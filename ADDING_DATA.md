@@ -96,6 +96,20 @@ analyses:
     whole_universe: true
 ```
 
+Columns of the marks table the website should keep (to colour sites, filter them, and show where each comes from)
+go under `marks.attributes`; no test reads them:
+
+```yaml
+marks:
+  attributes:
+    state: {column: <column>, label: <name on the page>, kind: category, values: {<value>: <label>}, colour: true, filter: true}
+    studies: {column: <column>, label: Studies, kind: list, separator: "; ", link: {column: <ids column>, url: "https://doi.org/{}"}, filter: true}
+```
+
+The website's Overview tiles, filter groups and header tiles are `website.overview`, `website.filters` and
+`website.stats` (see `sites/methylarginine.yaml`); without them the kit lists every question and offers every
+filterable attribute.
+
 **Check:** `ptmc run sites/<site>.yaml --root DATA` runs, and `out/<site>/run.json` lists every input with its MD5.
 
 ## 5. Prove it

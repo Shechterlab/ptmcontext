@@ -138,6 +138,82 @@
             "drop"
           ],
           "description": "a mark that is not on one of the profile's residues of the snapshot"
+        },
+        "attributes": {
+          "type": "object",
+          "description": "columns of the marks table the website keeps for each mark: to colour sites, filter them and show where they come from. Never used by a test.",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "column",
+              "label"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string",
+                "description": "its name on the page"
+              },
+              "kind": {
+                "enum": [
+                  "category",
+                  "list",
+                  "number"
+                ],
+                "description": "category: one value; list: several, split by separator; number"
+              },
+              "separator": {
+                "type": "string",
+                "description": "list: between values (default \"; \")"
+              },
+              "values": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "value -> its label on the page, in the order shown"
+              },
+              "link": {
+                "type": "object",
+                "required": [
+                  "column",
+                  "url"
+                ],
+                "additionalProperties": false,
+                "description": "list: a column holding each value's identifier (in the same order) and the URL it opens ({} is the identifier)",
+                "properties": {
+                  "column": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                }
+              },
+              "colour": {
+                "type": "boolean",
+                "description": "offered in \"Colour sites by\""
+              },
+              "filter": {
+                "type": "boolean",
+                "description": "offered as a filter"
+              },
+              "help": {
+                "type": "string"
+              },
+              "colours": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "description": "value -> its colour when sites are coloured by this attribute (default: a fixed palette in the order of values)"
+              }
+            }
+          }
         }
       }
     },
@@ -593,6 +669,133 @@
               ],
               "description": "the STRING score shown first (default 0.7, high confidence)"
             }
+          }
+        },
+        "overview": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the Overview page: which questions open as cards, in which sections and order (default: every question, in the analyses' order, under its section)",
+          "properties": {
+            "question": {
+              "type": "string",
+              "description": "the page's heading"
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "rows a card shows before \"+N more\" (default 5)"
+            },
+            "sections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "cards"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "cards": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "description": "an analysis id"
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "analysis"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "analysis": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "rows": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "summary": {
+                              "type": "string",
+                              "description": "the line under the card; {top} is the strongest class, {fold} its effect"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "filters": {
+          "type": "array",
+          "description": "the Filters panel: groups, in order; each lists the questions' classes and the marks' attributes it offers (default: one group per section, then one per filterable attribute)",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "analyses": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "attributes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "stats": {
+          "type": "array",
+          "description": "the tiles under the header (default: marks, proteins, questions, tests)",
+          "items": {
+            "oneOf": [
+              {
+                "enum": [
+                  "marks",
+                  "proteins",
+                  "questions",
+                  "tests"
+                ]
+              },
+              {
+                "type": "object",
+                "required": [
+                  "attribute",
+                  "label"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "attribute": {
+                    "type": "string",
+                    "description": "a list attribute of the marks: its distinct values are counted"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
           }
         }
       }

@@ -91,6 +91,29 @@ def select_marks(spec: dict, table: pd.DataFrame, snapshot: Snapshot, profile) -
     return marked.reset_index(drop=True), report
 
 
+def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame) -> pd.DataFrame:
+    """For each counted mark, the columns the site file keeps for the website (marks.attributes), as text; a mark on
+    several rows of the table takes its first row's. Columns 'a.<name>' (and 'a.<name>.link'), keyed by accession and
+    position. Nothing here changes which marks are counted."""
+    attrs = spec.get('attributes') or {}
+    if not attrs:
+        return pd.DataFrame(columns=['accession', 'position'])
+    cols = {}
+    for name, a in attrs.items():
+        cols[f'a.{name}'] = a['column']
+        if a.get('link'):
+            cols[f'a.{name}.link'] = a['link']['column']
+    missing = sorted({c for c in cols.values() if c not in table.columns})
+    if missing:
+        raise ValueError(f'marks.attributes name columns the marks table does not have: {missing}')
+    t = pd.DataFrame({'accession': table[spec['accession']].astype(str).str.strip(),
+                      'position': pd.to_numeric(table[spec['position']], errors='coerce')})
+    for out, col in cols.items():
+        t[out] = table[col].astype(str)
+    t = t.dropna(subset=['position']).astype({'position': int}).drop_duplicates(['accession', 'position'])
+    return marked[['accession', 'position']].merge(t, on=['accession', 'position'], how='left').fillna('')
+
+
 @dataclass
 class SiteRun:
     site: dict
@@ -103,7 +126,8 @@ class SiteRun:
         return all(r.equal for r in self.parity)
 
 
-def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, ctx: L.Context) -> dict[str, pd.DataFrame]:
+def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, ctx: L.Context,
+                    attributes: pd.DataFrame | None = None) -> dict[str, pd.DataFrame]:
     """What the protein pages read: each marked residue with its window and its class in every analysis (marks.tsv);
     each protein's marks and other candidate residues per class (protein_counts.tsv); the proteins (proteins.tsv); and
     the regions the layers placed residues against (units.tsv)."""
@@ -132,6 +156,8 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
         g['others_total'] = g['accession'].map(tot[False]).astype(int)
         g.insert(1, 'analysis', aid)
         counts.append(g[g['marks_in'] + g['others_in'] > 0])
+    if attributes is not None and len(attributes.columns) > 2:
+        m = m.merge(attributes, on=['accession', 'position'], how='left').fillna('')
     accs = sorted(set(m['accession']))
     n_marks = m.groupby('accession').size()
     cand = snap.residues(profile.residues, accessions=accs).groupby('accession').size()
@@ -176,9 +202,10 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
                     trusted_plugins=tuple(site.get('trusted_plugins', [])))
     table = pd.read_csv(paths[site['marks']['input']], sep='\t', dtype=str, keep_default_na=False, low_memory=False)
     marked, report = select_marks(site['marks'], table, snap, profile)
+    attributes = mark_attributes(site['marks'], table, marked)
     log(f"{site['id']}: {report['counted']:,} {profile.word('marks')} on {report['proteins']:,} proteins "
         f"({report['rows']:,} rows read, {report['selected']:,} selected)")
-    parts, layers_used, kept, set_names = [], {}, {}, []
+    parts, layers_used, kept, set_names, set_keep = [], {}, {}, [], {}
     if skip_new:
         site = {**site, 'analyses': [a for a in site['analyses'] if not a.get('new')]}
     for analysis in site['analyses']:
@@ -187,7 +214,8 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
             several = [r for r in roles_of(analysis) if isinstance(ctx.inputs.get(r), L.Several)]
             if several:
                 raise ValueError(f"{analysis['id']}: a protein-set test reads one table per role, but {several} name several inputs")
-            rows_, names = protein_set_test(analysis, ctx.inputs, set(marked['accession']), set(snap.sequences))
+            set_keep[analysis['id']] = {}
+            rows_, names = protein_set_test(analysis, ctx.inputs, set(marked['accession']), set(snap.sequences), keep=set_keep[analysis['id']])
             parts.append(rows_)
             set_names += [(analysis['id'], k, names.get(k, '')) for k in rows_['category']] if len(rows_) else []
             layers_used[analysis['id']] = {'test': 'protein_sets', 'sets': analysis['sets']['input']}
@@ -227,8 +255,11 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         folder = Path(out_root or root_of(site)) / site['outputs']['folder']
         ST.write(rows, folder / 'statistics.tsv')
         record['output'] = {'statistics.tsv': md5_file(folder / 'statistics.tsv')}
-        outs = protein_outputs(snap, profile, marked, kept, ctx)
+        outs = protein_outputs(snap, profile, marked, kept, ctx, attributes)
         outs['set_names.tsv'] = pd.DataFrame(set_names, columns=['analysis', 'set', 'name'])
+        if set_keep:                                   # for testing a selection again on the website
+            (folder / 'protein_sets.json').write_text(json.dumps(set_keep, separators=(',', ':')) + '\n')
+            record['output']['protein_sets.json'] = md5_file(folder / 'protein_sets.json')
         for name, frame in outs.items():
             frame.to_csv(folder / name, sep='\t', index=False, lineterminator='\n')
             record['output'][name] = md5_file(folder / name)

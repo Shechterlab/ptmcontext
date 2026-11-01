@@ -32,7 +32,7 @@
     <div class="wrap">
       <div class="search-field" role="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="A question, a class or a motif" aria-label="Search the questions and classes">
+        <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="A question, a class or a motif" aria-label="Search proteins and sites, or filter">
         <button class="search-clear" id="q-clear" type="button" aria-label="Clear search" hidden>×</button>
       </div>
       <div class="scope" id="scope"></div>
@@ -40,7 +40,11 @@
     </div>
   </div>
 
-  <main class="wrap" id="view"></main>
+  <div class="wrap layout">
+    <aside class="rail" id="rail" aria-label="Sections and filters"></aside>
+    <main id="view"></main>
+  </div>
+  <div class="rail-scrim" data-rail-close></div>
 
   <footer class="site">
     <div class="wrap">

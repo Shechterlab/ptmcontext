@@ -25,6 +25,48 @@ marks:
   exclude:
     - {column: flags, contains: one_sided_window}   # sites kept pending: counted on neither side
   residue_mismatch: error
+  attributes:          # what the website keeps for each site: to colour, filter and explain it (no test reads these)
+    state:
+      column: methyl_state
+      label: Methylation state
+      kind: category
+      values: {Rme1: Monomethyl (Rme1), Rme2: Dimethyl (Rme2), Rme1_Rme2: Mono- and dimethyl, "": Not reported}
+      colour: true
+      filter: true
+      help: The methylation state the studies report for the site; Rme2 is dimethylarginine, asymmetric or symmetric not resolved
+    studies:
+      column: studies
+      label: Studies
+      kind: list
+      separator: "; "
+      link: {column: study_dois, url: "https://doi.org/{}"}
+      filter: true
+      help: The studies and databases that report the site
+    n_studies:
+      column: n_studies
+      label: Studies reporting it
+      kind: number
+      colour: true
+      filter: true
+    interaction:
+      column: interaction_status
+      label: Interaction evidence
+      kind: category
+      values: {experimental: Experimental, predicted_only: Predicted only, none: None recorded}
+      colours: {experimental: "#334155", predicted_only: "#94A3B8", none: "#D9DEE2"}
+      colour: true
+      filter: true
+      help: "Experimental: an RNA or DNA crosslink at the residue, an RBDmap fragment covering it, or a PDB interface; predicted only: an AlphaFold-Multimer interface or a confident predicted contact"
+    localised_by:
+      column: localised_by
+      label: Localised by
+      kind: list
+      separator: "; "
+    flags:
+      column: flags
+      label: Notes
+      kind: list
+      separator: "; "
 
 analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel)
   # protein sets: clusterProfiler's enricher, as the release ran it (scripts/release_layers.py, release_tables.py)
@@ -153,5 +195,31 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
-  examples: [RGG, disorder, linker, RRM]
+  examples: [FUS, FUS R216, TAF15 EWSR1 FUS, "motif:RGG", "state:Rme2"]
+  stats: [marks, proteins, {attribute: studies, label: studies and databases}]
+  overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
+    question: "What kinds of proteins are arginine methylated?"
+    rows: 7
+    sections:
+      - name: Kinds of protein
+        cards:
+          - {analysis: panther_group, title: Protein classes}
+          - {analysis: hpa_location, title: Where in the cell}
+          - {analysis: reactome_top_level, title: Reactome pathways}
+          - {analysis: panther_subclass, title: Protein subclasses}
+      - name: Where in the protein
+        cards:
+          - {analysis: motif, title: Sequence motifs}
+          - {analysis: structure_context}
+          - {analysis: domain_class, title: Nearest domain class}
+          - {analysis: idr_charge}
+      - name: More questions
+        cards: [panther_class, reactome_pathway, disorder, domain_context]
+  filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
+    - {name: Protein function, analyses: [panther_group, panther_class, hpa_location, reactome_top_level]}
+    - {name: Methylation state, attributes: [state]}
+    - {name: Sequence motif, analyses: [motif]}
+    - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
+    - {name: Interactions and binding, attributes: [interaction]}
+    - {name: Provenance, attributes: [studies, n_studies, localised_by]}
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)

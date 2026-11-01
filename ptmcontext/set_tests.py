@@ -187,8 +187,11 @@ def stratified_rows(spec: dict, paths: dict, rows: pd.DataFrame, pairs: pd.DataF
     return res
 
 
-def protein_set_test(spec: dict, paths: dict, marked_proteins: set, snapshot_proteins: set) -> tuple[pd.DataFrame, dict]:
-    """Statistics rows of one protein-set analysis of a site, and the names of its sets."""
+def protein_set_test(spec: dict, paths: dict, marked_proteins: set, snapshot_proteins: set,
+                     keep: dict | None = None) -> tuple[pd.DataFrame, dict]:
+    """Statistics rows of one protein-set analysis of a site, and the names of its sets. keep, if given, receives what
+    a website needs to test a selection of the marked proteins again: the background's size, which marked proteins are
+    in it, and each tested set's size and marked members."""
     if spec['sets'].get('unclassified') and spec.get('universe') != 'snapshot':
         raise ValueError(f"{spec['id']}: an unclassified set needs universe: snapshot")
     pairs, names = read_sets(spec, paths, set(snapshot_proteins))
@@ -196,6 +199,12 @@ def protein_set_test(spec: dict, paths: dict, marked_proteins: set, snapshot_pro
     res = enricher(marked_proteins & universe, universe, pairs, whole_universe=spec.get('whole_universe', False),
                    min_size=spec.get('min_size', 1), max_size=spec.get('max_size', 10 ** 6))
     res = res.sort_values(['p', 'set'], kind='stable')
+    if keep is not None:
+        background = background_of(universe, pairs, spec.get('whole_universe', False))
+        members = pairs[pairs['protein'].isin(background)].groupby('set')['protein'].agg(set)
+        size_ok = members[members.map(len).between(spec.get('min_size', 1), spec.get('max_size', 10 ** 6))]
+        keep.update({'N': len(background), 'marked_in_background': sorted(marked_proteins & background),
+                     'sets': {s: {'M': len(g), 'marked': sorted(g & marked_proteins)} for s, g in size_ok.items()}})
     rows = [{'analysis': spec['id'], 'category': r['set'], 'stratum': 'all', 'a': r['k'], 'b': r['n'] - r['k'], 'c': r['M'] - r['k'],
              'd': r['N'] - r['M'] - r['n'] + r['k'], 'fold_enrichment': r['fold'],
              'log2_fold_enrichment': math.log2(r['fold']) if r['fold'] > 0 else np.nan, 'p': r['p'], 'q': r['q'],

@@ -35,7 +35,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-proteins.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-proteins.js', 'kit-sites.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -173,6 +173,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
     return {
         'inputs': inputs,
         'partners': web.get('partners'),
+        'overview': web.get('overview'), 'filters': web.get('filters'), 'stats': web.get('stats'),
         'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),
                  'lab': web.get('lab', {}).get('name', ''), 'config': f"sites/{site['id']}.yaml"},
         'words': {**profile.words, 'marked_long': profile.words.get('marked_long', profile.words['marked'])},
@@ -200,7 +201,7 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
 
     from ..snapshot import parse_fasta
     if not (folder / 'proteins.tsv').exists():
-        return ([], [], []), {}
+        return ([], [], [], []), {}
     prot = pd.read_csv(folder / 'proteins.tsv', sep='\t', dtype={'accession': str}, keep_default_na=False)
     marks = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
     counts = pd.read_csv(folder / 'protein_counts.tsv', sep='\t', dtype={'accession': str, 'analysis': str, 'category': str}, keep_default_na=False)
@@ -210,7 +211,8 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
     sources = sorted(set(units['source']))
     src_index = {s: i for i, s in enumerate(sources)}
     seqs = parse_fasta(snapshot_fasta) if snapshot_fasta and snapshot_fasta.exists() else {}
-    analyses = [c for c in marks.columns if c not in ('accession', 'position', 'residue', 'window_15')]
+    analyses = [c for c in marks.columns if c not in ('accession', 'position', 'residue', 'window_15') and not c.startswith('a.')]
+    attrs = [c for c in marks.columns if c.startswith('a.')]          # a.<name> and a.<name>.link: the site file's marks.attributes
     listing = [[r['accession'], r['gene'], r['name'], int(r['length']), int(r['marks']), int(r['candidates'])] for r in prot.to_dict('records')]
     shards: dict[int, dict] = {}
     m_by = {a: g for a, g in marks.groupby('accession')}
@@ -220,14 +222,69 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
         a = r['accession']
         mg, cg, ug = m_by.get(a), c_by.get(a), u_by.get(a)
         rec = {'entry': r['entry'], 'md5': r['sequence_md5'], 'seq': seqs.get(a, ''),
-               'marks': [[int(x['position']), x['window_15'], [x[k] for k in analyses]] for x in mg.to_dict('records')] if mg is not None else [],
+               'marks': [[int(x['position']), x['window_15'], [x[k] for k in analyses], [x[k] for k in attrs]] for x in mg.to_dict('records')] if mg is not None else [],
                'counts': {}, 'totals': {}, 'units': [[u['kind'], int(u['start']), int(u['end']), u['label'], src_index[u['source']]] for u in ug.to_dict('records')] if ug is not None else []}
         if cg is not None:
             for aid, g in cg.groupby('analysis'):
                 rec['counts'][aid] = [[c['category'], int(c['marks_in']), int(c['others_in'])] for c in g.to_dict('records')]
                 rec['totals'][aid] = [int(g['marks_total'].iloc[0]), int(g['others_total'].iloc[0])]
         shards.setdefault(shard_of(a), {})[a] = rec
-    return (listing, analyses, sources), shards
+    return (listing, analyses, sources, [c[2:] for c in attrs]), shards
+
+
+def selection_data(folder: Path, listing: list, analyses: list) -> dict:
+    """What the browser needs to filter the marks and test a selection again: every mark with its protein, position,
+    class in each residue question and attributes (dictionary-coded), and each protein's other candidate residues per
+    class (from protein_counts.tsv), so the within-protein and pooled tests can be recomputed on any subset."""
+    import pandas as pd
+    marks = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
+    counts = pd.read_csv(folder / 'protein_counts.tsv', sep='\t', dtype={'accession': str, 'analysis': str, 'category': str}, keep_default_na=False)
+    pidx = {r[0]: i for i, r in enumerate(listing)}
+    attrs = [c for c in marks.columns if c.startswith('a.') and not c.endswith('.link')]
+    classes, codes = {}, {}
+    for aid in analyses:
+        vals = sorted({v for x in marks[aid] for v in (x.split(';') if x else [])} | set(counts.loc[counts['analysis'] == aid, 'category']))
+        classes[aid] = vals
+        codes[aid] = {v: i for i, v in enumerate(vals)}
+    avals, acodes = {}, {}
+    for c in attrs:
+        vals = sorted({v for x in marks[c] for v in x.split('; ')}) if c else []
+        avals[c[2:]] = vals
+        acodes[c] = {v: i for i, v in enumerate(vals)}
+    rows = []
+    for r in marks.to_dict('records'):
+        rows.append([pidx[r['accession']], int(r['position']),
+                     [[codes[a][v] for v in r[a].split(';')] if r[a] else [] for a in analyses],
+                     [[acodes[c][v] for v in r[c].split('; ')] for c in attrs], r['window_15']])
+    # a list value's link (a study's DOI), the same wherever the value appears
+    links = {}
+    for c in attrs:
+        if c + '.link' in marks.columns:
+            m = {}
+            for vals, ids in zip(marks[c], marks[c + '.link']):
+                for v, i in zip(vals.split('; '), ids.split('; ')):
+                    if v and i:
+                        m.setdefault(v, i)
+            links[c[2:]] = m
+    others = {}
+    for aid, g in counts[counts['others_in'].astype(int) > 0].groupby('analysis'):
+        per = {}
+        for r in g.itertuples(index=False):
+            per.setdefault(pidx[r.accession], {})[codes[aid][r.category]] = int(r.others_in)
+        others[aid] = per
+    # each protein's other candidate residues, the same for every question (a protein with none is left out of the
+    # tests: its marks have nothing to be compared with)
+    others_total = [int(r[5]) - int(r[4]) for r in listing]
+    # protein-set questions: each tested set's size in the background and its marked proteins (protein_sets.json)
+    sets = {}
+    if (folder / 'protein_sets.json').exists():
+        for aid, k in json.loads((folder / 'protein_sets.json').read_text()).items():
+            if not k:
+                continue
+            sets[aid] = {'N': k['N'], 'in_background': [pidx[a] for a in k['marked_in_background'] if a in pidx],
+                         'sets': [[s, v['M'], [pidx[a] for a in v['marked'] if a in pidx]] for s, v in k['sets'].items()]}
+    return {'analyses': analyses, 'classes': classes, 'attributes': avals, 'attribute_links': links, 'marks': rows, 'others': others,
+            'others_total': others_total, 'protein_sets': sets}
 
 
 def build(site_path: str | Path, out_root: str | Path | None = None, log=print) -> Path:
@@ -262,16 +319,29 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
     cit = data['citation']
     run = data['run']
     fasta = Path(run.get('inputs', {}).get(site['snapshot']['input'], {}).get('file', ''))
-    (listing, mark_columns, unit_sources), shards = protein_data(folder, fasta)
+    (listing, mark_columns, unit_sources, mark_attrs), shards = protein_data(folder, fasta)
     data['proteins'] = listing
     data['mark_columns'] = mark_columns
+    data['mark_attributes'] = mark_attrs
+    if listing:
+        import pandas as pd
+        mk = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
+        data['attribute_counts'] = {a: len({v for x in mk[f'a.{a}'] for v in x.split(s.get('separator', '; ')) if v})
+                                    for a, s in site['marks'].get('attributes', {}).items() if f'a.{a}' in mk.columns}
+    data['attribute_specs'] = site['marks'].get('attributes', {})
     data['unit_sources'] = unit_sources
     data['shards'] = SHARDS if shards else 0
+    if listing:
+        sel = selection_data(folder, listing, mark_columns)
+        (out / 'data').mkdir(parents=True, exist_ok=True)
+        (out / 'data' / 'selection.json').write_text(json.dumps(sel, separators=(',', ':')))
+        log(f"  selection data: {len(sel['marks']):,} marks, {(out / 'data' / 'selection.json').stat().st_size / 1e6:.1f} MB")
     if shards:
         (out / 'data' / 'p').mkdir(parents=True, exist_ok=True)
         for k, recs in shards.items():
             (out / 'data' / 'p' / f'{k:02d}.json').write_text(json.dumps(recs, separators=(',', ':')))
     inline_proteins = json.dumps({f'{k:02d}': v for k, v in shards.items()}, separators=(',', ':')).replace('</', '<\\/')
+    inline_selection = (out / 'data' / 'selection.json').read_text().replace('</', '<\\/') if (out / 'data' / 'selection.json').exists() else ''
     if len(inline_proteins) > 12_000_000:
         log(f'  the one-file copy leaves out the protein pages ({len(inline_proteins) / 1e6:.0f} MB); index.html has them')
         inline_proteins = '{}'
@@ -304,6 +374,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
         if inline:
             css = f'<style>{_asset("assets/kit.css").read_text()}</style>'
             js = (f'<script id="protein-data" type="application/json">{inline_proteins}</script>'
+                  + (f'<script id="selection-data" type="application/json">{inline_selection}</script>' if inline_selection else '')
                   + ''.join(f'<script>{_asset("assets/" + n).read_text()}</script>' for n in MODULES))
         else:
             css = '<link rel="stylesheet" href="assets/kit.css">'
