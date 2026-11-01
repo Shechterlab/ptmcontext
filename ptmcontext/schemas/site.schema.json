@@ -1,0 +1,648 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Shechterlab/ptmcontext/schemas/site.schema.json",
+  "title": "Site config",
+  "description": "One site (a release and, later, its website): which mark, which sequences and annotations, which marked residues, which analyses, what to check against, where to write. Changing site is changing this file.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "mark",
+    "snapshot",
+    "marks",
+    "analyses",
+    "outputs"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "published",
+        "working",
+        "offline_pilot"
+      ],
+      "description": "offline_pilot: outputs stay out of the repository"
+    },
+    "mark": {
+      "type": "string",
+      "description": "a packaged profile id, or a path to a profile file"
+    },
+    "snapshot": {
+      "type": "object",
+      "required": [
+        "input",
+        "release"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "input": {
+          "type": "string"
+        },
+        "release": {
+          "type": "string"
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 1,
+            "additionalProperties": false,
+            "properties": {
+              "first_of": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "string"
+                },
+                "description": "each protein's units from the first input that has any for it"
+              },
+              "all_of": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "string"
+                },
+                "description": "every input's units"
+              }
+            }
+          }
+        ]
+      },
+      "description": "role -> manifest name, or several names combined (first_of, all_of): the inputs the layers read, by the role they fill (disorder, domains, ...)"
+    },
+    "trusted_plugins": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "packages whose layers this site may load"
+    },
+    "marks": {
+      "type": "object",
+      "required": [
+        "input",
+        "accession",
+        "position"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "manifest name of the table of marked residues"
+        },
+        "accession": {
+          "type": "string"
+        },
+        "position": {
+          "type": "string"
+        },
+        "include": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition"
+          },
+          "description": "rows kept: every condition holds"
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition"
+          },
+          "description": "rows dropped: any condition holds"
+        },
+        "residue_mismatch": {
+          "enum": [
+            "error",
+            "drop"
+          ],
+          "description": "a mark that is not on one of the profile's residues of the snapshot"
+        }
+      }
+    },
+    "analyses": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": "the analysis column of the statistics rows"
+          },
+          "layer": {
+            "type": "string"
+          },
+          "test": {
+            "enum": [
+              "residue",
+              "protein_sets"
+            ],
+            "default": "residue"
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "fisher",
+                "mantel_haenszel"
+              ]
+            }
+          },
+          "title": {
+            "type": "string",
+            "description": "card heading (default: the layer's title)"
+          },
+          "question": {
+            "type": "string",
+            "description": "the question the card answers, in words"
+          },
+          "section": {
+            "type": "string",
+            "description": "the Overview section it is listed under (default: the layer's)"
+          },
+          "sets": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "input",
+                  "set",
+                  "protein"
+                ],
+                "additionalProperties": false,
+                "description": "protein_sets: the table of (set, protein) pairs; input is a role of the site's inputs",
+                "properties": {
+                  "input": {
+                    "type": "string"
+                  },
+                  "set": {
+                    "type": "string"
+                  },
+                  "protein": {
+                    "type": "string"
+                  },
+                  "include": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/condition"
+                    }
+                  },
+                  "exclude": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/condition"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "input",
+                  "protein",
+                  "classes",
+                  "ontology",
+                  "level"
+                ],
+                "additionalProperties": false,
+                "description": "protein_sets: sets from a class hierarchy (PANTHER protein classes, a GO slim): each protein's classes, and the ontology that places them",
+                "properties": {
+                  "input": {
+                    "type": "string",
+                    "description": "role of the table giving each protein its classes"
+                  },
+                  "protein": {
+                    "type": "string"
+                  },
+                  "classes": {
+                    "type": "string",
+                    "description": "the column of class ids"
+                  },
+                  "separator": {
+                    "type": "string",
+                    "description": "between a protein's class ids (default ;)"
+                  },
+                  "ontology": {
+                    "type": "object",
+                    "required": [
+                      "input",
+                      "id",
+                      "name",
+                      "parent",
+                      "root"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "input": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "parent": {
+                        "type": "string"
+                      },
+                      "root": {
+                        "type": "string",
+                        "description": "the root's id: its children are the top level"
+                      }
+                    }
+                  },
+                  "level": {
+                    "enum": [
+                      "top",
+                      "below_top"
+                    ],
+                    "description": "top: each protein's top-level classes; below_top: every class under the top level a protein's classes lie in or under"
+                  },
+                  "groups": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 1
+                    },
+                    "description": "level top only: group name -> its top-level class ids; every top-level class in exactly one group"
+                  },
+                  "unclassified": {
+                    "type": "string",
+                    "description": "a set of the universe's proteins with no class at this level, under this name"
+                  }
+                }
+              }
+            ]
+          },
+          "names": {
+            "type": "object",
+            "required": [
+              "input",
+              "set",
+              "name"
+            ],
+            "additionalProperties": false,
+            "description": "protein_sets: the sets' names; a filter here restricts the sets tested",
+            "properties": {
+              "input": {
+                "type": "string"
+              },
+              "set": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "include": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "exclude": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              }
+            }
+          },
+          "universe": {
+            "enum": [
+              "annotated",
+              "snapshot"
+            ],
+            "description": "annotated: the proteins in at least one set; snapshot: every entry of the sequences"
+          },
+          "whole_universe": {
+            "type": "boolean",
+            "description": "the background is the whole universe, not only its proteins in some set"
+          },
+          "min_size": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_size": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "background": {
+            "type": "string",
+            "description": "the statistics rows' background, in words"
+          },
+          "sub": {
+            "type": "string",
+            "description": "the line under the figure's title"
+          },
+          "abundance": {
+            "type": "object",
+            "required": [
+              "input",
+              "protein",
+              "value"
+            ],
+            "additionalProperties": false,
+            "description": "protein_sets: repeat each set's test within strata of a covariate (Mantel-Haenszel across its deciles)",
+            "properties": {
+              "input": {
+                "type": "string"
+              },
+              "protein": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "strata": {
+                "type": "integer",
+                "minimum": 2
+              },
+              "label": {
+                "type": "string",
+                "description": "added to the background of the stratified rows"
+              }
+            }
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "layer"
+            ]
+          },
+          {
+            "required": [
+              "test",
+              "sets"
+            ],
+            "properties": {
+              "test": {
+                "const": "protein_sets"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "a published output the rebuild must equal",
+      "properties": {
+        "statistics": {
+          "type": "string",
+          "description": "manifest name of a statistics table"
+        }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "required": [
+        "folder"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "folder": {
+          "type": "string"
+        }
+      }
+    },
+    "website": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "the website's look and words: everything that differs between sites. Layout and behaviour are the kit's.",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "tagline": {
+          "type": "string",
+          "description": "one line under the title"
+        },
+        "url": {
+          "type": "string"
+        },
+        "band": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "the header band's gradient, top-left to bottom-right"
+        },
+        "accent": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "accent_dark": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "description": "the accent on the dark theme"
+        },
+        "brand_ink": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "brand_ink_dark": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "icon": {
+          "type": "string",
+          "description": "an SVG file, relative to the repository"
+        },
+        "art": {
+          "type": "string",
+          "description": "the header picture: an SVG file, relative to the repository (default: a drawn protein with its marks)"
+        },
+        "art_label": {
+          "type": "string"
+        },
+        "lab": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "affiliation": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "logo": {
+              "type": "string"
+            }
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "url"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "example searches shown under the search bar"
+        },
+        "version": {
+          "type": "string"
+        },
+        "doi": {
+          "type": "string"
+        },
+        "fonts": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "type: CSS font stacks, and the stylesheet that serves them (default: IBM Plex Serif headings, Inter body, IBM Plex Mono)",
+          "properties": {
+            "heading": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "mono": {
+              "type": "string"
+            },
+            "stylesheet": {
+              "type": "string"
+            }
+          }
+        },
+        "partners": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "species"
+          ],
+          "description": "interaction partners on protein pages, live from STRING; leave out for no partners card",
+          "properties": {
+            "species": {
+              "type": "integer",
+              "description": "the NCBI taxon STRING files this organism under (9606 human, 4932 budding yeast, 10090 mouse)"
+            },
+            "network": {
+              "enum": [
+                "physical",
+                "functional"
+              ],
+              "description": "the network shown first (default physical)"
+            },
+            "min_score": {
+              "enum": [
+                0.4,
+                0.7,
+                0.9
+              ],
+              "description": "the STRING score shown first (default 0.7, high confidence)"
+            }
+          }
+        }
+      }
+    },
+    "manifest": {
+      "type": "string",
+      "description": "the input manifest, relative to the repository (default inputs.json)"
+    },
+    "citation": {
+      "type": "string",
+      "description": "the site's CITATION.cff, relative to the repository: the citation, data sources, version and date every page and export carries"
+    }
+  },
+  "$defs": {
+    "condition": {
+      "type": "object",
+      "required": [
+        "column"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "type": "string"
+        },
+        "equals": {
+          "type": "string"
+        },
+        "in": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contains": {
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "equals"
+          ]
+        },
+        {
+          "required": [
+            "in"
+          ]
+        },
+        {
+          "required": [
+            "contains"
+          ]
+        }
+      ]
+    }
+  }
+}

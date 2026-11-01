@@ -1,0 +1,61 @@
+# How the methylarginine site is cited, and its version. Every page, figure and table the site exports reads this
+# file: edit it (and rebuild with ptmc web) to change the citation, the version or the date.
+cff-version: 1.2.0
+message: "Please cite the paper and the original data sources."
+title: "Human methylarginine sites (ptmcontext rebuild, checked against release v1.4.3)"
+version: "rebuild-0.1.0"
+date-released: "2026-11-01"
+url: "https://shechterlab.github.io/PTM_Pipeline/"
+license: "CC-BY-NC-SA-4.0"
+authors:
+  - name: "Shechter Lab, Albert Einstein College of Medicine"
+preferred-citation:
+  type: article
+  authors:
+    - {family-names: DeAngelo, given-names: JD}
+    - {family-names: Silverstein, given-names: AM}
+    - {family-names: Shechter, given-names: D}
+  title: "Protein arginine methylation rewires molecular interactions"
+  journal: "Cell Chem Biol"
+  volume: 33
+  start: 1404
+  end: 1421
+  year: 2026
+  doi: "10.1016/j.chembiol.2026.09.011"
+references:   # the data sources: cited with every export (DOIs checked on Crossref, 1 Nov 2026)
+  - type: dataset
+    authors:   # as the Zenodo record lists them
+      - {family-names: DeAngelo, given-names: JD}
+      - {family-names: Silverstein, given-names: AM}
+      - {family-names: Shechter, given-names: D}
+    title: "Human methylarginine sites (PTM_Pipeline), every version; the rebuild is checked against release v1.4.3"
+    publisher: Zenodo
+    year: 2026
+    doi: "10.5281/zenodo.22696798"
+  - type: article
+    authors: [{name: "UniProt Consortium"}]
+    title: "UniProt: the Universal Protein Knowledgebase in 2025"
+    journal: "Nucleic Acids Res"
+    volume: 53
+    start: D609
+    end: D617
+    year: 2025
+    doi: "10.1093/nar/gkae1010"
+  - type: article
+    authors: [{family-names: Piovesan, given-names: D}, {name: "et al."}]
+    title: "MobiDB in 2025: integrating ensemble properties and function annotations for intrinsically disordered proteins"
+    journal: "Nucleic Acids Res"
+    volume: 53
+    start: D495
+    end: D503
+    year: 2025
+    doi: "10.1093/nar/gkae969"
+  - type: article
+    authors: [{family-names: Blum, given-names: M}, {name: "et al."}]
+    title: "InterPro: the protein sequence classification resource in 2025"
+    journal: "Nucleic Acids Res"
+    volume: 53
+    start: D444
+    end: D456
+    year: 2025
+    doi: "10.1093/nar/gkae1082"

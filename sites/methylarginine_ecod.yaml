@@ -1,0 +1,30 @@
+# Site: the methylarginine analyses with structure-based domains instead of InterPro's: ECOD domains (defined from
+# experimental structures) that DomainMapper assigned to each sequence from hmmscan hits against ECOD's profile HMMs
+# (SHEPHARD's precomputed human file, MIT). One line differs from methylarginine.yaml: the input that fills the
+# domains role. A robustness check of every domain-dependent result, not a release.
+schema_version: 1
+id: methylarginine_ecod
+title: Human methylarginine sites, structural (ECOD) domains
+status: working
+mark: methylarginine
+manifest: sites/methylarginine_ecod.inputs.json
+
+snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}
+inputs:
+  disorder: mobidb_disorder
+  domains: human_shephard_ecod_domains      # was: interpro_domains
+
+marks:
+  input: methylarginine_sites_v1_4_3
+  accession: uniprot_accession
+  position: position
+  exclude:
+    - {column: flags, contains: one_sided_window}
+  residue_mismatch: error
+
+analyses:
+  - {id: domain_context, layer: domain_context}
+  - {id: domain_class, layer: domain_class}
+  - {id: structure_context, layer: structure_context}
+
+outputs: {folder: out/methylarginine_ecod}

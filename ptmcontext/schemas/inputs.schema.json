@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Shechterlab/ptmcontext/schemas/inputs.schema.json",
+  "title": "Input manifest",
+  "description": "Every file a build reads, named once with where it comes from and its MD5. A build checks each file against its MD5 before it reads it, whoever staged it.",
+  "type": "object",
+  "required": ["schema_version", "inputs"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "inputs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object", "required": ["file", "md5", "source", "version", "licence"], "additionalProperties": false,
+        "properties": {
+          "file": {"type": "string", "description": "path relative to the inputs folder"},
+          "md5": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+          "source": {"type": "string", "description": "the upstream URL or record"},
+          "version": {"type": "string"},
+          "licence": {"type": "string"},
+          "role": {"enum": ["input", "reference_output"], "description": "reference_output: read only to check parity"},
+          "note": {"type": "string"}
+        }
+      }
+    }
+  }
+}

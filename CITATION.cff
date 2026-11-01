@@ -1,0 +1,11 @@
+# The kit's own citation and version. pyproject.toml and ptmcontext/__init__.py must carry the same version
+# (tests/test_citation.py checks). Edit this file to change how the kit is cited.
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "ptmcontext: where modifications fall in proteins, tested pooled and within protein"
+version: "0.1.0"
+date-released: "2026-11-01"
+license: MIT
+repository-code: "https://github.com/Shechterlab/ptmcontext"
+authors:
+  - name: "Shechter Lab, Albert Einstein College of Medicine"

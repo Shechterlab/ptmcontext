@@ -1,0 +1,35 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The parity test reads release v1.4.3's inputs and statistics as data (checked against inputs.json MD5s);
+      # no code of that repository is run.
+      - uses: actions/checkout@v4
+        with:
+          repository: Shechterlab/PTM_Pipeline
+          ref: b0d9049835fbd2527075629f00a4ebab154221bf
+          path: reference
+          sparse-checkout: |
+            inputs/reference
+            inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv
+            inputs/annotation/interpro_108.0_domain_intervals.tsv
+            inputs/layers/reactome_human_protein_pathways.tsv
+            inputs/layers/reactome_human_pathways.tsv
+            inputs/layers/hpa_subcellular_locations.tsv
+            inputs/layers/paxdb_human_integrated_abundance.tsv
+            inputs/annotation/panther_19.0_protein_classes.tsv
+            inputs/annotation/panther_19.0_protein_class_ontology.tsv
+            releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
+            releases/v1.4.3/statistics_v1.4.3.tsv
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[test]" ruff
+      - run: ruff check ptmcontext tests --select E,F,W --ignore E501
+      - run: pytest -q
+        env:
+          PTMCONTEXT_ROOT: reference

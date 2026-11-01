@@ -1,0 +1,34 @@
+# Mark profile: phosphorylation of serine, threonine and tyrosine.
+schema_version: 1
+id: phospho
+name: "Phosphorylation (S, T, Y)"
+residues: [S, T, Y]
+
+states:   # PSI-MOD terms checked against EBI OLS, 2026-11-01
+  - {code: pS, label: phosphoserine, psi_mod: "MOD:00046", pdb_component: SEP}
+  - {code: pT, label: phosphothreonine, psi_mod: "MOD:00047", pdb_component: TPO}
+  - {code: pY, label: phosphotyrosine, psi_mod: "MOD:00048", pdb_component: PTR}
+
+modified_charge: {S: -2.0, T: -2.0, Y: -2.0}   # the phosphate, mostly dianionic at pH 7.4
+
+enzymes:
+  writers: []      # kinases: to come from a kinase-substrate layer, not listed by hand
+  erasers: []
+  reader_domains: []
+
+motifs:
+  window_flank: 7
+  families:
+    - {name: proline_directed, label: "S/T-P", help: "Pro at +1 (proline-directed kinases)", all: [{at: 1, in: P}]}
+    - {name: acidophilic_CK2, label: "S/T-x-x-D/E", help: "Asp or Glu at +3 (CK2-like, acidophilic)", all: [{at: 3, in: DE}]}
+    - {name: basophilic_RxxS, label: "R/K-x-x-S/T", help: "Arg or Lys at −3 (basophilic kinases)", all: [{at: -3, in: RK}]}
+
+words:
+  mark: phosphosite
+  marks: phosphosites
+  residue: "S, T or Y"
+  residues: "serines, threonines and tyrosines"
+  marked: phosphorylated
+  marked_long: phosphorylated
+  writer: kinase
+  writers: kinases

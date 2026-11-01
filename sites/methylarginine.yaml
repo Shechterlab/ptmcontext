@@ -1,0 +1,156 @@
+# Site: the human methylarginine sites, rebuilt. Its analyses must equal release v1.4.3 of the Methylarginine Site
+# Explorer (reference), row for row. Contract: ptmcontext/schemas/site.schema.json.
+schema_version: 1
+id: methylarginine
+title: Human methylarginine sites
+status: working
+mark: methylarginine
+
+snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}   # quoted: unquoted, YAML reads 2026_03 as 202603
+inputs:                # role the layers read: manifest input that fills it
+  disorder: mobidb_disorder
+  domains: interpro_domains
+  reactome: reactome_protein_pathways
+  reactome_names: reactome_pathways
+  hpa: hpa_locations
+  abundance: paxdb_abundance
+  panther_classes: panther_protein_classes
+  panther_ontology: panther_class_ontology
+
+marks:
+  # Until this repository builds the site union from the studies, the marks are the release's own sites.
+  input: methylarginine_sites_v1_4_3
+  accession: uniprot_accession
+  position: position
+  exclude:
+    - {column: flags, contains: one_sided_window}   # sites kept pending: counted on neither side
+  residue_mismatch: error
+
+analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel)
+  # protein sets: clusterProfiler's enricher, as the release ran it (scripts/release_layers.py, release_tables.py)
+  # PANTHER protein classes (scripts/03b_panther_class_enrichment.py): every reviewed protein is the universe and the
+  # background; the groups and the top-level classes, with the unclassified proteins, each partition it
+  - id: panther_group
+    test: protein_sets
+    title: Protein classes (PANTHER), grouped
+    question: "Which kinds of protein hold more methylated proteins than expected?"
+    sub: "Methylated proteins vs the reviewed human proteome, by PANTHER protein class (grouped); every protein is in one group (one-sided hypergeometric test)"
+    section: Kinds of protein
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: top
+      groups:                   # the release's overview groups (PTM_Pipeline config/panther_class_groups.json)
+          "Transcription, chromatin and DNA": [PC00264, PC00077, PC00009]
+          "RNA processing and translation": [PC00031, PC00263]
+          "Metabolic enzymes": [PC00262]
+          "Protein-modifying enzymes": [PC00260]
+          "Signalling: receptors, ligands and modulators": [PC00197, PC00207, PC00095, PC00060]
+          "Transport and membrane traffic": [PC00227, PC00219, PC00150]
+          "Cytoskeleton, adhesion and matrix": [PC00085, PC00211, PC00069, PC00070, PC00102]
+          "Scaffolds, adaptors and chaperones": [PC00226, PC00072]
+          "Immunity and defence": [PC00090]
+          "Other PANTHER classes": [PC00237, PC00210]
+      unclassified: No PANTHER protein class
+    universe: snapshot
+    whole_universe: true
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: panther_class
+    test: protein_sets
+    title: Protein classes (PANTHER)
+    question: "Which PANTHER protein classes hold more methylated proteins than expected?"
+    sub: "Methylated proteins vs the reviewed human proteome, by top-level PANTHER protein class; every protein is in one class (one-sided hypergeometric test)"
+    section: Kinds of protein
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: top
+      unclassified: No PANTHER protein class
+    universe: snapshot
+    whole_universe: true
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: panther_subclass
+    test: protein_sets
+    title: Protein subclasses (PANTHER)
+    question: "Which PANTHER protein subclasses hold more methylated proteins than expected?"
+    sub: "Methylated proteins vs the reviewed human proteome, every PANTHER class below the top level with 10 or more proteins; subclasses overlap (one-sided hypergeometric test)"
+    section: Kinds of protein
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: below_top
+    universe: snapshot
+    whole_universe: true
+    min_size: 10
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: reactome_top_level
+    test: protein_sets
+    title: Reactome pathways, top level
+    question: "Which top-level Reactome pathways hold more methylated proteins than expected?"
+    sub: "Methylated vs other proteins with a Reactome pathway, by top-level pathway (one-sided hypergeometric test)"
+    section: Kinds of protein
+    sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
+    names: {input: reactome_names, set: pathway_id, name: name, include: [{column: depth, equals: "0"}]}
+    background: other reviewed human proteins with at least one Reactome 97 pathway
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: reactome_pathway
+    test: protein_sets
+    title: Reactome pathways
+    question: "Which Reactome pathways, at any level, hold more methylated proteins than expected?"
+    sub: "Methylated vs other proteins with a Reactome pathway, every pathway of 10 to 500 proteins (one-sided hypergeometric test)"
+    section: Kinds of protein
+    sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
+    names: {input: reactome_names, set: pathway_id, name: name}
+    min_size: 10
+    max_size: 500
+    background: other reviewed human proteins with at least one Reactome 97 pathway
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: hpa_location
+    test: protein_sets
+    title: Where in the cell
+    question: "Where in the cell are methylated proteins found more often than other proteins?"
+    sub: "Methylated vs other proteins with a Human Protein Atlas location scored Approved or better (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets: {input: hpa, set: location, protein: canonical_UniProtAC, exclude: [{column: reliability, equals: Uncertain}]}
+    whole_universe: true
+    background: other proteins with an HPA 25.1 location (Approved or better)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - {id: motif, layer: motif}
+  - {id: disorder, layer: disorder}
+  - {id: domain_context, layer: domain_context}
+  - {id: domain_class, layer: domain_class}
+  - {id: structure_context, layer: structure_context}
+
+reference:
+  statistics: methylarginine_statistics_v1_4_3
+
+outputs: {folder: out/methylarginine}
+citation: sites/methylarginine.citation.cff   # the citation, data sources, version and date: edit there
+
+
+
+website:                  # the look and words of the website (ptmc web); layout and behaviour are the kit's
+  name: Methylarginine Site Explorer
+  tagline: "Human arginine methylation sites from published studies. This rebuild repeats the sequence and structure tests of release v1.4.3, with the same results."
+  band: ["#155e75", "#0f3b47"]      # the header gradient: teal
+  accent: "#c2410c"                 # the orange rule, active tab and links; shared by the lab's sites
+  accent_dark: "#fb923c"
+  icon: sites/art/methylarginine-icon.svg
+  art: sites/art/methylarginine-hero.svg
+  lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
+  links:
+    - {label: Method, url: "#method"}
+    - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
+    - {label: Research, url: "https://www.shechterlab.org/research/"}
+    - {label: Publications, url: "https://www.shechterlab.org/publications/"}
+  examples: [RGG, disorder, linker, RRM]
+  partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)

@@ -1,0 +1,49 @@
+# Site: budding yeast phosphosites, provisioned from upstream only (ptmc stage uniprot / mobidb), with no file from any
+# other repository. The test of whether the kit serves another proteome by configuration alone.
+schema_version: 1
+id: yeast_phospho
+title: Saccharomyces cerevisiae phosphosites (UniProt)
+status: working
+mark: phospho
+manifest: sites/yeast_phospho.inputs.json      # written by ptmc stage
+
+snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}
+inputs:
+  disorder: mobidb_disorder                     # MobiDB consensus (prediction-disorder-th_50), as for human
+  domains:                                      # each protein's domains from the first of these that has any:
+    first_of:
+      - uniprot_domains                         # UniProt DOMAIN and REPEAT features (InterPro's bulk file is 17 GB),
+      - yeast_shephard_ecod_domains             # then ECOD domains (SHEPHARD, DomainMapper) for the proteins without
+
+marks:
+  input: uniprot_mod_res
+  accession: accession
+  position: position
+  include:
+    - {column: modification, in: [Phosphoserine, Phosphothreonine, Phosphotyrosine]}
+    - {column: evidence_class, in: [experimental, large_scale]}    # not "by similarity" or sequence analysis
+  residue_mismatch: error
+
+analyses:
+  - {id: motif, layer: motif}
+  - {id: disorder, layer: disorder}
+  - {id: idr, layer: idr}
+  - {id: domain_context, layer: domain_context}
+  - {id: domain_class, layer: domain_class}
+  - {id: structure_context, layer: structure_context}
+
+outputs: {folder: out/yeast_phospho}
+citation: sites/yeast_phospho.citation.cff
+
+website:
+  name: Yeast Phosphosite Explorer
+  tagline: "Budding yeast phosphosites from UniProt, tested against disorder and domains. Built from public sources by one site file."
+  band: ["#334155", "#0f172a"]      # graphite: neutral beside the data colours; the orange rule ties it to its siblings
+  accent: "#c2410c"
+  accent_dark: "#fb923c"
+  lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
+  links:
+    - {label: Method, url: "#method"}
+    - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
+  examples: [S/T-P, IDR, linker, folded]
+  partners: {species: 4932}         # STRING files budding yeast under taxon 4932 (UniProt's proteome is strain S288c, 559292)
