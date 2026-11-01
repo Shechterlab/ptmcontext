@@ -18,15 +18,16 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
 
 ## Status (pilot)
 
-- **Parity:** `sites/methylarginine.yaml` rebuilds 3,972 of the 4,659 rows (85%) of release v1.4.3's statistics table
+- **Parity:** `sites/methylarginine.yaml` rebuilds 4,018 of the 4,659 rows (86%) of release v1.4.3's statistics table
   byte for byte, from the release's inputs, without running any of its code (`tests/test_parity_v1_4_3.py`):
   - the 82 residue-level rows (motif, disorder, domain context, domain class, structure context; pooled and within
     protein);
-  - the 3,890 protein-set rows for PANTHER protein classes (grouped, top level, subclasses), Reactome top-level groups,
-    Reactome pathways and HPA locations (clusterProfiler's `enricher`, rewritten in Python, and its repeat within PaxDb
-    abundance deciles).
+  - the 3,936 protein-set rows for PANTHER protein classes (grouped, top level, subclasses), Reactome top-level groups,
+    Reactome pathways, HPA locations and the DisGeNET disease families, audited and additional (Entrez genes, each
+    protein's through its UniProt gene name; the families from the release's rules, `sites/data/`)
+    (clusterProfiler's `enricher`, rewritten in Python, and its repeat within PaxDb abundance deciles).
 
-  The rest (687 rows: condensates, functional classes, sequence proximity, crosslinks, interfaces, cell maps, eCLIP)
+  The rest (641 rows: condensates, functional classes, sequence proximity, crosslinks, interfaces, cell maps, eCLIP)
   come next, one parity check at a time.
 - **A new question, from one new layer:** `idr_charge` places each residue by the charge of the IDR it sits in, the
   region of the Das–Pappu diagram of states (CIDER's FCR, NCPR and κ, written out from the papers in
@@ -72,7 +73,7 @@ ptmc pages sites/methylarginine.yaml sites/yeast_phospho.yaml --out _site   # af
 | | |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | the pieces and the rules they enforce |
-| [CONTRACTS.md](CONTRACTS.md) | the five file formats |
+| [CONTRACTS.md](CONTRACTS.md) | the seven file formats |
 | [ADDING_DATA.md](ADDING_DATA.md) | adding a source, a mark or a site: a step-by-step guide written for AI agents |
 | [AGENTS.md](AGENTS.md) | the rules for anyone, human or AI, changing this repository |
 

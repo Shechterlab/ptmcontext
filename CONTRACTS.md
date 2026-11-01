@@ -1,6 +1,6 @@
 # Contracts
 
-Six plain-data formats. Code on either side of a contract can change freely; a contract changes only with its
+Seven plain-data formats. Code on either side of a contract can change freely; a contract changes only with its
 `schema_version`, and every file is checked against its schema before it is used.
 
 | Contract | Format | Schema | Written by | Read by |
@@ -10,6 +10,7 @@ Six plain-data formats. Code on either side of a contract can change freely; a c
 | **Input manifest** | JSON | `ptmcontext/schemas/inputs.schema.json` | `ptmc stage`, `ptmc inputs record` | every build |
 | **Unit table** | TSV | `ptmcontext/schemas/units.schema.json` | stagers, other repositories | the layers |
 | **Statistics row** | TSV | `ptmcontext/schemas/statistics.schema.json` | every test | releases, websites, parity |
+| **Set families** | YAML | `ptmcontext/schemas/set_families.schema.json` | a person (a site's own data file, `sites/data/`) | protein-set questions that gather sets into families |
 | **Citation** | YAML (CITATION.cff 1.2.0) | [citation-file-format.github.io](https://citation-file-format.github.io/) | a person | every page and download; GitHub and Zenodo read it too |
 
 ## Statistics row
@@ -29,10 +30,29 @@ Conventions:
   (marked proteins in the set; other marked proteins; other proteins in the set; the rest of the background). One-sided
   hypergeometric p; `fold_enrichment` (k/n)/(M/N). The background is the universe's proteins in at least one set, or
   the whole universe if the site says so. Sets with no marked protein, or outside the site's sizes, are not tested.
+- `enricher` on sets of another identifier (`identifiers`: Entrez genes, say): each of the site's proteins is mapped
+  to it through the tables the site file names, in turn, and `a, b, c, d` count identifiers (the marked proteins'
+  identifiers in the set, ...); the universe is the proteins' identifiers (`universe: snapshot`) or those in a set.
+- `enricher` on sets gathered into families (`sets.families`): each set goes to at most one family by its name (a
+  site's rules file, below) and a family holds the members of its sets; the background is still the universe's
+  identifiers the source annotates, in any of its sets whether in a family or not.
 - `mantel_haenszel` on a protein-set analysis: the same 2×2 split by a protein covariate (PaxDb abundance decile, and
-  `none` for proteins without a value); its `a, b, c, d` add up to the `enricher` row's.
+  `none` for proteins without a value); its `a, b, c, d` add up to the `enricher` row's. For sets of another
+  identifier, an identifier takes the highest value of the proteins that map to it (`combine: max`), and the deciles
+  are those of the background's identifiers.
 - `q`: Benjamini–Hochberg within (analysis, method).
 - An effect is reported at q ≤ 0.05 and at least 1.1× either way.
+
+## Set families
+
+A site's curated vocabulary for gathering the sets of a protein-set table into families by name (DisGeNET terms into
+disease families, say), as data: `schema_version`, `lists` (in order of precedence, each a `name` and its `families`,
+each a `family` and `match`, a list of Python regular expressions), and optionally `overrides` (exact names placed
+before any rule: `{name, family}`, `family: null` for none), `case_sensitive` (default false), `title`, `source` and
+`note`s. A name takes the family of the first rule it matches, list by list (a later list sees only the names no earlier
+list places); a name nothing places is in no family and is not tested. A family is in one list only. An analysis names
+the file (`sets.families.rules`, relative to the site's repository), the column whose names the rules read (`by`), and
+the lists whose families it tests (`lists`; default every list); the run records the file's MD5.
 
 ## Unit table
 
@@ -74,7 +94,7 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 | `proteins.tsv` | one per protein with a mark | `accession, gene, name, entry, length, sequence_md5, marks, candidates` |
 | `units.tsv` | one per drawn unit | `accession, kind, start, end, label, source, class, ref` |
 | `tracks.json` | per kind of drawn unit | `{kind, title, style, help, roles, analysis, colours?}`: `style` is `domains` (boxes on the backbone), `disorder` (the backbone's wave) or `segments` (a row of boxes); `analysis` names the question whose classes colour it |
-| `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, covariate?}`: the background size, its marked proteins, and each tested set's size and marked proteins; with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used; absent when the site has no protein-set question |
+| `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?}`: the background size, its marked proteins, and each tested set's size and marked proteins; with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used; for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; absent when the site has no protein-set question |
 | `set_names.tsv` | per set | `analysis, set, name` |
 
 `ptmc web` turns these into `data/p/NN.json` (64 shards of protein records: marks with their classes and attributes,
@@ -82,4 +102,6 @@ units as `[kind, start, end, label, source index, class, ref]`) and `data/select
 `attributes` (the distinct values, which the rows code by index), `attribute_names` (their order), `attribute_links`,
 `marks` (`[protein index, position, [class codes per analysis], [attribute codes per attribute], window]`), `others`
 (per analysis, protein and class: the other candidate residues), `others_total` (per protein: candidates − marks) and
-`protein_sets` (from `protein_sets.json`). The one-file copy inlines both when they fit.
+`protein_sets` (from `protein_sets.json`; for sets of another identifier, members are coded by index into its `ids`,
+with `of`, each marked protein's identifiers, and `unit`, their name in the plural, so a selection is tested on its
+proteins' identifiers). The one-file copy inlines both when they fit.

@@ -364,15 +364,23 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         site = {**site, 'analyses': [a for a in site['analyses'] if not a.get('new')]}
     for analysis in site['analyses']:
         if analysis.get('test') == 'protein_sets':
-            from .set_tests import protein_set_test, roles_of
+            from .set_tests import families_file, protein_set_test, roles_of
             several = [r for r in roles_of(analysis) if isinstance(ctx.inputs.get(r), L.Several)]
             if several:
                 raise ValueError(f"{analysis['id']}: a protein-set test reads one table per role, but {several} name several inputs")
             set_keep[analysis['id']] = {}
-            rows_, names = protein_set_test(analysis, ctx.inputs, set(marked['accession']), set(snap.sequences), keep=set_keep[analysis['id']])
+            rows_, names = protein_set_test(analysis, ctx.inputs, set(marked['accession']), set(snap.sequences), keep=set_keep[analysis['id']],
+                                            root=root_of(site))
             parts.append(rows_)
             set_names += [(analysis['id'], k, names.get(k, '')) for k in rows_['category']] if len(rows_) else []
             layers_used[analysis['id']] = {'test': 'protein_sets', 'sets': analysis['sets']['input']}
+            if analysis['sets'].get('families'):          # the site's own rules file, as read
+                rules = families_file(analysis, root_of(site))
+                layers_used[analysis['id']]['families'] = {'file': analysis['sets']['families']['rules'], 'md5': md5_file(rules),
+                                                           'lists': analysis['sets']['families'].get('lists', [])}
+            if analysis.get('identifiers'):
+                layers_used[analysis['id']]['identifiers'] = {'noun': analysis['identifiers'].get('noun', 'identifier'),
+                                                              'map': [s['input'] for s in analysis['identifiers']['map']]}
             log(f"  {analysis['id']:18s} {len(rows_):3d} rows")
             continue
         layer = L.get(analysis['layer'], ctx, analysis.get('with'), analysis['id'])

@@ -200,7 +200,7 @@
     const blocks = D.analyses.filter(a => a.kind === 'protein_sets' && sd.protein_sets?.[a.id]).map(a => {
       const ps = sd.protein_sets[a.id];
       if (ps.covariate && !cov && ps.covariate.proteins[p.i]) cov = { ...ps.covariate, me: ps.covariate.proteins[p.i], from: a };
-      const mine = ps.sets.filter(([, , members]) => members.includes(p.i)).map(([s]) => ({ s, r: setRow(a.id, s, 'enricher') })).filter(x => x.r)
+      const mine = ps.sets.filter(([s]) => K.sel.setHas(a.id, s, p.i)).map(([s]) => ({ s, r: setRow(a.id, s, 'enricher') })).filter(x => x.r)
         .sort((x, y) => RANK[x.r.dir] - RANK[y.r.dir] || x.r.q - y.r.q);
       if (!mine.length) return `<div class="kind"><h4>${esc(a.title)}</h4><p class="muted">In none of its tested sets.</p></div>`;
       const shown = PV.open['kinds:' + a.id] ? mine : mine.slice(0, 10);
