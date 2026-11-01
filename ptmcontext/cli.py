@@ -9,6 +9,7 @@
   ptmc stage mobidb --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
                                                 stage a proteome from upstream, recording release, date and MD5
   ptmc web sites/methylarginine.yaml            the site's website, from its run: out/<site>/web/index.html and <site>.html
+  ptmc pages sites/a.yaml sites/b.yaml --out _site  the built sites and a landing page, ready to publish
   ptmc layers                                     the layers built in, and those installed packages offer
 """
 from __future__ import annotations
@@ -108,6 +109,12 @@ def cmd_web(a) -> int:
     return 0
 
 
+def cmd_pages(a) -> int:
+    from . import web
+    web.pages(a.sites, a.out, out_root=a.out_root)
+    return 0
+
+
 def cmd_layers(a) -> int:
     for row in L.available():
         print(f'{row["name"]:18s} {row["shape"]:6s} {row["origin"]:34s} {row["describe"]}')
@@ -154,6 +161,12 @@ def main(argv=None) -> int:
     s.add_argument('site')
     s.add_argument('--out-root', default=None, help='where outputs.folder is (default: this repository)')
     s.set_defaults(fn=cmd_web)
+
+    s = sub.add_parser('pages', help='gather built sites and a landing page into one folder to publish')
+    s.add_argument('sites', nargs='+')
+    s.add_argument('--out', required=True)
+    s.add_argument('--out-root', default=None)
+    s.set_defaults(fn=cmd_pages)
 
     s = sub.add_parser('layers', help='list layers')
     s.set_defaults(fn=cmd_layers)

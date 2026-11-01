@@ -161,6 +161,11 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         names.append(site['reference']['statistics'])
     manifest = manifest_of(site)
     paths = I.resolve(root, names, manifest=manifest, allow_untrusted=allow_untrusted)
+    staged = I.load(manifest).get(site['snapshot']['input'], {}).get('version', '')
+    release = site['snapshot']['release']
+    if staged and release.split()[-1] not in staged:
+        raise ValueError(f"the site file says its sequences are {release}, but the staged file is {staged!r}: "
+                         f"update snapshot.release in {Path(site_path).name} (and every result that depends on it), or stage {release}")
     profile = load_profile(site['mark'])
     snap = Snapshot.from_fasta(paths[site['snapshot']['input']], release=site['snapshot']['release'])
     ctx = L.Context(snap, profile, {role: paths[name] for role, name in roles.items()},

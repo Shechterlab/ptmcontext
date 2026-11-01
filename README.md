@@ -29,6 +29,15 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
 - **Not built yet:** isoform placement, measured backgrounds, protein-set tests, the release writer, the web kit. See
   [docs/DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) for why this design, the alternatives, prior art and the order of work.
 
+## Publishing
+
+`.github/workflows/pages.yml` builds every site from its sources on each merge to `main` and publishes them with a
+landing page on GitHub Pages (Settings → Pages → Source: GitHub Actions). By hand:
+
+```bash
+ptmc pages sites/methylarginine.yaml sites/yeast_phospho.yaml --out _site   # after ptmc run and ptmc web for each
+```
+
 ## Read next
 
 | | |

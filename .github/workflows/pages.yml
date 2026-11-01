@@ -1,0 +1,60 @@
+# Build every site from its sources and publish them on GitHub Pages, with a landing page. Runs on each merge to main
+# (and by hand). The methylarginine site reads the release's public inputs as data, checked against inputs.json, and
+# must still equal release v1.4.3; the yeast site is staged afresh from UniProt and MobiDB, and stops if UniProt has
+# moved to a release its site file does not name.
+name: pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Shechterlab/PTM_Pipeline
+          ref: b0d9049835fbd2527075629f00a4ebab154221bf
+          path: reference
+          sparse-checkout: |
+            inputs/reference
+            inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv
+            inputs/annotation/interpro_108.0_domain_intervals.tsv
+            releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
+            releases/v1.4.3/statistics_v1.4.3.tsv
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Methylarginine site
+        run: |
+          ptmc run sites/methylarginine.yaml --root reference
+          ptmc web sites/methylarginine.yaml
+      - name: Yeast phosphosites, staged from UniProt and MobiDB
+        run: |
+          ptmc stage uniprot UP000002311 --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
+          ptmc stage mobidb --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
+          ptmc run sites/yeast_phospho.yaml --root data
+          ptmc web sites/yeast_phospho.yaml
+      - run: ptmc pages sites/methylarginine.yaml sites/yeast_phospho.yaml --out _site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

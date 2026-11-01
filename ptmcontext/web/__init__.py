@@ -296,3 +296,60 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
     (out / f'{site["id"]}.html').write_text(page(inline=True))
     log(f'  -> {out / "index.html"} (with assets/) and {out / (site["id"] + ".html")} (one file)')
     return out / 'index.html'
+
+
+def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None, log=print) -> Path:
+    """One folder to publish (GitHub Pages, or any static host): each site's website under its id, and a landing page
+    in the same look listing them. Run ptmc run and ptmc web for each site first."""
+    out = Path(out)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / '.nojekyll').write_text('')
+    cards, lab = [], None
+    for sp in site_paths:
+        site = load_site(sp)
+        web = site.get('website', {})
+        src = Path(out_root or root_of(site)) / site['outputs']['folder'] / 'web'
+        if not (src / 'index.html').exists():
+            raise FileNotFoundError(f'{src}/index.html: run ptmc web {sp} first')
+        dest = out / site['id']
+        if dest.exists():
+            shutil.rmtree(dest)
+        shutil.copytree(src, dest)
+        run = json.loads((src.parent / 'run.json').read_text())
+        cit = site_citation(site)
+        profile = load_profile(site['mark'])
+        band = web.get('band', DEFAULT_BAND)
+        lab = lab or web.get('lab')
+        cards.append(
+            f'<a class="site-card" href="{html.escape(site["id"])}/"><span class="band" style="background:linear-gradient(160deg,{band[0]},{band[1]})">'
+            f'<b>{html.escape(web.get("name", site["title"]))}</b></span><span class="body"><span>{html.escape(web.get("tagline", ""))}</span>'
+            f'<span class="muted">{run["marks"]["counted"]:,} {html.escape(profile.words["marks"])} on {run["marks"]["proteins"]:,} proteins · '
+            f'{html.escape(run["snapshot"]["release"])}{" · version " + html.escape(cit["version"]) if cit else ""}</span><span class="open">Open ›</span></span></a>')
+        log(f'  {site["id"]} -> {dest}')
+    kit = kit_citation()
+    lab_html = (f'<a class="brand-mark" href="{html.escape(lab.get("url", "#"))}"><span>{html.escape(lab.get("name", ""))}'
+                f'<small>{html.escape(lab.get("affiliation", ""))}</small></span></a>') if lab else ''
+    page = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protein modification sites</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{html.escape(FONTS['stylesheet'])}">
+<link rel="stylesheet" href="{html.escape(site_paths and load_site(site_paths[0])['id'])}/assets/kit.css">
+<style>
+.sites {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr)); gap: 1rem; padding-block: 1.5rem 3rem; }}
+.site-card {{ display: grid; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow); color: var(--ink); text-decoration: none; }}
+.site-card:hover {{ box-shadow: var(--shadow-hover); }}
+.site-card .band {{ padding: 1.1rem 1.1rem 1rem; color: #fff; border-bottom: 3px solid var(--accent-l); }}
+.site-card .band b {{ font-family: var(--font-heading); font-size: 1.3rem; font-weight: 600; }}
+.site-card .body {{ display: grid; gap: 0.4rem; padding: 0.9rem 1.1rem 1rem; font-size: 0.92rem; }}
+.site-card .open {{ color: var(--accent); font-weight: 600; }}
+</style></head>
+<body><header class="hero"><div class="wrap"><div class="brand"><h1>Protein modification sites</h1><div class="brand-side">{lab_html}</div></div>
+<div class="lede"><p class="lede-what">Each site below is one file: a modification, a proteome and a set of questions. All of them run the same tests,
+within each protein and pooled, and offer the same pages and downloads.</p>
+<p class="lede-note">Built with <a href="{html.escape(kit['url'])}">ptmcontext</a> {html.escape(kit['version'])}.</p></div></div></header>
+<main class="wrap"><div class="sites">{''.join(cards)}</div></main></body></html>
+"""
+    (out / 'index.html').write_text(page)
+    log(f'  -> {out / "index.html"}')
+    return out / 'index.html'
