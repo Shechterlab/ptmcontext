@@ -7,7 +7,8 @@ A layer is a function from residues (a frame with accession and position) to col
 
 A layer may also say what it draws on the protein pages (Layer.tracks): the regions it placed residues against, each
 kind of region one row of the map, styled 'domains' (boxes on the backbone), 'disorder' (the backbone's wave) or
-'segments' (a row of boxes, coloured by their class when they have one). The website draws whatever tracks the run's
+'segments' (a row of boxes, coloured by their class when they have one), and the numbers each region carries
+(Track.values), which the run writes with the marks inside each region. The website draws whatever tracks the run's
 layers declare; it knows no layer by name.
 
 Some layers are made from a site file's parameters (factories: an analysis `{layer: regions, with: {...}}`), so a new
@@ -127,7 +128,10 @@ class Track:
     """One kind of region a layer draws on the protein pages. units(ctx, accessions) gives them as a unit table (with
     label, and class when the boxes are coloured by the layer's classes); roles are the inputs they come from (for the
     hovers' provenance and the source's own record links); a track with classes takes the labels of the analysis that
-    drew it. Two layers drawing the same kind share one row: the one whose units carry a class is kept."""
+    drew it. Two layers drawing the same kind share one row: the one whose units carry a class is kept.
+
+    values are numbers each unit carries in a column of its own, ((column, label, help), ...): the run writes them in a
+    table of their own, one row per unit with the marks and other candidate residues inside it (units_<kind>.tsv)."""
 
     kind: str
     title: str
@@ -136,6 +140,7 @@ class Track:
     roles: tuple[str, ...] = ()
     help: str = ''
     colours: tuple = ()                      # ((class, colour), ...): the site's own colours for its classes
+    values: tuple = ()                       # ((column, label, help), ...): numbers each unit carries
 
 
 BUILT_IN: dict[str, Layer] = {}

@@ -35,7 +35,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-proteins.js', 'kit-sites.js', 'kit-compare.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -387,6 +387,36 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
             'others_total': others_total, 'protein_sets': sets}
 
 
+def unit_value_data(folder: Path, listing: list, tracks: list[dict]) -> dict:
+    """The regions whose track carries numbers (tracks.json `values`, from units_<kind>.tsv), for the pages that read
+    them: by kind, the value columns, the classes (which the rows code by index) and one row per region, [protein index,
+    start, end, class code, the values (null for missing), marks, other candidate residues]. Regions on a protein
+    without a mark are not drawn, so they are not here either."""
+    import pandas as pd
+    pidx = {r[0]: i for i, r in enumerate(listing)}
+    out = {}
+    for t in tracks:
+        spec = t.get('values') or {}
+        path = folder / spec.get('table', '')
+        if not spec.get('table') or not path.exists():
+            continue
+        cols = [c['name'] for c in spec.get('columns', [])]
+        u = pd.read_csv(path, sep='\t', dtype=str, keep_default_na=False)
+        u = u[u['accession'].isin(pidx)]
+        classes = sorted(set(u['class']) - {''})
+        code = {c: i for i, c in enumerate(classes)}
+
+        def num(v):
+            if v == '':
+                return None
+            x = float(v)
+            return int(x) if x.is_integer() else x
+        rows = [[pidx[r['accession']], int(r['start']), int(r['end']), code.get(r['class'], -1), *[num(r.get(c, '')) for c in cols],
+                 int(r['marks']), int(r['other_candidates'])] for r in u.to_dict('records')]
+        out[t['kind']] = {'columns': cols, 'classes': classes, 'rows': rows}
+    return out
+
+
 def build(site_path: str | Path, out_root: str | Path | None = None, log=print) -> Path:
     site = load_site(site_path)
     if 'website' not in site:
@@ -441,6 +471,18 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
         (out / 'data' / 'p').mkdir(parents=True, exist_ok=True)
         for k, recs in shards.items():
             (out / 'data' / 'p' / f'{k:02d}.json').write_text(json.dumps(recs, separators=(',', ':')))
+    # the regions whose track carries numbers (the IDRs and their charge), read by the page that shows them
+    values = unit_value_data(folder, listing, data['tracks']) if listing else {}
+    if values:
+        (out / 'data').mkdir(parents=True, exist_ok=True)
+        (out / 'data' / 'units.json').write_text(json.dumps(values, separators=(',', ':'), allow_nan=False))
+        for t in data['tracks']:
+            if t['kind'] in values:
+                t['values'] = {**t['values'], 'n': len(values[t['kind']]['rows'])}
+        log('  region values: ' + ', '.join(f"{len(v['rows']):,} {k}" for k, v in values.items()))
+    elif (out / 'data' / 'units.json').exists():
+        (out / 'data' / 'units.json').unlink()
+    inline_values = (out / 'data' / 'units.json').read_text().replace('</', '<\\/') if values else ''
     inline_proteins = json.dumps({f'{k:02d}': v for k, v in shards.items()}, separators=(',', ':')).replace('</', '<\\/')
     inline_selection = (out / 'data' / 'selection.json').read_text().replace('</', '<\\/') if (out / 'data' / 'selection.json').exists() else ''
     if len(inline_proteins) > 12_000_000:
@@ -482,6 +524,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
             css = f'<style>{_asset("assets/kit.css").read_text()}</style>'
             js = (f'<script id="protein-data" type="application/json">{inline_proteins}</script>'
                   + (f'<script id="selection-data" type="application/json">{inline_selection}</script>' if inline_selection else '')
+                  + (f'<script id="unit-values" type="application/json">{inline_values}</script>' if inline_values else '')
                   + ''.join(f'<script>{_asset("assets/" + n).read_text()}</script>' for n in MODULES))
         else:
             css = '<link rel="stylesheet" href="assets/kit.css">'
