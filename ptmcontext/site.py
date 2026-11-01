@@ -437,9 +437,10 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
                 raise ValueError(f"{analysis['id']}: a protein-set test reads one table per role, but {several} name several inputs")
             set_keep[analysis['id']] = {}
             rows_, names = protein_set_test(analysis, ctx.inputs, set(marked['accession']), set(snap.sequences), keep=set_keep[analysis['id']],
-                                            root=root_of(site))
+                                            root=root_of(site), formats=ctx.formats)
             parts.append(rows_)
             set_names += [(analysis['id'], k, names.get(k, '')) for k in rows_['category']] if len(rows_) else []
+            set_names += [(analysis['id'], k, v['name']) for k, v in set_keep[analysis['id']].get('filter_sets', {}).items()]   # offered, not tested
             layers_used[analysis['id']] = {'test': 'protein_sets', 'sets': analysis['sets']['input']}
             if analysis['sets'].get('families'):          # the site's own rules file, as read
                 rules = families_file(analysis, root_of(site))
@@ -448,6 +449,9 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
             if analysis.get('identifiers'):
                 layers_used[analysis['id']]['identifiers'] = {'noun': analysis['identifiers'].get('noun', 'identifier'),
                                                               'map': [s['input'] for s in analysis['identifiers']['map']]}
+            for k in ('where', 'history'):                 # the tables that keep its rows, and bring its members to entries
+                if analysis['sets'].get(k):
+                    layers_used[analysis['id']][k] = analysis['sets'][k]
             log(f"  {analysis['id']:18s} {len(rows_):3d} rows")
             continue
         layer = L.get(analysis['layer'], ctx, analysis.get('with'), analysis['id'])

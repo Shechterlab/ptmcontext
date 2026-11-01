@@ -137,3 +137,12 @@ references:   # the data sources: cited with every export (DOIs checked on Cross
     version: "3.22.0"
     publisher: Bioconductor
     doi: "10.18129/B9.bioc.org.Hs.eg.db"
+  - type: article   # Crossref (1 Nov 2026): Nat Methods 20(5):673-676, online 6 Apr 2023; 12 authors
+    authors: [{family-names: Rostam, given-names: N}, {family-names: Ghosh, given-names: S}, {family-names: Chow, given-names: CFW}, {name: "et al."}]
+    title: "CD-CODE: crowdsourcing condensate database and encyclopedia"
+    journal: "Nat Methods"
+    volume: 20
+    start: 673
+    end: 676
+    year: 2023
+    doi: "10.1038/s41592-023-01831-0"

@@ -44,7 +44,9 @@ upstream ───────────► staged files ──► snapshot �
 - **Protein-set questions** read any (set, protein) table or class hierarchy (`set_tests.py`). Sets keyed by another
   identifier (Entrez genes) come with the tables that map the site's proteins to it (`identifiers`), and sets gathered
   into families by name with the site's own rules file (`sets.families`, `sites/data/`): curated vocabulary is a site's
-  data, never code.
+  data, never code. A table's rows may be kept by what other tables say of one of its columns (`sets.where`: CD-CODE's
+  members of human proteins, in human condensates that are not synthetic), its members brought to current entries
+  through an accession history (`sets.history`), and its rows written in a release's own order (`order`).
 - **Stagers** are a registry (`stage.STAGERS`); the per-proteome paths a stager needs live in `ptmcontext/config/`.
 
 ## The website
@@ -139,7 +141,7 @@ Inter and IBM Plex Serif embedded, and the TSV's `#` lines (readers skip them: `
 ## Not yet built
 
 Isoform-to-canonical placement of marks; the site union from study tables; the remaining protein-set sources
-(condensates, functional classes, cell maps);
+(functional classes, cell maps);
 measured backgrounds (candidates limited to residues covered by detected peptides); unit-level tests (IDRs as the
 unit); the release writer (sites and proteins tables, data dictionary, README, CHANGES, MD5SUMS). On the website:
 comparing two selections, "what sets it apart", the Figures view, and the protein page's class, pathway, abundance,

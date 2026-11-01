@@ -144,6 +144,57 @@
       "licence": "DisGeNET data: CC BY-NC-SA 4.0",
       "role": "input",
       "note": "DisGeNET disease terms and their Entrez genes, one row per term and gene (30,170 terms, 1,134,942 rows). Exported by PTM_Pipeline scripts/00_export_disease_tables.R, which checks that DGN_EXTID2PATHID is the exact inverse of DGN_PATHID2EXTID; this repository checks the bytes. Citations: Yu G et al., Bioinformatics 31:608 (2015), doi:10.1093/bioinformatics/btu684 (DOSE); Pinero J et al., Nucleic Acids Res 48:D845 (2020), doi:10.1093/nar/gkz1021 (DisGeNET)."
+    },
+    "uniprot_accession_history": {
+      "file": "inputs/reference/uniprot_accession_history_2026_03.tsv",
+      "md5": "c285be55ba2541822f068f8ec891dfb6",
+      "source": "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/docs/sec_ac.txt; UniProt REST field gene_synonym",
+      "version": "UniProt 2026_03, built 2026-10-20 against the FASTA above",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Secondary accessions (kind secondary: 70,627) and gene-name synonyms (kind synonym) of the entries of the FASTA above, one row per (kind, key, accession). Staged by PTM_Pipeline scripts/00_stage_context_sources.py stage_accession_history (inputs/MANIFEST.tsv); this repository checks the bytes. Read for its secondary accessions: a set member named by one is brought to its current entry when it names exactly one."
+    },
+    "cdcode_membership": {
+      "file": "inputs/annotation/cdcode_protein_membership_v2.2.tsv",
+      "md5": "7e56dc6d3595c23537bc3ed373dbb1dd",
+      "source": "CD-CODE export protein2cdcode_v2.2.tsv (https://cd-code.org/)",
+      "version": "CD-CODE export v2.2 (version from the file name only)",
+      "licence": "CC BY-NC 4.0 (\"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License\", the footer of https://cd-code.org/, checked 2026-11-01)",
+      "role": "input",
+      "note": "CD-CODE condensate membership, one row per (UniProt accession, condensate id, condensate name), every organism (14,622 rows). The original name is protein2cdcode_v2.2.tsv (inputs/MANIFEST.tsv); this repository checks the bytes. Citation: Rostam N et al., Nat Methods 20:673-676 (2023), doi:10.1038/s41592-023-01831-0."
+    },
+    "cdcode_proteins": {
+      "file": "inputs/annotation/cdcode_proteins_2026-03-18.csv",
+      "md5": "67a62603abb55cc1352af5a28c3976a5",
+      "source": "CD-CODE export proteins_202603181653.csv (https://cd-code.org/)",
+      "version": "CD-CODE export of 2026-03-18 16:53 (date from the file name only)",
+      "licence": "CC BY-NC 4.0 (\"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License\", the footer of https://cd-code.org/, checked 2026-11-01)",
+      "role": "input",
+      "columns": {
+        "sep": ","
+      },
+      "note": "CD-CODE's protein table (11,133 proteins: UniProt accession, organism, ...), comma-separated. Read for each member protein's organism. The original name is proteins_202603181653.csv (inputs/MANIFEST.tsv); this repository checks the bytes. Citation: Rostam N et al., Nat Methods 20:673-676 (2023), doi:10.1038/s41592-023-01831-0."
+    },
+    "cdcode_condensates": {
+      "file": "inputs/annotation/cdcode_condensates_2026-03-18.csv",
+      "md5": "357558769a08b0798aed86064b5aefb9",
+      "source": "CD-CODE export condensates_202603181647.csv (https://cd-code.org/)",
+      "version": "CD-CODE export of 2026-03-18 16:47 (date from the file name only)",
+      "licence": "CC BY-NC 4.0 (\"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License\", the footer of https://cd-code.org/, checked 2026-11-01)",
+      "role": "input",
+      "columns": {
+        "sep": ","
+      },
+      "note": "CD-CODE's condensate table (829 condensates: uid, name, organism, type: biomolecular, synthetic or infectious), comma-separated. Read for each condensate's organism, type and name. The original name is condensates_202603181647.csv (inputs/MANIFEST.tsv); this repository checks the bytes. Citation: Rostam N et al., Nat Methods 20:673-676 (2023), doi:10.1038/s41592-023-01831-0."
+    },
+    "cdcode_members_2_3": {
+      "file": "inputs/interactions/cdcode_2.3_condensate_members_2026-10-16.tsv",
+      "md5": "b4a8fcc59ba881d8a239520a6b037fc7",
+      "source": "https://cd-code.org/api/condensates/<uid>/proteins",
+      "version": "CD-CODE 2.3 API, answers saved 2026-10-16",
+      "licence": "CC BY-NC 4.0 (\"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License\", the footer of https://cd-code.org/, checked 2026-11-01)",
+      "role": "input",
+      "note": "CD-CODE 2.3 members of the 147 condensates PTM_Pipeline uses (6,992 rows): each membership's CD-CODE confidence score (0-5), roles, kinds of experimental evidence and PubMed IDs. Staged by PTM_Pipeline scripts/37a_stage_interactions.py stage_cdcode (inputs/MANIFEST.tsv); this repository checks the bytes. Read only for the website's membership-confidence filter; no test reads it. Citation: Rostam N et al., Nat Methods 20:673-676 (2023), doi:10.1038/s41592-023-01831-0."
     }
   }
 }

@@ -24,7 +24,7 @@
   // a token that names a protein: its gene, accession (an isoform's names its canonical entry) or entry name
   const protOf = t => { const u = t.toUpperCase(), a = u.replace(/-\d+$/, ''); return byGene[u] || (byAcc[a] ? [byAcc[a]] : byEntry[u] ? [byEntry[u]] : null); };
   const byGene = {}; P.forEach(p => String(p.gene || '').split(/[\s;]+/).filter(Boolean).forEach(g => { (byGene[g.toUpperCase()] ||= []).push(p); }));
-  S.f = {};                                   // filter key -> [values]; keys a:<analysis>, p:<analysis>, t:<attribute>, n:<attribute>
+  S.f = {};                                   // filter key -> [values]; keys a:<analysis>, p:<analysis>, s:<analysis>, t:<attribute>, n:<attribute>
 
   // ---- the data: every mark with its classes and attributes (data/selection.json, or inlined) ----------------------
   let SD = null;
@@ -38,7 +38,7 @@
       .then(d => { SD = d; prepare(); return d; }, () => null).then(d => { if (d) K.render(); return d; });
   })();
   const AN = () => SD.analyses, AT = () => SD.attribute_names || Object.keys(SD.attributes);
-  let setMembers = {};                         // analysis -> set name -> Set(protein index)
+  let setMembers = {}, anyMembers = {};        // analysis -> set name -> Set(protein index); analysis -> in any of its source's sets
   // a question whose sets hold other identifiers (genes; ps.of: protein index -> its identifiers' indices) counts
   // those: a group of proteins is the set of their identifiers
   const unitsOf = (ps, prots) => (ps.of ? new Set([...prots].flatMap(p => ps.of[p] || [])) : new Set(prots));
@@ -48,6 +48,8 @@
       const holders = {};                      // identifier index -> the marked proteins that map to it
       if (ps.of) Object.entries(ps.of).forEach(([p, us]) => us.forEach(u => (holders[u] ||= []).push(+p)));
       setMembers[aid] = Object.fromEntries(ps.sets.map(([s, , m]) => [s, new Set(ps.of ? m.flatMap(u => holders[u] || []) : m)]));
+      (ps.more || []).forEach(([s, m]) => { setMembers[aid][s] = new Set(m); });    // offered by the filter, not tested
+      anyMembers[aid] = new Set(ps.of ? ps.in_background.flatMap(u => holders[u] || []) : ps.any || ps.in_background);
     }
     SD.numbers = {};
     AT().forEach(k => { if (SPECS[k]?.kind === 'number') SD.numbers[k] = SD.attributes[k].map(Number); });
@@ -69,16 +71,23 @@
     const all = vals.filter(Boolean), shown = full ? all : all.slice(0, 3), rest = all.slice(shown.length).map(v => valueLabel(attr, v));
     return (shown.map(item).join(', ') + (rest.length ? ` <span class="muted" title="${esc(rest.join(', '))}">+${rest.length}</span>` : '')) || '<span class="muted">–</span>';
   }
-  const keyName = key => { const [kind, id] = key.split(':'); return kind === 't' || kind === 'n' ? (SPECS[id]?.label || id) : (A[id]?.title || id); };
+  const keyName = key => { const [kind, id] = key.split(':'); return kind === 't' || kind === 'n' ? (SPECS[id]?.label || id) : kind === 's' ? (A[id]?.scores?.label || id) : (A[id]?.title || id); };
+  // a protein-set filter: its set (or * for any of its source's sets) and, with a score filter on it (s:<analysis>, a
+  // threshold), the memberships scored at least that instead
+  const scoreOf = (aid, s, p) => { const sc = SD.protein_sets?.[aid]?.scores; return sc ? (s === '*' ? sc.any : sc.sets[s] || {})[p] : undefined; };
+  const inSet = (aid, s, p, t) => (t == null ? !!(s === '*' ? anyMembers[aid] : setMembers[aid]?.[s])?.has(p) : (s !== '*' || !!anyMembers[aid]?.has(p)) && scoreOf(aid, s, p) >= t);
+  const scoreText = (id, v) => { const sc = A[id]?.scores || {}; return `${+v === sc.max ? '' : '≥ '}${v}${sc.max != null ? ` of ${sc.max}` : ''}`; };
   function valueName(key, v) {
     const [kind, id] = key.split(':');
+    if (kind === 's') return scoreText(id, v);
+    if (kind === 'p' && v === '*') return A[id]?.filter?.any || 'in any set';
     if (kind === 'a') return classLabel(id, v);
     if (kind === 't') return valueLabel(id, v);
     if (kind === 'n') return `at least ${v}`;
     return (A[id]?.labels || {})[v] || v;
   }
 
-  const validKey = key => { const [kind, id] = String(key).split(':'); return (kind === 'a' && A[id] && A[id].kind !== 'protein_sets') || (kind === 'p' && A[id]?.kind === 'protein_sets') || ((kind === 't' || kind === 'n') && !!SPECS[id]); };
+  const validKey = key => { const [kind, id] = String(key).split(':'); return (kind === 'a' && A[id] && A[id].kind !== 'protein_sets') || (kind === 'p' && A[id]?.kind === 'protein_sets') || (kind === 's' && !!A[id]?.scores) || ((kind === 't' || kind === 'n') && !!SPECS[id]); };
 
   // ---- the search: proteins, sites and terms ---------------------------------------------------------------------
   // a gene, accession or entry name names all its marks; "GENE R216 R218" or "GENE 216" names those marks; key:value
@@ -156,7 +165,9 @@
     const tests = cons.map(([key, vals]) => {
       const [kind, id] = key.split(':');
       if (kind === 'a') { const ai = AN().indexOf(id), codes = new Set(vals.map(v => SD.classes[id].indexOf(v))); return m => m[2][ai].some(c => codes.has(c)); }
-      if (kind === 'p') { const sets = vals.map(v => setMembers[id]?.[v]).filter(Boolean); return m => sets.some(s => s.has(m[0])); }
+      const min = cons.find(([k]) => k === 's:' + id)?.[1][0], t = min == null ? null : +min;
+      if (kind === 'p') return m => vals.some(v => inSet(id, v, m[0], t));
+      if (kind === 's') return cons.some(([k]) => k === 'p:' + id) ? () => true : m => scoreOf(id, '*', m[0]) >= t;   // with a set: applied there
       if (kind === 't') { const ti = AT().indexOf(id), codes = new Set(vals.map(v => SD.attributes[id].indexOf(v))); return m => m[3][ti].some(c => codes.has(c)); }
       if (kind === 'n') { const ti = AT().indexOf(id), min = +vals[0], num = SD.numbers[id]; return m => m[3][ti].some(c => num[c] >= min); }
       return () => true;
@@ -445,7 +456,9 @@
       names.forEach((v, c) => { out[v] = n[c]; });
     } else if (kind === 'p') {
       const prots = idx ? new Set(idx.map(i => SD.marks[i][0])) : null;
-      Object.entries(setMembers[id] || {}).forEach(([s, mem]) => { let k = 0; if (!prots) k = mem.size; else mem.forEach(p => { if (prots.has(p)) k++; }); out[s] = k; });
+      const n = mem => { let k = 0; if (!prots) k = mem.size; else mem.forEach(p => { if (prots.has(p)) k++; }); return k; };
+      Object.entries(setMembers[id] || {}).forEach(([s, mem]) => { out[s] = n(mem); });
+      if (anyMembers[id]) out['*'] = n(anyMembers[id]);            // in any of the source's sets
     }
     return out;
   }
@@ -472,7 +485,7 @@
   function control(key) {
     const [kind, id] = key.split(':'), on = new Set([...(S.f[key] || []), ...termValues(key)]);
     // the values shown are fixed by the whole site (nothing moves as the selection changes); the counts follow it
-    const fc = kind === 'n' ? null : facet(key), shownN = v => (fc ? fc[v] ?? 0 : cnt(key, v));
+    const fc = kind === 'n' || kind === 's' ? null : facet(key), shownN = v => (fc ? fc[v] ?? 0 : cnt(key, v));
     const chip = (v, lab) => { const n = shownN(v), t = cnt(key, v);
       return `<button type="button" class="fchip${fc && !n && !on.has(v) ? ' zero' : ''}" data-f="${esc(key)}" data-v="${esc(v)}" aria-pressed="${on.has(v)}"${fc ? ` title="${int(n)} in the selection, ${int(t)} in all"` : ''}>${esc(lab)}${n != null ? ` <span class="muted">${int(n)}</span>` : ''}</button>`; };
     if (kind === 'a') {
@@ -482,8 +495,14 @@
     if (kind === 'p') {
       const lab = x => (A[id].labels || {})[x] || x;
       const names = Object.keys(setMembers[id] || {}).filter(x => cnt(key, x)).sort((x, y) => NONE_RE.test(lab(x)) - NONE_RE.test(lab(y)) || (cnt(key, y) || 0) - (cnt(key, x) || 0));
-      return `<div class="fctl"><p class="flabel">${esc(A[id].title)} <span class="muted">(${fc ? 'proteins of the selection' : `${esc(W.marked)} proteins`})</span></p><select data-fsel="${esc(key)}"><option value="">Any</option>` +
+      const any = A[id].filter?.any ? `<option value="*"${on.has('*') ? ' selected' : ''}>${esc(A[id].filter.any)} (${int(shownN('*'))})</option>` : '';
+      return `<div class="fctl"><p class="flabel">${A[id].filter?.label ? esc(A[id].filter.label) : `${esc(A[id].title)} <span class="muted">(${fc ? 'proteins of the selection' : `${esc(W.marked)} proteins`})</span>`}</p><select data-fsel="${esc(key)}"><option value="">Any</option>${any}` +
         names.map(s => `<option value="${esc(s)}"${on.has(s) ? ' selected' : ''}${fc && !shownN(s) && !on.has(s) ? ' class="zero"' : ''}>${esc(lab(s))} (${int(shownN(s))})</option>`).join('') + '</select></div>';
+    }
+    if (kind === 's') {
+      const sc = A[id].scores, cur = S.f[key]?.[0] || '';
+      return `<div class="fctl"><p class="flabel" title="${esc(sc.help || '')}">${esc(sc.label || 'Score')}</p><select data-fsel="${esc(key)}"><option value="">Any</option>` +
+        (sc.levels || []).map(v => `<option value="${v}"${String(v) === cur ? ' selected' : ''}>${esc(scoreText(id, v))}</option>`).join('') + '</select></div>';
     }
     const spec = SPECS[id] || {};
     if (spec.kind === 'number') {
@@ -501,7 +520,7 @@
       sorted.map(v => chip(v, valueLabel(id, v))).join('') + '</div></div>';
   }
   function keysOf(g) {
-    return [...(g.analyses || []).map(aid => (A[aid]?.kind === 'protein_sets' ? 'p:' : 'a:') + aid), ...(g.attributes || []).map(k => (SPECS[k]?.kind === 'number' ? 'n:' : 't:') + k)];
+    return [...(g.analyses || []).flatMap(aid => (A[aid]?.kind === 'protein_sets' ? ['p:' + aid, ...(A[aid].scores ? ['s:' + aid] : [])] : ['a:' + aid])), ...(g.attributes || []).map(k => (SPECS[k]?.kind === 'number' ? 'n:' : 't:') + k)];
   }
   function filtersTab() {
     const gs = groups();
