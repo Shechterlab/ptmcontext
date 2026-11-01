@@ -1,11 +1,12 @@
-# Build every site from its sources and publish them on GitHub Pages, with a landing page. Runs on each merge to main
-# (and by hand). The methylarginine site reads the release's public inputs as data, checked against inputs.json, and
+# Build every site from its sources and publish them on GitHub Pages, with a landing page. Runs on each push to develop,
+# the working branch the site is served from, and to main (and by hand). Pages' source must be "GitHub Actions", and
+# the github-pages environment must allow develop among its deployment branches. The methylarginine site reads the release's public inputs as data, checked against inputs.json, and
 # must still equal release v1.4.3; the yeast site is staged afresh from UniProt, MobiDB and SHEPHARD (pinned), and stops if UniProt has
 # moved to a release its site file does not name.
 name: pages
 on:
   push:
-    branches: [main]
+    branches: [develop, main]
   workflow_dispatch:
 permissions:
   contents: read
