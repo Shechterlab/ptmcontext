@@ -32,11 +32,16 @@
   D.rows.forEach((r, i) => { r.i = i; r.label = label(r); r.help = (A[r.analysis]?.help || {})[r.category] || ''; r.dir = dir(r); r.title = A[r.analysis]?.title || r.analysis; });
 
   // ---- state in the hash ---------------------------------------------------------------------------------------------
-  const S = { view: 'overview', q: '', m: 'mantel_haenszel', a: '', sort: 'or', desc: true, open: new Set(), all: new Set(), how: false };
+  const S = { view: 'overview', arg: '', q: '', m: 'mantel_haenszel', a: '', sort: 'or', desc: true, open: new Set(), all: new Set(), how: false };
+  // modules (kit-*.js) register views, tabs, click handlers, tooltips and search hints here; the core starts them last
+  const K = window.PTMC = { D, W, A, S, esc, int, fx, fxn, fq, pct, cap, views: {}, tabs: [], clicks: [], tips: [], scopeHints: [] };
+  const BUILT_IN_VIEWS = ['overview', 'statistics', 'method'];
   function readHash() {
-    const [view, qs] = location.hash.replace(/^#/, '').split('?');
+    const [path, qs] = location.hash.replace(/^#/, '').split('?');
     const p = new URLSearchParams(qs || '');
-    S.view = ['overview', 'statistics', 'method'].includes(view) ? view : 'overview';
+    const [view, ...rest] = (path || '').split('/');
+    S.view = BUILT_IN_VIEWS.includes(view) || K.views[view] ? view : 'overview';
+    S.arg = S.view === view ? decodeURIComponent(rest.join('/')) : '';
     S.q = p.get('q') || ''; S.m = p.get('m') || 'mantel_haenszel'; S.a = p.get('a') || '';
     S.sort = p.get('sort') || 'or'; S.desc = p.get('dir') !== 'asc';
     S.open = new Set((p.get('open') || '').split(',').filter(k => A[k]));
@@ -47,10 +52,11 @@
     if (S.m !== 'mantel_haenszel') p.set('m', S.m);
     if (S.view === 'statistics') { if (S.a) p.set('a', S.a); if (S.sort !== 'or') p.set('sort', S.sort); if (!S.desc) p.set('dir', 'asc'); }
     if (S.view === 'overview' && S.open.size) p.set('open', [...S.open].join(','));
-    const h = '#' + S.view + (p.toString() ? '?' + p : '');
+    const h = '#' + S.view + (S.arg ? '/' + encodeURIComponent(S.arg) : '') + (p.toString() ? '?' + p : '');
     if (h !== location.hash) (push ? history.pushState : history.replaceState).call(history, null, '', h);
   }
-  const go = (view, extra = {}) => { Object.assign(S, { view }, extra); writeHash(true); render(); scrollTo(0, 0); };
+  const go = (view, extra = {}) => { Object.assign(S, { view, arg: '' }, extra); writeHash(true); render(); scrollTo(0, 0); };
+  Object.assign(K, { go, writeHash, render: () => render() });
 
   // ---- search --------------------------------------------------------------------------------------------------------
   const tokens = () => S.q.toLowerCase().split(/[\s,]+/).filter(Boolean);
@@ -72,12 +78,14 @@
     const ex = (D.site.examples || []).map(e => `<button class="try-chip" type="button" data-try="${esc(e)}">${esc(e)}</button>`).join('');
     const eg = (D.site.examples || []).slice(0, 3);
     $('#q').placeholder = 'A question, a class or a motif' + (eg.length ? ', such as ' + (eg.length > 1 ? eg.slice(0, -1).join(', ') + ' or ' + eg[eg.length - 1] : eg[0]) : '');
+    const hints = K.scopeHints.map(f => f()).filter(Boolean).join('');
     $('#scope').innerHTML = `<span>All <b>${int(D.counts.marks)}</b> ${esc(W.marks)} on <b>${int(D.counts.proteins)}</b> proteins</span>` +
-      (ex ? `<span class="scope-hint">Try</span>${ex}` : '');
+      (hints || (ex ? `<span class="scope-hint">Try</span>${ex}` : ''));
   }
   function tabs() {
-    const t = [['overview', 'Overview', D.analyses.length], ['statistics', 'Statistics', D.rows.length], ['method', 'Method', null]];
-    $('#tabs').innerHTML = t.map(([v, name, n]) => `<a class="tab" role="tab" href="#${v}" aria-selected="${S.view === v}">${name}` +
+    const t = [['overview', 'Overview', D.analyses.length], ...K.tabs.map(f => f()).filter(Boolean), ['statistics', 'Statistics', D.rows.length], ['method', 'Method', null]];
+    const on = v => S.view === v || (K.views[S.view]?.tab === v);
+    $('#tabs').innerHTML = t.map(([v, name, n]) => `<a class="tab" role="tab" href="#${v}" aria-selected="${on(v)}">${name}` +
       (n != null ? ` <span class="count">${int(n)}</span>` : '') + '</a>').join('');
   }
 
@@ -139,7 +147,10 @@
       cardBody(a, rows) + '</details>';
   }
   function overview() {
-    const rows = D.analyses.map(scoreRow).filter(Boolean);
+    const sections = [];
+    D.analyses.forEach(a => { const html = scoreRow(a); if (!html) return; const sec = a.section || 'Other questions';
+      const last = sections[sections.length - 1]; if (last && last.name === sec) last.rows.push(html); else sections.push({ name: sec, rows: [html] }); });
+    const rows = sections.map(x => `<h3 class="sec-label">${esc(x.name)}</h3><div class="hub">${x.rows.join('')}</div>`);
     return `<div class="page-head"><h2>Which parts of proteins are ${esc(W.marked_long)}?</h2>` +
       `<span class="tools"><span class="seg" role="group" aria-label="Test">${['mantel_haenszel', 'fisher'].map(m => `<button type="button" data-m="${m}" aria-pressed="${S.m === m}">${cap(METHOD[m])}</button>`).join('')}</span>` +
       `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">How to read</button></span></div>` +
@@ -149,7 +160,7 @@
         `<b>Within each protein</b>, every protein is a stratum and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)} (Mantel–Haenszel), which separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}. ` +
         `<b>Pooled</b> puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact test). Hover a class for its counts.</span>` : '') + '</p>' +
       `<div class="hub-head" aria-hidden="true"><span>Question</span><span>At a glance</span><span>Answer · all ${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins</span><span></span></div>` +
-      (rows.length ? `<div class="hub">${rows.join('')}</div>` : `<p class="empty">No question or class matches “${esc(S.q)}”.</p>`);
+      (rows.length ? rows.join('') : `<p class="empty">No question or class matches “${esc(S.q)}”.</p>`);
   }
 
   // ---- Statistics: every test ----------------------------------------------------------------------------------------
@@ -414,12 +425,47 @@
       `<p><button class="btn" type="button" id="copy-cite">Copy citations</button> <button class="btn" type="button" id="dl-cff">Download CITATION.cff</button></p></section>`;
   }
 
+  // ---- a figure frame for modules: title, subtitle, legend, the module's drawing, a note and the credit, as figure() ---
+  function figureFrame({ title, sub = '', legend = [], body = '', bodyH = 0, note = '', W: Wd = 760, extra = {} }) {
+    const P = 20, parts = [];
+    const T = (x, y, t, o = {}) => parts.push(`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${o.size || 11.5}"${o.weight ? ` font-weight="${o.weight}"` : ''}${o.fam ? ` font-family="${o.fam}"` : ''}${o.anchor ? ` text-anchor="${o.anchor}"` : ''} fill="${o.fill || PAL.ink}">${esc(t)}</text>`);
+    T(P, 30, title, { size: 17, weight: 'bold', fam: FFH });
+    let y = 49;
+    wrap(sub, Wd - 2 * P, 11.5).slice(0, 2).forEach(t => { T(P, y, t, { size: 11.5, fill: PAL.muted }); y += 15; });
+    if (legend.length) {
+      let lx = P; y += 4;
+      legend.forEach(([fill, stroke, text]) => { parts.push(`<circle cx="${lx + 5}" cy="${y - 4}" r="4.5" fill="${fill}" stroke="${stroke || fill}" stroke-width="1.4"/>`); T(lx + 14, y, text, { size: 10.5, fill: PAL.muted }); lx += 22 + tw(text, 10.5); });
+      y += 10;
+    }
+    parts.push(`<g transform="translate(0,${y})">${body}</g>`); y += bodyH + 14;
+    if (note) { wrap(note, Wd - 2 * P, 10.5).forEach(t => { T(P, y, t, { size: 10.5 }); y += 14; }); y += 6; }
+    creditLines().forEach(line => wrap(line, Wd - 2 * P, 9.5).forEach(t => { T(P, y, t, { size: 9.5, fill: PAL.muted }); y += 12.5; }));
+    const H = Math.ceil(y + P - 6), desc = `${title}. ${sub}. ${note} ${creditLines().join(' ')}`;
+    const meta = JSON.stringify(provenance({ figure: title, ...extra }));
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${Wd}" height="${H}" viewBox="0 0 ${Wd} ${H}" font-family="${FF}">` +
+      `<title>${esc(title)}</title><desc>${esc(desc)}</desc><metadata id="ptmcontext-provenance">${esc(meta)}</metadata>` +
+      `<rect width="${Wd}" height="${H}" fill="${PAL.bg}"/>${parts.join('')}</svg>`;
+    return { svg, W: Wd, H, title, desc, meta };
+  }
+  async function exportFigure(kind, make, name, btn, tsv) {
+    const old = btn ? btn.textContent : ''; if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    try {
+      if (kind === 'tsv') download(name + '.tsv', tsv(), 'text/tab-separated-values');
+      else { const f = make(); if (kind === 'svg') download(name + '.svg', f.svg, 'image/svg+xml'); else if (kind === 'png') await pngExport(f, name); else await pdfExport(f, name); }
+    } catch (err) { alert((err && err.message) || 'The download failed.'); } finally { if (btn) { btn.disabled = false; btn.textContent = old; } }
+  }
+  const expBar = (kinds, attrs, label) => `<div class="exp" role="group" aria-label="Download ${esc(label)}">${kinds.map(k => `<button type="button" class="exp-btn" data-${attrs}="${k}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}</div>`;
+  Object.assign(K, { CIT, PAL, FF, FFH, tw, wrap, figureFrame, exportFigure, expBar, preamble, creditLines, provenance, download, hdate, htime, hlicence, shortCommit, testWords, PADJ, MIN_EFFECT, dir });
+
   // ---- render, events ------------------------------------------------------------------------------------------------
   function render() {
     tabs();
     $('#q').value = S.q; $('#q-clear').hidden = !S.q;
-    $('#view').innerHTML = S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview();
-    document.title = `${D.site.name}${S.view === 'overview' ? '' : ' · ' + S.view[0].toUpperCase() + S.view.slice(1)}`;
+    scope();
+    const mod = K.views[S.view];
+    $('#view').innerHTML = mod ? mod.render(S.arg) : S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview();
+    document.title = `${D.site.name}${S.view === 'overview' ? '' : ' · ' + (mod?.title ? mod.title(S.arg) : cap(S.view))}`;
+    if (mod?.after) mod.after(S.arg);
   }
   const tip = $('#tip');
   function showTip(e, r) {
@@ -430,11 +476,19 @@
     tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + 'px';
     tip.style.top = Math.min(e.clientY + 14, innerHeight - tip.offsetHeight - 8) + 'px';
   }
+  function placeTip(e) {
+    tip.hidden = false;
+    tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + 'px';
+    tip.style.top = Math.min(e.clientY + 14, innerHeight - tip.offsetHeight - 8) + 'px';
+  }
   document.addEventListener('mousemove', e => {
     const el = e.target.closest('.drow');
-    if (el) showTip(e, D.rows[+el.dataset.i]); else tip.hidden = true;
+    if (el) { showTip(e, D.rows[+el.dataset.i]); return; }
+    for (const [sel, fn] of K.tips) { const t = e.target.closest(sel); if (t) { const h = fn(t); if (h) { tip.innerHTML = h; placeTip(e); return; } } }
+    tip.hidden = true;
   });
   document.addEventListener('click', e => {
+    for (const [sel, fn] of K.clicks) { const el = e.target.closest(sel); if (el) { fn(el, e); return; } }
     const t = e.target.closest('[data-go],[data-try],[data-m],th[data-sort],#dl,#dl-cff,#copy-cite,#how,[data-all],[data-exp],[data-theme-choice]');
     if (!t) return;
     if (t.dataset.go) go(t.dataset.go);
@@ -471,5 +525,6 @@
   }
   $('#credit').innerHTML = `${esc(D.site.name)} · built with ptmcontext ${esc(D.kit.version)} from <span class="mono">sites/${esc(D.site.id)}.yaml</span>`;
   setTheme(document.documentElement.dataset.theme || 'auto');
-  readHash(); hero(); scope(); render();
+  (window.PTMC_MODULES || []).forEach(f => f(K));
+  readHash(); hero(); render();
 })();

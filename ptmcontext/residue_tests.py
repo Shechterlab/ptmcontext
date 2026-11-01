@@ -53,7 +53,7 @@ def candidates_and_marks(ctx: L.Context, marked: pd.DataFrame, left_out: pd.Data
 
 def residue_test(ctx: L.Context, marked: pd.DataFrame, layer: str | L.Layer, analysis: str, *,
                  left_out: pd.DataFrame | None = None, methods: Iterable[str] = ('fisher', 'mantel_haenszel'),
-                 stratum: str = 'all') -> pd.DataFrame:
+                 stratum: str = 'all', keep: dict | None = None) -> pd.DataFrame:
     """Statistics rows (statistics.COLUMNS) of the marked residues against the other candidate residues of the same
     proteins, for each class (or flag) of the layer. left_out: residues counted on neither side (sites kept pending)."""
     layer = L.get(layer, ctx) if isinstance(layer, str) else layer
@@ -66,6 +66,8 @@ def residue_test(ctx: L.Context, marked: pd.DataFrame, layer: str | L.Layer, ana
         columns = sorted(c for c in annotated.columns if c not in cand.columns)
     targets = annotated[is_marked]
     background = annotated[~is_marked & ~is_left]
+    if keep is not None:   # for the per-protein outputs: every candidate residue, annotated, and which are marks
+        keep.update(annotated=annotated, is_marked=is_marked, is_left=is_left, columns=columns)
     # sites on a protein with no other candidate residue have no background: neither test counts them
     same = targets[targets['accession'].isin(set(background['accession']))]
     rows = []

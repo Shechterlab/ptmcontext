@@ -222,7 +222,7 @@ details.score[open] .pm::after { display: none; }
 .ans .an { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .go { width: 0.55rem; height: 0.55rem; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); justify-self: center; margin-top: -0.25rem; transition: transform 0.15s; }
 details.score[open] .go { transform: rotate(225deg); margin-top: 0.25rem; }
-.card-body { display: grid; gap: 0.55rem; padding: 0.4rem 1.1rem 1rem; border-top: 1px solid var(--line); }
+.card-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.55rem; padding: 0.4rem 1.1rem 1rem; border-top: 1px solid var(--line); }
 .card-body .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.8rem 1.2rem; flex-wrap: wrap; padding-top: 0.6rem; }
 .card-body h3 { font-size: 1.05rem; }
 .card-body .sub { margin: 0.15rem 0 0; font-size: 0.84rem; color: var(--muted); max-width: 52rem; }
@@ -236,3 +236,41 @@ details.score[open] .go { transform: rotate(225deg); margin-top: 0.25rem; }
   details.score > summary .pm { grid-area: pm; } details.score > summary .tq { grid-area: tq; } details.score > summary .go { grid-area: go; }
   details.score > summary .glance { grid-area: glance; } details.score > summary .ans { grid-area: ans; }
 }
+
+/* ---- Overview sections ---- */
+.sec-label { margin: 1.4rem 0 0.5rem; font-family: var(--font-body); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.hub-head + .sec-label { margin-top: 0.2rem; }
+.scope-all { font-size: 0.82rem; }
+
+/* ---- Proteins and a protein's page ---- */
+.ptbl tbody tr { cursor: pointer; }
+.crumb { margin: 0 0 0.4rem; font-size: 0.85rem; }
+.prot-head h2 { font-size: clamp(1.4rem, 1.1rem + 1.2vw, 2rem); }
+.prot-head h2 small { font-family: var(--font-body); font-weight: 400; font-size: 0.55em; color: var(--muted); margin-left: 0.35rem; }
+.prot-head p { margin: 0.25rem 0 1rem; font-size: 0.88rem; }
+.drift { margin: 0 0 1rem; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--line)); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); font-size: 0.88rem; }
+.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow); padding: 0.9rem 1.1rem 1rem; margin: 0 0 1rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.55rem; min-width: 0; }
+.pcard > .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.8rem 1.2rem; flex-wrap: wrap; }
+.pcard h3 { font-size: 1.05rem; }
+.pcard h3 small { font-family: var(--font-body); font-weight: 400; font-size: 0.75rem; margin-left: 0.3rem; }
+.pcard .sub { margin: 0.15rem 0 0; font-size: 0.84rem; color: var(--muted); max-width: 56rem; }
+.pmap svg { width: 100%; height: auto; display: block; overflow: visible; }
+.pmap text { font-family: var(--font-body); }
+.m-line, .m-stick { stroke: var(--line-strong); }
+.m-wave { stroke: var(--muted); }
+.m-dom { fill: color-mix(in srgb, var(--brand-ink) 16%, var(--surface)); stroke: var(--brand-ink); }
+.m-domt { fill: var(--ink); }
+.m-head { fill: var(--accent); stroke: var(--surface); stroke-width: 1; cursor: default; }
+.m-head:hover { r: 5; }
+.m-tick { stroke: var(--muted); } .m-tickt { fill: var(--muted); }
+.win { font-family: var(--font-mono); font-size: 0.85em; letter-spacing: 0.02em; }
+.win b { color: var(--accent); }
+details.score.small > summary { grid-template-columns: 1.4rem minmax(0, 0.7fr) minmax(0, 1.6fr) 1.2rem; }
+details.score.small .tq .t { font-size: 0.95rem; }
+.live-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 0 1rem; }
+.live p { margin: 0.2rem 0 0.5rem; font-size: 0.9rem; color: var(--ink-2); }
+.live .src, .pcard .src { font-size: 0.75rem; color: var(--muted); }
+.af3d { position: relative; width: 100%; height: 26rem; border: 1px solid var(--line); border-radius: 0.6rem; overflow: hidden; background: #fff; }
+@media (max-width: 52rem) { details.score.small > summary { grid-template-columns: 1.4rem minmax(0, 1fr) 1.2rem; grid-template-areas: 'pm tq go' '. ans .'; } }
+
+details.score.small .ans .an { white-space: normal; }

@@ -38,6 +38,21 @@ band with its orange rule, the search with example chips, tabs with counts, card
 A site's `website:` block sets only its name, tagline, band colours, accent, type, icon, header picture, lab, links and
 example searches; a site without a picture gets a drawn protein with its marks.
 
+**Pages.** Overview (a scorecard: each question with its classes at a glance and its answer, grouped in sections; a
+row opens its figure), Proteins (every protein with a mark, searchable by gene, accession, name or a gene list), a page
+per protein (its map of domains, disordered regions and marks; how its marks compare with its own other residues; its
+marks one by one; live cards from UniProt, AlphaFold DB and PDBe), All tests and Method. `ptmc run` writes what the
+protein pages read beside the statistics (`marks.tsv`, `protein_counts.tsv`, `proteins.tsv`, `units.tsv`); `ptmc
+web` splits it into 64 files, so a protein page loads one.
+
+**Live sources add, never change.** UniProt (function, and a check that the sequence is still the one the results were
+computed on: a banner says so when it is not), AlphaFold DB (the model in 3D with 3Dmol, and its confidence drawn on the
+map only when its sequence is the same) and PDBe (experimental structures, one row per entry, with the marks each
+covers). Each says where it came from and when, and fails softly.
+
+**Modules.** `kit.js` is the core (state in the URL, search, tabs, Overview, All tests, Method, figures and downloads);
+`kit-proteins.js` registers the Proteins and protein views with it (`window.PTMC_MODULES`). A new view is a new module.
+
 **Every download is standard.** Each card offers PDF, SVG, PNG and TSV, and the statistics page a TSV of the rows shown.
 Each carries the same block: what it shows, the test and correction and the reading rule, the citation and data sources
 (from the site's CITATION.cff), the site's version and date, the kit's version and commit, the sequences (release, FASTA
@@ -69,5 +84,5 @@ Inter and IBM Plex Serif embedded, and the TSV's `#` lines (readers skip them: `
 
 Isoform-to-canonical placement of marks; the site union from study tables; protein-set tests (clusterProfiler parity);
 measured backgrounds (candidates limited to residues covered by detected peptides); unit-level tests (IDRs as the
-unit); the release writer (sites and proteins tables, data dictionary, README, CHANGES, MD5SUMS); website pages for
-proteins and sites, selections retested in the browser, and live UniProt, AlphaFold and PDB cards with drift checks.
+unit); the release writer (sites and proteins tables, data dictionary, README, CHANGES, MD5SUMS); selections retested in
+the browser; interaction partners on protein pages.

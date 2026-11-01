@@ -154,6 +154,10 @@
           "question": {
             "type": "string",
             "description": "the question the card answers, in words"
+          },
+          "section": {
+            "type": "string",
+            "description": "the Overview section it is listed under (default: the layer's)"
           }
         }
       }

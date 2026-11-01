@@ -32,6 +32,8 @@ FONTS = {
                   '&family=Inter:wght@400;500;600;700&display=swap',
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
+# the page's scripts, in load order: modules register with the core, which starts last
+MODULES = ('kit-proteins.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -133,6 +135,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         analyses.append({'id': a['id'], 'title': a.get('title') or (layer.title if layer else a['id']),
                          'question': a.get('question') or _fill(layer.question if layer else '', profile.words),
                          'sub': _fill(layer.sub if layer else '', profile.words), 'layer': a['layer'],
+                         'section': a.get('section') or (layer.section if layer else ''),
                          'describe': layer.describe if layer else '', 'labels': labels, 'help': helps})
     web = site['website']
     # each input by its name and version, and what this site uses it for
@@ -155,6 +158,45 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'kit': {**kit_citation(), 'version': __version__, 'commit': run.get('code_commit') or code_commit()},
         'statistics_tsv': (folder / 'statistics.tsv').read_text(),
     }
+
+
+SHARDS = 64
+
+
+def shard_of(accession: str) -> int:
+    """The protein file an accession is in: the sum of its character codes, modulo 64 (kit.js computes the same)."""
+    return sum(map(ord, accession)) % SHARDS
+
+
+def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[list, dict]:
+    """(the protein list for the Proteins tab, the per-protein records by shard) from a run's per-protein outputs."""
+    import pandas as pd
+    from ..snapshot import parse_fasta
+    if not (folder / 'proteins.tsv').exists():
+        return ([], []), {}
+    prot = pd.read_csv(folder / 'proteins.tsv', sep='\t', dtype={'accession': str}, keep_default_na=False)
+    marks = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
+    counts = pd.read_csv(folder / 'protein_counts.tsv', sep='\t', dtype={'accession': str, 'analysis': str, 'category': str}, keep_default_na=False)
+    units = pd.read_csv(folder / 'units.tsv', sep='\t', dtype={'accession': str, 'label': str}, keep_default_na=False)
+    seqs = parse_fasta(snapshot_fasta) if snapshot_fasta and snapshot_fasta.exists() else {}
+    analyses = [c for c in marks.columns if c not in ('accession', 'position', 'residue', 'window_15')]
+    listing = [[r['accession'], r['gene'], r['name'], int(r['length']), int(r['marks']), int(r['candidates'])] for r in prot.to_dict('records')]
+    shards: dict[int, dict] = {}
+    m_by = {a: g for a, g in marks.groupby('accession')}
+    c_by = {a: g for a, g in counts.groupby('accession')}
+    u_by = {a: g for a, g in units.groupby('accession')}
+    for r in prot.to_dict('records'):
+        a = r['accession']
+        mg, cg, ug = m_by.get(a), c_by.get(a), u_by.get(a)
+        rec = {'entry': r['entry'], 'md5': r['sequence_md5'], 'seq': seqs.get(a, ''),
+               'marks': [[int(x['position']), x['window_15'], [x[k] for k in analyses]] for x in mg.to_dict('records')] if mg is not None else [],
+               'counts': {}, 'totals': {}, 'units': [[u['kind'], int(u['start']), int(u['end']), u['label']] for u in ug.to_dict('records')] if ug is not None else []}
+        if cg is not None:
+            for aid, g in cg.groupby('analysis'):
+                rec['counts'][aid] = [[c['category'], int(c['marks_in']), int(c['others_in'])] for c in g.to_dict('records')]
+                rec['totals'][aid] = [int(g['marks_total'].iloc[0]), int(g['others_total'].iloc[0])]
+        shards.setdefault(shard_of(a), {})[a] = rec
+    return (listing, analyses), shards
 
 
 def build(site_path: str | Path, out_root: str | Path | None = None, log=print) -> Path:
@@ -187,6 +229,20 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
     logo = (root / web['lab']['logo']).read_text() if web.get('lab', {}).get('logo') else ''
     data = site_data(site, folder, profile)
     cit = data['citation']
+    run = data['run']
+    fasta = Path(run.get('inputs', {}).get(site['snapshot']['input'], {}).get('file', ''))
+    (listing, mark_columns), shards = protein_data(folder, fasta)
+    data['proteins'] = listing
+    data['mark_columns'] = mark_columns
+    data['shards'] = SHARDS if shards else 0
+    if shards:
+        (out / 'data' / 'p').mkdir(parents=True, exist_ok=True)
+        for k, recs in shards.items():
+            (out / 'data' / 'p' / f'{k:02d}.json').write_text(json.dumps(recs, separators=(',', ':')))
+    inline_proteins = json.dumps({f'{k:02d}': v for k, v in shards.items()}, separators=(',', ':')).replace('</', '<\\/')
+    if len(inline_proteins) > 12_000_000:
+        log(f'  the one-file copy leaves out the protein pages ({len(inline_proteins) / 1e6:.0f} MB); index.html has them')
+        inline_proteins = '{}'
 
     def page(inline: bool) -> str:
         icon_href = 'data:image/svg+xml;base64,' + base64.b64encode(icon.encode()).decode() if inline else 'assets/icon.svg'
@@ -215,9 +271,11 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
         version += f'{" · " if version else ""}<a href="#method">how it was made</a> · <a href="#statistics">download the data</a>'
         if inline:
             css = f'<style>{_asset("assets/kit.css").read_text()}</style>'
-            js = f'<script>{_asset("assets/kit.js").read_text()}</script>'
+            js = (f'<script id="protein-data" type="application/json">{inline_proteins}</script>'
+                  + ''.join(f'<script>{_asset("assets/" + n).read_text()}</script>' for n in MODULES))
         else:
-            css, js = '<link rel="stylesheet" href="assets/kit.css">', '<script src="assets/kit.js"></script>'
+            css = '<link rel="stylesheet" href="assets/kit.css">'
+            js = ''.join(f'<script src="assets/{n}"></script>' for n in MODULES)
         text = _asset('template.html').read_text()
         for key, value in {'{{NAME}}': html.escape(web['name']), '{{TAGLINE}}': html.escape(web.get('tagline', '')),
                            '{{ICON_HREF}}': icon_href, '{{THEME}}': theme, '{{ART}}': art, '{{LAB}}': lab,
@@ -229,7 +287,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
             text = text.replace(key, value)
         return text
 
-    for name in ('kit.css', 'kit.js'):
+    for name in ('kit.css', *MODULES):
         shutil.copyfile(_asset(f'assets/{name}'), out / 'assets' / name)
     (out / 'assets' / 'icon.svg').write_text(icon)
     if logo:

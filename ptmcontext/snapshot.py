@@ -42,6 +42,23 @@ def parse_fasta(path: str | Path) -> dict[str, str]:
     return {acc: ''.join(chunks) for acc, chunks in sequences.items()}
 
 
+def parse_fasta_headers(path: str | Path) -> dict[str, dict]:
+    """Accession -> entry name, protein name and gene of a UniProt FASTA header
+    ('>sp|P04637|P53_HUMAN Cellular tumor antigen p53 OS=Homo sapiens OX=9606 GN=TP53 PE=1 SV=4')."""
+    out = {}
+    for line in Path(path).read_text().splitlines():
+        if not line.startswith('>'):
+            continue
+        parts = line[1:].split('|')
+        if len(parts) < 3:
+            continue
+        entry, _, rest = parts[2].partition(' ')
+        name = rest.split(' OS=')[0].strip()
+        gene = rest.split(' GN=')[1].split(' ')[0] if ' GN=' in rest else ''
+        out[parts[1].strip()] = {'entry': entry, 'name': name, 'gene': gene}
+    return out
+
+
 def clean(seq: str) -> str:
     """Upper-case letters only (common.clean_aa_sequence)."""
     return ''.join(ch for ch in str(seq).upper() if 'A' <= ch <= 'Z')
@@ -75,7 +92,9 @@ class Snapshot:
         md5 = md5_file(path)
         if expect_md5 and md5 != expect_md5:
             raise ValueError(f'{path}: MD5 {md5}, expected {expect_md5}')
-        return cls(parse_fasta(path), release=release, source=source or path.name, fasta_md5=md5)
+        snap = cls(parse_fasta(path), release=release, source=source or path.name, fasta_md5=md5)
+        snap.meta['headers'] = parse_fasta_headers(path)
+        return snap
 
     @classmethod
     def from_uniprot_release(cls, folder: str | Path) -> 'Snapshot':
@@ -120,6 +139,14 @@ class Snapshot:
         """The sequence window of each (accession, position) row of frame."""
         return pd.Series([window(self.sequences.get(a, ''), int(p), flank) for a, p in zip(frame['accession'], frame['position'])],
                          index=frame.index, dtype=object)
+
+    def describe(self, accession: str) -> dict:
+        """Entry name, protein name and gene of an accession, from the FASTA header ('' where absent)."""
+        return self.meta.get('headers', {}).get(accession, {'entry': '', 'name': '', 'gene': ''})
+
+    def sequence_md5(self, accession: str) -> str:
+        """The MD5 of a sequence as UniProt reports it (upper-case hex), for checking a live entry against it."""
+        return hashlib.md5(clean(self.sequences.get(accession, '')).encode()).hexdigest().upper()
 
     def record(self) -> dict:
         """What an output records about the sequences it was computed on."""
