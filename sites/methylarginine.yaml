@@ -30,16 +30,39 @@ marks:
       column: methyl_state
       label: Methylation state
       kind: category
-      values: {Rme1: Monomethyl (Rme1), Rme2: Dimethyl (Rme2), Rme1_Rme2: Mono- and dimethyl, "": Not reported}
+      values: {Rme1: Monomethyl (Rme1), Rme2: Dimethyl (Rme2), Rme1_Rme2: Mono- and dimethyl, "": No assigned state}
       colour: true
       filter: true
       help: The methylation state the studies report for the site; Rme2 is dimethylarginine, asymmetric or symmetric not resolved
     studies:
       column: studies
-      label: Studies
+      label: Studies and databases
       kind: list
       separator: "; "
       link: {column: study_dois, url: "https://doi.org/{}"}
+      records:             # a database's own record of the protein, rather than its paper
+        PSP: "https://www.phosphosite.org/uniprotAccAction?id={acc}"
+        UniProt: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"
+      values:
+        Fedoriw2019: Fedoriw 2019
+        Fong2019: Fong 2019
+        Geoghegan2015: Geoghegan 2015
+        Guo2014: Guo 2014
+        Hartel2019: Hartel 2019
+        IEDB: IEDB
+        Larsen2016: Larsen 2016
+        Li2021: Li 2021
+        Lim2020: Lim 2020
+        Lu2024: Lu 2024
+        Lu2025: Lu 2025
+        Ma2023: Ma 2023
+        Maron2021: Maron 2021
+        Musiani2019: Musiani 2019
+        PSP: PhosphoSitePlus
+        ProMetheusDB: ProMetheusDB
+        Sylvestersen2014: Sylvestersen 2014
+        UniProt: UniProt
+        Wei2020: Wei 2020
       filter: true
       help: The studies and databases that report the site
     n_studies:
@@ -62,11 +85,23 @@ marks:
       label: Localised by
       kind: list
       separator: "; "
+      values:
+        localisation_score: a localisation score
+        one_methylatable_residue: one methylatable residue on the peptide
+        every_arginine_dimethylated: every arginine on the peptide dimethylated
+        curated_experimental: UniProt, experimental evidence (curated)
+        curated_database: PhosphoSitePlus 2021 (curated)
     flags:
       column: flags
       label: Notes
       kind: list
       separator: "; "
+      values:
+        single_study: reported by one study
+        paralog_assigned: assigned to one of several paralogs
+        paralog_window: the same window in a paralog
+        shared_sequence: the peptide's sequence is shared with another protein
+        xenograft_only: seen only in xenograft samples
 
 analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel)
   # protein sets: clusterProfiler's enricher, as the release ran it (scripts/release_layers.py, release_tables.py)
@@ -76,7 +111,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Protein classes (PANTHER), grouped
     question: "Which kinds of protein hold more methylated proteins than expected?"
-    sub: "Methylated proteins vs the reviewed human proteome, by PANTHER protein class (grouped); every protein is in one group (one-sided hypergeometric test)"
+    sub: "Methylated proteins against the reviewed human proteome, by PANTHER protein class (grouped); every protein is in one group (one-sided hypergeometric test)"
     section: Kinds of protein
     sets:
       input: panther_classes
@@ -104,7 +139,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Protein classes (PANTHER)
     question: "Which PANTHER protein classes hold more methylated proteins than expected?"
-    sub: "Methylated proteins vs the reviewed human proteome, by top-level PANTHER protein class; every protein is in one class (one-sided hypergeometric test)"
+    sub: "Methylated proteins against the reviewed human proteome, by top-level PANTHER protein class; every protein is in one class (one-sided hypergeometric test)"
     section: Kinds of protein
     sets:
       input: panther_classes
@@ -121,7 +156,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Protein subclasses (PANTHER)
     question: "Which PANTHER protein subclasses hold more methylated proteins than expected?"
-    sub: "Methylated proteins vs the reviewed human proteome, every PANTHER class below the top level with 10 or more proteins; subclasses overlap (one-sided hypergeometric test)"
+    sub: "Methylated proteins against the reviewed human proteome, every PANTHER class below the top level with 10 or more proteins; subclasses overlap (one-sided hypergeometric test)"
     section: Kinds of protein
     sets:
       input: panther_classes
@@ -138,7 +173,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Reactome pathways, top level
     question: "Which top-level Reactome pathways hold more methylated proteins than expected?"
-    sub: "Methylated vs other proteins with a Reactome pathway, by top-level pathway (one-sided hypergeometric test)"
+    sub: "Methylated proteins against the other proteins with a Reactome pathway, by top-level pathway (one-sided hypergeometric test)"
     section: Kinds of protein
     sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
     names: {input: reactome_names, set: pathway_id, name: name, include: [{column: depth, equals: "0"}]}
@@ -148,7 +183,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Reactome pathways
     question: "Which Reactome pathways, at any level, hold more methylated proteins than expected?"
-    sub: "Methylated vs other proteins with a Reactome pathway, every pathway of 10 to 500 proteins (one-sided hypergeometric test)"
+    sub: "Methylated proteins against the other proteins with a Reactome pathway, every pathway of 10 to 500 proteins (one-sided hypergeometric test)"
     section: Kinds of protein
     sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
     names: {input: reactome_names, set: pathway_id, name: name}
@@ -160,7 +195,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Where in the cell
     question: "Where in the cell are methylated proteins found more often than other proteins?"
-    sub: "Methylated vs other proteins with a Human Protein Atlas location scored Approved or better (one-sided hypergeometric test)"
+    sub: "Methylated proteins against the other proteins with a Human Protein Atlas location scored Approved or better (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: hpa, set: location, protein: canonical_UniProtAC, exclude: [{column: reliability, equals: Uncertain}]}
     whole_universe: true
@@ -205,7 +240,7 @@ website:                  # the look and words of the website (ptmc web); layout
         cards:
           - {analysis: panther_group, title: Protein classes}
           - {analysis: hpa_location, title: Where in the cell}
-          - {analysis: reactome_top_level, title: Reactome pathways}
+          - {analysis: reactome_top_level, title: Reactome pathways (top level)}
           - {analysis: panther_subclass, title: Protein subclasses}
       - name: Where in the protein
         cards:
@@ -213,8 +248,8 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: structure_context}
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
-      - name: More questions
-        cards: [panther_class, reactome_pathway, disorder, domain_context]
+      - name: In more detail
+        cards: [panther_class, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Protein function, analyses: [panther_group, panther_class, hpa_location, reactome_top_level]}
     - {name: Methylation state, attributes: [state]}

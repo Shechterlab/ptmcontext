@@ -211,6 +211,13 @@
                   "pattern": "^#[0-9a-fA-F]{6}$"
                 },
                 "description": "value -> its colour when sites are coloured by this attribute (default: a fixed palette in the order of values)"
+              },
+              "records": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "list: value -> a URL for that source's own record of the protein ({acc}), used instead of the paper link"
               }
             }
           }
@@ -683,7 +690,7 @@
             "rows": {
               "type": "integer",
               "minimum": 1,
-              "description": "rows a card shows before \"+N more\" (default 5)"
+              "description": "rows a tile shows before \"+N more\" (default 7, as the original explorer)"
             },
             "sections": {
               "type": "array",

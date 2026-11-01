@@ -45,6 +45,39 @@ def load_site(path: str | Path) -> dict:
     return site
 
 
+def website_problems(site: dict) -> list[str]:
+    """What the website block names that the site file does not have: a tile, filter or example naming an analysis
+    or a mark attribute that is not defined, or an attribute's colours for values it does not list. The schema checks
+    each block's shape; this checks that the blocks agree with each other (ptmc check)."""
+    ids = {x['id'] for x in site.get('analyses', [])}
+    attrs = (site.get('marks') or {}).get('attributes') or {}
+    web = site.get('website') or {}
+    out = []
+    for sec in (web.get('overview') or {}).get('sections', []):
+        for c in sec.get('cards', []):
+            aid = c if isinstance(c, str) else c.get('analysis')
+            if aid not in ids:
+                out.append(f"website.overview, section {sec.get('name')!r}: no analysis {aid!r}")
+    for g in web.get('filters') or []:
+        out += [f"website.filters, group {g.get('name')!r}: no analysis {a!r}" for a in g.get('analyses', []) if a not in ids]
+        out += [f"website.filters, group {g.get('name')!r}: no attribute {a!r} in marks.attributes" for a in g.get('attributes', []) if a not in attrs]
+    for st in web.get('stats') or []:
+        if isinstance(st, dict) and st['attribute'] not in attrs:
+            out.append(f"website.stats: no attribute {st['attribute']!r} in marks.attributes")
+        elif isinstance(st, dict) and attrs[st['attribute']].get('kind') != 'list':
+            out.append(f"website.stats: attribute {st['attribute']!r} is not a list (its distinct values are counted)")
+    for ex in web.get('examples') or []:
+        key = ex.split(':', 1)[0] if ':' in ex else None
+        if key is not None and key not in ids and key not in attrs:
+            out.append(f"website.examples: {ex!r} names neither an analysis nor an attribute")
+    for name, a in attrs.items():
+        if a.get('values') and a.get('colours'):
+            out += [f"marks.attributes.{name}: a colour for {v!r}, which is not among its values" for v in a['colours'] if v not in a['values']]
+        if a.get('records') and a.get('kind') != 'list':
+            out.append(f"marks.attributes.{name}: records are for a list attribute")
+    return out
+
+
 def root_of(site: dict) -> Path:
     return Path(site.get('__root__', REPO))
 
@@ -98,6 +131,15 @@ def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame) -> pd
     attrs = spec.get('attributes') or {}
     if not attrs:
         return pd.DataFrame(columns=['accession', 'position'])
+    clash = [n for n in attrs if not (n[:1].isalpha() and n.replace('_', 'a').isalnum())]
+    if clash:
+        raise ValueError(f'marks.attributes: names must be letters, digits and _ only: {clash}')
+    keep = pd.Series(True, index=table.index)            # the rows select_marks keeps, so a dropped row lends nothing
+    for cond in spec.get('include', []):
+        keep &= _holds(table, cond)
+    for cond in spec.get('exclude', []):
+        keep &= ~_holds(table, cond)
+    table = table[keep]
     cols = {}
     for name, a in attrs.items():
         cols[f'a.{name}'] = a['column']
@@ -171,9 +213,10 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
         if u is not None and len(u):
             u = u[u['accession'].isin(set(accs))]
             units.append(pd.DataFrame({'accession': u['accession'], 'kind': kind, 'start': u['start'], 'end': u['end'],
-                                       'label': u['label'] if 'label' in u.columns else '', 'source': u['source']}))
+                                       'label': u['label'] if 'label' in u.columns else '', 'source': u['source'],
+                                       'class': u['class'] if 'class' in u.columns else '', 'ref': u['ref'] if 'ref' in u.columns else ''}))
     return {'marks.tsv': m.sort_values(['accession', 'position']), 'protein_counts.tsv': pd.concat(counts, ignore_index=True),
-            'proteins.tsv': proteins, 'units.tsv': pd.concat(units, ignore_index=True) if units else pd.DataFrame(columns=['accession', 'kind', 'start', 'end', 'label', 'source'])}
+            'proteins.tsv': proteins, 'units.tsv': pd.concat(units, ignore_index=True) if units else pd.DataFrame(columns=['accession', 'kind', 'start', 'end', 'label', 'source', 'class', 'ref'])}
 
 
 def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, out_root: str | Path | None = None,
@@ -260,6 +303,8 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         if set_keep:                                   # for testing a selection again on the website
             (folder / 'protein_sets.json').write_text(json.dumps(set_keep, separators=(',', ':')) + '\n')
             record['output']['protein_sets.json'] = md5_file(folder / 'protein_sets.json')
+        elif (folder / 'protein_sets.json').exists():
+            (folder / 'protein_sets.json').unlink()
         for name, frame in outs.items():
             frame.to_csv(folder / name, sep='\t', index=False, lineterminator='\n')
             record['output'][name] = md5_file(folder / name)

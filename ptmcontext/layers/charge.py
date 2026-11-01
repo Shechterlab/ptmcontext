@@ -37,6 +37,7 @@ def idr_charge_units(ctx: Context, accessions: set) -> pd.DataFrame:
         params = [CH.charge(ctx.snapshot.sequences[a][s - 1:e]) for a, s, e in zip(units['accession'], units['start'], units['end'])]
         for f in ('f_plus', 'f_minus', 'fcr', 'ncpr', 'kappa', 'region'):
             units[f] = [getattr(c, f) for c in params]
+        units['class'] = [f'r{c.region}' for c in params]
         units['label'] = [f"{LABELS[f'r{c.region}']}: FCR {c.fcr:.2f}, NCPR {c.ncpr:+.2f}, κ {c.kappa:.2f}" if c.kappa is not None
                           else f"{LABELS[f'r{c.region}']}: no charged residue" for c in params]
         before = ctx._cache.get('units:idr_charge')
@@ -50,7 +51,7 @@ def idr_charge_units(ctx: Context, accessions: set) -> pd.DataFrame:
           'in, from its fractions of positive (K, R) and negative (D, E) residues; outside_idr; no_idr',
           needs=('disorder',), title='Charge of the IDR', labels=LABELS, help=HELP,
           question='Do {marks} sit in IDRs of a particular charge, against the other {residues} of the same proteins?',
-          sub='{Marked} vs other {residues} of the same proteins, by the charge class of the IDR they sit in (Das–Pappu diagram of states)')
+          sub='{Marks} against the other {residues} of the same proteins, by the charge class of the IDR they sit in (Das–Pappu diagram of states)')
 def idr_charge(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     accs = set(residues['accession'])
     units = idr_charge_units(ctx, accs)

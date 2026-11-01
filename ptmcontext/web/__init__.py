@@ -12,6 +12,7 @@ from __future__ import annotations
 import base64
 import html
 import json
+import re
 import math
 import shutil
 from importlib import resources
@@ -102,7 +103,8 @@ def _labels(layer: L.Layer | None, profile) -> tuple[dict, dict]:
 
 
 def _fill(template: str, words: dict) -> str:
-    w = {'marks': words['marks'], 'residues': words['residues'], 'marked': words['marked'], 'Marked': words['marked'].capitalize()}
+    w = {'marks': words['marks'], 'residues': words['residues'], 'marked': words['marked'], 'Marked': words['marked'].capitalize(),
+         'Marks': words['marks'][:1].upper() + words['marks'][1:]}
     return template.format(**w) if template else ''
 
 
@@ -143,13 +145,15 @@ def site_data(site: dict, folder: Path, profile) -> dict:
     analyses = []
     for a in site['analyses']:
         if a.get('test') == 'protein_sets':
-            analyses.append({'id': a['id'], 'kind': 'protein_sets', 'title': a.get('title', a['id']), 'question': a.get('question', ''),
+            from ..set_tests import roles_of
+            analyses.append({'id': a['id'], 'kind': 'protein_sets', 'roles': [r for r in roles_of(a) if r != (a.get('abundance') or {}).get('input')],
+                             'title': a.get('title', a['id']), 'question': a.get('question', ''),
                              'sub': a.get('sub', ''), 'section': a.get('section', 'Kinds of protein'), 'layer': '', 'describe': a.get('background', ''),
                              'labels': set_names.get(a['id'], {}), 'help': {}, 'new': bool(a.get('new'))})
             continue
         layer = L.BUILT_IN.get(a['layer'])
         labels, helps = _labels(layer, profile)
-        analyses.append({'id': a['id'], 'kind': 'residue', 'title': a.get('title') or (layer.title if layer else a['id']),
+        analyses.append({'id': a['id'], 'kind': 'residue', 'roles': list(layer.needs) if layer else [], 'title': a.get('title') or (layer.title if layer else a['id']),
                          'question': a.get('question') or _fill(layer.question if layer else '', profile.words),
                          'sub': _fill(layer.sub if layer else '', profile.words), 'layer': a['layer'],
                          'section': a.get('section') or (layer.section if layer else ''),
@@ -160,19 +164,30 @@ def site_data(site: dict, folder: Path, profile) -> dict:
     uses = {site['snapshot']['input']: 'sequences', site['marks']['input']: profile.words['marks']}
     order = site_input_names(site)            # the table lists them as the site file does: a role's sources in its order
     roles = {}
+    # what each role is used for, in words: the questions that read it (a role no question reads keeps its name)
+    readers = {}
+    for a, spec in zip(analyses, site['analyses']):
+        for r in a['roles']:
+            readers.setdefault(r, []).append(a['title'])
+        ab = (spec.get('abundance') or {}).get('input')
+        if ab:
+            readers.setdefault(ab, []).append(f"abundance deciles of {a['title']}")
     for role, value in site.get('inputs', {}).items():
         rule, names = role_inputs(value)
+        what = '; '.join(dict.fromkeys(readers.get(role, []))) or role.replace('_', ' ')
         for i, name in enumerate(names):
             roles[name] = role
-            uses[name] = role if rule == 'one' or i == 0 else f"{role}, for proteins with none from the row{'s' if i > 1 else ''} above" if rule == 'first_of' else f'{role}, with the row{"s" if i > 1 else ""} above'
+            uses[name] = what if rule == 'one' or i == 0 else f"{what}, for proteins with none from the row{'s' if i > 1 else ''} above" if rule == 'first_of' else f'{what}, with the row{"s" if i > 1 else ""} above'
     if site.get('reference', {}).get('statistics'):
-        uses[site['reference']['statistics']] = 'checking the rebuild'
+        uses[site['reference']['statistics']] = 'the parity check'
     inputs = {name: {'version': entries.get(name, {}).get('version', ''), 'licence': entries.get(name, {}).get('licence', ''),
                      'use': uses.get(name, ''), 'role': roles.get(name, '')}
               for name in sorted(run.get('inputs', {}), key=lambda n: order.index(n) if n in order else len(order))}
     return {
         'inputs': inputs,
         'partners': web.get('partners'),
+        'ptm_kinds': json.loads((Path(__file__).resolve().parents[1] / 'config' / 'uniprot_ptm_kinds.json').read_text())['kinds'],
+        'profile_uniprot': profile.data.get('uniprot_features', []),
         'overview': web.get('overview'), 'filters': web.get('filters'), 'stats': web.get('stats'),
         'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),
                  'lab': web.get('lab', {}).get('name', ''), 'config': f"sites/{site['id']}.yaml"},
@@ -205,7 +220,7 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
     prot = pd.read_csv(folder / 'proteins.tsv', sep='\t', dtype={'accession': str}, keep_default_na=False)
     marks = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
     counts = pd.read_csv(folder / 'protein_counts.tsv', sep='\t', dtype={'accession': str, 'analysis': str, 'category': str}, keep_default_na=False)
-    units = pd.read_csv(folder / 'units.tsv', sep='\t', dtype={'accession': str, 'label': str}, keep_default_na=False)
+    units = pd.read_csv(folder / 'units.tsv', sep='\t', dtype=str, keep_default_na=False)
     if 'source' not in units.columns:
         units['source'] = ''
     sources = sorted(set(units['source']))
@@ -223,7 +238,7 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
         mg, cg, ug = m_by.get(a), c_by.get(a), u_by.get(a)
         rec = {'entry': r['entry'], 'md5': r['sequence_md5'], 'seq': seqs.get(a, ''),
                'marks': [[int(x['position']), x['window_15'], [x[k] for k in analyses], [x[k] for k in attrs]] for x in mg.to_dict('records')] if mg is not None else [],
-               'counts': {}, 'totals': {}, 'units': [[u['kind'], int(u['start']), int(u['end']), u['label'], src_index[u['source']]] for u in ug.to_dict('records')] if ug is not None else []}
+               'counts': {}, 'totals': {}, 'units': [[u['kind'], int(u['start']), int(u['end']), u['label'], src_index[u['source']], u.get('class', ''), u.get('ref', '')] for u in ug.to_dict('records')] if ug is not None else []}
         if cg is not None:
             for aid, g in cg.groupby('analysis'):
                 rec['counts'][aid] = [[c['category'], int(c['marks_in']), int(c['others_in'])] for c in g.to_dict('records')]
@@ -232,7 +247,7 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
     return (listing, analyses, sources, [c[2:] for c in attrs]), shards
 
 
-def selection_data(folder: Path, listing: list, analyses: list) -> dict:
+def selection_data(folder: Path, listing: list, analyses: list, specs: dict | None = None) -> dict:
     """What the browser needs to filter the marks and test a selection again: every mark with its protein, position,
     class in each residue question and attributes (dictionary-coded), and each protein's other candidate residues per
     class (from protein_counts.tsv), so the within-protein and pooled tests can be recomputed on any subset."""
@@ -241,6 +256,9 @@ def selection_data(folder: Path, listing: list, analyses: list) -> dict:
     counts = pd.read_csv(folder / 'protein_counts.tsv', sep='\t', dtype={'accession': str, 'analysis': str, 'category': str}, keep_default_na=False)
     pidx = {r[0]: i for i, r in enumerate(listing)}
     attrs = [c for c in marks.columns if c.startswith('a.') and not c.endswith('.link')]
+    specs = specs or {}
+    seps = {c: (specs.get(c[2:], {}).get('separator', '; ') if specs.get(c[2:], {}).get('kind') == 'list' else None) for c in attrs}
+    split = lambda c, x: (x.split(seps[c]) if seps[c] else [x])  # noqa: E731
     classes, codes = {}, {}
     for aid in analyses:
         vals = sorted({v for x in marks[aid] for v in (x.split(';') if x else [])} | set(counts.loc[counts['analysis'] == aid, 'category']))
@@ -248,21 +266,21 @@ def selection_data(folder: Path, listing: list, analyses: list) -> dict:
         codes[aid] = {v: i for i, v in enumerate(vals)}
     avals, acodes = {}, {}
     for c in attrs:
-        vals = sorted({v for x in marks[c] for v in x.split('; ')}) if c else []
+        vals = sorted({v for x in marks[c] for v in split(c, x)})
         avals[c[2:]] = vals
         acodes[c] = {v: i for i, v in enumerate(vals)}
     rows = []
     for r in marks.to_dict('records'):
         rows.append([pidx[r['accession']], int(r['position']),
                      [[codes[a][v] for v in r[a].split(';')] if r[a] else [] for a in analyses],
-                     [[acodes[c][v] for v in r[c].split('; ')] for c in attrs], r['window_15']])
+                     [[acodes[c][v] for v in split(c, r[c])] for c in attrs], r['window_15']])
     # a list value's link (a study's DOI), the same wherever the value appears
     links = {}
     for c in attrs:
         if c + '.link' in marks.columns:
             m = {}
             for vals, ids in zip(marks[c], marks[c + '.link']):
-                for v, i in zip(vals.split('; '), ids.split('; ')):
+                for v, i in zip(split(c, vals), split(c, ids)):
                     if v and i:
                         m.setdefault(v, i)
             links[c[2:]] = m
@@ -283,7 +301,7 @@ def selection_data(folder: Path, listing: list, analyses: list) -> dict:
                 continue
             sets[aid] = {'N': k['N'], 'in_background': [pidx[a] for a in k['marked_in_background'] if a in pidx],
                          'sets': [[s, v['M'], [pidx[a] for a in v['marked'] if a in pidx]] for s, v in k['sets'].items()]}
-    return {'analyses': analyses, 'classes': classes, 'attributes': avals, 'attribute_links': links, 'marks': rows, 'others': others,
+    return {'analyses': analyses, 'classes': classes, 'attributes': avals, 'attribute_names': [c[2:] for c in attrs], 'attribute_links': links, 'marks': rows, 'others': others,
             'others_total': others_total, 'protein_sets': sets}
 
 
@@ -332,7 +350,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
     data['unit_sources'] = unit_sources
     data['shards'] = SHARDS if shards else 0
     if listing:
-        sel = selection_data(folder, listing, mark_columns)
+        sel = selection_data(folder, listing, mark_columns, site['marks'].get('attributes', {}))
         (out / 'data').mkdir(parents=True, exist_ok=True)
         (out / 'data' / 'selection.json').write_text(json.dumps(sel, separators=(',', ':')))
         log(f"  selection data: {len(sel['marks']):,} marks, {(out / 'data' / 'selection.json').stat().st_size / 1e6:.1f} MB")
@@ -361,16 +379,20 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
             cite_html = ''
         elif pref:
             cite_html = (f'<p class="lede-cite">Please cite <a href="https://doi.org/{html.escape(pref["doi"])}">{html.escape(pref["short"])}</a>, '
-                         f'and the original data sources (<a href="#method">how to cite</a>).</p>')
+                         f'and the original data sources (<a href="#method/cite">how to cite</a>).</p>')
         else:
-            cite_html = '<p class="lede-cite">Please cite the original data sources (<a href="#method">how to cite</a>).</p>'
+            cite_html = '<p class="lede-cite">Please cite the original data sources (<a href="#method/cite">how to cite</a>).</p>'
         version = ''
         if cit:
             version = f'Version {html.escape(cit["version"])}' + (f' ({human_date(cit["date"])})' if cit.get('date') else '')
             if cit.get('doi'):
                 version += (f' · <a class="doi-badge" href="https://doi.org/{html.escape(cit["doi"])}"><span>DOI</span>'
                             f'<span>{html.escape(cit["doi"])}</span></a>')
-        version += f'{" · " if version else ""}<a href="#method">how it was made</a> · <a href="#statistics">download the data</a>'
+        par = run.get('parity') or {}
+        if par.get('equal'):
+            ref = data['inputs'].get(par.get('reference'), {}).get('version', '') or par.get('reference', '')
+            version += f'{" · " if version else ""}<a href="#method/parity">tests identical to {html.escape(re.sub(r"[(].*[)]", "", ref).strip())}</a>'
+        version += f'{" · " if version else ""}<a href="#method/made">how it was made</a> · <a href="#sites">download the sites</a>'
         if inline:
             css = f'<style>{_asset("assets/kit.css").read_text()}</style>'
             js = (f'<script id="protein-data" type="application/json">{inline_proteins}</script>'

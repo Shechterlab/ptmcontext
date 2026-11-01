@@ -16,10 +16,10 @@
   const vals = (m, name) => { const ti = AT().indexOf(name); return ti < 0 ? [] : m[3][ti].map(c => SD().attributes[name][c]); };
   function attrCell(m, name, full) {
     const s = SPECS[name] || {}, v = vals(m, name);
-    if (s.colour && s.kind === 'category') return `<span class="state-pill" style="--c:${K.map ? K.map.attrColour(name, v[0] ?? '') : '#999'}">${esc(K.sel.valueLabel(name, v[0] ?? ''))}</span>`;
+    if (s.colour && s.kind === 'category') return `<span class="state-pill" style="--c:${K.map.attrColour(name, v[0] ?? '')};--t:${K.map.textOn(K.map.attrColour(name, v[0] ?? ''))}">${esc(K.sel.valueLabel(name, v[0] ?? ''))}</span>`;
     if (s.kind === 'list') {
-      const links = SD().attribute_links?.[name] || {}, shown = full ? v : v.slice(0, 3);
-      return shown.filter(Boolean).map(x => (s.link && links[x] ? `<a href="${esc(s.link.url.replace('{}', links[x]))}" title="${esc(links[x])}">${esc(x)}</a>` : esc(K.sel.valueLabel(name, x)))).join(', ') + (v.length > shown.length ? ` <span class="muted">+${v.length - shown.length}</span>` : '');
+      const links = SD().attribute_links?.[name] || {};
+      return K.sel.listHtml(name, v, v.map(x => links[x]), pr(m[0])[0], full);
     }
     return esc(v.map(x => K.sel.valueLabel(name, x)).join(', '));
   }
@@ -61,8 +61,8 @@
     return `<div class="page-head"><h2>${esc(cap(W.marks))}: ${int(rs.length)} of ${int(SD().marks.length)} on ${int(np)} protein${np === 1 ? '' : 's'}</h2>${K.expBar(['tsv'], 'sites-exp', 'the sites')}</div>` +
       `<p class="page-sub">Every ${esc(W.mark)}${K.sel.active() ? ' of your selection' : ''}: its protein, its attributes and where each comes from, the 15 residues around it and its context. A row opens its card on the protein’s page; a header sorts.</p>` +
       quick() +
-      `<div class="tbl-card"><table class="tbl sites-tbl"><thead><tr>${cols.map(([k, t]) => `<th data-ssort="${esc(k)}"${T.sort === k ? ` aria-sort="${T.desc ? 'descending' : 'ascending'}"` : ''}>${esc(t)}${T.sort === k ? (T.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
-      shown.map(m => `<tr data-goto="${esc(pr(m[0])[0])}/${m[1]}">${cols.map(c => `<td class="wrapok">${c[3](m)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>' +
+      `<div class="tbl-card"><table class="tbl sites-tbl"><thead><tr>${cols.map(([k, t]) => `<th data-ssort="${esc(k)}" tabindex="0"${T.sort === k ? ` aria-sort="${T.desc ? 'descending' : 'ascending'}"` : ''}>${esc(t)}${T.sort === k ? (T.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
+      shown.map(m => `<tr data-goto="${esc(pr(m[0])[0])}/${m[1]}" tabindex="0">${cols.map(c => `<td class="wrapok">${c[3](m)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>' +
       (rs.length > T.n ? `<p><button class="linkish" type="button" data-smore>Show ${int(Math.min(100, rs.length - T.n))} more</button></p>` : '');
   }
   function tsv() {
@@ -81,4 +81,5 @@
     ['[data-sites-exp]', el => K.exportFigure('tsv', null, `${D.site.id}_sites${K.sel.active() ? '_selection' : ''}`, el, tsv)],
     ['tr[data-goto]', (el, e) => { if (!e.target.closest('a')) K.go('protein', { arg: el.dataset.goto }); }],
   );
+  document.addEventListener('keydown', e => { const tr = e.target.closest?.('tr[data-goto]'); if (tr && !e.target.closest('a') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); K.go('protein', { arg: tr.dataset.goto }); } });
 });

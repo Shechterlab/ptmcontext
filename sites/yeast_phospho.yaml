@@ -46,5 +46,5 @@ website:
   links:
     - {label: Method, url: "#method"}
     - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
-  examples: [S/T-P, IDR, linker, folded]
+  examples: [SEC16, SEC16 S73, "motif:S/T-P", "disorder:IDR", "idr_charge:Janus"]
   partners: {species: 4932}         # STRING files budding yeast under taxon 4932 (UniProt's proteome is strain S288c, 559292)

@@ -170,6 +170,13 @@
       "additionalProperties": {
         "type": "string"
       }
+    },
+    "uniprot_features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "the mark as UniProt names it in Modified residue features (the protein map draws these in their own row)"
     }
   },
   "$defs": {

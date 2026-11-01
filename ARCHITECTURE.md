@@ -35,11 +35,14 @@ upstream ───────────► staged files ──► snapshot �
 `ptmc web sites/<site>.yaml` writes `out/<site>/web/index.html` with `assets/` (for GitHub Pages) and `<site>.html`
 (one file, for sharing). Layout and behaviour are the kit's, in the Methylarginine Site Explorer's look: the header
 band with its orange rule, the search with example chips, tabs with counts, cards of dot rows, light and dark themes.
-A site's `website:` block sets only its name, tagline, band colours, accent, type, icon, header picture, lab, links and
-example searches; a site without a picture gets a drawn protein with its marks.
+A site's `website:` block sets its name, tagline, band colours, accent, type, icon, header picture, lab, links,
+example searches, the tiles under the header (`stats`), what the Overview opens with (`overview`: sections of tiles,
+each a question with its most telling classes) and the groups of the Filters panel (`filters`); a site without a
+picture gets a drawn protein with its marks. `ptmc check` confirms that every analysis and attribute these name exists.
 
-**Pages.** Overview (a scorecard: each question with its classes at a glance and its answer, grouped in sections; a
-row opens its figure), Proteins (every protein with a mark, searchable by gene, accession, name or a gene list), a page
+**Pages.** Overview (tiles: each question with its classes at a glance and its answer, grouped in sections; a
+tile opens its figure, and a class in it selects its marks), Sites (every mark: its protein, state, the studies that
+report it, the 15 residues around it, its context), Proteins (every protein with a mark, searchable by gene, accession, name or a gene list), a page
 per protein (its map of domains, disordered regions and marks; how its marks compare with its own other residues; its
 marks one by one; live cards from UniProt, AlphaFold DB and PDBe), All tests and Method. `ptmc run` writes what the
 protein pages read beside the statistics (`marks.tsv`, `protein_counts.tsv`, `proteins.tsv`, `units.tsv`); `ptmc
@@ -50,8 +53,19 @@ computed on: a banner says so when it is not), AlphaFold DB (the model in 3D wit
 map only when its sequence is the same) and PDBe (experimental structures, one row per entry, with the marks each
 covers). Each says where it came from and when, and fails softly.
 
-**Modules.** `kit.js` is the core (state in the URL, search, tabs, Overview, All tests, Method, figures and downloads);
-`kit-proteins.js` registers the Proteins and protein views with it (`window.PTMC_MODULES`). A new view is a new module.
+**Selections.** The search (genes, accessions, sites such as `GENE R216`, terms such as `motif:RGG,GAR`) and the
+Filters panel make a selection; every page then shows it, and the Overview tests it again in the browser, as the site's
+own rows were: residue questions within each protein (Mantel–Haenszel) and pooled (Fisher), the selected marks against
+the other candidate residues of their own proteins; protein-set questions by the hypergeometric test over the sets the
+site tested. A question the selection was made with (or one reading the same data) is shown, not tested; a selection of
+fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers match SciPy to about 1e-9
+(`tests/test_web_stats.py`). The original explorer's links (`#P35637`, `#P35637/R216`, `#about`) open the same pages.
+
+**Modules.** `kit.js` is the core (state in the URL, tabs, Overview, All tests, Method, figures and downloads); the
+others register with it through `window.PTMC_MODULES`: `kit-stats.js` (the tests, for selections), `kit-select.js`
+(search, filters, the sidebar, selections and their tests), `kit-map.js` (the protein map: rows, hovers, pins, zoom,
+read-out, exports), `kit-proteins.js` (the Proteins tab and the protein page) and `kit-sites.js` (the Sites tab). A new
+view is a new module.
 
 **Every download is standard.** Each card offers PDF, SVG, PNG and TSV, and the statistics page a TSV of the rows shown.
 Each carries the same block: what it shows, the test and correction and the reading rule, the citation and data sources
@@ -89,5 +103,6 @@ Inter and IBM Plex Serif embedded, and the TSV's `#` lines (readers skip them: `
 Isoform-to-canonical placement of marks; the site union from study tables; the remaining protein-set sources
 (condensates, functional classes, cell maps);
 measured backgrounds (candidates limited to residues covered by detected peptides); unit-level tests (IDRs as the
-unit); the release writer (sites and proteins tables, data dictionary, README, CHANGES, MD5SUMS); selections retested in
-the browser.
+unit); the release writer (sites and proteins tables, data dictionary, README, CHANGES, MD5SUMS). On the website:
+comparing two selections, "what sets it apart", the Figures view, and the protein page's class, pathway, abundance,
+conservation and sequence sections.

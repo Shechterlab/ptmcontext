@@ -58,3 +58,10 @@ words:             # the nouns every text and figure uses
   marked_long: arginine methylated   # in a heading: Which parts of proteins are arginine methylated?
   writer: PRMT
   writers: PRMTs
+
+uniprot_features:   # the mark as UniProt names it (Modified residue descriptions): drawn in its own map row
+  - "Omega-N-methylarginine"
+  - "Asymmetric dimethylarginine"
+  - "Symmetric dimethylarginine"
+  - "Dimethylated arginine"
+  - "N5-methylarginine"

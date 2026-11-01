@@ -30,3 +30,8 @@ words:
   marked_long: lysine methylated
   writer: lysine methyltransferase
   writers: lysine methyltransferases
+
+uniprot_features:   # the mark as UniProt names it (Modified residue descriptions): drawn in its own map row
+  - "N6-methyllysine"
+  - "N6,N6-dimethyllysine"
+  - "N6,N6,N6-trimethyllysine"

@@ -88,7 +88,7 @@ def _nearest(ctx: Context, residues: pd.DataFrame) -> pd.DataFrame:
                 'distal': 'More than 20 aa from any domain and not between two domains',
                 'no_domain_annotation': 'Protein has no domain or repeat annotation'},
           question='Are {marks} inside domains, at their edges or between them, against the other {residues} of the same proteins?',
-          sub='{Marked} vs other {residues} of the same proteins, by position relative to domains')
+          sub='{Marks} against the other {residues} of the same proteins, by position relative to domains')
 def domain_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     near, _ = _nearest(ctx, residues)
     d = near['distance']
@@ -101,7 +101,7 @@ def domain_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
 @register('domain_class', 'class', 'the class of the nearest domain or repeat (config/domain_classes.json)',
           needs=('domains',), title='Nearest domain class',
           question='Which kinds of domain are {marks} nearest to, against the other {residues} of the same proteins?',
-          sub='{Marked} vs other {residues} of the same proteins, by the type of the nearest domain')
+          sub='{Marks} against the other {residues} of the same proteins, by the type of the nearest domain')
 def domain_class(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     near, units = _nearest(ctx, residues)
     blocks = domain_classes()
@@ -147,7 +147,7 @@ def structure_context_of(disorder_class, domain_class_, domain_edge_distance) ->
                 'idr_far_from_domain': 'In a MobiDB disordered region more than 30 aa from any domain, or on a protein with none',
                 'no_disorder_annotation': 'Protein has no MobiDB disorder annotation'},
           question='Are {marks} in disordered regions or domains, against the other {residues} of the same proteins?',
-          sub='{Marked} vs other {residues} of the same proteins, from folded domains to deep in disordered regions')
+          sub='{Marks} against the other {residues} of the same proteins, from folded domains to deep in disordered regions')
 def structure_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     dis = get('disorder')(residues, ctx)
     dom = get('domain_context')(residues, ctx)

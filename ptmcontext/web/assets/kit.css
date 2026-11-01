@@ -419,7 +419,7 @@ body.has-selection .tabs { box-shadow: inset 0 -2px 0 var(--accent); }
 .deflist { display: grid; grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr); gap: 0.3rem 1rem; margin: 0.6rem 0 0; font-size: 0.9rem; }
 .deflist dt { color: var(--muted); }
 .deflist dd { margin: 0; overflow-wrap: anywhere; }
-.state-pill { display: inline-block; font-family: var(--font-body); font-size: 0.74rem; font-weight: 600; padding: 0.05rem 0.5rem; border-radius: 999px; color: #fff; background: var(--c); vertical-align: 0.15em; }
+.state-pill { display: inline-block; font-family: var(--font-body); font-size: 0.74rem; font-weight: 600; padding: 0.05rem 0.5rem; border-radius: 999px; color: var(--t, #fff); background: var(--c); vertical-align: 0.15em; }
 .stbl tr.faded td { opacity: 0.4; }
 .stbl tr.on td { background: var(--wash); }
 .stbl tr[data-site] { cursor: pointer; }
@@ -435,3 +435,30 @@ body.has-selection .tabs { box-shadow: inset 0 -2px 0 var(--accent); }
 .tag { font-size: 0.72rem; border: 1px solid var(--line-strong); border-radius: 0.3rem; padding: 0 0.3rem; color: var(--ink-2); background: var(--surface-2); }
 .sites-tbl tr[data-goto] { cursor: pointer; }
 .sites-tbl th { white-space: nowrap; }
+
+/* ---- review fixes ------------------------------------------------------------------------------------------------- */
+.sel-miss { font-size: 0.82rem; color: #9a3412; background: color-mix(in srgb, #f97316 12%, var(--surface)); border-radius: 0.3rem; padding: 0.05rem 0.45rem; }
+.saved { margin: 0.4rem 0 0.2rem; font-size: 0.84rem; }
+.saved-row { display: flex; align-items: center; gap: 0.4rem; }
+.saved-row a { flex: 1; }
+.drow.pick { cursor: pointer; }
+.drow.pick:focus-visible { outline: 2px solid var(--accent); }
+.map-legend b { font-weight: 600; margin-right: 0.2rem; }
+.map-legend .rl { color: var(--muted); }
+.map-legend i.sq { border-radius: 2px; }
+.rows-menu { max-width: calc(100vw - 32px); }
+@media (max-width: 640px) {
+  .rows-menu { position: fixed; left: 16px; right: 16px; top: 20%; width: auto; max-height: 70vh; overflow: auto; }
+  .deflist { grid-template-columns: minmax(0, 1fr); gap: 0.1rem; }
+  .deflist dt { margin-top: 0.4rem; }
+  .pfold .card-head { flex-wrap: wrap; }
+}
+.stbl td, .sites-tbl td { overflow-wrap: anywhere; }
+@media print {
+  :root { color-scheme: light; --bg: #fff; --surface: #fff; --surface-2: #f5f7f8; --ink: #111827; --ink-2: #374151; --muted: #5f6f78; --line: #e0e8eb; }
+  .layout { display: block !important; }
+  .tbl-card { overflow: visible !important; }
+  .tbl { font-size: 9px; table-layout: auto; }
+  .tbl td, .tbl th { white-space: normal !important; }
+  body::after { content: attr(data-print-foot); display: block; margin-top: 1rem; font-size: 9px; color: #5f6f78; }
+}

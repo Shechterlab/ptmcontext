@@ -44,3 +44,30 @@ sequences. Domain units add `subtype` (domain, repeat), `ref` (the source's acce
 
 Any TSV with an accession column and a position column; the site file names them and selects rows with `include` and
 `exclude` conditions (`equals`, `in`, `contains`). Positions must be on the snapshot's sequences.
+
+`marks.attributes` keeps columns of the marks table for the website only (no test reads them): each has a name
+(letters, digits and `_`), its `column`, a `label`, a `kind` (`category`, `list` or `number`), and optionally the
+`separator` of a list (default `; `), display names for its `values`, a `link` (another column, aligned item by item,
+and a URL with `{}`, as each study to its DOI), `records` (a value that is a database, linked to its own record of the
+protein: a URL with `{acc}`), `colours`, `colour` (the map and Sites tab may colour by it), `filter` and `help`. A mark
+on several rows takes the first kept row's values.
+
+## What `ptmc run` writes for the website
+
+Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
+
+| File | Rows | Columns |
+|---|---|---|
+| `marks.tsv` | one per counted mark | `accession, position, residue, window_15`, one column per residue question (its class; motifs `;`-joined), then `a.<attribute>` (and `a.<attribute>.link`) |
+| `protein_counts.tsv` | (protein, analysis, class) | `accession, analysis, category, marks_in, others_in, marks_total, others_total` |
+| `proteins.tsv` | one per protein with a mark | `accession, gene, name, entry, length, sequence_md5, marks, candidates` |
+| `units.tsv` | one per drawn unit | `accession, kind, start, end, label, source, class, ref` |
+| `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}}`: the background size, its marked proteins, and each tested set's size and marked proteins; absent when the site has no protein-set question |
+| `set_names.tsv` | per set | `analysis, set, name` |
+
+`ptmc web` turns these into `data/p/NN.json` (64 shards of protein records: marks with their classes and attributes,
+units as `[kind, start, end, label, source index, class, ref]`) and `data/selection.json`: `analyses`, `classes` and
+`attributes` (the distinct values, which the rows code by index), `attribute_names` (their order), `attribute_links`,
+`marks` (`[protein index, position, [class codes per analysis], [attribute codes per attribute], window]`), `others`
+(per analysis, protein and class: the other candidate residues), `others_total` (per protein: candidates − marks) and
+`protein_sets` (from `protein_sets.json`). The one-file copy inlines both when they fit.

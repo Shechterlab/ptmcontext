@@ -46,11 +46,14 @@ def cmd_check(a) -> int:
     unknown = [x['layer'] for x in site['analyses'] if 'layer' in x and x['layer'] not in L.BUILT_IN and x['layer'] not in L.plugins()]
     from .set_tests import roles_of
     unknown += [r for x in site['analyses'] if 'sets' in x for r in roles_of(x) if r not in site.get('inputs', {})]
+    web = S.website_problems(site)
     print(f"{site['id']}: mark {profile.id} ({', '.join(profile.residues)}), {len(site['analyses'])} analyses")
     for problem, items in (('inputs not in the manifest', missing), ('layers not found', unknown)):
         if items:
             print(f'  {problem}: {items}')
-    return 1 if missing or unknown else 0
+    for w in web:
+        print(f'  {w}')
+    return 1 if missing or unknown or web else 0
 
 
 def cmd_inputs(a) -> int:

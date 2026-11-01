@@ -28,7 +28,9 @@ references:   # the data sources: cited with every export (DOIs checked on Cross
       - {family-names: DeAngelo, given-names: JD}
       - {family-names: Silverstein, given-names: AM}
       - {family-names: Shechter, given-names: D}
-    title: "Human methylarginine sites (PTM_Pipeline), every version; the rebuild is checked against release v1.4.3"
+    # the concept DOI, which names every version; its records on Zenodo (checked 1 Nov 2026) are v1.0.0
+    # (10.5281/zenodo.22696799) and v1.4.0, "Human methylarginine sites, v1.4.0 (PTM_Pipeline)" (10.5281/zenodo.23674710)
+    title: "Human methylarginine sites (PTM_Pipeline)"
     publisher: Zenodo
     year: 2026
     doi: "10.5281/zenodo.22696798"
@@ -77,3 +79,38 @@ references:   # the data sources: cited with every export (DOIs checked on Cross
     end: 21
     year: 2017
     doi: "10.1016/j.bpj.2016.11.3200"
+  - type: article
+    authors: [{family-names: Ragueneau, given-names: E}, {family-names: Gong, given-names: C}, {family-names: Sinquin, given-names: P}, {name: "et al."}]
+    title: "The Reactome Knowledgebase 2026"
+    journal: "Nucleic Acids Res"
+    volume: 54
+    start: D673
+    end: D681
+    year: 2026
+    doi: "10.1093/nar/gkaf1223"
+  - type: article
+    authors: [{family-names: Thul, given-names: PJ}, {family-names: Åkesson, given-names: L}, {family-names: Wiking, given-names: M}, {name: "et al."}]
+    title: "A subcellular map of the human proteome"
+    journal: "Science"
+    volume: 356
+    start: eaal3321
+    year: 2017
+    doi: "10.1126/science.aal3321"
+  - type: article
+    authors: [{family-names: Huang, given-names: Q}, {family-names: Szklarczyk, given-names: D}, {family-names: Oehninger, given-names: J}, {name: "et al."}]
+    title: "PaxDb v6.0: reprocessed, LLM-selected, curated protein abundance data across organisms"
+    journal: "Nucleic Acids Res"
+    volume: 54
+    start: D427
+    end: D439
+    year: 2026
+    doi: "10.1093/nar/gkaf1066"
+  - type: article
+    authors: [{family-names: Thomas, given-names: PD}, {family-names: Ebert, given-names: D}, {family-names: Muruganujan, given-names: A}, {name: "et al."}]
+    title: "PANTHER: Making genome-scale phylogenetics accessible to all"
+    journal: "Protein Sci"
+    volume: 31
+    start: 8
+    end: 22
+    year: 2022
+    doi: "10.1002/pro.4218"
