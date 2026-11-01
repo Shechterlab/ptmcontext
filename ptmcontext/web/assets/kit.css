@@ -439,7 +439,7 @@ body.has-selection .tabs { box-shadow: inset 0 -2px 0 var(--accent); }
 .stbl tr.faded td { opacity: 0.4; }
 .stbl tr.on td { background: var(--wash); }
 .stbl tr[data-site] { cursor: pointer; }
-@media print { .rail, .toolbar, .hero, footer, .map-ctl, .exp, .prot-chips .btn { display: none !important; } .pfold { box-shadow: none; break-inside: avoid; } body { background: #fff; } }
+@media print { .rail, .toolbar, .hero, footer, .map-ctl, .exp, .prot-chips .btn, .rail-fab { display: none !important; } .pfold { box-shadow: none; break-inside: avoid; } body { background: #fff; } body, h1, h2, h3, h4, .tbl, svg { font-family: Arial, 'Helvetica Neue', Helvetica, Arimo, 'Liberation Sans', sans-serif !important; } }
 .pfold .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
 .pfold .card-head .exp { border-top: 0; padding-top: 0; flex: none; }
 .pfold .card-head .sub { margin: 0 0 0.4rem; }

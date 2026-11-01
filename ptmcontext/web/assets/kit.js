@@ -545,7 +545,8 @@
   }
 
   // ---- a figure: one SVG for every format, with its credit -----------------------------------------------------------
-  const FF = "Inter, Arial, Helvetica, sans-serif", FFH = "'IBM Plex Serif', Georgia, serif";
+  // every output (figure SVG, PNG and PDF, card and page exports, print) is set in an Arial-like face; the website keeps its own
+  const FF = "Arial, 'Helvetica Neue', Helvetica, Arimo, 'Liberation Sans', sans-serif", FFH = FF;
   const PAL = { ink: '#111827', muted: '#5f6f78', line: '#e3e8ea', one: '#8a979e', more: '#b42318', less: '#334155', same: '#8a96a0', ns: '#ffffff', bg: '#ffffff' };
   const mctx = document.createElement('canvas').getContext('2d');
   const tw = (t, size, weight = 400, fam = FF) => { mctx.font = `${weight} ${size}px ${fam}`; return mctx.measureText(t).width; };
@@ -600,19 +601,21 @@
   }
 
   // ---- PNG at 300 dpi, fonts embedded, with text fields; PDF with fonts and properties --------------------------------
+  // Arimo (Arial's metric twin) for a PNG drawn where Arial is missing, and embedded in every PDF; DejaVu Sans only for
+  // the few characters Arimo lacks (✓ ▸ ◂), fetched only for a figure that has them
   const FONT_FILES = {
-    'Inter|400': 'https://cdn.jsdelivr.net/npm/@expo-google-fonts/inter@0.4.1/400Regular/Inter_400Regular.ttf',
-    'Inter|600': 'https://cdn.jsdelivr.net/npm/@expo-google-fonts/inter@0.4.1/600SemiBold/Inter_600SemiBold.ttf',
-    'IBM Plex Serif|600': 'https://cdn.jsdelivr.net/npm/@expo-google-fonts/ibm-plex-serif@0.4.1/600SemiBold/IBMPlexSerif_600SemiBold.ttf',
+    'Arimo|400': 'https://cdn.jsdelivr.net/npm/@expo-google-fonts/arimo@0.4.1/400Regular/Arimo_400Regular.ttf',
+    'Arimo|700': 'https://cdn.jsdelivr.net/npm/@expo-google-fonts/arimo@0.4.1/700Bold/Arimo_700Bold.ttf',
   };
+  const DEJAVU = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf', NOT_IN_ARIMO = /([\u2713\u25B8\u25C2])/;
   const JSPDF = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
   const SVG2PDF = 'https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.4/dist/svg2pdf.umd.min.js';
   const fontCache = {};
   const b64 = buf => { const u = new Uint8Array(buf); let t = ''; for (let i = 0; i < u.length; i += 0x8000) t += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(t); };
-  const fontB64 = key => (fontCache[key] ||= fetch(FONT_FILES[key]).then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('font ' + key))).then(b64));
+  const fontB64 = key => (fontCache[key] ||= fetch(FONT_FILES[key] || key).then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('font ' + key))).then(b64).catch(e => { delete fontCache[key]; throw e; }));
   async function embedFonts(svg) {
     try {
-      const faces = await Promise.all(Object.keys(FONT_FILES).map(async k => { const [fam, w] = k.split('|'); return `@font-face{font-family:'${fam}';font-weight:${w === '600' ? 'bold' : w};src:url(data:font/ttf;base64,${await fontB64(k)}) format('truetype');}`; }));
+      const faces = await Promise.all(Object.keys(FONT_FILES).map(async k => { const [fam, w] = k.split('|'); return `@font-face{font-family:'${fam}';font-weight:${w === '700' ? 'bold' : w};src:url(data:font/ttf;base64,${await fontB64(k)}) format('truetype');}`; }));
       return svg.replace(/(<svg[^>]*>)/, `$1<defs><style>${faces.join('')}</style></defs>`);
     } catch (err) { return svg; }   // offline: the figure falls back to Arial
   }
@@ -648,22 +651,54 @@
     const s = Object.assign(document.createElement('script'), { src, onload: ok, onerror: () => fail(new Error('could not load ' + src)) });
     document.head.appendChild(s);
   });
+  // a vector PDF of the figure's SVG, its text in Arimo (monospace in Courier, so residues still line up; weights as
+  // regular or bold, the font's two cuts); where the vector drawing fails, the figure as a 3x PNG on a page of its size
   async function pdfExport(f, name) {
-    await loadScript(JSPDF); await loadScript(SVG2PDF);
+    await loadScript(JSPDF);
     const pdf = new window.jspdf.jsPDF({ unit: 'pt', format: [f.W * 0.75, f.H * 0.75], orientation: f.W >= f.H ? 'l' : 'p', compress: true });
-    for (const [k, file] of [['Inter|400', 'Inter-Regular.ttf'], ['Inter|600', 'Inter-SemiBold.ttf'], ['IBM Plex Serif|600', 'IBMPlexSerif-SemiBold.ttf']]) {
-      try {
-        const [fam, w] = k.split('|');
-        pdf.addFileToVFS(file, await fontB64(k));
-        pdf.addFont(file, fam, w === '600' ? 'bold' : 'normal');
-        if (fam === 'IBM Plex Serif') pdf.addFont(file, fam, 'normal');
-      } catch (err) { /* offline: the standard Helvetica */ }
-    }
     pdf.setProperties({ title: f.title, subject: f.desc, author: D.site.lab || D.site.name, keywords: `${D.mark}, ${f.title}, ${CIT.version || ''}`,
       creator: `ptmcontext ${D.kit.version} (${D.kit.commit || 'commit not recorded'})` });
-    const holder = document.createElement('div'); holder.style.cssText = 'position:fixed;left:-100000px;top:0';
+    const holder = document.createElement('div'); holder.style.cssText = `position:fixed;left:-100000px;top:0;width:${f.W}px;height:${f.H}px;overflow:hidden`;
     holder.innerHTML = f.svg.replace(/<metadata[\s\S]*?<\/metadata>/, ''); document.body.appendChild(holder);
-    try { await pdf.svg(holder.firstElementChild, { x: 0, y: 0, width: f.W * 0.75, height: f.H * 0.75 }); } finally { holder.remove(); }
+    try {
+      await loadScript(SVG2PDF);
+      const svgEl = holder.firstElementChild;
+      try {
+        const [regular, bold] = await Promise.all([fontB64('Arimo|400'), fontB64('Arimo|700')]);
+        pdf.addFileToVFS('Arimo-Regular.ttf', regular); pdf.addFont('Arimo-Regular.ttf', 'Arimo', 'normal');
+        pdf.addFileToVFS('Arimo-Bold.ttf', bold); pdf.addFont('Arimo-Bold.ttf', 'Arimo', 'bold');
+        const mono = v => /mono|courier|consolas|menlo/i.test(v || '');
+        [svgEl, ...svgEl.querySelectorAll('[font-family], [style], text, tspan')].forEach(n => {
+          const fam = n.getAttribute('font-family') || n.style?.fontFamily, to = mono(fam) ? 'courier' : 'Arimo';
+          if (mono(fam) || n === svgEl || n.hasAttribute('font-family')) n.setAttribute('font-family', to);
+          if (n.style?.fontFamily) n.style.fontFamily = to;
+        });
+        svgEl.querySelectorAll('style').forEach(st => { st.textContent = st.textContent.replace(/font-family\s*:([^;}]+)/g, (m0, fam) => 'font-family: ' + (mono(fam) ? 'courier' : 'Arimo')); });
+        const walk = document.createTreeWalker(svgEl, NodeFilter.SHOW_TEXT), lack = [];
+        while (walk.nextNode()) if (NOT_IN_ARIMO.test(walk.currentNode.nodeValue) && !walk.currentNode.parentNode.closest('style')) lack.push(walk.currentNode);
+        if (lack.length) {
+          const dejavu = await fontB64(DEJAVU);
+          pdf.addFileToVFS('DejaVuSans.ttf', dejavu); pdf.addFont('DejaVuSans.ttf', 'DejaVu Sans', 'normal'); pdf.addFont('DejaVuSans.ttf', 'DejaVu Sans', 'bold');
+          lack.forEach(t => {
+            const frag = document.createDocumentFragment();
+            t.nodeValue.split(NOT_IN_ARIMO).forEach(part => {
+              if (!part) return;
+              if (!NOT_IN_ARIMO.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+              const sp = document.createElementNS('http://www.w3.org/2000/svg', 'tspan'); sp.setAttribute('font-family', 'DejaVu Sans'); sp.textContent = part; frag.appendChild(sp);
+            });
+            t.parentNode.replaceChild(frag, t);
+          });
+        }
+        const wt = w => (/bold|[6-9]00/.test(String(w)) ? 'bold' : 'normal');
+        svgEl.querySelectorAll('[font-weight], [style]').forEach(n => { if (n.hasAttribute('font-weight')) n.setAttribute('font-weight', wt(n.getAttribute('font-weight'))); if (n.style?.fontWeight) n.style.fontWeight = wt(n.style.fontWeight); });
+      } catch (err) { /* offline: the standard Helvetica */ }
+      await window.svg2pdf.svg2pdf(svgEl, pdf, { x: 0, y: 0, width: f.W * 0.75, height: f.H * 0.75 });
+    } catch (err) {
+      const svg = await embedFonts(f.svg), img = new Image(), url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
+      await new Promise((ok, fail) => { img.onload = ok; img.onerror = () => fail(new Error('The figure could not be drawn; save it as SVG.')); img.src = url; });
+      const c = document.createElement('canvas'); c.width = f.W * 3; c.height = f.H * 3; const ctx = c.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); pdf.addImage(c.toDataURL('image/png'), 'PNG', 0, 0, f.W * 0.75, f.H * 0.75);
+    } finally { holder.remove(); }
     download(name + '.pdf', pdf.output('blob'));
   }
   function download(name, data, type) {

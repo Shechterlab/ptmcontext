@@ -113,7 +113,7 @@ Each carries the same block: what it shows, the test and correction and the read
 (from the site's CITATION.cff), the site's version and date, the kit's version and commit, the sequences (release, FASTA
 MD5) and every input's MD5, the run's date, and when and from where it was exported. The block is visible in the figure,
 and in the file's own metadata: SVG `<metadata>` (JSON), PNG text fields and its 300 dpi, PDF document properties with
-Inter and IBM Plex Serif embedded, and the TSV's `#` lines (readers skip them: `pandas.read_csv(..., comment='#')`).
+Arimo (an Arial-like face) embedded; every export is set in Arial, Helvetica or Arimo, and the TSV's `#` lines (readers skip them: `pandas.read_csv(..., comment='#')`).
 
 ## Rules the structure enforces
 
