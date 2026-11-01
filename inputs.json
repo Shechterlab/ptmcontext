@@ -195,6 +195,24 @@
       "licence": "CC BY-NC 4.0 (\"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License\", the footer of https://cd-code.org/, checked 2026-11-01)",
       "role": "input",
       "note": "CD-CODE 2.3 members of the 147 condensates PTM_Pipeline uses (6,992 rows): each membership's CD-CODE confidence score (0-5), roles, kinds of experimental evidence and PubMed IDs. Staged by PTM_Pipeline scripts/37a_stage_interactions.py stage_cdcode (inputs/MANIFEST.tsv); this repository checks the bytes. Read only for the website's membership-confidence filter; no test reads it. Citation: Rostam N et al., Nat Methods 20:673-676 (2023), doi:10.1038/s41592-023-01831-0."
+    },
+    "methylarginine_lower_confidence_sites_v1_4_3": {
+      "file": "releases/v1.4.3/human_methylarginine_lower_confidence_sites_v1.4.3.tsv",
+      "md5": "165074c4b977aa6ea8e0937ff6e92772",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "reference_output",
+      "note": "The release's lower-confidence sites; those it counts (in_analyses_with_lower_confidence) are added to the marks by the with_lower_confidence variant."
+    },
+    "methylarginine_statistics_lower_confidence_v1_4_3": {
+      "file": "releases/v1.4.3/statistics_with_lower_confidence_v1.4.3.tsv",
+      "md5": "c62a97c257bd354b8f4a336d9d9e65e9",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "reference_output",
+      "note": "The rows the with_lower_confidence variant must equal."
     }
   }
 }

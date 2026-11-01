@@ -73,7 +73,10 @@ sequences. Domain units add `subtype` (domain, repeat), `ref` (the source's acce
 ## Marks
 
 Any TSV with an accession column and a position column; the site file names them and selects rows with `include` and
-`exclude` conditions (`equals`, `in`, `contains`). Positions must be on the snapshot's sequences.
+`exclude` conditions (`equals`, `in`, `contains`). Positions must be on the snapshot's sequences. `marks.add` appends the rows of
+further tables (each its manifest `input`, with its own `include`, `exclude` and `left_out`: rows counted on neither side).
+A site's `variants` run the same questions on other marks: each has a `label`, tables to add (`marks_add`) and its own
+`reference`; `ptmc run --variant <name>` writes it under `<outputs.folder>/variants/<name>` and records `variant` in run.json.
 
 `marks.attributes` keeps columns of the marks table for the website only (no test reads them): each has a name
 (letters, digits and `_`), its `column`, a `label`, a `kind` (`category`, `list` or `number`), and optionally the

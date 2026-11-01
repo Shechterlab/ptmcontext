@@ -56,7 +56,7 @@ def role_inputs(value) -> tuple[str, list[str]]:
 
 def site_input_names(site: dict) -> list[str]:
     """Every manifest name a site reads: its snapshot, its marks, each role's inputs and its reference."""
-    names = [site['snapshot']['input'], site['marks']['input']]
+    names = [site['snapshot']['input'], site['marks']['input'], *[a['input'] for a in site['marks'].get('add', [])]]
     for value in site.get('inputs', {}).values():
         names += role_inputs(value)[1]
     if site.get('reference', {}).get('statistics'):

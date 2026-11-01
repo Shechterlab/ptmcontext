@@ -5,6 +5,8 @@ Changing the mark, the inputs or the analyses is changing the file, never the co
 """
 from __future__ import annotations
 
+import copy
+
 import json
 import time
 from dataclasses import dataclass, field
@@ -44,6 +46,56 @@ def load_site(path: str | Path) -> dict:
     validate(site, 'site')
     site['__root__'] = str(Path(path).resolve().parent.parent)
     return site
+
+
+def with_variant(site: dict, name: str | None) -> dict:
+    """The site with one of its variants applied (site['variants'][name]): its tables added to the marks, its own
+    reference, and its outputs under <outputs.folder>/variants/<name>. The site itself when name is None."""
+    if not name:
+        return site
+    v = (site.get('variants') or {}).get(name)
+    if v is None:
+        raise ValueError(f"{site['id']} has no variant {name!r} (it has {sorted(site.get('variants') or {}) or 'none'})")
+    out = copy.deepcopy(site)
+    out['marks'] = {**out['marks'], 'add': [*out['marks'].get('add', []), *v.get('marks_add', [])]}
+    if 'reference' in v:
+        out['reference'] = v['reference']
+    out['outputs'] = {**out['outputs'], 'folder': str(Path(out['outputs']['folder']) / 'variants' / name)}
+    out['variant'] = {'name': name, 'label': v['label'], 'description': v.get('description', '')}
+    return out
+
+
+def read_marks_table(site: dict, paths: dict) -> tuple[pd.DataFrame, dict]:
+    """The marks table: the marks input, with the rows of each marks.add table that its conditions keep appended (a
+    column one table lacks is empty in the other). Also how many rows each added table gave."""
+    read = lambda n: pd.read_csv(paths[n], sep='\t', dtype=str, keep_default_na=False, low_memory=False)  # noqa: E731
+    table, added = read(site['marks']['input']), {}
+    for add in site['marks'].get('add', []):
+        extra = read(add['input'])
+        keep = pd.Series(True, index=extra.index)
+        for cond in add.get('include', []):
+            keep &= _holds(extra, cond)
+        for cond in add.get('exclude', []):
+            keep &= ~_holds(extra, cond)
+        # rows of the table counted on neither side (as marks.left_out), marked so select_marks leaves them out
+        aside = pd.Series(False, index=extra.index)
+        for cond in add.get('left_out', []):
+            aside |= _holds(extra, cond)
+        aside &= ~keep
+        added[add['input']] = {'marks': int(keep.sum()), 'left_out': int(aside.sum())} if add.get('left_out') else int(keep.sum())
+        table = pd.concat([table, extra[keep], extra[aside].assign(**{LEFT_OUT_COLUMN: 'yes'})], ignore_index=True).fillna('')
+    return table, added
+
+
+LEFT_OUT_COLUMN = '__left_out_by_add__'
+
+
+def marks_spec(site: dict, table: pd.DataFrame) -> dict:
+    """The marks section as select_marks reads it: with the rows an added table sets aside among those left out."""
+    spec = site['marks']
+    if LEFT_OUT_COLUMN in table.columns:
+        spec = {**spec, 'left_out': [*spec.get('left_out', []), {'column': LEFT_OUT_COLUMN, 'equals': 'yes'}]}
+    return spec
 
 
 def _analysis_words(site: dict) -> dict:
@@ -397,11 +449,11 @@ def drawn_tracks(layers: dict, ctx: L.Context, accs: set, values: dict | None = 
 
 
 def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, out_root: str | Path | None = None,
-        write: bool = True, log=print, skip_new: bool = False) -> SiteRun:
+        write: bool = True, log=print, skip_new: bool = False, variant: str | None = None) -> SiteRun:
     """Run a site: its analyses, statistics rows and run record, and its parity check. skip_new leaves out the analyses
-    marked new (not in the reference), for a parity check alone."""
+    marked new (not in the reference), for a parity check alone; variant runs one of the site's variants."""
     t0 = time.time()
-    site = load_site(site_path)
+    site = with_variant(load_site(site_path), variant)
     if site.get('status') == 'offline_pilot' and not allow_untrusted:
         raise PermissionError(f"site {site['id']} is an offline pilot: run it with allow_untrusted (ptmc run --allow-untrusted)")
     roles = site.get('inputs', {})
@@ -422,11 +474,14 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     ctx = L.Context(snap, profile, {role: fill(value) for role, value in roles.items()},
                     trusted_plugins=tuple(site.get('trusted_plugins', [])),
                     formats={str(paths[n]): entries[n]['columns'] for n in names if entries.get(n, {}).get('columns')})
-    table = pd.read_csv(paths[site['marks']['input']], sep='\t', dtype=str, keep_default_na=False, low_memory=False)
-    marked, report = select_marks(site['marks'], table, snap, profile)
-    pending = left_out_marks(site['marks'], table)
+    table, added = read_marks_table(site, paths)
+    spec = marks_spec(site, table)
+    marked, report = select_marks(spec, table, snap, profile)
+    if added:
+        report['added'] = added
+    pending = left_out_marks(spec, table)
     report['left_out'] = int(len(pending))
-    attributes = mark_attributes(site['marks'], table, marked)
+    attributes = mark_attributes(spec, table, marked)
     log(f"{site['id']}: {report['counted']:,} {profile.word('marks')} on {report['proteins']:,} proteins "
         f"({report['rows']:,} rows read, {report['selected']:,} selected)")
     parts, layers_used, kept, set_names, set_keep, layer_objs = [], {}, {}, [], {}, {}
@@ -472,7 +527,7 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         'site_repository_commit': code_commit(root_of(site)),
         'site_config_md5': md5_file(site_path),
         'written': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'snapshot': snap.record(),
-        'profile': profile.id, 'marks': report, 'analyses': layers_used,
+        'profile': profile.id, 'marks': report, 'analyses': layers_used, **({'variant': site['variant']} if site.get('variant') else {}),
         'manifest': str(manifest.relative_to(root_of(site))) if manifest.is_relative_to(root_of(site)) else str(manifest), 'roles': roles,
         'inputs': {n: {'file': str(p), 'md5': md5_file(p)} for n, p in sorted(paths.items())},
         'trusted_plugins': list(ctx.trusted_plugins), 'seconds': round(time.time() - t0, 1),

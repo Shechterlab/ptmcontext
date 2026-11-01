@@ -247,6 +247,44 @@
             "$ref": "#/$defs/condition"
           },
           "description": "rows kept pending: counted on neither side of a residue test (neither as marks nor as other residues), unlike exclude, which drops the row and leaves its residue among the others"
+        },
+        "add": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "input"
+            ],
+            "additionalProperties": false,
+            "description": "rows of another table counted as marks too (the same accession and position columns)",
+            "properties": {
+              "input": {
+                "type": "string",
+                "description": "manifest name of the table"
+              },
+              "include": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                },
+                "description": "its rows kept: every condition holds"
+              },
+              "exclude": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "left_out": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                },
+                "description": "its rows counted on neither side (neither marks nor other residues), as marks.left_out"
+              }
+            }
+          },
+          "description": "further tables whose rows are marks too, appended to the marks table before it is read"
         }
       }
     },
@@ -1222,6 +1260,75 @@
     "citation": {
       "type": "string",
       "description": "the site's CITATION.cff, relative to the repository: the citation, data sources, version and date every page and export carries"
+    },
+    "variants": {
+      "type": "object",
+      "description": "the same site run on other marks (for example with lower-confidence sites added): ptmc run --variant <name> writes it under <outputs.folder>/variants/<name>, and the website offers a switch to it",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "its name on the switch"
+          },
+          "description": {
+            "type": "string"
+          },
+          "marks_add": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "input"
+              ],
+              "additionalProperties": false,
+              "description": "rows of another table counted as marks too (the same accession and position columns)",
+              "properties": {
+                "input": {
+                  "type": "string",
+                  "description": "manifest name of the table"
+                },
+                "include": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/condition"
+                  },
+                  "description": "its rows kept: every condition holds"
+                },
+                "exclude": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/condition"
+                  }
+                },
+                "left_out": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/condition"
+                  },
+                  "description": "its rows counted on neither side (neither marks nor other residues), as marks.left_out"
+                }
+              }
+            },
+            "description": "tables added to the marks (marks.add)"
+          },
+          "reference": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "a published output the rebuild must equal",
+            "properties": {
+              "statistics": {
+                "type": "string",
+                "description": "manifest name of a statistics table"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "$defs": {

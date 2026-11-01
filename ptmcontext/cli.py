@@ -29,7 +29,7 @@ from .snapshot import md5_file
 
 
 def cmd_run(a) -> int:
-    result = S.run(a.site, a.root, allow_untrusted=a.allow_untrusted, out_root=a.out_root, write=not a.no_write)
+    result = S.run(a.site, a.root, allow_untrusted=a.allow_untrusted, out_root=a.out_root, write=not a.no_write, variant=a.variant)
     if result.parity and not result.parity_ok:
         for r in result.parity:
             for got, exp in r.diffs:
@@ -173,6 +173,7 @@ def main(argv=None) -> int:
     s.add_argument('--allow-untrusted', action='store_true', help='allow inputs the manifest marks not trusted (offline pilots)')
     s.add_argument('--out-root', default=None, help='where outputs.folder is written (default: this repository)')
     s.add_argument('--no-write', action='store_true')
+    s.add_argument('--variant', default=None, help="run one of the site's variants (variants: in the site file), written under <outputs.folder>/variants/<name>")
     s.set_defaults(fn=cmd_run)
 
     s = sub.add_parser('check', help='validate a site config')

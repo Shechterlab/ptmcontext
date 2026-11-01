@@ -511,6 +511,15 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
 
 reference:
   statistics: methylarginine_statistics_v1_4_3
+variants:                # the same questions on other marks; ptmc run --variant <name>
+  with_lower_confidence:
+    label: With lower-confidence sites
+    description: "The release's lower-confidence sites added: those whose own evidence covers the arginine and leaves the methyl group on an arginine (in_analyses_with_lower_confidence), as statistics_with_lower_confidence_v1.4.3.tsv counts them"
+    marks_add:
+      - input: methylarginine_lower_confidence_sites_v1_4_3
+        include: [{column: in_analyses_with_lower_confidence, equals: "true"}]
+        left_out: [{column: in_analyses_with_lower_confidence, equals: "false"}]   # the others are on neither side
+    reference: {statistics: methylarginine_statistics_lower_confidence_v1_4_3}
 
 outputs: {folder: out/methylarginine}
 citation: sites/methylarginine.citation.cff   # the citation, data sources, version and date: edit there
