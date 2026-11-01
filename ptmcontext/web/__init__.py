@@ -260,7 +260,8 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
     seqs = parse_fasta(snapshot_fasta) if snapshot_fasta and snapshot_fasta.exists() else {}
     analyses = [c for c in marks.columns if c not in ('accession', 'position', 'residue', 'window_15') and not c.startswith('a.')]
     attrs = [c for c in marks.columns if c.startswith('a.')]          # a.<name> and a.<name>.link: the site file's marks.attributes
-    listing = [[r['accession'], r['gene'], r['name'], int(r['length']), int(r['marks']), int(r['candidates'])] for r in prot.to_dict('records')]
+    listing = [[r['accession'], r['gene'], r['name'], int(r['length']), int(r['marks']), int(r['candidates']), r.get('entry', '')]
+               for r in prot.to_dict('records')]
     shards: dict[int, dict] = {}
     m_by = {a: g for a, g in marks.groupby('accession')}
     c_by = {a: g for a, g in counts.groupby('accession')}

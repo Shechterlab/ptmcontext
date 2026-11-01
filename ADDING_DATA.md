@@ -88,7 +88,8 @@ inputs:
     first_of: [<curated>, <predicted>]    # each protein's units from the first that has any (or all_of: every input's)
 marks:
   input: <manifest name>
-  include: [{column: ..., in: [...]}]
+  include: [{column: ..., in: [...]}]   # rows kept; exclude drops rows (their residues count as other residues)
+  left_out: [{column: ..., contains: ...}]   # rows kept pending: counted on neither side
 analyses:
   - {id: <analysis>, layer: <layer>}                     # a residue test, by a built-in or trusted plugin layer
   - id: <analysis>                                       # a residue test of any table of regions: no code

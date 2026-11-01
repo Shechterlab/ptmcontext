@@ -18,8 +18,11 @@
   const ST = window.PTMC_STATS;
   const SEL_MIN = { proteins: 10, marks: 30 };
   const SPECS = D.attribute_specs || {};
-  const P = (D.proteins || []).map(([acc, gene, name, len, marks, cand], i) => ({ i, acc, gene, name, len, marks, cand }));
+  const P = (D.proteins || []).map(([acc, gene, name, len, marks, cand, entry], i) => ({ i, acc, gene, name, len, marks, cand, entry }));
   const byAcc = Object.fromEntries(P.map(p => [p.acc, p]));
+  const byEntry = Object.fromEntries(P.filter(p => p.entry).map(p => [p.entry.toUpperCase(), p]));
+  // a token that names a protein: its gene, accession (an isoform's names its canonical entry) or entry name
+  const protOf = t => { const u = t.toUpperCase(), a = u.replace(/-\d+$/, ''); return byGene[u] || (byAcc[a] ? [byAcc[a]] : byEntry[u] ? [byEntry[u]] : null); };
   const byGene = {}; P.forEach(p => String(p.gene || '').split(/[\s;]+/).filter(Boolean).forEach(g => { (byGene[g.toUpperCase()] ||= []).push(p); }));
   S.f = {};                                   // filter key -> [values]; keys a:<analysis>, p:<analysis>, t:<attribute>, n:<attribute>
 
@@ -68,18 +71,19 @@
   const validKey = key => { const [kind, id] = String(key).split(':'); return (kind === 'a' && A[id] && A[id].kind !== 'protein_sets') || (kind === 'p' && A[id]?.kind === 'protein_sets') || ((kind === 't' || kind === 'n') && !!SPECS[id]); };
 
   // ---- the search: proteins, sites and terms ---------------------------------------------------------------------
-  // a gene or accession names all its marks; "GENE R216 R218" or "GENE 216" names those marks; key:value terms filter
-  // (values joined by commas or |); words that name no protein narrow by name, and a word that matches nothing is
-  // reported, not silently applied
+  // a gene, accession or entry name names all its marks; "GENE R216 R218" or "GENE 216" names those marks; key:value
+  // terms filter (values joined by commas or |). A list of proteins is their union: a name in it with no marked protein
+  // is reported (absent), not applied. Without any protein named, other words narrow by name; a word that matches
+  // nothing is reported, not silently applied.
   function parse(q) {
-    const out = { genes: [], words: [], sites: [], terms: [], unmatched: [] };
+    const out = { genes: [], words: [], sites: [], terms: [], unmatched: [], absent: [] };
     const raw = String(q || '').trim();
     const toks = raw.match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || [];
     for (let i = 0; i < toks.length; i++) {
       const t = toks[i].replace(/[,;]+$/, ''), m = /^([a-z_][\w]*):(.+)$/i.exec(t);
       if (!t) continue;
       if (m) { out.terms.push([m[1].toLowerCase(), m[2].replace(/^"|"$/g, '')]); continue; }
-      const prot = byGene[t.toUpperCase()] || (byAcc[t.toUpperCase()] ? [byAcc[t.toUpperCase()]] : null);
+      const prot = protOf(t);
       if (prot) {
         let j = i + 1, any = false;
         while (j < toks.length && /^[A-Z]?\d+[,;]?$/i.test(toks[j])) { const pos = +toks[j].replace(/\D/g, ''); prot.forEach(p => out.sites.push([p.i, pos])); any = true; j++; }
@@ -90,6 +94,8 @@
       if (P.some(p => (p.gene || '').toLowerCase().startsWith(w) || p.acc.toLowerCase().startsWith(w) || (p.name || '').toLowerCase().includes(w))) out.words.push(w);
       else out.unmatched.push(t);
     }
+    // a list that names proteins: its other plain words are names with no marked protein, not filters on the names
+    if (out.genes.length || out.sites.length) { out.absent = [...out.words, ...out.unmatched].map(w => toks.find(t => t.toLowerCase() === w) || w); out.words = []; out.unmatched = []; }
     return out;
   }
   // a term key:value: an analysis (its class or set), or an attribute of the marks
@@ -204,7 +210,10 @@
       if (!k) return null;
       return { analysis: aid, category: s, a: k, b: n - k, c: M - k, d: N - M - n + k, fold: (k / n) / (M / N), p: ST.hyperSF(k, N, M, n), method: 'enricher', selection: true };
     }).filter(Boolean);
-    const q = ST.bh(rows.map(r => r.p)); rows.forEach((r, k) => { r.q = madeWith(aid) || r.a === n ? null : q[k]; r.descriptive = madeWith(aid) || r.a === n; });
+    // a selection that names its proteins (a gene list) is shown against the sets, not tested: its enrichment would
+    // test the choice of genes, not the mark
+    const named = compute().q.genes.length || compute().q.sites.length;
+    const q = ST.bh(rows.map(r => r.p)); rows.forEach((r, k) => { const circ = madeWith(aid) || r.a === n || !!named; r.q = circ ? null : q[k]; r.descriptive = circ; });
     return rows;
   }
   // the rows of a question for the selection, shaped as the site's own (kit.js decorates them)
@@ -256,9 +265,10 @@
     const c = compute();
     if (!SD) return `<span class="sel-flag">Selection</span><span>Loading the ${esc(W.marks)}…</span>`;
     const n = c.marks.length, np = c.proteins.size, nCons = c.cons.filter(x => !x[2]).length + (S.q ? 1 : 0);
-    const miss = [...c.unresolved, ...c.q.unmatched];
+    const miss = [...c.unresolved, ...c.q.unmatched], absent = c.q.absent || [];
     return `<span class="sel-flag">Selection</span><span><b>${int(n)}</b> of ${int(D.counts.marks)} ${esc(W.marks)} on <b>${int(np)}</b> protein${np === 1 ? '' : 's'}${nCons > 1 ? ', matching all of' : ''}</span>${chipsHtml()}` +
       (miss.length ? `<span class="sel-miss" title="Terms are key:value, where the key is a question (${esc(D.analyses.map(a => a.id).join(', '))}) or an attribute (${esc(Object.keys(SPECS).join(', ') || 'none')})">Nothing matches ${miss.map(x => `<b>${esc(x)}</b>`).join(', ')}</span>` : '') +
+      (absent.length ? `<span class="sel-miss" title="Not a gene, accession or entry name of a protein with a ${esc(W.mark)} on this site">No ${esc(W.marked)} protein: ${absent.map(x => `<b>${esc(x)}</b>`).join(', ')}</span>` : '') +
       `<span class="sel-tools"><button class="btn small" type="button" data-sel-save title="Keep this selection in this browser; saved ones are listed under Filters">Save</button>` +
       `<button class="btn small" type="button" data-sel-copy>Copy link</button><button class="btn small accent" type="button" data-sel-clear-all>Clear all</button></span>`;
   }
@@ -382,5 +392,5 @@
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('fgroup')) { (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g); } }, true);
   addEventListener('keydown', e => { if (e.key === 'Escape' && R.open) { R.open = false; rail(); } });
 
-  Object.assign(K, { sel: { ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, MIN: SEL_MIN, valueLabel, classLabel, listHtml }, rail });
+  Object.assign(K, { sel: { ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, MIN: SEL_MIN, valueLabel, classLabel, listHtml, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
 });

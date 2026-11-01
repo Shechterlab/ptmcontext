@@ -37,13 +37,17 @@
   // a protein-set test's repeat within abundance deciles, beside its own row
   const STRAT = {};
   D.rows.forEach(r => { if (SETS(r.analysis) && r.method === 'mantel_haenszel') STRAT[r.analysis + '\u0000' + r.category] = r; });
+  // does a protein set's enrichment (or depletion) hold within abundance deciles? null when there is nothing to say
+  const holds = r => { if (!SETS(r.analysis) || r.selection || (r.dir !== 'more' && r.dir !== 'less')) return null; const st = STRAT[r.analysis + '\u0000' + r.category]; return st ? st.dir === r.dir : null; };
+  const holdsMark = r => { const h = holds(r); if (h !== false) return ''; const st = STRAT[r.analysis + '\u0000' + r.category];
+    return `<span class="nh" title="Not within abundance deciles: OR ${fxn(st.eff)}${st.lo != null ? ` (95% CI ${fxn(st.lo)} to ${fxn(st.hi)})` : ''}, q ${fq(st.q)}">○<span class="vh"> not within abundance deciles</span></span>`; };
   const testName = (aid, m) => SETS(aid) ? (m === 'enricher' ? 'proteins, hypergeometric' : 'within abundance deciles') : (METHOD[m] || m);
   const methodName = r => testName(r.analysis, r.method);
   const effText = r => r.eff == null ? '–' : r.method === 'enricher' ? fxn(r.eff) + '-fold' : 'OR ' + fxn(r.eff);
   const rowsFor = (a, m) => D.rows.filter(r => r.analysis === a.id && (a.kind === 'protein_sets' ? r.method === 'enricher' : r.method === m) && r.eff != null);
 
   // ---- state in the hash ---------------------------------------------------------------------------------------------
-  const S = { view: 'overview', arg: '', q: '', sq: '', m: 'mantel_haenszel', a: '', sort: 'or', desc: true, open: new Set(), all: new Set(), how: false };
+  const S = { view: 'overview', arg: '', q: '', sq: '', m: 'mantel_haenszel', a: '', sort: 'q', desc: false, nStat: 200, open: new Set(), all: new Set(), how: false };
   // modules (kit-*.js) register views, tabs, click handlers, tooltips and search hints here; the core starts them last
   const K = window.PTMC = { D, W, A, S, esc, int, fx, fxn, fq, pct, cap, decorate, views: {}, tabs: [], clicks: [], tips: [], scopeHints: [], sections: {} };
   const BUILT_IN_VIEWS = ['overview', 'statistics', 'method'];
@@ -64,7 +68,7 @@
     if (S.view === 'overview' && S.arg && !A[S.arg]) S.arg = '';
     S.q = p.get('q') || new URLSearchParams(location.search).get('q') || ''; S.m = p.get('m') || 'mantel_haenszel'; S.a = p.get('a') || ''; S.sq = p.get('sq') || '';
     K.sel?.decode(p.get('f'));
-    S.sort = p.get('sort') || 'or'; S.desc = p.get('dir') !== 'asc';
+    S.sort = p.get('sort') || 'q'; S.desc = p.get('dir') ? p.get('dir') === 'desc' : S.sort !== 'q';
     S.open = new Set((p.get('open') || '').split(',').filter(k => A[k]));
   }
   function writeHash(push) {
@@ -72,7 +76,7 @@
     if (S.q) p.set('q', S.q);
     const f = K.sel?.encode(); if (f) p.set('f', f);
     if (S.m !== 'mantel_haenszel') p.set('m', S.m);
-    if (S.view === 'statistics') { if (S.a) p.set('a', S.a); if (S.sq) p.set('sq', S.sq); if (S.sort !== 'or') p.set('sort', S.sort); if (!S.desc) p.set('dir', 'asc'); }
+    if (S.view === 'statistics') { if (S.a) p.set('a', S.a); if (S.sq) p.set('sq', S.sq); if (S.sort !== 'q') p.set('sort', S.sort); if (S.desc !== (S.sort !== 'q')) p.set('dir', S.desc ? 'desc' : 'asc'); }
 
     const h = '#' + S.view + (S.arg ? '/' + encodeURIComponent(S.arg).replace(/%2F/g, '/') : '') + (p.toString() ? '?' + p : '');
     if (h !== location.hash) (push ? history.pushState : history.replaceState).call(history, null, '', h);
@@ -126,7 +130,7 @@
     const dot = r.eff != null ? `<circle class="dot ${r.dir}" cx="${xp(Math.max(r.eff, 1e-3))}" cy="9" r="4.6"/>` : '';
     return `<div class="drow${fkey ? ' pick' : ''}" data-r="${reg(r)}"${fkey ? ` data-f="${esc(fkey)}" data-v="${esc(r.category)}" role="button" tabindex="0" title="Select the ${esc(W.marks)} ${SETS(r.analysis) ? 'on proteins in' : 'in'} ${esc(r.label)}"` : ''}><span class="lab">${esc(r.label)}</span>` +
       `<svg aria-hidden="true"><line class="track" x1="0" x2="100%" y1="9" y2="9"/><line class="one" x1="${xp(1)}" x2="${xp(1)}" y1="2" y2="16"/>${whisker}${dot}</svg>` +
-      `<span class="val ${r.dir}">${fx(r.eff)}</span></div>`;
+      `<span class="val ${r.dir}">${fx(r.eff)}${holdsMark(r)}</span></div>`;
   }
   const axisNote = () => `<div class="axis-note"><span></span><svg aria-hidden="true">` +
     [0.25, 1, 4, 16].map(v => `<text x="${xp(v)}" y="11" text-anchor="middle">${v}×</text>`).join('') + '</svg><span></span></div>';
@@ -137,6 +141,10 @@
     if (down.length) return am('less') + list(down, 2);
     return am('ns') + (rows.some(r => r.q != null && r.q <= PADJ) ? 'none differs by 1.1× or more' : 'none differs at q ≤ 0.05');
   }
+  // why a selection's rows are shown and not tested
+  const whyShown = a => (a.kind === 'protein_sets' && K.sel?.namesProteins() && !K.sel.madeWith(a.id)
+    ? 'Your selection names its proteins, so it is shown against the sets, not tested: the test would be of the choice of genes.'
+    : 'Your selection was made with this question (or one reading the same data), so it is shown, not tested.');
   function summaryLine(rows, tmpl) {
     rows = rows.filter(r => !EXCL.test(r.label));
     const top = rows.filter(r => r.dir === 'more').sort((x, y) => y.eff - x.eff)[0], low = rows.filter(r => r.dir === 'less').sort((x, y) => x.eff - y.eff)[0];
@@ -188,7 +196,7 @@
     const rows = rowsOf(a, S.m), { shown, more } = pick(rows, max);
     const whole = selOn() ? rowsFor(a, S.m) : null;
     const made = selOn() && rows.some(r => r.descriptive);
-    const foot = made ? `Your selection was made with this question (or one reading the same data), so it is shown, not tested.` : summaryLine(rows, card.summary);
+    const foot = made ? whyShown(a) : summaryLine(rows, card.summary);
     return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(card.title || a.title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</h3><span class="chev" aria-hidden="true">›</span></header>` +
       (shown.length ? `<div class="trows">${tileRows(shown)}</div>` : made ? '' : `<p class="muted tnone">${rows.some(r => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'}</p>`) +
       (more ? `<a class="tmore" href="#overview/${encodeURIComponent(a.id)}" title="Open the question at the ${more} not shown here">+${more} more ›</a>` : '') +
@@ -196,9 +204,9 @@
   }
   function lead() {
     const q = OV.question || `Which parts of proteins are ${W.marked_long}?`;
-    const key = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (q > ${PADJ})</span>` +
+    const key = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (q > ${PADJ})</span>${D.analyses.some(a => a.stratified) ? '<span><b class="nh">○</b> a protein set’s result that does not hold within abundance deciles</span>' : ''}` +
       `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">How to read</button></p>` +
-      (S.how ? `<p class="how-text">Each tile is a question; each row a class, with its effect on a log scale (the solid line is no difference). <b>Within each protein</b>, every protein is a stratum and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)} (Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}; <b>pooled</b> puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact test). ${D.analyses.some(a => a.kind === 'protein_sets') ? `Questions about kinds of protein count proteins: the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). ` : ''}Red: more often (q ≤ 0.05 and at least 1.1×); slate: less often; grey: significant but within 1.1×; hollow: no significant difference. A tile shows the classes that differ most; it opens to every class. Hover a row for its counts.</p>` : '');
+      (S.how ? `<p class="how-text">Each tile is a question; each row a class, with its effect on a log scale (the solid line is no difference). For a question about where ${esc(W.marks)} sit, × is an odds ratio: the odds that a ${esc(W.mark)} is in the class, over the odds for another ${esc(W.residue)} (not the ratio of the two shares, which is closer to 1; the hover gives both shares)${D.analyses.some(a => a.kind === 'protein_sets') ? '; for a question about kinds of protein it is the fold enrichment, the share of ' + esc(W.marked) + ' proteins in the set over the share of all proteins' : ''}. <b>Within each protein</b>, every protein is a stratum and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)} (Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}; <b>pooled</b> puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact test). ${D.analyses.some(a => a.kind === 'protein_sets') ? `Questions about kinds of protein count proteins: the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). ` : ''}Red: more often (q ≤ 0.05 and at least 1.1×); slate: less often; grey: significant but within 1.1×; hollow: no significant difference. A tile shows the classes that differ most; it opens to every class. Hover a row for its counts.</p>` : '');
     const tools = `<span class="tools"><span class="seg" role="group" aria-label="Test">${['mantel_haenszel', 'fisher'].map(m => `<button type="button" data-m="${m}" aria-pressed="${S.m === m}">${cap(METHOD[m])}</button>`).join('')}</span></span>`;
     if (!selOn()) return `<div class="page-head"><h2>${esc(q)}</h2>${tools}</div>` + key;
     const c = K.sel.compute(), n = (c.marks || []).length, np = c.proteins ? c.proteins.size : 0;
@@ -226,7 +234,7 @@
       (i >= 0 ? `<span class="muted">${i + 1} of ${cards.length}</span>` : '') +
       `<span class="pn">${prev ? `<a href="#overview/${encodeURIComponent(prev.analysis)}">‹ Previous · ${esc(prev.title || A[prev.analysis].title)}</a>` : ''}${next ? `<a href="#overview/${encodeURIComponent(next.analysis)}">${esc(next.title || A[next.analysis].title)} · Next ›</a>` : ''}</span></div>` +
       `<div class="page-head"><h2>${esc(card.title || a.title)}</h2><span class="tools">${a.kind === 'protein_sets' ? '' : `<span class="seg" role="group">${['mantel_haenszel', 'fisher'].map(m => `<button type="button" data-m="${m}" aria-pressed="${S.m === m}">${cap(METHOD[m])}</button>`).join('')}</span>`}</span></div>` +
-      `<p class="page-sub">${esc(a.question)}${selOn() ? ` <b>Your selection</b>${rows.some(r => r.descriptive) ? ': made with this question (or one reading the same data), so shown, not tested.' : ', tested again in your browser (exploratory: not adjusted for the other selections tried).'}` : ''} <span class="muted">Click a ${a.kind === 'protein_sets' ? 'set' : 'class'} to select its ${esc(W.marks)}.</span></p>` +
+      `<p class="page-sub">${esc(a.question)}${selOn() ? ` <b>Your selection</b>${rows.some(r => r.descriptive) ? ': ' + whyShown(a).replace(/^Your selection /, '') : ', tested again in your browser (exploratory: not adjusted for the other selections tried).'}` : ''} <span class="muted">Click a ${a.kind === 'protein_sets' ? 'set' : 'class'} to select its ${esc(W.marks)}.</span></p>` +
       `<section class="pcard">${cardBody(a, rows)}${selOn() ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
   }
   K.sections.method = () => [['m-tests', 'How the tests work', 1], ['m-data', 'Data', 1], ['m-questions', 'Questions', 1], ['m-sources', 'Sources', 1], ['m-parity', 'Checked against the release', 1], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1]].filter(([id]) => id !== 'm-parity' || D.run.parity);
@@ -244,7 +252,8 @@
     const all = S.all.has(a.id), shown = all ? rows : rows.slice(0, max);
     const noun = a.kind === 'protein_sets' ? 'sets' : 'classes';
     const toggle = rows.length > max ? `<button class="linkish" type="button" data-all="${esc(a.id)}">${all ? 'Show the top ' + SHOWN : 'Show all ' + int(rows.length) + ' ' + noun}</button>` : '';
-    const strat = a.kind === 'protein_sets' && rows.some(r => STRAT[a.id + '\u0000' + r.category]) ? ' Hover a set for the same test within protein abundance deciles.' : '';
+    const nNot = rows.filter(r => holds(r) === false).length, nDir = rows.filter(r => holds(r) != null).length;
+    const strat = a.kind === 'protein_sets' && rows.some(r => !r.selection && STRAT[a.id + '\u0000' + r.category]) ? ` Hover a set for the same test within protein abundance deciles${nNot ? `: ${int(nNot)} of the ${int(nDir)} sets that differ do not hold there (○)` : ''}.` : '';
     return `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3>` +
       `<p class="sub">${esc(a.sub)}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}.${strat} <a href="#method">How it was tested</a> · <a href="#statistics?a=${encodeURIComponent(a.id)}">all tests</a></p></div>` +
       `<div class="exp" role="group" aria-label="Download ${esc(a.title)}">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-exp="${k}" data-aid="${esc(a.id)}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}</div></div>` +
@@ -258,7 +267,7 @@
   ];
   function shownStatistics() {
     const rows = D.rows.filter(r => (!S.a || r.analysis === S.a) && (S.m === 'both' || r.method === S.m || (r.method === 'enricher' && S.m === 'fisher')) && rowHit(r));
-    const col = COLS.find(c => c[0] === S.sort) || COLS[5];
+    const col = COLS.find(c => c[0] === S.sort) || COLS[6];
     rows.sort((x, y) => { const a = col[2](x), b = col[2](y); const c = typeof a === 'number' ? a - b : String(a).localeCompare(String(b)); return S.desc ? -c : c; });
     return rows;
   }
@@ -272,11 +281,12 @@
       `<label>Class <input id="f-sq" type="search" value="${esc(S.sq)}" placeholder="a class or set"></label>` +
       `<span class="muted">${int(rows.length)} ${rows.length === 1 ? 'test' : 'tests'}${selOn() ? ' (the whole dataset: the Overview tests your selection)' : ''}</span></div>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr>${COLS.map(([k, t, , n]) => `<th class="${n ? 'num' : ''}" data-sort="${k}"${S.sort === k ? ` aria-sort="${S.desc ? 'descending' : 'ascending'}"` : ''}>${esc(t)}${S.sort === k ? (S.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
-      rows.map(r => `<tr data-i="${r.i}"><td>${esc(r.title)}</td><td class="wrapok" title="${esc(r.help)}">${esc(r.label)}</td><td>${esc(methodName(r))}</td>` +
+      rows.slice(0, S.nStat ||= 200).map(r => `<tr data-i="${r.i}"><td>${esc(r.title)}</td><td class="wrapok" title="${esc(r.help)}">${esc(r.label)}</td><td>${esc(methodName(r))}</td>` +
         `<td class="num">${int(r.a)} / ${int(r.a + r.b)}</td><td class="num">${int(r.c)} / ${int(r.c + r.d)}</td>` +
         `<td class="num">${esc(effText(r))}${r.lo != null ? ` <span class="muted">(${fxn(r.lo)} to ${fxn(r.hi)})</span>` : ''}</td><td class="num">${fq(r.q)}</td>` +
         `<td><span class="dir ${r.dir}">${DIR_WORDS[r.dir]}</span></td><td class="num">${r.strata != null ? int(r.strata) : ''}</td></tr>`).join('') +
-      `</tbody></table></div>`;
+      `</tbody></table></div>` +
+      (rows.length > S.nStat ? `<p><button class="linkish" type="button" data-stat-more>Show ${int(Math.min(200, rows.length - S.nStat))} more of ${int(rows.length)}</button> <span class="muted">(the download has every row)</span></p>` : '');
   }
 
   // ---- Method: how the tests work, the data, the parity check, how to cite --------------------------------------------
@@ -612,7 +622,7 @@
     const selNote = r.selection ? `<br><span class="muted">Your selection, tested again in the browser${r.descriptive ? ': shown, not tested' : ' (exploratory)'}</span>` : '';
     if (SETS(r.analysis)) {
       const st = STRAT[r.analysis + '\u0000' + r.category];
-      tip.innerHTML = `<b>${esc(r.label)}</b><br>${int(r.a)} of ${int(r.a + r.b)} ${esc(W.marked)} proteins (${pct(r.a, r.a + r.b)}) vs ${int(r.c)} of ${int(r.c + r.d)} other proteins (${pct(r.c, r.c + r.d)})` +
+      tip.innerHTML = `<b>${esc(r.label)}</b><br>${int(r.a)} of ${int(r.a + r.b)} ${r.selection ? 'proteins of your selection' : esc(W.marked) + ' proteins'} (${pct(r.a, r.a + r.b)}) vs ${int(r.c)} of ${int(r.c + r.d)} other proteins (${pct(r.c, r.c + r.d)})` +
         `<br>${fxn(r.eff)}-fold, q ${fq(r.q)} (one-sided hypergeometric)` +
         (st && !r.selection ? `<br>Within abundance deciles: OR ${fxn(st.eff)}${st.lo != null ? ` (95% CI ${fxn(st.lo)}–${fxn(st.hi)})` : ''}, q ${fq(st.q)}` : '') + selNote;
     } else tip.innerHTML = `<b>${esc(r.label)}</b>${r.help ? `<br><span class="muted">${esc(r.help)}</span>` : ''}` +
@@ -640,12 +650,14 @@
     for (const [sel, fn] of K.clicks) { const el = e.target.closest(sel); if (el) { fn(el, e); return; } }
     const tl = e.target.closest('.tile[data-tile]');
     if (tl && !e.target.closest('a,button')) { go('overview', { arg: tl.dataset.tile }); return; }
-    const t = e.target.closest('[data-go],[data-try],[data-m],th[data-sort],#dl,#dl-cff,#copy-cite,#how,[data-all],[data-exp],[data-theme-choice]');
+    const t = e.target.closest('[data-go],[data-try],[data-m],th[data-sort],#dl,#dl-cff,#copy-cite,#how,[data-all],[data-exp],[data-theme-choice],[data-stat-more],[data-skip]');
     if (!t) return;
     if (t.dataset.go) { const [v, ...rest] = t.dataset.go.split('/'); go(v, { arg: rest.join('/') }); }
     else if (t.dataset.try) { S.q = t.dataset.try; if (!openIfOne()) { writeHash(true); render(); } }
     else if (t.dataset.m) { S.m = t.dataset.m; writeHash(false); render(); }
-    else if (t.dataset.sort) { S.desc = S.sort === t.dataset.sort ? !S.desc : true; S.sort = t.dataset.sort; writeHash(false); render(); }
+    else if ('statMore' in t.dataset) { S.nStat += 200; render(); }
+    else if ('skip' in t.dataset) { const v = $('#view'); v.setAttribute('tabindex', '-1'); v.focus(); v.scrollIntoView({ block: 'start' }); }
+    else if (t.dataset.sort) { S.desc = S.sort === t.dataset.sort ? !S.desc : t.dataset.sort !== 'q'; S.sort = t.dataset.sort; S.nStat = 200; writeHash(false); render(); }
     else if (t.id === 'dl') download(`${D.site.id}_statistics${S.a ? '_' + S.a : ''}.tsv`, statisticsTsv(shownStatistics()), 'text/tab-separated-values');
     else if (t.dataset.exp) exportCard(t.dataset.exp, t.dataset.aid, t);
     else if (t.id === 'how') { S.how = !S.how; render(); }
@@ -665,7 +677,7 @@
   document.addEventListener('keydown', e => { const th = e.target.closest?.('th[data-psort], th[data-ssort]'); if (th && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); th.click(); } });
   document.addEventListener('input', e => { if (e.target.id === 'f-sq') { clearTimeout(timer); timer = setTimeout(() => { S.sq = e.target.value.trim(); writeHash(false); render(); const f = $('#f-sq'); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } }, 200); } });
   document.addEventListener('change', e => {
-    if (e.target.id === 'f-a') { S.a = e.target.value; writeHash(false); render(); }
+    if (e.target.id === 'f-a') { S.a = e.target.value; S.nStat = 200; writeHash(false); render(); }
     if (e.target.id === 'f-m') { S.m = e.target.value; writeHash(false); render(); }
   });
   let timer;
@@ -674,7 +686,7 @@
   $('#q').addEventListener('blur', () => { typing = false; });
   // a search that names one protein (and nothing else) opens it; "GENE R216" opens the site's card
   function openIfOne() {
-    const q = K.sel?.parse(S.q); if (!q || q.terms.length || q.words.length || q.unmatched.length) return false;
+    const q = K.sel?.parse(S.q); if (!q || q.terms.length || q.words.length || q.unmatched.length || q.absent.length) return false;
     const prots = [...new Set([...q.genes, ...q.sites.map(x => x[0])])];
     if (prots.length !== 1 || !K.views.protein) return false;
     const acc = D.proteins[prots[0]][0], site = q.sites.length === 1 ? '/' + q.sites[0][1] : '';
