@@ -27,5 +27,6 @@ words:
   residue: lysine
   residues: lysines
   marked: methylated
+  marked_long: lysine methylated
   writer: lysine methyltransferase
   writers: lysine methyltransferases

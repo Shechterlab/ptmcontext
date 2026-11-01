@@ -34,7 +34,7 @@ citation: sites/yeast_phospho.citation.cff
 
 website:
   name: Yeast Phosphosite Explorer
-  tagline: "Budding yeast phosphosites from UniProt, against disorder, IDRs and domains, provisioned from upstream sources by a site file alone."
+  tagline: "Budding yeast phosphosites from UniProt, tested against disorder and domains. Built from public sources by one site file."
   band: ["#334155", "#0f172a"]      # graphite: neutral beside the data colours; the orange rule ties it to its siblings
   accent: "#c2410c"
   accent_dark: "#fb923c"
@@ -42,4 +42,4 @@ website:
   links:
     - {label: Method, url: "#method"}
     - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
-  examples: [S/T-P, disorder, IDR, folded]
+  examples: [S/T-P, IDR, linker, folded]

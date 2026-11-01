@@ -148,6 +148,10 @@
               "label": {
                 "type": "string",
                 "description": "words for pages and figures"
+              },
+              "help": {
+                "type": "string",
+                "description": "its definition, shown on hover"
               }
             }
           }

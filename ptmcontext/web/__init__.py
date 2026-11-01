@@ -21,7 +21,8 @@ from .. import layers as L
 from .. import statistics as ST
 from ..citation import kit_citation, site_citation
 from ..profile import load_profile
-from ..site import code_commit, load_site, root_of
+from ..inputs import load as load_manifest
+from ..site import code_commit, load_site, manifest_of, root_of
 
 FONTS = {
     'heading': "'IBM Plex Serif', Georgia, 'Times New Roman', serif",
@@ -76,7 +77,7 @@ def default_art(profile, accent: str = '#fdba74') -> str:
             f'<g fill="currentColor" stroke="none" text-anchor="middle"><text x="115" y="104" font-size="11.5">folded domain</text>'
             f'<text x="235" y="104" font-size="11.5">disordered region</text><text x="345" y="104" font-size="11.5">folded domain</text>'
             f'<text x="248" y="128" font-size="14" font-weight="600">{html.escape(words["marks"].capitalize())}</text>'
-            f'<text x="248" y="143" font-size="11.5">where they fall, within each protein</text></g></svg>')
+            f'<text x="248" y="143" font-size="11.5">in folded domains and disordered regions</text></g></svg>')
 
 
 def default_icon(band: str, accent: str) -> str:
@@ -86,12 +87,29 @@ def default_icon(band: str, accent: str) -> str:
             f'<line x1="16" y1="17.5" x2="16" y2="11" stroke="#fff" stroke-width="2"/><circle cx="16" cy="8.5" r="3.6" fill="{accent}"/></svg>')
 
 
-def _labels(layer: L.Layer | None, profile) -> dict:
+def _labels(layer: L.Layer | None, profile) -> tuple[dict, dict]:
+    """(labels, definitions) of a layer's categories: the layer's own, or for motifs the profile's families."""
     if layer is None:
-        return {}
+        return {}, {}
     if layer.shape == 'flags':
-        return {f['name']: f.get('label', f['name'].replace('_', ' ')) for f in profile.motif_families}
-    return dict(layer.labels)
+        fams = profile.motif_families
+        return ({f['name']: f.get('label', f['name'].replace('_', ' ')) for f in fams}, {f['name']: f.get('help', '') for f in fams})
+    return dict(layer.labels), dict(layer.help)
+
+
+def _fill(template: str, words: dict) -> str:
+    w = {'marks': words['marks'], 'residues': words['residues'], 'marked': words['marked'], 'Marked': words['marked'].capitalize()}
+    return template.format(**w) if template else ''
+
+
+def human_date(iso: str) -> str:
+    """2026-11-01 -> 1 November 2026."""
+    import datetime as dt
+    try:
+        d = dt.date.fromisoformat(str(iso)[:10])
+    except ValueError:
+        return str(iso)
+    return f'{d.day} {d.strftime("%B")} {d.year}'
 
 
 def site_data(site: dict, folder: Path, profile) -> dict:
@@ -111,14 +129,26 @@ def site_data(site: dict, folder: Path, profile) -> dict:
     analyses = []
     for a in site['analyses']:
         layer = L.BUILT_IN.get(a['layer'])
+        labels, helps = _labels(layer, profile)
         analyses.append({'id': a['id'], 'title': a.get('title') or (layer.title if layer else a['id']),
-                         'question': a.get('question', ''), 'layer': a['layer'],
-                         'describe': layer.describe if layer else '', 'labels': _labels(layer, profile)})
+                         'question': a.get('question') or _fill(layer.question if layer else '', profile.words),
+                         'sub': _fill(layer.sub if layer else '', profile.words), 'layer': a['layer'],
+                         'describe': layer.describe if layer else '', 'labels': labels, 'help': helps})
     web = site['website']
+    # each input by its name and version, and what this site uses it for
+    entries = load_manifest(manifest_of(site))
+    uses = {site['snapshot']['input']: 'sequences', site['marks']['input']: profile.words['marks'],
+            **{name: role for role, name in site.get('inputs', {}).items()}}
+    if site.get('reference', {}).get('statistics'):
+        uses[site['reference']['statistics']] = 'checking the rebuild'
+    inputs = {name: {'version': entries.get(name, {}).get('version', ''), 'licence': entries.get(name, {}).get('licence', ''),
+                     'use': uses.get(name, '')} for name in run.get('inputs', {})}
     return {
+        'inputs': inputs,
         'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),
                  'lab': web.get('lab', {}).get('name', ''), 'config': f"sites/{site['id']}.yaml"},
-        'words': profile.words, 'mark': profile.id, 'residues': profile.residues,
+        'words': {**profile.words, 'marked_long': profile.words.get('marked_long', profile.words['marked'])},
+        'mark': profile.id, 'residues': profile.residues,
         'counts': {'marks': run['marks']['counted'], 'proteins': run['marks']['proteins']},
         'analyses': analyses, 'rows': rows, 'run': run,
         'citation': site_citation(site),
@@ -178,11 +208,11 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
             cite_html = '<p class="lede-cite">Please cite the original data sources (<a href="#method">how to cite</a>).</p>'
         version = ''
         if cit:
-            version = f'Version {html.escape(cit["version"])}' + (f' · {html.escape(cit["date"])}' if cit.get('date') else '')
+            version = f'Version {html.escape(cit["version"])}' + (f' ({human_date(cit["date"])})' if cit.get('date') else '')
             if cit.get('doi'):
                 version += (f' · <a class="doi-badge" href="https://doi.org/{html.escape(cit["doi"])}"><span>DOI</span>'
                             f'<span>{html.escape(cit["doi"])}</span></a>')
-        version += f'{" · " if version else ""}<a href="#method">how this was made</a>'
+        version += f'{" · " if version else ""}<a href="#method">how it was made</a> · <a href="#statistics">download the data</a>'
         if inline:
             css = f'<style>{_asset("assets/kit.css").read_text()}</style>'
             js = f'<script>{_asset("assets/kit.js").read_text()}</script>'

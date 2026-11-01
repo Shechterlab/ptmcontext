@@ -58,7 +58,10 @@ class Layer:
     needs: tuple[str, ...] = ()
     origin: str = 'ptmcontext'
     title: str = ''                          # a short heading for pages and figures
-    labels: dict = field(default_factory=dict)   # category code -> words a reader understands
+    labels: dict = field(default_factory=dict)   # category code -> a short label
+    help: dict = field(default_factory=dict)     # category code -> its definition, shown on hover
+    question: str = ''                       # the question a page asks of it; {marks}, {residues} come from the profile
+    sub: str = ''                            # the line under its figure's title
 
     def __call__(self, residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
         missing = [n for n in self.needs if n not in ctx.inputs]
@@ -74,11 +77,11 @@ BUILT_IN: dict[str, Layer] = {}
 
 
 def register(name: str, shape: str, describe: str, needs: tuple[str, ...] = (), title: str = '',
-             labels: dict | None = None):
+             labels: dict | None = None, help: dict | None = None, question: str = '', sub: str = ''):
     """Decorator for the package's own layers."""
     def wrap(fn):
         BUILT_IN[name] = Layer(name, shape, describe, fn, tuple(needs), title=title or name.replace('_', ' ').capitalize(),
-                               labels=dict(labels or {}))
+                               labels=dict(labels or {}), help=dict(help or {}), question=question, sub=sub)
         return fn
     return wrap
 
@@ -106,7 +109,7 @@ def get(name: str, ctx: Context | None = None) -> Layer:
         raise TypeError(f'entry point {name!r} of {dist!r} is not a ptmcontext Layer')
     version = ep.dist.version if ep.dist else ''
     return Layer(layer.name, layer.shape, layer.describe, layer.compute, layer.needs, origin=f'{dist} {version}'.strip(),
-                 title=layer.title, labels=layer.labels)
+                 title=layer.title, labels=layer.labels, help=layer.help, question=layer.question, sub=layer.sub)
 
 
 def available() -> list[dict]:
