@@ -25,10 +25,35 @@ from .snapshot import Snapshot, md5_file
 REPO = Path(__file__).resolve().parents[1]
 
 
+def code_commit(path: Path = REPO) -> str:
+    """The commit of the git checkout holding path ('' outside git), with '-dirty' when it has uncommitted changes."""
+    import subprocess
+    try:
+        head = subprocess.run(['git', '-C', str(path), 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True).stdout.strip()
+        dirty = subprocess.run(['git', '-C', str(path), 'status', '--porcelain', '--untracked-files=no'], capture_output=True, text=True).stdout.strip()
+        return head + ('-dirty' if dirty else '')
+    except Exception:      # noqa: BLE001  (not a git checkout: an installed package)
+        return ''
+
+
 def load_site(path: str | Path) -> dict:
+    """A site file, validated. Its paths (manifest, citation, pictures, outputs) are relative to the repository that
+    holds it (the folder above sites/), which may be this one or any repository that installs ptmcontext."""
     site = read_config(path)
     validate(site, 'site')
+    site['__root__'] = str(Path(path).resolve().parent.parent)
     return site
+
+
+def root_of(site: dict) -> Path:
+    return Path(site.get('__root__', REPO))
+
+
+def manifest_of(site: dict) -> Path:
+    root = root_of(site)
+    if site.get('manifest'):
+        return root / site['manifest']
+    return root / 'inputs.json' if (root / 'inputs.json').exists() else I.MANIFEST
 
 
 def _holds(frame: pd.DataFrame, cond: dict) -> pd.Series:
@@ -88,7 +113,7 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     names = [site['snapshot']['input'], site['marks']['input'], *roles.values()]
     if site.get('reference', {}).get('statistics'):
         names.append(site['reference']['statistics'])
-    manifest = REPO / site['manifest'] if site.get('manifest') else I.MANIFEST
+    manifest = manifest_of(site)
     paths = I.resolve(root, names, manifest=manifest, allow_untrusted=allow_untrusted)
     profile = load_profile(site['mark'])
     snap = Snapshot.from_fasta(paths[site['snapshot']['input']], release=site['snapshot']['release'])
@@ -107,10 +132,12 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         log(f"  {analysis['id']:18s} {len(parts[-1]):3d} rows")
     rows = pd.concat(parts, ignore_index=True)
     record = {
-        'tool': 'ptmcontext', 'version': __version__, 'site': site['id'], 'site_config_md5': md5_file(site_path),
+        'tool': 'ptmcontext', 'version': __version__, 'code_commit': code_commit(), 'site': site['id'],
+        'site_repository_commit': code_commit(root_of(site)),
+        'site_config_md5': md5_file(site_path),
         'written': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'snapshot': snap.record(),
         'profile': profile.id, 'marks': report, 'analyses': layers_used,
-        'manifest': str(manifest.relative_to(REPO)) if manifest.is_relative_to(REPO) else str(manifest), 'roles': roles,
+        'manifest': str(manifest.relative_to(root_of(site))) if manifest.is_relative_to(root_of(site)) else str(manifest), 'roles': roles,
         'inputs': {n: {'file': str(p), 'md5': md5_file(p)} for n, p in sorted(paths.items())},
         'trusted_plugins': list(ctx.trusted_plugins), 'seconds': round(time.time() - t0, 1),
     }
@@ -125,7 +152,7 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         record['parity'] = {'reference': ref, 'equal': result.parity_ok,
                             'checked': [{'analysis': r.analysis, 'method': r.method, 'rows': r.rows, 'equal': r.equal} for r in result.parity]}
     if write:
-        folder = Path(out_root or REPO) / site['outputs']['folder']
+        folder = Path(out_root or root_of(site)) / site['outputs']['folder']
         ST.write(rows, folder / 'statistics.tsv')
         record['output'] = {'statistics.tsv': md5_file(folder / 'statistics.tsv')}
         (folder / 'run.json').write_text(json.dumps(record, indent=1) + '\n')

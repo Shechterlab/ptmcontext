@@ -11,7 +11,8 @@ A site is a YAML file. Changing the mark, the organism or the analyses is changi
 pip install -e ".[test]"
 ptmc stage uniprot UP000002311 --out DATA/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
 ptmc stage mobidb --out DATA/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
-ptmc run sites/yeast_phospho.yaml --root DATA            # -> out/yeast_phospho/statistics.tsv and run.json
+ptmc run sites/yeast_phospho.yaml --root DATA          # -> out/yeast_phospho/statistics.tsv and run.json
+ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/web/: the site, in the Methylarginine Site Explorer's look
 ```
 
 ## Status (pilot)
@@ -22,6 +23,9 @@ ptmc run sites/yeast_phospho.yaml --root DATA            # -> out/yeast_phospho/
   4,659 rows; the rest come next, one parity check at a time.
 - **A second organism by configuration:** yeast phosphosites staged from UniProt 2026_03 and MobiDB in about 50 s and
   run in 21 s.
+- **A website per site, from its file:** `ptmc web` gives the Methylarginine Site Explorer's look with the site's own
+  colours, pictures and words; every figure and table downloads as PDF, SVG, PNG and TSV carrying its description,
+  citation (from the site's `CITATION.cff`), versions and provenance.
 - **Not built yet:** isoform placement, measured backgrounds, protein-set tests, the release writer, the web kit. See
   [docs/DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) for why this design, the alternatives, prior art and the order of work.
 

@@ -1,0 +1,28 @@
+# How the yeast phosphosite site is cited, and its version. Edit and rebuild (ptmc web) to change them.
+cff-version: 1.2.0
+message: "Please cite the original data sources; this site is a test of the kit, not a publication."
+title: "Saccharomyces cerevisiae phosphosites from UniProt, against disorder and domains"
+version: "pilot-0.1.0"
+date-released: "2026-11-01"
+license: "CC-BY-4.0"
+authors:
+  - name: "Shechter Lab, Albert Einstein College of Medicine"
+references:
+  - type: article
+    authors: [{name: "UniProt Consortium"}]
+    title: "UniProt: the Universal Protein Knowledgebase in 2025"
+    journal: "Nucleic Acids Res"
+    volume: 53
+    start: D609
+    end: D617
+    year: 2025
+    doi: "10.1093/nar/gkae1010"
+  - type: article
+    authors: [{family-names: Piovesan, given-names: D}, {name: "et al."}]
+    title: "MobiDB in 2025: integrating ensemble properties and function annotations for intrinsically disordered proteins"
+    journal: "Nucleic Acids Res"
+    volume: 53
+    start: D495
+    end: D503
+    year: 2025
+    doi: "10.1093/nar/gkae969"

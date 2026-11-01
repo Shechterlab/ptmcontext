@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{NAME}}</title>
+  <meta name="description" content="{{TAGLINE}}">
+  <link rel="icon" href="{{ICON_HREF}}">
+  {{FONTS}}
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>:root { {{THEME}} }</style>
+  <script>try { var t = localStorage.getItem('ptmc-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-art" aria-hidden="true">{{ART}}</div>
+    <div class="wrap">
+      <div class="brand">
+        <h1><a href="#overview" title="Back to the overview"><img class="site-mark" src="{{ICON_HREF}}" alt="" width="52" height="52"><span>{{NAME}}</span></a></h1>
+        <div class="brand-side">{{LAB}}<nav class="brand-links" aria-label="Site and lab links">{{LINKS}}</nav></div>
+      </div>
+      <div class="lede">
+        <p class="lede-what">{{TAGLINE}}</p>
+        {{CITE}}
+        <p class="lede-note">{{VERSION}}</p>
+      </div>
+      <div class="hero-stats" id="hero-stats" aria-label="Summary"></div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="wrap">
+      <div class="search-field" role="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="An analysis, a class or a motif, such as disorder or RGG" aria-label="Search the analyses">
+        <button class="search-clear" id="q-clear" type="button" aria-label="Clear search" hidden>×</button>
+      </div>
+      <div class="scope" id="scope"></div>
+      <nav class="tabs" id="tabs" role="tablist" aria-label="Views"></nav>
+    </div>
+  </div>
+
+  <main class="wrap" id="view"></main>
+
+  <footer class="site">
+    <div class="wrap">
+      <span id="credit"></span>
+      <span class="theme-switch" role="group" aria-label="Colour theme">
+        <button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button>
+      </span>
+    </div>
+  </footer>
+  <div id="tip" role="tooltip" hidden></div>
+  <script id="site-data" type="application/json">{{DATA}}</script>
+  <script src="assets/kit.js"></script>
+</body>
+</html>

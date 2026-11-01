@@ -17,10 +17,10 @@ test = ["pytest>=7"]
 ptmc = "ptmcontext.cli:main"
 
 [tool.setuptools]
-packages = ["ptmcontext", "ptmcontext.layers"]
+packages = ["ptmcontext", "ptmcontext.layers", "ptmcontext.web"]
 
 [tool.setuptools.package-data]
-ptmcontext = ["profiles/*.yaml", "schemas/*.json", "config/*.json"]
+ptmcontext = ["profiles/*.yaml", "schemas/*.json", "config/*.json", "web/*.html", "web/assets/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

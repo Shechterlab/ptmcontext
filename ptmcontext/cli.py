@@ -8,6 +8,7 @@
   ptmc stage uniprot UP000002311 --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
   ptmc stage mobidb --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
                                                 stage a proteome from upstream, recording release, date and MD5
+  ptmc web sites/methylarginine.yaml            the site's website, from its run: out/<site>/web/index.html and <site>.html
   ptmc layers                                     the layers built in, and those installed packages offer
 """
 from __future__ import annotations
@@ -37,7 +38,7 @@ def cmd_run(a) -> int:
 def cmd_check(a) -> int:
     site = S.load_site(a.site)
     profile = load_profile(site['mark'])
-    entries = I.load(S.REPO / site['manifest']) if site.get('manifest') else I.load()
+    entries = I.load(S.manifest_of(site))
     named = [site['snapshot']['input'], site['marks']['input'], *site.get('inputs', {}).values(),
              *([site['reference']['statistics']] if site.get('reference', {}).get('statistics') else [])]
     missing = [n for n in named if n not in entries]
@@ -101,6 +102,12 @@ def cmd_stage(a) -> int:
     return 0
 
 
+def cmd_web(a) -> int:
+    from . import web
+    web.build(a.site, out_root=a.out_root)
+    return 0
+
+
 def cmd_layers(a) -> int:
     for row in L.available():
         print(f'{row["name"]:18s} {row["shape"]:6s} {row["origin"]:34s} {row["describe"]}')
@@ -142,6 +149,11 @@ def main(argv=None) -> int:
     s.add_argument('--manifest', required=True, help="the site's input manifest (written or updated)")
     s.add_argument('--prefix', required=True, help='file name prefix, e.g. yeast')
     s.set_defaults(fn=cmd_stage)
+
+    s = sub.add_parser('web', help="build a site's website from its run (ptmc run first)")
+    s.add_argument('site')
+    s.add_argument('--out-root', default=None, help='where outputs.folder is (default: this repository)')
+    s.set_defaults(fn=cmd_web)
 
     s = sub.add_parser('layers', help='list layers')
     s.set_defaults(fn=cmd_layers)

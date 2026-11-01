@@ -30,3 +30,16 @@ analyses:
   - {id: structure_context, layer: structure_context}
 
 outputs: {folder: out/yeast_phospho}
+citation: sites/yeast_phospho.citation.cff
+
+website:
+  name: Yeast Phosphosite Explorer
+  tagline: "Budding yeast phosphosites from UniProt, against disorder, IDRs and domains, provisioned from upstream sources by a site file alone."
+  band: ["#334155", "#0f172a"]      # graphite: neutral beside the data colours; the orange rule ties it to its siblings
+  accent: "#c2410c"
+  accent_dark: "#fb923c"
+  lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
+  links:
+    - {label: Method, url: "#method"}
+    - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
+  examples: [S/T-P, disorder, IDR, folded]

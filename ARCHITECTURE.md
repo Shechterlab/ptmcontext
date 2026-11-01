@@ -17,6 +17,8 @@ written once, here; everything that differs is a file.
 | **statistics** | one table every test writes into, in the published release's columns and formatting | `ptmcontext/statistics.py` | `schemas/statistics.schema.json` |
 | **site** | one file choosing the mark, the snapshot, the inputs for each role, the marks, the analyses, a reference | `sites/<site>.yaml`, `ptmc run` | `schemas/site.schema.json` |
 | **parity** | a published output the rebuild must equal, row for row | `ptmcontext/parity.py` | the reference table's MD5 |
+| **citation** | how a site is cited, its data sources, version and date | `sites/<site>.citation.cff`; the kit's own `CITATION.cff` | Citation File Format 1.2.0 |
+| **website** | the site's pages: Overview cards, every test, Method; downloads of every figure and table | `ptmcontext/web/`, `ptmc web` | the site file's `website:` block |
 
 ```
            ptmc stage                    ptmc run sites/<site>.yaml
@@ -24,8 +26,24 @@ upstream ───────────► staged files ──► snapshot �
 (UniProt, MobiDB, …)  + manifest (MD5)            ├─► layers, by role (disorder, domains, motif, …)
                                                   ├─► marks (site file: which table, which rows)
                                                   └─► residue tests ─► statistics.tsv + run.json
-                                                                        └─► parity vs reference (if any)
+                                                                        ├─► parity vs reference (if any)
+                                                                        └─► ptmc web ─► out/<site>/web/ (+ CITATION.cff)
 ```
+
+## The website
+
+`ptmc web sites/<site>.yaml` writes `out/<site>/web/index.html` with `assets/` (for GitHub Pages) and `<site>.html`
+(one file, for sharing). Layout and behaviour are the kit's, in the Methylarginine Site Explorer's look: the header
+band with its orange rule, the search with example chips, tabs with counts, cards of dot rows, light and dark themes.
+A site's `website:` block sets only its name, tagline, band colours, accent, type, icon, header picture, lab, links and
+example searches; a site without a picture gets a drawn protein with its marks.
+
+**Every download is standard.** Each card offers PDF, SVG, PNG and TSV, and the statistics page a TSV of the rows shown.
+Each carries the same block: what it shows, the test and correction and the reading rule, the citation and data sources
+(from the site's CITATION.cff), the site's version and date, the kit's version and commit, the sequences (release, FASTA
+MD5) and every input's MD5, the run's date, and when and from where it was exported. The block is visible in the figure,
+and in the file's own metadata: SVG `<metadata>` (JSON), PNG text fields and its 300 dpi, PDF document properties with
+Inter and IBM Plex Serif embedded, and the TSV's `#` lines (readers skip them: `pandas.read_csv(..., comment='#')`).
 
 ## Rules the structure enforces
 
@@ -51,5 +69,5 @@ upstream ───────────► staged files ──► snapshot �
 
 Isoform-to-canonical placement of marks; the site union from study tables; protein-set tests (clusterProfiler parity);
 measured backgrounds (candidates limited to residues covered by detected peptides); unit-level tests (IDRs as the
-unit); the release writer (sites and proteins tables, data dictionary, README, CHANGES, MD5SUMS); the website data
-writer; the web kit.
+unit); the release writer (sites and proteins tables, data dictionary, README, CHANGES, MD5SUMS); website pages for
+proteins and sites, selections retested in the browser, and live UniProt, AlphaFold and PDB cards with drift checks.

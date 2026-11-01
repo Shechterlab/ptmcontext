@@ -181,12 +181,6 @@
         }
       }
     },
-    "cite": {
-      "type": "object",
-      "additionalProperties": {
-        "type": "string"
-      }
-    },
     "website": {
       "type": "object",
       "additionalProperties": false,
@@ -317,6 +311,10 @@
     "manifest": {
       "type": "string",
       "description": "the input manifest, relative to the repository (default inputs.json)"
+    },
+    "citation": {
+      "type": "string",
+      "description": "the site's CITATION.cff, relative to the repository: the citation, data sources, version and date every page and export carries"
     }
   },
   "$defs": {

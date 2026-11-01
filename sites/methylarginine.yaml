@@ -31,11 +31,22 @@ reference:
   statistics: methylarginine_statistics_v1_4_3
 
 outputs: {folder: out/methylarginine}
+citation: sites/methylarginine.citation.cff   # the citation, data sources, version and date: edit there
 
-cite:
-  text: "DeAngelo JD, Silverstein AM, Shechter D. Protein arginine methylation rewires molecular interactions. Cell Chem Biol 33:1404-1421 (2026)"
-  doi: "10.1016/j.chembiol.2026.09.011"
 
-website:
+
+website:                  # the look and words of the website (ptmc web); layout and behaviour are the kit's
   name: Methylarginine Site Explorer
-  url: "https://shechterlab.github.io/PTM_Pipeline/"
+  tagline: "Human arginine methylation sites from published studies: the rebuild's residue analyses, row for row equal to release v1.4.3."
+  band: ["#155e75", "#0f3b47"]      # the header gradient: teal
+  accent: "#c2410c"                 # the orange rule, active tab and links; shared by the lab's sites
+  accent_dark: "#fb923c"
+  icon: sites/art/methylarginine-icon.svg
+  art: sites/art/methylarginine-hero.svg
+  lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
+  links:
+    - {label: Method, url: "#method"}
+    - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
+    - {label: Research, url: "https://www.shechterlab.org/research/"}
+    - {label: Publications, url: "https://www.shechterlab.org/publications/"}
+  examples: [RGG, disorder, linker, RRM]

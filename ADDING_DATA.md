@@ -96,7 +96,17 @@ package that offers a `ptmcontext.Layer` under the entry-point group `ptmcontext
 the site names its package under `trusted_plugins`, and the run record keeps its version. Do not copy another
 repository's code into this one without the owner's review; do not run another repository's scripts from here.
 
-## 7. Write down what you did
+## 7. Cite it, version it, publish it
+
+- Add the source to the site's citation file (`sites/<site>.citation.cff`, under `references:`), with its DOI checked on
+  Crossref (`https://api.crossref.org/works/<doi>`), never written from memory. Every page and download of the site
+  then cites it.
+- A new release of a site: change `version:` and `date-released:` in the same file, then `ptmc run` and `ptmc web`. The
+  version, the date and the citation are read from that file everywhere; nothing else needs editing.
+- The kit's own version lives in `pyproject.toml`, `ptmcontext/__init__.py` and `CITATION.cff`; a test fails if they
+  differ.
+
+## 8. Write down what you did
 
 In the pull request: what was added, its licence, its coverage, the checks run and their output, and anything that
 could not be verified. Never claim a check passed that was not run.

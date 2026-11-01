@@ -1,6 +1,6 @@
 # Contracts
 
-Five plain-data formats. Code on either side of a contract can change freely; a contract changes only with its
+Six plain-data formats. Code on either side of a contract can change freely; a contract changes only with its
 `schema_version`, and every file is checked against its schema before it is used.
 
 | Contract | Format | Schema | Written by | Read by |
@@ -10,6 +10,7 @@ Five plain-data formats. Code on either side of a contract can change freely; a 
 | **Input manifest** | JSON | `ptmcontext/schemas/inputs.schema.json` | `ptmc stage`, `ptmc inputs record` | every build |
 | **Unit table** | TSV | `ptmcontext/schemas/units.schema.json` | stagers, other repositories | the layers |
 | **Statistics row** | TSV | `ptmcontext/schemas/statistics.schema.json` | every test | releases, websites, parity |
+| **Citation** | YAML (CITATION.cff 1.2.0) | [citation-file-format.github.io](https://citation-file-format.github.io/) | a person | every page and download; GitHub and Zenodo read it too |
 
 ## Statistics row
 
