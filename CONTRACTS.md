@@ -74,7 +74,7 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 | `proteins.tsv` | one per protein with a mark | `accession, gene, name, entry, length, sequence_md5, marks, candidates` |
 | `units.tsv` | one per drawn unit | `accession, kind, start, end, label, source, class, ref` |
 | `tracks.json` | per kind of drawn unit | `{kind, title, style, help, roles, analysis, colours?}`: `style` is `domains` (boxes on the backbone), `disorder` (the backbone's wave) or `segments` (a row of boxes); `analysis` names the question whose classes colour it |
-| `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}}`: the background size, its marked proteins, and each tested set's size and marked proteins; absent when the site has no protein-set question |
+| `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, covariate?}`: the background size, its marked proteins, and each tested set's size and marked proteins; with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used; absent when the site has no protein-set question |
 | `set_names.tsv` | per set | `analysis, set, name` |
 
 `ptmc web` turns these into `data/p/NN.json` (64 shards of protein records: marks with their classes and attributes,

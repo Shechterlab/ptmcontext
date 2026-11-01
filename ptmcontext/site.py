@@ -45,6 +45,48 @@ def load_site(path: str | Path) -> dict:
     return site
 
 
+def _analysis_words(site: dict) -> dict:
+    """For each residue analysis whose layer is built in or made from parameters: its shape and its class codes (a
+    flags layer without labels of its own takes the profile's motif families). Plugins are not loaded to check a file."""
+    out = {}
+    try:
+        fams = [f['name'] for f in load_profile(site['mark']).motif_families]
+    except Exception:              # noqa: BLE001  (a profile problem is reported elsewhere)
+        fams = []
+    for a in site.get('analyses', []):
+        if a.get('test') == 'protein_sets' or not (a.get('layer') in L.BUILT_IN or a.get('layer') in L.FACTORIES):
+            continue
+        try:
+            layer = L.get(a['layer'], None, a.get('with'), a['id'])
+        except (ValueError, KeyError, TypeError):
+            continue
+        classes = set(layer.labels) or (set(fams) if layer.shape == 'flags' else None)
+        out[a['id']] = {'shape': layer.shape, 'classes': classes, 'needs': list(layer.needs)}
+    return out
+
+
+def roles_missing(site: dict) -> list[str]:
+    """Residue analyses whose layer reads a role the site file does not fill."""
+    roles = set(site.get('inputs', {}))
+    return [f"{aid}: reads role {r!r}, which inputs: does not fill" for aid, w in _analysis_words(site).items() for r in w['needs'] if r not in roles]
+
+
+def mapping_problems(site: dict, root: str | Path) -> list[str]:
+    """Column mappings (a manifest entry's columns) that name a column its file does not have, read from the files."""
+    out, entries = [], I.load(manifest_of(site))
+    for name in I.site_input_names(site):
+        cols = entries.get(name, {}).get('columns')
+        path = Path(root) / entries.get(name, {}).get('file', '')
+        if not cols or not path.exists():
+            continue
+        have = set(pd.read_csv(path, sep=cols.get('sep', '\t'), nrows=0).columns)
+        named = {cols[k] for k in ('accession', 'start', 'end', 'position', 'value', 'label', 'ref', 'subtype', 'class') if cols.get(k)}
+        named |= {c['column'] for c in cols.get('include', []) + cols.get('exclude', [])}
+        if named - have:
+            out.append(f"input {name}: its column mapping names columns {path.name} does not have: {sorted(named - have)} (it has {sorted(have)})")
+    return out
+
+
 def website_problems(site: dict) -> list[str]:
     """What the website block names that the site file does not have: a tile, filter or example naming an analysis
     or a mark attribute that is not defined, or an attribute's colours for values it does not list. The schema checks
@@ -66,12 +108,19 @@ def website_problems(site: dict) -> list[str]:
             out.append(f"website.stats: no attribute {st['attribute']!r} in marks.attributes")
         elif isinstance(st, dict) and attrs[st['attribute']].get('kind') != 'list':
             out.append(f"website.stats: attribute {st['attribute']!r} is not a list (its distinct values are counted)")
+    words = _analysis_words(site)
     for a in (web.get('sites') or {}).get('columns', []):
         if a not in ids:
             out.append(f"website.sites.columns: no analysis {a!r}")
+        elif words.get(a, {}).get('shape') == 'flags':
+            out.append(f"website.sites.columns: {a!r} has flags (several per residue): it shows as tags beside the window, not as a column")
     for f in (web.get('protein') or {}).get('facts', []):
         if f['analysis'] not in ids:
             out.append(f"website.protein.facts: no analysis {f['analysis']!r}")
+        elif words.get(f['analysis'], {}).get('classes') is not None:
+            bad = [c for c in f['classes'] if c not in words[f['analysis']]['classes']]
+            if bad:
+                out.append(f"website.protein.facts: {f['analysis']!r} has no class {bad} (it has {sorted(words[f['analysis']]['classes'])})")
     for ex in web.get('examples') or []:
         key = ex.split(':', 1)[0] if ':' in ex else None
         if key is not None and key not in ids and key not in attrs:
@@ -113,6 +162,10 @@ def left_out_marks(spec: dict, table: pd.DataFrame) -> pd.DataFrame:
     hit = pd.Series(False, index=table.index)
     for cond in conds:
         hit |= _holds(table, cond)
+    for cond in spec.get('include', []):              # a row include or exclude drops is not pending: it is dropped
+        hit &= _holds(table, cond)
+    for cond in spec.get('exclude', []):
+        hit &= ~_holds(table, cond)
     rows = table[hit]
     out = pd.DataFrame({'accession': rows[spec['accession']].astype(str).str.strip(), 'position': pd.to_numeric(rows[spec['position']], errors='coerce')})
     return out.dropna().astype({'position': int}).drop_duplicates().reset_index(drop=True)
@@ -245,21 +298,28 @@ def layer_words(layer: L.Layer) -> dict:
 
 def drawn_tracks(layers: dict, ctx: L.Context, accs: set) -> tuple[pd.DataFrame, list[dict]]:
     """The regions the run's layers draw on the protein pages (Layer.tracks), as one unit table (units.tsv), and what
-    each kind is (tracks.json: its title, style, help, the roles it comes from, and the analysis whose classes colour
-    it). Two layers drawing one kind share it; the one whose units carry a class is kept."""
-    chosen: dict[str, tuple] = {}
+    each is (tracks.json: its title, style, help, the roles it comes from, and the analysis whose classes colour it, or
+    the classes its own units carry). Layers drawing one kind from the same roles share a track (the one whose units
+    carry a class is kept); the same kind from other roles is a track of its own, named kind.role."""
+    chosen: dict[tuple, tuple] = {}
     for aid, layer in layers.items():
         for t in layer.tracks:
             u = t.units(ctx, accs)
             has_class = 'class' in u.columns and (u['class'].astype(str) != '').any()
-            if t.kind not in chosen or (has_class and not chosen[t.kind][2]):
-                chosen[t.kind] = (t, u, has_class, aid)
+            key = (t.kind, tuple(t.roles))
+            if key not in chosen or (has_class and not chosen[key][2]):
+                chosen[key] = (t, u, has_class, aid)
+    kinds = [k for k, _ in chosen]
     frames, meta = [], []
-    for kind, (t, u, has_class, aid) in chosen.items():
-        meta.append({'kind': kind, 'title': t.title, 'style': t.style, 'help': t.help, 'roles': list(t.roles),
-                     'analysis': aid if has_class else '', **({'colours': dict(t.colours)} if t.colours else {})})
+    for (kind, roles), (t, u, has_class, aid) in chosen.items():
+        tid = kind if kinds.count(kind) == 1 or kinds.index(kind) == list(chosen).index((kind, roles)) else f"{kind}.{'.'.join(roles)}"
+        classes = sorted({str(c) for c in u['class']} - {''}) if has_class else []
+        own = has_class and not set(classes) <= set(layers[aid].labels)       # the file's own classes, not the question's
+        meta.append({'kind': tid, 'title': t.title, 'style': t.style, 'help': t.help, 'roles': list(t.roles),
+                     'analysis': aid if has_class and not own else '', **({'classes': classes} if own else {}),
+                     **({'colours': dict(t.colours)} if t.colours else {})})
         if len(u):
-            frames.append(pd.DataFrame({c: (u[c].to_numpy() if c in u.columns else '') for c in UNIT_OUT if c != 'kind'} | {'kind': kind})[UNIT_OUT])
+            frames.append(pd.DataFrame({c: (u[c].to_numpy() if c in u.columns else '') for c in UNIT_OUT if c != 'kind'} | {'kind': tid})[UNIT_OUT])
     return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=UNIT_OUT)), meta
 
 

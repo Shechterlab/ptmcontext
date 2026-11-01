@@ -93,3 +93,16 @@ def test_left_out_sites_count_on_neither_side(tmp_path):
     row = f[(f['method'] == 'fisher') & (f['category'] == 'disordered')].iloc[0]
     # R at 2 (marked) | 5 (pending: on neither side) | 11 (excluded row: an other residue), 22, 32, 43
     assert (row['a'], row['c']) == (1, 1) and row['a'] + row['b'] + row['c'] + row['d'] == 5
+
+
+def test_header_names_the_reporting_studies_most_marks_first(tmp_path):
+    from ptmcontext.web import reporters
+    pd.DataFrame({'accession': ['P1', 'P1', 'P2'], 'position': [1, 2, 3],
+                  'a.studies': ['S1; DB', 'DB', 'DB; S2'], 'a.studies.link': ['10.1/s1; 10.1/db', '10.1/db', '10.1/db; 10.1/s2']}
+                 ).to_csv(tmp_path / 'marks.tsv', sep='\t', index=False)
+    site = {'marks': {'attributes': {'studies': {'column': 'studies', 'label': 'Studies', 'kind': 'list', 'separator': '; ',
+                                                 'link': {'column': 'dois', 'url': 'https://doi.org/{}'}, 'values': {'DB': 'A Database'}}}},
+            'website': {'stats': ['marks', {'attribute': 'studies', 'label': 'studies'}]}}
+    r = reporters(site, tmp_path)
+    assert r['label'] == 'Studies' and r['url'] == 'https://doi.org/{}'
+    assert r['items'] == [['DB', 'A Database', '10.1/db', 3], ['S1', 'S1', '10.1/s1', 1], ['S2', 'S2', '10.1/s2', 1]]

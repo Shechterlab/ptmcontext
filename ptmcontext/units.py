@@ -145,6 +145,8 @@ def residue_values(path: str | Path, columns: dict) -> pd.DataFrame:
     df = pd.read_csv(path, sep=columns.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False)
     for cond in columns.get('include', []):
         df = df[_holds(df, cond)]
+    for cond in columns.get('exclude', []):
+        df = df[~_holds(df, cond)]
     missing = sorted({columns[k] for k in ('accession', 'position', 'value')} - set(df.columns))
     if missing:
         raise ValueError(f'{path}: the manifest entry names columns the file does not have: {missing}')
@@ -157,7 +159,11 @@ def residue_values(path: str | Path, columns: dict) -> pd.DataFrame:
 @register_reader('unit_table', lambda cols, kind: set(UNIT_COLUMNS) <= cols, 'the unit table of CONTRACTS.md')
 def _unit_table(path: Path, kind: str) -> pd.DataFrame:
     units = read_units(path)
-    units = units[units['kind'] == kind] if kind in set(units['kind']) else units
+    kinds = set(units['kind'])
+    if kind in kinds:
+        units = units[units['kind'] == kind]
+    elif len(kinds) > 1:                                   # never mix kinds silently
+        raise ValueError(f'{path}: a unit table of kinds {sorted(kinds)}, none of them {kind!r}: name the kind (with: kind)')
     for c in DOMAIN_COLUMNS if kind == 'domain' else []:
         if c not in units.columns:
             units[c] = ''

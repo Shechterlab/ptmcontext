@@ -28,6 +28,9 @@
 
   // ---- the data: every mark with its classes and attributes (data/selection.json, or inlined) ----------------------
   let SD = null;
+  // each protein's marked positions, for reading "GENE 12" as a site only when 12 is one
+  let markPos = null;
+  const isMark = (pi, pos) => { if (!SD) return false; if (!markPos) { markPos = {}; SD.marks.forEach(m => { (markPos[m[0]] ||= new Set()).add(m[1]); }); } return !!markPos[pi]?.has(pos); };
   const ready = (() => {
     const el = document.getElementById('selection-data');
     if (el) { try { SD = JSON.parse(el.textContent); return Promise.resolve(SD); } catch (e) { /* fall back to the file */ } }
@@ -76,7 +79,7 @@
   // is reported (absent), not applied. Without any protein named, other words narrow by name; a word that matches
   // nothing is reported, not silently applied.
   function parse(q) {
-    const out = { genes: [], words: [], sites: [], terms: [], unmatched: [], absent: [] };
+    const out = { genes: [], words: [], sites: [], terms: [], unmatched: [], absent: [], ignored: [], ambiguous: [] };
     const raw = String(q || '').trim();
     const toks = raw.match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || [];
     for (let i = 0; i < toks.length; i++) {
@@ -86,7 +89,12 @@
       const prot = protOf(t);
       if (prot) {
         let j = i + 1, any = false;
-        while (j < toks.length && /^[A-Z]?\d+[,;]?$/i.test(toks[j])) { const pos = +toks[j].replace(/\D/g, ''); prot.forEach(p => out.sites.push([p.i, pos])); any = true; j++; }
+        while (j < toks.length && /^[A-Z]?\d+[,;]?$/i.test(toks[j])) {
+          // a token that is also a protein's name (F12) is that protein, unless it is a mark of the one before it
+          const tok = toks[j].replace(/[,;]+$/, ''), pos = +tok.replace(/\D/g, ''), other = protOf(tok);
+          if (other) { if (!prot.some(p => isMark(p.i, pos))) break; out.ambiguous.push([tok, prot[0].gene || prot[0].acc]); }
+          prot.forEach(p => out.sites.push([p.i, pos])); any = true; j++;
+        }
         if (!any) prot.forEach(p => out.genes.push(p.i));
         i = j - 1; continue;
       }
@@ -95,7 +103,10 @@
       else out.unmatched.push(t);
     }
     // a list that names proteins: its other plain words are names with no marked protein, not filters on the names
-    if (out.genes.length || out.sites.length) { out.absent = [...out.words, ...out.unmatched].map(w => toks.find(t => t.toLowerCase() === w) || w); out.words = []; out.unmatched = []; }
+    if (out.genes.length || out.sites.length) {
+      const orig = w => toks.find(t => t.toLowerCase() === w) || w;
+      out.ignored = out.words.map(orig); out.absent = out.unmatched; out.words = []; out.unmatched = [];
+    }
     return out;
   }
   // a term key:value: an analysis (its class or set), or an attribute of the marks
@@ -116,21 +127,19 @@
     }
     return null;
   }
-  // every constraint: [key, values, from the search?]; terms that match nothing are kept aside, to be reported
-  let unresolved = [];
-  function constraints() {
-    const out = Object.entries(S.f).filter(([k, v]) => v && v.length && validKey(k)).map(([k, v]) => [k, v, false]);
-    unresolved = [];
-    if (SD) parse(S.q).terms.forEach(t => { const f = termFilter(t); if (f && f[1].length) out.push([...f, true]); else unresolved.push(t.join(':')); });
-    return out;
+  // every constraint of a search and filters: [key, values, from the search?]; terms that match nothing are kept
+  // aside, to be reported
+  function constraintsOf(qText, f) {
+    const out = Object.entries(f || {}).filter(([k, v]) => v && v.length && validKey(k)).map(([k, v]) => [k, v, false]), unresolved = [];
+    if (SD) parse(qText).terms.forEach(t => { const r = termFilter(t); if (r && r[1].length) out.push([...r, true]); else unresolved.push(t.join(':')); });
+    return { cons: out, unresolved };
   }
 
   // ---- which marks pass ------------------------------------------------------------------------------------------
-  let cache = { key: null };
-  const stateKey = () => JSON.stringify([S.q, S.f, !!SD]);
-  function compute() {
-    if (cache.key === stateKey()) return cache;
-    const q = parse(S.q), cons = constraints();
+  // select(q, f): the marks a search and filters select, without touching the page's own state (a saved selection
+  // can be evaluated beside the current one); compute() is the current selection, cached
+  function select(qText, f) {
+    const q = parse(qText), { cons, unresolved } = constraintsOf(qText, f);
     const active = !!(q.genes.length || q.words.length || q.sites.length || cons.length || q.unmatched.length || unresolved.length);
     let marks = null, proteins = null;
     if (SD && active) {
@@ -156,7 +165,13 @@
     }
     // nothing at all named by the search: no marks (the bar says which words and terms matched nothing)
     if (SD && active && !q.genes.length && !q.words.length && !q.sites.length && !cons.length) { marks = []; proteins = new Set(); }
-    cache = { key: stateKey(), active, marks, proteins, cons, q, unresolved: [...unresolved], retests: {} };
+    return { active, marks, proteins, cons, q, unresolved };
+  }
+  let cache = { key: null };
+  const stateKey = () => JSON.stringify([S.q, S.f, !!SD]);
+  function compute() {
+    if (cache.key === stateKey()) return cache;
+    cache = { key: stateKey(), ...select(S.q, S.f), retests: {} };
     return cache;
   }
   const active = () => compute().active;
@@ -229,12 +244,20 @@
   const dec = v => { try { return decodeURIComponent(v); } catch (e) { return null; } };
   const encode = () => Object.entries(S.f).filter(([, v]) => v && v.length).map(([k, v]) => k + '~' + v.map(enc).join('|')).join(';');
   // a hand-edited or stale link: malformed parts and keys this site does not have are dropped
-  function decode(s) {
-    S.f = {};
+  // the filters a link's f= holds; unknown keys are dropped
+  function decodeF(s) {
+    const f = {};
     String(s || '').split(';').filter(Boolean).forEach(part => {
       const [k, v] = part.split('~'); if (!k || !v || !validKey(k)) return;
-      const vals = v.split('|').map(dec).filter(x => x != null); if (vals.length) S.f[k] = vals;
+      const vals = v.split('|').map(dec).filter(x => x != null); if (vals.length) f[k] = vals;
     });
+    return f;
+  }
+  function decode(s) { S.f = decodeF(s); }
+  // a saved selection's (or any link's) search and filters, from its hash
+  function stateOfHash(h) {
+    const qs = String(h || '').split('?')[1] || '', p = new URLSearchParams(qs);
+    return { q: p.get('q') || '', f: decodeF(p.get('f')) };
   }
   function setFilter(key, vals) { if (vals && vals.length) S.f[key] = vals; else delete S.f[key]; K.writeHash(true); K.render(); }
   // the values a key has from the search box's terms
@@ -265,18 +288,20 @@
     const c = compute();
     if (!SD) return `<span class="sel-flag">Selection</span><span>Loading the ${esc(W.marks)}…</span>`;
     const n = c.marks.length, np = c.proteins.size, nCons = c.cons.filter(x => !x[2]).length + (S.q ? 1 : 0);
-    const miss = [...c.unresolved, ...c.q.unmatched], absent = c.q.absent || [];
+    const miss = [...c.unresolved, ...c.q.unmatched], absent = c.q.absent || [], ignored = c.q.ignored || [], amb = c.q.ambiguous || [];
     return `<span class="sel-flag">Selection</span><span><b>${int(n)}</b> of ${int(D.counts.marks)} ${esc(W.marks)} on <b>${int(np)}</b> protein${np === 1 ? '' : 's'}${nCons > 1 ? ', matching all of' : ''}</span>${chipsHtml()}` +
       (miss.length ? `<span class="sel-miss" title="Terms are key:value, where the key is a question (${esc(D.analyses.map(a => a.id).join(', '))}) or an attribute (${esc(Object.keys(SPECS).join(', ') || 'none')})">Nothing matches ${miss.map(x => `<b>${esc(x)}</b>`).join(', ')}</span>` : '') +
       (absent.length ? `<span class="sel-miss" title="Not a gene, accession or entry name of a protein with a ${esc(W.mark)} on this site">No ${esc(W.marked)} protein: ${absent.map(x => `<b>${esc(x)}</b>`).join(', ')}</span>` : '') +
-      `<span class="sel-tools"><button class="btn small" type="button" data-sel-save title="Keep this selection in this browser; saved ones are listed under Filters">Save</button>` +
+      (ignored.length ? `<span class="sel-miss" title="In a list of proteins, words are not searched in protein names: search them on their own to do that">Not a protein, left out of the list: ${ignored.map(x => `<b>${esc(x)}</b>`).join(', ')}</span>` : '') +
+      (amb.length ? `<span class="sel-miss" title="Write the protein first, or alone, to list it">${amb.map(([t, g]) => `<b>${esc(t)}</b> read as ${esc(g)}’s site, not the protein ${esc(t)}`).join('; ')}</span>` : '') +
+      `<span class="sel-tools">${(K.selTools || []).map(f => f()).join('')}<button class="btn small" type="button" data-sel-save title="Keep this selection in this browser; saved ones are listed under Filters">Save</button>` +
       `<button class="btn small" type="button" data-sel-copy>Copy link</button><button class="btn small accent" type="button" data-sel-clear-all>Clear all</button></span>`;
   }
   // saved selections, in this browser
   const savedList = () => { try { return JSON.parse(localStorage.getItem(`ptmc-saved-${D.site.id}`) || '[]'); } catch (e) { return []; } };
   function savedHtml() {
     const list = savedList(); if (!list.length) return '';
-    return `<div class="saved"><p class="flabel">Saved selections</p>${list.map((x, i) => `<div class="saved-row"><a href="${esc(x.hash)}">${esc(x.name)}</a> <span class="muted">${int(x.n)}</span><button type="button" class="linkish small" data-saved-del="${i}" aria-label="Delete ${esc(x.name)}">×</button></div>`).join('')}</div>`;
+    return `<div class="saved"><p class="flabel">Saved selections</p>${list.map((x, i) => `<div class="saved-row"><a href="${esc(x.hash)}">${esc(x.name)}</a> <span class="muted">${int(x.n)}</span>${K.views.compare ? `<button type="button" class="linkish small" data-saved-cmp="${i}" title="Compare ${esc(x.name)} with the current selection">Compare</button>` : ''}<button type="button" class="linkish small" data-saved-del="${i}" aria-label="Delete ${esc(x.name)}">×</button></div>`).join('')}</div>`;
   }
   const describe = () => [S.q, ...compute().cons.filter(x => !x[2]).map(([k, v]) => `${keyName(k)}: ${v.map(x => valueName(k, x)).join(' or ')}`)].filter(Boolean).join('; ');
   function save() {
@@ -392,5 +417,5 @@
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('fgroup')) { (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g); } }, true);
   addEventListener('keydown', e => { if (e.key === 'Escape' && R.open) { R.open = false; rail(); } });
 
-  Object.assign(K, { sel: { ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, MIN: SEL_MIN, valueLabel, classLabel, listHtml, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
+  Object.assign(K, { sel: { ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
 });

@@ -205,6 +205,15 @@ def protein_set_test(spec: dict, paths: dict, marked_proteins: set, snapshot_pro
         size_ok = members[members.map(len).between(spec.get('min_size', 1), spec.get('max_size', 10 ** 6))]
         keep.update({'N': len(background), 'marked_in_background': sorted(marked_proteins & background),
                      'sets': {s: {'M': len(g), 'marked': sorted(g & marked_proteins)} for s, g in size_ok.items()}})
+        if spec.get('abundance'):                        # each marked protein's covariate and its decile, as tested
+            ab = spec['abundance']
+            t = pd.read_csv(paths[ab['input']], sep='\t', dtype=str, keep_default_na=False)
+            values = pd.to_numeric(t.set_index(ab['protein'])[ab['value']], errors='coerce').dropna()
+            values = values[~values.index.duplicated()]
+            bg = sorted(background)
+            dec = dict(zip(bg, deciles(bg, values, ab.get('strata', 10))))
+            keep['covariate'] = {'input': ab['input'], 'value': ab['value'], 'strata': ab.get('strata', 10),
+                                 'proteins': {u: [float(values[u]) if u in values.index else None, dec[u]] for u in sorted(marked_proteins & background)}}
     rows = [{'analysis': spec['id'], 'category': r['set'], 'stratum': 'all', 'a': r['k'], 'b': r['n'] - r['k'], 'c': r['M'] - r['k'],
              'd': r['N'] - r['M'] - r['n'] + r['k'], 'fold_enrichment': r['fold'],
              'log2_fold_enrichment': math.log2(r['fold']) if r['fold'] > 0 else np.nan, 'p': r['p'], 'q': r['q'],

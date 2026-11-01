@@ -124,3 +124,59 @@ def test_a_file_no_reader_knows_asks_for_a_column_mapping(tmp_path):
         U.load(f, 'region')
     u = U.load(f, 'region', {'accession': 'protein', 'start': 'a', 'end': 'b'})
     assert list(u.columns[:6]) == U.UNIT_COLUMNS and u.iloc[0]['unit_id'] == 'P1:region:1-5'
+
+
+def _ctx_with(tmp_path, tables: dict, formats: dict):
+    from ptmcontext.profile import load_profile
+    from ptmcontext.snapshot import Snapshot
+    paths = {}
+    for role, frame in tables.items():
+        paths[role] = tmp_path / f'{role}.tsv'
+        frame.to_csv(paths[role], sep='\t', index=False)
+    return L.Context(Snapshot({'P1': P1, 'P2': P2}), load_profile('methylarginine'), paths,
+                     formats={str(paths[r]): f for r, f in formats.items()})
+
+
+def test_two_roles_of_one_kind_keep_a_map_row_each(tmp_path):
+    cols = {'accession': 'acc', 'start': 's', 'end': 'e'}
+    ctx = _ctx_with(tmp_path, {'lab_a': pd.DataFrame({'acc': ['P1'], 's': [1], 'e': [5]}), 'lab_b': pd.DataFrame({'acc': ['P1'], 's': [20], 'e': [30]})},
+                    {'lab_a': cols, 'lab_b': cols})
+    layers = {'a': L.get('regions', None, {'role': 'lab_a', 'kind': 'region'}, 'a'), 'b': L.get('regions', None, {'role': 'lab_b', 'kind': 'region'}, 'b')}
+    units, tracks = S.drawn_tracks(layers, ctx, {'P1'})
+    assert [t['kind'] for t in tracks] == ['region', 'region.lab_b']
+    assert sorted(zip(units['kind'], units['start'])) == [('region', 1), ('region.lab_b', 20)]
+
+
+def test_a_file_s_own_classes_colour_its_row(tmp_path):
+    cols = {'accession': 'acc', 'start': 's', 'end': 'e', 'class': 'strength'}
+    ctx = _ctx_with(tmp_path, {'hot': pd.DataFrame({'acc': ['P1', 'P1'], 's': [1, 20], 'e': [5, 30], 'strength': ['strong', 'weak']})}, {'hot': cols})
+    _, tracks = S.drawn_tracks({'h': L.get('regions', None, {'role': 'hot'}, 'h')}, ctx, {'P1'})
+    assert tracks[0]['analysis'] == '' and tracks[0]['classes'] == ['strong', 'weak']
+
+
+def test_exclude_applies_to_per_residue_tables(tmp_path):
+    from ptmcontext import units as U
+    f = tmp_path / 'v.tsv'
+    pd.DataFrame({'a': ['P1', 'P2'], 'p': [1, 1], 'v': [5.0, 6.0], 'model': ['m1', 'm2']}).to_csv(f, sep='\t', index=False)
+    v = U.residue_values(f, {'accession': 'a', 'position': 'p', 'value': 'v', 'exclude': [{'column': 'model', 'equals': 'm1'}]})
+    assert list(v['accession']) == ['P2']
+
+
+def test_a_unit_table_of_several_kinds_is_not_mixed(tmp_path):
+    from ptmcontext import units as U
+    f = tmp_path / 'u.tsv'
+    U.write_units(pd.concat([U.make_units(pd.DataFrame({'accession': ['P1'], 'start': [1], 'end': [5]}), k, 'x') for k in ('flank', 'segment')]), f)
+    assert set(U.load(f, 'flank')['kind']) == {'flank'}
+    with pytest.raises(ValueError, match='none of them'):
+        U.load(f, 'flanks')
+
+
+def test_an_excluded_row_is_not_pending():
+    table = pd.DataFrame({'acc': ['P1', 'P1'], 'pos': ['2', '5'], 'flag': ['pending', 'pending'], 'drop': ['', 'yes']})
+    spec = {'accession': 'acc', 'position': 'pos', 'left_out': [{'column': 'flag', 'equals': 'pending'}], 'exclude': [{'column': 'drop', 'equals': 'yes'}]}
+    assert list(S.left_out_marks(spec, table)['position']) == [2]
+
+
+def test_unknown_with_keys_are_named():
+    with pytest.raises(ValueError, match="does not know: \\['colour'\\]"):
+        L.get('regions', None, {'role': 'r', 'colour': {}}, 'x')

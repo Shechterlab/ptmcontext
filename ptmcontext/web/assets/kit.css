@@ -470,3 +470,24 @@ body.has-selection .tabs { box-shadow: inset 0 -2px 0 var(--accent); }
   background: var(--surface); color: var(--ink); font: inherit; font-weight: 700; }
 .skip:focus { top: 0.6rem; }
 #view:focus { outline: none; }
+
+/* comparisons (kit-compare.js) */
+.cmp-sides { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0.8rem; margin: 0.6rem 0; }
+.cmp-side { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 0.7rem 0.9rem; }
+.cmp-tag { display: inline-block; min-width: 1.4rem; text-align: center; border-radius: 4px; font-weight: 700; color: #fff; margin-right: 0.3rem; }
+.cmp-a { background: #2A78D6; } .cmp-b { background: #A23B12; }
+.cmp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 0.8rem; }
+.cmp-tbl td.num .val { font-weight: 700; } .cmp-tbl .val.more { color: var(--more); } .cmp-tbl .val.less { color: var(--less); } .cmp-tbl .val.ns, .cmp-tbl .val.same { color: var(--muted); }
+.cmp-tbl tr.pick { cursor: pointer; } .cmp-tbl tr.pick:hover td { background: var(--hover, rgba(0,0,0,0.03)); }
+.steps { margin: 0.4rem 0 0.8rem 1.2rem; }
+
+/* protein page: kinds of protein, regions, sequence */
+.kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 0.6rem 1.2rem; }
+.kind h4 { margin: 0.2rem 0 0.3rem; font-size: 0.9rem; }
+.kind-list { list-style: none; margin: 0; padding: 0; font-size: 0.86rem; }
+.kind-list li { padding: 0.1rem 0; } .kind-list .val { font-weight: 700; } .kind-list .val.more { color: var(--more); } .kind-list .val.less { color: var(--less); } .kind-list .val.ns, .kind-list .val.same { color: var(--muted); font-weight: 500; }
+.kind-cov { margin: 0 0 0.6rem; }
+pre.seq { font-family: var(--mono, ui-monospace, Menlo, Consolas, monospace); font-size: 0.82rem; line-height: 1.55; overflow-x: auto; margin: 0; padding: 0.6rem 0.8rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
+.seq .sq-n { display: inline-block; min-width: 3.2rem; color: var(--muted); user-select: none; }
+.seq .sq-m { color: var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); border-radius: 2px; cursor: pointer; }
+.seq .sq-m.faded { opacity: 0.35; }

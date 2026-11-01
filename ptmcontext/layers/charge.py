@@ -53,7 +53,9 @@ def idr_charge_units(ctx: Context, accessions: set) -> pd.DataFrame:
           question='Do {marks} sit in IDRs of a particular charge, against the other {residues} of the same proteins?',
           sub='{Marks} against the other {residues} of the same proteins, by the charge class of the IDR they sit in (Das–Pappu diagram of states)',
           tracks=(Track('idr', 'IDR charge', 'segments', lambda ctx, accs: idr_charge_units(ctx, accs), roles=('disorder',),
-                        help='IDRs (disordered regions merged, 20 residues or more) coloured by their region of the Das–Pappu diagram of states (FCR and NCPR)'),))
+                        help='IDRs (disordered regions merged, 20 residues or more) coloured by their region of the Das–Pappu diagram of states (FCR and NCPR)',
+                        # negative polyelectrolytes red and positive blue, as the map's charge row
+                        colours=(('r1', '#9DB8C7'), ('r2', '#E2B44C'), ('r3', '#8E7CC3'), ('r4', '#D64545'), ('r5', '#2F6FD6'))),))
 def idr_charge(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     accs = set(residues['accession'])
     units = idr_charge_units(ctx, accs)

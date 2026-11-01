@@ -76,8 +76,22 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 **Modules.** `kit.js` is the core (state in the URL, tabs, Overview, All tests, Method, figures and downloads); the
 others register with it through `window.PTMC_MODULES`: `kit-stats.js` (the tests, for selections), `kit-select.js`
 (search, filters, the sidebar, selections and their tests), `kit-map.js` (the protein map: rows, hovers, pins, zoom,
-read-out, exports), `kit-proteins.js` (the Proteins tab and the protein page) and `kit-sites.js` (the Sites tab). A new
-view is a new module.
+read-out, exports), `kit-proteins.js` (the Proteins tab and the protein page), `kit-sites.js` (the Sites tab) and
+`kit-compare.js` (what sets a selection apart from the other marks, and two selections side by side). A new view is a
+new module.
+
+**Comparisons.** "What sets it apart?" (`#apart`) and "Compare two selections" (`#compare/<A's search and filters>`, B
+being the current selection) compare every feature the site knows (each class of each residue question, each value of
+the marks' attributes, each tested protein set) between two groups of marks: pooled (Fisher) and within each protein
+that has marks in both (Mantel–Haenszel), Benjamini–Hochberg within each question. The questions a selection was made
+with are left out, and marks two selections share are left out of both sides. The link reopens the comparison.
+
+**The protein page** also shows, from data the site already has: the protein's sets in each protein-set question with
+the site's result for each and its abundance decile as the tests used it; every region the questions read, with the
+marks inside; and the sequence with its marks, as FASTA.
+
+**The header's citation line** names the studies and databases that report the most marks (the list attribute a header
+tile counts), each linked to its paper, and how many there are in all.
 
 **Every download is standard.** Each card offers PDF, SVG, PNG and TSV, and the statistics page a TSV of the rows shown.
 Each carries the same block: what it shows, the test and correction and the reading rule, the citation and data sources

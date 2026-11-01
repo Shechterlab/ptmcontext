@@ -36,7 +36,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-proteins.js', 'kit-sites.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-proteins.js', 'kit-sites.js', 'kit-compare.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -134,6 +134,33 @@ def _tracks(folder: Path) -> list[dict]:
     return [{'kind': k, 'title': k.replace('_', ' ').capitalize(), 'style': 'segments', 'help': '', 'roles': [], 'analysis': ''} for k in kinds]
 
 
+def reporters(site: dict, folder: Path) -> dict | None:
+    """The studies and databases that report the marks, most marks first, for the header's citation line: the list
+    attribute a header tile counts (website.stats), else the first list attribute linked to papers. Each is
+    [value, label, its paper's id, marks]."""
+    attrs = site['marks'].get('attributes') or {}
+    name = next((st['attribute'] for st in (site.get('website', {}).get('stats') or []) if isinstance(st, dict)), None)
+    name = name if name in attrs else next((n for n, a in attrs.items() if a.get('kind') == 'list' and a.get('link')), None)
+    if not name or not (folder / 'marks.tsv').exists():
+        return None
+    import pandas as pd
+    spec, col = attrs[name], f'a.{name}'
+    mk = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
+    if col not in mk.columns:
+        return None
+    sep, counts, ids = spec.get('separator', '; '), {}, {}
+    links = mk[col + '.link'] if col + '.link' in mk.columns else [''] * len(mk)
+    for vals, lks in zip(mk[col], links):
+        vs, ls = (vals.split(sep) if vals else []), (lks.split(sep) if lks else [])
+        for k, v in enumerate(vs):
+            counts[v] = counts.get(v, 0) + 1
+            if k < len(ls) and ls[k]:
+                ids.setdefault(v, ls[k])
+    items = sorted(counts.items(), key=lambda x: (-x[1], x[0]))
+    return {'attribute': name, 'label': spec.get('label', name), 'url': (spec.get('link') or {}).get('url', ''),
+            'items': [[v, (spec.get('values') or {}).get(v, v), ids.get(v, ''), n] for v, n in items if v]}
+
+
 def human_date(iso: str) -> str:
     """2026-11-01 -> 1 November 2026."""
     import datetime as dt
@@ -204,12 +231,14 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         rule, names = role_inputs(value)
         what = '; '.join(dict.fromkeys(readers.get(role, []))) or role.replace('_', ' ')
         for i, name in enumerate(names):
-            roles[name] = role
-            uses[name] = what if rule == 'one' or i == 0 else f"{what}, for proteins with none from the row{'s' if i > 1 else ''} above" if rule == 'first_of' else f'{what}, with the row{"s" if i > 1 else ""} above'
+            roles.setdefault(name, []).append(role)
+            prev = uses.get(name)
+            uses[name] = (prev + '; ' if prev and name in roles and len(roles[name]) > 1 else '') + (what if rule == 'one' or i == 0 else f"{what}, for proteins with none from the row{'s' if i > 1 else ''} above" if rule == 'first_of' else f'{what}, with the row{"s" if i > 1 else ""} above')
     if site.get('reference', {}).get('statistics'):
         uses[site['reference']['statistics']] = 'the parity check'
     inputs = {name: {'version': entries.get(name, {}).get('version', ''), 'licence': entries.get(name, {}).get('licence', ''),
-                     'use': uses.get(name, ''), 'role': roles.get(name, ''), 'record': entries.get(name, {}).get('record', '')}
+                     'use': uses.get(name, ''), 'role': (roles.get(name) or [''])[0], 'roles': roles.get(name, []),
+                     'record': entries.get(name, {}).get('record', '')}
               for name in sorted(run.get('inputs', {}), key=lambda n: order.index(n) if n in order else len(order))}
     return {
         'inputs': inputs,
@@ -334,6 +363,10 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
                 continue
             sets[aid] = {'N': k['N'], 'in_background': [pidx[a] for a in k['marked_in_background'] if a in pidx],
                          'sets': [[s, v['M'], [pidx[a] for a in v['marked'] if a in pidx]] for s, v in k['sets'].items()]}
+            if k.get('covariate'):                     # each marked protein's covariate and its decile, as the test used
+                cv = k['covariate']
+                sets[aid]['covariate'] = {'input': cv['input'], 'value': cv['value'], 'strata': cv['strata'],
+                                          'proteins': {pidx[a]: x for a, x in cv['proteins'].items() if a in pidx}}
     return {'analyses': analyses, 'classes': classes, 'attributes': avals, 'attribute_names': [c[2:] for c in attrs], 'attribute_links': links, 'marks': rows, 'others': others,
             'others_total': others_total, 'protein_sets': sets}
 
@@ -380,6 +413,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
         data['attribute_counts'] = {a: len({v for x in mk[f'a.{a}'] for v in x.split(s.get('separator', '; ')) if v})
                                     for a, s in site['marks'].get('attributes', {}).items() if f'a.{a}' in mk.columns}
     data['attribute_specs'] = site['marks'].get('attributes', {})
+    data['reporters'] = reporters(site, folder)
     data['unit_sources'] = unit_sources
     data['shards'] = SHARDS if shards else 0
     if listing:
@@ -408,13 +442,24 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
                    f'<span>{html.escape(lb.get("name", ""))}<small>{html.escape(lb.get("affiliation", ""))}</small></span></a>')
         links = ''.join(f'<a href="{html.escape(x["url"])}">{html.escape(x["label"])}</a>' for x in web.get('links', []))
         pref = (cit or {}).get('preferred')
+        # the studies that report the marks, most first: the original asked readers to cite those whose marks they use
+        rep = data.get('reporters')
+        studies = ''
+        if rep and rep['items']:
+            top, n = rep['items'][:6], len(rep['items'])
+            link = lambda v, lab, i: (f'<a href="{html.escape(rep["url"].replace("{}", i))}" title="{html.escape(v)}: {int(dict((x[0], x[3]) for x in rep["items"])[v]):,} {html.escape(data["words"]["marks"])}">{html.escape(lab)}</a>'  # noqa: E731
+                                      if i and rep['url'] else html.escape(lab))
+            studies = (f'the {n} {html.escape(rep["label"].lower())} that report the {html.escape(data["words"]["marks"])} you use ('
+                       + ', '.join(link(v, lab, i) for v, lab, i, _ in top)
+                       + (f', <a href="#method/sources">and {n - len(top)} more</a>' if n > len(top) else '') + ')')
         if not cit:
             cite_html = ''
         elif pref:
             cite_html = (f'<p class="lede-cite">Please cite <a href="https://doi.org/{html.escape(pref["doi"])}">{html.escape(pref["short"])}</a>, '
-                         f'and the original data sources (<a href="#method/cite">how to cite</a>).</p>')
+                         + (f'{studies}, ' if studies else '') + 'and the original data sources (<a href="#method/cite">how to cite</a>).</p>')
         else:
-            cite_html = '<p class="lede-cite">Please cite the original data sources (<a href="#method/cite">how to cite</a>).</p>'
+            cite_html = (f'<p class="lede-cite">Please cite {studies + " and " if studies else ""}the original data sources '
+                         f'(<a href="#method/cite">how to cite</a>).</p>')
         version = ''
         if cit:
             version = f'Version {html.escape(cit["version"])}' + (f' ({human_date(cit["date"])})' if cit.get('date') else '')

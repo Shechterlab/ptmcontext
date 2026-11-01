@@ -37,10 +37,20 @@
   // a protein-set test's repeat within abundance deciles, beside its own row
   const STRAT = {};
   D.rows.forEach(r => { if (SETS(r.analysis) && r.method === 'mantel_haenszel') STRAT[r.analysis + '\u0000' + r.category] = r; });
-  // does a protein set's enrichment (or depletion) hold within abundance deciles? null when there is nothing to say
-  const holds = r => { if (!SETS(r.analysis) || r.selection || (r.dir !== 'more' && r.dir !== 'less')) return null; const st = STRAT[r.analysis + '\u0000' + r.category]; return st ? st.dir === r.dir : null; };
-  const holdsMark = r => { const h = holds(r); if (h !== false) return ''; const st = STRAT[r.analysis + '\u0000' + r.category];
-    return `<span class="nh" title="Not within abundance deciles: OR ${fxn(st.eff)}${st.lo != null ? ` (95% CI ${fxn(st.lo)} to ${fxn(st.hi)})` : ''}, q ${fq(st.q)}">○<span class="vh"> not within abundance deciles</span></span>`; };
+  // does a protein set's enrichment (or depletion) hold within abundance deciles? 'holds' (the same reading there),
+  // 'weaker' (the same direction by 1.1× or more, but not at q ≤ 0.05: underpowered, not contradicted), 'lost' (under
+  // 1.1× or the other way), or null when there is nothing to say
+  const holdStatus = r => {
+    if (!SETS(r.analysis) || r.selection || (r.dir !== 'more' && r.dir !== 'less')) return null;
+    const st = STRAT[r.analysis + '\u0000' + r.category]; if (!st) return null;
+    if (st.dir === r.dir) return 'holds';
+    const same = st.eff != null && (r.dir === 'more' ? st.eff >= MIN_EFFECT : st.eff <= 1 / MIN_EFFECT);
+    return same ? 'weaker' : 'lost';
+  };
+  const holds = r => { const h = holdStatus(r); return h == null ? null : h === 'holds'; };
+  const HOLD_MARK = { weaker: ['◌', 'the same direction within abundance deciles, but not significant there'], lost: ['○', 'lost within abundance deciles (under 1.1× or the other way)'] };
+  const holdsMark = r => { const h = holdStatus(r); if (!HOLD_MARK[h]) return ''; const st = STRAT[r.analysis + '\u0000' + r.category];
+    return `<span class="nh ${h}" title="${HOLD_MARK[h][1]}: OR ${fxn(st.eff)}${st.lo != null ? ` (95% CI ${fxn(st.lo)} to ${fxn(st.hi)})` : ''}, q ${fq(st.q)}">${HOLD_MARK[h][0]}<span class="vh"> ${HOLD_MARK[h][1]}</span></span>`; };
   const testName = (aid, m) => SETS(aid) ? (m === 'enricher' ? 'proteins, hypergeometric' : 'within abundance deciles') : (METHOD[m] || m);
   const methodName = r => testName(r.analysis, r.method);
   const effText = r => r.eff == null ? '–' : r.method === 'enricher' ? fxn(r.eff) + '-fold' : 'OR ' + fxn(r.eff);
@@ -82,7 +92,7 @@
     if (h !== location.hash) (push ? history.pushState : history.replaceState).call(history, null, '', h);
   }
   const go = (view, extra = {}) => { Object.assign(S, { view, arg: '' }, extra); writeHash(true); render(); scrollTo(0, 0); };
-  Object.assign(K, { go, writeHash, render: () => render() });
+  Object.assign(K, { go, writeHash, render: () => render(), holds, holdStatus, effText, SETS });
 
   // ---- the statistics page's own filter (the search box above every page makes the selection) -----------------------
   const tokens = () => S.sq.toLowerCase().split(/[\s,]+/).filter(Boolean);
@@ -204,7 +214,7 @@
   }
   function lead() {
     const q = OV.question || `Which parts of proteins are ${W.marked_long}?`;
-    const key = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (q > ${PADJ})</span>${D.analyses.some(a => a.stratified) ? '<span><b class="nh">○</b> a protein set’s result that does not hold within abundance deciles</span>' : ''}` +
+    const key = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (q > ${PADJ})</span>${D.analyses.some(a => a.stratified) ? '<span><b class="nh">◌</b> a protein set’s result in the same direction within abundance deciles, but not significant there</span><span><b class="nh">○</b> lost within abundance deciles</span>' : ''}` +
       `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">How to read</button></p>` +
       (S.how ? `<p class="how-text">Each tile is a question; each row a class, with its effect on a log scale (the solid line is no difference). For a question about where ${esc(W.marks)} sit, × is an odds ratio: the odds that a ${esc(W.mark)} is in the class, over the odds for another ${esc(W.residue)} (not the ratio of the two shares, which is closer to 1; the hover gives both shares)${D.analyses.some(a => a.kind === 'protein_sets') ? '; for a question about kinds of protein it is the fold enrichment, the share of ' + esc(W.marked) + ' proteins in the set over the share of all proteins' : ''}. <b>Within each protein</b>, every protein is a stratum and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)} (Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}; <b>pooled</b> puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact test). ${D.analyses.some(a => a.kind === 'protein_sets') ? `Questions about kinds of protein count proteins: the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). ` : ''}Red: more often (q ≤ 0.05 and at least 1.1×); slate: less often; grey: significant but within 1.1×; hollow: no significant difference. A tile shows the classes that differ most; it opens to every class. Hover a row for its counts.</p>` : '');
     const tools = `<span class="tools"><span class="seg" role="group" aria-label="Test">${['mantel_haenszel', 'fisher'].map(m => `<button type="button" data-m="${m}" aria-pressed="${S.m === m}">${cap(METHOD[m])}</button>`).join('')}</span></span>`;
@@ -252,8 +262,8 @@
     const all = S.all.has(a.id), shown = all ? rows : rows.slice(0, max);
     const noun = a.kind === 'protein_sets' ? 'sets' : 'classes';
     const toggle = rows.length > max ? `<button class="linkish" type="button" data-all="${esc(a.id)}">${all ? 'Show the top ' + SHOWN : 'Show all ' + int(rows.length) + ' ' + noun}</button>` : '';
-    const nNot = rows.filter(r => holds(r) === false).length, nDir = rows.filter(r => holds(r) != null).length;
-    const strat = a.kind === 'protein_sets' && rows.some(r => !r.selection && STRAT[a.id + '\u0000' + r.category]) ? ` Hover a set for the same test within protein abundance deciles${nNot ? `: ${int(nNot)} of the ${int(nDir)} sets that differ do not hold there (○)` : ''}.` : '';
+    const nW = rows.filter(r => holdStatus(r) === 'weaker').length, nL = rows.filter(r => holdStatus(r) === 'lost').length, nDir = rows.filter(r => holdStatus(r) != null).length;
+    const strat = a.kind === 'protein_sets' && rows.some(r => !r.selection && STRAT[a.id + '\u0000' + r.category]) ? ` Hover a set for the same test within protein abundance deciles${nW + nL ? `: of the ${int(nDir)} sets that differ, ${int(nDir - nW - nL)} hold there, ${int(nW)} keep their direction without reaching q ≤ ${PADJ} (◌) and ${int(nL)} lose it (○)` : ''}.` : '';
     return `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3>` +
       `<p class="sub">${esc(a.sub)}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}.${strat} <a href="#method">How it was tested</a> · <a href="#statistics?a=${encodeURIComponent(a.id)}">all tests</a></p></div>` +
       `<div class="exp" role="group" aria-label="Download ${esc(a.title)}">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-exp="${k}" data-aid="${esc(a.id)}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}</div></div>` +
@@ -675,10 +685,10 @@
   document.addEventListener('keydown', e => { const tl = e.target.closest?.('.tile[data-tile]'); if (tl && e.key === 'Enter') go('overview', { arg: tl.dataset.tile }); });
   // a sortable header sorts from the keyboard too
   document.addEventListener('keydown', e => { const th = e.target.closest?.('th[data-psort], th[data-ssort]'); if (th && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); th.click(); } });
-  document.addEventListener('input', e => { if (e.target.id === 'f-sq') { clearTimeout(timer); timer = setTimeout(() => { S.sq = e.target.value.trim(); writeHash(false); render(); const f = $('#f-sq'); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } }, 200); } });
+  document.addEventListener('input', e => { if (e.target.id === 'f-sq') { clearTimeout(timer); timer = setTimeout(() => { S.sq = e.target.value.trim(); S.nStat = 200; writeHash(false); render(); const f = $('#f-sq'); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } }, 200); } });
   document.addEventListener('change', e => {
     if (e.target.id === 'f-a') { S.a = e.target.value; S.nStat = 200; writeHash(false); render(); }
-    if (e.target.id === 'f-m') { S.m = e.target.value; writeHash(false); render(); }
+    if (e.target.id === 'f-m') { S.m = e.target.value; S.nStat = 200; writeHash(false); render(); }
   });
   let timer;
   let typing = false;
@@ -686,7 +696,7 @@
   $('#q').addEventListener('blur', () => { typing = false; });
   // a search that names one protein (and nothing else) opens it; "GENE R216" opens the site's card
   function openIfOne() {
-    const q = K.sel?.parse(S.q); if (!q || q.terms.length || q.words.length || q.unmatched.length || q.absent.length) return false;
+    const q = K.sel?.parse(S.q); if (!q || q.terms.length || q.words.length || q.unmatched.length || q.absent.length || q.ignored.length) return false;
     const prots = [...new Set([...q.genes, ...q.sites.map(x => x[0])])];
     if (prots.length !== 1 || !K.views.protein) return false;
     const acc = D.proteins[prots[0]][0], site = q.sites.length === 1 ? '/' + q.sites[0][1] : '';

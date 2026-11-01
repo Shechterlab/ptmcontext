@@ -108,7 +108,7 @@
   // each input's own page for the protein (a manifest entry's record), without repeats
   const LINKS = acc => {
     const fill = u => u.replace('{acc}', encodeURIComponent(acc)).replace(/[&?][a-z_]+=\{species\}/, m => (IXP ? m.replace('{species}', IXP.species) : ''));
-    const own = Object.values(D.inputs || {}).filter(x => x.record).map(x => ({ label: String(x.version || 'source').replace(/\s*\(.*\)$/, ''), url: x.record }));
+    const own = Object.values(D.inputs || {}).filter(x => x.record).map(x => ({ label: (String(x.version || '').match(/^[^\d(]+/) || [''])[0].trim() || (() => { try { return new URL(x.record).host; } catch (e) { return 'source'; } })(), url: x.record }));
     const all = [...(D.protein_view?.default_links === false ? [] : D.protein_links || []), ...(D.protein_view?.links || []), ...own].map(l => [l.label, fill(l.url)]);
     return all.filter(([, u], k) => all.findIndex(([, v]) => v === u) === k);
   };
@@ -164,16 +164,85 @@
       `<div class="facts">${facts.map(([b, t]) => `<div class="fact"><b>${b}</b><span>${esc(t)}</span></div>`).join('')}</div>` +
       (sel && sel.size < rec.marks.length ? `<p class="note">${int(sel.size)} of ${int(rec.marks.length)} ${esc(W.marks)} match your selection; the others are faded. <button class="linkish" type="button" data-sel-clear-all>Clear filters</button></p>` : '') +
       fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa`, `<div class="card-head"><p class="sub">The ${esc(W.marks)} over the protein, and rows from the site’s data and live sources. Hover anything for what it is and where it comes from; click it to pin it with its links.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mexp', 'the map')}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
-      fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}, each with the studies that report it`, `<div class="card-head"><p class="sub">Each ${esc(W.mark)} with the 15 residues around it, its attributes and its class in every question. A row opens its card.</p>${K.expBar(['tsv'], 'sexp', 'the sites')}</div>` +
+      fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}${Object.values(SPECS).some(x => x.kind === 'list' && x.link) ? `, each with the ${esc(Object.values(SPECS).find(x => x.kind === 'list' && x.link).label.toLowerCase())} that report it` : ''}`, `<div class="card-head"><p class="sub">Each ${esc(W.mark)} with the 15 residues around it, its attributes and its class in every question. A row opens its card.</p>${K.expBar(['tsv'], 'sexp', 'the sites')}</div>` +
         `<div class="tbl-card"><table class="tbl stbl"><thead><tr><th>Site</th>${Object.keys(SPECS).filter(n => SPECS[n].colour || (SPECS[n].kind === 'list' && SPECS[n].link)).map(n => `<th>${esc(SPECS[n].label)}</th>`).join('')}<th>Window (±7)</th>${COLS.map(aid => `<th>${esc(A[aid]?.title || aid)}</th>`).join('')}</tr></thead><tbody>` +
         rec.marks.map(m => `<tr data-site="${m[0]}" tabindex="0" class="${sel && !sel.has(m[0]) ? 'faded' : ''}${PV.site === m[0] ? ' on' : ''}"><td class="mono"><b>${esc(site(m[0]))}</b></td>${Object.keys(SPECS).filter(n => SPECS[n].colour || (SPECS[n].kind === 'list' && SPECS[n].link)).map(n => `<td class="wrapok">${SPECS[n].colour && SPECS[n].kind === 'category' ? pillOf(m, n) : attrHtml(m, n, false)}</td>`).join('')}<td class="mono">${winHtml(m[1])}</td>${markClasses(m).map(([aid, v]) => `<td class="wrapok" title="${esc(help(aid, v))}">${esc(classText(aid, v))}</td>`).join('')}</tr>`).join('') +
         `</tbody></table></div>`, true) +
       fold('p-score', `Its ${esc(W.marks)}, against its other ${esc(W.residues)}`, 'counted in this protein', `<p class="sub">The classes its ${esc(W.marks)} fall in, and how often its other ${esc(W.residues)} do. A row opens every class.</p><div class="hub">${scoreRows(p, rec)}</div>`, false) +
+      (D.analyses.some(a => a.kind === 'protein_sets') ? fold('p-kinds', 'Kinds of protein', 'its classes, pathways and locations, with the site’s result for each', kindsHtml(p), false) : '') +
+      fold('p-regions', 'Domains and regions', `${int(rec.units.length)} region${rec.units.length === 1 ? '' : 's'} the site’s questions read`, regionsHtml(p, rec), false) +
+      fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, sel), false) +
       fold('p-struct', 'Structure', 'AlphaFold DB and PDBe, live', `<div class="live-grid"><section><h4>Predicted structure <small class="muted">AlphaFold DB, live</small></h4><div id="live-af" class="live"><p class="muted">Asking AlphaFold DB…</p></div><div id="af3d" class="af3d" hidden></div></section>` +
         `<section><h4>Experimental structures <small class="muted">PDBe, live</small></h4><div id="live-pdb" class="live"><p class="muted">Asking PDBe…</p></div></section></div>`, false) +
       (IXP ? fold('p-ix', 'Interaction partners', 'STRING, live', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(p.gene || p.acc)}, best first, and which of them have ${esc(W.marks)} in this site.</p>${K.expBar(['tsv'], 'ixexp', 'the partners')}</div><div id="live-ix" class="live"><p class="muted">Asking STRING…</p></div>`, false) : '');
   }
-  K.sections.protein = () => [['p-map', 'Protein map', 1], ['p-sites', cap(W.marks), 1], ['p-score', `Against its other ${W.residues}`, 1], ['p-struct', 'Structure', 1], ...(IXP ? [['p-ix', 'Interaction partners', 1]] : [])];
+  K.sections.protein = () => [['p-map', 'Protein map', 1], ['p-sites', cap(W.marks), 1], ['p-score', `Against its other ${W.residues}`, 1],
+    ...(D.analyses.some(a => a.kind === 'protein_sets') ? [['p-kinds', 'Kinds of protein', 1]] : []), ['p-regions', 'Domains and regions', 1], ['p-seq', 'Sequence', 1],
+    ['p-struct', 'Structure', 1], ...(IXP ? [['p-ix', 'Interaction partners', 1]] : [])];
+
+  // ---- kinds of protein: the sets of each protein-set question this protein is in, with the site's result for each,
+  // and its abundance as the test placed it (data/selection.json) --------------------------------------------------
+  const SETROW = {};
+  const setRow = (aid, s, m) => { if (!Object.keys(SETROW).length) D.rows.forEach(r => { if (K.SETS(r.analysis)) SETROW[r.analysis + '\u0000' + r.category + '\u0000' + r.method] = r; }); return SETROW[aid + '\u0000' + s + '\u0000' + m]; };
+  const RANK = { more: 0, less: 1, same: 2, ns: 3 };
+  function kindsHtml(p) {
+    const sd = K.sel?.data();
+    if (!sd) return `<p class="muted">Loading the sets…</p>`;
+    let cov = null;
+    const blocks = D.analyses.filter(a => a.kind === 'protein_sets' && sd.protein_sets?.[a.id]).map(a => {
+      const ps = sd.protein_sets[a.id];
+      if (ps.covariate && !cov && ps.covariate.proteins[p.i]) cov = { ...ps.covariate, me: ps.covariate.proteins[p.i], from: a };
+      const mine = ps.sets.filter(([, , members]) => members.includes(p.i)).map(([s]) => ({ s, r: setRow(a.id, s, 'enricher') })).filter(x => x.r)
+        .sort((x, y) => RANK[x.r.dir] - RANK[y.r.dir] || x.r.q - y.r.q);
+      if (!mine.length) return `<div class="kind"><h4>${esc(a.title)}</h4><p class="muted">In none of its tested sets.</p></div>`;
+      const shown = PV.open['kinds:' + a.id] ? mine : mine.slice(0, 10);
+      return `<div class="kind"><h4>${esc(a.title)} <span class="muted">${int(mine.length)} set${mine.length === 1 ? '' : 's'}</span></h4><ul class="kind-list">` +
+        shown.map(({ s, r }) => { const hs = K.holdStatus(r), nh = hs === 'lost' || hs === 'weaker'; return `<li><button class="linkish" type="button" data-f="p:${esc(a.id)}" data-v="${esc(s)}" title="Select the ${esc(W.marks)} on proteins in this set">${esc(r.label)}</button> <span class="val ${r.dir}">${esc(K.effText(r))}</span> <span class="muted">q ${K.fq(r.q)}</span>${nh ? ` <span class="nh" title="${hs === 'lost' ? 'Lost within abundance deciles' : 'The same direction within abundance deciles, but not significant there'}">${hs === 'lost' ? '○' : '◌'}</span>` : ''}</li>`; }).join('') + '</ul>' +
+        (mine.length > 10 ? `<button class="linkish" type="button" data-kinds-all="${esc(a.id)}">${PV.open['kinds:' + a.id] ? 'Fewer' : `All ${int(mine.length)}`}</button>` : '') + '</div>';
+    }).join('');
+    const covLine = cov ? `<p class="kind-cov"><b>Abundance</b>: ${cov.me[0] == null ? 'no value' : `${esc(cov.value)} ${K.fxn(cov.me[0])}`}${cov.me[1] !== 'none' ? `, decile ${esc(cov.me[1])} of ${int(cov.strata)}` : ''} <span class="muted">(${esc((Object.values(D.inputs).find(x => (x.roles || [x.role]).includes(cov.input)) || {}).version || cov.input)}; the decile the protein-set tests stratify by)</span></p>` : '';
+    return covLine + `<div class="kinds">${blocks}</div><p class="note">Each set’s result is the site’s own (all ${esc(W.marked)} proteins against the background), not this protein’s. A set’s name selects the ${esc(W.marks)} on its proteins.</p>`;
+  }
+
+  // ---- domains and regions: every region the site's questions read, as a table, with the marks inside each --------
+  function regionsHtml(p, rec) {
+    const tracks = D.tracks || [], title = k => (tracks.find(t => t.kind === k) || {}).title || k;
+    const labs = k => { const t = tracks.find(x => x.kind === k); return (A[t?.analysis] || {}).labels || {}; };
+    const refUrl = ref => { const r = (D.ref_links || []).find(x => ref && new RegExp(x.pattern).test(ref)); return r ? r.url.replace('{ref}', encodeURIComponent(ref)) : null; };
+    const rows = rec.units.slice().sort((x, y) => tracks.findIndex(t => t.kind === x[0]) - tracks.findIndex(t => t.kind === y[0]) || x[1] - y[1]);
+    if (!rows.length) return `<p class="muted">The site’s questions place no region on this protein.</p>`;
+    return `<div class="card-head"><p class="sub">Each region the site’s questions read, with the ${esc(W.marks)} inside it; a ${esc(W.mark)} opens its card.</p>${K.expBar(['tsv'], 'regexp', 'the regions')}</div>` +
+      `<div class="tbl-card"><table class="tbl"><thead><tr><th>Kind</th><th class="num">From–to</th><th>Name or class</th><th>Accession</th><th>${esc(cap(W.marks))} inside</th><th>Source</th></tr></thead><tbody>` +
+      rows.map(([k, s, e, lab, src, cls, ref]) => { const inside = rec.marks.filter(m => m[0] >= s && m[0] <= e).map(m => m[0]); const u = refUrl(ref);
+        return `<tr><td>${esc(title(k))}</td><td class="num mono">${s}–${e}</td><td class="wrapok">${esc(lab || labs(k)[cls] || cls || '')}</td><td class="mono">${ref ? (u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(ref)}</a>` : esc(ref)) : ''}</td>` +
+          `<td class="wrapok">${inside.length ? inside.map(x => `<button class="linkish mono" type="button" data-site-open="${x}">${esc(site(x))}</button>`).join(' ') : '<span class="muted">–</span>'}</td><td class="wrapok muted">${esc((D.unit_sources || [])[src] || '')}</td></tr>`; }).join('') + '</tbody></table></div>';
+  }
+  function regionsTsv() {
+    const p = byAcc[PV.acc], rec = PV.rec, tracks = D.tracks || [];
+    return K.preamble(`${p.gene || p.acc}: domains and regions`, `every region the site's questions read on ${p.acc}, with the ${W.marks} inside it`) +
+      ['kind', 'start', 'end', 'label', 'class', 'ref', `${W.marks}_inside`, 'source'].join('\t') + '\n' +
+      rec.units.map(([k, s, e, lab, src, cls, ref]) => [(tracks.find(t => t.kind === k) || {}).title || k, s, e, lab || '', cls || '', ref || '', rec.marks.filter(m => m[0] >= s && m[0] <= e).map(m => site(m[0])).join(' '), (D.unit_sources || [])[src] || ''].join('\t')).join('\n') + '\n';
+  }
+
+  // ---- the sequence, with the marks in it, and as FASTA ---------------------------------------------------------
+  function fasta(p, rec) {
+    const seq = rec.seq || '';
+    return `>${p.acc}${rec.entry ? '|' + rec.entry : ''} ${p.name || ''}${p.gene ? ' GN=' + p.gene : ''} [${(D.run.snapshot || {}).release || ''}; ${D.site.name}]\n` + (seq.match(/.{1,60}/g) || []).join('\n') + '\n';
+  }
+  function sequenceHtml(p, rec, sel) {
+    const seq = rec.seq || ''; if (!seq) return `<p class="muted">No sequence in this copy of the site.</p>`;
+    const at = new Map(rec.marks.map(m => [m[0], m]));
+    const res = i => { const m = at.get(i), aa = esc(seq[i - 1]); if (!m) return aa; const c = K.map.siteColour(m), off = sel && !sel.has(i);
+      return `<b class="sq-m${off ? ' faded' : ''}" style="--c:${c.c}" data-msite="${i}" title="${esc(site(i))}${c.label ? ' · ' + esc(c.label) : ''}">${aa}</b>`; };
+    const lines = [];
+    for (let s = 1; s <= seq.length; s += 60) {
+      const blocks = []; for (let b = s; b < Math.min(s + 60, seq.length + 1); b += 10) { let t = ''; for (let i = b; i < Math.min(b + 10, seq.length + 1); i++) t += res(i); blocks.push(t); }
+      lines.push(`<span class="sq-n">${s}</span>${blocks.join(' ')}`);
+    }
+    return `<div class="card-head"><p class="sub">${int(seq.length)} residues (${esc((D.run.snapshot || {}).release || '')}), the ${esc(W.marks)} in colour as on the map; hover one for its name, click it for its card.</p>` +
+      `<span class="exp"><button class="btn small" type="button" data-fasta="copy">Copy FASTA</button><button class="btn small" type="button" data-fasta="dl">Download FASTA</button></span></div><pre class="seq">${lines.join('\n')}</pre>`;
+  }
+
 
   // ---- live sources: asked once per protein, shown when they answer, never needed for a number ---------------------
   const today = () => K.hdate(new Date().toISOString());
@@ -352,6 +421,13 @@
     ['[data-sexp]', el => K.exportFigure('tsv', null, `${D.site.id}_${PV.acc}_sites`, el, sitesTsv)],
     ['[data-mexp]', el => K.exportFigure(el.dataset.mexp, mapFigure, `${D.site.id}_${PV.acc}_map`, el, sitesTsv)],
     ['[data-msite]', el => openSite(+el.dataset.msite)],
+    ['[data-site-open]', el => openSite(+el.dataset.siteOpen)],
+    ['[data-kinds-all]', el => { const k = 'kinds:' + el.dataset.kindsAll; PV.open[k] = !PV.open[k]; PV.open['p-kinds'] = true; K.render(); }],
+    ['[data-regexp]', el => K.exportFigure('tsv', null, `${D.site.id}_${PV.acc}_regions`, el, regionsTsv)],
+    ['[data-fasta]', el => { const p = byAcc[PV.acc], text = fasta(p, PV.rec);
+      if (el.dataset.fasta === 'dl') { K.download(`${p.acc}${p.gene ? '_' + p.gene : ''}.fasta`, text, 'text/plain'); return; }
+      const done = t => { const o = el.textContent; el.textContent = t; setTimeout(() => { el.textContent = o; }, 1500); };
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => done('Copied'), () => done('Copy failed')); else done('Copy failed'); }],
     ['tr[data-site]', (el, e) => { if (!e.target.closest('a')) openSite(+el.dataset.site); }],
     ['[data-site-close]', () => { const y = scrollY; S.arg = PV.acc; PV.site = null; K.writeHash(true); K.render(); scrollTo(0, y); }],
     ['[data-site-copy]', el => navigator.clipboard?.writeText(location.href).then(() => { el.textContent = 'Link copied'; })],

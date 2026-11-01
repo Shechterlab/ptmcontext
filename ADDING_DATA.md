@@ -72,10 +72,12 @@ keep, and every build reads it the same way (`ptmc inputs record ... --columns '
 "scores": {"file": "...", "...": "...", "columns": {"accession": "entry", "position": "resnum", "value": "score"}}
 ```
 
-`record` (optional) is the source's own page for a protein; the protein pages link it. A format read often may instead
-get a reader (`ptmcontext.units.register_reader`, in the package or a trusted plugin).
+`record` (optional) is the source's own page for a protein; the protein pages link it. A file that is not
+tab-separated says so (`"sep": ","`). A format read often may instead get a reader (`ptmcontext.units.register_reader`,
+in the package or a trusted plugin).
 
-**Check:** `ptmc check sites/<site>.yaml` passes, and a unit table reads with `ptmcontext.units.read_units`.
+**Check:** `ptmc check sites/<site>.yaml --root DATA` passes: it reads each mapped file's header and names any column
+the mapping gets wrong. A unit table (not a mapped file) also reads with `ptmcontext.units.read_units`.
 
 ## 4. Wire it into a site
 
@@ -99,6 +101,16 @@ analyses:
     layer: residue_values
     with: {role: <role>, bins: [50, 70, 90], classes: [very_low, low, confident, very_high], noun: pLDDT,
            colours: {very_high: "#0053d6"}}
+```
+
+The class codes these make are what filters, `website.protein.facts` and `labels:` use: for `regions`, `in_<id>`,
+`<id>_boundary`, `outside_<id>` and `no_<id>` (the analysis id, or `with: code`); for `residue_values`, the classes
+given, lowest first, with a value equal to a threshold in the class above it (90 is `very_high` here), and `no_value`
+(or `with: missing`) where a residue has none. `ptmc check` names any `with:` key a layer does not know, any role it
+reads that `inputs:` does not fill, and any fact naming a class the question does not make. Two `regions` questions
+reading different roles may share a `kind`: each keeps its own row of the map.
+
+```yaml
   - id: <analysis>                                       # a protein-set test
     test: protein_sets
     sets: {input: <role>, set: <column>, protein: <column>, include: [...]}
@@ -131,7 +143,8 @@ marks:
 
 The website's Overview tiles, filter groups and header tiles are `website.overview`, `website.filters` and
 `website.stats`; the Sites tab's columns `website.sites.columns`; the protein page's fact tiles and extra links
-`website.protein.facts` and `website.protein.links` (see `sites/methylarginine.yaml`). Without them the kit lists
+`website.protein.facts` and `website.protein.links: [{label, url: "...{acc}..."}]` (`sites/methylarginine.yaml` shows
+the others). Without them the kit lists
 every question and offers every filterable attribute. A new question appears on every page with no kit change: its
 tile, its filter, its rows in All tests and the downloads, its column if named, and, if its layer draws regions, a row
 of the protein map (`tests/test_new_sources.py` builds such a site from scratch).

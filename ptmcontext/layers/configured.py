@@ -11,6 +11,12 @@ An analysis names one with its parameters:
   - {id: plddt, layer: residue_values, with: {role: plddt, bins: [50, 70, 90],
                                                classes: [very_low, low, confident, very_high]}}
 
+The classes they make (for filters, website.protein.facts and labels):
+
+  regions          in_<code>, <code>_boundary, outside_<code>, no_<code> (code: the analysis id, or with: code)
+  residue_values   the classes given, from the lowest bin up (a value equal to a threshold goes to the class above
+                   it), and missing (default no_value) for a residue without a value
+
 Each draws its regions (or its runs of residues in one class) as a row of the protein map. Words a page shows (title,
 question, sub, labels, help, section, track, track_help) and the row's colours (colours: {class: colour}) may be given
 with the parameters; otherwise they are made from the noun.
@@ -33,16 +39,30 @@ def _words(params: dict, default_title: str, default_question: str, default_sub:
             'sub': params.get('sub', default_sub), 'section': params.get('section', 'Structural context')}
 
 
-def _need(params: dict, aid: str, *keys: str) -> None:
+WORDS = {'title', 'question', 'sub', 'section', 'labels', 'help', 'noun', 'track', 'track_help', 'colours'}
+ALLOWED = {'regions': WORDS | {'role', 'kind', 'window', 'nouns', 'code'},
+           'residue_values': WORDS | {'role', 'kind', 'bins', 'classes', 'missing'}}
+
+
+def _need(params: dict, aid: str, *keys: str, layer: str = '') -> None:
     missing = [k for k in keys if k not in params]
     if missing:
         raise ValueError(f'analysis {aid!r}: with: needs {missing}')
+    unknown = sorted(set(params) - ALLOWED.get(layer, set(params)))
+    if unknown:
+        raise ValueError(f'analysis {aid!r}: with: has keys layer {layer} does not know: {unknown} (it knows {sorted(ALLOWED[layer])})')
+
+
+def _cap(text: str) -> str:
+    """The first letter capitalised, unless the word is written with capitals inside (pLDDT, mRNA)."""
+    first = text.split(' ')[0]
+    return text if any(c.isupper() for c in first[1:]) else text[:1].upper() + text[1:]
 
 
 @factory('regions')
 def regions(params: dict, aid: str) -> Layer:
     """Inside, within a window of, further from, or on a protein without the regions of any interval table."""
-    _need(params, aid, 'role')
+    _need(params, aid, 'role', layer='regions')
     role, kind, w = params['role'], params.get('kind', params['role']), int(params.get('window', 20))
     noun = params.get('noun', kind.replace('_', ' ') + ' region')
     nouns = params.get('nouns', noun + 's')
@@ -61,19 +81,19 @@ def regions(params: dict, aid: str) -> Layer:
     def drawn(ctx, accs: set) -> pd.DataFrame:
         u = ctx.units(role, kind)
         return u[u['accession'].isin(accs)]
-    track = Track(kind, params.get('track', nouns[:1].upper() + nouns[1:]), 'segments', drawn, roles=(role,),
-                  help=params.get('track_help', f'{nouns[:1].upper() + nouns[1:]}: the site’s {role} input'),
+    track = Track(kind, params.get('track', _cap(nouns)), 'segments', drawn, roles=(role,),
+                  help=params.get('track_help', f'{_cap(nouns)}: the site’s {role} input'),
                   colours=tuple((params.get('colours') or {}).items()))
     return Layer('regions', 'class', f'{noun}s ({role}): inside, within {w} residues, further, or none', compute, needs=(role,),
                  labels=labels, help=helps, tracks=(track,),
-                 **_words(params, nouns[:1].upper() + nouns[1:], f'Are {{marks}} in {nouns}, against the other {{residues}} of the same proteins?',
+                 **_words(params, _cap(nouns), f'Are {{marks}} in {nouns}, against the other {{residues}} of the same proteins?',
                           f'{{Marks}} against the other {{residues}} of the same proteins, by {nouns}'))
 
 
 @factory('residue_values')
 def residue_values(params: dict, aid: str) -> Layer:
     """Residues by a per-residue value, cut into classes at the site's thresholds (bins)."""
-    _need(params, aid, 'role', 'bins', 'classes')
+    _need(params, aid, 'role', 'bins', 'classes', layer='residue_values')
     role, bins, classes = params['role'], [float(b) for b in params['bins']], list(params['classes'])
     if sorted(bins) != bins or len(classes) != len(bins) + 1:
         raise ValueError(f'analysis {aid!r}: bins must ascend, and classes must be one more than bins')
@@ -114,7 +134,7 @@ def residue_values(params: dict, aid: str) -> Layer:
         out['label'] = [f'{labels[c]}: {lo:g} to {hi:g}' if lo != hi else f'{labels[c]}: {lo:g}' for c, lo, hi in zip(out['cls'], out['lo'], out['hi'])]
         out['source'] = role
         return out.rename(columns={'cls': 'class'})[['accession', 'start', 'end', 'label', 'source', 'class']]
-    title = params.get('title', noun[:1].upper() + noun[1:])
+    title = params.get('title', _cap(noun))
     track = Track(params.get('kind', aid), params.get('track', title), 'segments', drawn, roles=(role,),
                   help=params.get('track_help', f'{title} along the chain, in the classes of the question (the site’s {role} input)'),
                   colours=tuple((params.get('colours') or {}).items()))

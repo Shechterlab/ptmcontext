@@ -29,19 +29,24 @@
   // the regions the run's layers draw (tracks.json): each kind is a row, or the backbone's boxes or wave; the map knows
   // no layer by name. A row of segments is coloured by the classes of the analysis that drew it, if it has any.
   const TRACKS = D.tracks || [];
-  const SEG_PAL = ['#9DB8C7', '#E2B44C', '#8E7CC3', '#D64545', '#2F6FD6', '#7C8A93', '#1BAF7A', '#B45309'], SEG_PLAIN = '#9DB8C7';
+  // not the charge row's red and blue, nor AlphaFold's bands: a track that means them says so with its own colours
+  const SEG_PAL = ['#9DB8C7', '#E2B44C', '#8E7CC3', '#1BAF7A', '#B45309', '#BE185D', '#7C8A93', '#0E7490'], SEG_PLAIN = '#9DB8C7';
   const trackRow = t => (t.style === 'segments' ? 'tr:' : 'bb:') + t.kind;
   const kindsOf = style => new Set(TRACKS.filter(t => t.style === style).map(t => t.kind));
   const trackOf = kind => TRACKS.find(t => t.kind === kind) || { kind, title: kind, roles: [] };
-  const segLabels = t => (K.A[t.analysis] || {}).labels || {};
+  // a track's classes: its question's labels, or the classes its own units carry (a file's class column)
+  const segLabels = t => (t.analysis ? (K.A[t.analysis] || {}).labels || {} : Object.fromEntries((t.classes || []).map(c => [c, c])));
   const segColour = (t, cls) => (t.colours || {})[cls] || (!cls ? SEG_PLAIN : (k => (k >= 0 ? SEG_PAL[k % SEG_PAL.length] : '#cbd5e1'))(Object.keys(segLabels(t)).indexOf(cls)));
   const store = { get: (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* */ } } };
   // the inputs that fill a role, by version (for the hovers' provenance)
-  const roleVersion = role => Object.values(D.inputs || {}).filter(x => x.role === role).map(x => x.version).join('; ');
+  const rolesOf = x => x.roles || (x.role ? [x.role] : []);
+  const roleVersion = role => Object.values(D.inputs || {}).filter(x => rolesOf(x).includes(role)).map(x => x.version).join('; ');
+  // a source's short name for a link: its version's words before a date or number, else its record's host
+  const sourceName = x => (String(x.version || '').match(/^[^\d(]+/) || [''])[0].trim() || (() => { try { return new URL(x.record).host; } catch (e) { return 'source'; } })();
   const tracksVersion = t => [...new Set((t.roles || []).map(roleVersion).filter(Boolean))].join('; ');
   // the source's own page for this protein (a manifest entry's record), for each input of a track's roles
-  const recordLinks = (t, acc) => Object.values(D.inputs || {}).filter(x => (t.roles || []).includes(x.role) && x.record)
-    .map(x => `<a href="${esc(x.record.replace('{acc}', encodeURIComponent(acc)))}">${esc(String(x.version || '').split(' ')[0] || 'source')} ${esc(acc)}</a>`).join(' · ');
+  const recordLinks = (t, acc) => Object.values(D.inputs || {}).filter(x => (t.roles || []).some(r => rolesOf(x).includes(r)) && x.record)
+    .map(x => `<a href="${esc(x.record.replace('{acc}', encodeURIComponent(acc)))}">${esc(sourceName(x))} ${esc(acc)}</a>`).join(' · ');
 
   // ---- the rows -------------------------------------------------------------------------------------------------
   const trackHelp = t => `${t.help || t.title}${tracksVersion(t) ? ` (${tracksVersion(t)})` : ''}`;
@@ -189,7 +194,8 @@
       parts.push(`<rect x="${a.toFixed(1)}" y="${yB - 2}" width="${(b - a).toFixed(1)}" height="4" fill="${SURF}"/>`);
       let d = `M${a.toFixed(1)},${yB}`, x = a, up = true;
       while (x < b) { const nx = Math.min(b, x + 5); d += ` Q${((x + nx) / 2).toFixed(1)},${up ? yB - 5 : yB + 5} ${nx.toFixed(1)},${yB}`; x = nx; up = !up; }
-      const t = trackOf(kind), over = segs.filter(([, is, ie]) => is <= e && ie >= s);
+      // the other regions here that come from the same input (an IDR made from this disorder), not every track's
+      const t = trackOf(kind), over = segs.filter(([k2, is, ie]) => is <= e && ie >= s && (trackOf(k2).roles || []).some(r => (t.roles || []).includes(r))).slice(0, 6);
       const tip = full => `<b>${esc(t.title)} ${s}–${e}</b>${over.map(([k2, is, ie, lab]) => `<br>${esc(trackOf(k2).title)} ${is}–${ie}${lab ? ': ' + esc(lab) : ''}`).join('')}<br><span class="muted">${esc(tracksVersion(t))}</span>${full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`;
       const k = it({ tip: tip(false), card: tip(true), a: s, b: e });
       parts.push(`<path d="${d}" fill="none" stroke="${MUTED}" stroke-width="1.6" data-mi="${k}" pointer-events="stroke"/>`);
@@ -414,7 +420,7 @@
   function rowLegend() {
     const out = [];
     const rec = M.ctx?.rec;
-    TRACKS.filter(t => t.style === 'segments' && isOn(trackRow(t)) && (t.analysis || t.colours)).forEach(t => {
+    TRACKS.filter(t => t.style === 'segments' && isOn(trackRow(t)) && (t.analysis || t.colours || t.classes)).forEach(t => {
       const here = new Set((rec?.units || []).filter(u => u[0] === t.kind).map(u => u[5]).filter(Boolean));
       Object.keys(segLabels(t)).filter(c => here.has(c)).forEach(c => out.push([segColour(t, c), segLabels(t)[c]]));
     });

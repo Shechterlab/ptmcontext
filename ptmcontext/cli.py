@@ -56,7 +56,7 @@ def cmd_check(a) -> int:
             unknown.append(f"{x['id']}: layer {x.get('layer')!r} takes no with:")
     from .set_tests import roles_of
     unknown += [r for x in site['analyses'] if 'sets' in x for r in roles_of(x) if r not in site.get('inputs', {})]
-    web = S.website_problems(site)
+    web = S.website_problems(site) + S.roles_missing(site) + (S.mapping_problems(site, a.root) if a.root else [])
     print(f"{site['id']}: mark {profile.id} ({', '.join(profile.residues)}), {len(site['analyses'])} analyses")
     for problem, items in (('inputs not in the manifest', missing), ('layers not found or not made', unknown)):
         if items:
@@ -102,13 +102,22 @@ def cmd_inputs_record(a) -> int:
     if a.note:
         entry['note'] = a.note
     if a.columns:
-        entry['columns'] = json.loads(a.columns)
+        try:
+            entry['columns'] = json.loads(a.columns)
+        except json.JSONDecodeError as exc:
+            print(f'--columns is not JSON ({exc}); write it as, e.g., \'{{"accession": "uniprot", "start": "from", "end": "to"}}\'')
+            return 1
     if a.record:
         entry['record'] = a.record
     old = data['inputs'].get(a.name)
     data['inputs'][a.name] = entry
     from .profile import validate
-    validate(data, 'inputs')
+    import jsonschema
+    try:
+        validate(data, 'inputs')
+    except jsonschema.ValidationError as exc:
+        print(f'the entry does not meet the manifest contract: {exc.message}')
+        return 1
     manifest.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n')
     print(f"{'updated' if old else 'added'} {a.name}: {entry['md5']}")
     if old and old['md5'] != entry['md5']:
@@ -159,6 +168,7 @@ def main(argv=None) -> int:
 
     s = sub.add_parser('check', help='validate a site config')
     s.add_argument('site')
+    s.add_argument('--root', default=None, help="the inputs' folder: also check each column mapping against its file's columns")
     s.set_defaults(fn=cmd_check)
 
     s = sub.add_parser('inputs', help='check, or record, manifest inputs')
