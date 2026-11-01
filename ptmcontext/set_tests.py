@@ -10,6 +10,9 @@ clusterProfiler itself, and tests/test_parity_v1_4_3.py checks these rows agains
 
 A site file names everything else: which table holds the sets, which columns name the set and the protein, which rows
 to keep, the names of the sets, the universe and the sizes. Nothing here names a source.
+
+Sets come from a table of (set, protein) pairs, or from a class hierarchy (class_sets): each protein's classes and the
+ontology that places them, at the top level (optionally gathered into groups the site file names) or below it.
 """
 from __future__ import annotations
 
@@ -40,9 +43,70 @@ def _select(frame: pd.DataFrame, spec: dict) -> pd.DataFrame:
     return frame[keep]
 
 
-def read_sets(spec: dict, paths: dict) -> tuple[pd.DataFrame, dict]:
+def roles_of(spec: dict) -> list[str]:
+    """The roles a protein-set analysis reads: its sets (and their ontology), names and covariate."""
+    return [r for r in (spec['sets']['input'], spec['sets'].get('ontology', {}).get('input'), spec.get('names', {}).get('input'),
+                        spec.get('abundance', {}).get('input')) if r]
+
+
+def _read(path) -> pd.DataFrame:
+    return pd.read_csv(path, sep='\t', dtype=str, keep_default_na=False, low_memory=False)
+
+
+def class_sets(src: dict, paths: dict, universe: set) -> pd.DataFrame:
+    """(set, protein) pairs from a class hierarchy, each set named by its class's name (or its group's).
+
+      level top        each protein's top-level classes (the root's children above its classes); with groups, the
+                       group of each top-level class instead
+      level below_top  every class below the top level that a protein's classes are, or lie under
+      unclassified     the universe's proteins with no set at this level, as one more set of this name
+    """
+    onto = src['ontology']
+    o = _read(paths[onto['input']])
+    name = dict(zip(o[onto['id']], o[onto['name']]))
+    parent = dict(zip(o[onto['id']], o[onto['parent']]))
+    root = onto['root']
+    if len(set(name.values())) != len(name):
+        raise ValueError(f"{onto['input']}: two classes share a name, and sets are named by their class")
+
+    def lineage(c: str) -> list[str]:                    # the class and its ancestors, up to the top level
+        out = []
+        while c in parent and c != root:
+            out.append(c)
+            c = parent[c]
+        return out
+    tops = {c for c, p in parent.items() if p == root}
+    group_of = {}
+    for g, members in (src.get('groups') or {}).items():
+        for c in members:
+            if c in group_of:
+                raise ValueError(f'top-level class {c} is in two groups: {group_of[c]!r} and {g!r}')
+            group_of[c] = g
+    if src.get('groups') and set(group_of) != tops:
+        raise ValueError(f'the groups must hold every top-level class once: missing {sorted(tops - set(group_of))}, '
+                         f'not top-level {sorted(set(group_of) - tops)}')
+    t = _read(paths[src['input']])
+    sep = src.get('separator', ';')
+    pairs = set()
+    for acc, ids in zip(t[src['protein']].astype(str).str.split('-').str[0], t[src['classes']]):
+        closure = {a for c in (ids.split(sep) if ids else []) for a in lineage(c)}
+        if src['level'] == 'top':
+            for c in closure & tops:
+                pairs.add((group_of[c] if group_of else name[c], acc))
+        else:
+            pairs.update((name[c], acc) for c in closure - tops)
+    out = pd.DataFrame(sorted(pairs), columns=['set', 'protein'])
+    if src.get('unclassified'):
+        rest = sorted(set(universe) - set(out['protein']))
+        out = pd.concat([out, pd.DataFrame({'set': src['unclassified'], 'protein': rest})], ignore_index=True)
+    return out
+
+
+def read_sets(spec: dict, paths: dict, universe: set | None = None) -> tuple[pd.DataFrame, dict]:
     """(set, protein) pairs and the sets' names, from the tables a site's analysis names."""
     src = spec['sets']
+    if 'classes' in src:
+        return class_sets(src, paths, universe or set()), {}
     t = _select(pd.read_csv(paths[src['input']], sep='\t', dtype=str, keep_default_na=False, low_memory=False), src)
     pairs = pd.DataFrame({'set': t[src['set']].astype(str), 'protein': t[src['protein']].astype(str).str.split('-').str[0]}).drop_duplicates()
     names = {}
@@ -125,7 +189,9 @@ def stratified_rows(spec: dict, paths: dict, rows: pd.DataFrame, pairs: pd.DataF
 
 def protein_set_test(spec: dict, paths: dict, marked_proteins: set, snapshot_proteins: set) -> tuple[pd.DataFrame, dict]:
     """Statistics rows of one protein-set analysis of a site, and the names of its sets."""
-    pairs, names = read_sets(spec, paths)
+    if spec['sets'].get('unclassified') and spec.get('universe') != 'snapshot':
+        raise ValueError(f"{spec['id']}: an unclassified set needs universe: snapshot")
+    pairs, names = read_sets(spec, paths, set(snapshot_proteins))
     universe = set(pairs['protein']) if spec.get('universe', 'annotated') == 'annotated' else set(snapshot_proteins)
     res = enricher(marked_proteins & universe, universe, pairs, whole_universe=spec.get('whole_universe', False),
                    min_size=spec.get('min_size', 1), max_size=spec.get('max_size', 10 ** 6))

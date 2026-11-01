@@ -97,6 +97,24 @@
       "licence": "CC BY 4.0",
       "role": "input",
       "note": "Staged by PTM_Pipeline scripts/47; this repository checks the bytes."
+    },
+    "panther_protein_classes": {
+      "file": "inputs/annotation/panther_19.0_protein_classes.tsv",
+      "md5": "dd0f2ba0f30df033412c7a4c6bca96e1",
+      "source": "https://data.pantherdb.org/ftp/sequence_classifications/19.0/PANTHER_Sequence_Classification_files/PTHR19.0_human",
+      "version": "PANTHER 19.0 (protein class ontology of 17.0), downloaded 2026-10-20",
+      "licence": "CC BY 4.0 (PANTHER data and data products, https://www.pantherdb.org/tou.jsp)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/00_stage_panther_classes.py from PANTHER's downloads; this repository checks the bytes."
+    },
+    "panther_class_ontology": {
+      "file": "inputs/annotation/panther_19.0_protein_class_ontology.tsv",
+      "md5": "d2b7c752a4772716e8ba41f6ccc0468b",
+      "source": "https://data.pantherdb.org/PANTHER19.0/ontology/Protein_Class_19.0 and Protein_class_relationship",
+      "version": "PANTHER 19.0 (protein class ontology of 17.0), downloaded 2026-10-20",
+      "licence": "CC BY 4.0 (PANTHER data and data products, https://www.pantherdb.org/tou.jsp)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/00_stage_panther_classes.py from PANTHER's downloads; this repository checks the bytes."
     }
   }
 }

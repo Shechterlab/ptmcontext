@@ -84,3 +84,19 @@ def test_shephard_domains_keep_only_identical_sequences(tmp_path):
     assert u[['accession', 'ref', 'label']].values.tolist() == [['A', '206.1.1.2', 'Pkinase · Protein kinase-like (PK-like)']]
     entry = json.loads((tmp_path / 'm.json').read_text())['inputs']['x_shephard_ecod_domains']
     assert entry['file'] == 'inputs/x_shephard_ecod_domains.tsv' and entry['licence'].startswith('MIT')
+
+
+def test_class_sets_at_the_top_in_groups_and_below(tmp_path):
+    from ptmcontext.set_tests import class_sets
+    (tmp_path / 'onto.tsv').write_text('id\tname\tparent\nR\troot\t\nT1\tenzyme\tR\nT2\treceptor\tR\n'
+                                       'S1\tkinase\tT1\nS2\tprotein kinase\tS1\nS3\tGPCR\tT2\n')
+    (tmp_path / 'cls.tsv').write_text('acc\tids\nA\tS2\nB\tS1;T1\nC\tS3\nD\t\n')
+    paths = {'cls': tmp_path / 'cls.tsv', 'onto': tmp_path / 'onto.tsv'}
+    src = {'input': 'cls', 'protein': 'acc', 'classes': 'ids', 'ontology': {'input': 'onto', 'id': 'id', 'name': 'name', 'parent': 'parent', 'root': 'R'}}
+    pairs = lambda **kw: sorted(map(tuple, class_sets({**src, **kw}, paths, {'A', 'B', 'C', 'D', 'E'})[['set', 'protein']].values.tolist()))  # noqa: E731
+    assert pairs(level='top') == [('enzyme', 'A'), ('enzyme', 'B'), ('receptor', 'C')]
+    # a protein's classes count with every class above them; the unclassified set takes the rest of the universe
+    assert pairs(level='below_top', unclassified='none') == [('GPCR', 'C'), ('kinase', 'A'), ('kinase', 'B'), ('none', 'D'), ('none', 'E'), ('protein kinase', 'A')]
+    assert pairs(level='top', groups={'catalytic': ['T1'], 'signalling': ['T2']}) == [('catalytic', 'A'), ('catalytic', 'B'), ('signalling', 'C')]
+    with pytest.raises(ValueError, match='every top-level class once'):
+        class_sets({**src, 'level': 'top', 'groups': {'catalytic': ['T1']}}, paths, set())

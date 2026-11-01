@@ -6,6 +6,7 @@ import pytest
 import yaml
 
 from ptmcontext import inputs as I
+from ptmcontext.set_tests import roles_of
 from ptmcontext import layers as L
 from ptmcontext.profile import load_profile, validate
 from ptmcontext.site import load_site
@@ -30,7 +31,7 @@ def test_site_configs_name_known_inputs_layers_and_profiles(path):
         assert name in manifest, name
     for a in site['analyses']:
         if a.get('test') == 'protein_sets':
-            assert a['sets']['input'] in site['inputs'] and (not a.get('names') or a['names']['input'] in site['inputs'])
+            assert all(r in site['inputs'] for r in roles_of(a)), roles_of(a)
         else:
             assert a['layer'] in L.BUILT_IN, a['layer']
 

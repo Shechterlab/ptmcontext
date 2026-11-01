@@ -14,6 +14,8 @@ inputs:                # role the layers read: manifest input that fills it
   reactome_names: reactome_pathways
   hpa: hpa_locations
   abundance: paxdb_abundance
+  panther_classes: panther_protein_classes
+  panther_ontology: panther_class_ontology
 
 marks:
   # Until this repository builds the site union from the studies, the marks are the release's own sites.
@@ -26,6 +28,70 @@ marks:
 
 analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel)
   # protein sets: clusterProfiler's enricher, as the release ran it (scripts/release_layers.py, release_tables.py)
+  # PANTHER protein classes (scripts/03b_panther_class_enrichment.py): every reviewed protein is the universe and the
+  # background; the groups and the top-level classes, with the unclassified proteins, each partition it
+  - id: panther_group
+    test: protein_sets
+    title: Protein classes (PANTHER), grouped
+    question: "Which kinds of protein hold more methylated proteins than expected?"
+    sub: "Methylated proteins vs the reviewed human proteome, by PANTHER protein class (grouped); every protein is in one group (one-sided hypergeometric test)"
+    section: Kinds of protein
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: top
+      groups:                   # the release's overview groups (PTM_Pipeline config/panther_class_groups.json)
+          "Transcription, chromatin and DNA": [PC00264, PC00077, PC00009]
+          "RNA processing and translation": [PC00031, PC00263]
+          "Metabolic enzymes": [PC00262]
+          "Protein-modifying enzymes": [PC00260]
+          "Signalling: receptors, ligands and modulators": [PC00197, PC00207, PC00095, PC00060]
+          "Transport and membrane traffic": [PC00227, PC00219, PC00150]
+          "Cytoskeleton, adhesion and matrix": [PC00085, PC00211, PC00069, PC00070, PC00102]
+          "Scaffolds, adaptors and chaperones": [PC00226, PC00072]
+          "Immunity and defence": [PC00090]
+          "Other PANTHER classes": [PC00237, PC00210]
+      unclassified: No PANTHER protein class
+    universe: snapshot
+    whole_universe: true
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: panther_class
+    test: protein_sets
+    title: Protein classes (PANTHER)
+    question: "Which PANTHER protein classes hold more methylated proteins than expected?"
+    sub: "Methylated proteins vs the reviewed human proteome, by top-level PANTHER protein class; every protein is in one class (one-sided hypergeometric test)"
+    section: Kinds of protein
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: top
+      unclassified: No PANTHER protein class
+    universe: snapshot
+    whole_universe: true
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: panther_subclass
+    test: protein_sets
+    title: Protein subclasses (PANTHER)
+    question: "Which PANTHER protein subclasses hold more methylated proteins than expected?"
+    sub: "Methylated proteins vs the reviewed human proteome, every PANTHER class below the top level with 10 or more proteins; subclasses overlap (one-sided hypergeometric test)"
+    section: Kinds of protein
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: below_top
+    universe: snapshot
+    whole_universe: true
+    min_size: 10
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: reactome_top_level
     test: protein_sets
     title: Reactome pathways, top level

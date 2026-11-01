@@ -18,15 +18,16 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
 
 ## Status (pilot)
 
-- **Parity:** `sites/methylarginine.yaml` rebuilds 3,646 of the 4,659 rows (78%) of release v1.4.3's statistics table
+- **Parity:** `sites/methylarginine.yaml` rebuilds 3,972 of the 4,659 rows (85%) of release v1.4.3's statistics table
   byte for byte, from the release's inputs, without running any of its code (`tests/test_parity_v1_4_3.py`):
   - the 82 residue-level rows (motif, disorder, domain context, domain class, structure context; pooled and within
     protein);
-  - the 3,564 protein-set rows for Reactome top-level groups, Reactome pathways and HPA locations (clusterProfiler's
-    `enricher`, rewritten in Python, and its repeat within PaxDb abundance deciles).
+  - the 3,890 protein-set rows for PANTHER protein classes (grouped, top level, subclasses), Reactome top-level groups,
+    Reactome pathways and HPA locations (clusterProfiler's `enricher`, rewritten in Python, and its repeat within PaxDb
+    abundance deciles).
 
-  The rest (PANTHER classes, condensates, interfaces, crosslinks, cell maps, eCLIP) come next, one parity check at a
-  time.
+  The rest (687 rows: condensates, functional classes, sequence proximity, crosslinks, interfaces, cell maps, eCLIP)
+  come next, one parity check at a time.
 - **A second organism by configuration:** yeast phosphosites staged from UniProt 2026_03, MobiDB and SHEPHARD in
   about 50 s and run in 21 s. UniProt's domain features cover 1,937 of 6,067 yeast proteins; SHEPHARD's ECOD domains
   fill 2,506 more, so 79% of the phosphosites (4,702 of 5,930) are on a protein with domain data, up from 47%.
@@ -35,7 +36,7 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
   citation (from the site's `CITATION.cff`), versions and provenance. Each protein has a page: its map, its marks
   against its own other residues, and live cards from UniProt (with a check that the sequence has not changed),
   AlphaFold DB, PDBe and STRING (interaction partners, linked to their own pages when they are marked too).
-- **Not built yet:** isoform placement, measured backgrounds, the release writer, the remaining 1,013 rows. See
+- **Not built yet:** isoform placement, measured backgrounds, the release writer, the remaining 687 rows. See
   [docs/DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) for why this design, the alternatives, prior art and the order of work.
 
 ## Publishing

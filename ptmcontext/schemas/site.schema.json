@@ -188,37 +188,121 @@
             "description": "the Overview section it is listed under (default: the layer's)"
           },
           "sets": {
-            "type": "object",
-            "required": [
-              "input",
-              "set",
-              "protein"
-            ],
-            "additionalProperties": false,
-            "description": "protein_sets: the table of (set, protein) pairs; input is a role of the site's inputs",
-            "properties": {
-              "input": {
-                "type": "string"
-              },
-              "set": {
-                "type": "string"
-              },
-              "protein": {
-                "type": "string"
-              },
-              "include": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/condition"
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "input",
+                  "set",
+                  "protein"
+                ],
+                "additionalProperties": false,
+                "description": "protein_sets: the table of (set, protein) pairs; input is a role of the site's inputs",
+                "properties": {
+                  "input": {
+                    "type": "string"
+                  },
+                  "set": {
+                    "type": "string"
+                  },
+                  "protein": {
+                    "type": "string"
+                  },
+                  "include": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/condition"
+                    }
+                  },
+                  "exclude": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/condition"
+                    }
+                  }
                 }
               },
-              "exclude": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/condition"
+              {
+                "type": "object",
+                "required": [
+                  "input",
+                  "protein",
+                  "classes",
+                  "ontology",
+                  "level"
+                ],
+                "additionalProperties": false,
+                "description": "protein_sets: sets from a class hierarchy (PANTHER protein classes, a GO slim): each protein's classes, and the ontology that places them",
+                "properties": {
+                  "input": {
+                    "type": "string",
+                    "description": "role of the table giving each protein its classes"
+                  },
+                  "protein": {
+                    "type": "string"
+                  },
+                  "classes": {
+                    "type": "string",
+                    "description": "the column of class ids"
+                  },
+                  "separator": {
+                    "type": "string",
+                    "description": "between a protein's class ids (default ;)"
+                  },
+                  "ontology": {
+                    "type": "object",
+                    "required": [
+                      "input",
+                      "id",
+                      "name",
+                      "parent",
+                      "root"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "input": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "parent": {
+                        "type": "string"
+                      },
+                      "root": {
+                        "type": "string",
+                        "description": "the root's id: its children are the top level"
+                      }
+                    }
+                  },
+                  "level": {
+                    "enum": [
+                      "top",
+                      "below_top"
+                    ],
+                    "description": "top: each protein's top-level classes; below_top: every class under the top level a protein's classes lie in or under"
+                  },
+                  "groups": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 1
+                    },
+                    "description": "level top only: group name -> its top-level class ids; every top-level class in exactly one group"
+                  },
+                  "unclassified": {
+                    "type": "string",
+                    "description": "a set of the universe's proteins with no class at this level, under this name"
+                  }
                 }
               }
-            }
+            ]
           },
           "names": {
             "type": "object",

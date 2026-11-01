@@ -83,6 +83,17 @@ analyses:
     min_size: 10
     max_size: 500
     abundance: {input: <role>, protein: <column>, value: <column>}   # optional: repeat within abundance deciles
+  - id: <analysis>                                       # sets from a class hierarchy (PANTHER, a GO slim)
+    test: protein_sets
+    sets:
+      input: <role>                                      # each protein's class ids
+      protein: <column>
+      classes: <column>
+      ontology: {input: <role>, id: <column>, name: <column>, parent: <column>, root: <root id>}
+      level: top                                         # or below_top; top may add groups: {name: [top ids]}
+      unclassified: <set name>                           # the universe's proteins with no class, as a set
+    universe: snapshot
+    whole_universe: true
 ```
 
 **Check:** `ptmc run sites/<site>.yaml --root DATA` runs, and `out/<site>/run.json` lists every input with its MD5.

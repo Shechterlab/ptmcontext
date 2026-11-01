@@ -44,7 +44,8 @@ def cmd_check(a) -> int:
     named = I.site_input_names(site)
     missing = [n for n in named if n not in entries]
     unknown = [x['layer'] for x in site['analyses'] if 'layer' in x and x['layer'] not in L.BUILT_IN and x['layer'] not in L.plugins()]
-    unknown += [x['sets']['input'] for x in site['analyses'] if 'sets' in x and x['sets']['input'] not in site.get('inputs', {})]
+    from .set_tests import roles_of
+    unknown += [r for x in site['analyses'] if 'sets' in x for r in roles_of(x) if r not in site.get('inputs', {})]
     print(f"{site['id']}: mark {profile.id} ({', '.join(profile.residues)}), {len(site['analyses'])} analyses")
     for problem, items in (('inputs not in the manifest', missing), ('layers not found', unknown)):
         if items:

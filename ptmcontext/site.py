@@ -178,9 +178,8 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     parts, layers_used, kept, set_names = [], {}, {}, []
     for analysis in site['analyses']:
         if analysis.get('test') == 'protein_sets':
-            from .set_tests import protein_set_test
-            several = [r for r in ctx.inputs if isinstance(ctx.inputs[r], L.Several)
-                       and r in (analysis['sets']['input'], analysis.get('names', {}).get('input'), analysis.get('abundance', {}).get('input'))]
+            from .set_tests import protein_set_test, roles_of
+            several = [r for r in roles_of(analysis) if isinstance(ctx.inputs.get(r), L.Several)]
             if several:
                 raise ValueError(f"{analysis['id']}: a protein-set test reads one table per role, but {several} name several inputs")
             rows_, names = protein_set_test(analysis, ctx.inputs, set(marked['accession']), set(snap.sequences))

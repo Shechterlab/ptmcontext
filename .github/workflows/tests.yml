@@ -20,6 +20,8 @@ jobs:
             inputs/layers/reactome_human_pathways.tsv
             inputs/layers/hpa_subcellular_locations.tsv
             inputs/layers/paxdb_human_integrated_abundance.tsv
+            inputs/annotation/panther_19.0_protein_classes.tsv
+            inputs/annotation/panther_19.0_protein_class_ontology.tsv
             releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
             releases/v1.4.3/statistics_v1.4.3.tsv
           sparse-checkout-cone-mode: false
