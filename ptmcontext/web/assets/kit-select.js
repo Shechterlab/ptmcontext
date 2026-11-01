@@ -540,7 +540,7 @@
     const cur = v => S.view === v || K.views[S.view]?.tab === v;
     const here = K.sections?.[S.view]?.() || [];
     const item = ([id, lab, lvl, href]) => (lvl === 0 ? `<p class="toc-group">${esc(lab)}</p>`
-      : href ? `<a href="${esc(href)}" class="sub l${lvl || 1}${S.view + '/' + S.arg === href.slice(1).split('?')[0] ? ' on' : ''}">${esc(lab)}</a>`
+      : href ? `<a href="${esc(href)}" class="sub l${lvl || 1}${K.link(S.view, S.arg).split('?')[0] === href.split('?')[0] ? ' on' : ''}">${esc(lab)}</a>`
       : `<a href="${esc(location.hash)}" data-jump="${esc(id)}"${id === 'view' ? '' : ` data-spy="${esc(id)}"`} class="sub l${lvl || 1}">${esc(lab)}</a>`);
     // the open protein is a page of its own, under Proteins; a page with no tab (Compare) is listed while open
     const extra = K.views[S.view] && !pages.some(([v]) => v === S.view) && S.view !== 'protein' ? [[S.view, K.views[S.view].title?.() || S.view]] : [];

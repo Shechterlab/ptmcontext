@@ -70,7 +70,7 @@
   // ---- state in the hash ---------------------------------------------------------------------------------------------
   const S = { view: 'overview', arg: '', q: '', sq: '', m: 'mantel_haenszel', a: '', vs: 'residues', cmp: '', sort: 'q', desc: false, nStat: 200, open: new Set(), all: new Set(), how: false };
   // modules (kit-*.js) register views, tabs, click handlers, tooltips and search hints here; the core starts them last
-  const K = window.PTMC = { D, W, A, S, esc, int, fx, fxn, fq, pct, cap, decorate, views: {}, tabs: [], clicks: [], tips: [], scopeHints: [], sections: {} };
+  const K = window.PTMC = { D, W, A, S, esc, int, fx, fxn, fq, pct, cap, decorate, views: {}, tabs: [], clicks: [], tips: [], scopeHints: [], sections: {}, routes: {} };
   const BUILT_IN_VIEWS = ['overview', 'statistics', 'method'];
   // a question's title in running text, as the site file writes it (lower-casing would break PRMT, DNA, Reactome)
   const inText = t => String(t || '');
@@ -80,6 +80,9 @@
     const [view, ...rest] = (path || '').split('/');
     S.view = BUILT_IN_VIEWS.includes(view) || K.views[view] ? view : 'overview';
     try { S.arg = S.view === view ? decodeURIComponent(rest.join('/')) : ''; } catch (e) { S.arg = ''; }
+    // a view with a readable path (a protein's gene before its accession) reads it, and an older form is rewritten
+    let routed = false;
+    if (K.routes[S.view] && S.arg) { const a = K.routes[S.view].arg(S.arg); routed = siteless(K.routes[S.view].path(a)) !== siteless(S.arg); S.arg = a; }
     // the original explorer's links: #ACC and #ACC/R216 open the protein; ?q= before the hash is the search
     const legacy = /^([A-NR-Z][0-9][A-Z0-9]{3}[0-9]|[OPQ][0-9][A-Z0-9]{3}[0-9])(?:-\d+)?(?:\/[A-Z]?(\d+))?$/i.exec(path || '');
     if (S.view === 'overview' && legacy && K.views.protein) { S.view = 'protein'; S.arg = legacy[1].toUpperCase() + (legacy[2] ? '/' + legacy[2] : ''); }
@@ -87,7 +90,7 @@
     else if (S.view === 'overview' && /^(about|docs)$/.test(view)) { S.view = 'method'; S.arg = ''; }
     const ov = S.view === 'overview' && /^ov-/.test(S.arg);
     if (ov) S.arg = S.arg.slice(3);
-    S.legacy = ov || (S.view !== view && !!view);     // written back as this site's own link (replaceState)
+    S.legacy = ov || routed || (S.view !== view && !!view);     // written back as this site's own link (replaceState)
     if (S.view === 'overview' && S.arg && !A[S.arg]) S.arg = '';
     S.q = p.get('q') || new URLSearchParams(location.search).get('q') || ''; S.m = p.get('m') || 'mantel_haenszel'; S.a = p.get('a') || ''; S.sq = p.get('sq') || '';
     // what a selection is compared with: other residues (the site's own tests), other marks, or another selection
@@ -100,6 +103,10 @@
     S.sort = p.get('sort') || 'q'; S.desc = p.get('dir') ? p.get('dir') === 'desc' : S.sort !== 'q';
     S.open = new Set((p.get('open') || '').split(',').filter(k => A[k]));
   }
+  // a view's argument as it appears in the address: the module's readable path (K.routes), each part encoded
+  const pathOf = (view, arg) => (K.routes[view] ? K.routes[view].path(arg) : arg).split('/').map(encodeURIComponent).join('/');
+  // a path without the residue letter of a site (R216 and 216 are the same site)
+  const siteless = x => String(x).split('/').map(t => t.replace(/^[A-Za-z](\d+)$/, '$1')).join('/');
   // the selection's part of a link: search, filters, the test shown and the baseline
   function selParams() {
     const p = new URLSearchParams();
@@ -117,12 +124,12 @@
     const p = selParams(); own.forEach((v, k) => p.set(k, v));
     return '#' + path + (p.toString() ? '?' + p : '');
   }
-  const link = (view, arg, extra) => carry('#' + view + (arg ? '/' + encodeURIComponent(arg).replace(/%2F/g, '/') : '') + (extra ? '?' + new URLSearchParams(extra) : ''));
+  const link = (view, arg, extra) => carry('#' + view + (arg ? '/' + pathOf(view, arg) : '') + (extra ? '?' + new URLSearchParams(extra) : ''));
   function writeHash(push) {
     const p = selParams();
     if (S.view === 'statistics') { if (S.a) p.set('a', S.a); if (S.sq) p.set('sq', S.sq); if (S.sort !== 'q') p.set('sort', S.sort); if (S.desc !== (S.sort !== 'q')) p.set('dir', S.desc ? 'desc' : 'asc'); }
 
-    const h = '#' + S.view + (S.arg ? '/' + encodeURIComponent(S.arg).replace(/%2F/g, '/') : '') + (p.toString() ? '?' + p : '');
+    const h = '#' + S.view + (S.arg ? '/' + pathOf(S.view, S.arg) : '') + (p.toString() ? '?' + p : '');
     if (h !== location.hash) (push ? history.pushState : history.replaceState).call(history, null, '', h);
   }
   const go = (view, extra = {}) => { Object.assign(S, { view, arg: '' }, extra); writeHash(true); render(); scrollTo(0, 0); };

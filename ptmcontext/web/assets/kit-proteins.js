@@ -141,6 +141,31 @@
       (pl != null ? `<dt>AlphaFold confidence</dt><dd>pLDDT ${Number(pl).toFixed(1)} <span class="muted">(model v${esc(PV.af.version)})</span></dd>` : '') +
       `<dt>UniProt at ${esc(site(m[0]))}</dt><dd>${PV.uniJson ? (uniAt.length ? uniAt.map(featLine).join('<br>') : '<span class="muted">no feature at this residue</span>') + ` <span class="muted">· <a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry#ptm_processing">UniProt ${esc(p.acc)}</a>, read live</span>` : '<span class="muted">asking UniProt…</span>'}</dd></dl></section>`;
   }
+  // the protein's address reads as its gene: #protein/EWSR1/Q01844, a site #protein/EWSR1/Q01844/R575, a region
+  // .../120-180. Older links (#protein/Q01844, #protein/Q01844/575, the explorer's #Q01844/R575) still open it, and a
+  // gene alone (#protein/EWSR1) opens its protein
+  const geneTag = p => String(p?.gene || '').split(/[\s;,]+/)[0].replace(/[/?#%]/g, '-');
+  let resAt = null;
+  const residueOf = (p, pos) => {
+    const sd = K.sel?.data();
+    if (sd && !resAt) { resAt = {}; sd.marks.forEach(m => { resAt[m[0] + ':' + m[1]] = (m[4] || '')[Math.floor((m[4] || '').length / 2)] || ''; }); }
+    return (resAt && resAt[p.i + ':' + pos]) || (PV.acc === p.acc && PV.rec?.seq?.[pos - 1]) || (D.residues?.length === 1 ? D.residues[0] : '');
+  };
+  K.routes.protein = {
+    path: arg => {
+      const [acc, at] = String(arg).split('/'), p = byAcc[acc]; if (!p) return String(arg);
+      const site = at && /^\d+$/.test(at) ? residueOf(p, +at) + at : at;
+      return [geneTag(p), acc, site].filter(Boolean).join('/');
+    },
+    arg: path => {
+      const parts = String(path).split('/').filter(Boolean), accOf = x => { const a = x.toUpperCase().replace(/-\d+$/, ''); return byAcc[a] ? a : null; };
+      const i = parts.findIndex(accOf);
+      if (i < 0) { const g = parts[0] && P_BY_GENE[parts[0].toUpperCase()]; return g ? g + (parts[1] ? '/' + parts[1].replace(/^[A-Za-z](\d+)$/, '$1') : '') : String(path); }
+      const at = parts[i + 1];
+      return accOf(parts[i]) + (at ? '/' + at.replace(/^[A-Za-z](\d+)$/, '$1') : '');
+    },
+  };
+  const P_BY_GENE = {}; (D.proteins || []).forEach(([acc, gene]) => String(gene || '').split(/[\s;,]+/).filter(Boolean).forEach(g => { P_BY_GENE[g.toUpperCase()] ||= acc; }));
   function proteinView(arg) {
     const [acc, sitePos] = String(arg).split('/');
     const p = byAcc[acc];

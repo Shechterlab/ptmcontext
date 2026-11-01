@@ -537,6 +537,10 @@ website:                  # the look and words of the website (ptmc web); layout
     question: "What kinds of proteins are arginine methylated?"
     rows: 7
     sections:
+      - name: Disease and cancer
+        cards:
+          - {analysis: disease_family, title: Disease families}
+          - {analysis: disease_family_additional, title: Disease families (additional)}
       - name: Kinds of protein
         cards:
           - {analysis: panther_group, title: Protein classes}
@@ -544,10 +548,6 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: hpa_location, title: Where in the cell}
           - {analysis: reactome_top_level, title: Reactome pathways (top level)}
           - {analysis: panther_subclass, title: Protein subclasses}
-      - name: Disease and cancer
-        cards:
-          - {analysis: disease_family, title: Disease families}
-          - {analysis: disease_family_additional, title: Disease families (additional)}
       - name: Where in the protein
         cards:
           - {analysis: motif, title: Sequence motifs}
