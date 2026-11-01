@@ -14,7 +14,7 @@
       (K.sel.active() ? `<p>Or <button class="linkish" type="button" data-go-apart>compare the current selection with the other ${esc(W.marks)}</button>.</p>` : '');
   }
   K.views.compare = { render: chooser, title: () => 'Compare two selections' };
-  K.sections.compare = () => [];
+  K.sections.compare = () => [['view', 'Compare two selections', 1]];
   // in the selection bar: the selection against the other marks, and the way to compare it with a saved one
   (K.selTools ||= []).push(() => (K.sel.active() && S.vs === 'residues' ? `<button class="btn small" type="button" data-go-apart title="Its ${esc(W.marks)} against the site’s other ${esc(W.marks)}, question by question">What sets it apart? ›</button>` : '') +
     (K.sel.savedList().length ? `<button class="btn small" type="button" data-go-compare title="Compare this selection with a saved one">Compare</button>` : ''));

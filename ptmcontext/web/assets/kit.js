@@ -323,8 +323,19 @@
       `<p class="page-sub">${vsOn() ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}, tested in your browser (exploratory).` : esc(a.question || a.describe || '')}${selOn() && !vsOn() ? ` <b>Your selection</b>${rows.some(r => r.descriptive) ? ': ' + whyShown(a).replace(/^Your selection /, '') : vsOn() ? '' : ', tested again in your browser (exploratory: not adjusted for the other selections tried).'}` : ''} <span class="muted">Click a ${a.kind === 'protein_sets' ? 'set' : 'class'} to select its ${esc(W.marks)}.</span></p>` +
       `<section class="pcard">${cardBody(a, rows)}${selOn() && !vsOn() ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
   }
-  K.sections.method = () => [['m-tests', 'How the tests work', 1], ['m-data', 'Data', 1], ['m-questions', 'Questions', 1], ['m-sources', 'Sources', 1], ['m-parity', 'Checked against the release', 1], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1]].filter(([id]) => id !== 'm-parity' || D.run.parity);
-  K.sections.overview = () => (S.arg ? [] : secList().flatMap(x => [[`sec-${x.name.replace(/\W+/g, '-').toLowerCase()}`, x.name, 1], ...x.cards.map(c => [`tile-${c.analysis}`, c.title || A[c.analysis].title, 2])]));
+  K.sections.method = () => [['m-g1', 'The tests', 0], ['m-tests', 'How the tests work', 1], ['m-questions', 'Questions, and what made each', 1], ['m-parity', 'Checked against the release', 1],
+    ['m-g2', 'The data', 0], ['m-data', 'Data', 1], ['m-sources', 'Sources', 1], ['m-g3', 'The site', 0], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1]]
+    .filter(([id]) => (id !== 'm-parity' || D.run.parity) && (id !== 'm-sources' || Object.values(D.attribute_specs || {}).some(x => x.kind === 'list' && x.link)));
+  // the Overview's sections and their questions: jumps on the tiles, links from an opened question (keeping the
+  // selection and the baseline)
+  const hashQuery = () => { const q = location.hash.split('?')[1]; return q ? '?' + q : ''; };
+  K.sections.overview = () => [
+    ...(selOn() ? [['view', vsOn() ? 'Your selection, against ' + vsName() : 'Your selection', 1]] : []),
+    ...secList().flatMap(x => [[`sec-${x.name.replace(/\W+/g, '-').toLowerCase()}`, x.name, 0],
+      ...x.cards.map(c => (S.arg ? [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, `#overview/${encodeURIComponent(c.analysis)}${hashQuery()}`] : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1]))])];
+  // All tests: every question, each opening its own tests
+  K.sections.statistics = () => [['view', 'All tests', 1, `#statistics${S.m !== 'mantel_haenszel' ? '?m=' + S.m : ''}`], ...secList().filter(x => !x.caveat && x.name !== 'About the sites').flatMap(x => [[`stat-${x.name}`, x.name, 0],
+    ...x.cards.filter(c => D.analyses.some(a => a.id === c.analysis)).map(c => [`stat-${c.analysis}`, c.title || A[c.analysis].title, 1, `#statistics?a=${encodeURIComponent(c.analysis)}`])])];
   const SLO = Math.log(1 / 16), SHI = Math.log(16);
   const sp = v => (Math.min(Math.max((Math.log(v) - SLO) / (SHI - SLO), 0), 1) * 100).toFixed(2) + '%';
   function strip(rows) {

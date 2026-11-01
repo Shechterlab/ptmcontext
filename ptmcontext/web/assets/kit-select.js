@@ -409,8 +409,13 @@
   }
 
   // ---- the sidebar: Sections and Filters --------------------------------------------------------------------------
-  const R = { tab: (() => { try { return localStorage.getItem('ptmc-rail-tab') || 'filters'; } catch (e) { return 'filters'; } })(),
-    pinned: (() => { try { const v = localStorage.getItem('ptmc-rail-pin'); return v == null ? innerWidth >= 1280 : v === '1'; } catch (e) { return innerWidth >= 1280; } })(), open: false };
+  const R = { tab: (() => { try { return localStorage.getItem('ptmc-rail-tab') || 'sections'; } catch (e) { return 'sections'; } })(),
+    // pinning is automatic (pinned whenever the window is wide enough, following its resizes) unless unpinned by hand
+    pin: (() => { try { return localStorage.getItem('ptmc-rail') === 'off' ? 'off' : 'auto'; } catch (e) { return 'auto'; } })(), open: false,
+    width: (() => { try { return +localStorage.getItem('ptmc-rail-w') || 0; } catch (e) { return 0; } })() };
+  const PIN_MIN = 1100;
+  const setRailWidth = () => { document.documentElement.style.setProperty('--rail-w', R.width ? `${Math.min(Math.max(R.width, 224), Math.min(520, innerWidth * 0.4))}px` : ''); };
+  setRailWidth();
   // the groups: from the site file, or one per section of residue questions, protein-set questions and attributes
   function groups() {
     if (D.filters && D.filters.length) return D.filters.map(g => ({ ...g, analyses: (g.analyses || []).filter(a => A[a]), attributes: (g.attributes || []).filter(k => SPECS[k]) }));
@@ -468,13 +473,30 @@
       }).join('') +
       `<div class="rail-foot"><span><b>${int(nMarks())}</b> ${esc(nMarks() === 1 ? W.mark : W.marks)} on <b>${int(nProteins())}</b> protein${nProteins() === 1 ? '' : 's'}${active() ? '' : ' (all)'}</span>${active() ? '<button class="linkish" type="button" data-sel-clear-all>Clear all</button>' : ''}</div>`;
   }
+  // every page, and the current page's own sections under it: [id, label, level, href?]; a section with an href is a
+  // link (another view), one without is a jump to the element with that id; group headings have level 0
   function sectionsTab() {
     const pages = [['overview', 'Overview'], ...K.tabs.map(f => f()).filter(Boolean).map(([v, n]) => [v, n]), ['statistics', 'Statistics'], ['method', 'Method']];
+    const cur = v => S.view === v || K.views[S.view]?.tab === v;
     const here = K.sections?.[S.view]?.() || [];
-    return '<nav class="toc">' + pages.map(([v, n]) => `<a href="#${v}" class="${S.view === v || K.views[S.view]?.tab === v ? 'on' : ''}">${esc(n)}</a>` +
-      (S.view === v || K.views[S.view]?.tab === v ? here.map(([id, lab, lvl]) => `<a href="${esc(location.hash)}" data-jump="${esc(id)}" class="sub l${lvl || 1}">${esc(lab)}</a>`).join('') : '')).join('') + '</nav>';
+    const item = ([id, lab, lvl, href]) => (lvl === 0 ? `<p class="toc-group">${esc(lab)}</p>`
+      : href ? `<a href="${esc(href)}" class="sub l${lvl || 1}${S.view + '/' + S.arg === href.slice(1).split('?')[0] ? ' on' : ''}">${esc(lab)}</a>`
+      : `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="sub l${lvl || 1}">${esc(lab)}</a>`);
+    return '<nav class="toc">' + pages.map(([v, n]) => `<a href="#${v}" class="page${cur(v) ? ' on' : ''}">${esc(n)}</a>` + (cur(v) ? here.map(item).join('') : '')).join('') + '</nav>';
   }
-  const pinned = () => R.pinned && innerWidth >= 1100;
+  const pinned = () => R.pin !== 'off' && innerWidth >= PIN_MIN;
+  // scroll-spy: the section in view is marked in the list
+  let spy = null;
+  function watchSections() {
+    spy?.disconnect(); const links = [...document.querySelectorAll('#rail [data-spy]')]; if (!links.length || !('IntersectionObserver' in window)) return;
+    const seen = new Map();
+    spy = new IntersectionObserver(es => {
+      es.forEach(e => seen.set(e.target.id, e.isIntersecting ? e.boundingClientRect.top : null));
+      const top = [...seen.entries()].filter(([, t]) => t != null).sort((x, y) => x[1] - y[1])[0];
+      links.forEach(a => a.classList.toggle('on', !!top && a.dataset.spy === top[0]));
+    }, { rootMargin: '-120px 0px -55% 0px' });
+    links.forEach(a => { const t = document.getElementById(a.dataset.spy); if (t) spy.observe(t); });
+  }
   function rail() {
     const el = document.getElementById('rail'); if (!el) return;
     const ae = document.activeElement, keep = ae && el.contains(ae) ? (ae.dataset.f ? `[data-f="${CSS.escape(ae.dataset.f)}"][data-v="${CSS.escape(ae.dataset.v)}"]` : ae.dataset.fsel ? `[data-fsel="${CSS.escape(ae.dataset.fsel)}"]` : ae.dataset.railTab ? `[data-rail-tab="${ae.dataset.railTab}"]` : null) : null;
@@ -485,13 +507,26 @@
     ['#view', '.toolbar', '.hero', 'footer.site'].forEach(sel => { const x = document.querySelector(sel); if (x) x.inert = open; });
     el.innerHTML = `<div class="rail-head"><span class="seg" role="group"><button type="button" data-rail-tab="sections" aria-pressed="${R.tab === 'sections'}">☰ Sections</button>` +
       `<button type="button" data-rail-tab="filters" aria-pressed="${R.tab === 'filters'}">⏚ Filters${Object.keys(S.f).length ? ` <span class="badge">${Object.keys(S.f).length}</span>` : ''}</button></span>` +
-      `<button type="button" class="btn small" data-rail-pin>${R.pinned ? 'Unpin' : 'Pin'}</button>${R.pinned ? '' : '<button type="button" class="btn small" data-rail-close aria-label="Close">×</button>'}</div>` +
-      `<div class="rail-body">${R.tab === 'sections' ? sectionsTab() : filtersTab()}</div>`;
+      `<button type="button" class="btn small" data-rail-pin title="${R.pin === 'off' ? `Keep the sidebar beside the page whenever the window is ${PIN_MIN} px or wider` : 'Show the sidebar only when asked (☰)'}">${R.pin === 'off' ? 'Pin' : 'Unpin'}</button>${pinned() ? '' : '<button type="button" class="btn small" data-rail-close aria-label="Close">×</button>'}</div>` +
+      `<div class="rail-body">${R.tab === 'sections' ? sectionsTab() : filtersTab()}</div>` +
+      (pinned() ? `<div class="rail-grip" role="separator" aria-orientation="vertical" aria-label="Sidebar width: drag, or use the arrow keys; double-click resets it" tabindex="0" data-rail-grip></div>` : '');
+    if (R.tab === 'sections') requestAnimationFrame(watchSections);
     if (keep) el.querySelector(keep)?.focus();
     else if (open && !wasOpen) el.querySelector('[data-rail-tab][aria-pressed="true"]')?.focus();
     else if (!open && wasOpen) R.opener?.focus();
   }
-  addEventListener('resize', () => { if (document.body.classList.contains('rail-pinned') !== pinned()) rail(); });
+  addEventListener('resize', () => { setRailWidth(); if (document.body.classList.contains('rail-pinned') !== pinned()) rail(); });
+  // the width grip: drag (or arrow keys) to resize the pinned sidebar; double-click for the automatic width
+  const saveWidth = () => { try { if (R.width) localStorage.setItem('ptmc-rail-w', String(Math.round(R.width))); else localStorage.removeItem('ptmc-rail-w'); } catch (e) { /* storage may be blocked */ } };
+  document.addEventListener('pointerdown', e => {
+    const g = e.target.closest?.('[data-rail-grip]'); if (!g) return;
+    e.preventDefault(); const rail0 = document.getElementById('rail').getBoundingClientRect(); g.setPointerCapture(e.pointerId);
+    const move = ev => { R.width = ev.clientX - rail0.left; setRailWidth(); };
+    const up = () => { g.removeEventListener('pointermove', move); g.removeEventListener('pointerup', up); saveWidth(); };
+    g.addEventListener('pointermove', move); g.addEventListener('pointerup', up);
+  });
+  document.addEventListener('dblclick', e => { if (e.target.closest?.('[data-rail-grip]')) { R.width = 0; setRailWidth(); saveWidth(); } });
+  document.addEventListener('keydown', e => { if (!e.target.closest?.('[data-rail-grip]') || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return; e.preventDefault(); R.width = (R.width || document.getElementById('rail').getBoundingClientRect().width) + (e.key === 'ArrowRight' ? 16 : -16); setRailWidth(); saveWidth(); });
 
   // ---- events ------------------------------------------------------------------------------------------------------
   K.clicks.push(
@@ -504,7 +539,7 @@
     ['[data-fgroup-clear]', (el, e) => { e.preventDefault(); keysOf(groups()[+el.dataset.fgroupClear]).forEach(k => delete S.f[k]); K.writeHash(true); K.render(); }],
     ['[data-rail-tab]', el => { R.tab = el.dataset.railTab; try { localStorage.setItem('ptmc-rail-tab', R.tab); } catch (e) { /* */ } rail(); }],
     ['[data-saved-del]', el => { const list = savedList(); list.splice(+el.dataset.savedDel, 1); try { localStorage.setItem(`ptmc-saved-${D.site.id}`, JSON.stringify(list)); } catch (e) { /* */ } rail(); }],
-    ['[data-rail-pin]', () => { R.pinned = !R.pinned; R.open = false; try { localStorage.setItem('ptmc-rail-pin', R.pinned ? '1' : '0'); } catch (e) { /* */ } rail(); }],
+    ['[data-rail-pin]', () => { R.pin = R.pin === 'off' ? 'auto' : 'off'; R.open = false; try { localStorage.setItem('ptmc-rail', R.pin); } catch (e) { /* */ } rail(); if (R.pin === 'auto' && !pinned()) { R.open = true; rail(); } }],
     ['[data-rail-close]', () => { R.open = false; rail(); }],
     ['[data-rail-open]', el => { R.opener = el; if (pinned()) { R.tab = el.dataset.railOpen || R.tab; rail(); document.querySelector('#rail [data-rail-tab]')?.focus(); return; } R.open = true; R.tab = el.dataset.railOpen || R.tab; rail(); }],
     ['[data-jump]', (el, e) => { e.preventDefault(); const t = document.getElementById(el.dataset.jump); if (t) { if (t.tagName === 'DETAILS') t.open = true; t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }],
@@ -513,5 +548,5 @@
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('fgroup')) { (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g); } }, true);
   addEventListener('keydown', e => { if (e.key === 'Escape' && R.open) { R.open = false; rail(); } });
 
-  Object.assign(K, { sel: { ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, STUDY, MIN_SIDE, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
+  Object.assign(K, { watchSections, sel: { ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, STUDY, MIN_SIDE, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
 });

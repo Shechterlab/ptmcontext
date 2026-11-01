@@ -43,7 +43,7 @@
     return `<div class="page-head"><h2>Proteins</h2>${K.expBar(['tsv'], 'pexp', 'the protein list')}</div>` +
       `<p class="page-sub">Every protein with at least one ${esc(W.mark)}${K.sel?.active() ? ' in your selection' : ''}. Search above by gene, accession or name (a list of genes works too), or filter. A row opens the protein.</p>` +
       `<div class="filters"><span class="muted">${int(rows.length)} of ${int(P.length)} proteins${K.sel?.active() ? ' in your selection' : ''}</span></div>` +
-      `<div class="tbl-card"><table class="tbl ptbl"><thead><tr>${PCOLS.map(([k, t, n]) => `<th class="${n ? 'num' : ''}" data-psort="${k}" tabindex="0"${PS.sort === k ? ` aria-sort="${PS.desc ? 'descending' : 'ascending'}"` : ''}>${esc(t)}${PS.sort === k ? (PS.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
+      `<div class="tbl-card" id="proteins-table"><table class="tbl ptbl"><thead><tr>${PCOLS.map(([k, t, n]) => `<th class="${n ? 'num' : ''}" data-psort="${k}" tabindex="0"${PS.sort === k ? ` aria-sort="${PS.desc ? 'descending' : 'ascending'}"` : ''}>${esc(t)}${PS.sort === k ? (PS.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
       shown.map(p => `<tr data-acc="${esc(p.acc)}"><td><a href="#protein/${esc(p.acc)}"><b>${esc(p.gene || '–')}</b></a></td><td class="wrapok">${esc(p.name)}</td><td class="mono">${esc(p.acc)}</td>` +
         `<td class="num">${K.sel?.active() ? `<b>${int(selCount(p))}</b> <span class="muted">of ${int(p.marks)}</span>` : int(p.marks)}</td><td class="num">${int(p.len)}</td><td class="num">${pct(p.marks, p.cand)}</td></tr>`).join('') +
       `</tbody></table></div>` + (rows.length > PS.n ? `<p><button class="linkish" type="button" data-pmore>Show ${int(Math.min(200, rows.length - PS.n))} more</button></p>` : '');
@@ -176,9 +176,17 @@
         `<section><h4>Experimental structures <small class="muted">PDBe, live</small></h4><div id="live-pdb" class="live"><p class="muted">Asking PDBe…</p></div></section></div>`, false) +
       (IXP ? fold('p-ix', 'Interaction partners', 'STRING, live', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(p.gene || p.acc)}, best first, and which of them have ${esc(W.marks)} in this site.</p>${K.expBar(['tsv'], 'ixexp', 'the partners')}</div><div id="live-ix" class="live"><p class="muted">Asking STRING…</p></div>`, false) : '');
   }
-  K.sections.protein = () => [['p-map', 'Protein map', 1], ['p-sites', cap(W.marks), 1], ['p-score', `Against its other ${W.residues}`, 1],
-    ...(D.analyses.some(a => a.kind === 'protein_sets') ? [['p-kinds', 'Kinds of protein', 1]] : []), ['p-regions', 'Domains and regions', 1], ['p-seq', 'Sequence', 1],
-    ['p-struct', 'Structure', 1], ...(IXP ? [['p-ix', 'Interaction partners', 1]] : [])];
+  K.sections.protein = () => { const p = byAcc[PV.acc]; return [['view', p ? `${p.gene || p.acc}: ${p.name || ''}` : 'This protein', 1], ...(PV.site ? [['site-card', `The ${W.mark} ${site(PV.site)}`, 1]] : []),
+    ['g-marks', `Its ${W.marks}`, 0], ['p-map', 'Protein map', 1], ['p-sites', cap(W.marks), 1], ['p-score', `Against its other ${W.residues}`, 1],
+    ['g-protein', 'The protein', 0], ...(D.analyses.some(a => a.kind === 'protein_sets') ? [['p-kinds', 'Kinds of protein', 1]] : []), ['p-regions', 'Domains and regions', 1], ['p-seq', 'Sequence', 1],
+    ['g-live', 'Live sources', 0], ['p-struct', 'Structure', 1], ...(IXP ? [['p-ix', 'Interaction partners', 1]] : [])]; };
+  // the Proteins page: its table, and the proteins with most marks (of the selection, if any)
+  K.sections.proteins = () => {
+    const cnt = K.sel?.active() ? K.sel.selectedCountByProtein() : null;
+    const top = P.slice().map(p => [p, cnt ? (cnt[p.i] || 0) : p.marks]).filter(([, k]) => k > 0).sort((x, y) => y[1] - x[1]).slice(0, 12);
+    return [['view', 'Proteins', 1], ['proteins-table', 'The table: search, sort, download', 1], ['g-top', cnt ? `Most ${W.marks} in the selection` : `Most ${W.marks}`, 0],
+      ...top.map(([p, k]) => [`p-${p.acc}`, `${p.gene || p.acc} (${int(k)})`, 1, `#protein/${p.acc}`])];
+  };
 
   // ---- kinds of protein: the sets of each protein-set question this protein is in, with the site's result for each,
   // and its abundance as the test placed it (data/selection.json) --------------------------------------------------
