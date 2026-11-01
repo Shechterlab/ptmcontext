@@ -26,22 +26,31 @@
   const slide = (v, w) => { const h = Math.floor(w / 2), c = [0]; v.forEach(x => c.push(c[c.length - 1] + x)); return v.map((_, i) => { const a = Math.max(0, i - h), b = Math.min(v.length, i + h + 1); return (c[b] - c[a]) / (b - a); }); };
   const AF_BINS = [[90, '#0053d6', 'very high (> 90)'], [70, '#65cbf3', 'confident (70–90)'], [50, '#ffdb13', 'low (50–70)'], [0, '#ff7d45', 'very low (< 50)']];
   const afColour = v => AF_BINS.find(([t]) => v > t || t === 0)[1];
-  const IDR_PAL = ['#9DB8C7', '#E2B44C', '#8E7CC3', '#D64545', '#2F6FD6', '#7C8A93'];
-  const idrAid = () => Object.values(K.A).find(a => a.layer === 'idr_charge')?.id;
-  const idrClasses = () => Object.keys((K.A[idrAid()] || {}).labels || {}).filter(c => /^r\d$/.test(c));
-  const idrColour = cls => { const k = idrClasses().indexOf(cls); return k >= 0 ? IDR_PAL[k % IDR_PAL.length] : '#cbd5e1'; };
+  // the regions the run's layers draw (tracks.json): each kind is a row, or the backbone's boxes or wave; the map knows
+  // no layer by name. A row of segments is coloured by the classes of the analysis that drew it, if it has any.
+  const TRACKS = D.tracks || [];
+  const SEG_PAL = ['#9DB8C7', '#E2B44C', '#8E7CC3', '#D64545', '#2F6FD6', '#7C8A93', '#1BAF7A', '#B45309'], SEG_PLAIN = '#9DB8C7';
+  const trackRow = t => (t.style === 'segments' ? 'tr:' : 'bb:') + t.kind;
+  const kindsOf = style => new Set(TRACKS.filter(t => t.style === style).map(t => t.kind));
+  const trackOf = kind => TRACKS.find(t => t.kind === kind) || { kind, title: kind, roles: [] };
+  const segLabels = t => (K.A[t.analysis] || {}).labels || {};
+  const segColour = (t, cls) => (t.colours || {})[cls] || (!cls ? SEG_PLAIN : (k => (k >= 0 ? SEG_PAL[k % SEG_PAL.length] : '#cbd5e1'))(Object.keys(segLabels(t)).indexOf(cls)));
   const store = { get: (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* */ } } };
   // the inputs that fill a role, by version (for the hovers' provenance)
   const roleVersion = role => Object.values(D.inputs || {}).filter(x => x.role === role).map(x => x.version).join('; ');
+  const tracksVersion = t => [...new Set((t.roles || []).map(roleVersion).filter(Boolean))].join('; ');
+  // the source's own page for this protein (a manifest entry's record), for each input of a track's roles
+  const recordLinks = (t, acc) => Object.values(D.inputs || {}).filter(x => (t.roles || []).includes(x.role) && x.record)
+    .map(x => `<a href="${esc(x.record.replace('{acc}', encodeURIComponent(acc)))}">${esc(String(x.version || '').split(' ')[0] || 'source')} ${esc(acc)}</a>`).join(' · ');
 
   // ---- the rows -------------------------------------------------------------------------------------------------
+  const trackHelp = t => `${t.help || t.title}${tracksVersion(t) ? ` (${tracksVersion(t)})` : ''}`;
   const ROWS = [
-    ['dom_backbone', 'Domains', 'on the backbone', `The site’s domains (${roleVersion('domains') || 'the domains input'}), drawn as boxes on the backbone`],
-    ['dis_backbone', 'Disorder', 'on the backbone', `The site’s disordered regions (${roleVersion('disorder') || 'the disorder input'}): the backbone waves where a region is disordered`],
+    ...TRACKS.filter(t => t.style !== 'segments').map(t => [trackRow(t), t.title, 'on the backbone', trackHelp(t)]),
     ['uni_dom', 'UniProt domains', 'live', 'Domains, repeats and zinc fingers of the UniProt entry, read live'],
     ['regions', 'Regions', 'live', 'Regions and motifs of the UniProt entry (its “Disordered” regions are left out), read live'],
     ['composition', 'Composition', 'live', 'Compositional bias of the UniProt entry, read live'],
-    ['idr', 'IDR charge', 'site', 'IDRs (disordered regions merged, 20 residues or more) coloured by their region of the Das–Pappu diagram of states (FCR and NCPR; CIDER)'],
+    ...TRACKS.filter(t => t.style === 'segments').map(t => [trackRow(t), t.title, 'site', trackHelp(t)]),
     ['charge', 'Charge', 'sequence', 'Net charge along the chain: a 5-residue sliding mean on the EMBOSS charge scale (K, R +1; H +0.5; D, E −1), positive up (blue), negative down (red)'],
     ['hydropathy', 'Hydropathy', 'sequence', 'Hydropathy along the chain: a 9-residue sliding mean of the Kyte–Doolittle scale (J Mol Biol 157:105, 1982), hydrophobic up (amber), hydrophilic down (teal); the axis runs from −3 to +3'],
     ['aromatic', 'Aromatic', 'sequence', 'Aromatic residues (F, Y, W): the “stickers” of many disordered regions'],
@@ -51,12 +60,15 @@
     ['ptm', 'Other PTMs', 'live', 'Modified residues, cross-links, glycosylation and lipidation of the UniProt entry, read live, one row per kind'],
     ['plddt', 'AlphaFold', 'live', 'The AlphaFold DB model’s confidence (pLDDT) per residue, read live; drawn only where the model’s sequence is this one'],
   ];
-  const DEFAULT_ON = ['dom_backbone', 'dis_backbone', 'uni_dom', 'regions', 'idr', 'charge', 'hydropathy', 'uni_mark', 'variants', 'ptm', 'plddt'];
+  // every row is drawn unless turned off, so a site's new track shows without anyone turning it on
+  const DEFAULT_OFF = ['composition', 'aromatic', 'residues'];
   const M = {
-    on: new Set(store.get('ptmc-map-rows', DEFAULT_ON)), order: store.get('ptmc-map-order', ROWS.map(r => r[0])),
+    off: new Set(store.get('ptmc-map-off', DEFAULT_OFF)), order: store.get('ptmc-map-order', ROWS.map(r => r[0])),
     colour: store.get('ptmc-map-colour', Object.keys(SPECS).find(k => SPECS[k].colour) || 'single'), labels: store.get('ptmc-map-labels', 'auto'),
     zoom: null, items: [], rowsMenu: false, ctx: null,
   };
+  const isOn = id => !M.off.has(id);
+  const isBackbone = id => id.startsWith('bb:');
   const rowOrder = () => [...M.order.filter(id => ROWS.some(r => r[0] === id)), ...ROWS.map(r => r[0]).filter(id => !M.order.includes(id))];
 
   // ---- colours for the sites ------------------------------------------------------------------------------------
@@ -108,14 +120,15 @@
   // the site's domains, those with the same name merged where they overlap (InterPro lists one domain per member hit)
   function mergedDomains(rec) {
     const out = [];
-    rec.units.filter(u => u[0] === 'domain').sort((x, y) => x[1] - y[1]).forEach(u => {
-      const prev = out.find(o => o[3] === u[3] && u[1] <= o[2] && u[2] >= o[1]);
+    const kinds = kindsOf('domains');
+    rec.units.filter(u => kinds.has(u[0]) && isOn('bb:' + u[0])).sort((x, y) => x[1] - y[1]).forEach(u => {
+      const prev = out.find(o => o[0] === u[0] && o[3] === u[3] && u[1] <= o[2] && u[2] >= o[1]);
       if (prev) { prev[1] = Math.min(prev[1], u[1]); prev[2] = Math.max(prev[2], u[2]); } else out.push([...u]);
     });
     return out;
   }
-  // a public accession, linked: InterPro entries; others stay plain text
-  const refLink = ref => (/^IPR\d{6}$/.test(ref || '') ? `https://www.ebi.ac.uk/interpro/entry/InterPro/${ref}/` : null);
+  // a region's accession, linked to the database that defines it (config/ref_links.json); others stay plain text
+  const refLink = ref => { const r = (D.ref_links || []).find(x => ref && new RegExp(x.pattern).test(ref)); return r ? r.url.replace('{ref}', encodeURIComponent(ref)) : null; };
 
   // ---- drawing --------------------------------------------------------------------------------------------------
   const Wd = 1000, LB = 104, X0 = 112, X1 = 988;
@@ -167,23 +180,25 @@
         : `<text x="${l.x.toFixed(1)}" y="${y.toFixed(1)}" font-size="10.5" text-anchor="middle" fill="${INK}">${esc(l.txt)}</text>`);
     });
     // backbone: a bar where ordered, a wave where disordered (the site's disorder), the site's domains as boxes
-    const dis = rec.units.filter(u => u[0] === 'disordered' && inView(u[1], u[2]));
-    const idrs = rec.units.filter(u => u[0] === 'idr');
+    const disK = kindsOf('disorder'), segK = kindsOf('segments');
+    const dis = rec.units.filter(u => disK.has(u[0]) && isOn('bb:' + u[0]) && inView(u[1], u[2]));
+    const segs = rec.units.filter(u => segK.has(u[0]));
     parts.push(`<line x1="${X0}" x2="${X1}" y1="${yB}" y2="${yB}" stroke="${MUTED}" stroke-width="2"/>`);
-    if (M.on.has('dis_backbone')) dis.forEach(([, s, e]) => {
+    dis.forEach(([kind, s, e]) => {
       const a = X(Math.max(s, za) - 0.5), b = X(Math.min(e, zb) + 0.5); if (b - a < 2) return;
       parts.push(`<rect x="${a.toFixed(1)}" y="${yB - 2}" width="${(b - a).toFixed(1)}" height="4" fill="${SURF}"/>`);
       let d = `M${a.toFixed(1)},${yB}`, x = a, up = true;
       while (x < b) { const nx = Math.min(b, x + 5); d += ` Q${((x + nx) / 2).toFixed(1)},${up ? yB - 5 : yB + 5} ${nx.toFixed(1)},${yB}`; x = nx; up = !up; }
-      const idr = idrs.find(([, is, ie]) => is <= e && ie >= s);
-      const k = it({ tip: `<b>Disordered ${s}–${e}</b>${idr ? `<br>In the IDR ${idr[1]}–${idr[2]}${idr[3] ? ': ' + esc(idr[3]) : ''}` : '<br>Shorter than 20 aa, so in no IDR'}<br><span class="muted">${esc(roleVersion('disorder'))}</span>`, a: s, b: e });
+      const t = trackOf(kind), over = segs.filter(([, is, ie]) => is <= e && ie >= s);
+      const tip = full => `<b>${esc(t.title)} ${s}–${e}</b>${over.map(([k2, is, ie, lab]) => `<br>${esc(trackOf(k2).title)} ${is}–${ie}${lab ? ': ' + esc(lab) : ''}`).join('')}<br><span class="muted">${esc(tracksVersion(t))}</span>${full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`;
+      const k = it({ tip: tip(false), card: tip(true), a: s, b: e });
       parts.push(`<path d="${d}" fill="none" stroke="${MUTED}" stroke-width="1.6" data-mi="${k}" pointer-events="stroke"/>`);
     });
-    if (M.on.has('dom_backbone')) mergedDomains(rec).filter(u => inView(u[1], u[2])).forEach(([, s, e, lab, src, , ref]) => {
-      const a = X(Math.max(s, za) - 0.5), b = X(Math.min(e, zb) + 0.5), w = Math.max(2, b - a);
-      const from = (D.unit_sources || [])[src] || roleVersion('domains'), short = String(lab || '').split(' · ')[0];
+    mergedDomains(rec).filter(u => inView(u[1], u[2])).forEach(([kind, s, e, lab, src, , ref]) => {
+      const a = X(Math.max(s, za) - 0.5), b = X(Math.min(e, zb) + 0.5), w = Math.max(2, b - a), t = trackOf(kind), ver = tracksVersion(t);
+      const from = (D.unit_sources || [])[src] || ver, short = String(lab || '').split(' · ')[0];
       const link = refLink(ref);
-      const tip = full => `<b>${esc(lab || 'Domain')}</b>${ref ? ` (${full && link ? `<a href="${esc(link)}">${esc(ref)}</a>` : esc(ref)})` : ''}<br>${s}–${e}<br><span class="muted">The site’s domains: ${esc(from)}${roleVersion('domains') && !from.includes(roleVersion('domains')) ? ' (' + esc(roleVersion('domains')) + ')' : ''}</span>`;
+      const tip = full => `<b>${esc(lab || t.title)}</b>${ref ? ` (${full && link ? `<a href="${esc(link)}">${esc(ref)}</a>` : esc(ref)})` : ''}<br>${s}–${e}<br><span class="muted">${esc(t.title)}: ${esc(from)}${ver && !from.includes(ver) ? ' (' + esc(ver) + ')' : ''}</span>${full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`;
       const k = it({ tip: tip(false), card: tip(true), a: s, b: e });
       parts.push(`<rect x="${a.toFixed(1)}" y="${yB - 8}" width="${w.toFixed(1)}" height="16" rx="4" fill="#D6ECF0" stroke="#0E7490" stroke-width="1" data-mi="${k}"/>`);
       if (short && K.tw(short, 10) + 8 < w) parts.push(`<text x="${((a + b) / 2).toFixed(1)}" y="${yB + 3.5}" font-size="10" text-anchor="middle" fill="#0F3B47" pointer-events="none">${esc(short)}</text>`);
@@ -223,20 +238,23 @@
     const feats = types => (uni?.features || []).filter(f => types.includes(f.type));
     const atMark = new Set(rec.marks.map(m => m[0]));
     for (const id of rowOrder()) {
-      if (!M.on.has(id) || id.endsWith('_backbone')) continue;
+      if (!isOn(id) || isBackbone(id)) continue;
       const row = ROWS.find(r => r[0] === id);
       if (id === 'uni_dom') { if (!live(row, true)) continue; const fs = feats(['Domain', 'Repeat', 'Zinc finger']); if (!fs.length) continue; const h = boxes(fs, f => (f.type === 'Repeat' ? '#DCEEF3' : '#B9DDE6'), () => '#5B97A6', f => f.description, (f, full) => `<b>${esc(f.type)}</b> ${esc(f.description || '')}<br>${fpos(f).join('–')}` + featureProv(p.acc, f, full)); rowLabel(row[1], h, row[3]); y += h + 8; }
       else if (id === 'regions') { if (!live(row, true)) continue; const fs = feats(['Region', 'Motif']).filter(f => !/^disordered$/i.test(f.description || '')); if (!fs.length) continue; const h = boxes(fs, f => (f.type === 'Motif' ? '#FFFFFF' : '#E3ECF6'), f => (f.type === 'Motif' ? '#334155' : '#8FA5BF'), f => f.description, (f, full) => `<b>${esc(f.type)}</b> ${esc(f.description || '')}<br>${fpos(f).join('–')}` + featureProv(p.acc, f, full)); rowLabel(row[1], h, row[3]); y += h + 8; }
       else if (id === 'composition') { if (!live(row, true)) continue; const fs = feats(['Compositional bias']); if (!fs.length) continue; const h = boxes(fs, () => '#FDE3D4', () => '#D9A486', f => f.description, (f, full) => `<b>Compositional bias</b> ${esc(f.description || '')}<br>${fpos(f).join('–')}` + featureProv(p.acc, f, full)); rowLabel(row[1], h, row[3]); y += h + 8; }
-      else if (id === 'idr') {
-        if (!idrs.length) continue;
-        const shownIdr = idrs.filter(u => inView(u[1], u[2]));
-        if (!shownIdr.length) { rowLabel(row[1], 12, row[3]); parts.push(`<text x="${X0}" y="${y + 10}" font-size="10" fill="${MUTED}">none in ${za}–${zb}</text>`); y += 20; continue; }
-        shownIdr.forEach(([, s, e, lab, , code]) => {
-          const a = X(Math.max(s, za) - 0.5), b = X(Math.min(e, zb) + 0.5);
-          const tip = `<b>IDR ${s}–${e}</b>${lab ? '<br>' + esc(lab) : ''}<br><span class="muted">The site’s disordered regions (${esc(roleVersion('disorder'))}) merged, 20 aa or more; ${esc((K.A[idrAid()] || {}).describe || '')}</span>`;
-          const k = it({ tip, card: tip + `<br><a href="https://mobidb.org/${esc(p.acc)}">MobiDB ${esc(p.acc)}</a>`, a: s, b: e });
-          parts.push(`<rect x="${a.toFixed(1)}" y="${y}" width="${Math.max(2, b - a).toFixed(1)}" height="12" rx="3" fill="${idrColour(code)}" data-mi="${k}"/>`);
+      else if (id.startsWith('tr:')) {
+        // a track's regions, coloured by class when they have one; a row is drawn only for a protein that has some
+        const t = trackOf(id.slice(3)), mine = segs.filter(u => u[0] === t.kind);
+        if (!mine.length) continue;
+        const shown = mine.filter(u => inView(u[1], u[2]));
+        if (!shown.length) { rowLabel(row[1], 12, row[3]); parts.push(`<text x="${X0}" y="${y + 10}" font-size="10" fill="${MUTED}">none in ${za}–${zb}</text>`); y += 20; continue; }
+        const what = (K.A[t.analysis] || {}).describe || '';
+        shown.forEach(([, s, e, lab, , code, ref]) => {
+          const a = X(Math.max(s, za) - 0.5), b = X(Math.min(e, zb) + 0.5), link = refLink(ref);
+          const tip = full => `<b>${esc(t.title)} ${s}–${e}</b>${lab ? '<br>' + esc(lab) : code ? '<br>' + esc(segLabels(t)[code] || code) : ''}${ref ? `<br>${full && link ? `<a href="${esc(link)}">${esc(ref)}</a>` : esc(ref)}` : ''}<br><span class="muted">${esc(t.help || '')}${tracksVersion(t) ? ' (' + esc(tracksVersion(t)) + ')' : ''}${what ? '; ' + esc(what) : ''}</span>${full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`;
+          const k = it({ tip: tip(false), card: tip(true), a: s, b: e });
+          parts.push(`<rect x="${a.toFixed(1)}" y="${y}" width="${Math.max(2, b - a).toFixed(1)}" height="12" rx="3" fill="${segColour(t, code)}" data-mi="${k}"/>`);
         });
         rowLabel(row[1], 12, row[3]); y += 20;
       } else if ((id === 'charge' || id === 'hydropathy') && seq) {
@@ -341,8 +359,8 @@
       `<div class="map-legend"><b>${esc(SPECS[M.colour]?.label || cap(W.marks))}</b>${legendFor(ctx).map(([c, l]) => `<span><i style="background:${c}"></i>${esc(l)}</span>`).join('')}${rowLegend().map(([c, l]) => `<span class="rl"><i class="sq" style="background:${c}"></i>${esc(l)}</span>`).join('')}</div>`;
   }
   function rowsMenu() {
-    return `<div class="rows-menu" role="menu"><p class="flabel">On the backbone</p>` + ROWS.filter(r => r[0].endsWith('_backbone')).map(r => `<label><input type="checkbox" data-map-row="${r[0]}"${M.on.has(r[0]) ? ' checked' : ''}> ${esc(r[1])}</label>`).join('') +
-      `<p class="flabel">Rows, top to bottom</p>` + rowOrder().filter(id => !id.endsWith('_backbone')).map(id => { const r = ROWS.find(x => x[0] === id); return `<div class="rm-row"><label title="${esc(r[3])}"><input type="checkbox" data-map-row="${id}"${M.on.has(id) ? ' checked' : ''}> ${esc(r[1])} <span class="muted">${esc(r[2])}</span></label><span><button type="button" data-map-move="${id}" data-d="-1" aria-label="Up">↑</button><button type="button" data-map-move="${id}" data-d="1" aria-label="Down">↓</button></span></div>`; }).join('') +
+    return `<div class="rows-menu" role="menu"><p class="flabel">On the backbone</p>` + ROWS.filter(r => isBackbone(r[0])).map(r => `<label title="${esc(r[3])}"><input type="checkbox" data-map-row="${r[0]}"${isOn(r[0]) ? ' checked' : ''}> ${esc(r[1])}</label>`).join('') +
+      `<p class="flabel">Rows, top to bottom</p>` + rowOrder().filter(id => !isBackbone(id)).map(id => { const r = ROWS.find(x => x[0] === id); return `<div class="rm-row"><label title="${esc(r[3])}"><input type="checkbox" data-map-row="${id}"${isOn(id) ? ' checked' : ''}> ${esc(r[1])} <span class="muted">${esc(r[2])}</span></label><span><button type="button" data-map-move="${id}" data-d="-1" aria-label="Up">↑</button><button type="button" data-map-move="${id}" data-d="1" aria-label="Down">↓</button></span></div>`; }).join('') +
       `<p><button type="button" class="linkish" data-map-defaults>Default rows</button></p></div>`;
   }
   function render(el, ctx) {
@@ -377,9 +395,10 @@
     const out = [`<b>${esc(aa)}${pos}</b>`];
     const mk = rec.marks.find(m => m[0] === pos);
     if (mk) { const c = siteColour(mk); out.push(`${esc(W.mark)}${c.label ? ': ' + esc(c.label) : ''}`); }
-    [...new Set(rec.units.filter(u => u[0] === 'domain' && u[1] <= pos && u[2] >= pos).map(u => String(u[3]).split(' · ')[0] || 'domain'))].forEach(t => out.push(esc(t)));
-    const idr = rec.units.find(u => u[0] === 'idr' && u[1] <= pos && u[2] >= pos);
-    if (idr) out.push(`IDR ${idr[1]}–${idr[2]}${idr[3] ? ' (' + esc(String(idr[3]).split(':')[0]) + ')' : ''}`);
+    // each track's regions at the residue: domains by name, other regions by their track and class
+    const at = rec.units.filter(u => u[1] <= pos && u[2] >= pos), domK = kindsOf('domains');
+    [...new Set(at.filter(u => domK.has(u[0])).map(u => String(u[3]).split(' · ')[0] || trackOf(u[0]).title))].forEach(t => out.push(esc(t)));
+    at.filter(u => !domK.has(u[0])).forEach(u => { const t = trackOf(u[0]); out.push(`${esc(t.title)} ${u[1]}–${u[2]}${u[5] && segLabels(t)[u[5]] ? ' (' + esc(segLabels(t)[u[5]]) + ')' : ''}`); });
     (uni?.features || []).filter(f => ['Region', 'Motif', 'Compositional bias'].includes(f.type) && fpos(f)[0] <= pos && fpos(f)[1] >= pos && !/^disordered$/i.test(f.description || '')).slice(0, 3).forEach(f => out.push(`${f.type === 'Compositional bias' ? 'compositional bias: ' : ''}${esc(f.description)}`));
     (uni?.features || []).filter(f => ['Modified residue', 'Cross-link'].includes(f.type) && fpos(f)[0] === pos).forEach(f => out.push(esc(f.description)));
     const vars = (uni?.features || []).filter(f => f.type === 'Natural variant' && fpos(f)[0] === pos).flatMap(f => f.alternativeSequence?.alternativeSequences || []);
@@ -394,32 +413,36 @@
   // the legends of the rows that use colour: IDR charge classes, AlphaFold confidence, charge and hydropathy
   function rowLegend() {
     const out = [];
-    if (M.on.has('idr') && idrAid()) idrClasses().forEach(c => out.push([idrColour(c), (K.A[idrAid()].labels || {})[c] || c]));
-    if (M.on.has('plddt')) AF_BINS.forEach(([, c, l]) => out.push([c, `pLDDT ${l}`]));
-    if (M.on.has('charge')) out.push(['#2F6FD6', 'charge +'], ['#D64545', 'charge −']);
-    if (M.on.has('hydropathy')) out.push(['#B7791F', 'hydrophobic'], ['#3B82A0', 'hydrophilic']);
+    const rec = M.ctx?.rec;
+    TRACKS.filter(t => t.style === 'segments' && isOn(trackRow(t)) && (t.analysis || t.colours)).forEach(t => {
+      const here = new Set((rec?.units || []).filter(u => u[0] === t.kind).map(u => u[5]).filter(Boolean));
+      Object.keys(segLabels(t)).filter(c => here.has(c)).forEach(c => out.push([segColour(t, c), segLabels(t)[c]]));
+    });
+    if (isOn('plddt')) AF_BINS.forEach(([, c, l]) => out.push([c, `pLDDT ${l}`]));
+    if (isOn('charge')) out.push(['#2F6FD6', 'charge +'], ['#D64545', 'charge −']);
+    if (isOn('hydropathy')) out.push(['#B7791F', 'hydrophobic'], ['#3B82A0', 'hydrophilic']);
     return out;
   }
   function figure(ctx) {
     const m = draw(ctx, true), p = ctx.p;
     const legend = [...legendFor(ctx), ...rowLegend()].map(([c, l]) => [c, c, l]);
     return K.figureFrame({ title: `${p.gene || p.acc}: ${p.name}`, sub: `${p.acc} · ${int(p.len)} aa · ${int(ctx.rec.marks.length)} ${W.marks}, coloured by ${(SPECS[M.colour]?.label || 'a single colour').toLowerCase()}${M.zoom ? ` · showing ${M.zoom[0]}–${M.zoom[1]}` : ''}; rows: ${(M.drawn || []).join(', ')}`,
-      legend, body: m.svg, bodyH: m.H, W: Wd, note: `Sources: the site’s inputs (${[roleVersion('domains'), roleVersion('disorder')].filter(Boolean).join('; ')}); UniProt ${p.acc}, read live${ctx.af ? `; AlphaFold DB model v${ctx.af.version}` : ''}.`, extra: { protein: p.acc } });
+      legend, body: m.svg, bodyH: m.H, W: Wd, note: `Sources: the site’s inputs (${[...new Set(TRACKS.map(tracksVersion).filter(Boolean))].join('; ')}); UniProt ${p.acc}, read live${ctx.af ? `; AlphaFold DB model v${ctx.af.version}` : ''}.`, extra: { protein: p.acc } });
   }
 
   // ---- events ------------------------------------------------------------------------------------------------------
   const redraw = () => { const el = document.getElementById('pmap'); if (el && M.ctx) render(el, M.ctx); };
-  const saveRows = () => { store.set('ptmc-map-rows', [...M.on]); store.set('ptmc-map-order', rowOrder()); };
+  const saveRows = () => { store.set('ptmc-map-off', [...M.off]); store.set('ptmc-map-order', rowOrder()); };
   K.clicks.push(
     ['[data-map-labels]', el => { M.labels = el.dataset.mapLabels; store.set('ptmc-map-labels', M.labels); redraw(); }],
     ['[data-map-rows]', () => { M.rowsMenu = !M.rowsMenu; redraw(); }],
-    ['[data-map-row]', el => { const id = el.dataset.mapRow; if (el.checked) M.on.add(id); else M.on.delete(id); saveRows(); redraw(); }],
+    ['[data-map-row]', el => { const id = el.dataset.mapRow; if (el.checked) M.off.delete(id); else M.off.add(id); saveRows(); redraw(); }],
     ['[data-map-move]', el => {
       // moves among the rows the menu lists (the backbone overlays are not rows)
-      const rows = rowOrder().filter(id => !id.endsWith('_backbone')), i = rows.indexOf(el.dataset.mapMove), j = i + +el.dataset.d;
-      if (j >= 0 && j < rows.length) { [rows[i], rows[j]] = [rows[j], rows[i]]; M.order = [...ROWS.map(r => r[0]).filter(id => id.endsWith('_backbone')), ...rows]; saveRows(); redraw(); }
+      const rows = rowOrder().filter(id => !isBackbone(id)), i = rows.indexOf(el.dataset.mapMove), j = i + +el.dataset.d;
+      if (j >= 0 && j < rows.length) { [rows[i], rows[j]] = [rows[j], rows[i]]; M.order = [...ROWS.map(r => r[0]).filter(isBackbone), ...rows]; saveRows(); redraw(); }
     }],
-    ['[data-map-defaults]', () => { M.on = new Set(DEFAULT_ON); M.order = ROWS.map(r => r[0]); saveRows(); redraw(); }],
+    ['[data-map-defaults]', () => { M.off = new Set(DEFAULT_OFF); M.order = ROWS.map(r => r[0]); saveRows(); redraw(); }],
     ['[data-map-unzoom]', () => { M.zoom = null; redraw(); }],
     ['[data-mi]', el => { const x = M.items[+el.dataset.mi]; const pin = document.getElementById('map-pin'); if (x && pin) { pin.hidden = false; pin.innerHTML = `<button type="button" class="pin-x" data-pin-close aria-label="Close">×</button>${x.card || x.tip}`; } }],
     ['[data-pin-close]', () => { const pin = document.getElementById('map-pin'); if (pin) pin.hidden = true; }],

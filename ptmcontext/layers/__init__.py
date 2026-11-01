@@ -5,6 +5,14 @@ A layer is a function from residues (a frame with accession and position) to col
   shape 'class'  one column, `category`: each residue's class (disordered, disorder_boundary, ...);
   shape 'flags'  one boolean column per flag (the motif families).
 
+A layer may also say what it draws on the protein pages (Layer.tracks): the regions it placed residues against, each
+kind of region one row of the map, styled 'domains' (boxes on the backbone), 'disorder' (the backbone's wave) or
+'segments' (a row of boxes, coloured by their class when they have one). The website draws whatever tracks the run's
+layers declare; it knows no layer by name.
+
+Some layers are made from a site file's parameters (factories: an analysis `{layer: regions, with: {...}}`), so a new
+table of regions or of per-residue values becomes a new question without code.
+
 Built-in layers are registered here when the package loads. A layer written in another repository is a plugin: an
 installed package that declares it under the entry-point group `ptmcontext.layers`. Plugins are never loaded because
 they are installed. A run loads only the plugins it names as trusted (Context.trusted_plugins, or `ptmc --trust NAME`),
@@ -42,6 +50,7 @@ class Context:
     profile: Profile | None = None
     inputs: dict[str, Path | Several] = field(default_factory=dict)
     trusted_plugins: tuple[str, ...] = ()
+    formats: dict[str, dict] = field(default_factory=dict)     # an input's path -> its manifest column mapping
     _cache: dict = field(default_factory=dict, repr=False)
 
     def path(self, name: str) -> Path:
@@ -52,7 +61,9 @@ class Context:
         return Path(self.inputs[name])
 
     def units(self, role: str, kind: str):
-        """The units of a kind that fill a role, from its one input or its several combined; read once per run."""
+        """The units of a kind that fill a role, from its one input or its several combined; read once per run. Each
+        file is read by its manifest entry's column mapping, if it has one (Context.formats), else by a reader that
+        knows it (units.READERS)."""
         from .. import units as U
 
         def make():
@@ -60,9 +71,18 @@ class Context:
                 raise KeyError(f'input {role!r} is not given (inputs: {sorted(self.inputs)})')
             given = self.inputs[role]
             if isinstance(given, Several):
-                return U.combine([U.load(p, kind) for p in given.paths], given.rule)
-            return U.load(given, kind)
-        return self.cached(f'units:{kind}', make)
+                return U.combine([U.load(p, kind, self.formats.get(str(p))) for p in given.paths], given.rule)
+            return U.load(given, kind, self.formats.get(str(given)))
+        return self.cached(f'units:{role}:{kind}', make)          # two roles may hold units of one kind
+
+    def values(self, role: str):
+        """A per-residue table (accession, position, value) that fills a role, by its manifest column mapping."""
+        from .. import units as U
+        path = self.path(role)
+        cols = self.formats.get(str(path))
+        if not cols:
+            raise ValueError(f'role {role!r}: a per-residue table needs a column mapping (columns: {{accession, position, value}}) in its manifest entry')
+        return self.cached(f'values:{role}', lambda: U.residue_values(path, cols))
 
     def cached(self, key: str, make: Callable):
         if key not in self._cache:
@@ -90,6 +110,7 @@ class Layer:
     question: str = ''                       # the question a page asks of it; {marks}, {residues} come from the profile
     sub: str = ''                            # the line under its figure's title
     section: str = ''                        # the Overview section it is listed under
+    tracks: tuple = ()                       # what it draws on the protein pages (Track), if anything
 
     def __call__(self, residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
         missing = [n for n in self.needs if n not in ctx.inputs]
@@ -101,15 +122,42 @@ class Layer:
         return out
 
 
+@dataclass(frozen=True)
+class Track:
+    """One kind of region a layer draws on the protein pages. units(ctx, accessions) gives them as a unit table (with
+    label, and class when the boxes are coloured by the layer's classes); roles are the inputs they come from (for the
+    hovers' provenance and the source's own record links); a track with classes takes the labels of the analysis that
+    drew it. Two layers drawing the same kind share one row: the one whose units carry a class is kept."""
+
+    kind: str
+    title: str
+    style: str                               # 'domains', 'disorder' or 'segments'
+    units: Callable[['Context', set], pd.DataFrame]
+    roles: tuple[str, ...] = ()
+    help: str = ''
+    colours: tuple = ()                      # ((class, colour), ...): the site's own colours for its classes
+
+
 BUILT_IN: dict[str, Layer] = {}
+FACTORIES: dict[str, Callable[[dict, str], Layer]] = {}
 
 
 def register(name: str, shape: str, describe: str, needs: tuple[str, ...] = (), title: str = '',
-             labels: dict | None = None, help: dict | None = None, question: str = '', sub: str = '', section: str = 'Structural context'):
+             labels: dict | None = None, help: dict | None = None, question: str = '', sub: str = '', section: str = 'Structural context',
+             tracks: tuple = ()):
     """Decorator for the package's own layers."""
     def wrap(fn):
         BUILT_IN[name] = Layer(name, shape, describe, fn, tuple(needs), title=title or name.replace('_', ' ').capitalize(),
-                               labels=dict(labels or {}), help=dict(help or {}), question=question, sub=sub, section=section)
+                               labels=dict(labels or {}), help=dict(help or {}), question=question, sub=sub, section=section,
+                               tracks=tuple(tracks))
+        return fn
+    return wrap
+
+
+def factory(name: str):
+    """Decorator for a layer made from a site file's parameters: fn(params, analysis_id) -> Layer."""
+    def wrap(fn):
+        FACTORIES[name] = fn
         return fn
     return wrap
 
@@ -119,8 +167,13 @@ def plugins() -> dict[str, metadata.EntryPoint]:
     return {ep.name: ep for ep in metadata.entry_points(group=ENTRY_POINT_GROUP)}
 
 
-def get(name: str, ctx: Context | None = None) -> Layer:
-    """A built-in layer, or a plugin layer whose distribution the context trusts."""
+def get(name: str, ctx: Context | None = None, params: dict | None = None, analysis: str = '') -> Layer:
+    """A built-in layer, a layer made from parameters (a factory, with the analysis's `with:`), or a plugin layer whose
+    distribution the context trusts."""
+    if name in FACTORIES:
+        return FACTORIES[name](dict(params or {}), analysis or name)
+    if params:
+        raise ValueError(f'layer {name!r} takes no parameters (with:); layers made from parameters: {sorted(FACTORIES)}')
     if name in BUILT_IN:
         return BUILT_IN[name]
     eps = plugins()
@@ -136,16 +189,18 @@ def get(name: str, ctx: Context | None = None) -> Layer:
     if not isinstance(layer, Layer):
         raise TypeError(f'entry point {name!r} of {dist!r} is not a ptmcontext Layer')
     version = ep.dist.version if ep.dist else ''
-    return Layer(layer.name, layer.shape, layer.describe, layer.compute, layer.needs, origin=f'{dist} {version}'.strip(),
-                 title=layer.title, labels=layer.labels, help=layer.help, question=layer.question, sub=layer.sub, section=layer.section)
+    from dataclasses import replace
+    return replace(layer, origin=f'{dist} {version}'.strip())
 
 
 def available() -> list[dict]:
     rows = [{'name': n, 'shape': lay.shape, 'origin': lay.origin, 'describe': lay.describe} for n, lay in sorted(BUILT_IN.items())]
+    rows += [{'name': n, 'shape': 'class', 'origin': 'ptmcontext (made from with:)', 'describe': (fn.__doc__ or '').strip().split('\n')[0]}
+             for n, fn in sorted(FACTORIES.items())]
     for n, ep in sorted(plugins().items()):
         rows.append({'name': n, 'shape': '?', 'origin': f'plugin: {ep.dist.name if ep.dist else "?"} (not loaded)',
                      'describe': ep.value})
     return rows
 
 
-from . import charge, context, domains, motifs  # noqa: E402,F401  (registers the built-in layers)
+from . import charge, configured, context, domains, motifs  # noqa: E402,F401  (registers the built-in layers)

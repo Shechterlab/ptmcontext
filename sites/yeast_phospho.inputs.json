@@ -40,7 +40,8 @@
       "version": "MobiDB API, downloaded 2026-11-01",
       "licence": "CC BY 4.0 (as listed for MobiDB)",
       "role": "input",
-      "note": "6036 of 6067 entries have prediction-disorder-th_50 regions; the API does not report a release, so the download date is the version"
+      "note": "6036 of 6067 entries have prediction-disorder-th_50 regions; the API does not report a release, so the download date is the version",
+      "record": "https://mobidb.org/{acc}"
     },
     "yeast_shephard_ecod_domains": {
       "file": "inputs/yeast_shephard_ecod_domains.tsv",

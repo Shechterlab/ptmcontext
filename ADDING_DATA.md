@@ -10,10 +10,11 @@ Every new dataset is exactly one of these. If it is none of them, stop and ask.
 | It is | Example | It becomes |
 |---|---|---|
 | **sequences** | a new UniProt release, another organism | a snapshot: `ptmc stage uniprot <proteome>` |
-| **regions** | disorder, domains, flanks, charged segments, a lab's own regions | a **unit table** (`schemas/units.schema.json`) filling a **role** (`disorder`, `domains`, ...) |
+| **regions** | disorder, domains, flanks, charged segments, a lab's own regions | any table of intervals filling a **role**: a **unit table** (`schemas/units.schema.json`), or any layout its manifest entry maps with `columns`; a new kind of region is tested by the `regions` layer (no code) |
 | **marked residues** | a PTM site list, an MS experiment's sites | a **marks table** (accession, position, plus any columns) selected by a site file |
 | **a mark** | a modification not yet profiled | a **profile** (`ptmcontext/profiles/<mark>.yaml`) |
-| **a per-residue or per-protein annotation** | AlphaFold pLDDT, abundance, a score | a **layer** (code) or a unit table, if it is regions |
+| **a per-residue value** | AlphaFold pLDDT, conservation, a variant-effect score | a per-residue table read by a **column mapping**, tested by the `residue_values` layer (no code) |
+| **a per-protein annotation** | pathways, locations, classes, abundance | a (set, protein) table or class hierarchy for a **protein-set test** (no code) |
 | **a published result to match** | a release's statistics table | a `reference_output` entry: read only to check parity |
 
 ## 1. Check the terms before downloading
@@ -60,6 +61,20 @@ says `--allow-untrusted`, and nothing computed from it is committed.
   versions are not placed by this package yet**: the site file's `residue_mismatch` decides whether such rows fail the
   run (`error`, the default) or are dropped and counted (`drop`). Never silently re-number.
 
+A table in its own layout needs no conversion: say in its manifest entry which columns hold what, and which rows to
+keep, and every build reads it the same way (`ptmc inputs record ... --columns '<json>'` writes it):
+
+```json
+"lab_condensates": {"file": "...", "md5": "...", "source": "...", "version": "...", "licence": "...",
+  "columns": {"accession": "uniprot", "start": "from", "end": "to", "label": "name",
+              "include": [{"column": "evidence", "equals": "curated"}]},
+  "record": "https://example.org/protein/{acc}"}
+"scores": {"file": "...", "...": "...", "columns": {"accession": "entry", "position": "resnum", "value": "score"}}
+```
+
+`record` (optional) is the source's own page for a protein; the protein pages link it. A format read often may instead
+get a reader (`ptmcontext.units.register_reader`, in the package or a trusted plugin).
+
 **Check:** `ptmc check sites/<site>.yaml` passes, and a unit table reads with `ptmcontext.units.read_units`.
 
 ## 4. Wire it into a site
@@ -75,7 +90,14 @@ marks:
   input: <manifest name>
   include: [{column: ..., in: [...]}]
 analyses:
-  - {id: <analysis>, layer: <layer>}                     # a residue test
+  - {id: <analysis>, layer: <layer>}                     # a residue test, by a built-in or trusted plugin layer
+  - id: <analysis>                                       # a residue test of any table of regions: no code
+    layer: regions
+    with: {role: <role>, kind: <kind>, window: 20, noun: condensate-forming region}   # words, colours optional
+  - id: <analysis>                                       # a residue test of any per-residue value: no code
+    layer: residue_values
+    with: {role: <role>, bins: [50, 70, 90], classes: [very_low, low, confident, very_high], noun: pLDDT,
+           colours: {very_high: "#0053d6"}}
   - id: <analysis>                                       # a protein-set test
     test: protein_sets
     sets: {input: <role>, set: <column>, protein: <column>, include: [...]}
@@ -107,8 +129,11 @@ marks:
 ```
 
 The website's Overview tiles, filter groups and header tiles are `website.overview`, `website.filters` and
-`website.stats` (see `sites/methylarginine.yaml`); without them the kit lists every question and offers every
-filterable attribute.
+`website.stats`; the Sites tab's columns `website.sites.columns`; the protein page's fact tiles and extra links
+`website.protein.facts` and `website.protein.links` (see `sites/methylarginine.yaml`). Without them the kit lists
+every question and offers every filterable attribute. A new question appears on every page with no kit change: its
+tile, its filter, its rows in All tests and the downloads, its column if named, and, if its layer draws regions, a row
+of the protein map (`tests/test_new_sources.py` builds such a site from scratch).
 
 **Check:** `ptmc run sites/<site>.yaml --root DATA` runs, and `out/<site>/run.json` lists every input with its MD5.
 

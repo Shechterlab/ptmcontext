@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 
 from . import Context, get, register
+from .context import DISORDER_TRACK, DOMAIN_TRACK
 
 WINDOW = 20
 TYPE_PRIORITY = {'domain': 0, 'repeat': 1, 'homologous_superfamily': 2, 'family': 3}
@@ -88,7 +89,7 @@ def _nearest(ctx: Context, residues: pd.DataFrame) -> pd.DataFrame:
                 'distal': 'More than 20 aa from any domain and not between two domains',
                 'no_domain_annotation': 'Protein has no domain or repeat annotation'},
           question='Are {marks} inside domains, at their edges or between them, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, by position relative to domains')
+          sub='{Marks} against the other {residues} of the same proteins, by position relative to domains', tracks=(DOMAIN_TRACK,))
 def domain_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     near, _ = _nearest(ctx, residues)
     d = near['distance']
@@ -101,7 +102,7 @@ def domain_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
 @register('domain_class', 'class', 'the class of the nearest domain or repeat (config/domain_classes.json)',
           needs=('domains',), title='Nearest domain class',
           question='Which kinds of domain are {marks} nearest to, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, by the type of the nearest domain')
+          sub='{Marks} against the other {residues} of the same proteins, by the type of the nearest domain', tracks=(DOMAIN_TRACK,))
 def domain_class(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     near, units = _nearest(ctx, residues)
     blocks = domain_classes()
@@ -139,15 +140,15 @@ def structure_context_of(disorder_class, domain_class_, domain_edge_distance) ->
           labels={'domain_folded': 'Folded domain', 'domain_disordered': 'Disordered domain', 'ordered_outside_domain': 'Ordered, outside domains',
                   'idr_near_domain': 'IDR ≤10 aa from a domain', 'idr_mid_domain': 'IDR 11–30 aa from a domain',
                   'idr_far_from_domain': 'IDR >30 aa from any domain', 'no_disorder_annotation': 'No disorder data'},
-          help={'domain_folded': 'Inside a domain or repeat, outside MobiDB disorder',
-                'domain_disordered': 'Inside a domain or repeat that MobiDB annotates as disordered at the site',
-                'ordered_outside_domain': 'Outside domains and outside MobiDB disorder',
-                'idr_near_domain': 'In a MobiDB disordered region outside domains, within 10 aa of a domain edge',
-                'idr_mid_domain': 'In a MobiDB disordered region outside domains, 11–30 aa from the nearest domain edge',
-                'idr_far_from_domain': 'In a MobiDB disordered region more than 30 aa from any domain, or on a protein with none',
-                'no_disorder_annotation': 'Protein has no MobiDB disorder annotation'},
+          help={'domain_folded': 'Inside a domain or repeat, outside the site’s disordered regions',
+                'domain_disordered': 'Inside a domain or repeat, in one of the site’s disordered regions',
+                'ordered_outside_domain': 'Outside domains and outside the site’s disordered regions',
+                'idr_near_domain': 'In a disordered region outside domains, within 10 aa of a domain edge',
+                'idr_mid_domain': 'In a disordered region outside domains, 11–30 aa from the nearest domain edge',
+                'idr_far_from_domain': 'In a disordered region more than 30 aa from any domain, or on a protein with none',
+                'no_disorder_annotation': 'The protein has no disordered region in the site’s disorder input'},
           question='Are {marks} in disordered regions or domains, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, from folded domains to deep in disordered regions')
+          sub='{Marks} against the other {residues} of the same proteins, from folded domains to deep in disordered regions', tracks=(DOMAIN_TRACK, DISORDER_TRACK))
 def structure_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     dis = get('disorder')(residues, ctx)
     dom = get('domain_context')(residues, ctx)

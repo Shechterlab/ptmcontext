@@ -71,3 +71,25 @@ def test_website_cross_references():
     problems = S.website_problems(bad)
     for word in ('no_such_analysis', 'no_such_attribute', 'missing_card', "'state' is not a list", 'nokey:value'):
         assert any(word in p for p in problems), (word, problems)
+
+
+def test_left_out_sites_count_on_neither_side(tmp_path):
+    """A pending site (marks.left_out) is neither a mark nor one of the other residues; an excluded row's residue is."""
+    from ptmcontext import layers as L
+    from ptmcontext import residue_tests as RT
+    from ptmcontext.profile import load_profile
+    from ptmcontext.snapshot import Snapshot
+    snap = Snapshot({'P1': 'MRGGRAAAAARAAAAAAAAAARAAAAAAAAARGGAAAAAAAAR'})
+    mob = tmp_path / 'mobidb.tsv'
+    pd.DataFrame({'canonical_UniProtAC': ['P1'], 'fragment_start': [1], 'fragment_end': [12]}).to_csv(mob, sep='\t', index=False)
+    ctx = L.Context(snap, load_profile('methylarginine'), {'disorder': mob})
+    table = pd.DataFrame({'acc': ['P1', 'P1', 'P1'], 'pos': ['2', '5', '11'], 'flag': ['', 'pending', 'dropped']})
+    spec = {'accession': 'acc', 'position': 'pos', 'left_out': [{'column': 'flag', 'equals': 'pending'}],
+            'exclude': [{'column': 'flag', 'equals': 'dropped'}]}
+    marked, report = S.select_marks(spec, table, snap, ctx.profile)
+    pending = S.left_out_marks(spec, table)
+    assert list(marked['position']) == [2] and list(pending['position']) == [5]
+    f = RT.residue_test(ctx, marked, 'disorder', 'disorder', left_out=pending)
+    row = f[(f['method'] == 'fisher') & (f['category'] == 'disordered')].iloc[0]
+    # R at 2 (marked) | 5 (pending: on neither side) | 11 (excluded row: an other residue), 22, 32, 43
+    assert (row['a'], row['c']) == (1, 1) and row['a'] + row['b'] + row['c'] + row['d'] == 5

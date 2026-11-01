@@ -30,6 +30,18 @@ upstream ───────────► staged files ──► snapshot �
                                                                         └─► ptmc web ─► out/<site>/web/ (+ CITATION.cff)
 ```
 
+## Adding a question or a source without code
+
+- **Inputs** are read by a manifest entry's column mapping (`columns`), else by the first registered reader that knows
+  the file (`units.READERS`: the unit table, staged MobiDB, staged InterPro; a trusted plugin may add one).
+- **Layers** are built in, made from a site file's parameters (`layers.FACTORIES`: `regions` for any interval table,
+  `residue_values` for any per-residue value), or trusted plugins. Each declares the roles it reads and, optionally,
+  what it draws (`Layer.tracks`: a kind of region, its style, the roles it comes from).
+- **The run records what the website shows**: each layer's words (title, labels, help, question, shape) in `run.json`,
+  its regions in `units.tsv` and what each kind is in `tracks.json`. The website reads these, so it shows a plugin's
+  or a configured layer's question exactly as a built-in one, and draws any track; it knows no layer by name.
+- **Stagers** are a registry (`stage.STAGERS`); the per-proteome paths a stager needs live in `ptmcontext/config/`.
+
 ## The website
 
 `ptmc web sites/<site>.yaml` writes `out/<site>/web/index.html` with `assets/` (for GitHub Pages) and `<site>.html`

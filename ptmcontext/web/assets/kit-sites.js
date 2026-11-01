@@ -24,8 +24,10 @@
     return esc(v.map(x => K.sel.valueLabel(name, x)).join(', '));
   }
   const winHtml = w => { const c = Math.floor(w.length / 2); return `<span class="win">${esc(w.slice(0, c))}<b>${esc(w[c])}</b>${esc(w.slice(c + 1))}</span>`; };
-  const motifAid = () => AN().find(a => A[a]?.layer === 'motif');
-  const ctxAid = () => AN().find(a => A[a]?.layer === 'structure_context') || AN().find(a => A[a]?.layer === 'disorder');
+  // the questions shown as columns: those a site file names (website.sites.columns), else its first residue question
+  // with classes; questions whose residues carry several flags (motifs) show as tags beside the window
+  const tagAids = () => AN().filter(a => A[a]?.shape === 'flags');
+  const ctxAids = () => { const named = (D.sites_view?.columns || []).filter(a => AN().includes(a)); return named.length ? named : AN().filter(a => A[a]?.shape === 'class').slice(0, 1); };
   // the columns: protein, site, then the attributes the site file colours by or links, the window, the context
   function columns() {
     const attrCols = Object.keys(SPECS).filter(n => SPECS[n].colour || (SPECS[n].kind === 'list' && SPECS[n].link));
@@ -33,8 +35,8 @@
       ['protein', 'Protein', m => pr(m[0])[1] || pr(m[0])[0], m => `<a href="#protein/${esc(pr(m[0])[0])}"><b>${esc(pr(m[0])[1] || '–')}</b></a> <span class="muted mono">${esc(pr(m[0])[0])}</span>`],
       ['site', 'Site', m => m[1], m => `<a class="mono" href="#protein/${esc(pr(m[0])[0])}/${m[1]}"><b>${esc((m[4] || '')[7] || '')}${m[1]}</b></a>`],
       ...attrCols.map(n => [`a:${n}`, SPECS[n].label, m => (SPECS[n].kind === 'list' ? vals(m, n).length : vals(m, n).join()), m => attrCell(m, n, false)]),
-      ['window', `Window ±7${motifAid() ? ' · motifs' : ''}`, m => m[4], m => `<span class="mono">${winHtml(m[4] || '')}</span>${motifAid() ? ` <span class="tags">${classLabel(motifAid(), m[2][AN().indexOf(motifAid())]).split(', ').filter(Boolean).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</span>` : ''}`],
-      ...(ctxAid() ? [['ctx', A[ctxAid()]?.title || 'Context', m => classLabel(ctxAid(), m[2][AN().indexOf(ctxAid())]), m => esc(classLabel(ctxAid(), m[2][AN().indexOf(ctxAid())]))]] : []),
+      ['window', `Window ±7${tagAids().length ? ' · ' + tagAids().map(a => (A[a]?.title || a).toLowerCase()).join(', ') : ''}`, m => m[4], m => `<span class="mono">${winHtml(m[4] || '')}</span>${tagAids().map(a => ` <span class="tags">${m[2][AN().indexOf(a)].map(c => `<span class="tag" title="${esc((A[a]?.help || {})[SD().classes[a][c]] || '')}">${esc(K.sel.classLabel(a, SD().classes[a][c]))}</span>`).join('')}</span>`).join('')}`],
+      ...ctxAids().map(aid => [`ctx:${aid}`, A[aid]?.title || aid, m => classLabel(aid, m[2][AN().indexOf(aid)]), m => esc(classLabel(aid, m[2][AN().indexOf(aid)]))]),
     ];
   }
   function rows() {

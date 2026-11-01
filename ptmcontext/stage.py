@@ -169,16 +169,11 @@ def mobidb(fasta: Path, out: Path, manifest: Path, prefix: str, feature: str = M
     return {'entries': len(accs), 'with_regions': covered, 'regions': len(table)}
 
 
-SHEPHARD_DATA = 'https://github.com/holehouse-lab/shephard-data'
-SHEPHARD_RAW = 'https://raw.githubusercontent.com/holehouse-lab/shephard-data'
-# SHEPHARD's precomputed ECOD domains (DomainMapper on hmmscan hits against ECOD's HMMs) and the sequences they were
-# computed on, per proteome folder of shephard-data. Pinned to a commit: a moved file is a new staging.
-SHEPHARD_ECOD = {
-    'human': ('data/proteomes/human/shprd_domains_ecod_domainmapper.tsv', 'data/proteomes/human/human_proteome_clean.fasta'),
-    's_cerevisiae': ('data/proteomes/s_cerevisiae/shprd_domains_ecod_domainmapper_s_cerevisiae.tsv',
-                     'data/proteomes/s_cerevisiae/s_cerevisiae_clean.fasta'),
-}
-SHEPHARD_COMMIT = 'c5c956c0ff47da49ec024b0d99039c8d0d3dcbac'     # 2024-05-07
+# SHEPHARD's precomputed ECOD domains, per proteome folder of shephard-data, pinned to a commit (config: a new
+# proteome is a new entry there, not code)
+_SHEPHARD = json.loads((Path(__file__).resolve().parent / 'config' / 'shephard_proteomes.json').read_text())
+SHEPHARD_DATA, SHEPHARD_RAW, SHEPHARD_COMMIT = _SHEPHARD['repository'], _SHEPHARD['raw'], _SHEPHARD['commit']
+SHEPHARD_ECOD = {k: (v['domains'], v['fasta']) for k, v in _SHEPHARD['proteomes'].items()}
 
 
 def shephard(proteome: str, snapshot_fasta: Path, out: Path, manifest: Path, prefix: str, commit: str = SHEPHARD_COMMIT) -> dict:
@@ -231,3 +226,42 @@ def shephard_domains(domains_tsv: Path, their_fasta: Path, snapshot_fasta: Path,
            note=f'{len(kept):,} of {len(df):,} domains kept: those on the {len(same):,} entries whose sequence equals the snapshot\'s'
                 + (f'. Downloaded: {got}' if got else ''))
     return {'domains': len(df), 'kept': len(kept), 'proteins': kept['accession'].nunique(), 'identical_entries': len(same)}
+
+
+# ---- stagers, by name: ptmc stage <name> -------------------------------------------------------------------------------
+# Each takes the command line's arguments (proteome, out, manifest, prefix, commit) and returns what it staged. A
+# trusted plugin may add one with register_stager when it loads.
+STAGERS: dict = {}
+
+
+def register_stager(name: str, describe: str = ''):
+    def wrap(fn):
+        STAGERS[name] = (fn, describe)
+        return fn
+    return wrap
+
+
+def _snapshot_fasta(out: Path, prefix: str) -> Path:
+    fasta = sorted(Path(out).glob(f'{prefix}_uniprot_*.fasta'))
+    if not fasta:
+        raise FileNotFoundError(f'stage uniprot first: no {prefix}_uniprot_*.fasta in {out}')
+    return fasta[-1]
+
+
+@register_stager('uniprot', 'a UniProt proteome (its sequences, modified residues and domains): needs a proteome id')
+def _stage_uniprot(a) -> dict:
+    if not a.proteome:
+        raise ValueError('ptmc stage uniprot needs a UniProt proteome id (e.g. UP000002311)')
+    return uniprot(a.proteome, Path(a.out), Path(a.manifest), a.prefix)
+
+
+@register_stager('mobidb', "MobiDB disordered regions for the staged proteome's entries")
+def _stage_mobidb(a) -> dict:
+    return mobidb(_snapshot_fasta(a.out, a.prefix), Path(a.out), Path(a.manifest), a.prefix)
+
+
+@register_stager('shephard', "SHEPHARD's ECOD domains for a proteome folder of shephard-data (config/shephard_proteomes.json)")
+def _stage_shephard(a) -> dict:
+    if a.proteome not in SHEPHARD_ECOD:
+        raise ValueError(f'ptmc stage shephard needs a shephard-data proteome folder: one of {sorted(SHEPHARD_ECOD)}')
+    return shephard(a.proteome, _snapshot_fasta(a.out, a.prefix), Path(a.out), Path(a.manifest), a.prefix, a.commit or SHEPHARD_COMMIT)

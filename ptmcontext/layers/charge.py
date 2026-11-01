@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from .. import charge as CH
-from . import Context, register
+from . import Context, Track, register
 from .context import idr_units
 
 LABELS = {'r1': 'Weakly charged IDR', 'r2': 'Janus IDR', 'r3': 'Strong polyampholyte IDR',
@@ -47,11 +47,13 @@ def idr_charge_units(ctx: Context, accessions: set) -> pd.DataFrame:
     return every[every['accession'].isin(accessions)] if every is not None else idr_units(ctx).iloc[:0]
 
 
-@register('idr_charge', 'class', 'The Das-Pappu region of the IDR (MobiDB regions merged, 20 residues or more) a residue sits '
+@register('idr_charge', 'class', 'The Das-Pappu region of the IDR (the disorder input’s regions merged, 20 residues or more) a residue sits '
           'in, from its fractions of positive (K, R) and negative (D, E) residues; outside_idr; no_idr',
           needs=('disorder',), title='Charge of the IDR', labels=LABELS, help=HELP,
           question='Do {marks} sit in IDRs of a particular charge, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, by the charge class of the IDR they sit in (Das–Pappu diagram of states)')
+          sub='{Marks} against the other {residues} of the same proteins, by the charge class of the IDR they sit in (Das–Pappu diagram of states)',
+          tracks=(Track('idr', 'IDR charge', 'segments', lambda ctx, accs: idr_charge_units(ctx, accs), roles=('disorder',),
+                        help='IDRs (disordered regions merged, 20 residues or more) coloured by their region of the Das–Pappu diagram of states (FCR and NCPR)'),))
 def idr_charge(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     accs = set(residues['accession'])
     units = idr_charge_units(ctx, accs)

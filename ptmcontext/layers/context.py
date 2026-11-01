@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from .. import units as U
-from . import Context, register
+from . import Context, Track, register
 
 NONE = np.iinfo(np.int32).max
 
@@ -70,28 +70,41 @@ def idr_units(ctx: Context) -> pd.DataFrame:
 DISORDER_LABELS = {'inside': 'disordered', 'near': 'disorder_boundary', 'far': 'ordered', 'none': 'no_disorder_annotation'}
 
 
-@register('disorder', 'class', 'MobiDB disordered region: inside, within 20 residues outside, further out, or a protein '
-          'without MobiDB regions (the release disorder classes)', needs=('disorder',), title='Disorder context',
+def _of(units: pd.DataFrame, accs: set) -> pd.DataFrame:
+    return units[units['accession'].isin(accs)]
+
+
+# what these layers draw on the protein pages (layers.Track); layers that read the same regions share them
+DISORDER_TRACK = Track('disordered', 'Disorder', 'disorder', lambda ctx, accs: _of(ctx.units('disorder', 'disordered'), accs),
+                       roles=('disorder',), help='The site’s disordered regions: the backbone waves where a region is disordered')
+IDR_TRACK = Track('idr', 'IDRs', 'segments', lambda ctx, accs: _of(idr_units(ctx), accs), roles=('disorder',),
+                  help='IDRs: the site’s disordered regions merged where they overlap, of 20 residues or more')
+DOMAIN_TRACK = Track('domain', 'Domains', 'domains', lambda ctx, accs: _of(ctx.units('domains', 'domain'), accs), roles=('domains',),
+                     help='The site’s domains, drawn as boxes on the backbone')
+
+
+@register('disorder', 'class', 'The site’s disordered regions (disorder input): inside, within 20 residues outside, further out, or a protein '
+          'without any (the release disorder classes)', needs=('disorder',), title='Disorder context',
           labels={'disordered': 'IDR', 'disorder_boundary': 'Ordered, ≤20 aa from an IDR', 'ordered': 'Ordered, >20 aa from an IDR',
                   'no_disorder_annotation': 'No disorder data'},
-          help={'disordered': 'Inside a MobiDB disorder interval', 'disorder_boundary': 'Outside, but within 20 aa of, a disorder interval',
-                'ordered': 'More than 20 aa from any disorder interval', 'no_disorder_annotation': 'Protein has no MobiDB disorder annotation'},
+          help={'disordered': 'Inside one of the site’s disordered regions', 'disorder_boundary': 'Outside, but within 20 aa of, a disordered region',
+                'ordered': 'More than 20 aa from any disordered region', 'no_disorder_annotation': 'The protein has no disordered region in the site’s disorder input'},
           question='Are {marks} in disordered regions, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, by disorder (MobiDB)')
+          sub='{Marks} against the other {residues} of the same proteins, by disorder', tracks=(DISORDER_TRACK,))
 def disorder(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     units = ctx.units('disorder', 'disordered')
     return unit_context(residues, units, ctx.snapshot.lengths(), 20, DISORDER_LABELS)
 
 
-@register('idr', 'class', 'IDR (MobiDB regions merged, at least 20 residues): inside, within 20 residues outside, further '
+@register('idr', 'class', 'IDR (the disorder input’s regions merged, at least 20 residues): inside, within 20 residues outside, further '
           'out, or a protein without one', needs=('disorder',), title='IDRs',
           labels={'idr': 'IDR of 20 aa or more', 'idr_boundary': 'Ordered, ≤20 aa from an IDR', 'outside_idr': 'Ordered, >20 aa from an IDR',
                   'no_idr': 'No IDR of 20 aa or more'},
-          help={'idr': 'Inside a disordered region of at least 20 residues (MobiDB regions merged where they overlap)',
+          help={'idr': 'Inside a disordered region of at least 20 residues (the site’s regions merged where they overlap)',
                 'idr_boundary': 'Outside, but within 20 aa of, an IDR of 20 or more residues', 'outside_idr': 'More than 20 aa from any IDR of 20 or more residues',
                 'no_idr': 'Protein has no disordered region of 20 or more residues'},
           question='Are {marks} in IDRs of 20 or more residues, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, by IDRs of 20 or more residues (MobiDB)')
+          sub='{Marks} against the other {residues} of the same proteins, by IDRs of 20 or more residues', tracks=(IDR_TRACK, DISORDER_TRACK))
 def idr(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     units = idr_units(ctx)
     return unit_context(residues, units, ctx.snapshot.lengths(), 20,
@@ -105,7 +118,7 @@ def idr(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
           help={'in_domain': 'Inside a domain or repeat', 'domain_boundary': 'Outside, but within 20 aa of, a domain edge',
                 'outside_domain': 'More than 20 aa from any domain', 'no_domain_annotation': 'Protein has no domain or repeat annotation'},
           question='Are {marks} in domains, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, in and outside domains')
+          sub='{Marks} against the other {residues} of the same proteins, in and outside domains', tracks=(DOMAIN_TRACK,))
 def domain(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     units = ctx.units('domains', 'domain')
     return unit_context(residues, units, ctx.snapshot.lengths(), 20,

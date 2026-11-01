@@ -3,7 +3,8 @@
   ptmc run sites/methylarginine.yaml --root DIR   run a site: its analyses, its statistics table, its parity check
   ptmc check sites/phospho.yaml                   validate a site config (and the profile it names) without running
   ptmc inputs --root DIR                          check every file of the manifest under DIR against its MD5
-  ptmc inputs record NAME FILE --root DIR --source URL --version V --licence L
+  ptmc inputs record NAME FILE --root DIR --source URL --version V --licence L [--site S | --manifest M]
+               [--columns '{"accession": ..., "start": ..., "end": ...}'] [--record URL]
                                                 add (or update) a manifest entry, with the file's MD5
   ptmc stage uniprot UP000002311 --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
   ptmc stage mobidb --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
@@ -43,12 +44,21 @@ def cmd_check(a) -> int:
     entries = I.load(S.manifest_of(site))
     named = I.site_input_names(site)
     missing = [n for n in named if n not in entries]
-    unknown = [x['layer'] for x in site['analyses'] if 'layer' in x and x['layer'] not in L.BUILT_IN and x['layer'] not in L.plugins()]
+    unknown = [x['layer'] for x in site['analyses'] if 'layer' in x and x['layer'] not in L.BUILT_IN and x['layer'] not in L.FACTORIES
+               and x['layer'] not in L.plugins()]
+    for x in site['analyses']:                      # a layer made from parameters: are they enough to make it?
+        if x.get('layer') in L.FACTORIES:
+            try:
+                L.get(x['layer'], None, x.get('with'), x['id'])
+            except (ValueError, KeyError, TypeError) as exc:
+                unknown.append(f"{x['id']}: {exc}")
+        elif x.get('with'):
+            unknown.append(f"{x['id']}: layer {x.get('layer')!r} takes no with:")
     from .set_tests import roles_of
     unknown += [r for x in site['analyses'] if 'sets' in x for r in roles_of(x) if r not in site.get('inputs', {})]
     web = S.website_problems(site)
     print(f"{site['id']}: mark {profile.id} ({', '.join(profile.residues)}), {len(site['analyses'])} analyses")
-    for problem, items in (('inputs not in the manifest', missing), ('layers not found', unknown)):
+    for problem, items in (('inputs not in the manifest', missing), ('layers not found or not made', unknown)):
         if items:
             print(f'  {problem}: {items}')
     for w in web:
@@ -56,13 +66,23 @@ def cmd_check(a) -> int:
     return 1 if missing or unknown or web else 0
 
 
+def _manifest_arg(a) -> Path:
+    """The manifest a command works on: --manifest, or the one a --site file names, or the package's own."""
+    if getattr(a, 'manifest', None):
+        return Path(a.manifest)
+    if getattr(a, 'site', None):
+        return S.manifest_of(S.load_site(a.site))
+    return I.MANIFEST
+
+
 def cmd_inputs(a) -> int:
     if a.action == 'record':
         return cmd_inputs_record(a)
     bad = 0
-    for name, e in I.load().items():
+    manifest = _manifest_arg(a)
+    for name, e in I.load(manifest).items():
         try:
-            I.resolve(a.root, [name], allow_untrusted=True)
+            I.resolve(a.root, [name], manifest=manifest, allow_untrusted=True)
             status = 'ok' + ('  (not trusted)' if e.get('note', '').startswith('NOT TRUSTED') else '')
         except Exception as exc:     # noqa: BLE001  (report every failure, then fail)
             status, bad = f'FAILS: {exc}', bad + 1
@@ -75,16 +95,21 @@ def cmd_inputs_record(a) -> int:
     if not path.exists():
         print(f'{path} does not exist')
         return 1
-    data = json.loads(I.MANIFEST.read_text())
+    manifest = _manifest_arg(a)
+    data = json.loads(manifest.read_text()) if manifest.exists() else {'schema_version': 1, 'inputs': {}}
     entry = {'file': a.file, 'md5': md5_file(path), 'source': a.source, 'version': a.version, 'licence': a.licence,
              'role': a.role}
     if a.note:
         entry['note'] = a.note
+    if a.columns:
+        entry['columns'] = json.loads(a.columns)
+    if a.record:
+        entry['record'] = a.record
     old = data['inputs'].get(a.name)
     data['inputs'][a.name] = entry
     from .profile import validate
     validate(data, 'inputs')
-    I.MANIFEST.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n')
+    manifest.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n')
     print(f"{'updated' if old else 'added'} {a.name}: {entry['md5']}")
     if old and old['md5'] != entry['md5']:
         print(f"  the MD5 changed ({old['md5']} -> {entry['md5']}): every result that read it must be rebuilt and the change recorded")
@@ -93,24 +118,12 @@ def cmd_inputs_record(a) -> int:
 
 def cmd_stage(a) -> int:
     from . import stage
-    out, manifest = Path(a.out), Path(a.manifest)
-    if a.source == 'uniprot':
-        if not a.proteome:
-            print('ptmc stage uniprot needs a UniProt proteome id (e.g. UP000002311)')
-            return 1
-        print(stage.uniprot(a.proteome, out, manifest, a.prefix))
-        return 0
-    fasta = sorted(out.glob(f'{a.prefix}_uniprot_*.fasta'))
-    if not fasta:
-        print(f'stage uniprot first: no {a.prefix}_uniprot_*.fasta in {out}')
+    fn, _ = stage.STAGERS[a.source]
+    try:
+        print(fn(a))
+    except (ValueError, FileNotFoundError) as exc:
+        print(exc)
         return 1
-    if a.source == 'mobidb':
-        print(stage.mobidb(fasta[-1], out, manifest, a.prefix))
-    else:
-        if a.proteome not in stage.SHEPHARD_ECOD:
-            print(f'ptmc stage shephard needs a shephard-data proteome folder: one of {sorted(stage.SHEPHARD_ECOD)}')
-            return 1
-        print(stage.shephard(a.proteome, fasta[-1], out, manifest, a.prefix, a.commit or stage.SHEPHARD_COMMIT))
     return 0
 
 
@@ -158,10 +171,15 @@ def main(argv=None) -> int:
     s.add_argument('--licence', default='')
     s.add_argument('--role', default='input', choices=['input', 'reference_output'])
     s.add_argument('--note', default='')
+    s.add_argument('--manifest', default=None, help='the manifest to check or write (default: the package inputs.json)')
+    s.add_argument('--site', default=None, help="a site file: work on the manifest it names")
+    s.add_argument('--columns', default=None, help='a column mapping, as JSON: how to read a file no reader knows (CONTRACTS.md)')
+    s.add_argument('--record', default=None, help="the source's own page for a protein, with {acc}")
     s.set_defaults(fn=cmd_inputs)
 
     s = sub.add_parser('stage', help='download a source from upstream and record it in a manifest')
-    s.add_argument('source', choices=['uniprot', 'mobidb', 'shephard'])
+    from . import stage as _stage
+    s.add_argument('source', choices=sorted(_stage.STAGERS), help='; '.join(f'{k}: {d}' for k, (_, d) in sorted(_stage.STAGERS.items())))
     s.add_argument('proteome', nargs='?', help='UniProt proteome id (uniprot), or shephard-data proteome folder (shephard)')
     s.add_argument('--commit', help='shephard-data commit (default: the one this version of ptmcontext pins)')
     s.add_argument('--out', required=True, help='folder for the staged files (its parent is the --root of ptmc run)')

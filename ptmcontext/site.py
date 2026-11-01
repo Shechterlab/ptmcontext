@@ -66,6 +66,12 @@ def website_problems(site: dict) -> list[str]:
             out.append(f"website.stats: no attribute {st['attribute']!r} in marks.attributes")
         elif isinstance(st, dict) and attrs[st['attribute']].get('kind') != 'list':
             out.append(f"website.stats: attribute {st['attribute']!r} is not a list (its distinct values are counted)")
+    for a in (web.get('sites') or {}).get('columns', []):
+        if a not in ids:
+            out.append(f"website.sites.columns: no analysis {a!r}")
+    for f in (web.get('protein') or {}).get('facts', []):
+        if f['analysis'] not in ids:
+            out.append(f"website.protein.facts: no analysis {f['analysis']!r}")
     for ex in web.get('examples') or []:
         key = ex.split(':', 1)[0] if ':' in ex else None
         if key is not None and key not in ids and key not in attrs:
@@ -98,12 +104,29 @@ def _holds(frame: pd.DataFrame, cond: dict) -> pd.Series:
     return col.str.contains(cond['contains'], regex=False)
 
 
+def left_out_marks(spec: dict, table: pd.DataFrame) -> pd.DataFrame:
+    """The rows a site keeps pending (marks.left_out conditions, any of which holds): counted on neither side of a
+    residue test, neither as marks nor as other residues."""
+    conds = spec.get('left_out') or []
+    if not conds:
+        return pd.DataFrame(columns=['accession', 'position'])
+    hit = pd.Series(False, index=table.index)
+    for cond in conds:
+        hit |= _holds(table, cond)
+    rows = table[hit]
+    out = pd.DataFrame({'accession': rows[spec['accession']].astype(str).str.strip(), 'position': pd.to_numeric(rows[spec['position']], errors='coerce')})
+    return out.dropna().astype({'position': int}).drop_duplicates().reset_index(drop=True)
+
+
 def select_marks(spec: dict, table: pd.DataFrame, snapshot: Snapshot, profile) -> tuple[pd.DataFrame, dict]:
-    """The marked residues a site counts, and a report of what was left out and why."""
+    """The marked residues a site counts, and a report of what was left out and why. Rows a left_out condition holds
+    for are not marks (left_out_marks counts them on neither side)."""
     keep = pd.Series(True, index=table.index)
     for cond in spec.get('include', []):
         keep &= _holds(table, cond)
     for cond in spec.get('exclude', []):
+        keep &= ~_holds(table, cond)
+    for cond in spec.get('left_out', []):
         keep &= ~_holds(table, cond)
     rows = table[keep]
     pos = pd.to_numeric(rows[spec['position']], errors='coerce')
@@ -137,7 +160,7 @@ def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame) -> pd
     keep = pd.Series(True, index=table.index)            # the rows select_marks keeps, so a dropped row lends nothing
     for cond in spec.get('include', []):
         keep &= _holds(table, cond)
-    for cond in spec.get('exclude', []):
+    for cond in spec.get('exclude', []) + spec.get('left_out', []):
         keep &= ~_holds(table, cond)
     table = table[keep]
     cols = {}
@@ -169,10 +192,10 @@ class SiteRun:
 
 
 def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, ctx: L.Context,
-                    attributes: pd.DataFrame | None = None) -> dict[str, pd.DataFrame]:
+                    attributes: pd.DataFrame | None = None, layers: dict | None = None) -> dict:
     """What the protein pages read: each marked residue with its window and its class in every analysis (marks.tsv);
     each protein's marks and other candidate residues per class (protein_counts.tsv); the proteins (proteins.tsv); and
-    the regions the layers placed residues against (units.tsv)."""
+    the regions the layers draw (units.tsv, and what each kind is: tracks.json)."""
     from .snapshot import window
     m = marked[['accession', 'position']].copy()
     m['residue'] = [snap.residue_at(a, p) for a, p in zip(m['accession'], m['position'])]
@@ -206,17 +229,38 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
     proteins = pd.DataFrame([{**{'accession': a}, **{k: snap.describe(a)[k] for k in ('gene', 'name', 'entry')},
                               'length': snap.length(a), 'sequence_md5': snap.sequence_md5(a),
                               'marks': int(n_marks.get(a, 0)), 'candidates': int(cand.get(a, 0))} for a in accs])
-    units = []
-    idr_key = 'units:idr_charge' if 'units:idr_charge' in ctx._cache else 'units:idr'     # with their charge, if worked out
-    for key, kind in (('units:disordered', 'disordered'), (idr_key, 'idr'), ('units:domain', 'domain')):
-        u = ctx._cache.get(key)
-        if u is not None and len(u):
-            u = u[u['accession'].isin(set(accs))]
-            units.append(pd.DataFrame({'accession': u['accession'], 'kind': kind, 'start': u['start'], 'end': u['end'],
-                                       'label': u['label'] if 'label' in u.columns else '', 'source': u['source'],
-                                       'class': u['class'] if 'class' in u.columns else '', 'ref': u['ref'] if 'ref' in u.columns else ''}))
+    units, tracks = drawn_tracks(layers or {}, ctx, set(accs))
     return {'marks.tsv': m.sort_values(['accession', 'position']), 'protein_counts.tsv': pd.concat(counts, ignore_index=True),
-            'proteins.tsv': proteins, 'units.tsv': pd.concat(units, ignore_index=True) if units else pd.DataFrame(columns=['accession', 'kind', 'start', 'end', 'label', 'source', 'class', 'ref'])}
+            'proteins.tsv': proteins, 'units.tsv': units, 'tracks.json': tracks}
+
+
+UNIT_OUT = ['accession', 'kind', 'start', 'end', 'label', 'source', 'class', 'ref']
+
+
+def layer_words(layer: L.Layer) -> dict:
+    """What the website shows of a layer, kept in run.json so the website needs no layer code (a plugin's included)."""
+    return {'shape': layer.shape, 'title': layer.title, 'describe': layer.describe, 'labels': dict(layer.labels),
+            'help': dict(layer.help), 'question': layer.question, 'sub': layer.sub, 'section': layer.section, 'needs': list(layer.needs)}
+
+
+def drawn_tracks(layers: dict, ctx: L.Context, accs: set) -> tuple[pd.DataFrame, list[dict]]:
+    """The regions the run's layers draw on the protein pages (Layer.tracks), as one unit table (units.tsv), and what
+    each kind is (tracks.json: its title, style, help, the roles it comes from, and the analysis whose classes colour
+    it). Two layers drawing one kind share it; the one whose units carry a class is kept."""
+    chosen: dict[str, tuple] = {}
+    for aid, layer in layers.items():
+        for t in layer.tracks:
+            u = t.units(ctx, accs)
+            has_class = 'class' in u.columns and (u['class'].astype(str) != '').any()
+            if t.kind not in chosen or (has_class and not chosen[t.kind][2]):
+                chosen[t.kind] = (t, u, has_class, aid)
+    frames, meta = [], []
+    for kind, (t, u, has_class, aid) in chosen.items():
+        meta.append({'kind': kind, 'title': t.title, 'style': t.style, 'help': t.help, 'roles': list(t.roles),
+                     'analysis': aid if has_class else '', **({'colours': dict(t.colours)} if t.colours else {})})
+        if len(u):
+            frames.append(pd.DataFrame({c: (u[c].to_numpy() if c in u.columns else '') for c in UNIT_OUT if c != 'kind'} | {'kind': kind})[UNIT_OUT])
+    return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=UNIT_OUT)), meta
 
 
 def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, out_root: str | Path | None = None,
@@ -241,14 +285,18 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     def fill(value):
         rule, given = I.role_inputs(value)
         return paths[given[0]] if rule == 'one' else L.Several(rule, tuple(paths[n] for n in given))
+    entries = I.load(manifest)
     ctx = L.Context(snap, profile, {role: fill(value) for role, value in roles.items()},
-                    trusted_plugins=tuple(site.get('trusted_plugins', [])))
+                    trusted_plugins=tuple(site.get('trusted_plugins', [])),
+                    formats={str(paths[n]): entries[n]['columns'] for n in names if entries.get(n, {}).get('columns')})
     table = pd.read_csv(paths[site['marks']['input']], sep='\t', dtype=str, keep_default_na=False, low_memory=False)
     marked, report = select_marks(site['marks'], table, snap, profile)
+    pending = left_out_marks(site['marks'], table)
+    report['left_out'] = int(len(pending))
     attributes = mark_attributes(site['marks'], table, marked)
     log(f"{site['id']}: {report['counted']:,} {profile.word('marks')} on {report['proteins']:,} proteins "
         f"({report['rows']:,} rows read, {report['selected']:,} selected)")
-    parts, layers_used, kept, set_names, set_keep = [], {}, {}, [], {}
+    parts, layers_used, kept, set_names, set_keep, layer_objs = [], {}, {}, [], {}, {}
     if skip_new:
         site = {**site, 'analyses': [a for a in site['analyses'] if not a.get('new')]}
     for analysis in site['analyses']:
@@ -264,11 +312,14 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
             layers_used[analysis['id']] = {'test': 'protein_sets', 'sets': analysis['sets']['input']}
             log(f"  {analysis['id']:18s} {len(rows_):3d} rows")
             continue
-        layer = L.get(analysis['layer'], ctx)
-        layers_used[analysis['id']] = {'layer': layer.name, 'origin': layer.origin}
+        layer = L.get(analysis['layer'], ctx, analysis.get('with'), analysis['id'])
+        layer_objs[analysis['id']] = layer
+        layers_used[analysis['id']] = {'layer': layer.name, 'origin': layer.origin, **({'with': analysis['with']} if analysis.get('with') else {}),
+                                       **layer_words(layer)}
         methods = analysis.get('methods', ['fisher', 'mantel_haenszel'])
         kept[analysis['id']] = {}
-        parts.append(RT.residue_test(ctx, marked, layer, analysis['id'], methods=methods, keep=kept[analysis['id']]))
+        parts.append(RT.residue_test(ctx, marked, layer, analysis['id'], methods=methods, keep=kept[analysis['id']],
+                                     left_out=pending if len(pending) else None))
         log(f"  {analysis['id']:18s} {len(parts[-1]):3d} rows")
     rows = pd.concat(parts, ignore_index=True)
     record = {
@@ -298,7 +349,7 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         folder = Path(out_root or root_of(site)) / site['outputs']['folder']
         ST.write(rows, folder / 'statistics.tsv')
         record['output'] = {'statistics.tsv': md5_file(folder / 'statistics.tsv')}
-        outs = protein_outputs(snap, profile, marked, kept, ctx, attributes)
+        outs = protein_outputs(snap, profile, marked, kept, ctx, attributes, layers=layer_objs)
         outs['set_names.tsv'] = pd.DataFrame(set_names, columns=['analysis', 'set', 'name'])
         if set_keep:                                   # for testing a selection again on the website
             (folder / 'protein_sets.json').write_text(json.dumps(set_keep, separators=(',', ':')) + '\n')
@@ -306,7 +357,10 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         elif (folder / 'protein_sets.json').exists():
             (folder / 'protein_sets.json').unlink()
         for name, frame in outs.items():
-            frame.to_csv(folder / name, sep='\t', index=False, lineterminator='\n')
+            if name.endswith('.json'):
+                (folder / name).write_text(json.dumps(frame, indent=1, ensure_ascii=False) + '\n')
+            else:
+                frame.to_csv(folder / name, sep='\t', index=False, lineterminator='\n')
             record['output'][name] = md5_file(folder / name)
         (folder / 'run.json').write_text(json.dumps(record, indent=1) + '\n')
         log(f'  -> {folder}')

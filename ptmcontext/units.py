@@ -10,8 +10,9 @@ flanks, the IDR Explorer's charged segments) are written as a unit table there a
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 import pandas as pd
 
@@ -81,22 +82,104 @@ def interpro_domains(path: str | Path, types: Iterable[str] = ('domain', 'repeat
                       end='fragment_end', keep=DOMAIN_COLUMNS)
 
 
-def load(path: str | Path, kind: str) -> pd.DataFrame:
-    """Units of a kind from a file in any of the formats this package reads: a unit table (the contract), or a staged
-    MobiDB or InterPro table."""
+# ---- readers: how a file becomes units -------------------------------------------------------------------------------
+# A file is read by, in order: the column mapping its manifest entry gives (`columns`, any layout, no code), else the
+# first registered reader that recognises its columns. The package registers the unit table (the contract) and the
+# staged MobiDB and InterPro tables; a trusted plugin may register more with register_reader when it loads.
+
+@dataclass(frozen=True)
+class Reader:
+    name: str
+    detect: Callable[[set, str], bool]        # (the file's columns, the kind asked for) -> can it read it
+    read: Callable[[Path, str], pd.DataFrame]
+    describe: str = ''
+
+
+READERS: list[Reader] = []
+
+
+def register_reader(name: str, detect: Callable[[set, str], bool], describe: str = ''):
+    """Decorator: a reader for one more file format. Later registrations are tried after earlier ones."""
+    def wrap(fn):
+        READERS[:] = [r for r in READERS if r.name != name] + [Reader(name, detect, fn, describe)]
+        return fn
+    return wrap
+
+
+def _holds(frame: pd.DataFrame, cond: dict) -> pd.Series:
+    col = frame[cond['column']].astype(str)
+    if 'equals' in cond:
+        return col == cond['equals']
+    if 'in' in cond:
+        return col.isin({str(x) for x in cond['in']})
+    return col.str.contains(cond['contains'], regex=False)
+
+
+def from_columns(path: str | Path, kind: str, columns: dict, source: str = '') -> pd.DataFrame:
+    """Units from any table of intervals, by a column mapping (a manifest entry's `columns`):
+    {accession, start, end} name its columns; label, ref, subtype, class (optional) name more; include/exclude keep
+    rows as a site's marks do ({column, equals | in | contains}); kind, if given, must match the kind asked for."""
+    if columns.get('kind') and columns['kind'] != kind:
+        raise ValueError(f'{path}: its manifest entry gives units of kind {columns["kind"]!r}, not {kind!r}')
+    df = pd.read_csv(path, sep=columns.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False)
+    for cond in columns.get('include', []):
+        df = df[_holds(df, cond)]
+    for cond in columns.get('exclude', []):
+        df = df[~_holds(df, cond)]
+    extra = {k: columns[k] for k in ('label', 'ref', 'subtype', 'class') if columns.get(k)}
+    missing = sorted(({columns[k] for k in ('accession', 'start', 'end')} | set(extra.values())) - set(df.columns))
+    if missing:
+        raise ValueError(f'{path}: the manifest entry names columns the file does not have: {missing}')
+    df = df.rename(columns={v: k for k, v in extra.items()})
+    units = make_units(df, kind, source or Path(path).name, accession=columns['accession'], start=columns['start'],
+                       end=columns['end'], keep=list(extra))
+    for c in DOMAIN_COLUMNS if kind == 'domain' else []:
+        if c not in units.columns:
+            units[c] = ''
+    return units
+
+
+def residue_values(path: str | Path, columns: dict) -> pd.DataFrame:
+    """A per-residue table (accession, position, value) by a column mapping {accession, position, value}; rows without
+    a number are dropped. One value per residue: the first row's."""
+    df = pd.read_csv(path, sep=columns.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False)
+    for cond in columns.get('include', []):
+        df = df[_holds(df, cond)]
+    missing = sorted({columns[k] for k in ('accession', 'position', 'value')} - set(df.columns))
+    if missing:
+        raise ValueError(f'{path}: the manifest entry names columns the file does not have: {missing}')
+    out = pd.DataFrame({'accession': df[columns['accession']].astype(str).str.strip(),
+                        'position': pd.to_numeric(df[columns['position']], errors='coerce'),
+                        'value': pd.to_numeric(df[columns['value']], errors='coerce')}).dropna()
+    return out.astype({'position': int}).drop_duplicates(['accession', 'position']).reset_index(drop=True)
+
+
+@register_reader('unit_table', lambda cols, kind: set(UNIT_COLUMNS) <= cols, 'the unit table of CONTRACTS.md')
+def _unit_table(path: Path, kind: str) -> pd.DataFrame:
+    units = read_units(path)
+    units = units[units['kind'] == kind] if kind in set(units['kind']) else units
+    for c in DOMAIN_COLUMNS if kind == 'domain' else []:
+        if c not in units.columns:
+            units[c] = ''
+    return units.reset_index(drop=True)
+
+
+register_reader('mobidb', lambda cols, kind: kind == 'disordered' and {'canonical_UniProtAC', 'fragment_start', 'fragment_end'} <= cols,
+                'MobiDB disordered regions as ptmc stage mobidb writes them')(lambda path, kind: mobidb_disorder(path))
+register_reader('interpro', lambda cols, kind: kind == 'domain' and 'interpro_type' in cols,
+                'InterPro domain and repeat intervals as staged')(lambda path, kind: interpro_domains(path))
+
+
+def load(path: str | Path, kind: str, columns: dict | None = None) -> pd.DataFrame:
+    """Units of a kind from a file: by its column mapping if it has one, else by the first reader that knows it."""
+    if columns:
+        return from_columns(path, kind, columns)
     cols = set(pd.read_csv(path, sep='\t', nrows=0).columns)
-    if set(UNIT_COLUMNS) <= cols:
-        units = read_units(path)
-        units = units[units['kind'] == kind] if kind in set(units['kind']) else units
-        for c in DOMAIN_COLUMNS if kind == 'domain' else []:
-            if c not in units.columns:
-                units[c] = ''
-        return units.reset_index(drop=True)
-    if kind == 'disordered' and {'canonical_UniProtAC', 'fragment_start', 'fragment_end'} <= cols:
-        return mobidb_disorder(path)
-    if kind == 'domain' and 'interpro_type' in cols:
-        return interpro_domains(path)
-    raise ValueError(f'{path}: not a unit table, nor a staged MobiDB or InterPro table, for units of kind {kind}')
+    for r in READERS:
+        if r.detect(cols, kind):
+            return r.read(Path(path), kind)
+    raise ValueError(f'{path}: no reader knows this file for units of kind {kind!r} (readers: {[r.name for r in READERS]}); '
+                     f'give its manifest entry a column mapping (columns: {{accession, start, end, ...}})')
 
 
 COMBINE_RULES = ('first_of', 'all_of')

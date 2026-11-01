@@ -22,8 +22,8 @@ marks:
   input: methylarginine_sites_v1_4_3
   accession: uniprot_accession
   position: position
-  exclude:
-    - {column: flags, contains: one_sided_window}   # sites kept pending: counted on neither side
+  left_out:            # sites kept pending: counted on neither side (none of v1.4.3's sites carries this flag; the
+    - {column: flags, contains: one_sided_window}   # release keeps them in a separate table)
   residue_mismatch: error
   attributes:          # what the website keeps for each site: to colour, filter and explain it (no test reads these)
     state:
@@ -258,3 +258,5 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Interactions and binding, attributes: [interaction]}
     - {name: Provenance, attributes: [studies, n_studies, localised_by]}
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
+  sites: {columns: [structure_context]}                            # the Sites tab's context column
+  protein: {facts: [{analysis: disorder, classes: [disordered]}]}  # a tile on each protein page

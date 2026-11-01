@@ -4,22 +4,195 @@
   "title": "Input manifest",
   "description": "Every file a build reads, named once with where it comes from and its MD5. A build checks each file against its MD5 before it reads it, whoever staged it.",
   "type": "object",
-  "required": ["schema_version", "inputs"],
+  "required": [
+    "schema_version",
+    "inputs"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": {"const": 1},
+    "schema_version": {
+      "const": 1
+    },
     "inputs": {
       "type": "object",
       "additionalProperties": {
-        "type": "object", "required": ["file", "md5", "source", "version", "licence"], "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "file",
+          "md5",
+          "source",
+          "version",
+          "licence"
+        ],
+        "additionalProperties": false,
         "properties": {
-          "file": {"type": "string", "description": "path relative to the inputs folder"},
-          "md5": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
-          "source": {"type": "string", "description": "the upstream URL or record"},
-          "version": {"type": "string"},
-          "licence": {"type": "string"},
-          "role": {"enum": ["input", "reference_output"], "description": "reference_output: read only to check parity"},
-          "note": {"type": "string"}
+          "file": {
+            "type": "string",
+            "description": "path relative to the inputs folder"
+          },
+          "md5": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "source": {
+            "type": "string",
+            "description": "the upstream URL or record"
+          },
+          "version": {
+            "type": "string"
+          },
+          "licence": {
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "input",
+              "reference_output"
+            ],
+            "description": "reference_output: read only to check parity"
+          },
+          "note": {
+            "type": "string"
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "how to read the file when no built-in reader knows it: the columns that hold each field. Intervals: accession, start, end (1-based, inclusive), and optionally label, ref, subtype, class; per-residue values: accession, position, value. include/exclude keep rows; kind, if given, is the kind of units the file holds.",
+            "properties": {
+              "accession": {
+                "type": "string"
+              },
+              "start": {
+                "type": "string"
+              },
+              "end": {
+                "type": "string"
+              },
+              "position": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "ref": {
+                "type": "string"
+              },
+              "subtype": {
+                "type": "string"
+              },
+              "class": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "sep": {
+                "type": "string"
+              },
+              "include": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "column"
+                  ],
+                  "properties": {
+                    "column": {
+                      "type": "string"
+                    },
+                    "equals": {
+                      "type": "string"
+                    },
+                    "in": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "string",
+                          "number"
+                        ]
+                      }
+                    },
+                    "contains": {
+                      "type": "string"
+                    }
+                  },
+                  "oneOf": [
+                    {
+                      "required": [
+                        "equals"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "in"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "contains"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "exclude": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "column"
+                  ],
+                  "properties": {
+                    "column": {
+                      "type": "string"
+                    },
+                    "equals": {
+                      "type": "string"
+                    },
+                    "in": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "string",
+                          "number"
+                        ]
+                      }
+                    },
+                    "contains": {
+                      "type": "string"
+                    }
+                  },
+                  "oneOf": [
+                    {
+                      "required": [
+                        "equals"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "in"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "contains"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "record": {
+            "type": "string",
+            "pattern": "\\{acc\\}",
+            "description": "the source's own page for a protein, with {acc} for its accession (linked from the protein pages)"
+          }
         }
       }
     }

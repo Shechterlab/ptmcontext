@@ -92,20 +92,46 @@ def default_icon(band: str, accent: str) -> str:
             f'<line x1="16" y1="17.5" x2="16" y2="11" stroke="#fff" stroke-width="2"/><circle cx="16" cy="8.5" r="3.6" fill="{accent}"/></svg>')
 
 
-def _labels(layer: L.Layer | None, profile) -> tuple[dict, dict]:
-    """(labels, definitions) of a layer's categories: the layer's own, or for motifs the profile's families."""
-    if layer is None:
+def _labels(layer: dict | None, profile) -> tuple[dict, dict]:
+    """(labels, definitions) of a layer's categories: the layer's own, or for a flags layer without its own (motifs)
+    the profile's families."""
+    if not layer:
         return {}, {}
-    if layer.shape == 'flags':
+    if layer['shape'] == 'flags' and not layer.get('labels'):
         fams = profile.motif_families
         return ({f['name']: f.get('label', f['name'].replace('_', ' ')) for f in fams}, {f['name']: f.get('help', '') for f in fams})
-    return dict(layer.labels), dict(layer.help)
+    return dict(layer.get('labels') or {}), dict(layer.get('help') or {})
+
+
+def _layer_words(a: dict, run: dict) -> dict | None:
+    """A residue analysis's layer as the website shows it: as its run recorded it (built in, made from with:, or a
+    plugin), or, for a run written before runs recorded it, the built-in layer's own words."""
+    rec = (run.get('analyses') or {}).get(a['id']) or {}
+    if 'shape' in rec:
+        return rec
+    layer = L.BUILT_IN.get(a.get('layer', ''))
+    if layer is None:
+        return None
+    from ..site import layer_words
+    return layer_words(layer)
 
 
 def _fill(template: str, words: dict) -> str:
     w = {'marks': words['marks'], 'residues': words['residues'], 'marked': words['marked'], 'Marked': words['marked'].capitalize(),
          'Marks': words['marks'][:1].upper() + words['marks'][1:]}
     return template.format(**w) if template else ''
+
+
+def _tracks(folder: Path) -> list[dict]:
+    """What each kind of region on the protein pages is (tracks.json, from the run's layers). A run written before
+    runs recorded it gets each kind of its units.tsv drawn plainly, as a row of boxes."""
+    if (folder / 'tracks.json').exists():
+        return json.loads((folder / 'tracks.json').read_text())
+    if not (folder / 'units.tsv').exists():
+        return []
+    import pandas as pd
+    kinds = pd.read_csv(folder / 'units.tsv', sep='\t', dtype=str, keep_default_na=False, usecols=['kind'])['kind'].unique()
+    return [{'kind': k, 'title': k.replace('_', ' ').capitalize(), 'style': 'segments', 'help': '', 'roles': [], 'analysis': ''} for k in kinds]
 
 
 def human_date(iso: str) -> str:
@@ -146,18 +172,20 @@ def site_data(site: dict, folder: Path, profile) -> dict:
     for a in site['analyses']:
         if a.get('test') == 'protein_sets':
             from ..set_tests import roles_of
-            analyses.append({'id': a['id'], 'kind': 'protein_sets', 'roles': [r for r in roles_of(a) if r != (a.get('abundance') or {}).get('input')],
+            analyses.append({'id': a['id'], 'kind': 'protein_sets', 'shape': 'sets', 'stratified': bool(a.get('abundance')), 'roles': [r for r in roles_of(a) if r != (a.get('abundance') or {}).get('input')],
                              'title': a.get('title', a['id']), 'question': a.get('question', ''),
                              'sub': a.get('sub', ''), 'section': a.get('section', 'Kinds of protein'), 'layer': '', 'describe': a.get('background', ''),
                              'labels': set_names.get(a['id'], {}), 'help': {}, 'new': bool(a.get('new'))})
             continue
-        layer = L.BUILT_IN.get(a['layer'])
+        layer = _layer_words(a, run)
         labels, helps = _labels(layer, profile)
-        analyses.append({'id': a['id'], 'kind': 'residue', 'roles': list(layer.needs) if layer else [], 'title': a.get('title') or (layer.title if layer else a['id']),
-                         'question': a.get('question') or _fill(layer.question if layer else '', profile.words),
-                         'sub': _fill(layer.sub if layer else '', profile.words), 'layer': a['layer'],
-                         'section': a.get('section') or (layer.section if layer else ''),
-                         'describe': layer.describe if layer else '', 'labels': labels, 'help': helps, 'new': bool(a.get('new'))})
+        lw = layer or {}
+        analyses.append({'id': a['id'], 'kind': 'residue', 'shape': lw.get('shape', 'class'), 'roles': list(lw.get('needs', [])),
+                         'title': a.get('title') or lw.get('title') or a['id'],
+                         'question': a.get('question') or _fill(lw.get('question', ''), profile.words),
+                         'sub': a.get('sub') or _fill(lw.get('sub', ''), profile.words), 'layer': a['layer'],
+                         'section': a.get('section') or lw.get('section', ''),
+                         'describe': lw.get('describe', ''), 'labels': labels, 'help': helps, 'new': bool(a.get('new'))})
     web = site['website']
     # each input by its name and version, and what this site uses it for
     entries = load_manifest(manifest_of(site))
@@ -181,14 +209,18 @@ def site_data(site: dict, folder: Path, profile) -> dict:
     if site.get('reference', {}).get('statistics'):
         uses[site['reference']['statistics']] = 'the parity check'
     inputs = {name: {'version': entries.get(name, {}).get('version', ''), 'licence': entries.get(name, {}).get('licence', ''),
-                     'use': uses.get(name, ''), 'role': roles.get(name, '')}
+                     'use': uses.get(name, ''), 'role': roles.get(name, ''), 'record': entries.get(name, {}).get('record', '')}
               for name in sorted(run.get('inputs', {}), key=lambda n: order.index(n) if n in order else len(order))}
     return {
         'inputs': inputs,
         'partners': web.get('partners'),
         'ptm_kinds': json.loads((Path(__file__).resolve().parents[1] / 'config' / 'uniprot_ptm_kinds.json').read_text())['kinds'],
+        'ref_links': json.loads((Path(__file__).resolve().parents[1] / 'config' / 'ref_links.json').read_text())['links'],
+        'protein_links': json.loads((Path(__file__).resolve().parents[1] / 'config' / 'protein_links.json').read_text())['links'],
+        'tracks': _tracks(folder),
         'profile_uniprot': profile.data.get('uniprot_features', []),
         'overview': web.get('overview'), 'filters': web.get('filters'), 'stats': web.get('stats'),
+        'sites_view': web.get('sites'), 'protein_view': web.get('protein'),
         'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),
                  'lab': web.get('lab', {}).get('name', ''), 'config': f"sites/{site['id']}.yaml"},
         'words': {**profile.words, 'marked_long': profile.words.get('marked_long', profile.words['marked'])},

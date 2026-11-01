@@ -130,7 +130,7 @@
           "items": {
             "$ref": "#/$defs/condition"
           },
-          "description": "rows dropped: any condition holds"
+          "description": "rows dropped: their residues count as other residues, like any unmarked candidate"
         },
         "residue_mismatch": {
           "enum": [
@@ -221,6 +221,13 @@
               }
             }
           }
+        },
+        "left_out": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition"
+          },
+          "description": "rows kept pending: counted on neither side of a residue test (neither as marks nor as other residues), unlike exclude, which drops the row and leaves its residue among the others"
         }
       }
     },
@@ -479,6 +486,10 @@
           "new": {
             "type": "boolean",
             "description": "not in the site's reference: no parity check, and the website marks it new"
+          },
+          "with": {
+            "type": "object",
+            "description": "the parameters of a layer made from them (ptmc layers lists them): regions {role, kind, window, noun, nouns, labels, help, title, question, sub, section, track}; residue_values {role, bins, classes, missing, noun, labels, help, title, question, sub, section, track}"
           }
         },
         "anyOf": [
@@ -803,6 +814,79 @@
                 }
               }
             ]
+          }
+        },
+        "sites": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the Sites tab",
+          "properties": {
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "residue questions shown as columns (default: the first with classes); questions with flags (motifs) show as tags beside the window"
+            }
+          }
+        },
+        "protein": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the protein page",
+          "properties": {
+            "facts": {
+              "type": "array",
+              "description": "tiles counting the protein's marks in some classes of a question",
+              "items": {
+                "type": "object",
+                "required": [
+                  "analysis",
+                  "classes"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "analysis": {
+                    "type": "string"
+                  },
+                  "classes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "links": {
+              "type": "array",
+              "description": "more links on every protein page, by UniProt accession ({acc})",
+              "items": {
+                "type": "object",
+                "required": [
+                  "label",
+                  "url"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string",
+                    "pattern": "\\{acc\\}"
+                  }
+                }
+              }
+            },
+            "default_links": {
+              "type": "boolean",
+              "description": "false: leave out the kit's own list (config/protein_links.json)"
+            }
           }
         }
       }

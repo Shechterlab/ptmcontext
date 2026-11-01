@@ -1,0 +1,37 @@
+{
+  "description": "Links every protein page offers under More links, by UniProt accession ({acc}); {species} is the site's website.partners.species. A site adds its own with website.protein.links, or replaces these with website.protein.default_links: false. Inputs whose manifest entry has a record link are added too.",
+  "links": [
+    {
+      "label": "AlphaFold DB",
+      "url": "https://alphafold.ebi.ac.uk/entry/{acc}"
+    },
+    {
+      "label": "InterPro",
+      "url": "https://www.ebi.ac.uk/interpro/protein/UniProt/{acc}/"
+    },
+    {
+      "label": "PhosphoSitePlus (PTMs)",
+      "url": "https://www.phosphosite.org/uniprotAccSubmitAction.action?id={acc}"
+    },
+    {
+      "label": "PDBe-KB",
+      "url": "https://www.ebi.ac.uk/pdbe/pdbe-kb/proteins/{acc}"
+    },
+    {
+      "label": "MobiDB",
+      "url": "https://mobidb.org/{acc}"
+    },
+    {
+      "label": "QuickGO (GO terms)",
+      "url": "https://www.ebi.ac.uk/QuickGO/search/{acc}"
+    },
+    {
+      "label": "Complex Portal",
+      "url": "https://www.ebi.ac.uk/complexportal/complex/search?query={acc}"
+    },
+    {
+      "label": "STRING",
+      "url": "https://string-db.org/cgi/network?identifiers={acc}&species={species}"
+    }
+  ]
+}

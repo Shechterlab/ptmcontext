@@ -18,7 +18,7 @@ marks:
   input: methylarginine_sites_v1_4_3
   accession: uniprot_accession
   position: position
-  exclude:
+  left_out:                                       # kept pending: counted on neither side
     - {column: flags, contains: one_sided_window}
   residue_mismatch: error
 

@@ -52,7 +52,18 @@ and a URL with `{}`, as each study to its DOI), `records` (a value that is a dat
 protein: a URL with `{acc}`), `colours`, `colour` (the map and Sites tab may colour by it), `filter` and `help`. A mark
 on several rows takes the first kept row's values.
 
+## Input manifest entries
+
+`file, md5, source, version, licence` (required), `role` (`input` or `reference_output`), `note`, and two optional
+fields: `columns`, a column mapping for a file no reader knows (intervals: `accession, start, end`, and `label, ref,
+subtype, class`; per-residue values: `accession, position, value`; `include`/`exclude` conditions; `kind`; `sep`), and
+`record`, the source's own page for a protein (a URL with `{acc}`).
+
 ## What `ptmc run` writes for the website
+
+`run.json` keeps, for each residue question, its layer, origin (`ptmcontext`, or a plugin's package and version), its
+parameters (`with`) and its words (`shape, title, describe, labels, help, question, sub, section, needs`), so the
+website needs no layer code.
 
 Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 
@@ -62,6 +73,7 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 | `protein_counts.tsv` | (protein, analysis, class) | `accession, analysis, category, marks_in, others_in, marks_total, others_total` |
 | `proteins.tsv` | one per protein with a mark | `accession, gene, name, entry, length, sequence_md5, marks, candidates` |
 | `units.tsv` | one per drawn unit | `accession, kind, start, end, label, source, class, ref` |
+| `tracks.json` | per kind of drawn unit | `{kind, title, style, help, roles, analysis, colours?}`: `style` is `domains` (boxes on the backbone), `disorder` (the backbone's wave) or `segments` (a row of boxes); `analysis` names the question whose classes colour it |
 | `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}}`: the background size, its marked proteins, and each tested set's size and marked proteins; absent when the site has no protein-set question |
 | `set_names.tsv` | per set | `analysis, set, name` |
 

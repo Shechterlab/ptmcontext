@@ -16,7 +16,8 @@
       "version": "MobiDB 2026-03-30",
       "licence": "CC BY 4.0",
       "role": "input",
-      "note": "Staged by PTM_Pipeline scripts/00_stage_mobidb_disorder.py; this repository checks the bytes, not the staging. A stage step of its own (from the MobiDB API) is planned."
+      "note": "Staged by PTM_Pipeline scripts/00_stage_mobidb_disorder.py; this repository checks the bytes, not the staging. A stage step of its own (from the MobiDB API) is planned.",
+      "record": "https://mobidb.org/{acc}"
     },
     "methylarginine_sites_v1_4_3": {
       "file": "releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv",
@@ -43,7 +44,8 @@
       "version": "InterPro 108.0",
       "licence": "CC0 1.0",
       "role": "input",
-      "note": "Staged by PTM_Pipeline scripts/00_stage_context_sources.py --interpro-source bulk; this repository checks the bytes."
+      "note": "Staged by PTM_Pipeline scripts/00_stage_context_sources.py --interpro-source bulk; this repository checks the bytes.",
+      "record": "https://www.ebi.ac.uk/interpro/protein/UniProt/{acc}/"
     }
   }
 }

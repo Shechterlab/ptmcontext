@@ -229,7 +229,7 @@
       `<p class="page-sub">${esc(a.question)}${selOn() ? ` <b>Your selection</b>${rows.some(r => r.descriptive) ? ': made with this question (or one reading the same data), so shown, not tested.' : ', tested again in your browser (exploratory: not adjusted for the other selections tried).'}` : ''} <span class="muted">Click a ${a.kind === 'protein_sets' ? 'set' : 'class'} to select its ${esc(W.marks)}.</span></p>` +
       `<section class="pcard">${cardBody(a, rows)}${selOn() ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
   }
-  K.sections.method = () => [['m-tests', 'How the tests work', 1], ['m-data', 'Data', 1], ['m-sources', 'Sources', 1], ['m-parity', 'Checked against the release', 1], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1]].filter(([id]) => id !== 'm-parity' || D.run.parity);
+  K.sections.method = () => [['m-tests', 'How the tests work', 1], ['m-data', 'Data', 1], ['m-questions', 'Questions', 1], ['m-sources', 'Sources', 1], ['m-parity', 'Checked against the release', 1], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1]].filter(([id]) => id !== 'm-parity' || D.run.parity);
   K.sections.overview = () => (S.arg ? [] : ovSections().flatMap(x => [[`sec-${x.name.replace(/\W+/g, '-').toLowerCase()}`, x.name, 1], ...x.cards.map(c => [`tile-${c.analysis}`, c.title || A[c.analysis].title, 2])]));
   const SLO = Math.log(1 / 16), SHI = Math.log(16);
   const sp = v => (Math.min(Math.max((Math.log(v) - SLO) / (SHI - SLO), 0), 1) * 100).toFixed(2) + '%';
@@ -266,7 +266,7 @@
     const rows = shownStatistics();
     const opts = [['', 'All questions'], ...D.analyses.map(a => [a.id, a.title])];
     return `<div class="page-head"><h2>All tests</h2><button class="btn" type="button" id="dl">Download TSV</button></div>` +
-      `<p class="page-sub">One row per class and test. A question about where ${esc(W.marks)} sit compares the ${esc(W.marks)} in a class with the other ${esc(W.residues)} of the same proteins${D.analyses.some(a => a.kind === 'protein_sets') ? `; a question about kinds of protein compares the ${esc(W.marked)} proteins in a set with the other proteins` : ''}. Strata are the proteins of a within-protein test${D.analyses.some(a => a.kind === 'protein_sets') ? ', or the abundance deciles of a protein-set test' : ''}. q is Benjamini–Hochberg within each question and test; a class counts as more or less often at q ≤ 0.05 and at least 1.1×. The download keeps the columns of the release’s statistics table.</p>` +
+      `<p class="page-sub">One row per class and test. A question about where ${esc(W.marks)} sit compares the ${esc(W.marks)} in a class with the other ${esc(W.residues)} of the same proteins${D.analyses.some(a => a.kind === 'protein_sets') ? `; a question about kinds of protein compares the ${esc(W.marked)} proteins in a set with the other proteins` : ''}. Strata are the proteins of a within-protein test${D.analyses.some(a => a.stratified) ? ', or the abundance deciles of a protein-set test' : ''}. q is Benjamini–Hochberg within each question and test; a class counts as more or less often at q ≤ 0.05 and at least 1.1×. The download keeps the columns of the release’s statistics table.</p>` +
       `<div class="filters"><label>Question <select id="f-a">${opts.map(([v, t]) => `<option value="${esc(v)}"${v === S.a ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>` +
       `<label>Test <select id="f-m">${[['mantel_haenszel', 'Within each protein (or abundance decile)'], ['fisher', 'Pooled'], ['both', 'Both']].map(([v, t]) => `<option value="${v}"${v === S.m ? ' selected' : ''}>${t}</option>`).join('')}</select></label>` +
       `<label>Class <input id="f-sq" type="search" value="${esc(S.sq)}" placeholder="a class or set"></label>` +
@@ -302,10 +302,14 @@
       `<li><b>Within each protein</b>, every protein is a stratum, and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)}: a Mantel–Haenszel odds ratio, with its 95% confidence interval (Robins–Breslow–Greenland) and the continuity-corrected Cochran–Mantel–Haenszel test. This separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}: abundant proteins are detected more often, and they differ in their structure.</li>` +
       `<li><b>Pooled</b>, all the ${esc(W.residues)} of the ${esc(W.marked)} proteins are taken together: Fisher’s exact test, with the Haldane–Anscombe odds ratio.</li></ul>` +
       `<p>Both count the same ${esc(W.marks)}: those on a protein with at least one other ${esc(W.residue)}. q is Benjamini–Hochberg across the classes of a question, for each test. A class counts as more or less often at q ≤ 0.05 and at least 1.1×.</p>` +
-      (D.analyses.some(a => a.kind === 'protein_sets') ? `<p><b>Questions about kinds of protein</b> (pathways, locations) count proteins, not residues: the ${esc(W.marked)} proteins in each set against the other proteins of the question’s universe, in a one-sided hypergeometric test as clusterProfiler’s enricher runs it, with the fold enrichment and Benjamini–Hochberg across the sets. Each is repeated within protein-abundance deciles (a Mantel–Haenszel odds ratio across them), because mass spectrometry finds abundant proteins most often: an enrichment that holds there is not explained by abundance.</p>` : '') + `</section>` +
+      (D.analyses.some(a => a.kind === 'protein_sets') ? `<p><b>Questions about kinds of protein</b> (${esc(D.analyses.filter(a => a.kind === 'protein_sets').map(a => a.title).join(', '))}) count proteins, not residues: the ${esc(W.marked)} proteins in each set against the other proteins of the question’s universe, in a one-sided hypergeometric test as clusterProfiler’s enricher runs it, with the fold enrichment and Benjamini–Hochberg across the sets.${D.analyses.some(a => a.stratified) ? ` ${D.analyses.every(a => a.kind !== 'protein_sets' || a.stratified) ? 'Each is' : 'Those with an abundance input are'} repeated within protein-abundance deciles (a Mantel–Haenszel odds ratio across them), because mass spectrometry finds abundant proteins most often: an enrichment that holds there is not explained by abundance.` : ''}</p>` : '') + `</section>` +
       `<section id="m-data"><h3>Data</h3><p>Sequences: ${esc(sn.release)}, ${int(sn.entries)} entries (FASTA MD5 <span class="mono">${esc(sn.fasta_md5)}</span>). ` +
       `${cap(W.marks)}: ${int(m.counted)} on ${int(m.proteins)} proteins, from ${int(m.selected)} records${dropped.length ? ' (' + dropped.join('; ') + ', left out)' : ''}. Every file below was checked against its MD5 before it was read.</p>` +
-      `<div class="tbl-card"><table class="tbl"><thead><tr><th>Source</th><th>Used for</th><th>Licence</th><th>File</th><th>MD5</th></tr></thead><tbody>${inputs}</tbody></table></div></section>` + par +
+      `<div class="tbl-card"><table class="tbl"><thead><tr><th>Source</th><th>Used for</th><th>Licence</th><th>File</th><th>MD5</th></tr></thead><tbody>${inputs}</tbody></table></div></section>` +
+      `<section id="m-questions"><h3>Questions, and what made each</h3><p>Each question is a layer (built in, made from the site file’s parameters, or a plugin the site trusts, with its package and version) or a protein-set test; the inputs it reads are the roles it names.</p>` +
+      `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th><th>Reads</th><th>What it compares</th></tr></thead><tbody>` +
+      D.analyses.map(a => `<tr><td>${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag">new</span>' : ''}</td><td class="wrapok">${esc(madeByText(a.id))}</td><td class="mono wrapok">${esc((a.roles || []).join(', '))}</td><td class="wrapok">${esc(a.describe || a.sub || '')}</td></tr>`).join('') +
+      `</tbody></table></div></section>` + par +
       citeSection() +
       sourcesSection() +
       `<section id="m-made"><h3>How this site is made</h3><p>This site is one file, <span class="mono">${esc(D.site.config)}</span>: which mark, which sequences and regions, which questions, its colours and pictures. ptmcontext ${esc(D.kit.version)} (commit <span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(R.written))}. Its citation, version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>` +
@@ -341,9 +345,17 @@
       software: `ptmcontext ${D.kit.version}`, commit: D.kit.commit || '', run: R.written, sequences: R.snapshot,
       marks: R.marks, inputs: Object.fromEntries(Object.entries(R.inputs || {}).map(([k, v]) => [k, { file: String(v.file).split('/').pop(), md5: v.md5 }])), roles: R.roles,
       parity: R.parity ? { reference: R.parity.reference, equal: R.parity.equal } : null,
+      questions: madeBy(), trusted_plugins: R.trusted_plugins || [],
       selection: selOn() && K.sel.data() ? { text: K.sel.describe(), marks: K.sel.nMarks(), proteins: K.sel.nProteins() } : null,
       exported: stamp(), from: pageUrl(), ...extra };
   }
+  // which code made each question: a built-in layer, one made from the site file's parameters, a trusted plugin (with
+  // its package and version), or a protein-set test
+  function madeBy() {
+    return Object.fromEntries(Object.entries(D.run.analyses || {}).map(([aid, x]) => [aid, x.test === 'protein_sets' ? { test: 'protein_sets', sets: x.sets }
+      : { layer: x.layer, origin: x.origin, ...(x.with ? { with: x.with } : {}) }]));
+  }
+  const madeByText = aid => { const x = (D.run.analyses || {})[aid]; if (!x) return ''; return x.test === 'protein_sets' ? `protein-set test of the ${x.sets} input` : `layer ${x.layer} (${x.origin})${x.with ? ', made from the site file’s parameters' : ''}`; };
   function creditLines() {
     const R = D.run, sn = R.snapshot || {};
     const lines = [];
@@ -363,6 +375,7 @@
       `# Version: ${CIT.version || '–'}${CIT.date ? ' (' + CIT.date + ')' : ''}${CIT.doi ? ', doi:' + CIT.doi : ''}${CIT.licence ? '; licence ' + CIT.licence : ''}`,
       `# Made with: ptmcontext ${D.kit.version} (commit ${D.kit.commit || 'not recorded'}) from ${D.site.config}; run ${R.written}`,
       `# Sequences: ${sn.release} (${int(sn.entries)} entries, FASTA MD5 ${sn.fasta_md5}); inputs: ${inputs}`,
+      `# Questions made by: ${Object.keys(D.run.analyses || {}).map(aid => `${aid}: ${madeByText(aid)}`).join('; ')}${(R.trusted_plugins || []).length ? `; trusted plugins: ${R.trusted_plugins.join(', ')}` : ''}`,
       selOn() && K.sel.data() ? `# Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks} on ${K.sel.nProteins()} proteins), tested again in the browser` : null,
       `# Exported: ${stamp()} from ${pageUrl()}`].filter(Boolean).join('\n') + '\n';
   }
