@@ -99,6 +99,31 @@ def load(path: str | Path, kind: str) -> pd.DataFrame:
     raise ValueError(f'{path}: not a unit table, nor a staged MobiDB or InterPro table, for units of kind {kind}')
 
 
+COMBINE_RULES = ('first_of', 'all_of')
+
+
+def combine(frames: list[pd.DataFrame], rule: str) -> pd.DataFrame:
+    """Units of one kind from several sources, in the order a site lists them.
+
+      first_of  each protein's units from the first source that has any for it: a later source fills only the proteins
+                the earlier ones leave without (curated domains first, predicted ones for the rest), so no protein mixes
+                two sources' boundaries;
+      all_of    every source's units.
+    """
+    if rule not in COMBINE_RULES:
+        raise ValueError(f'unknown rule {rule!r}: use one of {COMBINE_RULES}')
+    parts, seen = [], set()
+    for f in frames:
+        parts.append(f[~f['accession'].isin(seen)] if rule == 'first_of' else f)
+        seen |= set(f['accession'])
+    cols = list(dict.fromkeys(c for f in frames for c in f.columns))
+    out = pd.concat([p.reindex(columns=cols) for p in parts], ignore_index=True)
+    for c in cols:
+        if c not in UNIT_COLUMNS and out[c].dtype == object:
+            out[c] = out[c].fillna('')
+    return out.sort_values(['accession', 'start', 'end'], kind='stable').reset_index(drop=True)
+
+
 def merge_spans(spans) -> list[list[int]]:
     """Overlapping 1-based inclusive intervals merged (idrkit.merge_intervals)."""
     out: list[list[int]] = []

@@ -2,7 +2,7 @@
 cff-version: 1.2.0
 message: "Please cite the original data sources; this site is a test of the kit, not a publication."
 title: "Saccharomyces cerevisiae phosphosites from UniProt, against disorder and domains"
-version: "pilot-0.1.0"
+version: "pilot-0.2.0"
 date-released: "2026-11-01"
 license: "CC-BY-4.0"
 authors:
@@ -26,3 +26,27 @@ references:
     end: D503
     year: 2025
     doi: "10.1093/nar/gkae969"
+  - type: article
+    authors: [{family-names: Ginell, given-names: GM}, {family-names: Flynn, given-names: AJ}, {family-names: Holehouse, given-names: AS}]
+    title: "SHEPHARD: a modular and extensible software architecture for analyzing and annotating large protein datasets"
+    journal: "Bioinformatics"
+    volume: 39
+    start: btad488
+    year: 2023
+    doi: "10.1093/bioinformatics/btad488"
+  - type: article
+    authors: [{family-names: Manriquez-Sandoval, given-names: E}, {family-names: Fried, given-names: SD}]
+    title: "DomainMapper: Accurate domain structure annotation including those with non-contiguous topologies"
+    journal: "Protein Sci"
+    volume: 31
+    start: e4465
+    year: 2022
+    doi: "10.1002/pro.4465"
+  - type: article
+    authors: [{family-names: Cheng, given-names: H}, {name: "et al."}]
+    title: "ECOD: an evolutionary classification of protein domains"
+    journal: "PLoS Comput Biol"
+    volume: 10
+    start: e1003926
+    year: 2014
+    doi: "10.1371/journal.pcbi.1003926"

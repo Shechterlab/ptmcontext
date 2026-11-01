@@ -204,7 +204,9 @@
   function method() {
     const R = D.run, m = R.marks || {}, sn = R.snapshot || {};
     const IN = D.inputs || {};
-    const inputs = Object.entries(R.inputs || {}).sort(([a], [b]) => (IN[a]?.use === 'checking the rebuild') - (IN[b]?.use === 'checking the rebuild'))
+    // in the site file's order (a role's sources in the order it combines them), the reference last
+    const inputs = [...Object.keys(IN).filter(k => (R.inputs || {})[k]).map(k => [k, R.inputs[k]]), ...Object.entries(R.inputs || {}).filter(([k]) => !IN[k])]
+      .sort(([a], [b]) => (IN[a]?.use === 'checking the rebuild') - (IN[b]?.use === 'checking the rebuild'))
       .map(([k, v]) => `<tr><td class="wrapok">${esc(IN[k]?.version || k)}</td><td>${esc(IN[k]?.use || '')}</td><td class="wrapok">${esc(hlicence(IN[k]?.licence))}</td><td class="mono">${esc(String(v.file).split('/').pop())}</td><td class="mono">${esc(v.md5)}</td></tr>`).join('');
     const dropped = [m.not_on_snapshot ? `${int(m.not_on_snapshot)} on other sequences (isoforms, unreviewed entries)` : '', m.residue_mismatch ? `${int(m.residue_mismatch)} not on a candidate residue` : ''].filter(Boolean);
     const nPar = R.parity ? R.parity.checked.reduce((n, c) => n + c.rows, 0) : 0;

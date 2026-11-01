@@ -41,6 +41,15 @@
       "licence": "CC BY 4.0 (as listed for MobiDB)",
       "role": "input",
       "note": "6036 of 6067 entries have prediction-disorder-th_50 regions; the API does not report a release, so the download date is the version"
+    },
+    "yeast_shephard_ecod_domains": {
+      "file": "inputs/yeast_shephard_ecod_domains.tsv",
+      "md5": "c5d308f44daa117e722ea0742109eb8e",
+      "source": "https://github.com/holehouse-lab/shephard-data/blob/c5c956c0ff47da49ec024b0d99039c8d0d3dcbac/data/proteomes/s_cerevisiae/shprd_domains_ecod_domainmapper_s_cerevisiae.tsv",
+      "version": "shephard-data c5c956c",
+      "licence": "MIT (shephard-data LICENSE)",
+      "role": "input",
+      "note": "8,196 of 8,197 domains kept: those on the 6,058 entries whose sequence equals the snapshot's. Downloaded: c5c956c_shprd_domains_ecod_domainmapper_s_cerevisiae.tsv MD5 410f40d02b1f466c91578d11d6e17df4; c5c956c_s_cerevisiae_clean.fasta MD5 8c5be333d9cc1f9bfc9e430a16fda370"
     }
   }
 }

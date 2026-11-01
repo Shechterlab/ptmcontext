@@ -25,20 +25,44 @@ from ..snapshot import Snapshot, md5_file
 ENTRY_POINT_GROUP = 'ptmcontext.layers'
 
 
+@dataclass(frozen=True)
+class Several:
+    """A role filled by several inputs, combined by a rule (units.combine: first_of or all_of)."""
+
+    rule: str
+    paths: tuple[Path, ...]
+
+
 @dataclass
 class Context:
-    """What a layer may read: the snapshot, the mark profile, named input files, and the plugins trusted for this run."""
+    """What a layer may read: the snapshot, the mark profile, the inputs by the role they fill (a file, or Several), and
+    the plugins trusted for this run."""
 
     snapshot: Snapshot
     profile: Profile | None = None
-    inputs: dict[str, Path] = field(default_factory=dict)
+    inputs: dict[str, Path | Several] = field(default_factory=dict)
     trusted_plugins: tuple[str, ...] = ()
     _cache: dict = field(default_factory=dict, repr=False)
 
     def path(self, name: str) -> Path:
         if name not in self.inputs:
             raise KeyError(f'input {name!r} is not given (inputs: {sorted(self.inputs)})')
+        if isinstance(self.inputs[name], Several):
+            raise TypeError(f'role {name!r} is filled by several inputs: read it with Context.units')
         return Path(self.inputs[name])
+
+    def units(self, role: str, kind: str):
+        """The units of a kind that fill a role, from its one input or its several combined; read once per run."""
+        from .. import units as U
+
+        def make():
+            if role not in self.inputs:
+                raise KeyError(f'input {role!r} is not given (inputs: {sorted(self.inputs)})')
+            given = self.inputs[role]
+            if isinstance(given, Several):
+                return U.combine([U.load(p, kind) for p in given.paths], given.rule)
+            return U.load(given, kind)
+        return self.cached(f'units:{kind}', make)
 
     def cached(self, key: str, make: Callable):
         if key not in self._cache:
@@ -46,7 +70,10 @@ class Context:
         return self._cache[key]
 
     def input_record(self) -> dict:
-        return {name: {'path': str(p), 'md5': md5_file(p)} for name, p in sorted(self.inputs.items())}
+        def one(p):
+            return {'path': str(p), 'md5': md5_file(p)}
+        return {name: ({'rule': p.rule, 'inputs': [one(x) for x in p.paths]} if isinstance(p, Several) else one(p))
+                for name, p in sorted(self.inputs.items())}
 
 
 @dataclass(frozen=True)

@@ -65,7 +65,10 @@ Inter and IBM Plex Serif embedded, and the TSV's `#` lines (readers skip them: `
 - **Change a site by changing its file.** Mark, organism, inputs and analyses are in `sites/<site>.yaml`; no code
   names a residue, a mark or an organism.
 - **Layers read roles, sites bind roles to inputs.** The domain layers read whatever unit table fills `domains`: InterPro
-  for the human release, UniProt's features for yeast. A new source needs a stager, not a new layer.
+  for the human release; for yeast, UniProt's features, then SHEPHARD's ECOD domains for the proteins UniProt leaves
+  without (`first_of`). A new source needs a stager, not a new layer. A role filled by several inputs names its rule:
+  `first_of` (each protein's units from the first input that has any for it, so no protein mixes two sources'
+  boundaries) or `all_of` (every input's units).
 - **A build never touches the network** and refuses any file whose MD5 differs from its manifest.
 - **Other repositories' code is not run.** Their outputs are data with MD5s. Their layers come in only as plugins that
   a site names as trusted, recorded with their version in every run record.

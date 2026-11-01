@@ -7,6 +7,7 @@
                                                 add (or update) a manifest entry, with the file's MD5
   ptmc stage uniprot UP000002311 --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
   ptmc stage mobidb --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
+  ptmc stage shephard s_cerevisiae --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
                                                 stage a proteome from upstream, recording release, date and MD5
   ptmc web sites/methylarginine.yaml            the site's website, from its run: out/<site>/web/index.html and <site>.html
   ptmc pages sites/a.yaml sites/b.yaml --out _site  the built sites and a landing page, ready to publish
@@ -40,8 +41,7 @@ def cmd_check(a) -> int:
     site = S.load_site(a.site)
     profile = load_profile(site['mark'])
     entries = I.load(S.manifest_of(site))
-    named = [site['snapshot']['input'], site['marks']['input'], *site.get('inputs', {}).values(),
-             *([site['reference']['statistics']] if site.get('reference', {}).get('statistics') else [])]
+    named = I.site_input_names(site)
     missing = [n for n in named if n not in entries]
     unknown = [x['layer'] for x in site['analyses'] if 'layer' in x and x['layer'] not in L.BUILT_IN and x['layer'] not in L.plugins()]
     unknown += [x['sets']['input'] for x in site['analyses'] if 'sets' in x and x['sets']['input'] not in site.get('inputs', {})]
@@ -95,12 +95,18 @@ def cmd_stage(a) -> int:
             print('ptmc stage uniprot needs a UniProt proteome id (e.g. UP000002311)')
             return 1
         print(stage.uniprot(a.proteome, out, manifest, a.prefix))
-    else:
-        fasta = sorted(out.glob(f'{a.prefix}_uniprot_*.fasta'))
-        if not fasta:
-            print(f'stage uniprot first: no {a.prefix}_uniprot_*.fasta in {out}')
-            return 1
+        return 0
+    fasta = sorted(out.glob(f'{a.prefix}_uniprot_*.fasta'))
+    if not fasta:
+        print(f'stage uniprot first: no {a.prefix}_uniprot_*.fasta in {out}')
+        return 1
+    if a.source == 'mobidb':
         print(stage.mobidb(fasta[-1], out, manifest, a.prefix))
+    else:
+        if a.proteome not in stage.SHEPHARD_ECOD:
+            print(f'ptmc stage shephard needs a shephard-data proteome folder: one of {sorted(stage.SHEPHARD_ECOD)}')
+            return 1
+        print(stage.shephard(a.proteome, fasta[-1], out, manifest, a.prefix, a.commit or stage.SHEPHARD_COMMIT))
     return 0
 
 
@@ -151,8 +157,9 @@ def main(argv=None) -> int:
     s.set_defaults(fn=cmd_inputs)
 
     s = sub.add_parser('stage', help='download a source from upstream and record it in a manifest')
-    s.add_argument('source', choices=['uniprot', 'mobidb'])
-    s.add_argument('proteome', nargs='?', help='UniProt proteome id, for uniprot')
+    s.add_argument('source', choices=['uniprot', 'mobidb', 'shephard'])
+    s.add_argument('proteome', nargs='?', help='UniProt proteome id (uniprot), or shephard-data proteome folder (shephard)')
+    s.add_argument('--commit', help='shephard-data commit (default: the one this version of ptmcontext pins)')
     s.add_argument('--out', required=True, help='folder for the staged files (its parent is the --root of ptmc run)')
     s.add_argument('--manifest', required=True, help="the site's input manifest (written or updated)")
     s.add_argument('--prefix', required=True, help='file name prefix, e.g. yeast')

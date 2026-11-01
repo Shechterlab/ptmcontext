@@ -69,7 +69,8 @@ Edit the site file only (`sites/<site>.yaml`); do not change code to change a si
 ```yaml
 inputs:
   disorder: <manifest name>     # the role a layer reads, and the input that fills it
-  domains: <manifest name>
+  domains:                      # or several inputs, with the rule that combines them:
+    first_of: [<curated>, <predicted>]    # each protein's units from the first that has any (or all_of: every input's)
 marks:
   input: <manifest name>
   include: [{column: ..., in: [...]}]

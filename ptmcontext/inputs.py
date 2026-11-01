@@ -42,3 +42,23 @@ def resolve(root: str | Path, names: list[str] | None = None, manifest: str | Pa
             raise ValueError(f'input {name!r}: {path} has MD5 {md5}, the manifest says {e["md5"]}')
         out[name] = path
     return out
+
+
+def role_inputs(value) -> tuple[str, list[str]]:
+    """A site's role, as written: one manifest name, or {first_of: [names]} or {all_of: [names]} (units.combine)."""
+    if isinstance(value, str):
+        return 'one', [value]
+    if isinstance(value, dict) and len(value) == 1:
+        (rule, names), = value.items()
+        return rule, list(names)
+    raise ValueError(f'a role is a manifest name, or {{first_of: [...]}} or {{all_of: [...]}}, not {value!r}')
+
+
+def site_input_names(site: dict) -> list[str]:
+    """Every manifest name a site reads: its snapshot, its marks, each role's inputs and its reference."""
+    names = [site['snapshot']['input'], site['marks']['input']]
+    for value in site.get('inputs', {}).values():
+        names += role_inputs(value)[1]
+    if site.get('reference', {}).get('statistics'):
+        names.append(site['reference']['statistics'])
+    return list(dict.fromkeys(names))

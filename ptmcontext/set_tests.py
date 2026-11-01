@@ -14,7 +14,6 @@ to keep, the names of the sets, the universe and the sizes. Nothing here names a
 from __future__ import annotations
 
 import math
-from pathlib import Path
 
 import numpy as np
 import pandas as pd

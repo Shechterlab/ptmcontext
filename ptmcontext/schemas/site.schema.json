@@ -60,9 +60,23 @@
     "inputs": {
       "type": "object",
       "additionalProperties": {
-        "type": "string"
+        "oneOf": [
+          {"type": "string"},
+          {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 1,
+            "additionalProperties": false,
+            "properties": {
+              "first_of": {"type": "array", "minItems": 2, "items": {"type": "string"},
+                           "description": "each protein's units from the first input that has any for it"},
+              "all_of": {"type": "array", "minItems": 2, "items": {"type": "string"},
+                         "description": "every input's units"}
+            }
+          }
+        ]
       },
-      "description": "role -> manifest name: the inputs the layers read, by the role they fill (disorder, domains, ...)"
+      "description": "role -> manifest name, or several names combined (first_of, all_of): the inputs the layers read, by the role they fill (disorder, domains, ...)"
     },
     "trusted_plugins": {
       "type": "array",

@@ -86,10 +86,13 @@
       while (x < b) { const nx = Math.min(b, x + 5); d += ` Q${((x + nx) / 2).toFixed(1)},${up ? yB - 5 : yB + 5} ${nx.toFixed(1)},${yB}`; x = nx; up = !up; }
       parts.push(`<path ${cls('m-wave', `stroke="${C?.wave}"`)} d="${d}" fill="none" stroke-width="1.4"/>`);
     });
-    rec.units.filter(u => u[0] === 'domain').forEach(([, s, e, lab]) => {
+    rec.units.filter(u => u[0] === 'domain').forEach(([, s, e, lab, src]) => {
       const a = X(s - 0.5), b = X(e + 0.5), w = Math.max(2, b - a);
-      parts.push(`<rect ${cls('m-dom', `fill="${C?.dom}" stroke="${C?.domS}"`)} x="${a.toFixed(1)}" y="${yB - 9}" width="${w.toFixed(1)}" height="18" rx="4" stroke-width="1"><title>${esc(lab)} ${s}–${e}</title></rect>`);
-      if (lab && K.tw(lab, 10) + 8 < w) parts.push(`<text ${cls('m-domt', `fill="${C?.domT}"`)} x="${((a + b) / 2).toFixed(1)}" y="${yB + 3.5}" font-size="10" text-anchor="middle">${esc(lab)}</text>`);
+      const from = (D.unit_sources || [])[src];
+      // the block shows the name's first part (an ECOD label's family); its tooltip, the whole name and the source
+      const short = String(lab || '').split(' · ')[0];
+      parts.push(`<rect ${cls('m-dom', `fill="${C?.dom}" stroke="${C?.domS}"`)} x="${a.toFixed(1)}" y="${yB - 9}" width="${w.toFixed(1)}" height="18" rx="4" stroke-width="1"><title>${esc(lab)}, ${s}–${e}${from ? ` (${esc(from)})` : ''}</title></rect>`);
+      if (short && K.tw(short, 10) + 8 < w) parts.push(`<text ${cls('m-domt', `fill="${C?.domT}"`)} x="${((a + b) / 2).toFixed(1)}" y="${yB + 3.5}" font-size="10" text-anchor="middle">${esc(short)}</text>`);
     });
     rec.marks.forEach(([pos]) => {
       const x = X(pos).toFixed(1);
@@ -245,7 +248,7 @@
     const legend = [['#d6ecf0', '#0e7490', 'domain'], ['#ffffff', '#5f6f78', 'disordered region (wavy line)'], ['#c2410c', '#c2410c', W.mark]];
     const af = PV.af?.plddt && PV.af.plddt.length === p.len ? ` AlphaFold confidence (pLDDT) from model v${PV.af.version}, retrieved ${today()}: ${AF_BINS.map(b => b[2]).join(', ')}.` : '';
     return K.figureFrame({ title: `${p.gene || p.acc}: ${p.name}`, sub: `${p.acc}, ${int(p.len)} residues; ${int(p.marks)} ${p.marks === 1 ? W.mark : W.marks} of its ${int(p.cand)} ${W.residues}`,
-      legend, body: m.svg, bodyH: m.H, W: 720, note: `Domains and disordered regions as the site’s tests placed them (${Object.values(D.inputs || {}).filter(x => x.use === 'domains' || x.use === 'disorder').map(x => x.version).join('; ')}).${af}`, extra: { protein: p.acc } });
+      legend, body: m.svg, bodyH: m.H, W: 720, note: `Domains and disordered regions as the site’s tests placed them (${Object.values(D.inputs || {}).filter(x => x.role === 'domains' || x.role === 'disorder').map(x => x.version).join('; ')}).${af}`, extra: { protein: p.acc } });
   }
   function sitesTsv() {
     const p = byAcc[PV.acc], rec = PV.rec;

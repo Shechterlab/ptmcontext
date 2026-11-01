@@ -21,8 +21,9 @@ from .. import __version__
 from .. import layers as L
 from .. import statistics as ST
 from ..citation import kit_citation, site_citation
-from ..profile import load_profile
 from ..inputs import load as load_manifest
+from ..inputs import role_inputs, site_input_names
+from ..profile import load_profile
 from ..site import code_commit, load_site, manifest_of, root_of
 
 FONTS = {
@@ -156,12 +157,19 @@ def site_data(site: dict, folder: Path, profile) -> dict:
     web = site['website']
     # each input by its name and version, and what this site uses it for
     entries = load_manifest(manifest_of(site))
-    uses = {site['snapshot']['input']: 'sequences', site['marks']['input']: profile.words['marks'],
-            **{name: role for role, name in site.get('inputs', {}).items()}}
+    uses = {site['snapshot']['input']: 'sequences', site['marks']['input']: profile.words['marks']}
+    order = site_input_names(site)            # the table lists them as the site file does: a role's sources in its order
+    roles = {}
+    for role, value in site.get('inputs', {}).items():
+        rule, names = role_inputs(value)
+        for i, name in enumerate(names):
+            roles[name] = role
+            uses[name] = role if rule == 'one' or i == 0 else f"{role}, for proteins with none from the row{'s' if i > 1 else ''} above" if rule == 'first_of' else f'{role}, with the row{"s" if i > 1 else ""} above'
     if site.get('reference', {}).get('statistics'):
         uses[site['reference']['statistics']] = 'checking the rebuild'
     inputs = {name: {'version': entries.get(name, {}).get('version', ''), 'licence': entries.get(name, {}).get('licence', ''),
-                     'use': uses.get(name, '')} for name in run.get('inputs', {})}
+                     'use': uses.get(name, ''), 'role': roles.get(name, '')}
+              for name in sorted(run.get('inputs', {}), key=lambda n: order.index(n) if n in order else len(order))}
     return {
         'inputs': inputs,
         'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),
@@ -184,16 +192,22 @@ def shard_of(accession: str) -> int:
     return sum(map(ord, accession)) % SHARDS
 
 
-def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[list, dict]:
-    """(the protein list for the Proteins tab, the per-protein records by shard) from a run's per-protein outputs."""
+def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list, list, list], dict]:
+    """((the protein list for the Proteins tab, the mark columns, the regions' sources), the per-protein records by
+    shard) from a run's per-protein outputs. A region is [kind, start, end, label, index of its source]."""
     import pandas as pd
+
     from ..snapshot import parse_fasta
     if not (folder / 'proteins.tsv').exists():
-        return ([], []), {}
+        return ([], [], []), {}
     prot = pd.read_csv(folder / 'proteins.tsv', sep='\t', dtype={'accession': str}, keep_default_na=False)
     marks = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
     counts = pd.read_csv(folder / 'protein_counts.tsv', sep='\t', dtype={'accession': str, 'analysis': str, 'category': str}, keep_default_na=False)
     units = pd.read_csv(folder / 'units.tsv', sep='\t', dtype={'accession': str, 'label': str}, keep_default_na=False)
+    if 'source' not in units.columns:
+        units['source'] = ''
+    sources = sorted(set(units['source']))
+    src_index = {s: i for i, s in enumerate(sources)}
     seqs = parse_fasta(snapshot_fasta) if snapshot_fasta and snapshot_fasta.exists() else {}
     analyses = [c for c in marks.columns if c not in ('accession', 'position', 'residue', 'window_15')]
     listing = [[r['accession'], r['gene'], r['name'], int(r['length']), int(r['marks']), int(r['candidates'])] for r in prot.to_dict('records')]
@@ -206,13 +220,13 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[list, dict]
         mg, cg, ug = m_by.get(a), c_by.get(a), u_by.get(a)
         rec = {'entry': r['entry'], 'md5': r['sequence_md5'], 'seq': seqs.get(a, ''),
                'marks': [[int(x['position']), x['window_15'], [x[k] for k in analyses]] for x in mg.to_dict('records')] if mg is not None else [],
-               'counts': {}, 'totals': {}, 'units': [[u['kind'], int(u['start']), int(u['end']), u['label']] for u in ug.to_dict('records')] if ug is not None else []}
+               'counts': {}, 'totals': {}, 'units': [[u['kind'], int(u['start']), int(u['end']), u['label'], src_index[u['source']]] for u in ug.to_dict('records')] if ug is not None else []}
         if cg is not None:
             for aid, g in cg.groupby('analysis'):
                 rec['counts'][aid] = [[c['category'], int(c['marks_in']), int(c['others_in'])] for c in g.to_dict('records')]
                 rec['totals'][aid] = [int(g['marks_total'].iloc[0]), int(g['others_total'].iloc[0])]
         shards.setdefault(shard_of(a), {})[a] = rec
-    return (listing, analyses), shards
+    return (listing, analyses, sources), shards
 
 
 def build(site_path: str | Path, out_root: str | Path | None = None, log=print) -> Path:
@@ -247,9 +261,10 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
     cit = data['citation']
     run = data['run']
     fasta = Path(run.get('inputs', {}).get(site['snapshot']['input'], {}).get('file', ''))
-    (listing, mark_columns), shards = protein_data(folder, fasta)
+    (listing, mark_columns, unit_sources), shards = protein_data(folder, fasta)
     data['proteins'] = listing
     data['mark_columns'] = mark_columns
+    data['unit_sources'] = unit_sources
     data['shards'] = SHARDS if shards else 0
     if shards:
         (out / 'data' / 'p').mkdir(parents=True, exist_ok=True)

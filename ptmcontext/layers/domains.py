@@ -21,7 +21,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .. import units as U
 from . import Context, get, register
 
 WINDOW = 20
@@ -46,7 +45,7 @@ def _nearest(ctx: Context, residues: pd.DataFrame) -> pd.DataFrame:
     """distance to the nearest domain edge, the nearest domain (row of the unit table), and whether the residue lies
     in a gap between domains; NaN / -1 / False on a protein without domains."""
     def compute():
-        units = ctx.cached('units:domain', lambda: U.load(ctx.path('domains'), 'domain'))
+        units = ctx.units('domains', 'domain')
         out_d = np.full(len(residues), np.nan)
         out_i = np.full(len(residues), -1, dtype=np.int64)
         out_gap = np.zeros(len(residues), dtype=bool)
@@ -80,7 +79,7 @@ def _nearest(ctx: Context, residues: pd.DataFrame) -> pd.DataFrame:
     return ctx.cached(f'nearest_domain:{len(residues)}:{key}', compute)
 
 
-@register('domain_context', 'class', 'InterPro domain or repeat: in_domain, boundary (<= 20 residues from an edge), '
+@register('domain_context', 'class', 'Domain or repeat (the site’s domains input): in_domain, boundary (<= 20 residues from an edge), '
           'inter_domain_linker, distal, no_domain_annotation', needs=('domains',), title='Domain context',
           labels={'in_domain': 'In domain', 'boundary': 'Outside, ≤20 aa from a domain', 'inter_domain_linker': 'Inter-domain linker',
                   'distal': 'Domain-distal', 'no_domain_annotation': 'No domain data'},
@@ -99,7 +98,7 @@ def domain_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     return pd.DataFrame({'category': cat.astype(object), 'edge_distance': d}, index=residues.index)
 
 
-@register('domain_class', 'class', 'the class of the nearest InterPro domain or repeat (config/domain_classes.json)',
+@register('domain_class', 'class', 'the class of the nearest domain or repeat (config/domain_classes.json)',
           needs=('domains',), title='Nearest domain class',
           question='Which kinds of domain are {marks} nearest to, against the other {residues} of the same proteins?',
           sub='{Marked} vs other {residues} of the same proteins, by the type of the nearest domain')

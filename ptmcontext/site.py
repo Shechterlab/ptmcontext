@@ -144,9 +144,9 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
         if u is not None and len(u):
             u = u[u['accession'].isin(set(accs))]
             units.append(pd.DataFrame({'accession': u['accession'], 'kind': kind, 'start': u['start'], 'end': u['end'],
-                                       'label': u['label'] if 'label' in u.columns else ''}))
+                                       'label': u['label'] if 'label' in u.columns else '', 'source': u['source']}))
     return {'marks.tsv': m.sort_values(['accession', 'position']), 'protein_counts.tsv': pd.concat(counts, ignore_index=True),
-            'proteins.tsv': proteins, 'units.tsv': pd.concat(units, ignore_index=True) if units else pd.DataFrame(columns=['accession', 'kind', 'start', 'end', 'label'])}
+            'proteins.tsv': proteins, 'units.tsv': pd.concat(units, ignore_index=True) if units else pd.DataFrame(columns=['accession', 'kind', 'start', 'end', 'label', 'source'])}
 
 
 def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, out_root: str | Path | None = None,
@@ -156,9 +156,7 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     if site.get('status') == 'offline_pilot' and not allow_untrusted:
         raise PermissionError(f"site {site['id']} is an offline pilot: run it with allow_untrusted (ptmc run --allow-untrusted)")
     roles = site.get('inputs', {})
-    names = [site['snapshot']['input'], site['marks']['input'], *roles.values()]
-    if site.get('reference', {}).get('statistics'):
-        names.append(site['reference']['statistics'])
+    names = I.site_input_names(site)
     manifest = manifest_of(site)
     paths = I.resolve(root, names, manifest=manifest, allow_untrusted=allow_untrusted)
     staged = I.load(manifest).get(site['snapshot']['input'], {}).get('version', '')
@@ -168,7 +166,10 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
                          f"update snapshot.release in {Path(site_path).name} (and every result that depends on it), or stage {release}")
     profile = load_profile(site['mark'])
     snap = Snapshot.from_fasta(paths[site['snapshot']['input']], release=site['snapshot']['release'])
-    ctx = L.Context(snap, profile, {role: paths[name] for role, name in roles.items()},
+    def fill(value):
+        rule, given = I.role_inputs(value)
+        return paths[given[0]] if rule == 'one' else L.Several(rule, tuple(paths[n] for n in given))
+    ctx = L.Context(snap, profile, {role: fill(value) for role, value in roles.items()},
                     trusted_plugins=tuple(site.get('trusted_plugins', [])))
     table = pd.read_csv(paths[site['marks']['input']], sep='\t', dtype=str, keep_default_na=False, low_memory=False)
     marked, report = select_marks(site['marks'], table, snap, profile)
@@ -178,6 +179,10 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     for analysis in site['analyses']:
         if analysis.get('test') == 'protein_sets':
             from .set_tests import protein_set_test
+            several = [r for r in ctx.inputs if isinstance(ctx.inputs[r], L.Several)
+                       and r in (analysis['sets']['input'], analysis.get('names', {}).get('input'), analysis.get('abundance', {}).get('input'))]
+            if several:
+                raise ValueError(f"{analysis['id']}: a protein-set test reads one table per role, but {several} name several inputs")
             rows_, names = protein_set_test(analysis, ctx.inputs, set(marked['accession']), set(snap.sequences))
             parts.append(rows_)
             set_names += [(analysis['id'], k, names.get(k, '')) for k in rows_['category']] if len(rows_) else []

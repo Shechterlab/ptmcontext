@@ -11,6 +11,7 @@ A site is a YAML file. Changing the mark, the organism or the analyses is changi
 pip install -e ".[test]"
 ptmc stage uniprot UP000002311 --out DATA/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
 ptmc stage mobidb --out DATA/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
+ptmc stage shephard s_cerevisiae --out DATA/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
 ptmc run sites/yeast_phospho.yaml --root DATA          # -> out/yeast_phospho/statistics.tsv and run.json
 ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/web/: the site, in the Methylarginine Site Explorer's look
 ```
@@ -26,8 +27,9 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
 
   The rest (PANTHER classes, condensates, interfaces, crosslinks, cell maps, eCLIP) come next, one parity check at a
   time.
-- **A second organism by configuration:** yeast phosphosites staged from UniProt 2026_03 and MobiDB in about 50 s and
-  run in 21 s.
+- **A second organism by configuration:** yeast phosphosites staged from UniProt 2026_03, MobiDB and SHEPHARD in
+  about 50 s and run in 21 s. UniProt's domain features cover 1,937 of 6,067 yeast proteins; SHEPHARD's ECOD domains
+  fill 2,506 more, so 79% of the phosphosites (4,702 of 5,930) are on a protein with domain data, up from 47%.
 - **A website per site, from its file:** `ptmc web` gives the Methylarginine Site Explorer's look with the site's own
   colours, pictures and words; every figure and table downloads as PDF, SVG, PNG and TSV carrying its description,
   citation (from the site's `CITATION.cff`), versions and provenance.

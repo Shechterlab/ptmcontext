@@ -74,7 +74,7 @@ DISORDER_LABELS = {'inside': 'disordered', 'near': 'disorder_boundary', 'far': '
           question='Are {marks} in disordered regions, against the other {residues} of the same proteins?',
           sub='{Marked} vs other {residues} of the same proteins, by disorder (MobiDB)')
 def disorder(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
-    units = ctx.cached('units:disordered', lambda: U.load(ctx.path('disorder'), 'disordered'))
+    units = ctx.units('disorder', 'disordered')
     return unit_context(residues, units, ctx.snapshot.lengths(), 20, DISORDER_LABELS)
 
 
@@ -88,13 +88,13 @@ def disorder(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
           question='Are {marks} in IDRs of 20 or more residues, against the other {residues} of the same proteins?',
           sub='{Marked} vs other {residues} of the same proteins, by IDRs of 20 or more residues (MobiDB)')
 def idr(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
-    units = ctx.cached('units:idr', lambda: U.idrs(ctx.cached('units:disordered', lambda: U.load(ctx.path('disorder'), 'disordered')),
+    units = ctx.cached('units:idr', lambda: U.idrs(ctx.units('disorder', 'disordered'),
                                                     ctx.snapshot))
     return unit_context(residues, units, ctx.snapshot.lengths(), 20,
                         {'inside': 'idr', 'near': 'idr_boundary', 'far': 'outside_idr', 'none': 'no_idr'})
 
 
-@register('domain', 'class', 'InterPro domain or repeat: inside, within 20 residues outside, further out, or a protein '
+@register('domain', 'class', 'Domain or repeat (the site’s domains input): inside, within 20 residues outside, further out, or a protein '
           'without one', needs=('domains',), title='Domains',
           labels={'in_domain': 'In domain', 'domain_boundary': 'Outside, ≤20 aa from a domain', 'outside_domain': 'More than 20 aa from a domain',
                   'no_domain_annotation': 'No domain data'},
@@ -103,7 +103,7 @@ def idr(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
           question='Are {marks} in domains, against the other {residues} of the same proteins?',
           sub='{Marked} vs other {residues} of the same proteins, in and outside domains')
 def domain(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
-    units = ctx.cached('units:domain', lambda: U.load(ctx.path('domains'), 'domain'))
+    units = ctx.units('domains', 'domain')
     return unit_context(residues, units, ctx.snapshot.lengths(), 20,
                         {'inside': 'in_domain', 'near': 'domain_boundary', 'far': 'outside_domain', 'none': 'no_domain_annotation'})
 

@@ -3,6 +3,7 @@ file (source URL, release or date, licence, MD5) in a site's input manifest.
 
   ptmc stage uniprot UP000002311 --out DIR --manifest sites/yeast_phospho.inputs.json
   ptmc stage mobidb  --out DIR --manifest ...      (after uniprot: it reads the accessions from the FASTA)
+  ptmc stage shephard s_cerevisiae --out DIR ...   (after uniprot: SHEPHARD's ECOD domains on identical sequences)
 
 Staging is the only step that touches the network. A build reads only staged files and checks their MD5s, so a
 release can be rebuilt offline, and a source that changes upstream changes nothing until it is staged again.
@@ -169,10 +170,38 @@ def mobidb(fasta: Path, out: Path, manifest: Path, prefix: str, feature: str = M
 
 
 SHEPHARD_DATA = 'https://github.com/holehouse-lab/shephard-data'
+SHEPHARD_RAW = 'https://raw.githubusercontent.com/holehouse-lab/shephard-data'
+# SHEPHARD's precomputed ECOD domains (DomainMapper on hmmscan hits against ECOD's HMMs) and the sequences they were
+# computed on, per proteome folder of shephard-data. Pinned to a commit: a moved file is a new staging.
+SHEPHARD_ECOD = {
+    'human': ('data/proteomes/human/shprd_domains_ecod_domainmapper.tsv', 'data/proteomes/human/human_proteome_clean.fasta'),
+    's_cerevisiae': ('data/proteomes/s_cerevisiae/shprd_domains_ecod_domainmapper_s_cerevisiae.tsv',
+                     'data/proteomes/s_cerevisiae/s_cerevisiae_clean.fasta'),
+}
+SHEPHARD_COMMIT = 'c5c956c0ff47da49ec024b0d99039c8d0d3dcbac'     # 2024-05-07
+
+
+def shephard(proteome: str, snapshot_fasta: Path, out: Path, manifest: Path, prefix: str, commit: str = SHEPHARD_COMMIT) -> dict:
+    """SHEPHARD's ECOD domains for a proteome, downloaded from shephard-data at a commit and kept on the entries whose
+    sequence is identical to the snapshot's (shephard_domains). The two downloaded files are kept beside the staged
+    table, and their MD5s go in the manifest's note."""
+    if proteome not in SHEPHARD_ECOD:
+        raise ValueError(f'no SHEPHARD ECOD file known for {proteome!r}: known are {sorted(SHEPHARD_ECOD)}')
+    raw = out / 'shephard_raw'
+    raw.mkdir(parents=True, exist_ok=True)
+    files = []
+    for rel in SHEPHARD_ECOD[proteome]:
+        body, _ = _get(f'{SHEPHARD_RAW}/{commit}/{rel}')
+        path = raw / f'{commit[:7]}_{Path(rel).name}'
+        path.write_bytes(body)
+        files.append(path)
+    return shephard_domains(files[0], files[1], snapshot_fasta, out, manifest, f'{prefix}_shephard_ecod_domains', commit,
+                            'ECOD domains (DomainMapper)', upstream=files,
+                            source=f'{SHEPHARD_DATA}/blob/{commit}/{SHEPHARD_ECOD[proteome][0]}')
 
 
 def shephard_domains(domains_tsv: Path, their_fasta: Path, snapshot_fasta: Path, out: Path, manifest: Path, name: str,
-                     commit: str, describe: str) -> dict:
+                     commit: str, describe: str, upstream: list[Path] = (), source: str = '') -> dict:
     """Domains from a SHEPHARD domains file (accession, start, end, domain_type, key:value ...), as domain units, kept
     only on entries whose sequence in SHEPHARD's FASTA is identical to the snapshot's: their files were computed on
     older UniProt sequences, and a position on a changed sequence is not a position on ours."""
@@ -184,17 +213,21 @@ def shephard_domains(domains_tsv: Path, their_fasta: Path, snapshot_fasta: Path,
         if len(parts) < 4 or not parts[1].isdigit():
             continue
         kv = dict(p.split(':', 1) for p in parts[4:] if ':' in p)
+        # the label: the family's short name, then ECOD's topology and, if it differs, its possible-homology group
+        t, x = kv.get('ECOD_T_group', ''), kv.get('ECOD_X_group', '')
         rows.append({'accession': parts[0], 'start': int(parts[1]), 'end': int(parts[2]), 'subtype': 'domain',
                      'ref': kv.get('ECOD_F_ID', kv.get('domain_type', '')),
-                     'label': ' '.join(x for x in (kv.get('domain_type', ''), kv.get('ECOD_T_group', ''), kv.get('ECOD_X_group', '')) if x),
+                     'label': ' · '.join(dict.fromkeys(v for v in (kv.get('domain_type', ''), t, x) if v)),
                      'members': ''})
     df = pd.DataFrame(rows, columns=['accession', 'start', 'end', *DOMAIN_COLUMNS])
     kept = df[df['accession'].isin(same)]
-    units = make_units(kept, 'domain', f'SHEPHARD {describe} (shephard-data {commit})', keep=DOMAIN_COLUMNS)
+    units = make_units(kept, 'domain', f'SHEPHARD {describe}, shephard-data {commit[:7]}', keep=DOMAIN_COLUMNS)
     out.mkdir(parents=True, exist_ok=True)
     path = out / f'{name}.tsv'
     write_units(units, path)
-    record(manifest, name, out.parent, path, f'{SHEPHARD_DATA}/tree/{commit} ({Path(domains_tsv).name})', f'shephard-data {commit}',
+    got = '; '.join(f'{p.name} MD5 {md5_file(p)}' for p in upstream)
+    record(manifest, name, out.parent, path, source or f'{SHEPHARD_DATA}/tree/{commit} ({Path(domains_tsv).name})', f'shephard-data {commit[:7]}',
            'MIT (shephard-data LICENSE)',
-           note=f'{len(kept):,} of {len(df):,} domains kept: those on the {len(same):,} entries whose sequence equals the snapshot\'s')
+           note=f'{len(kept):,} of {len(df):,} domains kept: those on the {len(same):,} entries whose sequence equals the snapshot\'s'
+                + (f'. Downloaded: {got}' if got else ''))
     return {'domains': len(df), 'kept': len(kept), 'proteins': kept['accession'].nunique(), 'identical_entries': len(same)}

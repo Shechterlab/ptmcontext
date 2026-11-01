@@ -26,7 +26,7 @@ def test_site_configs_name_known_inputs_layers_and_profiles(path):
     site = load_site(path)
     load_profile(site['mark'])
     manifest = I.load(REPO / site['manifest']) if site.get('manifest') else I.load()
-    for name in [site['snapshot']['input'], site['marks']['input'], *site.get('inputs', {}).values()]:
+    for name in I.site_input_names(site):
         assert name in manifest, name
     for a in site['analyses']:
         if a.get('test') == 'protein_sets':

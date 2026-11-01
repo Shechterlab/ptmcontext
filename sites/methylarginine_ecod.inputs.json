@@ -27,14 +27,14 @@
       "role": "reference_output",
       "note": "The marks the parity test counts, until this repository builds the site union itself."
     },
-    "shephard_ecod_domains": {
-      "file": "staged/shephard_ecod_domains.tsv",
-      "md5": "fdae453b2d93fdd4ebe82ca51e5c820d",
-      "source": "https://github.com/holehouse-lab/shephard-data/tree/c5c956c (shprd_domains_ecod_domainmapper.tsv)",
+    "human_shephard_ecod_domains": {
+      "file": "staged/human_shephard_ecod_domains.tsv",
+      "md5": "86c21ff8c254e3bc36bb8949e10636b5",
+      "source": "https://github.com/holehouse-lab/shephard-data/blob/c5c956c0ff47da49ec024b0d99039c8d0d3dcbac/data/proteomes/human/shprd_domains_ecod_domainmapper.tsv",
       "version": "shephard-data c5c956c",
       "licence": "MIT (shephard-data LICENSE)",
       "role": "input",
-      "note": "42,691 of 44,222 domains kept: those on the 19,696 entries whose sequence equals the snapshot's"
+      "note": "42,691 of 44,222 domains kept: those on the 19,696 entries whose sequence equals the snapshot's. Downloaded: c5c956c_shprd_domains_ecod_domainmapper.tsv MD5 d5fe4c8dd51f065a96c78eab9d37d975; c5c956c_human_proteome_clean.fasta MD5 b38f2cae97e4156d9cf250139d20758d"
     }
   }
 }

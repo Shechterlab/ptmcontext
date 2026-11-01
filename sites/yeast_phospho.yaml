@@ -10,7 +10,10 @@ manifest: sites/yeast_phospho.inputs.json      # written by ptmc stage
 snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}
 inputs:
   disorder: mobidb_disorder                     # MobiDB consensus (prediction-disorder-th_50), as for human
-  domains: uniprot_domains                      # UniProt DOMAIN and REPEAT features: InterPro's bulk file is 17 GB
+  domains:                                      # each protein's domains from the first of these that has any:
+    first_of:
+      - uniprot_domains                         # UniProt DOMAIN and REPEAT features (InterPro's bulk file is 17 GB),
+      - yeast_shephard_ecod_domains             # then ECOD domains (SHEPHARD, DomainMapper) for the proteins without
 
 marks:
   input: uniprot_mod_res
