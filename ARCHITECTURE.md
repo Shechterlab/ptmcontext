@@ -82,7 +82,8 @@ Inter and IBM Plex Serif embedded, and the TSV's `#` lines (readers skip them: `
 
 ## Not yet built
 
-Isoform-to-canonical placement of marks; the site union from study tables; protein-set tests (clusterProfiler parity);
+Isoform-to-canonical placement of marks; the site union from study tables; the remaining protein-set sources (PANTHER,
+condensates, cell maps);
 measured backgrounds (candidates limited to residues covered by detected peptides); unit-level tests (IDRs as the
 unit); the release writer (sites and proteins tables, data dictionary, README, CHANGES, MD5SUMS); selections retested in
 the browser; interaction partners on protein pages.

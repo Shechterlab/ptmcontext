@@ -61,6 +61,42 @@
       "licence": "CC BY-NC-SA 4.0",
       "role": "reference_output",
       "note": "The rows the rebuild must equal."
+    },
+    "reactome_protein_pathways": {
+      "file": "inputs/layers/reactome_human_protein_pathways.tsv",
+      "md5": "4944dc94c47129190d9ba6231211dbe3",
+      "source": "https://download.reactome.org/97/UniProt2Reactome_All_Levels.txt (reviewed human entries)",
+      "version": "Reactome 97 (2026-06-24)",
+      "licence": "CC0 1.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/48; this repository checks the bytes."
+    },
+    "reactome_pathways": {
+      "file": "inputs/layers/reactome_human_pathways.tsv",
+      "md5": "e9d0af98aae6cd9558e021160ae9aaf6",
+      "source": "https://download.reactome.org/97/ (pathways, hierarchy)",
+      "version": "Reactome 97 (2026-06-24)",
+      "licence": "CC0 1.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/48; this repository checks the bytes."
+    },
+    "hpa_locations": {
+      "file": "inputs/layers/hpa_subcellular_locations.tsv",
+      "md5": "1c0975ad0c3aa3bf9145038181242dae",
+      "source": "https://www.proteinatlas.org/download/tsv/subcellular_location.tsv.zip",
+      "version": "Human Protein Atlas 25.1 (downloaded 2026-10-19)",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/42; this repository checks the bytes."
+    },
+    "paxdb_abundance": {
+      "file": "inputs/layers/paxdb_human_integrated_abundance.tsv",
+      "md5": "2a6f3303c4fa644d59ae79fab3a046ee",
+      "source": "https://pax-db.org/downloads/6.1/datasets/9606.zip (9606-WHOLE_ORGANISM-integrated.txt)",
+      "version": "PaxDb 6.1 (whole-organism integrated)",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/47; this repository checks the bytes."
     }
   }
 }

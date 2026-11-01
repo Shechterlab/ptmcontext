@@ -33,7 +33,7 @@ Yes. The evidence that one is needed is not tidiness but correctness:
 - **The pipeline is tied to one residue.**
   - PTM_Pipeline is 42,032 lines in 96 scripts, and 34 of them compare residues with `'R'` directly.
   - About 850 of `explorer.js`'s 18,125 lines name the mark.
-- **The pilot shows the alternative works.** About 1,600 lines reproduce 82 published statistics rows byte for byte.
+- **The pilot shows the alternative works.** About 2,000 lines of Python reproduce 3,646 published statistics rows byte for byte.
   It runs three sites from three YAML files and no code changes.
 
 **What it does:** stage sources from upstream into checksummed files; place candidate residues on one snapshot;
@@ -50,14 +50,15 @@ Measured against PTM_Pipeline v1.4.3's outputs (audit of `releases/v1.4.3/` and 
 | Output | Generic? | In the kit |
 |---|---|---|
 | Statistics: residue-level tests (motif, disorder, domain context, domain class, structure context) | generic | **done**: 82 of 82 rows identical |
-| Statistics: everything else (4,577 of 4,659 rows: 2,197 clusterProfiler protein-set rows, their PaxDb-decile repeats, interfaces, crosslinks, clustering nulls, condensates, cell maps) | mostly generic | not yet |
+| Statistics: protein-set tests for Reactome top level, Reactome pathways and HPA locations, with their PaxDb-decile repeats | generic | **done**: 3,564 of 3,564 rows identical |
+| Statistics: everything else (1,013 of 4,659 rows: PANTHER classes, condensates, interfaces, crosslinks, cell maps, eCLIP) | mostly generic | not yet |
 | Site table, proteins table, lower-confidence sites | generic schema, mark-specific columns | not yet: needs isoform placement and a site-union builder |
 | data dictionary, README, CHANGES, MD5SUMS, release.json | generic | not yet |
 | Website data (`docs/data/*.json`) | mostly generic; DepMap, HPA and other layers are human-only | not yet |
 | Website | generic shell, mark-specific panels | not yet |
 
-So the pilot covers **1.8% of the statistics rows** but the hardest part to get right: identical numbers from an
-independent implementation. The order of work in section 8 adds the rest one parity check at a time.
+So the pilot covers **78% of the statistics rows** (3,646 of 4,659), and the hardest part to get right: identical
+numbers from an independent implementation. The order of work in section 8 adds the rest one parity check at a time.
 
 ## 3. Would others use it, for other proteomes?
 
@@ -187,8 +188,8 @@ If the JPR deadline is the target (8 weeks):
 
 1. **Week 0:** choose the name and create the repository; push the pilot; add CITATION.cff.
 2. **Weeks 1–2:** isoform placement; measured backgrounds.
-3. **Weeks 2–3:** protein-set tests in Python, with parity against the 2,197 clusterProfiler rows. PTM_Pipeline
-   already re-derives them in Python when it verifies a cached result.
+3. **Weeks 2–3:** protein-set tests in Python, with parity against the clusterProfiler rows. *Done for Reactome and
+   HPA (3,564 rows); PANTHER, condensates and cell maps remain.*
 4. **Weeks 3–4:** the release writer; v0.1.0 with a Zenodo DOI.
 5. **Weeks 4–6:**
    - a "your sites" report page from `pk` output (the rendered pilot page is the seed);

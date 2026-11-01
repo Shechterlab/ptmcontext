@@ -10,6 +10,10 @@ snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}   # quoted: unquote
 inputs:                # role the layers read: manifest input that fills it
   disorder: mobidb_disorder
   domains: interpro_domains
+  reactome: reactome_protein_pathways
+  reactome_names: reactome_pathways
+  hpa: hpa_locations
+  abundance: paxdb_abundance
 
 marks:
   # Until this repository builds the site union from the studies, the marks are the release's own sites.
@@ -21,6 +25,39 @@ marks:
   residue_mismatch: error
 
 analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel)
+  # protein sets: clusterProfiler's enricher, as the release ran it (scripts/release_layers.py, release_tables.py)
+  - id: reactome_top_level
+    test: protein_sets
+    title: Reactome pathways, top level
+    question: "Which top-level Reactome pathways hold more methylated proteins than expected?"
+    sub: "Methylated vs other proteins with a Reactome pathway, by top-level pathway (one-sided hypergeometric test)"
+    section: Kinds of protein
+    sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
+    names: {input: reactome_names, set: pathway_id, name: name, include: [{column: depth, equals: "0"}]}
+    background: other reviewed human proteins with at least one Reactome 97 pathway
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: reactome_pathway
+    test: protein_sets
+    title: Reactome pathways
+    question: "Which Reactome pathways, at any level, hold more methylated proteins than expected?"
+    sub: "Methylated vs other proteins with a Reactome pathway, every pathway of 10 to 500 proteins (one-sided hypergeometric test)"
+    section: Kinds of protein
+    sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
+    names: {input: reactome_names, set: pathway_id, name: name}
+    min_size: 10
+    max_size: 500
+    background: other reviewed human proteins with at least one Reactome 97 pathway
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: hpa_location
+    test: protein_sets
+    title: Where in the cell
+    question: "Where in the cell are methylated proteins found more often than other proteins?"
+    sub: "Methylated vs other proteins with a Human Protein Atlas location scored Approved or better (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets: {input: hpa, set: location, protein: canonical_UniProtAC, exclude: [{column: reliability, equals: Uncertain}]}
+    whole_universe: true
+    background: other proteins with an HPA 25.1 location (Approved or better)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - {id: motif, layer: motif}
   - {id: disorder, layer: disorder}
   - {id: domain_context, layer: domain_context}

@@ -119,8 +119,7 @@
       "items": {
         "type": "object",
         "required": [
-          "id",
-          "layer"
+          "id"
         ],
         "additionalProperties": false,
         "properties": {
@@ -134,7 +133,8 @@
           },
           "test": {
             "enum": [
-              "residue"
+              "residue",
+              "protein_sets"
             ],
             "default": "residue"
           },
@@ -158,8 +158,148 @@
           "section": {
             "type": "string",
             "description": "the Overview section it is listed under (default: the layer's)"
+          },
+          "sets": {
+            "type": "object",
+            "required": [
+              "input",
+              "set",
+              "protein"
+            ],
+            "additionalProperties": false,
+            "description": "protein_sets: the table of (set, protein) pairs; input is a role of the site's inputs",
+            "properties": {
+              "input": {
+                "type": "string"
+              },
+              "set": {
+                "type": "string"
+              },
+              "protein": {
+                "type": "string"
+              },
+              "include": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "exclude": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              }
+            }
+          },
+          "names": {
+            "type": "object",
+            "required": [
+              "input",
+              "set",
+              "name"
+            ],
+            "additionalProperties": false,
+            "description": "protein_sets: the sets' names; a filter here restricts the sets tested",
+            "properties": {
+              "input": {
+                "type": "string"
+              },
+              "set": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "include": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "exclude": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              }
+            }
+          },
+          "universe": {
+            "enum": [
+              "annotated",
+              "snapshot"
+            ],
+            "description": "annotated: the proteins in at least one set; snapshot: every entry of the sequences"
+          },
+          "whole_universe": {
+            "type": "boolean",
+            "description": "the background is the whole universe, not only its proteins in some set"
+          },
+          "min_size": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_size": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "background": {
+            "type": "string",
+            "description": "the statistics rows' background, in words"
+          },
+          "sub": {
+            "type": "string",
+            "description": "the line under the figure's title"
+          },
+          "abundance": {
+            "type": "object",
+            "required": [
+              "input",
+              "protein",
+              "value"
+            ],
+            "additionalProperties": false,
+            "description": "protein_sets: repeat each set's test within strata of a covariate (Mantel-Haenszel across its deciles)",
+            "properties": {
+              "input": {
+                "type": "string"
+              },
+              "protein": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "strata": {
+                "type": "integer",
+                "minimum": 2
+              },
+              "label": {
+                "type": "string",
+                "description": "added to the background of the stratified rows"
+              }
+            }
           }
-        }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "layer"
+            ]
+          },
+          {
+            "required": [
+              "test",
+              "sets"
+            ],
+            "properties": {
+              "test": {
+                "const": "protein_sets"
+              }
+            }
+          }
+        ]
       }
     },
     "reference": {

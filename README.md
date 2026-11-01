@@ -17,16 +17,21 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
 
 ## Status (pilot)
 
-- **Parity:** `sites/methylarginine.yaml` rebuilds the 82 residue-level rows of release v1.4.3's statistics table (motif,
-  disorder, domain context, domain class, structure context; pooled and within protein) byte for byte, from the
-  release's inputs, without running any of its code (`tests/test_parity_v1_4_3.py`). That is 1.8% of the table's
-  4,659 rows; the rest come next, one parity check at a time.
+- **Parity:** `sites/methylarginine.yaml` rebuilds 3,646 of the 4,659 rows (78%) of release v1.4.3's statistics table
+  byte for byte, from the release's inputs, without running any of its code (`tests/test_parity_v1_4_3.py`):
+  - the 82 residue-level rows (motif, disorder, domain context, domain class, structure context; pooled and within
+    protein);
+  - the 3,564 protein-set rows for Reactome top-level groups, Reactome pathways and HPA locations (clusterProfiler's
+    `enricher`, rewritten in Python, and its repeat within PaxDb abundance deciles).
+
+  The rest (PANTHER classes, condensates, interfaces, crosslinks, cell maps, eCLIP) come next, one parity check at a
+  time.
 - **A second organism by configuration:** yeast phosphosites staged from UniProt 2026_03 and MobiDB in about 50 s and
   run in 21 s.
 - **A website per site, from its file:** `ptmc web` gives the Methylarginine Site Explorer's look with the site's own
   colours, pictures and words; every figure and table downloads as PDF, SVG, PNG and TSV carrying its description,
   citation (from the site's `CITATION.cff`), versions and provenance.
-- **Not built yet:** isoform placement, measured backgrounds, protein-set tests, the release writer, the web kit. See
+- **Not built yet:** isoform placement, measured backgrounds, the release writer, the remaining 1,013 rows. See
   [docs/DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) for why this design, the alternatives, prior art and the order of work.
 
 ## Publishing

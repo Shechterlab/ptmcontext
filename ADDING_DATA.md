@@ -74,7 +74,14 @@ marks:
   input: <manifest name>
   include: [{column: ..., in: [...]}]
 analyses:
-  - {id: <analysis>, layer: <layer>}
+  - {id: <analysis>, layer: <layer>}                     # a residue test
+  - id: <analysis>                                       # a protein-set test
+    test: protein_sets
+    sets: {input: <role>, set: <column>, protein: <column>, include: [...]}
+    names: {input: <role>, set: <column>, name: <column>}
+    min_size: 10
+    max_size: 500
+    abundance: {input: <role>, protein: <column>, value: <column>}   # optional: repeat within abundance deciles
 ```
 
 **Check:** `ptmc run sites/<site>.yaml --root DATA` runs, and `out/<site>/run.json` lists every input with its MD5.

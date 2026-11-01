@@ -174,8 +174,16 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     marked, report = select_marks(site['marks'], table, snap, profile)
     log(f"{site['id']}: {report['counted']:,} {profile.word('marks')} on {report['proteins']:,} proteins "
         f"({report['rows']:,} rows read, {report['selected']:,} selected)")
-    parts, layers_used, kept = [], {}, {}
+    parts, layers_used, kept, set_names = [], {}, {}, []
     for analysis in site['analyses']:
+        if analysis.get('test') == 'protein_sets':
+            from .set_tests import protein_set_test
+            rows_, names = protein_set_test(analysis, ctx.inputs, set(marked['accession']), set(snap.sequences))
+            parts.append(rows_)
+            set_names += [(analysis['id'], k, names.get(k, '')) for k in rows_['category']] if len(rows_) else []
+            layers_used[analysis['id']] = {'test': 'protein_sets', 'sets': analysis['sets']['input']}
+            log(f"  {analysis['id']:18s} {len(rows_):3d} rows")
+            continue
         layer = L.get(analysis['layer'], ctx)
         layers_used[analysis['id']] = {'layer': layer.name, 'origin': layer.origin}
         methods = analysis.get('methods', ['fisher', 'mantel_haenszel'])
@@ -207,7 +215,9 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         folder = Path(out_root or root_of(site)) / site['outputs']['folder']
         ST.write(rows, folder / 'statistics.tsv')
         record['output'] = {'statistics.tsv': md5_file(folder / 'statistics.tsv')}
-        for name, frame in protein_outputs(snap, profile, marked, kept, ctx).items():
+        outs = protein_outputs(snap, profile, marked, kept, ctx)
+        outs['set_names.tsv'] = pd.DataFrame(set_names, columns=['analysis', 'set', 'name'])
+        for name, frame in outs.items():
             frame.to_csv(folder / name, sep='\t', index=False, lineterminator='\n')
             record['output'][name] = md5_file(folder / name)
         (folder / 'run.json').write_text(json.dumps(record, indent=1) + '\n')

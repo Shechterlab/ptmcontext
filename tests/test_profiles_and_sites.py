@@ -29,7 +29,10 @@ def test_site_configs_name_known_inputs_layers_and_profiles(path):
     for name in [site['snapshot']['input'], site['marks']['input'], *site.get('inputs', {}).values()]:
         assert name in manifest, name
     for a in site['analyses']:
-        assert a['layer'] in L.BUILT_IN, a['layer']
+        if a.get('test') == 'protein_sets':
+            assert a['sets']['input'] in site['inputs'] and (not a.get('names') or a['names']['input'] in site['inputs'])
+        else:
+            assert a['layer'] in L.BUILT_IN, a['layer']
 
 
 def test_yaml_number_trap_is_caught():

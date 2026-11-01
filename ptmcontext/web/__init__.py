@@ -12,6 +12,7 @@ from __future__ import annotations
 import base64
 import html
 import json
+import math
 import shutil
 from importlib import resources
 from pathlib import Path
@@ -119,20 +120,35 @@ def site_data(site: dict, folder: Path, profile) -> dict:
     run = json.loads((folder / 'run.json').read_text())
 
     def num(v):
+        """A number for JSON: an infinite odds ratio (every set member marked) as 1e300, which the page prints as
+        '> 1,000' as the explorer does; NaN and an empty cell as None. JSON has no infinity."""
         try:
-            return float(v) if v != '' else None
+            x = float(v) if v != '' else None
         except ValueError:
             return None
+        if x is None or math.isnan(x):
+            return None
+        return 1e300 if x == math.inf else 0.0 if x == -math.inf else x
     rows = [{'analysis': r['analysis'], 'category': r['category'], 'method': r['method'],
              'a': int(r['a']), 'b': int(r['b']), 'c': int(r['c']), 'd': int(r['d']),
-             'or': num(r['odds_ratio']), 'lo': num(r['odds_ratio_ci_low']), 'hi': num(r['odds_ratio_ci_high']),
+             'or': num(r['odds_ratio']), 'fold': num(r['fold_enrichment']), 'lo': num(r['odds_ratio_ci_low']), 'hi': num(r['odds_ratio_ci_high']),
              'p': num(r['p']), 'q': num(r['q']), 'strata': int(r['n_strata']) if r['n_strata'] else None}
             for r in stats.to_dict('records')]
+    set_names = {}
+    if (folder / 'set_names.tsv').exists():
+        import pandas as pd
+        for r in pd.read_csv(folder / 'set_names.tsv', sep='\t', dtype=str, keep_default_na=False).to_dict('records'):
+            set_names.setdefault(r['analysis'], {})[r['set']] = r['name']
     analyses = []
     for a in site['analyses']:
+        if a.get('test') == 'protein_sets':
+            analyses.append({'id': a['id'], 'kind': 'protein_sets', 'title': a.get('title', a['id']), 'question': a.get('question', ''),
+                             'sub': a.get('sub', ''), 'section': a.get('section', 'Kinds of protein'), 'layer': '', 'describe': a.get('background', ''),
+                             'labels': set_names.get(a['id'], {}), 'help': {}})
+            continue
         layer = L.BUILT_IN.get(a['layer'])
         labels, helps = _labels(layer, profile)
-        analyses.append({'id': a['id'], 'title': a.get('title') or (layer.title if layer else a['id']),
+        analyses.append({'id': a['id'], 'kind': 'residue', 'title': a.get('title') or (layer.title if layer else a['id']),
                          'question': a.get('question') or _fill(layer.question if layer else '', profile.words),
                          'sub': _fill(layer.sub if layer else '', profile.words), 'layer': a['layer'],
                          'section': a.get('section') or (layer.section if layer else ''),
@@ -283,7 +299,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
                            '{{FONTS}}': (f'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
                                          f'<link rel="stylesheet" href="{html.escape(fonts["stylesheet"])}">') if fonts.get('stylesheet') else '',
                            '<link rel="stylesheet" href="assets/kit.css">': css, '<script src="assets/kit.js"></script>': js,
-                           '{{DATA}}': json.dumps(data, separators=(',', ':')).replace('</', '<\\/')}.items():
+                           '{{DATA}}': json.dumps(data, separators=(',', ':'), allow_nan=False).replace('</', '<\\/')}.items():
             text = text.replace(key, value)
         return text
 

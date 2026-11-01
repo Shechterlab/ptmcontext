@@ -43,7 +43,8 @@ def cmd_check(a) -> int:
     named = [site['snapshot']['input'], site['marks']['input'], *site.get('inputs', {}).values(),
              *([site['reference']['statistics']] if site.get('reference', {}).get('statistics') else [])]
     missing = [n for n in named if n not in entries]
-    unknown = [x['layer'] for x in site['analyses'] if x['layer'] not in L.BUILT_IN and x['layer'] not in L.plugins()]
+    unknown = [x['layer'] for x in site['analyses'] if 'layer' in x and x['layer'] not in L.BUILT_IN and x['layer'] not in L.plugins()]
+    unknown += [x['sets']['input'] for x in site['analyses'] if 'sets' in x and x['sets']['input'] not in site.get('inputs', {})]
     print(f"{site['id']}: mark {profile.id} ({', '.join(profile.residues)}), {len(site['analyses'])} analyses")
     for problem, items in (('inputs not in the manifest', missing), ('layers not found', unknown)):
         if items:

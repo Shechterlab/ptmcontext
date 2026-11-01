@@ -25,6 +25,12 @@ Conventions:
 - `mantel_haenszel`: each protein a stratum; Mantel–Haenszel odds ratio, Robins–Breslow–Greenland 95% CI, the
   continuity-corrected CMH statistic floored at 0 (a count within 0.5 of its expectation gives p = 1).
 - Both count the same marks: those on a protein with at least one other candidate residue.
+- `enricher`: protein-set tests (clusterProfiler's `enricher`). `a, b, c, d` are k, n − k, M − k and N − M − n + k
+  (marked proteins in the set; other marked proteins; other proteins in the set; the rest of the background). One-sided
+  hypergeometric p; `fold_enrichment` (k/n)/(M/N). The background is the universe's proteins in at least one set, or
+  the whole universe if the site says so. Sets with no marked protein, or outside the site's sizes, are not tested.
+- `mantel_haenszel` on a protein-set analysis: the same 2×2 split by a protein covariate (PaxDb abundance decile, and
+  `none` for proteins without a value); its `a, b, c, d` add up to the `enricher` row's.
 - `q`: Benjamini–Hochberg within (analysis, method).
 - An effect is reported at q ≤ 0.05 and at least 1.1× either way.
 
