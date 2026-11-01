@@ -37,8 +37,8 @@ enzymes:
 motifs:            # read in the 15-residue window centred on the arginine (window_flank 7)
   window_flank: 7
   families:        # 'at': the residue at that offset; 'within': any residue from lo to hi, the centre excluded
-    - {name: CARM1_hydrophobic_proline, all: [{within: [-5, 5], in: P}, {within: [-3, 3], in: AILMFWVY}]}
-    - {name: CARM1_proline_rich, all: [{within: [-5, 5], in: P}]}
+    - {name: CARM1_hydrophobic_proline, label: "CARM1: proline and hydrophobic", all: [{within: [-5, 5], in: P}, {within: [-3, 3], in: AILMFWVY}]}
+    - {name: CARM1_proline_rich, label: "CARM1: proline-rich", all: [{within: [-5, 5], in: P}]}
     - {name: DR,  all: [{at: -1, in: D}]}
     - {name: ER,  all: [{at: -1, in: E}]}
     - {name: GAR, all: [{at: -2, in: G}, {at: -1, in: A}]}

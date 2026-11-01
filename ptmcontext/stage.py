@@ -1,8 +1,8 @@
 """Staging: download a proteome's sources from upstream, write them in the formats the layers read, and record each
 file (source URL, release or date, licence, MD5) in a site's input manifest.
 
-  pk stage uniprot UP000002311 --out DIR --manifest sites/yeast_phospho.inputs.json
-  pk stage mobidb  --out DIR --manifest ...      (after uniprot: it reads the accessions from the FASTA)
+  ptmc stage uniprot UP000002311 --out DIR --manifest sites/yeast_phospho.inputs.json
+  ptmc stage mobidb  --out DIR --manifest ...      (after uniprot: it reads the accessions from the FASTA)
 
 Staging is the only step that touches the network. A build reads only staged files and checks their MD5s, so a
 release can be rebuilt offline, and a source that changes upstream changes nothing until it is staged again.
@@ -35,7 +35,7 @@ ECO = {'ECO:0000269': 'experimental', 'ECO:0007744': 'large_scale', 'ECO:0000250
 def _get(url: str, retries: int = 4) -> tuple[bytes, dict]:
     for attempt in range(retries):
         try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'proteomekit-stage'})
+            req = urllib.request.Request(url, headers={'User-Agent': 'ptmcontext-stage'})
             with urllib.request.urlopen(req, timeout=300) as r:
                 return r.read(), {k.lower(): v for k, v in r.headers.items()}
         except Exception:      # noqa: BLE001  (network: retry with backoff, then raise)

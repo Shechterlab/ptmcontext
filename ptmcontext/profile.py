@@ -16,7 +16,7 @@ from .snapshot import Snapshot
 
 
 def _packaged(kind: str, name: str) -> Path:
-    return Path(str(resources.files('proteomekit') / kind / name))
+    return Path(str(resources.files('ptmcontext') / kind / name))
 
 
 def schema(name: str) -> dict:

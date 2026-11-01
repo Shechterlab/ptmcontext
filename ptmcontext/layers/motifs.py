@@ -6,7 +6,7 @@ import pandas as pd
 from . import Context, register
 
 
-@register('motif', 'flags', "the mark profile's motif families, read in the window around each residue")
+@register('motif', 'flags', "the mark profile's motif families, read in the window around each residue", title='Sequence motifs')
 def motif(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     if ctx.profile is None:
         raise ValueError('the motif layer needs a mark profile')

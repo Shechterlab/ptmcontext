@@ -1,4 +1,4 @@
-# proteome-kit (working name; `ptmcontext` proposed)
+# ptmcontext (working name; `ptmcontext` proposed)
 
 Where do modifications fall in proteins, tested fairly? One reference proteome, any mark (methylarginine,
 phosphosites, methyllysine ...), any regions (disorder, IDRs, domains, motifs, a lab's own), and two tests for every
@@ -9,9 +9,9 @@ A site is a YAML file. Changing the mark, the organism or the analyses is changi
 
 ```bash
 pip install -e ".[test]"
-pk stage uniprot UP000002311 --out DATA/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
-pk stage mobidb --out DATA/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
-pk run sites/yeast_phospho.yaml --root DATA            # -> out/yeast_phospho/statistics.tsv and run.json
+ptmc stage uniprot UP000002311 --out DATA/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
+ptmc stage mobidb --out DATA/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
+ptmc run sites/yeast_phospho.yaml --root DATA            # -> out/yeast_phospho/statistics.tsv and run.json
 ```
 
 ## Status (pilot)

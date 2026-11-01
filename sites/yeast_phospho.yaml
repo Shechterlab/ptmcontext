@@ -1,11 +1,11 @@
-# Site: budding yeast phosphosites, provisioned from upstream only (pk stage uniprot / mobidb), with no file from any
+# Site: budding yeast phosphosites, provisioned from upstream only (ptmc stage uniprot / mobidb), with no file from any
 # other repository. The test of whether the kit serves another proteome by configuration alone.
 schema_version: 1
 id: yeast_phospho
 title: Saccharomyces cerevisiae phosphosites (UniProt)
 status: working
 mark: phospho
-manifest: sites/yeast_phospho.inputs.json      # written by pk stage
+manifest: sites/yeast_phospho.inputs.json      # written by ptmc stage
 
 snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}
 inputs:

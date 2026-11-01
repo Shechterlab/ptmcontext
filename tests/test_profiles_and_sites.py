@@ -5,13 +5,13 @@ import pandas as pd
 import pytest
 import yaml
 
-from proteomekit import inputs as I
-from proteomekit import layers as L
-from proteomekit.profile import load_profile, validate
-from proteomekit.site import load_site
+from ptmcontext import inputs as I
+from ptmcontext import layers as L
+from ptmcontext.profile import load_profile, validate
+from ptmcontext.site import load_site
 
 REPO = Path(__file__).resolve().parents[1]
-PROFILES = sorted(p.stem for p in (REPO / 'proteomekit' / 'profiles').glob('*.yaml'))
+PROFILES = sorted(p.stem for p in (REPO / 'ptmcontext' / 'profiles').glob('*.yaml'))
 SITES = sorted((REPO / 'sites').glob('*.yaml'))
 
 

@@ -63,10 +63,10 @@ independent implementation. The order of work in section 8 adds the rest one par
 
 **The provisioning run** staged budding yeast from upstream only and ran it:
 
-- **Staging:** `pk stage uniprot UP000002311` and `pk stage mobidb` took about 50 s. They got UniProt 2026_03,
+- **Staging:** `ptmc stage uniprot UP000002311` and `ptmc stage mobidb` took about 50 s. They got UniProt 2026_03,
   6,067 reviewed entries, 7,311 modified residues and 5,343 domains and repeats. MobiDB disordered regions came
   for 6,036 entries.
-- **Run:** `pk run sites/yeast_phospho.yaml` took 21 s. It counted 5,930 phosphosites with experimental or
+- **Run:** `ptmc run sites/yeast_phospho.yaml` took 21 s. It counted 5,930 phosphosites with experimental or
   large-scale evidence, on 1,936 proteins.
 - **Results are biologically sensible:**
   - disordered regions, within protein: OR 4.1 (95% CI 3.8–4.3);

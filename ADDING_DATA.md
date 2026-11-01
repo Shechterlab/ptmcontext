@@ -9,10 +9,10 @@ Every new dataset is exactly one of these. If it is none of them, stop and ask.
 
 | It is | Example | It becomes |
 |---|---|---|
-| **sequences** | a new UniProt release, another organism | a snapshot: `pk stage uniprot <proteome>` |
+| **sequences** | a new UniProt release, another organism | a snapshot: `ptmc stage uniprot <proteome>` |
 | **regions** | disorder, domains, flanks, charged segments, a lab's own regions | a **unit table** (`schemas/units.schema.json`) filling a **role** (`disorder`, `domains`, ...) |
 | **marked residues** | a PTM site list, an MS experiment's sites | a **marks table** (accession, position, plus any columns) selected by a site file |
-| **a mark** | a modification not yet profiled | a **profile** (`proteomekit/profiles/<mark>.yaml`) |
+| **a mark** | a modification not yet profiled | a **profile** (`ptmcontext/profiles/<mark>.yaml`) |
 | **a per-residue or per-protein annotation** | AlphaFold pLDDT, abundance, a score | a **layer** (code) or a unit table, if it is regions |
 | **a published result to match** | a release's statistics table | a `reference_output` entry: read only to check parity |
 
@@ -28,11 +28,11 @@ Every new dataset is exactly one of these. If it is none of them, stop and ask.
 Staging is the only step that touches the network. Prefer an existing stager:
 
 ```bash
-pk stage uniprot UP000002311 --out DATA/inputs --manifest sites/<site>.inputs.json --prefix <site>
-pk stage mobidb --out DATA/inputs --manifest sites/<site>.inputs.json --prefix <site>
+ptmc stage uniprot UP000002311 --out DATA/inputs --manifest sites/<site>.inputs.json --prefix <site>
+ptmc stage mobidb --out DATA/inputs --manifest sites/<site>.inputs.json --prefix <site>
 ```
 
-For a new source, add a function to `proteomekit/stage.py` that downloads, writes the table in the contract's
+For a new source, add a function to `ptmcontext/stage.py` that downloads, writes the table in the contract's
 format and calls `stage.record(...)`. Requirements:
 
 - the upstream URL, the source's release (from the response or the file, never from memory) or else the download
@@ -43,13 +43,13 @@ format and calls `stage.record(...)`. Requirements:
 For a file you were given rather than downloaded:
 
 ```bash
-pk inputs record <name> <path under root> --root DATA --source "<where it came from>" --version "<release or date>" --licence "<licence>"
+ptmc inputs record <name> <path under root> --root DATA --source "<where it came from>" --version "<release or date>" --licence "<licence>"
 ```
 
 A file with no traceable origin is recorded with a note that starts `NOT TRUSTED`: the build refuses it unless a run
 says `--allow-untrusted`, and nothing computed from it is committed.
 
-**Check:** `pk inputs --root DATA` lists the entry as `ok`.
+**Check:** `ptmc inputs --root DATA` lists the entry as `ok`.
 
 ## 3. Put it in a contract
 
@@ -60,7 +60,7 @@ says `--allow-untrusted`, and nothing computed from it is committed.
   versions are not placed by this package yet**: the site file's `residue_mismatch` decides whether such rows fail the
   run (`error`, the default) or are dropped and counted (`drop`). Never silently re-number.
 
-**Check:** `pk check sites/<site>.yaml` passes, and a unit table reads with `proteomekit.units.read_units`.
+**Check:** `ptmc check sites/<site>.yaml` passes, and a unit table reads with `ptmcontext.units.read_units`.
 
 ## 4. Wire it into a site
 
@@ -77,13 +77,13 @@ analyses:
   - {id: <analysis>, layer: <layer>}
 ```
 
-**Check:** `pk run sites/<site>.yaml --root DATA` runs, and `out/<site>/run.json` lists every input with its MD5.
+**Check:** `ptmc run sites/<site>.yaml --root DATA` runs, and `out/<site>/run.json` lists every input with its MD5.
 
 ## 5. Prove it
 
 - A new layer gets a unit test with a known answer built by hand (`tests/test_layers.py` shows how).
 - A layer that reproduces a published table gets a parity check: add the table as a `reference_output` and a
-  `reference:` block to the site; `pk run` then compares every row.
+  `reference:` block to the site; `ptmc run` then compares every row.
 - A change that moves any number of a site with a reference fails its parity test. If the change is meant, the owner
   decides; record it in the site's CHANGES, never by editing the reference.
 
@@ -92,7 +92,7 @@ analyses:
 ## 6. Code from another repository
 
 Layers written elsewhere (a private repository's flanks, a collaborator's score) come in as plugins: an installed
-package that offers a `proteomekit.Layer` under the entry-point group `proteomekit.layers`. A plugin loads only when
+package that offers a `ptmcontext.Layer` under the entry-point group `ptmcontext.layers`. A plugin loads only when
 the site names its package under `trusted_plugins`, and the run record keeps its version. Do not copy another
 repository's code into this one without the owner's review; do not run another repository's scripts from here.
 

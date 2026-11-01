@@ -7,19 +7,19 @@ written once, here; everything that differs is a file.
 
 | Piece | Is | Lives in | Contract |
 |---|---|---|---|
-| **snapshot** | the reference sequences (UniProt release, FASTA MD5) every position refers to | `proteomekit/snapshot.py` | the FASTA's MD5 |
+| **snapshot** | the reference sequences (UniProt release, FASTA MD5) every position refers to | `ptmcontext/snapshot.py` | the FASTA's MD5 |
 | **manifest** | every input file: source, release or date, licence, MD5 | `inputs.json`, or a site's own `sites/<site>.inputs.json` | `schemas/inputs.schema.json` |
-| **staging** | the only step that uses the network: download, convert to a contract, record in a manifest | `proteomekit/stage.py`, `pk stage` | the unit and marks tables |
-| **units** | regions as rows: disordered regions, IDRs, domains, flanks, segments, sites | `proteomekit/units.py` | `schemas/units.schema.json` |
-| **layers** | an annotation of every candidate residue: a class (disorder, domain context, ...) or flags (motifs) | `proteomekit/layers/` | a `Layer` reading **roles** (`disorder`, `domains`) |
-| **profile** | everything specific to one mark: residues, states, enzymes, motifs, words | `proteomekit/profiles/<mark>.yaml` | `schemas/profile.schema.json` |
-| **tests** | is the mark over-represented in a class, pooled and within protein | `proteomekit/residue_tests.py`, `stats.py` | statistics rows |
-| **statistics** | one table every test writes into, in the published release's columns and formatting | `proteomekit/statistics.py` | `schemas/statistics.schema.json` |
-| **site** | one file choosing the mark, the snapshot, the inputs for each role, the marks, the analyses, a reference | `sites/<site>.yaml`, `pk run` | `schemas/site.schema.json` |
-| **parity** | a published output the rebuild must equal, row for row | `proteomekit/parity.py` | the reference table's MD5 |
+| **staging** | the only step that uses the network: download, convert to a contract, record in a manifest | `ptmcontext/stage.py`, `ptmc stage` | the unit and marks tables |
+| **units** | regions as rows: disordered regions, IDRs, domains, flanks, segments, sites | `ptmcontext/units.py` | `schemas/units.schema.json` |
+| **layers** | an annotation of every candidate residue: a class (disorder, domain context, ...) or flags (motifs) | `ptmcontext/layers/` | a `Layer` reading **roles** (`disorder`, `domains`) |
+| **profile** | everything specific to one mark: residues, states, enzymes, motifs, words | `ptmcontext/profiles/<mark>.yaml` | `schemas/profile.schema.json` |
+| **tests** | is the mark over-represented in a class, pooled and within protein | `ptmcontext/residue_tests.py`, `stats.py` | statistics rows |
+| **statistics** | one table every test writes into, in the published release's columns and formatting | `ptmcontext/statistics.py` | `schemas/statistics.schema.json` |
+| **site** | one file choosing the mark, the snapshot, the inputs for each role, the marks, the analyses, a reference | `sites/<site>.yaml`, `ptmc run` | `schemas/site.schema.json` |
+| **parity** | a published output the rebuild must equal, row for row | `ptmcontext/parity.py` | the reference table's MD5 |
 
 ```
-           pk stage                    pk run sites/<site>.yaml
+           ptmc stage                    ptmc run sites/<site>.yaml
 upstream ───────────► staged files ──► snapshot ─┬─► candidate residues (profile.residues)
 (UniProt, MobiDB, …)  + manifest (MD5)            ├─► layers, by role (disorder, domains, motif, …)
                                                   ├─► marks (site file: which table, which rows)

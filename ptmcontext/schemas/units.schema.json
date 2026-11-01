@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Shechterlab/proteome-kit/schemas/units.schema.json",
+  "$id": "https://github.com/Shechterlab/ptmcontext/schemas/units.schema.json",
   "title": "Unit table row",
   "description": "One row of a unit table (TSV): a region of a protein that something is counted in or drawn as. Positions are 1-based and inclusive, on the snapshot's sequences. Columns after the six below are the unit's own.",
   "type": "object",

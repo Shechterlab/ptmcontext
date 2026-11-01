@@ -1,5 +1,5 @@
 # Site: the human methylarginine sites, rebuilt. Its analyses must equal release v1.4.3 of the Methylarginine Site
-# Explorer (reference), row for row. Contract: proteomekit/schemas/site.schema.json.
+# Explorer (reference), row for row. Contract: ptmcontext/schemas/site.schema.json.
 schema_version: 1
 id: methylarginine
 title: Human methylarginine sites

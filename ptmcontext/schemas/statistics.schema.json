@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Shechterlab/proteome-kit/schemas/statistics.schema.json",
+  "$id": "https://github.com/Shechterlab/ptmcontext/schemas/statistics.schema.json",
   "title": "Statistics row",
   "description": "One test: one row of statistics_<version>.tsv, with the columns, order and formatting of the Methylarginine Site Explorer's releases. Values are as written in the TSV (strings; empty for missing). q is Benjamini-Hochberg within (analysis, method).",
   "type": "object",

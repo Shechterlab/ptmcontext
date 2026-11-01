@@ -3,7 +3,7 @@ import math
 import numpy as np
 import pytest
 
-from proteomekit import stats
+from ptmcontext import stats
 
 
 def test_bh_known_values():

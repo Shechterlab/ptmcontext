@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Shechterlab/proteome-kit/schemas/site.schema.json",
+  "$id": "https://github.com/Shechterlab/ptmcontext/schemas/site.schema.json",
   "title": "Site config",
   "description": "One site (a release and, later, its website): which mark, which sequences and annotations, which marked residues, which analyses, what to check against, where to write. Changing site is changing this file.",
   "type": "object",
@@ -146,6 +146,14 @@
                 "mantel_haenszel"
               ]
             }
+          },
+          "title": {
+            "type": "string",
+            "description": "card heading (default: the layer's title)"
+          },
+          "question": {
+            "type": "string",
+            "description": "the question the card answers, in words"
           }
         }
       }
@@ -182,20 +190,127 @@
     "website": {
       "type": "object",
       "additionalProperties": false,
-      "description": "read by the web kit (to come)",
+      "description": "the website's look and words: everything that differs between sites. Layout and behaviour are the kit's.",
+      "required": [
+        "name"
+      ],
       "properties": {
         "name": {
           "type": "string"
         },
+        "tagline": {
+          "type": "string",
+          "description": "one line under the title"
+        },
         "url": {
           "type": "string"
         },
-        "icon": {
-          "type": "string"
+        "band": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "the header band's gradient, top-left to bottom-right"
         },
-        "band_colour": {
+        "accent": {
           "type": "string",
           "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "accent_dark": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "description": "the accent on the dark theme"
+        },
+        "brand_ink": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "brand_ink_dark": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "icon": {
+          "type": "string",
+          "description": "an SVG file, relative to the repository"
+        },
+        "art": {
+          "type": "string",
+          "description": "the header picture: an SVG file, relative to the repository (default: a drawn protein with its marks)"
+        },
+        "art_label": {
+          "type": "string"
+        },
+        "lab": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "affiliation": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "logo": {
+              "type": "string"
+            }
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "url"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "example searches shown under the search bar"
+        },
+        "version": {
+          "type": "string"
+        },
+        "doi": {
+          "type": "string"
+        },
+        "fonts": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "type: CSS font stacks, and the stylesheet that serves them (default: IBM Plex Serif headings, Inter body, IBM Plex Mono)",
+          "properties": {
+            "heading": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "mono": {
+              "type": "string"
+            },
+            "stylesheet": {
+              "type": "string"
+            }
+          }
         }
       }
     },

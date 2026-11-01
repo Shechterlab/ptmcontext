@@ -5,11 +5,11 @@ Five plain-data formats. Code on either side of a contract can change freely; a 
 
 | Contract | Format | Schema | Written by | Read by |
 |---|---|---|---|---|
-| **Mark profile** | YAML | `proteomekit/schemas/profile.schema.json` | a person | the layers (motifs), the tests (residues, words) |
-| **Site** | YAML | `proteomekit/schemas/site.schema.json` | a person | `pk run` |
-| **Input manifest** | JSON | `proteomekit/schemas/inputs.schema.json` | `pk stage`, `pk inputs record` | every build |
-| **Unit table** | TSV | `proteomekit/schemas/units.schema.json` | stagers, other repositories | the layers |
-| **Statistics row** | TSV | `proteomekit/schemas/statistics.schema.json` | every test | releases, websites, parity |
+| **Mark profile** | YAML | `ptmcontext/schemas/profile.schema.json` | a person | the layers (motifs), the tests (residues, words) |
+| **Site** | YAML | `ptmcontext/schemas/site.schema.json` | a person | `ptmc run` |
+| **Input manifest** | JSON | `ptmcontext/schemas/inputs.schema.json` | `ptmc stage`, `ptmc inputs record` | every build |
+| **Unit table** | TSV | `ptmcontext/schemas/units.schema.json` | stagers, other repositories | the layers |
+| **Statistics row** | TSV | `ptmcontext/schemas/statistics.schema.json` | every test | releases, websites, parity |
 
 ## Statistics row
 

@@ -2,7 +2,7 @@
 table (motif, disorder, domain context, domain class, structure context; pooled and within protein), as written."""
 from pathlib import Path
 
-from proteomekit import site as S
+from ptmcontext import site as S
 
 REPO = Path(__file__).resolve().parents[1]
 

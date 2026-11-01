@@ -19,9 +19,9 @@ enzymes:
 motifs:
   window_flank: 7
   families:
-    - {name: proline_directed, all: [{at: 1, in: P}]}          # S/T-P
-    - {name: acidophilic_CK2, all: [{at: 3, in: DE}]}           # S/T-x-x-D/E
-    - {name: basophilic_RxxS, all: [{at: -3, in: RK}]}          # R/K-x-x-S/T
+    - {name: proline_directed, label: "S/T-P (proline-directed)", all: [{at: 1, in: P}]}
+    - {name: acidophilic_CK2, label: "S/T-x-x-D/E (CK2-like)", all: [{at: 3, in: DE}]}
+    - {name: basophilic_RxxS, label: "R/K-x-x-S/T (basophilic)", all: [{at: -3, in: RK}]}
 
 words:
   mark: phosphosite

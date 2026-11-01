@@ -5,7 +5,7 @@
 2. **No code from another repository is run or imported** unless the owner has said it is trusted: then only as a
    plugin named in a site's `trusted_plugins`. Files from other repositories are data: checked against the MD5 in a
    manifest, never executed.
-3. **No mark-specific or organism-specific literal in `proteomekit/`.** Residues, states, enzymes, motifs and nouns come
+3. **No mark-specific or organism-specific literal in `ptmcontext/`.** Residues, states, enzymes, motifs and nouns come
    from a profile; organisms, sources and analyses from a site file.
 4. **Every input is in a manifest** with its source, release or date, licence and MD5. Staging is the only step that
    uses the network.
@@ -20,6 +20,6 @@ Run before every commit:
 
 ```bash
 pip install -e ".[test]"
-ruff check proteomekit tests --select E,F,W --ignore E501
-pytest -q                       # the parity test needs the inputs: set PROTEOMEKIT_ROOT
+ruff check ptmcontext tests --select E,F,W --ignore E501
+pytest -q                       # the parity test needs the inputs: set PTMCONTEXT_ROOT
 ```

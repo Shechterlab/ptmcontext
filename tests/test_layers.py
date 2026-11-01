@@ -4,12 +4,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from proteomekit import layers as L
-from proteomekit import residue_tests as RT
-from proteomekit import units as U
-from proteomekit.layers.context import classify, unit_context
-from proteomekit.profile import load_profile
-from proteomekit.snapshot import Snapshot
+from ptmcontext import layers as L
+from ptmcontext import residue_tests as RT
+from ptmcontext import units as U
+from ptmcontext.layers.context import classify, unit_context
+from ptmcontext.profile import load_profile
+from ptmcontext.snapshot import Snapshot
 
 
 def test_classify_inside_near_far_and_termini():

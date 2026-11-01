@@ -1,4 +1,4 @@
-"""proteomekit: one proteome background, many units and marks.
+"""ptmcontext: one proteome background, many units and marks.
 
   snapshot      the reference sequences (UniProt release, MD5)
   profile       a mark's residues, states, enzymes, motifs and words, as data (profiles/<mark>.json)

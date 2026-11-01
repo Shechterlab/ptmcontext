@@ -66,14 +66,18 @@ DISORDER_LABELS = {'inside': 'disordered', 'near': 'disorder_boundary', 'far': '
 
 
 @register('disorder', 'class', 'MobiDB disordered region: inside, within 20 residues outside, further out, or a protein '
-          'without MobiDB regions (the release disorder classes)', needs=('disorder',))
+          'without MobiDB regions (the release disorder classes)', needs=('disorder',), title='Disorder',
+          labels={'disordered': 'In a disordered region', 'disorder_boundary': 'Within 20 aa outside one',
+                  'ordered': 'Further from disorder', 'no_disorder_annotation': 'No disorder annotation'})
 def disorder(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     units = ctx.cached('units:disordered', lambda: U.load(ctx.path('disorder'), 'disordered'))
     return unit_context(residues, units, ctx.snapshot.lengths(), 20, DISORDER_LABELS)
 
 
 @register('idr', 'class', 'IDR (MobiDB regions merged, at least 20 residues): inside, within 20 residues outside, further '
-          'out, or a protein without one', needs=('disorder',))
+          'out, or a protein without one', needs=('disorder',), title='Intrinsically disordered regions',
+          labels={'idr': 'In an IDR (20 aa or longer)', 'idr_boundary': 'Within 20 aa outside one',
+                  'outside_idr': 'Further from IDRs', 'no_idr': 'Protein without an IDR'})
 def idr(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     units = ctx.cached('units:idr', lambda: U.idrs(ctx.cached('units:disordered', lambda: U.load(ctx.path('disorder'), 'disordered')),
                                                     ctx.snapshot))
@@ -82,7 +86,9 @@ def idr(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
 
 
 @register('domain', 'class', 'InterPro domain or repeat: inside, within 20 residues outside, further out, or a protein '
-          'without one', needs=('domains',))
+          'without one', needs=('domains',), title='Domains',
+          labels={'in_domain': 'In a domain', 'domain_boundary': 'Within 20 aa outside one',
+                  'outside_domain': 'Further from domains', 'no_domain_annotation': 'Protein without domains'})
 def domain(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     units = ctx.cached('units:domain', lambda: U.load(ctx.path('domains'), 'domain'))
     return unit_context(residues, units, ctx.snapshot.lengths(), 20,

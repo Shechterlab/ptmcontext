@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Shechterlab/proteome-kit/schemas/profile.schema.json",
+  "$id": "https://github.com/Shechterlab/ptmcontext/schemas/profile.schema.json",
   "title": "Mark profile",
   "description": "Everything specific to one modification. No other file of the code names a residue, a state, an enzyme, a motif or a noun of a mark.",
   "type": "object",
@@ -144,6 +144,10 @@
                 "items": {
                   "$ref": "#/$defs/condition"
                 }
+              },
+              "label": {
+                "type": "string",
+                "description": "words for pages and figures"
               }
             }
           }

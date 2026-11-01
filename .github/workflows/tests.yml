@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[test]" ruff
-      - run: ruff check proteomekit tests --select E,F,W --ignore E501
+      - run: ruff check ptmcontext tests --select E,F,W --ignore E501
       - run: pytest -q
         env:
-          PROTEOMEKIT_ROOT: reference
+          PTMCONTEXT_ROOT: reference

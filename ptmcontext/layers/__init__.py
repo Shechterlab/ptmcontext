@@ -6,8 +6,8 @@ A layer is a function from residues (a frame with accession and position) to col
   shape 'flags'  one boolean column per flag (the motif families).
 
 Built-in layers are registered here when the package loads. A layer written in another repository is a plugin: an
-installed package that declares it under the entry-point group `proteomekit.layers`. Plugins are never loaded because
-they are installed. A run loads only the plugins it names as trusted (Context.trusted_plugins, or `pk --trust NAME`),
+installed package that declares it under the entry-point group `ptmcontext.layers`. Plugins are never loaded because
+they are installed. A run loads only the plugins it names as trusted (Context.trusted_plugins, or `ptmc --trust NAME`),
 and records each plugin's distribution and version in its provenance.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ import pandas as pd
 from ..profile import Profile
 from ..snapshot import Snapshot, md5_file
 
-ENTRY_POINT_GROUP = 'proteomekit.layers'
+ENTRY_POINT_GROUP = 'ptmcontext.layers'
 
 
 @dataclass
@@ -56,7 +56,9 @@ class Layer:
     describe: str
     compute: Callable[[pd.DataFrame, Context], pd.DataFrame]
     needs: tuple[str, ...] = ()
-    origin: str = 'proteomekit'
+    origin: str = 'ptmcontext'
+    title: str = ''                          # a short heading for pages and figures
+    labels: dict = field(default_factory=dict)   # category code -> words a reader understands
 
     def __call__(self, residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
         missing = [n for n in self.needs if n not in ctx.inputs]
@@ -71,10 +73,12 @@ class Layer:
 BUILT_IN: dict[str, Layer] = {}
 
 
-def register(name: str, shape: str, describe: str, needs: tuple[str, ...] = ()):
+def register(name: str, shape: str, describe: str, needs: tuple[str, ...] = (), title: str = '',
+             labels: dict | None = None):
     """Decorator for the package's own layers."""
     def wrap(fn):
-        BUILT_IN[name] = Layer(name, shape, describe, fn, tuple(needs))
+        BUILT_IN[name] = Layer(name, shape, describe, fn, tuple(needs), title=title or name.replace('_', ' ').capitalize(),
+                               labels=dict(labels or {}))
         return fn
     return wrap
 
@@ -96,12 +100,13 @@ def get(name: str, ctx: Context | None = None) -> Layer:
     trusted = ctx.trusted_plugins if ctx else ()
     if dist not in trusted and name not in trusted:
         raise PermissionError(f'layer {name!r} comes from the package {dist!r}, which this run does not trust; '
-                              f'trust it explicitly (Context.trusted_plugins or pk --trust {dist})')
+                              f'trust it explicitly (Context.trusted_plugins or ptmc --trust {dist})')
     layer = ep.load()
     if not isinstance(layer, Layer):
-        raise TypeError(f'entry point {name!r} of {dist!r} is not a proteomekit Layer')
+        raise TypeError(f'entry point {name!r} of {dist!r} is not a ptmcontext Layer')
     version = ep.dist.version if ep.dist else ''
-    return Layer(layer.name, layer.shape, layer.describe, layer.compute, layer.needs, origin=f'{dist} {version}'.strip())
+    return Layer(layer.name, layer.shape, layer.describe, layer.compute, layer.needs, origin=f'{dist} {version}'.strip(),
+                 title=layer.title, labels=layer.labels)
 
 
 def available() -> list[dict]:

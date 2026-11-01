@@ -1,14 +1,14 @@
-"""pk: the command line, so any repository's scripts (shell, HPC jobs, Makefiles) can use the kit without importing it.
+"""ptmc: the command line, so any repository's scripts (shell, HPC jobs, Makefiles) can use the kit without importing it.
 
-  pk run sites/methylarginine.yaml --root DIR   run a site: its analyses, its statistics table, its parity check
-  pk check sites/phospho.yaml                   validate a site config (and the profile it names) without running
-  pk inputs --root DIR                          check every file of the manifest under DIR against its MD5
-  pk inputs record NAME FILE --root DIR --source URL --version V --licence L
+  ptmc run sites/methylarginine.yaml --root DIR   run a site: its analyses, its statistics table, its parity check
+  ptmc check sites/phospho.yaml                   validate a site config (and the profile it names) without running
+  ptmc inputs --root DIR                          check every file of the manifest under DIR against its MD5
+  ptmc inputs record NAME FILE --root DIR --source URL --version V --licence L
                                                 add (or update) a manifest entry, with the file's MD5
-  pk stage uniprot UP000002311 --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
-  pk stage mobidb --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
+  ptmc stage uniprot UP000002311 --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
+  ptmc stage mobidb --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
                                                 stage a proteome from upstream, recording release, date and MD5
-  pk layers                                     the layers built in, and those installed packages offer
+  ptmc layers                                     the layers built in, and those installed packages offer
 """
 from __future__ import annotations
 
@@ -89,7 +89,7 @@ def cmd_stage(a) -> int:
     out, manifest = Path(a.out), Path(a.manifest)
     if a.source == 'uniprot':
         if not a.proteome:
-            print('pk stage uniprot needs a UniProt proteome id (e.g. UP000002311)')
+            print('ptmc stage uniprot needs a UniProt proteome id (e.g. UP000002311)')
             return 1
         print(stage.uniprot(a.proteome, out, manifest, a.prefix))
     else:
@@ -108,7 +108,7 @@ def cmd_layers(a) -> int:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog='pk', description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(prog='ptmc', description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest='cmd', required=True)
 
     s = sub.add_parser('run', help='run a site config')
@@ -138,7 +138,7 @@ def main(argv=None) -> int:
     s = sub.add_parser('stage', help='download a source from upstream and record it in a manifest')
     s.add_argument('source', choices=['uniprot', 'mobidb'])
     s.add_argument('proteome', nargs='?', help='UniProt proteome id, for uniprot')
-    s.add_argument('--out', required=True, help='folder for the staged files (its parent is the --root of pk run)')
+    s.add_argument('--out', required=True, help='folder for the staged files (its parent is the --root of ptmc run)')
     s.add_argument('--manifest', required=True, help="the site's input manifest (written or updated)")
     s.add_argument('--prefix', required=True, help='file name prefix, e.g. yeast')
     s.set_defaults(fn=cmd_stage)
@@ -148,7 +148,7 @@ def main(argv=None) -> int:
 
     a = ap.parse_args(argv)
     if a.cmd == 'inputs' and a.action == 'record' and not (a.name and a.file and a.source and a.version and a.licence):
-        ap.error('pk inputs record NAME FILE needs --source, --version and --licence')
+        ap.error('ptmc inputs record NAME FILE needs --source, --version and --licence')
     return a.fn(a)
 
 

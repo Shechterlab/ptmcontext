@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "proteomekit"
+name = "ptmcontext"
 version = "0.1.0"
 description = "One proteome background, many units and marks: the Shechter lab's shared model of the human proteome (sequence, regions, domains, modifications) and the tests and release format built on it"
 requires-python = ">=3.10"
@@ -14,13 +14,13 @@ dependencies = ["numpy>=1.24", "pandas>=2.0", "scipy>=1.10", "statsmodels>=0.14"
 test = ["pytest>=7"]
 
 [project.scripts]
-pk = "proteomekit.cli:main"
+ptmc = "ptmcontext.cli:main"
 
 [tool.setuptools]
-packages = ["proteomekit", "proteomekit.layers"]
+packages = ["ptmcontext", "ptmcontext.layers"]
 
 [tool.setuptools.package-data]
-proteomekit = ["profiles/*.yaml", "schemas/*.json", "config/*.json"]
+ptmcontext = ["profiles/*.yaml", "schemas/*.json", "config/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

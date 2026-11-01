@@ -83,7 +83,7 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     t0 = time.time()
     site = load_site(site_path)
     if site.get('status') == 'offline_pilot' and not allow_untrusted:
-        raise PermissionError(f"site {site['id']} is an offline pilot: run it with allow_untrusted (pk run --allow-untrusted)")
+        raise PermissionError(f"site {site['id']} is an offline pilot: run it with allow_untrusted (ptmc run --allow-untrusted)")
     roles = site.get('inputs', {})
     names = [site['snapshot']['input'], site['marks']['input'], *roles.values()]
     if site.get('reference', {}).get('statistics'):
@@ -107,7 +107,7 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         log(f"  {analysis['id']:18s} {len(parts[-1]):3d} rows")
     rows = pd.concat(parts, ignore_index=True)
     record = {
-        'tool': 'proteomekit', 'version': __version__, 'site': site['id'], 'site_config_md5': md5_file(site_path),
+        'tool': 'ptmcontext', 'version': __version__, 'site': site['id'], 'site_config_md5': md5_file(site_path),
         'written': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'snapshot': snap.record(),
         'profile': profile.id, 'marks': report, 'analyses': layers_used,
         'manifest': str(manifest.relative_to(REPO)) if manifest.is_relative_to(REPO) else str(manifest), 'roles': roles,

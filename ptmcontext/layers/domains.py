@@ -30,7 +30,7 @@ STRUCTURE_NEAR, STRUCTURE_MID = 10, 30
 
 
 def domain_classes() -> list[dict]:
-    path = Path(str(resources.files('proteomekit') / 'config' / 'domain_classes.json'))
+    path = Path(str(resources.files('ptmcontext') / 'config' / 'domain_classes.json'))
     return json.loads(path.read_text())['domain_classes']
 
 
@@ -81,7 +81,10 @@ def _nearest(ctx: Context, residues: pd.DataFrame) -> pd.DataFrame:
 
 
 @register('domain_context', 'class', 'InterPro domain or repeat: in_domain, boundary (<= 20 residues from an edge), '
-          'inter_domain_linker, distal, no_domain_annotation', needs=('domains',))
+          'inter_domain_linker, distal, no_domain_annotation', needs=('domains',), title='Position relative to domains',
+          labels={'in_domain': 'In a domain', 'boundary': 'Within 20 aa of a domain edge',
+                  'inter_domain_linker': 'Between two domains', 'distal': 'Away from domains',
+                  'no_domain_annotation': 'Protein without domains'})
 def domain_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     near, _ = _nearest(ctx, residues)
     d = near['distance']
@@ -92,7 +95,7 @@ def domain_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
 
 
 @register('domain_class', 'class', 'the class of the nearest InterPro domain or repeat (config/domain_classes.json)',
-          needs=('domains',))
+          needs=('domains',), title='Nearest domain')
 def domain_class(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     near, units = _nearest(ctx, residues)
     blocks = domain_classes()
@@ -126,7 +129,11 @@ def structure_context_of(disorder_class, domain_class_, domain_edge_distance) ->
 
 @register('structure_context', 'class', 'disorder and domains together: domain_folded, domain_disordered, '
           'ordered_outside_domain, idr_near_domain (<= 10), idr_mid_domain (11-30), idr_far_from_domain, '
-          'no_disorder_annotation', needs=('disorder', 'domains'))
+          'no_disorder_annotation', needs=('disorder', 'domains'), title='Structural context',
+          labels={'domain_folded': 'Folded domain', 'domain_disordered': 'Disordered part of a domain',
+                  'ordered_outside_domain': 'Ordered, outside domains', 'idr_near_domain': 'IDR, within 10 aa of a domain',
+                  'idr_mid_domain': 'IDR, 11-30 aa from a domain', 'idr_far_from_domain': 'IDR, over 30 aa from a domain',
+                  'no_disorder_annotation': 'No disorder annotation'})
 def structure_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     dis = get('disorder')(residues, ctx)
     dom = get('domain_context')(residues, ctx)

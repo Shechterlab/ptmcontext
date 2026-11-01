@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Shechterlab/proteome-kit/schemas/inputs.schema.json",
+  "$id": "https://github.com/Shechterlab/ptmcontext/schemas/inputs.schema.json",
   "title": "Input manifest",
   "description": "Every file a build reads, named once with where it comes from and its MD5. A build checks each file against its MD5 before it reads it, whoever staged it.",
   "type": "object",
