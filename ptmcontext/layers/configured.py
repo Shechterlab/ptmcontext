@@ -4,20 +4,24 @@
                    filled by any interval table: a unit table, or any layout its manifest entry maps with `columns`)
   residue_values   residues by a per-residue value (pLDDT, a conservation or variant-effect score), cut into classes at
                    the site's thresholds (a role filled by a per-residue table mapped with `columns`)
+  residue_lists    flags: whether a residue is listed in each of several tables (a change seen in tumours, a crosslink),
+                   each table a role filled by a list of residues mapped with `columns` {accession, position}
 
 An analysis names one with its parameters:
 
   - {id: condensates, layer: regions, with: {role: condensates, noun: condensate-forming region}}
   - {id: plddt, layer: residue_values, with: {role: plddt, bins: [50, 70, 90],
                                                classes: [very_low, low, confident, very_high]}}
+  - {id: changes, layer: residue_lists, with: {flags: {in_tumours: tumour_changes, in_cell_lines: line_changes}}}
 
 The classes they make (for filters, website.protein.facts and labels):
 
   regions          in_<code>, <code>_boundary, outside_<code>, no_<code> (code: the analysis id, or with: code)
   residue_values   the classes given, from the lowest bin up (a value equal to a threshold goes to the class above
                    it), and missing (default no_value) for a residue without a value
+  residue_lists    the flags given, in their order (a residue may carry several, or none)
 
-Each draws its regions (or its runs of residues in one class) as a row of the protein map. Words a page shows (title,
+regions and residue_values draw their regions (or runs of residues in one class) as a row of the protein map. Words a page shows (title,
 question, sub, labels, help, section, track, track_help) and the row's colours (colours: {class: colour}) may be given
 with the parameters; otherwise they are made from the noun.
 """
@@ -41,7 +45,8 @@ def _words(params: dict, default_title: str, default_question: str, default_sub:
 
 WORDS = {'title', 'question', 'sub', 'section', 'labels', 'help', 'noun', 'track', 'track_help', 'colours'}
 ALLOWED = {'regions': WORDS | {'role', 'kind', 'window', 'nouns', 'code'},
-           'residue_values': WORDS | {'role', 'kind', 'bins', 'classes', 'missing'}}
+           'residue_values': WORDS | {'role', 'kind', 'bins', 'classes', 'missing'},
+           'residue_lists': WORDS - {'track', 'track_help', 'colours'} | {'flags'}}
 
 
 def _need(params: dict, aid: str, *keys: str, layer: str = '') -> None:
@@ -142,3 +147,27 @@ def residue_values(params: dict, aid: str) -> Layer:
                  labels=labels, help=helps, tracks=(track,),
                  **_words(params, title, f'Do {{marks}} sit at a particular {noun}, against the other {{residues}} of the same proteins?',
                           f'{{Marks}} against the other {{residues}} of the same proteins, by {noun}'))
+
+
+@factory('residue_lists')
+def residue_lists(params: dict, aid: str) -> Layer:
+    """Flags: whether each residue is listed in each of several tables (flags: {flag: role})."""
+    _need(params, aid, 'flags', layer='residue_lists')
+    flags = params['flags']
+    if not isinstance(flags, dict) or not flags or not all(isinstance(r, str) for r in flags.values()):
+        raise ValueError(f'analysis {aid!r}: with: flags must map each flag to the role of a list of residues')
+    noun = params.get('noun', 'listed residue')
+    labels = {f: params.get('labels', {}).get(f, f'Listed in {role}') for f, role in flags.items()}
+    helps = {f: params.get('help', {}).get(f, f'The residue is in the site’s {role} input') for f, role in flags.items()}
+
+    def compute(residues: pd.DataFrame, ctx) -> pd.DataFrame:
+        idx = pd.MultiIndex.from_arrays([residues['accession'], residues['position'].astype(int)])
+        out = {}
+        for f, role in flags.items():                     # in the order given
+            listed = ctx.listed(role)
+            out[f] = idx.isin(pd.MultiIndex.from_arrays([listed['accession'], listed['position']]))
+        return pd.DataFrame(out, index=residues.index)
+    return Layer('residue_lists', 'flags', f"{noun}s: listed in {', '.join(flags.values())}", compute, needs=tuple(dict.fromkeys(flags.values())),
+                 labels=labels, help=helps,
+                 **_words(params, _cap(noun + 's'), f'Are {{marks}} {noun}s more often than the other {{residues}} of the same proteins?',
+                          f'{{Marks}} against the other {{residues}} of the same proteins: {noun}s'))

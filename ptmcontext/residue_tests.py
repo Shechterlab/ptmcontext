@@ -9,8 +9,10 @@ table from anywhere) and writes statistics rows. Two tests, as the releases repo
                    Robins-Breslow-Greenland 95% CI, continuity-corrected CMH p), which separates where a protein's
                    marks fall from which proteins are marked.
 
-Both count the same sites: those on a protein with at least one other candidate residue. q is Benjamini-Hochberg
-over the categories of the analysis, within each method.
+Both count the same sites: those on a protein with at least one other candidate residue (or, with alone='count', every
+site: one on a protein with no other candidate residue adds to a and b, and nothing to the within-protein odds ratio or
+test). q is Benjamini-Hochberg over the categories of the analysis, within each method. An analysis may count only the
+marks and candidate residues of some proteins (proteins: those a table lists), and may give its rows' order.
 """
 from __future__ import annotations
 
@@ -53,10 +55,17 @@ def candidates_and_marks(ctx: L.Context, marked: pd.DataFrame, left_out: pd.Data
 
 def residue_test(ctx: L.Context, marked: pd.DataFrame, layer: str | L.Layer, analysis: str, *,
                  left_out: pd.DataFrame | None = None, methods: Iterable[str] = ('fisher', 'mantel_haenszel'),
-                 stratum: str = 'all', keep: dict | None = None) -> pd.DataFrame:
+                 stratum: str = 'all', keep: dict | None = None, proteins: set | None = None, alone: str = 'drop',
+                 order: list | None = None, pooled_label: str = '') -> pd.DataFrame:
     """Statistics rows (statistics.COLUMNS) of the marked residues against the other candidate residues of the same
-    proteins, for each class (or flag) of the layer. left_out: residues counted on neither side (sites kept pending)."""
+    proteins, for each class (or flag) of the layer. left_out: residues counted on neither side (sites kept pending).
+    proteins: count only the marks (and so the candidate residues) of these proteins. alone: 'drop' (default) leaves
+    out the marks of a protein with no other candidate residue, 'count' counts them. order: the rows' order, as a
+    protein-set question's (default: pooled rows by odds ratio, within-protein rows by category). pooled_label:
+    added to the pooled rows' background."""
     layer = L.get(layer, ctx) if isinstance(layer, str) else layer
+    if proteins is not None:
+        marked = marked[marked['accession'].isin(proteins)]
     cand, is_marked, is_left = candidates_and_marks(ctx, marked, left_out)
     annotated = pd.concat([cand, layer(cand, ctx)], axis=1)
     if layer.shape == 'class':
@@ -68,15 +77,28 @@ def residue_test(ctx: L.Context, marked: pd.DataFrame, layer: str | L.Layer, ana
     background = annotated[~is_marked & ~is_left]
     if keep is not None:   # for the per-protein outputs: every candidate residue, annotated, and which are marks
         keep.update(annotated=annotated, is_marked=is_marked, is_left=is_left, columns=columns)
-    # sites on a protein with no other candidate residue have no background: neither test counts them
-    same = targets[targets['accession'].isin(set(background['accession']))]
+    if alone not in ('drop', 'count'):
+        raise ValueError(f"{analysis}: alone must be 'drop' or 'count', not {alone!r}")
+    # sites on a protein with no other candidate residue have no background: neither test counts them, unless the
+    # analysis counts them (alone='count': in a and b of both tests, adding nothing within proteins)
+    same = targets if alone == 'count' else targets[targets['accession'].isin(set(background['accession']))]
     rows = []
     methods = tuple(methods)
     if 'fisher' in methods:
-        rows += _fisher(same, background, columns, analysis, stratum, ctx.profile.background('marked_proteins'))
+        rows += _fisher(same, background, columns, analysis, stratum, ctx.profile.background('marked_proteins') + pooled_label, order)
     if 'mantel_haenszel' in methods:
-        rows += _within_protein(targets, background, columns, analysis, stratum, ctx.profile.background('same_protein'))
+        rows += _within_protein(same, background, columns, analysis, stratum, ctx.profile.background('same_protein'), order,
+                                alone == 'count')
     return pd.DataFrame(rows)
+
+
+def _ordered(rows: list[dict], order: list | None) -> list[dict]:
+    """The rows in the order an analysis names (the keys of set_tests.ordered: {categories: [...]} first, or {by,
+    descending}), each method's rows apart; without one, as they were."""
+    if not order or not rows:
+        return rows
+    from .set_tests import ordered
+    return ordered(pd.DataFrame(rows), order).to_dict('records')
 
 
 def _counts_by_category(targets, background, columns):
@@ -91,7 +113,7 @@ def _counts_by_category(targets, background, columns):
             yield col, int(targets[col].sum()), nt, int(background[col].sum()), nb
 
 
-def _fisher(targets, background, columns, analysis, stratum, label):
+def _fisher(targets, background, columns, analysis, stratum, label, order=None):
     rows = []
     for cat, a, nt, c, nb in _counts_by_category(targets, background, columns):
         b, d = nt - a, nb - c
@@ -104,11 +126,13 @@ def _fisher(targets, background, columns, analysis, stratum, label):
     out = pd.DataFrame(rows)
     out['q'] = stats.benjamini_hochberg(out['p'].astype(float))
     out = out.sort_values(['odds_ratio', 'a'], ascending=[False, False])
-    return out.to_dict('records')
+    return _ordered(out.to_dict('records'), order)
 
 
-def _within_protein(targets, background, columns, analysis, stratum, label):
-    proteins = sorted(set(targets['accession']) & set(background['accession']))
+def _within_protein(targets, background, columns, analysis, stratum, label, order=None, alone=False):
+    # each protein with marks and other candidate residues a stratum; with alone, also those with marks only, whose
+    # tables add to a and b and nothing else (they are not informative)
+    proteins = sorted(set(targets['accession']) if alone else set(targets['accession']) & set(background['accession']))
     if columns is None:
         cats = sorted(set(targets['category']) | set(background['category']))
         t = pd.crosstab(targets['accession'], targets['category']).reindex(index=proteins, columns=cats, fill_value=0)
@@ -140,4 +164,4 @@ def _within_protein(targets, background, columns, analysis, stratum, label):
         q = stats.benjamini_hochberg(pd.Series([r['p'] for r in rows], dtype=float))
         for r, v in zip(rows, q):
             r['q'] = v
-    return rows
+    return _ordered(rows, order)

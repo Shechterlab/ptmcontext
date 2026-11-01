@@ -204,7 +204,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                              **({'scores': {k: a['scores'][k] for k in ('label', 'help', 'levels', 'max') if k in a['scores']}} if a.get('scores') else {}),
                              'title': a.get('title', a['id']), 'question': a.get('question', ''),
                              'sub': a.get('sub', ''), 'section': a.get('section', 'Kinds of protein'), 'layer': '', 'describe': a.get('background', ''),
-                             'labels': set_names.get(a['id'], {}), 'help': {}, 'new': bool(a.get('new'))})
+                             'labels': {**set_names.get(a['id'], {}), **(a.get('labels') or {})}, 'help': dict(a.get('help') or {}),
+                             'new': bool(a.get('new'))})
             continue
         layer = _layer_words(a, run)
         labels, helps = _labels(layer, profile)
@@ -362,6 +363,14 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
     # each protein's other candidate residues, the same for every question (a protein with none is left out of the
     # tests: its marks have nothing to be compared with)
     others_total = [int(r[5]) - int(r[4]) for r in listing]
+    # a residue question that counts only some proteins (proteins:) skips the others' marks, and one that counts the
+    # marks of a protein with no other candidate residue (marks_alone: count) keeps them (run.json says which)
+    counted = {}
+    run = json.loads((folder / 'run.json').read_text()) if (folder / 'run.json').exists() else {}
+    for aid, used in (run.get('analyses') or {}).items():
+        if aid in analyses and (used.get('proteins') or used.get('marks_alone') == 'count'):
+            counted[aid] = {'skip': sorted(pidx[a] for a in (used.get('proteins') or {}).get('not_counted', []) if a in pidx),
+                            'alone': used.get('marks_alone') == 'count'}
     # protein-set questions: each tested set's size in the background and its marked proteins (protein_sets.json)
     sets = {}
     if (folder / 'protein_sets.json').exists():
@@ -397,7 +406,7 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
                 sets[aid]['covariate'] = {'input': cv['input'], 'value': cv['value'], 'strata': cv['strata'],
                                           'proteins': {pidx[a]: x for a, x in cv['proteins'].items() if a in pidx}}
     return {'analyses': analyses, 'classes': classes, 'attributes': avals, 'attribute_names': [c[2:] for c in attrs], 'attribute_links': links, 'marks': rows, 'others': others,
-            'others_total': others_total, 'protein_sets': sets}
+            'others_total': others_total, 'counted': counted, 'protein_sets': sets}
 
 
 def unit_value_data(folder: Path, listing: list, tracks: list[dict]) -> dict:

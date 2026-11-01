@@ -35,13 +35,16 @@ upstream ───────────► staged files ──► snapshot �
 - **Inputs** are read by a manifest entry's column mapping (`columns`), else by the first registered reader that knows
   the file (`units.READERS`: the unit table, staged MobiDB, staged InterPro; a trusted plugin may add one).
 - **Layers** are built in, made from a site file's parameters (`layers.FACTORIES`: `regions` for any interval table,
-  `residue_values` for any per-residue value), or trusted plugins. Each declares the roles it reads and, optionally,
-  what it draws (`Layer.tracks`: a kind of region, its style, the roles it comes from, and the numbers each region
-  carries, `Track.values`, which the run writes with the marks inside each region).
+  `residue_values` for any per-residue value, `residue_lists` for tables that list residues), or trusted plugins. A
+  residue question may count only the proteins a table lists (`proteins:`). Each declares the roles it reads and,
+  optionally, what it draws (`Layer.tracks`: a kind of region, its style, the roles it comes from, and the numbers each
+  region carries, `Track.values`, which the run writes with the marks inside each region).
 - **The run records what the website shows**: each layer's words (title, labels, help, question, shape) in `run.json`,
   its regions in `units.tsv` and what each kind is in `tracks.json`. The website reads these, so it shows a plugin's
   or a configured layer's question exactly as a built-in one, and draws any track; it knows no layer by name.
-- **Protein-set questions** read any (set, protein) table or class hierarchy (`set_tests.py`). Sets keyed by another
+- **Protein-set questions** read any (set, protein) table or class hierarchy (`set_tests.py`), or make their sets
+  from a table's columns by rules (a protein in the first set whose conditions hold: a value at least a threshold, a
+  share of two columns, a flag). Sets keyed by another
   identifier (Entrez genes) come with the tables that map the site's proteins to it (`identifiers`), and sets gathered
   into families by name with the site's own rules file (`sets.families`, `sites/data/`): curated vocabulary is a site's
   data, never code. A table's rows may be kept by what other tables say of one of its columns (`sets.where`: CD-CODE's

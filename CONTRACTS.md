@@ -25,7 +25,12 @@ Conventions:
 - `fisher`: pooled 2x2 test; Haldane–Anscombe odds ratio (0.5 added to each cell), two-sided Fisher p.
 - `mantel_haenszel`: each protein a stratum; Mantel–Haenszel odds ratio, Robins–Breslow–Greenland 95% CI, the
   continuity-corrected CMH statistic floored at 0 (a count within 0.5 of its expectation gives p = 1).
-- Both count the same marks: those on a protein with at least one other candidate residue.
+- Both count the same marks: those on a protein with at least one other candidate residue, unless the analysis counts
+  them all (`marks_alone: count`: a protein with marks only adds to `a` and `b` of both, and nothing to the
+  within-protein odds ratio or test, its table not being informative). An analysis may count only the marks and
+  candidate residues of the proteins a table lists (`proteins:`; its `label` is added to the pooled rows' background).
+- Rows are in the order the analysis gives (`order:`, a list of categories), else: pooled residue rows by odds ratio,
+  within-protein rows by category, protein-set rows by p.
 - `enricher`: protein-set tests (clusterProfiler's `enricher`). `a, b, c, d` are k, n − k, M − k and N − M − n + k
   (marked proteins in the set; other marked proteins; other proteins in the set; the rest of the background). One-sided
   hypergeometric p; `fold_enrichment` (k/n)/(M/N). The background is the universe's proteins in at least one set, or
@@ -45,7 +50,12 @@ Conventions:
 - Rows are written by ascending p, then set name, unless the analysis names an `order` (`by` a row's `a, b, c, d,
   fold_enrichment, p, q` or `category`, `descending`), first key first, a tie keeping the order before. Fold enrichment
   is compared exactly, as the fraction a(a+b+c+d)/((a+b)(a+c)), so 4 of 6 and 14 of 21 tie. The stratified rows follow
-  the `enricher` rows' order.
+  the `enricher` rows' order. A key `{categories: [...]}` puts the rows of those categories first, in its order (a
+  residue question takes the same keys).
+- `enricher` on sets made by rules (`sets.rules`): each row of a table goes to the set of the first rule whose
+  conditions all hold for it (`equals`, `in`, `contains` on text; `at_least` and `below` on a column's number or the
+  `ratio` of two columns, missing where the second is 0 or empty; a rule without conditions takes every row left);
+  the source annotates every protein of the table's rows.
 - `mantel_haenszel` on a protein-set analysis: the same 2×2 split by a protein covariate (PaxDb abundance decile, and
   `none` for proteins without a value); its `a, b, c, d` add up to the `enricher` row's. For sets of another
   identifier, an identifier takes the highest value of the proteins that map to it (`combine: max`), and the deciles
@@ -95,9 +105,10 @@ error). A mark on several rows takes the first kept row's values.
 
 `file, md5, source, version, licence` (required), `role` (`input` or `reference_output`), `note`, and two optional
 fields: `columns`, a column mapping for a file no reader knows (intervals: `accession, start, end`, and `label, ref,
-subtype, class`; per-residue values: `accession, position, value`; `include`/`exclude` conditions; `kind`; `sep`), and
-`record`, the source's own page for a protein (a URL with `{acc}`). A table a protein-set question reads that is not
-tab-separated says so with `columns: {sep: ","}` alone; every table of a protein-set question is read with it.
+subtype, class`; per-residue values: `accession, position, value`; lists of residues: `accession, position`;
+`include`/`exclude` conditions; `kind`; `sep`), and `record`, the source's own page for a protein (a URL with `{acc}`).
+A table a protein-set question reads that is not tab-separated says so with `columns: {sep: ","}` alone; every table of
+a protein-set question is read with it.
 
 ## What `ptmc run` writes for the website
 
@@ -122,7 +133,9 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 units as `[kind, start, end, label, source index, class, ref]`) and `data/selection.json`: `analyses`, `classes` and
 `attributes` (the distinct values, which the rows code by index), `attribute_names` (their order), `attribute_links`,
 `marks` (`[protein index, position, [class codes per analysis], [attribute codes per attribute], window]`), `others`
-(per analysis, protein and class: the other candidate residues), `others_total` (per protein: candidates − marks) and
+(per analysis, protein and class: the other candidate residues), `others_total` (per protein: candidates − marks),
+`counted` (per residue question that counts only some proteins or every mark, from `run.json`: `skip`, the indices of
+the marked proteins it leaves out, and `alone`, whether it counts the marks of a protein with no other candidate) and
 `protein_sets` (from `protein_sets.json`; for sets of another identifier, members are coded by index into its `ids`,
 with `of`, each marked protein's identifiers, and `unit`, their name in the plural, so a selection is tested on its
 proteins' identifiers; `any`, `more: [[set, [proteins]]]` and `scores` serve the filters: `p:<analysis>` takes a set or

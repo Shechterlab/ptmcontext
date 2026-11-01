@@ -122,7 +122,10 @@ def _analysis_words(site: dict) -> dict:
 def roles_missing(site: dict) -> list[str]:
     """Residue analyses whose layer reads a role the site file does not fill."""
     roles = set(site.get('inputs', {}))
-    return [f"{aid}: reads role {r!r}, which inputs: does not fill" for aid, w in _analysis_words(site).items() for r in w['needs'] if r not in roles]
+    out = [f"{aid}: reads role {r!r}, which inputs: does not fill" for aid, w in _analysis_words(site).items() for r in w['needs'] if r not in roles]
+    out += [f"{a['id']}: proteins: reads role {a['proteins']['input']!r}, which inputs: does not fill" for a in site.get('analyses', [])
+            if a.get('proteins') and a['proteins']['input'] not in roles]
+    return out
 
 
 def mapping_problems(site: dict, root: str | Path) -> list[str]:
@@ -217,6 +220,20 @@ def _holds(frame: pd.DataFrame, cond: dict) -> pd.Series:
     if 'in' in cond:
         return col.isin(set(cond['in']))
     return col.str.contains(cond['contains'], regex=False)
+
+
+def listed_proteins(spec: dict, ctx: L.Context) -> set:
+    """The proteins a residue question counts (proteins: the accessions in a column of a table that fills a role, on
+    the rows its include and exclude conditions keep): only their marks and candidate residues are counted."""
+    t = pd.read_csv(ctx.path(spec['input']), sep='\t', dtype=str, keep_default_na=False, low_memory=False)
+    if spec['column'] not in t.columns:
+        raise ValueError(f"proteins: role {spec['input']} has no column {spec['column']!r}")
+    keep = pd.Series(True, index=t.index)
+    for cond in spec.get('include', []):
+        keep &= _holds(t, cond)
+    for cond in spec.get('exclude', []):
+        keep &= ~_holds(t, cond)
+    return set(t.loc[keep, spec['column']].astype(str).str.strip()) - {''}
 
 
 def left_out_marks(spec: dict, table: pd.DataFrame) -> pd.DataFrame:
@@ -522,8 +539,17 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
                                        **layer_words(layer)}
         methods = analysis.get('methods', ['fisher', 'mantel_haenszel'])
         kept[analysis['id']] = {}
+        only = listed_proteins(analysis['proteins'], ctx) if analysis.get('proteins') else None
+        if only is not None:                              # the marked proteins this question leaves out, for the website
+            layers_used[analysis['id']]['proteins'] = {
+                'input': analysis['proteins']['input'], 'column': analysis['proteins']['column'], 'listed': len(only),
+                'not_counted': sorted(set(marked['accession']) - only)}
+        if analysis.get('marks_alone'):
+            layers_used[analysis['id']]['marks_alone'] = analysis['marks_alone']
         parts.append(RT.residue_test(ctx, marked, layer, analysis['id'], methods=methods, keep=kept[analysis['id']],
-                                     left_out=pending if len(pending) else None))
+                                     left_out=pending if len(pending) else None, proteins=only,
+                                     alone=analysis.get('marks_alone', 'drop'), order=analysis.get('order'),
+                                     pooled_label=(analysis.get('proteins') or {}).get('label', '')))
         log(f"  {analysis['id']:18s} {len(parts[-1]):3d} rows")
     rows = pd.concat(parts, ignore_index=True)
     record = {

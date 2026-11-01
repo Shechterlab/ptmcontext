@@ -102,7 +102,17 @@ analyses:
     layer: residue_values
     with: {role: <role>, bins: [50, 70, 90], classes: [very_low, low, confident, very_high], noun: pLDDT,
            colours: {very_high: "#0053d6"}}
+  - id: <analysis>                                       # flags: is a residue listed in each of these tables? no code
+    layer: residue_lists
+    with: {flags: {<flag>: <role>, <flag>: <role>}, noun: changed residue, labels: {<flag>: ...}}
+    proteins: {input: <role>, column: <accession column>, label: " whose gene was screened"}   # count only these proteins
+    marks_alone: count                                   # and every mark of theirs, one with no other candidate too
+    order: [{categories: [<flag>, <flag>]}]              # the rows in this order
 ```
+
+A list of residues (a change seen in tumours, a crosslinked residue) is any table with an accession and a position
+column, mapped in its manifest entry (`"columns": {"accession": ..., "position": ...}`); a residue is listed once
+however many rows name it.
 
 The class codes these make are what filters, `website.protein.facts` and `labels:` use: for `regions`, `in_<id>`,
 `<id>_boundary`, `outside_<id>` and `no_<id>` (the analysis id, or `with: code`); for `residue_values`, the classes
@@ -130,6 +140,18 @@ reading different roles may share a `kind`: each keeps its own row of the map.
       unclassified: <set name>                           # the universe's proteins with no class, as a set
     universe: snapshot
     whole_universe: true
+  - id: <analysis>                                       # sets made by rules on a table's columns: no table of sets
+    test: protein_sets
+    sets:
+      input: <role>
+      protein: <column>
+      rules:                                             # each row in the first set whose conditions all hold
+        - {set: essential, when: [{column: <flag column>, equals: "True"}]}
+        - {set: most, when: [{ratio: [<column>, <column>], at_least: 0.5}]}   # a share; at_least and below on numbers
+        - {set: rest}                                    # no conditions: every row left
+    whole_universe: true
+    order: [{categories: [essential, most, rest]}]       # the rows in this order (default: by p)
+    labels: {most: "Most lines (≥ 50%)"}                 # names on the website; help: {set: definition}
   - id: <analysis>                                       # sets of another identifier (genes), gathered into families
     test: protein_sets
     identifiers:                                         # each protein's identifiers, through these tables in turn

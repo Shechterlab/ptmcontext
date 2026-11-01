@@ -322,6 +322,48 @@
               ]
             }
           },
+          "proteins": {
+            "type": "object",
+            "required": [
+              "input",
+              "column"
+            ],
+            "additionalProperties": false,
+            "description": "residue: count only the marks and candidate residues of the proteins a table lists (the accessions in a column of a role's table, on the rows its conditions keep)",
+            "properties": {
+              "input": {
+                "type": "string",
+                "description": "a role of the site's inputs"
+              },
+              "column": {
+                "type": "string"
+              },
+              "include": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "exclude": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "label": {
+                "type": "string",
+                "description": "added to the pooled rows' background"
+              }
+            }
+          },
+          "marks_alone": {
+            "enum": [
+              "drop",
+              "count"
+            ],
+            "default": "drop",
+            "description": "residue: the marks of a protein with no other candidate residue: left out of both tests (drop), or counted in a and b of both (count), adding nothing to the within-protein odds ratio or test"
+          },
           "title": {
             "type": "string",
             "description": "card heading (default: the layer's title)"
@@ -333,6 +375,20 @@
           "section": {
             "type": "string",
             "description": "the Overview section it is listed under (default: the layer's)"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "protein_sets: a set's name on the website, by its category (a residue question's labels come from its layer)"
+          },
+          "help": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "protein_sets: a set's definition, shown on hover, by its category"
           },
           "sets": {
             "oneOf": [
@@ -553,6 +609,59 @@
                     "description": "a set of the universe's proteins with no class at this level, under this name"
                   }
                 }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "input",
+                  "protein",
+                  "rules"
+                ],
+                "additionalProperties": false,
+                "description": "protein_sets: sets made by rules on a table's columns: each row goes to the set of the first rule whose conditions all hold (a rule without conditions takes every row left); the source annotates every protein of the table's rows",
+                "properties": {
+                  "input": {
+                    "type": "string"
+                  },
+                  "protein": {
+                    "type": "string"
+                  },
+                  "rules": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "set"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "set": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "when": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/rule_condition"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "include": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/condition"
+                    }
+                  },
+                  "exclude": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/condition"
+                    }
+                  }
+                }
               }
             ]
           },
@@ -668,14 +777,18 @@
           "order": {
             "type": "array",
             "minItems": 1,
-            "description": "protein_sets: the order its rows are written in, the first key first (default: ascending p, then the set's name, which also breaks every tie here)",
+            "description": "the order its rows are written in, the first key first (default: protein sets by ascending p, then the set's name, which also breaks every tie here; pooled residue rows by odds ratio, within-protein rows by category)",
             "items": {
               "type": "object",
-              "required": [
-                "by"
-              ],
               "additionalProperties": false,
+              "oneOf": [{"required": ["by"]}, {"required": ["categories"]}],
               "properties": {
+                "categories": {
+                  "type": "array",
+                  "items": {"type": "string"},
+                  "minItems": 1,
+                  "description": "the rows of these categories first, in this order, then the others as they were"
+                },
                 "by": {
                   "enum": [
                     "a",
@@ -827,7 +940,7 @@
           },
           "with": {
             "type": "object",
-            "description": "the parameters of a layer made from them (ptmc layers lists them): regions {role, kind, window, noun, nouns, labels, help, title, question, sub, section, track}; residue_values {role, bins, classes, missing, noun, labels, help, title, question, sub, section, track}"
+            "description": "the parameters of a layer made from them (ptmc layers lists them): regions {role, kind, window, noun, nouns, labels, help, title, question, sub, section, track}; residue_values {role, bins, classes, missing, noun, labels, help, title, question, sub, section, track}; residue_lists {flags: {flag: role}, noun, labels, help, title, question, sub, section}"
           }
         },
         "anyOf": [
@@ -1478,6 +1591,62 @@
         {
           "required": [
             "contains"
+          ]
+        }
+      ]
+    },
+    "rule_condition": {
+      "description": "a condition of a rule that makes sets: equals, in or contains on a column's text, or at_least and below (a half-open interval) on a number, a column's or the ratio of two columns (missing where the second is 0 or empty)",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/condition"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "column": {
+              "type": "string"
+            },
+            "ratio": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "[numerator, denominator] columns"
+            },
+            "at_least": {
+              "type": "number"
+            },
+            "below": {
+              "type": "number"
+            }
+          },
+          "oneOf": [
+            {
+              "required": [
+                "column"
+              ]
+            },
+            {
+              "required": [
+                "ratio"
+              ]
+            }
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "at_least"
+              ]
+            },
+            {
+              "required": [
+                "below"
+              ]
+            }
           ]
         }
       ]

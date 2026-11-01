@@ -156,6 +156,22 @@ def residue_values(path: str | Path, columns: dict) -> pd.DataFrame:
     return out.astype({'position': int}).drop_duplicates(['accession', 'position']).reset_index(drop=True)
 
 
+def listed_residues(path: str | Path, columns: dict) -> pd.DataFrame:
+    """The residues a table lists (accession, position), by a column mapping {accession, position}: a residue is listed
+    once however many rows name it (a change seen in several tumours, say); rows without a position are dropped."""
+    df = pd.read_csv(path, sep=columns.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False)
+    for cond in columns.get('include', []):
+        df = df[_holds(df, cond)]
+    for cond in columns.get('exclude', []):
+        df = df[~_holds(df, cond)]
+    missing = sorted({columns[k] for k in ('accession', 'position')} - set(df.columns))
+    if missing:
+        raise ValueError(f'{path}: the manifest entry names columns the file does not have: {missing}')
+    out = pd.DataFrame({'accession': df[columns['accession']].astype(str).str.strip(),
+                        'position': pd.to_numeric(df[columns['position']], errors='coerce')}).dropna()
+    return out.astype({'position': int}).drop_duplicates().reset_index(drop=True)
+
+
 @register_reader('unit_table', lambda cols, kind: set(UNIT_COLUMNS) <= cols, 'the unit table of CONTRACTS.md')
 def _unit_table(path: Path, kind: str) -> pd.DataFrame:
     units = read_units(path)
