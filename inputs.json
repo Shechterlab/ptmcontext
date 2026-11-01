@@ -117,6 +117,33 @@
       "licence": "CC BY 4.0 (PANTHER data and data products, https://www.pantherdb.org/tou.jsp)",
       "role": "input",
       "note": "Staged by PTM_Pipeline scripts/00_stage_panther_classes.py from PANTHER's downloads; this repository checks the bytes."
+    },
+    "uniprot_entries": {
+      "file": "inputs/reference/uniprot_human_reviewed_2026_03_entries.tsv",
+      "md5": "07057d3bda4051dd23f9f90b0a425916",
+      "source": "https://rest.uniprot.org/uniprotkb/stream?format=tsv&query=(proteome:UP000005640) AND (reviewed:true)&fields=accession,id,gene_primary,protein_name,length",
+      "version": "UniProt 2026_03, downloaded 2026-10-20: the 20,416 entries of the sequences above",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv: same query as the FASTA, same accession set); this repository checks the bytes. Read for each entry's primary gene name (the first, where UniProt gives several)."
+    },
+    "orghs_symbol_entrez": {
+      "file": "inputs/disease/orghsegdb_3.22.0_symbol_entrez.tsv",
+      "md5": "23729b6f0e4132a6d2833704265c99d1",
+      "source": "Bioconductor package org.Hs.eg.db 3.22.0 (bioconda bioconductor-org.hs.eg.db 3.22.0): AnnotationDbi select, keytype SYMBOL, all keys; data from NCBI Gene",
+      "version": "org.Hs.eg.db 3.22.0",
+      "licence": "Artistic-2.0 (package); NCBI Gene data are public domain",
+      "role": "input",
+      "note": "Gene symbol to Entrez gene map (193,613 rows; a symbol may map to several genes). Exported by PTM_Pipeline scripts/00_export_disease_tables.R; this repository checks the bytes. Citation: Carlson M, org.Hs.eg.db: Genome wide annotation for Human, R package 3.22.0."
+    },
+    "disgenet_term_genes": {
+      "file": "inputs/disease/dose_4.4.0_disgenet_term_genes.tsv",
+      "md5": "4e01948e570a275c0d906837a71a6f7b",
+      "source": "Bioconductor package DOSE 4.4.0 (bioconda bioconductor-dose 4.4.0): its DisGeNET data DGN_PATHID2EXTID with DGN_PATHID2NAME",
+      "version": "DOSE 4.4.0 (DisGeNET as DOSE distributes it)",
+      "licence": "DisGeNET data: CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "DisGeNET disease terms and their Entrez genes, one row per term and gene (30,170 terms, 1,134,942 rows). Exported by PTM_Pipeline scripts/00_export_disease_tables.R, which checks that DGN_EXTID2PATHID is the exact inverse of DGN_PATHID2EXTID; this repository checks the bytes. Citations: Yu G et al., Bioinformatics 31:608 (2015), doi:10.1093/bioinformatics/btu684 (DOSE); Pinero J et al., Nucleic Acids Res 48:D845 (2020), doi:10.1093/nar/gkz1021 (DisGeNET)."
     }
   }
 }

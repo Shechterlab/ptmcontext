@@ -16,6 +16,9 @@ inputs:                # role the layers read: manifest input that fills it
   abundance: paxdb_abundance
   panther_classes: panther_protein_classes
   panther_ontology: panther_class_ontology
+  uniprot_entries: uniprot_entries
+  gene_symbols: orghs_symbol_entrez
+  disgenet: disgenet_term_genes
 
 marks:
   # Until this repository builds the site union from the studies, the marks are the release's own sites.
@@ -173,6 +176,51 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     min_size: 10
     background: other reviewed human proteins
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Disease families (scripts/14_disease_enrichment.py): DisGeNET terms (as DOSE 4.4.0 ships them) gathered into
+  # families by name (the release's rules, sites/data/methylarginine_disease_families.yaml); the sets are Entrez genes,
+  # each protein's through its UniProt primary gene name (the first of several) and org.Hs.eg.db's symbols. Every
+  # reviewed protein's genes are the universe, those with a DisGeNET term the background; the eight audited families
+  # and the additional ones are tested apart (BH within each)
+  - id: disease_family
+    test: protein_sets
+    title: Disease families (DisGeNET)
+    question: "Which disease gene sets are over-represented?"
+    sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by disease family: the eight audited families (one-sided hypergeometric test). Association, not causation"
+    section: Kinds of protein
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets:
+      input: disgenet
+      set: term_id
+      protein: entrez_id
+      families: {rules: sites/data/methylarginine_disease_families.yaml, by: term_name, lists: [audited]}
+    universe: snapshot
+    background: other reviewed human genes (Entrez) with a DisGeNET term
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
+  - id: disease_family_additional
+    test: protein_sets
+    title: Disease families, additional (rule-based, not audited)
+    question: "Which of the additional disease families, mostly clinical signs, are over-represented?"
+    sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by additional disease family: rule-based and not audited, mostly clinical signs, tested apart from the audited families (one-sided hypergeometric test). Association, not causation"
+    section: Kinds of protein
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets:
+      input: disgenet
+      set: term_id
+      protein: entrez_id
+      families: {rules: sites/data/methylarginine_disease_families.yaml, by: term_name, lists: [additional]}
+    universe: snapshot
+    background: other reviewed human genes (Entrez) with a DisGeNET term
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
   - id: reactome_top_level
     test: protein_sets
     title: Reactome pathways, top level
@@ -243,6 +291,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - name: Kinds of protein
         cards:
           - {analysis: panther_group, title: Protein classes}
+          - {analysis: disease_family, title: Disease}
           - {analysis: hpa_location, title: Where in the cell}
           - {analysis: reactome_top_level, title: Reactome pathways (top level)}
           - {analysis: panther_subclass, title: Protein subclasses}
@@ -253,9 +302,9 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
       - name: In more detail
-        cards: [panther_class, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
+        cards: [panther_class, {analysis: disease_family_additional, title: Disease families (additional)}, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
-    - {name: Protein function, analyses: [panther_group, panther_class, hpa_location, reactome_top_level]}
+    - {name: Protein function, analyses: [panther_group, panther_class, disease_family, disease_family_additional, hpa_location, reactome_top_level]}
     - {name: Methylation state, attributes: [state]}
     - {name: Sequence motif, analyses: [motif]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}

@@ -114,3 +114,26 @@ references:   # the data sources: cited with every export (DOIs checked on Cross
     end: 22
     year: 2022
     doi: "10.1002/pro.4218"
+  - type: article
+    authors: [{family-names: Yu, given-names: G}, {family-names: Wang, given-names: LG}, {family-names: Yan, given-names: GR}, {family-names: He, given-names: QY}]
+    title: "DOSE: an R/Bioconductor package for disease ontology semantic and enrichment analysis"
+    journal: "Bioinformatics"
+    volume: 31
+    start: 608
+    end: 609
+    year: 2015
+    doi: "10.1093/bioinformatics/btu684"
+  - type: article   # Crossref gives no volume or pages (online 2019-11-04); these are the release's (inputs/MANIFEST.tsv)
+    authors: [{family-names: Piñero, given-names: J}, {family-names: Ramírez-Anguita, given-names: JM}, {family-names: Saüch-Pitarch, given-names: J}, {name: "et al."}]
+    title: "The DisGeNET knowledge platform for disease genomics: 2019 update"
+    journal: "Nucleic Acids Res"
+    volume: 48
+    start: D845
+    year: 2020
+    doi: "10.1093/nar/gkz1021"
+  - type: software   # the Bioconductor DOI, checked on DataCite (1 Nov 2026)
+    authors: [{family-names: Carlson, given-names: M}]
+    title: "org.Hs.eg.db: Genome wide annotation for Human, R package version 3.22.0"
+    version: "3.22.0"
+    publisher: Bioconductor
+    doi: "10.18129/B9.bioc.org.Hs.eg.db"
