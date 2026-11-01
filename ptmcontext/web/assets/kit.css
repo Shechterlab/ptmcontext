@@ -270,6 +270,7 @@ details.score.small .tq .t { font-size: 0.95rem; }
 .live-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 0 1rem; }
 .live p { margin: 0.2rem 0 0.5rem; font-size: 0.9rem; color: var(--ink-2); }
 .live .src, .pcard .src { font-size: 0.75rem; color: var(--muted); }
+.ix-opts { display: flex; flex-wrap: wrap; gap: 0.4rem 0.6rem; margin: 0.1rem 0 0.5rem; }
 .af3d { position: relative; width: 100%; height: 26rem; border: 1px solid var(--line); border-radius: 0.6rem; overflow: hidden; background: #fff; }
 @media (max-width: 52rem) { details.score.small > summary { grid-template-columns: 1.4rem minmax(0, 1fr) 1.2rem; grid-template-areas: 'pm tq go' '. ans .'; } }
 

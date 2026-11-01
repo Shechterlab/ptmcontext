@@ -89,4 +89,4 @@ Isoform-to-canonical placement of marks; the site union from study tables; the r
 condensates, cell maps);
 measured backgrounds (candidates limited to residues covered by detected peptides); unit-level tests (IDRs as the
 unit); the release writer (sites and proteins tables, data dictionary, README, CHANGES, MD5SUMS); selections retested in
-the browser; interaction partners on protein pages.
+the browser.

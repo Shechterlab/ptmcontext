@@ -172,6 +172,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
               for name in sorted(run.get('inputs', {}), key=lambda n: order.index(n) if n in order else len(order))}
     return {
         'inputs': inputs,
+        'partners': web.get('partners'),
         'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),
                  'lab': web.get('lab', {}).get('name', ''), 'config': f"sites/{site['id']}.yaml"},
         'words': {**profile.words, 'marked_long': profile.words.get('marked_long', profile.words['marked'])},

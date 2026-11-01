@@ -61,17 +61,31 @@
       "type": "object",
       "additionalProperties": {
         "oneOf": [
-          {"type": "string"},
+          {
+            "type": "string"
+          },
           {
             "type": "object",
             "minProperties": 1,
             "maxProperties": 1,
             "additionalProperties": false,
             "properties": {
-              "first_of": {"type": "array", "minItems": 2, "items": {"type": "string"},
-                           "description": "each protein's units from the first input that has any for it"},
-              "all_of": {"type": "array", "minItems": 2, "items": {"type": "string"},
-                         "description": "every input's units"}
+              "first_of": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "string"
+                },
+                "description": "each protein's units from the first input that has any for it"
+              },
+              "all_of": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "string"
+                },
+                "description": "every input's units"
+              }
             }
           }
         ]
@@ -461,6 +475,35 @@
             },
             "stylesheet": {
               "type": "string"
+            }
+          }
+        },
+        "partners": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "species"
+          ],
+          "description": "interaction partners on protein pages, live from STRING; leave out for no partners card",
+          "properties": {
+            "species": {
+              "type": "integer",
+              "description": "the NCBI taxon STRING files this organism under (9606 human, 4932 budding yeast, 10090 mouse)"
+            },
+            "network": {
+              "enum": [
+                "physical",
+                "functional"
+              ],
+              "description": "the network shown first (default physical)"
+            },
+            "min_score": {
+              "enum": [
+                0.4,
+                0.7,
+                0.9
+              ],
+              "description": "the STRING score shown first (default 0.7, high confidence)"
             }
           }
         }

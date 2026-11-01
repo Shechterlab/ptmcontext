@@ -32,7 +32,9 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
   fill 2,506 more, so 79% of the phosphosites (4,702 of 5,930) are on a protein with domain data, up from 47%.
 - **A website per site, from its file:** `ptmc web` gives the Methylarginine Site Explorer's look with the site's own
   colours, pictures and words; every figure and table downloads as PDF, SVG, PNG and TSV carrying its description,
-  citation (from the site's `CITATION.cff`), versions and provenance.
+  citation (from the site's `CITATION.cff`), versions and provenance. Each protein has a page: its map, its marks
+  against its own other residues, and live cards from UniProt (with a check that the sequence has not changed),
+  AlphaFold DB, PDBe and STRING (interaction partners, linked to their own pages when they are marked too).
 - **Not built yet:** isoform placement, measured backgrounds, the release writer, the remaining 1,013 rows. See
   [docs/DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) for why this design, the alternatives, prior art and the order of work.
 

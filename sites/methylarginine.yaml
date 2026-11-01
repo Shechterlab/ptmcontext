@@ -87,3 +87,4 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
   examples: [RGG, disorder, linker, RRM]
+  partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
