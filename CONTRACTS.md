@@ -76,7 +76,10 @@ Any TSV with an accession column and a position column; the site file names them
 `exclude` conditions (`equals`, `in`, `contains`). Positions must be on the snapshot's sequences. `marks.add` appends the rows of
 further tables (each its manifest `input`, with its own `include`, `exclude` and `left_out`: rows counted on neither side).
 A site's `variants` run the same questions on other marks: each has a `label`, tables to add (`marks_add`) and its own
-`reference`; `ptmc run --variant <name>` writes it under `<outputs.folder>/variants/<name>` and records `variant` in run.json.
+`reference`, and `attributes` of the marks it adds; `ptmc run --variant <name>` writes it under
+`<outputs.folder>/variants/<name>` and records `variant` in run.json, and `ptmc web --variant <name>` builds its website in
+`<outputs.folder>/web/<name>/`. The site's own page lists the variants that have been run (`variants`: name, label,
+description, href) and a variant's page names its way back (`variant.base`): a switch in the toolbar keeps the page and selection.
 
 `marks.attributes` keeps columns of the marks table for the website only (no test reads them): each has a name
 (letters, digits and `_`), its `column`, a `label`, a `kind` (`category`, `list` or `number`), and optionally the

@@ -1333,6 +1333,108 @@
                 "description": "manifest name of a statistics table"
               }
             }
+          },
+          "attributes": {
+            "type": "object",
+            "description": "attributes of the marks the variant adds (for example which marks are the added, lower-confidence ones)",
+            "additionalProperties": {
+              "type": "object",
+              "required": [
+                "column",
+                "label"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "column": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "its name on the page"
+                },
+                "kind": {
+                  "enum": [
+                    "category",
+                    "list",
+                    "number"
+                  ],
+                  "description": "category: one value; list: several, split by separator; number"
+                },
+                "separator": {
+                  "type": "string",
+                  "description": "list: between values (default \"; \")"
+                },
+                "values": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "value -> its label on the page, in the order shown"
+                },
+                "link": {
+                  "type": "object",
+                  "required": [
+                    "column",
+                    "url"
+                  ],
+                  "additionalProperties": false,
+                  "description": "list: a column holding each value's identifier (in the same order) and the URL it opens ({} is the identifier)",
+                  "properties": {
+                    "column": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "colour": {
+                  "type": "boolean",
+                  "description": "offered in \"Colour sites by\""
+                },
+                "filter": {
+                  "type": "boolean",
+                  "description": "offered as a filter"
+                },
+                "help": {
+                  "type": "string"
+                },
+                "colours": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-fA-F]{6}$"
+                  },
+                  "description": "value -> its colour when sites are coloured by this attribute (default: a fixed palette in the order of values)"
+                },
+                "records": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "list: value -> a URL for that source's own record of the protein ({acc}), used instead of the paper link"
+                },
+                "provenance": {
+                  "type": "boolean",
+                  "description": "the attribute says how a mark was found (its studies, how it was localised, notes), not what it is: comparisons of marks show it as a caveat, and the first linked list of these gives the study strata"
+                },
+                "present": {
+                  "type": "boolean",
+                  "description": "the value is whether the column holds anything: 'yes' or 'no' (name them in values); for a filter such as \"changed in tumours\" over a column of changes"
+                },
+                "pair_with": {
+                  "type": "string",
+                  "description": "list: a second column listing one value per value of the first, in the same order; each value becomes '<value>:<its partner>' (a perturbation and its call)"
+                },
+                "control": {
+                  "enum": [
+                    "chips",
+                    "select"
+                  ],
+                  "description": "filter: chips (default) or a drop-down list, for many values"
+                }
+              }
+            }
           }
         }
       }

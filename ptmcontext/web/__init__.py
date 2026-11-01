@@ -430,8 +430,12 @@ def unit_value_data(folder: Path, listing: list, tracks: list[dict]) -> dict:
     return out
 
 
-def build(site_path: str | Path, out_root: str | Path | None = None, log=print) -> Path:
-    site = load_site(site_path)
+def build(site_path: str | Path, out_root: str | Path | None = None, log=print, variant: str | None = None) -> Path:
+    """The site's website, in <outputs.folder>/web; a variant's (site variants:, run first with ptmc run --variant) in
+    <outputs.folder>/web/<variant>, so the two link to each other and deploy together."""
+    from ..site import with_variant
+    base = load_site(site_path)
+    site = with_variant(base, variant)
     if 'website' not in site:
         raise ValueError(f"{site_path}: no website block; add website: {{name: ...}} to the site file")
     web = site['website']
@@ -439,8 +443,9 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
     root = root_of(site)
     folder = Path(out_root or root) / site['outputs']['folder']
     if not (folder / 'statistics.tsv').exists():
-        raise FileNotFoundError(f'{folder}/statistics.tsv: run the site first (ptmc run {site_path})')
-    out = folder / 'web'
+        raise FileNotFoundError(f"{folder}/statistics.tsv: run the site first (ptmc run {site_path}{' --variant ' + variant if variant else ''})")
+    main = Path(out_root or root) / base['outputs']['folder']
+    out = main / 'web' / variant if variant else folder / 'web'
     (out / 'assets').mkdir(parents=True, exist_ok=True)
 
     band = web.get('band', DEFAULT_BAND)
@@ -459,6 +464,11 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
     art = (root / web['art']).read_text() if web.get('art') else default_art(profile)
     logo = (root / web['lab']['logo']).read_text() if web.get('lab', {}).get('logo') else ''
     data = site_data(site, folder, profile)
+    # the switch between the site and its variants: each variant that has been run, and the way back
+    if variant:
+        data['variant'] = {**site['variant'], 'base': '../'}
+    data['variants'] = [{'name': n, 'label': v['label'], 'description': v.get('description', ''), 'href': f'{n}/'}
+                        for n, v in (base.get('variants') or {}).items() if not variant and (main / 'variants' / n / 'statistics.tsv').exists()]
     cit = data['citation']
     run = data['run']
     fasta = Path(run.get('inputs', {}).get(site['snapshot']['input'], {}).get('file', ''))

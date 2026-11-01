@@ -576,3 +576,5 @@ a.exp-btn { display: inline-flex; align-items: center; text-decoration: none; }
 /* the Sites table fits the card: no blanket minimum width, long lists wrap within a bound */
 .sites-tbl td.wrapok { min-width: 0; max-width: 16rem; }
 .sites-tbl th, .sites-tbl td { padding-left: 0.45rem; padding-right: 0.45rem; }
+.vswitch { margin-left: auto; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.84rem; font-weight: 600; color: var(--ink-2); white-space: nowrap; padding: 0 0.4rem; cursor: pointer; }
+.vswitch input { accent-color: var(--accent); }

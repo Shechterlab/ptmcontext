@@ -520,6 +520,17 @@ variants:                # the same questions on other marks; ptmc run --variant
         include: [{column: in_analyses_with_lower_confidence, equals: "true"}]
         left_out: [{column: in_analyses_with_lower_confidence, equals: "false"}]   # the others are on neither side
     reference: {statistics: methylarginine_statistics_lower_confidence_v1_4_3}
+    attributes:
+      confidence:
+        column: in_analyses_with_lower_confidence
+        present: true
+        label: Confidence
+        kind: category
+        values: {"no": Site, "yes": Lower-confidence site}
+        colours: {"no": "#334155", "yes": "#C9A227"}
+        filter: true
+        help: "A lower-confidence site: an arginine a study reports as methylated whose records each fail a site test, counted here because its own evidence covers the arginine and leaves the methyl group on an arginine"
+
 
 outputs: {folder: out/methylarginine}
 citation: sites/methylarginine.citation.cff   # the citation, data sources, version and date: edit there

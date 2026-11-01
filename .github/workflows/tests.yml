@@ -30,6 +30,8 @@ jobs:
             inputs/interactions/cdcode_2.3_condensate_members_2026-10-16.tsv
             releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
             releases/v1.4.3/statistics_v1.4.3.tsv
+            releases/v1.4.3/human_methylarginine_lower_confidence_sites_v1.4.3.tsv
+            releases/v1.4.3/statistics_with_lower_confidence_v1.4.3.tsv
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
         with:

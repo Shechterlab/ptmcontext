@@ -147,7 +147,7 @@ def cmd_stage(a) -> int:
 
 def cmd_web(a) -> int:
     from . import web
-    web.build(a.site, out_root=a.out_root)
+    web.build(a.site, out_root=a.out_root, variant=a.variant)
     return 0
 
 
@@ -210,6 +210,7 @@ def main(argv=None) -> int:
     s = sub.add_parser('web', help="build a site's website from its run (ptmc run first)")
     s.add_argument('site')
     s.add_argument('--out-root', default=None, help='where outputs.folder is (default: this repository)')
+    s.add_argument('--variant', default=None, help="build one of the site's variants (run it first), into <outputs.folder>/web/<name>")
     s.set_defaults(fn=cmd_web)
 
     s = sub.add_parser('pages', help='gather built sites and a landing page into one folder to publish')

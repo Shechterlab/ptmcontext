@@ -57,7 +57,8 @@ def with_variant(site: dict, name: str | None) -> dict:
     if v is None:
         raise ValueError(f"{site['id']} has no variant {name!r} (it has {sorted(site.get('variants') or {}) or 'none'})")
     out = copy.deepcopy(site)
-    out['marks'] = {**out['marks'], 'add': [*out['marks'].get('add', []), *v.get('marks_add', [])]}
+    out['marks'] = {**out['marks'], 'add': [*out['marks'].get('add', []), *v.get('marks_add', [])],
+                    'attributes': {**out['marks'].get('attributes', {}), **v.get('attributes', {})}}
     if 'reference' in v:
         out['reference'] = v['reference']
     out['outputs'] = {**out['outputs'], 'folder': str(Path(out['outputs']['folder']) / 'variants' / name)}

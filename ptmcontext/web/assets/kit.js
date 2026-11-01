@@ -171,7 +171,13 @@
     const t = [['overview', 'Overview', sel ? 'selection' : null], ...K.tabs.map(f => f()).filter(Boolean), ['statistics', 'Statistics', D.rows.length], ['method', 'Method', null]];
     const on = v => S.view === v || (K.views[S.view]?.tab === v);
     $('#tabs').innerHTML = `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>` + t.map(([v, name, n]) => `<a class="tab" role="tab" href="${esc(link(v))}" aria-selected="${on(v)}">${name}` +
-      (n != null ? ` <span class="count${n === 'selection' ? ' sel' : ''}"${n === 'selection' ? ' title="Every question here is tested again on your selection"' : ''}>${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + '</a>').join('');
+      (n != null ? ` <span class="count${n === 'selection' ? ' sel' : ''}"${n === 'selection' ? ' title="Every question here is tested again on your selection"' : ''}>${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + '</a>').join('') + variantSwitch();
+  }
+  // the site's variants (the same questions on other marks, such as with lower-confidence sites): a switch to each,
+  // and in a variant the switch back; the page, its selection and its place are kept
+  function variantSwitch() {
+    const sw = (on, href, label, help) => `<label class="vswitch" title="${esc(help || '')}"><input type="checkbox" data-variant-href="${esc(href)}"${on ? ' checked' : ''}> ${esc(label)}</label>`;
+    return D.variant ? sw(true, D.variant.base, D.variant.label, D.variant.description) : (D.variants || []).map(v => sw(false, v.href, v.label, v.description)).join('');
   }
 
   // ---- Overview: tiles. Each tile is a question with its most telling classes, and opens the question's figure ------
@@ -885,6 +891,7 @@
   document.addEventListener('keydown', e => { const th = e.target.closest?.('th[data-psort], th[data-ssort]'); if (th && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); th.click(); } });
   document.addEventListener('input', e => { if (e.target.id === 'f-sq') { clearTimeout(timer); timer = setTimeout(() => { S.sq = e.target.value.trim(); S.nStat = 200; writeHash(false); render(); const f = $('#f-sq'); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } }, 200); } });
   document.addEventListener('change', e => {
+    if (e.target.dataset?.variantHref != null) { location.href = e.target.dataset.variantHref + location.hash; return; }
     if (e.target.id === 'f-a') { S.a = e.target.value; S.nStat = 200; writeHash(false); render(); }
     if (e.target.id === 'f-m') { S.m = e.target.value; S.nStat = 200; writeHash(false); render(); }
   });

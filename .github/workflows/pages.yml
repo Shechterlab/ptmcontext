@@ -43,6 +43,8 @@ jobs:
             inputs/interactions/cdcode_2.3_condensate_members_2026-10-16.tsv
             releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
             releases/v1.4.3/statistics_v1.4.3.tsv
+            releases/v1.4.3/human_methylarginine_lower_confidence_sites_v1.4.3.tsv
+            releases/v1.4.3/statistics_with_lower_confidence_v1.4.3.tsv
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
         with:
@@ -51,7 +53,9 @@ jobs:
       - name: Methylarginine site
         run: |
           ptmc run sites/methylarginine.yaml --root reference
+          ptmc run sites/methylarginine.yaml --root reference --variant with_lower_confidence
           ptmc web sites/methylarginine.yaml
+          ptmc web sites/methylarginine.yaml --variant with_lower_confidence
       - name: Yeast phosphosites, staged from UniProt, MobiDB and SHEPHARD
         run: |
           ptmc stage uniprot UP000002311 --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast

@@ -180,3 +180,45 @@ def test_an_excluded_row_is_not_pending():
 def test_unknown_with_keys_are_named():
     with pytest.raises(ValueError, match="does not know: \\['colour'\\]"):
         L.get('regions', None, {'role': 'r', 'colour': {}}, 'x')
+
+
+def test_a_variant_adds_marks_from_another_table(tmp_path):
+    """A site's variant (variants:) runs the same questions with the rows of another table added to the marks: those its
+    conditions keep are marks, those it sets aside are on neither side; it is written beside the site, and its website
+    in a folder of the site's, each with a switch to the other."""
+    root = _toy_site(tmp_path)
+    data = root / 'data'
+    # a second table in the marks' own layout: one row counted (P1 R11), one set aside (P1 R22), one dropped (P2 R6)
+    pd.DataFrame({'acc': ['P1', 'P1', 'P2'], 'pos': [11, 22, 6], 'counted': ['true', 'false', 'no record']}).to_csv(data / 'extra.tsv', sep='\t', index=False)
+    man = json.loads((root / 'sites' / 'toy.inputs.json').read_text())
+    man['inputs']['toy_extra'] = {'file': 'extra.tsv', 'md5': md5_file(data / 'extra.tsv'), 'source': 'synthetic, for a test',
+                                  'version': 'test 1', 'licence': 'CC0 1.0'}
+    (root / 'sites' / 'toy.inputs.json').write_text(json.dumps(man, indent=1))
+    site = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
+    site['variants'] = {'more': {'label': 'With more marks', 'marks_add': [
+        {'input': 'toy_extra', 'include': [{'column': 'counted', 'equals': 'true'}], 'left_out': [{'column': 'counted', 'equals': 'false'}]}],
+        'attributes': {'tier': {'column': 'counted', 'present': True, 'label': 'Tier', 'kind': 'category',
+                                'values': {'no': 'Mark', 'yes': 'Added mark'}, 'filter': True}}}}
+    (root / 'sites' / 'toy.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
+    base = S.run(root / 'sites' / 'toy.yaml', root=data, log=lambda *_: None)
+    more = S.run(root / 'sites' / 'toy.yaml', root=data, log=lambda *_: None, variant='more')
+    assert more.record['marks']['counted'] == base.record['marks']['counted'] + 1
+    assert more.record['marks']['added'] == {'toy_extra': {'marks': 1, 'left_out': 1}} and more.record['variant']['name'] == 'more'
+
+    def tot(run):
+        r = run.rows[(run.rows['analysis'] == 'confidence') & (run.rows['method'] == 'fisher')].iloc[0]
+        return int(r['a'] + r['b']), int(r['c'] + r['d'])
+    (m0, o0), (m1, o1) = tot(base), tot(more)
+    assert (m1, o1) == (m0 + 1, o0 - 2)            # R11 moves to the marks; R22 is on neither side
+    assert (root / 'out' / 'toy' / 'variants' / 'more' / 'statistics.tsv').exists()
+
+    page = lambda p: json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', p.read_text(), re.S).group(1))  # noqa: E731
+    main = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None)
+    var = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None, variant='more')
+    assert var == root / 'out' / 'toy' / 'web' / 'more' / 'index.html'
+    assert page(main)['variants'] == [{'name': 'more', 'label': 'With more marks', 'description': '', 'href': 'more/'}]
+    v = page(var)
+    assert v['variant']['base'] == '../' and v['variants'] == [] and 'tier' in v['attribute_specs']
+    assert 'tier' not in page(main)['attribute_specs']
+    with pytest.raises(ValueError, match='no variant'):
+        S.run(root / 'sites' / 'toy.yaml', root=data, log=lambda *_: None, variant='other')
