@@ -56,13 +56,13 @@
   };
 
   // ---- a protein's page: as the Methylarginine Site Explorer's ------------------------------------------------------
-  const PV = { acc: '', rec: null, err: '', af: null, uni: null, uniJson: null, pdb: null, pdbAll: false, ix: null, site: null, more: false, fn: false, open: {}, scrolled: null };
+  const PV = { acc: '', rec: null, err: '', af: null, uni: null, uniJson: null, pdb: null, pdbAll: false, ix: null, site: null, span: null, spanArg: '', more: false, fn: false, open: {}, scrolled: null };
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('pfold')) PV.open[d.id] = d.open; }, true);
   document.addEventListener('click', e => { if (PV.more && !e.target.closest('.more-links')) { PV.more = false; const m = document.getElementById('more-menu'); if (m) m.hidden = true; } });
   const SPECS = D.attribute_specs || {}, AT = D.mark_attributes || [];
   function load(acc) {
     if (PV.acc === acc) return;
-    Object.assign(PV, { acc, rec: null, err: '', af: null, uni: null, uniJson: null, pdb: null, pdbAll: false, ix: null, more: false, fn: false, open: {}, scrolled: null });
+    Object.assign(PV, { acc, rec: null, err: '', af: null, uni: null, uniJson: null, pdb: null, pdbAll: false, ix: null, span: null, spanArg: '', more: false, fn: false, open: {}, scrolled: null });
     IXS.all = false; K.map?.reset();
     loadProtein(acc).then(r => { if (PV.acc === acc) { PV.rec = r; K.render(); } },
       () => { if (PV.acc === acc) { PV.err = location.protocol === 'file:' ? 'This copy of the site cannot read the protein files from disk. Open the hosted site, or index.html through a local web server.' : 'The protein’s file could not be read.'; K.render(); } });
@@ -70,7 +70,7 @@
   const AF_BINS = [[90, '#0053d6', 'very high (pLDDT > 90)'], [70, '#65cbf3', 'confident (70–90)'], [50, '#ffdb13', 'low (50–70)'], [0, '#ff7d45', 'very low (< 50)']];
   const afColour = v => AF_BINS.find(([t]) => v > t || t === 0)[1];
   const mapCtx = () => ({ p: byAcc[PV.acc], rec: PV.rec, uni: PV.uniJson, uniFailed: PV.uniFailed, af: PV.af && !PV.af.failed && !PV.af.none ? PV.af : null, afFailed: PV.af?.failed, afNone: PV.af?.none,
-    selected: K.sel?.active() ? K.sel.selectedPositions(PV.acc) : null, site: PV.site });
+    selected: K.sel?.active() ? K.sel.selectedPositions(PV.acc) : null, site: PV.site, span: PV.span });
   function drawMap() { const el = document.getElementById('pmap'); if (el && PV.rec) K.map.render(el, mapCtx()); }
   const site = pos => `${(PV.rec.seq || '')[pos - 1] || D.residues?.[0] || ''}${pos}`;
   function markClasses(m) { return COLS.map((aid, k) => [aid, m[2][k]]); }
@@ -138,10 +138,17 @@
     const [acc, sitePos] = String(arg).split('/');
     const p = byAcc[acc];
     if (!p) return `<p class="empty">No ${esc(W.marks)} on ${esc(acc)} in this site. <a href="#proteins">All proteins</a></p>`;
-    load(acc); PV.site = sitePos ? +sitePos : null;
+    // #protein/ACC/216 opens a mark's card; #protein/ACC/120-180 opens the map zoomed to a region (an IDR, from its page)
+    const span = /^(\d+)-(\d+)$/.exec(sitePos || '');
+    load(acc); PV.site = sitePos && !span ? +sitePos : null;
+    if (!span) { PV.span = null; PV.spanArg = ''; }
+    else if (PV.spanArg !== sitePos) {
+      const a = Math.max(1, +span[1]), b = Math.min(p.len, +span[2]), pad = Math.max(5, Math.round((b - a + 1) * 0.15));
+      PV.span = [a, b]; PV.spanArg = sitePos; PV.scrolled = null; K.map.state.zoom = [Math.max(1, a - pad), Math.min(p.len, b + pad)];
+    }
     if (PV.rec && PV.site && !PV.rec.marks.some(m => m[0] === PV.site)) PV.site = null;
     const selTxt = K.sel?.active() ? `${int(K.sel.nMarks())} ${esc(W.marks)} · selection` : `all ${esc(W.marks)}`;
-    const head = `<p class="crumb"><a href="#overview">Overview</a> › <a href="#proteins">Proteins</a> <span class="muted">(${selTxt})</span> › <b>${esc(p.gene || p.acc)}</b>${PV.site ? ` › ${esc(PV.rec ? site(PV.site) : PV.site)}` : ''}</p>` +
+    const head = `<p class="crumb"><a href="#overview">Overview</a> › <a href="#proteins">Proteins</a> <span class="muted">(${selTxt})</span> › <b>${esc(p.gene || p.acc)}</b>${PV.site ? ` › ${esc(PV.rec ? site(PV.site) : PV.site)}` : PV.span ? ` › ${int(PV.span[0])}–${int(PV.span[1])}` : ''}</p>` +
       `<div class="prot-head"><h2>${esc(p.gene || p.acc)} <small>${esc(p.name)}</small></h2>` +
       `<p class="aliases" id="aliases"></p><div class="fn" id="fn"><p class="muted">Asking UniProt for its function…</p></div>` +
       `<div class="prot-chips"><span class="chip mono">${esc(p.acc)}</span>${PV.rec?.entry ? `<span class="chip mono">${esc(PV.rec.entry)}</span>` : ''}<a class="btn small" href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}" target="_blank" rel="noopener">UniProt ↗</a>` +
@@ -260,6 +267,10 @@
     const acc = String(arg).split('/')[0];
     if (!PV.rec || PV.acc !== acc) return;
     if (PV.site && PV.scrolled !== PV.site) { PV.scrolled = PV.site; requestAnimationFrame(() => document.getElementById('site-card')?.scrollIntoView({ block: 'center' })); }
+    else if (PV.span && PV.scrolled !== String(PV.span)) {          // the map, just below the sticky toolbar
+      PV.scrolled = String(PV.span);
+      requestAnimationFrame(() => { const t = document.getElementById('p-map'); if (t) scrollTo(0, t.getBoundingClientRect().top + scrollY - (document.querySelector('.toolbar')?.offsetHeight || 0) - 8); });
+    }
     // the function's More/Less only when there is more
     requestAnimationFrame(() => { const t = document.querySelector('.fn-text'), b = document.querySelector('[data-fn-more]'); if (t && b && !PV.fn) b.hidden = t.scrollHeight <= t.clientHeight + 2; });
     drawMap();

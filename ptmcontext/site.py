@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from . import __version__
@@ -251,7 +252,9 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
                     attributes: pd.DataFrame | None = None, layers: dict | None = None) -> dict:
     """What the protein pages read: each marked residue with its window and its class in every analysis (marks.tsv);
     each protein's marks and other candidate residues per class (protein_counts.tsv); the proteins (proteins.tsv); and
-    the regions the layers draw (units.tsv, and what each kind is: tracks.json)."""
+    the regions the layers draw (units.tsv, and what each kind is: tracks.json); and, for a kind whose track carries
+    numbers (Track.values), each of its regions with them and with the marks and other candidate residues inside it
+    (units_<kind>.tsv)."""
     from .snapshot import window
     m = marked[['accession', 'position']].copy()
     m['residue'] = [snap.residue_at(a, p) for a, p in zip(m['accession'], m['position'])]
@@ -285,9 +288,48 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
     proteins = pd.DataFrame([{**{'accession': a}, **{k: snap.describe(a)[k] for k in ('gene', 'name', 'entry')},
                               'length': snap.length(a), 'sequence_md5': snap.sequence_md5(a),
                               'marks': int(n_marks.get(a, 0)), 'candidates': int(cand.get(a, 0))} for a in accs])
-    units, tracks = drawn_tracks(layers or {}, ctx, set(accs))
-    return {'marks.tsv': m.sort_values(['accession', 'position']), 'protein_counts.tsv': pd.concat(counts, ignore_index=True),
-            'proteins.tsv': proteins, 'units.tsv': units, 'tracks.json': tracks}
+    valued: dict = {}
+    units, tracks = drawn_tracks(layers or {}, ctx, set(accs), values=valued)
+    out = {'marks.tsv': m.sort_values(['accession', 'position']), 'protein_counts.tsv': pd.concat(counts, ignore_index=True),
+           'proteins.tsv': proteins, 'units.tsv': units, 'tracks.json': tracks}
+    if valued:
+        # the candidate residues as the tests counted them (any question's: they are the same residues)
+        k = next(iter(kept.values()), None)
+        if k is not None:
+            cand, is_m, is_l = k['annotated'][['accession', 'position']], k['is_marked'], k['is_left']
+        else:
+            cand = snap.residues(profile.residues, accessions=accs)[['accession', 'position']]
+            keys = set(zip(marked['accession'], marked['position'].astype(int)))
+            is_m = pd.Series([(a, int(p)) in keys for a, p in zip(cand['accession'], cand['position'])], index=cand.index)
+            is_l = pd.Series(False, index=cand.index)
+        for t in tracks:
+            if t['kind'] in valued:
+                out[t['values']['table']] = unit_values(valued[t['kind']], [c['name'] for c in t['values']['columns']], cand, is_m, is_l)
+    return out
+
+
+def unit_values(units: pd.DataFrame, columns: list[str], residues: pd.DataFrame, is_marked: pd.Series, is_left: pd.Series) -> pd.DataFrame:
+    """Each unit with the numbers its track carries (Track.values) and what is inside it: `marks` (the counted marks)
+    and `other_candidates` (the other candidate residues, left-out marks counted on neither side, as the tests count
+    them). Columns: accession, start, end, length, class, the values (up to 6 significant digits, empty for missing),
+    marks, other_candidates."""
+    units = units.sort_values(['accession', 'start', 'end'], kind='stable')
+    acc, start, end = units['accession'].astype(str).to_numpy(), units['start'].astype(int).to_numpy(), units['end'].astype(int).to_numpy()
+    out = pd.DataFrame({'accession': acc, 'start': start, 'end': end, 'length': end - start + 1,
+                        'class': units['class'].astype(str).to_numpy() if 'class' in units.columns else ''})
+    for c in columns:
+        out[c] = [ST.cell(v, 'number') for v in units[c]] if c in units.columns else ''
+    r_acc, r_pos = residues['accession'].astype(str).to_numpy(), residues['position'].to_numpy(dtype=np.int64)
+
+    def inside(keep: np.ndarray) -> np.ndarray:
+        by = {a: np.sort(g.to_numpy()) for a, g in pd.Series(r_pos[keep]).groupby(r_acc[keep])}
+        empty = np.array([], dtype=np.int64)
+        return np.array([np.searchsorted(by.get(a, empty), e, 'right') - np.searchsorted(by.get(a, empty), s, 'left')
+                         for a, s, e in zip(acc, start, end)], dtype=np.int64)
+    m, left = is_marked.to_numpy(dtype=bool), is_left.to_numpy(dtype=bool)
+    out['marks'] = inside(m)
+    out['other_candidates'] = inside(~m & ~left)
+    return out
 
 
 UNIT_OUT = ['accession', 'kind', 'start', 'end', 'label', 'source', 'class', 'ref']
@@ -299,11 +341,13 @@ def layer_words(layer: L.Layer) -> dict:
             'help': dict(layer.help), 'question': layer.question, 'sub': layer.sub, 'section': layer.section, 'needs': list(layer.needs)}
 
 
-def drawn_tracks(layers: dict, ctx: L.Context, accs: set) -> tuple[pd.DataFrame, list[dict]]:
+def drawn_tracks(layers: dict, ctx: L.Context, accs: set, values: dict | None = None) -> tuple[pd.DataFrame, list[dict]]:
     """The regions the run's layers draw on the protein pages (Layer.tracks), as one unit table (units.tsv), and what
     each is (tracks.json: its title, style, help, the roles it comes from, and the analysis whose classes colour it, or
     the classes its own units carry). Layers drawing one kind from the same roles share a track (the one whose units
-    carry a class is kept); the same kind from other roles is a track of its own, named kind.role."""
+    carry a class is kept); the same kind from other roles is a track of its own, named kind.role. A track that carries
+    numbers (Track.values) says so (`values`: the table they go to and its columns), and values, if given, receives its
+    units with them, by kind."""
     chosen: dict[tuple, tuple] = {}
     for aid, layer in layers.items():
         for t in layer.tracks:
@@ -320,7 +364,11 @@ def drawn_tracks(layers: dict, ctx: L.Context, accs: set) -> tuple[pd.DataFrame,
         own = has_class and not set(classes) <= set(layers[aid].labels)       # the file's own classes, not the question's
         meta.append({'kind': tid, 'title': t.title, 'style': t.style, 'help': t.help, 'roles': list(t.roles),
                      'analysis': aid if has_class and not own else '', **({'classes': classes} if own else {}),
-                     **({'colours': dict(t.colours)} if t.colours else {})})
+                     **({'colours': dict(t.colours)} if t.colours else {}),
+                     **({'values': {'table': f'units_{tid}.tsv', 'columns': [{'name': c, 'label': lab, 'help': h} for c, lab, h in t.values]}}
+                        if t.values else {})})
+        if t.values and values is not None:
+            values[tid] = u
         if len(u):
             frames.append(pd.DataFrame({c: (u[c].to_numpy() if c in u.columns else '') for c in UNIT_OUT if c != 'kind'} | {'kind': tid})[UNIT_OUT])
     return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=UNIT_OUT)), meta
@@ -427,6 +475,9 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
             record['output']['protein_sets.json'] = md5_file(folder / 'protein_sets.json')
         elif (folder / 'protein_sets.json').exists():
             (folder / 'protein_sets.json').unlink()
+        for stale in folder.glob('units_*.tsv'):         # a kind that no longer carries values
+            if stale.name not in outs:
+                stale.unlink()
         for name, frame in outs.items():
             if name.endswith('.json'):
                 (folder / name).write_text(json.dumps(frame, indent=1, ensure_ascii=False) + '\n')

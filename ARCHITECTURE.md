@@ -36,7 +36,8 @@ upstream ───────────► staged files ──► snapshot �
   the file (`units.READERS`: the unit table, staged MobiDB, staged InterPro; a trusted plugin may add one).
 - **Layers** are built in, made from a site file's parameters (`layers.FACTORIES`: `regions` for any interval table,
   `residue_values` for any per-residue value), or trusted plugins. Each declares the roles it reads and, optionally,
-  what it draws (`Layer.tracks`: a kind of region, its style, the roles it comes from).
+  what it draws (`Layer.tracks`: a kind of region, its style, the roles it comes from, and the numbers each region
+  carries, `Track.values`, which the run writes with the marks inside each region).
 - **The run records what the website shows**: each layer's words (title, labels, help, question, shape) in `run.json`,
   its regions in `units.tsv` and what each kind is in `tracks.json`. The website reads these, so it shows a plugin's
   or a configured layer's question exactly as a built-in one, and draws any track; it knows no layer by name.
@@ -60,7 +61,9 @@ picture gets a drawn protein with its marks. `ptmc check` confirms that every an
 tile opens its figure, and a class in it selects its marks), Sites (every mark: its protein, state, the studies that
 report it, the 15 residues around it, its context), Proteins (every protein with a mark, searchable by gene, accession, name or a gene list), a page
 per protein (its map of domains, disordered regions and marks; how its marks compare with its own other residues; its
-marks one by one; live cards from UniProt, AlphaFold DB and PDBe), All tests and Method. `ptmc run` writes what the
+marks one by one; live cards from UniProt, AlphaFold DB and PDBe), IDRs (when the run wrote IDR parameters: every IDR
+in the Das–Pappu diagram of states, the diagram's regions compared, κ with and without marks, every IDR in a table; it
+describes, and the residue tests are the statistics), All tests and Method. `ptmc run` writes what the
 protein pages read beside the statistics (`marks.tsv`, `protein_counts.tsv`, `proteins.tsv`, `units.tsv`); `ptmc
 web` splits it into 64 files, so a protein page loads one.
 
@@ -80,9 +83,9 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 **Modules.** `kit.js` is the core (state in the URL, tabs, Overview, All tests, Method, figures and downloads); the
 others register with it through `window.PTMC_MODULES`: `kit-stats.js` (the tests, for selections), `kit-select.js`
 (search, filters, the sidebar, selections and their tests), `kit-map.js` (the protein map: rows, hovers, pins, zoom,
-read-out, exports), `kit-proteins.js` (the Proteins tab and the protein page), `kit-sites.js` (the Sites tab) and
-`kit-compare.js` (what sets a selection apart from the other marks, and two selections side by side). A new view is a
-new module.
+read-out, exports), `kit-proteins.js` (the Proteins tab and the protein page), `kit-sites.js` (the Sites tab),
+`kit-idrs.js` (the IDRs tab, from a track whose values include `fcr` and `ncpr`) and `kit-compare.js` (what sets a
+selection apart from the other marks, and two selections side by side). A new view is a new module.
 
 **Comparisons.** What a selection is compared with is the Overview's baseline: the other residues of its proteins (the
 site's own tests), the site's other marks ("what sets it apart"), or another selection's marks (`vs=cmp`, `cmp=` its

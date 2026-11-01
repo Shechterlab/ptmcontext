@@ -3,8 +3,9 @@
   idr_charge  r1 to r5 for a residue inside an IDR (the IDR's region: weakly charged, Janus, strong polyampholyte,
               strongly negative, strongly positive); outside_idr; no_idr (a protein without an IDR of 20 or more)
 
-Not in the Methylarginine Site Explorer's releases: a question the rebuild adds. Each IDR's parameters (f+, f-, FCR,
-NCPR, kappa, region) are kept with the run's regions (units.tsv) for the protein pages.
+Not in the Methylarginine Site Explorer's releases: a question the rebuild adds. Each IDR is drawn on the protein pages
+(units.tsv), and its parameters (f+, f-, FCR, NCPR, kappa, region) are the track's values: the run writes them, with
+the marks and other candidate residues inside each IDR, to units_idr.tsv, which the website's IDRs page reads.
 """
 from __future__ import annotations
 
@@ -24,6 +25,14 @@ HELP = {'r1': 'In an IDR with fewer than a quarter of its residues charged (FCR 
         'r5': 'In an IDR with more than a third of its residues positive (K, R) and the rest not balancing them: strong polyelectrolytes',
         'outside_idr': 'Not inside an IDR of 20 or more residues',
         'no_idr': 'Protein has no disordered region of 20 or more residues'}
+# each IDR's parameters, written with it (Track.values): (column, label, definition)
+VALUES = (('f_plus', 'f+', 'Fraction of the IDR’s residues that are positive (K, R)'),
+          ('f_minus', 'f−', 'Fraction of the IDR’s residues that are negative (D, E)'),
+          ('fcr', 'FCR', 'Fraction of charged residues: f+ + f−'),
+          ('ncpr', 'NCPR', 'Net charge per residue: f+ − f−'),
+          ('kappa', 'κ', 'How far the IDR’s charges are segregated from each other: 0 well mixed, 1 fully segregated (Das & Pappu 2013); '
+                    'none without charged residues'),
+          ('region', 'Das–Pappu region', 'Its region of the diagram of states, 1 to 5 (the class r1 to r5)'))
 
 
 def idr_charge_units(ctx: Context, accessions: set) -> pd.DataFrame:
@@ -53,9 +62,10 @@ def idr_charge_units(ctx: Context, accessions: set) -> pd.DataFrame:
           question='Do {marks} sit in IDRs of a particular charge, against the other {residues} of the same proteins?',
           sub='{Marks} against the other {residues} of the same proteins, by the charge class of the IDR they sit in (Das–Pappu diagram of states)',
           tracks=(Track('idr', 'IDR charge', 'segments', lambda ctx, accs: idr_charge_units(ctx, accs), roles=('disorder',),
-                        help='IDRs (disordered regions merged, 20 residues or more) coloured by their region of the Das–Pappu diagram of states (FCR and NCPR)',
+                        help='IDRs (disordered regions merged, 20 residues or more), each in its region of the Das–Pappu diagram of states (from its FCR and NCPR)',
                         # negative polyelectrolytes red and positive blue, as the map's charge row
-                        colours=(('r1', '#9DB8C7'), ('r2', '#E2B44C'), ('r3', '#8E7CC3'), ('r4', '#D64545'), ('r5', '#2F6FD6'))),))
+                        colours=(('r1', '#9DB8C7'), ('r2', '#E2B44C'), ('r3', '#8E7CC3'), ('r4', '#D64545'), ('r5', '#2F6FD6')),
+                        values=VALUES),))
 def idr_charge(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     accs = set(residues['accession'])
     units = idr_charge_units(ctx, accs)

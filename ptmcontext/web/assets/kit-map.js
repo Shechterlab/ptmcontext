@@ -348,6 +348,8 @@
         rowLabel(`${row[1]} v${af.version}`, 10, `${row[3]}. Bands: ${AF_BINS.map(b => b[2]).join(', ')}`); y += 18;
       }
     }
+    // a region the page was opened at (#protein/ACC/120-180): a faint band behind every row
+    if (!ex && ctx.span && inView(ctx.span[0], ctx.span[1])) parts.unshift(`<rect x="${X(Math.max(za, ctx.span[0]) - 0.5).toFixed(1)}" y="0" width="${(X(Math.min(zb, ctx.span[1]) + 0.5) - X(Math.max(za, ctx.span[0]) - 0.5)).toFixed(1)}" height="${y}" fill="${css('--accent') || '#c2410c'}" opacity="0.08" pointer-events="none"/>`);
     if (!ex) parts.push(`<line id="map-cross" x1="0" x2="0" y1="0" y2="${y}" stroke="${INK}" stroke-width="0.6" stroke-dasharray="2 2" visibility="hidden" pointer-events="none"/><rect id="map-drag" x="0" y="0" width="0" height="${y}" fill="${INK}" opacity="0.08" visibility="hidden" pointer-events="none"/>`);
     M.items = items;
     M.drawn = drawnRows;
