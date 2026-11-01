@@ -35,6 +35,15 @@
       "licence": "MIT (shephard-data LICENSE)",
       "role": "input",
       "note": "42,691 of 44,222 domains kept: those on the 19,696 entries whose sequence equals the snapshot's. Downloaded: c5c956c_shprd_domains_ecod_domainmapper.tsv MD5 d5fe4c8dd51f065a96c78eab9d37d975; c5c956c_human_proteome_clean.fasta MD5 b38f2cae97e4156d9cf250139d20758d"
+    },
+    "interpro_domains": {
+      "file": "inputs/annotation/interpro_108.0_domain_intervals.tsv",
+      "md5": "390a8429f7c5425ae06ef1fc4ffcb268",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/interpro/releases/108.0/protein2ipr.dat.gz (md5 d722648460460c6259bfd3a05ad00fef) and entry.list",
+      "version": "InterPro 108.0",
+      "licence": "CC0 1.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/00_stage_context_sources.py --interpro-source bulk; this repository checks the bytes."
     }
   }
 }
