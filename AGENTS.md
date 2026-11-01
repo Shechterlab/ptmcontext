@@ -9,7 +9,7 @@
    from a profile; organisms, sources and analyses from a site file.
 4. **Every input is in a manifest** with its source, release or date, licence and MD5. Staging is the only step that
    uses the network.
-5. **Unpublished lab data stay out** (MicroDomains and dtIDR material included). Ask when unsure.
+5. **Unpublished lab data and analyses stay out**, and so do plans for them. Ask when unsure.
 6. **Branches only.** Never push to `main`; the owner reviews and merges, and creates tags and releases.
 7. **Report what happened**: tests run and their output, what was skipped, what could not be verified.
 

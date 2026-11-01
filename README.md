@@ -56,7 +56,7 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
     it is and where it comes from and a click that pins it with its links), a card per site with its evidence, and
     live cards from AlphaFold DB, PDBe and STRING.
 - **Not built yet:** isoform placement, measured backgrounds, the release writer, the remaining 687 rows. See
-  [docs/DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) for why this design, the alternatives, prior art and the order of work.
+  [ARCHITECTURE.md](ARCHITECTURE.md) for how the pieces fit and what is not built yet.
 
 ## Publishing
 

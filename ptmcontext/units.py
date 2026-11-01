@@ -5,8 +5,8 @@ the unit's own. start and end are 1-based and inclusive. kind is a short word: d
 idr (disordered regions merged and at least 20 residues), domain, flank, segment, site, ... A site is a unit of
 length 1, so the same tests and drawings serve residues and regions.
 
-Builders here read the inputs PTM_Pipeline stages (inputs/annotation/). Units made in another repository (MicroDomains'
-flanks, the IDR Explorer's charged segments) are written as a unit table there and read with read_units.
+Builders here read the inputs PTM_Pipeline stages (inputs/annotation/). Units made in another repository (a lab's own
+regions, the IDR Explorer's charged segments) are written as a unit table there and read with read_units.
 """
 from __future__ import annotations
 
