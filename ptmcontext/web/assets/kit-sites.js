@@ -60,7 +60,7 @@
   function view() {
     if (!SD()) return `<div class="page-head"><h2>${esc(cap(W.marks))}</h2></div><p class="muted">Loading the ${esc(W.marks)}…</p>`;
     const rs = rows(), shown = rs.slice(0, T.n), cols = columns(), np = new Set(rs.map(m => m[0])).size;
-    return `<div class="page-head"><h2>${esc(cap(W.marks))}: ${int(rs.length)} of ${int(SD().marks.length)} on ${int(np)} protein${np === 1 ? '' : 's'}</h2>${K.expBar(['tsv'], 'sites-exp', 'the sites')}</div>` +
+    return `<div class="page-head"><h2>${esc(cap(W.marks))}: ${int(rs.length)} of ${int(SD().marks.length)} on ${int(np)} protein${np === 1 ? '' : 's'}</h2>${K.expBar(['tsv'], 'sites-exp', 'the sites', 'data')}</div>` +
       `<p class="page-sub">Every ${esc(W.mark)}${K.sel.active() ? ' of your selection' : ''}: its protein, its attributes and where each comes from, the 15 residues around it and its context. A row opens its card on the protein’s page; a header sorts.</p>` +
       `<div id="sites-quick">${quick()}</div>` +
       `<div class="tbl-card" id="sites-table"><table class="tbl sites-tbl"><thead><tr>${cols.map(([k, t]) => `<th data-ssort="${esc(k)}" tabindex="0"${T.sort === k ? ` aria-sort="${T.desc ? 'descending' : 'ascending'}"` : ''}>${esc(t)}${T.sort === k ? (T.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +

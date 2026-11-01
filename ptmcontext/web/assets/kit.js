@@ -360,6 +360,7 @@
       `<p><b>Privacy.</b> The site sets no cookies and uses no tracking or analytics. Your searches, filters and selections stay in this page and its address; every test on them runs in your browser, and nothing is sent to a server. This browser keeps only your preferences (theme, the sidebar’s pin and width, the protein map’s rows) and the selections you save, in its local storage; clear them with your browser’s site data. A protein page asks these services for that protein’s public data, by its accession only: ${esc(live.join(', '))}. Downloads are made in the browser.</p></section>`;
   }
   K.sections.method = () => [['m-g1', 'The tests', 0], ['m-tests', 'How the tests work', 1], ['m-questions', 'Questions, and what made each', 1], ['m-parity', 'Checked against the release', 1],
+    ['m-gq', 'Each question', 0], ...D.analyses.map(a => [`m-q-${a.id}`, a.title, 1]),
     ['m-g2', 'The data', 0], ['m-data', 'Data', 1], ['m-sources', 'Sources', 1], ['m-g3', 'The site', 0], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1], ['m-privacy', 'Licences and privacy', 1]]
     .filter(([id]) => (id !== 'm-parity' || D.run.parity) && (id !== 'm-sources' || Object.values(D.attribute_specs || {}).some(x => x.kind === 'list' && x.link)));
   // the Overview's sections and their questions: jumps on the tiles, links from an opened question (keeping the
@@ -388,7 +389,7 @@
     const strat = a.kind === 'protein_sets' && rows.some(r => !r.selection && STRAT[a.id + '\u0000' + r.category]) ? ` Hover a set for the same test within protein abundance deciles${nW + nL ? `: of the ${int(nDir)} sets that differ, ${int(nDir - nW - nL)} hold there, ${int(nW)} keep their direction without reaching q ≤ ${PADJ} (◌) and ${int(nL)} lose it (○)` : ''}.` : '';
     return `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3>` +
       `<p class="sub">${vsOn() ? `Each ${a.kind === 'protein_sets' ? 'set: the share of your selection’s proteins in it (filled) and of the other proteins (hollow)' : `class: the share of your selection’s ${esc(W.marks)} in it (filled) and of ${esc(vsName())} (hollow)`}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}` : `${esc(a.sub)}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}`}.${strat} <a href="#method">How it was tested</a> · <a href="#statistics?a=${encodeURIComponent(a.id)}">all tests</a></p></div>` +
-      `<div class="exp" role="group" aria-label="Download ${esc(a.title)}">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-exp="${k}" data-aid="${esc(a.id)}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}</div></div>` +
+      `<div class="exp" role="group" aria-label="Download ${esc(a.title)}">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-exp="${k}" data-aid="${esc(a.id)}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}${methodLink(a.id)}</div></div>` +
       `<div class="drows">${rows.some(r => r.vs) ? shareRows(shown, 'drow') : shown.map(r => dotRow(r, fkeyOf(a))).join('') + axisNote()}</div>${toggle}${rows.some(r => r.descriptive) ? '' : `<p class="summary">${summaryLine(rows)}</p>`}</div>`;
   }
   // ---- Statistics: every test ----------------------------------------------------------------------------------------
@@ -451,11 +452,31 @@
       `<section id="m-questions"><h3>Questions, and what made each</h3><p>Each question is a layer (built in, made from the site file’s parameters, or a plugin the site trusts, with its package and version) or a protein-set test; the inputs it reads are the roles it names.</p>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th><th>Reads</th><th>What it compares</th></tr></thead><tbody>` +
       D.analyses.map(a => `<tr><td>${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag">new</span>' : ''}</td><td class="wrapok">${esc(madeByText(a.id))}</td><td class="mono wrapok">${esc((a.roles || []).join(', '))}</td><td class="wrapok">${esc(a.describe || a.sub || '')}</td></tr>`).join('') +
-      `</tbody></table></div></section>` + par +
+      `</tbody></table></div></section>` + D.analyses.map(questionMethod).join('') + par +
       citeSection() + privacySection() +
       sourcesSection() +
       `<section id="m-made"><h3>How this site is made</h3><p>This site is one file, <span class="mono">${esc(D.site.config)}</span>: which mark, which sequences and regions, which questions, its colours and pictures. ptmcontext ${esc(D.kit.version)} (commit <span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(R.written))}. Its citation, version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>` +
       `<p>Every download carries the same block: what it shows and how it was tested, how to cite it and its data sources, the site’s and ptmcontext’s versions, the sequences and inputs it came from, and when and where it was exported. It is printed under each figure and kept in the file itself: the SVG’s metadata, the PNG’s text fields, the PDF’s properties and the TSV’s # lines.</p></section></div>`;
+  }
+
+  // a question's own Method section (#method/q-<id>): what it asks, what made it, what it reads, how it is tested,
+  // its classes, and whether it equals the published release
+  function questionMethod(a) {
+    const IN = D.inputs || {}, R = D.run, set = a.kind === 'protein_sets';
+    const reads = (a.roles || []).map(r => { const src = Object.values(IN).filter(x => x.role === r || (x.roles || []).includes(r)).map(x => `${x.version || ''}${x.licence ? ` (${hlicence(x.licence)})` : ''}`);
+      return `<li><span class="mono">${esc(r)}</span>${src.length ? ': ' + esc(src.join('; ')) : ''}</li>`; }).join('');
+    const checked = (R.parity?.checked || []).filter(c => c.analysis === a.id), nRows = checked.reduce((n, c) => n + c.rows, 0);
+    const parity = !R.parity ? '' : a.new ? `<p><b>Release:</b> new in the rebuild; not in the published release, so not checked against it.</p>`
+      : checked.length ? `<p><b>Release:</b> ${checked.every(c => c.equal) ? `all ${int(nRows)} rows identical to the published release` : 'some rows differ from the published release'} (${checked.map(c => `${esc(testName(a.id, c.method))}: ${int(c.rows)}`).join('; ')}).</p>` : '';
+    const labels = Object.entries(a.labels || {}).filter(([c]) => c);
+    const classes = labels.length && labels.length <= 40 ? `<details><summary>Its ${set ? 'sets' : 'classes'} (${int(labels.length)})</summary><dl class="qm-classes">${labels.map(([c, l]) => `<dt>${esc(l || c)}</dt><dd>${esc((a.help || {})[c] || '')}</dd>`).join('')}</dl></details>` : '';
+    const tests = set ? `the ${esc(W.marked)} proteins in each set against the background (${esc(a.describe || 'the other proteins')}): one-sided hypergeometric test, fold enrichment, q Benjamini–Hochberg over the question's sets${a.stratified ? '; again within protein abundance deciles (Mantel–Haenszel), a check that abundance does not explain it' : ''}`
+      : `the ${esc(W.marks)} against the other ${esc(W.residues)} of the same proteins, class by class: within each protein (Mantel–Haenszel, Robins–Breslow–Greenland CI) and pooled (Fisher’s exact test, Haldane–Anscombe odds ratio); q Benjamini–Hochberg over the question's classes`;
+    return `<section id="m-q-${esc(a.id)}" class="qm"><h3>${esc(a.title)}${a.new && R.parity ? ' <span class="newtag">new</span>' : ''}</h3>` +
+      (a.question ? `<p class="qm-q">${esc(a.question)}</p>` : '') + (a.sub ? `<p>${esc(a.sub)}.</p>` : '') +
+      `<p><b>Made by:</b> ${esc(madeByText(a.id))}. <b>Tested:</b> ${tests}.</p>` +
+      (reads ? `<p><b>Reads:</b></p><ul class="qm-reads">${reads}</ul>` : '') + parity + classes +
+      `<p class="qm-links"><a href="${esc(link('overview', a.id))}">Its figure</a> · <a href="${esc(link('statistics', '', { a: a.id }))}">Its tests</a></p></section>`;
   }
 
   // ---- citing, and provenance: every export carries the same block -----------------------------------------------------
@@ -769,7 +790,9 @@
       else { const f = make(); if (kind === 'svg') download(name + '.svg', f.svg, 'image/svg+xml'); else if (kind === 'png') await pngExport(f, name); else await pdfExport(f, name); }
     } catch (err) { alert((err && err.message) || 'The download failed.'); } finally { if (btn) { btn.disabled = false; btn.textContent = old; } }
   }
-  const expBar = (kinds, attrs, label) => `<div class="exp" role="group" aria-label="Download ${esc(label)}">${kinds.map(k => `<button type="button" class="exp-btn" data-${attrs}="${k}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}</div>`;
+  // the export buttons of a card, and its Method link (the question's own section, or a section of the Method page)
+  const methodLink = (aid, sec) => `<a class="exp-btn" href="${esc(link('method', aid ? 'q-' + aid : sec || ''))}" title="How ${aid ? 'this question was' : 'these were'} made and tested, and from what data">Method</a>`;
+  const expBar = (kinds, attrs, label, method) => `<div class="exp" role="group" aria-label="Download ${esc(label)}">${kinds.map(k => `<button type="button" class="exp-btn" data-${attrs}="${k}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}${method ? methodLink(A[method] ? method : '', A[method] ? '' : method) : ''}</div>`;
   Object.assign(K, { CIT, PAL, FF, FFH, tw, wrap, figureFrame, exportFigure, expBar, preamble, creditLines, provenance, download, hdate, htime, hlicence, shortCommit, testWords, PADJ, MIN_EFFECT, dir });
 
   // ---- render, events ------------------------------------------------------------------------------------------------
