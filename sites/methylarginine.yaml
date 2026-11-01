@@ -19,6 +19,11 @@ inputs:                # role the layers read: manifest input that fills it
   uniprot_entries: uniprot_entries
   gene_symbols: orghs_symbol_entrez
   disgenet: disgenet_term_genes
+  accession_history: uniprot_accession_history
+  cdcode_membership: cdcode_membership
+  cdcode_proteins: cdcode_proteins
+  cdcode_condensates: cdcode_condensates
+  cdcode_members: cdcode_members_2_3
 
 marks:
   # Until this repository builds the site union from the studies, the marks are the release's own sites.
@@ -221,6 +226,59 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     universe: snapshot
     background: other reviewed human genes (Entrez) with a DisGeNET term
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
+  # Biomolecular condensates (scripts/12_condensate_enrichment.py): CD-CODE's membership (export v2.2), kept for human
+  # proteins (its protein table) in human condensates that are not synthetic (its condensate table); a member named by
+  # a secondary accession counts as its current entry where the accession history names exactly one, and a member on
+  # no reviewed entry is dropped. Every condensate of five or more members is tested against the reviewed proteome
+  # (condensate_proteome) and against the proteins in any of these condensates (condensate); the release lists them by
+  # fold enrichment, then by methylated members. The release keeps a condensate whose taxon is 9606 or whose species is
+  # named Homo sapiens: in this export the name holds for every 9606 condensate and for two more (taxon 9607: RdRp
+  # condensates, LANA body), so the name alone keeps the same ones; the protein table's taxon and name always agree.
+  # The CD-CODE 2.3 confidence of each membership (0-5) is for the website's filter only.
+  - id: condensate_proteome
+    test: protein_sets
+    title: Biomolecular condensates
+    question: "Which biomolecular condensates are over-represented (CD-CODE)?"
+    sub: "CD-CODE condensates with a higher fraction of methylated members than the reviewed proteome: every human condensate (not synthetic) with at least five members, its members against all reviewed human proteins (one-sided hypergeometric test). Condensate proteins are about twice as often methylated as proteins in general, so most condensates are enriched relative to the proteome, and few relative to other condensates"
+    section: Kinds of protein
+    sets:
+      input: cdcode_membership
+      set: condensate_id
+      protein: uniprotkb_ac
+      where:
+        - {column: uniprotkb_ac, input: cdcode_proteins, key: uniprot_id, include: [{column: species_name, equals: Homo sapiens}]}
+        - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
+    names: {input: cdcode_condensates, set: uid, name: name}
+    universe: snapshot
+    whole_universe: true
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    scores: {input: cdcode_members, set: condensate_uid, protein: uniprot_accession, value: confidence_score, label: Membership confidence (CD-CODE),
+             help: "CD-CODE's 0-5 confidence that the protein belongs to the condensate (CD-CODE 2.3)", levels: [2, 3, 4, 5], max: 5}
+    filter: {label: CD-CODE condensate (methylated members), any: In any CD-CODE condensate, sets: all}   # every condensate with a methylated member, as the original
+  - id: condensate
+    test: protein_sets
+    title: Biomolecular condensates, against other condensate proteins
+    question: "Which biomolecular condensates stand out among condensate proteins (CD-CODE)?"
+    sub: "CD-CODE condensates with a higher fraction of methylated members than all condensate proteins: every human condensate (not synthetic) with at least five members, its members against the proteins in any of these condensates, about half of which are methylated (one-sided hypergeometric test)"
+    section: Kinds of protein
+    sets:
+      input: cdcode_membership
+      set: condensate_id
+      protein: uniprotkb_ac
+      where:
+        - {column: uniprotkb_ac, input: cdcode_proteins, key: uniprot_id, include: [{column: species_name, equals: Homo sapiens}]}
+        - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
+    names: {input: cdcode_condensates, set: uid, name: name}
+    universe: annotated            # the proteins in any of these condensates
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
+    background: other human proteins in CD-CODE condensates (export of 2026-03-18)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: reactome_top_level
     test: protein_sets
     title: Reactome pathways, top level
@@ -292,6 +350,7 @@ website:                  # the look and words of the website (ptmc web); layout
         cards:
           - {analysis: panther_group, title: Protein classes}
           - {analysis: disease_family, title: Disease}
+          - {analysis: condensate_proteome, title: Biomolecular condensates}   # the original's default background: the proteome
           - {analysis: hpa_location, title: Where in the cell}
           - {analysis: reactome_top_level, title: Reactome pathways (top level)}
           - {analysis: panther_subclass, title: Protein subclasses}
@@ -302,9 +361,9 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
       - name: In more detail
-        cards: [panther_class, {analysis: disease_family_additional, title: Disease families (additional)}, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
+        cards: [panther_class, {analysis: disease_family_additional, title: Disease families (additional)}, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)"}, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
-    - {name: Protein function, analyses: [panther_group, panther_class, disease_family, disease_family_additional, hpa_location, reactome_top_level]}
+    - {name: Protein function, analyses: [panther_group, panther_class, disease_family, disease_family_additional, condensate_proteome, hpa_location, reactome_top_level]}
     - {name: Methylation state, attributes: [state]}
     - {name: Sequence motif, analyses: [motif]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}

@@ -18,16 +18,18 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
 
 ## Status (pilot)
 
-- **Parity:** `sites/methylarginine.yaml` rebuilds 4,018 of the 4,659 rows (86%) of release v1.4.3's statistics table
+- **Parity:** `sites/methylarginine.yaml` rebuilds 4,178 of the 4,659 rows (90%) of release v1.4.3's statistics table
   byte for byte, from the release's inputs, without running any of its code (`tests/test_parity_v1_4_3.py`):
   - the 82 residue-level rows (motif, disorder, domain context, domain class, structure context; pooled and within
     protein);
-  - the 3,936 protein-set rows for PANTHER protein classes (grouped, top level, subclasses), Reactome top-level groups,
-    Reactome pathways, HPA locations and the DisGeNET disease families, audited and additional (Entrez genes, each
-    protein's through its UniProt gene name; the families from the release's rules, `sites/data/`)
+  - the 4,096 protein-set rows for PANTHER protein classes (grouped, top level, subclasses), Reactome top-level groups,
+    Reactome pathways, HPA locations, the DisGeNET disease families, audited and additional (Entrez genes, each
+    protein's through its UniProt gene name; the families from the release's rules, `sites/data/`), and CD-CODE's
+    human condensates against the proteome and against the other condensate proteins (members kept by CD-CODE's
+    protein and condensate tables, old accessions through UniProt's history)
     (clusterProfiler's `enricher`, rewritten in Python, and its repeat within PaxDb abundance deciles).
 
-  The rest (641 rows: condensates, functional classes, sequence proximity, crosslinks, interfaces, cell maps, eCLIP)
+  The rest (481 rows: functional classes, sequence proximity, crosslinks, interfaces, cell maps, eCLIP, DepMap, ...)
   come next, one parity check at a time.
 - **A new question, from one new layer:** `idr_charge` places each residue by the charge of the IDR it sits in, the
   region of the Das–Pappu diagram of states (CIDER's FCR, NCPR and κ, written out from the papers in
@@ -56,7 +58,7 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
     residues) and live sources (UniProt regions, variants, PTMs; AlphaFold pLDDT), each item with a hover saying what
     it is and where it comes from and a click that pins it with its links), a card per site with its evidence, and
     live cards from AlphaFold DB, PDBe and STRING.
-- **Not built yet:** isoform placement, measured backgrounds, the release writer, the remaining 687 rows. See
+- **Not built yet:** isoform placement, measured backgrounds, the release writer, the remaining 481 rows. See
   [ARCHITECTURE.md](ARCHITECTURE.md) for how the pieces fit and what is not built yet.
 
 ## Publishing

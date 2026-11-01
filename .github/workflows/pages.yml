@@ -37,6 +37,10 @@ jobs:
             inputs/annotation/panther_19.0_protein_class_ontology.tsv
             inputs/disease/dose_4.4.0_disgenet_term_genes.tsv
             inputs/disease/orghsegdb_3.22.0_symbol_entrez.tsv
+            inputs/annotation/cdcode_protein_membership_v2.2.tsv
+            inputs/annotation/cdcode_proteins_2026-03-18.csv
+            inputs/annotation/cdcode_condensates_2026-03-18.csv
+            inputs/interactions/cdcode_2.3_condensate_members_2026-10-16.tsv
             releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
             releases/v1.4.3/statistics_v1.4.3.tsv
           sparse-checkout-cone-mode: false
