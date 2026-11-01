@@ -43,6 +43,9 @@
   const s2 = v => { if (v == null) return '–'; const t = Math.abs(v).toFixed(2); return t === '0.00' ? t : (v > 0 ? '+' : '−') + t; };
   const pc = (k, n) => (n ? (100 * k / n).toFixed(k && k / n < 0.001 ? 2 : 1) + '%' : '–');
   const WORD = s => String(s).replace(/\W+/g, '_');
+  // a link inside the site, carrying the current selection: the kit's K.link, or this page's own query (on this page
+  // the hash's query is the selection's alone: q, f, m, vs, cmp)
+  const href = (v, a) => (K.link ? K.link(v, a) : '#' + v + (a ? '/' + a : '') + (location.hash.includes('?') ? '?' + location.hash.split('?')[1] : ''));
   const resHead = () => (W.residues.length <= 14 ? cap(W.residues) : 'Candidates');
 
   // ---- the data: data/units.json (or inlined in the one-file copy), read when the page is first shown ----------------
@@ -217,13 +220,14 @@
     const { rows, all } = regionRows(), rate = r => (r.cand ? r.marks / r.cand : 0), base = rate(all), max = Math.max(...rows.map(rate), 1e-9);
     const mk = cap(W.marks);
     const share = `the share of the candidate residues (${W.residues}) inside that are ${SC.on ? 'selected ' : ''}${W.marks}`;
-    return `<div class="tbl-card"><table class="tbl idr-reg"><thead><tr><th>Region</th><th class="num">IDRs</th><th class="num">With ${esc(W.marks)}</th><th class="num">Residues</th>` +
-      `<th class="num">${esc(mk)}</th><th class="num" title="Candidate residues: the ${esc(W.residues)} inside, ${esc(W.marks)} included">${esc(resHead())}</th><th title="${esc(cap(share))}">% ${esc(W.marked)}</th><th class="num" title="${esc(cap(share))}, over that of all IDRs">vs all IDRs</th></tr></thead><tbody>` +
+    const ratio = r => (base && r.cand ? `${(rate(r) / base).toFixed(2)}× all IDRs` : '');
+    const cells = (r, bar) => `<td class="num">${int(r.idrs)}<br><span class="muted small">${int(r.withM)} · ${pc(r.withM, r.idrs)}</span></td><td class="num">${int(r.res)}</td><td class="num">${int(r.marks)}</td><td class="num">${int(r.cand)}</td>` +
+      `<td>${bar ? `<span class="idr-bar" title="${esc(`${int(r.marks)} of ${int(r.cand)} candidate residues`)}"><i style="width:${(100 * rate(r) / max).toFixed(1)}%;--c:${colour(r.cls)}"></i></span> ` : ''}<b>${pc(r.marks, r.cand)}</b>${bar ? `<br><span class="muted small">${ratio(r)}</span>` : ''}</td>`;
+    return `<div class="tbl-card"><table class="tbl idr-reg"><thead><tr><th>Region</th><th class="num" title="IDRs, and below, those with ${esc(W.marks)} and their share">IDRs · with ${esc(W.marks)}</th><th class="num">Residues</th>` +
+      `<th class="num">${esc(mk)}</th><th class="num" title="Candidate residues: the ${esc(W.residues)} inside, ${esc(W.marks)} included">${esc(resHead())}</th><th title="${esc(cap(share))}, and below, over that of all IDRs">% ${esc(W.marked)}</th></tr></thead><tbody>` +
       rows.map(r => { const d = DP[regionNo(r.cls)];
-        return `<tr data-idr-reg="${esc(r.cls)}" tabindex="0" title="List the IDRs of this region"><td class="idr-rname"><i class="idr-sw" style="--c:${colour(r.cls)}"></i><b>R${regionNo(r.cls)}</b> ${esc(clsLabel(r.cls))}${d ? `<br><span class="muted small" title="${esc(`${d[0]}: ${d[1]}`)}">${esc(d[2])}; ${esc(d[1])}</span>` : ''}</td>` +
-        `<td class="num">${int(r.idrs)}</td><td class="num">${int(r.withM)} <span class="muted">${pc(r.withM, r.idrs)}</span></td><td class="num">${int(r.res)}</td><td class="num">${int(r.marks)}</td><td class="num">${int(r.cand)}</td>` +
-        `<td><span class="idr-bar" title="${esc(`${int(r.marks)} of ${int(r.cand)} candidate residues`)}"><i style="width:${(100 * rate(r) / max).toFixed(1)}%;--c:${colour(r.cls)}"></i></span> <b>${pc(r.marks, r.cand)}</b></td><td class="num">${base && r.cand ? (rate(r) / base).toFixed(2) + '×' : '–'}</td></tr>`; }).join('') +
-      `<tr class="idr-total"><td><b>All IDRs</b></td><td class="num">${int(all.idrs)}</td><td class="num">${int(all.withM)} <span class="muted">${pc(all.withM, all.idrs)}</span></td><td class="num">${int(all.res)}</td><td class="num">${int(all.marks)}</td><td class="num">${int(all.cand)}</td><td><b>${pc(all.marks, all.cand)}</b></td><td class="num">1×</td></tr></tbody></table></div>`;
+        return `<tr data-idr-reg="${esc(r.cls)}" tabindex="0" title="List the IDRs of this region"><td class="idr-rname"><i class="idr-sw" style="--c:${colour(r.cls)}"></i><b>R${regionNo(r.cls)}</b> ${esc(clsLabel(r.cls))}${d ? `<br><span class="muted small" title="${esc(`${d[0]}: ${d[1]}`)}">${esc(d[2])}; ${esc(d[1])}</span>` : ''}</td>${cells(r, true)}</tr>`; }).join('') +
+      `<tr class="idr-total"><td><b>All IDRs</b></td>${cells(all, false)}</tr></tbody></table></div>`;
   }
   function regionsTsv() {
     const { rows, all } = regionRows();
@@ -289,7 +293,7 @@
     sel();
     const xs = scoped(), np = new Set(xs.map(x => x.p)).size, withM = xs.filter(x => marksOf(x) > 0), inM = withM.reduce((s, x) => s + marksOf(x), 0);
     const nMarks = SC.on ? K.sel.nMarks() : D.counts.marks, res = xs.reduce((s, x) => s + x.len, 0);
-    const testLink = QA ? `<a href="#overview/${encodeURIComponent(QA.id)}">${esc(QA.title)}</a>` : 'the Overview';
+    const testLink = QA ? `<a href="${esc(href('overview', encodeURIComponent(QA.id)))}">${esc(QA.title)}</a>` : `<a href="${esc(href('overview'))}">the Overview</a>`;
     return `<div class="page-head"><h2>IDRs: ${int(xs.length)} on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</h2></div>` +
       `<p class="page-sub">Every IDR of the ${esc(W.marked)} proteins${SC.on ? ' in your selection' : ''}, read with its charge (FCR, the fraction of its residues charged; NCPR, its net charge per residue), how its charges are patterned (κ) and the ${esc(W.marks)} inside it. They are the row “${esc(TR.title)}” of the protein maps: ${esc(TR.help || '')}.</p>` +
       `<p class="note">This page describes; it tests nothing. The statistics are the residue tests on the Overview (${testLink}), which compare each ${esc(W.mark)} with the other ${esc(W.residues)} of its own protein. Here IDRs are pooled, so a protein with many IDRs or many ${esc(W.marks)} counts for more.${SC.on ? ` With a selection, its ${esc(W.marks)} are counted against the other candidate ${esc(W.residues)} of its proteins’ IDRs; ${esc(W.marks)} not selected are left out of both.` : ''}</p>` +
@@ -322,7 +326,9 @@
     if (K.sel?.active() && K.sel.data()) { if (!V) { load(); return ['idrs', 'IDRs', null]; } sel(); return ['idrs', 'IDRs', V.idrs.filter(x => SC.n[x.i] > 0).length]; }
     return ['idrs', 'IDRs', TR.values.n];
   });
-  K.sections.idrs = () => [['idr-diagram', 'The diagram of states', 1], ['idr-regions', 'The regions compared', 1], ['idr-kappa', 'κ', 1], ['idr-list', 'Every IDR', 1], ['idr-refs', 'References', 1]];
+  K.sections.idrs = () => [['view', 'IDRs', 1], ['idr-diagram', 'The diagram of states', 1], ['idr-regions', 'The regions compared', 1], ['idr-kappa', 'κ, with and without ' + W.marks, 1],
+    ['idr-list', 'Every IDR', 1], ['idr-refs', 'Where the parameters come from', 1],
+    ...(QA ? [['g-test', 'The test', 0], ['idr-test', QA.title, 1, href('overview', encodeURIComponent(QA.id))]] : [])];
   K.tips.push(['[data-di]', el => (V ? tipHtml(V.idrs[+el.dataset.di]) : '')]);
   K.clicks.push(
     ['[data-di]', el => openIdr(el.dataset.di)],
