@@ -1,0 +1,32 @@
+# Site: budding yeast phosphosites, provisioned from upstream only (pk stage uniprot / mobidb), with no file from any
+# other repository. The test of whether the kit serves another proteome by configuration alone.
+schema_version: 1
+id: yeast_phospho
+title: Saccharomyces cerevisiae phosphosites (UniProt)
+status: working
+mark: phospho
+manifest: sites/yeast_phospho.inputs.json      # written by pk stage
+
+snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}
+inputs:
+  disorder: mobidb_disorder                     # MobiDB consensus (prediction-disorder-th_50), as for human
+  domains: uniprot_domains                      # UniProt DOMAIN and REPEAT features: InterPro's bulk file is 17 GB
+
+marks:
+  input: uniprot_mod_res
+  accession: accession
+  position: position
+  include:
+    - {column: modification, in: [Phosphoserine, Phosphothreonine, Phosphotyrosine]}
+    - {column: evidence_class, in: [experimental, large_scale]}    # not "by similarity" or sequence analysis
+  residue_mismatch: error
+
+analyses:
+  - {id: motif, layer: motif}
+  - {id: disorder, layer: disorder}
+  - {id: idr, layer: idr}
+  - {id: domain_context, layer: domain_context}
+  - {id: domain_class, layer: domain_class}
+  - {id: structure_context, layer: structure_context}
+
+outputs: {folder: out/yeast_phospho}

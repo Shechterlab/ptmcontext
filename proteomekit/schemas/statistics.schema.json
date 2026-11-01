@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Shechterlab/proteome-kit/schemas/statistics.schema.json",
+  "title": "Statistics row",
+  "description": "One test: one row of statistics_<version>.tsv, with the columns, order and formatting of the Methylarginine Site Explorer's releases. Values are as written in the TSV (strings; empty for missing). q is Benjamini-Hochberg within (analysis, method).",
+  "type": "object",
+  "required": ["analysis", "category", "stratum", "a", "b", "c", "d", "odds_ratio", "log2_odds_ratio", "fold_enrichment", "log2_fold_enrichment", "p", "q", "method", "background", "n_strata", "odds_ratio_ci_low", "odds_ratio_ci_high"],
+  "additionalProperties": false,
+  "properties": {
+    "analysis": {"type": "string", "description": "what was tested"},
+    "category": {"type": "string", "description": "the class, motif, family or set tested"},
+    "stratum": {"type": "string", "description": "all, or the subset the test is restricted to"},
+    "a": {"$ref": "#/$defs/integer", "description": "targets in the category"},
+    "b": {"$ref": "#/$defs/integer", "description": "targets not in the category"},
+    "c": {"$ref": "#/$defs/integer", "description": "background in the category"},
+    "d": {"$ref": "#/$defs/integer", "description": "background not in the category"},
+    "odds_ratio": {"$ref": "#/$defs/number", "description": "for methods fisher (Haldane-Anscombe) and mantel_haenszel"},
+    "log2_odds_ratio": {"$ref": "#/$defs/number"},
+    "fold_enrichment": {"$ref": "#/$defs/number", "description": "k/n over M/N, for method enricher"},
+    "log2_fold_enrichment": {"$ref": "#/$defs/number"},
+    "p": {"$ref": "#/$defs/number"},
+    "q": {"$ref": "#/$defs/number"},
+    "method": {"enum": ["fisher", "mantel_haenszel", "enricher", "hypergeometric"]},
+    "background": {"type": "string", "description": "what the targets are compared with, in words"},
+    "n_strata": {"$ref": "#/$defs/integer", "description": "informative strata of a stratified test"},
+    "odds_ratio_ci_low": {"$ref": "#/$defs/number", "description": "Robins-Breslow-Greenland 95% CI, mantel_haenszel rows"},
+    "odds_ratio_ci_high": {"$ref": "#/$defs/number"}
+  },
+  "$defs": {
+    "integer": {"type": "string", "pattern": "^(|-?[0-9]+)$"},
+    "number": {"type": "string", "pattern": "^(|-?(inf|[0-9.]+(e[-+][0-9]+)?))$"}
+  }
+}

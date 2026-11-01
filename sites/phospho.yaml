@@ -1,0 +1,31 @@
+# Site: phosphosites through the same code, OFFLINE. The second mark is a test of the code, not a result: the input is
+# marked not trusted in the manifest (no build script, no release date), so this site runs only with
+# --allow-untrusted and its outputs stay out of the repository (out/ is ignored).
+schema_version: 1
+id: phospho
+title: Human phosphosites (offline pilot)
+status: offline_pilot
+mark: phospho
+
+snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}
+inputs:
+  disorder: mobidb_disorder
+  domains: interpro_domains
+
+marks:
+  input: iptmnet_master
+  accession: substrate_UniProtAC
+  position: position
+  include:
+    - {column: ptm_type, equals: PHOSPHORYLATION}
+    - {column: residue, in: [S, T, Y]}
+  residue_mismatch: drop      # records placed on other sequence versions: dropped, and counted in the run record
+
+analyses:
+  - {id: motif, layer: motif}
+  - {id: disorder, layer: disorder}
+  - {id: idr, layer: idr}
+  - {id: domain_context, layer: domain_context}
+  - {id: structure_context, layer: structure_context}
+
+outputs: {folder: out/phospho}

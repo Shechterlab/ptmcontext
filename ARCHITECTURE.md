@@ -1,0 +1,55 @@
+# Architecture
+
+One background, many marks and units. Everything that is the same for every modification and every proteome is
+written once, here; everything that differs is a file.
+
+## The pieces
+
+| Piece | Is | Lives in | Contract |
+|---|---|---|---|
+| **snapshot** | the reference sequences (UniProt release, FASTA MD5) every position refers to | `proteomekit/snapshot.py` | the FASTA's MD5 |
+| **manifest** | every input file: source, release or date, licence, MD5 | `inputs.json`, or a site's own `sites/<site>.inputs.json` | `schemas/inputs.schema.json` |
+| **staging** | the only step that uses the network: download, convert to a contract, record in a manifest | `proteomekit/stage.py`, `pk stage` | the unit and marks tables |
+| **units** | regions as rows: disordered regions, IDRs, domains, flanks, segments, sites | `proteomekit/units.py` | `schemas/units.schema.json` |
+| **layers** | an annotation of every candidate residue: a class (disorder, domain context, ...) or flags (motifs) | `proteomekit/layers/` | a `Layer` reading **roles** (`disorder`, `domains`) |
+| **profile** | everything specific to one mark: residues, states, enzymes, motifs, words | `proteomekit/profiles/<mark>.yaml` | `schemas/profile.schema.json` |
+| **tests** | is the mark over-represented in a class, pooled and within protein | `proteomekit/residue_tests.py`, `stats.py` | statistics rows |
+| **statistics** | one table every test writes into, in the published release's columns and formatting | `proteomekit/statistics.py` | `schemas/statistics.schema.json` |
+| **site** | one file choosing the mark, the snapshot, the inputs for each role, the marks, the analyses, a reference | `sites/<site>.yaml`, `pk run` | `schemas/site.schema.json` |
+| **parity** | a published output the rebuild must equal, row for row | `proteomekit/parity.py` | the reference table's MD5 |
+
+```
+           pk stage                    pk run sites/<site>.yaml
+upstream ───────────► staged files ──► snapshot ─┬─► candidate residues (profile.residues)
+(UniProt, MobiDB, …)  + manifest (MD5)            ├─► layers, by role (disorder, domains, motif, …)
+                                                  ├─► marks (site file: which table, which rows)
+                                                  └─► residue tests ─► statistics.tsv + run.json
+                                                                        └─► parity vs reference (if any)
+```
+
+## Rules the structure enforces
+
+- **Change a site by changing its file.** Mark, organism, inputs and analyses are in `sites/<site>.yaml`; no code
+  names a residue, a mark or an organism.
+- **Layers read roles, sites bind roles to inputs.** The domain layers read whatever unit table fills `domains`: InterPro
+  for the human release, UniProt's features for yeast. A new source needs a stager, not a new layer.
+- **A build never touches the network** and refuses any file whose MD5 differs from its manifest.
+- **Other repositories' code is not run.** Their outputs are data with MD5s. Their layers come in only as plugins that
+  a site names as trusted, recorded with their version in every run record.
+- **Results are proven, not assumed.** A site with a reference fails if any row changes.
+
+## How other repositories use it
+
+| Repository | Uses | How |
+|---|---|---|
+| PTM_Pipeline (methylarginine) | the tests, statistics, snapshot and release format | `pip install` at a tag; its study parsers and PRMT layers stay its own |
+| idr-explorer | units (IDRs, flanks, segments), the tests on a selection | a site file; IDR charge layers as a plugin or built in once their definitions are settled |
+| MicroDomains (private) | everything, plus its private layers | a plugin package that the kit loads only when a site trusts it; nothing private enters this repository |
+| glu_proteomics (private) | the statistics, instead of its own copies | `pip install` at a tag |
+
+## Not yet built
+
+Isoform-to-canonical placement of marks; the site union from study tables; protein-set tests (clusterProfiler parity);
+measured backgrounds (candidates limited to residues covered by detected peptides); unit-level tests (IDRs as the
+unit); the release writer (sites and proteins tables, data dictionary, README, CHANGES, MD5SUMS); the website data
+writer; the web kit.

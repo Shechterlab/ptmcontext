@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "inputs": {
+    "uniprot_fasta": {
+      "file": "inputs/reference/uniprot_human_reviewed_2026_03.fasta",
+      "md5": "c75aad9d197cbba00f51063f65a96ac4",
+      "source": "https://rest.uniprot.org/uniprotkb/stream?format=fasta&query=(proteome:UP000005640) AND (reviewed:true)",
+      "version": "UniProt 2026_03 (released 2026-09-02), 20,416 reviewed human entries",
+      "licence": "CC BY 4.0",
+      "role": "input"
+    },
+    "uniprot_release": {
+      "file": "inputs/reference/uniprot_release.json",
+      "md5": "51fa7275f4fabdfde2db981193436140",
+      "source": "the X-UniProt-Release header of the download above",
+      "version": "2026_03",
+      "licence": "CC BY 4.0",
+      "role": "input"
+    },
+    "mobidb_disorder": {
+      "file": "inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv",
+      "md5": "1ffa4ed06adc22754cd4d8765059ecce",
+      "source": "MobiDB human export of 2026-03-30 (prediction-disorder-th_50 regions), lifted to the UniProt 2026_03 sequences",
+      "version": "MobiDB 2026-03-30",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/00_stage_mobidb_disorder.py; this repository checks the bytes, not the staging. A stage step of its own (from the MobiDB API) is planned."
+    },
+    "interpro_domains": {
+      "file": "inputs/annotation/interpro_108.0_domain_intervals.tsv",
+      "md5": "390a8429f7c5425ae06ef1fc4ffcb268",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/interpro/releases/108.0/protein2ipr.dat.gz (md5 d722648460460c6259bfd3a05ad00fef) and entry.list",
+      "version": "InterPro 108.0",
+      "licence": "CC0 1.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/00_stage_context_sources.py --interpro-source bulk; this repository checks the bytes."
+    },
+    "iptmnet_master": {
+      "file": "inputs/sources/ptm_master_iptmnet_human.tsv",
+      "md5": "e9b4e5bf505c6e228dc83a9b7de02251",
+      "source": "an iPTMnet bulk export assembled outside any repository",
+      "version": "not recorded",
+      "licence": "CC BY-NC-SA 4.0 (iPTMnet); component databases keep their own terms",
+      "role": "input",
+      "note": "NOT TRUSTED: no build script and no release or download date. Used only by the offline second-mark pilot, whose results are not committed."
+    },
+    "methylarginine_sites_v1_4_3": {
+      "file": "releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv",
+      "md5": "50dd293d1a3dd94ce7a0fb3168eae3bd",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "reference_output",
+      "note": "The marks the parity test counts, until this repository builds the site union itself."
+    },
+    "methylarginine_statistics_v1_4_3": {
+      "file": "releases/v1.4.3/statistics_v1.4.3.tsv",
+      "md5": "bdeb58f4dbbc713a3059930c363b074a",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "reference_output",
+      "note": "The rows the rebuild must equal."
+    }
+  }
+}

@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Shechterlab/proteome-kit/schemas/profile.schema.json",
+  "title": "Mark profile",
+  "description": "Everything specific to one modification. No other file of the code names a residue, a state, an enzyme, a motif or a noun of a mark.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "residues",
+    "states",
+    "words"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "residues": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[ACDEFGHIKLMNPQRSTVWY]$"
+      }
+    },
+    "states": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "psi_mod": {
+            "type": "string",
+            "pattern": "^MOD:[0-9]{5}$"
+          },
+          "pdb_component": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{1,5}$"
+          }
+        }
+      }
+    },
+    "modified_charge": {
+      "description": "Charge of each residue once modified, at pH 7.4 (null: the residue keeps its own charge)",
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "enzymes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "writers": {
+          "$ref": "#/$defs/enzymes"
+        },
+        "erasers": {
+          "$ref": "#/$defs/enzymes"
+        },
+        "writer_types": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "makes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "reader_domains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "motifs": {
+      "type": "object",
+      "required": [
+        "families"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "window_flank": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "families": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_]+$"
+              },
+              "all": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "any": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "words": {
+      "type": "object",
+      "required": [
+        "mark",
+        "marks",
+        "residue",
+        "residues",
+        "marked"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "enzymes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "gene",
+          "uniprot"
+        ],
+        "properties": {
+          "gene": {
+            "type": "string"
+          },
+          "uniprot": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "required": [
+        "in"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "type": "integer"
+        },
+        "within": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "in": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "at"
+          ]
+        },
+        {
+          "required": [
+            "within"
+          ]
+        }
+      ]
+    }
+  }
+}

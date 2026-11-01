@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Shechterlab/proteome-kit/schemas/units.schema.json",
+  "title": "Unit table row",
+  "description": "One row of a unit table (TSV): a region of a protein that something is counted in or drawn as. Positions are 1-based and inclusive, on the snapshot's sequences. Columns after the six below are the unit's own.",
+  "type": "object",
+  "required": ["unit_id", "accession", "start", "end", "kind", "source"],
+  "properties": {
+    "unit_id": {"type": "string", "description": "accession:kind:start-end, unless the source gives its own stable id"},
+    "accession": {"type": "string", "description": "UniProt accession of the snapshot"},
+    "start": {"type": "integer", "minimum": 1},
+    "end": {"type": "integer", "minimum": 1},
+    "kind": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "site, disordered, idr, domain, flank, segment, ..."},
+    "source": {"type": "string", "description": "where the units come from, with its version"}
+  }
+}

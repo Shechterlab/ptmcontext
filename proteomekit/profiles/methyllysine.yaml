@@ -1,0 +1,31 @@
+# Mark profile: lysine methylation. A profile only: no site table is staged yet (iPTMnet has 245 rows; CPLM 4.0 is
+# all rights reserved and cannot be redistributed).
+schema_version: 1
+id: methyllysine
+name: Methyllysine
+residues: [K]
+
+states:   # PSI-MOD terms checked against EBI OLS, 2026-11-01
+  - {code: Kme1, label: monomethyllysine, psi_mod: "MOD:00085", pdb_component: MLZ}
+  - {code: Kme2, label: dimethyllysine, psi_mod: "MOD:00084", pdb_component: MLY}
+  - {code: Kme3, label: trimethyllysine, psi_mod: "MOD:00083", pdb_component: M3L}
+
+modified_charge: {K: null}   # methyllysines keep the lysine's charge
+
+enzymes:
+  writers: []      # SET-domain and seven-beta-strand methyltransferases: to be listed from UniProt, not by hand
+  erasers: []
+  reader_domains: [Chromo, Tudor, MBT, PHD, PWWP]
+
+motifs:
+  window_flank: 7
+  families: []
+
+words:
+  mark: methyllysine
+  marks: methyllysines
+  residue: lysine
+  residues: lysines
+  marked: methylated
+  writer: lysine methyltransferase
+  writers: lysine methyltransferases

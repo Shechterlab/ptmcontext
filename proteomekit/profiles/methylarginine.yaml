@@ -1,0 +1,59 @@
+# Mark profile: methylarginine. Everything specific to this mark, as data; the code reads it and names none of it.
+# Contract: schemas/profile.schema.json. Quote anything YAML could read as a number or boolean.
+schema_version: 1
+id: methylarginine
+name: Methylarginine
+residues: [R]
+
+states:   # PSI-MOD terms checked against EBI OLS, 2026-11-01; PDB components as the release reads structures
+  - {code: Rme1,  label: monomethylarginine, psi_mod: "MOD:00414", pdb_component: NMM}
+  - {code: Rme2a, label: asymmetric dimethylarginine, psi_mod: "MOD:00077", pdb_component: DA2}
+  - {code: Rme2s, label: symmetric dimethylarginine, psi_mod: "MOD:00076", pdb_component: 2MR}
+  - {code: Rme2,  label: "dimethylarginine, asymmetric or symmetric not stated", psi_mod: "MOD:00783"}
+  - {code: Rme,   label: "methylarginine, degree not stated", psi_mod: "MOD:00658"}
+
+modified_charge: {R: null}   # null: a methylarginine keeps the arginine's charge
+
+enzymes:
+  writers:
+    - {gene: PRMT1, uniprot: Q99873, type: "I"}
+    - {gene: PRMT2, uniprot: P55345, type: "I"}
+    - {gene: PRMT3, uniprot: O60678, type: "I"}
+    - {gene: CARM1, uniprot: Q86X55, type: "I"}
+    - {gene: PRMT6, uniprot: Q96LA8, type: "I"}
+    - {gene: PRMT8, uniprot: Q9NR22, type: "I"}
+    - {gene: PRMT5, uniprot: O14744, type: "II"}
+    - {gene: PRMT9, uniprot: Q6P2P2, type: "II"}
+    - {gene: PRMT7, uniprot: Q9NVM4, type: "III"}
+  writer_types:
+    "I":   {makes: [Rme, Rme1, Rme2, Rme2a]}
+    "II":  {makes: [Rme, Rme1, Rme2, Rme2s]}
+    "III": {makes: [Rme, Rme1]}
+  erasers: []
+  reader_domains: [Tudor, WD40, PHD]
+  references:
+    - "Bedford & Clarke, Mol Cell 33:1 (2009), for what each PRMT type makes"
+
+motifs:            # read in the 15-residue window centred on the arginine (window_flank 7)
+  window_flank: 7
+  families:        # 'at': the residue at that offset; 'within': any residue from lo to hi, the centre excluded
+    - {name: CARM1_hydrophobic_proline, all: [{within: [-5, 5], in: P}, {within: [-3, 3], in: AILMFWVY}]}
+    - {name: CARM1_proline_rich, all: [{within: [-5, 5], in: P}]}
+    - {name: DR,  all: [{at: -1, in: D}]}
+    - {name: ER,  all: [{at: -1, in: E}]}
+    - {name: GAR, all: [{at: -2, in: G}, {at: -1, in: A}]}
+    - {name: GRG, all: [{at: -1, in: G}, {at: 1, in: G}]}
+    - {name: RD,  all: [{at: 1, in: D}]}
+    - {name: RE,  all: [{at: 1, in: E}]}
+    - {name: RG,  all: [{at: 1, in: G}]}
+    - {name: RGG, all: [{at: 1, in: G}, {at: 2, in: G}]}
+    - {name: RXR, any: [{at: -2, in: R}, {at: 2, in: R}]}
+
+words:             # the nouns every text and figure uses
+  mark: methylarginine
+  marks: methylarginines
+  residue: arginine
+  residues: arginines
+  marked: methylated
+  writer: PRMT
+  writers: PRMTs

@@ -1,0 +1,41 @@
+# Site: the human methylarginine sites, rebuilt. Its analyses must equal release v1.4.3 of the Methylarginine Site
+# Explorer (reference), row for row. Contract: proteomekit/schemas/site.schema.json.
+schema_version: 1
+id: methylarginine
+title: Human methylarginine sites
+status: working
+mark: methylarginine
+
+snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}   # quoted: unquoted, YAML reads 2026_03 as 202603
+inputs:                # role the layers read: manifest input that fills it
+  disorder: mobidb_disorder
+  domains: interpro_domains
+
+marks:
+  # Until this repository builds the site union from the studies, the marks are the release's own sites.
+  input: methylarginine_sites_v1_4_3
+  accession: uniprot_accession
+  position: position
+  exclude:
+    - {column: flags, contains: one_sided_window}   # sites kept pending: counted on neither side
+  residue_mismatch: error
+
+analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel)
+  - {id: motif, layer: motif}
+  - {id: disorder, layer: disorder}
+  - {id: domain_context, layer: domain_context}
+  - {id: domain_class, layer: domain_class}
+  - {id: structure_context, layer: structure_context}
+
+reference:
+  statistics: methylarginine_statistics_v1_4_3
+
+outputs: {folder: out/methylarginine}
+
+cite:
+  text: "DeAngelo JD, Silverstein AM, Shechter D. Protein arginine methylation rewires molecular interactions. Cell Chem Biol 33:1404-1421 (2026)"
+  doi: "10.1016/j.chembiol.2026.09.011"
+
+website:
+  name: Methylarginine Site Explorer
+  url: "https://shechterlab.github.io/PTM_Pipeline/"

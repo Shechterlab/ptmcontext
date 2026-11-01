@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "inputs": {
+    "uniprot_fasta": {
+      "file": "inputs/yeast_uniprot_2026_03.fasta",
+      "md5": "a57f2ba9b79131054be459731f54eb33",
+      "source": "https://rest.uniprot.org/uniprotkb/stream?format=fasta&query=(proteome:UP000002311) AND (reviewed:true)",
+      "version": "UniProt 2026_03 (02-September-2026), downloaded 2026-11-01",
+      "licence": "CC BY 4.0",
+      "role": "input"
+    },
+    "uniprot_features": {
+      "file": "inputs/yeast_uniprot_2026_03_features.tsv",
+      "md5": "cb65c1ead47a4af3e7a5e3f30ce3ce56",
+      "source": "https://rest.uniprot.org/uniprotkb/stream?format=tsv&fields=accession,gene_primary,length,ft_mod_res,ft_domain,ft_repeat&query=(proteome:UP000002311) AND (reviewed:true)",
+      "version": "UniProt 2026_03 (02-September-2026), downloaded 2026-11-01",
+      "licence": "CC BY 4.0",
+      "role": "input"
+    },
+    "uniprot_mod_res": {
+      "file": "inputs/yeast_uniprot_2026_03_mod_res.tsv",
+      "md5": "7978d13c0b3e3a81ad512297f7fd2b72",
+      "source": "derived from uniprot_features (cb65c1ead47a4af3e7a5e3f30ce3ce56)",
+      "version": "UniProt 2026_03 (02-September-2026), downloaded 2026-11-01",
+      "licence": "CC BY 4.0",
+      "role": "input"
+    },
+    "uniprot_domains": {
+      "file": "inputs/yeast_uniprot_2026_03_domains.tsv",
+      "md5": "8a14d27656831409a7b864f878d873e7",
+      "source": "derived from uniprot_features (cb65c1ead47a4af3e7a5e3f30ce3ce56)",
+      "version": "UniProt 2026_03 (02-September-2026), downloaded 2026-11-01",
+      "licence": "CC BY 4.0",
+      "role": "input"
+    },
+    "mobidb_disorder": {
+      "file": "inputs/yeast_mobidb_2026-11-01_disorder_intervals.tsv",
+      "md5": "5b8a3fdb01729888d1020a96da1138b0",
+      "source": "https://mobidb.org/api/download?acc=<6067 accessions of uniprot_fasta>&format=tsv, feature prediction-disorder-th_50",
+      "version": "MobiDB API, downloaded 2026-11-01",
+      "licence": "CC BY 4.0 (as listed for MobiDB)",
+      "role": "input",
+      "note": "6036 of 6067 entries have prediction-disorder-th_50 regions; the API does not report a release, so the download date is the version"
+    }
+  }
+}
