@@ -139,7 +139,8 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
                               'length': snap.length(a), 'sequence_md5': snap.sequence_md5(a),
                               'marks': int(n_marks.get(a, 0)), 'candidates': int(cand.get(a, 0))} for a in accs])
     units = []
-    for key, kind in (('units:disordered', 'disordered'), ('units:idr', 'idr'), ('units:domain', 'domain')):
+    idr_key = 'units:idr_charge' if 'units:idr_charge' in ctx._cache else 'units:idr'     # with their charge, if worked out
+    for key, kind in (('units:disordered', 'disordered'), (idr_key, 'idr'), ('units:domain', 'domain')):
         u = ctx._cache.get(key)
         if u is not None and len(u):
             u = u[u['accession'].isin(set(accs))]
@@ -150,7 +151,9 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
 
 
 def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, out_root: str | Path | None = None,
-        write: bool = True, log=print) -> SiteRun:
+        write: bool = True, log=print, skip_new: bool = False) -> SiteRun:
+    """Run a site: its analyses, statistics rows and run record, and its parity check. skip_new leaves out the analyses
+    marked new (not in the reference), for a parity check alone."""
     t0 = time.time()
     site = load_site(site_path)
     if site.get('status') == 'offline_pilot' and not allow_untrusted:
@@ -176,6 +179,8 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     log(f"{site['id']}: {report['counted']:,} {profile.word('marks')} on {report['proteins']:,} proteins "
         f"({report['rows']:,} rows read, {report['selected']:,} selected)")
     parts, layers_used, kept, set_names = [], {}, {}, []
+    if skip_new:
+        site = {**site, 'analyses': [a for a in site['analyses'] if not a.get('new')]}
     for analysis in site['analyses']:
         if analysis.get('test') == 'protein_sets':
             from .set_tests import protein_set_test, roles_of
@@ -210,10 +215,13 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     if ref:
         reference = ST.read(paths[ref])
         for analysis in site['analyses']:
+            if analysis.get('new'):                          # not in the reference: nothing to compare it with
+                log(f"  new    {analysis['id']:18s} not in the reference")
+                continue
             for r in compare(rows[rows['analysis'] == analysis['id']], reference, analysis['id']):
                 result.parity.append(r)
                 log(f'  parity {r.analysis:18s} {r.method:16s} {r.rows:3d} rows  {"equal" if r.equal else "DIFFERENT"}')
-        record['parity'] = {'reference': ref, 'equal': result.parity_ok,
+        record['parity'] = {'reference': ref, 'equal': result.parity_ok, 'new': [a['id'] for a in site['analyses'] if a.get('new')],
                             'checked': [{'analysis': r.analysis, 'method': r.method, 'rows': r.rows, 'equal': r.equal} for r in result.parity]}
     if write:
         folder = Path(out_root or root_of(site)) / site['outputs']['folder']

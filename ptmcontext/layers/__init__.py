@@ -148,4 +148,4 @@ def available() -> list[dict]:
     return rows
 
 
-from . import context, domains, motifs  # noqa: E402,F401  (registers the built-in layers)
+from . import charge, context, domains, motifs  # noqa: E402,F401  (registers the built-in layers)

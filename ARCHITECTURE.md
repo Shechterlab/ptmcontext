@@ -11,7 +11,7 @@ written once, here; everything that differs is a file.
 | **manifest** | every input file: source, release or date, licence, MD5 | `inputs.json`, or a site's own `sites/<site>.inputs.json` | `schemas/inputs.schema.json` |
 | **staging** | the only step that uses the network: download, convert to a contract, record in a manifest | `ptmcontext/stage.py`, `ptmc stage` | the unit and marks tables |
 | **units** | regions as rows: disordered regions, IDRs, domains, flanks, segments, sites | `ptmcontext/units.py` | `schemas/units.schema.json` |
-| **layers** | an annotation of every candidate residue: a class (disorder, domain context, ...) or flags (motifs) | `ptmcontext/layers/` | a `Layer` reading **roles** (`disorder`, `domains`) |
+| **layers** | an annotation of every candidate residue: a class (disorder, domain context, the charge of its IDR, ...) or flags (motifs) | `ptmcontext/layers/` | a `Layer` reading **roles** (`disorder`, `domains`) |
 | **profile** | everything specific to one mark: residues, states, enzymes, motifs, words | `ptmcontext/profiles/<mark>.yaml` | `schemas/profile.schema.json` |
 | **tests** | is the mark over-represented in a class, pooled and within protein | `ptmcontext/residue_tests.py`, `stats.py` | statistics rows |
 | **statistics** | one table every test writes into, in the published release's columns and formatting | `ptmcontext/statistics.py` | `schemas/statistics.schema.json` |
@@ -72,7 +72,8 @@ Inter and IBM Plex Serif embedded, and the TSV's `#` lines (readers skip them: `
 - **A build never touches the network** and refuses any file whose MD5 differs from its manifest.
 - **Other repositories' code is not run.** Their outputs are data with MD5s. Their layers come in only as plugins that
   a site names as trusted, recorded with their version in every run record.
-- **Results are proven, not assumed.** A site with a reference fails if any row changes.
+- **Results are proven, not assumed.** A site with a reference fails if any row changes. A question the reference
+  does not have says so (`new: true`): it is left out of the parity check and marked new on the website.
 
 ## How other repositories use it
 

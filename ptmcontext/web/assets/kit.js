@@ -151,7 +151,7 @@
     rows.sort((x, y) => y.eff - x.eff);
     const open = S.open.has(a.id) || byClass;
     return `<details class="score" data-key="${esc(a.id)}"${open ? ' open' : ''}><summary>` +
-      `<span class="pm" aria-hidden="true"></span><span class="tq"><span class="t">${esc(a.title)}</span><span class="qq">${esc(a.question)}</span></span>` +
+      `<span class="pm" aria-hidden="true"></span><span class="tq"><span class="t">${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</span><span class="qq">${esc(a.question)}</span></span>` +
       `<span class="glance">${strip(rows)}</span><span class="ans">${answer(rows)}</span><span class="go" aria-hidden="true"></span></summary>` +
       cardBody(a, rows) + '</details>';
   }
@@ -215,7 +215,9 @@
       `<span class="${R.parity.equal ? 'ok' : ''}">${R.parity.equal ? `all ${nPar} rows are identical` : 'some rows differ'}</span>.</p>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Test</th><th class="num">Rows</th><th>Identical</th></tr></thead><tbody>` +
       R.parity.checked.map(c => `<tr><td>${esc(A[c.analysis]?.title || c.analysis)}</td><td>${METHOD[c.method] || esc(c.method)}</td><td class="num">${c.rows}</td><td>${c.equal ? '<span class="ok">✓</span>' : '✗'}</td></tr>`).join('') +
-      '</tbody></table></div></section>' : '';
+      '</tbody></table></div>' +
+      ((R.parity.new || []).length ? `<p>Not in the release, and so not checked against it: ${R.parity.new.map(id => esc(A[id]?.title || id)).join(', ')}. ${R.parity.new.length === 1 ? 'This question is' : 'These questions are'} new in the rebuild.</p>` : '') +
+      '</section>' : '';
     return `<div class="page-head"><h2>Method</h2></div><div class="doc">` +
       `<section><h3>How the tests work</h3><p>Every question compares the ${esc(W.marks)} with the other ${esc(W.residues)} of the same proteins, class by class: is a ${esc(W.mark)} more or less likely than another ${esc(W.residue)} to sit in a disordered region, a domain, a motif? Each class is tested two ways.</p><ul>` +
       `<li><b>Within each protein</b>, every protein is a stratum, and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)}: a Mantel–Haenszel odds ratio, with its 95% confidence interval (Robins–Breslow–Greenland) and the continuity-corrected Cochran–Mantel–Haenszel test. This separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}: abundant proteins are detected more often, and they differ in their structure.</li>` +

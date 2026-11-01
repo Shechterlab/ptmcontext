@@ -62,6 +62,11 @@ def unit_context(residues: pd.DataFrame, units: pd.DataFrame, lengths: dict[str,
     return pd.DataFrame({'category': category, 'edge_distance': distance}, index=residues.index)
 
 
+def idr_units(ctx: Context) -> pd.DataFrame:
+    """The IDRs: the site's disordered regions merged where they overlap, of 20 residues or more (units.idrs)."""
+    return ctx.cached('units:idr', lambda: U.idrs(ctx.units('disorder', 'disordered'), ctx.snapshot))
+
+
 DISORDER_LABELS = {'inside': 'disordered', 'near': 'disorder_boundary', 'far': 'ordered', 'none': 'no_disorder_annotation'}
 
 
@@ -88,8 +93,7 @@ def disorder(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
           question='Are {marks} in IDRs of 20 or more residues, against the other {residues} of the same proteins?',
           sub='{Marked} vs other {residues} of the same proteins, by IDRs of 20 or more residues (MobiDB)')
 def idr(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
-    units = ctx.cached('units:idr', lambda: U.idrs(ctx.units('disorder', 'disordered'),
-                                                    ctx.snapshot))
+    units = idr_units(ctx)
     return unit_context(residues, units, ctx.snapshot.lengths(), 20,
                         {'inside': 'idr', 'near': 'idr_boundary', 'far': 'outside_idr', 'none': 'no_idr'})
 

@@ -392,6 +392,10 @@
                 "description": "added to the background of the stratified rows"
               }
             }
+          },
+          "new": {
+            "type": "boolean",
+            "description": "not in the site's reference: no parity check, and the website marks it new"
           }
         },
         "anyOf": [

@@ -145,7 +145,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         if a.get('test') == 'protein_sets':
             analyses.append({'id': a['id'], 'kind': 'protein_sets', 'title': a.get('title', a['id']), 'question': a.get('question', ''),
                              'sub': a.get('sub', ''), 'section': a.get('section', 'Kinds of protein'), 'layer': '', 'describe': a.get('background', ''),
-                             'labels': set_names.get(a['id'], {}), 'help': {}})
+                             'labels': set_names.get(a['id'], {}), 'help': {}, 'new': bool(a.get('new'))})
             continue
         layer = L.BUILT_IN.get(a['layer'])
         labels, helps = _labels(layer, profile)
@@ -153,7 +153,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                          'question': a.get('question') or _fill(layer.question if layer else '', profile.words),
                          'sub': _fill(layer.sub if layer else '', profile.words), 'layer': a['layer'],
                          'section': a.get('section') or (layer.section if layer else ''),
-                         'describe': layer.describe if layer else '', 'labels': labels, 'help': helps})
+                         'describe': layer.describe if layer else '', 'labels': labels, 'help': helps, 'new': bool(a.get('new'))})
     web = site['website']
     # each input by its name and version, and what this site uses it for
     entries = load_manifest(manifest_of(site))

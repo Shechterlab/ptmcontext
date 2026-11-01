@@ -81,11 +81,15 @@
     const C = ex ? { line: '#8a979e', dom: '#d6ecf0', domS: '#0e7490', domT: '#0f3b47', head: '#c2410c', tick: '#5f6f78', wave: '#5f6f78' } : null;
     const cls = (k, inlineAttrs) => (ex ? inlineAttrs : `class="${k}"`);
     parts.push(`<line ${cls('m-line', `stroke="${C?.line}"`)} x1="${x0}" x2="${x1}" y1="${yB}" y2="${yB}" stroke-width="1.6"/>`);
+    // each disordered stretch, with the IDR it belongs to (and that IDR's charge, if the site worked it out) on hover
+    const idrs = rec.units.filter(u => u[0] === 'idr');
     rec.units.filter(u => u[0] === 'disordered').forEach(([, s, e]) => {
       const a = X(s - 0.5), b = X(e + 0.5); if (b - a < 2) return;
       let d = `M${a.toFixed(1)},${yB}`, x = a, up = true;
       while (x < b) { const nx = Math.min(b, x + 5); d += ` Q${((x + nx) / 2).toFixed(1)},${up ? yB - 5 : yB + 5} ${nx.toFixed(1)},${yB}`; x = nx; up = !up; }
-      parts.push(`<path ${cls('m-wave', `stroke="${C?.wave}"`)} d="${d}" fill="none" stroke-width="1.4"/>`);
+      const idr = idrs.find(([, is, ie]) => is <= e && ie >= s);
+      const tip = idr ? `IDR ${idr[1]}–${idr[2]}${idr[3] ? ': ' + idr[3].replace(/^[^:]*: /, `${idr[3].split(':')[0]}, `) : ''}` : `Disordered ${s}–${e} (shorter than 20 aa as an IDR)`;
+      parts.push(`<path ${cls('m-wave', `stroke="${C?.wave}"`)} d="${d}" fill="none" stroke-width="1.4"${ex ? '' : ' pointer-events="stroke"'}><title>${esc(tip)}</title></path>`);
     });
     rec.units.filter(u => u[0] === 'domain').forEach(([, s, e, lab, src]) => {
       const a = X(s - 0.5), b = X(e + 0.5), w = Math.max(2, b - a);

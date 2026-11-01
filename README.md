@@ -28,6 +28,15 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
 
   The rest (687 rows: condensates, functional classes, sequence proximity, crosslinks, interfaces, cell maps, eCLIP)
   come next, one parity check at a time.
+- **A new question, from one new layer:** `idr_charge` places each residue by the charge of the IDR it sits in, the
+  region of the Das–Pappu diagram of states (CIDER's FCR, NCPR and κ, written out from the papers in
+  `ptmcontext/charge.py`). One line adds it to a site (`new: true` where the site has a reference: it is not checked
+  against the release, and the website marks it new). Within each protein, methylarginines sit 3.3× more often than
+  other arginines in weakly charged IDRs (FCR < 0.25) and less often in strongly charged ones; yeast phosphosites go
+  the other way, from 1.8× in weakly charged IDRs to 4.4× in negatively charged ones.
+- **Domain sources compared:** `sites/methylarginine_interpro_ecod.yaml` fills the proteins InterPro leaves without
+  domains with SHEPHARD's ECOD domains (sites without domain data 1,579 → 754); every domain result of the release
+  holds.
 - **A second organism by configuration:** yeast phosphosites staged from UniProt 2026_03, MobiDB and SHEPHARD in
   about 50 s and run in 21 s. UniProt's domain features cover 1,937 of 6,067 yeast proteins; SHEPHARD's ECOD domains
   fill 2,506 more, so 79% of the phosphosites (4,702 of 5,930) are on a protein with domain data, up from 47%.

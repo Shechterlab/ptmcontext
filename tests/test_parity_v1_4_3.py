@@ -13,7 +13,7 @@ EXPECTED = {'motif': 22, 'disorder': 8, 'domain_context': 10, 'domain_class': 28
 
 
 def test_methylarginine_site_equals_release_v1_4_3(reference_root):
-    result = S.run(REPO / 'sites' / 'methylarginine.yaml', reference_root, write=False, log=lambda *_: None)
+    result = S.run(REPO / 'sites' / 'methylarginine.yaml', reference_root, write=False, log=lambda *_: None, skip_new=True)
     failed = [(r.analysis, r.method, r.diffs) for r in result.parity if not r.equal]
     assert not failed, failed
     rows = {}
