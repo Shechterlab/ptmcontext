@@ -501,6 +501,11 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
     return out / 'index.html'
 
 
+def _licence_words(spdx: str) -> str:
+    """CC-BY-NC-SA-4.0 -> CC BY-NC-SA 4.0; MIT stays MIT."""
+    return spdx.replace('CC-', 'CC ', 1).rsplit('-', 1)[0] + ' ' + spdx.rsplit('-', 1)[1] if spdx.startswith('CC-') else spdx
+
+
 def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None, log=print) -> Path:
     """One folder to publish (GitHub Pages, or any static host): each site's website under its id, and a landing page
     in the same look listing them. Run ptmc run and ptmc web for each site first."""
@@ -527,7 +532,7 @@ def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None,
             f'<a class="site-card" href="{html.escape(site["id"])}/"><span class="band" style="background:linear-gradient(160deg,{band[0]},{band[1]})">'
             f'<b>{html.escape(web.get("name", site["title"]))}</b></span><span class="body"><span>{html.escape(web.get("tagline", ""))}</span>'
             f'<span class="muted">{run["marks"]["counted"]:,} {html.escape(profile.words["marks"])} on {run["marks"]["proteins"]:,} proteins · '
-            f'{html.escape(run["snapshot"]["release"])}{" · version " + html.escape(cit["version"]) if cit else ""}</span><span class="open">Open ›</span></span></a>')
+            f'{html.escape(run["snapshot"]["release"])}{" · version " + html.escape(cit["version"]) if cit else ""}{" · data " + html.escape(_licence_words(cit.get("licence", ""))) if cit and cit.get("licence") else ""}</span><span class="open">Open ›</span></span></a>')
         log(f'  {site["id"]} -> {dest}')
     kit = kit_citation()
     lab_html = (f'<a class="brand-mark" href="{html.escape(lab.get("url", "#"))}"><span>{html.escape(lab.get("name", ""))}'
@@ -546,12 +551,15 @@ def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None,
 .site-card .band b {{ font-family: var(--font-heading); font-size: 1.3rem; font-weight: 600; }}
 .site-card .body {{ display: grid; gap: 0.4rem; padding: 0.9rem 1.1rem 1rem; font-size: 0.92rem; }}
 .site-card .open {{ color: var(--accent); font-weight: 600; }}
+.land-foot {{ margin-top: 2rem; color: var(--muted); font-size: 0.85rem; max-width: 60rem; }}
 </style></head>
 <body><header class="hero"><div class="wrap"><div class="brand"><h1>Protein modification sites</h1><div class="brand-side">{lab_html}</div></div>
 <div class="lede"><p class="lede-what">Each site below is one file: a modification, a proteome and a set of questions. All of them run the same tests,
 within each protein and pooled, and offer the same pages and downloads.</p>
 <p class="lede-note">Built with <a href="{html.escape(kit['url'])}">ptmcontext</a> {html.escape(kit['version'])}.</p></div></div></header>
-<main class="wrap"><div class="sites">{''.join(cards)}</div></main></body></html>
+<main class="wrap"><div class="sites">{''.join(cards)}</div>
+<p class="land-foot">Code: <a href="{html.escape(kit['url'])}">ptmcontext</a>, {html.escape(_licence_words(kit.get('licence', 'MIT')))} licence. Each site's data are under the licence its page states.
+No cookies, no tracking: every test runs in your browser, and nothing you search or select leaves it.</p></main></body></html>
 """
     (out / 'index.html').write_text(page)
     log(f'  -> {out / "index.html"}')

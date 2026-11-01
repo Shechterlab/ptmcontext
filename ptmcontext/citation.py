@@ -75,8 +75,8 @@ def kit_citation() -> dict:
     """The kit's title, version and code URL: from its CITATION.cff in a checkout, else from the installed package."""
     if (REPO / 'CITATION.cff').exists():
         data = read(REPO / 'CITATION.cff')
-        return {'title': data['title'], 'version': data['version'], 'url': data.get('repository-code', '')}
+        return {'title': data['title'], 'version': data['version'], 'url': data.get('repository-code', ''), 'licence': data.get('license', '')}
     from importlib import metadata
     meta = metadata.metadata('ptmcontext')
     return {'title': f"ptmcontext: {meta.get('Summary', '')}", 'version': metadata.version('ptmcontext'),
-            'url': 'https://github.com/Shechterlab/ptmcontext'}
+            'url': 'https://github.com/Shechterlab/ptmcontext', 'licence': meta.get('License', 'MIT')}
