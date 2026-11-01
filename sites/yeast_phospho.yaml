@@ -38,7 +38,7 @@ citation: sites/yeast_phospho.citation.cff
 
 website:
   name: Yeast Phosphosite Explorer
-  tagline: "Budding yeast phosphosites from UniProt, tested against disorder and domains. Built from public sources by one site file."
+  tagline: "Budding yeast phosphosites from UniProt."
   band: ["#334155", "#0f172a"]      # graphite: neutral beside the data colours; the orange rule ties it to its siblings
   accent: "#c2410c"
   accent_dark: "#fb923c"

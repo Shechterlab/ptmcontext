@@ -12,7 +12,6 @@ from __future__ import annotations
 import base64
 import html
 import json
-import re
 import math
 import shutil
 from importlib import resources
@@ -444,14 +443,9 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
         pref = (cit or {}).get('preferred')
         # the studies that report the marks, most first: the original asked readers to cite those whose marks they use
         rep = data.get('reporters')
-        studies = ''
-        if rep and rep['items']:
-            top, n = rep['items'][:6], len(rep['items'])
-            link = lambda v, lab, i: (f'<a href="{html.escape(rep["url"].replace("{}", i))}" title="{html.escape(v)}: {int(dict((x[0], x[3]) for x in rep["items"])[v]):,} {html.escape(data["words"]["marks"])}">{html.escape(lab)}</a>'  # noqa: E731
-                                      if i and rep['url'] else html.escape(lab))
-            studies = (f'the {n} {html.escape(rep["label"].lower())} that report the {html.escape(data["words"]["marks"])} you use ('
-                       + ', '.join(link(v, lab, i) for v, lab, i, _ in top)
-                       + (f', <a href="#method/sources">and {n - len(top)} more</a>' if n > len(top) else '') + ')')
+        # the studies that report the marks, as one link to their list (the original asked readers to cite them)
+        studies = (f'the <a href="#method/sources">{len(rep["items"])} {html.escape(rep["label"].lower())}</a> that report the {html.escape(data["words"]["marks"])} you use'
+                   if rep and rep['items'] else '')
         if not cit:
             cite_html = ''
         elif pref:
@@ -466,11 +460,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print) 
             if cit.get('doi'):
                 version += (f' · <a class="doi-badge" href="https://doi.org/{html.escape(cit["doi"])}"><span>DOI</span>'
                             f'<span>{html.escape(cit["doi"])}</span></a>')
-        par = run.get('parity') or {}
-        if par.get('equal'):
-            ref = data['inputs'].get(par.get('reference'), {}).get('version', '') or par.get('reference', '')
-            version += f'{" · " if version else ""}<a href="#method/parity">tests identical to {html.escape(re.sub(r"[(].*[)]", "", ref).strip())}</a>'
-        version += f'{" · " if version else ""}<a href="#method/made">how it was made</a> · <a href="#sites">download the sites</a>'
+        version += f'{" · " if version else ""}<a href="#method">method</a> · <a href="#sites">download the sites</a>'
         if inline:
             css = f'<style>{_asset("assets/kit.css").read_text()}</style>'
             js = (f'<script id="protein-data" type="application/json">{inline_proteins}</script>'
