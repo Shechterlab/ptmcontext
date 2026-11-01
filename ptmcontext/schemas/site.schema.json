@@ -1172,6 +1172,13 @@
                 "type": "string"
               },
               "description": "residue questions shown as columns (default: the first with classes); questions with flags (motifs) show as tags beside the window"
+            },
+            "attributes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "the attributes of the marks shown as the Sites table's columns, in order (default: every attribute coloured by or linked)"
             }
           }
         },

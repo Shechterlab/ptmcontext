@@ -30,7 +30,9 @@
   const ctxAids = () => { const named = (D.sites_view?.columns || []).filter(a => AN().includes(a)); return named.length ? named : AN().filter(a => A[a]?.shape === 'class').slice(0, 1); };
   // the columns: protein, site, then the attributes the site file colours by or links, the window, the context
   function columns() {
-    const attrCols = Object.keys(SPECS).filter(n => SPECS[n].colour || (SPECS[n].kind === 'list' && SPECS[n].link));
+    // the site file's choice (website.sites.attributes), else every attribute it colours by or links
+    const named = (D.sites_view?.attributes || []).filter(n => SPECS[n]);
+    const attrCols = named.length ? named : Object.keys(SPECS).filter(n => SPECS[n].colour || (SPECS[n].kind === 'list' && SPECS[n].link));
     return [
       ['protein', 'Protein', m => pr(m[0])[1] || pr(m[0])[0], m => `<a href="${esc(K.link('protein', pr(m[0])[0]))}"><b>${esc(pr(m[0])[1] || '–')}</b></a> <span class="muted mono">${esc(pr(m[0])[0])}</span>`],
       ['site', 'Site', m => m[1], m => `<a class="mono" href="${esc(K.link('protein', pr(m[0])[0] + '/' + m[1]))}"><b>${esc((m[4] || '')[7] || '')}${m[1]}</b></a>`],

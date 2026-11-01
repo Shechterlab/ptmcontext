@@ -171,6 +171,9 @@ def website_problems(site: dict) -> list[str]:
         elif words.get(a, {}).get('shape') == 'flags':
             out.append(f"website.sites.columns: {a!r} has flags (several per residue): it shows as tags beside the window, not as a column")
     set_ids = {a['id'] for a in site.get('analyses', []) if a.get('test') == 'protein_sets'}
+    for n in (web.get('sites') or {}).get('attributes', []):
+        if n not in attrs:
+            out.append(f"website.sites.attributes: no attribute {n!r}")
     for f in (web.get('protein') or {}).get('facts', []):
         if f['analysis'] not in ids:
             out.append(f"website.protein.facts: no analysis {f['analysis']!r}")

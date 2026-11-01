@@ -585,6 +585,6 @@ website:                  # the look and words of the website (ptmc web); layout
     sel-enriched: "?vs=marks"
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   compare: {stratify: studies}      # "compared with other methylarginines, within studies": the same reporting sources
-  sites: {columns: [structure_context]}                            # the Sites tab's context column
+  sites: {columns: [structure_context], attributes: [state, interaction, studies]}   # the explorer's default columns                            # the Sites tab's context column
   protein:                 # tiles at the top of each protein page
     facts: [{analysis: disorder, classes: [disordered]}, {analysis: disease_family, label: disease families}]

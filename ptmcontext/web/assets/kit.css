@@ -573,3 +573,6 @@ a.exp-btn { display: inline-flex; align-items: center; text-decoration: none; }
 .qm-classes { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.1rem 0.8rem; font-size: 0.86rem; }
 .qm-classes dd { margin: 0; color: var(--muted); }
 .seg button:disabled { opacity: 0.45; cursor: not-allowed; }
+/* the Sites table fits the card: no blanket minimum width, long lists wrap within a bound */
+.sites-tbl td.wrapok { min-width: 0; max-width: 16rem; }
+.sites-tbl th, .sites-tbl td { padding-left: 0.45rem; padding-right: 0.45rem; }
