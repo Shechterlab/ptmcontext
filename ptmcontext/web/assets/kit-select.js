@@ -145,29 +145,31 @@
   // ---- which marks pass ------------------------------------------------------------------------------------------
   // select(q, f): the marks a search and filters select, without touching the page's own state (a saved selection
   // can be evaluated beside the current one); compute() is the current selection, cached
-  function select(qText, f) {
+  // a search and filters as tests: base(m), what the search names (words, genes, sites), and one test per constraint
+  function matcher(qText, f) {
     const q = parse(qText), { cons, unresolved } = constraintsOf(qText, f);
+    // proteins named by the search (a gene or accession names all its marks; "GENE R216" names one mark)
+    const genes = new Set(q.genes), sites = new Set(q.sites.map(([p, pos]) => p + ':' + pos)), named = genes.size || sites.size;
+    const wordHit = p => q.words.every(w => (p.gene || '').toLowerCase().startsWith(w) || p.acc.toLowerCase().startsWith(w) || (p.name || '').toLowerCase().includes(w));
+    const protOk = P.map(p => !q.words.length || wordHit(p));
+    const base = m => protOk[m[0]] && (!named || genes.has(m[0]) || sites.has(m[0] + ':' + m[1]));
+    const tests = cons.map(([key, vals]) => {
+      const [kind, id] = key.split(':');
+      if (kind === 'a') { const ai = AN().indexOf(id), codes = new Set(vals.map(v => SD.classes[id].indexOf(v))); return m => m[2][ai].some(c => codes.has(c)); }
+      if (kind === 'p') { const sets = vals.map(v => setMembers[id]?.[v]).filter(Boolean); return m => sets.some(s => s.has(m[0])); }
+      if (kind === 't') { const ti = AT().indexOf(id), codes = new Set(vals.map(v => SD.attributes[id].indexOf(v))); return m => m[3][ti].some(c => codes.has(c)); }
+      if (kind === 'n') { const ti = AT().indexOf(id), min = +vals[0], num = SD.numbers[id]; return m => m[3][ti].some(c => num[c] >= min); }
+      return () => true;
+    });
+    return { q, cons, unresolved, base, tests };
+  }
+  function select(qText, f) {
+    const M = SD ? matcher(qText, f) : null, q = M ? M.q : parse(qText), { cons, unresolved } = M || constraintsOf(qText, f);
     const active = !!(q.genes.length || q.words.length || q.sites.length || cons.length || q.unmatched.length || unresolved.length);
     let marks = null, proteins = null;
     if (SD && active) {
-      // proteins named by the search (a gene or accession names all its marks; "GENE R216" names one mark)
-      const genes = new Set(q.genes), sites = new Set(q.sites.map(([p, pos]) => p + ':' + pos)), named = genes.size || sites.size;
-      const wordHit = p => q.words.every(w => (p.gene || '').toLowerCase().startsWith(w) || p.acc.toLowerCase().startsWith(w) || (p.name || '').toLowerCase().includes(w));
-      const protOk = P.map(p => !q.words.length || wordHit(p));
-      const tests = cons.map(([key, vals]) => {
-        const [kind, id] = key.split(':');
-        if (kind === 'a') { const ai = AN().indexOf(id), codes = new Set(vals.map(v => SD.classes[id].indexOf(v))); return m => m[2][ai].some(c => codes.has(c)); }
-        if (kind === 'p') { const sets = vals.map(v => setMembers[id]?.[v]).filter(Boolean); return m => sets.some(s => s.has(m[0])); }
-        if (kind === 't') { const ti = AT().indexOf(id), codes = new Set(vals.map(v => SD.attributes[id].indexOf(v))); return m => m[3][ti].some(c => codes.has(c)); }
-        if (kind === 'n') { const ti = AT().indexOf(id), min = +vals[0], num = SD.numbers[id]; return m => m[3][ti].some(c => num[c] >= min); }
-        return () => true;
-      });
       marks = [];
-      SD.marks.forEach((m, i) => {
-        if (!protOk[m[0]]) return;
-        if (named && !genes.has(m[0]) && !sites.has(m[0] + ':' + m[1])) return;
-        if (tests.every(t => t(m))) marks.push(i);
-      });
+      SD.marks.forEach((m, i) => { if (M.base(m) && M.tests.every(t => t(m))) marks.push(i); });
       proteins = new Set(marks.map(i => SD.marks[i][0]));
     }
     // nothing at all named by the search: no marks (the bar says which words and terms matched nothing)
@@ -418,9 +420,10 @@
   // ---- the sidebar: Sections and Filters --------------------------------------------------------------------------
   const R = { tab: (() => { try { return localStorage.getItem('ptmc-rail-tab') || 'sections'; } catch (e) { return 'sections'; } })(),
     // pinning is automatic (pinned whenever the window is wide enough, following its resizes) unless unpinned by hand
-    pin: (() => { try { return localStorage.getItem('ptmc-rail') === 'off' ? 'off' : 'auto'; } catch (e) { return 'auto'; } })(), open: false,
+    // 'auto' pins from 1,280 px; 'on' (pinned by hand) from 1,100 px; 'off' keeps it in a drawer
+    pin: (() => { try { const v = localStorage.getItem('ptmc-rail'); return ['on', 'off'].includes(v) ? v : 'auto'; } catch (e) { return 'auto'; } })(), open: false,
     width: (() => { try { return +localStorage.getItem('ptmc-rail-w') || 0; } catch (e) { return 0; } })() };
-  const PIN_MIN = 1100;
+  const PIN_MIN = 1100, PIN_AUTO = 1280;
   const setRailWidth = () => { document.documentElement.style.setProperty('--rail-w', R.width ? `${Math.min(Math.max(R.width, 224), Math.min(520, innerWidth * 0.4))}px` : ''); };
   setRailWidth();
   // the groups: from the site file, or one per section of residue questions, protein-set questions and attributes
@@ -432,27 +435,55 @@
     if (attrs.length) out.push({ name: 'Marks', attributes: attrs });
     return out;
   }
-  function countFor(key, v) {
-    if (!SD) return null;
-    const [kind, id] = key.split(':');
-    if (kind === 'a') { const ai = AN().indexOf(id), c = SD.classes[id].indexOf(v); return SD.marks.reduce((n, m) => n + (m[2][ai].includes(c) ? 1 : 0), 0); }
-    if (kind === 't') { const ti = AT().indexOf(id), c = SD.attributes[id].indexOf(v); return SD.marks.reduce((n, m) => n + (m[3][ti].includes(c) ? 1 : 0), 0); }
-    if (kind === 'p') return setMembers[id]?.[v]?.size ?? null;
-    return null;
+  // a control's counts over a list of marks: per class or value (marks), per set (proteins)
+  function tally(key, idx) {
+    const [kind, id] = key.split(':'), out = {};
+    if (kind === 'a' || kind === 't') {
+      const col = kind === 'a' ? 2 : 3, at = kind === 'a' ? AN().indexOf(id) : AT().indexOf(id), names = kind === 'a' ? SD.classes[id] : SD.attributes[id];
+      const n = new Array(names.length).fill(0);
+      (idx || SD.marks.map((_, i) => i)).forEach(i => SD.marks[i][col][at].forEach(c => { n[c]++; }));
+      names.forEach((v, c) => { out[v] = n[c]; });
+    } else if (kind === 'p') {
+      const prots = idx ? new Set(idx.map(i => SD.marks[i][0])) : null;
+      Object.entries(setMembers[id] || {}).forEach(([s, mem]) => { let k = 0; if (!prots) k = mem.size; else mem.forEach(p => { if (prots.has(p)) k++; }); out[s] = k; });
+    }
+    return out;
   }
-  const counts = {};
-  const cnt = (key, v) => (counts[key + '\u0000' + v] ??= countFor(key, v));
+  const totals = {};
+  const cnt = (key, v) => (totals[key] ||= SD ? tally(key, null) : {})[v] ?? null;
+  // the counts a control shows under the current selection: the marks that pass every other constraint, so a
+  // control's own values stay comparable while it is in use (faceted search); cached with the selection
+  function facet(key) {
+    const c = compute(); if (!SD || !c.active) return null;
+    if (!c.facets) {
+      const M = matcher(S.q, S.f), keys = M.cons.map(([k]) => k), all = [], except = {};
+      SD.marks.forEach((m, i) => {
+        if (!M.base(m)) return;
+        let bad = null;
+        for (let j = 0; j < M.tests.length; j++) if (!M.tests[j](m)) { if (bad == null) bad = keys[j]; else if (bad !== keys[j]) return; }
+        if (bad == null) all.push(i); else (except[bad] ||= []).push(i);
+      });
+      c.facets = { all, except, keys: new Set(keys), memo: {} };
+    }
+    const F = c.facets;
+    return (F.memo[key] ||= tally(key, F.keys.has(key) ? [...F.all, ...(F.except[key] || [])] : F.all));
+  }
+  const NONE_RE = /^(no |not |none|unknown|unassigned)/i;
   function control(key) {
     const [kind, id] = key.split(':'), on = new Set([...(S.f[key] || []), ...termValues(key)]);
-    const chip = (v, lab, n) => `<button type="button" class="fchip" data-f="${esc(key)}" data-v="${esc(v)}" aria-pressed="${on.has(v)}">${esc(lab)}${n != null ? ` <span class="muted">${int(n)}</span>` : ''}</button>`;
+    // the values shown are fixed by the whole site (nothing moves as the selection changes); the counts follow it
+    const fc = kind === 'n' ? null : facet(key), shownN = v => (fc ? fc[v] ?? 0 : cnt(key, v));
+    const chip = (v, lab) => { const n = shownN(v), t = cnt(key, v);
+      return `<button type="button" class="fchip${fc && !n && !on.has(v) ? ' zero' : ''}" data-f="${esc(key)}" data-v="${esc(v)}" aria-pressed="${on.has(v)}"${fc ? ` title="${int(n)} in the selection, ${int(t)} in all"` : ''}>${esc(lab)}${n != null ? ` <span class="muted">${int(n)}</span>` : ''}</button>`; };
     if (kind === 'a') {
-      const codes = (SD?.classes[id] || Object.keys(A[id]?.labels || {})).filter(c => !/^(no |not |unknown|unassigned)/i.test(classLabel(id, c)) && cnt(key, c) !== 0);
-      return `<div class="fctl"><p class="flabel">${esc(A[id].title)}</p><div class="fchips">${codes.map(c => chip(c, classLabel(id, c), cnt(key, c))).join('')}</div></div>`;
+      const codes = (SD?.classes[id] || Object.keys(A[id]?.labels || {})).filter(c => !NONE_RE.test(classLabel(id, c)) && cnt(key, c) !== 0);
+      return `<div class="fctl"><p class="flabel">${esc(A[id].title)}</p><div class="fchips">${codes.map(c => chip(c, classLabel(id, c))).join('')}</div></div>`;
     }
     if (kind === 'p') {
-      const names = Object.keys(setMembers[id] || {}).filter(x => cnt(key, x)).sort((x, y) => (cnt(key, y) || 0) - (cnt(key, x) || 0));
-      return `<div class="fctl"><p class="flabel">${esc(A[id].title)} <span class="muted">(${esc(W.marked)} proteins)</span></p><select data-fsel="${esc(key)}"><option value="">Any</option>` +
-        names.map(s => `<option value="${esc(s)}"${on.has(s) ? ' selected' : ''}>${esc((A[id].labels || {})[s] || s)} (${int(cnt(key, s))})</option>`).join('') + '</select></div>';
+      const lab = x => (A[id].labels || {})[x] || x;
+      const names = Object.keys(setMembers[id] || {}).filter(x => cnt(key, x)).sort((x, y) => NONE_RE.test(lab(x)) - NONE_RE.test(lab(y)) || (cnt(key, y) || 0) - (cnt(key, x) || 0));
+      return `<div class="fctl"><p class="flabel">${esc(A[id].title)} <span class="muted">(${fc ? 'proteins of the selection' : `${esc(W.marked)} proteins`})</span></p><select data-fsel="${esc(key)}"><option value="">Any</option>` +
+        names.map(s => `<option value="${esc(s)}"${on.has(s) ? ' selected' : ''}${fc && !shownN(s) && !on.has(s) ? ' class="zero"' : ''}>${esc(lab(s))} (${int(shownN(s))})</option>`).join('') + '</select></div>';
     }
     const spec = SPECS[id] || {};
     if (spec.kind === 'number') {
@@ -463,8 +494,11 @@
     const vals = (SD ? SD.attributes[id] : Object.keys(spec.values || {})).filter(v => cnt('t:' + id, v) !== 0);
     const order = spec.values ? Object.keys(spec.values) : [];
     const sorted = [...vals].sort((x, y) => (order.includes(x) ? order.indexOf(x) : 999) - (order.includes(y) ? order.indexOf(y) : 999) || (cnt('t:' + id, y) || 0) - (cnt('t:' + id, x) || 0));
+    if (spec.control === 'select')       // many values: a drop-down list, one value at a time
+      return `<div class="fctl"><p class="flabel" title="${esc(spec.help || '')}">${esc(spec.label)}</p><select data-fsel="t:${esc(id)}"><option value="">Any</option>` +
+        sorted.map(v => `<option value="${esc(v)}"${on.has(v) ? ' selected' : ''}${fc && !shownN(v) && !on.has(v) ? ' class="zero"' : ''}>${esc(valueLabel(id, v))} (${int(shownN(v))})</option>`).join('') + '</select></div>';
     return `<div class="fctl"><p class="flabel" title="${esc(spec.help || '')}">${esc(spec.label)}${spec.kind === 'list' ? ' <span class="muted">(match any)</span>' : ''}</p><div class="fchips">` +
-      sorted.map(v => chip(v, valueLabel(id, v), cnt('t:' + id, v))).join('') + '</div></div>';
+      sorted.map(v => chip(v, valueLabel(id, v))).join('') + '</div></div>';
   }
   function keysOf(g) {
     return [...(g.analyses || []).map(aid => (A[aid]?.kind === 'protein_sets' ? 'p:' : 'a:') + aid), ...(g.attributes || []).map(k => (SPECS[k]?.kind === 'number' ? 'n:' : 't:') + k)];
@@ -488,37 +522,51 @@
     const here = K.sections?.[S.view]?.() || [];
     const item = ([id, lab, lvl, href]) => (lvl === 0 ? `<p class="toc-group">${esc(lab)}</p>`
       : href ? `<a href="${esc(href)}" class="sub l${lvl || 1}${S.view + '/' + S.arg === href.slice(1).split('?')[0] ? ' on' : ''}">${esc(lab)}</a>`
-      : `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="sub l${lvl || 1}">${esc(lab)}</a>`);
-    return '<nav class="toc">' + pages.map(([v, n]) => `<a href="#${v}" class="page${cur(v) ? ' on' : ''}">${esc(n)}</a>` + (cur(v) ? here.map(item).join('') : '')).join('') + '</nav>';
+      : `<a href="${esc(location.hash)}" data-jump="${esc(id)}"${id === 'view' ? '' : ` data-spy="${esc(id)}"`} class="sub l${lvl || 1}">${esc(lab)}</a>`);
+    // the open protein is a page of its own, under Proteins; a page with no tab (Compare) is listed while open
+    const extra = K.views[S.view] && !pages.some(([v]) => v === S.view) && S.view !== 'protein' ? [[S.view, K.views[S.view].title?.() || S.view]] : [];
+    const list = [...pages, ...extra];
+    const prot = S.view === 'protein' && S.arg ? (() => { const acc = S.arg.split('/')[0], pr = byAcc[acc]; return `<a href="${esc(K.link('protein', acc))}" class="page sub-page on">${esc(pr?.gene || acc)}</a>` + here.map(item).join(''); })() : '';
+    return '<nav class="toc">' + list.map(([v, n]) => `<a href="${esc(K.link(v))}" class="page${cur(v) && S.view !== 'protein' ? ' on' : ''}">${esc(n)}</a>` +
+      (v === 'proteins' && prot ? prot : cur(v) && S.view !== 'protein' ? here.map(item).join('') : '')).join('') + '</nav>';
   }
-  const pinned = () => R.pin !== 'off' && innerWidth >= PIN_MIN;
+  const pinned = () => (R.pin === 'on' && innerWidth >= PIN_MIN) || (R.pin === 'auto' && innerWidth >= PIN_AUTO);
   // scroll-spy: the section in view is marked in the list
-  let spy = null;
+  let spyTick = false;
   function watchSections() {
-    spy?.disconnect(); const links = [...document.querySelectorAll('#rail [data-spy]')]; if (!links.length || !('IntersectionObserver' in window)) return;
-    const seen = new Map();
-    spy = new IntersectionObserver(es => {
-      es.forEach(e => seen.set(e.target.id, e.isIntersecting ? e.boundingClientRect.top : null));
-      const top = [...seen.entries()].filter(([, t]) => t != null).sort((x, y) => x[1] - y[1])[0];
-      links.forEach(a => a.classList.toggle('on', !!top && a.dataset.spy === top[0]));
-    }, { rootMargin: '-120px 0px -55% 0px' });
-    links.forEach(a => { const t = document.getElementById(a.dataset.spy); if (t) spy.observe(t); });
+    const links = [...document.querySelectorAll('#rail [data-spy]')]; if (!links.length) return;
+    const bar = (document.querySelector('.toolbar')?.getBoundingClientRect().bottom || 0) + 24;
+    let cur = null;
+    links.forEach(a => { const t = document.getElementById(a.dataset.spy); if (t && t.getBoundingClientRect().top <= bar) cur = a; });
+    links.forEach(a => a.classList.toggle('on', a === (cur || links[0])));
   }
+  addEventListener('scroll', () => { if (spyTick) return; spyTick = true; requestAnimationFrame(() => { spyTick = false; watchSections(); }); }, { passive: true });
   function rail() {
     const el = document.getElementById('rail'); if (!el) return;
     const ae = document.activeElement, keep = ae && el.contains(ae) ? (ae.dataset.f ? `[data-f="${CSS.escape(ae.dataset.f)}"][data-v="${CSS.escape(ae.dataset.v)}"]` : ae.dataset.fsel ? `[data-fsel="${CSS.escape(ae.dataset.fsel)}"]` : ae.dataset.railTab ? `[data-rail-tab="${ae.dataset.railTab}"]` : null) : null;
+    // the control in use stays where it was on the screen while the sidebar is drawn again
+    const top0 = keep ? el.querySelector(keep)?.getBoundingClientRect().top : null;
     const wasOpen = document.body.classList.contains('rail-open'), open = !pinned() && R.open;
     document.body.classList.toggle('rail-pinned', pinned());
+    // the floating button on narrow screens: the sidebar's way in once the toolbar has scrolled away
+    let fab = document.querySelector('.rail-fab');
+    if (!fab) { document.body.insertAdjacentHTML('beforeend', '<button class="rail-fab" type="button" data-rail-open="filters"></button>'); fab = document.querySelector('.rail-fab'); }
+    const nf = Object.keys(S.f).length + (S.q ? 1 : 0);
+    fab.innerHTML = `☰ Filters${nf ? ` <span class="badge">${nf}</span>` : ''}`; fab.setAttribute('aria-label', `Sections and filters${nf ? `, ${nf} in use` : ''}`);
     document.body.classList.toggle('rail-open', open);
     if (open) { el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); } else { el.removeAttribute('role'); el.removeAttribute('aria-modal'); }
     ['#view', '.toolbar', '.hero', 'footer.site'].forEach(sel => { const x = document.querySelector(sel); if (x) x.inert = open; });
     el.innerHTML = `<div class="rail-head"><span class="seg" role="group"><button type="button" data-rail-tab="sections" aria-pressed="${R.tab === 'sections'}">☰ Sections</button>` +
       `<button type="button" data-rail-tab="filters" aria-pressed="${R.tab === 'filters'}">⏚ Filters${Object.keys(S.f).length ? ` <span class="badge">${Object.keys(S.f).length}</span>` : ''}</button></span>` +
-      `<button type="button" class="btn small" data-rail-pin title="${R.pin === 'off' ? `Keep the sidebar beside the page whenever the window is ${PIN_MIN} px or wider` : 'Show the sidebar only when asked (☰)'}">${R.pin === 'off' ? 'Pin' : 'Unpin'}</button>${pinned() ? '' : '<button type="button" class="btn small" data-rail-close aria-label="Close">×</button>'}</div>` +
+      (innerWidth >= PIN_MIN ? `<button type="button" class="btn small" data-rail-pin title="${pinned() ? 'Show the sidebar only when asked (☰)' : 'Keep the sidebar beside the page'}">${pinned() ? 'Unpin' : 'Pin'}</button>` : '') + `${pinned() ? '' : '<button type="button" class="btn small" data-rail-close aria-label="Close">×</button>'}</div>` +
       `<div class="rail-body">${R.tab === 'sections' ? sectionsTab() : filtersTab()}</div>` +
       (pinned() ? `<div class="rail-grip" role="separator" aria-orientation="vertical" aria-label="Sidebar width: drag, or use the arrow keys; double-click resets it" tabindex="0" data-rail-grip></div>` : '');
     if (R.tab === 'sections') requestAnimationFrame(watchSections);
-    if (keep) el.querySelector(keep)?.focus();
+    const kept = keep && el.querySelector(keep);
+    if (kept) {
+      kept.focus({ preventScroll: true });
+      if (top0 != null) { const dy = kept.getBoundingClientRect().top - top0, sc = [el, el.querySelector('.rail-body')].find(x => x && x.scrollHeight > x.clientHeight && /auto|scroll/.test(getComputedStyle(x).overflowY)); if (sc) sc.scrollTop += dy; else scrollBy(0, dy); }
+    }
     else if (open && !wasOpen) el.querySelector('[data-rail-tab][aria-pressed="true"]')?.focus();
     else if (!open && wasOpen) R.opener?.focus();
   }
@@ -546,7 +594,7 @@
     ['[data-fgroup-clear]', (el, e) => { e.preventDefault(); keysOf(groups()[+el.dataset.fgroupClear]).forEach(k => delete S.f[k]); K.writeHash(true); K.render(); }],
     ['[data-rail-tab]', el => { R.tab = el.dataset.railTab; try { localStorage.setItem('ptmc-rail-tab', R.tab); } catch (e) { /* */ } rail(); }],
     ['[data-saved-del]', el => { const list = savedList(); list.splice(+el.dataset.savedDel, 1); try { localStorage.setItem(`ptmc-saved-${D.site.id}`, JSON.stringify(list)); } catch (e) { /* */ } rail(); }],
-    ['[data-rail-pin]', () => { R.pin = R.pin === 'off' ? 'auto' : 'off'; R.open = false; try { localStorage.setItem('ptmc-rail', R.pin); } catch (e) { /* */ } rail(); if (R.pin === 'auto' && !pinned()) { R.open = true; rail(); } }],
+    ['[data-rail-pin]', () => { R.pin = pinned() ? 'off' : innerWidth >= PIN_AUTO ? 'auto' : 'on'; R.open = false; try { localStorage.setItem('ptmc-rail', R.pin); } catch (e) { /* */ } rail(); if (!pinned()) { R.open = true; rail(); } }],
     ['[data-rail-close]', () => { R.open = false; rail(); }],
     ['[data-rail-open]', el => { R.opener = el; if (pinned()) { R.tab = el.dataset.railOpen || R.tab; rail(); document.querySelector('#rail [data-rail-tab]')?.focus(); return; } R.open = true; R.tab = el.dataset.railOpen || R.tab; rail(); }],
     ['[data-jump]', (el, e) => { e.preventDefault(); const t = document.getElementById(el.dataset.jump); if (t) { if (t.tagName === 'DETAILS') t.open = true; t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }],

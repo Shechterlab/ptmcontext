@@ -44,7 +44,7 @@
       `<p class="page-sub">Every protein with at least one ${esc(W.mark)}${K.sel?.active() ? ' in your selection' : ''}. Search above by gene, accession or name (a list of genes works too), or filter. A row opens the protein.</p>` +
       `<div class="filters"><span class="muted">${int(rows.length)} of ${int(P.length)} proteins${K.sel?.active() ? ' in your selection' : ''}</span></div>` +
       `<div class="tbl-card" id="proteins-table"><table class="tbl ptbl"><thead><tr>${PCOLS.map(([k, t, n]) => `<th class="${n ? 'num' : ''}" data-psort="${k}" tabindex="0"${PS.sort === k ? ` aria-sort="${PS.desc ? 'descending' : 'ascending'}"` : ''}>${esc(t)}${PS.sort === k ? (PS.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
-      shown.map(p => `<tr data-acc="${esc(p.acc)}"><td><a href="#protein/${esc(p.acc)}"><b>${esc(p.gene || '–')}</b></a></td><td class="wrapok">${esc(p.name)}</td><td class="mono">${esc(p.acc)}</td>` +
+      shown.map(p => `<tr data-acc="${esc(p.acc)}"><td><a href="${esc(K.link('protein', p.acc))}"><b>${esc(p.gene || '–')}</b></a></td><td class="wrapok">${esc(p.name)}</td><td class="mono">${esc(p.acc)}</td>` +
         `<td class="num">${K.sel?.active() ? `<b>${int(selCount(p))}</b> <span class="muted">of ${int(p.marks)}</span>` : int(p.marks)}</td><td class="num">${int(p.len)}</td><td class="num">${pct(p.marks, p.cand)}</td></tr>`).join('') +
       `</tbody></table></div>` + (rows.length > PS.n ? `<p><button class="linkish" type="button" data-pmore>Show ${int(Math.min(200, rows.length - PS.n))} more</button></p>` : '');
   }
@@ -72,8 +72,11 @@
   const mapCtx = () => ({ p: byAcc[PV.acc], rec: PV.rec, uni: PV.uniJson, uniFailed: PV.uniFailed, af: PV.af && !PV.af.failed && !PV.af.none ? PV.af : null, afFailed: PV.af?.failed, afNone: PV.af?.none,
     selected: K.sel?.active() ? K.sel.selectedPositions(PV.acc) : null, site: PV.site });
   function drawMap() { const el = document.getElementById('pmap'); if (el && PV.rec) K.map.render(el, mapCtx()); }
-  const site = pos => `${(PV.rec.seq || '')[pos - 1] || D.residues?.[0] || ''}${pos}`;
+  const site = pos => `${(PV.rec?.seq || '')[pos - 1] || D.residues?.[0] || ''}${pos}`;
   function markClasses(m) { return COLS.map((aid, k) => [aid, m[2][k]]); }
+  // the sites table's question columns: the site file's (website.sites.columns) and those with tags (motifs), unless
+  // every question is asked for
+  const shownCols = () => (PV.allCols ? COLS : COLS.filter(aid => (D.sites_view?.columns || []).includes(aid) || A[aid]?.shape === 'flags'));
   function classText(aid, v) {
     if (!v) return '–';
     const a = A[aid]; if (!a) return v;
@@ -89,6 +92,10 @@
     }
     return esc(K.sel?.valueLabel ? K.sel.valueLabel(name, v) : v);
   }
+  // what a site card or tip lists: the attributes a site has a value for (a coloured one always), and not a yes/no
+  // attribute whose column another attribute shows in full (the changes rather than "changed")
+  const detailOf = n => Object.keys(SPECS).some(o => o !== n && SPECS[o].column === SPECS[n].column && !SPECS[o].present);
+  const shownAttrs = m => Object.keys(SPECS).filter(n => !(SPECS[n].present && detailOf(n)) && (attrVal(m, n) !== '' || SPECS[n].colour));
   const pillOf = (m, k) => `<span class="state-pill" style="--c:${K.map.attrColour(k, attrVal(m, k))};--t:${K.map.textOn(K.map.attrColour(k, attrVal(m, k)))}" title="${esc(SPECS[k].label)}">${esc(K.sel?.valueLabel ? K.sel.valueLabel(k, attrVal(m, k)) : attrVal(m, k))}</span>`;
   const statePill = m => { const k = Object.keys(SPECS).find(n => SPECS[n].colour && SPECS[n].kind === 'category'); return k ? pillOf(m, k) : ''; };
   function scoreRows(p, rec) {
@@ -115,7 +122,7 @@
   // the site card: one mark, everything the site knows about it, each source linked
   function siteCard(p, rec) {
     const m = rec.marks.find(x => x[0] === PV.site); if (!m) return '';
-    const attrs = Object.keys(SPECS).map(n => `<dt title="${esc(SPECS[n].help || '')}">${esc(SPECS[n].label)}</dt><dd>${attrHtml(m, n, true)}</dd>`).join('');
+    const attrs = shownAttrs(m).map(n => `<dt title="${esc(SPECS[n].help || '')}">${esc(SPECS[n].label)}</dt><dd>${attrHtml(m, n, true)}</dd>`).join('');
     const uniAt = (PV.uniJson?.features || []).filter(f => (f.location?.start?.value === m[0] && f.location?.end?.value === m[0]) && ['Modified residue', 'Natural variant', 'Mutagenesis', 'Cross-link'].includes(f.type));
     const pm = f => [...new Set((f.evidences || []).filter(e => e.source === 'PubMed').map(e => e.id))];
     const others = rec.marks.filter(x => x[0] !== m[0]).map(x => x[0]), near = others.length ? others.reduce((b, x) => (Math.abs(x - m[0]) < Math.abs(b - m[0]) ? x : b)) : null;
@@ -137,11 +144,11 @@
   function proteinView(arg) {
     const [acc, sitePos] = String(arg).split('/');
     const p = byAcc[acc];
-    if (!p) return `<p class="empty">No ${esc(W.marks)} on ${esc(acc)} in this site. <a href="#proteins">All proteins</a></p>`;
+    if (!p) return `<p class="empty">No ${esc(W.marks)} on ${esc(acc)} in this site. <a href="${esc(K.link('proteins'))}">All proteins</a></p>`;
     load(acc); PV.site = sitePos ? +sitePos : null;
     if (PV.rec && PV.site && !PV.rec.marks.some(m => m[0] === PV.site)) PV.site = null;
     const selTxt = K.sel?.active() ? `${int(K.sel.nMarks())} ${esc(W.marks)} · selection` : `all ${esc(W.marks)}`;
-    const head = `<p class="crumb"><a href="#overview">Overview</a> › <a href="#proteins">Proteins</a> <span class="muted">(${selTxt})</span> › <b>${esc(p.gene || p.acc)}</b>${PV.site ? ` › ${esc(PV.rec ? site(PV.site) : PV.site)}` : ''}</p>` +
+    const head = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> <span class="muted">(${selTxt})</span> › <b>${esc(p.gene || p.acc)}</b>${PV.site ? ` › ${esc(PV.rec ? site(PV.site) : PV.site)}` : ''}</p>` +
       `<div class="prot-head"><h2>${esc(p.gene || p.acc)} <small>${esc(p.name)}</small></h2>` +
       `<p class="aliases" id="aliases"></p><div class="fn" id="fn"><p class="muted">Asking UniProt for its function…</p></div>` +
       `<div class="prot-chips"><span class="chip mono">${esc(p.acc)}</span>${PV.rec?.entry ? `<span class="chip mono">${esc(PV.rec.entry)}</span>` : ''}<a class="btn small" href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}" target="_blank" rel="noopener">UniProt ↗</a>` +
@@ -151,7 +158,14 @@
     const rec = PV.rec, sel = K.sel?.active() ? K.sel.selectedPositions(acc) : null;
     // the facts a site file asks for (website.protein.facts): how many of the protein's marks are in some classes of a
     // question, e.g. in disordered regions
-    const factOf = f => { const k = COLS.indexOf(f.analysis); if (k < 0) return null; const want = new Set(f.classes || []);
+    const factOf = f => {
+      // a protein-set question: the sets this protein is in (its disease families, say)
+      if (A[f.analysis]?.kind === 'protein_sets') {
+        const sd = K.sel?.data(), ps = sd?.protein_sets?.[f.analysis]; if (!ps) return null;
+        const names = ps.sets.map(([s]) => s).filter(s => K.sel.setHas(f.analysis, s, p.i)), lab = s => (A[f.analysis].labels || {})[s] || s;
+        return [int(names.length), f.label || A[f.analysis].title, names.map(lab).join('; ')];
+      }
+      const k = COLS.indexOf(f.analysis); if (k < 0) return null; const want = new Set(f.classes || []);
       const n = rec.marks.filter(m => String(m[2][k] || '').split(';').some(c => want.has(c))).length;
       return [`${int(n)} of ${int(rec.marks.length)}`, f.label || `in: ${(f.classes || []).map(c => label(f.analysis, c)).join(', ')}`]; };
     const listAttr = Object.keys(SPECS).find(n => SPECS[n].kind === 'list' && SPECS[n].link);
@@ -161,12 +175,13 @@
       ...(nSrc != null ? [[int(nSrc), `${SPECS[listAttr].label} reporting ${rec.marks.length === 1 ? 'it' : 'them'}`]] : [])];
     const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${(PV.open[id] ?? open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
     return head +
-      `<div class="facts">${facts.map(([b, t]) => `<div class="fact"><b>${b}</b><span>${esc(t)}</span></div>`).join('')}</div>` +
+      `<div class="facts">${facts.map(([b, t, more]) => `<div class="fact"><b>${b}</b><span>${esc(t)}</span>${more ? `<small class="fact-more" title="${esc(more)}">${esc(more)}</small>` : ''}</div>`).join('')}</div>` +
       (sel && sel.size < rec.marks.length ? `<p class="note">${int(sel.size)} of ${int(rec.marks.length)} ${esc(W.marks)} match your selection; the others are faded. <button class="linkish" type="button" data-sel-clear-all>Clear filters</button></p>` : '') +
       fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa`, `<div class="card-head"><p class="sub">The ${esc(W.marks)} over the protein, and rows from the site’s data and live sources. Hover anything for what it is and where it comes from; click it to pin it with its links.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mexp', 'the map')}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
       fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}${Object.values(SPECS).some(x => x.kind === 'list' && x.link) ? `, each with the ${esc(Object.values(SPECS).find(x => x.kind === 'list' && x.link).label.toLowerCase())} that report it` : ''}`, `<div class="card-head"><p class="sub">Each ${esc(W.mark)} with the 15 residues around it, its attributes and its class in every question. A row opens its card.</p>${K.expBar(['tsv'], 'sexp', 'the sites')}</div>` +
-        `<div class="tbl-card"><table class="tbl stbl"><thead><tr><th>Site</th>${Object.keys(SPECS).filter(n => SPECS[n].colour || (SPECS[n].kind === 'list' && SPECS[n].link)).map(n => `<th>${esc(SPECS[n].label)}</th>`).join('')}<th>Window (±7)</th>${COLS.map(aid => `<th>${esc(A[aid]?.title || aid)}</th>`).join('')}</tr></thead><tbody>` +
-        rec.marks.map(m => `<tr data-site="${m[0]}" tabindex="0" class="${sel && !sel.has(m[0]) ? 'faded' : ''}${PV.site === m[0] ? ' on' : ''}"><td class="mono"><b>${esc(site(m[0]))}</b></td>${Object.keys(SPECS).filter(n => SPECS[n].colour || (SPECS[n].kind === 'list' && SPECS[n].link)).map(n => `<td class="wrapok">${SPECS[n].colour && SPECS[n].kind === 'category' ? pillOf(m, n) : attrHtml(m, n, false)}</td>`).join('')}<td class="mono">${winHtml(m[1])}</td>${markClasses(m).map(([aid, v]) => `<td class="wrapok" title="${esc(help(aid, v))}">${esc(classText(aid, v))}</td>`).join('')}</tr>`).join('') +
+        `<p class="cols-note muted">${PV.allCols ? 'Every question’s class.' : `The questions the site shows by default; ${int(COLS.length - shownCols().length)} more.`} <button type="button" class="linkish" data-all-cols>${PV.allCols ? 'Fewer columns' : 'Every question'}</button></p>` +
+        `<div class="tbl-card"><table class="tbl stbl"><thead><tr><th>Site</th>${Object.keys(SPECS).filter(n => SPECS[n].colour || (SPECS[n].kind === 'list' && SPECS[n].link)).map(n => `<th>${esc(SPECS[n].label)}</th>`).join('')}<th>Window (±7)</th>${shownCols().map(aid => `<th>${esc(A[aid]?.title || aid)}</th>`).join('')}</tr></thead><tbody>` +
+        rec.marks.map(m => `<tr data-site="${m[0]}" tabindex="0" class="${sel && !sel.has(m[0]) ? 'faded' : ''}${PV.site === m[0] ? ' on' : ''}"><td class="mono"><b>${esc(site(m[0]))}</b></td>${Object.keys(SPECS).filter(n => SPECS[n].colour || (SPECS[n].kind === 'list' && SPECS[n].link)).map(n => `<td class="wrapok">${SPECS[n].colour && SPECS[n].kind === 'category' ? pillOf(m, n) : attrHtml(m, n, false)}</td>`).join('')}<td class="mono">${winHtml(m[1])}</td>${markClasses(m).filter(([aid]) => shownCols().includes(aid)).map(([aid, v]) => `<td class="wrapok" title="${esc(help(aid, v))}">${esc(classText(aid, v))}</td>`).join('')}</tr>`).join('') +
         `</tbody></table></div>`, true) +
       fold('p-score', `Its ${esc(W.marks)}, against its other ${esc(W.residues)}`, 'counted in this protein', `<p class="sub">The classes its ${esc(W.marks)} fall in, and how often its other ${esc(W.residues)} do. A row opens every class.</p><div class="hub">${scoreRows(p, rec)}</div>`, false) +
       (D.analyses.some(a => a.kind === 'protein_sets') ? fold('p-kinds', 'Kinds of protein', 'its classes, pathways and locations, with the site’s result for each', kindsHtml(p), false) : '') +
@@ -185,7 +200,7 @@
     const cnt = K.sel?.active() ? K.sel.selectedCountByProtein() : null;
     const top = P.slice().map(p => [p, cnt ? (cnt[p.i] || 0) : p.marks]).filter(([, k]) => k > 0).sort((x, y) => y[1] - x[1]).slice(0, 12);
     return [['view', 'Proteins', 1], ['proteins-table', 'The table: search, sort, download', 1], ['g-top', cnt ? `Most ${W.marks} in the selection` : `Most ${W.marks}`, 0],
-      ...top.map(([p, k]) => [`p-${p.acc}`, `${p.gene || p.acc} (${int(k)})`, 1, `#protein/${p.acc}`])];
+      ...top.map(([p, k]) => [`p-${p.acc}`, `${p.gene || p.acc} (${int(k)})`, 1, K.link('protein', p.acc)])];
   };
 
   // ---- kinds of protein: the sets of each protein-set question this protein is in, with the site's result for each,
@@ -369,7 +384,7 @@
         ? `<p>${int(list.length)} ${esc(IXS.net)} partner${list.length === 1 ? '' : 's'} at score ${(IXS.min / 1000).toFixed(1)} or more; <b>${int(withMarks.length)}</b> of them ${withMarks.length === 1 ? 'has' : 'have'} ${esc(W.marks)} in this site.</p>`
         : `<p class="muted">STRING lists no ${esc(IXS.net)} partner at score ${(IXS.min / 1000).toFixed(1)} or more.</p>`;
       const table = shown.length ? `<div class="tbl-card"><table class="tbl"><thead><tr><th>Partner</th><th class="num">Score</th><th>Evidence</th><th class="num">${esc(cap(W.marks))} here</th></tr></thead><tbody>` +
-        shown.map(x => `<tr><td>${x.here ? `<a href="#protein/${esc(x.here.acc)}"><b>${esc(x.preferredName_B)}</b></a>` : `<span title="${esc(x.stringId_B)}">${esc(x.preferredName_B)}</span>`}</td>` +
+        shown.map(x => `<tr><td>${x.here ? `<a href="${esc(K.link('protein', x.here.acc))}"><b>${esc(x.preferredName_B)}</b></a>` : `<span title="${esc(x.stringId_B)}">${esc(x.preferredName_B)}</span>`}</td>` +
           `<td class="num">${Number(x.score).toFixed(3)}</td><td class="wrapok">${esc(evidence(x))}</td><td class="num">${x.here ? int(x.here.marks) : '–'}</td></tr>`).join('') + '</tbody></table></div>' : '';
       const more = shownAll.length > 15 ? `<p><button class="linkish" type="button" data-ix-all>${IXS.all ? 'Show the best 15' : 'Show all ' + int(shownAll.length)}</button></p>` : '';
       fill('live-ix', controls + head + table + more +
@@ -430,6 +445,7 @@
     ['[data-mexp]', el => K.exportFigure(el.dataset.mexp, mapFigure, `${D.site.id}_${PV.acc}_map`, el, sitesTsv)],
     ['[data-msite]', el => openSite(+el.dataset.msite)],
     ['[data-site-open]', el => openSite(+el.dataset.siteOpen)],
+    ['[data-all-cols]', () => { PV.allCols = !PV.allCols; PV.open['p-sites'] = true; K.render(); }],
     ['[data-kinds-all]', el => { const k = 'kinds:' + el.dataset.kindsAll; PV.open[k] = !PV.open[k]; PV.open['p-kinds'] = true; K.render(); }],
     ['[data-regexp]', el => K.exportFigure('tsv', null, `${D.site.id}_${PV.acc}_regions`, el, regionsTsv)],
     ['[data-fasta]', el => { const p = byAcc[PV.acc], text = fasta(p, PV.rec);
@@ -463,7 +479,7 @@
     const c = K.map.siteColour(m);
     return `<b>${esc(site(pos))}</b>${c.label ? ' · ' + esc(c.label) : ''}<br><span class="win">${winHtml(m[1])}</span><br>` +
       markClasses(m).map(([aid, v]) => `${esc(A[aid]?.title || aid)}: ${esc(classText(aid, v))}`).join('<br>') +
-      Object.keys(SPECS).map(n => `<br><span class="muted">${esc(SPECS[n].label)}:</span> ${attrHtml(m, n, false)}`).join('') +
+      shownAttrs(m).map(n => `<br><span class="muted">${esc(SPECS[n].label)}:</span> ${attrHtml(m, n, false)}`).join('') +
       '<br><span class="muted">Click for its card</span>';
   }]);
 });

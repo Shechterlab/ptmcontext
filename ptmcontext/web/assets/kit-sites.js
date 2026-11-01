@@ -32,8 +32,8 @@
   function columns() {
     const attrCols = Object.keys(SPECS).filter(n => SPECS[n].colour || (SPECS[n].kind === 'list' && SPECS[n].link));
     return [
-      ['protein', 'Protein', m => pr(m[0])[1] || pr(m[0])[0], m => `<a href="#protein/${esc(pr(m[0])[0])}"><b>${esc(pr(m[0])[1] || '–')}</b></a> <span class="muted mono">${esc(pr(m[0])[0])}</span>`],
-      ['site', 'Site', m => m[1], m => `<a class="mono" href="#protein/${esc(pr(m[0])[0])}/${m[1]}"><b>${esc((m[4] || '')[7] || '')}${m[1]}</b></a>`],
+      ['protein', 'Protein', m => pr(m[0])[1] || pr(m[0])[0], m => `<a href="${esc(K.link('protein', pr(m[0])[0]))}"><b>${esc(pr(m[0])[1] || '–')}</b></a> <span class="muted mono">${esc(pr(m[0])[0])}</span>`],
+      ['site', 'Site', m => m[1], m => `<a class="mono" href="${esc(K.link('protein', pr(m[0])[0] + '/' + m[1]))}"><b>${esc((m[4] || '')[7] || '')}${m[1]}</b></a>`],
       ...attrCols.map(n => [`a:${n}`, SPECS[n].label, m => (SPECS[n].kind === 'list' ? vals(m, n).length : vals(m, n).join()), m => attrCell(m, n, false)]),
       ['window', `Window ±7${tagAids().length ? ' · ' + tagAids().map(a => (A[a]?.title || a).toLowerCase()).join(', ') : ''}`, m => m[4], m => `<span class="mono">${winHtml(m[4] || '')}</span>${tagAids().map(a => ` <span class="tags">${m[2][AN().indexOf(a)].map(c => `<span class="tag" title="${esc((A[a]?.help || {})[SD().classes[a][c]] || '')}">${esc(K.sel.classLabel(a, SD().classes[a][c]))}</span>`).join('')}</span>`).join('')}`],
       ...ctxAids().map(aid => [`ctx:${aid}`, A[aid]?.title || aid, m => classLabel(aid, m[2][AN().indexOf(aid)]), m => esc(classLabel(aid, m[2][AN().indexOf(aid)]))]),
@@ -76,7 +76,7 @@
   K.views.sites = { render: view, title: () => cap(W.marks) };
   K.tabs.push(() => ['sites', 'Sites', K.sel?.active() ? K.sel.nMarks() : D.counts.marks]);
   K.sections.sites = () => [['view', cap(W.marks), 1], ...(Object.keys(SPECS).some(n => SPECS[n].colour && SPECS[n].kind === 'category') ? [['sites-quick', 'Quick filters', 1]] : []), ['sites-table', 'The table: sort, open, download', 1],
-    ['g-by', 'By question', 0], ...D.analyses.filter(a => a.kind !== 'protein_sets').map(a => [`s-${a.id}`, a.title, 1, `#overview/${encodeURIComponent(a.id)}`])];
+    ['g-by', 'By question', 0], ...D.analyses.filter(a => a.kind !== 'protein_sets').map(a => [`s-${a.id}`, a.title, 1, K.link('overview', a.id)])];
   K.clicks.push(
     ['[data-ssort]', el => { const k = el.dataset.ssort; T.desc = T.sort === k ? !T.desc : false; T.sort = k; K.render(); }],
     ['[data-smore]', () => { T.n += 100; K.render(); }],

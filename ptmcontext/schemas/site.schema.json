@@ -222,6 +222,21 @@
               "provenance": {
                 "type": "boolean",
                 "description": "the attribute says how a mark was found (its studies, how it was localised, notes), not what it is: comparisons of marks show it as a caveat, and the first linked list of these gives the study strata"
+              },
+              "present": {
+                "type": "boolean",
+                "description": "the value is whether the column holds anything: 'yes' or 'no' (name them in values); for a filter such as \"changed in tumours\" over a column of changes"
+              },
+              "pair_with": {
+                "type": "string",
+                "description": "list: a second column listing one value per value of the first, in the same order; each value becomes '<value>:<its partner>' (a perturbation and its call)"
+              },
+              "control": {
+                "enum": [
+                  "chips",
+                  "select"
+                ],
+                "description": "filter: chips (default) or a drop-down list, for many values"
               }
             }
           }
@@ -931,12 +946,11 @@
           "properties": {
             "facts": {
               "type": "array",
-              "description": "tiles counting the protein's marks in some classes of a question",
+              "description": "tiles at the top of each protein page: for a residue question, how many of the protein's marks are in some of its classes (classes required); for a protein-set question, the sets the protein is in (e.g. its disease families)",
               "items": {
                 "type": "object",
                 "required": [
-                  "analysis",
-                  "classes"
+                  "analysis"
                 ],
                 "additionalProperties": false,
                 "properties": {

@@ -114,3 +114,20 @@ def test_compare_stratify_must_name_a_list_attribute():
     bad = copy.deepcopy(site)
     bad['website']['compare']['stratify'] = 'state'
     assert any('website.compare.stratify' in p for p in S.website_problems(bad))
+
+
+def test_attribute_present_and_pair_with():
+    """present: whether a column holds anything; pair_with: two lists in step become '<value>:<partner>'."""
+    table = pd.DataFrame({'acc': ['P1', 'P1'], 'pos': ['5', '9'], 'flag': ['', ''],
+                          'changes': ['R5C; R5H', ''], 'pert': ['ko_a; kd_b', ''], 'call': ['decreased; no_change', '']})
+    marked = pd.DataFrame({'accession': ['P1', 'P1'], 'position': [5, 9]})
+    spec = _spec(changed={'column': 'changes', 'label': 'Changed', 'kind': 'category', 'present': True},
+                 changes={'column': 'changes', 'label': 'Changes', 'kind': 'list'},
+                 pert={'column': 'pert', 'label': 'Perturbations', 'kind': 'list', 'pair_with': 'call'})
+    out = S.mark_attributes(spec, table, marked).set_index('position')
+    assert list(out['a.changed']) == ['yes', 'no']
+    assert out.loc[5, 'a.changes'] == 'R5C; R5H'                  # the column itself is still read as it is
+    assert out.loc[5, 'a.pert'] == 'ko_a:decreased; kd_b:no_change' and out.loc[9, 'a.pert'] == ''
+    bad = table.assign(call=['decreased', ''])
+    with pytest.raises(ValueError, match='pair_with'):
+        S.mark_attributes(spec, bad, marked)

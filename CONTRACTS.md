@@ -69,8 +69,11 @@ Any TSV with an accession column and a position column; the site file names them
 (letters, digits and `_`), its `column`, a `label`, a `kind` (`category`, `list` or `number`), and optionally the
 `separator` of a list (default `; `), display names for its `values`, a `link` (another column, aligned item by item,
 and a URL with `{}`, as each study to its DOI), `records` (a value that is a database, linked to its own record of the
-protein: a URL with `{acc}`), `colours`, `colour` (the map and Sites tab may colour by it), `filter` and `help`. A mark
-on several rows takes the first kept row's values.
+protein: a URL with `{acc}`), `colours`, `colour` (the map and Sites tab may colour by it), `filter`, `control`
+(`chips`, or `select` for many values) and `help`. `present: true` makes the value whether the column holds anything
+(`yes` or `no`: "changed in tumours" over a column of changes); `pair_with` names a second list column in step with the
+first, and each value becomes `<value>:<its partner>` (a perturbation and its call; lists of different lengths are an
+error). A mark on several rows takes the first kept row's values.
 
 ## Input manifest entries
 

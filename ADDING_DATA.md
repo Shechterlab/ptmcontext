@@ -166,6 +166,10 @@ marks:
     studies: {column: <column>, label: Studies, kind: list, separator: "; ", link: {column: <ids column>, url: "https://doi.org/{}"}, filter: true,
               provenance: true}   # how a mark was found, not what it is: a caveat when marks are compared, and the
                                   # within-study strata (website.compare.stratify names another)
+    changed: {column: <changes column>, present: true, label: Changed in tumours, kind: category,
+              values: {"yes": Changed, "no": Not changed}, filter: true}           # a yes/no filter over a column of changes
+    response: {column: <perturbations>, pair_with: <their calls>, label: Responses, kind: list, control: select,
+               filter: true}                                                       # each value "<perturbation>:<call>"
 ```
 
 The website's Overview tiles, filter groups and header tiles are `website.overview`, `website.filters` and

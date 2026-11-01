@@ -72,6 +72,8 @@
   // modules (kit-*.js) register views, tabs, click handlers, tooltips and search hints here; the core starts them last
   const K = window.PTMC = { D, W, A, S, esc, int, fx, fxn, fq, pct, cap, decorate, views: {}, tabs: [], clicks: [], tips: [], scopeHints: [], sections: {} };
   const BUILT_IN_VIEWS = ['overview', 'statistics', 'method'];
+  // a question's title in running text, as the site file writes it (lower-casing would break PRMT, DNA, Reactome)
+  const inText = t => String(t || '');
   function readHash() {
     const [path, qs] = location.hash.replace(/^#/, '').split('?');
     const p = new URLSearchParams(qs || '');
@@ -98,19 +100,36 @@
     S.sort = p.get('sort') || 'q'; S.desc = p.get('dir') ? p.get('dir') === 'desc' : S.sort !== 'q';
     S.open = new Set((p.get('open') || '').split(',').filter(k => A[k]));
   }
-  function writeHash(push) {
+  // the selection's part of a link: search, filters, the test shown and the baseline
+  function selParams() {
     const p = new URLSearchParams();
     if (S.q) p.set('q', S.q);
     const f = K.sel?.encode(); if (f) p.set('f', f);
     if (S.m !== 'mantel_haenszel') p.set('m', S.m);
     if (S.vs !== 'residues') { p.set('vs', S.vs); if (S.vs === 'cmp') p.set('cmp', S.cmp); }
+    return p;
+  }
+  // every link inside the site carries the selection, so it follows the reader from page to page; a link that names
+  // a selection of its own (a saved one) keeps it, and a link's own parameters win
+  function carry(href) {
+    const [path, qs] = String(href).replace(/^#/, '').split('?'), own = new URLSearchParams(qs || '');
+    if (own.has('q') || own.has('f')) return '#' + path + (qs ? '?' + qs : '');
+    const p = selParams(); own.forEach((v, k) => p.set(k, v));
+    return '#' + path + (p.toString() ? '?' + p : '');
+  }
+  const link = (view, arg, extra) => carry('#' + view + (arg ? '/' + encodeURIComponent(arg).replace(/%2F/g, '/') : '') + (extra ? '?' + new URLSearchParams(extra) : ''));
+  function writeHash(push) {
+    const p = selParams();
     if (S.view === 'statistics') { if (S.a) p.set('a', S.a); if (S.sq) p.set('sq', S.sq); if (S.sort !== 'q') p.set('sort', S.sort); if (S.desc !== (S.sort !== 'q')) p.set('dir', S.desc ? 'desc' : 'asc'); }
 
     const h = '#' + S.view + (S.arg ? '/' + encodeURIComponent(S.arg).replace(/%2F/g, '/') : '') + (p.toString() ? '?' + p : '');
     if (h !== location.hash) (push ? history.pushState : history.replaceState).call(history, null, '', h);
   }
   const go = (view, extra = {}) => { Object.assign(S, { view, arg: '' }, extra); writeHash(true); render(); scrollTo(0, 0); };
-  Object.assign(K, { go, writeHash, render: () => render(), holds, holdStatus, effText, SETS });
+  Object.assign(K, { go, writeHash, link, carry, render: () => render(), holds, holdStatus, effText, SETS });
+  // a link written without the selection (the header's, the footer's, a module's) gets it when followed or copied
+  const carryLink = e => { const a = e.target.closest?.('a[href^="#"]'); if (!a || 'jump' in a.dataset) return; const base = a.dataset.base ?? a.getAttribute('href'); a.dataset.base = base; a.setAttribute('href', carry(base)); };
+  ['click', 'auxclick', 'pointerdown', 'contextmenu'].forEach(t => document.addEventListener(t, carryLink, true));
 
   // ---- the statistics page's own filter (the search box above every page makes the selection) -----------------------
   const tokens = () => S.sq.toLowerCase().split(/[\s,]+/).filter(Boolean);
@@ -141,7 +160,7 @@
     const sel = K.sel?.active();
     const t = [['overview', 'Overview', sel ? 'selection' : null], ...K.tabs.map(f => f()).filter(Boolean), ['statistics', 'Statistics', D.rows.length], ['method', 'Method', null]];
     const on = v => S.view === v || (K.views[S.view]?.tab === v);
-    $('#tabs').innerHTML = `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>` + t.map(([v, name, n]) => `<a class="tab" role="tab" href="#${v}" aria-selected="${on(v)}">${name}` +
+    $('#tabs').innerHTML = `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>` + t.map(([v, name, n]) => `<a class="tab" role="tab" href="${esc(link(v))}" aria-selected="${on(v)}">${name}` +
       (n != null ? ` <span class="count${n === 'selection' ? ' sel' : ''}"${n === 'selection' ? ' title="Every question here is tested again on your selection"' : ''}>${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + '</a>').join('');
   }
 
@@ -257,7 +276,7 @@
     const foot = made ? whyShown(a) : shown.length || !vsOn() ? summaryLine(rows, card.summary) : '';
     return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(card.title || a.title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</h3><span class="chev" aria-hidden="true">›</span></header>` +
       (shown.length ? `<div class="trows">${tileRows(shown)}</div>` : made ? '' : `<p class="muted tnone">${rows.some(r => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'}</p>`) +
-      (more ? `<a class="tmore" href="#overview/${encodeURIComponent(a.id)}" title="Open the question at the ${more} not shown here">+${more} more ›</a>` : '') +
+      (more ? `<a class="tmore" href="${esc(link('overview', a.id))}" title="Open the question at the ${more} not shown here">+${more} more ›</a>` : '') +
       (foot ? `<p class="tfoot">${foot}</p>` : '') + (whole ? `<p class="twhole"><span>Whole dataset</span> ${answer(whole)}</p>` : '') + '</article>';
   }
   function lead() {
@@ -271,14 +290,14 @@
     const c = K.sel.compute(), n = (c.marks || []).length, np = c.proteins ? c.proteins.size : 0;
     if (K.sel.data() && n === 0) return `<div class="page-head"><h2>Your selection</h2></div><p class="note">No ${esc(W.mark)} matches this selection. Change the search or the filters, or <button class="linkish" type="button" data-sel-clear-all>clear the selection</button>.</p>`;
     const byP = K.sel.selectedCountByProtein ? K.sel.selectedCountByProtein() : {};
-    const pills = Object.entries(byP).sort((x, y) => y[1] - x[1]).slice(0, 30).map(([pi, k]) => { const p = D.proteins[pi]; return `<a class="ppill" href="#protein/${esc(p[0])}" title="${esc(p[2])}: ${int(k)} of its ${int(p[4])} ${esc(W.marks)} selected">${esc(p[1] || p[0])} <span>${int(k)}</span></a>`; }).join('');
+    const pills = Object.entries(byP).sort((x, y) => y[1] - x[1]).slice(0, 30).map(([pi, k]) => { const p = D.proteins[pi]; return `<a class="ppill" href="${esc(link('protein', p[0]))}" title="${esc(p[2])}: ${int(k)} of its ${int(p[4])} ${esc(W.marks)} selected">${esc(p[1] || p[0])} <span>${int(k)}</span></a>`; }).join('');
     const against = `<p class="against"><span class="flabel">Compared with</span><span class="seg" role="group" aria-label="Compared with">` +
       `<button type="button" data-vs="residues" aria-pressed="${S.vs === 'residues'}" title="The site’s own tests: the selected ${esc(W.marks)} against the other ${esc(W.residues)} of their proteins">other ${esc(W.residues)}</button>` +
       `<button type="button" data-vs="marks" aria-pressed="${S.vs === 'marks'}" title="What sets the selection apart: its ${esc(W.marks)} against the site’s other ${esc(W.marks)}">other ${esc(W.marks)}</button>` +
       (S.vs === 'cmp' ? `<button type="button" data-vs="cmp" aria-pressed="true">${esc(cmpName())}</button>` : '') +
       (K.views.compare ? `<button type="button" class="linkish" data-go-compare title="Compare with a saved selection">a saved selection…</button>` : '') + `</span></p>`;
     const head = `<div class="page-head"><h2>Your selection</h2>${K.sel.testable() || vsOn() ? tools : ''}</div><p class="sel-lead">${esc(K.sel.describe())} · <b>${int(n)}</b> ${esc(n === 1 ? W.mark : W.marks)} on <b>${int(np)}</b> protein${np === 1 ? '' : 's'}</p>` +
-      `<div class="ppills">${pills}${np > 30 ? `<a href="#proteins" class="muted">+${int(np - 30)} more on the Proteins page</a>` : ''}</div>` + against;
+      `<div class="ppills">${pills}${np > 30 ? `<a href="${esc(link('proteins'))}" class="muted">+${int(np - 30)} more on the Proteins page</a>` : ''}</div>` + against;
     if (vsOn()) return head + vsLead() + key;
     return head + (K.sel.testable() ? key : `<p class="note">Too few to compare with the other ${esc(W.residues)}: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)} for its tests. Compare it with the other ${esc(W.marks)} instead, or see its ${esc(W.marks)} on the Proteins${K.views.sites ? ' and Sites pages' : ' page'}.</p>`);
   }
@@ -293,16 +312,16 @@
     const qs = [...D.analyses.filter(a => a.kind !== 'protein_sets'), ...ATTRQ.filter(a => !a.provenance)];
     const all = qs.flatMap(a => (rowsOf(a, S.m) || []).filter(r => !r.descriptive && enough(r) && !EXCL.test(r.label)));
     const top = (rs, d, k) => rs.filter(r => r.dir === d).sort((x, y) => strength(y) - strength(x)).slice(0, k);
-    const one = r => { const h = holdsIn(r); return `<b>${esc(r.label)}</b> <span class="muted">(${esc((A[r.analysis]?.title || '').toLowerCase())}: ${pcS(share1(r))} against ${pcS(share2(r))}${h.length ? `; also ${h.join(' and ')}` : meths.length ? `; not ${meths.map(m => METHOD[m]).join(' or ')}` : ''})</span>`; };
+    const one = r => { const h = holdsIn(r); return `<b>${esc(r.label)}</b> <span class="muted">(${esc(inText(A[r.analysis]?.title))}: ${pcS(share1(r))} against ${pcS(share2(r))}${h.length ? `; also ${h.join(' and ')}` : meths.length ? `; not ${meths.map(m => METHOD[m]).join(' or ')}` : ''})</span>`; };
     const up = top(all, 'more', 3), dn = top(all, 'less', 2);
     const sets = D.analyses.filter(a => a.kind === 'protein_sets').flatMap(a => (rowsOf(a, 'enricher') || []).filter(r => !r.descriptive && enough(r)));
     const sUp = top(sets, 'more', 2);
     const say = (up.length ? `More often than in ${esc(vsName())}: ${up.map(one).join('; ')}.` : '') + (dn.length ? ` Less often: ${dn.map(one).join('; ')}.` : '') + (up.length || dn.length ? '' : `No class differs from ${esc(vsName())} at q ≤ ${PADJ} and 1.1×, with at least 10 ${esc(W.marks)}.`) +
-      (sUp.length ? ` Their proteins are more often in ${sUp.map(r => `<b>${esc(r.label)}</b> <span class="muted">(${esc(A[r.analysis].title.toLowerCase())}: ${pcS(share1(r))} of the proteins against ${pcS(share2(r))})</span>`).join('; ')}.` : '');
+      (sUp.length ? ` Their proteins are more often in ${sUp.map(r => `<b>${esc(r.label)}</b> <span class="muted">(${esc(inText(A[r.analysis].title))}: ${pcS(share1(r))} of the proteins against ${pcS(share2(r))})</span>`).join('; ')}.` : '');
     // how they were found: the provenance attributes whose shares differ most, as a caveat
     const prov = ATTRQ.filter(a => a.provenance).flatMap(a => (K.sel.contrast(a.id, 'fisher') || []).filter(r => enough(r) && r.q != null && r.q <= PADJ));
     const pv = prov.sort((x, y) => Math.abs(share1(y) - share2(y)) - Math.abs(share1(x) - share2(x))).slice(0, 3);
-    const caveat = pv.length ? `<p class="vs-caveat"><b>How they were found.</b> ${pv.map(r => `<b>${esc(r.label)}</b> <span class="muted">(${esc(A[r.analysis].title.toLowerCase())})</span>: ${pcS(share1(r))} of these, against ${pcS(share2(r))} of the others`).join('; ')}. Differences above may reflect which sources report these ${esc(W.marks)}${K.sel.STUDY && S.m !== 'study' ? `: <button type="button" class="linkish" data-m="study">compare within studies</button>, where each ${esc(W.mark)} is compared only with ${esc(W.marks)} reported by the same sources.` : S.m === 'study' ? '; the comparison above is within studies, so they do not explain it.' : '.'}</p>` : '';
+    const caveat = pv.length ? `<p class="vs-caveat"><b>How they were found.</b> ${pv.map(r => `<b>${esc(r.label)}</b> <span class="muted">(${esc(inText(A[r.analysis].title))})</span>: ${pcS(share1(r))} of these, against ${pcS(share2(r))} of the others`).join('; ')}. Differences above may reflect which sources report these ${esc(W.marks)}${K.sel.STUDY && S.m !== 'study' ? `: <button type="button" class="linkish" data-m="study">compare within studies</button>, where each ${esc(W.mark)} is compared only with ${esc(W.marks)} reported by the same sources.` : S.m === 'study' ? '; the comparison above is within studies, so they do not explain it.' : '.'}</p>` : '';
     return who + `<p class="vs-say">${say}</p>` + caveat + `<p class="muted small">Exploratory: ${esc(W.marks)} of one protein are not independent, and the comparison is not adjusted for the other selections tried. Each ${esc(W.mark)} row shows the selection’s share (filled) and ${esc(vsName())}’ (hollow).</p>`;
   }
   function overview() {
@@ -319,9 +338,9 @@
     const prev = cards[i - 1], next = cards[i + 1], card = cards[i] || { section: a.section };
     const ORDER = { more: 0, same: 1, ns: 2, less: 3 };
     const rows = rowsOf(a, S.m).slice().sort(a.kind === 'protein_sets' ? (x, y) => ORDER[x.dir] - ORDER[y.dir] || y.eff - x.eff : (x, y) => y.eff - x.eff);
-    return `<div class="focus-bar"><a href="#overview">‹ All sections</a><span class="crumb">Overview › ${esc(card.section || '')} › <b>${esc(card.title || a.title)}</b></span>` +
+    return `<div class="focus-bar"><a href="${esc(link('overview'))}">‹ All sections</a><span class="crumb">Overview › ${esc(card.section || '')} › <b>${esc(card.title || a.title)}</b></span>` +
       (i >= 0 ? `<span class="muted">${i + 1} of ${cards.length}</span>` : '') +
-      `<span class="pn">${prev ? `<a href="#overview/${encodeURIComponent(prev.analysis)}">‹ Previous · ${esc(prev.title || A[prev.analysis].title)}</a>` : ''}${next ? `<a href="#overview/${encodeURIComponent(next.analysis)}">${esc(next.title || A[next.analysis].title)} · Next ›</a>` : ''}</span></div>` +
+      `<span class="pn">${prev ? `<a href="${esc(link('overview', prev.analysis))}">‹ Previous · ${esc(prev.title || A[prev.analysis].title)}</a>` : ''}${next ? `<a href="${esc(link('overview', next.analysis))}">${esc(next.title || A[next.analysis].title)} · Next ›</a>` : ''}</span></div>` +
       `<div class="page-head"><h2>${esc(card.title || a.title)}</h2><span class="tools">${a.kind === 'protein_sets' ? '' : `<span class="seg" role="group">${(vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher']).map(m => `<button type="button" data-m="${m}" aria-pressed="${S.m === m}">${cap(METHOD[m])}</button>`).join('')}</span>`}</span></div>` +
       `<p class="page-sub">${vsOn() ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}, tested in your browser (exploratory).` : esc(a.question || a.describe || '')}${selOn() && !vsOn() ? ` <b>Your selection</b>${rows.some(r => r.descriptive) ? ': ' + whyShown(a).replace(/^Your selection /, '') : vsOn() ? '' : ', tested again in your browser (exploratory: not adjusted for the other selections tried).'}` : ''} <span class="muted">Click a ${a.kind === 'protein_sets' ? 'set' : 'class'} to select its ${esc(W.marks)}.</span></p>` +
       `<section class="pcard">${cardBody(a, rows)}${selOn() && !vsOn() ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
@@ -338,14 +357,13 @@
     .filter(([id]) => (id !== 'm-parity' || D.run.parity) && (id !== 'm-sources' || Object.values(D.attribute_specs || {}).some(x => x.kind === 'list' && x.link)));
   // the Overview's sections and their questions: jumps on the tiles, links from an opened question (keeping the
   // selection and the baseline)
-  const hashQuery = () => { const q = location.hash.split('?')[1]; return q ? '?' + q : ''; };
   K.sections.overview = () => [
     ...(selOn() ? [['view', vsOn() ? 'Your selection, against ' + vsName() : 'Your selection', 1]] : []),
     ...secList().flatMap(x => [[`sec-${x.name.replace(/\W+/g, '-').toLowerCase()}`, x.name, 0],
-      ...x.cards.map(c => (S.arg ? [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, `#overview/${encodeURIComponent(c.analysis)}${hashQuery()}`] : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1]))])];
+      ...x.cards.map(c => (S.arg ? [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, link('overview', c.analysis)] : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1]))])];
   // All tests: every question, each opening its own tests
-  K.sections.statistics = () => [['view', 'All tests', 1, `#statistics${S.m !== 'mantel_haenszel' ? '?m=' + S.m : ''}`], ...secList().filter(x => !x.caveat && x.name !== 'About the sites').flatMap(x => [[`stat-${x.name}`, x.name, 0],
-    ...x.cards.filter(c => D.analyses.some(a => a.id === c.analysis)).map(c => [`stat-${c.analysis}`, c.title || A[c.analysis].title, 1, `#statistics?a=${encodeURIComponent(c.analysis)}`])])];
+  K.sections.statistics = () => [['view', 'All tests', 1, link('statistics')], ...secList().filter(x => !x.caveat && x.name !== 'About the sites').flatMap(x => [[`stat-${x.name}`, x.name, 0],
+    ...x.cards.filter(c => D.analyses.some(a => a.id === c.analysis)).map(c => [`stat-${c.analysis}`, c.title || A[c.analysis].title, 1, link('statistics', '', { a: c.analysis })])])];
   const SLO = Math.log(1 / 16), SHI = Math.log(16);
   const sp = v => (Math.min(Math.max((Math.log(v) - SLO) / (SHI - SLO), 0), 1) * 100).toFixed(2) + '%';
   function strip(rows) {
@@ -807,8 +825,21 @@
   K.openIfOne = openIfOne;
   $('#q').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(timer); S.q = e.target.value.trim(); typing = false; if (!openIfOne()) { writeHash(true); render(); } } });
   $('#q-clear').addEventListener('click', () => { S.q = ''; writeHash(true); render(); $('#q').focus(); });
-  let shown = null;
-  const onNav = () => { if (location.hash === shown) return; readHash(); if (S.legacy) writeHash(false); shown = location.hash; render(); };
+  let shown = null, byLink = false;
+  // where each page was scrolled to, for Back and Forward; a link opens its page at the top
+  const scrolled = {};
+  const pageOf = () => S.view + '/' + S.arg;
+  const onNav = () => {
+    if (location.hash === shown) return;
+    if (shown != null) scrolled[shown] = scrollY;
+    const was = pageOf(), wasProt = S.view === 'protein' ? S.arg.split('/')[0] : null;
+    readHash(); if (S.legacy) writeHash(false); shown = location.hash; render();
+    const samePage = pageOf() === was || (wasProt && S.view === 'protein' && S.arg.split('/')[0] === wasProt);
+    if (!byLink && scrolled[shown] != null) scrollTo(0, scrolled[shown]);
+    else if (!samePage && !(S.view === 'method' && S.arg)) scrollTo(0, 0);
+    byLink = false;
+  };
+  document.addEventListener('click', e => { if (e.target.closest?.('a[href^="#"]:not([data-jump])')) byLink = true; }, true);
   addEventListener('hashchange', onNav);
   addEventListener('popstate', onNav);
   function setTheme(choice) {
@@ -817,6 +848,16 @@
     document.querySelectorAll('[data-theme-choice]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeChoice === choice)));
     if (themed) render();
   }
+  // the pinned sidebar sits just under the sticky toolbar, whatever the toolbar's height
+  // when the toolbar grows or shrinks (the selection bar wraps), the pinned sidebar's content keeps its place
+  let barH = null;
+  const toolbarH = () => {
+    const t = document.querySelector('.toolbar'), h = t && getComputedStyle(t).position === 'sticky' ? Math.ceil(t.getBoundingClientRect().height) : 0;
+    const rail = document.getElementById('rail');
+    if (barH != null && h !== barH && rail && document.body.classList.contains('rail-pinned') && rail.scrollTop > 0) rail.scrollTop += h - barH;
+    barH = h; document.documentElement.style.setProperty('--toolbar-h', `${h}px`);
+  };
+  try { new ResizeObserver(toolbarH).observe(document.querySelector('.toolbar')); } catch (e) { addEventListener('resize', toolbarH); }
   let themed = false;
   // the figures take their colours when drawn: draw again when the system theme changes under "auto"
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.dataset.theme) render(); }); } catch (err) { /* old browsers */ }

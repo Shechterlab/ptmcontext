@@ -110,6 +110,197 @@ marks:
         shared_sequence: the peptide's sequence is shared with another protein
         xenograft_only: seen only in xenograft samples
 
+    # the release's own evidence at each site (human_methylarginine_sites_v1.4.3.tsv; definitions in its README)
+    tcga:
+      column: tcga_changes
+      label: Changes in TCGA tumours
+      kind: list
+      separator: "; "
+      help: "Somatic missense and stop changes of the arginine in TCGA tumours (MC3 public calls from the GDC: 33 projects, 10,294 tumour samples), most tumours first; * is a stop"
+    tcga_any:
+      column: tcga_changes
+      present: true
+      label: Changed in TCGA tumours
+      kind: category
+      values: {"yes": Changed in a tumour, "no": Not changed}
+      colours: {"yes": "#B42318", "no": "#D9DEE2"}
+      colour: true
+      filter: true
+      help: "Whether a TCGA tumour (MC3 public calls) carries a missense or stop change of this arginine"
+    depmap:
+      column: depmap_changes
+      label: Changes in DepMap cell lines
+      kind: list
+      separator: "; "
+      help: "Missense and stop changes of the arginine in DepMap 24Q4 cell lines (OmicsSomaticMutations, on the canonical UniProt isoform), most lines first"
+    depmap_any:
+      column: depmap_changes
+      present: true
+      label: Changed in DepMap cell lines
+      kind: category
+      values: {"yes": Changed in a cell line, "no": Not changed}
+      filter: true
+      help: "Whether a DepMap 24Q4 cell line carries a missense or stop change of this arginine"
+    methyl_ip:
+      column: maron2021_s3_antibodies
+      provenance: true                       # which study measured the site, as much as what it is
+      label: Recovered by methyl-IP (Maron 2021)
+      kind: list
+      separator: "; "
+      values: {MMA: MMA antibody, ADMA: ADMA antibody, SDMA: SDMA antibody}
+      filter: true
+      help: "Antibodies whose immunoprecipitation recovered the site in Maron et al. 2021 Table S3"
+    neutral_loss:
+      column: dimethyl_type_neutral_loss
+      provenance: true                       # which study measured the site, as much as what it is
+      label: Dimethyl type by neutral loss (Hartel 2019)
+      kind: list
+      separator: "; "
+      values: {ADMA: Asymmetric (ADMA), SDMA: Symmetric (SDMA)}
+      filter: true
+      help: "The dimethylarginine type Hartel et al. 2019 called at the site from neutral losses in the fragment spectra, whatever the antibody"
+    gsk591:
+      column: maron2021_GSK591_call
+      provenance: true                       # which study measured the site, as much as what it is
+      label: PRMT5 inhibitor GSK591 (Maron 2021)
+      kind: category
+      values: {decreased: Decreased, increased: Increased, mixed: Mixed, no_significant_change: No significant change, "": Not measured}
+      filter: true
+      help: "Response to GSK591 in Maron et al. 2021 Table S3, combined over antibodies (a peptide changes at adjusted p ≤ 0.05): peptide-level evidence"
+    ms023:
+      column: maron2021_MS023_call
+      provenance: true                       # which study measured the site, as much as what it is
+      label: Type I PRMT inhibitor MS023 (Maron 2021)
+      kind: category
+      values: {decreased: Decreased, increased: Increased, mixed: Mixed, no_significant_change: No significant change, "": Not measured}
+      filter: true
+      help: "Response to MS023 in Maron et al. 2021 Table S3, combined over antibodies (a peptide changes at adjusted p ≤ 0.05): peptide-level evidence"
+    perturbation:
+      column: perturbations
+      provenance: true                       # which study measured the site, as much as what it is
+      pair_with: perturbation_calls
+      label: PRMT knockouts, knockdowns and inhibitors
+      kind: list
+      separator: "; "
+      control: select
+      filter: true
+      help: "Each knockout, knockdown or inhibitor that quantified a peptide carrying the site, with its call (twofold at q < 0.05, or the published call): peptide-level evidence"
+      values:
+        "carm1_ko_mcf7:decreased": "CARM1 knockout (MCF7): decreased"
+        "carm1_ko_mcf7:increased": "CARM1 knockout (MCF7): increased"
+        "carm1_ko_mcf7:mixed": "CARM1 knockout (MCF7): mixed"
+        "carm1_ko_mcf7:no_significant_change": "CARM1 knockout (MCF7): no significant change"
+        "carm1_ko_mcf7:not_tested": "CARM1 knockout (MCF7): not tested"
+        "carm1_ko_mdamb231:decreased": "CARM1 knockout (MDA-MB-231): decreased"
+        "carm1_ko_mdamb231:increased": "CARM1 knockout (MDA-MB-231): increased"
+        "carm1_ko_mdamb231:mixed": "CARM1 knockout (MDA-MB-231): mixed"
+        "carm1_ko_mdamb231:no_significant_change": "CARM1 knockout (MDA-MB-231): no significant change"
+        "carm1_ko_mdamb231:not_tested": "CARM1 knockout (MDA-MB-231): not tested"
+        "prmt7_ko_hct116:decreased": "PRMT7 knockout (HCT116): decreased"
+        "prmt7_ko_hct116:increased": "PRMT7 knockout (HCT116): increased"
+        "prmt7_ko_hct116:mixed": "PRMT7 knockout (HCT116): mixed"
+        "prmt7_ko_hct116:no_significant_change": "PRMT7 knockout (HCT116): no significant change"
+        "prmt7_ko_hct116:not_tested": "PRMT7 knockout (HCT116): not tested"
+        "prmt1_kd_hek293t:decreased": "PRMT1 knockdown (HEK293T): decreased"
+        "prmt1_kd_hek293t:increased": "PRMT1 knockdown (HEK293T): increased"
+        "prmt1_kd_hek293t:mixed": "PRMT1 knockdown (HEK293T): mixed"
+        "prmt1_kd_hek293t:no_significant_change": "PRMT1 knockdown (HEK293T): no significant change"
+        "prmt1_kd_hek293t:not_tested": "PRMT1 knockdown (HEK293T): not tested"
+        "prmt5i_epz015666_hela:decreased": "PRMT5 inhibitor EPZ015666 (HeLa): decreased"
+        "prmt5i_epz015666_hela:increased": "PRMT5 inhibitor EPZ015666 (HeLa): increased"
+        "prmt5i_epz015666_hela:mixed": "PRMT5 inhibitor EPZ015666 (HeLa): mixed"
+        "prmt5i_epz015666_hela:no_significant_change": "PRMT5 inhibitor EPZ015666 (HeLa): no significant change"
+        "prmt5i_epz015666_hela:not_tested": "PRMT5 inhibitor EPZ015666 (HeLa): not tested"
+        "prmt7_kd_hek293:decreased": "PRMT7 knockdown (HEK293): decreased"
+        "prmt7_kd_hek293:increased": "PRMT7 knockdown (HEK293): increased"
+        "prmt7_kd_hek293:mixed": "PRMT7 knockdown (HEK293): mixed"
+        "prmt7_kd_hek293:no_significant_change": "PRMT7 knockdown (HEK293): no significant change"
+        "prmt7_kd_hek293:not_tested": "PRMT7 knockdown (HEK293): not tested"
+        "prmt7i_sgc3027_hek293:decreased": "PRMT7 inhibitor SGC3027 (HEK293): decreased"
+        "prmt7i_sgc3027_hek293:increased": "PRMT7 inhibitor SGC3027 (HEK293): increased"
+        "prmt7i_sgc3027_hek293:mixed": "PRMT7 inhibitor SGC3027 (HEK293): mixed"
+        "prmt7i_sgc3027_hek293:no_significant_change": "PRMT7 inhibitor SGC3027 (HEK293): no significant change"
+        "prmt7i_sgc3027_hek293:not_tested": "PRMT7 inhibitor SGC3027 (HEK293): not tested"
+        "carm1_kd_hek293:decreased": "CARM1 knockdown (HEK293): decreased"
+        "carm1_kd_hek293:increased": "CARM1 knockdown (HEK293): increased"
+        "carm1_kd_hek293:mixed": "CARM1 knockdown (HEK293): mixed"
+        "carm1_kd_hek293:no_significant_change": "CARM1 knockdown (HEK293): no significant change"
+        "carm1_kd_hek293:not_tested": "CARM1 knockdown (HEK293): not tested"
+        "prmt5_kd_hek293:decreased": "PRMT5 knockdown (HEK293): decreased"
+        "prmt5_kd_hek293:increased": "PRMT5 knockdown (HEK293): increased"
+        "prmt5_kd_hek293:mixed": "PRMT5 knockdown (HEK293): mixed"
+        "prmt5_kd_hek293:no_significant_change": "PRMT5 knockdown (HEK293): no significant change"
+        "prmt5_kd_hek293:not_tested": "PRMT5 knockdown (HEK293): not tested"
+    nucleic_acid:
+      column: bound_nucleic_acid
+      label: RNA or DNA contact in PDB structures
+      kind: list
+      separator: "; "
+      values: {rna_at: "RNA, direct (side chain within 4 Å)", dna_at: "DNA, direct (side chain within 4 Å)", rna_proximal: "RNA, proximal (within 8 Å)", dna_proximal: "DNA, proximal (within 8 Å)", rna_near: "RNA, via a residue at i ± 1–5", dna_near: "DNA, via a residue at i ± 1–5"}
+      filter: true
+      help: "RNA or DNA in direct contact with the site in PDB structures, within 8 Å of its side chain in a complex without direct contact, or in contact via a residue at i ± 1–5 in a complex with neither"
+    nucleic_acid_type:
+      column: bound_nucleic_acid_types
+      label: Type of RNA or DNA in contact
+      kind: list
+      separator: "; "
+      values: {rrna: rRNA, trna: tRNA, snrna: snRNA, mrna: mRNA, other_ncrna: Other ncRNA, viral_rna: Viral RNA, rna_oligo: RNA oligo, other_rna: Other RNA, nucleosomal_dna: Nucleosomal DNA, telomeric_dna: Telomeric DNA, other_dna: Other DNA}
+      filter: true
+      help: "The types of the RNA and DNA chains in those PDB structures"
+    evidence:
+      column: interaction_evidence
+      label: Interaction evidence at the site
+      kind: list
+      separator: "; "
+      control: select
+      filter: true
+      help: "The kinds of evidence that the site meets a partner: crosslinks and RNA-bound peptides in cells, PDB interfaces, predicted complexes and IntAct records"
+      values:
+        rna_crosslink: RNA-crosslinked residue
+        rbdmap_fragment: RBDmap RNA-bound fragment
+        capri_xl_peptide: CAPRI RNA-crosslinked peptide (XL)
+        capri_adj_peptide: CAPRI RNA-bound peptide (ADJ)
+        pclap_peptide: pCLAP RNA-binding peptide
+        pclap_lysc_region: pCLAP RNA-binding region
+        rbrid_residue: RBR-ID+ residue
+        rbrid_residue_published_rule: RBR-ID+ residue (published rule)
+        rbrid_region: RBR-ID region
+        dna_crosslink: DNA-crosslinked residue
+        dna_binding_region: UniProt DNA-binding region (annotation)
+        pdb_protein: PDB protein–protein interface
+        pdb_rna: PDB protein–RNA interface
+        pdb_dna: PDB protein–DNA interface
+        pdb_self: PDB interface with another copy of the protein
+        predicted_interface: Predicted interface (ProtVar)
+        predicted_contact: Contact in a predicted complex
+        intact_mutation: IntAct mutation that changes an interaction
+        intact_binding_region: IntAct binding region
+        intact_methylated: IntAct records it methylated
+        pdb_methylated_contact: Modelled as a methylarginine in a PDB entry
+    partner_class:
+      column: interaction_classes
+      label: Interaction records at the site
+      kind: list
+      separator: "; "
+      control: select
+      filter: true
+      help: "The classes of the interaction records at the site (IntAct, PDB, predicted complexes)"
+      values:
+        writes: Methylates the site (enzyme)
+        removes: Demethylates the site (enzyme)
+        binds_methylated: Binds it methylated
+        binds_unmodified: Binds it unmodified (PDB)
+        binds_other_residue: Binds a mutated or variant residue there (PDB)
+        binds_state_not_read: PDB interface, residue not read
+        mutation_changes_binding: Mutating it changes binding (IntAct)
+        mutation_no_effect: Mutating it leaves binding unchanged (IntAct)
+        mutation_unspecified: A mutation tested, effect not stated (IntAct)
+        binds_region: Binds a region holding it (IntAct)
+        other_reaction: Another reaction on a region holding it
+        nucleic_acid: RNA or DNA
+        not_a_protein: A partner that is not a protein
+        self: Another copy of the same protein
+        predicted: A predicted complex only
 analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel)
   # protein sets: clusterProfiler's enricher, as the release ran it (scripts/release_layers.py, release_tables.py)
   # PANTHER protein classes (scripts/03b_panther_class_enrichment.py): every reviewed protein is the universe and the
@@ -282,7 +473,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
-  examples: [FUS, FUS R216, TAF15 EWSR1 FUS, "motif:RGG", "state:Rme2"]
+  examples: [FUS, FUS R216, TAF15 EWSR1 FUS, "motif:RGG", "state:Rme2", "disease_family:ALS", "tcga_any:yes"]
   stats: [marks, proteins, {attribute: studies, label: studies and databases}]
   overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
     question: "What kinds of proteins are arginine methylated?"
@@ -291,10 +482,13 @@ website:                  # the look and words of the website (ptmc web); layout
       - name: Kinds of protein
         cards:
           - {analysis: panther_group, title: Protein classes}
-          - {analysis: disease_family, title: Disease}
           - {analysis: hpa_location, title: Where in the cell}
           - {analysis: reactome_top_level, title: Reactome pathways (top level)}
           - {analysis: panther_subclass, title: Protein subclasses}
+      - name: Disease and cancer
+        cards:
+          - {analysis: disease_family, title: Disease families}
+          - {analysis: disease_family_additional, title: Disease families (additional)}
       - name: Where in the protein
         cards:
           - {analysis: motif, title: Sequence motifs}
@@ -302,15 +496,18 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
       - name: In more detail
-        cards: [panther_class, {analysis: disease_family_additional, title: Disease families (additional)}, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
+        cards: [panther_class, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
-    - {name: Protein function, analyses: [panther_group, panther_class, disease_family, disease_family_additional, hpa_location, reactome_top_level]}
-    - {name: Methylation state, attributes: [state]}
+    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional], attributes: [tcga_any, depmap_any]}
+    - {name: Protein function, analyses: [panther_group, panther_class, hpa_location, reactome_top_level]}
+    - {name: Methylation state, attributes: [state, methyl_ip, neutral_loss]}
+    - {name: "PRMT inhibitors, knockouts and knockdowns", attributes: [gsk591, ms023, perturbation]}
     - {name: Sequence motif, analyses: [motif]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
-    - {name: Interactions and binding, attributes: [interaction]}
+    - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class]}
     - {name: Provenance, attributes: [studies, n_studies, localised_by]}
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   compare: {stratify: studies}      # "compared with other methylarginines, within studies": the same reporting sources
   sites: {columns: [structure_context]}                            # the Sites tab's context column
-  protein: {facts: [{analysis: disorder, classes: [disordered]}]}  # a tile on each protein page
+  protein:                 # tiles at the top of each protein page
+    facts: [{analysis: disorder, classes: [disordered]}, {analysis: disease_family, label: disease families}]

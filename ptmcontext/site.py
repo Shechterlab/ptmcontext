@@ -117,10 +117,13 @@ def website_problems(site: dict) -> list[str]:
             out.append(f"website.sites.columns: no analysis {a!r}")
         elif words.get(a, {}).get('shape') == 'flags':
             out.append(f"website.sites.columns: {a!r} has flags (several per residue): it shows as tags beside the window, not as a column")
+    set_ids = {a['id'] for a in site.get('analyses', []) if a.get('test') == 'protein_sets'}
     for f in (web.get('protein') or {}).get('facts', []):
         if f['analysis'] not in ids:
             out.append(f"website.protein.facts: no analysis {f['analysis']!r}")
-        elif words.get(f['analysis'], {}).get('classes') is not None:
+        elif f['analysis'] not in set_ids and not f.get('classes'):
+            out.append(f"website.protein.facts: {f['analysis']!r} is a residue question: name the classes to count")
+        elif f['analysis'] not in set_ids and words.get(f['analysis'], {}).get('classes') is not None:
             bad = [c for c in f['classes'] if c not in words[f['analysis']]['classes']]
             if bad:
                 out.append(f"website.protein.facts: {f['analysis']!r} has no class {bad} (it has {sorted(words[f['analysis']]['classes'])})")
@@ -219,20 +222,36 @@ def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame) -> pd
     for cond in spec.get('exclude', []) + spec.get('left_out', []):
         keep &= ~_holds(table, cond)
     table = table[keep]
-    cols = {}
+    cols, paired = {}, {}
     for name, a in attrs.items():
         cols[f'a.{name}'] = a['column']
         if a.get('link'):
             cols[f'a.{name}.link'] = a['link']['column']
-    missing = sorted({c for c in cols.values() if c not in table.columns})
+        if a.get('pair_with'):
+            paired[f'a.{name}'] = a['pair_with']
+    missing = sorted({c for c in [*cols.values(), *paired.values()] if c not in table.columns})
     if missing:
         raise ValueError(f'marks.attributes name columns the marks table does not have: {missing}')
     t = pd.DataFrame({'accession': table[spec['accession']].astype(str).str.strip(),
                       'position': pd.to_numeric(table[spec['position']], errors='coerce')})
     for out, col in cols.items():
         t[out] = table[col].astype(str)
+    for name, a in attrs.items():
+        out = f'a.{name}'
+        if a.get('present'):                 # whether the column holds anything: 'yes' or 'no'
+            t[out] = t[out].str.strip().ne('').map({True: 'yes', False: 'no'})
+        elif out in paired:                  # two lists in step: each value is "<value>:<its partner>"
+            sep = a.get('separator', '; ')
+            t[out] = [sep.join(f'{x}:{y}' for x, y in _zip_lists(u, v, sep, out)) for u, v in zip(t[out], table[paired[out]].astype(str))]
     t = t.dropna(subset=['position']).astype({'position': int}).drop_duplicates(['accession', 'position'])
     return marked[['accession', 'position']].merge(t, on=['accession', 'position'], how='left').fillna('')
+
+
+def _zip_lists(u: str, v: str, sep: str, name: str) -> list:
+    xs, ys = ([p.strip() for p in str(w).split(sep.strip() or sep) if p.strip()] for w in (u, v))
+    if len(xs) != len(ys):
+        raise ValueError(f'marks.attributes {name}: pair_with lists differ in length ({u!r} and {v!r})')
+    return list(zip(xs, ys))
 
 
 @dataclass
