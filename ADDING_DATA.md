@@ -20,7 +20,7 @@ Every new dataset is exactly one of these. If it is none of them, stop and ask.
 ## 1. Check the terms before downloading
 
 - Find the licence on the source's own site. Record it word for word; if none is stated, write `none stated`.
-- Unpublished lab data (MicroDomains, dtIDR material, unpublished MS) never enter this repository. They go in a
+- Unpublished lab data and analyses (unpublished MS included) never enter this repository. They go in a
   private repository as a plugin (step 6). **If unsure whether something is published, stop and ask.**
 - A source that forbids redistribution is staged outside the repository and recorded with its MD5 only.
 
@@ -138,7 +138,9 @@ go under `marks.attributes`; no test reads them:
 marks:
   attributes:
     state: {column: <column>, label: <name on the page>, kind: category, values: {<value>: <label>}, colour: true, filter: true}
-    studies: {column: <column>, label: Studies, kind: list, separator: "; ", link: {column: <ids column>, url: "https://doi.org/{}"}, filter: true}
+    studies: {column: <column>, label: Studies, kind: list, separator: "; ", link: {column: <ids column>, url: "https://doi.org/{}"}, filter: true,
+              provenance: true}   # how a mark was found, not what it is: a caveat when marks are compared, and the
+                                  # within-study strata (website.compare.stratify names another)
 ```
 
 The website's Overview tiles, filter groups and header tiles are `website.overview`, `website.filters` and
@@ -163,7 +165,7 @@ of the protein map (`tests/test_new_sources.py` builds such a site from scratch)
 
 ## 6. Code from another repository
 
-Layers written elsewhere (a private repository's flanks, a collaborator's score) come in as plugins: an installed
+Layers written elsewhere (a private repository's regions, a collaborator's score) come in as plugins: an installed
 package that offers a `ptmcontext.Layer` under the entry-point group `ptmcontext.layers`. A plugin loads only when
 the site names its package under `trusted_plugins`, and the run record keeps its version. Do not copy another
 repository's code into this one without the owner's review; do not run another repository's scripts from here.

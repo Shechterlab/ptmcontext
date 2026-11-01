@@ -106,3 +106,11 @@ def test_header_names_the_reporting_studies_most_marks_first(tmp_path):
     r = reporters(site, tmp_path)
     assert r['label'] == 'Studies' and r['url'] == 'https://doi.org/{}'
     assert r['items'] == [['DB', 'A Database', '10.1/db', 3], ['S1', 'S1', '10.1/s1', 1], ['S2', 'S2', '10.1/s2', 1]]
+
+
+def test_compare_stratify_must_name_a_list_attribute():
+    site = S.load_site(SITES / 'methylarginine.yaml')
+    assert site['website']['compare']['stratify'] == 'studies' and S.website_problems(site) == []
+    bad = copy.deepcopy(site)
+    bad['website']['compare']['stratify'] = 'state'
+    assert any('website.compare.stratify' in p for p in S.website_problems(bad))

@@ -491,3 +491,18 @@ pre.seq { font-family: var(--mono, ui-monospace, Menlo, Consolas, monospace); fo
 .seq .sq-n { display: inline-block; min-width: 3.2rem; color: var(--muted); user-select: none; }
 .seq .sq-m { color: var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); border-radius: 2px; cursor: pointer; }
 .seq .sq-m.faded { opacity: 0.35; }
+
+/* compared with other marks (or another selection): the switch, the lead, and each class as two shares */
+.against { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0.5rem 0; }
+.against .linkish { margin-left: 0.3rem; }
+.vs-who { margin: 0.4rem 0 0.2rem; }
+.vs-say { font-size: 1.02rem; line-height: 1.5; margin: 0.3rem 0; }
+.vs-caveat { border-left: 3px solid var(--accent); background: var(--wash); padding: 0.45rem 0.7rem; border-radius: 4px; margin: 0.5rem 0; }
+.sec-label.caveat { color: var(--muted); }
+.trow.share { grid-template-columns: minmax(0, 1fr) 4.4rem 5.4rem; }
+.drow.share { grid-template-columns: minmax(0, 1fr) minmax(8rem, 18rem) 6rem; }
+.share .lab { overflow-wrap: break-word; hyphens: auto; }
+:is(.trow, .drow) .dot.sel.ns, :is(.trow, .drow) .dot.sel.same { fill: var(--muted); stroke: var(--surface); }
+.share .val .muted { font-weight: 500; }
+:is(.trow, .drow) .dot.other { fill: var(--surface); stroke: var(--muted); stroke-width: 1.5; }
+.share-axis .one-lab { color: var(--muted); }

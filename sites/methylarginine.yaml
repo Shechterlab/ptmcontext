@@ -36,6 +36,7 @@ marks:
       help: The methylation state the studies report for the site; Rme2 is dimethylarginine, asymmetric or symmetric not resolved
     studies:
       column: studies
+      provenance: true                       # how the site was found, not what it is
       label: Studies and databases
       kind: list
       separator: "; "
@@ -67,6 +68,7 @@ marks:
       help: The studies and databases that report the site
     n_studies:
       column: n_studies
+      provenance: true                       # how the site was found, not what it is
       label: Studies reporting it
       kind: number
       colour: true
@@ -82,6 +84,7 @@ marks:
       help: "Experimental: an RNA or DNA crosslink at the residue, an RBDmap fragment covering it, or a PDB interface; predicted only: an AlphaFold-Multimer interface or a confident predicted contact"
     localised_by:
       column: localised_by
+      provenance: true                       # how the site was found, not what it is
       label: Localised by
       kind: list
       separator: "; "
@@ -93,6 +96,7 @@ marks:
         curated_database: PhosphoSitePlus 2021 (curated)
     flags:
       column: flags
+      provenance: true                       # how the site was found, not what it is
       label: Notes
       kind: list
       separator: "; "
@@ -258,5 +262,6 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Interactions and binding, attributes: [interaction]}
     - {name: Provenance, attributes: [studies, n_studies, localised_by]}
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
+  compare: {stratify: studies}      # "compared with other methylarginines, within studies": the same reporting sources
   sites: {columns: [structure_context]}                            # the Sites tab's context column
   protein: {facts: [{analysis: disorder, classes: [disordered]}]}  # a tile on each protein page

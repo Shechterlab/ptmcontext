@@ -108,6 +108,9 @@ def website_problems(site: dict) -> list[str]:
             out.append(f"website.stats: no attribute {st['attribute']!r} in marks.attributes")
         elif isinstance(st, dict) and attrs[st['attribute']].get('kind') != 'list':
             out.append(f"website.stats: attribute {st['attribute']!r} is not a list (its distinct values are counted)")
+    st = (web.get('compare') or {}).get('stratify')
+    if st and (st not in attrs or attrs[st].get('kind') != 'list'):
+        out.append(f"website.compare.stratify: {st!r} is not a list attribute of the marks")
     words = _analysis_words(site)
     for a in (web.get('sites') or {}).get('columns', []):
         if a not in ids:

@@ -231,6 +231,102 @@
     const q = ST.bh(rows.map(r => r.p)); rows.forEach((r, k) => { const circ = madeWith(aid) || r.a === n || !!named; r.q = circ ? null : q[k]; r.descriptive = circ; });
     return rows;
   }
+  // ---- the selection against other marks, not other residues -------------------------------------------------------
+  // S.vs 'marks': the selection's marks against the site's other marks; S.vs 'cmp': against the marks of another
+  // selection (S.cmp: its search and filters), the marks both hold left out of both. Each class of a question (an
+  // attribute of the marks is a question too, id '@<name>') is compared between the two groups:
+  //   fisher           pooled: Fisher's exact test, the Haldane odds ratio and Woolf's 95% CI
+  //   mantel_haenszel  within each protein with marks in both groups (Mantel–Haenszel, RBG CI, CMH test)
+  //   study            within studies: Mantel–Haenszel over the marks reported by exactly the same sources (the
+  //                    attribute website.compare.stratify names), so a difference is not which studies report them
+  // Protein sets: the selection's proteins against the other marked proteins of the background (hypergeometric), or
+  // against the other selection's (Fisher). BH within each question and test.
+  const MIN_SIDE = 10;
+  const STUDY = (() => { const c = D.compare?.stratify; if (c && SPECS[c]) return c; return Object.keys(SPECS).find(n => SPECS[n].provenance && SPECS[n].kind === 'list' && SPECS[n].link) || null; })();
+  // a question's classes, each with its test on a mark: a residue question's, or an attribute's values (a number
+  // attribute at 2, 3 and 5 or more)
+  function featuresOf(qid) {
+    if (qid[0] === '@') {
+      const name = qid.slice(1), ti = AT().indexOf(name), sp = SPECS[name] || {}; if (ti < 0) return [];
+      if (sp.kind === 'number') { const nums = SD.numbers[name], max = Math.max(...nums.filter(Number.isFinite)); return [2, 3, 5].filter(t => t <= max).map(t => ({ code: String(t), has: m => m[3][ti].some(c => nums[c] >= t) })); }
+      return SD.attributes[name].map((v, ci) => ({ code: v, has: m => m[3][ti].includes(ci) })).filter(f => f.code !== '');
+    }
+    const ai = AN().indexOf(qid); if (ai < 0) return [];
+    return SD.classes[qid].map((c, ci) => ({ code: c, has: m => m[2][ai].includes(ci) }));
+  }
+  let studyOf = null;                          // mark index -> the set of sources that report it, as one key
+  const studyKey = i => { if (!studyOf) { const ti = AT().indexOf(STUDY); studyOf = SD.marks.map(m => (ti < 0 ? '' : [...m[3][ti]].sort((x, y) => x - y).join(','))); } return studyOf[i]; };
+  // the two groups: [group 1 (the selection), group 2, marks both hold, the constraints of both]
+  function contrastPair() {
+    const c = compute(); if (!c.active || !SD || !c.marks) return null;
+    if (S.vs === 'cmp') {
+      const st = stateOfHash('?' + (S.cmp || '')), o = select(st.q, st.f), oth = o.active ? o.marks : SD.marks.map((_, i) => i);
+      const in2 = new Set(oth), in1 = new Set(c.marks);
+      return { g1: c.marks.filter(i => !in2.has(i)), g2: oth.filter(i => !in1.has(i)), shared: c.marks.filter(i => in2.has(i)).length, cons: [...c.cons, ...o.cons], other: o, otherState: st };
+    }
+    const in1 = new Set(c.marks);
+    return { g1: c.marks, g2: SD.marks.map((_, i) => i).filter(i => !in1.has(i)), shared: 0, cons: c.cons };
+  }
+  const woolf = (a, b, c, d) => { const or = ((a + 0.5) * (d + 0.5)) / ((b + 0.5) * (c + 0.5)), se = Math.sqrt(1 / (a + 0.5) + 1 / (b + 0.5) + 1 / (c + 0.5) + 1 / (d + 0.5)); return [Math.exp(Math.log(or) - 1.959963984540054 * se), Math.exp(Math.log(or) + 1.959963984540054 * se)]; };
+  // circular: a question either selection was made with, or one reading the same inputs
+  function circularFor(qid, cons) {
+    const mine = qid[0] === '@' ? new Set(['t:' + qid.slice(1), 'n:' + qid.slice(1)]) : rolesOf(qid);
+    return cons.some(([k]) => { const id = k.split(':')[1]; return qid[0] === '@' ? mine.has(k) : [...rolesOf(id)].some(x => mine.has(x)); });
+  }
+  function contrastResidue(qid, method, G) {
+    const m1 = G.g1.map(i => SD.marks[i]), m2 = G.g2.map(i => SD.marks[i]), n1 = m1.length, n2 = m2.length;
+    let strata = null;
+    if (method !== 'fisher') {
+      const by = new Map(), keyOf = method === 'study' ? (i => studyKey(i)) : (i => SD.marks[i][0]);
+      G.g1.forEach((i, k) => { const s = keyOf(i); (by.get(s) || by.set(s, [[], []]).get(s))[0].push(m1[k]); });
+      G.g2.forEach((i, k) => { const s = keyOf(i); (by.get(s) || by.set(s, [[], []]).get(s))[1].push(m2[k]); });
+      strata = [...by.values()].filter(([x, y]) => x.length && y.length);
+    }
+    const rows = featuresOf(qid).map(f => {
+      let a = 0, c = 0; for (const m of m1) if (f.has(m)) a++; for (const m of m2) if (f.has(m)) c++;
+      if (!a && !c) return null;
+      const b = n1 - a, d = n2 - c;
+      if (method === 'fisher') { const fi = ST.fisher(a, b, c, d), [lo, hi] = woolf(a, b, c, d); return { analysis: qid, category: f.code, a, b, c, d, or: fi.or, lo, hi, p: fi.p, strata: null, method, selection: true, vs: S.vs }; }
+      const r = ST.mh(strata.map(([x, y]) => { const ax = x.filter(f.has).length, cy = y.filter(f.has).length; return [ax, x.length - ax, cy, y.length - cy]; }));
+      return { analysis: qid, category: f.code, a, b, c, d, or: r.or, lo: r.lo, hi: r.hi, p: r.p, strata: r.strata, method, selection: true, vs: S.vs };
+    }).filter(Boolean);
+    const circ = circularFor(qid, G.cons);
+    const q = ST.bh(rows.map(r => r.p)); rows.forEach((r, k) => { r.q = circ ? null : q[k]; r.descriptive = circ; });
+    return rows;
+  }
+  function contrastSets(aid, G) {
+    const ps = SD.protein_sets?.[aid]; if (!ps) return [];
+    const inBg = new Set(ps.in_background), prot = idx => new Set(idx.map(i => SD.marks[i][0]).filter(p => inBg.has(p)));
+    let p1 = prot(G.g1), p2;
+    if (S.vs === 'cmp') { p2 = prot(G.g2); const both = [...p1].filter(p => p2.has(p)); both.forEach(p => { p1.delete(p); p2.delete(p); }); }
+    else p2 = new Set(ps.in_background.filter(p => !p1.has(p)));
+    const n1 = p1.size, n2 = p2.size;
+    const rows = ps.sets.map(([s, , members]) => {
+      let a = 0, c = 0; for (const p of members) { if (p1.has(p)) a++; else if (p2.has(p)) c++; }
+      if (!a) return null;
+      const b = n1 - a, d = n2 - c, [lo, hi] = woolf(a, b, c, d);
+      // against the other marked proteins: one-sided hypergeometric over the marked background, as the site's own test
+      const p = S.vs === 'cmp' ? ST.fisher(a, b, c, d).p : ST.hyperSF(a, n1 + n2, a + c, n1);
+      return { analysis: aid, category: s, a, b, c, d, fold: (a / n1) / ((a + c) / (n1 + n2)), or: ((a + 0.5) * (d + 0.5)) / ((b + 0.5) * (c + 0.5)), lo, hi, p, method: 'enricher', selection: true, vs: S.vs };
+    }).filter(Boolean);
+    const named = compute().q.genes.length || compute().q.sites.length;
+    const circ = circularFor(aid, G.cons) || !!named;
+    const q = ST.bh(rows.map(r => r.p)); rows.forEach((r, k) => { r.q = circ ? null : q[k]; r.descriptive = circ; });
+    return rows;
+  }
+  // a question's rows against the other marks (or the other selection), shaped as the site's own; null when the
+  // groups are too small (fewer than 10 marks either side)
+  function contrast(qid, method) {
+    const c = compute(); if (!SD || !c.active) return null;
+    const key = `vs|${S.vs}|${S.cmp || ''}|${qid}|${method}`;
+    if (c.retests[key] !== undefined) return c.retests[key];
+    const G = c.retests['groups|' + S.vs + '|' + (S.cmp || '')] ||= contrastPair();
+    if (!G || G.g1.length < MIN_SIDE || G.g2.length < MIN_SIDE) return (c.retests[key] = null);
+    const out = A[qid]?.kind === 'protein_sets' ? contrastSets(qid, G) : contrastResidue(qid, method === 'enricher' ? 'fisher' : method, G);
+    return (c.retests[key] = K.decorate(out));
+  }
+  const contrastGroups = () => { const c = compute(); if (!SD || !c.active) return null; return c.retests['groups|' + S.vs + '|' + (S.cmp || '')] ||= contrastPair(); };
+
   // the rows of a question for the selection, shaped as the site's own (kit.js decorates them)
   function rows(aid, method) {
     const c = compute(); if (!c.active || !SD || !testable()) return null;
@@ -417,5 +513,5 @@
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('fgroup')) { (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g); } }, true);
   addEventListener('keydown', e => { if (e.key === 'Escape' && R.open) { R.open = false; rail(); } });
 
-  Object.assign(K, { sel: { ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
+  Object.assign(K, { sel: { ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, STUDY, MIN_SIDE, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
 });

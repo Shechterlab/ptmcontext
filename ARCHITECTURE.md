@@ -80,11 +80,17 @@ read-out, exports), `kit-proteins.js` (the Proteins tab and the protein page), `
 `kit-compare.js` (what sets a selection apart from the other marks, and two selections side by side). A new view is a
 new module.
 
-**Comparisons.** "What sets it apart?" (`#apart`) and "Compare two selections" (`#compare/<A's search and filters>`, B
-being the current selection) compare every feature the site knows (each class of each residue question, each value of
-the marks' attributes, each tested protein set) between two groups of marks: pooled (Fisher) and within each protein
-that has marks in both (Mantel–Haenszel), Benjamini–Hochberg within each question. The questions a selection was made
-with are left out, and marks two selections share are left out of both sides. The link reopens the comparison.
+**Comparisons.** What a selection is compared with is the Overview's baseline: the other residues of its proteins (the
+site's own tests), the site's other marks ("what sets it apart"), or another selection's marks (`vs=cmp`, `cmp=` its
+search and filters; `#compare` picks one saved in the browser). Against marks, every question and every attribute of
+the marks (as `@<name>`) is tested pooled (Fisher, Woolf's CI), within proteins with marks in both groups, and within
+studies: Mantel–Haenszel over marks reported by exactly the same sources (`website.compare.stratify`), so a
+difference is not which studies report the marks. Tiles show each class as two shares; a lead sentence gives the
+differences with most evidence (CI bound nearer 1, at least 10 marks) and whether each holds under the other two
+tests; attributes marked `provenance: true` are shown as a caveat ("How they were found"), not as findings. The
+questions a selection was made with are left out, and marks two selections share are left out of both. One engine
+(`kit-select.js`, `contrast`) serves every question, so tiles, opened questions, hovers and downloads work the same
+for every baseline. The browser's within-study test equals `ptmcontext.stats.mantel_haenszel` on the same tables.
 
 **The protein page** also shows, from data the site already has: the protein's sets in each protein-set question with
 the site's result for each and its abundance decile as the tests used it; every region the questions read, with the
@@ -120,9 +126,8 @@ Inter and IBM Plex Serif embedded, and the TSV's `#` lines (readers skip them: `
 | Repository | Uses | How |
 |---|---|---|
 | PTM_Pipeline (methylarginine) | the tests, statistics, snapshot and release format | `pip install` at a tag; its study parsers and PRMT layers stay its own |
-| idr-explorer | units (IDRs, flanks, segments), the tests on a selection | a site file; IDR charge layers as a plugin or built in once their definitions are settled |
-| MicroDomains (private) | everything, plus its private layers | a plugin package that the kit loads only when a site trusts it; nothing private enters this repository |
-| glu_proteomics (private) | the statistics, instead of its own copies | `pip install` at a tag |
+| idr-explorer | units (IDRs, segments), the tests on a selection | a site file; IDR charge layers as a plugin or built in once their definitions are settled |
+| a private repository | the kit, plus its own layers | a plugin package that the kit loads only when a site trusts it; nothing private enters this repository |
 
 ## Not yet built
 
