@@ -166,3 +166,35 @@ def mobidb(fasta: Path, out: Path, manifest: Path, prefix: str, feature: str = M
            f'MobiDB API, downloaded {_today()}', 'CC BY 4.0 (as listed for MobiDB)',
            note=f'{covered} of {len(accs)} entries have {feature} regions; the API does not report a release, so the download date is the version')
     return {'entries': len(accs), 'with_regions': covered, 'regions': len(table)}
+
+
+SHEPHARD_DATA = 'https://github.com/holehouse-lab/shephard-data'
+
+
+def shephard_domains(domains_tsv: Path, their_fasta: Path, snapshot_fasta: Path, out: Path, manifest: Path, name: str,
+                     commit: str, describe: str) -> dict:
+    """Domains from a SHEPHARD domains file (accession, start, end, domain_type, key:value ...), as domain units, kept
+    only on entries whose sequence in SHEPHARD's FASTA is identical to the snapshot's: their files were computed on
+    older UniProt sequences, and a position on a changed sequence is not a position on ours."""
+    ours, theirs = parse_fasta(snapshot_fasta), parse_fasta(their_fasta)
+    same = {a for a in ours if theirs.get(a) == ours[a]}
+    rows = []
+    for line in Path(domains_tsv).read_text().splitlines():
+        parts = line.rstrip('\n').split('\t')
+        if len(parts) < 4 or not parts[1].isdigit():
+            continue
+        kv = dict(p.split(':', 1) for p in parts[4:] if ':' in p)
+        rows.append({'accession': parts[0], 'start': int(parts[1]), 'end': int(parts[2]), 'subtype': 'domain',
+                     'ref': kv.get('ECOD_F_ID', kv.get('domain_type', '')),
+                     'label': ' '.join(x for x in (kv.get('domain_type', ''), kv.get('ECOD_T_group', ''), kv.get('ECOD_X_group', '')) if x),
+                     'members': ''})
+    df = pd.DataFrame(rows, columns=['accession', 'start', 'end', *DOMAIN_COLUMNS])
+    kept = df[df['accession'].isin(same)]
+    units = make_units(kept, 'domain', f'SHEPHARD {describe} (shephard-data {commit})', keep=DOMAIN_COLUMNS)
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / f'{name}.tsv'
+    write_units(units, path)
+    record(manifest, name, out.parent, path, f'{SHEPHARD_DATA}/tree/{commit} ({Path(domains_tsv).name})', f'shephard-data {commit}',
+           'MIT (shephard-data LICENSE)',
+           note=f'{len(kept):,} of {len(df):,} domains kept: those on the {len(same):,} entries whose sequence equals the snapshot\'s')
+    return {'domains': len(df), 'kept': len(kept), 'proteins': kept['accession'].nunique(), 'identical_entries': len(same)}

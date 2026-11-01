@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "inputs": {
+    "uniprot_fasta": {
+      "file": "inputs/reference/uniprot_human_reviewed_2026_03.fasta",
+      "md5": "c75aad9d197cbba00f51063f65a96ac4",
+      "source": "https://rest.uniprot.org/uniprotkb/stream?format=fasta&query=(proteome:UP000005640) AND (reviewed:true)",
+      "version": "UniProt 2026_03 (released 2026-09-02), 20,416 reviewed human entries",
+      "licence": "CC BY 4.0",
+      "role": "input"
+    },
+    "mobidb_disorder": {
+      "file": "inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv",
+      "md5": "1ffa4ed06adc22754cd4d8765059ecce",
+      "source": "MobiDB human export of 2026-03-30 (prediction-disorder-th_50 regions), lifted to the UniProt 2026_03 sequences",
+      "version": "MobiDB 2026-03-30",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/00_stage_mobidb_disorder.py; this repository checks the bytes, not the staging. A stage step of its own (from the MobiDB API) is planned."
+    },
+    "methylarginine_sites_v1_4_3": {
+      "file": "releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv",
+      "md5": "50dd293d1a3dd94ce7a0fb3168eae3bd",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "reference_output",
+      "note": "The marks the parity test counts, until this repository builds the site union itself."
+    },
+    "shephard_ecod_domains": {
+      "file": "staged/shephard_ecod_domains.tsv",
+      "md5": "fdae453b2d93fdd4ebe82ca51e5c820d",
+      "source": "https://github.com/holehouse-lab/shephard-data/tree/c5c956c (shprd_domains_ecod_domainmapper.tsv)",
+      "version": "shephard-data c5c956c",
+      "licence": "MIT (shephard-data LICENSE)",
+      "role": "input",
+      "note": "42,691 of 44,222 domains kept: those on the 19,696 entries whose sequence equals the snapshot's"
+    }
+  }
+}
