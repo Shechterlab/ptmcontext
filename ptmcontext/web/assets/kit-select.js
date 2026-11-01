@@ -135,7 +135,9 @@
     }
     if (A[key] && SD) {
       const names = Object.keys(setMembers[key] || {});
-      return ['p:' + key, vals.flatMap(v => names.filter(s => low(s) === low(v) || low((A[key].labels || {})[s] || '').includes(low(v))))];
+      // a set by its name or label: exactly, else every set where a word begins with it ("ALS" for "ALS / motor neuron / FTD")
+      const lab = s => low((A[key].labels || {})[s] || ''), at = v => new RegExp('(^|[^a-z0-9])' + low(v).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      return ['p:' + key, vals.flatMap(v => { const ex = names.filter(s => low(s) === low(v) || lab(s) === low(v)); return ex.length ? ex : names.filter(s => at(v).test(low(s)) || at(v).test(lab(s))); })];
     }
     if (SPECS[key] && SD) {
       if (SPECS[key].kind === 'number') return ['n:' + key, [vals[0]]];
@@ -282,11 +284,14 @@
     if (S.vs === 'cmp') {
       const st = stateOfHash('?' + (S.cmp || '')), o = select(st.q, st.f), oth = o.active ? o.marks : SD.marks.map((_, i) => i);
       const in2 = new Set(oth), in1 = new Set(c.marks);
-      return { g1: c.marks.filter(i => !in2.has(i)), g2: oth.filter(i => !in1.has(i)), shared: c.marks.filter(i => in2.has(i)).length, cons: [...c.cons, ...o.cons], other: o, otherState: st };
+      return mixedOf({ g1: c.marks.filter(i => !in2.has(i)), g2: oth.filter(i => !in1.has(i)), shared: c.marks.filter(i => in2.has(i)).length, cons: [...c.cons, ...o.cons], other: o, otherState: st });
     }
     const in1 = new Set(c.marks);
-    return { g1: c.marks, g2: SD.marks.map((_, i) => i).filter(i => !in1.has(i)), shared: 0, cons: c.cons };
+    return mixedOf({ g1: c.marks, g2: SD.marks.map((_, i) => i).filter(i => !in1.has(i)), shared: 0, cons: c.cons });
   }
+  // how many proteins have marks on both sides: a selection of whole proteins (a set, a gene list) has none, and then
+  // no within-protein comparison can be made
+  function mixedOf(G) { const p1 = new Set(G.g1.map(i => SD.marks[i][0])); G.mixed = new Set(G.g2.map(i => SD.marks[i][0]).filter(p => p1.has(p))).size; return G; }
   const woolf = (a, b, c, d) => { const or = ((a + 0.5) * (d + 0.5)) / ((b + 0.5) * (c + 0.5)), se = Math.sqrt(1 / (a + 0.5) + 1 / (b + 0.5) + 1 / (c + 0.5) + 1 / (d + 0.5)); return [Math.exp(Math.log(or) - 1.959963984540054 * se), Math.exp(Math.log(or) + 1.959963984540054 * se)]; };
   // circular: a question either selection was made with, or one reading the same inputs
   function circularFor(qid, cons) {
@@ -604,7 +609,8 @@
 
   // ---- events ------------------------------------------------------------------------------------------------------
   K.clicks.push(
-    ['[data-f]', el => toggle(el.dataset.f, el.dataset.v)],
+    // a class picked on a question's page selects it and returns to the Overview, where every question is tested again
+    ['[data-f]', el => { const back = el.closest('.drow') && S.view === 'overview' && S.arg; if (back) S.arg = ''; toggle(el.dataset.f, el.dataset.v); if (back) scrollTo(0, 0); }],
     ['[data-sel-clear]', el => setFilter(el.dataset.selClear, [])],
     ['[data-sel-clear-q]', () => { S.q = ''; K.writeHash(true); K.render(); }],
     ['[data-sel-clear-all]', () => clearAll()],

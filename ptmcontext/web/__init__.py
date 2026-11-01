@@ -256,7 +256,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'tracks': _tracks(folder),
         'profile_uniprot': profile.data.get('uniprot_features', []),
         'overview': web.get('overview'), 'filters': web.get('filters'), 'stats': web.get('stats'),
-        'sites_view': web.get('sites'), 'protein_view': web.get('protein'), 'compare': web.get('compare'),
+        'sites_view': web.get('sites'), 'protein_view': web.get('protein'), 'compare': web.get('compare'), 'legacy_links': web.get('legacy_links') or {},
         'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),
                  'lab': web.get('lab', {}).get('name', ''), 'config': f"sites/{site['id']}.yaml"},
         'words': {**profile.words, 'marked_long': profile.words.get('marked_long', profile.words['marked'])},

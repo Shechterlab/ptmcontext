@@ -539,14 +539,14 @@ website:                  # the look and words of the website (ptmc web); layout
     sections:
       - name: Disease and cancer
         cards:
-          - {analysis: disease_family, title: Disease families}
-          - {analysis: disease_family_additional, title: Disease families (additional)}
+          - {analysis: disease_family, title: Disease}
+          - {analysis: disease_family_additional, title: "More disease families (rule-based, not audited)"}
       - name: Kinds of protein
         cards:
           - {analysis: panther_group, title: Protein classes}
-          - {analysis: condensate_proteome, title: Biomolecular condensates}   # the original's default background: the proteome
+          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
           - {analysis: hpa_location, title: Where in the cell}
-          - {analysis: reactome_top_level, title: Reactome pathways (top level)}
+          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
       - name: Where in the protein
         cards:
@@ -555,7 +555,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
       - name: In more detail
-        cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)"}, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
+        cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional], attributes: [tcga_any, depmap_any]}
     - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, hpa_location, reactome_top_level]}
@@ -565,6 +565,15 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class]}
     - {name: Provenance, attributes: [studies, n_studies, localised_by]}
+  legacy_links:            # the explorer's Overview anchors (#overview/ov-pan, ...) open the same questions here
+    ov-pan: panther_group
+    ov-dis: disease_family
+    ov-cond: condensate_proteome
+    ov-cell: hpa_location
+    ov-path: reactome_top_level
+    ov-motif: motif
+    ov-struct: structure_context
+    sel-enriched: "?vs=marks"
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   compare: {stratify: studies}      # "compared with other methylarginines, within studies": the same reporting sources
   sites: {columns: [structure_context]}                            # the Sites tab's context column

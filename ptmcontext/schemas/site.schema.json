@@ -1044,6 +1044,13 @@
                             "summary": {
                               "type": "string",
                               "description": "the line under the card; {top} is the strongest class, {fold} its effect"
+                            },
+                            "order": {
+                              "enum": [
+                                "effect",
+                                "q"
+                              ],
+                              "description": "the classes' order on the tile and its question: by effect (default) or by evidence (q), for sets where a small set reaches the largest fold when every member is marked"
                             }
                           }
                         }
@@ -1198,6 +1205,13 @@
               "description": "the list attribute whose sources define the within-study strata (default: the first provenance list attribute with a link)"
             }
           }
+        },
+        "legacy_links": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "an older site's Overview anchors (#overview/<key>) and what they open now: a question's id, or ?<parameters> for the Overview (?vs=marks)"
         }
       }
     },
