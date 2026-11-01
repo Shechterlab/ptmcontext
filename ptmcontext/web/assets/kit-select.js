@@ -39,9 +39,16 @@
   })();
   const AN = () => SD.analyses, AT = () => SD.attribute_names || Object.keys(SD.attributes);
   let setMembers = {};                         // analysis -> set name -> Set(protein index)
+  // a question whose sets hold other identifiers (genes; ps.of: protein index -> its identifiers' indices) counts
+  // those: a group of proteins is the set of their identifiers
+  const unitsOf = (ps, prots) => (ps.of ? new Set([...prots].flatMap(p => ps.of[p] || [])) : new Set(prots));
   function prepare() {
     setMembers = {};
-    for (const [aid, ps] of Object.entries(SD.protein_sets || {})) setMembers[aid] = Object.fromEntries(ps.sets.map(([s, , m]) => [s, new Set(m)]));
+    for (const [aid, ps] of Object.entries(SD.protein_sets || {})) {
+      const holders = {};                      // identifier index -> the marked proteins that map to it
+      if (ps.of) Object.entries(ps.of).forEach(([p, us]) => us.forEach(u => (holders[u] ||= []).push(+p)));
+      setMembers[aid] = Object.fromEntries(ps.sets.map(([s, , m]) => [s, new Set(ps.of ? m.flatMap(u => holders[u] || []) : m)]));
+    }
     SD.numbers = {};
     AT().forEach(k => { if (SPECS[k]?.kind === 'number') SD.numbers[k] = SD.attributes[k].map(Number); });
   }
@@ -218,7 +225,7 @@
   }
   function setRows(aid) {
     const ps = SD.protein_sets?.[aid]; if (!ps) return [];
-    const inBg = new Set(ps.in_background), sel = [...compute().proteins].filter(p => inBg.has(p)), n = sel.length, N = ps.N;
+    const inBg = new Set(ps.in_background), sel = [...unitsOf(ps, compute().proteins)].filter(p => inBg.has(p)), n = sel.length, N = ps.N;
     const selSet = new Set(sel);
     const rows = ps.sets.map(([s, M, members]) => {
       const k = members.reduce((x, p) => x + (selSet.has(p) ? 1 : 0), 0);
@@ -296,7 +303,7 @@
   }
   function contrastSets(aid, G) {
     const ps = SD.protein_sets?.[aid]; if (!ps) return [];
-    const inBg = new Set(ps.in_background), prot = idx => new Set(idx.map(i => SD.marks[i][0]).filter(p => inBg.has(p)));
+    const inBg = new Set(ps.in_background), prot = idx => new Set([...unitsOf(ps, idx.map(i => SD.marks[i][0]))].filter(p => inBg.has(p)));
     let p1 = prot(G.g1), p2;
     if (S.vs === 'cmp') { p2 = prot(G.g2); const both = [...p1].filter(p => p2.has(p)); both.forEach(p => { p1.delete(p); p2.delete(p); }); }
     else p2 = new Set(ps.in_background.filter(p => !p1.has(p)));
@@ -513,5 +520,5 @@
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('fgroup')) { (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g); } }, true);
   addEventListener('keydown', e => { if (e.key === 'Escape' && R.open) { R.open = false; rail(); } });
 
-  Object.assign(K, { sel: { ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, STUDY, MIN_SIDE, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
+  Object.assign(K, { sel: { ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, STUDY, MIN_SIDE, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
 });

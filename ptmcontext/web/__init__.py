@@ -198,8 +198,9 @@ def site_data(site: dict, folder: Path, profile) -> dict:
     analyses = []
     for a in site['analyses']:
         if a.get('test') == 'protein_sets':
-            from ..set_tests import roles_of
-            analyses.append({'id': a['id'], 'kind': 'protein_sets', 'shape': 'sets', 'stratified': bool(a.get('abundance')), 'roles': [r for r in roles_of(a) if r != (a.get('abundance') or {}).get('input')],
+            from ..set_tests import question_roles
+            analyses.append({'id': a['id'], 'kind': 'protein_sets', 'shape': 'sets', 'stratified': bool(a.get('abundance')), 'roles': question_roles(a),
+                             **({'unit': (a['identifiers'].get('nouns') or 'identifiers')} if a.get('identifiers') else {}),
                              'title': a.get('title', a['id']), 'question': a.get('question', ''),
                              'sub': a.get('sub', ''), 'section': a.get('section', 'Kinds of protein'), 'layer': '', 'describe': a.get('background', ''),
                              'labels': set_names.get(a['id'], {}), 'help': {}, 'new': bool(a.get('new'))})
@@ -227,6 +228,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         ab = (spec.get('abundance') or {}).get('input')
         if ab:
             readers.setdefault(ab, []).append(f"abundance deciles of {a['title']}")
+        for step in (spec.get('identifiers') or {}).get('map', []):      # the tables that map proteins to the sets' identifiers
+            readers.setdefault(step['input'], []).append(f"proteins to {a.get('unit', 'identifiers')} for {a['title']}")
     for role, value in site.get('inputs', {}).items():
         rule, names = role_inputs(value)
         what = '; '.join(dict.fromkeys(readers.get(role, []))) or role.replace('_', ' ')
@@ -360,6 +363,20 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
     if (folder / 'protein_sets.json').exists():
         for aid, k in json.loads((folder / 'protein_sets.json').read_text()).items():
             if not k:
+                continue
+            if k.get('identifiers'):                   # sets of other identifiers (genes): coded by index, with each
+                ids = k['identifiers']                 # marked protein's identifiers in the background (of)
+                uids = sorted({u for us in ids['proteins'].values() for u in us} | set(k['marked_in_background']))
+                uidx = {u: i for i, u in enumerate(uids)}
+                sets[aid] = {'N': k['N'], 'ids': uids, 'unit': ids.get('nouns', 'identifiers'),
+                             'of': {pidx[a]: [uidx[u] for u in us] for a, us in ids['proteins'].items() if a in pidx},
+                             'in_background': [uidx[u] for u in k['marked_in_background']],
+                             'sets': [[s, v['M'], [uidx[u] for u in v['marked']]] for s, v in k['sets'].items()]}
+                if k.get('covariate'):                 # a protein shows the covariate of its first identifier with one
+                    cv = k['covariate']
+                    first = {pidx[a]: next((cv['proteins'][u] for u in us if u in cv['proteins']), None) for a, us in ids['proteins'].items() if a in pidx}
+                    sets[aid]['covariate'] = {'input': cv['input'], 'value': cv['value'], 'strata': cv['strata'],
+                                              'proteins': {i: x for i, x in first.items() if x is not None}}
                 continue
             sets[aid] = {'N': k['N'], 'in_background': [pidx[a] for a in k['marked_in_background'] if a in pidx],
                          'sets': [[s, v['M'], [pidx[a] for a in v['marked'] if a in pidx]] for s, v in k['sets'].items()]}

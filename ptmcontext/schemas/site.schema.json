@@ -313,6 +313,32 @@
                     "items": {
                       "$ref": "#/$defs/condition"
                     }
+                  },
+                  "families": {
+                    "type": "object",
+                    "required": [
+                      "rules"
+                    ],
+                    "additionalProperties": false,
+                    "description": "protein_sets: gather the table's sets into families by their names, with a site's own rules file (schemas/set_families.schema.json); each family holds the members of its sets, and the source still annotates every member of its table (the background, unless whole_universe)",
+                    "properties": {
+                      "rules": {
+                        "type": "string",
+                        "description": "the rules file, relative to the site's repository (sites/data/...)"
+                      },
+                      "by": {
+                        "type": "string",
+                        "description": "the column whose names the rules read (default: the set column)"
+                      },
+                      "lists": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1,
+                        "description": "the rules file's lists whose families this analysis tests (default: every list)"
+                      }
+                    }
                   }
                 }
               },
@@ -397,6 +423,63 @@
                 }
               }
             ]
+          },
+          "identifiers": {
+            "type": "object",
+            "required": [
+              "map"
+            ],
+            "additionalProperties": false,
+            "description": "protein_sets: the sets hold another identifier (Entrez genes, say): each of the site's proteins is mapped to it through these tables in turn, and the test counts identifiers, its universe the proteins' identifiers",
+            "properties": {
+              "noun": {
+                "type": "string",
+                "description": "one identifier, in words (gene)"
+              },
+              "nouns": {
+                "type": "string",
+                "description": "several, in words (genes)"
+              },
+              "map": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "input",
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "input": {
+                      "type": "string",
+                      "description": "a role of the site's inputs"
+                    },
+                    "from": {
+                      "type": "string",
+                      "description": "the column holding the step before's identifier (the protein's accession, first)"
+                    },
+                    "to": {
+                      "type": "string",
+                      "description": "the column holding the next identifier"
+                    },
+                    "separator": {
+                      "type": "string",
+                      "description": "the to column holds lists, split here"
+                    },
+                    "take": {
+                      "enum": [
+                        "first",
+                        "all"
+                      ],
+                      "default": "all",
+                      "description": "of a list, the first item or every item"
+                    }
+                  }
+                }
+              }
+            }
           },
           "names": {
             "type": "object",
@@ -484,6 +567,13 @@
               "label": {
                 "type": "string",
                 "description": "added to the background of the stratified rows"
+              },
+              "combine": {
+                "enum": [
+                  "max"
+                ],
+                "default": "max",
+                "description": "with identifiers: an identifier takes the highest value of the proteins that map to it"
               }
             }
           },

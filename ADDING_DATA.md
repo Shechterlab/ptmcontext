@@ -15,6 +15,7 @@ Every new dataset is exactly one of these. If it is none of them, stop and ask.
 | **a mark** | a modification not yet profiled | a **profile** (`ptmcontext/profiles/<mark>.yaml`) |
 | **a per-residue value** | AlphaFold pLDDT, conservation, a variant-effect score | a per-residue table read by a **column mapping**, tested by the `residue_values` layer (no code) |
 | **a per-protein annotation** | pathways, locations, classes, abundance | a (set, protein) table or class hierarchy for a **protein-set test** (no code) |
+| **a per-gene annotation** | disease terms (DisGeNET), any sets keyed by another identifier | a (set, identifier) table, with the tables that map the site's proteins to that identifier, for a **protein-set test** (no code); families of its sets by name: a rules file in `sites/data/` |
 | **a published result to match** | a release's statistics table | a `reference_output` entry: read only to check parity |
 
 ## 1. Check the terms before downloading
@@ -129,7 +130,31 @@ reading different roles may share a `kind`: each keeps its own row of the map.
       unclassified: <set name>                           # the universe's proteins with no class, as a set
     universe: snapshot
     whole_universe: true
+  - id: <analysis>                                       # sets of another identifier (genes), gathered into families
+    test: protein_sets
+    identifiers:                                         # each protein's identifiers, through these tables in turn
+      noun: gene                                         # words for the website: "genes of marked proteins"
+      nouns: genes
+      map:
+        - {input: <role>, from: <accession column>, to: <column>, separator: ";", take: first}   # first of a list
+        - {input: <role>, from: <column>, to: <identifier column>}                                # every row's
+    sets:
+      input: <role>                                      # (set, identifier) pairs
+      set: <column>
+      protein: <identifier column>
+      families: {rules: sites/data/<site>_<vocabulary>.yaml, by: <name column>, lists: [<list>]}   # optional
+    universe: snapshot                                   # every protein's identifiers; the background: those in any set
+    abundance: {input: <role>, protein: <column>, value: <column>, combine: max}   # an identifier: its proteins' highest
 ```
+
+Which sets make a family is curated vocabulary: it goes in a site's own data file under `sites/data/`, never in code
+(`ptmcontext/schemas/set_families.schema.json`; `sites/data/methylarginine_disease_families.yaml` gathers DisGeNET's
+terms into the release's disease families). Each family is a list of regular expressions matched against the set's
+name; exact-name `overrides` come first; families sit in ordered `lists`, a name taking the first family that matches,
+list by list, and each analysis tests the families of the lists it names. A set no rule places is in no family, but its
+identifiers still count as annotated (the background). `ptmc check` reads the rules file, the lists an analysis names
+and every column its tables must have; the run records the file's MD5. Record each mapping table in the manifest like
+any input: the identifiers are only as good as the map.
 
 Columns of the marks table the website should keep (to colour sites, filter them, and show where each comes from)
 go under `marks.attributes`; no test reads them:

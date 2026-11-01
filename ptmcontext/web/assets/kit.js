@@ -38,6 +38,9 @@
   ATTRQ.forEach(a => { A[a.id] = a; });
   const label = r => (A[r.analysis]?.labels || {})[r.category] || r.category.replace(/_/g, ' ');
   const SETS = a => A[a]?.kind === 'protein_sets';
+  // what a protein-set question counts: proteins, or another identifier of theirs (genes), as the site file says
+  const setUnit = a => A[a]?.unit || 'proteins';
+  const markedUnits = a => (A[a]?.unit ? `${A[a].unit} of ${W.marked} proteins` : `${W.marked} proteins`);
   // a row of a test, ready to draw: its effect, labels and reading (the site's own rows, and a selection's)
   const decorate = rows => { rows.forEach(r => { r.eff = r.or ?? r.fold; r.label = label(r); r.help = (A[r.analysis]?.help || {})[r.category] || ''; r.dir = dir(r); r.title = A[r.analysis]?.title || r.analysis; }); return rows; };
   D.rows.forEach((r, i) => { r.i = i; });
@@ -432,7 +435,7 @@
       ` Only ${W.marks} on proteins with another ${W.residue} are counted. q: Benjamini–Hochberg across the classes of the question. Red: more often (q ≤ 0.05 and at least 1.1×); slate: less often; hollow: no significant difference.`;
   }
   function setWords(a) {
-    return `One-sided hypergeometric test, as clusterProfiler’s enricher: the ${W.marked} proteins in each set against the ${a.describe || 'other proteins of the universe'}; fold enrichment is the share of ${W.marked} proteins in the set over the share of all proteins in it. q: Benjamini–Hochberg across the sets tested. Within abundance deciles (where shown): the same counts, a Mantel–Haenszel odds ratio across protein-abundance deciles, which asks whether an enrichment holds among proteins of similar abundance.`;
+    return `One-sided hypergeometric test, as clusterProfiler’s enricher: the ${markedUnits(a.id)} in each set against the ${a.describe || 'other proteins of the universe'}; fold enrichment is the share of ${markedUnits(a.id)} in the set over the share of all ${setUnit(a.id)} in it. q: Benjamini–Hochberg across the sets tested. Within abundance deciles (where shown): the same counts, a Mantel–Haenszel odds ratio across protein-abundance deciles, which asks whether an enrichment holds among proteins of similar abundance.`;
   }
   function provenance(extra = {}) {
     const R = D.run;
@@ -707,12 +710,12 @@
   function showTip(e, r) {
     const selNote = r.selection ? `<br><span class="muted">Your selection, tested again in the browser${r.descriptive ? ': shown, not tested' : ' (exploratory)'}</span>` : '';
     if (r.vs) {
-      const set = SETS(r.analysis), unit = set ? 'proteins' : W.marks;
-      tip.innerHTML = `<b>${esc(r.label)}</b>${r.help ? `<br><span class="muted">${esc(r.help)}</span>` : ''}<br>${int(r.a)} of ${int(r.a + r.b)} ${esc(unit)} of your selection (${pct(r.a, r.a + r.b)}) against ${int(r.c)} of ${int(r.c + r.d)} ${set ? (S.vs === 'cmp' ? 'proteins of ' + esc(cmpName()) : 'other ' + esc(W.marked) + ' proteins') : esc(vsName())} (${pct(r.c, r.c + r.d)})` +
+      const set = SETS(r.analysis), unit = set ? setUnit(r.analysis) : W.marks;
+      tip.innerHTML = `<b>${esc(r.label)}</b>${r.help ? `<br><span class="muted">${esc(r.help)}</span>` : ''}<br>${int(r.a)} of ${int(r.a + r.b)} ${esc(unit)} of your selection (${pct(r.a, r.a + r.b)}) against ${int(r.c)} of ${int(r.c + r.d)} ${set ? (S.vs === 'cmp' ? esc(setUnit(r.analysis)) + ' of ' + esc(cmpName()) : 'other ' + esc(markedUnits(r.analysis))) : esc(vsName())} (${pct(r.c, r.c + r.d)})` +
         `<br>${set && S.vs !== 'cmp' ? `${fxn(r.fold)}-fold (one-sided hypergeometric over the ${esc(W.marked)} proteins)` : `OR ${fxn(r.or)}${r.lo != null ? ` (95% CI ${fxn(r.lo)} to ${fxn(r.hi)})` : ''} · ${set ? 'pooled' : METHOD[r.method] || esc(r.method)}${r.strata ? `, ${int(r.strata)} informative ${r.method === 'study' ? 'groups of sources' : 'proteins'}` : ''}`}, q ${fq(r.q)}` + selNote;
     } else if (SETS(r.analysis)) {
       const st = STRAT[r.analysis + '\u0000' + r.category];
-      tip.innerHTML = `<b>${esc(r.label)}</b><br>${int(r.a)} of ${int(r.a + r.b)} ${r.selection ? 'proteins of your selection' : esc(W.marked) + ' proteins'} (${pct(r.a, r.a + r.b)}) vs ${int(r.c)} of ${int(r.c + r.d)} other proteins (${pct(r.c, r.c + r.d)})` +
+      tip.innerHTML = `<b>${esc(r.label)}</b><br>${int(r.a)} of ${int(r.a + r.b)} ${r.selection ? esc(setUnit(r.analysis)) + ' of your selection' : esc(markedUnits(r.analysis))} (${pct(r.a, r.a + r.b)}) vs ${int(r.c)} of ${int(r.c + r.d)} other ${esc(setUnit(r.analysis))} (${pct(r.c, r.c + r.d)})` +
         `<br>${fxn(r.eff)}-fold, q ${fq(r.q)} (one-sided hypergeometric)` +
         (st && !r.selection ? `<br>Within abundance deciles: OR ${fxn(st.eff)}${st.lo != null ? ` (95% CI ${fxn(st.lo)}–${fxn(st.hi)})` : ''}, q ${fq(st.q)}` : '') + selNote;
     } else tip.innerHTML = `<b>${esc(r.label)}</b>${r.help ? `<br><span class="muted">${esc(r.help)}</span>` : ''}` +

@@ -40,6 +40,10 @@ upstream ───────────► staged files ──► snapshot �
 - **The run records what the website shows**: each layer's words (title, labels, help, question, shape) in `run.json`,
   its regions in `units.tsv` and what each kind is in `tracks.json`. The website reads these, so it shows a plugin's
   or a configured layer's question exactly as a built-in one, and draws any track; it knows no layer by name.
+- **Protein-set questions** read any (set, protein) table or class hierarchy (`set_tests.py`). Sets keyed by another
+  identifier (Entrez genes) come with the tables that map the site's proteins to it (`identifiers`), and sets gathered
+  into families by name with the site's own rules file (`sets.families`, `sites/data/`): curated vocabulary is a site's
+  data, never code.
 - **Stagers** are a registry (`stage.STAGERS`); the per-proteome paths a stager needs live in `ptmcontext/config/`.
 
 ## The website

@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Shechterlab/ptmcontext/schemas/set_families.schema.json",
+  "title": "Set families",
+  "description": "Curated vocabulary that places the sets of a protein-set table (disease terms, say) into families by their names: an exact-name override first, else the first family whose rule matches, list by list. A protein-set question reads it through sets.families and tests the families of the lists it names; each family holds the identifiers of its sets. A site's own data file (sites/), never code.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "lists"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "description": "where the rules come from"
+    },
+    "case_sensitive": {
+      "type": "boolean",
+      "default": false,
+      "description": "false: the patterns ignore case"
+    },
+    "overrides": {
+      "type": "array",
+      "description": "exact names, placed before any rule",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "family"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "family": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "a family of the lists, or null: in no family"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "lists": {
+      "type": "array",
+      "minItems": 1,
+      "description": "in order of precedence: a name takes the family of the first rule it matches in the first list where any matches; a name no rule matches is in no family",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "families"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "note": {
+            "type": "string"
+          },
+          "families": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "family",
+                "match"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "family": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "match": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": "Python regular expressions; the family's rule matches a name when any of them is found in it (re.search)"
+                },
+                "note": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
