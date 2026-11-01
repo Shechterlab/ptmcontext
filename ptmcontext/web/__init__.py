@@ -200,6 +200,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
             from ..set_tests import question_roles
             analyses.append({'id': a['id'], 'kind': 'protein_sets', 'shape': 'sets', 'stratified': bool(a.get('abundance')), 'roles': question_roles(a),
                              **({'unit': (a['identifiers'].get('nouns') or 'identifiers')} if a.get('identifiers') else {}),
+                             **({'filter': a['filter']} if a.get('filter') else {}),     # the words of its filter control
+                             **({'scores': {k: a['scores'][k] for k in ('label', 'help', 'levels', 'max') if k in a['scores']}} if a.get('scores') else {}),
                              'title': a.get('title', a['id']), 'question': a.get('question', ''),
                              'sub': a.get('sub', ''), 'section': a.get('section', 'Kinds of protein'), 'layer': '', 'describe': a.get('background', ''),
                              'labels': set_names.get(a['id'], {}), 'help': {}, 'new': bool(a.get('new'))})
@@ -229,6 +231,9 @@ def site_data(site: dict, folder: Path, profile) -> dict:
             readers.setdefault(ab, []).append(f"abundance deciles of {a['title']}")
         for step in (spec.get('identifiers') or {}).get('map', []):      # the tables that map proteins to the sets' identifiers
             readers.setdefault(step['input'], []).append(f"proteins to {a.get('unit', 'identifiers')} for {a['title']}")
+        hist = ((spec.get('sets') or {}).get('history') or {}).get('input')
+        if hist:                                                          # members' older accessions to current entries
+            readers.setdefault(hist, []).append(f"older accessions of the members of {a['title']}")
     for role, value in site.get('inputs', {}).items():
         rule, names = role_inputs(value)
         what = '; '.join(dict.fromkeys(readers.get(role, []))) or role.replace('_', ' ')
@@ -379,6 +384,14 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
                 continue
             sets[aid] = {'N': k['N'], 'in_background': [pidx[a] for a in k['marked_in_background'] if a in pidx],
                          'sets': [[s, v['M'], [pidx[a] for a in v['marked'] if a in pidx]] for s, v in k['sets'].items()]}
+            if k.get('marked_in_any') is not None and k['marked_in_any'] != k['marked_in_background']:
+                sets[aid]['any'] = [pidx[a] for a in k['marked_in_any'] if a in pidx]   # in any of the source's sets
+            if k.get('filter_sets'):                   # sets the filter offers that were not tested (too small, say)
+                sets[aid]['more'] = [[s, [pidx[a] for a in v['marked'] if a in pidx]] for s, v in k['filter_sets'].items()]
+            if k.get('scores'):                        # each set's marked members' scores, and each one's best (any)
+                sc = k['scores']
+                sets[aid]['scores'] = {'sets': {s: {pidx[a]: v for a, v in m.items() if a in pidx} for s, m in sc['sets'].items()},
+                                       'any': {pidx[a]: v for a, v in sc['any'].items() if a in pidx}}
             if k.get('covariate'):                     # each marked protein's covariate and its decile, as the test used
                 cv = k['covariate']
                 sets[aid]['covariate'] = {'input': cv['input'], 'value': cv['value'], 'strata': cv['strata'],

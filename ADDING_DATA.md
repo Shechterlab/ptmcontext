@@ -14,7 +14,7 @@ Every new dataset is exactly one of these. If it is none of them, stop and ask.
 | **marked residues** | a PTM site list, an MS experiment's sites | a **marks table** (accession, position, plus any columns) selected by a site file |
 | **a mark** | a modification not yet profiled | a **profile** (`ptmcontext/profiles/<mark>.yaml`) |
 | **a per-residue value** | AlphaFold pLDDT, conservation, a variant-effect score | a per-residue table read by a **column mapping**, tested by the `residue_values` layer (no code) |
-| **a per-protein annotation** | pathways, locations, classes, abundance | a (set, protein) table or class hierarchy for a **protein-set test** (no code) |
+| **a per-protein annotation** | pathways, locations, classes, condensates, abundance | a (set, protein) table or class hierarchy for a **protein-set test** (no code); rows kept by other tables (`where`), old accessions through a history (`history`) |
 | **a per-gene annotation** | disease terms (DisGeNET), any sets keyed by another identifier | a (set, identifier) table, with the tables that map the site's proteins to that identifier, for a **protein-set test** (no code); families of its sets by name: a rules file in `sites/data/` |
 | **a published result to match** | a release's statistics table | a `reference_output` entry: read only to check parity |
 
@@ -146,6 +146,36 @@ reading different roles may share a `kind`: each keeps its own row of the map.
     universe: snapshot                                   # every protein's identifiers; the background: those in any set
     abundance: {input: <role>, protein: <column>, value: <column>, combine: max}   # an identifier: its proteins' highest
 ```
+
+A (set, protein) table that needs other tables to say which of its rows count (the organism of a member, the kind of a
+set), whose members are named by older accessions, or whose rows the release lists in its own order:
+
+```yaml
+  - id: <analysis>                                       # CD-CODE condensates, as sites/methylarginine.yaml
+    test: protein_sets
+    sets:
+      input: <role>                                      # (set, protein) rows
+      set: <column>
+      protein: <column>
+      where:                                             # rows kept: the column's value is the key of a row that counts
+        - {column: <protein column>, input: <role>, key: <column>, include: [{column: species_name, equals: Homo sapiens}]}
+        - {column: <set column>, input: <role>, key: <column>, exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: <role>, from: key, to: accession, include: [{column: kind, equals: secondary}]}   # old -> entry
+    names: {input: <role>, set: <column>, name: <column>}
+    universe: annotated                                  # the proteins in any kept set (or snapshot, whole_universe: true)
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]   # default: ascending p, then name
+    scores: {input: <role>, set: <column>, protein: <column>, value: <column>, label: <words>, levels: [2, 3, 4, 5], max: 5}
+    filter: {label: <words>, any: <words for "in any set">, sets: all}   # the Filters panel's control
+```
+
+A `where` condition on the protein column compares entries (an isoform counts as its entry); one table may fill several
+conditions. `history` keeps a member that is an entry of the snapshot, brings one the history maps to exactly one entry
+to it, and drops any other (sets of proteins only). `order` writes the rows in the order a release lists them; the fold
+enrichment is compared exactly, so equal fractions tie. `scores` (a value per membership, CD-CODE's confidence, say) and
+`filter` are for the website only: the control lists the tested sets (or every set holding a marked protein, `sets:
+all`), an option for marks on a protein in any set, and a threshold on the scores. A comma-separated table says so in
+its manifest entry: `"columns": {"sep": ","}`.
 
 Which sets make a family is curated vocabulary: it goes in a site's own data file under `sites/data/`, never in code
 (`ptmcontext/schemas/set_families.schema.json`; `sites/data/methylarginine_disease_families.yaml` gathers DisGeNET's

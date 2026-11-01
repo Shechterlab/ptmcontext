@@ -36,6 +36,16 @@ Conventions:
 - `enricher` on sets gathered into families (`sets.families`): each set goes to at most one family by its name (a
   site's rules file, below) and a family holds the members of its sets; the background is still the universe's
   identifiers the source annotates, in any of its sets whether in a family or not.
+- `enricher` on a table whose rows other tables keep (`sets.where`): a row is kept when the value in its column is the
+  key of a row of the other table that the condition's `include` and `exclude` keep, every condition holding (CD-CODE's
+  members of human proteins, through its protein table, in human condensates that are not synthetic, through its
+  condensate table); on the protein column accessions are compared as entries. With `sets.history` (an accession
+  history: `from` an old accession `to` the entry), a member that is a snapshot entry stays, one the history maps to
+  exactly one entry becomes it, and any other is dropped, before the sets, the universe and the background are drawn.
+- Rows are written by ascending p, then set name, unless the analysis names an `order` (`by` a row's `a, b, c, d,
+  fold_enrichment, p, q` or `category`, `descending`), first key first, a tie keeping the order before. Fold enrichment
+  is compared exactly, as the fraction a(a+b+c+d)/((a+b)(a+c)), so 4 of 6 and 14 of 21 tie. The stratified rows follow
+  the `enricher` rows' order.
 - `mantel_haenszel` on a protein-set analysis: the same 2×2 split by a protein covariate (PaxDb abundance decile, and
   `none` for proteins without a value); its `a, b, c, d` add up to the `enricher` row's. For sets of another
   identifier, an identifier takes the highest value of the proteins that map to it (`combine: max`), and the deciles
@@ -77,7 +87,8 @@ on several rows takes the first kept row's values.
 `file, md5, source, version, licence` (required), `role` (`input` or `reference_output`), `note`, and two optional
 fields: `columns`, a column mapping for a file no reader knows (intervals: `accession, start, end`, and `label, ref,
 subtype, class`; per-residue values: `accession, position, value`; `include`/`exclude` conditions; `kind`; `sep`), and
-`record`, the source's own page for a protein (a URL with `{acc}`).
+`record`, the source's own page for a protein (a URL with `{acc}`). A table a protein-set question reads that is not
+tab-separated says so with `columns: {sep: ","}` alone; every table of a protein-set question is read with it.
 
 ## What `ptmc run` writes for the website
 
@@ -94,7 +105,7 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 | `proteins.tsv` | one per protein with a mark | `accession, gene, name, entry, length, sequence_md5, marks, candidates` |
 | `units.tsv` | one per drawn unit | `accession, kind, start, end, label, source, class, ref` |
 | `tracks.json` | per kind of drawn unit | `{kind, title, style, help, roles, analysis, colours?}`: `style` is `domains` (boxes on the backbone), `disorder` (the backbone's wave) or `segments` (a row of boxes); `analysis` names the question whose classes colour it |
-| `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?}`: the background size, its marked proteins, and each tested set's size and marked proteins; with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used; for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; absent when the site has no protein-set question |
+| `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used; for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; absent when the site has no protein-set question |
 | `set_names.tsv` | per set | `analysis, set, name` |
 
 `ptmc web` turns these into `data/p/NN.json` (64 shards of protein records: marks with their classes and attributes,
@@ -104,4 +115,5 @@ units as `[kind, start, end, label, source index, class, ref]`) and `data/select
 (per analysis, protein and class: the other candidate residues), `others_total` (per protein: candidates − marks) and
 `protein_sets` (from `protein_sets.json`; for sets of another identifier, members are coded by index into its `ids`,
 with `of`, each marked protein's identifiers, and `unit`, their name in the plural, so a selection is tested on its
-proteins' identifiers). The one-file copy inlines both when they fit.
+proteins' identifiers; `any`, `more: [[set, [proteins]]]` and `scores` serve the filters: `p:<analysis>` takes a set or
+`*` (in any set), and `s:<analysis>` a score threshold, which then counts the memberships scored at least that). The one-file copy inlines both when they fit.

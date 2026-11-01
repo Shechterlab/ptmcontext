@@ -56,13 +56,15 @@ def cmd_check(a) -> int:
             unknown.append(f"{x['id']}: layer {x.get('layer')!r} takes no with:")
     from .set_tests import roles_of, spec_problems
     unknown += [r for x in site['analyses'] if 'sets' in x for r in roles_of(x) if r not in site.get('inputs', {})]
-    files = {}                                      # role -> file under --root, to read the columns a test names
+    files, formats = {}, {}                         # role -> file under --root, to read the columns a test names
     if a.root:
         for role, value in site.get('inputs', {}).items():
             rule, given = I.role_inputs(value)
             if rule == 'one' and given[0] in entries:
                 files[role] = Path(a.root) / entries[given[0]]['file']
-    sets = [p for x in site['analyses'] if 'sets' in x for p in spec_problems(x, S.root_of(site), files)]
+                if entries[given[0]].get('columns'):    # its separator, if not a tab
+                    formats[str(files[role])] = entries[given[0]]['columns']
+    sets = [p for x in site['analyses'] if 'sets' in x for p in spec_problems(x, S.root_of(site), files, formats)]
     web = S.website_problems(site) + S.roles_missing(site) + (S.mapping_problems(site, a.root) if a.root else []) + sets
     print(f"{site['id']}: mark {profile.id} ({', '.join(profile.residues)}), {len(site['analyses'])} analyses")
     for problem, items in (('inputs not in the manifest', missing), ('layers not found or not made', unknown)):

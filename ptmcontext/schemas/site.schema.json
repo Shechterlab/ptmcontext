@@ -314,6 +314,85 @@
                       "$ref": "#/$defs/condition"
                     }
                   },
+                  "where": {
+                    "type": "array",
+                    "minItems": 1,
+                    "description": "protein_sets: rows kept by what another table says of one of their columns (the organism of a protein, the kind of a set): a row is kept when its column's value is the key of a row of that table that include and exclude keep; every condition must hold. On the protein column, accessions are compared as entries (an isoform counts as its entry)",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "column",
+                        "input",
+                        "key"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "column": {
+                          "type": "string",
+                          "description": "the column of this table"
+                        },
+                        "input": {
+                          "type": "string",
+                          "description": "a role of the site's inputs: the other table"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "the other table's column holding the same values"
+                        },
+                        "include": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/condition"
+                          },
+                          "description": "the other table's rows that count: every condition holds"
+                        },
+                        "exclude": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/condition"
+                          },
+                          "description": "the other table's rows that do not count"
+                        }
+                      }
+                    }
+                  },
+                  "history": {
+                    "type": "object",
+                    "required": [
+                      "input",
+                      "from",
+                      "to"
+                    ],
+                    "additionalProperties": false,
+                    "description": "protein_sets: members named by an older (secondary) UniProt accession, brought to the snapshot's current entry through an accession history: a member that is an entry stays, one the history maps to exactly one entry becomes it, any other is dropped. Not for sets of other identifiers",
+                    "properties": {
+                      "input": {
+                        "type": "string",
+                        "description": "a role of the site's inputs: the history table"
+                      },
+                      "from": {
+                        "type": "string",
+                        "description": "the column of old accessions"
+                      },
+                      "to": {
+                        "type": "string",
+                        "description": "the column of the entry each now belongs to"
+                      },
+                      "include": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/$defs/condition"
+                        },
+                        "description": "the history's rows read (its secondary accessions, say)"
+                      },
+                      "exclude": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/$defs/condition"
+                        }
+                      }
+                    }
+                  },
                   "families": {
                     "type": "object",
                     "required": [
@@ -533,6 +612,37 @@
             "type": "integer",
             "minimum": 1
           },
+          "order": {
+            "type": "array",
+            "minItems": 1,
+            "description": "protein_sets: the order its rows are written in, the first key first (default: ascending p, then the set's name, which also breaks every tie here)",
+            "items": {
+              "type": "object",
+              "required": [
+                "by"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "by": {
+                  "enum": [
+                    "a",
+                    "b",
+                    "c",
+                    "d",
+                    "fold_enrichment",
+                    "p",
+                    "q",
+                    "category"
+                  ],
+                  "description": "a column of the statistics rows"
+                },
+                "descending": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            }
+          },
           "background": {
             "type": "string",
             "description": "the statistics rows' background, in words"
@@ -574,6 +684,87 @@
                 ],
                 "default": "max",
                 "description": "with identifiers: an identifier takes the highest value of the proteins that map to it"
+              }
+            }
+          },
+          "scores": {
+            "type": "object",
+            "required": [
+              "input",
+              "set",
+              "protein",
+              "value"
+            ],
+            "additionalProperties": false,
+            "description": "protein_sets, for the website only: a score for each membership of a protein in a set (CD-CODE's confidence that a protein belongs to a condensate), offered as a filter of the members at or above a level; no test reads it. Members as entries and, with sets.history, brought to the snapshot's entries; a protein in a set on several rows takes its highest score",
+            "properties": {
+              "input": {
+                "type": "string",
+                "description": "a role of the site's inputs: (set, protein, score) rows"
+              },
+              "set": {
+                "type": "string"
+              },
+              "protein": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string",
+                "description": "the column of scores"
+              },
+              "include": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "exclude": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "label": {
+                "type": "string",
+                "description": "the filter's name"
+              },
+              "help": {
+                "type": "string"
+              },
+              "levels": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 1,
+                "description": "the thresholds offered (a member's score at least this)"
+              },
+              "max": {
+                "type": "number",
+                "description": "the highest score: the options read \"at least 3 of 5\""
+              }
+            }
+          },
+          "filter": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "protein_sets: the words of its control in the Filters panel",
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "the control's name (default: its title, and whose proteins it counts)"
+              },
+              "any": {
+                "type": "string",
+                "description": "offer marks on a protein in any of the source's sets, with these words (In any CD-CODE condensate)"
+              },
+              "sets": {
+                "enum": [
+                  "tested",
+                  "all"
+                ],
+                "default": "tested",
+                "description": "the sets the control lists: those tested, or every set of the source holding a marked protein (all)"
               }
             }
           },
