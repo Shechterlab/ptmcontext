@@ -4,7 +4,8 @@
    website.protein.table.columns): attributes, questions' classes, and the site card's blocks read from the tables of
    website.tables (interaction evidence with its chips, whose click opens what the tables say; RNA and DNA contacts with
    a hover; perturbation calls; the nearest mark). Above it "Your selection", Enriched features and quick filters; below
-   it how to cite the marks shown. A row opens the mark's card on its protein's page; a header sorts (numbers and
+   it how to cite the marks shown. The marks the site shows and counts nowhere (kit-shown.js) are rows of their own,
+   tagged, behind a toggle that is on; they never change the number of marks or the selection. A row opens the mark's card on its protein's page; a header sorts (numbers and
    statuses first descending, missing values last). The download has the columns website.sites.download names. A
    module of the site kit; the shared parts are K.tables (kit-tables.js). */
 (window.PTMC_MODULES ||= []).push(K => {
@@ -12,7 +13,7 @@
   const { D, W, A, S, esc, int, cap } = K;
   if (!D.proteins || !D.proteins.length) return;
   const SPECS = D.attribute_specs || {}, SV = D.sites_view || {}, CC = D.protein_view?.card || {};
-  const T = { sort: 'protein', desc: false, n: 100, key: null };
+  const T = { sort: 'protein', desc: false, n: 100, key: null, shown: true };
   const SD = () => K.sel.data();
   const AN = () => SD().analyses;
   const pr = i => K.tables.P[i];
@@ -65,6 +66,7 @@
     { id: 'site', label: 'Site', text: true, key: m => m[1],
       cell: m => { const p = pr(m[0]), num = K.prot?.numbering?.(p.acc), tg = SITE_TAGS ? vals(m, SITE_TAGS.attribute).filter(v => (SITE_TAGS.values || {})[v]) : [];
         return `<a class="mono" href="${esc(K.link('protein', p.acc + '/' + m[1]))}"><b>${esc(siteName(p, m[1], m))}</b></a>${num ? `<span class="acc">UniProt ${esc((m[4] || '')[7] || '')}${m[1]}</span>` : ''}` +
+          (LC && K.shown.counted(raw(m)) ? `<div class="tags">${K.shown.tag(raw(m), false)}</div>` : '') +
           (tg.length ? `<div class="tags">${tg.map(v => `<span class="tag t-flag" title="${esc(K.sel.valueLabel(SITE_TAGS.attribute, v))}">${esc(SITE_TAGS.values[v])}</span>`).join('')}</div>` : ''); } },
     ...(colourAttr ? [{ id: 'state', label: SV.state_label || 'State', key: m => { const o = Object.keys(SPECS[colourAttr].values || {}), v = vals(m, colourAttr)[0] ?? ''; const k = o.indexOf(v); return v === '' ? null : k < 0 ? 0 : o.length - k; },
       cell: m => { const v = vals(m, colourAttr)[0] ?? ''; return `<span class="sdot" title="${esc(K.sel.valueLabel(colourAttr, v))}"><i style="--c:${K.map.attrColour(colourAttr, v)}"></i>${esc(short(colourAttr, v))}</span>`; } }] : []),
@@ -138,6 +140,41 @@
   }
   const optText = c => !!c.analyses;
 
+  // ---- the marks shown and counted nowhere (K.shown, website.shown_marks): rows of their own, after a toggle that is
+  // on where there are any; never in the selection, its counts or the sites' number -------------------------------------
+  const LC = !!K.shown?.on, PI = Object.fromEntries(K.tables.P.map(p => [p.acc, p]));
+  const lcOn = () => LC && T.shown && !K.sel.active();
+  // a row [accession, position, window, values] as a row of this table: [protein index, position, [], [], window]
+  // with its own protein (one with only these has none in the list) and its mark as a protein record lays it out
+  const LCROWS = LC ? K.shown.rows().map(r => { const m = [PI[r[0]] ? PI[r[0]].i : 1e9, r[1], [], [], r[2]]; m.lc = { p: PI[r[0]] || K.shown.protein(r[0]) || { acc: r[0], gene: '', name: '' }, mk: K.shown.asMark(r) }; return m; }) : [];
+  const lcVals = (m, n) => { const v = String(m.lc.mk[3][(D.mark_attributes || []).indexOf(n)] ?? ''); return v === '' ? [] : SPECS[n]?.kind === 'list' ? v.split(SPECS[n].separator || '; ') : [v]; };
+  function lcCell(c, m) {
+    const p = m.lc.p;
+    if (c.id === 'protein') return `<a class="gene" href="${esc(K.link('protein', p.acc))}">${esc(K.tables.pLabel(p))}</a><span class="acc mono">${esc(p.acc)}</span>`;
+    if (c.id === 'site') return `<a class="mono" href="${esc(K.link('protein', p.acc + '/' + m[1]))}"><b>${esc(K.prot?.siteLabel ? K.prot.siteLabel(p.acc, m[1]) : `${(m[4] || '')[7] || ''}${m[1]}`)}</b></a><div class="tags">${K.shown.tag(m.lc.mk, true)}</div><span class="acc">${esc(K.shown.row())}</span>`;
+    if (c.id === 'state') { const v = lcVals(m, colourAttr)[0] ?? ''; return `<span class="sdot" title="${esc(K.sel.valueLabel(colourAttr, v))}"><i style="--c:${K.map.attrColour(colourAttr, v)}"></i>${esc(short(colourAttr, v))}</span>`; }
+    if (c.id === 'window') { const w = m[4] || '', k = Math.floor(w.length / 2); return `<span class="mono"><span class="win swin">${esc(w.slice(0, k)).replace(/[_-]/g, '·')}<b class="wc">${esc(w[k] || '')}</b>${esc(w.slice(k + 1)).replace(/[_-]/g, '·')}</span></span>`; }
+    if (c.attribute) {
+      const sp = SPECS[c.attribute], v = lcVals(m, c.attribute); if (!v.length) return dash;
+      if (sp.kind === 'category' && sp.colour) return `<span class="sdot"><i style="--c:${K.map.attrColour(c.attribute, v[0])}"></i>${esc(short(c.attribute, v[0]))}</span>`;
+      return esc(v.map(x => short(c.attribute, x)).join(', '));
+    }
+    return dash;
+  }
+  function lcKey(c, m) {
+    if (c.id === 'protein') return K.tables.pLabel(m.lc.p).toLowerCase();
+    if (c.id === 'site') return m[1];
+    if (c.id === 'window') return m[4] || null;
+    if (c.id === 'state') { const o = Object.keys(SPECS[colourAttr]?.values || {}), v = lcVals(m, colourAttr)[0] ?? ''; const k = o.indexOf(v); return v === '' ? null : k < 0 ? 0 : o.length - k; }
+    if (c.attribute) { const v = lcVals(m, c.attribute); return v.length ? v.join(' ') : null; }
+    return null;
+  }
+  const cellOf = (c, m) => (m.lc ? lcCell(c, m) : c.cell(m));
+  // a counted mark of the selection as a protein record lays it out (its attribute values as text), for its tag
+  const raw = m => [m[1], m[4], [], (D.mark_attributes || []).map(n => K.tables.attrStr(m, n))];
+  // the line under the sites' number: how many more are shown, and the toggle
+  const lcLine = () => (LC ? `<p class="cx lc-line"><label class="vswitch" title="${esc(K.shown.cfg.help || '')}"><input type="checkbox" data-sites-shown${T.shown ? ' checked' : ''}${K.sel.active() ? ' disabled' : ''}> Show ${int(K.shown.n())} more: ${esc(K.shown.row())}${K.sel.active() ? ' (not with a selection)' : ''}</label></p>` : '');
+
   // ---- the rows ---------------------------------------------------------------------------------------------------
   function allCols() {
     const opt = optCols(), defaults = opt.filter(c => c.default).map(c => c.id), on = new Set(K.columns.on('sites', opt, defaults));
@@ -145,7 +182,7 @@
   }
   function rows(cols) {
     const c = K.sel.compute(), idx = c.active ? c.marks : SD().marks.map((_, i) => i);
-    const col = cols.find(x => x.id === T.sort) || cols[0], out = idx.map(i => SD().marks[i]), key = new Map(out.map(m => [m, col.key(m)]));
+    const col = cols.find(x => x.id === T.sort) || cols[0], out = [...idx.map(i => SD().marks[i]), ...(lcOn() ? LCROWS : [])], key = new Map(out.map(m => [m, m.lc ? lcKey(col, m) : col.key(m)]));
     out.sort((x, y) => {
       const a = key.get(x), b = key.get(y);
       if (a == null || b == null) { if (a != null) return -1; if (b != null) return 1; }
@@ -171,18 +208,18 @@
   function view() {
     if (!SD()) return `<div class="page-head"><h2>Sites</h2></div><p class="muted">Loading the ${esc(W.marks)}…</p>`;
     if (T.key !== K.tables.selKey()) { T.key = K.tables.selKey(); T.n = 100; }
-    const { opt, defaults, shown: cols } = allCols(), rs = rows(cols), shown = rs.slice(0, T.n), np = new Set(rs.map(m => m[0])).size;
-    const head = `<div class="page-head results-head"><div><h2>Sites</h2><p class="cx">${int(rs.length)} of ${int(SD().marks.length)} ${esc(W.marks)} on ${int(np)} protein${np === 1 ? '' : 's'}</p></div>` +
+    const { opt, defaults, shown: cols } = allCols(), rs = rows(cols), shown = rs.slice(0, T.n), counted = rs.filter(m => !m.lc), np = new Set(counted.map(m => m[0])).size;
+    const head = `<div class="page-head results-head"><div><h2>Sites</h2><p class="cx">${int(counted.length)} of ${int(SD().marks.length)} ${esc(W.marks)} on ${int(np)} protein${np === 1 ? '' : 's'}</p>${lcLine()}</div>` +
       `<div class="actions">${K.tables.figuresBtn()}${K.expBar(['tsv'], 'sites-exp', 'the sites', 'data')}</div></div>`;
     const sorted = id => (T.sort === id ? ` aria-sort="${T.desc ? 'descending' : 'ascending'}"` : '');
     const q = quick();
     if (!rs.length) return head + K.tables.selectionCard() + (q ? `<div id="sites-quick">${q}</div>` : '') + K.tables.emptyState();
-    return head + K.tables.selectionCard() + K.tables.enrichedCard() + (q ? `<div id="sites-quick">${q}</div>` : '') +
+    return head + (LC && K.shown.note ? K.shown.note() : '') + K.tables.selectionCard() + K.tables.enrichedCard() + (q ? `<div id="sites-quick">${q}</div>` : '') +
       `<div class="tbl-card t-card" id="sites-table"><div class="tbl-tools"><span class="muted small">Click a site to open it on its protein.</span>${K.columns.menu('sites', opt, defaults)}</div><div class="tbl-wrap">` +
       `<table class="tbl stackable sites-tbl"><thead><tr>${cols.map(c => `<th class="${esc(c.cls || '')}${c.hide ? ' hide-' + esc(c.hide) : ''}" data-ssort="${esc(c.id)}" tabindex="0"${sorted(c.id)}${c.help || (c.attribute && SPECS[c.attribute]?.help) ? ` title="${esc(c.help || SPECS[c.attribute].help)}"` : ''}>${esc(c.label)}</th>`).join('')}</tr></thead><tbody>` +
-      shown.map(m => `<tr data-goto="${esc(pr(m[0]).acc)}/${m[1]}" tabindex="0">${cols.map(c => `<td class="${esc(c.cls || '')}${c.hide ? ' hide-' + esc(c.hide) : ''}" data-label="${esc(c.label.split(' · ')[0])}">${c.cell(m)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>' +
+      shown.map(m => `<tr data-goto="${esc(m.lc ? m.lc.p.acc : pr(m[0]).acc)}/${m[1]}" tabindex="0"${m.lc ? ' class="lc-row"' : ''}>${cols.map(c => `<td class="${esc(c.cls || '')}${c.hide ? ' hide-' + esc(c.hide) : ''}" data-label="${esc(c.label.split(' · ')[0])}">${cellOf(c, m)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>' +
       `<div class="tbl-foot"><span>Showing ${int(shown.length)} of ${int(rs.length)}</span>${rs.length > T.n ? `<button class="btn small" type="button" data-smore>Show 100 more</button>` : ''}</div></div>` +
-      K.tables.citeBox(rs, K.sel.active() ? `these ${int(rs.length)} ${rs.length === 1 ? W.mark : W.marks}` : `the ${W.marks} of this site`);
+      K.tables.citeBox(counted, K.sel.active() ? `these ${int(rs.length)} ${rs.length === 1 ? W.mark : W.marks}` : `the ${W.marks} of this site`);
   }
 
   // ---- the evidence popover: what the site's tables say of one kind of evidence at the site --------------------------
@@ -219,6 +256,12 @@
     ...D.analyses.filter(a => a.kind !== 'protein_sets').map(a => ({ name: a.id, analysis: a.id })), ...Object.keys(SPECS).map(n => ({ name: n, attribute: n }))];
   const dlTables = () => DL.some(c => c.table);
   function dlValue(c, m) {
+    if (m.lc) {
+      const p = m.lc.p;
+      if (c.value) return { accession: p.acc, gene: p.gene, entry: p.entry, protein: p.name, site: K.prot?.siteLabel ? K.prot.siteLabel(p.acc, m[1]) : m[1], position: m[1], window: m[4], residue: (m[4] || '')[7] || '' }[c.value] ?? '';
+      if (c.attribute) return lcVals(m, c.attribute).map(v => (c.labels ? short(c.attribute, v) : v)).join(';');
+      return '';
+    }
     const p = pr(m[0]);
     if (c.value) {
       if (c.value === 'nearest') return nearest(m) ?? '';
@@ -246,13 +289,14 @@
     return '';
   }
   function tsv(rs) {
+    const lcAny = rs.some(m => m.lc);
     return K.preamble(`${W.marks}${K.sel.active() ? ' (selection)' : ''}`, `every ${W.mark}${K.sel.active() ? ' of the selection' : ''} (${int(rs.length)}), in the table’s order, with the columns the site names; lists are separated by ";".`) +
-      DL.map(c => c.name).join('\t') + '\n' + rs.map(m => DL.map(c => String(dlValue(c, m)).replace(/[\t\n]/g, ' ')).join('\t')).join('\n') + '\n';
+      [...DL.map(c => c.name), ...(lcAny ? ['counted'] : [])].join('\t') + '\n' + rs.map(m => [...DL.map(c => String(dlValue(c, m)).replace(/[\t\n]/g, ' ')), ...(lcAny ? [m.lc ? 'no' : 'yes'] : [])].join('\t')).join('\n') + '\n';
   }
   async function download(el) {
     const rs = rows(allCols().shown), name = K.tables.fileName('sites');
     if (dlTables() && K.card) {
-      const accs = [...new Set(rs.map(m => pr(m[0]).acc))].filter(a => TB[a] === undefined), old = el.textContent;
+      const accs = [...new Set(rs.filter(m => !m.lc).map(m => pr(m[0]).acc))].filter(a => TB[a] === undefined), old = el.textContent;
       el.disabled = true; let done = 0;
       await Promise.all(accs.map(a => K.card.load(a).then(tb => { TB[a] = tb || {}; if (++done % 200 === 0) el.textContent = `${Math.round(100 * done / accs.length)}%`; })));
       el.disabled = false; el.textContent = old;
@@ -275,6 +319,7 @@
   K.clicks.push(
     ['[data-ssort]', el => { const id = el.dataset.ssort, c = allCols().shown.find(x => x.id === id); K.tables.sortBy(T, id, !!c?.text); K.render(); }],
     ['[data-smore]', () => { T.n += 100; K.render(); }],
+    ['[data-sites-shown]', el => { T.shown = el.checked; const y = scrollY; K.render(); scrollTo(0, y); }],
     ['[data-f-all]', el => { delete S.f[el.dataset.fAll]; K.writeHash(true); K.render(); }],
     ['[data-sites-exp]', el => download(el)],
     ['tr[data-goto]', (el, e) => { if (!e.target.closest('a, button, summary, input, [data-ev-kind]')) K.go('protein', { arg: el.dataset.goto }); }],

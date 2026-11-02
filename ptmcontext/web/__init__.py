@@ -38,7 +38,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-help.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-help.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -394,6 +394,69 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
     return (listing, analyses, sources, [c[2:] for c in attrs]), shards
 
 
+def _holds_mark(values: dict, specs: dict, cond: dict) -> bool:
+    """A mark condition ({attribute, has, lacks, empty}) on one mark's attribute values, as the page reads it (an
+    attribute the marks lack never holds)."""
+    s = specs.get(cond['attribute'])
+    if s is None or cond['attribute'] not in values:
+        return False
+    v = values[cond['attribute']]
+    vs = [x for x in (v.split(s.get('separator', '; ')) if s.get('kind') == 'list' else [v]) if x != '']
+    if cond.get('has') and not any(x in cond['has'] for x in vs):
+        return False
+    if cond.get('lacks') and any(x in cond['lacks'] for x in vs):
+        return False
+    if cond.get('empty') is not None and (not vs) != cond['empty']:
+        return False
+    return True
+
+
+def shown_data(folder: Path, site: dict, attrs: list, shards: dict, snapshot_fasta: Path | None) -> dict | None:
+    """The marks a site shows and counts nowhere (shown_marks.tsv, marks.left_out): each into its protein's record as
+    rec['shown'] ([position, window, [], attribute values], as a mark), a record for each protein with only these
+    (shown_proteins.tsv), and for the page their count, those proteins ([accession, gene, name, length, entry]) and
+    every one as a row of the Sites page ([accession, position, window, attribute values]). With the counted marks
+    the site file names as like them (website.shown_marks.counted.when), for the variant's note. None when there are
+    none: the page is then as before. Never in selection.json, the counts or a test."""
+    import pandas as pd
+
+    from ..snapshot import parse_fasta
+    path = folder / 'shown_marks.tsv'
+    if not path.exists():
+        return None
+    sm = pd.read_csv(path, sep='\t', dtype=str, keep_default_na=False)
+    if not len(sm):
+        return None
+    cols = [f'a.{a}' for a in attrs]
+    val = lambda r: [r.get(c, '') for c in cols]  # noqa: E731
+    recs = {acc: rec for sh in shards.values() for acc, rec in sh.items()}
+    alone = pd.read_csv(folder / 'shown_proteins.tsv', sep='\t', dtype=str, keep_default_na=False) if (folder / 'shown_proteins.tsv').exists() else pd.DataFrame(columns=['accession'])
+    seqs = parse_fasta(snapshot_fasta) if len(alone) and snapshot_fasta and snapshot_fasta.exists() else {}
+    proteins = []
+    for r in alone.to_dict('records'):
+        a = r['accession']
+        proteins.append([a, r['gene'], r['name'], int(r['length']), r['entry']])
+        rec = {'entry': r['entry'], 'md5': r['sequence_md5'], 'seq': seqs.get(a, ''), 'marks': [], 'counts': {}, 'totals': {}, 'units': [], 'shown_only': True}
+        shards.setdefault(shard_of(a), {})[a] = rec
+        recs[a] = rec
+    rows = []
+    for r in sm.to_dict('records'):
+        a, pos = r['accession'], int(r['position'])
+        if a in recs:
+            recs[a].setdefault('shown', []).append([pos, r['window_15'], [], val(r)])
+        rows.append([a, pos, r['window_15'], val(r)])
+    cfg = (site.get('website') or {}).get('shown_marks') or {}
+    when = (cfg.get('counted') or {}).get('when') or []
+    like = 0
+    if when and (folder / 'marks.tsv').exists():
+        specs = site['marks'].get('attributes', {})
+        mk = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
+        for r in mk.to_dict('records'):
+            values = {a: r[f'a.{a}'] for a in specs if f'a.{a}' in r}
+            like += all(_holds_mark(values, specs, c) for c in when)
+    return {'n': len(rows), 'proteins': proteins, 'rows': rows, 'counted_like': like}
+
+
 def map_data(folder: Path, site: dict) -> tuple[list[str], dict]:
     """The protein map's own rows (map_items.tsv, website.protein.map.rows): the rows' ids, and each protein's items
     by shard, an item [row index, start, end, class, label, value, ref, sources] without its empty tail."""
@@ -680,6 +743,11 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     # experiment's marks in selection.json
     data['count_questions'], sel_counts = counts_data(site, folder)
     data['structure'] = S3D.site_data(site, profile)
+    # the marks shown and counted nowhere (marks.left_out): into the protein records and the page, never the selection
+    shown = shown_data(folder, site, mark_attrs, shards, fasta) if listing else None
+    if shown:
+        data['shown_marks'], data['shown_view'] = shown, web.get('shown_marks') or {}
+        log(f"  shown, not counted: {shown['n']:,} {data['words']['marks']}, {len(shown['proteins']):,} proteins with these alone")
     S3D.add(site, run, shards, log)             # each protein's structure evidence, into its record (s3d)
     data['unit_sources'] = unit_sources
     data['shards'] = SHARDS if shards else 0

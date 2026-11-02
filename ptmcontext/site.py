@@ -330,6 +330,15 @@ def website_problems(site: dict) -> list[str]:
         if to not in ids and to not in attrs:
             out.append(f"website.search_aliases: {key!r} means {to!r}, which is neither a question nor an attribute of this site")
     out += card_problems(site)
+    sm = web.get('shown_marks')
+    if sm:                                    # the shown marks' tag: attributes of the marks, or of a variant's marks
+        known = set(attrs) | {n for v in (site.get('variants') or {}).values() for n in (v.get('attributes') or {})}
+        named = [('counted.when', c['attribute']) for c in (sm.get('counted') or {}).get('when', [])]
+        named += [('tests', n) for n in (sm.get('tests') or {}).get('attributes', [])] + [('also', n) for n in sm.get('also', [])]
+        out += [f"website.shown_marks.{where}: no attribute {n!r} in marks.attributes or a variant's attributes" for where, n in named if n not in known]
+        bad = sorted(set(re.findall(r'\{(\w+)\}', sm.get('note', ''))) - {'all', 'counted', 'shown', 'others'})
+        if bad:
+            out.append(f"website.shown_marks.note: no number {bad} (it has {{all}}, {{counted}}, {{shown}}, {{others}})")
     for ref in [site.get('reference') or {}, *[(v.get('reference') or {}) for v in (site.get('variants') or {}).values()]]:
         out += [f"reference.tables: {aid!r} is not a protein-set question" for aid in (ref.get('tables') or {}) if aid not in sets]
     for k, card in enumerate((web.get('protein') or {}).get('sets', [])):
@@ -736,19 +745,29 @@ def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame, rows:
     return marked[['accession', 'position']].merge(t, on=['accession', 'position'], how='left').fillna('')
 
 
-def shown_marks(spec: dict, table: pd.DataFrame, pending: pd.DataFrame, snap: Snapshot, proteins: set) -> pd.DataFrame:
-    """The residues marks.left_out keeps pending, for the website to show beside the marks and count nowhere: on a
-    marked protein, at a residue the snapshot has, with their window and attributes (as marks.tsv's columns)."""
+def shown_marks(spec: dict, table: pd.DataFrame, pending: pd.DataFrame, snap: Snapshot, marked: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """The residues marks.left_out keeps pending, for the website to show beside the marks and count nowhere: at a
+    residue the snapshot has and not itself a counted mark, with their window and attributes (as marks.tsv's columns)
+    (shown_marks.tsv). And the proteins among them with no counted mark (shown_proteins.tsv: accession, gene, name,
+    entry, length, sequence_md5), so the website can give each a page. Nothing here is counted or tested."""
     from .snapshot import window
     cols = ['accession', 'position', 'residue', 'window_15']
-    m = pending[pending['accession'].isin(proteins)].copy() if len(pending) else pd.DataFrame(columns=['accession', 'position'])
-    m = m[[snap.residue_at(a, p) != '' for a, p in zip(m['accession'], m['position'])]] if len(m) else m
+    m = pending.copy() if len(pending) else pd.DataFrame(columns=['accession', 'position'])
+    if len(m):
+        m = m[[a in snap and snap.residue_at(a, p) != '' for a, p in zip(m['accession'], m['position'])]]
+        counted = set(zip(marked['accession'], marked['position']))
+        m = m[[(a, p) not in counted for a, p in zip(m['accession'], m['position'])]]
     m['residue'] = [snap.residue_at(a, p) for a, p in zip(m['accession'], m['position'])]
     m['window_15'] = [window(snap.sequences[a], p, 7) for a, p in zip(m['accession'], m['position'])]
     attrs = mark_attributes(spec, table, m[['accession', 'position']], rows='left_out') if len(m) else None
     if attrs is not None and len(attrs.columns) > 2:
         m = m.merge(attrs, on=['accession', 'position'], how='left').fillna('')
-    return (m if len(m) else pd.DataFrame(columns=cols)).sort_values(['accession', 'position']).reset_index(drop=True)
+    m = (m if len(m) else pd.DataFrame(columns=cols)).sort_values(['accession', 'position']).reset_index(drop=True)
+    alone = sorted(set(m['accession']) - set(marked['accession']))
+    prot = pd.DataFrame([{'accession': a, **{k: snap.describe(a)[k] for k in ('gene', 'name', 'entry')},
+                          'length': snap.length(a), 'sequence_md5': snap.sequence_md5(a)} for a in alone],
+                        columns=['accession', 'gene', 'name', 'entry', 'length', 'sequence_md5'])
+    return m, prot
 
 
 def _kept_rows(spec: dict, table: pd.DataFrame) -> pd.DataFrame:
@@ -1082,7 +1101,7 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
             own = tables.get(analysis['id'])
             if own:                                          # a published table of its own (a release's supporting table)
                 published = pd.read_csv(paths[own['input']], sep=own.get('sep', '\t'), dtype=str, keep_default_na=False)
-                found = [compare_table(rows, published, analysis['id'], own)]
+                found = [compare_table(rows, published, analysis['id'], own)]   # not `table`: the marks table is read below
             elif analysis.get('new') or reference is None:   # not in the reference: nothing to compare it with
                 log(f"  new    {analysis['id']:18s} not in the reference")
                 continue
@@ -1100,7 +1119,7 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         ST.write(rows, folder / 'statistics.tsv')
         record['output'] = {'statistics.tsv': md5_file(folder / 'statistics.tsv')}
         outs = protein_outputs(snap, profile, marked, kept, ctx, attributes, layers=layer_objs)
-        outs['shown_marks.tsv'] = shown_marks(spec, table, pending, snap, set(marked['accession']))
+        outs['shown_marks.tsv'], outs['shown_proteins.tsv'] = shown_marks(spec, table, pending, snap, marked)
         outs['set_names.tsv'] = pd.DataFrame(set_names, columns=['analysis', 'set', 'name'])
         if site.get('proteins'):                       # per-protein facts the website shows (proteins.attributes)
             ptable = pd.read_csv(paths[site['proteins']['input']], sep='\t', dtype=str, keep_default_na=False, low_memory=False)

@@ -15,7 +15,8 @@
    its links (UniProt entry, PubMed, dbSNP, the papers of a row's sources, PDB entries and "3D" when a viewer is on
    the page: K.show3d). A crosshair reads out the residue under the pointer. Marks are coloured by any attribute the
    site file offers, or by a mode the site file makes from the attributes (website.protein.map.colour_by; a class may
-   be hollow, and marks the site file names are hatched); their labels are placed Auto (merged where they collide), All
+   be hollow, and marks the site file names are hatched); the marks the site shows and counts nowhere (rec.shown,
+   kit-shown.js) are hatched ticks on the backbone, each with its tag's hover; the marks' labels are placed Auto (merged where they collide), All
    or None. Rows are chosen and ordered in the Rows menu (remembered in this browser); a drag across the map zooms in, a
    double click zooms out. A narrow box gets the map laid out again at its width. The same drawing, in light colours,
    is the map's PDF, SVG and PNG, at screen size or a journal column (85, 114, 174 mm; PNG at 300, 600 or 1000 dpi).
@@ -210,6 +211,12 @@
       for (const off of [-r * 0.5, 0, r * 0.5]) { const h = (Math.sqrt(r * r - off * off) - 0.4) / Math.SQRT2, cx = x + off / Math.SQRT2, cy = y + off / Math.SQRT2; d += `M${r1(cx - h)} ${r1(cy + h)}L${r1(cx + h)} ${r1(cy - h)}`; }
       return `<g${attr}><circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" fill="${P.surf}" stroke="${stroke || c}" stroke-width="${stroke ? 2 : 1.2}"/><path d="${d}" stroke="${c}" stroke-width="0.9" stroke-linecap="round"/></g>`;
     },
+    // a hatched tick: an outlined bar in its colour crossed by diagonal strokes (a mark shown and counted nowhere)
+    htick: (P, x, y, h, c, attr = '', stroke) => {
+      const w = 5, x0 = x - w / 2, y0 = y - h / 2; let d = '';
+      for (let t = -w; t < h; t += 3) { const a = Math.max(0, -t), b = Math.min(w, h - t); if (b > a) d += `M${r1(x0 + a)} ${r1(y0 + t + a)}L${r1(x0 + b)} ${r1(y0 + t + b)}`; }
+      return `<g${attr}><rect x="${r1(x0)}" y="${r1(y0)}" width="${w}" height="${r1(h)}" rx="1" fill="${P.surf}" stroke="${stroke || c}" stroke-width="${stroke ? 1.8 : 1.1}"/><path d="${d}" stroke="${c}" stroke-width="0.9" stroke-linecap="round"/></g>`;
+    },
     tick: (x, y, h, c, attr = '', w = 2, op = 1) => `<rect x="${r1(x - w / 2)}" y="${r1(y - h / 2)}" width="${r1(w)}" height="${r1(h)}" rx="0.6" fill="${c}"${op < 1 ? ` fill-opacity="${op}"` : ''}${attr}/>`,
     box: (x, y, w, h, c, op = 1, attr = '') => `<rect x="${r1(x)}" y="${r1(y)}" width="${r1(Math.max(1.5, w))}" height="${r1(h)}" rx="1" fill="${c}"${op < 1 ? ` fill-opacity="${op}"` : ''}${attr}/>`,
     pred: (x, y, w, h, c, op, attr = '') => MK.box(x, y, w, h, c, op, (w >= 4 ? ` stroke="${c}" stroke-width="0.7" stroke-dasharray="2 1.2"` : '') + attr),
@@ -220,6 +227,7 @@
   const SW = {
     head: (c, hollow) => (P, x, y) => MK.head(P, x + 10, y, 4.6, c, hollow),
     hatch: c => (P, x, y) => MK.hatch(P, x + 10, y, 5, c),
+    htick: c => (P, x, y) => MK.htick(P, x + 10, y, 12, c),
     tick: (c, op) => (P, x, y) => MK.tick(x + 10, y, 12, c, '', 2.4, op),
     box: (c, op, stroke) => (P, x, y) => `<rect x="${x}" y="${y - 5}" width="20" height="10" rx="2" fill="${c}"${op < 1 ? ` fill-opacity="${op}"` : ''}${stroke ? ` stroke="${stroke}" stroke-width="0.8"` : ''}/>`,
     pred: (c, op) => (P, x, y) => MK.pred(x, y - 5, 20, 10, c, op),
@@ -475,6 +483,21 @@
     });
     if (marks.length) rowLabel(cap(W.marks), top + 8 + (nLev - 1) * 5.5, `the ${W.marks} of this site, coloured as chosen above; click one for its card`, true);
     if (marks.some(m => hatched(m))) key(SW.hatch(P.muted), HATCH_LABEL);
+    // the marks the site shows and counts nowhere (K.shown, website.shown_marks): hatched ticks on the backbone, in
+    // their colour, each with its tag's hover; a click pins it with a link to its card
+    const shownHere = (rec.shown || []).filter(m => inView(m[0], m[0]));
+    shownHere.forEach(m => {
+      const x = X(m[0]), c = siteColour(m, ex), on = ctx.site === m[0] && !ex;
+      const words = K.shown?.tip ? K.shown.tip(m, true) : '';
+      const tipOf = full => `<b>${esc(resName(m[0]))}</b> · ${esc(K.shown?.row ? K.shown.row() : '')}${c.label ? ' · ' + esc(c.label) : ''}<br><span class="win mono">${esc(m[1] || '')}</span><br><span class="muted">${esc(words)}</span>` +
+        (full ? `<br><button type="button" class="linkish" data-site-open="${m[0]}">Open its card</button>` : '');
+      const k = it({ tip: tipOf(false), card: tipOf(true), a: m[0], b: m[0] });
+      parts.push(MK.htick(P, x, yB - 9, 13, c.c, ex ? '' : ` data-mi="${k}" data-shown="${m[0]}"`, on ? P.ink : null));
+    });
+    if (shownHere.length) {
+      if (!marks.length) rowLabel(cap(W.marks), yB - 9, `the ${W.marks} of this site; hatched: shown, not counted`, true);
+      key(SW.htick(P.muted), K.shown?.row ? K.shown.row() : 'Shown, not counted');
+    }
     let y = yB + 22;
     if (below.length) {
       // names of domains too narrow to hold them, under the backbone where there is room
@@ -827,6 +850,8 @@
     const out = [`<b>${esc(aa)}${pos}</b>`];
     const mk = rec.marks.find(m => m[0] === pos);
     if (mk) { const c = siteColour(mk); out.push(`${esc(W.mark)}${c.label ? ': ' + esc(c.label) : ''}`); }
+    const sm = (rec.shown || []).find(m => m[0] === pos);
+    if (sm) { const c = siteColour(sm); out.push(`${esc(K.shown?.row ? K.shown.row() : '')}${c.label ? ': ' + esc(c.label) : ''}`); }
     // each track's regions at the residue: domains by name, other regions by their track and class
     const at = rec.units.filter(u => u[1] <= pos && u[2] >= pos), domK = kindsOf('domains');
     [...new Set(at.filter(u => domK.has(u[0])).map(u => String(u[3]).split(' · ')[0] || trackOf(u[0]).title))].forEach(t => out.push(esc(t)));
