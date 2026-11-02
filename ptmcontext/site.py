@@ -340,7 +340,7 @@ def website_problems(site: dict) -> list[str]:
     from .web.search import problems as search_problems, search_keys
     out += search_problems(site)
     keys = search_keys(site)
-    for ex in web.get('examples') or []:
+    for ex in [*(web.get('examples') or []), *(x.get('query', '') for x in (web.get('start') or {}).get('examples') or [])]:
         key = ex.split(':', 1)[0] if ':' in ex else None
         if key is not None and key not in keys:
             out.append(f"website.examples: {ex!r} names no search key of this site (a question, an attribute or a website.search key)")

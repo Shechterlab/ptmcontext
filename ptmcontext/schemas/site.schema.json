@@ -1362,6 +1362,29 @@
           },
           "description": "example searches shown under the search bar"
         },
+        "start": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the start panel on the Overview for a first visit and the Help page's starts (kit-help.js); without it, three starts are chosen from examples",
+          "properties": {
+            "title": {"type": "string", "description": "the panel's heading"},
+            "text": {"type": "string", "description": "what the site is, in a sentence or two"},
+            "examples": {
+              "type": "array",
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["query"],
+                "properties": {
+                  "label": {"type": "string", "description": "who or what it is for: A list of genes, A disease, One site"},
+                  "query": {"type": "string", "description": "what the search box takes"},
+                  "help": {"type": "string", "description": "one line on what it shows"}
+                }
+              }
+            }
+          }
+        },
         "version": {
           "type": "string"
         },
