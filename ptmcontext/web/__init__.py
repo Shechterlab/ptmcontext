@@ -37,7 +37,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-start.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -207,10 +207,16 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         for r in pd.read_csv(folder / 'set_names.tsv', sep='\t', dtype=str, keep_default_na=False).to_dict('records'):
             set_names.setdefault(r['analysis'], {})[r['set']] = r['name']
     analyses = []
+    kept = json.loads((folder / 'protein_sets.json').read_text()) if (folder / 'protein_sets.json').exists() else {}
+    ref_tables = (site.get('reference') or {}).get('tables') or {}
+    ontology = set_structure(site, kept)
     for a in site['analyses']:
         if a.get('test') == 'protein_sets':
             from ..set_tests import question_roles
             analyses.append({'id': a['id'], 'kind': 'protein_sets', 'shape': 'sets', 'stratified': bool(a.get('abundance')), 'roles': question_roles(a),
+                             **({'link': a['link']} if a.get('link') else {}),       # each set's own page
+                             **ontology.get(a['id'], {}),                            # its sets' parents, its families' own sets
+                             **({'checked_against': ref_tables[a['id']]['input']} if a['id'] in ref_tables else {}),
                              **({'unit': (a['identifiers'].get('nouns') or 'identifiers')} if a.get('identifiers') else {}),
                              **({'filter': a['filter']} if a.get('filter') else {}),     # the words of its filter control
                              **({'scores': {k: a['scores'][k] for k in ('label', 'help', 'levels', 'max') if k in a['scores']}} if a.get('scores') else {}),
@@ -270,6 +276,9 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         uses[tb['input']] = (uses[tb['input']] + '; ' if uses.get(tb['input']) else '') + f"the protein pages ({tid.replace('_', ' ')})"
     for name, what in S3D.roles(site).items():                            # the 3D viewer reads some of them
         uses[name] = (uses[name] + '; ' if uses.get(name) else '') + what
+    titles = {a['id']: a.get('title', a['id']) for a in site['analyses']}
+    for aid, x in ((site.get('reference') or {}).get('tables') or {}).items():   # a published table of one question
+        uses[x['input']] = f"the parity check of {titles.get(aid, aid)}"
     inputs = {name: {'version': entries.get(name, {}).get('version', ''), 'licence': entries.get(name, {}).get('licence', ''),
                      'use': uses.get(name, ''), 'role': (roles.get(name) or [''])[0], 'roles': roles.get(name, []),
                      'record': entries.get(name, {}).get('record', '')}
@@ -298,6 +307,29 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'kit': {**kit_citation(), 'version': __version__, 'commit': run.get('code_commit') or code_commit()},
         'statistics_tsv': (folder / 'statistics.tsv').read_text(),
     }
+
+
+def set_structure(site: dict, kept: dict) -> dict:
+    """What the website's views of protein-set questions read beside the rows, from the run's protein_sets.json: for a
+    question with a hierarchy, each tested set's parents and the root (an ontology's tree and its most specific sets);
+    for a question gathering sets into families that an Overview card names as members' families, each family's own
+    sets among the member question's tested sets (terms by family)."""
+    out: dict[str, dict] = {}
+    for a in site['analyses']:
+        k = kept.get(a['id']) or {}
+        if a.get('hierarchy') and k.get('parents') is not None:
+            out.setdefault(a['id'], {}).update({'parents': k['parents'], 'root': k.get('root', '')})
+    cards = [c for sec in ((site.get('website') or {}).get('overview') or {}).get('sections', []) for c in sec.get('cards', []) if isinstance(c, dict)]
+    for v in [x for c in cards for x in [c, *(c.get('views') or [])]]:
+        mem = v.get('members')
+        if not mem:
+            continue
+        tested = set((kept.get(mem['analysis']) or {}).get('sets', {}))
+        for o in mem['of']:
+            g = (kept.get(o['analysis']) or {}).get('gathers') or {}
+            out.setdefault(o['analysis'], {})['gathers'] = {f: [s for s in ss if s in tested] for f, ss in g.items()}
+            out[o['analysis']]['gathers_all'] = {f: len(ss) for f, ss in g.items()}     # every set of the family, tested or not
+    return out
 
 
 SHARDS = 64
@@ -699,6 +731,9 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     if inline_proteins == '{}' or len(inline_proteins) + len(inline_map) > 12_000_000:
         inline_map = ''
 
+    # the rows travel once, as the statistics table's own text (for its downloads): the page reads its rows from it
+    page_data = {k: v for k, v in data.items() if k != 'rows'}
+
     def page(inline: bool) -> str:
         icon_href = 'data:image/svg+xml;base64,' + base64.b64encode(icon.encode()).decode() if inline else 'assets/icon.svg'
         logo_href = 'data:image/svg+xml;base64,' + base64.b64encode(logo.encode()).decode() if inline else 'assets/lab.svg'
@@ -755,7 +790,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
                            '{{FONTS}}': (f'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
                                          f'<link rel="stylesheet" href="{html.escape(fonts["stylesheet"])}">') if fonts.get('stylesheet') else '',
                            '<link rel="stylesheet" href="assets/kit.css">': css, '<script src="assets/kit.js"></script>': js,
-                           '{{DATA}}': json.dumps(data, separators=(',', ':'), allow_nan=False).replace('</', '<\\/')}.items():
+                           '{{DATA}}': json.dumps(page_data, separators=(',', ':'), allow_nan=False).replace('</', '<\\/')}.items():
             text = text.replace(key, value)
         return text
 

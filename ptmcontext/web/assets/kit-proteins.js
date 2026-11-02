@@ -395,6 +395,7 @@
       fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}${nSrc ? `, each with the ${esc(SPECS[nSrc].label.toLowerCase())} that report it` : ''}`, sitesTable(p, rec, sel), true) +
       fold('p-score', `Its ${esc(W.marks)}, against its other ${esc(W.residues)}`, 'counted in this protein', `<p class="sub">The classes its ${esc(W.marks)} fall in, and how often its other ${esc(W.residues)} do. A row opens every class.</p><div class="hub">${scoreRows(p, rec)}</div>`, false) +
       (D.analyses.some(a => a.kind === 'protein_sets') ? fold('p-kinds', 'Kinds of protein', 'its classes, pathways and locations, with the site’s result for each', kindsHtml(p), false) : '') +
+      (K.proteinFolds || []).map(f => f(p, rec, fold)).join('') +
       fold('p-regions', 'Domains and regions', `${int(rec.units.length)} region${rec.units.length === 1 ? '' : 's'} the site’s questions read`, regionsHtml(p, rec), false) +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, sel), false) +
       fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) +           // kit-3d.js
@@ -473,7 +474,7 @@
   }
   K.sections.protein = () => { const p = byAcc[PV.acc] || PV.lightP; if (!byAcc[PV.acc]) return [['view', p ? `${p.gene || p.acc}: ${p.name || ''}` : 'This protein', 1]]; return [['view', p ? `${p.gene || p.acc}: ${p.name || ''}` : 'This protein', 1], ...(PV.site ? [['site-card', `The ${W.mark} ${site(PV.site)}`, 1]] : []),
     ['g-marks', `Its ${W.marks}`, 0], ['p-map', 'Protein map', 1], ['p-sites', cap(W.marks), 1], ['p-score', `Against its other ${W.residues}`, 1],
-    ['g-protein', 'The protein', 0], ...(D.analyses.some(a => a.kind === 'protein_sets') ? [['p-kinds', 'Kinds of protein', 1]] : []), ['p-regions', 'Domains and regions', 1], ['p-seq', 'Sequence', 1],
+    ['g-protein', 'The protein', 0], ...(D.analyses.some(a => a.kind === 'protein_sets') ? [['p-kinds', 'Kinds of protein', 1]] : []), ...(K.proteinFoldSections || []), ['p-regions', 'Domains and regions', 1], ['p-seq', 'Sequence', 1],
     ['g-live', 'Live sources', 0], ['p-struct', '3D structure', 1], ...(IXP ? [['p-ix', 'Interaction partners', 1]] : [])]; };
   // the Proteins page: its table, and the proteins with most marks (of the selection, if any)
   K.sections.proteins = () => {
@@ -492,7 +493,7 @@
     const sd = K.sel?.data();
     if (!sd) return `<p class="muted">Loading the sets…</p>`;
     let cov = null;
-    const blocks = D.analyses.filter(a => a.kind === 'protein_sets' && sd.protein_sets?.[a.id]).map(a => {
+    const blocks = D.analyses.filter(a => a.kind === 'protein_sets' && sd.protein_sets?.[a.id] && !K.inSetCards?.(a.id)).map(a => {
       const ps = sd.protein_sets[a.id];
       if (ps.covariate && !cov && ps.covariate.proteins[p.i]) cov = { ...ps.covariate, me: ps.covariate.proteins[p.i], from: a };
       const mine = ps.sets.filter(([s]) => K.sel.setHas(a.id, s, p.i)).map(([s]) => ({ s, r: setRow(a.id, s, 'enricher') })).filter(x => x.r)
@@ -500,7 +501,7 @@
       if (!mine.length) return `<div class="kind"><h4>${esc(a.title)}</h4><p class="muted">In none of its tested sets.</p></div>`;
       const shown = PV.open['kinds:' + a.id] ? mine : mine.slice(0, 10);
       return `<div class="kind"><h4>${esc(a.title)} <span class="muted">${int(mine.length)} set${mine.length === 1 ? '' : 's'}</span></h4><ul class="kind-list">` +
-        shown.map(({ s, r }) => { const hs = K.holdStatus(r), nh = hs === 'lost' || hs === 'weaker'; return `<li><button class="linkish" type="button" data-f="p:${esc(a.id)}" data-v="${esc(s)}" title="Select the ${esc(W.marks)} on proteins in this set">${esc(r.label)}</button> <span class="val ${r.dir}">${esc(K.effText(r))}</span> <span class="muted">q ${K.fq(r.q)}</span>${nh ? ` <span class="nh" title="${hs === 'lost' ? 'Lost within abundance deciles' : 'The same direction within abundance deciles, but not significant there'}">${hs === 'lost' ? '○' : '◌'}</span>` : ''}</li>`; }).join('') + '</ul>' +
+        shown.map(({ s, r }) => { const hs = K.holdStatus(r), nh = hs === 'lost' || hs === 'weaker'; return `<li><button class="linkish" type="button" data-f="p:${esc(a.id)}" data-v="${esc(s)}" title="Select the ${esc(W.marks)} on proteins in this set">${esc(r.label)}</button>${a.link && K.setIdLink ? ' ' + K.setIdLink(a.id, s) : ''} <span class="val ${r.dir}">${esc(K.effText(r))}</span> <span class="muted">q ${K.fq(r.q)}</span>${nh ? ` <span class="nh" title="${hs === 'lost' ? 'Lost within abundance deciles' : 'The same direction within abundance deciles, but not significant there'}">${hs === 'lost' ? '○' : '◌'}</span>` : ''}</li>`; }).join('') + '</ul>' +
         (mine.length > 10 ? `<button class="linkish" type="button" data-kinds-all="${esc(a.id)}">${PV.open['kinds:' + a.id] ? 'Fewer' : `All ${int(mine.length)}`}</button>` : '') + '</div>';
     }).join('');
     const covLine = cov ? `<p class="kind-cov"><b>Abundance</b>: ${cov.me[0] == null ? 'no value' : `${esc(cov.value)} ${K.fxn(cov.me[0])}`}${cov.me[1] !== 'none' ? `, decile ${esc(cov.me[1])} of ${int(cov.strata)}` : ''} <span class="muted">(${esc((Object.values(D.inputs).find(x => (x.roles || [x.role]).includes(cov.input)) || {}).version || cov.input)}; the decile the protein-set tests stratify by)</span></p>` : '';

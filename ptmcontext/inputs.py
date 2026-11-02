@@ -67,4 +67,5 @@ def site_input_names(site: dict) -> list[str]:
         names.append(site['reference']['statistics'])
     # the tables the protein pages show (website.tables): checked and recorded like every input, read by ptmc web
     names += [t['input'] for t in ((site.get('website') or {}).get('tables') or {}).values()]
+    names += [x['input'] for x in (site.get('reference', {}).get('tables') or {}).values()]
     return list(dict.fromkeys(names))

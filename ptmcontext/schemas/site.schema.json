@@ -1115,6 +1115,44 @@
                 }
               }
             }
+          },
+          "hierarchy": {
+            "type": "object",
+            "required": [
+              "input",
+              "set",
+              "parents"
+            ],
+            "additionalProperties": false,
+            "description": "protein_sets, for the website only: each set's parents (an ontology such as the Disease Ontology, whose sets already hold the members of the sets under them), so a question can be shown as its most specific sets and as a tree; no test reads it. The run keeps the parents of each tested set among the tested sets",
+            "properties": {
+              "input": {
+                "type": "string",
+                "description": "a role of the site's inputs: one row per set"
+              },
+              "set": {
+                "type": "string",
+                "description": "the column of set ids, as the sets table names them"
+              },
+              "parents": {
+                "type": "string",
+                "description": "the column of each set's parent ids"
+              },
+              "separator": {
+                "type": "string",
+                "default": ";",
+                "description": "between parent ids"
+              },
+              "root": {
+                "type": "string",
+                "description": "the set every other set lies under (the Disease Ontology's DOID:4, disease)"
+              }
+            }
+          },
+          "link": {
+            "type": "string",
+            "pattern": "\\{\\}",
+            "description": "protein_sets: each set's own page, a URL with {} for the set's id (https://disease-ontology.org/?id={})"
           }
         },
         "anyOf": [
@@ -1145,6 +1183,70 @@
         "statistics": {
           "type": "string",
           "description": "manifest name of a statistics table"
+        },
+        "tables": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "input",
+              "columns"
+            ],
+            "additionalProperties": false,
+            "description": "a published table of one protein-set question's results, in its own columns (a release's supporting table, for a question its statistics table does not hold): the run checks the question's rows against it, set by set: the same sets, the same counts, and the fold enrichment, p and q as the statistics table writes them (6 significant digits)",
+            "properties": {
+              "input": {
+                "type": "string",
+                "description": "manifest name of the table (role reference_output)"
+              },
+              "columns": {
+                "type": "object",
+                "required": [
+                  "set",
+                  "a",
+                  "fold_enrichment",
+                  "p",
+                  "q"
+                ],
+                "additionalProperties": false,
+                "description": "the table's column for each value: the set's id, its marked members (a), its size in the background (M, optional), the fold enrichment, p and the Benjamini-Hochberg q",
+                "properties": {
+                  "set": {
+                    "type": "string"
+                  },
+                  "a": {
+                    "type": "string"
+                  },
+                  "M": {
+                    "type": "string"
+                  },
+                  "fold_enrichment": {
+                    "type": "string"
+                  },
+                  "p": {
+                    "type": "string"
+                  },
+                  "q": {
+                    "type": "string"
+                  }
+                }
+              },
+              "sep": {
+                "type": "string",
+                "default": "\t"
+              },
+              "rows": {
+                "enum": [
+                  "all",
+                  "enriched",
+                  "some"
+                ],
+                "default": "all",
+                "description": "which of the question's sets the table lists: every tested set (all), those at q <= 0.05 (enriched: the listed sets must be exactly those), or some (each listed set is checked, the others not)"
+              }
+            }
+          },
+          "description": "for a protein-set question (its id) whose rows the statistics table does not hold: a published table of its own to equal"
         }
       }
     },
@@ -1381,6 +1483,284 @@
                             "wide": {
                               "type": "boolean",
                               "description": "spans two columns where the page has room"
+                            },
+                            "views": {
+                              "type": "array",
+                              "minItems": 2,
+                              "description": "one question seen several ways, a switch on its page: each view a protein-set question (the first is the card's own)",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "analysis",
+                                  "label"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "analysis": {
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "description": "the switch's words"
+                                  },
+                                  "more": {
+                                    "type": "object",
+                                    "required": [
+                                      "analysis"
+                                    ],
+                                    "additionalProperties": false,
+                                    "description": "more sets of the same kind, tested apart, shown under the question's own behind a button",
+                                    "properties": {
+                                      "analysis": {
+                                        "type": "string",
+                                        "description": "a protein-set question"
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "description": "the button's words; {n} is how many sets (default: Show {n} more sets)"
+                                      },
+                                      "head": {
+                                        "type": "string",
+                                        "description": "the heading over them"
+                                      }
+                                    }
+                                  },
+                                  "members": {
+                                    "type": "object",
+                                    "required": [
+                                      "analysis",
+                                      "of"
+                                    ],
+                                    "additionalProperties": false,
+                                    "description": "the sets a family question gathers (DisGeNET terms in disease families), each with its own test: a table behind a button, with a picker of families",
+                                    "properties": {
+                                      "analysis": {
+                                        "type": "string",
+                                        "description": "the protein-set question that tests the member sets one by one"
+                                      },
+                                      "of": {
+                                        "type": "array",
+                                        "minItems": 1,
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "analysis"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "analysis": {
+                                              "type": "string",
+                                              "description": "a question gathering sets into families (sets.families)"
+                                            },
+                                            "label": {
+                                              "type": "string",
+                                              "description": "its families as a group, in the picker"
+                                            }
+                                          }
+                                        },
+                                        "description": "the family questions whose families the member sets are grouped into"
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "description": "the button's words (default: Show the member sets)"
+                                      },
+                                      "noun": {
+                                        "type": "string",
+                                        "description": "a member set, in words (term)"
+                                      },
+                                      "nouns": {
+                                        "type": "string",
+                                        "description": "member sets, in words (DisGeNET terms)"
+                                      },
+                                      "none": {
+                                        "type": "string",
+                                        "description": "the picker's words for members in no family"
+                                      },
+                                      "id_label": {
+                                        "type": "string",
+                                        "description": "what a set's id is (UMLS CUI)"
+                                      }
+                                    }
+                                  },
+                                  "ontology": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "description": "a question whose sets form an ontology (its analysis has hierarchy): the most specific enriched sets and, for comparison, the largest classes that are not; the whole ontology as a tree; and a table of every tested set",
+                                    "properties": {
+                                      "short": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "default": 50,
+                                        "description": "the short list: enriched sets of at least this many members, each left out when an enriched set under it is listed"
+                                      },
+                                      "compare": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "default": 4,
+                                        "description": "then the largest sets two levels below the root that are not enriched"
+                                      },
+                                      "tree": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "default": 100,
+                                        "description": "the tree: the classes under the root, then their sets of at least this many members"
+                                      },
+                                      "glosses": {
+                                        "type": "object",
+                                        "additionalProperties": {
+                                          "type": "array",
+                                          "minItems": 1,
+                                          "maxItems": 2,
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "description": "for a set id: a plain gloss shown after its name, and its definition for the hover"
+                                      },
+                                      "id_label": {
+                                        "type": "string",
+                                        "description": "what a set's id is (DOID)"
+                                      },
+                                      "noun": {
+                                        "type": "string",
+                                        "description": "a set, in words (term)"
+                                      },
+                                      "nouns": {
+                                        "type": "string",
+                                        "description": "sets, in words (terms)"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "more": {
+                              "type": "object",
+                              "required": [
+                                "analysis"
+                              ],
+                              "additionalProperties": false,
+                              "description": "more sets of the same kind, tested apart, shown under the question's own behind a button",
+                              "properties": {
+                                "analysis": {
+                                  "type": "string",
+                                  "description": "a protein-set question"
+                                },
+                                "label": {
+                                  "type": "string",
+                                  "description": "the button's words; {n} is how many sets (default: Show {n} more sets)"
+                                },
+                                "head": {
+                                  "type": "string",
+                                  "description": "the heading over them"
+                                }
+                              }
+                            },
+                            "members": {
+                              "type": "object",
+                              "required": [
+                                "analysis",
+                                "of"
+                              ],
+                              "additionalProperties": false,
+                              "description": "the sets a family question gathers (DisGeNET terms in disease families), each with its own test: a table behind a button, with a picker of families",
+                              "properties": {
+                                "analysis": {
+                                  "type": "string",
+                                  "description": "the protein-set question that tests the member sets one by one"
+                                },
+                                "of": {
+                                  "type": "array",
+                                  "minItems": 1,
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "analysis"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "analysis": {
+                                        "type": "string",
+                                        "description": "a question gathering sets into families (sets.families)"
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "description": "its families as a group, in the picker"
+                                      }
+                                    }
+                                  },
+                                  "description": "the family questions whose families the member sets are grouped into"
+                                },
+                                "label": {
+                                  "type": "string",
+                                  "description": "the button's words (default: Show the member sets)"
+                                },
+                                "noun": {
+                                  "type": "string",
+                                  "description": "a member set, in words (term)"
+                                },
+                                "nouns": {
+                                  "type": "string",
+                                  "description": "member sets, in words (DisGeNET terms)"
+                                },
+                                "none": {
+                                  "type": "string",
+                                  "description": "the picker's words for members in no family"
+                                },
+                                "id_label": {
+                                  "type": "string",
+                                  "description": "what a set's id is (UMLS CUI)"
+                                }
+                              }
+                            },
+                            "ontology": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "description": "a question whose sets form an ontology (its analysis has hierarchy): the most specific enriched sets and, for comparison, the largest classes that are not; the whole ontology as a tree; and a table of every tested set",
+                              "properties": {
+                                "short": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "default": 50,
+                                  "description": "the short list: enriched sets of at least this many members, each left out when an enriched set under it is listed"
+                                },
+                                "compare": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "default": 4,
+                                  "description": "then the largest sets two levels below the root that are not enriched"
+                                },
+                                "tree": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "default": 100,
+                                  "description": "the tree: the classes under the root, then their sets of at least this many members"
+                                },
+                                "glosses": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "maxItems": 2,
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "description": "for a set id: a plain gloss shown after its name, and its definition for the hover"
+                                },
+                                "id_label": {
+                                  "type": "string",
+                                  "description": "what a set's id is (DOID)"
+                                },
+                                "noun": {
+                                  "type": "string",
+                                  "description": "a set, in words (term)"
+                                },
+                                "nouns": {
+                                  "type": "string",
+                                  "description": "sets, in words (terms)"
+                                }
+                              }
                             }
                           }
                         }
@@ -2241,6 +2621,34 @@
                         }
                       },
                       "minItems": 1
+                    }
+                  }
+                }
+              }
+            },
+            "sets": {
+              "type": "array",
+              "description": "cards on each protein page: the protein's sets in these protein-set questions, each linked to its own page (the question's link) and selecting its proteins; for an ontology, its most specific sets first",
+              "items": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "analyses"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "summary": {
+                    "type": "string",
+                    "description": "the words beside the title"
+                  },
+                  "analyses": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
                     }
                   }
                 }
@@ -3264,6 +3672,70 @@
               "statistics": {
                 "type": "string",
                 "description": "manifest name of a statistics table"
+              },
+              "tables": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "required": [
+                    "input",
+                    "columns"
+                  ],
+                  "additionalProperties": false,
+                  "description": "a published table of one protein-set question's results, in its own columns (a release's supporting table, for a question its statistics table does not hold): the run checks the question's rows against it, set by set: the same sets, the same counts, and the fold enrichment, p and q as the statistics table writes them (6 significant digits)",
+                  "properties": {
+                    "input": {
+                      "type": "string",
+                      "description": "manifest name of the table (role reference_output)"
+                    },
+                    "columns": {
+                      "type": "object",
+                      "required": [
+                        "set",
+                        "a",
+                        "fold_enrichment",
+                        "p",
+                        "q"
+                      ],
+                      "additionalProperties": false,
+                      "description": "the table's column for each value: the set's id, its marked members (a), its size in the background (M, optional), the fold enrichment, p and the Benjamini-Hochberg q",
+                      "properties": {
+                        "set": {
+                          "type": "string"
+                        },
+                        "a": {
+                          "type": "string"
+                        },
+                        "M": {
+                          "type": "string"
+                        },
+                        "fold_enrichment": {
+                          "type": "string"
+                        },
+                        "p": {
+                          "type": "string"
+                        },
+                        "q": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "sep": {
+                      "type": "string",
+                      "default": "\t"
+                    },
+                    "rows": {
+                      "enum": [
+                        "all",
+                        "enriched",
+                        "some"
+                      ],
+                      "default": "all",
+                      "description": "which of the question's sets the table lists: every tested set (all), those at q <= 0.05 (enriched: the listed sets must be exactly those), or some (each listed set is checked, the others not)"
+                    }
+                  }
+                },
+                "description": "for a protein-set question (its id) whose rows the statistics table does not hold: a published table of its own to equal"
               }
             }
           },

@@ -201,6 +201,34 @@ enrichment is compared exactly, so equal fractions tie. `scores` (a value per me
 all`), an option for marks on a protein in any set, and a threshold on the scores. A comma-separated table says so in
 its manifest entry: `"columns": {"sep": ","}`.
 
+Sets that form an ontology (each holding the members of the sets under it) name their parents, for the website's
+views; a set's own page is `link`; a question a release keeps in a supporting table, not its statistics table, is
+checked against that table in its own columns (CONTRACTS.md: Set hierarchy, Published set results):
+
+```yaml
+  - id: <analysis>
+    test: protein_sets
+    sets: {input: <role>, set: <column>, protein: <column>}
+    names: {input: <role>, set: <column>, name: <column>}
+    hierarchy: {input: <role>, set: <column>, parents: <column>, root: <root id>}   # website only
+    link: "https://example.org/term/{}"
+reference:
+  tables:
+    <analysis>: {input: <manifest name>, columns: {set: <col>, a: <col>, M: <col>, fold_enrichment: <col>, p: <col>, q: <col>}}
+website:
+  overview:
+    sections:
+      - name: <section>
+        cards:
+          - analysis: <families question>
+            views:                          # the first is the card's own question
+              - {label: <words>, analysis: <families question>, more: {analysis: <more families>, label: "Show {n} more"},
+                 members: {analysis: <one-by-one question>, of: [{analysis: <families question>, label: <words>}]}}
+              - {label: <words>, analysis: <ontology question>, ontology: {short: 50, compare: 4, tree: 100, glosses: {<id>: [<gloss>, <definition>]}}}
+  protein:
+    sets: [{title: <words>, analyses: [<ontology question>, <one-by-one question>, <families question>]}]
+```
+
 Which sets make a family is curated vocabulary: it goes in a site's own data file under `sites/data/`, never in code
 (`ptmcontext/schemas/set_families.schema.json`; `sites/data/methylarginine_disease_families.yaml` gathers DisGeNET's
 terms into the release's disease families; `sites/data/methylarginine_cell_regions.yaml` the compartments of three

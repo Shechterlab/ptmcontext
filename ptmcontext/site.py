@@ -22,7 +22,7 @@ from . import inputs as I
 from . import layers as L
 from . import residue_tests as RT
 from . import statistics as ST
-from .parity import Result, compare
+from .parity import Result, compare, compare_table
 from .profile import check_residues, load_profile, read_config, validate
 from .snapshot import Snapshot, md5_file
 
@@ -263,11 +263,14 @@ def website_problems(site: dict) -> list[str]:
     if (web.get('cell') or {}).get('id'):
         ids = ids | {web['cell']['id']}        # the maps of the cell are one question of the website's own
         questions = questions | {web['cell']['id']}
+    sets = {a['id']: a for a in site.get('analyses', []) if a.get('test') == 'protein_sets'}
     for sec in (web.get('overview') or {}).get('sections', []):
         for c in sec.get('cards', []):
             aid = c if isinstance(c, str) else c.get('analysis')
             if aid not in questions:
                 out.append(f"website.overview, section {sec.get('name')!r}: no analysis {aid!r}")
+            if isinstance(c, dict):
+                out += view_problems(c, sets, f"website.overview card {aid!r}")
     for g in web.get('filters') or []:
         out += [f"website.filters, group {g.get('name')!r}: no analysis {a!r}" for a in g.get('analyses', []) if a not in ids]
         out += [f"website.filters, group {g.get('name')!r}: no attribute {a!r} in marks.attributes" for a in g.get('attributes', []) if a not in attrs]
@@ -327,6 +330,10 @@ def website_problems(site: dict) -> list[str]:
         if to not in ids and to not in attrs:
             out.append(f"website.search_aliases: {key!r} means {to!r}, which is neither a question nor an attribute of this site")
     out += card_problems(site)
+    for ref in [site.get('reference') or {}, *[(v.get('reference') or {}) for v in (site.get('variants') or {}).values()]]:
+        out += [f"reference.tables: {aid!r} is not a protein-set question" for aid in (ref.get('tables') or {}) if aid not in sets]
+    for k, card in enumerate((web.get('protein') or {}).get('sets', [])):
+        out += [f"website.protein.sets[{k}] ({card['title']!r}): {a!r} is not a protein-set question" for a in card['analyses'] if a not in sets]
     for key, to in (web.get('legacy_links') or {}).items():
         if not to.startswith('?') and to not in questions:
             out.append(f"website.legacy_links: {key!r} opens {to!r}, which is not a question of this site")
@@ -571,6 +578,32 @@ def card_problems(site: dict) -> list[str]:
                 re.compile(n.get(key, ''))
             except re.error as e:
                 out.append(f"website.protein.numbering[{k}].{key}: not a regular expression ({e})")
+    return out
+
+
+def view_problems(card: dict, sets: dict, where: str) -> list[str]:
+    """What an Overview card's views, more sets and member sets name that the site does not have: each must be a
+    protein-set question; a card's first view is the card's own question; members gather the sets of family questions
+    (sets.families) and an ontology view needs its question's hierarchy."""
+    out = []
+    views = card.get('views') or []
+    if views and views[0]['analysis'] != card['analysis']:
+        out.append(f"{where}: its first view is {views[0]['analysis']!r}; the first view is the card's own question")
+    for v in [card, *views]:
+        aid = v.get('analysis')
+        if v is not card and aid not in sets:
+            out.append(f"{where}: view {v.get('label')!r} names {aid!r}, which is not a protein-set question")
+        if v.get('more') and v['more']['analysis'] not in sets:
+            out.append(f"{where}: more names {v['more']['analysis']!r}, which is not a protein-set question")
+        mem = v.get('members')
+        if mem:
+            if mem['analysis'] not in sets:
+                out.append(f"{where}: members names {mem['analysis']!r}, which is not a protein-set question")
+            for o in mem['of']:
+                if not (sets.get(o['analysis']) or {}).get('sets', {}).get('families'):
+                    out.append(f"{where}: members of {o['analysis']!r}, which does not gather sets into families (sets.families)")
+        if v.get('ontology') is not None and aid in sets and not sets[aid].get('hierarchy'):
+            out.append(f"{where}: an ontology view of {aid!r} needs its hierarchy (the sets' parents)")
     return out
 
 
@@ -849,7 +882,10 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
                               'marks': int(n_marks.get(a, 0)), 'candidates': int(cand.get(a, 0))} for a in accs])
     valued: dict = {}
     units, tracks = drawn_tracks(layers or {}, ctx, set(accs), values=valued)
-    out = {'marks.tsv': m.sort_values(['accession', 'position']), 'protein_counts.tsv': pd.concat(counts, ignore_index=True),
+    # a site of protein-set questions only has no class counts: the table keeps its columns
+    count_cols = ['accession', 'analysis', 'category', 'marks_in', 'others_in', 'marks_total', 'others_total']
+    out = {'marks.tsv': m.sort_values(['accession', 'position']),
+           'protein_counts.tsv': pd.concat(counts, ignore_index=True) if counts else pd.DataFrame(columns=count_cols),
            'proteins.tsv': proteins, 'units.tsv': units, 'tracks.json': tracks}
     if valued:
         # the candidate residues as the tests counted them (any question's: they are the same residues)
@@ -996,6 +1032,8 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
             if analysis.get('identifiers'):
                 layers_used[analysis['id']]['identifiers'] = {'noun': analysis['identifiers'].get('noun', 'identifier'),
                                                               'map': [s['input'] for s in analysis['identifiers']['map']]}
+            if analysis.get('hierarchy'):                  # the sets' parents, for the website's ontology views
+                layers_used[analysis['id']]['hierarchy'] = analysis['hierarchy']['input']
             for k in ('where', 'history'):                 # the tables that keep its rows, and bring its members to entries
                 if analysis['sets'].get(k):
                     layers_used[analysis['id']][k] = analysis['sets'][k]
@@ -1034,17 +1072,26 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         record['mark_tables'] = per_mark_report
     result = SiteRun(site, rows, record)
     ref = site.get('reference', {}).get('statistics')
-    if ref:
-        reference = ST.read(paths[ref])
+    tables = site.get('reference', {}).get('tables') or {}
+    if ref or tables:
+        reference = ST.read(paths[ref]) if ref else None
         for analysis in site['analyses']:
-            if analysis.get('new'):                          # not in the reference: nothing to compare it with
+            own = tables.get(analysis['id'])
+            if own:                                          # a published table of its own (a release's supporting table)
+                table = pd.read_csv(paths[own['input']], sep=own.get('sep', '\t'), dtype=str, keep_default_na=False)
+                found = [compare_table(rows, table, analysis['id'], own)]
+            elif analysis.get('new') or reference is None:   # not in the reference: nothing to compare it with
                 log(f"  new    {analysis['id']:18s} not in the reference")
                 continue
-            for r in compare(rows[rows['analysis'] == analysis['id']], reference, analysis['id']):
+            else:
+                found = compare(rows[rows['analysis'] == analysis['id']], reference, analysis['id'])
+            for r in found:
                 result.parity.append(r)
-                log(f'  parity {r.analysis:18s} {r.method:16s} {r.rows:3d} rows  {"equal" if r.equal else "DIFFERENT"}')
-        record['parity'] = {'reference': ref, 'equal': result.parity_ok, 'new': [a['id'] for a in site['analyses'] if a.get('new')],
-                            'checked': [{'analysis': r.analysis, 'method': r.method, 'rows': r.rows, 'equal': r.equal} for r in result.parity]}
+                log(f'  parity {r.analysis:18s} {r.method:16s} {r.rows:3d} rows  {"equal" if r.equal else "DIFFERENT"}'
+                    + (f'  (against {r.reference})' if r.reference else ''))
+        record['parity'] = {'reference': ref, 'equal': result.parity_ok, 'new': [a['id'] for a in site['analyses'] if a.get('new') and a['id'] not in tables],
+                            'checked': [{'analysis': r.analysis, 'method': r.method, 'rows': r.rows, 'equal': r.equal, **({'reference': r.reference} if r.reference else {})}
+                                        for r in result.parity]}
     if write:
         folder = Path(out_root or root_of(site)) / site['outputs']['folder']
         ST.write(rows, folder / 'statistics.tsv')
