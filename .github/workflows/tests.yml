@@ -31,6 +31,9 @@ jobs:
             releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
             releases/v1.4.3/statistics_v1.4.3.tsv
             releases/v1.4.3/human_methylarginine_proteins_v1.4.3.tsv
+            releases/v1.4.3/supporting/carm1_ko_v1.4.3.tsv
+            releases/v1.4.3/supporting/maron2021_inhibitors_v1.4.3.tsv
+            releases/v1.4.3/supporting/writer_perturbations_v1.4.3.tsv
             releases/v1.4.3/human_methylarginine_lower_confidence_sites_v1.4.3.tsv
             releases/v1.4.3/statistics_with_lower_confidence_v1.4.3.tsv
           sparse-checkout-cone-mode: false
