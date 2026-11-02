@@ -146,6 +146,15 @@ marks:
       values: {"yes": Changed in a cell line, "no": Not changed}
       filter: true
       help: "Whether a DepMap 24Q4 cell line carries a missense or stop change of this arginine"
+    maron_s2:
+      column: maron2021_s2_states
+      provenance: true                       # which study measured the site, as much as what it is
+      label: Maron 2021 Table S2 call
+      kind: list
+      separator: "; "
+      values: {Rme1: Rme1, Rme2: Rme2, Rme2a: Rme2a, Rme2s: Rme2s, Rme: Rme}
+      filter: true
+      help: "The degrees of methylation called at the site in Maron et al. 2021 Table S2"
     methyl_ip:
       column: maron2021_s3_antibodies
       provenance: true                       # which study measured the site, as much as what it is
@@ -520,6 +529,9 @@ proteins:                  # the release's protein table: facts of each methylat
                        help: "Benjamini-Hochberg q of the protein's methylated share of arginines against the proteome-wide rate, with more of them methylated than that rate"}
     dense_window: {column: best_window_aa, label: Densest window (aa), kind: number, help: "the window, in residues, of the protein's most significant cluster of methylarginines"}
     dense_sites: {column: best_window_sites, label: Sites in the densest window, kind: number}
+    architecture: {column: architecture_class, label: Clustered architecture, kind: category,
+                   values: {"broad across IDR": Broad across an IDR, "domain-distal clustered": Domain-distal clusters, "domain-proximal clustered": Domain-proximal clusters},
+                   help: "How the protein's clustered disordered sites (at least 3 within 20 residues) sit against its domains"}
     dense_q: {column: best_window_q, label: Protein has a significant dense region, kind: number, levels: [0.05, 0.01], direction: max,
               help: "q of the protein's most significant cluster of methylarginines (permutation test against the protein's own arginines)"}
 variants:                # the same questions on other marks; ptmc run --variant <name>
@@ -602,10 +614,11 @@ website:                  # the look and words of the website (ptmc web); layout
         cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional], attributes: [tcga_any, depmap_any]}
-    - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, hpa_location, reactome_top_level], proteins: [marks, arg_enrichment_q, dense_q]}
-    - {name: Methylation state, attributes: [state, methyl_ip, neutral_loss]}
+    - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, hpa_location, reactome_top_level], proteins: [marks, arg_enrichment_q]}
+    - {name: Methylation state, attributes: [state, maron_s2, methyl_ip, neutral_loss]}
     - {name: "PRMT inhibitors, knockouts and knockdowns", attributes: [gsk591, ms023, perturbation]}
     - {name: Sequence motif, analyses: [motif]}
+    - {name: Clustering, proteins: [dense_q, architecture]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class]}
     - {name: Provenance, attributes: [studies, n_studies, localised_by]}
