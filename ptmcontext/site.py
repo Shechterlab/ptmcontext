@@ -588,10 +588,11 @@ def select_marks(spec: dict, table: pd.DataFrame, snapshot: Snapshot, profile) -
     return marked.reset_index(drop=True), report
 
 
-def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame) -> pd.DataFrame:
+def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame, rows: str = 'kept') -> pd.DataFrame:
     """For each counted mark, the columns the site file keeps for the website (marks.attributes), as text; a mark on
     several rows of the table takes its first row's. Columns 'a.<name>' (and 'a.<name>.link'), keyed by accession and
-    position. Nothing here changes which marks are counted."""
+    position. rows='left_out' reads the rows marks.left_out keeps pending instead (for the sites shown, not counted).
+    Nothing here changes which marks are counted."""
     attrs = spec.get('attributes') or {}
     if not attrs:
         return pd.DataFrame(columns=['accession', 'position'])
@@ -601,9 +602,12 @@ def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame) -> pd
     keep = pd.Series(True, index=table.index)            # the rows select_marks keeps, so a dropped row lends nothing
     for cond in spec.get('include', []):
         keep &= _holds(table, cond)
-    for cond in spec.get('exclude', []) + spec.get('left_out', []):
+    for cond in spec.get('exclude', []):
         keep &= ~_holds(table, cond)
-    table = table[keep]
+    pending = pd.Series(False, index=table.index)
+    for cond in spec.get('left_out', []):
+        pending |= _holds(table, cond)
+    table = table[keep & (pending if rows == 'left_out' else ~pending)]
     cols, paired = {}, {}
     for name, a in attrs.items():
         cols[f'a.{name}'] = a['column']
@@ -627,6 +631,21 @@ def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame) -> pd
             t[out] = [sep.join(f'{x}:{y}' for x, y in _zip_lists(u, v, sep, out)) for u, v in zip(t[out], table[paired[out]].astype(str))]
     t = t.dropna(subset=['position']).astype({'position': int}).drop_duplicates(['accession', 'position'])
     return marked[['accession', 'position']].merge(t, on=['accession', 'position'], how='left').fillna('')
+
+
+def shown_marks(spec: dict, table: pd.DataFrame, pending: pd.DataFrame, snap: Snapshot, proteins: set) -> pd.DataFrame:
+    """The residues marks.left_out keeps pending, for the website to show beside the marks and count nowhere: on a
+    marked protein, at a residue the snapshot has, with their window and attributes (as marks.tsv's columns)."""
+    from .snapshot import window
+    cols = ['accession', 'position', 'residue', 'window_15']
+    m = pending[pending['accession'].isin(proteins)].copy() if len(pending) else pd.DataFrame(columns=['accession', 'position'])
+    m = m[[snap.residue_at(a, p) != '' for a, p in zip(m['accession'], m['position'])]] if len(m) else m
+    m['residue'] = [snap.residue_at(a, p) for a, p in zip(m['accession'], m['position'])]
+    m['window_15'] = [window(snap.sequences[a], p, 7) for a, p in zip(m['accession'], m['position'])]
+    attrs = mark_attributes(spec, table, m[['accession', 'position']], rows='left_out') if len(m) else None
+    if attrs is not None and len(attrs.columns) > 2:
+        m = m.merge(attrs, on=['accession', 'position'], how='left').fillna('')
+    return (m if len(m) else pd.DataFrame(columns=cols)).sort_values(['accession', 'position']).reset_index(drop=True)
 
 
 def _kept_rows(spec: dict, table: pd.DataFrame) -> pd.DataFrame:
@@ -964,6 +983,7 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         ST.write(rows, folder / 'statistics.tsv')
         record['output'] = {'statistics.tsv': md5_file(folder / 'statistics.tsv')}
         outs = protein_outputs(snap, profile, marked, kept, ctx, attributes, layers=layer_objs)
+        outs['shown_marks.tsv'] = shown_marks(spec, table, pending, snap, set(marked['accession']))
         outs['set_names.tsv'] = pd.DataFrame(set_names, columns=['analysis', 'set', 'name'])
         if site.get('proteins'):                       # per-protein facts the website shows (proteins.attributes)
             ptable = pd.read_csv(paths[site['proteins']['input']], sep='\t', dtype=str, keep_default_na=False, low_memory=False)
