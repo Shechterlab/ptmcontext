@@ -19,8 +19,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
           ref: b0d9049835fbd2527075629f00a4ebab154221bf
@@ -43,10 +43,11 @@ jobs:
             inputs/interactions/cdcode_2.3_condensate_members_2026-10-16.tsv
             releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
             releases/v1.4.3/statistics_v1.4.3.tsv
+            releases/v1.4.3/human_methylarginine_proteins_v1.4.3.tsv
             releases/v1.4.3/human_methylarginine_lower_confidence_sites_v1.4.3.tsv
             releases/v1.4.3/statistics_with_lower_confidence_v1.4.3.tsv
           sparse-checkout-cone-mode: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install -e .
