@@ -1241,6 +1241,13 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "proteins": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "protein-level filters: attributes of proteins (proteins.attributes) or marks (the protein's count of marks)"
               }
             }
           }
@@ -1735,6 +1742,39 @@
                   "select"
                 ],
                 "description": "filter: chips (default) or a drop-down list, for many values"
+              },
+              "levels": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "description": "a number attribute's filter: the thresholds offered"
+              },
+              "direction": {
+                "enum": [
+                  "min",
+                  "max"
+                ],
+                "description": "a number attribute's filter: at least (min, default) or at most (max) the threshold"
+              },
+              "also": {
+                "type": "object",
+                "required": [
+                  "attribute"
+                ],
+                "additionalProperties": false,
+                "description": "a second condition the filter adds (for example a positive effect with a small q)",
+                "properties": {
+                  "attribute": {
+                    "type": "string"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                }
               }
             }
           }

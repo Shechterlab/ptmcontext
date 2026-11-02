@@ -177,6 +177,10 @@ def website_problems(site: dict) -> list[str]:
         for n in [lst['by'], (lst.get('where') or {}).get('attribute')]:
             if n and n != 'marks' and (n not in pattrs or pattrs[n].get('kind') != 'number'):
                 out.append(f"website.overview.starting_points: {lst['title']!r} reads {n!r}, which is not a number attribute of proteins (proteins.attributes)")
+    for g in web.get('filters') or []:
+        for n in g.get('proteins', []):
+            if n != 'marks' and n not in pattrs:
+                out.append(f"website.filters {g['name']!r}: no protein attribute {n!r} (proteins.attributes, or marks)")
     for n in (web.get('sites') or {}).get('attributes', []):
         if n not in attrs:
             out.append(f"website.sites.attributes: no attribute {n!r}")

@@ -71,7 +71,15 @@
     const all = vals.filter(Boolean), shown = full ? all : all.slice(0, 3), rest = all.slice(shown.length).map(v => valueLabel(attr, v));
     return (shown.map(item).join(', ') + (rest.length ? ` <span class="muted" title="${esc(rest.join(', '))}">+${rest.length}</span>` : '')) || '<span class="muted">–</span>';
   }
-  const keyName = key => { const [kind, id] = key.split(':'); return kind === 't' || kind === 'n' ? (SPECS[id]?.label || id) : kind === 's' ? (A[id]?.scores?.label || id) : (A[id]?.title || id); };
+  // a protein-level filter (r:<name>): a protein attribute (proteins.attributes) or the protein's count of marks (marks)
+  const PSPEC = D.protein_attributes?.specs || {};
+  const RSPEC = id => (id === 'marks' ? { label: `Minimum ${W.marks} per protein`, kind: 'number', levels: [2, 3, 5, 10, 20], direction: 'min' } : PSPEC[id]);
+  const protVal = (id, pi) => (id === 'marks' ? D.proteins[pi]?.[4] : D.protein_attributes?.values?.[id]?.[pi]);
+  const rHolds = (id, pi, v) => { const sp = RSPEC(id) || {}, x = protVal(id, pi); if (x == null || x === '') return false;
+    if (sp.kind !== 'number') return String(x).split(sp.separator || '; ').includes(v);
+    const ok = sp.direction === 'max' ? x <= +v : x >= +v; if (!ok) return false;
+    const also = sp.also; if (!also) return true; const y = protVal(also.attribute, pi); return y != null && (also.min == null || y >= also.min) && (also.max == null || y <= also.max); };
+  const keyName = key => { if (key.startsWith('r:')) return RSPEC(key.slice(2))?.label || key.slice(2); const [kind, id] = key.split(':'); return kind === 't' || kind === 'n' ? (SPECS[id]?.label || id) : kind === 's' ? (A[id]?.scores?.label || id) : (A[id]?.title || id); };
   // a protein-set filter: its set (or * for any of its source's sets) and, with a score filter on it (s:<analysis>, a
   // threshold), the memberships scored at least that instead
   const scoreOf = (aid, s, p) => { const sc = SD.protein_sets?.[aid]?.scores; return sc ? (s === '*' ? sc.any : sc.sets[s] || {})[p] : undefined; };
@@ -79,6 +87,7 @@
   const scoreText = (id, v) => { const sc = A[id]?.scores || {}; return `${+v === sc.max ? '' : '≥ '}${v}${sc.max != null ? ` of ${sc.max}` : ''}`; };
   function valueName(key, v) {
     const [kind, id] = key.split(':');
+    if (kind === 'r') { const sp = RSPEC(id) || {}; return sp.kind === 'number' ? `${sp.direction === 'max' ? '≤' : 'at least'} ${v}` : v; }
     if (kind === 's') return scoreText(id, v);
     if (kind === 'p' && v === '*') return A[id]?.filter?.any || 'in any set';
     if (kind === 'a') return classLabel(id, v);
@@ -87,7 +96,7 @@
     return (A[id]?.labels || {})[v] || v;
   }
 
-  const validKey = key => { const [kind, id] = String(key).split(':'); return (kind === 'a' && A[id] && A[id].kind !== 'protein_sets') || (kind === 'p' && A[id]?.kind === 'protein_sets') || (kind === 's' && !!A[id]?.scores) || ((kind === 't' || kind === 'n') && !!SPECS[id]); };
+  const validKey = key => { const [kind, id] = String(key).split(':'); if (kind === 'r') return !!RSPEC(id); return (kind === 'a' && A[id] && A[id].kind !== 'protein_sets') || (kind === 'p' && A[id]?.kind === 'protein_sets') || (kind === 's' && !!A[id]?.scores) || ((kind === 't' || kind === 'n') && !!SPECS[id]); };
 
   // ---- the search: proteins, sites and terms ---------------------------------------------------------------------
   // a gene, accession or entry name names all its marks; "GENE R216 R218" or "GENE 216" names those marks; key:value
@@ -175,6 +184,7 @@
       if (kind === 's') return cons.some(([k]) => k === 'p:' + id) ? () => true : m => scoreOf(id, '*', m[0]) >= t;   // with a set: applied there
       if (kind === 't') { const ti = AT().indexOf(id), codes = new Set(vals.map(v => SD.attributes[id].indexOf(v))); return m => m[3][ti].some(c => codes.has(c)); }
       if (kind === 'n') { const ti = AT().indexOf(id), min = +vals[0], num = SD.numbers[id]; return m => m[3][ti].some(c => num[c] >= min); }
+      if (kind === 'r') return m => vals.some(v => rHolds(id, m[0], v));
       return () => true;
     });
     return { q, cons, unresolved, base, tests };
@@ -448,7 +458,7 @@
   setRailWidth();
   // the groups: from the site file, or one per section of residue questions, protein-set questions and attributes
   function groups() {
-    if (D.filters && D.filters.length) return D.filters.map(g => ({ ...g, analyses: (g.analyses || []).filter(a => A[a]), attributes: (g.attributes || []).filter(k => SPECS[k]) }));
+    if (D.filters && D.filters.length) return D.filters.map(g => ({ ...g, analyses: (g.analyses || []).filter(a => A[a]), attributes: (g.attributes || []).filter(k => SPECS[k]), proteins: (g.proteins || []).filter(k => RSPEC(k)) }));
     const out = [], seen = {};
     D.analyses.forEach(a => { const g = seen[a.section] || (seen[a.section] = out[out.push({ name: a.section || 'Questions', analyses: [] }) - 1]); g.analyses.push(a.id); });
     const attrs = Object.entries(SPECS).filter(([, s]) => s.filter).map(([k]) => k);
@@ -494,7 +504,7 @@
   function control(key) {
     const [kind, id] = key.split(':'), on = new Set([...(S.f[key] || []), ...termValues(key)]);
     // the values shown are fixed by the whole site (nothing moves as the selection changes); the counts follow it
-    const fc = kind === 'n' || kind === 's' ? null : facet(key), shownN = v => (fc ? fc[v] ?? 0 : cnt(key, v));
+    const fc = kind === 'n' || kind === 's' || kind === 'r' ? null : facet(key), shownN = v => (fc ? fc[v] ?? 0 : cnt(key, v));
     const chip = (v, lab) => { const n = shownN(v), t = cnt(key, v);
       return `<button type="button" class="fchip${fc && !n && !on.has(v) ? ' zero' : ''}" data-f="${esc(key)}" data-v="${esc(v)}" aria-pressed="${on.has(v)}"${fc ? ` title="${int(n)} in the selection, ${int(t)} in all"` : ''}>${esc(lab)}${n != null ? ` <span class="muted">${int(n)}</span>` : ''}</button>`; };
     if (kind === 'a') {
@@ -514,6 +524,13 @@
         (sc.levels || []).map(v => `<option value="${v}"${String(v) === cur ? ' selected' : ''}>${esc(scoreText(id, v))}</option>`).join('') + '</select></div>';
     }
     const spec = SPECS[id] || {};
+    if (kind === 'r') {                  // a protein-level filter: a threshold, or a protein attribute's values
+      const sp = RSPEC(id) || {}, cur = S.f[key]?.[0] || '';
+      const opts = sp.kind === 'number' ? (sp.levels || []).map(v => [String(v), `${sp.direction === 'max' ? '≤' : 'at least'} ${v}`])
+        : [...new Set((D.protein_attributes?.values?.[id] || []).flatMap(x => String(x || '').split(sp.separator || '; ')).filter(Boolean))].sort().map(v => [v, (sp.values || {})[v] || v]);
+      return `<div class="fctl"><p class="flabel" title="${esc(sp.help || '')}">${esc(sp.label || id)} <span class="muted">(proteins)</span></p><select data-fsel="${esc(key)}"><option value="">Any</option>` +
+        opts.map(([v, l]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`).join('') + '</select></div>';
+    }
     if (spec.kind === 'number') {
       const top = SD ? Math.max(...SD.numbers[id]) : 5, cur = S.f['n:' + id]?.[0] || '';
       return `<div class="fctl"><p class="flabel">${esc(spec.label)}</p><select data-fsel="n:${esc(id)}"><option value="">Any</option>` +
@@ -529,7 +546,8 @@
       sorted.map(v => chip(v, valueLabel(id, v))).join('') + '</div></div>';
   }
   function keysOf(g) {
-    return [...(g.analyses || []).flatMap(aid => (A[aid]?.kind === 'protein_sets' ? ['p:' + aid, ...(A[aid].scores ? ['s:' + aid] : [])] : ['a:' + aid])), ...(g.attributes || []).map(k => (SPECS[k]?.kind === 'number' ? 'n:' : 't:') + k)];
+    return [...(g.analyses || []).flatMap(aid => (A[aid]?.kind === 'protein_sets' ? ['p:' + aid, ...(A[aid].scores ? ['s:' + aid] : [])] : ['a:' + aid])), ...(g.attributes || []).map(k => (SPECS[k]?.kind === 'number' ? 'n:' : 't:') + k),
+      ...(g.proteins || []).filter(k => RSPEC(k)).map(k => 'r:' + k)];
   }
   function filtersTab() {
     const gs = groups();

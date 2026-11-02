@@ -516,10 +516,12 @@ proteins:                  # the release's protein table: facts of each methylat
   accession: uniprot_accession
   attributes:
     arg_enrichment: {column: arg_enrichment_log2, label: Arg enrichment, kind: number, help: "log2 of the shrinkage-estimated methylated share of the protein's arginines over the proteome-wide rate (negative when below it)"}
-    arg_enrichment_q: {column: arg_enrichment_q, label: Arg enrichment q, kind: number, help: "Benjamini-Hochberg q of the protein's methylated share of arginines against the proteome-wide rate"}
+    arg_enrichment_q: {column: arg_enrichment_q, label: Arginines methylated more than the proteome rate, kind: number, levels: [0.05, 0.01], direction: max, also: {attribute: arg_enrichment, min: 0},
+                       help: "Benjamini-Hochberg q of the protein's methylated share of arginines against the proteome-wide rate, with more of them methylated than that rate"}
     dense_window: {column: best_window_aa, label: Densest window (aa), kind: number, help: "the window, in residues, of the protein's most significant cluster of methylarginines"}
     dense_sites: {column: best_window_sites, label: Sites in the densest window, kind: number}
-    dense_q: {column: best_window_q, label: Clustering q, kind: number, help: "q of the protein's most significant cluster (permutation test against the protein's own arginines)"}
+    dense_q: {column: best_window_q, label: Protein has a significant dense region, kind: number, levels: [0.05, 0.01], direction: max,
+              help: "q of the protein's most significant cluster of methylarginines (permutation test against the protein's own arginines)"}
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites
@@ -577,6 +579,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - {label: sites reported by 2 or more sources, query: "f=n:n_studies~2", view: sites}
         - {label: sites measured with PRMT inhibitors (Maron 2021), query: "f=t:gsk591~decreased|increased|mixed|no_significant_change", view: sites}
         - {label: proteins in condensates, query: "f=p:condensate_proteome~*", view: proteins}
+        - {label: proteins with dense clusters, query: "f=r:dense_q~0.05", view: proteins}
     sections:
       - name: Disease and cancer
         cards:
@@ -599,7 +602,7 @@ website:                  # the look and words of the website (ptmc web); layout
         cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional], attributes: [tcga_any, depmap_any]}
-    - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, hpa_location, reactome_top_level]}
+    - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, hpa_location, reactome_top_level], proteins: [marks, arg_enrichment_q, dense_q]}
     - {name: Methylation state, attributes: [state, methyl_ip, neutral_loss]}
     - {name: "PRMT inhibitors, knockouts and knockdowns", attributes: [gsk591, ms023, perturbation]}
     - {name: Sequence motif, analyses: [motif]}

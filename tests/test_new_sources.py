@@ -249,8 +249,11 @@ def test_a_protein_table_gives_facts_and_starting_points(tmp_path):
     assert vals == {'P1': 2.5, 'P2': None} and dict(zip(order, d['protein_attributes']['values']['kind']))['P2'] == 'scaffold'
     bad = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
     bad['website']['overview']['starting_points']['lists'][0]['by'] = 'kind'          # a category, not a number
+    bad['website']['filters'] = [{'name': 'Proteins', 'proteins': ['marks', 'enrichment', 'no_such']}]
     (root / 'sites' / 'bad.yaml').write_text(yaml.safe_dump(bad, sort_keys=False))
-    assert any('not a number attribute' in p for p in S.website_problems(S.load_site(root / 'sites' / 'bad.yaml')))
+    problems = S.website_problems(S.load_site(root / 'sites' / 'bad.yaml'))
+    assert any('not a number attribute' in p for p in problems)
+    assert [p for p in problems if 'protein attribute' in p] == ["website.filters 'Proteins': no protein attribute 'no_such' (proteins.attributes, or marks)"]
 
 
 def test_a_question_s_class_order_and_groups_come_from_its_layer_or_the_site_file(tmp_path):

@@ -97,7 +97,9 @@ writes `protein_attributes.tsv` (`accession`, then `p.<name>` per attribute, for
 has no row), and the page receives `protein_attributes: {specs, values: {name: [one value per protein of the list, numbers as
 numbers]}}` (`K.proteinAttr(accession, name)`). The Overview's `starting_points` rank proteins by `marks` or a number
 attribute (`lists: [{title, by, order, where: {attribute, max, min}, show, n, help}]`) and offer ready-made selections
-(`quick: [{label, query, view}]`); a list whose attribute a site lacks is left out.
+(`quick: [{label, query, view}]`); a list whose attribute a site lacks is left out. A filter group's `proteins` lists
+protein-level filters (key `r:<name>`): a number attribute with its `levels` and `direction` (at least, or at most, the
+threshold, with an optional second condition `also`), a category's values, or `marks` (the protein's count of marks).
 
 ## Input manifest entries
 
