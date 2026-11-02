@@ -1003,7 +1003,8 @@ website:                  # the look and words of the website (ptmc web); layout
       input: methylarginine_nucleic_acid_contacts_v1_4_3
       format: bound_windows
       columns: {site: site_id, window: window_marked, kind: nucleic_acid, type: nucleic_acid_type, name: molecule_name, entry: pdb_id,
-                distance: closest_distance_a, preparation: sample_preparation}
+                distance: closest_distance_a, preparation: sample_preparation, chain: chain, nucleotides: contacted_nucleotides,
+                numbers: contacted_author_numbers, distances: contacted_distances_a}
     contacts_near:
       input: methylarginine_nucleic_acid_near_sites_v1_4_3
       format: bound_windows
@@ -1014,6 +1015,12 @@ website:                  # the look and words of the website (ptmc web); layout
       format: residue_evidence
       columns: {accession: uniprot_accession, start: start, end: end, kind: evidence_type, source: sources}
       include: [{column: evidence_type, in: [rna_crosslink, dna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, rbrid_residue, rbrid_region, dna_binding_region]}]
+    chain_evidence:        # the 3D viewer's colourings along the chain: each run's kind with where it falls (pCLAP left out:
+      input: methylarginine_residue_evidence_v1_4_3      # its peptide extents may not be republished)
+      format: residue_evidence
+      columns: {accession: uniprot_accession, start: start, end: end, kind: [evidence_type, localisation], source: sources}
+      include: [{column: evidence_type, in: [rna_crosslink, dna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, rbrid_residue, rbrid_region,
+                                             dna_binding_region, pdb_rna, pdb_dna, pdb_protein, pdb_self]}]
     records:
       input: methylarginine_site_interaction_records_v1_4_3
       format: site_records
@@ -1043,6 +1050,46 @@ website:                  # the look and words of the website (ptmc web); layout
       columns: {accession: uniprot_accession, partner_accession: partner_accession, partner: partner_gene, score: string_score,
                 partner_marked: partner_methylated, classes: partner_classes}
   protein:                 # the protein page
+    structure:             # the 3D viewer's evidence at the sites (CONTRACTS.md, Structure evidence), through the tables above
+      contacts:            # PDBe-KB interfaces at the sites, with the PDB entries that show each
+        table: interactions
+        include: [{column: kind, in: [pdb_rna, pdb_dna, pdb_protein, pdb_self]}]
+        kinds: {pdb_rna: rna, pdb_dna: dna, pdb_protein: protein, pdb_self: self}
+        label: PDBe-KB interfaces at the methylarginines
+        help: "PDB entries in which the methylarginine is at an interface with RNA, DNA, another protein or another copy of the protein (PDBe-KB), as the release lists them"
+      bound:               # the RNA or DNA each site touches (side chain within 4 Å), entry by entry
+        table: contacts
+        label: RNA and DNA bound at the methylarginine
+        help: "Nucleotides within 4 Å of the arginine side chain (CD, NE, CZ, NH1, NH2) in each PDB entry the release analysed"
+      predicted:           # partners of predicted complexes with the site at the interface
+        table: interactions
+        include: [{column: kind, in: [predicted_interface, predicted_contact]}]
+        label: Predicted complexes with the methylarginine at the interface
+        help: "ProtVar (AlphaFold-Multimer, pDockQ at least 0.23) and AlphaFold DB complexes, as the release lists them"
+      residues:
+        table: chain_evidence
+        colourings:
+          - id: crosslinks
+            label: RNA/DNA crosslinks (cells)
+            none: No crosslink recorded
+            help: "Residues crosslinked to RNA or DNA in living cells, and the fragments and peptides found bound (the release's residue evidence)"
+            classes:
+              - {id: both, label: Crosslinked to RNA and to DNA, colour: ev, all: [rna, dna]}
+              - {id: rna, label: RNA-crosslinked residue, colour: rna, where: [{column: kind, contains: "rna_crosslink;"}]}
+              - {id: dna, label: DNA-crosslinked residue, colour: dna, where: [{column: kind, equals: "dna_crosslink; at_residue"}]}
+              - {id: rna_bound, label: "RNA-bound fragment or peptide (RBDmap, CAPRI, RBR-ID)", colour: rna_pale,
+                 where: [{column: kind, in: ["rbdmap_fragment; in_fragment", "capri_xl_peptide; in_peptide", "capri_adj_peptide; in_fragment", "rbrid_residue; in_region", "rbrid_region; in_region"]}]}
+              - {id: dna_bound, label: "DNA crosslink candidate, crosslinked peptide or DNA-binding region", colour: dna_pale,
+                 where: [{column: kind, in: ["dna_crosslink; candidate_residue", "dna_crosslink; in_peptide", "dna_binding_region; in_region"]}]}
+          - id: interfaces
+            label: Interfaces in the PDB (PDBe-KB)
+            none: At no interface in the PDB
+            help: "Residues at an interface in a PDB entry (PDBe-KB): with RNA, DNA, another protein or another copy of the protein"
+            classes:
+              - {id: rna, label: RNA interface, colour: rna, where: [{column: kind, equals: "pdb_rna; at_residue"}]}
+              - {id: dna, label: DNA interface, colour: dna, where: [{column: kind, equals: "pdb_dna; at_residue"}]}
+              - {id: protein, label: Protein interface, colour: protein, where: [{column: kind, equals: "pdb_protein; at_residue"}]}
+              - {id: self, label: Interface with another copy of the protein, colour: self, where: [{column: kind, equals: "pdb_self; at_residue"}]}
     numbering:             # proteins numbered as papers do: histones without the initiator methionine (H3R2 is UniProt R3)
       - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
         names: "^(putative |core )?histone (h1|h2a|h2b|h3|h4|macro-h2a)\\b|^testis-specific h1 histone|^histone h3-like centromeric"

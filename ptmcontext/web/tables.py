@@ -20,7 +20,7 @@ FORMATS: dict[str, dict] = {
     'lookup': {'key': 'key', 'free': True},
     'site_evidence': {'key': 'site', 'required': ['kind'], 'optional': ['partner', 'partner_accession', 'ids', 'score', 'detail']},
     'bound_windows': {'key': 'site', 'required': ['window', 'kind'],
-                      'optional': ['type', 'name', 'entry', 'entries', 'distance', 'offset', 'preparation']},
+                      'optional': ['type', 'name', 'entry', 'entries', 'distance', 'offset', 'preparation', 'chain', 'nucleotides', 'numbers', 'distances']},
     'residue_evidence': {'key': 'accession', 'required': ['start', 'end', 'kind'], 'optional': ['source']},
     'site_records': {'key': 'site', 'required': ['group'], 'partner': 'partner_accession',
                      'optional': ['partner', 'partner_name', 'partner_accession', 'partner_kind', 'species', 'source', 'id', 'method', 'context',

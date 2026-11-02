@@ -1767,6 +1767,220 @@
                 }
               },
               "additionalProperties": false
+            },
+            "structure": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the 3D viewer's evidence at the marks, read through website.tables (CONTRACTS.md, Structure evidence); the structures themselves are read live",
+              "properties": {
+                "contacts": {
+                  "type": "object",
+                  "description": "PDB entries in which a mark touches RNA, DNA, a protein or another copy (a site_evidence table: kind, ids, partner, partner_accession)",
+                  "additionalProperties": false,
+                  "required": [
+                    "table"
+                  ],
+                  "properties": {
+                    "table": {
+                      "type": "string",
+                      "description": "the website.tables table that holds it (CONTRACTS.md, Tables the protein pages show)"
+                    },
+                    "include": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/condition"
+                      },
+                      "description": "rows kept: conditions on the format's columns"
+                    },
+                    "exclude": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/condition"
+                      }
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "what the page calls this evidence"
+                    },
+                    "help": {
+                      "type": "string"
+                    },
+                    "kinds": {
+                      "type": "object",
+                      "description": "the table's kind codes mapped to the viewer's (rna, dna, protein, self; hybrid for bound)",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "bound": {
+                  "type": "object",
+                  "description": "the RNA or DNA a mark touches in an entry (a bound_windows table: entry, kind, chain, nucleotides, numbers, distances)",
+                  "additionalProperties": false,
+                  "required": [
+                    "table"
+                  ],
+                  "properties": {
+                    "table": {
+                      "type": "string",
+                      "description": "the website.tables table that holds it (CONTRACTS.md, Tables the protein pages show)"
+                    },
+                    "include": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/condition"
+                      },
+                      "description": "rows kept: conditions on the format's columns"
+                    },
+                    "exclude": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/condition"
+                      }
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "what the page calls this evidence"
+                    },
+                    "help": {
+                      "type": "string"
+                    },
+                    "kinds": {
+                      "type": "object",
+                      "description": "the table's kind codes mapped to the viewer's (rna, dna, protein, self; hybrid for bound)",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "predicted": {
+                  "type": "object",
+                  "description": "predicted complexes at a mark (a site_evidence table: partner, partner_accession, ids as the model, score)",
+                  "additionalProperties": false,
+                  "required": [
+                    "table"
+                  ],
+                  "properties": {
+                    "table": {
+                      "type": "string",
+                      "description": "the website.tables table that holds it (CONTRACTS.md, Tables the protein pages show)"
+                    },
+                    "include": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/condition"
+                      },
+                      "description": "rows kept: conditions on the format's columns"
+                    },
+                    "exclude": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/condition"
+                      }
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "what the page calls this evidence"
+                    },
+                    "help": {
+                      "type": "string"
+                    },
+                    "kinds": {
+                      "type": "object",
+                      "description": "the table's kind codes mapped to the viewer's (rna, dna, protein, self; hybrid for bound)",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "residues": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "table",
+                    "colourings"
+                  ],
+                  "description": "evidence along the chain (a residue_evidence table) for the viewer's colourings",
+                  "properties": {
+                    "table": {
+                      "type": "string"
+                    },
+                    "colourings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "label",
+                          "classes"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_]+$"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "none": {
+                            "type": "string"
+                          },
+                          "help": {
+                            "type": "string"
+                          },
+                          "classes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "id",
+                                "label",
+                                "colour"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_]+$"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "colour": {
+                                  "type": "string",
+                                  "description": "a hex colour or one of the viewer's names: rna, dna, protein, self, ev, rna_pale, dna_pale (they follow the theme)"
+                                },
+                                "where": {
+                                  "type": "array",
+                                  "items": {
+                                    "$ref": "#/$defs/condition"
+                                  },
+                                  "minItems": 1,
+                                  "description": "the rows of the class, by the format's columns: every condition holds"
+                                },
+                                "all": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "minItems": 2,
+                                  "description": "the residues in every one of these other classes"
+                                }
+                              }
+                            },
+                            "minItems": 1
+                          }
+                        }
+                      },
+                      "minItems": 1
+                    }
+                  }
+                }
+              }
             }
           }
         },

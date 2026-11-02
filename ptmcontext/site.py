@@ -346,7 +346,8 @@ def website_problems(site: dict) -> list[str]:
             known = words.get(a['id'], {}).get('classes')
             if known is not None and set(g['classes']) - known:
                 out.append(f"analyses.{a['id']}.groups, group {g['name']!r}: no class {sorted(set(g['classes']) - known)} (it has {sorted(known)})")
-    return out
+    from .web.structure import problems as structure_problems     # the 3D viewer's tables (website.protein.structure)
+    return out + structure_problems(site)
 
 
 def cell_drawings() -> dict:

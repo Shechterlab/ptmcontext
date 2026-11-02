@@ -13,6 +13,7 @@ Eight plain-data formats, and the tables the protein pages show (at the end). Co
 | **Set families** | YAML | `ptmcontext/schemas/set_families.schema.json` | a person (a site's own data file, `sites/data/`) | protein-set questions that gather sets into families |
 | **Per-mark table** | TSV (any columns; the site file names its key and the columns kept) | `marks.tables` in `ptmcontext/schemas/site.schema.json` | a source, another repository, a user | the website's count questions (`website.counts`) |
 | **Citation** | YAML (CITATION.cff 1.2.0) | [citation-file-format.github.io](https://citation-file-format.github.io/) | a person | every page and download; GitHub and Zenodo read it too |
+| **Structure evidence** | TSV, columns named in the site file | `website.protein.structure` in `ptmcontext/schemas/site.schema.json` | a release, a lab, any table mapped to it | the protein page's 3D viewer (`kit-3d.js`) |
 
 ## Statistics row
 
@@ -272,7 +273,7 @@ shows). Every value is text unless said otherwise; empty means not known. Lists 
 | `protein_values` | `accession` | `aliases` (other names a search or an old link may use), and any columns under `values:` | the whole-protein line of the card, a headline card's hover; `aliases` make `#TDP-43` and a search for an alias find the protein |
 | `lookup` | `key` | any columns under `values:` | the sources of the citation box and of the card's links (`label`, `citation`, `doi`, `licence`) |
 | `site_evidence` | site | **`kind`** (a code: the values of the card's evidence attribute), `partner`, `partner_accession`, `ids` (a list of entry ids, e.g. PDB), `score` (number), `detail` | the card's interaction evidence: the entries at the site by kind, the partners named in a tag |
-| `bound_windows` | site | **`window`** (the bound chain around the contacted unit: one letter a unit, `[X]` a contacted unit, `-` past the chain's end), **`kind`** (a code: rna, dna, …), `type` (a code), `name`, `entry` (an id), `entries` (a count, for a row that stands for several), `distance` (Å), `offset` (k when the residue i + k makes the contact; empty or 0: the site), `preparation` | the card's bound sequences, aligned on the contacted unit; the sites table's contacts column |
+| `bound_windows` | site | **`window`** (the bound chain around the contacted unit: one letter a unit, `[X]` a contacted unit, `-` past the chain's end), **`kind`** (a code: rna, dna, …), `type` (a code), `name`, `entry` (an id), `entries` (a count, for a row that stands for several), `distance` (Å), `offset` (k when the residue i + k makes the contact; empty or 0: the site), `preparation`, `chain`, `nucleotides`, `numbers`, `distances` (the contacted units, their author numbers and Å, lists in the same order) | the card's bound sequences, aligned on the contacted unit; the sites table's contacts column |
 | `residue_evidence` | `accession` | **`start`**, **`end`** (integers; a residue: start = end), **`kind`** (a code), `source` | the card's line on evidence at or within `span` residues of the site (crosslinks, bound stretches) |
 | `site_records` | site | **`group`** (a code: what the record shows), `partner`, `partner_name`, `partner_accession`, `partner_kind` (protein, self, rna, dna, gene, small_molecule, … : labels from the site file), `species`, `source` (PDB, IntAct, …), `id`, `method`, `context`, `state` (the site in the experiment: a code), `state_detail`, `other_marks`, `pubmed`, `doi`, `citation`, `title` | "Who binds it, and how it was found" (records grouped by `group`, rows by partner, state and source), the writer-and-reader lines, and on a protein without marks the records naming it as `partner_accession` |
 | `site_measurements` | site | **`condition`** (a code), **`call`** (a code: the site file gives each a mark and words), `n`, `n_down`, `n_up` (counts), `value` (a log2 change), `q`, `rule` | the perturbation marks of the card and the sites table, and every measurement in the Evidence row |
@@ -289,3 +290,43 @@ The site card and the sites table read the site file's `website.protein.card` an
 words: the codes' labels, the sentences, the marks of each call, which columns the Columns menu offers and which show
 first. `website.protein.numbering` numbers some proteins as papers do (a gene or name pattern and an offset: histones
 without their initiator methionine): their positions are shown and read in links with it.
+
+## Structure evidence
+
+What a site knows about its marks in 3D structures, for the protein page's viewer (`kit-3d.js`). The structures
+themselves come live, by UniProt accession: the AlphaFold DB model, the PDB entries PDBe maps to the protein (SIFTS),
+their coordinates from RCSB, and predicted complexes from AlphaFold DB and ProtVar. A site with no structure evidence
+still gets all of that; the evidence adds the contacts, the bound RNA and DNA, the predicted partners and colourings.
+
+Each part names a table of `website.tables` (above, "Tables the protein pages show") in the format it reads, and may
+keep some of its rows (`include`/`exclude`, on the format's columns), map the table's kind codes to the viewer's
+(`kinds:`), and give the page's `label` and `help`. Every part is optional; a site without one simply lacks it.
+
+| Part | Table format | What the viewer reads |
+|---|---|---|
+| `contacts` | `site_evidence` | per mark, `kind` (mapped by `kinds:` to `rna`, `dna`, `protein`, `self`; anything else is drawn as other), `ids` (the PDB entries), `partner`, `partner_accession` |
+| `bound` | `bound_windows` | per mark and entry, `entry`, `kind` (`rna`, `dna`, `hybrid`), `type`, `name`, `window`, and to draw the contacted nucleotides `chain` (the nucleic acid's author chain id), `nucleotides`, `numbers` (their author numbers) and `distances` (Å), lists in the same order |
+| `predicted` | `site_evidence` | per mark, `partner`, `partner_accession`, `ids` (the model: an AlphaFold DB model id `AF-…`, or a ProtVar pair `ACC1_ACC2` in the order it was made), `score` |
+| `residues` | `residue_evidence` | runs of residues (`accession`, `start`, `end`), for the colourings |
+
+`residues` holds the viewer's colourings: `colourings: [{id, label, none, help, classes}]`, each class `{id, label,
+colour}` with either `where` (conditions on the table's format columns, all holding) or `all` (the residues in every one
+of the other classes named). A residue takes the first class it is in, in the order listed; `colour` is a hex colour
+or one of the viewer's names (`rna`, `dna`, `protein`, `self`, `ev`, `rna_pale`, `dna_pale`), which follow the themes.
+
+The mark's chemical components in PDB entries come from the profile's states (`pdb_component`); the viewer lists the
+entries that model one and draws them. The other colourings are the site's own: its domains and disordered regions as on
+the map, each segments track by its classes, and the marks by the map's colour attribute.
+
+`ptmc web` puts each protein's part into its record in `data/p/NN.json`, as `s3d`:
+
+| Key | Rows |
+|---|---|
+| `c` | `[position, kind, [entries, lower case], partner, partner accession]` |
+| `b` | `[position, entry, chain, kind, type, molecule, [nucleotides], [author numbers], [distances], window]` |
+| `p` | `[position, partner, partner accession, source, model, score, distance]` |
+| `r` | `{colouring id: [[class index, start, end], ...]}` (classes made with `all` are drawn by the page) |
+
+and the page's data a `structure` block: the components (`code, state, label`), each part's `label` and `help`, the
+manifest input each part's table reads (`inputs`) and the colourings without their conditions.
+
