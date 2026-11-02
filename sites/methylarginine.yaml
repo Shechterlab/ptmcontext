@@ -776,8 +776,12 @@ proteins:                  # the release's protein table: facts of each methylat
               help: "q of the protein's most significant cluster of methylarginines (permutation test against the protein's own arginines)"}
     string_partners: {column: n_string_partners, label: STRING physical partners, kind: number, help: "STRING physical associations at score 0.7 or more"}
     complexes: {column: n_complexes, label: Complexes with methylated members, kind: number}
-    go_rna: {column: go_rna_binding, label: GO RNA binding, kind: category}
-    go_dna: {column: go_dna_binding, label: GO DNA binding, kind: category}
+    go_rna: {column: go_rna_binding, label: "Binds RNA (Gene Ontology)", kind: category, control: chips,
+             values: {experimental: Experimental evidence, other_evidence: Electronic or inferred, none: No GO annotation},
+             help: "Gene Ontology RNA binding (GO:0003723 or a term under it), from QuickGO: experimental evidence codes, or electronic and inferred ones"}
+    go_dna: {column: go_dna_binding, label: "Binds DNA (Gene Ontology)", kind: category, control: chips,
+             values: {experimental: Experimental evidence, other_evidence: Electronic or inferred, none: No GO annotation},
+             help: "Gene Ontology DNA binding (GO:0003677 or a term under it), from QuickGO: experimental evidence codes, or electronic and inferred ones"}
     hpa: {column: hpa_locations, label: Locations in the Human Protein Atlas, kind: list}
     # for the Proteins table and its download (website.proteins): the release's own columns
     condensates: {column: condensates, label: CD-CODE condensates, kind: list, help: "CD-CODE condensates (human, not synthetic) the protein is a member of"}
@@ -838,7 +842,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
-  examples: [FUS, FUS R216, TAF15 EWSR1 FUS, "motif:RGG", "state:Rme2", "disease_family:ALS", "tcga_any:yes"]
+  examples: [FUS, FUS R216, TAF15 EWSR1 FUS, "disease:als", "motif:RGG"]
   stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
     question: "What kinds of proteins are arginine methylated?"
@@ -1036,10 +1040,10 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
     - {name: Methylation state, attributes: [state, maron_s2, methyl_ip, neutral_loss]}
     - {name: "PRMT inhibitors, knockouts and knockdowns", attributes: [gsk591, ms023, perturbation]}
-    - {name: Sequence motif, analyses: [motif]}
-    - {name: Clustering, proteins: [dense_q, architecture]}
+    - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
+    - {name: Clustering and crosstalk, keys: ["d:marks", "o:other_ptms"], proteins: [dense_q, architecture]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
-    - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class]}
+    - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
     - {name: Provenance, attributes: [studies, n_studies, localised_by]}
   dataset: {label: dataset, version: v1.4.3, date: "2026-10-31", doi: "10.5281/zenodo.22696798", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3"}
   download_terms: "The release's tables are under CC BY-NC-SA 4.0; PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the studies and databases that report the sites you use, and the archive (How to cite)."
@@ -1067,6 +1071,55 @@ website:                  # the look and words of the website (ptmc web); layout
     dense: {key: "r:dense_q", value: "0.05"}
     anyCond: {key: "p:condensate_proteome", value: "*"}
     lc: {variant: with_lower_confidence}
+  search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
+    shorthand: {H4: P62805, H3: P68431, "H3.1": P68431, "H3.3": P84243}   # names papers use for a protein (H4R3, H3 R2)
+    patterns:                # the motif finder: a pattern of residues on the sites' sequence windows
+      at: motif              # motif:GXRG covers the site (motif families keep their names: motif:RGG)
+      near: window           # window:PRPR anywhere within the span
+      span: 15
+    terms:                   # the explorer's other search words, as this site's filters
+      go:
+        label: Binds (Gene Ontology)
+        help: "Gene Ontology binding: rna or dna"
+        values:
+          rna: {"r:go_rna": [experimental, other_evidence]}
+          dna: {"r:go_dna": [experimental, other_evidence]}
+      interaction:
+        label: Interaction evidence
+        help: "Interaction evidence at the site: experimental, predicted, predicted-only, any or none"
+        values:
+          experimental: {"t:interaction": [experimental]}
+          predicted: {"t:evidence": [predicted_interface, predicted_contact]}
+          predicted-only: {"t:interaction": [predicted_only]}
+          any: {"t:interaction": [experimental, predicted_only]}
+          none: {"t:interaction": [none]}
+    spacing: {label: "Another methylarginine within", within: [2, 3, 5, 10, 20]}
+    nearby:                  # a residue of another table within some residues of the site (residue_evidence tables)
+      other_ptms:
+        key: ptm
+        label: Other PTM nearby
+        help: "Another modification of the protein within some residues of the site, from the PTM master table (iPTMnet export; not exhaustive)"
+        kinds: {phospho: "Phospho (S, T, Y)", lys_acyl: Lys acylation, ub_sumo: "Ub or SUMO (K)", lys_methyl: Lys methylation}
+        within: [2, 5, 10, 20]
+      residues:
+        key: incell
+        label: Crosslinked residue at the site or nearby
+        help: "A residue UV-crosslinked to RNA or DNA in living cells, or a bound region, at the site or within some residues of it"
+        kinds: {rna_crosslink: RNA-crosslinked residue, dna_crosslink: DNA-crosslinked residue, rbdmap_fragment: RBDmap RNA-bound fragment,
+                capri_xl_peptide: CAPRI XL peptide, capri_adj_peptide: CAPRI ADJ peptide, rbrid_residue: RBR-ID+ residue, rbrid_region: RBR-ID+ region,
+                dna_binding_region: UniProt DNA-binding region}
+        within: [0, 3, 5]
+    partners:                # the proteins' physical partners (a protein_partners table)
+      table: string
+      key: binds
+      label: Has a physical partner that is
+      gene_label: Binds a specific protein
+      score_label: STRING physical confidence
+      help: "STRING 12.5 physical associations of the methylated protein (score 0.7 or more)"
+      classes: {prmt: a PRMT, tudor: a Tudor-domain protein, wd40: a WD40-repeat protein, phd: a PHD-finger protein}
+      marked: another methylated protein
+      other: any other protein
+      scores: [0.7, 0.9]
   search_aliases:          # the explorer's search keys, read as this site's questions and attributes
     disease: disease_family
     dterm: disease_term          # one DisGeNET term (dterm:C0002736)
@@ -1293,6 +1346,10 @@ website:                  # the look and words of the website (ptmc web); layout
       format: protein_partners
       columns: {accession: uniprot_accession, partner_accession: partner_accession, partner: partner_gene, score: string_score,
                 partner_marked: partner_methylated, classes: partner_classes}
+    other_ptms:                          # other modifications on the methylated proteins: the Filters panel's "other PTM nearby"
+      input: methylarginine_other_ptm_sites_v1_4_3
+      format: residue_evidence
+      columns: {accession: uniprot_accession, start: position, end: position, kind: ptm_type, source: evidence}
   protein:                 # the protein page
     structure:             # the 3D viewer's evidence at the sites (CONTRACTS.md, Structure evidence), through the tables above
       contacts:            # PDBe-KB interfaces at the sites, with the PDB entries that show each

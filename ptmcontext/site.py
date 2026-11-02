@@ -337,10 +337,13 @@ def website_problems(site: dict) -> list[str]:
     for key, to in (web.get('legacy_links') or {}).items():
         if not to.startswith('?') and to not in questions:
             out.append(f"website.legacy_links: {key!r} opens {to!r}, which is not a question of this site")
+    from .web.search import problems as search_problems, search_keys
+    out += search_problems(site)
+    keys = search_keys(site)
     for ex in web.get('examples') or []:
         key = ex.split(':', 1)[0] if ':' in ex else None
-        if key is not None and key not in ids and key not in attrs:
-            out.append(f"website.examples: {ex!r} names neither an analysis nor an attribute")
+        if key is not None and key not in keys:
+            out.append(f"website.examples: {ex!r} names no search key of this site (a question, an attribute or a website.search key)")
     for name, a in attrs.items():
         if a.get('values') and a.get('colours'):
             out += [f"marks.attributes.{name}: a colour for {v!r}, which is not among its values" for v in a['colours'] if v not in a['values']]
