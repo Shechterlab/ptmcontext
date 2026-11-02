@@ -87,7 +87,7 @@
   const scoreText = (id, v) => { const sc = A[id]?.scores || {}; return `${+v === sc.max ? '' : '≥ '}${v}${sc.max != null ? ` of ${sc.max}` : ''}`; };
   function valueName(key, v) {
     const [kind, id] = key.split(':');
-    if (kind === 'r') { const sp = RSPEC(id) || {}; return sp.kind === 'number' ? `${sp.direction === 'max' ? '≤' : 'at least'} ${v}` : v; }
+    if (kind === 'r') { const sp = RSPEC(id) || {}; return sp.kind === 'number' ? `${sp.direction === 'max' ? '≤' : 'at least'} ${v}` : (sp.values || {})[v] || v; }
     if (kind === 's') return scoreText(id, v);
     if (kind === 'p' && v === '*') return A[id]?.filter?.any || 'in any set';
     if (kind === 'a') return classLabel(id, v);
