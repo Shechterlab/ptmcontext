@@ -19,6 +19,8 @@ inputs:                # role the layers read: manifest input that fills it
   uniprot_entries: uniprot_entries
   gene_symbols: orghs_symbol_entrez
   disgenet: disgenet_term_genes
+  hdo_term_genes: hdo_term_genes
+  hdo_terms: hdo_terms
   accession_history: uniprot_accession_history
   cdcode_membership: cdcode_membership
   cdcode_proteins: cdcode_proteins
@@ -451,6 +453,53 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     universe: snapshot
     background: other reviewed human genes (Entrez) with a DisGeNET term
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
+  # Disease Ontology (scripts/14_disease_enrichment.py): the gene sets DOSE enrichDO tests (each term holds the genes of
+  # the terms under it; Human Disease Ontology 2026-09-30), on the genes of the disease families: every reviewed
+  # protein's genes are the universe, those with a Disease Ontology term the background, and every term of 10 genes or
+  # more with a methylated gene is tested. The release keeps these rows in a supporting table, not in its statistics
+  # table, so the run checks them against that table (reference.tables)
+  - id: disease_ontology
+    test: protein_sets
+    title: Disease Ontology
+    question: "Which Disease Ontology terms hold more genes of methylated proteins than expected?"
+    sub: "Genes of methylated proteins vs all reviewed human genes with a Disease Ontology term, every term of at least 10 genes; a term holds the genes of the terms under it (one-sided hypergeometric test, as DOSE's enrichDO). Association, not causation"
+    section: Kinds of protein
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets: {input: hdo_term_genes, set: term_id, protein: entrez_id}
+    names: {input: hdo_terms, set: term_id, name: name}
+    hierarchy: {input: hdo_terms, set: term_id, parents: parents, root: "DOID:4"}
+    universe: snapshot
+    min_size: 10
+    link: "https://disease-ontology.org/?id={}"
+    filter: {label: Disease Ontology term (methylated proteins)}
+    background: other reviewed human genes (Entrez) with a Disease Ontology term
+  # DisGeNET terms one by one (scripts/14_disease_enrichment.py): the terms of the disease families, each tested as
+  # DOSE's enrichDGN tests it (terms of 10 to 300 genes), against the same background. In the release's supporting
+  # tables, not its statistics table: the run checks them against supporting/disease_terms_tested (reference.tables)
+  - id: disease_term
+    test: protein_sets
+    title: DisGeNET terms
+    question: "Which DisGeNET disease terms hold more genes of methylated proteins than expected?"
+    sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, every term of 10 to 300 genes (one-sided hypergeometric test, as DOSE's enrichDGN). Association, not causation"
+    section: Kinds of protein
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets: {input: disgenet, set: term_id, protein: entrez_id}
+    names: {input: disgenet, set: term_id, name: term_name}
+    universe: snapshot
+    min_size: 10
+    max_size: 300
+    link: "https://www.disgenet.com/search?view=DISEASES&idents={}&source=ALL&tab=GDA"
+    background: other reviewed human genes (Entrez) with a DisGeNET term
   # Biomolecular condensates (scripts/12_condensate_enrichment.py): CD-CODE's membership (export v2.2), kept for human
   # proteins (its protein table) in human condensates that are not synthetic (its condensate table); a member named by
   # a secondary accession counts as its current entry where the accession history names exactly one, and a member on
@@ -704,6 +753,13 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
 
 reference:
   statistics: methylarginine_statistics_v1_4_3
+  tables:                  # questions the statistics table does not hold, checked against the release's supporting tables
+    disease_ontology:
+      input: methylarginine_disease_ontology_v1_4_3
+      columns: {set: term_id, a: n_methylated, M: n_genes_term, fold_enrichment: fold_enrichment, p: p, q: q}
+    disease_term:          # p_adjust is the Benjamini-Hochberg q (its q is DOSE's q value)
+      input: methylarginine_disease_terms_tested_v1_4_3
+      columns: {set: term_id, a: n_methylated, M: n_genes_term, fold_enrichment: fold_enrichment, p: p, q: p_adjust}
 proteins:                  # the release's protein table: facts of each methylated protein for the website (no test reads these)
   input: methylarginine_proteins_v1_4_3
   accession: uniprot_accession
@@ -731,7 +787,16 @@ variants:                # the same questions on other marks; ptmc run --variant
       - input: methylarginine_lower_confidence_sites_v1_4_3
         include: [{column: in_analyses_with_lower_confidence, equals: "true"}]
         left_out: [{column: in_analyses_with_lower_confidence, equals: "false"}]   # the others are on neither side
-    reference: {statistics: methylarginine_statistics_lower_confidence_v1_4_3}
+    reference:
+      statistics: methylarginine_statistics_lower_confidence_v1_4_3
+      tables:              # the view's own disease tables (analyses_with_lower_confidence/disease)
+        disease_ontology:
+          input: methylarginine_lc_disease_ontology_v1_4_3
+          columns: {set: ID, a: k, M: M, fold_enrichment: FoldEnrichment, p: pvalue, q: p.adjust}
+        disease_term:      # only the enriched terms are listed (and DOSE's q value also cut them)
+          input: methylarginine_lc_disease_terms_v1_4_3
+          columns: {set: ID, a: Count, fold_enrichment: FoldEnrichment, p: pvalue, q: p.adjust}
+          rows: enriched
     attributes:
       confidence:
         column: in_analyses_with_lower_confidence
@@ -784,7 +849,40 @@ website:                  # the look and words of the website (ptmc web); layout
     sections:
       - name: Disease and cancer
         cards:
-          - {analysis: disease_family, title: Disease}
+          - analysis: disease_family
+            title: Disease
+            views:               # one question, two vocabularies: a switch on its page
+              - label: DisGeNET families
+                analysis: disease_family
+                more: {analysis: disease_family_additional, label: "Show {n} more families (rule-based, not audited)", head: "Additional families (rule-based, not audited; tested separately)"}
+                members:
+                  analysis: disease_term
+                  label: Show the DisGeNET terms
+                  noun: term
+                  nouns: DisGeNET terms
+                  id_label: UMLS CUI
+                  none: terms in no family
+                  of:
+                    - {analysis: disease_family, label: audited disease families}
+                    - {analysis: disease_family_additional, label: "additional families, mostly clinical signs"}
+              - label: Disease Ontology
+                analysis: disease_ontology
+                ontology:
+                  short: 50
+                  compare: 4
+                  tree: 100
+                  id_label: DOID
+                  noun: term
+                  nouns: terms
+                  glosses:         # the classes under "disease": a plain gloss after the name, and the ontology's own definition
+                    "DOID:14566": [cancers and other neoplasms, "A disease that is characterized by abnormally rapid cell division."]
+                    "DOID:0080015": [congenital and developmental, "A disease that has_material_basis_in a genetic abnormality, error with embryonic development, infection or compromised intrauterine environment."]
+                    "DOID:225": [named sets of signs and symptoms, "A disease characterized by a group of signs and symptoms that occur together and characterize a particular abnormality."]
+                    "DOID:150": ["psychiatric, cognitive, developmental", "A disease that involves a psychological or behavioral pattern generally associated with subjective distress or disability that occurs in an individual, and which are not a part of normal development or culture."]
+                    "DOID:630": [chromosomal and other genetic variation, "A disease that has_material_basis_in genetic variations in the human genome."]
+                    "DOID:7": [by organ system, "A disease that manifests in a defined anatomical structure."]
+                    "DOID:0014667": [inherited and acquired metabolic, "A disease that involves errors in metabolic processes of building or degradation of molecules."]
+                    "DOID:0050117": ["viral, bacterial, parasitic, fungal"]
           - {analysis: disease_family_additional, title: "More disease families (rule-based, not audited)"}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
           - {analysis: cancer_change, title: Changes in tumours and cell lines}
@@ -924,7 +1022,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - {name: "CARM1 KD, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: carm1_kd_hek293, table: writer_perturbations, where: {perturbation: carm1_kd_hek293}, change: log2_treated_over_control}
         - {name: "PRMT5 KD, HEK293", note: "Li WJ et al. 2021 · published call; lists its decreased sites only", kind: knockdown, listed: true, attribute: perturbation, value: prmt5_kd_hek293, table: writer_perturbations, where: {perturbation: prmt5_kd_hek293}, change: log2_treated_over_control}
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
-    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, depmap_dependency, cancer_change], attributes: [tcga_any, depmap_any]}
+    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change], attributes: [tcga_any, depmap_any]}
     - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, reactome_top_level], proteins: [marks, arg_enrichment_q]}
     - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
     - {name: Methylation state, attributes: [state, maron_s2, methyl_ip, neutral_loss]}
@@ -962,6 +1060,8 @@ website:                  # the look and words of the website (ptmc web); layout
     lc: {variant: with_lower_confidence}
   search_aliases:          # the explorer's search keys, read as this site's questions and attributes
     disease: disease_family
+    dterm: disease_term          # one DisGeNET term (dterm:C0002736)
+    doterm: disease_ontology     # one Disease Ontology term (doterm:DOID:332)
     location: hpa_location
     study: studies
     condensate: condensate_proteome
@@ -1048,6 +1148,8 @@ website:                  # the look and words of the website (ptmc web); layout
       columns: {accession: uniprot_accession, partner_accession: partner_accession, partner: partner_gene, score: string_score,
                 partner_marked: partner_methylated, classes: partner_classes}
   protein:                 # the protein page
+    sets:                  # cards of the protein's own sets, each linked to its page and selecting its proteins
+      - {title: Disease, summary: "its Disease Ontology terms, DisGeNET terms and disease families", analyses: [disease_ontology, disease_term, disease_family, disease_family_additional]}
     numbering:             # proteins numbered as papers do: histones without the initiator methionine (H3R2 is UniProt R3)
       - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
         names: "^(putative |core )?histone (h1|h2a|h2b|h3|h4|macro-h2a)\\b|^testis-specific h1 histone|^histone h3-like centromeric"

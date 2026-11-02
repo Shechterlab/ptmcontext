@@ -145,6 +145,24 @@
       "role": "input",
       "note": "DisGeNET disease terms and their Entrez genes, one row per term and gene (30,170 terms, 1,134,942 rows). Exported by PTM_Pipeline scripts/00_export_disease_tables.R, which checks that DGN_EXTID2PATHID is the exact inverse of DGN_PATHID2EXTID; this repository checks the bytes. Citations: Yu G et al., Bioinformatics 31:608 (2015), doi:10.1093/bioinformatics/btu684 (DOSE); Pinero J et al., Nucleic Acids Res 48:D845 (2020), doi:10.1093/nar/gkz1021 (DisGeNET)."
     },
+    "hdo_term_genes": {
+      "file": "inputs/disease/hdo_2026-09-30_term_genes.tsv",
+      "md5": "409cfbc5383cc2a0bb244722cd113cbb",
+      "source": "Derived by PTM_Pipeline scripts/00_export_disease_ontology.R from the HDO.sqlite that DOSE 4.4.0 / GOSemSim 2.36.0 download from YuLab (https://yulab-smu.top/DOSE; database MD5 866c455b010b32052f620345e2295aca), itself built from https://raw.githubusercontent.com/DiseaseOntology/HumanDiseaseOntology/main/src/ontology/HumanDO.obo",
+      "version": "Human Disease Ontology 2026-09-30, the gene sets of DOSE 4.4.0 enrichDO (exported 2026-10-21)",
+      "licence": "Disease Ontology: CC0 1.0 (https://disease-ontology.org/about); gene annotations as DOSE distributes them (DOSE, Artistic-2.0)",
+      "role": "input",
+      "note": "Each Disease Ontology term with the Entrez genes of it and of every term under it: the gene sets DOSE enrichDO tests (7,137 terms, 142,427 rows). PTM_Pipeline checked that enricher on these sets gives the same terms, ratios and p values as DOSE enrichDO (v1.1.0); this repository checks the bytes. Citations: Baron JA et al., Nucleic Acids Res 52:D1305 (2024), doi:10.1093/nar/gkad1051 (Human Disease Ontology); Yu G et al., Bioinformatics 31:608 (2015), doi:10.1093/bioinformatics/btu684 (DOSE)."
+    },
+    "hdo_terms": {
+      "file": "inputs/disease/hdo_2026-09-30_terms.tsv",
+      "md5": "043a183adf748726340fe825a8514b5e",
+      "source": "Derived by PTM_Pipeline scripts/00_export_disease_ontology.R from the HDO.sqlite that DOSE 4.4.0 / GOSemSim 2.36.0 download from YuLab (https://yulab-smu.top/DOSE; database MD5 866c455b010b32052f620345e2295aca), itself built from https://raw.githubusercontent.com/DiseaseOntology/HumanDiseaseOntology/main/src/ontology/HumanDO.obo",
+      "version": "Human Disease Ontology 2026-09-30 (exported 2026-10-21)",
+      "licence": "Disease Ontology: CC0 1.0 (https://disease-ontology.org/about); gene annotations as DOSE distributes them (DOSE, Artistic-2.0)",
+      "role": "input",
+      "note": "Every Disease Ontology term with its name and parents (is_a; 12,335 terms): the names of the tested terms and the ontology the website draws. Citations: Baron JA et al., Nucleic Acids Res 52:D1305 (2024), doi:10.1093/nar/gkad1051 (Human Disease Ontology); Yu G et al., Bioinformatics 31:608 (2015), doi:10.1093/bioinformatics/btu684 (DOSE)."
+    },
     "uniprot_accession_history": {
       "file": "inputs/reference/uniprot_accession_history_2026_03.tsv",
       "md5": "c285be55ba2541822f068f8ec891dfb6",
@@ -420,6 +438,42 @@
       "role": "input",
       "note": "Every InterPro 108.0 entry interval of the reviewed human entries (families and superfamilies too). Staged by PTM_Pipeline scripts/00_stage_context_sources.py --interpro-source bulk (inputs/MANIFEST.tsv); this repository checks the bytes. Read for the protein map only.",
       "record": "https://www.ebi.ac.uk/interpro/protein/UniProt/{acc}/"
+    },
+    "methylarginine_disease_ontology_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/disease_ontology_v1.4.3.tsv",
+      "md5": "efe543b7019105127166e47d5030b233",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), supporting/disease_ontology",
+      "licence": "CC BY-NC-SA 4.0 (the release); Disease Ontology CC0 1.0; DOSE gene sets Artistic-2.0",
+      "role": "reference_output",
+      "note": "Every Disease Ontology term the release tested (1,088 rows; clusterProfiler enricher on the gene sets of DOSE enrichDO). The release's statistics table does not hold these rows, so the rebuilt disease_ontology rows are checked against this table."
+    },
+    "methylarginine_disease_terms_tested_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/disease_terms_tested_v1.4.3.tsv",
+      "md5": "ed047e8b2ece3d24b8f2a6bcae6900e3",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), supporting/disease_terms_tested",
+      "licence": "CC BY-NC-SA 4.0 (the release); DisGeNET data CC BY-NC-SA 4.0",
+      "role": "reference_output",
+      "note": "Every DisGeNET term the release tested, enriched or not (8,334 rows; clusterProfiler enricher on DOSE 4.4.0's DisGeNET terms of 10 to 300 genes). The release's statistics table does not hold these rows, so the rebuilt disease_term rows are checked against this table (p_adjust is the Benjamini-Hochberg q)."
+    },
+    "methylarginine_lc_disease_ontology_v1_4_3": {
+      "file": "releases/v1.4.3/analyses_with_lower_confidence/disease/disease_ontology.tsv",
+      "md5": "6f797a78b9ac5d00cf0f627733a93581",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), analyses_with_lower_confidence/disease/disease_ontology",
+      "licence": "CC BY-NC-SA 4.0 (the release); Disease Ontology CC0 1.0; DOSE gene sets Artistic-2.0",
+      "role": "reference_output",
+      "note": "Every Disease Ontology term tested with the release's lower-confidence sites added (clusterProfiler's own columns); the with_lower_confidence variant's disease_ontology rows are checked against it."
+    },
+    "methylarginine_lc_disease_terms_v1_4_3": {
+      "file": "releases/v1.4.3/analyses_with_lower_confidence/disease/disease_terms.tsv",
+      "md5": "aea09b24e34256243d8c2c1438027a77",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), analyses_with_lower_confidence/disease/disease_terms",
+      "licence": "CC BY-NC-SA 4.0 (the release); DisGeNET data CC BY-NC-SA 4.0",
+      "role": "reference_output",
+      "note": "The DisGeNET terms enriched with the release's lower-confidence sites added (clusterProfiler's own columns; enriched terms only); the with_lower_confidence variant's disease_term rows at q <= 0.05 are checked against it."
     }
   }
 }

@@ -57,7 +57,8 @@ def test_web_build_from_a_synthetic_run(tmp_path):
     assert 'Yeast Phosphosite Explorer' in page and 'assets/kit.js' in page
     data = json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', page, re.S).group(1))
     assert data['citation']['version'] == C.site_citation(site)['version']
-    assert [r['category'] for r in data['rows']] == ['disordered', 'ordered']
+    # the rows travel once, as the statistics table's text, which the page reads its rows from
+    assert 'rows' not in data and [x.split('\t')[1] for x in data['statistics_tsv'].splitlines()[1:]] == ['disordered', 'ordered']
     assert data['partners'] == {'species': 4932}            # the partners card asks STRING for budding yeast
     one_file = (index.parent / 'yeast_phospho.html').read_text()
     assert 'src="assets/kit.js"' not in one_file and 'function figure(' in one_file

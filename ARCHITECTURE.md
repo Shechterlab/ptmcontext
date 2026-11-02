@@ -104,6 +104,14 @@ questions a selection was made with are left out, and marks two selections share
 (`kit-select.js`, `contrast`) serves every question, so tiles, opened questions, hovers and downloads work the same
 for every baseline. The browser's within-study test equals `ptmcontext.stats.mantel_haenszel` on the same tables.
 
+**One question, several ways.** An Overview card may show one question through several protein-set questions
+(`views`: two vocabularies of disease, say, a switch on its page), with more sets tested apart behind a button (`more`),
+the sets its families gather each with its own test (`members`: a table with a picker of families) and, for a question
+whose sets form an ontology (`hierarchy`), its most specific enriched sets, its tree and a table of every tested set
+(`ontology`). `kit-questions.js` draws them from the site file's words and the run's `parents`, `root` and `gathers`;
+protein pages get cards of the protein's own sets (`website.protein.sets`), each linked to the set's page (`link`). A
+question its release keeps outside its statistics table is checked against that table (`reference.tables`).
+
 **The protein page** shows what the site's tables say of each mark (`website.tables`, in the formats of CONTRACTS.md, mapped from any source's columns in the site file): the site card's interaction evidence, bound sequences, records of who binds it, writer and reader, the methylation state by source; the sites table's optional columns and Evidence rows (every source record, every measurement); how to cite the protein's marks. A protein without marks has a light page (its map, the records naming it as a partner, its partners with marks). It also shows, from data the site already has: the protein's sets in each protein-set question with
 the site's result for each and its abundance decile as the tests used it; every region the questions read, with the
 marks inside; and the sequence with its marks, as FASTA.

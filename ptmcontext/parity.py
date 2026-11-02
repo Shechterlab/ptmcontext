@@ -19,6 +19,7 @@ class Result:
     rows: int
     equal: bool
     diffs: list[tuple[str, str]] = field(default_factory=list)
+    reference: str = ''          # a table of its own (an analysis's reference), not the site's statistics reference
 
 
 def compare(rows: pd.DataFrame, reference: pd.DataFrame, analysis: str) -> list[Result]:
@@ -38,3 +39,31 @@ def compare(rows: pd.DataFrame, reference: pd.DataFrame, analysis: str) -> list[
             diffs.append((f'{len(g)} rows', f'{len(exp)} rows'))
         out.append(Result(analysis, method, len(exp), g == exp, diffs[:5]))
     return out
+
+
+def _g6(v) -> str:
+    return ST.cell(float(v), 'number') if str(v).strip() != '' else ''
+
+
+def compare_table(rows: pd.DataFrame, table: pd.DataFrame, analysis: str, ref: dict) -> Result:
+    """A protein-set question's enricher rows against a published table in its own columns (ref.columns: the set's id,
+    a, optionally the set's size M, fold_enrichment, p and q), set by set: the counts equal and the numbers equal as the
+    statistics table writes them (6 significant digits). ref.rows says which sets the table lists: every tested set
+    (all: the same sets), those at q <= 0.05 (enriched: exactly those), or some (each listed set is checked). For a
+    question a release keeps in a supporting table only."""
+    cols, listed = ref['columns'], ref.get('rows', 'all')
+    got = rows[(rows['analysis'] == analysis) & (rows['method'] == 'enricher')]
+
+    def values(r, a, m, f, p, q):
+        return (int(r[a]), *([int(r[m])] if 'M' in cols else []), _g6(r[f]), _g6(r[p]), _g6(r[q]))
+    mine = {str(r['category']): (int(r['a']), *([int(r['a']) + int(r['c'])] if 'M' in cols else []),
+                                 _g6(r['fold_enrichment']), _g6(r['p']), _g6(r['q'])) for r in got.to_dict('records')}
+    theirs = {str(r[cols['set']]).strip(): values(r, cols['a'], cols.get('M'), cols['fold_enrichment'], cols['p'], cols['q'])
+              for r in table.to_dict('records')}
+    if listed == 'enriched':
+        q = dict(zip(got['category'].astype(str), pd.to_numeric(got['q'], errors='coerce')))
+        mine = {s: v for s, v in mine.items() if q[s] <= 0.05}
+    keys = sorted(theirs) if listed == 'some' else sorted(set(mine) | set(theirs))
+    what = 'a, M, fold, p, q' if 'M' in cols else 'a, fold, p, q'
+    diffs = [(f'{s}: {what} = {mine.get(s)}', f'{theirs.get(s)}') for s in keys if mine.get(s) != theirs.get(s)]
+    return Result(analysis, 'enricher', len(theirs), not diffs, diffs[:5], reference=ref['input'])

@@ -38,6 +38,8 @@ jobs:
             inputs/annotation/panther_19.0_protein_class_ontology.tsv
             inputs/disease/dose_4.4.0_disgenet_term_genes.tsv
             inputs/disease/orghsegdb_3.22.0_symbol_entrez.tsv
+            inputs/disease/hdo_2026-09-30_term_genes.tsv
+            inputs/disease/hdo_2026-09-30_terms.tsv
             inputs/annotation/cdcode_protein_membership_v2.2.tsv
             inputs/annotation/cdcode_proteins_2026-03-18.csv
             inputs/annotation/cdcode_condensates_2026-03-18.csv
@@ -65,6 +67,10 @@ jobs:
             releases/v1.4.3/human_methylarginine_lower_confidence_sites_v1.4.3.tsv
             releases/v1.4.3/statistics_with_lower_confidence_v1.4.3.tsv
             releases/v1.4.3/supporting/density_windows_v1.4.3.tsv
+            releases/v1.4.3/supporting/disease_ontology_v1.4.3.tsv
+            releases/v1.4.3/supporting/disease_terms_tested_v1.4.3.tsv
+            releases/v1.4.3/analyses_with_lower_confidence/disease/disease_ontology.tsv
+            releases/v1.4.3/analyses_with_lower_confidence/disease/disease_terms.tsv
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v6
         with:

@@ -98,7 +98,7 @@ def question_roles(spec: dict) -> list[str]:
     them, their members' scores) and their names."""
     src = spec['sets']
     roles = [src['input'], src.get('ontology', {}).get('input'), *(w['input'] for w in src.get('where', [])),
-             (spec.get('scores') or {}).get('input'), spec.get('names', {}).get('input')]
+             (spec.get('scores') or {}).get('input'), spec.get('names', {}).get('input'), (spec.get('hierarchy') or {}).get('input')]
     return list(dict.fromkeys(r for r in roles if r))
 
 
@@ -359,11 +359,13 @@ def set_table(spec: dict, paths: dict, universe: set | None = None, formats: dic
     return t, members
 
 
-def read_sets(spec: dict, paths: dict, universe: set | None = None, root=None, formats: dict | None = None) -> tuple[pd.DataFrame, dict, set]:
+def read_sets(spec: dict, paths: dict, universe: set | None = None, root=None, formats: dict | None = None,
+              gathered: dict | None = None) -> tuple[pd.DataFrame, dict, set]:
     """(set, protein) pairs, the sets' names, and the identifiers the source annotates (what the background is drawn
     from), from the tables a site's analysis names (set_table: the rows kept and their members). With families, each
     set is replaced by its family (sets.families: the rules file, relative to root, the column whose names they read,
-    and the lists tested); the source still annotates every identifier of its table, in a family or not."""
+    and the lists tested); the source still annotates every identifier of its table, in a family or not. gathered, if
+    given, receives each tested family's own sets (family -> sorted set ids), for a website's table of member sets."""
     src = spec['sets']
     if 'classes' in src:
         pairs = class_sets(src, paths, universe or set(), formats)
@@ -390,6 +392,10 @@ def read_sets(spec: dict, paths: dict, universe: set | None = None, root=None, f
             raise ValueError(f"{spec['id']}: sets.families.lists names lists {sorted(wanted - known)} the rules file does not have ({sorted(known)})")
         by = fam.get('by', src['set'])
         placed = place(dict(zip(t[src['set']].astype(str), t[by].astype(str))), rules)
+        if gathered is not None:
+            for s, (f, lst) in sorted(placed.items()):
+                if lst in wanted:
+                    gathered.setdefault(f, []).append(s)
         pairs = pd.DataFrame({'set': [placed[s][0] if s in placed and placed[s][1] in wanted else None for s in pairs['set']],
                               'protein': pairs['protein'].to_numpy()}).dropna().drop_duplicates()
         names = {}
@@ -441,6 +447,9 @@ def spec_problems(spec: dict, root=None, files: dict | None = None, formats: dic
     if spec.get('names'):
         n = spec['names']
         named.append((n['input'], [n['set'], n['name']] + [c['column'] for c in n.get('include', []) + n.get('exclude', [])]))
+    if spec.get('hierarchy'):
+        h = spec['hierarchy']
+        named.append((h['input'], [h['set'], h['parents']]))
     for step in (spec.get('identifiers') or {}).get('map', []):
         named.append((step['input'], [step['from'], step['to']]))
     if spec.get('abundance'):
@@ -459,6 +468,20 @@ def spec_problems(spec: dict, root=None, files: dict | None = None, formats: dic
         missing = sorted({c for c in cols if c} - have)
         if missing:
             out.append(f'{aid}: role {role} ({Path(path).name}) has no column {missing}')
+    return out
+
+
+def set_parents(spec: dict, paths: dict, tested: set, formats: dict | None = None) -> dict[str, list[str]]:
+    """Each tested set's parents among the tested sets (hierarchy: a table of sets and their parents), for the
+    website's ontology views; no test reads it. In an ontology whose sets hold the members of the sets under them
+    (an ontology's gene sets, say) every parent of a tested set is tested too."""
+    h = spec['hierarchy']
+    t = _read(paths[h['input']], formats)
+    sep = h.get('separator', ';')
+    out = {}
+    for s, ps in zip(t[h['set']].astype(str).str.strip(), t[h['parents']].astype(str)):
+        if s in tested:
+            out[s] = [x for x in dict.fromkeys(x.strip() for x in ps.split(sep)) if x in tested and x != s]
     return out
 
 
@@ -584,7 +607,8 @@ def protein_set_test(spec: dict, paths: dict, marked_proteins: set, snapshot_pro
     id_of = identifiers_of(spec['identifiers'], paths, sorted(snapshot_proteins), formats) if spec.get('identifiers') else None
     proteome = set().union(*id_of.values()) if id_of is not None else set(snapshot_proteins)
     targets = set().union(*(id_of[p] for p in marked_proteins if p in id_of)) if id_of is not None else set(marked_proteins)
-    pairs, names, annotated = read_sets(spec, paths, proteome, root, formats)
+    gathered: dict[str, list] = {}
+    pairs, names, annotated = read_sets(spec, paths, proteome, root, formats, gathered=gathered)
     universe = annotated if spec.get('universe', 'annotated') == 'annotated' else proteome
     whole = spec.get('whole_universe', False)
     background = background_of(universe, annotated, whole)
@@ -597,6 +621,13 @@ def protein_set_test(spec: dict, paths: dict, marked_proteins: set, snapshot_pro
         size_ok = members[members.map(len).between(spec.get('min_size', 1), spec.get('max_size', 10 ** 6))]
         keep.update({'N': len(background), 'marked_in_background': sorted(targets & background),
                      'sets': {s: {'M': len(g), 'marked': sorted(g & targets)} for s, g in size_ok.items()}})
+        if spec.get('hierarchy'):                        # each tested set's parents, for the website's ontology views
+            keep['parents'] = set_parents(spec, paths, set(keep['sets']), formats)
+            root_set = spec['hierarchy'].get('root')
+            if root_set in keep['sets']:
+                keep['root'] = root_set
+        if gathered:                                     # each family's own sets, for the website's table of member sets
+            keep['gathers'] = {f: ss for f, ss in sorted(gathered.items()) if f in keep['sets']}
         if (spec.get('filter') or {}).get('any'):        # the filter offers "in any of its sets"
             keep['marked_in_any'] = sorted(targets & annotated)
         if (spec.get('filter') or {}).get('sets') == 'all':     # the filter offers the untested sets too

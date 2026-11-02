@@ -43,6 +43,15 @@
   const markedUnits = a => (A[a]?.unit ? `${A[a].unit} of ${W.marked} proteins` : `${W.marked} proteins`);
   // a row of a test, ready to draw: its effect, labels and reading (the site's own rows, and a selection's)
   const decorate = rows => { rows.forEach(r => { r.eff = r.or ?? r.fold; r.label = label(r); r.help = (A[r.analysis]?.help || {})[r.category] || ''; r.dir = dir(r); r.title = A[r.analysis]?.title || r.analysis; }); return rows; };
+  // the rows, read from the statistics table the page carries once (its text serves the downloads): numbers as the
+  // run wrote them, an infinite odds ratio (every set member marked) as 1e300, which prints as '> 1,000'
+  if (!D.rows) {
+    const [head, ...lines] = D.statistics_tsv.replace(/\n$/, '').split('\n'), col = Object.fromEntries(head.split('\t').map((c, k) => [c, k]));
+    const num = v => (v === '' || v === 'nan' ? null : v === 'inf' ? 1e300 : v === '-inf' ? 0 : Number(v));
+    D.rows = lines.map(l => { const x = l.split('\t'), g = c => x[col[c]];
+      return { analysis: g('analysis'), category: g('category'), method: g('method'), a: +g('a'), b: +g('b'), c: +g('c'), d: +g('d'), or: num(g('odds_ratio')), fold: num(g('fold_enrichment')),
+        lo: num(g('odds_ratio_ci_low')), hi: num(g('odds_ratio_ci_high')), p: num(g('p')), q: num(g('q')), strata: g('n_strata') ? +g('n_strata') : null }; });
+  }
   D.rows.forEach((r, i) => { r.i = i; });
   decorate(D.rows);
   // a protein-set test's repeat within abundance deciles, beside its own row
@@ -523,7 +532,8 @@
     .map(([x, cs]) => `<h3 class="sec-label" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(x.name)}</h3><div class="tiles">${cs.map(tile).join('')}</div>`).join('');
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
   function focus(aid) {
-    const cards = allCards(), i = cards.findIndex(c => c.analysis === aid), a = A[aid];
+    // a question that is one of a card's views (website.overview cards: views) opens that card
+    const cards = allCards(), own = cards.findIndex(c => c.analysis === aid), i = own >= 0 ? own : cards.findIndex(c => (c.views || []).some(v => v.analysis === aid)), a = A[aid];
     const prev = cards[i - 1], next = cards[i + 1], card = cards[i] || { section: a.section };
     const Q = K.questions[aid], mod = a.kind === 'module';
     const bar = `<div class="focus-bar"><a href="${esc(link('overview'))}">‹ All sections</a><span class="crumb">Overview › ${esc(card.section || '')} › <b>${esc(card.title || a.title)}</b></span>` +
@@ -533,7 +543,7 @@
     const rows = mod ? [] : chartRows(a, S.m, card);
     return bar + `<div class="page-head"><h2>${esc(card.title || a.title)}</h2><span class="tools">${a.kind === 'protein_sets' || mod ? '' : `<span class="seg" role="group">${(vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher']).map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ''}>${cap(METHOD[m])}</button>`).join('')}</span>`}</span></div>` +
       `<p class="page-sub">${vsOn() ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}, tested in your browser (exploratory).` : esc(a.question || a.describe || '')}${selOn() && !vsOn() ? ` <b>Your selection</b>${rows.some(r => r.descriptive) ? ': ' + whyShown(a).replace(/^Your selection /, '') : vsOn() ? '' : ', tested again in your browser (exploratory: not adjusted for the other selections tried).'}` : ''} <span class="muted">Click a ${a.kind === 'protein_sets' ? 'set' : 'class'} to select its ${esc(W.marks)}.</span></p>` +
-      `<section class="pcard">${(Q?.page && Q.page(card, () => cardBody(a, rows))) ?? cardBody(a, rows)}${selOn() && !vsOn() && !mod ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
+      `<section class="pcard">${(Q?.page && Q.page(card, () => cardBody(a, rows))) ?? (K.questionBody && K.questionBody(a, rows, card)) ?? cardBody(a, rows)}${selOn() && !vsOn() && !mod ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
   }
   // what the site keeps, what it asks other services for, and under which licences everything is
   // the data a reader can download (website.downloads), under its terms, and the site's own tables
@@ -606,7 +616,8 @@
     ['or', 'Effect (95% CI)', r => r.eff ?? -1, true], ['q', 'q', r => r.q ?? 2, true], ['dir', 'Reading', r => r.dir, false], ['strata', 'Strata', r => r.strata ?? -1, true],
   ];
   function shownStatistics() {
-    const rows = D.rows.filter(r => (!S.a || r.analysis === S.a) && (S.m === 'both' || r.method === S.m || (r.method === 'enricher' && S.m === 'fisher')) && rowHit(r));
+    // a protein-set question with no abundance repeat has its hypergeometric rows under either test
+    const rows = D.rows.filter(r => (!S.a || r.analysis === S.a) && (S.m === 'both' || r.method === S.m || (r.method === 'enricher' && (S.m === 'fisher' || !A[r.analysis]?.stratified))) && rowHit(r));
     const col = COLS.find(c => c[0] === S.sort) || COLS[6];
     rows.sort((x, y) => { const a = col[2](x), b = col[2](y); const c = typeof a === 'number' ? a - b : String(a).localeCompare(String(b)); return S.desc ? -c : c; });
     return rows;
@@ -643,7 +654,7 @@
     const par = R.parity ? `<section id="m-parity"><h3>Checked against the published release</h3><p>The rebuild recomputes the published tests and compares them, row by row and character by character, with the statistics table of the ${esc(refName)}: ` +
       `<span class="${R.parity.equal ? 'ok' : ''}">${R.parity.equal ? `all ${int(nPar)} rows are identical` : 'some rows differ'}</span>.</p>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Test</th><th class="num">Rows</th><th>Identical</th></tr></thead><tbody>` +
-      R.parity.checked.map(c => `<tr><td>${esc(A[c.analysis]?.title || c.analysis)}</td><td>${esc(testName(c.analysis, c.method))}</td><td class="num">${int(c.rows)}</td><td>${c.equal ? '<span class="ok">✓</span>' : '✗'}</td></tr>`).join('') +
+      R.parity.checked.map(c => `<tr><td>${esc(A[c.analysis]?.title || c.analysis)}${c.reference ? ` <span class="muted">(against ${esc(IN[c.reference]?.version || c.reference)})</span>` : ''}</td><td>${esc(testName(c.analysis, c.method))}</td><td class="num">${int(c.rows)}</td><td>${c.equal ? '<span class="ok">✓</span>' : '✗'}</td></tr>`).join('') +
       '</tbody></table></div>' +
       ((R.parity.new || []).length ? `<p>Not in the release, and so not checked against it: ${R.parity.new.map(id => esc(A[id]?.title || id)).join(', ')}. ${R.parity.new.length === 1 ? 'This question is' : 'These questions are'} new in the rebuild.</p>` : '') +
       '</section>' : '';
@@ -674,7 +685,7 @@
       return `<li><span class="mono">${esc(r)}</span>${src.length ? ': ' + esc(src.join('; ')) : ''}</li>`; }).join('');
     const checked = (R.parity?.checked || []).filter(c => c.analysis === a.id), nRows = checked.reduce((n, c) => n + c.rows, 0);
     const parity = !R.parity ? '' : a.new ? `<p><b>Release:</b> new in the rebuild; not in the published release, so not checked against it.</p>`
-      : checked.length ? `<p><b>Release:</b> ${checked.every(c => c.equal) ? `all ${int(nRows)} rows identical to the published release` : 'some rows differ from the published release'} (${checked.map(c => `${esc(testName(a.id, c.method))}: ${int(c.rows)}`).join('; ')}).</p>` : '';
+      : checked.length ? `<p><b>Release:</b> ${checked.every(c => c.equal) ? `all ${int(nRows)} rows identical to the published release` : 'some rows differ from the published release'} (${checked.map(c => `${esc(testName(a.id, c.method))}: ${int(c.rows)}${c.reference ? `, against ${esc(IN[c.reference]?.version || c.reference)}, not its statistics table` : ''}`).join('; ')}).</p>` : '';
     const labels = Object.entries(a.labels || {}).filter(([c]) => c);
     const classes = labels.length && labels.length <= 40 ? `<details><summary>Its ${set ? 'sets' : 'classes'} (${int(labels.length)})</summary><dl class="qm-classes">${labels.map(([c, l]) => `<dt>${esc(l || c)}</dt><dd>${esc((a.help || {})[c] || '')}</dd>`).join('')}</dl></details>` : '';
     const tests = set ? `the ${esc(W.marked)} proteins in each set against the background (${esc(a.describe || 'the other proteins')}): one-sided hypergeometric test, fold enrichment, q Benjamini–Hochberg over the question's sets${a.stratified ? '; again within protein abundance deciles (Mantel–Haenszel), a check that abundance does not explain it' : ''}`
@@ -1077,6 +1088,8 @@
   const methodLink = (aid, sec) => `<a class="exp-btn" href="${esc(link('method', aid ? 'q-' + aid : sec || ''))}" title="How ${aid ? 'this question was' : 'these were'} made and tested, and from what data">Method</a>`;
   const expBar = (kinds, attrs, label, method) => `<div class="exp" role="group" aria-label="Download ${esc(label)}">${kinds.map(k => `<button type="button" class="exp-btn" data-${attrs}="${k}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}${method ? methodLink(A[method] ? method : '', A[method] ? '' : method) : ''}</div>`;
   Object.assign(K, { CIT, PAL, FF, FFH, tw, wrap, figureFrame, exportFigure, expBar, preamble, creditLines, provenance, download, hdate, htime, hlicence, shortCommit, testWords, PADJ, MIN_EFFECT, dir, selOn, vsOn });
+  // for modules that draw a question's card their own way (kit-questions.js)
+  Object.assign(K, { cardBody, chartRows, chartModel, chartHtml, rowsOf, rowsFor, fkeyOf, allCards, cardOf, byOrder, methodLink, setWords, selWords, EXP_HELP, g6 });
 
   // ---- render, events ------------------------------------------------------------------------------------------------
   function render() {

@@ -13,6 +13,8 @@ Nine plain-data formats, and the tables the protein pages show (at the end). Cod
 | **Set families** | YAML | `ptmcontext/schemas/set_families.schema.json` | a person (a site's own data file, `sites/data/`) | protein-set questions that gather sets into families |
 | **Per-mark table** | TSV (any columns; the site file names its key and the columns kept) | `marks.tables` in `ptmcontext/schemas/site.schema.json` | a source, another repository, a user | the website's count questions (`website.counts`) |
 | **Map rows** | TSV in any layout, mapped to the format's columns in the site file | `ptmcontext/schemas/site.schema.json` (`website.protein.map.rows`) | a backend's release, or a person | `ptmc run` (map_items.tsv), the protein map |
+| **Set hierarchy** | TSV | below (`hierarchy:` in the site schema) | an ontology's export, a person | the website's views of an ontology question |
+| **Published set results** | TSV (any columns) | below (`reference.tables` in the site schema) | a release, another pipeline | the parity check of one protein-set question |
 | **Citation** | YAML (CITATION.cff 1.2.0) | [citation-file-format.github.io](https://citation-file-format.github.io/) | a person | every page and download; GitHub and Zenodo read it too |
 
 ## Statistics row
@@ -107,6 +109,42 @@ highest number or share of two columns (within some sets), and a residue questio
 numbers with **`values`**: `{input? (default the sets' table), protein? (default the sets' protein column), columns:
 [name | {name, label?, help?, background?}], include?, exclude?}`, each protein's first row; a column with `background:
 true` also keeps every other background protein's number. No test reads them.
+## Set hierarchy
+
+For a protein-set question whose sets form an ontology (each set holding the members of the sets under it, as the
+Disease Ontology's gene sets do), a table with one row per set: a column of set ids, as the sets table names them, and a
+column of each set's parents (ids joined by `separator`, default `;`; spaces around ids are ignored; empty for the root).
+Any other column is ignored. The question names it with `hierarchy: {input: <role>, set: <column>, parents: <column>,
+separator, root: <id>}`; `root` (optional) is the set every other lies under. No test reads it: the run keeps each
+tested set's parents among the tested sets (`protein_sets.json`, `parents` and `root`), and the website draws the
+question's most specific sets, its tree and its table from them. A question without one is shown as a plain list.
+
+| column | type | required | meaning |
+|---|---|---|---|
+| (set) | string | yes | the set's id, as in the sets table (`DOID:332`) |
+| (parents) | list of strings | yes | its parents' ids (`DOID:0050155;DOID:231`), empty for the root |
+
+A set's own page (`link`, a URL with `{}` for the set's id) is linked wherever the website names the set.
+
+## Published set results
+
+A question whose rows a release keeps outside its statistics table (in a supporting table) is checked against that
+table: `reference.tables.<question>: {input, columns, sep, rows}` in the site file (or in a variant's `reference`). The
+table may have any layout: `columns` names its column for each value, so a release's own headers, clusterProfiler's or a
+user's are mapped in the site file, never in code.
+
+| value | `columns` key | required | compared as |
+|---|---|---|---|
+| the set's id | `set` | yes | text, stripped |
+| marked members in the set (k) | `a` | yes | integer |
+| the set's size in the background (M) | `M` | no | integer (a + c of the statistics row) |
+| fold enrichment | `fold_enrichment` | yes | 6 significant digits |
+| p | `p` | yes | 6 significant digits |
+| q (Benjamini–Hochberg over the question's sets) | `q` | yes | 6 significant digits |
+
+`rows` says which of the question's tested sets the table lists: `all` (default; the same sets), `enriched` (exactly
+those at q ≤ 0.05) or `some` (each listed set is checked, the others are not). The run records each such check in
+`run.json` (`parity.checked`, with `reference` naming the table); a question checked this way is not marked new.
 
 ## Unit table
 
@@ -259,6 +297,7 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 | `tracks.json` | per kind of drawn unit | `{kind, title, style, help, roles, analysis, colours?, values?}`: `style` is `domains` (boxes on the backbone), `disorder` (the backbone's wave) or `segments` (a row of boxes); `analysis` names the question whose classes colour it; `values`, for a kind whose units carry numbers (a layer's `Track.values`), is `{table, columns: [{name, label, help}]}` |
 | `units_<kind>.tsv` | one per unit of a kind with `values`, on a protein with a mark | `accession, start, end, length, class`, the value columns (up to 6 significant digits, empty for missing), `marks` (the counted marks inside) and `other_candidates` (the other candidate residues inside; left-out marks on neither side, as the tests count them). The IDR charge layer writes `units_idr.tsv`: each IDR with `f_plus, f_minus, fcr, ncpr, kappa, region` (its Das–Pappu region, 1 to 5; `class` r1 to r5) |
 | `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used, and `counts: {codes, N, sets}`, the background's proteins in each stratum overall and in each set (from the lowest decile, then `none`); with `values`, `values: {columns, marked: {accession: [number or null per column]}, others: {column: sorted numbers}}` (columns with `background: true`); for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; absent when the site has no protein-set question |
+| `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used; for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; with a `hierarchy`, `parents: {set: [parent sets]}` (each tested set's parents among the tested sets) and `root`; for sets gathered into families, `gathers: {family: [set ids]}` (each tested family's own sets, which a website's table of member sets groups by); absent when the site has no protein-set question |
 | `set_names.tsv` | per set | `analysis, set, name` |
 | `marks_<name>.tsv` | per row of a per-mark table (`marks.tables.<name>`) on a counted mark | `accession, position`, then the columns it keeps (text), in the table's order; `run.json` records each table's rows read and kept (`mark_tables`) |
 
@@ -325,3 +364,13 @@ The site card and the sites table read the site file's `website.protein.card` an
 words: the codes' labels, the sentences, the marks of each call, which columns the Columns menu offers and which show
 first. `website.protein.numbering` numbers some proteins as papers do (a gene or name pattern and an offset: histones
 without their initiator methionine): their positions are shown and read in links with it.
+The page's own data (`site-data`) carry the statistics rows once, as the text of `statistics.tsv` (`statistics_tsv`);
+the page reads its rows from it. Each protein-set question there has, when the site gives them, `link` (its sets' own
+pages), `parents` and `root` (from its hierarchy), `gathers` (for a family question an Overview card names under
+`members`: each family's own sets among the member question's tested sets) with `gathers_all` (how many sets each family
+gathers, tested or not) and `checked_against` (the manifest name of its `reference.tables` entry). An Overview card may
+show one question several ways (`views`: each a protein-set question with its `label`), more sets tested apart behind a
+button (`more`), the member sets of its families (`members`: the question testing them one by one, `of` the family
+questions) and, for a question with a hierarchy, an ontology view (`ontology`: `short`, `compare`, `tree`, `glosses`);
+`website.protein.sets` gives cards of a protein's own sets. All of these are words and choices of the site file; a site
+without them shows its questions as plain lists.

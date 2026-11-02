@@ -838,3 +838,30 @@ html.pdf-export .exp, html.pdf-export .tools, html.pdf-export .prot-chips .btn, 
 }
 /* print: every text in the Arial-like face of the exports (monospace stays monospace) */
 @media print { body *:not(.mono):not(code):not(pre):not(.win):not(.win *) { font-family: Arial, 'Helvetica Neue', Helvetica, Arimo, 'Liberation Sans', sans-serif !important; } }
+
+/* kit-questions.js: one question seen several ways, more sets, member sets, an ontology, a protein's own sets */
+.qv-views { margin: 0.1rem 0 0.2rem; }
+.qv-views .seg a { padding: 0.25rem 0.85rem; font-size: 0.82rem; color: var(--ink-2); text-decoration: none; }
+.qv-views .seg a + a { border-left: 1px solid var(--line-strong); }
+.qv-views .seg a[aria-pressed="true"] { background: var(--brand-ink); color: var(--surface); }
+.qv-head { margin: 0.2rem 0 0.25rem; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 700; font-family: var(--font-body); }
+.qrow.qv-d1 .ln { padding-left: 1.1rem; } .qrow.qv-d2 .ln { padding-left: 2.2rem; }
+.qrow.qv-d1, .qrow.qv-d2 { background: color-mix(in srgb, var(--wash) 70%, transparent); }
+.qv-links { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; margin: 0.45rem 0 0.15rem; }
+.qv-more, .qv-members { border-top: 1px solid var(--line); padding-top: 0.5rem; margin-top: 0.35rem; }
+.qv-more .card-head, .qv-members .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.6rem 1.2rem; flex-wrap: wrap; }
+.qv-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0.3rem 0 0.45rem; font-size: 0.84rem; max-width: 100%; }
+.qv-pick select { max-width: min(30rem, 100%); min-width: 0; }
+.qv-tbl { max-height: 34rem; overflow: auto; border: 1px solid var(--line); border-radius: 8px; max-width: 52rem; }
+.qv-tbl .tbl td, .qv-tbl .tbl th { white-space: normal; vertical-align: top; }
+.qv-tbl .tbl td.num, .qv-tbl .tbl th.num { white-space: nowrap; }
+@media (max-width: 640px) { .qv-tbl .tbl th, .qv-tbl .tbl td { padding: 0.4rem 0.45rem; } .qv-tbl .tbl th.num { white-space: normal; } }
+.qv-tbl tr.qv-group th { position: static; background: var(--surface-2); cursor: default; font-size: 0.74rem; letter-spacing: 0.04em; text-transform: uppercase; white-space: normal; }
+.qv-tbl tr.qv-group th .linkish { font-size: 0.74rem; text-transform: none; letter-spacing: 0; }
+.qv-tbl .linkish, .qv-psets .linkish { white-space: normal; text-align: left; overflow-wrap: break-word; }
+.qv-sub { display: block; font-size: 0.74rem; color: var(--muted); margin-top: 0.1rem; }
+.qv-id { font-size: 0.74rem; color: var(--muted); }
+a.qv-id { color: var(--accent); }
+.qv-tag { font-size: 0.7rem; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--wash); color: var(--ink-2); margin-left: 0.2rem; white-space: nowrap; }
+.qv-psets .kind-list li { margin: 0.15rem 0; }
+
