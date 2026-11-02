@@ -112,6 +112,8 @@ class Layer:
     sub: str = ''                            # the line under its figure's title
     section: str = ''                        # the Overview section it is listed under
     tracks: tuple = ()                       # what it draws on the protein pages (Track), if anything
+    ordered: bool = False                    # its classes have an order (that of labels), which pages keep
+    groups: tuple = ()                       # ((heading, (class codes, ...)), ...): headed groups of its classes, in order
 
     def __call__(self, residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
         missing = [n for n in self.needs if n not in ctx.inputs]
@@ -149,12 +151,13 @@ FACTORIES: dict[str, Callable[[dict, str], Layer]] = {}
 
 def register(name: str, shape: str, describe: str, needs: tuple[str, ...] = (), title: str = '',
              labels: dict | None = None, help: dict | None = None, question: str = '', sub: str = '', section: str = 'Structural context',
-             tracks: tuple = ()):
-    """Decorator for the package's own layers."""
+             tracks: tuple = (), ordered: bool = False, groups: tuple = ()):
+    """Decorator for the package's own layers. ordered: the classes have an order, that of labels (from inside a domain
+    outwards, say), which the website keeps instead of sorting them by effect; groups: headed groups of them."""
     def wrap(fn):
         BUILT_IN[name] = Layer(name, shape, describe, fn, tuple(needs), title=title or name.replace('_', ' ').capitalize(),
                                labels=dict(labels or {}), help=dict(help or {}), question=question, sub=sub, section=section,
-                               tracks=tuple(tracks))
+                               tracks=tuple(tracks), ordered=ordered, groups=tuple((g, tuple(cs)) for g, cs in groups))
         return fn
     return wrap
 

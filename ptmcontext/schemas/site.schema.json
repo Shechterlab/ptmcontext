@@ -696,6 +696,36 @@
               }
             }
           },
+          "ordered": {
+            "type": "boolean",
+            "description": "the website keeps the classes in their own order (the layer's labels, or for protein sets the rows' order) instead of sorting them by effect, as for classes from inside a domain outwards (default: the layer's)"
+          },
+          "groups": {
+            "type": "array",
+            "description": "headed groups of the classes on the website, in order (default: the layer's); a class in no group follows them",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "classes"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "the group's heading"
+                },
+                "classes": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "its class codes, in order"
+                }
+              }
+            }
+          },
           "background": {
             "type": "string",
             "description": "the statistics rows' background, in words"

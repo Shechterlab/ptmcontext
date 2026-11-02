@@ -90,7 +90,7 @@ DOMAIN_TRACK = Track('domain', 'Domains', 'domains', lambda ctx, accs: _of(ctx.u
           help={'disordered': 'Inside one of the site’s disordered regions', 'disorder_boundary': 'Outside, but within 20 aa of, a disordered region',
                 'ordered': 'More than 20 aa from any disordered region', 'no_disorder_annotation': 'The protein has no disordered region in the site’s disorder input'},
           question='Are {marks} in disordered regions, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, by disorder', tracks=(DISORDER_TRACK,))
+          sub='{Marks} against the other {residues} of the same proteins, by disorder', tracks=(DISORDER_TRACK,), ordered=True)
 def disorder(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     units = ctx.units('disorder', 'disordered')
     return unit_context(residues, units, ctx.snapshot.lengths(), 20, DISORDER_LABELS)
@@ -104,7 +104,8 @@ def disorder(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
                 'idr_boundary': 'Outside, but within 20 aa of, an IDR of 20 or more residues', 'outside_idr': 'More than 20 aa from any IDR of 20 or more residues',
                 'no_idr': 'Protein has no disordered region of 20 or more residues'},
           question='Are {marks} in IDRs of 20 or more residues, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, by IDRs of 20 or more residues', tracks=(IDR_TRACK, DISORDER_TRACK))
+          sub='{Marks} against the other {residues} of the same proteins, by IDRs of 20 or more residues', tracks=(IDR_TRACK, DISORDER_TRACK),
+          ordered=True)
 def idr(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     units = idr_units(ctx)
     return unit_context(residues, units, ctx.snapshot.lengths(), 20,
@@ -118,7 +119,7 @@ def idr(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
           help={'in_domain': 'Inside a domain or repeat', 'domain_boundary': 'Outside, but within 20 aa of, a domain edge',
                 'outside_domain': 'More than 20 aa from any domain', 'no_domain_annotation': 'Protein has no domain or repeat annotation'},
           question='Are {marks} in domains, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, in and outside domains', tracks=(DOMAIN_TRACK,))
+          sub='{Marks} against the other {residues} of the same proteins, in and outside domains', tracks=(DOMAIN_TRACK,), ordered=True)
 def domain(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     units = ctx.units('domains', 'domain')
     return unit_context(residues, units, ctx.snapshot.lengths(), 20,

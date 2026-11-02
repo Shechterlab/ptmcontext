@@ -131,3 +131,22 @@ def test_attribute_present_and_pair_with():
     bad = table.assign(call=['decreased', ''])
     with pytest.raises(ValueError, match='pair_with'):
         S.mark_attributes(spec, bad, marked)
+
+
+def test_ordered_classes_and_their_groups_reach_the_website():
+    from ptmcontext import layers as L
+    from ptmcontext.web import _class_order
+    words = S.layer_words(L.BUILT_IN['structure_context'])
+    assert words['ordered'] and list(words['labels'])[:2] == ['domain_folded', 'domain_disordered']
+    assert [g['name'] for g in words['groups']] == ['In a domain', 'Outside domains']
+    assert not S.layer_words(L.BUILT_IN['domain_class'])['ordered']
+    # a run written before runs recorded the order takes the built-in layer's; the site file's own wins
+    assert _class_order({'layer': 'structure_context'}, {})['ordered']
+    assert _class_order({'layer': 'motif'}, {}) == {'ordered': False, 'groups': []}
+    assert _class_order({'layer': 'structure_context', 'ordered': False, 'groups': []}, words) == {'ordered': False, 'groups': []}
+    site = S.load_site(SITES / 'methylarginine.yaml')
+    bad = copy.deepcopy(site)
+    a = next(x for x in bad['analyses'] if x['id'] == 'structure_context')
+    a['groups'] = [{'name': 'Inside', 'classes': ['domain_folded', 'no_such_class']}, {'name': 'Again', 'classes': ['domain_folded']}]
+    problems = S.website_problems(bad)
+    assert any('no_such_class' in p for p in problems) and any('more than one group' in p for p in problems), problems

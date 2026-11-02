@@ -17,7 +17,9 @@ The classes they make (for filters, website.protein.facts and labels):
   residue_values   the classes given, from the lowest bin up (a value equal to a threshold goes to the class above
                    it), and missing (default no_value) for a residue without a value
 
-Each draws its regions (or its runs of residues in one class) as a row of the protein map. Words a page shows (title,
+Their classes have an order (inside to far, the lowest bin up), which the website keeps (ordered; the site file's
+analysis may say `ordered: false`, or give headed `groups` of them). Each draws its regions (or its runs of residues in
+one class) as a row of the protein map. Words a page shows (title,
 question, sub, labels, help, section, track, track_help) and the row's colours (colours: {class: colour}) may be given
 with the parameters; otherwise they are made from the noun.
 """
@@ -85,7 +87,7 @@ def regions(params: dict, aid: str) -> Layer:
                   help=params.get('track_help', f'{_cap(nouns)}: the site’s {role} input'),
                   colours=tuple((params.get('colours') or {}).items()))
     return Layer('regions', 'class', f'{noun}s ({role}): inside, within {w} residues, further, or none', compute, needs=(role,),
-                 labels=labels, help=helps, tracks=(track,),
+                 labels=labels, help=helps, tracks=(track,), ordered=True,
                  **_words(params, _cap(nouns), f'Are {{marks}} in {nouns}, against the other {{residues}} of the same proteins?',
                           f'{{Marks}} against the other {{residues}} of the same proteins, by {nouns}'))
 
@@ -139,6 +141,6 @@ def residue_values(params: dict, aid: str) -> Layer:
                   help=params.get('track_help', f'{title} along the chain, in the classes of the question (the site’s {role} input)'),
                   colours=tuple((params.get('colours') or {}).items()))
     return Layer('residue_values', 'class', f'{noun} ({role}) in classes at {bins}; {missing} without a value', compute, needs=(role,),
-                 labels=labels, help=helps, tracks=(track,),
+                 labels=labels, help=helps, tracks=(track,), ordered=True,
                  **_words(params, title, f'Do {{marks}} sit at a particular {noun}, against the other {{residues}} of the same proteins?',
                           f'{{Marks}} against the other {{residues}} of the same proteins, by {noun}'))
