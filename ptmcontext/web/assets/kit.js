@@ -136,7 +136,10 @@
     if (h !== location.hash) (push ? history.pushState : history.replaceState).call(history, null, '', h);
   }
   const go = (view, extra = {}) => { Object.assign(S, { view, arg: '' }, extra); writeHash(true); render(); scrollTo(0, 0); };
-  Object.assign(K, { go, writeHash, link, carry, render: () => render(), holds, holdStatus, effText, SETS });
+  // a protein's own facts (the site file's proteins.attributes): by accession, a number for a number attribute
+  const PI = Object.fromEntries((D.proteins || []).map((p, i) => [p[0], i]));
+  const proteinAttr = (acc, name) => { const v = D.protein_attributes?.values?.[name]; return v && PI[acc] != null ? v[PI[acc]] : null; };
+  Object.assign(K, { proteinAttr, go, writeHash, link, carry, render: () => render(), holds, holdStatus, effText, SETS });
   // a link written without the selection (the header's, the footer's, a module's) gets it when followed or copied
   const carryLink = e => { const a = e.target.closest?.('a[href^="#"]'); if (!a || 'jump' in a.dataset) return; const base = a.dataset.base ?? a.getAttribute('href'); a.dataset.base = base; a.setAttribute('href', carry(base)); };
   ['click', 'auxclick', 'pointerdown', 'contextmenu'].forEach(t => document.addEventListener(t, carryLink, true));
@@ -355,7 +358,8 @@
     if (selOn() && !vsOn() && !selTestable()) return lead();
     if (S.arg && A[S.arg] && (A[S.arg].kind !== 'attribute' || vsOn())) return focus(S.arg);
     if (vsOn() && !(K.sel.contrastGroups()?.g1.length >= K.sel.MIN_SIDE && K.sel.contrastGroups()?.g2.length >= K.sel.MIN_SIDE)) return lead();
-    return lead() + secList().map(x => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(x.name)}</h3><div class="tiles">${x.cards.map(tile).join('')}</div>`).join('');
+    return lead() + secList().map(x => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(x.name)}</h3><div class="tiles">${x.cards.map(tile).join('')}</div>`).join('') +
+      (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
   function focus(aid) {
@@ -386,7 +390,8 @@
   K.sections.overview = () => [
     ...(selOn() ? [['view', vsOn() ? 'Your selection, against ' + vsName() : 'Your selection', 1]] : []),
     ...secList().flatMap(x => [[`sec-${x.name.replace(/\W+/g, '-').toLowerCase()}`, x.name, 0],
-      ...x.cards.map(c => (S.arg ? [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, link('overview', c.analysis)] : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1]))])];
+      ...x.cards.map(c => (S.arg ? [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, link('overview', c.analysis)] : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1]))]),
+    ...(selOn() || S.arg ? [] : (K.overviewSections || []).flatMap(f => f()))];
   // All tests: every question, each opening its own tests
   K.sections.statistics = () => [['view', 'All tests', 1, link('statistics')], ...secList().filter(x => !x.caveat && x.name !== 'About the sites').flatMap(x => [[`stat-${x.name}`, x.name, 0],
     ...x.cards.filter(c => D.analyses.some(a => a.id === c.analysis)).map(c => [`stat-${c.analysis}`, c.title || A[c.analysis].title, 1, link('statistics', '', { a: c.analysis })])])];

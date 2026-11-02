@@ -222,3 +222,32 @@ def test_a_variant_adds_marks_from_another_table(tmp_path):
     assert 'tier' not in page(main)['attribute_specs']
     with pytest.raises(ValueError, match='no variant'):
         S.run(root / 'sites' / 'toy.yaml', root=data, log=lambda *_: None, variant='other')
+
+
+def test_a_protein_table_gives_facts_and_starting_points(tmp_path):
+    """A table with one row per protein, in its own layout (proteins: input, accession, attributes), gives the website each
+    marked protein's facts, numbers as numbers, and the Overview's Starting points rank proteins by them."""
+    root = _toy_site(tmp_path)
+    data = root / 'data'
+    pd.DataFrame({'entry': ['P1', 'P2', 'P9'], 'enrich': ['2.5', '', '9'], 'kind': ['enzyme', 'scaffold', 'other']}).to_csv(data / 'prot.tsv', sep='\t', index=False)
+    man = json.loads((root / 'sites' / 'toy.inputs.json').read_text())
+    man['inputs']['toy_proteins'] = {'file': 'prot.tsv', 'md5': md5_file(data / 'prot.tsv'), 'source': 'synthetic, for a test', 'version': 'test 1', 'licence': 'CC0 1.0'}
+    (root / 'sites' / 'toy.inputs.json').write_text(json.dumps(man, indent=1))
+    site = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
+    site['proteins'] = {'input': 'toy_proteins', 'accession': 'entry', 'attributes': {
+        'enrichment': {'column': 'enrich', 'label': 'Enrichment', 'kind': 'number'}, 'kind': {'column': 'kind', 'label': 'Kind', 'kind': 'category'}}}
+    site['website']['overview'] = {'starting_points': {'lists': [{'title': 'Most enriched', 'by': 'enrichment', 'n': 3}], 'quick': [{'label': 'all of P1', 'query': 'q=ONE'}]}}
+    (root / 'sites' / 'toy.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
+    assert S.website_problems(S.load_site(root / 'sites' / 'toy.yaml')) == []
+    S.run(root / 'sites' / 'toy.yaml', root=data, log=lambda *_: None)
+    pa = pd.read_csv(root / 'out' / 'toy' / 'protein_attributes.tsv', sep='\t', dtype=str, keep_default_na=False)
+    assert list(pa['accession']) == ['P1', 'P2']                      # marked proteins only; P9 has no mark
+    index = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None)
+    d = json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1))
+    order = [p[0] for p in d['proteins']]
+    vals = dict(zip(order, d['protein_attributes']['values']['enrichment']))
+    assert vals == {'P1': 2.5, 'P2': None} and dict(zip(order, d['protein_attributes']['values']['kind']))['P2'] == 'scaffold'
+    bad = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
+    bad['website']['overview']['starting_points']['lists'][0]['by'] = 'kind'          # a category, not a number
+    (root / 'sites' / 'bad.yaml').write_text(yaml.safe_dump(bad, sort_keys=False))
+    assert any('not a number attribute' in p for p in S.website_problems(S.load_site(root / 'sites' / 'bad.yaml')))

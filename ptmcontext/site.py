@@ -172,6 +172,11 @@ def website_problems(site: dict) -> list[str]:
         elif words.get(a, {}).get('shape') == 'flags':
             out.append(f"website.sites.columns: {a!r} has flags (several per residue): it shows as tags beside the window, not as a column")
     set_ids = {a['id'] for a in site.get('analyses', []) if a.get('test') == 'protein_sets'}
+    pattrs = (site.get('proteins') or {}).get('attributes') or {}
+    for lst in ((web.get('overview') or {}).get('starting_points') or {}).get('lists', []):
+        for n in [lst['by'], (lst.get('where') or {}).get('attribute')]:
+            if n and n != 'marks' and (n not in pattrs or pattrs[n].get('kind') != 'number'):
+                out.append(f"website.overview.starting_points: {lst['title']!r} reads {n!r}, which is not a number attribute of proteins (proteins.attributes)")
     for n in (web.get('sites') or {}).get('attributes', []):
         if n not in attrs:
             out.append(f"website.sites.attributes: no attribute {n!r}")
@@ -312,6 +317,24 @@ def _zip_lists(u: str, v: str, sep: str, name: str) -> list:
     if len(xs) != len(ys):
         raise ValueError(f'marks.attributes {name}: pair_with lists differ in length ({u!r} and {v!r})')
     return list(zip(xs, ys))
+
+
+def protein_attributes(spec: dict, table: pd.DataFrame, accessions) -> pd.DataFrame:
+    """For each marked protein, the columns the site file keeps for the website (proteins.attributes), as text: one row
+    per protein (the table's first row for it), 'p.<name>' columns; a protein the table lacks has them empty."""
+    attrs = spec.get('attributes') or {}
+    bad = [n for n in attrs if not (n[:1].isalpha() and n.replace('_', 'a').isalnum())]
+    if bad:
+        raise ValueError(f'proteins.attributes: names must be letters, digits and _ only: {bad}')
+    missing = sorted({a['column'] for a in attrs.values()} - set(table.columns) | ({spec['accession']} - set(table.columns)))
+    if missing:
+        raise ValueError(f'proteins.attributes name columns the protein table does not have: {missing}')
+    t = pd.DataFrame({'accession': table[spec['accession']].astype(str).str.strip()})
+    for name, a in attrs.items():
+        col = table[a['column']].astype(str)
+        t[f'p.{name}'] = col.str.strip().ne('').map({True: 'yes', False: 'no'}) if a.get('present') else col
+    t = t.drop_duplicates('accession')
+    return pd.DataFrame({'accession': sorted(accessions)}).merge(t, on='accession', how='left').fillna('')
 
 
 @dataclass
@@ -555,6 +578,9 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         record['output'] = {'statistics.tsv': md5_file(folder / 'statistics.tsv')}
         outs = protein_outputs(snap, profile, marked, kept, ctx, attributes, layers=layer_objs)
         outs['set_names.tsv'] = pd.DataFrame(set_names, columns=['analysis', 'set', 'name'])
+        if site.get('proteins'):                       # per-protein facts the website shows (proteins.attributes)
+            ptable = pd.read_csv(paths[site['proteins']['input']], sep='\t', dtype=str, keep_default_na=False, low_memory=False)
+            outs['protein_attributes.tsv'] = protein_attributes(site['proteins'], ptable, set(marked['accession']))
         if set_keep:                                   # for testing a selection again on the website
             (folder / 'protein_sets.json').write_text(json.dumps(set_keep, separators=(',', ':')) + '\n')
             record['output']['protein_sets.json'] = md5_file(folder / 'protein_sets.json')

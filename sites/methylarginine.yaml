@@ -511,6 +511,15 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
 
 reference:
   statistics: methylarginine_statistics_v1_4_3
+proteins:                  # the release's protein table: facts of each methylated protein for the website (no test reads these)
+  input: methylarginine_proteins_v1_4_3
+  accession: uniprot_accession
+  attributes:
+    arg_enrichment: {column: arg_enrichment_log2, label: Arg enrichment, kind: number, help: "log2 of the shrinkage-estimated methylated share of the protein's arginines over the proteome-wide rate (negative when below it)"}
+    arg_enrichment_q: {column: arg_enrichment_q, label: Arg enrichment q, kind: number, help: "Benjamini-Hochberg q of the protein's methylated share of arginines against the proteome-wide rate"}
+    dense_window: {column: best_window_aa, label: Densest window (aa), kind: number, help: "the window, in residues, of the protein's most significant cluster of methylarginines"}
+    dense_sites: {column: best_window_sites, label: Sites in the densest window, kind: number}
+    dense_q: {column: best_window_q, label: Clustering q, kind: number, help: "q of the protein's most significant cluster (permutation test against the protein's own arginines)"}
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites
@@ -556,6 +565,17 @@ website:                  # the look and words of the website (ptmc web); layout
   overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
     question: "What kinds of proteins are arginine methylated?"
     rows: 7
+    starting_points:       # under the sections: proteins to start from, and ready-made selections (the explorer's)
+      lists:
+        - {title: Most sites, by: marks, n: 6, help: Proteins with the most methylarginine sites}
+        - {title: Most of their arginines methylated, by: arg_enrichment, where: {attribute: arg_enrichment_q, max: 0.05}, show: "", n: 6,
+           help: "Highest arginine-methylation enrichment: more of the protein's arginines methylated than its length and arginine count predict"}
+        - {title: Densest clusters, by: dense_q, order: asc, where: {attribute: dense_q, max: 0.05}, show: "{dense_sites}/{dense_window} aa", n: 6,
+           help: "Most significant clustering of methylarginines (permutation test): sites in the window"}
+      quick:
+        - {label: sites reported by 2 or more sources, query: "f=n:n_studies~2", view: sites}
+        - {label: sites measured with PRMT inhibitors (Maron 2021), query: "f=t:gsk591~decreased|increased|mixed|no_significant_change", view: sites}
+        - {label: proteins in condensates, query: "f=p:condensate_proteome~*", view: proteins}
     sections:
       - name: Disease and cancer
         cards:

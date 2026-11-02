@@ -91,6 +91,14 @@ protein: a URL with `{acc}`), `colours`, `colour` (the map and Sites tab may col
 first, and each value becomes `<value>:<its partner>` (a perturbation and its call; lists of different lengths are an
 error). A mark on several rows takes the first kept row's values.
 
+`proteins` (optional) keeps facts of each marked protein for the website, from a table with one row per protein: its manifest
+`input`, its `accession` column, and `attributes` as for marks (name -> {column, label, kind, ...}; `present` too). The run
+writes `protein_attributes.tsv` (`accession`, then `p.<name>` per attribute, for every marked protein, empty where the table
+has no row), and the page receives `protein_attributes: {specs, values: {name: [one value per protein of the list, numbers as
+numbers]}}` (`K.proteinAttr(accession, name)`). The Overview's `starting_points` rank proteins by `marks` or a number
+attribute (`lists: [{title, by, order, where: {attribute, max, min}, show, n, help}]`) and offer ready-made selections
+(`quick: [{label, query, view}]`); a list whose attribute a site lacks is left out.
+
 ## Input manifest entries
 
 `file, md5, source, version, licence` (required), `role` (`input` or `reference_output`), `note`, and two optional

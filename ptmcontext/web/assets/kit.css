@@ -578,3 +578,10 @@ a.exp-btn { display: inline-flex; align-items: center; text-decoration: none; }
 .sites-tbl th, .sites-tbl td { padding-left: 0.45rem; padding-right: 0.45rem; }
 .vswitch { margin-left: auto; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.84rem; font-weight: 600; color: var(--ink-2); white-space: nowrap; padding: 0 0.4rem; cursor: pointer; }
 .vswitch input { accent-color: var(--accent); }
+/* Starting points (kit-start.js) */
+.start-card { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.9rem 1.4rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow); padding: 0.9rem 1.1rem; margin-bottom: 1.2rem; }
+.start-col h4 { margin: 0 0 0.4rem; font-size: 0.86rem; color: var(--ink-2); }
+.start-pills { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.start-pill { display: inline-flex; align-items: baseline; gap: 0.35rem; border: 1px solid var(--line-strong); border-radius: 999px; padding: 0.12rem 0.6rem; font-size: 0.82rem; color: var(--ink); text-decoration: none; background: var(--surface); }
+.start-pill:hover { border-color: var(--accent); }
+.start-pill b { font-weight: 600; color: var(--accent-dark); font-variant-numeric: tabular-nums; }

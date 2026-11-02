@@ -35,7 +35,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-start.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -474,6 +474,21 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     fasta = Path(run.get('inputs', {}).get(site['snapshot']['input'], {}).get('file', ''))
     (listing, mark_columns, unit_sources, mark_attrs), shards = protein_data(folder, fasta)
     data['proteins'] = listing
+    # per-protein facts (proteins.attributes), aligned with the protein list; numbers as numbers
+    if listing and (folder / 'protein_attributes.tsv').exists() and site.get('proteins'):
+        import pandas as pd
+        pa = pd.read_csv(folder / 'protein_attributes.tsv', sep='\t', dtype=str, keep_default_na=False).set_index('accession')
+        specs = site['proteins']['attributes']
+
+        def val(name, v):
+            if specs[name].get('kind') == 'number':
+                try:
+                    return float(v) if v != '' else None
+                except ValueError:
+                    return None
+            return v
+        data['protein_attributes'] = {'specs': specs, 'values': {n: [val(n, pa.at[r[0], f'p.{n}']) if r[0] in pa.index else None for r in listing]
+                                                                 for n in specs if f'p.{n}' in pa.columns}}
     data['mark_columns'] = mark_columns
     data['mark_attributes'] = mark_attrs
     if listing:
