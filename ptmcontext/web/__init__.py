@@ -36,7 +36,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-start.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-map.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-start.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -621,9 +621,6 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         sel = selection_data(folder, listing, mark_columns, site['marks'].get('attributes', {}), stratum_questions(web))
         if sel_counts:
             sel['count_questions'] = sel_counts
-        (out / 'data').mkdir(parents=True, exist_ok=True)
-        (out / 'data' / 'selection.json').write_text(json.dumps(sel, separators=(',', ':')))
-        log(f"  selection data: {len(sel['marks']):,} marks, {(out / 'data' / 'selection.json').stat().st_size / 1e6:.1f} MB")
     if shards:
         (out / 'data' / 'p').mkdir(parents=True, exist_ok=True)
         for k, recs in shards.items():
@@ -643,9 +640,18 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     # page (data/e), the rows naming a protein without marks on its own light page (data/u), lookups in the page
     ev_shards, light = protein_tables(web.get('tables') or {}, run, data, listing, fasta, out, log) if listing else ({}, 0)
     data['light_pages'] = light
+    if listing:
+        # the search's words and the filters that read more than the marks' classes (website.search): windows and
+        # distances beside the marks, the partners in their own file
+        from . import search as SR
+        data['search'] = SR.data(site, run, sel, listing, fasta, out, log)
+        (out / 'data').mkdir(parents=True, exist_ok=True)
+        (out / 'data' / 'selection.json').write_text(json.dumps(sel, separators=(',', ':')))
+        log(f"  selection data: {len(sel['marks']):,} marks, {(out / 'data' / 'selection.json').stat().st_size / 1e6:.1f} MB")
     inline_values = (out / 'data' / 'units.json').read_text().replace('</', '<\\/') if values else ''
     inline_proteins = json.dumps({f'{k:02d}': v for k, v in shards.items()}, separators=(',', ':')).replace('</', '<\\/')
     inline_selection = (out / 'data' / 'selection.json').read_text().replace('</', '<\\/') if (out / 'data' / 'selection.json').exists() else ''
+    inline_partners = (out / 'data' / 'partners.json').read_text().replace('</', '<\\/') if (out / 'data' / 'partners.json').exists() else ''
     if len(inline_proteins) > 12_000_000:
         log(f'  the one-file copy leaves out the protein pages ({len(inline_proteins) / 1e6:.0f} MB); index.html has them')
         inline_proteins = '{}'
@@ -696,6 +702,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             js = (f'<script id="protein-data" type="application/json">{inline_proteins}</script>'
                   + (f'<script id="table-data" type="application/json">{inline_tables}</script>' if inline_tables != '{}' else '')
                   + (f'<script id="selection-data" type="application/json">{inline_selection}</script>' if inline_selection else '')
+                  + (f'<script id="partners-data" type="application/json">{inline_partners}</script>' if inline_partners else '')
                   + (f'<script id="unit-values" type="application/json">{inline_values}</script>' if inline_values else '')
                   + ''.join(f'<script>{_asset("assets/" + n).read_text()}</script>' for n in MODULES))
         else:

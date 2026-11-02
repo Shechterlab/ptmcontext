@@ -510,12 +510,15 @@
     REG = [];
     if (S.arg && A[S.arg]?.page) return focus(S.arg);
     if (selOn() && !K.sel.data()) return lead() + '<p class="muted">Loading the selection…</p>';
-    if (selOn() && !vsOn() && !selTestable()) return lead() + anySize();
+    // a selection too small to test: its proteins drawn and the counts that hold for any selection; one that can be
+    // tested: what sets it apart, in brief (the modules' blocks: kit-selview.js)
+    const selBlocks = list => (list || []).map(f => f()).join('');
+    if (selOn() && !vsOn() && !selTestable()) return lead() + selBlocks(K.selSmall) + anySize();
     if (S.arg && A[S.arg] && (A[S.arg].kind !== 'attribute' || vsOn())) return focus(S.arg);
     if (vsOn() && !(K.sel.contrastGroups()?.g1.length >= K.sel.MIN_SIDE && K.sel.contrastGroups()?.g2.length >= K.sel.MIN_SIDE)) return lead();
     // with a selection, a section of protein-set questions is about its proteins: "Kinds of protein in your selection"
     const head = x => (selOn() && x.cards.length && x.cards.every(c => A[c.analysis]?.kind === 'protein_sets') ? `${x.name} in your selection` : x.name);
-    return lead() + secList().map(x => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(head(x))}</h3><div class="tiles">${x.cards.map(tile).join('')}</div>`).join('') +
+    return lead() + (selOn() && !vsOn() ? selBlocks(K.selLead) : '') + secList().map(x => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(head(x))}</h3><div class="tiles">${x.cards.map(tile).join('')}</div>`).join('') +
       (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
   // the tiles of questions that hold for any selection (a module's counts), for a selection too small to test
@@ -1078,9 +1081,11 @@
   Object.assign(K, { CIT, PAL, FF, FFH, tw, wrap, figureFrame, exportFigure, expBar, preamble, creditLines, provenance, download, hdate, htime, hlicence, shortCommit, testWords, PADJ, MIN_EFFECT, dir, selOn, vsOn });
 
   // ---- render, events ------------------------------------------------------------------------------------------------
+  let qPending = false;                                 // the search box holds letters not yet read
   function render() {
     tabs();
-    $('#q').value = S.q; $('#q-clear').hidden = !S.q;
+    if (!qPending) $('#q').value = S.q;                // not over letters typed while the page was drawn (data arriving)
+    $('#q-clear').hidden = !S.q;
     scope();
     const mod = K.views[S.view];
     $('#view').innerHTML = mod ? mod.render(S.arg) : S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview();
@@ -1089,6 +1094,7 @@
     if (mod?.after) mod.after(S.arg);
     if (S.view === 'method' && S.arg) document.getElementById('m-' + S.arg)?.scrollIntoView({ block: 'start' });
     K.rail?.();
+    (K.afterRender || []).forEach(f => f());         // the modules' own touches after a page is drawn (kit-search.js)
   }
   const tip = $('#tip');
   function showTip(e, r) {
@@ -1163,7 +1169,7 @@
   });
   let timer;
   let typing = false;
-  $('#q').addEventListener('input', e => { clearTimeout(timer); timer = setTimeout(() => { S.q = e.target.value.trim(); writeHash(!typing); typing = true; render(); $('#q').focus(); }, 150); });
+  $('#q').addEventListener('input', e => { clearTimeout(timer); qPending = true; timer = setTimeout(() => { qPending = false; S.q = e.target.value.trim(); writeHash(!typing); typing = true; render(); $('#q').focus(); }, 150); });
   $('#q').addEventListener('blur', () => { typing = false; });
   // a search that names one protein (and nothing else) opens it; "GENE R216" opens the site's card
   function openIfOne() {
@@ -1174,7 +1180,7 @@
     go('protein', { arg: acc + site }); return true;
   }
   K.openIfOne = openIfOne;
-  $('#q').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(timer); S.q = e.target.value.trim(); typing = false; if (!openIfOne() && !K.openLight?.(S.q)) { writeHash(true); render(); } } });
+  $('#q').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(timer); qPending = false; S.q = e.target.value.trim(); typing = false; if (!openIfOne() && !K.openLight?.(S.q)) { writeHash(true); render(); } } });
   $('#q-clear').addEventListener('click', () => { S.q = ''; writeHash(true); render(); $('#q').focus(); });
   let byLink = false;
   // where each page was scrolled to, for Back and Forward; a link opens its page at the top

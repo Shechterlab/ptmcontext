@@ -401,6 +401,15 @@
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
       "note": "STRING physical partners (score 0.7 or more) of the methylated proteins, with whether each is methylated and its class: the site card's writer and reader, and a protein's methylated STRING partners on its page. STRING CC BY 4.0."
+    },
+    "methylarginine_other_ptm_sites_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/other_ptm_sites_v1.4.3.tsv",
+      "md5": "fb852bc28016e6c1e504ae67ca7e7a68",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0); component databases keep their own terms",
+      "role": "input",
+      "note": "Other modifications (phosphorylation, lysine acylation, ubiquitination or SUMOylation, lysine methylation) on the methylated proteins, from the iPTMnet-format PTM master table, residues checked against the reference sequence; not exhaustive. The Filters panel's 'other modification nearby'."
     }
   }
 }

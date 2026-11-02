@@ -289,3 +289,27 @@ The site card and the sites table read the site file's `website.protein.card` an
 words: the codes' labels, the sentences, the marks of each call, which columns the Columns menu offers and which show
 first. `website.protein.numbering` numbers some proteins as papers do (a gene or name pattern and an offset: histones
 without their initiator methionine): their positions are shown and read in links with it.
+
+## Search and its filters (website.search)
+
+What the search reads beyond genes, accessions, entry names and the questions' keys, and the filters that read more than a
+mark's own classes. Every part is optional; a site without a part has none of it (no suggestion, filter or key), and
+`ptmc check` names a part that refers to what the site lacks (`web/search.py`, `problems`). The data come in the formats
+above, mapped from any source's columns under `website.tables`; nothing else is read. `tests/test_search.py` builds a toy
+site from a few rows in each format.
+
+| Part | Reads | Gives |
+|---|---|---|
+| other names | `aliases` of a `protein_values` table; `shorthand: {name: accession}` | a protein found by any of them, also without hyphens, spaces and dots (TDP-43, TDP43) and written in two words (hnRNP A1); "Matched by another name" under the search |
+| numbering | `website.protein.numbering` (genes or names, `offset`, `note`) | positions typed in a search read as the protein's page numbers them (H3 R2 is UniProt R3), said under the search |
+| sites | the marks | `GENE R216`, `GENE 216`, `GENE:R216`, `GENE_216`, `GENE-R216`, `GENE/216`, and a name with its site in one word (`H4R3`, when the letter is a residue of the profile); a site that is no mark: "No <mark> reported at GENE R999" |
+| `patterns: {at, near, span}` | the snapshot's sequences | `<at>:GXRG` a pattern (residue letters, `X . * ?` any, `[ST]` a choice, 2 to 10 positions; `,` or `\|` for either) with one of its positions on the mark; `<near>:PRPR` anywhere within `span` residues (default 15). A key that is also a question keeps its classes (`motif:RGG`). `ptmc web` writes each mark's window, `selection.json` `wide: {span, w: [string per mark]}` (`-` past the chain's ends). Filter keys `m:at`, `m:near` (values: patterns) |
+| `terms: {key: {label?, help?, values: {word: {filter key: [values]}}}}` | the site's filters | search words that stand for filters (`go:rna` → `r:go_rna` experimental or other evidence); a word holds when all its filters hold, words of one term match any; a key shared with a question or attribute reads its own words first. Filter key `x:<key>` |
+| `spacing: {label?, within?}` | the marks | filter `d:marks`: another mark of the site within N residues |
+| `nearby: {table: {key?, label, help?, kinds?: {code: label}, within: [N]}}` | a `residue_evidence` table of `website.tables` | filter `o:<table>`, values `<kind>@<N>` (`*` any kind; `@0` at the mark): a residue of that kind on the protein within N; search key `<key>:<kind>`, `<key>:<kind>@N`, `<key>:N`. `selection.json` `nearby: {<table>: {kinds, d: [per kind: [mark index, distance, ...]]}}`, distances up to the largest of `within` |
+| `partners: {table, key?, label?, gene_label?, score_label?, help?, classes?: {code: label}, marked?, other?, scores?: [x]}` | a `protein_partners` table | filters `b:class` (a partner of a class code, `marked`, or `other`: neither), `b:gene` (a gene or accession), `b:score` (the partners counted: score at least x); search key `<key>:<class>` or `<key>:<gene>`. `data/partners.json` (read when first used; inlined in the one-file copy): `{genes, accessions, classes, bits (a partner's classes as bits), marked (0/1), rows: {protein index: [partner index, score × 1000, ...]}}` |
+
+A filter group of `website.filters` places these filters by key (`keys: ["d:marks", "o:other_ptms", "m:at", "b:class", "b:gene",
+"b:score"]`); a module may add kinds of its own (`K.filterKinds[kind]`: `valid`, `test`, and optionally `control`, `label`,
+`value`) and search keys (`K.searchTerms[key]`: values → `[filter key, values]` or `{error}`). A protein attribute with
+`control: chips` is offered as chips (match any). A term that cannot be read selects nothing and says why under the search.
