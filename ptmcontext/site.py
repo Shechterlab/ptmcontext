@@ -122,7 +122,10 @@ def _analysis_words(site: dict) -> dict:
 def roles_missing(site: dict) -> list[str]:
     """Residue analyses whose layer reads a role the site file does not fill."""
     roles = set(site.get('inputs', {}))
-    return [f"{aid}: reads role {r!r}, which inputs: does not fill" for aid, w in _analysis_words(site).items() for r in w['needs'] if r not in roles]
+    out = [f"{aid}: reads role {r!r}, which inputs: does not fill" for aid, w in _analysis_words(site).items() for r in w['needs'] if r not in roles]
+    out += [f"{a['id']}: proteins: reads role {a['proteins']['input']!r}, which inputs: does not fill" for a in site.get('analyses', [])
+            if a.get('proteins') and a['proteins']['input'] not in roles]
+    return out
 
 
 def mapping_problems(site: dict, root: str | Path) -> list[str]:
@@ -243,6 +246,10 @@ def website_problems(site: dict) -> list[str]:
     counts = web.get('counts') or {}
     out = count_problems(site)
     questions = ids | set(counts)                       # what a card, a header tile or an old link may open
+    out += cell_problems(site) + set_view_problems(site)
+    if (web.get('cell') or {}).get('id'):
+        ids = ids | {web['cell']['id']}        # the maps of the cell are one question of the website's own
+        questions = questions | {web['cell']['id']}
     for sec in (web.get('overview') or {}).get('sections', []):
         for c in sec.get('cards', []):
             aid = c if isinstance(c, str) else c.get('analysis')
@@ -318,6 +325,69 @@ def website_problems(site: dict) -> list[str]:
     return out
 
 
+def cell_drawings() -> dict:
+    """The kit's drawings of a cell and the parts each has (config/cell_drawings.json), which website.cell rows colour."""
+    return json.loads((Path(__file__).parent / 'config' / 'cell_drawings.json').read_text())['drawings']
+
+
+def cell_problems(site: dict) -> list[str]:
+    """What website.cell names that the site does not have: a map that is not a protein-set question, a row's set in a
+    map it does not list, a part no drawing it shows has (ptmc check)."""
+    cell = (site.get('website') or {}).get('cell')
+    if not cell:
+        return []
+    sets = {a['id']: a for a in site.get('analyses', []) if a.get('test') == 'protein_sets'}
+    out = []
+    if cell['id'] in {a['id'] for a in site.get('analyses', [])}:
+        out.append(f"website.cell.id: {cell['id']!r} is also an analysis: give the maps of the cell an id of their own")
+    maps = [m['analysis'] for m in cell['maps']]
+    for m in cell['maps']:
+        for key in ('analysis', 'regions'):
+            if m.get(key) and m[key] not in sets:
+                out.append(f"website.cell.maps: {m[key]!r} is not a protein-set question of this site")
+    drawings = cell_drawings()
+    parts = {p for d in cell.get('drawings', []) for p in drawings[d['drawing']]['parts']}
+    rows = [('regions', r) for r in cell.get('regions', [])] + [(g['group'], r) for g in cell['compartments'] for r in g['rows']]
+    for where, r in rows:
+        out += [f"website.cell.compartments ({where}), {r['label']!r}: {a!r} is not one of website.cell.maps" for a in r.get('sets', {}) if a not in maps]
+        bad = [p for p in [r.get('part'), *r.get('also', [])] if p and p not in parts]
+        if bad:
+            out.append(f"website.cell ({where}), {r['label']!r}: no drawing shown has the part {bad} (the drawings' parts: {sorted(parts)})")
+    if cell.get('regions') and not any(m.get('regions') for m in cell['maps']):
+        out.append('website.cell.regions: no map names its regions question (maps: regions:)')
+    return out
+
+
+def set_view_problems(site: dict) -> list[str]:
+    """What website.set_views names that the site does not have: a question without values, a column its values do not
+    list (ptmc check)."""
+    analyses = {a['id']: a for a in site.get('analyses', [])}
+    out = []
+    for v in (site.get('website') or {}).get('set_views') or []:
+        a = analyses.get(v['analysis'])
+        if not a or a.get('test') != 'protein_sets':
+            out.append(f"website.set_views: {v['analysis']!r} is not a protein-set question of this site")
+            continue
+        cols = {(c['name'] if isinstance(c, dict) else c): (c if isinstance(c, dict) else {}) for c in (a.get('values') or {}).get('columns', [])}
+        if not cols:
+            out.append(f"website.set_views: {v['analysis']!r} has no values (values: columns)")
+            continue
+        box = (v.get('box') or {}).get('value')
+        if box and not cols.get(box, {}).get('background'):
+            out.append(f"website.set_views, {v['analysis']!r}: box: {box!r} is not a column of its values with background: true")
+        for ch in v.get('chips', []):
+            out += [f"website.set_views, {v['analysis']!r}: chips {ch['title']!r}: {c!r} is not a column of its values"
+                    for c in [ch.get('value'), *(ch.get('share') or [])] if c and c not in cols]
+        rules = {r['set'] for r in (a.get('sets') or {}).get('rules', [])}
+        named = [v.get('meter'), *[s for ch in v.get('chips', []) for s in ch.get('sets', [])]]
+        if rules:
+            out += [f"website.set_views, {v['analysis']!r}: no set {s!r} (its rules make {sorted(rules)})" for s in named if s and s not in rules]
+        r = v.get('residue')
+        if r and (r not in analyses or analyses[r].get('test') == 'protein_sets'):
+            out.append(f"website.set_views, {v['analysis']!r}: residue: {r!r} is not a residue question of this site")
+    return out
+
+
 def root_of(site: dict) -> Path:
     return Path(site.get('__root__', REPO))
 
@@ -336,6 +406,20 @@ def _holds(frame: pd.DataFrame, cond: dict) -> pd.Series:
     if 'in' in cond:
         return col.isin(set(cond['in']))
     return col.str.contains(cond['contains'], regex=False)
+
+
+def listed_proteins(spec: dict, ctx: L.Context) -> set:
+    """The proteins a residue question counts (proteins: the accessions in a column of a table that fills a role, on
+    the rows its include and exclude conditions keep): only their marks and candidate residues are counted."""
+    t = pd.read_csv(ctx.path(spec['input']), sep='\t', dtype=str, keep_default_na=False, low_memory=False)
+    if spec['column'] not in t.columns:
+        raise ValueError(f"proteins: role {spec['input']} has no column {spec['column']!r}")
+    keep = pd.Series(True, index=t.index)
+    for cond in spec.get('include', []):
+        keep &= _holds(t, cond)
+    for cond in spec.get('exclude', []):
+        keep &= ~_holds(t, cond)
+    return set(t.loc[keep, spec['column']].astype(str).str.strip()) - {''}
 
 
 def left_out_marks(spec: dict, table: pd.DataFrame) -> pd.DataFrame:
@@ -718,8 +802,17 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
                                        **layer_words(layer)}
         methods = analysis.get('methods', ['fisher', 'mantel_haenszel'])
         kept[analysis['id']] = {}
+        only = listed_proteins(analysis['proteins'], ctx) if analysis.get('proteins') else None
+        if only is not None:                              # the marked proteins this question leaves out, for the website
+            layers_used[analysis['id']]['proteins'] = {
+                'input': analysis['proteins']['input'], 'column': analysis['proteins']['column'], 'listed': len(only),
+                'not_counted': sorted(set(marked['accession']) - only)}
+        if analysis.get('marks_alone'):
+            layers_used[analysis['id']]['marks_alone'] = analysis['marks_alone']
         parts.append(RT.residue_test(ctx, marked, layer, analysis['id'], methods=methods, keep=kept[analysis['id']],
-                                     left_out=pending if len(pending) else None))
+                                     left_out=pending if len(pending) else None, proteins=only,
+                                     alone=analysis.get('marks_alone', 'drop'), order=analysis.get('order'),
+                                     pooled_label=(analysis.get('proteins') or {}).get('label', '')))
         log(f"  {analysis['id']:18s} {len(parts[-1]):3d} rows")
     rows = pd.concat(parts, ignore_index=True)
     record = {

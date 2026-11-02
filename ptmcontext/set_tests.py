@@ -11,8 +11,10 @@ clusterProfiler itself, and tests/test_parity_v1_4_3.py checks these rows agains
 A site file names everything else: which table holds the sets, which columns name the set and the protein, which rows
 to keep, the names of the sets, the universe and the sizes. Nothing here names a source.
 
-Sets come from a table of (set, protein) pairs, or from a class hierarchy (class_sets): each protein's classes and the
-ontology that places them, at the top level (optionally gathered into groups the site file names) or below it. The sets
+Sets come from a table of (set, protein) pairs, from a class hierarchy (class_sets): each protein's classes and the
+ontology that places them, at the top level (optionally gathered into groups the site file names) or below it, or from
+rules on a table's columns (rule_sets): each row in the set of the first rule that holds for it (a value at least a
+threshold, a share of two columns, a flag), so classes cut from numbers need no table of their own. The sets
 of a table may be gathered into families by their names (families: a site's own rules file), and may be keyed by an
 identifier other than the site's proteins (identifiers: the tables that map each protein to it, as UniProt entries to
 Entrez genes); the test then counts those identifiers, and its universe is the site's proteins' identifiers.
@@ -54,6 +56,43 @@ def _select(frame: pd.DataFrame, spec: dict) -> pd.DataFrame:
     return frame[keep]
 
 
+def _number(frame: pd.DataFrame, cond: dict) -> pd.Series:
+    """The number a numeric condition reads: a column, or the ratio of two (NaN where the denominator is 0 or empty)."""
+    if 'ratio' in cond:
+        num, den = (pd.to_numeric(frame[c], errors='coerce') for c in cond['ratio'])
+        return num / den.where(den != 0)
+    return pd.to_numeric(frame[cond['column']], errors='coerce')
+
+
+def _rule_holds(frame: pd.DataFrame, cond: dict) -> pd.Series:
+    """A rule's condition: equals, in or contains on a column's text, or at_least and below on a number (a value
+    missing fails both)."""
+    if 'at_least' in cond or 'below' in cond:
+        v = _number(frame, cond)
+        out = v.notna()
+        if 'at_least' in cond:
+            out &= v >= float(cond['at_least'])
+        if 'below' in cond:
+            out &= v < float(cond['below'])
+        return out
+    return _holds(frame, cond)
+
+
+def rule_sets(src: dict, frame: pd.DataFrame) -> pd.DataFrame:
+    """(set, protein) pairs from rules (sets.rules): each row of the table goes to the set of the first rule whose
+    conditions (when) all hold for it; a rule without conditions takes every row left; a row no rule takes is in no
+    set. A protein on several rows is in the set of each."""
+    rest = pd.Series(True, index=frame.index)
+    out = []
+    for rule in src['rules']:
+        hit = rest.copy()
+        for cond in rule.get('when', []):
+            hit &= _rule_holds(frame, cond)
+        out.append(pd.DataFrame({'set': rule['set'], 'protein': frame.loc[hit, src['protein']].astype(str).to_numpy()}))
+        rest &= ~hit
+    return pd.concat(out, ignore_index=True) if out else pd.DataFrame(columns=['set', 'protein'])
+
+
 def question_roles(spec: dict) -> list[str]:
     """The roles holding what a protein-set analysis asks about: its sets (their ontology, the tables whose rows keep
     them, their members' scores) and their names."""
@@ -73,7 +112,44 @@ def map_roles(spec: dict) -> list[str]:
 def roles_of(spec: dict) -> list[str]:
     """Every role a protein-set analysis reads: its sets (their ontology, where tables and scores), names, identifier
     map or history, and covariate."""
-    return list(dict.fromkeys(question_roles(spec) + map_roles(spec) + [r for r in [spec.get('abundance', {}).get('input')] if r]))
+    return list(dict.fromkeys(question_roles(spec) + map_roles(spec) + [r for r in [spec.get('abundance', {}).get('input'), values_role(spec)] if r]))
+
+
+def values_role(spec: dict) -> str | None:
+    """The role of the table of per-protein numbers a protein-set question shows beside its sets (values:), by default
+    the sets' own table."""
+    v = spec.get('values')
+    return (v.get('input') or spec['sets']['input']) if v else None
+
+
+def protein_values(spec: dict, paths: dict, background: set, targets: set, formats: dict | None = None) -> dict:
+    """Per-protein numbers the website shows beside a question's sets (values: the columns of a table, each protein's
+    first row; no test reads them): each marked protein's values in the background, and, for the columns marked
+    background: true, every other background protein's values, sorted (missing ones left out), so a page can draw and
+    compare any group of marked proteins with the rest."""
+    v = spec['values']
+    t = _select(_read(paths[values_role(spec)], formats), v)
+    prot = _entry(t[v.get('protein') or spec['sets']['protein']])
+    cols = [c['name'] if isinstance(c, dict) else c for c in v['columns']]
+    nums = pd.DataFrame({c: pd.to_numeric(t[c], errors='coerce') for c in cols}).set_index(prot.to_numpy())
+    nums = nums[~nums.index.duplicated()]
+    nums = nums[nums.index.isin(background)]
+    clean = lambda x: None if pd.isna(x) else float(x)  # noqa: E731
+    marked = nums[nums.index.isin(targets)].sort_index()
+    others = nums[~nums.index.isin(targets)]
+    return {'columns': [c if isinstance(c, dict) else {'name': c} for c in v['columns']],
+            'marked': {a: [clean(x) for x in row] for a, row in zip(marked.index, marked.to_numpy())},
+            'others': {c['name']: sorted(float(x) for x in others[c['name']].dropna()) for c in v['columns'] if isinstance(c, dict) and c.get('background')}}
+
+
+def strata_counts(background: list, dec: dict, members: pd.Series) -> dict:
+    """The background's proteins in each stratum of the covariate, overall (N) and in each set (sets), so that a page
+    can repeat the stratified test on any group of marked proteins (whose strata it has): codes in order, the deciles
+    from the lowest, then none."""
+    codes = sorted(set(dec.values()), key=lambda c: (c == 'none', int(c) if c != 'none' else 0))
+    at = {c: i for i, c in enumerate(codes)}
+    count = lambda us: np.bincount([at[dec[u]] for u in us if u in dec], minlength=len(codes)).tolist()  # noqa: E731
+    return {'codes': codes, 'N': count(background), 'sets': {s: count(g) for s, g in members.items()}}
 
 
 def _read(path, formats: dict | None = None) -> pd.DataFrame:
@@ -129,8 +205,14 @@ def _order_values(rows: pd.DataFrame, by: str) -> list:
 
 def ordered(rows: pd.DataFrame, order: list | None) -> pd.DataFrame:
     """The rows in the order an analysis names (order: [{by, descending}], the first key first; a tie keeps the
-    order before: ascending p, then the set's name). Without one, as they are."""
+    order before: ascending p, then the set's name). A key {categories: [...]} puts the rows of those categories
+    first, in its order, and the others after them. Without one, as they are."""
     for key in reversed(order or []):
+        if 'categories' in key:
+            rank = {c: i for i, c in enumerate(key['categories'])}
+            if len(rows):
+                rows = rows.iloc[sorted(range(len(rows)), key=lambda i: rank.get(rows['category'].iloc[i], len(rank)))]
+            continue
         if key['by'] not in ORDER_COLUMNS:
             raise ValueError(f"order: {key['by']!r} is not one of {ORDER_COLUMNS}")
         if len(rows):                                   # a stable sort, so a tie keeps the order of the keys after it
@@ -287,6 +369,9 @@ def read_sets(spec: dict, paths: dict, universe: set | None = None, root=None, f
         pairs = class_sets(src, paths, universe or set(), formats)
         return pairs, {}, set(pairs['protein'])
     t, members = set_table(spec, paths, universe, formats)
+    if 'rules' in src:                                   # sets by rules on the table's columns: the source annotates
+        pairs = rule_sets(src, t.assign(**{src['protein']: members}))   # every protein of its rows, in a set or not
+        return pairs.drop_duplicates(), {}, set(members)
     pairs = pd.DataFrame({'set': t[src['set']].astype(str).to_numpy(), 'protein': members.to_numpy()}).drop_duplicates()
     names = {}
     if spec.get('names'):
@@ -339,9 +424,10 @@ def spec_problems(spec: dict, root=None, files: dict | None = None, formats: dic
         out.append(f"{aid}: sets.history brings UniProt accessions to the snapshot's entries: it is not for sets of other identifiers")
     if spec.get('identifiers') and spec.get('scores'):
         out.append(f'{aid}: scores are a value per member protein: not for sets of other identifiers')
-    out += [f"{aid}: order by {k['by']!r}: the rows have {list(ORDER_COLUMNS)}" for k in spec.get('order', []) if k['by'] not in ORDER_COLUMNS]
+    out += [f"{aid}: order by {k['by']!r}: the rows have {list(ORDER_COLUMNS)}" for k in spec.get('order', []) if 'by' in k and k['by'] not in ORDER_COLUMNS]
     conds = lambda x: [c['column'] for c in x.get('include', []) + x.get('exclude', [])]  # noqa: E731
-    named = [(src['input'], [src.get('set'), src['protein'], src.get('classes'), (fam or {}).get('by')] + conds(src)
+    rule_cols = [c for r in src.get('rules', []) for cond in r.get('when', []) for c in (cond.get('ratio') or [cond.get('column')])]
+    named = [(src['input'], [src.get('set'), src['protein'], src.get('classes'), (fam or {}).get('by')] + conds(src) + rule_cols
               + [w['column'] for w in src.get('where', [])])]
     named += [(w['input'], [w['key']] + conds(w)) for w in src.get('where', [])]
     if src.get('history'):
@@ -359,6 +445,11 @@ def spec_problems(spec: dict, root=None, files: dict | None = None, formats: dic
         named.append((step['input'], [step['from'], step['to']]))
     if spec.get('abundance'):
         named.append((spec['abundance']['input'], [spec['abundance']['protein'], spec['abundance']['value']]))
+    if spec.get('values'):
+        v = spec['values']
+        if spec.get('identifiers'):
+            out.append(f'{aid}: values are numbers per protein: not for sets of other identifiers')
+        named.append((values_role(spec), [v.get('protein') or src['protein']] + [c['name'] if isinstance(c, dict) else c for c in v['columns']] + conds(v)))
     for role, cols in named:
         path = (files or {}).get(role)
         if path is None or not Path(path).exists():
@@ -532,7 +623,10 @@ def protein_set_test(spec: dict, paths: dict, marked_proteins: set, snapshot_pro
             bg = sorted(background)
             dec = dict(zip(bg, deciles(bg, values, ab.get('strata', 10))))
             keep['covariate'] = {'input': ab['input'], 'value': ab['value'], 'strata': ab.get('strata', 10),
-                                 'proteins': {u: [float(values[u]) if u in values.index else None, dec[u]] for u in sorted(targets & background)}}
+                                 'proteins': {u: [float(values[u]) if u in values.index else None, dec[u]] for u in sorted(targets & background)},
+                                 'counts': strata_counts(bg, dec, size_ok)}
+        if spec.get('values'):                           # per-protein numbers shown beside the sets (no test reads them)
+            keep['values'] = protein_values(spec, paths, background, targets, formats)
     rows = [{'analysis': spec['id'], 'category': r['set'], 'stratum': 'all', 'a': r['k'], 'b': r['n'] - r['k'], 'c': r['M'] - r['k'],
              'd': r['N'] - r['M'] - r['n'] + r['k'], 'fold_enrichment': r['fold'],
              'log2_fold_enrichment': math.log2(r['fold']) if r['fold'] > 0 else np.nan, 'p': r['p'], 'q': r['q'],

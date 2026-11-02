@@ -85,6 +85,15 @@ class Context:
             raise ValueError(f'role {role!r}: a per-residue table needs a column mapping (columns: {{accession, position, value}}) in its manifest entry')
         return self.cached(f'values:{role}', lambda: U.residue_values(path, cols))
 
+    def listed(self, role: str):
+        """The residues a table lists (accession, position) that fills a role, by its manifest column mapping."""
+        from .. import units as U
+        path = self.path(role)
+        cols = self.formats.get(str(path))
+        if not cols or not cols.get('accession') or not cols.get('position'):
+            raise ValueError(f'role {role!r}: a list of residues needs a column mapping (columns: {{accession, position}}) in its manifest entry')
+        return self.cached(f'listed:{role}', lambda: U.listed_residues(path, cols))
+
     def cached(self, key: str, make: Callable):
         if key not in self._cache:
             self._cache[key] = make()

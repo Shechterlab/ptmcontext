@@ -249,6 +249,68 @@
       "licence": "Each perturbation keeps its source's terms (PTM_Pipeline inputs/MANIFEST.tsv): CC BY-NC 4.0 for the PRMT5 inhibitor rows (Lu et al. 2024 supporting information, ACS figshare; the article is not open access); CC BY 4.0 for the others: the CARM1 knockout (Shishkova et al. 2017), the PRMT7 knockout (Szewczyk et al. 2020: the article's licence, taken to cover its Supplementary Data, the lab's decision of 2026-10-25), the PRMT1 knockdown (Hartel et al. 2019, from 2020-09-15) and the Li et al. 2021 arms (the article's licence, taken to cover its Supplementary Data)",
       "role": "input",
       "note": "One row per site and knockout, knockdown or inhibitor (9 perturbations): peptides, median log2 perturbed / control, the call (twofold at q < 0.05, or the published call where the perturbation says so) and both calls beside it (4,954 rows). Its calls equal the site table's perturbation_calls, which the website reads; this table gives the median change. No test reads it."
+    },
+    "hcm_cell_map": {
+      "file": "inputs/layers/cell_map_hcm_go2021.tsv",
+      "md5": "91ccc0b6416772662e52f70d53c89bba",
+      "source": "https://humancellmap.org/resources/downloads/preys-v1.txt",
+      "version": "Human Cell Map v1 preys (downloaded 2026-10-27)",
+      "licence": "CC BY 4.0 (humancellmap.org)",
+      "role": "input",
+      "note": "The NMF compartment and SAFE domain of each prey the Human Cell Map localises (HEK293 BioID), on reviewed canonical entries (4,369 rows). Staged by PTM_Pipeline scripts/52_stage_cell_maps.py (its docstring gives every rule; the raw download's MD5 in inputs/layers/raw_files.tsv); this repository checks the bytes. Citation: Go et al., Nature 595:120 (2021), doi:10.1038/s41586-021-03592-2."
+    },
+    "organelle_ip": {
+      "file": "inputs/layers/cell_map_organelle_ip_hein2025.tsv",
+      "md5": "34f4a29d8e30955b4a9f7cbd0697a682",
+      "source": "https://raw.githubusercontent.com/czbiohub-sf/Organelle_IP_analyses_and_figures/65f22ac57deeab5e0d5b8959049e88e36c3ad876/data/labels/cluster_annotation_Dec6.csv",
+      "version": "Organelle IP analysis repository, commit 65f22ac (downloaded 2026-10-27)",
+      "licence": "BSD-3-Clause (the analysis repository)",
+      "role": "input",
+      "note": "The cluster annotation of each protein group in organelle IP (HEK293T), on reviewed canonical entries (8,044 rows). Staged by PTM_Pipeline scripts/52_stage_cell_maps.py (its docstring gives every rule; the raw download's MD5 in inputs/layers/raw_files.tsv); this repository checks the bytes. Citation: Hein et al., Cell 188:1137 (2025), doi:10.1016/j.cell.2024.11.028."
+    },
+    "chromatin_probability": {
+      "file": "inputs/layers/cell_map_chromatin_kustatscher2014.tsv",
+      "md5": "5b92b8b2d51acc011bc48f09fc6d8494",
+      "source": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC3983682/supplementaryFiles (Table EV1, embj0033-0648-sd8.xlsx)",
+      "version": "Kustatscher et al. 2014, Table EV1 (downloaded 2026-10-27)",
+      "licence": "CC BY (the article's licence)",
+      "role": "input",
+      "note": "The interphase chromatin probability of each protein (chromatin enrichment for proteomics), on reviewed canonical entries (7,394 rows). Staged by PTM_Pipeline scripts/52_stage_cell_maps.py (its docstring gives every rule; the raw download's MD5 in inputs/layers/raw_files.tsv); this repository checks the bytes. Citation: Kustatscher et al., EMBO J 33:648 (2014), doi:10.1002/embj.201387614."
+    },
+    "depmap_gene_effect": {
+      "file": "inputs/layers/depmap_24q4_gene_effect_summary.tsv",
+      "md5": "7bc0f60d7ed0c141b0ce7157a916051b",
+      "source": "https://doi.org/10.25452/figshare.plus.27993248 (Figshare+ files CRISPRGeneEffect.csv, CRISPRGeneDependency.csv, CRISPRInferredCommonEssentials.csv, AchillesCommonEssentialControls.csv, Model.csv, OmicsSomaticMutations.csv)",
+      "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10; downloaded 2026-10-25)",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Per reviewed entry whose gene DepMap screened (primary gene name to Entrez by org.Hs.eg.db; 17,876 entries): the CRISPR gene effect (Chronos) across the screened lines, the lines with a dependency probability of at least 0.5, and whether DepMap calls the gene commonly essential. Staged by PTM_Pipeline scripts/44_stage_depmap.py; this repository checks the bytes. Citations: DepMap, Broad (2024), DepMap Public 24Q4, doi:10.25452/figshare.plus.27993248; Tsherniak et al., Cell 170:564 (2017); Dempster et al., Genome Biol 22:343 (2021)."
+    },
+    "depmap_arginine_changes": {
+      "file": "inputs/layers/depmap_24q4_arginine_changes.tsv",
+      "md5": "e256cfabef70d7ae423a4e71e2056e07",
+      "source": "https://doi.org/10.25452/figshare.plus.27993248 (Figshare+ files CRISPRGeneEffect.csv, CRISPRGeneDependency.csv, CRISPRInferredCommonEssentials.csv, AchillesCommonEssentialControls.csv, Model.csv, OmicsSomaticMutations.csv)",
+      "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10; downloaded 2026-10-25)",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "DepMap somatic missense and stop changes at arginines of reviewed canonical proteins (OmicsSomaticMutations), one row per cell line and change (53,209 rows); each counts only where the canonical sequence has an arginine at its position. Staged by PTM_Pipeline scripts/44_stage_depmap.py; this repository checks the bytes."
+    },
+    "tcga_arginine_changes": {
+      "file": "inputs/layers/tcga_mc3_arginine_changes.tsv",
+      "md5": "1df8a9e1bbe305ed37cb1277368c5c8c",
+      "source": "https://gdc.cancer.gov/about-data/publications/mc3-2017 (mc3.v0.2.8.PUBLIC.maf.gz, https://api.gdc.cancer.gov/data/1c8cfe5f-e52d-41ba-94da-f15ea1337efc) and the GDC cases endpoint (TCGA projects)",
+      "version": "MC3 public MAF v0.2.8 (GDC publication page, downloaded 2026-10-25); GDC cases fetched 2026-10-25",
+      "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no licence stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "TCGA MC3 somatic missense and stop changes at arginines of reviewed canonical proteins, one row per tumour sample and change (274,408 rows; FILTER PASS, and in OV and LAML also wga alone, as MC3 used them); each counts only where the canonical sequence has an arginine at its position. Staged by PTM_Pipeline scripts/44b_extract_tcga_mc3.py and scripts/44_stage_depmap.py; this repository checks the bytes. The results shown here are in whole or part based upon data generated by the TCGA Research Network (https://www.cancer.gov/tcga): MC3 somatic calls (Ellrott et al., Cell Syst 6:271 (2018), doi:10.1016/j.cels.2018.03.002), the calls of the PanCancer Atlas (Hoadley et al., Cell 173:291 (2018), doi:10.1016/j.cell.2018.03.022)."
     }
   }
 }

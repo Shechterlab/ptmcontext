@@ -36,7 +36,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-start.js', 'kit-counts.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-start.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -215,7 +215,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                              **({'scores': {k: a['scores'][k] for k in ('label', 'help', 'levels', 'max') if k in a['scores']}} if a.get('scores') else {}),
                              'title': a.get('title', a['id']), 'question': a.get('question', ''),
                              'sub': a.get('sub', ''), 'section': a.get('section', 'Kinds of protein'), 'layer': '', 'describe': a.get('background', ''),
-                             'labels': set_names.get(a['id'], {}), 'help': {}, 'new': bool(a.get('new')), **_class_order(a, {})})
+                             'labels': {**set_names.get(a['id'], {}), **(a.get('labels') or {})}, 'help': dict(a.get('help') or {}),
+                             'new': bool(a.get('new')), **_class_order(a, {})})
             continue
         layer = _layer_words(a, run)
         labels, helps = _labels(layer, profile)
@@ -242,6 +243,9 @@ def site_data(site: dict, folder: Path, profile) -> dict:
             readers.setdefault(ab, []).append(f"abundance deciles of {a['title']}")
         for step in (spec.get('identifiers') or {}).get('map', []):      # the tables that map proteins to the sets' identifiers
             readers.setdefault(step['input'], []).append(f"proteins to {a.get('unit', 'identifiers')} for {a['title']}")
+        vals = (spec.get('values') or {}).get('input') or ((spec.get('sets') or {}).get('input') if spec.get('values') else None)
+        if vals and vals not in a['roles']:                               # numbers shown beside the sets
+            readers.setdefault(vals, []).append(f"the numbers shown with {a['title']}")
         hist = ((spec.get('sets') or {}).get('history') or {}).get('input')
         if hist:                                                          # members' older accessions to current entries
             readers.setdefault(hist, []).append(f"older accessions of the members of {a['title']}")
@@ -272,6 +276,10 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'profile_uniprot': profile.data.get('uniprot_features', []),
         'overview': web.get('overview'), 'filters': web.get('filters'), 'stats': web.get('stats'),
         'sites_view': web.get('sites'), 'protein_view': web.get('protein'), 'compare': web.get('compare'), 'legacy_links': web.get('legacy_links') or {}, 'search_aliases': web.get('search_aliases') or {}, 'dataset': web.get('dataset'), 'downloads': web.get('downloads') or [], 'download_terms': web.get('download_terms', ''),
+        # the maps of the cell as one question (kit-cell.js) and the parts of the kit's drawings; protein-set questions
+        # drawn with their proteins' numbers (kit-values.js)
+        **({'cell': web['cell'], 'cell_drawings': _cell_drawings()} if web.get('cell') else {}),
+        **({'set_views': web['set_views']} if web.get('set_views') else {}),
         'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),
                  'lab': web.get('lab', {}).get('name', ''), 'config': f"sites/{site['id']}.yaml"},
         'words': {**profile.words, 'marked_long': profile.words.get('marked_long', profile.words['marked'])},
@@ -285,6 +293,18 @@ def site_data(site: dict, folder: Path, profile) -> dict:
 
 
 SHARDS = 64
+
+
+def _cell_drawings() -> dict:
+    from ..site import cell_drawings
+    return {k: sorted(d['parts']) for k, d in cell_drawings().items()}
+
+
+def stratum_questions(web: dict) -> set:
+    """The protein-set questions whose strata counts a page needs, to test a selection within the abundance deciles
+    (the maps of the cell and their regions)."""
+    cell = web.get('cell') or {}
+    return {x for m in cell.get('maps', []) for x in (m.get('analysis'), m.get('regions')) if x}
 
 
 def shard_of(accession: str) -> int:
@@ -331,7 +351,7 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
     return (listing, analyses, sources, [c[2:] for c in attrs]), shards
 
 
-def selection_data(folder: Path, listing: list, analyses: list, specs: dict | None = None) -> dict:
+def selection_data(folder: Path, listing: list, analyses: list, specs: dict | None = None, strata_for: set | None = None) -> dict:
     """What the browser needs to filter the marks and test a selection again: every mark with its protein, position,
     class in each residue question and attributes (dictionary-coded), and each protein's other candidate residues per
     class (from protein_counts.tsv), so the within-protein and pooled tests can be recomputed on any subset."""
@@ -377,6 +397,14 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
     # each protein's other candidate residues, the same for every question (a protein with none is left out of the
     # tests: its marks have nothing to be compared with)
     others_total = [int(r[5]) - int(r[4]) for r in listing]
+    # a residue question that counts only some proteins (proteins:) skips the others' marks, and one that counts the
+    # marks of a protein with no other candidate residue (marks_alone: count) keeps them (run.json says which)
+    counted = {}
+    run = json.loads((folder / 'run.json').read_text()) if (folder / 'run.json').exists() else {}
+    for aid, used in (run.get('analyses') or {}).items():
+        if aid in analyses and (used.get('proteins') or used.get('marks_alone') == 'count'):
+            counted[aid] = {'skip': sorted(pidx[a] for a in (used.get('proteins') or {}).get('not_counted', []) if a in pidx),
+                            'alone': used.get('marks_alone') == 'count'}
     # protein-set questions: each tested set's size in the background and its marked proteins (protein_sets.json)
     sets = {}
     if (folder / 'protein_sets.json').exists():
@@ -411,8 +439,14 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
                 cv = k['covariate']
                 sets[aid]['covariate'] = {'input': cv['input'], 'value': cv['value'], 'strata': cv['strata'],
                                           'proteins': {pidx[a]: x for a, x in cv['proteins'].items() if a in pidx}}
+                if aid in (strata_for or ()) and cv.get('counts'):   # the background in each stratum, overall and per set
+                    sets[aid]['covariate']['counts'] = cv['counts']
+            if k.get('values'):                        # numbers per protein: the marked proteins', the others' sorted
+                v = k['values']
+                sets[aid]['values'] = {'columns': v['columns'], 'marked': {pidx[a]: x for a, x in v['marked'].items() if a in pidx},
+                                       'others': v['others']}
     return {'analyses': analyses, 'classes': classes, 'attributes': avals, 'attribute_names': [c[2:] for c in attrs], 'attribute_links': links, 'marks': rows, 'others': others,
-            'others_total': others_total, 'protein_sets': sets}
+            'others_total': others_total, 'counted': counted, 'protein_sets': sets}
 
 
 def unit_value_data(folder: Path, listing: list, tracks: list[dict]) -> dict:
@@ -519,7 +553,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     data['unit_sources'] = unit_sources
     data['shards'] = SHARDS if shards else 0
     if listing:
-        sel = selection_data(folder, listing, mark_columns, site['marks'].get('attributes', {}))
+        sel = selection_data(folder, listing, mark_columns, site['marks'].get('attributes', {}), stratum_questions(web))
         if sel_counts:
             sel['count_questions'] = sel_counts
         (out / 'data').mkdir(parents=True, exist_ok=True)

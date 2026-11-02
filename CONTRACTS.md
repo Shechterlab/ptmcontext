@@ -26,7 +26,12 @@ Conventions:
 - `fisher`: pooled 2x2 test; Haldane–Anscombe odds ratio (0.5 added to each cell), two-sided Fisher p.
 - `mantel_haenszel`: each protein a stratum; Mantel–Haenszel odds ratio, Robins–Breslow–Greenland 95% CI, the
   continuity-corrected CMH statistic floored at 0 (a count within 0.5 of its expectation gives p = 1).
-- Both count the same marks: those on a protein with at least one other candidate residue.
+- Both count the same marks: those on a protein with at least one other candidate residue, unless the analysis counts
+  them all (`marks_alone: count`: a protein with marks only adds to `a` and `b` of both, and nothing to the
+  within-protein odds ratio or test, its table not being informative). An analysis may count only the marks and
+  candidate residues of the proteins a table lists (`proteins:`; its `label` is added to the pooled rows' background).
+- Rows are in the order the analysis gives (`order:`, a list of categories), else: pooled residue rows by odds ratio,
+  within-protein rows by category, protein-set rows by p.
 - `enricher`: protein-set tests (clusterProfiler's `enricher`). `a, b, c, d` are k, n − k, M − k and N − M − n + k
   (marked proteins in the set; other marked proteins; other proteins in the set; the rest of the background). One-sided
   hypergeometric p; `fold_enrichment` (k/n)/(M/N). The background is the universe's proteins in at least one set, or
@@ -46,7 +51,12 @@ Conventions:
 - Rows are written by ascending p, then set name, unless the analysis names an `order` (`by` a row's `a, b, c, d,
   fold_enrichment, p, q` or `category`, `descending`), first key first, a tie keeping the order before. Fold enrichment
   is compared exactly, as the fraction a(a+b+c+d)/((a+b)(a+c)), so 4 of 6 and 14 of 21 tie. The stratified rows follow
-  the `enricher` rows' order.
+  the `enricher` rows' order. A key `{categories: [...]}` puts the rows of those categories first, in its order (a
+  residue question takes the same keys).
+- `enricher` on sets made by rules (`sets.rules`): each row of a table goes to the set of the first rule whose
+  conditions all hold for it (`equals`, `in`, `contains` on text; `at_least` and `below` on a column's number or the
+  `ratio` of two columns, missing where the second is 0 or empty; a rule without conditions takes every row left);
+  the source annotates every protein of the table's rows.
 - `mantel_haenszel` on a protein-set analysis: the same 2×2 split by a protein covariate (PaxDb abundance decile, and
   `none` for proteins without a value); its `a, b, c, d` add up to the `enricher` row's. For sets of another
   identifier, an identifier takes the highest value of the proteins that map to it (`combine: max`), and the deciles
@@ -64,6 +74,38 @@ before any rule: `{name, family}`, `family: null` for none), `case_sensitive` (d
 list places); a name nothing places is in no family and is not tested. A family is in one list only. An analysis names
 the file (`sets.families.rules`, relative to the site's repository), the column whose names the rules read (`by`), and
 the lists whose families it tests (`lists`; default every list); the run records the file's MD5.
+
+## Maps of the cell and numbers per protein (website blocks)
+
+Two website blocks read only what protein-set questions already write, so any site whose maps or numbers come as
+protein-set tables gets them with no code (`ptmc check` names what they get wrong; `tests/test_cell_and_values.py`).
+
+**`website.cell`** (kit-cell.js): several maps of the cell as one question, its address `#overview/<id>`.
+- `maps`: each `{analysis, regions?, name, short?, method?, cells?, how?, ref?, doi?, url?, licence?, min_members?}`; `analysis`
+  is a protein-set question whose sets are the map's compartments, `regions` (optional) another whose sets are the same
+  map's regions. The grids' columns, in order. A map tested within abundance strata (`abundance:`) is compared within them
+  (its `mantel_haenszel` rows); one without, by its fold enrichment.
+- `regions`: rows `{label, set? (default label), part?, name?, in_text?}`, the sets of each map's regions question.
+- `compartments`: groups `{group, rows}`, each row `{label, sets: {analysis: set}, part?, also?, name?, in_text?}`: the
+  set it is in each map; the part of the drawings it colours, and `also` the parts it colours when they have no row of
+  their own; its name on the drawings (default label) and inside a sentence (default lower case).
+- `drawings`: `[{drawing, title?}]`, the kit's drawings shown. Their parts are `ptmcontext/config/cell_drawings.json`
+  (geometry only: `cell` has cytosol, microtubules, actin, pm, er, ribosomes, nucleus, golgi, mito, endolyso, perox,
+  granules, pbodies, centrosome; `nucleus` has nucleoplasm, chromatin, periphery, perinucleolar, nucleolus, speckles,
+  paraspeckles, pml, cajal, bodies, envelope, pores). A part no row colours is drawn outlined and not labelled; what a
+  part is called on a page is the row's name, never the kit's.
+- A part (and a region, on the tile) takes the median log2 odds ratio of the maps that have it; it is coloured when at
+  least half of them differ that way (q ≤ 0.05 and 1.1× or more), grey otherwise.
+- `title, question, intro, note`: words.
+
+**`website.set_views`** (kit-values.js): a protein-set question drawn with its proteins' numbers. Each `{analysis,
+meter?, meter_words?, population?, intro?, box?: {value, title?, sub?, axis?}, caveat?, chips?: [{title, note?, value? |
+share?: [column, column], sets?, order?, max?}], residue?, credit?}`: the set whose share the tile shows, a column drawn
+as box plots and compared (Mann–Whitney; the set's share by Fisher's test), lists of the proteins with the lowest or
+highest number or share of two columns (within some sets), and a residue question shown with it. The analysis names its
+numbers with **`values`**: `{input? (default the sets' table), protein? (default the sets' protein column), columns:
+[name | {name, label?, help?, background?}], include?, exclude?}`, each protein's first row; a column with `background:
+true` also keeps every other background protein's number. No test reads them.
 
 ## Unit table
 
@@ -141,9 +183,10 @@ names that the site file does not keep. A site without counts has none of this.
 
 `file, md5, source, version, licence` (required), `role` (`input` or `reference_output`), `note`, and two optional
 fields: `columns`, a column mapping for a file no reader knows (intervals: `accession, start, end`, and `label, ref,
-subtype, class`; per-residue values: `accession, position, value`; `include`/`exclude` conditions; `kind`; `sep`), and
-`record`, the source's own page for a protein (a URL with `{acc}`). A table a protein-set question reads that is not
-tab-separated says so with `columns: {sep: ","}` alone; every table of a protein-set question is read with it.
+subtype, class`; per-residue values: `accession, position, value`; lists of residues: `accession, position`;
+`include`/`exclude` conditions; `kind`; `sep`), and `record`, the source's own page for a protein (a URL with `{acc}`).
+A table a protein-set question reads that is not tab-separated says so with `columns: {sep: ","}` alone; every table of
+a protein-set question is read with it.
 
 ## What `ptmc run` writes for the website
 
@@ -179,7 +222,7 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 | `units.tsv` | one per drawn unit | `accession, kind, start, end, label, source, class, ref` |
 | `tracks.json` | per kind of drawn unit | `{kind, title, style, help, roles, analysis, colours?, values?}`: `style` is `domains` (boxes on the backbone), `disorder` (the backbone's wave) or `segments` (a row of boxes); `analysis` names the question whose classes colour it; `values`, for a kind whose units carry numbers (a layer's `Track.values`), is `{table, columns: [{name, label, help}]}` |
 | `units_<kind>.tsv` | one per unit of a kind with `values`, on a protein with a mark | `accession, start, end, length, class`, the value columns (up to 6 significant digits, empty for missing), `marks` (the counted marks inside) and `other_candidates` (the other candidate residues inside; left-out marks on neither side, as the tests count them). The IDR charge layer writes `units_idr.tsv`: each IDR with `f_plus, f_minus, fcr, ncpr, kappa, region` (its Das–Pappu region, 1 to 5; `class` r1 to r5) |
-| `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used; for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; absent when the site has no protein-set question |
+| `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used, and `counts: {codes, N, sets}`, the background's proteins in each stratum overall and in each set (from the lowest decile, then `none`); with `values`, `values: {columns, marked: {accession: [number or null per column]}, others: {column: sorted numbers}}` (columns with `background: true`); for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; absent when the site has no protein-set question |
 | `set_names.tsv` | per set | `analysis, set, name` |
 | `marks_<name>.tsv` | per row of a per-mark table (`marks.tables.<name>`) on a counted mark | `accession, position`, then the columns it keeps (text), in the table's order; `run.json` records each table's rows read and kept (`mark_tables`) |
 
@@ -187,10 +230,12 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 units as `[kind, start, end, label, source index, class, ref]`) and `data/selection.json`: `analyses`, `classes` and
 `attributes` (the distinct values, which the rows code by index), `attribute_names` (their order), `attribute_links`,
 `marks` (`[protein index, position, [class codes per analysis], [attribute codes per attribute], window]`), `others`
-(per analysis, protein and class: the other candidate residues), `others_total` (per protein: candidates − marks) and
+(per analysis, protein and class: the other candidate residues), `others_total` (per protein: candidates − marks),
+`counted` (per residue question that counts only some proteins or every mark, from `run.json`: `skip`, the indices of
+the marked proteins it leaves out, and `alone`, whether it counts the marks of a protein with no other candidate) and
 `protein_sets` (from `protein_sets.json`; for sets of another identifier, members are coded by index into its `ids`,
 with `of`, each marked protein's identifiers, and `unit`, their name in the plural, so a selection is tested on its
-proteins' identifiers; `any`, `more: [[set, [proteins]]]` and `scores` serve the filters: `p:<analysis>` takes a set or
+proteins' identifiers; a covariate's `counts` for the questions `website.cell` names, and `values` with their marked proteins coded by index; `any`, `more: [[set, [proteins]]]` and `scores` serve the filters: `p:<analysis>` takes a set or
 `*` (in any set), and `s:<analysis>` a score threshold, which then counts the memberships scored at least that); and,
 when a track has `values`, `data/units.json`: by kind, `{columns, classes, rows}`, a row
 `[protein index, start, end, class code, the values (null for missing), marks, other_candidates]`. A track whose values

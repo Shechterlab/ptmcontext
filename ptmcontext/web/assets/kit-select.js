@@ -233,9 +233,9 @@
   // ---- the tests again, on the selection -------------------------------------------------------------------------
   function residueRows(aid, method) {
     const ai = AN().indexOf(aid); if (ai < 0) return [];
-    const codes = SD.classes[aid], others = SD.others[aid] || {};
+    const codes = SD.classes[aid], others = SD.others[aid] || {}, cnt = SD.counted?.[aid], skip = new Set(cnt?.skip || []);
     const byProt = {};
-    compute().marks.forEach(i => { const m = SD.marks[i]; if (SD.others_total[m[0]] > 0) (byProt[m[0]] ||= []).push(m[2][ai]); });
+    compute().marks.forEach(i => { const m = SD.marks[i]; if (!skip.has(m[0]) && (SD.others_total[m[0]] > 0 || cnt?.alone)) (byProt[m[0]] ||= []).push(m[2][ai]); });
     const rows = codes.map((cat, ci) => {
       const tables = []; let a = 0, b = 0, c = 0, d = 0;
       for (const [p, ms] of Object.entries(byProt)) {
@@ -315,6 +315,8 @@
     return cons.some(([k]) => { const id = k.split(':')[1]; return qid[0] === '@' ? mine.has(k) : [...rolesOf(id)].some(x => mine.has(x)); });
   }
   function contrastResidue(qid, method, G) {
+    const skip = new Set(SD.counted?.[qid]?.skip || []), kept = i => !skip.has(SD.marks[i][0]);   // marks the question counts
+    G = { ...G, g1: G.g1.filter(kept), g2: G.g2.filter(kept) };
     const m1 = G.g1.map(i => SD.marks[i]), m2 = G.g2.map(i => SD.marks[i]), n1 = m1.length, n2 = m2.length;
     let strata = null;
     if (method !== 'fisher') {

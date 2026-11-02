@@ -18,19 +18,22 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
 
 ## Status (pilot)
 
-- **Parity:** `sites/methylarginine.yaml` rebuilds 4,178 of the 4,659 rows (90%) of release v1.4.3's statistics table
+- **Parity:** `sites/methylarginine.yaml` rebuilds 4,342 of the 4,659 rows (93%) of release v1.4.3's statistics table
   byte for byte, from the release's inputs, without running any of its code (`tests/test_parity_v1_4_3.py`):
-  - the 82 residue-level rows (motif, disorder, domain context, domain class, structure context; pooled and within
-    protein);
-  - the 4,096 protein-set rows for PANTHER protein classes (grouped, top level, subclasses), Reactome top-level groups,
+  - the 86 residue-level rows (motif, disorder, domain context, domain class, structure context, and changes at
+    methylarginines in TCGA tumours and DepMap cell lines, counted on the proteins whose gene DepMap screened; pooled
+    and within protein);
+  - the 4,256 protein-set rows for PANTHER protein classes (grouped, top level, subclasses), Reactome top-level groups,
     Reactome pathways, HPA locations, the DisGeNET disease families, audited and additional (Entrez genes, each
-    protein's through its UniProt gene name; the families from the release's rules, `sites/data/`), and CD-CODE's
+    protein's through its UniProt gene name; the families from the release's rules, `sites/data/`), CD-CODE's
     human condensates against the proteome and against the other condensate proteins (members kept by CD-CODE's
-    protein and condensate tables, old accessions through UniProt's history)
-    (clusterProfiler's `enricher`, rewritten in Python, and its repeat within PaxDb abundance deciles).
+    protein and condensate tables, old accessions through UniProt's history), the maps of the cell (Human Cell Map
+    compartments and domains, organelle IP, chromatin probability, and the regions of the cell in three maps) and
+    DepMap dependency classes (clusterProfiler's `enricher`, rewritten in Python, and its repeat within PaxDb
+    abundance deciles).
 
-  The rest (481 rows: functional classes, sequence proximity, crosslinks, interfaces, cell maps, eCLIP, DepMap, ...)
-  come next, one parity check at a time.
+  The rest (317 rows: functional classes, sequence proximity, crosslinks, interfaces, GO and experimental RNA and DNA
+  binding, eCLIP, the nuclear-body proteomes) come next, one parity check at a time.
 - **A new question, from one new layer:** `idr_charge` places each residue by the charge of the IDR it sits in, the
   region of the Das–Pappu diagram of states (CIDER's FCR, NCPR and κ, written out from the papers in
   `ptmcontext/charge.py`). One line adds it to a site (`new: true` where the site has a reference: it is not checked

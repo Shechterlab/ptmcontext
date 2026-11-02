@@ -35,13 +35,16 @@ upstream ───────────► staged files ──► snapshot �
 - **Inputs** are read by a manifest entry's column mapping (`columns`), else by the first registered reader that knows
   the file (`units.READERS`: the unit table, staged MobiDB, staged InterPro; a trusted plugin may add one).
 - **Layers** are built in, made from a site file's parameters (`layers.FACTORIES`: `regions` for any interval table,
-  `residue_values` for any per-residue value), or trusted plugins. Each declares the roles it reads and, optionally,
-  what it draws (`Layer.tracks`: a kind of region, its style, the roles it comes from, and the numbers each region
-  carries, `Track.values`, which the run writes with the marks inside each region).
+  `residue_values` for any per-residue value, `residue_lists` for tables that list residues), or trusted plugins. A
+  residue question may count only the proteins a table lists (`proteins:`). Each declares the roles it reads and,
+  optionally, what it draws (`Layer.tracks`: a kind of region, its style, the roles it comes from, and the numbers each
+  region carries, `Track.values`, which the run writes with the marks inside each region).
 - **The run records what the website shows**: each layer's words (title, labels, help, question, shape) in `run.json`,
   its regions in `units.tsv` and what each kind is in `tracks.json`. The website reads these, so it shows a plugin's
   or a configured layer's question exactly as a built-in one, and draws any track; it knows no layer by name.
-- **Protein-set questions** read any (set, protein) table or class hierarchy (`set_tests.py`). Sets keyed by another
+- **Protein-set questions** read any (set, protein) table or class hierarchy (`set_tests.py`), or make their sets
+  from a table's columns by rules (a protein in the first set whose conditions hold: a value at least a threshold, a
+  share of two columns, a flag). Sets keyed by another
   identifier (Entrez genes) come with the tables that map the site's proteins to it (`identifiers`), and sets gathered
   into families by name with the site's own rules file (`sets.families`, `sites/data/`): curated vocabulary is a site's
   data, never code. A table's rows may be kept by what other tables say of one of its columns (`sets.where`: CD-CODE's
@@ -86,11 +89,8 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 others register with it through `window.PTMC_MODULES`: `kit-stats.js` (the tests, for selections), `kit-select.js`
 (search, filters, the sidebar, selections and their tests), `kit-map.js` (the protein map: rows, hovers, pins, zoom,
 read-out, exports), `kit-proteins.js` (the Proteins tab and the protein page), `kit-sites.js` (the Sites tab),
-`kit-idrs.js` (the IDRs tab, from a track whose values include `fcr` and `ncpr`) and `kit-compare.js` (what sets a
-selection apart from the other marks, and two selections side by side) and `kit-counts.js` (questions answered by
-counting the marks rather than testing them, `website.counts`: their tiles, pages, filters, downloads and Method
-sections; a module's question draws its own tile and page through `A[id].tile` and `A[id].page`, and may add a kind of
-filter, `K.filterKinds`). A new view is a new module.
+`kit-idrs.js` (the IDRs tab, from a track whose values include `fcr` and `ncpr`), `kit-cell.js` (several maps of the cell as one question: `website.cell`; the drawings' parts in `config/cell_drawings.json`), `kit-values.js` (a protein-set question with its proteins' numbers: `website.set_views`) and `kit-compare.js` (what sets a
+selection apart from the other marks, and two selections side by side). `kit-counts.js` (questions answered by counting the marks rather than testing them, `website.counts`: their tiles, pages, filters, downloads and Method sections; a module's question draws its own tile and page through `A[id].tile` and `A[id].page`, and may add a kind of filter, `K.filterKinds`). A new view is a new module; a module may draw a question of its own or its own tile and page for one (`K.questions`) and add a Method section (`K.methods`).
 
 **Comparisons.** What a selection is compared with is the Overview's baseline: the other residues of its proteins (the
 site's own tests), the site's other marks ("what sets it apart"), or another selection's marks (`vs=cmp`, `cmp=` its
@@ -152,7 +152,7 @@ Arimo (an Arial-like face) embedded; every export is set in Arial, Helvetica or 
 ## Not yet built
 
 Isoform-to-canonical placement of marks; the site union from study tables; the remaining protein-set sources
-(functional classes, cell maps);
+(functional classes, the nuclear-body proteomes, GO binding, the eCLIP maps of RNA);
 measured backgrounds (candidates limited to residues covered by detected peptides); unit-level tests (IDRs as the
 unit); the release writer (sites and proteins tables, data dictionary, README, CHANGES, MD5SUMS). On the website:
 comparing two selections, "what sets it apart", the Figures view, and the protein page's class, pathway, abundance,
