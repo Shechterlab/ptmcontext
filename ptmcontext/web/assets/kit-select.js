@@ -576,7 +576,7 @@
     // the open protein is a page of its own, under Proteins; a page with no tab (Compare) is listed while open
     const extra = K.views[S.view] && !pages.some(([v]) => v === S.view) && S.view !== 'protein' ? [[S.view, K.views[S.view].title?.() || S.view]] : [];
     const list = [...pages, ...extra];
-    const prot = S.view === 'protein' && S.arg ? (() => { const acc = S.arg.split('/')[0], pr = byAcc[acc]; return `<a href="${esc(K.link('protein', acc))}" class="page sub-page on">${esc(pr?.gene || acc)}</a>` + here.map(item).join(''); })() : '';
+    const prot = S.view === 'protein' && S.arg ? (() => { const acc = S.arg.split('/')[0], pr = byAcc[acc]; return `<a href="${esc(K.link('protein', acc))}" class="page sub-page on">${esc(pr?.gene || K.views.protein?.title?.(acc) || acc)}</a>` + here.map(item).join(''); })() : '';
     return '<nav class="toc">' + list.map(([v, n]) => `<a href="${esc(K.link(v))}" class="page${cur(v) && S.view !== 'protein' ? ' on' : ''}">${esc(n)}</a>` +
       (v === 'proteins' && prot ? prot : cur(v) && S.view !== 'protein' ? here.map(item).join('') : '')).join('') + '</nav>';
   }

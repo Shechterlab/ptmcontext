@@ -141,6 +141,15 @@ def mapping_problems(site: dict, root: str | Path) -> list[str]:
         named |= {c['column'] for c in cols.get('include', []) + cols.get('exclude', [])}
         if named - have:
             out.append(f"input {name}: its column mapping names columns {path.name} does not have: {sorted(named - have)} (it has {sorted(have)})")
+    from .web.tables import source_columns
+    for tid, tb in ((site.get('website') or {}).get('tables') or {}).items():      # the tables the protein pages show
+        path = Path(root) / entries.get(tb['input'], {}).get('file', '')
+        if not path.exists():
+            continue
+        have = set(pd.read_csv(path, sep=tb.get('sep', '\t'), nrows=0).columns)
+        missing = [c for c in source_columns(tb) if c not in have]
+        if missing:
+            out.append(f"website.tables.{tid}: {path.name} has no columns {missing}")
     return out
 
 
@@ -288,17 +297,26 @@ def website_problems(site: dict) -> list[str]:
         if n not in attrs:
             out.append(f"website.sites.attributes: no attribute {n!r}")
     for f in (web.get('protein') or {}).get('facts', []):
-        if f['analysis'] not in ids:
+        if f.get('attribute'):
+            if f['attribute'] not in attrs:
+                out.append(f"website.protein.facts: no attribute {f['attribute']!r} in marks.attributes")
+            continue
+        if f.get('count'):
+            continue
+        if not f.get('analysis'):
+            out.append("website.protein.facts: a card counts marks (count: marks), an attribute's values or a question's classes")
+        elif f['analysis'] not in ids:
             out.append(f"website.protein.facts: no analysis {f['analysis']!r}")
-        elif f['analysis'] not in set_ids and not f.get('classes'):
+        elif f['analysis'] not in set_ids and not f.get('classes') and not f.get('best'):
             out.append(f"website.protein.facts: {f['analysis']!r} is a residue question: name the classes to count")
-        elif f['analysis'] not in set_ids and words.get(f['analysis'], {}).get('classes') is not None:
+        elif f['analysis'] not in set_ids and f.get('classes') and words.get(f['analysis'], {}).get('classes') is not None:
             bad = [c for c in f['classes'] if c not in words[f['analysis']]['classes']]
             if bad:
                 out.append(f"website.protein.facts: {f['analysis']!r} has no class {bad} (it has {sorted(words[f['analysis']]['classes'])})")
     for key, to in (web.get('search_aliases') or {}).items():
         if to not in ids and to not in attrs:
             out.append(f"website.search_aliases: {key!r} means {to!r}, which is neither a question nor an attribute of this site")
+    out += card_problems(site)
     for key, to in (web.get('legacy_links') or {}).items():
         if not to.startswith('?') and to not in questions:
             out.append(f"website.legacy_links: {key!r} opens {to!r}, which is not a question of this site")
@@ -385,6 +403,97 @@ def set_view_problems(site: dict) -> list[str]:
         r = v.get('residue')
         if r and (r not in analyses or analyses[r].get('test') == 'protein_sets'):
             out.append(f"website.set_views, {v['analysis']!r}: residue: {r!r} is not a residue question of this site")
+    return out
+
+
+def card_problems(site: dict) -> list[str]:
+    """What the protein page reads that the site file does not have: a table not in website.tables or not in the
+    format a block reads, a table that does not fit its format, an attribute not in marks.attributes, a question not
+    among the analyses, a numbering rule that is not a regular expression."""
+    import re
+
+    from .web.tables import problems as table_problems
+    web = site.get('website') or {}
+    tables, attrs = web.get('tables') or {}, (site.get('marks') or {}).get('attributes') or {}
+    ids = {x['id'] for x in site.get('analyses', [])}
+    prot = web.get('protein') or {}
+    out = [x for name, spec in tables.items() for x in table_problems(name, spec)]
+
+    def table(where, name, *formats):
+        if name not in tables:
+            out.append(f"website.protein.{where}: no table {name!r} in website.tables")
+        elif formats and tables[name].get('format') not in formats:
+            out.append(f"website.protein.{where}: table {name!r} is {tables[name].get('format')}, not {' or '.join(formats)}")
+
+    def attr(where, name):
+        if name and name not in attrs:
+            out.append(f"website.protein.{where}: no attribute {name!r} in marks.attributes")
+    card = prot.get('card') or {}
+    for a in card.get('hide') or []:
+        attr('card.hide', a)
+    ev = card.get('evidence') or {}
+    attr('card.evidence.status', ev.get('status'))
+    if ev.get('tags'):
+        attr('card.evidence.tags', ev['tags'].get('attribute'))
+        if ev['tags'].get('partners'):
+            table('card.evidence.tags.partners', ev['tags']['partners'], 'site_evidence')
+    if ev.get('entries'):
+        table('card.evidence.entries', ev['entries']['table'], 'site_evidence')
+    for n in (ev.get('sequences') or {}).get('tables', []):
+        table('card.evidence.sequences', n, 'bound_windows')
+    if ev.get('around'):
+        table('card.evidence.around', ev['around']['table'], 'residue_evidence')
+    if ev.get('protein'):
+        if ev['protein'].get('table'):
+            table('card.evidence.protein', ev['protein']['table'], 'protein_values')
+        pattrs = (site.get('proteins') or {}).get('attributes') or {}
+        out.extend(f"website.protein.card.evidence.protein: no attribute {v['attribute']!r} in proteins.attributes" for v in ev['protein'].get('values', []) if v.get('attribute') and v['attribute'] not in pattrs)
+    for k, s in enumerate((card.get('states') or []) + (card.get('changes') or [])):
+        attr(f'card.states/changes[{k}]', s.get('attribute'))
+        if s.get('table'):
+            table(f'card.states/changes[{k}]', s['table'], 'site_values')
+    if card.get('calls'):
+        for n in card['calls'].get('tables', []):
+            table('card.calls', n, 'site_measurements')
+        for a in (card['calls'].get('attributes') or {}):
+            attr('card.calls', a)
+    if card.get('records'):
+        table('card.records', card['records']['table'], 'site_records')
+        attr('card.records', card['records'].get('groups'))
+    if card.get('writer'):
+        w = card['writer']
+        for rule in (w.get('suggest') or {}).get('rules', []):
+            attr('card.writer.suggest', rule.get('attribute'))
+        if w.get('partners'):
+            table('card.writer.partners', w['partners']['table'], 'protein_partners')
+    if card.get('sources'):
+        table('card.sources', card['sources']['table'], 'source_records')
+        attr('card.sources', card['sources'].get('attribute'))
+    for k, x in enumerate(card.get('tables') or []):
+        table(f'card.tables[{k}]', x['table'], 'site_table')
+    if card.get('cite'):
+        attr('card.cite', card['cite'].get('attribute'))
+        if card['cite'].get('lookup'):
+            table('card.cite', card['cite']['lookup'], 'lookup')
+    for k, f in enumerate(prot.get('facts') or []):
+        if isinstance(f.get('tip'), dict) and f['tip'].get('table'):
+            table(f'facts[{k}].tip', f['tip']['table'], 'protein_values')
+        if isinstance(f.get('tip'), dict):
+            pattrs = (site.get('proteins') or {}).get('attributes') or {}
+            out.extend(f"website.protein.facts[{k}].tip: no attribute {v['attribute']!r} in proteins.attributes" for v in f['tip'].get('values', []) if v.get('attribute') and v['attribute'] not in pattrs)
+    tb = prot.get('table') or {}
+    attr('table.filter', tb.get('filter'))
+    for c in tb.get('columns', []):
+        attr(f"table.columns.{c['id']}", c.get('attribute'))
+        out.extend(f"website.protein.table.columns.{c['id']}: no analysis {a!r}" for a in c.get('analyses', []) if a not in ids)
+    if tb.get('nearest_domain'):
+        table('table.nearest_domain', tb['nearest_domain']['table'], 'site_values')
+    for k, n in enumerate(prot.get('numbering') or []):
+        for key in ('genes', 'names'):
+            try:
+                re.compile(n.get(key, ''))
+            except re.error as e:
+                out.append(f"website.protein.numbering[{k}].{key}: not a regular expression ({e})")
     return out
 
 

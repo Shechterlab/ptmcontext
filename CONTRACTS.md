@@ -1,6 +1,6 @@
 # Contracts
 
-Eight plain-data formats. Code on either side of a contract can change freely; a contract changes only with its
+Eight plain-data formats, and the tables the protein pages show (at the end). Code on either side of a contract can change freely; a contract changes only with its
 `schema_version`, and every file is checked against its schema before it is used.
 
 | Contract | Format | Schema | Written by | Read by |
@@ -250,3 +250,42 @@ where `filter` is the filter a row's click sets (`[t:<attribute>, <value>:<down>
 filter `c:<count id>`, whose values are row ids, keeping each row's down marks). `data/selection.json` then holds
 `count_questions: {<count id>: [per row: [[mark index, 1 if down + 2 if up, its change or null]]]}`, so a selection is counted
 again in the browser (`kit-counts.js`).
+
+## Tables the protein pages show
+
+What a protein page shows beyond the marks and their questions (the site card's blocks, the sites table's columns and
+Evidence rows, the citation box, a protein's light page) comes from tables in these formats. A site names each table
+under `website.tables` with the manifest input it reads, its `format`, and `columns`, which maps each column of the
+format to a column of the input (or to several, joined with `; `); `include` and `exclude` keep rows as elsewhere. The
+release's own tables are one source of them (`sites/methylarginine.yaml` maps them); a site with other data maps its own
+columns, and a block whose table a site does not name is absent. No test reads them. `ptmc check` names a column the
+mapping or a block gets wrong (`site.card_problems`, `web.tables.problems`).
+
+A **site** is named by one column, `<accession>:<residue><position>` or `<accession>:<position>` (`Q01844:R575`), or by
+an `accession` and a `position` column; positions are on the snapshot's sequences (UniProt numbering, whatever the page
+shows). Every value is text unless said otherwise; empty means not known. Lists are `; `-separated.
+
+| Format | Key | Columns (required in bold) | Read by |
+|---|---|---|---|
+| `site_values` | site | any columns, listed under `values:` and kept under their own names | blocks naming a column: the methylation state by source, the counts beside a list of changes, the nearest domain, source positions |
+| `site_table` | site | any columns, under `values:` | a table in a site's Evidence row (`card.tables`), each column labelled and formatted by the site file |
+| `protein_values` | `accession` | `aliases` (other names a search or an old link may use), and any columns under `values:` | the whole-protein line of the card, a headline card's hover; `aliases` make `#TDP-43` and a search for an alias find the protein |
+| `lookup` | `key` | any columns under `values:` | the sources of the citation box and of the card's links (`label`, `citation`, `doi`, `licence`) |
+| `site_evidence` | site | **`kind`** (a code: the values of the card's evidence attribute), `partner`, `partner_accession`, `ids` (a list of entry ids, e.g. PDB), `score` (number), `detail` | the card's interaction evidence: the entries at the site by kind, the partners named in a tag |
+| `bound_windows` | site | **`window`** (the bound chain around the contacted unit: one letter a unit, `[X]` a contacted unit, `-` past the chain's end), **`kind`** (a code: rna, dna, …), `type` (a code), `name`, `entry` (an id), `entries` (a count, for a row that stands for several), `distance` (Å), `offset` (k when the residue i + k makes the contact; empty or 0: the site), `preparation` | the card's bound sequences, aligned on the contacted unit; the sites table's contacts column |
+| `residue_evidence` | `accession` | **`start`**, **`end`** (integers; a residue: start = end), **`kind`** (a code), `source` | the card's line on evidence at or within `span` residues of the site (crosslinks, bound stretches) |
+| `site_records` | site | **`group`** (a code: what the record shows), `partner`, `partner_name`, `partner_accession`, `partner_kind` (protein, self, rna, dna, gene, small_molecule, … : labels from the site file), `species`, `source` (PDB, IntAct, …), `id`, `method`, `context`, `state` (the site in the experiment: a code), `state_detail`, `other_marks`, `pubmed`, `doi`, `citation`, `title` | "Who binds it, and how it was found" (records grouped by `group`, rows by partner, state and source), the writer-and-reader lines, and on a protein without marks the records naming it as `partner_accession` |
+| `site_measurements` | site | **`condition`** (a code), **`call`** (a code: the site file gives each a mark and words), `n`, `n_down`, `n_up` (counts), `value` (a log2 change), `q`, `rule` | the perturbation marks of the card and the sites table, and every measurement in the Evidence row |
+| `source_records` | site | **`source`** (a code: a value of the site's provenance attribute), `doi`, `reference`, `pubmed` (ids), `source_table`, `peptide` (modifications in brackets after their residue: `GR(me)G`), `state`, `enzyme`, `sample`, `detail`, `reported_accession`, `reported_position`, `check` (a code: how the record was placed) | the Evidence row's source records, the site's residue marked in each peptide |
+| `protein_partners` | `accession` | **`partner_accession`**, **`score`** (number), `partner`, `partner_marked` (true/false), `classes` (a list of codes) | the card's partners of some classes (`card.writer.partners`), and on a protein without marks the proteins with marks associated with it |
+
+`ptmc web` keeps each protein's rows beside its page (`data/e/NN.json`, the shards of `data/p`), the rows that name a
+protein without marks as a partner (`site_records`, `protein_partners`) on that protein's light page (`data/u/NN.json`,
+with its name, length and sequence from the snapshot; `data/u/index.json` lists those proteins), and lookups in the
+page's data (`D.lookups`); `D.tables` gives each table's format and columns. In a shard, a string seen twice or more is
+written once (`_s`) and its places hold its index; positions, `start` and `end` are the only numbers.
+
+The site card and the sites table read the site file's `website.protein.card` and `website.protein.table` for their
+words: the codes' labels, the sentences, the marks of each call, which columns the Columns menu offers and which show
+first. `website.protein.numbering` numbers some proteins as papers do (a gene or name pattern and an offset: histones
+without their initiator methionine): their positions are shown and read in links with it.

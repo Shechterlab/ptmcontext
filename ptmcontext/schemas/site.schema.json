@@ -1582,9 +1582,6 @@
               "description": "tiles at the top of each protein page: for a residue question, how many of the protein's marks are in some of its classes (classes required); for a protein-set question, the sets the protein is in (e.g. its disease families)",
               "items": {
                 "type": "object",
-                "required": [
-                  "analysis"
-                ],
                 "additionalProperties": false,
                 "properties": {
                   "analysis": {
@@ -1599,8 +1596,58 @@
                   },
                   "label": {
                     "type": "string"
+                  },
+                  "count": {
+                    "enum": [
+                      "marks"
+                    ]
+                  },
+                  "of": {
+                    "enum": [
+                      "candidates"
+                    ]
+                  },
+                  "attribute": {
+                    "type": "string"
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "best": {
+                    "type": "boolean"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "glyph": {
+                    "enum": [
+                      "pins",
+                      "letters",
+                      "wave",
+                      "squiggle",
+                      "drops",
+                      "cross",
+                      "bars"
+                    ]
+                  },
+                  "opens": {
+                    "type": "string"
+                  },
+                  "tip": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object"
+                      }
+                    ]
                   }
-                }
+                },
+                "description": "a headline card: a count of the protein's marks (count: marks, of: candidates), those in some classes of a residue question (classes), the class at its marks that the site's tests favour most (best: true), those with some values of an attribute (attribute, values), or the sets of a protein-set question it is in; kind, glyph, opens (a section id) and tip make it a card that opens its section"
               }
             },
             "links": {
@@ -1627,6 +1674,99 @@
             "default_links": {
               "type": "boolean",
               "description": "false: leave out the kit's own list (config/protein_links.json)"
+            },
+            "numbering": {
+              "type": "array",
+              "description": "proteins numbered as papers do, in labels and links: a protein whose gene (or, without a gene, name) matches is shown at UniProt position + offset (histones without the initiator methionine: offset -1)",
+              "items": {
+                "type": "object",
+                "required": [
+                  "offset"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "genes": {
+                    "type": "string",
+                    "description": "a regular expression on the gene"
+                  },
+                  "names": {
+                    "type": "string",
+                    "description": "a regular expression on the protein's name (case-insensitive), for a protein without a gene"
+                  },
+                  "offset": {
+                    "type": "integer"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "card": {
+              "type": "object",
+              "description": "the site card's blocks, read from the attributes and website.tables (evidence, states, changes, calls, records, writer, sources, inhibitors, cite); ptmc check names a table, attribute or column a block reads that does not exist",
+              "additionalProperties": {
+                "type": [
+                  "object",
+                  "array"
+                ]
+              }
+            },
+            "table": {
+              "type": "object",
+              "description": "the protein page's sites table: its columns (the Columns menu; default: true for those shown at first) and a filter by an attribute's values",
+              "properties": {
+                "filter": {
+                  "type": "string"
+                },
+                "columns": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "label"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "menu": {
+                        "type": "string"
+                      },
+                      "default": {
+                        "type": "boolean"
+                      },
+                      "attribute": {
+                        "type": "string"
+                      },
+                      "analyses": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "show": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "nearest_domain": {
+                  "type": "object"
+                }
+              },
+              "additionalProperties": false
             }
           }
         },
@@ -2137,6 +2277,122 @@
               },
               "credit": {
                 "type": "string"
+              }
+            }
+          }
+        },
+        "tables": {
+          "type": "object",
+          "description": "tables the protein pages show (no test reads them): each a manifest input in a format of CONTRACTS.md ('Tables the protein pages show'), its columns mapped to the format's",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "input",
+              "format",
+              "columns"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "input": {
+                "type": "string",
+                "description": "a manifest input"
+              },
+              "format": {
+                "enum": [
+                  "site_values",
+                  "site_table",
+                  "protein_values",
+                  "lookup",
+                  "site_evidence",
+                  "bound_windows",
+                  "residue_evidence",
+                  "site_records",
+                  "site_measurements",
+                  "source_records",
+                  "protein_partners"
+                ]
+              },
+              "columns": {
+                "type": "object",
+                "description": "the format's column: the input's column (or columns, joined with '; ')",
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 1
+                    }
+                  ]
+                }
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "the free formats' value columns, kept under their own names"
+              },
+              "sep": {
+                "type": "string"
+              },
+              "include": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "column"
+                  ],
+                  "properties": {
+                    "column": {
+                      "type": "string"
+                    },
+                    "equals": {
+                      "type": "string"
+                    },
+                    "in": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "contains": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "exclude": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "column"
+                  ],
+                  "properties": {
+                    "column": {
+                      "type": "string"
+                    },
+                    "equals": {
+                      "type": "string"
+                    },
+                    "in": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "contains": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
               }
             }
           }

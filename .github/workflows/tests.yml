@@ -37,6 +37,14 @@ jobs:
             releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
             releases/v1.4.3/statistics_v1.4.3.tsv
             releases/v1.4.3/human_methylarginine_proteins_v1.4.3.tsv
+            releases/v1.4.3/supporting/nucleic_acid_contacts_v1.4.3.tsv
+            releases/v1.4.3/supporting/nucleic_acid_near_sites_v1.4.3.tsv
+            releases/v1.4.3/supporting/protein_partners_v1.4.3.tsv
+            releases/v1.4.3/supporting/residue_evidence_v1.4.3.tsv
+            releases/v1.4.3/supporting/site_interaction_records_v1.4.3.tsv
+            releases/v1.4.3/supporting/site_interactions_v1.4.3.tsv
+            releases/v1.4.3/supporting/source_records_v1.4.3.tsv
+            releases/v1.4.3/studies_v1.4.3.tsv
             releases/v1.4.3/supporting/carm1_ko_v1.4.3.tsv
             releases/v1.4.3/supporting/maron2021_inhibitors_v1.4.3.tsv
             releases/v1.4.3/supporting/writer_perturbations_v1.4.3.tsv
