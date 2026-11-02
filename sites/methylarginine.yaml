@@ -760,6 +760,12 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
   examples: [FUS, FUS R216, TAF15 EWSR1 FUS, "motif:RGG", "state:Rme2", "disease_family:ALS", "tcga_any:yes"]
+  start:                   # the Overview's start panel for a first visit, and the Help page's starts (kit-help.js)
+    text: "Human arginine methylation sites from published studies and databases, and where they fall: in disordered regions, domains and motifs, on which kinds of protein, in which diseases. Each tile of the Overview is one question, tested within each protein and pooled; search a protein, a list of genes or a disease to test a selection of your own, and download any figure or table with how to cite it."
+    examples:
+      - {label: A list of genes, query: TAF15 EWSR1 FUS, help: "Paste your genes: every question is tested again on their methylarginines, and the Proteins page lists them."}
+      - {label: A disease, query: "disease_family:ALS", help: "The methylarginines on proteins linked to a disease family, and what sets them apart."}
+      - {label: One site in its structure, query: FUS R216, help: "Its protein's map of domains and disordered regions, the evidence for the site, and its AlphaFold model and PDB structures."}
   stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
     question: "What kinds of proteins are arginine methylated?"

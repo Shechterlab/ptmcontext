@@ -144,6 +144,8 @@
   // a protein's own facts (the site file's proteins.attributes): by accession, a number for a number attribute
   const PI = Object.fromEntries((D.proteins || []).map((p, i) => [p[0], i]));
   const proteinAttr = (acc, name) => { const v = D.protein_attributes?.values?.[name]; return v && PI[acc] != null ? v[PI[acc]] : null; };
+  // smooth scrolling only for readers whose system does not ask for reduced motion
+  K.smooth = () => (matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
   Object.assign(K, { proteinAttr, go, writeHash, link, carry, render: () => render(), holds, holdStatus, effText, SETS, rowsFor, strat: (aid, cat) => STRAT[aid + '\u0000' + cat] });
   // a link written without the selection (the header's, the footer's, a module's) gets it when followed or copied
   const carryLink = e => { const a = e.target.closest?.('a[href^="#"]'); if (!a || 'jump' in a.dataset) return; const base = a.dataset.base ?? a.getAttribute('href'); a.dataset.base = base; a.setAttribute('href', carry(base)); };
@@ -176,9 +178,10 @@
   }
   function tabs() {
     const sel = K.sel?.active();
-    const t = [['overview', 'Overview', sel ? 'selection' : null], ...K.tabs.map(f => f()).filter(Boolean), ['statistics', 'Statistics', D.rows.length], ['method', 'Method', null]];
+    // K.tabsEnd: a module's page after Method (kit-help.js: Help)
+    const t = [['overview', 'Overview', sel ? 'selection' : null], ...K.tabs.map(f => f()).filter(Boolean), ['statistics', 'Statistics', D.rows.length], ['method', 'Method', null], ...(K.tabsEnd || []).map(f => f()).filter(Boolean)];
     const on = v => S.view === v || (K.views[S.view]?.tab === v);
-    $('#tabs').innerHTML = `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>` + t.map(([v, name, n]) => `<a class="tab" role="tab" href="${esc(link(v))}" aria-selected="${on(v)}">${name}` +
+    $('#tabs').innerHTML = `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>` + t.map(([v, name, n]) => `<a class="tab" href="${esc(link(v))}"${on(v) ? ' aria-current="page"' : ''}>${name}` +
       (n != null ? ` <span class="count${n === 'selection' ? ' sel' : ''}"${n === 'selection' ? ' title="Every question here is tested again on your selection"' : ''}>${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + '</a>').join('') + variantSwitch();
   }
   // the site's variants (the same questions on other marks, such as with lower-confidence sites): a switch to each,
@@ -449,7 +452,7 @@
       MORE.scroll = false;
       setTimeout(() => {
         const el = document.querySelector('.qrow.more-mark'), bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--toolbar-h')) || 0;
-        if (el) scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + scrollY - bar - 90), behavior: 'smooth' });
+        if (el) scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + scrollY - bar - 90), behavior: K.smooth() });
         setTimeout(() => document.querySelectorAll('.more-mark').forEach(x => x.classList.remove('more-mark')), Math.max(0, MORE.until - Date.now()));
       }, 0);
     }
@@ -469,7 +472,9 @@
     const tools = `<span class="tools"><span class="seg" role="group" aria-label="Test">${methods.map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ''}>${cap(METHOD[m])}</button>`).join('')}</span></span>`;
     if (!selOn()) return `<div class="page-head"><h2>${esc(q)}</h2>${tools}</div>` + key;
     const c = K.sel.compute(), n = (c.marks || []).length, np = c.proteins ? c.proteins.size : 0;
-    if (K.sel.data() && n === 0) return `<div class="page-head"><h2>Your selection</h2></div><p class="note">No ${esc(W.mark)} matches this selection. Change the search or the filters, or <button class="linkish" type="button" data-sel-clear-all>clear the selection</button>.</p>`;
+    if (K.sel.data() && n === 0) return `<div class="page-head"><h2>Your selection</h2></div><p class="note">No ${esc(W.mark)} matches this selection. Change the search or the filters, or <button class="linkish" type="button" data-sel-clear-all>clear the selection</button>.</p>` +
+      // an empty result says what the search takes, with the site's examples to try, and where the help is
+      `<p class="note empty-help">The search takes a gene, an accession, a list of genes${(D.site.examples || []).some(e => e.includes(':')) ? ' or a term such as key:value' : ''}.${(D.site.examples || []).length ? ` Try ${D.site.examples.slice(0, 4).map(e => `<button class="linkish mono" type="button" data-try="${esc(e)}">${esc(e)}</button>`).join(', ')}.` : ''}${K.views.help ? ` <a href="#help/h-search">How searching works</a>.` : ''}</p>`;
     const byP = K.sel.selectedCountByProtein ? K.sel.selectedCountByProtein() : {};
     const pills = Object.entries(byP).sort((x, y) => y[1] - x[1]).slice(0, 30).map(([pi, k]) => { const p = D.proteins[pi]; return `<a class="ppill" href="${esc(link('protein', p[0]))}" title="${esc(p[2])}: ${int(k)} of its ${int(p[4])} ${esc(W.marks)} selected">${esc(p[1] || p[0])} <span>${int(k)}</span></a>`; }).join('');
     const against = `<p class="against"><span class="flabel">Compared with</span><span class="seg" role="group" aria-label="Compared with">` +
@@ -510,12 +515,13 @@
     REG = [];
     if (S.arg && A[S.arg]?.page) return focus(S.arg);
     if (selOn() && !K.sel.data()) return lead() + '<p class="muted">Loading the selection…</p>';
-    if (selOn() && !vsOn() && !selTestable()) return lead() + anySize();
+    if (selOn() && !vsOn() && !selTestable()) return lead() + (K.sel.data() && !K.sel.nMarks() ? '' : anySize());   // nothing selected: no empty tiles
     if (S.arg && A[S.arg] && (A[S.arg].kind !== 'attribute' || vsOn())) return focus(S.arg);
     if (vsOn() && !(K.sel.contrastGroups()?.g1.length >= K.sel.MIN_SIDE && K.sel.contrastGroups()?.g2.length >= K.sel.MIN_SIDE)) return lead();
     // with a selection, a section of protein-set questions is about its proteins: "Kinds of protein in your selection"
     const head = x => (selOn() && x.cards.length && x.cards.every(c => A[c.analysis]?.kind === 'protein_sets') ? `${x.name} in your selection` : x.name);
-    return lead() + secList().map(x => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(head(x))}</h3><div class="tiles">${x.cards.map(tile).join('')}</div>`).join('') +
+    // K.overviewTop: a module's block above the Overview's questions (kit-help.js: the start panel for a first visit)
+    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + lead() + secList().map(x => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(head(x))}</h3><div class="tiles">${x.cards.map(tile).join('')}</div>`).join('') +
       (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
   // the tiles of questions that hold for any selection (a module's counts), for a selection too small to test

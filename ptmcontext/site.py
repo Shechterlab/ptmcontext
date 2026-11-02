@@ -326,7 +326,7 @@ def website_problems(site: dict) -> list[str]:
     for key, to in (web.get('legacy_links') or {}).items():
         if not to.startswith('?') and to not in questions:
             out.append(f"website.legacy_links: {key!r} opens {to!r}, which is not a question of this site")
-    for ex in web.get('examples') or []:
+    for ex in [*(web.get('examples') or []), *(x.get('query', '') for x in (web.get('start') or {}).get('examples') or [])]:
         key = ex.split(':', 1)[0] if ':' in ex else None
         if key is not None and key not in ids and key not in attrs:
             out.append(f"website.examples: {ex!r} names neither an analysis nor an attribute")
