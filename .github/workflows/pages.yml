@@ -96,3 +96,29 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+  # one open issue says the published site is stale: opened (or commented on) when a build or deploy fails, closed when a
+  # deploy succeeds; watch the label "pages-failure" instead of Actions' e-mails
+  report:
+    needs: [build, deploy]
+    if: always() && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RESULT: ${{ needs.build.result }}/${{ needs.deploy.result }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+          REF: ${{ github.ref_name }}
+        run: |
+          gh label create pages-failure --repo "$REPO" --color B42318 --description "The Pages build or deploy failed" 2>/dev/null || true
+          open=$(gh issue list --repo "$REPO" --label pages-failure --state open --json number --jq '.[0].number')
+          if [ "$RESULT" = "success/success" ]; then
+            [ -n "$open" ] && gh issue close "$open" --repo "$REPO" --comment "Deployed again from $REF at ${SHA:0:7}: $RUN" || true
+          elif [ "$RESULT" != "cancelled/skipped" ] && [ "$RESULT" != "cancelled/cancelled" ]; then
+            body="Build/deploy: $RESULT on $REF at ${SHA:0:7}. Log: $RUN"
+            if [ -n "$open" ]; then gh issue comment "$open" --repo "$REPO" --body "$body"
+            else gh issue create --repo "$REPO" --label pages-failure --title "Pages build failing on $REF" --body "$body"; fi
+          fi
