@@ -1078,8 +1078,8 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         for analysis in site['analyses']:
             own = tables.get(analysis['id'])
             if own:                                          # a published table of its own (a release's supporting table)
-                table = pd.read_csv(paths[own['input']], sep=own.get('sep', '\t'), dtype=str, keep_default_na=False)
-                found = [compare_table(rows, table, analysis['id'], own)]
+                published = pd.read_csv(paths[own['input']], sep=own.get('sep', '\t'), dtype=str, keep_default_na=False)
+                found = [compare_table(rows, published, analysis['id'], own)]
             elif analysis.get('new') or reference is None:   # not in the reference: nothing to compare it with
                 log(f"  new    {analysis['id']:18s} not in the reference")
                 continue
