@@ -110,8 +110,26 @@ tab-separated says so with `columns: {sep: ","}` alone; every table of a protein
 ## What `ptmc run` writes for the website
 
 `run.json` keeps, for each residue question, its layer, origin (`ptmcontext`, or a plugin's package and version), its
-parameters (`with`) and its words (`shape, title, describe, labels, help, question, sub, section, needs`), so the
-website needs no layer code.
+parameters (`with`) and its words (`shape, title, describe, labels, help, question, sub, section, needs, ordered,
+groups`), so the website needs no layer code.
+
+A question's classes, as its chart and tiles show them:
+
+| Field | Type | From | Meaning |
+|---|---|---|---|
+| `labels` | object, class code → label | the layer (or the profile's motif families; for protein sets `set_names.tsv`) | the class's name; its key order is the classes' own order |
+| `help` | object, class code → text (optional) | the layer, the profile | the class's meaning, shown after its name ("RGG · Gly at +1 and +2") and in its hover |
+| `ordered` | boolean (default false) | the site file's analysis (`ordered`), else the layer (`Layer.ordered`) | the classes keep the order of `labels` (from inside a domain outwards, the lowest bin up); otherwise they are sorted by effect, the sets that differ first, catch-all classes ("No …") and classes without a test last |
+| `groups` | list of `{name, classes}` (optional) | the site file's analysis (`groups`), else the layer (`Layer.groups`) | headed groups of the classes, in order; a class in no group follows them under a rule. `ptmc check` reports a class a group names that the question does not have, or one in two groups |
+
+Each row of the chart is a statistics row of the question and the test shown (`enricher` for a protein-set question):
+its counts (`a / a+b`, the marks in the class of all marks; `c / c+d`, the other residues or proteins), its effect
+(`odds_ratio` or `fold_enrichment`) with `odds_ratio_ci_low`/`high`, and `q`. A row with an empty odds ratio (no protein
+has residues both in the class and outside it, so no within-protein test) is drawn with its counts and "—". For a
+protein-set question with `mantel_haenszel` rows (within abundance deciles, `abundance:` in the site file), the value
+carries that test's reading (✓ more, ≈ about the same, ○ no difference, ▼ fewer) where either test differs. With a
+selection, the rows are its own, tested again in the browser, each with the whole dataset's value as a tick. A question
+without labels, help, order or deciles simply shows less.
 
 Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 

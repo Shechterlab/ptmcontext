@@ -201,6 +201,17 @@ def website_problems(site: dict) -> list[str]:
             out += [f"marks.attributes.{name}: a colour for {v!r}, which is not among its values" for v in a['colours'] if v not in a['values']]
         if a.get('records') and a.get('kind') != 'list':
             out.append(f"marks.attributes.{name}: records are for a list attribute")
+    # headed groups of a question's classes: each class in one group, and (where the classes are known) one of its own
+    for a in site.get('analyses', []):
+        seen: set = set()
+        for g in a.get('groups') or []:
+            twice = [c for c in g['classes'] if c in seen]
+            seen.update(g['classes'])
+            if twice:
+                out.append(f"analyses.{a['id']}.groups: {twice} in more than one group")
+            known = words.get(a['id'], {}).get('classes')
+            if known is not None and set(g['classes']) - known:
+                out.append(f"analyses.{a['id']}.groups, group {g['name']!r}: no class {sorted(set(g['classes']) - known)} (it has {sorted(known)})")
     return out
 
 
@@ -439,7 +450,8 @@ UNIT_OUT = ['accession', 'kind', 'start', 'end', 'label', 'source', 'class', 're
 def layer_words(layer: L.Layer) -> dict:
     """What the website shows of a layer, kept in run.json so the website needs no layer code (a plugin's included)."""
     return {'shape': layer.shape, 'title': layer.title, 'describe': layer.describe, 'labels': dict(layer.labels),
-            'help': dict(layer.help), 'question': layer.question, 'sub': layer.sub, 'section': layer.section, 'needs': list(layer.needs)}
+            'help': dict(layer.help), 'question': layer.question, 'sub': layer.sub, 'section': layer.section, 'needs': list(layer.needs),
+            'ordered': bool(layer.ordered), 'groups': [{'name': g, 'classes': list(cs)} for g, cs in layer.groups]}
 
 
 def drawn_tracks(layers: dict, ctx: L.Context, accs: set, values: dict | None = None) -> tuple[pd.DataFrame, list[dict]]:

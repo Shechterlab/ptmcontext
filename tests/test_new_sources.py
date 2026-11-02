@@ -251,3 +251,32 @@ def test_a_protein_table_gives_facts_and_starting_points(tmp_path):
     bad['website']['overview']['starting_points']['lists'][0]['by'] = 'kind'          # a category, not a number
     (root / 'sites' / 'bad.yaml').write_text(yaml.safe_dump(bad, sort_keys=False))
     assert any('not a number attribute' in p for p in S.website_problems(S.load_site(root / 'sites' / 'bad.yaml')))
+
+
+def test_a_question_s_class_order_and_groups_come_from_its_layer_or_the_site_file(tmp_path):
+    """The chart of a question keeps its classes' own order, under headed groups, when its layer or the site file says
+    so: a configured layer's classes are ordered (inside to far, the lowest bin up), and the site file may group them
+    or turn the order off. Nothing names a class in code."""
+    root = _toy_site(tmp_path)
+    path = root / 'sites' / 'toy.yaml'
+    site = yaml.safe_load(path.read_text())
+    conf = next(a for a in site['analyses'] if a['id'] == 'confidence')
+    conf['groups'] = [{'name': 'Modelled', 'classes': ['high', 'mid']}, {'name': 'Poorly modelled', 'classes': ['low']}]
+    site['analyses'].append({'id': 'condensates_plain', 'layer': 'regions', 'ordered': False,
+                             'with': {'role': 'condensates', 'kind': 'condensate', 'code': 'cr', 'noun': 'condensate region'}})
+    path.write_text(yaml.safe_dump(site, sort_keys=False))
+    assert S.website_problems(S.load_site(path)) == []
+    S.run(path, root=root / 'data', log=lambda *_: None)
+    rec = json.loads((root / 'out' / 'toy' / 'run.json').read_text())['analyses']
+    assert rec['condensates']['ordered'] and rec['confidence']['ordered'] and rec['condensates']['groups'] == []
+    index = web.build(path, log=lambda *_: None)
+    data = json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1))
+    a = {x['id']: x for x in data['analyses']}
+    assert a['condensates']['ordered'] and list(a['condensates']['labels']) == ['in_condensates', 'condensates_boundary', 'outside_condensates', 'no_condensates']
+    assert a['confidence']['ordered'] and list(a['confidence']['labels'])[:3] == ['low', 'mid', 'high']
+    assert a['confidence']['groups'] == [{'name': 'Modelled', 'classes': ['high', 'mid']}, {'name': 'Poorly modelled', 'classes': ['low']}]
+    assert not a['condensates_plain']['ordered'] and a['condensates_plain']['groups'] == []
+    # a group naming a class the question does not have is reported by ptmc check
+    conf['groups'][0]['classes'].append('very_high')
+    path.write_text(yaml.safe_dump(site, sort_keys=False))
+    assert any("no class ['very_high']" in p for p in S.website_problems(S.load_site(path)))

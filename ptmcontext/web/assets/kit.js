@@ -59,9 +59,6 @@
     return same ? 'weaker' : 'lost';
   };
   const holds = r => { const h = holdStatus(r); return h == null ? null : h === 'holds'; };
-  const HOLD_MARK = { weaker: ['◌', 'the same direction within abundance deciles, but not significant there'], lost: ['○', 'lost within abundance deciles (under 1.1× or the other way)'] };
-  const holdsMark = r => { const h = holdStatus(r); if (!HOLD_MARK[h]) return ''; const st = STRAT[r.analysis + '\u0000' + r.category];
-    return `<span class="nh ${h}" title="${HOLD_MARK[h][1]}: OR ${fxn(st.eff)}${st.lo != null ? ` (95% CI ${fxn(st.lo)} to ${fxn(st.hi)})` : ''}, q ${fq(st.q)}">${HOLD_MARK[h][0]}<span class="vh"> ${HOLD_MARK[h][1]}</span></span>`; };
   const testName = (aid, m) => SETS(aid) ? (m === 'enricher' ? 'proteins, hypergeometric' : 'within abundance deciles') : (METHOD[m] || m);
   const methodName = r => testName(r.analysis, r.method);
   const effText = r => r.eff == null ? '–' : r.method === 'enricher' ? fxn(r.eff) + '-fold' : 'OR ' + fxn(r.eff);
@@ -184,22 +181,133 @@
   }
 
   // ---- Overview: tiles. Each tile is a question with its most telling classes, and opens the question's figure ------
-  const LO = Math.log(0.1), HI = Math.log(30);
-  const xp = v => (Math.min(Math.max((Math.log(v) - LO) / (HI - LO), 0), 1) * 100).toFixed(2) + '%';
   const am = d => `<span class="am ${d}" aria-hidden="true">${d === 'more' ? '▲' : d === 'less' ? '▼' : '○'}</span>`;
   const SHOWN = 8;
   // the rows behind every dot on the page, for their hover (the site's own rows and a selection's alike)
   let REG = [];
   const reg = r => REG.push(r) - 1;
-  function dotRow(r, fkey) {
-    const whisker = r.lo != null && r.hi != null ? `<line class="whisker ${r.dir}" x1="${xp(r.lo)}" x2="${xp(r.hi)}" y1="9" y2="9"/>` : '';
-    const dot = r.eff != null ? `<circle class="dot ${r.dir}" cx="${xp(Math.max(r.eff, 1e-3))}" cy="9" r="4.6"/>` : '';
-    return `<div class="drow${fkey ? ' pick' : ''}" data-r="${reg(r)}"${fkey ? ` data-f="${esc(fkey)}" data-v="${esc(r.category)}" role="button" tabindex="0" title="Select the ${esc(W.marks)} ${SETS(r.analysis) ? 'on proteins in' : 'in'} ${esc(r.label)}"` : ''}><span class="lab">${esc(r.label)}</span>` +
-      `<svg aria-hidden="true"><line class="track" x1="0" x2="100%" y1="9" y2="9"/><line class="one" x1="${xp(1)}" x2="${xp(1)}" y1="2" y2="16"/>${whisker}${dot}</svg>` +
-      `<span class="val ${r.dir}">${fx(r.eff)}${holdsMark(r)}</span></div>`;
+
+  // ---- a question's chart: one model, drawn on the page (rows of HTML, each with its SVG bar) and, the same, in its
+  // exports (one SVG for PDF, SVG and PNG): every class in its order, under its group's heading; the counts behind
+  // it; a bar from 1× on an axis fitted to the values, its 95% CI, and with a selection the whole dataset's value
+  // as a tick; the value, and for a protein set the same test within abundance deciles; a legend and the axis's title
+  // counts as the explorer prints them in a column: 3,069; 11.6K; 195K
+  const kfmt = n => (n == null ? '–' : n < 1e4 ? int(n) : n < 1e6 ? +(n / 1e3).toFixed(n < 1e5 ? 1 : 0) + 'K' : +(n / 1e6).toFixed(1) + 'M');
+  // ticks of a log axis: ratios and their reciprocals (2× and 0.5× as far from 1×), from the finest ladder that gives at
+  // most `max` ticks; the axis runs from the tick at or below the smallest value to the one at or above the largest
+  const LADDERS = [[1, [1, 1.25, 1.5]], [1, [1, 1.5]], [1, [1]], [2, [1]], [3, [1]], [4, [1]], [5, [1]]];
+  const tickLab = v => (v >= 1 ? +v.toPrecision(3) : v >= 0.095 ? +v.toFixed(2) : +v.toPrecision(1)) + '×';
+  function logAxis(vals, max = 7) {
+    const l2 = vals.filter(v => v != null && v > 0 && Number.isFinite(v)).map(v => Math.min(10, Math.max(-10, Math.log2(v))));
+    const lo = Math.min(0, ...l2), hi = Math.max(0, ...l2);
+    let best = null;
+    for (const [s, ms] of LADDERS) {
+      const up = []; for (let k = 0; k * s <= 11; k++) ms.forEach(m => up.push(k * s + Math.log2(m)));
+      const all = [...new Set([...up, ...up.map(p => -p)].map(p => +p.toFixed(6)))].sort((x, y) => x - y);
+      const a = Math.max(...all.filter(p => p <= lo + 1e-9)), b = Math.min(...all.filter(p => p >= hi - 1e-9));
+      best = { a, b, t: all.filter(p => p >= a - 1e-9 && p <= b + 1e-9) };
+      if (best.t.length <= max) break;
+    }
+    if (best.b - best.a < 1e-9) best = { a: -1, b: 1, t: [-1, 0, 1] };
+    const { a, b } = best, z = best.t.indexOf(0);
+    const X = v => (Math.min(Math.max(Math.log2(Math.max(v, 1e-300)), a), b) - a) / (b - a);
+    return { X, log: true, ticks: best.t.map((p, i) => ({ x: (p - a) / (b - a), lab: tickLab(2 ** p), minor: best.t.length > 5 && (i - z) % 2 !== 0 })) };
   }
-  const axisNote = () => `<div class="axis-note"><span></span><svg aria-hidden="true">` +
-    [0.25, 1, 4, 16].map(v => `<text x="${xp(v)}" y="11" text-anchor="middle">${v}×</text>`).join('') + '</svg><span></span></div>';
+  // a share axis, from 0 to the round share above the largest
+  function shareAxis(rows) {
+    const top = Math.max(0.05, ...rows.flatMap(r => [share1(r), share2(r)]));
+    const s = [0.1, 0.25, 0.5, 1].find(v => v >= top) || 1;
+    return { X: v => Math.min(v / s, 1), log: false, ticks: [0, 0.25, 0.5, 0.75, 1].map((f, i) => ({ x: f, lab: pcS(f * s), minor: i % 2 === 1 })) };
+  }
+  // a protein set's test again within abundance deciles: shown after its value where either test differs (as the
+  // explorer marks it), never on a selection's rows (the deciles are the whole dataset's)
+  const DECILE = { more: ['✓', 'more than expected'], same: ['≈', 'about the same (within 1.1×)'], ns: ['○', 'no difference'], less: ['▼', 'fewer than expected'] };
+  const decile = r => {
+    if (!SETS(r.analysis) || r.selection || r.vs) return null;
+    const st = STRAT[r.analysis + '\u0000' + r.category];
+    return st && ((r.q != null && r.q <= PADJ && r.eff > 1) || st.dir !== 'ns') ? st : null;
+  };
+  // with a selection tested again, each row keeps the whole dataset's row of its class: a tick, and a line in the hover
+  function withRef(a, rows, m) {
+    if (!selOn() || vsOn() || !rows) return rows;
+    const whole = {}; D.rows.forEach(r => { if (r.analysis === a.id && r.method === (a.kind === 'protein_sets' ? 'enricher' : m) && r.eff != null) whole[r.category] = r; });
+    rows.forEach(r => { r.ref = whole[r.category] || null; });
+    return rows;
+  }
+  // a question's rows as its chart draws them: a question with ordered classes keeps their order (a layer's labels, or
+  // the site file's), in its groups; any other puts the sets that differ first and sorts by effect, or by evidence
+  // (order: q); catch-all classes ("No …") and classes without a test go last
+  const TAIL = /^(no |not |unknown|unassigned)/i;
+  function chartRows(a, m, card = cardOf(a.id)) {
+    const rows = withRef(a, (vsOn() || selOn() ? rowsOf(a, m) || [] : D.rows.filter(r => r.analysis === a.id && r.method === (a.kind === 'protein_sets' ? 'enricher' : m))).slice(), m);
+    const ORDER = { more: 0, same: 1, ns: 2, less: 3 }, sets = a.kind === 'protein_sets', groups = a.groups || [];
+    const tail = r => (r.eff == null || TAIL.test(r.label) ? 1 : 0);
+    const eff = (x, y) => (card.order === 'q' ? (x.q ?? 1) - (y.q ?? 1) : 0) || (y.eff ?? 0) - (x.eff ?? 0) || x.label.localeCompare(y.label);
+    const own = Object.keys(a.labels || {}), at = r => { const i = own.indexOf(r.category); return i < 0 ? own.length : i; };
+    const gi = r => { const i = groups.findIndex(g => g.classes.includes(r.category)); return i < 0 ? groups.length : i; };
+    return rows.sort((x, y) => gi(x) - gi(y) || (a.ordered ? at(x) - at(y) || eff(x, y) : tail(x) - tail(y) || (sets && !x.vs ? ORDER[x.dir] - ORDER[y.dir] : 0) || eff(x, y)));
+  }
+  // the rows a question shows: every class, and of a protein-set question of more than 12 sets the first 8 until
+  // "Show all"
+  const shownOf = (a, rows) => (a.kind === 'protein_sets' && rows.length > 12 && !S.all.has(a.id) ? rows.slice(0, SHOWN) : rows);
+  function chartModel(a, rows, m) {
+    const sets = a.kind === 'protein_sets', vs = rows.some(r => r.vs), sel = rows.some(r => r.selection), groups = a.groups || [];
+    // a group's heading before its first row; a row in no group after a grouped one gets a rule
+    const headOf = r => (groups.find(g => g.classes.includes(r.category)) || {}).name || '';
+    const items = []; let prev = null;
+    rows.forEach(r => { const h = groups.length ? headOf(r) : null; if (h != null && h !== prev && (h || prev != null)) items.push({ head: h }); prev = h; items.push({ r }); });
+    // the axis covers every value, whole-dataset value and CI, a CI at most 4× beyond the values
+    let axis;
+    if (vs) axis = shareAxis(rows);
+    else {
+      const e = rows.map(r => r.eff).filter(v => v != null && v > 0), eLo = Math.min(1, ...e) / 4, eHi = Math.max(1, ...e) * 4;
+      axis = logAxis([...e, ...rows.map(r => r.ref?.eff), ...rows.flatMap(r => [r.lo, r.hi]).filter(v => v != null && v > 0).map(v => Math.min(Math.max(v, eLo), eHi))]);
+    }
+    const unit = sets ? setUnit(a.id) : W.residues, cls = sets ? 'set' : 'class';
+    const cols = vs ? ['your selection', S.vs === 'cmp' ? 'the other selection' : `other ${sets ? markedUnits(a.id) : W.marks}`]
+      : [sel ? `your selection’s ${sets ? setUnit(a.id) : W.marks}` : sets ? markedUnits(a.id) : W.marks, `other ${unit}`];
+    const descr = rows.some(r => r.descriptive), has = d => rows.some(r => r.eff != null && r.dir === d);
+    const legend = vs ? [['sel', `your selection (red: more often, slate: less often, q ≤ ${PADJ} and at least 1.1×)`], ['other', vsName()]]
+      : [...(descr ? [] : [['more', `more often (q ≤ ${PADJ}, at least 1.1×)`], ...(!sets || has('less') ? [['less', `less often (q ≤ ${PADJ}, at least 1.1×)`]] : []), ...(has('same') ? [['same', `about the same: q ≤ ${PADJ} but within 1.1×`]] : [])]),
+        ['ns', descr ? 'shown, not tested' : `no difference (q > ${PADJ})`],
+        ...(rows.some(r => r.lo != null && r.hi != null) ? [['ci', '95% confidence interval']] : []),
+        ...(rows.some(r => r.ref) ? [['ref', 'the whole dataset (bars: your selection)']] : []),
+        ...(rows.some(decile) ? [['dec', 'within protein abundance deciles: ✓ more than expected · ≈ about the same · ○ no difference · ▼ fewer']] : []),
+        ...(rows.some(r => r.eff == null) ? [['none', `— no test within proteins: no protein has ${W.residues} both in the class and outside it`]] : [])];
+    const axisTitle = vs ? `share of ${sets ? 'the proteins' : `the ${W.marks}`} in each ${cls}` : sets ? `fold enrichment (log scale): the share of ${sel ? 'your selection’s' : markedUnits(a.id)} ${sel ? setUnit(a.id) : ''} in the set over the share of all ${setUnit(a.id)}`.replace(/\s+/g, ' ')
+      : `odds ratio ${m === 'fisher' ? 'pooled over the proteins (Fisher)' : 'within each protein (Mantel–Haenszel)'}, log scale; 1× is as often as the other ${W.residues}`;
+    return { a, m, sets, vs, items, rows, axis, cols, cls, legend, axisTitle, valHead: vs ? 'shares' : sets ? 'fold' : 'OR' };
+  }
+  // a class's meaning beside its name only when it is short ("RGG · Gly at +1 and +2"); a longer one is its hover
+  const shortHelp = r => !!r.help && r.help.length <= 34;
+  const valText = r => (r.vs ? `${pcS(share1(r))} · ${pcS(share2(r))}` : r.eff == null ? '—' : fx(r.eff));
+  // on the page: a row of the chart (it keeps .drow: its hover read-out, and a click selects its marks)
+  function chartRow(r, M, fkey, mark) {
+    const X = M.axis.X, pc = v => (100 * X(v)).toFixed(2) + '%', d = decile(r);
+    let marks = M.axis.ticks.map(t => `<line class="${t.lab === '1×' ? 'one' : 'grid'}" x1="${(100 * t.x).toFixed(2)}%" x2="${(100 * t.x).toFixed(2)}%" y1="0" y2="100%"/>`).join('');
+    if (r.vs) {
+      marks += `<line class="whisker ${r.dir}" x1="${pc(share2(r))}" x2="${pc(share1(r))}" y1="50%" y2="50%"/><circle class="dot other" cx="${pc(share2(r))}" cy="50%" r="4"/><circle class="dot sel ${r.dir}" cx="${pc(share1(r))}" cy="50%" r="4.6"/>`;
+    } else if (r.eff != null) {
+      const x1 = X(1), x2 = X(r.eff);
+      marks += `<rect class="bar ${r.dir}" x="${(100 * Math.min(x1, x2)).toFixed(2)}%" width="${Math.max(0.4, 100 * Math.abs(x2 - x1)).toFixed(2)}%" y="5" height="10" rx="1.5"/>`;
+      if (r.lo != null && r.hi != null) marks += `<line class="ci" x1="${pc(r.lo)}" x2="${pc(r.hi)}" y1="10" y2="10"/>` + [r.lo, r.hi].map(v => `<line class="ci" x1="${pc(v)}" x2="${pc(v)}" y1="7" y2="13"/>`).join('');
+    }
+    if (r.ref) marks += `<line class="ref" x1="${pc(r.ref.eff)}" x2="${pc(r.ref.eff)}" y1="1" y2="19"/>`;
+    return `<div class="drow qrow${fkey ? ' pick' : ''}${mark ? ' more-mark' : ''}" data-r="${reg(r)}" data-cat="${esc(r.category)}"${fkey ? ` data-f="${esc(fkey)}" data-v="${esc(r.category)}" role="button" tabindex="0" title="Select the ${esc(W.marks)} ${SETS(r.analysis) ? 'on proteins in' : 'in'} ${esc(r.label)}"` : ''}>` +
+      `<span class="lab"${r.help ? ` title="${esc(r.help)}"` : ''}><span class="ln">${esc(r.label)}</span>${shortHelp(r) ? `<span class="lh"><span class="sep">&nbsp;·&nbsp;</span>${esc(r.help)}</span>` : ''}</span>` +
+      `<span class="cnt">${kfmt(r.a)} / ${kfmt(r.a + r.b)}</span><span class="cnt o">${kfmt(r.c)} / ${kfmt(r.c + r.d)}</span>` +
+      `<svg aria-hidden="true">${marks}</svg><span class="val ${r.dir}">${r.vs ? `${pcS(share1(r))} <span class="muted">· ${pcS(share2(r))}</span>` : valText(r)}${d ? `<i class="dm ${d.dir}" title="Within protein abundance deciles: ${DECILE[d.dir][1]} (OR ${fxn(d.eff)}, q ${fq(d.q)})">${DECILE[d.dir][0]}</i>` : r.vs || !M.legend.some(x => x[0] === 'dec') ? '' : '<i class="dm"></i>'}</span>` +
+      `<span class="vh">${r.vs ? `${pcS(share1(r))} of your selection, against ${pcS(share2(r))} of ${esc(vsName())}` : `${esc(effText(r))}, q ${fq(r.q)}`}${d ? `; within abundance deciles: ${DECILE[d.dir][1]}` : ''}${r.ref ? `; whole dataset ${esc(effText(r.ref))}` : ''}</span></div>`;
+  }
+  const SWATCH = { more: '<i class="sw bar more"></i>', less: '<i class="sw bar less"></i>', same: '<i class="sw bar same"></i>', ns: '<i class="sw bar ns"></i>', ci: '<i class="sw ci"></i>',
+    ref: '<i class="sw ref"></i>', sel: '<i class="kd more"></i>', other: '<i class="kd ns"></i>', dec: '', none: '' };
+  function chartHtml(M, fkey, mark) {
+    const head = `<div class="qhead" aria-hidden="true"><span></span>${M.cols.map((c, k) => `<span class="cnt${k ? ' o' : ''}">${esc(c)}<small>in ${M.cls} / all</small></span>`).join('')}<span></span><span class="val">${M.valHead}</span></div>`;
+    const body = M.items.map(it => (it.r ? chartRow(it.r, M, fkey, mark && mark.has(it.r.category)) : `<div class="qgroup"${it.head ? '' : ' aria-hidden="true"'}>${esc(it.head)}</div>`)).join('');
+    const axis = `<div class="qaxis" aria-hidden="true"><span></span><span class="cnt"></span><span class="cnt o"></span><span class="ticks">${M.axis.ticks.map(t => `<span class="${t.minor ? 'minor' : ''}" style="left:${(100 * t.x).toFixed(2)}%">${t.lab}</span>`).join('')}</span><span></span>` +
+      `<span class="qaxis-title">${esc(M.axisTitle)}</span></div>`;
+    return `<div class="qchart">${head}${body}${axis}<p class="qkey">${M.legend.map(([k, t]) => `<span>${SWATCH[k]}${esc(t)}</span>`).join('')}</p></div>`;
+  }
   function answer(rows) {
     const up = rows.filter(r => r.dir === 'more').sort((x, y) => y.eff - x.eff), down = rows.filter(r => r.dir === 'less').sort((x, y) => x.eff - y.eff);
     const list = (rs, k) => rs.slice(0, k).map(r => `${esc(r.label)} <span class="an">${effText(r)}</span>`).join(', ') + (rs.length > k ? ` <span class="muted">+${rs.length - k}</span>` : '');
@@ -269,7 +377,9 @@
     const nUp = Math.min(up.length, dn.length ? max - 2 : max), nDn = Math.min(dn.length, max - nUp, up.length ? 2 : max);
     const shown = [...up.slice(0, nUp), ...dn.slice(0, nDn)];
     shown.push(...same.slice(0, Math.max(0, max - shown.length)));
-    return { shown, more: up.length + dn.length + same.length - shown.length };
+    // the classes that differ but are not shown: "+N more", which the question outlines when opened from it
+    const left = [...up, ...dn, ...same].filter(r => !shown.includes(r)).map(r => r.category);
+    return { shown, more: left.length, left };
   }
   // against other marks: each class as two shares on one axis, the selection's (filled) and the others' (hollow)
   function shareRows(rows, cls = 'trow') {
@@ -281,34 +391,67 @@
       `<span class="val ${r.dir}">${pcS(share1(r))} <span class="muted">· ${pcS(share2(r))}</span><span class="vh"> of your selection, against ${pcS(share2(r))} of ${esc(vsName())}</span></span></div>`).join('') +
       `<div class="taxis share-axis"><span></span><span class="one-lab" style="--x:100%">${pcS(scale)}</span><span></span></div>`;
   }
-  // a tile's rows on one log2 axis: dashed lines at each doubling, a solid line at 1×
+  // a tile's rows on one log2 axis: dashed lines at each doubling, a solid line at 1×; with a selection, a tick at the
+  // whole dataset's value (the tile's SVG export draws the same, tileSvg)
+  function tileScale(rows) {
+    const l2 = v => Math.log2(Math.max(v, 1e-3));
+    const vals = rows.flatMap(r => [r.eff, r.lo, r.hi, r.ref?.eff].filter(v => v != null && v > 0));
+    const lo = Math.min(-1, Math.max(-4, Math.floor(Math.min(...vals.map(l2))))), hi = Math.max(1, Math.min(6, Math.ceil(Math.max(...vals.map(l2)))));
+    const grid = []; for (let k = lo; k <= hi; k++) grid.push(k);
+    return { X: v => (Math.min(Math.max(l2(v), lo), hi) - lo) / (hi - lo), grid };
+  }
   function tileRows(rows) {
     if (!rows.length) return '';
     if (rows.some(r => r.vs)) return shareRows(rows);
-    const l2 = v => Math.log2(Math.max(v, 1e-3));
-    const vals = rows.flatMap(r => [r.eff, r.lo, r.hi].filter(v => v != null && v > 0));
-    const lo = Math.min(-1, Math.max(-4, Math.floor(Math.min(...vals.map(l2))))), hi = Math.max(1, Math.min(6, Math.ceil(Math.max(...vals.map(l2)))));
-    const X = v => ((Math.min(Math.max(l2(v), lo), hi) - lo) / (hi - lo) * 100).toFixed(2) + '%';
-    const grid = []; for (let k = lo; k <= hi; k++) grid.push(`<line class="${k === 0 ? 'one' : 'grid'}" x1="${X(2 ** k)}" x2="${X(2 ** k)}" y1="0" y2="100%"/>`);
+    const sc = tileScale(rows), X = v => (100 * sc.X(v)).toFixed(2) + '%';
+    const grid = sc.grid.map(k => `<line class="${k === 0 ? 'one' : 'grid'}" x1="${X(2 ** k)}" x2="${X(2 ** k)}" y1="0" y2="100%"/>`);
     return rows.map(r => `<div class="trow" data-r="${reg(r)}"><span class="lab">${esc(r.label)}</span><svg aria-hidden="true">${grid.join('')}` +
       (r.lo != null && r.hi != null ? `<line class="whisker ${r.dir}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" y2="50%"/>` : '') +
-      `<circle class="dot ${r.dir}" cx="${X(r.eff)}" cy="50%" r="4.6"/></svg><span class="val ${r.dir}">${fx(r.eff)}</span></div>`).join('') +
+      `<circle class="dot ${r.dir}" cx="${X(r.eff)}" cy="50%" r="4.6"/>${r.ref ? `<line class="ref" x1="${X(r.ref.eff)}" x2="${X(r.ref.eff)}" y1="15%" y2="85%"/>` : ''}</svg><span class="val ${r.dir}">${fx(r.eff)}</span></div>`).join('') +
       `<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div>`;
   }
-  function tile(card) {
+  // what a tile shows, for the tile and its exports
+  function tileState(card) {
     const a = A[card.analysis], max = card.rows || OV.rows || 7;
-    const rows = rowsOf(a, S.m), { shown, more } = pick(rows, max, card);
+    const rows = withRef(a, rowsOf(a, S.m), S.m), { shown, more, left } = pick(rows, max, card);
     const whole = selOn() && !vsOn() ? rowsFor(a, S.m) : null;
     const made = selOn() && rows.some(r => r.descriptive);
     const foot = made ? whyShown(a) : shown.length || !vsOn() ? summaryLine(rows, card.summary, card) : '';
-    return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(card.title || a.title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</h3><span class="chev" aria-hidden="true">›</span></header>` +
+    return { a, rows, shown, more, left, whole, made, foot };
+  }
+  function tile(card) {
+    const { a, rows, shown, more, left, whole, made, foot } = tileState(card);
+    // its downloads on hover (none on a touch screen): the tile as a figure, the question's rows as a TSV, its Method
+    const exp = `<div class="exp texp" role="group" aria-label="Download ${esc(card.title || a.title)}">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-texp="${k}" data-aid="${esc(a.id)}" title="${k === 'tsv' ? 'TSV: every row of the question, ' + EXP_HELP.tsv.replace(/^TSV: the rows, /, '') : EXP_HELP[k].replace(/^(\w+)/, '$1 of this tile')}">${k.toUpperCase()}</button>`).join('')}${methodLink(a.id)}</div>`;
+    return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(card.title || a.title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</h3>${exp}<span class="chev" aria-hidden="true">›</span></header>` +
       (shown.length ? `<div class="trows">${tileRows(shown)}</div>` : made ? '' : `<p class="muted tnone">${rows.some(r => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'}</p>`) +
-      (more ? `<a class="tmore" href="${esc(link('overview', a.id))}" title="Open the question at the ${more} not shown here">+${more} more ›</a>` : '') +
+      (more ? `<a class="tmore" href="${esc(link('overview', a.id))}" data-more="${esc(JSON.stringify(left))}" title="Open the question at the ${more} not shown here">+${more} more ›</a>` : '') +
       (foot ? `<p class="tfoot">${foot}</p>` : '') + (whole ? `<p class="twhole"><span>Whole dataset</span> ${answer(whole)}</p>` : '') + '</article>';
   }
+  // "+N more ›": the question opens with the classes the tile left out outlined for a few seconds, the first in view
+  let MORE = null;
+  K.clicks.push(['a.tmore[data-more]', el => { try { MORE = { aid: el.closest('[data-tile]').dataset.tile, cats: new Set(JSON.parse(el.dataset.more)), until: Date.now() + 6000, scroll: true }; } catch (err) { MORE = null; } }]);
+  function moreMarks(a, rows) {
+    if (!MORE || MORE.aid !== a.id || Date.now() > MORE.until) return null;
+    if (shownOf(a, rows).filter(r => MORE.cats.has(r.category)).length < rows.filter(r => MORE.cats.has(r.category)).length) S.all.add(a.id);
+    if (MORE.scroll) {
+      MORE.scroll = false;
+      setTimeout(() => {
+        const el = document.querySelector('.qrow.more-mark'), bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--toolbar-h')) || 0;
+        if (el) scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + scrollY - bar - 90), behavior: 'smooth' });
+        setTimeout(() => document.querySelectorAll('.more-mark').forEach(x => x.classList.remove('more-mark')), Math.max(0, MORE.until - Date.now()));
+      }, 0);
+    }
+    return MORE.cats;
+  }
+  // a tile's downloads: the tile drawn as a figure (PDF, SVG, PNG), and its question's rows (TSV)
+  K.clicks.push(['[data-texp]', btn => {
+    const aid = btn.dataset.aid, card = allCards().find(c => c.analysis === aid) || { analysis: aid }, name = `${D.site.id}_${aid}_tile${SETS(aid) ? '' : '_' + (S.m === 'fisher' ? 'pooled' : 'within_protein')}${selOn() ? '_selection' : ''}`;
+    exportFigure(btn.dataset.texp, () => tileFigure(card), name, btn, () => cardTsv(aid, S.m));
+  }]);
   function lead() {
     const q = OV.question || `Which parts of proteins are ${W.marked_long}?`;
-    const key = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (q > ${PADJ})</span>${vsOn() ? `<span><i class="kd more"></i> your selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>` : ''}${!vsOn() && D.analyses.some(a => a.stratified) ? '<span><b class="nh">◌</b> a protein set’s result in the same direction within abundance deciles, but not significant there</span><span><b class="nh">○</b> lost within abundance deciles</span>' : ''}` +
+    const key = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (q > ${PADJ})</span>${vsOn() ? `<span><i class="kd more"></i> your selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>` : ''}` +
       `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">How to read</button></p>` +
       (S.how ? `<p class="how-text">Each tile is a question; each row a class, with its effect on a log scale (the solid line is no difference). For a question about where ${esc(W.marks)} sit, × is an odds ratio: the odds that a ${esc(W.mark)} is in the class, over the odds for another ${esc(W.residue)} (not the ratio of the two shares, which is closer to 1; the hover gives both shares)${D.analyses.some(a => a.kind === 'protein_sets') ? '; for a question about kinds of protein it is the fold enrichment, the share of ' + esc(W.marked) + ' proteins in the set over the share of all proteins' : ''}. <b>Within each protein</b>, every protein is a stratum and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)} (Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}; <b>pooled</b> puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact test). ${D.analyses.some(a => a.kind === 'protein_sets') ? `Questions about kinds of protein count proteins: the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). ` : ''}Red: more often (q ≤ 0.05 and at least 1.1×); slate: less often; grey: significant but within 1.1×; hollow: no significant difference. A tile shows the classes that differ most; it opens to every class. Hover a row for its counts.</p>` : '');
     const methods = vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher'];
@@ -358,15 +501,16 @@
     if (selOn() && !vsOn() && !selTestable()) return lead();
     if (S.arg && A[S.arg] && (A[S.arg].kind !== 'attribute' || vsOn())) return focus(S.arg);
     if (vsOn() && !(K.sel.contrastGroups()?.g1.length >= K.sel.MIN_SIDE && K.sel.contrastGroups()?.g2.length >= K.sel.MIN_SIDE)) return lead();
-    return lead() + secList().map(x => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(x.name)}</h3><div class="tiles">${x.cards.map(tile).join('')}</div>`).join('') +
+    // with a selection, a section of protein-set questions is about its proteins: "Kinds of protein in your selection"
+    const head = x => (selOn() && x.cards.length && x.cards.every(c => A[c.analysis]?.kind === 'protein_sets') ? `${x.name} in your selection` : x.name);
+    return lead() + secList().map(x => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(head(x))}</h3><div class="tiles">${x.cards.map(tile).join('')}</div>`).join('') +
       (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
   function focus(aid) {
     const cards = allCards(), i = cards.findIndex(c => c.analysis === aid), a = A[aid];
     const prev = cards[i - 1], next = cards[i + 1], card = cards[i] || { section: a.section };
-    const ORDER = { more: 0, same: 1, ns: 2, less: 3 };
-    const rows = rowsOf(a, S.m).slice().sort(a.kind === 'protein_sets' ? (x, y) => ORDER[x.dir] - ORDER[y.dir] || byOrder(card)(x, y) : byOrder(card));
+    const rows = chartRows(a, S.m, card);
     return `<div class="focus-bar"><a href="${esc(link('overview'))}">‹ All sections</a><span class="crumb">Overview › ${esc(card.section || '')} › <b>${esc(card.title || a.title)}</b></span>` +
       (i >= 0 ? `<span class="muted">${i + 1} of ${cards.length}</span>` : '') +
       `<span class="pn">${prev ? `<a href="${esc(link('overview', prev.analysis))}">‹ Previous · ${esc(prev.title || A[prev.analysis].title)}</a>` : ''}${next ? `<a href="${esc(link('overview', next.analysis))}">${esc(next.title || A[next.analysis].title)} · Next ›</a>` : ''}</span></div>` +
@@ -405,17 +549,17 @@
   }
   function cardBody(a, rows) {
     // a residue question shows every class, and so does a set question with 12 sets or fewer (a partition)
-    const max = a.kind === 'protein_sets' && rows.length > 12 ? SHOWN : 1e9;
-    const all = S.all.has(a.id), shown = all ? rows : rows.slice(0, max);
+    const mark = moreMarks(a, rows), all = S.all.has(a.id), shown = shownOf(a, rows);
     const noun = a.kind === 'protein_sets' ? 'sets' : 'classes';
-    const toggle = rows.length > max ? `<button class="linkish" type="button" data-all="${esc(a.id)}">${all ? 'Show the top ' + SHOWN : 'Show all ' + int(rows.length) + ' ' + noun}</button>` : '';
+    const toggle = a.kind === 'protein_sets' && rows.length > 12 ? `<button class="linkish" type="button" data-all="${esc(a.id)}">${all ? 'Show the top ' + SHOWN : 'Show all ' + int(rows.length) + ' ' + noun}</button>` : '';
     const nW = rows.filter(r => holdStatus(r) === 'weaker').length, nL = rows.filter(r => holdStatus(r) === 'lost').length, nDir = rows.filter(r => holdStatus(r) != null).length;
-    const strat = a.kind === 'protein_sets' && rows.some(r => !r.selection && STRAT[a.id + '\u0000' + r.category]) ? ` Hover a set for the same test within protein abundance deciles${nW + nL ? `: of the ${int(nDir)} sets that differ, ${int(nDir - nW - nL)} hold there, ${int(nW)} keep their direction without reaching q ≤ ${PADJ} (◌) and ${int(nL)} lose it (○)` : ''}.` : '';
+    const strat = a.kind === 'protein_sets' && rows.some(r => !r.selection && STRAT[a.id + '\u0000' + r.category]) ? ` After each value, the same test within protein abundance deciles${nDir ? `: of the ${int(nDir)} sets that differ, ${int(nDir - nW - nL)} hold there, ${int(nW)} keep their direction without reaching q ≤ ${PADJ} and ${int(nL)} lose it` : ''}; hover a set for its numbers.` : '';
     return `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3>` +
       `<p class="sub">${vsOn() ? `Each ${a.kind === 'protein_sets' ? 'set: the share of your selection’s proteins in it (filled) and of the other proteins (hollow)' : `class: the share of your selection’s ${esc(W.marks)} in it (filled) and of ${esc(vsName())} (hollow)`}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}` : `${esc(a.sub)}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}`}.${strat} <a href="#method">How it was tested</a> · <a href="#statistics?a=${encodeURIComponent(a.id)}">all tests</a></p></div>` +
       `<div class="exp" role="group" aria-label="Download ${esc(a.title)}">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-exp="${k}" data-aid="${esc(a.id)}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}${methodLink(a.id)}</div></div>` +
-      `<div class="drows">${rows.some(r => r.vs) ? shareRows(shown, 'drow') : shown.map(r => dotRow(r, fkeyOf(a))).join('') + axisNote()}</div>${toggle}${rows.some(r => r.descriptive) ? '' : `<p class="summary">${summaryLine(rows)}</p>`}</div>`;
+      chartHtml(chartModel(a, shown, S.m), fkeyOf(a), mark) + `${toggle}${rows.some(r => r.descriptive) ? '' : `<p class="summary">${summaryLine(rows)}</p>`}</div>`;
   }
+
   // ---- Statistics: every test ----------------------------------------------------------------------------------------
   const COLS = [
     ['analysis', 'Question', r => r.title, false], ['label', 'Class or set', r => r.label, false], ['method', 'Test', r => methodName(r), false],
@@ -600,39 +744,81 @@
     for (const word of String(text).split(/\s+/)) { const t = cur ? cur + ' ' + word : word; if (!cur || tw(t, size, weight, fam) <= width) cur = t; else { out.push(cur); cur = word; } }
     if (cur) out.push(cur); return out;
   }
+  // a question's figure for its exports: the chart the page shows (chartModel), drawn as one SVG, with the test and the
+  // credit under it
   function figure(aid, m) {
-    const a = A[aid], sets = a.kind === 'protein_sets';
-    const allRows = rowsOf(a, m).slice().sort(byOrder(cardOf(aid))), rows = sets && !S.all.has(aid) && allRows.length > 12 ? allRows.slice(0, SHOWN) : allRows;
-    const Wd = 760, P = 20, L0 = P, LW = 250, X0 = 290, X1 = 650, VX = Wd - P;
-    const X = v => X0 + (Math.min(Math.max((Math.log(Math.max(v, 1e-3)) - LO) / (HI - LO), 0), 1)) * (X1 - X0);
-    const title = a.title, sub = (sets ? a.sub : `${a.sub}, ${METHOD_PHRASE[m]}`) + selWords();
-    const parts = [];
-    const T = (x, y, t, o = {}) => parts.push(`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${o.size || 11.5}"${o.weight ? ` font-weight="${o.weight}"` : ''}${o.fam ? ` font-family="${o.fam}"` : ''}${o.anchor ? ` text-anchor="${o.anchor}"` : ''} fill="${o.fill || PAL.ink}">${esc(t)}</text>`);
+    const a = A[aid], sets = a.kind === 'protein_sets', all = chartRows(a, m), rows = shownOf(a, all), M = chartModel(a, rows, m);
+    const Wd = 860, P = 20, LW = 236, C1 = 350, C2 = 442, X0 = 462, X1 = 728, VX = 814, DX = 832, ink2 = '#374151';
+    const X = v => X0 + M.axis.X(v) * (X1 - X0), r1 = v => v.toFixed(1);
+    const title = a.title, sub = (M.vs ? `${a.title}: your selection against ${vsName()}` : sets ? a.sub : `${a.sub}, ${METHOD_PHRASE[m]}`) + selWords();
+    const parts = [], gp = [], rp = [];
+    const T = (x, y, t, o = {}, to = parts) => to.push(`<text x="${r1(x)}" y="${r1(y)}" font-size="${o.size || 11.5}"${o.weight ? ` font-weight="${o.weight}"` : ''}${o.fam ? ` font-family="${o.fam}"` : ''}${o.anchor ? ` text-anchor="${o.anchor}"` : ''}${o.ls ? ` letter-spacing="${o.ls}"` : ''} fill="${o.fill || PAL.ink}">${o.raw || esc(t)}</text>`);
+    // text cut to a width, with an ellipsis
+    const fit = (t, w, size) => { if (tw(t, size) <= w) return t; let u = t; while (u.length > 1 && tw(u + '…', size) > w) u = u.slice(0, -1); return u.trimEnd() + '…'; };
     T(P, 30, title, { size: 17, weight: 'bold', fam: FFH });
     const subLines = wrap(sub, Wd - 2 * P, 11.5).slice(0, 5);
     subLines.forEach((t, k) => T(P, 49 + k * 15, t, { size: 11.5, fill: PAL.muted }));
-    const dy = (subLines.length - 1) * 15;
-    let lx = P;
-    ['more', 'less', 'same', 'ns'].forEach(d => {
-      parts.push(`<circle cx="${lx + 5}" cy="${66 + dy}" r="4.5" fill="${PAL[d]}" stroke="${d === 'ns' ? PAL.muted : PAL[d]}" stroke-width="1.4"/>`);
-      T(lx + 14, 70 + dy, DIR_WORDS[d], { size: 10.5, fill: PAL.muted }); lx += 22 + tw(DIR_WORDS[d], 10.5);
-    });
-    let y = 86 + dy; const top = y;
-    rows.forEach(r => {
-      const lab = wrap(r.label, LW, 11.5).slice(0, 2), h = Math.max(22, lab.length * 14 + 8), yc = y + h / 2;
-      lab.forEach((t, k) => T(L0, yc + 4 - (lab.length - 1) * 7 + k * 14, t));
-      parts.push(`<line x1="${X0}" x2="${X1}" y1="${yc}" y2="${yc}" stroke="${PAL.line}" stroke-width="1"/>`);
-      const col = PAL[r.dir] === PAL.ns ? PAL.muted : PAL[r.dir];
-      if (r.lo != null && r.hi != null) parts.push(`<line x1="${X(r.lo).toFixed(1)}" x2="${X(r.hi).toFixed(1)}" y1="${yc}" y2="${yc}" stroke="${col}" stroke-width="1.6" stroke-linecap="round"/>`);
-      parts.push(`<circle cx="${X(r.eff).toFixed(1)}" cy="${yc}" r="4.8" fill="${PAL[r.dir]}" stroke="${r.dir === 'ns' ? PAL.muted : '#ffffff'}" stroke-width="1.4"/>`);
-      T(VX, yc + 4, fx(r.eff), { anchor: 'end', weight: r.dir === 'more' || r.dir === 'less' ? 'bold' : null, fill: r.dir === 'more' || r.dir === 'less' ? PAL[r.dir] : PAL.muted });
+    let y = 49 + subLines.length * 15 + 8;
+    // the column heads, as on the page
+    const heads = M.cols.map(c => [...wrap(c, 86, 9.5, 700).slice(0, 2), `in ${M.cls} / all`]), hh = Math.max(...heads.map(l => l.length)) * 11;
+    heads.forEach((ls, k) => ls.forEach((t, j) => T(k ? C2 : C1, y + hh - (ls.length - 1 - j) * 11, t, { size: 9.5, weight: j === ls.length - 1 ? null : 'bold', anchor: 'end', fill: PAL.muted })));
+    T(VX, y + hh, M.valHead, { size: 9.5, weight: 'bold', anchor: 'end', fill: PAL.muted });
+    y += hh + 5; parts.push(`<line x1="${P}" x2="${Wd - P}" y1="${y}" y2="${y}" stroke="${PAL.line}"/>`); y += 3;
+    const top = y;
+    M.items.forEach(it => {
+      if (!it.r) {
+        y += 5; if (y - 5 > top) rp.push(`<line x1="${P}" x2="${Wd - P}" y1="${y}" y2="${y}" stroke="${PAL.line}"/>`);
+        if (it.head) { T(P, y + 14, it.head.toUpperCase(), { size: 9.5, weight: 'bold', fill: PAL.muted, ls: 0.4 }, rp); y += 20; } else y += 3;
+        return;
+      }
+      const r = it.r, d = decile(r);
+      // its name (two lines at most), then its meaning where there is room
+      let name = wrap(r.label, LW, 11.5);
+      if (name.length > 2) name = [name[0], fit(name.slice(1).join(' '), LW, 11.5)];
+      const h = Math.max(22, name.length * 14 + 8), yc = y + h / 2;
+      name.forEach((t, k) => {
+        const last = k === name.length - 1, room = LW - tw(t, 11.5) - tw(' · ', 10.5);
+        const help = last && shortHelp(r) && room > 30 ? `<tspan fill="${PAL.muted}" font-size="10.5"> · ${esc(fit(r.help, room, 10.5))}</tspan>` : '';
+        T(P, yc + 4 - (name.length - 1) * 7 + k * 14, '', { raw: esc(t) + help }, rp);
+      });
+      T(C1, yc + 4, `${kfmt(r.a)} / ${kfmt(r.a + r.b)}`, { size: 10.5, anchor: 'end', fill: PAL.muted }, rp);
+      T(C2, yc + 4, `${kfmt(r.c)} / ${kfmt(r.c + r.d)}`, { size: 10.5, anchor: 'end', fill: PAL.muted }, rp);
+      const col = r.dir === 'more' || r.dir === 'less' || r.dir === 'same' ? PAL[r.dir] : PAL.muted;
+      if (r.vs) {
+        rp.push(`<line x1="${r1(X(share2(r)))}" x2="${r1(X(share1(r)))}" y1="${yc}" y2="${yc}" stroke="${col}" stroke-width="1.6" stroke-linecap="round"/>` +
+          `<circle cx="${r1(X(share2(r)))}" cy="${yc}" r="4" fill="${PAL.bg}" stroke="${PAL.muted}" stroke-width="1.5"/><circle cx="${r1(X(share1(r)))}" cy="${yc}" r="4.6" fill="${col}" stroke="${PAL.bg}" stroke-width="1.5"/>`);
+      } else if (r.eff != null) {
+        const a1 = X(1), a2 = X(r.eff), ns = r.dir === 'ns';
+        rp.push(`<rect x="${r1(Math.min(a1, a2))}" y="${yc - 5}" width="${r1(Math.max(1, Math.abs(a2 - a1)))}" height="10" rx="1.5" fill="${ns ? PAL.bg : col}" stroke="${col}" stroke-width="${ns ? 1.2 : 0}"/>`);
+        if (r.lo != null && r.hi != null) rp.push(`<line x1="${r1(X(r.lo))}" x2="${r1(X(r.hi))}" y1="${yc}" y2="${yc}" stroke="${ink2}" stroke-width="1.2"/>` + [r.lo, r.hi].map(v => `<line x1="${r1(X(v))}" x2="${r1(X(v))}" y1="${yc - 3}" y2="${yc + 3}" stroke="${ink2}" stroke-width="1.2"/>`).join(''));
+      }
+      if (r.ref) rp.push(`<line x1="${r1(X(r.ref.eff))}" x2="${r1(X(r.ref.eff))}" y1="${yc - 9}" y2="${yc + 9}" stroke="${PAL.ink}" stroke-width="2"/>`);
+      const strong = !r.vs && (r.dir === 'more' || r.dir === 'less');
+      T(VX, yc + 4, valText(r), { size: 11, anchor: 'end', weight: strong ? 'bold' : null, fill: strong ? PAL[r.dir] : PAL.muted }, rp);
+      if (d) T(DX, yc + 4, DECILE[d.dir][0], { size: 11, anchor: 'middle', fill: d.dir === 'more' ? PAL.more : d.dir === 'less' ? PAL.less : PAL.muted }, rp);
       y += h;
     });
-    parts.push(`<line x1="${X(1)}" x2="${X(1)}" y1="${top - 2}" y2="${y + 2}" stroke="${PAL.one}" stroke-width="1.2"/>`);
-    [0.25, 1, 4, 16].forEach(v => T(X(v), y + 16, v + '×', { size: 10.5, anchor: 'middle', fill: PAL.muted }));
-    T((X0 + X1) / 2, y + 31, sets ? 'fold enrichment (log scale); 1× is as often as the other proteins' : `odds ratio (log scale); 1× is as often as the other ${W.residues} of the same proteins`, { size: 10.5, anchor: 'middle', fill: PAL.muted });
-    y += 50;
-    const note = sets ? setWords(a) + (rows.length < allRows.length ? ` Shown: the ${rows.length} sets with the largest fold enrichment of the ${int(allRows.length)} tested; the TSV has every set.` : '') : testWords(m);
+    M.axis.ticks.forEach(t => gp.push(`<line x1="${r1(X0 + t.x * (X1 - X0))}" x2="${r1(X0 + t.x * (X1 - X0))}" y1="${top}" y2="${y + 2}" stroke="${M.axis.log && t.lab === '1×' ? PAL.one : PAL.line}" stroke-width="${M.axis.log && t.lab === '1×' ? 1.2 : 1}"/>`));
+    parts.push(...gp, ...rp);
+    M.axis.ticks.forEach(t => T(X0 + t.x * (X1 - X0), y + 15, t.lab, { size: 10, anchor: 'middle', fill: PAL.muted }));
+    y += 15;
+    wrap(M.axisTitle, X1 - X0 + 150, 10.5).forEach(t => { y += 14; T((X0 + X1) / 2, y, t, { size: 10.5, anchor: 'middle', fill: PAL.muted }); });
+    // the legend, as under the page's chart
+    y += 20; let lx = P;
+    const sw = { more: x => `<rect x="${x}" y="${y - 8}" width="16" height="8" rx="1.5" fill="${PAL.more}"/>`, less: x => `<rect x="${x}" y="${y - 8}" width="16" height="8" rx="1.5" fill="${PAL.less}"/>`,
+      same: x => `<rect x="${x}" y="${y - 8}" width="16" height="8" rx="1.5" fill="${PAL.same}"/>`, ns: x => `<rect x="${x}" y="${y - 8}" width="16" height="8" rx="1.5" fill="${PAL.bg}" stroke="${PAL.muted}" stroke-width="1.2"/>`,
+      ci: x => `<line x1="${x}" x2="${x + 16}" y1="${y - 4}" y2="${y - 4}" stroke="${ink2}" stroke-width="1.2"/><line x1="${x}" x2="${x}" y1="${y - 7}" y2="${y - 1}" stroke="${ink2}" stroke-width="1.2"/><line x1="${x + 16}" x2="${x + 16}" y1="${y - 7}" y2="${y - 1}" stroke="${ink2}" stroke-width="1.2"/>`,
+      ref: x => `<line x1="${x + 8}" x2="${x + 8}" y1="${y - 11}" y2="${y + 2}" stroke="${PAL.ink}" stroke-width="2"/>`,
+      sel: x => `<circle cx="${x + 8}" cy="${y - 4}" r="4.5" fill="${PAL.more}"/>`, other: x => `<circle cx="${x + 8}" cy="${y - 4}" r="4.5" fill="${PAL.bg}" stroke="${PAL.muted}" stroke-width="1.4"/>` };
+    M.legend.forEach(([k, text]) => {
+      const w = (sw[k] ? 22 : 0) + tw(text, 10) + 16;
+      if (lx > P && lx + w > Wd - P) { lx = P; y += 16; }
+      if (sw[k]) parts.push(sw[k](lx));
+      T(lx + (sw[k] ? 22 : 0), y, text, { size: 10, fill: PAL.muted }); lx += w;
+    });
+    y += 24;
+    const note = M.vs ? `Your selection against ${vsName()}: ${sets ? 'the share of its proteins in each set against that of the other proteins, one-sided hypergeometric test' : `the share of its ${W.marks} in each class against that of the others, ${METHOD_PHRASE[vsMethod(m)] || 'pooled'}`}; q Benjamini–Hochberg across the ${sets ? 'sets' : 'classes'}. Exploratory.`
+      : sets ? setWords(a) + (rows.length < all.length ? ` Shown: the first ${rows.length} of the ${int(all.length)} sets tested, in the page’s order; the TSV has every set.` : '') : testWords(m);
     wrap(note, Wd - 2 * P, 10.5).forEach(t => { T(P, y, t, { size: 10.5 }); y += 14; });
     y += 6;
     creditLines().forEach(line => wrap(line, Wd - 2 * P, 9.5).forEach(t => { T(P, y, t, { size: 9.5, fill: PAL.muted }); y += 12.5; }));
@@ -644,6 +830,39 @@
       `<rect width="${Wd}" height="${H}" fill="${PAL.bg}"/>${parts.join('')}</svg>`;
     return { svg, W: Wd, H, title, desc, meta };
   }
+  // a tile's figure for its exports: the tile as it shows (its rows, the line under them, the whole dataset's)
+  function tileFigure(card) {
+    const { a, shown, foot, whole, made } = tileState(card), title = card.title || a.title;
+    const Wd = 560, P = 20, LW = 230, X0 = 262, X1 = 470, VX = Wd - P, parts = [];
+    const T = (x, y, t, o = {}) => parts.push(`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${o.size || 11}"${o.weight ? ` font-weight="${o.weight}"` : ''}${o.anchor ? ` text-anchor="${o.anchor}"` : ''} fill="${o.fill || PAL.ink}">${esc(t)}</text>`);
+    const vs = shown.some(r => r.vs), sc = vs ? shareAxis(shown) : tileScale(shown), X = v => X0 + sc.X(v) * (X1 - X0);
+    let y = 0;
+    shown.forEach(r => {
+      const lab = wrap(r.label, LW, 11).slice(0, 2), h = Math.max(22, lab.length * 13 + 8), yc = y + h / 2;
+      lab.forEach((t, k) => T(P, yc + 4 - (lab.length - 1) * 6.5 + k * 13, t));
+      const col = r.dir === 'more' || r.dir === 'less' || r.dir === 'same' ? PAL[r.dir] : PAL.muted;
+      if (vs) {
+        parts.push(`<line x1="${X0}" x2="${X1}" y1="${yc}" y2="${yc}" stroke="${PAL.line}"/><line x1="${X(share2(r)).toFixed(1)}" x2="${X(share1(r)).toFixed(1)}" y1="${yc}" y2="${yc}" stroke="${col}" stroke-width="1.6"/>` +
+          `<circle cx="${X(share2(r)).toFixed(1)}" cy="${yc}" r="4" fill="${PAL.bg}" stroke="${PAL.muted}" stroke-width="1.5"/><circle cx="${X(share1(r)).toFixed(1)}" cy="${yc}" r="4.6" fill="${col}" stroke="${PAL.bg}" stroke-width="1.5"/>`);
+      } else {
+        sc.grid.forEach(k => parts.push(`<line x1="${X(2 ** k).toFixed(1)}" x2="${X(2 ** k).toFixed(1)}" y1="${y}" y2="${y + h}" stroke="${k === 0 ? PAL.ink : PAL.one}" stroke-width="1"${k === 0 ? '' : ' stroke-dasharray="2 3"'}/>`));
+        if (r.lo != null && r.hi != null) parts.push(`<line x1="${X(r.lo).toFixed(1)}" x2="${X(r.hi).toFixed(1)}" y1="${yc}" y2="${yc}" stroke="${col}" stroke-width="1.6" stroke-linecap="round"/>`);
+        parts.push(`<circle cx="${X(r.eff).toFixed(1)}" cy="${yc}" r="4.6" fill="${r.dir === 'ns' ? PAL.bg : col}" stroke="${r.dir === 'ns' ? PAL.muted : PAL.bg}" stroke-width="1.5"/>`);
+        if (r.ref) parts.push(`<line x1="${X(r.ref.eff).toFixed(1)}" x2="${X(r.ref.eff).toFixed(1)}" y1="${yc - 7}" y2="${yc + 7}" stroke="${PAL.ink}" stroke-width="2"/>`);
+      }
+      const strong = !vs && (r.dir === 'more' || r.dir === 'less');
+      T(VX, yc + 4, vs ? `${pcS(share1(r))} · ${pcS(share2(r))}` : fx(r.eff), { anchor: 'end', weight: strong ? 'bold' : null, fill: strong ? PAL[r.dir] : PAL.muted });
+      y += h;
+    });
+    if (shown.length) { parts.push(`<line x1="${X0}" x2="${X1}" y1="${y + 1}" y2="${y + 1}" stroke="${PAL.line}"/>`); T(vs ? X1 : X(1), y + 14, vs ? sc.ticks[sc.ticks.length - 1].lab : '1×', { size: 10, anchor: 'middle', fill: PAL.muted }); y += 18; }
+    const plain = t => String(t || '').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
+    const note = [made ? '' : plain(foot), whole ? 'Whole dataset: ' + plain(answer(whole)) : '', made ? plain(foot) : '',
+      shown.some(r => r.ref) ? 'Tick: the whole dataset’s value.' : '', vs ? '' : SETS(a.id) ? setWords(a) : testWords(S.m)].filter(Boolean).join(' ');
+    return figureFrame({ title, sub: (a.question || a.describe || '') + selWords(), W: Wd, body: parts.join(''), bodyH: y, note,
+      legend: vs ? [[PAL.more, PAL.more, 'your selection'], [PAL.bg, PAL.muted, vsName()]] : ['more', 'less', 'same', 'ns'].map(k => [PAL[k], k === 'ns' ? PAL.muted : PAL[k], DIR_WORDS[k]]),
+      extra: { analysis: a.id, test: S.m, tile: true } });
+  }
+
 
   // ---- PNG at 300 dpi, fonts embedded, with text fields; PDF with fonts and properties --------------------------------
   // Arimo (Arial's metric twin) for a PNG drawn where Arial is missing, and embedded in every PDF; DejaVu Sans only for
@@ -833,7 +1052,8 @@
   }
   const tip = $('#tip');
   function showTip(e, r) {
-    const selNote = r.selection ? `<br><span class="muted">Your selection, tested again in the browser${r.descriptive ? ': shown, not tested' : ' (exploratory)'}</span>` : '';
+    const selNote = (r.selection ? `<br><span class="muted">Your selection, tested again in the browser${r.descriptive ? ': shown, not tested' : ' (exploratory)'}</span>` : '') +
+      (r.ref && !r.vs ? `<br><span class="muted">Whole dataset: ${esc(effText(r.ref))}${r.ref.lo != null ? ` (95% CI ${fxn(r.ref.lo)}–${fxn(r.ref.hi)})` : ''}, q ${fq(r.ref.q)} (tick)</span>` : '');
     if (r.vs) {
       const set = SETS(r.analysis), unit = set ? setUnit(r.analysis) : W.marks;
       tip.innerHTML = `<b>${esc(r.label)}</b>${r.help ? `<br><span class="muted">${esc(r.help)}</span>` : ''}<br>${int(r.a)} of ${int(r.a + r.b)} ${esc(unit)} of your selection (${pct(r.a, r.a + r.b)}) against ${int(r.c)} of ${int(r.c + r.d)} ${set ? (S.vs === 'cmp' ? esc(setUnit(r.analysis)) + ' of ' + esc(cmpName()) : 'other ' + esc(markedUnits(r.analysis))) : esc(vsName())} (${pct(r.c, r.c + r.d)})` +
@@ -842,10 +1062,11 @@
       const st = STRAT[r.analysis + '\u0000' + r.category];
       tip.innerHTML = `<b>${esc(r.label)}</b><br>${int(r.a)} of ${int(r.a + r.b)} ${r.selection ? esc(setUnit(r.analysis)) + ' of your selection' : esc(markedUnits(r.analysis))} (${pct(r.a, r.a + r.b)}) vs ${int(r.c)} of ${int(r.c + r.d)} other ${esc(setUnit(r.analysis))} (${pct(r.c, r.c + r.d)})` +
         `<br>${fxn(r.eff)}-fold, q ${fq(r.q)} (one-sided hypergeometric)` +
-        (st && !r.selection ? `<br>Within abundance deciles: OR ${fxn(st.eff)}${st.lo != null ? ` (95% CI ${fxn(st.lo)}–${fxn(st.hi)})` : ''}, q ${fq(st.q)}` : '') + selNote;
+        (st && !r.selection ? `<br>Within abundance deciles: OR ${fxn(st.eff)}${st.lo != null ? ` (95% CI ${fxn(st.lo)}–${fxn(st.hi)})` : ''}, q ${fq(st.q)}${decile(r) ? ` (${DECILE[st.dir][0]} ${DECILE[st.dir][1]})` : ''}` : '') + selNote;
     } else tip.innerHTML = `<b>${esc(r.label)}</b>${r.help ? `<br><span class="muted">${esc(r.help)}</span>` : ''}` +
       `<br>${int(r.a)} of ${int(r.a + r.b)} ${esc(W.marks)} (${pct(r.a, r.a + r.b)}) vs ${int(r.c)} of ${int(r.c + r.d)} other ${esc(W.residues)} (${pct(r.c, r.c + r.d)})` +
-      `<br>OR ${fxn(r.or)}${r.lo != null ? ` (95% CI ${fxn(r.lo)}–${fxn(r.hi)})` : ''}, q ${fq(r.q)} · ${METHOD[r.method] || esc(r.method)}${r.strata != null && r.method === 'mantel_haenszel' ? `, ${int(r.strata)} informative proteins` : ''}` +
+      (r.or == null ? `<br>No test ${METHOD[r.method] || esc(r.method)}: no protein has ${esc(W.residues)} both in this class and outside it` :
+        `<br>OR ${fxn(r.or)}${r.lo != null ? ` (95% CI ${fxn(r.lo)}–${fxn(r.hi)})` : ''}, q ${fq(r.q)} · ${METHOD[r.method] || esc(r.method)}${r.strata != null && r.method === 'mantel_haenszel' ? `, ${int(r.strata)} informative proteins` : ''}`) +
       (r.dir === 'same' ? '<br>Significant, but within 1.1× either way: about the same' : '') + selNote;
     tip.hidden = false;
     tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + 'px';
@@ -891,7 +1112,7 @@
     if (d.open) S.open.add(d.dataset.key); else S.open.delete(d.dataset.key);
     writeHash(false);
   }, true);
-  document.addEventListener('keydown', e => { const tl = e.target.closest?.('.tile[data-tile]'); if (tl && e.key === 'Enter') go('overview', { arg: tl.dataset.tile }); });
+  document.addEventListener('keydown', e => { const tl = e.target.closest?.('.tile[data-tile]'); if (tl && e.target === tl && e.key === 'Enter') go('overview', { arg: tl.dataset.tile }); });
   // a sortable header sorts from the keyboard too
   document.addEventListener('keydown', e => { const th = e.target.closest?.('th[data-psort], th[data-ssort]'); if (th && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); th.click(); } });
   document.addEventListener('input', e => { if (e.target.id === 'f-sq') { clearTimeout(timer); timer = setTimeout(() => { S.sq = e.target.value.trim(); S.nStat = 200; writeHash(false); render(); const f = $('#f-sq'); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } }, 200); } });

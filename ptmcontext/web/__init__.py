@@ -115,6 +115,16 @@ def _layer_words(a: dict, run: dict) -> dict | None:
     return layer_words(layer)
 
 
+def _class_order(a: dict, words: dict) -> dict:
+    """Whether a question's classes keep their own order on the website (that of its labels: from inside a domain
+    outwards, say) and their headed groups: the site file's (an analysis's `ordered` and `groups`), else its layer's,
+    as the run recorded them; a run written before runs recorded them takes the built-in layer's."""
+    built = L.BUILT_IN.get(a.get('layer', ''))
+    ordered = a.get('ordered', words.get('ordered', bool(built and built.ordered)))
+    groups = a.get('groups') if 'groups' in a else words.get('groups', [{'name': g, 'classes': list(cs)} for g, cs in (built.groups if built else ())])
+    return {'ordered': bool(ordered), 'groups': [{'name': g['name'], 'classes': list(g['classes'])} for g in groups or []]}
+
+
 def _fill(template: str, words: dict) -> str:
     w = {'marks': words['marks'], 'residues': words['residues'], 'marked': words['marked'], 'Marked': words['marked'].capitalize(),
          'Marks': words['marks'][:1].upper() + words['marks'][1:]}
@@ -204,7 +214,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                              **({'scores': {k: a['scores'][k] for k in ('label', 'help', 'levels', 'max') if k in a['scores']}} if a.get('scores') else {}),
                              'title': a.get('title', a['id']), 'question': a.get('question', ''),
                              'sub': a.get('sub', ''), 'section': a.get('section', 'Kinds of protein'), 'layer': '', 'describe': a.get('background', ''),
-                             'labels': set_names.get(a['id'], {}), 'help': {}, 'new': bool(a.get('new'))})
+                             'labels': set_names.get(a['id'], {}), 'help': {}, 'new': bool(a.get('new')), **_class_order(a, {})})
             continue
         layer = _layer_words(a, run)
         labels, helps = _labels(layer, profile)
@@ -214,7 +224,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                          'question': a.get('question') or _fill(lw.get('question', ''), profile.words),
                          'sub': a.get('sub') or _fill(lw.get('sub', ''), profile.words), 'layer': a['layer'],
                          'section': a.get('section') or lw.get('section', ''),
-                         'describe': lw.get('describe', ''), 'labels': labels, 'help': helps, 'new': bool(a.get('new'))})
+                         'describe': lw.get('describe', ''), 'labels': labels, 'help': helps, 'new': bool(a.get('new')), **_class_order(a, lw)})
     web = site['website']
     # each input by its name and version, and what this site uses it for
     entries = load_manifest(manifest_of(site))

@@ -89,7 +89,8 @@ def _nearest(ctx: Context, residues: pd.DataFrame) -> pd.DataFrame:
                 'distal': 'More than 20 aa from any domain and not between two domains',
                 'no_domain_annotation': 'Protein has no domain or repeat annotation'},
           question='Are {marks} inside domains, at their edges or between them, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, by position relative to domains', tracks=(DOMAIN_TRACK,))
+          sub='{Marks} against the other {residues} of the same proteins, by position relative to domains', tracks=(DOMAIN_TRACK,),
+          ordered=True)
 def domain_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     near, _ = _nearest(ctx, residues)
     d = near['distance']
@@ -148,7 +149,9 @@ def structure_context_of(disorder_class, domain_class_, domain_edge_distance) ->
                 'idr_far_from_domain': 'In a disordered region more than 30 aa from any domain, or on a protein with none',
                 'no_disorder_annotation': 'The protein has no disordered region in the site’s disorder input'},
           question='Are {marks} in disordered regions or domains, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, from folded domains to deep in disordered regions', tracks=(DOMAIN_TRACK, DISORDER_TRACK))
+          sub='{Marks} against the other {residues} of the same proteins, from folded domains to deep in disordered regions', tracks=(DOMAIN_TRACK, DISORDER_TRACK),
+          ordered=True, groups=(('In a domain', ('domain_folded', 'domain_disordered')),
+                                ('Outside domains', ('ordered_outside_domain', 'idr_near_domain', 'idr_mid_domain', 'idr_far_from_domain'))))
 def structure_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     dis = get('disorder')(residues, ctx)
     dom = get('domain_context')(residues, ctx)
