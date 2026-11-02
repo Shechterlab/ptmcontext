@@ -933,7 +933,21 @@
     const L = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
     return (L + 0.05) / 0.05 > 1.05 / (L + 0.05) ? '#111827' : '#ffffff';
   }
+  // a fill that carries small text at 4.5:1 or better (WCAG AA): the colour itself when black or white text passes on it,
+  // else the colour darkened step by step until white text does; {bg, fg}
+  function readable(hex) {
+    const lum = h => { const v = String(h).replace('#', ''); const c = [0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16) / 255).map(x => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+    if (!/^#?[0-9a-f]{6}$/i.test(String(hex))) return { bg: hex, fg: textOn(hex) };
+    const L = lum(hex);
+    if ((L + 0.05) / 0.05 >= 4.5) return { bg: hex, fg: '#111827' };
+    let rgb = [0, 2, 4].map(i => parseInt(String(hex).replace('#', '').slice(i, i + 2), 16)), bg = hex;
+    for (let k = 0; k < 20 && 1.05 / (lum(bg) + 0.05) < 4.5; k++) {
+      rgb = rgb.map(x => Math.round(x * 0.92)); bg = '#' + rgb.map(x => x.toString(16).padStart(2, '0')).join('');
+    }
+    return { bg, fg: '#ffffff' };
+  }
   // what other modules may read: the mark's colour in the mode chosen (a 3D view follows it), the modes, the figure
-  K.map = { render, figure, fileName, siteColour, attrColour, textOn, modes: () => MODES.map(md => ({ id: md.id, label: md.label })), mode: () => mode().id,
+  K.map = { render, figure, fileName, siteColour, attrColour, textOn, readable, modes: () => MODES.map(md => ({ id: md.id, label: md.label })), mode: () => mode().id,
     reset: () => { M.zoom = null; M.rowsMenu = false; }, state: M };
 });

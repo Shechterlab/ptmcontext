@@ -101,7 +101,7 @@
   // attribute whose column another attribute shows in full (the changes rather than "changed")
   const detailOf = n => Object.keys(SPECS).some(o => o !== n && SPECS[o].column === SPECS[n].column && !SPECS[o].present);
   const shownAttrs = m => Object.keys(SPECS).filter(n => !(SPECS[n].present && detailOf(n)) && (attrVal(m, n) !== '' || SPECS[n].colour));
-  const pillOf = (m, k) => `<span class="state-pill" style="--c:${K.map.attrColour(k, attrVal(m, k))};--t:${K.map.textOn(K.map.attrColour(k, attrVal(m, k)))}" title="${esc(SPECS[k].label)}">${esc(K.sel?.valueLabel ? K.sel.valueLabel(k, attrVal(m, k)) : attrVal(m, k))}</span>`;
+  const pillOf = (m, k) => { const rc = K.map.readable(K.map.attrColour(k, attrVal(m, k))); return `<span class="state-pill" style="--c:${rc.bg};--t:${rc.fg}" title="${esc(SPECS[k].label)}">${esc(K.sel?.valueLabel ? K.sel.valueLabel(k, attrVal(m, k)) : attrVal(m, k))}</span>`; };
   const statePill = m => { const k = Object.keys(SPECS).find(n => SPECS[n].colour && SPECS[n].kind === 'category'); return k ? pillOf(m, k) : ''; };
   function scoreRows(p, rec) {
     return D.analyses.filter(a => rec.counts[a.id]).map(a => {
