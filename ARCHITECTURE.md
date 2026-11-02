@@ -73,9 +73,14 @@ protein pages read beside the statistics (`marks.tsv`, `protein_counts.tsv`, `pr
 web` splits it into 64 files, so a protein page loads one.
 
 **Live sources add, never change.** UniProt (function, and a check that the sequence is still the one the results were
-computed on: a banner says so when it is not), AlphaFold DB (the model in 3D with 3Dmol, and its confidence drawn on the
-map only when its sequence is the same) and PDBe (experimental structures, one row per entry, with the marks each
-covers). Each says where it came from and when, and fails softly.
+computed on: a banner says so when it is not), AlphaFold DB (its confidence drawn on the map only when its sequence is
+the same) and the 3D structure (`kit-3d.js`, with 3Dmol.js loaded when it opens): the PDB chain that models most of the
+protein or any entry and chain, the AlphaFold model, homologous structures and predicted complexes, read live by
+accession from AlphaFold DB, PDBe, RCSB and ProtVar, coloured like the map, with ChimeraX, PyMOL and coordinate
+downloads. What the marks touch in those structures comes from the site's own tables when it has them
+(`website.protein.structure`, CONTRACTS.md "Structure evidence"); every export says which parts were live and which
+were the site's. `K.show3d(acc, {pos, entry, chain})` opens it at a mark from anywhere. Each says where it came from
+and when, and fails softly.
 
 **Selections.** The search (genes, accessions, sites such as `GENE R216`, terms such as `motif:RGG,GAR`) and the
 Filters panel make a selection; every page then shows it, and the Overview tests it again in the browser, as the site's
@@ -88,7 +93,7 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 **Modules.** `kit.js` is the core (state in the URL, tabs, Overview, All tests, Method, figures and downloads); the
 others register with it through `window.PTMC_MODULES`: `kit-stats.js` (the tests, for selections), `kit-select.js`
 (search, filters, the sidebar, selections and their tests), `kit-map.js` (the protein map: rows, hovers, pins, zoom,
-read-out, exports), `kit-proteins.js` (the Proteins tab and the protein page), `kit-sites.js` (the Sites tab),
+read-out, exports), `kit-3d.js` (the protein page's 3D structure), `kit-proteins.js` (the Proteins tab and the protein page), `kit-sites.js` (the Sites tab),
 `kit-idrs.js` (the IDRs tab, from a track whose values include `fcr` and `ncpr`), `kit-sitecard.js` (the site card's blocks, the sites table's Evidence rows and the citation box, from the tables of CONTRACTS.md's "Tables the protein pages show"), `kit-cell.js` (several maps of the cell as one question: `website.cell`; the drawings' parts in `config/cell_drawings.json`), `kit-values.js` (a protein-set question with its proteins' numbers: `website.set_views`) and `kit-compare.js` (what sets a
 selection apart from the other marks, and two selections side by side). `kit-counts.js` (questions answered by counting the marks rather than testing them, `website.counts`: their tiles, pages, filters, downloads and Method sections; a module's question draws its own tile and page through `A[id].tile` and `A[id].page`, and may add a kind of filter, `K.filterKinds`). A new view is a new module; a module may draw a question of its own or its own tile and page for one (`K.questions`) and add a Method section (`K.methods`).
 

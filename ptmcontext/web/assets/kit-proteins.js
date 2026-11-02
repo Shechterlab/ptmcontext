@@ -397,8 +397,7 @@
       (D.analyses.some(a => a.kind === 'protein_sets') ? fold('p-kinds', 'Kinds of protein', 'its classes, pathways and locations, with the site’s result for each', kindsHtml(p), false) : '') +
       fold('p-regions', 'Domains and regions', `${int(rec.units.length)} region${rec.units.length === 1 ? '' : 's'} the site’s questions read`, regionsHtml(p, rec), false) +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, sel), false) +
-      fold('p-struct', 'Structure', 'AlphaFold DB and PDBe, live', `<div class="live-grid"><section><h4>Predicted structure <small class="muted">AlphaFold DB, live</small></h4><div id="live-af" class="live"><p class="muted">Asking AlphaFold DB…</p></div><div id="af3d" class="af3d" hidden></div></section>` +
-        `<section><h4>Experimental structures <small class="muted">PDBe, live</small></h4><div id="live-pdb" class="live"><p class="muted">Asking PDBe…</p></div></section></div>`, false) +
+      fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) +           // kit-3d.js
       (IXP ? fold('p-ix', 'Interaction partners', 'STRING, live', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(p.gene || p.acc)}, best first, and which of them have ${esc(W.marks)} in this site.</p>${K.expBar(['tsv'], 'ixexp', 'the partners')}</div><div id="live-ix" class="live"><p class="muted">Asking STRING…</p></div>`, false) : '');
   }
   // the facts as tiles, for a site without headline cards
@@ -440,8 +439,7 @@
       (ptab ? fold('p-partners', `Proteins with ${esc(W.marks)} associated with ${esc(p.gene || p.acc)}`, `${int(partners.length)}`, partners.length ? `<p class="sub">${esc(CC.writer?.partners?.note || 'Partners')}, most confident first; the number is each protein’s ${esc(W.marks)}.</p><div class="gene-chips">${shownP.map(chip).join('')}</div>` +
         `<p>${partners.length > 40 ? `<button class="linkish" type="button" data-light-all>${PV.lightAll ? 'Fewer' : `All ${int(partners.length)}`}</button> · ` : ''}<button class="linkish" type="button" data-try="${esc(partners.map(r => byAcc[r.acc]?.gene || r.acc).join(' '))}">Select these ${int(partners.length)}</button></p>` : `<p class="muted">None in the site’s partner table.</p>`, true) : '') +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
-      fold('p-struct', 'Structure', 'AlphaFold DB and PDBe, live', `<div class="live-grid"><section><h4>Predicted structure <small class="muted">AlphaFold DB, live</small></h4><div id="live-af" class="live"><p class="muted">Asking AlphaFold DB…</p></div><div id="af3d" class="af3d" hidden></div></section>` +
-        `<section><h4>Experimental structures <small class="muted">PDBe, live</small></h4><div id="live-pdb" class="live"><p class="muted">Asking PDBe…</p></div></section></div>`, false) +
+      fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) +           // kit-3d.js
       (IXP ? fold('p-ix', 'Interaction partners', 'STRING, live', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(p.gene || p.acc)}, best first, and which of them have ${esc(W.marks)} in this site.</p>${K.expBar(['tsv'], 'ixexp', 'the partners')}</div><div id="live-ix" class="live"><p class="muted">Asking STRING…</p></div>`, false) : '');
   }
   // a search for one name that only a protein without marks has (MAPT): Enter opens its light page; the search goes
@@ -476,7 +474,7 @@
   K.sections.protein = () => { const p = byAcc[PV.acc] || PV.lightP; if (!byAcc[PV.acc]) return [['view', p ? `${p.gene || p.acc}: ${p.name || ''}` : 'This protein', 1]]; return [['view', p ? `${p.gene || p.acc}: ${p.name || ''}` : 'This protein', 1], ...(PV.site ? [['site-card', `The ${W.mark} ${site(PV.site)}`, 1]] : []),
     ['g-marks', `Its ${W.marks}`, 0], ['p-map', 'Protein map', 1], ['p-sites', cap(W.marks), 1], ['p-score', `Against its other ${W.residues}`, 1],
     ['g-protein', 'The protein', 0], ...(D.analyses.some(a => a.kind === 'protein_sets') ? [['p-kinds', 'Kinds of protein', 1]] : []), ['p-regions', 'Domains and regions', 1], ['p-seq', 'Sequence', 1],
-    ['g-live', 'Live sources', 0], ['p-struct', 'Structure', 1], ...(IXP ? [['p-ix', 'Interaction partners', 1]] : [])]; };
+    ['g-live', 'Live sources', 0], ['p-struct', '3D structure', 1], ...(IXP ? [['p-ix', 'Interaction partners', 1]] : [])]; };
   // the Proteins page: its table, and the proteins with most marks (of the selection, if any)
   K.sections.proteins = () => {
     const cnt = K.sel?.active() ? K.sel.selectedCountByProtein() : null;
@@ -593,7 +591,7 @@
           el.innerHTML = `<b>UniProt has changed this sequence</b> since ${esc(D.run.snapshot?.release || 'the release these results use')}. Positions on this page are on that release’s sequence; the live cards below may not line up with them.`;
         }
       });
-    // AlphaFold DB: the model, its confidence along the map (only if its sequence is the same), and 3D on request
+    // AlphaFold DB: the model's confidence along the map (only if its sequence is the same); the model in 3D is kit-3d.js's
     (PV.afReq ||= {})[acc] ||= getJson(`https://alphafold.ebi.ac.uk/api/prediction/${acc}`).then(async list => {
       const m = Array.isArray(list) ? list[0] : null; if (!m) return { none: true };
       const same = m.sequence === rec.seq;
@@ -604,36 +602,11 @@
     PV.afReq[acc].then(af => {
       if (PV.acc !== acc) return;
       if (af.failed || af.none) { const first = !PV.af; PV.af = af; if (first) drawMap(); }
-      if (af.failed) { fill('live-af', '<p class="muted">AlphaFold DB did not answer. Nothing on this page depends on it.</p>'); return; }
-      if (af.none) { fill('live-af', '<p class="muted">AlphaFold DB has no model of this protein.</p>'); return; }
+      if (af.failed || af.none) return;
       const first = !PV.af; PV.af = af; if (first) drawMap();
-      fill('live-af', `<p>Model v${esc(af.version)}, mean confidence (pLDDT) ${esc(Number(af.mean).toFixed(1))}.${af.same ? ' Its confidence is drawn under the map.' : ' <b>Its sequence differs from the one these results use</b>, so its confidence is not drawn on the map.'}</p>` +
-        `<p><button class="btn" type="button" id="af-3d-btn">Show the model in 3D</button> <a href="https://alphafold.ebi.ac.uk/entry/${esc(acc)}">Open in AlphaFold DB</a></p>` +
-        `<p class="src">AlphaFold DB (Varadi et al., Nucleic Acids Res 52:D368 (2024), doi:10.1093/nar/gkad1011), retrieved ${esc(today())}. The ${esc(W.marks)} are drawn as spheres.</p>`);
-    });
-    // PDBe: the experimental structures, best first, and which of the marks each covers
-    (PV.pdbReq ||= {})[acc] ||= getJson(`https://www.ebi.ac.uk/pdbe/api/mappings/best_structures/${acc}`).then(j => j[acc] || [], e => (String(e.message) === '404' ? [] : null));
-    PV.pdbReq[acc].then(list => {
-      if (PV.acc !== acc) return;
-      if (list === null) { fill('live-pdb', '<p class="muted">PDBe did not answer. Nothing on this page depends on it.</p>'); return; }
-      if (!list.length) { fill('live-pdb', '<p class="muted">No experimental structure of this protein in the PDB.</p>'); return; }
-      PV.pdb = list; drawPdb();
     });
     drawIx();
-  }
-  function drawPdb() {
-    const rec = PV.rec; if (!PV.pdb || !rec) return;
-    // one row per entry, best mapping first (PDBe's order), with every chain of the protein in it
-    const byEntry = new Map();
-    PV.pdb.forEach(e => { const k = String(e.pdb_id); if (!byEntry.has(k)) byEntry.set(k, { ...e, chains: [] }); const x = byEntry.get(k); if (!x.chains.includes(e.chain_id)) x.chains.push(e.chain_id); });
-    const list = [...byEntry.values()].map(e => ({ ...e, chain_id: e.chains.join(', ') }));
-    const shown = PV.pdbAll ? list : list.slice(0, 10);
-    const covered = e => rec.marks.filter(([pos]) => pos >= e.unp_start && pos <= e.unp_end).length;
-    fill('live-pdb', `<div class="tbl-card"><table class="tbl"><thead><tr><th>Entry</th><th>Method</th><th class="num">Resolution</th><th>Chains</th><th class="num">Residues</th><th class="num">${esc(cap(W.marks))} in the construct</th></tr></thead><tbody>` +
-      shown.map(e => `<tr><td class="mono"><a href="https://www.rcsb.org/structure/${esc(e.pdb_id)}">${esc(String(e.pdb_id).toUpperCase())}</a></td><td>${esc(e.experimental_method || '')}</td>` +
-        `<td class="num">${e.resolution != null ? esc(Number(e.resolution).toFixed(1)) + ' Å' : '–'}</td><td>${esc(e.chain_id || '')}</td><td class="num">${int(e.unp_start)}–${int(e.unp_end)}</td><td class="num">${int(covered(e))} of ${int(rec.marks.length)}</td></tr>`).join('') +
-      `</tbody></table></div>` + (list.length > 10 ? `<p><button class="linkish" type="button" data-pdb-all>${PV.pdbAll ? 'Show the best 10' : 'Show all ' + int(list.length) + ' entries'}</button></p>` : '') +
-      `<p class="src">PDBe best structures (SIFTS), retrieved ${esc(today())}; residues are UniProt positions.</p>`);
+    K.s3d.after(p, rec);                // the 3D structure (kit-3d.js)
   }
   // ---- interaction partners: live from STRING, matched to this site's proteins by gene name ------------------------
   // The site file turns the card on and names the taxon STRING files the organism under (website.partners).
@@ -700,22 +673,6 @@
       .catch(() => { if (w) w.close(); });
   }
 
-  const THREE_D = 'https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.5.3/3Dmol-min.js';
-  async function show3d() {
-    const box = document.getElementById('af3d'), af = PV.af; if (!box || !af?.pdbUrl) return;
-    box.hidden = false; box.innerHTML = '<p class="muted">Loading the model…</p>';
-    try {
-      if (!window.$3Dmol) await new Promise((ok, fail) => document.head.appendChild(Object.assign(document.createElement('script'), { src: THREE_D, onload: ok, onerror: () => fail(new Error('3Dmol did not load')) })));
-      const pdb = await fetch(af.pdbUrl).then(r => (r.ok ? r.text() : Promise.reject(new Error('model'))));
-      box.innerHTML = '';
-      const v = window.$3Dmol.createViewer(box, { backgroundColor: 'white' });
-      v.addModel(pdb, 'pdb');
-      v.setStyle({}, { cartoon: { colorfunc: a => afColour(a.b) } });
-      if (af.same) v.addStyle({ resi: PV.rec.marks.map(([pos]) => pos), atom: 'CA' }, { sphere: { color: '#c2410c', radius: 1.6 } });
-      v.zoomTo(); v.render();
-    } catch (e) { box.innerHTML = `<p class="muted">The 3D model could not be shown (${esc(e.message)}).</p>`; }
-  }
-
   // ---- downloads: the map as a figure, the sites and the proteins as tables ------------------------------------------
   const mapFigure = () => K.map.figure(mapCtx());
   // a site's card, opened without leaving the page's place (the card is scrolled into view)
@@ -772,8 +729,6 @@
       document.body.dataset.printFoot = `${D.site.name} · ${location.href} · printed ${K.hdate(new Date().toISOString())}. ${K.creditLines()[0] || ''}`;
       setTimeout(() => { print(); if (theme) document.documentElement.dataset.theme = theme; else delete document.documentElement.dataset.theme; }, 150);
     }],
-    ['#af-3d-btn', () => show3d()],
-    ['[data-pdb-all]', () => { PV.pdbAll = !PV.pdbAll; drawPdb(); }],
     ['[data-ix-net]', el => { IXS.net = el.dataset.ixNet; IXS.all = false; drawIx(); }],
     ['[data-ix-min]', el => { IXS.min = +el.dataset.ixMin; IXS.all = false; drawIx(); }],
     ['[data-ix-only]', el => { IXS.only = el.dataset.ixOnly === 'true'; IXS.all = false; drawIx(); }],

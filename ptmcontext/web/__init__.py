@@ -26,6 +26,7 @@ from ..inputs import role_inputs, site_input_names
 from ..profile import load_profile
 from ..site import code_commit, load_site, manifest_of, root_of
 from .counts import counts_data
+from . import structure as S3D
 
 FONTS = {
     'heading': "'IBM Plex Serif', Georgia, 'Times New Roman', serif",
@@ -36,7 +37,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-start.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-start.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -267,6 +268,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         uses[site['reference']['statistics']] = 'the parity check'
     for tid, tb in (web.get('tables') or {}).items():      # the tables the protein pages show
         uses[tb['input']] = (uses[tb['input']] + '; ' if uses.get(tb['input']) else '') + f"the protein pages ({tid.replace('_', ' ')})"
+    for name, what in S3D.roles(site).items():                            # the 3D viewer reads some of them
+        uses[name] = (uses[name] + '; ' if uses.get(name) else '') + what
     inputs = {name: {'version': entries.get(name, {}).get('version', ''), 'licence': entries.get(name, {}).get('licence', ''),
                      'use': uses.get(name, ''), 'role': (roles.get(name) or [''])[0], 'roles': roles.get(name, []),
                      'record': entries.get(name, {}).get('record', '')}
@@ -641,6 +644,8 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     # questions answered by counting the marks (website.counts): the whole dataset's counts in the page, each
     # experiment's marks in selection.json
     data['count_questions'], sel_counts = counts_data(site, folder)
+    data['structure'] = S3D.site_data(site, profile)
+    S3D.add(site, run, shards, log)             # each protein's structure evidence, into its record (s3d)
     data['unit_sources'] = unit_sources
     data['shards'] = SHARDS if shards else 0
     if listing:
