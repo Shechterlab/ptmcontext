@@ -75,13 +75,15 @@ jobs:
           ptmc web sites/methylarginine.yaml
           ptmc web sites/methylarginine.yaml --variant with_lower_confidence
       - name: Yeast phosphosites, staged from UniProt, MobiDB and SHEPHARD
+        # an outage at one of these sources leaves the yeast site out of this deploy, not the methylarginine site
+        continue-on-error: true
         run: |
           ptmc stage uniprot UP000002311 --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
           ptmc stage mobidb --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
           ptmc stage shephard s_cerevisiae --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
           ptmc run sites/yeast_phospho.yaml --root data
           ptmc web sites/yeast_phospho.yaml
-      - run: ptmc pages sites/methylarginine.yaml sites/yeast_phospho.yaml --out _site
+      - run: ptmc pages sites/methylarginine.yaml sites/yeast_phospho.yaml --out _site --skip-missing
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

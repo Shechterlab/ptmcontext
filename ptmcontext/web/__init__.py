@@ -728,9 +728,10 @@ def _licence_words(spdx: str) -> str:
     return spdx.replace('CC-', 'CC ', 1).rsplit('-', 1)[0] + ' ' + spdx.rsplit('-', 1)[1] if spdx.startswith('CC-') else spdx
 
 
-def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None, log=print) -> Path:
+def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None, log=print, skip_missing: bool = False) -> Path:
     """One folder to publish (GitHub Pages, or any static host): each site's website under its id, and a landing page
-    in the same look listing them. Run ptmc run and ptmc web for each site first."""
+    in the same look listing them. Run ptmc run and ptmc web for each site first; with skip_missing, a site whose
+    website was not built (its sources could not be fetched) is left out with a warning instead of failing the rest."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     (out / '.nojekyll').write_text('')
@@ -740,6 +741,9 @@ def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None,
         web = site.get('website', {})
         src = Path(out_root or root_of(site)) / site['outputs']['folder'] / 'web'
         if not (src / 'index.html').exists():
+            if skip_missing:
+                log(f'  warning: {sp} has no website ({src}/index.html); left out of this build')
+                continue
             raise FileNotFoundError(f'{src}/index.html: run ptmc web {sp} first')
         dest = out / site['id']
         if dest.exists():

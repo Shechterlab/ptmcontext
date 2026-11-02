@@ -154,7 +154,7 @@ def cmd_web(a) -> int:
 
 def cmd_pages(a) -> int:
     from . import web
-    web.pages(a.sites, a.out, out_root=a.out_root)
+    web.pages(a.sites, a.out, out_root=a.out_root, skip_missing=a.skip_missing)
     return 0
 
 
@@ -218,6 +218,7 @@ def main(argv=None) -> int:
     s.add_argument('sites', nargs='+')
     s.add_argument('--out', required=True)
     s.add_argument('--out-root', default=None)
+    s.add_argument('--skip-missing', action='store_true', help='leave out, with a warning, a site whose website was not built')
     s.set_defaults(fn=cmd_pages)
 
     s = sub.add_parser('layers', help='list layers')
