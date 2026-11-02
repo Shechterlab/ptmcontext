@@ -30,6 +30,11 @@ inputs:                # role the layers read: manifest input that fills it
   depmap_genes: depmap_gene_effect
   tcga_changes: tcga_arginine_changes
   depmap_changes: depmap_arginine_changes
+  # the protein map's own rows (website.protein.map.rows): release tables read for the map only, no test reads them
+  residue_evidence: methylarginine_residue_evidence_v1_4_3
+  density_windows: density_windows_v1_4_3
+  lower_confidence_sites: methylarginine_lower_confidence_sites_v1_4_3
+  interpro_entries: interpro_all_entries
 
 marks:
   # Until this repository builds the site union from the studies, the marks are the release's own sites.
@@ -1224,3 +1229,199 @@ website:                  # the look and words of the website (ptmc web); layout
         - {id: tcga, label: In cancers, menu: "Changes in tumours (TCGA) and cell lines (DepMap)", show: [changes]}
       nearest_domain: {table: site, name: nearest_domain_name, ref: nearest_domain_interpro, side: domain_side, distance: domain_edge_distance,
                        url: "https://www.ebi.ac.uk/interpro/entry/InterPro/{ref}/", sides: {N_terminal_to_domain: N-term, C_terminal_to_domain: C-term, inside: inside}}
+    map:                   # the protein map: more ways to colour the sites, and rows of the release's own evidence
+      colour_by:           # in this order; the original explorer's modes, from the sites' attributes
+        - state
+        - id: methyl_ip
+          label: Maron methyl-IP
+          help: "The antibodies whose immunoprecipitation recovered the site in Maron et al. 2021 (Table S3)"
+          classes:
+            - {label: Rme1 IP only, colour: "#2A78D6", colour_dark: "#3987E5", when: [{attribute: methyl_ip, has: [MMA]}, {attribute: methyl_ip, lacks: [ADMA, SDMA]}]}
+            - {label: "Rme2a IP (no Rme2s)", colour: "#EB6834", colour_dark: "#D95926", when: [{attribute: methyl_ip, has: [ADMA]}, {attribute: methyl_ip, lacks: [SDMA]}]}
+            - {label: Rme2s IP, colour: "#A23B12", colour_dark: "#F4A26B", when: [{attribute: methyl_ip, has: [SDMA]}]}
+          otherwise: {label: Not in Maron IP, colour: "#A3AEB3", colour_dark: "#6D7D84"}
+        - id: prmt_inhibitor
+          label: PRMT inhibitor response
+          help: "Maron et al. 2021: a site called decreased with the PRMT5 inhibitor GSK591 or the type I PRMT inhibitor MS023 (a peptide down, none up); a decrease is coloured by the methylation the inhibited enzymes make (PRMT5 symmetric, type I asymmetric). Hollow: measured, not decreased"
+          classes:
+            - {label: "↓ GSK591 (PRMT5i)", colour: "#A23B12", colour_dark: "#F4A26B", when: [{attribute: gsk591, has: [decreased]}, {attribute: ms023, lacks: [decreased]}]}
+            - {label: "↓ MS023 (type I PRMTi)", colour: "#EB6834", colour_dark: "#D95926", when: [{attribute: ms023, has: [decreased]}, {attribute: gsk591, lacks: [decreased]}]}
+            - {label: "↓ both", colour: ink, when: [{attribute: gsk591, has: [decreased]}, {attribute: ms023, has: [decreased]}]}
+            - {label: "Measured, not decreased", colour: "#A3AEB3", colour_dark: "#6D7D84", hollow: true, when: [{attribute: gsk591, empty: false}]}
+          otherwise: {label: Not measured, colour: "#A3AEB3", colour_dark: "#6D7D84"}
+        - id: carm1_ko
+          label: CARM1 knockout
+          help: "Shishkova et al. 2017: a site decreased in CARM1 knockout cells (twofold at q < 0.05 in either cell line). Hollow: measured, not decreased"
+          classes:
+            - {label: "↓ in CARM1 KO", colour: "#EB6834", colour_dark: "#D95926", when: [{attribute: perturbation, matches: "^carm1_ko_[^:]+:decreased$"}]}
+            - {label: "Measured, not decreased", colour: "#A3AEB3", colour_dark: "#6D7D84", hollow: true, when: [{attribute: perturbation, matches: "^carm1_ko_[^:]+:(increased|mixed|no_significant_change)$"}]}
+          otherwise: {label: Not measured, colour: "#A3AEB3", colour_dark: "#6D7D84"}
+        - n_studies
+        - interaction
+        - tcga_any
+        - confidence       # the lower-confidence view's (variants.with_lower_confidence.attributes)
+      hatch: [{attribute: confidence, has: ["yes"]}]   # the lower-confidence view's added sites, hatched as the explorer drew them
+      sources:             # each source the rows' items name: its paper (citations and DOIs as the release's site_interaction_records give them)
+        pepR-MS: {cite: "Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1101/2025.09.05.674461}
+        pepR-MS_focused: {label: pepR-MS (focused sites), cite: "Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1101/2025.09.05.674461}
+        Kramer2014: {label: Kramer 2014, cite: "Kramer et al., Nat Methods 11:1064 (2014), re-analysed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1038/nmeth.3092}
+        XRNAX: {cite: "Trendel et al., Cell 176:391 (2019), re-analysed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1016/j.cell.2018.11.004}
+        RBS-ID: {cite: "Bae et al., Nat Struct Mol Biol 27:678 (2020), re-analysed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1038/s41594-020-0436-2}
+        pRBS-ID: {cite: "Bae et al., Nat Commun 12:6026 (2021), re-analysed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1038/s41467-021-26317-5}
+        RBDmap: {cite: "Castello et al., Mol Cell 63:696 (2016)", doi: 10.1016/j.molcel.2016.06.029}
+        CAPRI: {cite: "Panhale et al., Nat Commun 10:2682 (2019)", doi: 10.1038/s41467-019-10585-3}
+        pCLAP: {cite: "Mullari et al., J Proteome Res 16:2762 (2017)", doi: 10.1021/acs.jproteome.7b00042}
+        RBR-ID: {cite: "Oksuz et al., Mol Cell 83:2449 (2023)", doi: 10.1016/j.molcel.2023.06.012}
+        Trendel2025: {label: Trendel 2025, cite: "Trendel et al., Cell 188:4424 (2025)", doi: 10.1016/j.cell.2025.04.037}
+        UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
+        ProtVar: {cite: "Burke et al., Nat Struct Mol Biol 30:216 (2023); Stephenson et al., Nucleic Acids Res 52:W140 (2024)", doi: 10.1038/s41594-022-00910-8}
+        IntAct: {cite: "IntAct curated interaction features", url: "https://www.ebi.ac.uk/intact/"}
+      rows:                # each read from a release table, mapped to the map-row format (CONTRACTS.md, Map rows)
+        - id: dense
+          title: Dense methyl-R windows
+          help: "Windows holding more methylarginine sites than expected from the protein's arginines (release supporting/density_windows: observed against a null of shuffled sites, q ≤ 0.05)"
+          place: backbone
+          from:
+            role: density_windows
+            columns: {accession: uniprot_accession, start: start, end: end, value: sites,
+                      label: "{sites} sites in {window_aa} aa, log2 observed/null {log2_obs_over_null:.2f}, q {q:.2g}"}
+          colour: "#111827"
+          colour_dark: "#E8EFF2"
+          opacity: 0.07
+        - id: interpro_families
+          title: InterPro families
+          help: "Families and homologous superfamilies from InterPro 108.0: each entry's member-database hits merged"
+          after: uni_dom
+          default: "off"
+          from:
+            role: interpro_entries
+            columns: {accession: canonical_UniProtAC, start: fragment_start, end: fragment_end, label: interpro_name, ref: interpro_accession, class: interpro_type}
+          classes:
+            family: {label: Family (InterPro)}
+            homologous_superfamily: {label: Homologous superfamily (InterPro)}
+          mark: named
+          merge: true
+          colour: "#ECE4CF"
+          colour_dark: "#40391F"
+          ink: "#4D4123"
+          ink_dark: "#F0E6C8"
+        - id: rg
+          title: RG/RGG-rich
+          help: "At least 3 RG dipeptides whose consecutive RG arginines are at most 12 residues apart, found in the sequence; RGG-rich when 2 or more are RGG"
+          after: composition
+          sequence: {motif: "RGG?", min: 3, gap: 12, label: RG-rich, words: "{n} RG dipeptides, {strong} RGG", strong: {motif: "^RGG$", min: 2, label: RGG-rich}}
+          mark: named
+          colour: "#F5D6DE"
+          colour_dark: "#5A2C3A"
+          ink: "#7A2E45"
+          ink_dark: "#F6C9D6"
+        - id: tcga
+          title: Tumours (TCGA)
+          help: "Somatic missense and stop changes of the site's arginine in TCGA tumours (MC3 public calls from the GDC: 33 projects), a taller tick where more tumours carry one (the release's tcga_changes and tcga_change_tumours)"
+          after: mutagen
+          from: {marks: true, columns: {label: tcga_changes, value: tcga_change_tumours}, split: "; "}
+          mark: tick
+          labels: marks
+          value: {one: "in {n} tumour", many: "in {n} tumours", size: true}
+          key: Change in tumours (TCGA)
+        - id: depmap
+          title: Cell lines (DepMap)
+          help: "Missense and stop changes of the site's arginine in DepMap 24Q4 cancer cell lines, a taller tick where more lines carry one (the release's depmap_changes and depmap_change_lines)"
+          after: tcga
+          from: {marks: true, columns: {label: depmap_changes, value: depmap_change_lines}, split: "; "}
+          mark: tick
+          labels: marks
+          value: {one: "in {n} cell line", many: "in {n} cell lines", size: true}
+          key: Change in cell lines (DepMap)
+        - id: rna_cells
+          title: RNA in cells
+          help: "Residues UV-crosslinked to RNA in living cells (pepR-MS compendium: re-analysis of Kramer 2014, XRNAX, RBS-ID, pRBS-ID and pepR-MS), RBDmap RNA-bound fragments (Castello et al. 2016, HeLa) and CAPRI RNA-bound peptides (Panhale et al. 2019, HEK293; paler: ADJ-peptides next to a crosslink); pCLAP (Mullari et al. 2017) as a flag at the sites inside its peptides only"
+          after: ptm
+          from:
+            - role: residue_evidence
+              columns: {accession: uniprot_accession, start: start, end: end, class: evidence_type, sources: sources}
+              include: [{column: evidence_type, in: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide]}]
+            - {marks: true, columns: {class: interaction_evidence}, split: "; ", classes: [pclap_peptide, pclap_lysc_region]}   # the site table's pCLAP flags: no extents
+          classes:
+            capri_adj_peptide: {label: "CAPRI RNA-bound peptide (ADJ)", mark: box, opacity: 0.16, help: "a Lys-C peptide released next to an RNA crosslink (Panhale et al. 2019, HEK293)"}
+            rbdmap_fragment: {label: RBDmap RNA-bound fragment, mark: box, opacity: 0.28, help: "an RNA-bound proteolytic fragment (Castello et al. 2016, HeLa)"}
+            capri_xl_peptide: {label: "CAPRI RNA-crosslinked peptide (XL)", mark: box, opacity: 0.45, help: "identified with an RNA adduct (Panhale et al. 2019, HEK293)"}
+            pclap_lysc_region: {label: "In a pCLAP RNA-binding region (site only)", mark: dot, opacity: 0.4, sources: [pCLAP], help: "the site lies in the Lys-C peptide around a pCLAP RNA-binding peptide (Mullari et al. 2017, HEK293); the region itself is not shown"}
+            pclap_peptide: {label: "In a pCLAP RNA-binding peptide (site only)", mark: dot, opacity: 0.85, sources: [pCLAP], help: "the site lies in a peptide enriched from UV-crosslinked RNA-protein complexes (Mullari et al. 2017, HEK293); the peptide itself is not shown"}
+            rna_crosslink: {label: RNA-crosslinked residue, mark: tick, help: "a residue UV-crosslinked to RNA in living cells"}
+          colour: "#7B4FBF"
+          colour_dark: "#A98BE0"
+        - id: rbrid
+          title: RBR-ID
+          help: "RBR-ID (Oksuz et al. 2023, K562 nuclei): residues under a peptide depleted when RNA is 4SU-labelled and crosslinked, and regions whose smoothed residue score reaches the release's threshold"
+          after: rna_cells
+          from:
+            role: residue_evidence
+            columns: {accession: uniprot_accession, start: start, end: end, class: evidence_type, sources: sources}
+            include: [{column: evidence_type, in: [rbrid_region, rbrid_residue]}]
+          classes:
+            rbrid_region: {label: RBR-ID region, mark: box, opacity: 0.18}
+            rbrid_residue: {label: RBR-ID+ residues, mark: box, opacity: 0.55}
+          colour: "#7B4FBF"
+          colour_dark: "#A98BE0"
+        - id: dna_cells
+          title: DNA in cells
+          help: "Residues UV-crosslinked to DNA in MCF7 cells, alone or as candidates, and crosslinked peptides (Trendel et al. 2025); UniProt DNA-binding regions"
+          after: rbrid
+          from:
+            role: residue_evidence
+            columns: {accession: uniprot_accession, start: start, end: end, class: [evidence_type, localisation], sources: sources}
+            include: [{column: evidence_type, in: [dna_crosslink, dna_binding_region]}]
+          classes:
+            "dna_binding_region:in_region": {label: UniProt DNA-binding region, mark: box, opacity: 0.22, help: "an annotation, not evidence of contact"}
+            "dna_crosslink:in_peptide": {label: DNA-crosslinked peptide, mark: box, opacity: 0.45}
+            "dna_crosslink:candidate_residue": {label: DNA crosslink candidate, mark: box, opacity: 0.75, help: "one of several candidate residues of the crosslink"}
+            "dna_crosslink:at_residue": {label: DNA-crosslinked residue, mark: tick}
+          colour: "#B7791F"
+          colour_dark: "#D9A548"
+        - id: intact
+          title: IntAct
+          help: "IntAct curated features of interaction participants: binding regions mapped for a partner, and mutations that change an interaction"
+          after: pdb
+          default: "off"
+          from:
+            role: residue_evidence
+            columns: {accession: uniprot_accession, start: start, end: end, class: evidence_type, value: n_partners, sources: sources}
+            include: [{column: evidence_type, in: [intact_binding_region, intact_mutation]}]
+          classes:
+            intact_binding_region: {label: IntAct binding region, mark: box, opacity: 0.3}
+            intact_mutation: {label: IntAct mutation that changes an interaction, mark: diamond}
+          value: {one: "{n} record", many: "{n} records"}
+          colour: "#0E7490"
+          colour_dark: "#3FB5CF"
+        - id: predicted
+          title: Protein contact (predicted)
+          help: "Residues at the partner interface of AlphaFold-Multimer models of human protein pairs (ProtVar, pDockQ ≥ 0.23), darker where more partners share them"
+          after: intact
+          from:
+            role: residue_evidence
+            columns: {accession: uniprot_accession, start: start, end: end, value: n_partners, label: "best pDockQ {best_score}", sources: sources}
+            include: [{column: evidence_type, equals: predicted_interface}]
+          mark: pred
+          value: {one: "with up to {n} partner", many: "with up to {n} partners", opacity: [1, 5]}
+          key: "Protein contact (predicted; darker: more partners)"
+          colour: "#0E7490"
+          colour_dark: "#3FB5CF"
+        - id: lower_confidence
+          title: Lower confidence
+          help: "Arginines a study reports as methylated whose records each fail a site test (the release's lower-confidence sites): not counted as sites"
+          after: predicted
+          default: "off"
+          key: Lower-confidence evidence (not a site)
+          from:
+            role: lower_confidence_sites
+            columns: {accession: uniprot_accession, position: position, label: "{studies}: {reasons}"}
+            values:
+              reasons: {below_threshold: "localisation score below the study's threshold", several_residues: "the methyl group is on one of several residues",
+                        search_disagrees: "the study's confident spectra disagree on the residue", no_localising_evidence: "no spectrum or score localises it",
+                        window_fits_several: "the study's window fits several arginines", several_sites: "the same sequence occurs at several sites",
+                        other_protein: "the sequence names a site in another protein", not_in_reference: "the sequence is not in the reviewed protein"}
+          mark: tick
+          colour: "#5F6F78"
+          colour_dark: "#93A8B0"
+          opacity: 0.75

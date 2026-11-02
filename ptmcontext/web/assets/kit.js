@@ -937,7 +937,8 @@
     return new Blob([u.slice(0, ihdrEnd), ...extra, u.slice(ihdrEnd)], { type: 'image/png' });
   }
   async function pngExport(f, name) {
-    const dpi = 300, scale = dpi / 96, svg = await embedFonts(f.svg);
+    // a figure may set its print width (f.mm) and resolution (f.dpi): the PNG is then that many dots across that width
+    const dpi = f.dpi || 300, scale = f.mm ? (f.mm / 25.4 * dpi) / f.W : dpi / 96, svg = await embedFonts(f.svg);
     const img = new Image(), url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
     await new Promise((ok, fail) => { img.onload = ok; img.onerror = () => fail(new Error('The figure could not be drawn as a PNG; save it as SVG.')); img.src = url; });
     const c = document.createElement('canvas'); c.width = Math.round(f.W * scale); c.height = Math.round(f.H * scale);

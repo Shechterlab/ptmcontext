@@ -467,6 +467,14 @@ body.has-selection .tabs { box-shadow: inset 0 -2px 0 var(--accent); }
 .map-legend b { font-weight: 600; margin-right: 0.2rem; }
 .map-legend .rl { color: var(--muted); }
 .map-legend i.sq { border-radius: 2px; }
+/* the map's key, under it (folded on narrow screens), drawn with the map's own marks; the export size beside the controls */
+.map-key { margin: 0.1rem 0 0.5rem; }
+.map-key > summary { cursor: pointer; font-size: 0.84rem; font-weight: 600; color: var(--ink-2); margin-bottom: 0.2rem; }
+.pmap .map-legend svg.sw { display: inline-block; width: 22px; height: 14px; vertical-align: -0.2em; margin-right: 0.25rem; overflow: visible; }
+.map-legend .lg-break { flex-basis: 100%; height: 0; }
+.map-ctl .map-size { font-size: 0.8rem; color: var(--muted); }
+.map-pin .linkish { font-size: inherit; }
+.map-svg svg { margin: 0 auto; }
 .rows-menu { max-width: calc(100vw - 32px); }
 @media (max-width: 640px) {
   .rows-menu { position: fixed; left: 16px; right: 16px; top: 20%; width: auto; max-height: 70vh; overflow: auto; }
