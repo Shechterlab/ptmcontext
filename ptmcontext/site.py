@@ -313,6 +313,12 @@ def website_problems(site: dict) -> list[str]:
             bad = [c for c in f['classes'] if c not in words[f['analysis']]['classes']]
             if bad:
                 out.append(f"website.protein.facts: {f['analysis']!r} has no class {bad} (it has {sorted(words[f['analysis']]['classes'])})")
+    for name, lp in (web.get('legacy_params') or {}).items():
+        if lp.get('variant') and lp['variant'] not in (site.get('variants') or {}):
+            out.append(f"website.legacy_params: {name!r} opens the variant {lp['variant']!r}, which this site does not have")
+        kind, _, id_ = (lp.get('key') or ':').partition(':')
+        if lp.get('key') and not ((kind == 'a' and id_ in ids) or (kind == 'p' and id_ in ids) or (kind in 'tn' and id_ in attrs) or (kind == 'r' and (id_ == 'marks' or id_ in ((site.get('proteins') or {}).get('attributes') or {})))):
+            out.append(f"website.legacy_params: {name!r} sets {lp['key']!r}, which is not a filter of this site")
     for key, to in (web.get('search_aliases') or {}).items():
         if to not in ids and to not in attrs:
             out.append(f"website.search_aliases: {key!r} means {to!r}, which is neither a question nor an attribute of this site")

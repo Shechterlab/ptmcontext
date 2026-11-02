@@ -942,6 +942,19 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
     - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/README.md", format: Markdown, note: "how the release was made, and every column"}
     - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+  legacy_params:            # the explorer's filter parameters (?states=2&motifs=1), in its own codes
+    states: {key: "t:state", values: {"1": Rme1, "2": Rme2, "3": Rme1_Rme2, "0": ""}}
+    ips: {key: "t:methyl_ip", values: {"0": MMA, "1": ADMA, "2": SDMA}}
+    s2: {key: "t:maron_s2", values: {"0": Rme1, "1": Rme2}}
+    motifs: {key: "a:motif", values: {"0": RG, "1": RGG, "2": GRG, "3": GAR, "4": RXR, "5": CARM1_proline_rich, "6": CARM1_hydrophobic_proline, "7": DR, "8": RD, "9": ER, "10": RE}}
+    disorder: {key: "a:disorder", values: {"0": disordered, "1": disorder_boundary, "2": ordered}}
+    sctx: {key: "a:structure_context", values: {"0": domain_folded, "1": domain_disordered, "2": ordered_outside_domain, "3": idr_near_domain, "4": idr_mid_domain, "5": idr_far_from_domain}}
+    minRep: {key: "n:n_studies"}
+    minSites: {key: "r:marks"}
+    argEnriched: {key: "r:arg_enrichment_q", value: "0.05"}
+    dense: {key: "r:dense_q", value: "0.05"}
+    anyCond: {key: "p:condensate_proteome", value: "*"}
+    lc: {variant: with_lower_confidence}
   search_aliases:          # the explorer's search keys, read as this site's questions and attributes
     disease: disease_family
     location: hpa_location

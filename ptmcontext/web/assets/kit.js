@@ -1227,5 +1227,24 @@
     ['q', 'f'].forEach(k => { if (sp.has(k) && !hp.has(k)) hp.set(k, sp.get(k)); sp.delete(k); });
     history.replaceState(null, '', location.pathname + (sp.toString() ? '?' + sp : '') + '#' + (path || '') + (hp.toString() ? '?' + hp : ''));
   })();
+  // an older site's filter parameters before the hash (?states=2&motifs=1,3, website.legacy_params): read once as this
+  // site's filters, written into the hash and taken off the address; a flag naming a variant opens it
+  (() => {
+    const LP = D.legacy_params || {}, sp = new URLSearchParams(location.search); if (!Object.keys(LP).some(k => sp.has(k))) return;
+    const hp = new URLSearchParams(location.hash.split('?')[1] || ''), f = new URLSearchParams((hp.get('f') || '').replace(/;/g, '&').replace(/~/g, '='));
+    let variant = null;
+    for (const [name, lp] of Object.entries(LP)) {
+      if (!sp.has(name)) continue; const raw = sp.get(name); sp.delete(name);
+      if (lp.variant) { if (raw === '1' || raw === 'true') variant = (D.variants || []).find(v => v.name === lp.variant); continue; }
+      if (!lp.key) continue;
+      const vals = lp.value != null ? (raw === '1' || raw === 'true' ? [lp.value] : []) : raw.split(',').filter(Boolean).map(v => (lp.values ? lp.values[v] : v)).filter(v => v != null);
+      if (vals.length) f.set(lp.key, [...new Set([...(f.get(lp.key) || '').split('|').filter(Boolean), ...vals])].join('|'));
+    }
+    const fs = [...f.entries()].map(([k, v]) => `${k}~${v.split('|').map(x => encodeURIComponent(x).replace(/~/g, '%7E')).join('|')}`).join(';');
+    if (fs) hp.set('f', fs); else hp.delete('f');
+    const hash = (location.hash.split('?')[0] || '#overview') + (hp.toString() ? '?' + hp : ''), search = sp.toString() ? '?' + sp : '';
+    if (variant && !D.variant) { location.replace(variant.href + search + hash); return; }
+    history.replaceState(null, '', location.pathname + search + hash);
+  })();
   readHash(); if (S.legacy) writeHash(false); hero(); render();
 })();

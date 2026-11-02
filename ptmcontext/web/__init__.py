@@ -277,7 +277,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'tracks': _tracks(folder),
         'profile_uniprot': profile.data.get('uniprot_features', []),
         'overview': web.get('overview'), 'filters': web.get('filters'), 'stats': web.get('stats'),
-        'sites_view': web.get('sites'), 'protein_view': web.get('protein'), 'compare': web.get('compare'), 'legacy_links': web.get('legacy_links') or {}, 'search_aliases': web.get('search_aliases') or {}, 'dataset': web.get('dataset'), 'downloads': web.get('downloads') or [], 'download_terms': web.get('download_terms', ''),
+        'sites_view': web.get('sites'), 'protein_view': web.get('protein'), 'compare': web.get('compare'), 'legacy_links': web.get('legacy_links') or {}, 'search_aliases': web.get('search_aliases') or {}, 'legacy_params': web.get('legacy_params') or {}, 'dataset': web.get('dataset'), 'downloads': web.get('downloads') or [], 'download_terms': web.get('download_terms', ''),
         # the maps of the cell as one question (kit-cell.js) and the parts of the kit's drawings; protein-set questions
         # drawn with their proteins' numbers (kit-values.js)
         **({'cell': web['cell'], 'cell_drawings': _cell_drawings()} if web.get('cell') else {}),

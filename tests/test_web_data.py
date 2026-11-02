@@ -150,3 +150,11 @@ def test_ordered_classes_and_their_groups_reach_the_website():
     a['groups'] = [{'name': 'Inside', 'classes': ['domain_folded', 'no_such_class']}, {'name': 'Again', 'classes': ['domain_folded']}]
     problems = S.website_problems(bad)
     assert any('no_such_class' in p for p in problems) and any('more than one group' in p for p in problems), problems
+
+
+def test_legacy_params_must_name_this_site_s_filters():
+    site = S.load_site(SITES / 'methylarginine.yaml')
+    bad = copy.deepcopy(site)
+    bad['website']['legacy_params'] = {'x': {'key': 't:no_such'}, 'y': {'variant': 'none'}, 'states': {'key': 't:state'}}
+    problems = [p for p in S.website_problems(bad) if 'legacy_params' in p]
+    assert len(problems) == 2 and any("'t:no_such'" in p for p in problems) and any("'none'" in p for p in problems)
