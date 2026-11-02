@@ -35,7 +35,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-start.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-start.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -253,6 +253,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
             uses[name] = (prev + '; ' if prev and name in roles and len(roles[name]) > 1 else '') + (what if rule == 'one' or i == 0 else f"{what}, for proteins with none from the row{'s' if i > 1 else ''} above" if rule == 'first_of' else f'{what}, with the row{"s" if i > 1 else ""} above')
     if site.get('reference', {}).get('statistics'):
         uses[site['reference']['statistics']] = 'the parity check'
+    for tid, tb in (web.get('tables') or {}).items():      # the tables the protein pages show
+        uses[tb['input']] = (uses[tb['input']] + '; ' if uses.get(tb['input']) else '') + f"the protein pages ({tid.replace('_', ' ')})"
     inputs = {name: {'version': entries.get(name, {}).get('version', ''), 'licence': entries.get(name, {}).get('licence', ''),
                      'use': uses.get(name, ''), 'role': (roles.get(name) or [''])[0], 'roles': roles.get(name, []),
                      'record': entries.get(name, {}).get('record', '')}
@@ -440,6 +442,69 @@ def unit_value_data(folder: Path, listing: list, tracks: list[dict]) -> dict:
     return out
 
 
+def protein_tables(specs: dict, run: dict, data: dict, listing: list, fasta: Path, out: Path, log=print) -> tuple[dict, int]:
+    """Pack the site's website.tables (tables.py) for the protein pages: each protein's rows into data/e/NN.json (the
+    shards of data/p), the rows that name a protein without marks into its light page's record in data/u/NN.json (with its
+    name, length and sequence from the snapshot), and an index of those proteins (data/u/index.json). Adds the tables'
+    columns (D.tables), lookups (D.lookups) and other names of the proteins (D.protein_aliases) to the page's data. A
+    table whose input the run did not record is left out, with a line saying so."""
+    import hashlib
+
+    from ..snapshot import md5_file, parse_fasta, parse_fasta_headers
+    from . import tables as T
+    for d in ('e', 'u'):
+        if (out / 'data' / d).exists():
+            shutil.rmtree(out / 'data' / d)
+    if not specs:
+        return {}, 0
+    paths = {}
+    for name, rec in (run.get('inputs') or {}).items():
+        f = Path(rec.get('file', ''))
+        if f.exists() and md5_file(f) == rec.get('md5'):
+            paths[name] = f
+        elif any(s['input'] == name for s in specs.values()):
+            log(f'  input {name}: {f} is missing or changed since the run; its tables are left out')
+    marked = {r[0] for r in listing}
+    seqs = parse_fasta(fasta) if fasta and fasta.exists() else {}
+    head = parse_fasta_headers(fasta) if fasta and fasta.exists() else {}
+    header, rows, partner, lookups = T.pack(specs, paths, marked, set(seqs) | marked, log=log)
+    data['tables'] = header
+    data['lookups'] = lookups
+    aliases = {}
+    for name, spec in specs.items():
+        if spec.get('format') == 'protein_values' and 'aliases' in (header.get(name) or {}).get('columns', []):
+            k = header[name]['columns'].index('aliases')
+            for acc, tb in rows.items():
+                for r in tb.get(name, []):
+                    if r[k]:
+                        aliases[acc] = '; '.join(dict.fromkeys(filter(None, (aliases.get(acc, '') + '; ' + r[k]).split('; '))))
+    data['protein_aliases'] = aliases
+    shards: dict[int, dict] = {}
+    for acc, tb in rows.items():
+        shards.setdefault(shard_of(acc), {})[acc] = tb
+    (out / 'data' / 'e').mkdir(parents=True, exist_ok=True)
+    for k in range(SHARDS):                            # every shard, so a protein with no rows reads an empty one
+        shards[k] = T.dedupe(shards.get(k, {}))
+        (out / 'data' / 'e' / f'{k:02d}.json').write_text(json.dumps(shards[k], separators=(',', ':'), default=int))
+    # the light pages: every protein of the snapshot without a mark, with the rows naming it as a partner
+    light: dict[int, dict] = {}
+    index = []
+    for acc, seq in seqs.items():
+        if acc in marked:
+            continue
+        h = head.get(acc, {})
+        light.setdefault(shard_of(acc), {})[acc] = {'gene': h.get('gene', ''), 'name': h.get('name', ''), 'entry': h.get('entry', ''), 'seq': seq,
+                                                    'md5': hashlib.md5(seq.encode()).hexdigest().upper(), 'tables': partner.get(acc, {})}
+        index.append([acc, h.get('gene', ''), h.get('entry', ''), sum(len(v) for v in partner.get(acc, {}).values())])
+    (out / 'data' / 'u').mkdir(parents=True, exist_ok=True)
+    for k in range(SHARDS):
+        (out / 'data' / 'u' / f'{k:02d}.json').write_text(json.dumps(T.dedupe(light.get(k, {})), separators=(',', ':'), default=int))
+    (out / 'data' / 'u' / 'index.json').write_text(json.dumps(index, separators=(',', ':')))
+    size = sum(f.stat().st_size for f in (out / 'data' / 'e').glob('*.json'))
+    log(f'  protein tables: {len(header)} tables, {len(rows):,} proteins ({size / 1e6:.1f} MB); {len(index):,} proteins without marks')
+    return shards, len(index)
+
+
 def build(site_path: str | Path, out_root: str | Path | None = None, log=print, variant: str | None = None) -> Path:
     """The site's website, in <outputs.folder>/web; a variant's (site variants:, run first with ptmc run --variant) in
     <outputs.folder>/web/<variant>, so the two link to each other and deploy together."""
@@ -530,12 +595,19 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         log('  region values: ' + ', '.join(f"{len(v['rows']):,} {k}" for k, v in values.items()))
     elif (out / 'data' / 'units.json').exists():
         (out / 'data' / 'units.json').unlink()
+    # the tables the protein pages show (website.tables, in the formats of CONTRACTS.md): each protein's rows beside its
+    # page (data/e), the rows naming a protein without marks on its own light page (data/u), lookups in the page
+    ev_shards, light = protein_tables(web.get('tables') or {}, run, data, listing, fasta, out, log) if listing else ({}, 0)
+    data['light_pages'] = light
     inline_values = (out / 'data' / 'units.json').read_text().replace('</', '<\\/') if values else ''
     inline_proteins = json.dumps({f'{k:02d}': v for k, v in shards.items()}, separators=(',', ':')).replace('</', '<\\/')
     inline_selection = (out / 'data' / 'selection.json').read_text().replace('</', '<\\/') if (out / 'data' / 'selection.json').exists() else ''
     if len(inline_proteins) > 12_000_000:
         log(f'  the one-file copy leaves out the protein pages ({len(inline_proteins) / 1e6:.0f} MB); index.html has them')
         inline_proteins = '{}'
+    inline_tables = json.dumps({f'{k:02d}': v for k, v in ev_shards.items()}, separators=(',', ':'), default=int).replace('</', '<\\/')
+    if inline_proteins == '{}' or len(inline_proteins) + len(inline_tables) > 12_000_000:
+        inline_tables = '{}'
 
     def page(inline: bool) -> str:
         icon_href = 'data:image/svg+xml;base64,' + base64.b64encode(icon.encode()).decode() if inline else 'assets/icon.svg'
@@ -578,6 +650,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         if inline:
             css = f'<style>{_asset("assets/kit.css").read_text()}</style>'
             js = (f'<script id="protein-data" type="application/json">{inline_proteins}</script>'
+                  + (f'<script id="table-data" type="application/json">{inline_tables}</script>' if inline_tables != '{}' else '')
                   + (f'<script id="selection-data" type="application/json">{inline_selection}</script>' if inline_selection else '')
                   + (f'<script id="unit-values" type="application/json">{inline_values}</script>' if inline_values else '')
                   + ''.join(f'<script>{_asset("assets/" + n).read_text()}</script>' for n in MODULES))

@@ -16,6 +16,7 @@ Every new dataset is exactly one of these. If it is none of them, stop and ask.
 | **a per-residue value** | AlphaFold pLDDT, conservation, a variant-effect score | a per-residue table read by a **column mapping**, tested by the `residue_values` layer (no code) |
 | **a per-protein annotation** | pathways, locations, classes, condensates, abundance | a (set, protein) table or class hierarchy for a **protein-set test** (no code); rows kept by other tables (`where`), old accessions through a history (`history`) |
 | **a per-gene annotation** | disease terms (DisGeNET), any sets keyed by another identifier | a (set, identifier) table, with the tables that map the site's proteins to that identifier, for a **protein-set test** (no code); families of its sets by name: a rules file in `sites/data/` |
+| **evidence to show on the protein pages** | interaction records at sites, bound RNA/DNA, source records, perturbation measurements | a table in one of the formats of CONTRACTS.md ("Tables the protein pages show"), named under `website.tables` with its columns mapped (no code); the site card and sites table show it as `website.protein.card` and `.table` say |
 | **a published result to match** | a release's statistics table | a `reference_output` entry: read only to check parity |
 
 ## 1. Check the terms before downloading

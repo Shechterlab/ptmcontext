@@ -86,7 +86,7 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 others register with it through `window.PTMC_MODULES`: `kit-stats.js` (the tests, for selections), `kit-select.js`
 (search, filters, the sidebar, selections and their tests), `kit-map.js` (the protein map: rows, hovers, pins, zoom,
 read-out, exports), `kit-proteins.js` (the Proteins tab and the protein page), `kit-sites.js` (the Sites tab),
-`kit-idrs.js` (the IDRs tab, from a track whose values include `fcr` and `ncpr`) and `kit-compare.js` (what sets a
+`kit-idrs.js` (the IDRs tab, from a track whose values include `fcr` and `ncpr`), `kit-sitecard.js` (the site card's blocks, the sites table's Evidence rows and the citation box, from the tables of CONTRACTS.md's "Tables the protein pages show"), `kit-columns.js` (a table's Columns menu, remembered per table), `kit-pagepdf.js` (a page as an A4 PDF) and `kit-compare.js` (what sets a
 selection apart from the other marks, and two selections side by side). A new view is a new module.
 
 **Comparisons.** What a selection is compared with is the Overview's baseline: the other residues of its proteins (the
@@ -101,7 +101,7 @@ questions a selection was made with are left out, and marks two selections share
 (`kit-select.js`, `contrast`) serves every question, so tiles, opened questions, hovers and downloads work the same
 for every baseline. The browser's within-study test equals `ptmcontext.stats.mantel_haenszel` on the same tables.
 
-**The protein page** also shows, from data the site already has: the protein's sets in each protein-set question with
+**The protein page** shows what the site's tables say of each mark (`website.tables`, in the formats of CONTRACTS.md, mapped from any source's columns in the site file): the site card's interaction evidence, bound sequences, records of who binds it, writer and reader, the methylation state by source; the sites table's optional columns and Evidence rows (every source record, every measurement); how to cite the protein's marks. A protein without marks has a light page (its map, the records naming it as a partner, its partners with marks). It also shows, from data the site already has: the protein's sets in each protein-set question with
 the site's result for each and its abundance decile as the tests used it; every region the questions read, with the
 marks inside; and the sequence with its marks, as FASTA.
 

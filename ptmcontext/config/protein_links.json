@@ -11,7 +11,7 @@
     },
     {
       "label": "PhosphoSitePlus (PTMs)",
-      "url": "https://www.phosphosite.org/uniprotAccSubmitAction.action?id={acc}"
+      "url": "https://www.phosphosite.org/uniprotAccAction?id={acc}"
     },
     {
       "label": "PDBe-KB",

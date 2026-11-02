@@ -221,7 +221,97 @@
       "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "reference_output",
-      "note": "The release's protein table: per-protein facts (arginine enrichment, clusters) the website shows, through proteins.attributes."
+      "note": "The release's protein table: per-protein facts (arginine enrichment, clusters) the website shows, through proteins.attributes; and the protein pages' other names of each protein (UniProt synonyms and the symbols the sources report: website.tables.proteins)."
+    },
+    "methylarginine_studies_v1_4_3": {
+      "file": "releases/v1.4.3/studies_v1.4.3.tsv",
+      "md5": "2132e4b6c309d92628360cddbccad3a9",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "The studies and databases of the release, each with its citation, DOI and terms: the site card's and the sites table's references (how to cite, RIS). No test reads it."
+    },
+    "methylarginine_site_interactions_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/site_interactions_v1.4.3.tsv",
+      "md5": "6bcf76c1ea443a8fa28a5a71d2d3b15d",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "Each site's interaction evidence, one row per kind and partner (PDB entries, crosslinks, predicted interfaces): the site card's interaction evidence. Sources: PDBe-KB (EMBL-EBI terms), pepR-MS (CC BY-NC), RBDmap and CAPRI (CC BY 4.0), ProtVar (CC BY 4.0), IntAct (CC BY 4.0); pCLAP and RBDmap peptides as per-site flags only."
+    },
+    "methylarginine_site_interaction_records_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/site_interaction_records_v1.4.3.tsv",
+      "md5": "53c485e8980c6c8a3359837a507c5da1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "Every interaction record at a site with its source, method, paper and the state of the site: the site card's 'Who binds it, and how it was found' and the records naming a protein as a partner. IntAct CC BY 4.0, PDB CC0, ProtVar CC BY 4.0, CAPRI CC BY 4.0."
+    },
+    "methylarginine_nucleic_acid_contacts_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/nucleic_acid_contacts_v1.4.3.tsv",
+      "md5": "de303766f58bf0b40acf68f13058e540",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "The RNA and DNA chains within reach of each site in PDB structures, with the contacted nucleotides and the bound window: the site card's RNA and DNA contacts. PDB: CC0."
+    },
+    "methylarginine_nucleic_acid_near_sites_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/nucleic_acid_near_sites_v1.4.3.tsv",
+      "md5": "a9e94161866c6427fbd274e4af1c07df",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "RNA and DNA in contact with a residue at i ± 1–5 of a site in PDB structures: the site card's contacts via a neighbouring residue. PDB: CC0."
+    },
+    "methylarginine_residue_evidence_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/residue_evidence_v1.4.3.tsv",
+      "md5": "8a7764aa518675e594fdaffb4f8c3cc7",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "Interaction evidence along each protein (crosslinked residues, RNA-bound fragments and peptides, interfaces): the site card's crosslinks within a few residues of a site. pCLAP extents are not shown (no licence); the site card names them only as flags."
+    },
+    "methylarginine_source_records_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/source_records_v1.4.3.tsv",
+      "md5": "27a2e57f6e978fcba017c6e9c4b0240f",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "Every source record of the release with where it was placed: the sites table's Evidence row (each report of a site, its peptide, state and the check that placed it). Records derived from studies whose tables are not redistributed, as the release keeps them."
+    },
+    "methylarginine_writer_perturbations_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/writer_perturbations_v1.4.3.tsv",
+      "md5": "368e601f1752b6282ccff412cc0bc804",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "Each site under each PRMT knockout, knockdown or inhibitor, with its numbers and calls: the site card's and sites table's PRMT perturbation marks and the Evidence row. CC BY 4.0 (Shishkova 2017, Szewczyk 2020, Hartel 2019, Li 2021); CC BY-NC 4.0 (Lu 2024)."
+    },
+    "methylarginine_maron2021_inhibitors_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/maron2021_inhibitors_v1.4.3.tsv",
+      "md5": "53261fec99cb1cbb731a525cdf3f8eed",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "Maron et al. 2021 Table S3 per site, antibody and inhibitor: the Evidence row's inhibitor responses. Derived records (Maron 2021 supplement: CC BY-NC-ND 4.0)."
+    },
+    "methylarginine_protein_partners_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/protein_partners_v1.4.3.tsv",
+      "md5": "8631f3df370c2b0cef0a02b8e0cfe20a",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "STRING physical partners (score 0.7 or more) of the methylated proteins, with whether each is methylated and its class: the site card's writer and reader, and a protein's methylated STRING partners on its page. STRING CC BY 4.0."
     }
   }
 }

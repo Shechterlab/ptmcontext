@@ -81,8 +81,11 @@
     let routed = false;
     if (K.routes[S.view] && S.arg) { const a = K.routes[S.view].arg(S.arg); routed = siteless(K.routes[S.view].path(a)) !== siteless(S.arg); S.arg = a; }
     // the original explorer's links: #ACC and #ACC/R216 open the protein; ?q= before the hash is the search
-    const legacy = /^([A-NR-Z][0-9][A-Z0-9]{3}[0-9]|[OPQ][0-9][A-Z0-9]{3}[0-9])(?:-\d+)?(?:\/[A-Z]?(\d+))?$/i.exec(path || '');
-    if (S.view === 'overview' && legacy && K.views.protein) { S.view = 'protein'; S.arg = legacy[1].toUpperCase() + (legacy[2] ? '/' + legacy[2] : ''); }
+    // (and #FUS, #FUS/R216, #TDP-43, #P35637/p-na: any old hash that names a protein, read by the protein page's route,
+    // with its site as the page numbers it; an upper-case name no protein with marks has, a protein without marks)
+    const named = S.view === 'overview' && view && !BUILT_IN_VIEWS.includes(view) && !K.views[view] && K.views.protein && K.routes.protein &&
+      (K.routes.protein.claims?.(path) || /^[A-Z][A-Z0-9.-]{1,19}$/.test(view));
+    if (named) { S.view = 'protein'; S.arg = K.routes.protein.arg(path); }
     // its pages: #about and #docs are Method here; #overview/ov-<question> is the question
     else if (S.view === 'overview' && /^(about|docs)$/.test(view)) { S.view = 'method'; S.arg = ''; }
     // an older site's anchors (website.legacy_links): a question, or the Overview with parameters (?vs=marks)
@@ -92,7 +95,7 @@
     if (ov && !old) S.arg = S.arg.slice(3);
     S.legacy = ov || routed || (S.view !== view && !!view);     // written back as this site's own link (replaceState)
     if (S.view === 'overview' && S.arg && !A[S.arg]) S.arg = '';
-    S.q = p.get('q') || new URLSearchParams(location.search).get('q') || ''; S.m = p.get('m') || 'mantel_haenszel'; S.a = p.get('a') || ''; S.sq = p.get('sq') || '';
+    S.q = p.get('q') || ''; S.m = p.get('m') || 'mantel_haenszel'; S.a = p.get('a') || ''; S.sq = p.get('sq') || '';
     // what a selection is compared with: other residues (the site's own tests), other marks, or another selection
     S.vs = ['marks', 'cmp'].includes(p.get('vs')) ? p.get('vs') : 'residues'; S.cmp = p.get('cmp') || '';
     if (view === 'apart') { S.view = 'overview'; S.arg = ''; S.vs = 'marks'; S.legacy = true; }
@@ -1069,7 +1072,8 @@
     scope();
     const mod = K.views[S.view];
     $('#view').innerHTML = mod ? mod.render(S.arg) : S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview();
-    document.title = `${D.site.name}${S.view === 'overview' ? '' : ' · ' + (mod?.title ? mod.title(S.arg) : cap(S.view))}`;
+    document.title = S.view === 'overview' ? D.site.name : `${mod?.title ? mod.title(S.arg) : cap(S.view)} · ${D.site.name}`;   // the page first: "FUS R216 · <site>"
+    document.body.classList.toggle('slim', S.view !== 'overview');      // the header band in full on the Overview only
     if (mod?.after) mod.after(S.arg);
     if (S.view === 'method' && S.arg) document.getElementById('m-' + S.arg)?.scrollIntoView({ block: 'start' });
     K.rail?.();
@@ -1158,7 +1162,7 @@
     go('protein', { arg: acc + site }); return true;
   }
   K.openIfOne = openIfOne;
-  $('#q').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(timer); S.q = e.target.value.trim(); typing = false; if (!openIfOne()) { writeHash(true); render(); } } });
+  $('#q').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(timer); S.q = e.target.value.trim(); typing = false; if (!openIfOne() && !K.openLight?.(S.q)) { writeHash(true); render(); } } });
   $('#q-clear').addEventListener('click', () => { S.q = ''; writeHash(true); render(); $('#q').focus(); });
   let byLink = false;
   // where each page was scrolled to, for Back and Forward; a link opens its page at the top
@@ -1203,5 +1207,13 @@
     ` · <a href="#method/privacy">no cookies, no tracking; nothing you search leaves your browser</a>`;
   setTheme(document.documentElement.dataset.theme || 'auto'); themed = true;
   (window.PTMC_MODULES || []).forEach(f => f(K));
+  // the explorer's links put the selection before the hash (?q=FUS%20R216#P35637): it moves into the hash once, and leaves
+  // the address's query, so a search cleared later stays cleared on reload
+  (() => {
+    const sp = new URLSearchParams(location.search); if (!['q', 'f'].some(k => sp.has(k))) return;
+    const [path, qs] = location.hash.replace(/^#/, '').split('?'), hp = new URLSearchParams(qs || '');
+    ['q', 'f'].forEach(k => { if (sp.has(k) && !hp.has(k)) hp.set(k, sp.get(k)); sp.delete(k); });
+    history.replaceState(null, '', location.pathname + (sp.toString() ? '?' + sp : '') + '#' + (path || '') + (hp.toString() ? '?' + hp : ''));
+  })();
   readHash(); if (S.legacy) writeHash(false); hero(); render();
 })();

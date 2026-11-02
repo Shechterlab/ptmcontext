@@ -534,6 +534,11 @@ proteins:                  # the release's protein table: facts of each methylat
                    help: "How the protein's clustered disordered sites (at least 3 within 20 residues) sit against its domains"}
     dense_q: {column: best_window_q, label: Protein has a significant dense region, kind: number, levels: [0.05, 0.01], direction: max,
               help: "q of the protein's most significant cluster of methylarginines (permutation test against the protein's own arginines)"}
+    string_partners: {column: n_string_partners, label: STRING physical partners, kind: number, help: "STRING physical associations at score 0.7 or more"}
+    complexes: {column: n_complexes, label: Complexes with methylated members, kind: number}
+    go_rna: {column: go_rna_binding, label: GO RNA binding, kind: category}
+    go_dna: {column: go_dna_binding, label: GO DNA binding, kind: category}
+    hpa: {column: hpa_locations, label: Locations in the Human Protein Atlas, kind: list}
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites
@@ -655,5 +660,249 @@ website:                  # the look and words of the website (ptmc web); layout
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   compare: {stratify: studies}      # "compared with other methylarginines, within studies": the same reporting sources
   sites: {columns: [structure_context], attributes: [state, interaction, studies]}   # the explorer's default columns                            # the Sites tab's context column
-  protein:                 # tiles at the top of each protein page
-    facts: [{analysis: disorder, classes: [disordered]}, {analysis: disease_family, label: disease families}]
+  tables:                  # tables the protein pages show (no test reads them), each in a format of CONTRACTS.md ("Tables
+                           # the protein pages show"); here the release's own tables, their columns mapped to the format's
+    site:
+      input: methylarginine_sites_v1_4_3
+      format: site_values
+      columns: {site: site_id}
+      values: [methyl_states_reported, maron2021_s2_states, uniprot_states, states_by_study_design, tcga_change_tumours, depmap_change_lines,
+               reported_positions, nearest_domain_interpro, nearest_domain_name, domain_side, domain_edge_distance]
+    proteins:                            # other names a search or an old link may use (#TDP-43); the facts are proteins.attributes
+      input: methylarginine_proteins_v1_4_3
+      format: protein_values
+      columns: {accession: uniprot_accession, aliases: [gene_synonyms, reported_genes]}
+    studies:
+      input: methylarginine_studies_v1_4_3
+      format: lookup
+      columns: {key: study_id}
+      values: [label, citation, doi, licence]
+    interactions:
+      input: methylarginine_site_interactions_v1_4_3
+      format: site_evidence
+      columns: {site: site_id, kind: evidence_type, partner: partner_gene, partner_accession: partner_accession, ids: structures, score: score, detail: detail}
+    contacts:
+      input: methylarginine_nucleic_acid_contacts_v1_4_3
+      format: bound_windows
+      columns: {site: site_id, window: window_marked, kind: nucleic_acid, type: nucleic_acid_type, name: molecule_name, entry: pdb_id,
+                distance: closest_distance_a, preparation: sample_preparation}
+    contacts_near:
+      input: methylarginine_nucleic_acid_near_sites_v1_4_3
+      format: bound_windows
+      columns: {site: site_id, window: window_marked, kind: nucleic_acid, type: nucleic_acid_type, name: molecule_name, entry: pdb_id,
+                entries: n_entries, offset: residue_offset, preparation: sample_preparation}
+    residues:
+      input: methylarginine_residue_evidence_v1_4_3
+      format: residue_evidence
+      columns: {accession: uniprot_accession, start: start, end: end, kind: evidence_type, source: sources}
+      include: [{column: evidence_type, in: [rna_crosslink, dna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, rbrid_residue, rbrid_region, dna_binding_region]}]
+    records:
+      input: methylarginine_site_interaction_records_v1_4_3
+      format: site_records
+      columns: {site: site_id, group: record_class, partner: partner_gene, partner_name: partner_name, partner_accession: partner_accession,
+                partner_kind: partner_kind, species: partner_species, source: source, id: source_id, method: method, context: context,
+                state: site_state, state_detail: state_detail, other_marks: other_marks, pubmed: pubmed, doi: doi, citation: citation,
+                title: paper_title}
+    perturbations:
+      input: methylarginine_writer_perturbations_v1_4_3
+      format: site_measurements
+      columns: {site: site_id, condition: perturbation, call: call, n: n_peptides, n_down: n_decreased, n_up: n_increased,
+                value: log2_treated_over_control, q: q, rule: call_criteria}
+    inhibitors:
+      input: methylarginine_maron2021_inhibitors_v1_4_3
+      format: site_table
+      columns: {site: site_id}
+      values: [antibody, inhibitor, log2_diff_median, adj_p_min, n_peptides, n_decreased, n_increased, call, call_single_site_peptides]
+    sources:
+      input: methylarginine_source_records_v1_4_3
+      format: source_records
+      columns: {site: placed_site, source: study, doi: study_doi, reference: reference_text, pubmed: pmid, source_table: source_table,
+                peptide: evidence_sequence, state: reported_methyl_state, enzyme: reported_enzyme, sample: reported_sample, detail: reported_detail,
+                reported_accession: reported_accession, reported_position: reported_position, check: placement_code}
+    string:
+      input: methylarginine_protein_partners_v1_4_3
+      format: protein_partners
+      columns: {accession: uniprot_accession, partner_accession: partner_accession, partner: partner_gene, score: string_score,
+                partner_marked: partner_methylated, classes: partner_classes}
+  protein:                 # the protein page
+    numbering:             # proteins numbered as papers do: histones without the initiator methionine (H3R2 is UniProt R3)
+      - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
+        names: "^(putative |core )?histone (h1|h2a|h2b|h3|h4|macro-h2a)\\b|^testis-specific h1 histone|^histone h3-like centromeric"
+        offset: -1
+        label: histone numbering
+        note: "Histone numbering, without the initiator methionine"
+    facts:                 # the headline cards under the map: each opens its section, with a hover
+      - {count: marks, of: candidates, label: "{residues} methylated", kind: Sites, glyph: pins, opens: p-seq,
+         tip: {values: [{attribute: arg_enrichment, label: "Arginine methylation enrichment: log2", format: l2}, {attribute: arg_enrichment_q, label: q, format: p}]}}
+      - {analysis: motif, best: true, label: "in {class} motifs", kind: Sequence motif, glyph: letters, opens: p-score}
+      - {analysis: disorder, classes: [disordered], label: in disordered regions, kind: Position in the protein, glyph: wave, opens: p-regions}
+      - {attribute: evidence, values: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, rbrid_residue_published_rule, rbrid_region],
+         label: in RNA-bound regions, kind: RNA · in living cells, glyph: squiggle, opens: p-sites,
+         tip: "Methylarginines crosslinked to RNA, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or under an RBR-ID+ peptide, in living cells"}
+      - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
+      - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds}
+    card:                  # the site card: its blocks, each reading an attribute or a table above (a block without its data is absent)
+      labels: {states: Methylation state, calls: PRMT perturbation, changes: In cancers, reported: Reported by}
+      hide: [perturbation, nucleic_acid, nucleic_acid_type]   # attributes the blocks show in full (calls, bound sequences)
+      evidence:            # interaction evidence: a badge, tags, PDB entries, bound RNA and DNA, crosslinks near it, the whole protein
+        title: Interaction evidence
+        status: interaction                  # the category attribute the badge shows
+        sentences:
+          experimental: This arginine has experimental interaction evidence.
+          experimental_pred: This arginine has experimental interaction evidence and is also at a predicted interface.
+          predicted_only: Predicted to sit at a protein interface; no experimental interaction evidence recorded yet.
+          none: No interaction evidence is recorded at this residue. Most proteins were never crystallised, crosslinked or mutated, so this is not evidence of no interaction.
+        tags:
+          attribute: evidence
+          short: {rna_crosslink: RNA xl, rbdmap_fragment: RBDmap, capri_xl_peptide: CAPRI, capri_adj_peptide: CAPRI, pclap_peptide: pCLAP, pclap_lysc_region: pCLAP,
+                  rbrid_residue: RBR-ID, rbrid_residue_published_rule: RBR-ID, rbrid_region: RBR-ID, dna_crosslink: DNA xl, dna_binding_region: DNA-binding domain,
+                  pdb_rna: RNA, pdb_dna: DNA, pdb_protein: protein, pdb_self: another copy, intact_mutation: mutation alters binding,
+                  intact_binding_region: binding region, intact_methylated: methylated (IntAct), pdb_methylated_contact: PDB methyl-R, predicted_interface: pred., predicted_contact: pred.}
+          tone: {rna_crosslink: a, rbdmap_fragment: a, capri_xl_peptide: a, capri_adj_peptide: a, pclap_peptide: a, pclap_lysc_region: a, rbrid_residue: a,
+                 rbrid_residue_published_rule: a, rbrid_region: a, pdb_rna: a, dna_crosslink: b, dna_binding_region: b, pdb_dna: b,
+                 pdb_protein: c, pdb_self: c, intact_mutation: c, intact_binding_region: c, intact_methylated: c, pdb_methylated_contact: c,
+                 predicted_interface: pred, predicted_contact: pred}
+          predicted: [predicted_interface, predicted_contact]     # values that alone make a status "predicted only" (the badge says "+ pred.")
+          partners: interactions             # a site_evidence table: the partner named in a predicted tag, the rest in its hover
+        entries:                             # the site's entries in structures, by kind (a site_evidence table)
+          table: interactions
+          kinds: {pdb_rna: RNA, pdb_dna: DNA, pdb_protein: "", pdb_self: another copy}   # "": the partner's name
+          url: "https://www.rcsb.org/structure/{id}"
+        sequences:                           # bound_windows tables: the RNA and DNA in contact in structures
+          title: RNA and DNA contacts of {site}
+          tables: [contacts, contacts_near]
+          kinds: {rna: RNA, dna: DNA}
+          types: {rrna: rRNA, trna: tRNA, snrna: snRNA, mrna: mRNA, other_ncrna: Other ncRNA, viral_rna: Viral RNA, rna_oligo: RNA oligo, other_rna: Other RNA,
+                  nucleosomal_dna: Nucleosomal DNA, telomeric_dna: Telomeric DNA, other_dna: Other DNA}
+          designed: {preparation: Synthetically obtained, label: oligo}
+          ends: ["5′", "3′"]
+          max: 5
+        around:                              # a residue_evidence table: crosslinks and RNA-bound stretches at or near the site
+          table: residues
+          span: 3
+          labels: {rna_crosslink: UV-crosslinked to RNA in living cells, dna_crosslink: UV-crosslinked to DNA in living cells,
+                   rbdmap_fragment: inside RBDmap RNA-bound fragment, capri_xl_peptide: inside CAPRI RNA-crosslinked peptide,
+                   capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RBR-ID+ peptide, rbrid_region: inside an RBR-ID region,
+                   dna_binding_region: inside a UniProt DNA-binding region}
+        protein:                             # the whole protein (proteins.attributes), labelled so it is not read as site evidence
+          title: "Whole protein (not specific to {site})"
+          values:
+            - {attribute: string_partners, label: "STRING physical associations (≥ 0.7)"}
+            - {attribute: complexes, label: complexes with methylated members}
+            - {attribute: go_rna, label: GO RNA binding, flag: true}
+            - {attribute: go_dna, label: GO DNA binding, flag: true}
+            - {attribute: hpa, label: "HPA:", before: true}
+          opens: p-ix
+          opens_label: Interaction partners of {gene}
+      states:              # the methylation state as each source gives it (a site_values table, or an attribute)
+        - {table: site, column: methyl_states_reported, label: Source records}
+        - {table: site, column: maron2021_s2_states, label: Maron 2021 Table S2, source: Maron2021}
+        - {table: site, column: uniprot_states, label: UniProt, url: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"}
+        - {attribute: neutral_loss, label: "Hartel 2019, neutral loss", source: Hartel2019}
+        - {table: site, column: states_by_study_design, label: a study that looked for one state only}
+      changes:             # changes of the residue, with how many tumours or lines carry each (counts: a site_values column in step)
+        - {attribute: tcga, table: site, counts: tcga_change_tumours, unit: [tumour, tumours], label: TCGA}
+        - {attribute: depmap, table: site, counts: depmap_change_lines, unit: [cell line, cell lines], label: DepMap}
+      calls:               # a mark per decrease or increase: site_measurements tables and category attributes
+        tables: [perturbations]
+        attributes: {gsk591: GSK591, ms023: MS023}
+        conditions: {carm1_ko_mcf7: CARM1 KO (MCF7), carm1_ko_mdamb231: CARM1 KO (MDA-MB-231), prmt7_ko_hct116: PRMT7 KO, prmt1_kd_hek293t: PRMT1 KD,
+                     prmt5i_epz015666_hela: PRMT5i EPZ015666, prmt7_kd_hek293: PRMT7 KD, prmt7i_sgc3027_hek293: PRMT7i SGC3027, carm1_kd_hek293: CARM1 KD,
+                     prmt5_kd_hek293: PRMT5 KD}
+        marks: {decreased: "▼", increased: "▲", mixed: "↕"}
+        words: {decreased: decreased, increased: increased, mixed: mixed, no_significant_change: no significant change}
+        quiet: n.s.                          # the word for "measured, no change"
+        skip: [not_tested, ""]
+      records:             # a site_records table: who binds it, and how it was found
+        title: Who binds it, and how it was found
+        table: records
+        groups: partner_class                # the attribute whose values name the groups
+        help:
+          writes: IntAct methylation reactions with the methylarginine curated at this residue, or in which mutating it changes the reaction
+          removes: IntAct demethylation reactions with the methylarginine curated at this residue
+          binds_methylated: "the residue is a methylarginine in the experiment: modelled as one in a structure (2MR, DA2, NMM), or curated as methylated in IntAct"
+          mutation_changes_binding: "IntAct: a mutation of this residue (alone or with up to two neighbours) decreased, disrupted or increased the binding"
+          mutation_no_effect: "IntAct: a mutation of this residue had no effect on the binding"
+          binds_unmodified: structures that model an unmodified arginine here (PDBe-KB interface)
+          binds_other_residue: "structures with another residue here: a mutated construct or a natural variant"
+          binds_state_not_read: PDBe-KB places an interface here, but the entry's sequence could not be matched to the site
+          binds_region: IntAct binding regions of at most 20 residues; whether the site was methylated is not recorded
+          other_reaction: IntAct reactions that IntAct does not place at this residue
+          nucleic_acid: contacts in structures, crosslinks and RNA-bound peptides in cells, UniProt DNA-binding regions
+          not_a_protein: "IntAct: a gene locus in chromatin immunoprecipitation, or a small molecule"
+          self: homo-oligomer contacts in structures
+          predicted: complex models (ProtVar, AlphaFold DB), not observations
+        open: [writes, removes, binds_methylated, mutation_changes_binding, binds_region, other_reaction, not_a_protein]
+        not_papers: [predicted]              # groups whose records are not counted among the papers
+        kinds: {self: another copy, rna: RNA, dna: DNA, gene: Gene locus, small_molecule: Small molecule, peptide: Peptide or complex}
+        species: Homo sapiens                # partners of another species are named with theirs
+        urls: {PDB: "https://www.rcsb.org/structure/{id}", IntAct: "https://www.ebi.ac.uk/intact/details/interaction/{id}"}
+        states: {arginine: R (unmodified), not_recorded: not recorded, not_read: not read, other_residue: variant, mutated: mutated}
+      writer:              # writer and reader: who acts on it (site_records groups), a suggestion from the attributes, partners
+        title: Writer and reader
+        who:
+          - {label: Methylates it, groups: [writes], none: no methylation reaction recorded at this residue (IntAct)}
+          - {label: Demethylates it, groups: [removes]}
+          - {label: Binds it methylated, groups: [binds_methylated], none: no structure or IntAct record with this residue methylated}
+        suggest:
+          label: Writer suggested
+          rules:
+            - {attribute: methyl_ip, has: [SDMA], suggests: PRMT5, because: "a peptide carrying it was recovered by the SDMA antibody (symmetric dimethylation, made by PRMT5)"}
+            - {attribute: methyl_ip, has: [ADMA], suggests: type I PRMTs, because: "a peptide carrying it was recovered by the ADMA antibody (asymmetric dimethylation, made by type I PRMTs such as PRMT1 and CARM1)"}
+            - {attribute: gsk591, has: [decreased], suggests: PRMT5, because: "a peptide carrying it decreased with the PRMT5 inhibitor GSK591, and none increased"}
+            - {attribute: ms023, has: [decreased], suggests: type I PRMTs, because: "a peptide carrying it decreased with the type I PRMT inhibitor MS023, and none increased"}
+            - {attribute: perturbation, has: ["carm1_ko_mcf7:decreased", "carm1_ko_mdamb231:decreased"], suggests: CARM1, replaces: type I PRMTs,
+               because: "a peptide carrying it decreased in CARM1 knockout cells, and none increased"}
+          none: "No writer suggested: no peptide carrying it was recovered by the ADMA or SDMA antibodies or decreased with a PRMT inhibitor or knockout"
+          sources: [Maron2021]
+        partners:                            # a protein_partners table: its partners of some classes
+          table: string
+          classes: {prmt: "PRMTs associated with {gene}", tudor: "Tudor proteins associated with {gene}"}
+          note: STRING physical, whole protein
+          none: none at STRING ≥ 0.7
+        note: "The suggestion is indirect: the antibodies and the inhibitor and knockout responses measure peptides, and a peptide with several methylarginines answers for any of them; no total-protein correction was made, and a decrease after PRMT loss does not show a direct substrate. STRING associations are to the whole protein and do not show that a partner methylates or reads this arginine; the records at the residue are under \"Who binds it\" above. Several Tudor domains read methyllysine instead."
+      sources:             # a source_records table: every report of the site, in the sites table's Evidence row
+        table: sources
+        attribute: studies                   # the provenance attribute whose values name the sources
+        checks:
+          same_accession_position_verified: Reported position checked on the canonical sequence
+          sequence_position_verified: Reported position is an arginine inside the matching peptide
+          sequence_unique_canonical: Peptide fits one place in the canonical sequence
+          sequence_unique_candidate: Peptide fits one place (reported on another isoform)
+          sequence_closest_supported: Peptide fits several places; the nearest supported position is used
+          same_accession_evidence_near_match: Peptide or window not in the current sequence; matched within 2 residues of the reported arginine
+          canonical_evidence_near_match: Peptide or window not in the current sequence; matched within 2 residues of the reported arginine
+        warn: [sequence_closest_supported, same_accession_evidence_near_match, canonical_evidence_near_match]
+        tables: {maron2021_s5: via Maron et al. 2021 Table S5 (compiled sites), prometheusdb_mmc2: ProMetheusDB supplementary table mmc2}
+      tables:              # site_table tables shown in the Evidence row, each with its words
+        - table: inhibitors
+          title: PRMT inhibitor response
+          note: "Maron et al. 2021 Table S3, over the peptides carrying this site. A call says a peptide carrying the site changed (adj. p ≤ 0.05); a peptide with several methylarginines changes for any of them, so only the single-site column speaks for this arginine alone. The median is descriptive."
+          source: Maron2021
+          columns:
+            - {column: antibody, label: Methyl-IP}
+            - {column: inhibitor, label: Inhibitor}
+            - {column: log2_diff_median, label: Median log2 change, format: l2}
+            - {column: adj_p_min, label: Lowest adj. p, format: p}
+            - {column: n_peptides, label: "Peptides (▼/▲)", with: [n_decreased, n_increased]}
+            - {column: call, label: Peptide call, words: calls}
+            - {column: call_single_site_peptides, label: Single-site peptides, words: calls}
+      cite:                # how to cite a protein's sites: the provenance attribute's values, with a lookup table of the sources
+        attribute: studies
+        lookup: studies
+        notices: {PSP: "PhosphoSitePlus® data (www.phosphosite.org) are licensed under CC BY-NC-SA 3.0: non-commercial use, with attribution, and adaptations shared under the same licence."}
+    table:                 # the sites table: its columns (the Columns menu), the explorer's defaults first
+      filter: interaction                # buttons that show only the sites of one value of this attribute
+      columns:
+        - {id: ix, label: Interaction evidence, show: [status, tags], default: true}
+        - {id: na, label: RNA/DNA contacts, menu: "RNA/DNA contacts (structures) and crosslinks (cells)", show: [sequences, around], default: true}
+        - {id: prmt, label: PRMT perturbation, menu: "PRMT inhibitors, knockouts and knockdowns", show: [calls], default: true}
+        - {id: src, label: Reported by, attribute: studies, default: true}
+        - {id: af, label: AlphaFold, menu: AlphaFold pLDDT, show: [plddt]}
+        - {id: ctx, label: Context, menu: Disorder and domain context, analyses: [disorder, domain_context]}
+        - {id: dom, label: Nearest domain, show: [nearest_domain]}
+        - {id: nn, label: Nearest methyl-R, show: [nearest]}
+        - {id: stev, label: State evidence, menu: "State evidence (Maron IP, Table S2, UniProt)", show: [states]}
+        - {id: tcga, label: In cancers, menu: "Changes in tumours (TCGA) and cell lines (DepMap)", show: [changes]}
+      nearest_domain: {table: site, name: nearest_domain_name, ref: nearest_domain_interpro, side: domain_side, distance: domain_edge_distance,
+                       url: "https://www.ebi.ac.uk/interpro/entry/InterPro/{ref}/", sides: {N_terminal_to_domain: N-term, C_terminal_to_domain: C-term, inside: inside}}
