@@ -24,6 +24,7 @@
     return (shardCache[key] ||= fetch(`data/p/${key}.json`).then(r => (r.ok ? r.json() : Promise.reject(new Error('missing')))));
   }
   const loadProtein = acc => loadShard(shardOf(acc)).then(sh => sh[acc] || Promise.reject(new Error('not found')));
+  K.loadProtein = loadProtein;                       // for other modules' drawings of a protein (kit-selview.js)
 
   // ---- the selection: the proteins with a selected mark (kit-select.js), or every protein ------------------------
   const pHit = p => !K.sel || K.sel.protSelected(p.acc);

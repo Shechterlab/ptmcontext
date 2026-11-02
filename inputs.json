@@ -474,6 +474,15 @@
       "licence": "CC BY-NC-SA 4.0 (the release); DisGeNET data CC BY-NC-SA 4.0",
       "role": "reference_output",
       "note": "The DisGeNET terms enriched with the release's lower-confidence sites added (clusterProfiler's own columns; enriched terms only); the with_lower_confidence variant's disease_term rows at q <= 0.05 are checked against it."
+    },
+    "methylarginine_other_ptm_sites_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/other_ptm_sites_v1.4.3.tsv",
+      "md5": "fb852bc28016e6c1e504ae67ca7e7a68",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0); component databases keep their own terms",
+      "role": "input",
+      "note": "Other modifications (phosphorylation, lysine acylation, ubiquitination or SUMOylation, lysine methylation) on the methylated proteins, from the iPTMnet-format PTM master table, residues checked against the reference sequence; not exhaustive. The Filters panel's 'other modification nearby'."
     }
   }
 }

@@ -110,7 +110,7 @@ button, input, select { font: inherit; color: inherit; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { flex: none; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 0.8rem 0.65rem; border: 0; border-bottom: 2.5px solid transparent; background: none; color: var(--muted); font-weight: 600; font-size: 0.9rem; cursor: pointer; text-decoration: none; }
 .tab:hover { color: var(--brand-ink); }
-.tab[aria-selected="true"] { color: var(--brand-ink); border-bottom-color: var(--accent); }
+.tab[aria-current="page"] { color: var(--brand-ink); border-bottom-color: var(--accent); }
 .tab .count { font-weight: 500; font-size: 0.75rem; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
 /* ---- Pages ---------------------------------------------------------------------------------------------------------- */
@@ -944,3 +944,96 @@ a.qv-id { color: var(--accent); }
 .qv-tag { font-size: 0.7rem; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--wash); color: var(--ink-2); margin-left: 0.2rem; white-space: nowrap; }
 .qv-psets .kind-list li { margin: 0.15rem 0; }
 
+/* the search's suggestions and the line under it (kit-search.js) */
+.q-list { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 40; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 0.6rem; box-shadow: var(--shadow); max-height: 22rem; overflow-y: auto; padding: 0.25rem 0; }
+.q-opt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: baseline; gap: 0.6rem; padding: 0.4rem 0.8rem; cursor: pointer; font-size: 0.9rem; }
+.q-opt.on, .q-opt:hover { background: color-mix(in srgb, var(--brand-ink) 10%, var(--surface)); }
+.q-l { font-weight: 600; white-space: nowrap; }
+.q-s { color: var(--muted); font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-n { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+.q-k { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--brand-ink); border: 1px solid currentColor; border-radius: 4px; padding: 0 0.3rem; }
+.q-note { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.45; }
+.q-note b { color: var(--ink); }
+.warn-text { color: #b42318; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .warn-text { color: #f97066; } }
+:root[data-theme="dark"] .warn-text { color: #f97066; }
+.sel-chip.bad { background: color-mix(in srgb, #b42318 12%, var(--surface)); color: #b42318; text-decoration: line-through; }
+@media (max-width: 40rem) { .q-opt { grid-template-columns: auto minmax(0, 1fr) auto; } .q-opt .q-k { display: none; } }
+/* filters of kit-near.js */
+.fpair { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; }
+.fpair select, .fpair input { flex: 1 1 7rem; min-width: 0; }
+.fhint { margin: 0.3rem 0 0; font-size: 0.78rem; color: var(--muted); }
+/* a selection's Overview (kit-selview.js) */
+details.apart { margin: 0.6rem 0 1rem; border: 1px solid var(--line); border-radius: 0.7rem; background: var(--surface); }
+details.apart > summary { cursor: pointer; padding: 0.6rem 0.9rem; display: flex; flex-wrap: wrap; gap: 0.3rem 0.7rem; align-items: baseline; }
+.apart-h { font-weight: 600; }
+.apart-card { padding: 0 0.9rem 0.8rem; }
+.apart-top, .drawn-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; align-items: center; }
+.apart-forest { width: 100%; height: auto; max-width: 760px; display: block; color: var(--ink); }
+.drawn-card { border: 1px solid var(--line); border-radius: 0.7rem; background: var(--surface); padding: 0.6rem 0.9rem; margin-bottom: 1rem; }
+.drawn-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 0.8rem; padding: 0.35rem 0; border-top: 1px solid var(--line); }
+.drawn-row:first-of-type { border-top: 0; }
+.drawn-row a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drawn-map { grid-column: 1 / -1; width: 100%; height: 44px; color: var(--ink); }
+/* ---- Help for every reader (kit-help.js): the start panel, the Help page, the shortcuts, and the WCAG 2.1 AA basics
+   the rest of the kit leans on (focus visible on every background, targets of at least 24 px, reduced motion, zoom) -- */
+.start-panel { position: relative; margin: 0 0 1.4rem; padding: 1rem 1.1rem 0.9rem; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); border-left: 4px solid var(--accent); border-radius: var(--radius-card); background: var(--surface); box-shadow: var(--shadow); }
+.sp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
+.start-panel h2 { font-size: clamp(1.15rem, 1rem + 0.6vw, 1.4rem); line-height: 1.25; }
+.sp-what { margin: 0.4rem 0 0.8rem; max-width: 62rem; color: var(--ink-2); }
+.sp-starts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr)); gap: 0.6rem; }
+.sp-start { display: grid; gap: 0.15rem; width: 100%; height: 100%; text-align: left; padding: 0.65rem 0.8rem; border: 1px solid var(--line-strong); border-radius: 0.7rem; background: var(--surface-2); cursor: pointer; color: var(--ink); }
+.sp-start:hover { border-color: var(--accent); background: var(--wash); }
+.sp-label { font-weight: 600; }
+.sp-q { color: var(--accent-dark); font-size: 0.9rem; overflow-wrap: anywhere; }
+.sp-help { font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
+.sp-foot { margin: 0.75rem 0 0; font-size: 0.85rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.2rem 0.4rem; align-items: center; }
+.sp-close { flex: none; min-width: 32px; min-height: 32px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--ink-2); font-size: 1.1rem; line-height: 1; cursor: pointer; }
+.sp-close:hover { border-color: var(--accent); color: var(--accent-dark); }
+kbd { font-family: var(--font-mono); font-size: 0.8em; padding: 0.05rem 0.4rem; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 0.3rem; background: var(--surface-2); color: var(--ink); white-space: nowrap; }
+.help-doc section { scroll-margin-top: calc(var(--toolbar-h, 0px) + 1rem); }
+.help-doc .help-starts { margin: 0.5rem 0; }
+.key-list { list-style: none; padding: 0; display: grid; gap: 0.3rem; }
+.keys-tbl td:first-child { white-space: nowrap; }
+.keys-dlg { width: min(34rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); border: 1px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--ink); padding: 1rem 1.1rem; box-shadow: var(--shadow-hover); }
+.keys-dlg::backdrop { background: rgba(0, 0, 0, 0.45); }
+.keys-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.6rem; }
+.keys-head h2 { font-size: 1.2rem; }
+.foot-help { display: inline-flex; gap: 0.4rem; align-items: center; }
+.foot-help .linkish { font-size: inherit; }
+.empty-help { margin-top: 0.6rem; }
+/* focus: a ring that shows on the header band too (WCAG 2.4.7, 1.4.11) */
+.hero :focus-visible, .rail-fab:focus-visible { outline: 3px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.55); }
+.search-field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tile:focus-visible, .drow:focus-visible, .tbl-card:focus-visible, tr[tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#view h2[tabindex="-1"]:focus { outline: none; }
+#view h2[tabindex="-1"]:focus-visible { outline: 2px dashed var(--accent); outline-offset: 4px; }
+/* targets of at least 24 px (WCAG 2.5.8): small buttons and links that stand alone */
+.exp-btn, .theme-switch button, .seg button, .try-chip, .btn.small { min-height: 24px; }
+a.tmore { display: inline-block; padding-block: 0.15rem; min-height: 24px; }
+th[data-sort] { cursor: pointer; }
+/* reduced motion: no transitions, animations or smooth scrolling (WCAG 2.3.3 and the reader's own setting) */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
+/* a short window (a laptop at 200% zoom, a phone held sideways): the search and tabs scroll with the page instead of
+   covering a third of it (WCAG 1.4.10) */
+@media (max-height: 34rem) { .toolbar { position: static; } }
+/* a phone: the header's links stay (they hid), the summary tiles sit three to a row, and the floating Filters button
+   leaves the last line of the page uncovered */
+@media (max-width: 40rem) {
+  .brand-links { display: flex; justify-content: flex-start; gap: 0.2rem 0.9rem; font-size: 0.8rem; }
+  .brand-links a { display: inline-block; padding-block: 0.2rem; }
+  .brand-side { justify-items: start; }
+  .hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr)); gap: 0.45rem; }
+  .stat { min-width: 0; padding: 0.45rem 0.6rem; }
+  .stat b { font-size: 1.15rem; }
+  .start-panel { padding: 0.85rem 0.85rem 0.75rem; }
+  .sp-keys { display: none; }
+}
+@media (max-width: 700px) { main.wrap { padding-bottom: 5rem; } }
+@media (hover: none) { .sp-keys { display: none; } }
+.keys-tbl { width: 100%; } .keys-tbl td { white-space: normal; } .keys-tbl td:first-child { width: 1%; } .keys-dlg { overflow-x: hidden; }
+/* a long option (a question's title) no longer widens the page on a phone */
+.filters label { max-width: 100%; min-width: 0; } .filters select, .filters input { max-width: 100%; min-width: 0; }

@@ -1362,6 +1362,29 @@
           },
           "description": "example searches shown under the search bar"
         },
+        "start": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the start panel on the Overview for a first visit and the Help page's starts (kit-help.js); without it, three starts are chosen from examples",
+          "properties": {
+            "title": {"type": "string", "description": "the panel's heading"},
+            "text": {"type": "string", "description": "what the site is, in a sentence or two"},
+            "examples": {
+              "type": "array",
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["query"],
+                "properties": {
+                  "label": {"type": "string", "description": "who or what it is for: A list of genes, A disease, One site"},
+                  "query": {"type": "string", "description": "what the search box takes"},
+                  "help": {"type": "string", "description": "one line on what it shows"}
+                }
+              }
+            }
+          }
+        },
         "version": {
           "type": "string"
         },
@@ -1890,6 +1913,13 @@
                   "type": "string"
                 },
                 "description": "protein-level filters: attributes of proteins (proteins.attributes) or marks (the protein's count of marks)"
+              },
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "filters the kit's modules add, by key: d:marks (another mark within some residues), m:at and m:near (the motif finder, website.search.patterns), o:<table> (a residue of a table within some residues, website.search.nearby), b:class, b:gene and b:score (the proteins' partners, website.search.partners); a module may add others (K.filterKinds). A key whose data the site lacks is left out"
               }
             }
           }
@@ -3595,6 +3625,180 @@
               },
               "note": {
                 "type": "string"
+              }
+            }
+          }
+        },
+        "search": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the search's words beyond genes, accessions and the questions' keys (CONTRACTS.md, Search and its filters)",
+          "properties": {
+            "shorthand": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "other names for proteins, as papers write them (H4: its accession): a name, or a name with a site (H4R3)"
+            },
+            "patterns": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the motif finder: a pattern of residues (X . * ? any residue, [ST] a choice, 2 to 10 positions) on each mark's sequence window",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "description": "the search key of a pattern covering the mark (motif:GXRG); a question with that id keeps its classes"
+                },
+                "near": {
+                  "type": "string",
+                  "description": "the search key of a pattern anywhere within the span (window:PRPR)"
+                },
+                "span": {
+                  "type": "integer",
+                  "minimum": 3,
+                  "maximum": 50,
+                  "description": "residues each side of the mark the windows hold (default 15)"
+                },
+                "help": {
+                  "type": "string"
+                }
+              }
+            },
+            "terms": {
+              "type": "object",
+              "description": "search keys that stand for this site's filters: key -> {help, values: {word: {filter key: [values]}}}",
+              "additionalProperties": {
+                "type": "object",
+                "required": [
+                  "values"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "help": {
+                    "type": "string"
+                  },
+                  "values": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "its name on the selection's chips"
+                  }
+                }
+              }
+            },
+            "spacing": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the filter d:marks: another mark within some residues",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "help": {
+                  "type": "string"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "within": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "nearby": {
+              "type": "object",
+              "description": "filters o:<table>: a residue of a residue_evidence table (website.tables) within some residues of the mark",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "help": {
+                    "type": "string"
+                  },
+                  "kinds": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "within": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            },
+            "partners": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "table"
+              ],
+              "description": "filters b:class, b:gene and b:score: the proteins' partners, from a protein_partners table (website.tables)",
+              "properties": {
+                "table": {
+                  "type": "string"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "gene_label": {
+                  "type": "string"
+                },
+                "score_label": {
+                  "type": "string"
+                },
+                "help": {
+                  "type": "string"
+                },
+                "classes": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "marked": {
+                  "type": "string"
+                },
+                "other": {
+                  "type": "string"
+                },
+                "scores": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
               }
             }
           }
