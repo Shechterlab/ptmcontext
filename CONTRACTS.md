@@ -1,6 +1,6 @@
 # Contracts
 
-Seven plain-data formats. Code on either side of a contract can change freely; a contract changes only with its
+Eight plain-data formats. Code on either side of a contract can change freely; a contract changes only with its
 `schema_version`, and every file is checked against its schema before it is used.
 
 | Contract | Format | Schema | Written by | Read by |
@@ -11,6 +11,7 @@ Seven plain-data formats. Code on either side of a contract can change freely; a
 | **Unit table** | TSV | `ptmcontext/schemas/units.schema.json` | stagers, other repositories | the layers |
 | **Statistics row** | TSV | `ptmcontext/schemas/statistics.schema.json` | every test | releases, websites, parity |
 | **Set families** | YAML | `ptmcontext/schemas/set_families.schema.json` | a person (a site's own data file, `sites/data/`) | protein-set questions that gather sets into families |
+| **Per-mark table** | TSV (any columns; the site file names its key and the columns kept) | `marks.tables` in `ptmcontext/schemas/site.schema.json` | a source, another repository, a user | the website's count questions (`website.counts`) |
 | **Citation** | YAML (CITATION.cff 1.2.0) | [citation-file-format.github.io](https://citation-file-format.github.io/) | a person | every page and download; GitHub and Zenodo read it too |
 
 ## Statistics row
@@ -101,6 +102,41 @@ attribute (`lists: [{title, by, order, where: {attribute, max, min}, show, n, he
 protein-level filters (key `r:<name>`): a number attribute with its `levels` and `direction` (at least, or at most, the
 threshold, with an optional second condition `also`), a category's values, or `marks` (the protein's count of marks).
 
+## Per-mark tables and count questions
+
+A **per-mark table** (`marks.tables.<name>` in the site file) is any table with several rows per mark: one row per
+mark and experiment, say. It names its mark one of two ways, as the site file's `key` says:
+
+| `key` | The row's mark |
+|---|---|
+| `{marks: <column of the marks table>, table: <its column>}` | the mark whose marks-table row (the first kept, as for attributes) has the same value (a site id such as `P12345:R216`) |
+| `{accession: <column>, position: <column>}` | the residue those columns give, on the snapshot's sequences |
+
+and keeps the `columns` the site file lists, as text. Nothing else is required; any column may be empty. Rows for marks
+the site does not count are dropped. Tab-separated, unless its manifest entry says `columns: {sep: ...}`. No test reads
+it: it serves the website's count questions only.
+
+A **count question** (`website.counts.<id>`) is answered by counting marks, not by a test, and needs no code:
+
+- `kind: values` counts a `list` or `category` attribute of the marks (`attribute`): each value's marks; for a list,
+  the marks with that value alone; and how many values each mark has, 1 to `bins` (default 5) or more, read from a
+  `number` attribute (whose "at least" filter then serves the distribution's rows) or from the list's length.
+- `kind: responses` is a table of experiments (`rows`, in order). Each row counts the marks it measured (`n`), those
+  whose call is `calls.down` and those whose call is `calls.up` (a mark with several rows in the experiment is counted
+  once, in each direction one of its rows has), and the median of a numeric `change` column over its marks (each
+  mark's own median first). A row's calls come from a per-mark table (`table`, the rows where every `where: {column:
+  value}` holds, the call in column `call`, default `call`) or from a paired list attribute (`attribute` with
+  `pair_with`, the partner of the value `value`: `<value>:<call>`); its change only from a table. `listed: true` says
+  the experiment lists only its changed marks, so its count is not a share. A row's id (`id`, default `value`, else
+  the `where` values joined by `_`) names it in links and filters.
+
+Its words (`title, question, sub, head, note, method`; a values count's `unit: [one, several]`, `noun`,
+`distribution`, `two_or_more`; a responses count's `first` and `group` column headings and each row's `name, note, short, group,
+kind`) come from the site file. The Overview places it by naming its id among the cards (`wide: true` spans two columns);
+a header tile opens it with `opens: <id>`; `legacy_links` may name it. Its id may not be an analysis's or an
+attribute's (the search reads `key:value` by those names); `ptmc check` names any attribute, table or column a count
+names that the site file does not keep. A site without counts has none of this.
+
 ## Input manifest entries
 
 `file, md5, source, version, licence` (required), `role` (`input` or `reference_output`), `note`, and two optional
@@ -145,6 +181,7 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 | `units_<kind>.tsv` | one per unit of a kind with `values`, on a protein with a mark | `accession, start, end, length, class`, the value columns (up to 6 significant digits, empty for missing), `marks` (the counted marks inside) and `other_candidates` (the other candidate residues inside; left-out marks on neither side, as the tests count them). The IDR charge layer writes `units_idr.tsv`: each IDR with `f_plus, f_minus, fcr, ncpr, kappa, region` (its Das–Pappu region, 1 to 5; `class` r1 to r5) |
 | `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used; for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; absent when the site has no protein-set question |
 | `set_names.tsv` | per set | `analysis, set, name` |
+| `marks_<name>.tsv` | per row of a per-mark table (`marks.tables.<name>`) on a counted mark | `accession, position`, then the columns it keeps (text), in the table's order; `run.json` records each table's rows read and kept (`mark_tables`) |
 
 `ptmc web` turns these into `data/p/NN.json` (64 shards of protein records: marks with their classes and attributes,
 units as `[kind, start, end, label, source index, class, ref]`) and `data/selection.json`: `analyses`, `classes` and
@@ -158,3 +195,13 @@ proteins' identifiers; `any`, `more: [[set, [proteins]]]` and `scores` serve the
 when a track has `values`, `data/units.json`: by kind, `{columns, classes, rows}`, a row
 `[protein index, start, end, class code, the values (null for missing), marks, other_candidates]`. A track whose values
 include `fcr` and `ncpr` gives the site an IDRs page (`kit-idrs.js`). The one-file copy inlines them when they fit.
+
+With `website.counts`, the page data carry `count_questions`: per count id, its words and the whole dataset's counts. A values
+count: `{kind: 'values', attribute, list, number, top, bins, unit, noun, distribution, total, values: [[value, label,
+marks, marks with it alone (null for a category), link id]] (most marks first), dist: [marks with 1 .. bins or more],
+none, multi, two_or_more}` (`multi`: marks with two or more). A responses count: `{kind: 'responses', calls: {down, up}, first,
+group, tables, attributes, rows: [{id, name, note, short, group, kind, listed, filter, n, down, up, median, changes}]}`,
+where `filter` is the filter a row's click sets (`[t:<attribute>, <value>:<down>]`, or `[null, id]`: the count's own
+filter `c:<count id>`, whose values are row ids, keeping each row's down marks). `data/selection.json` then holds
+`count_questions: {<count id>: [per row: [[mark index, 1 if down + 2 if up, its change or null]]]}`, so a selection is counted
+again in the browser (`kit-counts.js`).

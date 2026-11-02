@@ -141,6 +141,98 @@ def mapping_problems(site: dict, root: str | Path) -> list[str]:
     return out
 
 
+def count_row_id(row: dict) -> str:
+    """A responses row's id in links and filters: its own, else its attribute value, else its where values joined by _."""
+    if row.get('id'):
+        return row['id']
+    if row.get('value'):
+        return row['value']
+    return '_'.join(str(v) for v in (row.get('where') or {}).values()).lower().replace('-', '')
+
+
+def count_problems(site: dict) -> list[str]:
+    """What a count question (website.counts) names that the site file does not have: an attribute of the wrong kind, a
+    per-mark table it does not keep, a table column it does not keep, a row without calls. Its id must not be an
+    analysis or an attribute (the search reads 'key:value' terms by those names)."""
+    ids = {x['id'] for x in site.get('analyses', [])}
+    attrs = (site.get('marks') or {}).get('attributes') or {}
+    tables = (site.get('marks') or {}).get('tables') or {}
+    out = []
+    for cid, c in ((site.get('website') or {}).get('counts') or {}).items():
+        at = f'website.counts.{cid}'
+        if cid in ids or cid in attrs:
+            out.append(f"{at}: {cid!r} is already an analysis or an attribute; give the count another id")
+        if c['kind'] == 'values':
+            a = attrs.get(c.get('attribute', ''))
+            if not a:
+                out.append(f"{at}: no attribute {c.get('attribute')!r} in marks.attributes")
+            elif a.get('kind', 'category') not in ('list', 'category'):
+                out.append(f"{at}: attribute {c['attribute']!r} is a {a.get('kind')}; counting its values needs a list or a category")
+            if c.get('number') and attrs.get(c['number'], {}).get('kind') != 'number':
+                out.append(f"{at}: number {c['number']!r} is not a number attribute of the marks")
+            for k in ('rows', 'calls', 'group', 'first'):
+                if k in c:
+                    out.append(f"{at}: {k} is for a responses count")
+            continue
+        for k in ('attribute', 'number', 'top', 'bins', 'unit', 'noun', 'distribution', 'two_or_more'):
+            if k in c:
+                out.append(f"{at}: {k} is for a values count")
+        if not c.get('rows'):
+            out.append(f"{at}: a responses count lists its rows")
+        if not c.get('calls'):
+            out.append(f"{at}: a responses count names its calls ({{down: ..., up: ...}})")
+        seen = set()
+        for i, r in enumerate(c.get('rows') or []):
+            rid, where = count_row_id(r), f"{at}.rows[{i}] ({r.get('name')!r})"
+            if not rid or rid in seen:
+                out.append(f"{where}: its id {rid!r} is empty or not unique; give it an id")
+            seen.add(rid)
+            if not r.get('attribute') and not r.get('table'):
+                out.append(f"{where}: its calls come from an attribute (attribute, value) or a table (table, where)")
+            if r.get('attribute'):
+                a = attrs.get(r['attribute'])
+                if not a or not a.get('pair_with'):
+                    out.append(f"{where}: {r['attribute']!r} is not a paired list attribute (marks.attributes ... pair_with)")
+                if not r.get('value'):
+                    out.append(f"{where}: with attribute, name the value whose partner is the call")
+            if r.get('table'):
+                t = tables.get(r['table'])
+                if not t:
+                    out.append(f"{where}: no table {r['table']!r} in marks.tables")
+                    continue
+                named = [*(r.get('where') or {}), *([] if r.get('attribute') else [r.get('call', 'call')]), *([r['change']] if r.get('change') else [])]
+                miss = [x for x in named if x not in t['columns']]
+                if miss:
+                    out.append(f"{where}: marks.tables.{r['table']} does not keep {miss} (columns: {t['columns']})")
+            elif r.get('where') or r.get('change') or r.get('call'):
+                out.append(f"{where}: where, call and change read a table: name it")
+    return out
+
+
+def mark_table_problems(site: dict, root: str | Path) -> list[str]:
+    """The per-mark tables' columns (marks.tables), read from the files' headers: the key and every kept column."""
+    out, entries = [], I.load(manifest_of(site))
+    marks_entry = entries.get(site['marks']['input'], {})
+    marks_path = Path(root) / marks_entry.get('file', '')
+    marks_cols = set(pd.read_csv(marks_path, sep='\t', nrows=0).columns) if marks_path.is_file() else None
+    for name, t in ((site.get('marks') or {}).get('tables') or {}).items():
+        e = entries.get(t['input'])
+        if not e:
+            out.append(f"marks.tables.{name}: input {t['input']!r} is not in the manifest")
+            continue
+        path = Path(root) / e['file']
+        if not path.is_file():
+            continue
+        have = set(pd.read_csv(path, sep=(e.get('columns') or {}).get('sep', '\t'), nrows=0).columns)
+        key = t['key']
+        need = [key.get('table') or key['accession'], *([] if 'marks' in key else [key['position']]), *t['columns']]
+        if set(need) - have:
+            out.append(f"marks.tables.{name}: {path.name} has no column {sorted(set(need) - have)}")
+        if 'marks' in key and marks_cols is not None and key['marks'] not in marks_cols:
+            out.append(f"marks.tables.{name}: the marks table has no column {key['marks']!r}")
+    return out
+
+
 def website_problems(site: dict) -> list[str]:
     """What the website block names that the site file does not have: a tile, filter or example naming an analysis
     or a mark attribute that is not defined, or an attribute's colours for values it does not list. The schema checks
@@ -148,11 +240,13 @@ def website_problems(site: dict) -> list[str]:
     ids = {x['id'] for x in site.get('analyses', [])}
     attrs = (site.get('marks') or {}).get('attributes') or {}
     web = site.get('website') or {}
-    out = []
+    counts = web.get('counts') or {}
+    out = count_problems(site)
+    questions = ids | set(counts)                       # what a card, a header tile or an old link may open
     for sec in (web.get('overview') or {}).get('sections', []):
         for c in sec.get('cards', []):
             aid = c if isinstance(c, str) else c.get('analysis')
-            if aid not in ids:
+            if aid not in questions:
                 out.append(f"website.overview, section {sec.get('name')!r}: no analysis {aid!r}")
     for g in web.get('filters') or []:
         out += [f"website.filters, group {g.get('name')!r}: no analysis {a!r}" for a in g.get('analyses', []) if a not in ids]
@@ -162,6 +256,8 @@ def website_problems(site: dict) -> list[str]:
             out.append(f"website.stats: no attribute {st['attribute']!r} in marks.attributes")
         elif isinstance(st, dict) and attrs[st['attribute']].get('kind') != 'list':
             out.append(f"website.stats: attribute {st['attribute']!r} is not a list (its distinct values are counted)")
+        if isinstance(st, dict) and st.get('opens') and st['opens'] not in questions:
+            out.append(f"website.stats: {st['attribute']!r} opens {st['opens']!r}, which is not a question of this site")
     st = (web.get('compare') or {}).get('stratify')
     if st and (st not in attrs or attrs[st].get('kind') != 'list'):
         out.append(f"website.compare.stratify: {st!r} is not a list attribute of the marks")
@@ -197,7 +293,7 @@ def website_problems(site: dict) -> list[str]:
         if to not in ids and to not in attrs:
             out.append(f"website.search_aliases: {key!r} means {to!r}, which is neither a question nor an attribute of this site")
     for key, to in (web.get('legacy_links') or {}).items():
-        if not to.startswith('?') and to not in ids:
+        if not to.startswith('?') and to not in questions:
             out.append(f"website.legacy_links: {key!r} opens {to!r}, which is not a question of this site")
     for ex in web.get('examples') or []:
         key = ex.split(':', 1)[0] if ':' in ex else None
@@ -328,6 +424,61 @@ def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame) -> pd
             t[out] = [sep.join(f'{x}:{y}' for x, y in _zip_lists(u, v, sep, out)) for u, v in zip(t[out], table[paired[out]].astype(str))]
     t = t.dropna(subset=['position']).astype({'position': int}).drop_duplicates(['accession', 'position'])
     return marked[['accession', 'position']].merge(t, on=['accession', 'position'], how='left').fillna('')
+
+
+def _kept_rows(spec: dict, table: pd.DataFrame) -> pd.DataFrame:
+    """The marks table's rows select_marks keeps (include, exclude, left_out), so a dropped row lends nothing."""
+    keep = pd.Series(True, index=table.index)
+    for cond in spec.get('include', []):
+        keep &= _holds(table, cond)
+    for cond in spec.get('exclude', []) + spec.get('left_out', []):
+        keep &= ~_holds(table, cond)
+    return table[keep]
+
+
+def mark_tables(spec: dict, table: pd.DataFrame, marked: pd.DataFrame, paths: dict, formats: dict | None = None) -> tuple[dict, dict]:
+    """For each per-mark table of the site (marks.tables): its rows for the counted marks, as accession, position and
+    the columns it keeps (text), in the table's order; and a report of how many rows it had and kept. A row names its
+    mark through a column of the marks table (key: {marks, table}: a mark takes its first kept row's value, as
+    mark_attributes) or by its own accession and position columns. Rows of marks not counted are dropped. Nothing here
+    changes which marks are counted or any test."""
+    tables = spec.get('tables') or {}
+    out, report = {}, {}
+    if not tables:
+        return out, report
+    bad = [n for n in tables if not (n[:1].isalpha() and n.replace('_', 'a').isalnum())]
+    if bad:
+        raise ValueError(f'marks.tables: names must be letters, digits and _ only: {bad}')
+    kept = _kept_rows(spec, table)
+    for name, t in tables.items():
+        path = paths[t['input']]
+        sep = ((formats or {}).get(str(path)) or {}).get('sep', '\t')
+        rows = pd.read_csv(path, sep=sep, dtype=str, keep_default_na=False, low_memory=False)
+        key, cols = t['key'], list(t['columns'])
+        need = [key.get('table') or key['accession'], *([] if 'marks' in key else [key['position']]), *cols]
+        missing = [c for c in dict.fromkeys(need) if c not in rows.columns]
+        if missing:
+            raise ValueError(f"marks.tables.{name}: {path.name} has no column {missing} (it has {list(rows.columns)})")
+        if {'accession', 'position'} & set(cols):
+            raise ValueError(f"marks.tables.{name}: 'accession' and 'position' name the mark; keep other columns")
+        if 'marks' in key:
+            if key['marks'] not in kept.columns:
+                raise ValueError(f"marks.tables.{name}: the marks table has no column {key['marks']!r}")
+            ids = pd.DataFrame({'accession': kept[spec['accession']].astype(str).str.strip(),
+                                'position': pd.to_numeric(kept[spec['position']], errors='coerce'), '_key': kept[key['marks']].astype(str)})
+            ids = ids.dropna(subset=['position']).astype({'position': int}).drop_duplicates(['accession', 'position'])
+            ids = marked[['accession', 'position']].merge(ids, on=['accession', 'position'], how='inner')
+            j = rows[[key['table'], *cols]].rename(columns={key['table']: '_key'}).merge(ids, on='_key', how='inner')
+        else:
+            r = pd.DataFrame({'accession': rows[key['accession']].astype(str).str.strip(),
+                              'position': pd.to_numeric(rows[key['position']], errors='coerce'), **{c: rows[c] for c in cols}})
+            r = r.dropna(subset=['position']).astype({'position': int})
+            j = r.merge(marked[['accession', 'position']], on=['accession', 'position'], how='inner')
+        frame = j[['accession', 'position', *cols]].reset_index(drop=True)
+        out[name] = frame
+        report[name] = {'input': t['input'], 'rows': int(len(rows)), 'kept': int(len(frame)),
+                        'marks': int(len(frame[['accession', 'position']].drop_duplicates()))}
+    return out, report
 
 
 def _zip_lists(u: str, v: str, sep: str, name: str) -> list:
@@ -528,8 +679,11 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     pending = left_out_marks(spec, table)
     report['left_out'] = int(len(pending))
     attributes = mark_attributes(spec, table, marked)
+    per_mark, per_mark_report = mark_tables(spec, table, marked, paths, ctx.formats)
     log(f"{site['id']}: {report['counted']:,} {profile.word('marks')} on {report['proteins']:,} proteins "
         f"({report['rows']:,} rows read, {report['selected']:,} selected)")
+    for name, r in per_mark_report.items():
+        log(f"  table {name:18s} {r['kept']:,} of {r['rows']:,} rows, on {r['marks']:,} {profile.word('marks')} (website only)")
     parts, layers_used, kept, set_names, set_keep, layer_objs = [], {}, {}, [], {}, {}
     if skip_new:
         site = {**site, 'analyses': [a for a in site['analyses'] if not a.get('new')]}
@@ -578,6 +732,8 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         'inputs': {n: {'file': str(p), 'md5': md5_file(p)} for n, p in sorted(paths.items())},
         'trusted_plugins': list(ctx.trusted_plugins), 'seconds': round(time.time() - t0, 1),
     }
+    if per_mark_report:                                # tables kept for the website: what each held and kept
+        record['mark_tables'] = per_mark_report
     result = SiteRun(site, rows, record)
     ref = site.get('reference', {}).get('statistics')
     if ref:
@@ -600,6 +756,11 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         if site.get('proteins'):                       # per-protein facts the website shows (proteins.attributes)
             ptable = pd.read_csv(paths[site['proteins']['input']], sep='\t', dtype=str, keep_default_na=False, low_memory=False)
             outs['protein_attributes.tsv'] = protein_attributes(site['proteins'], ptable, set(marked['accession']))
+        for name, frame in per_mark.items():           # per-mark tables, for the website's count questions
+            outs[f'marks_{name}.tsv'] = frame
+        for stale in folder.glob('marks_*.tsv'):       # a table the site file no longer keeps
+            if stale.name not in outs:
+                stale.unlink()
         if set_keep:                                   # for testing a selection again on the website
             (folder / 'protein_sets.json').write_text(json.dumps(set_keep, separators=(',', ':')) + '\n')
             record['output']['protein_sets.json'] = md5_file(folder / 'protein_sets.json')

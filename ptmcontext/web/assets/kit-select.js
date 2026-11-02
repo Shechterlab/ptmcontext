@@ -96,7 +96,8 @@
     return (A[id]?.labels || {})[v] || v;
   }
 
-  const validKey = key => { const [kind, id] = String(key).split(':'); if (kind === 'r') return !!RSPEC(id); return (kind === 'a' && A[id] && A[id].kind !== 'protein_sets') || (kind === 'p' && A[id]?.kind === 'protein_sets') || (kind === 's' && !!A[id]?.scores) || ((kind === 't' || kind === 'n') && !!SPECS[id]); };
+  // a module may add a kind of filter (K.filterKinds[kind]: valid(id), test(id, values) -> mark -> bool), as kit-counts.js does
+  const validKey = key => { const [kind, id] = String(key).split(':'); if (kind === 'r') return !!RSPEC(id); return (kind === 'a' && A[id] && A[id].kind !== 'protein_sets' && !A[id].page) || !!K.filterKinds?.[kind]?.valid(id) || (kind === 'p' && A[id]?.kind === 'protein_sets') || (kind === 's' && !!A[id]?.scores) || ((kind === 't' || kind === 'n') && !!SPECS[id]); };
 
   // ---- the search: proteins, sites and terms ---------------------------------------------------------------------
   // a gene, accession or entry name names all its marks; "GENE R216 R218" or "GENE 216" names those marks; key:value
@@ -185,6 +186,7 @@
       if (kind === 't') { const ti = AT().indexOf(id), codes = new Set(vals.map(v => SD.attributes[id].indexOf(v))); return m => m[3][ti].some(c => codes.has(c)); }
       if (kind === 'n') { const ti = AT().indexOf(id), min = +vals[0], num = SD.numbers[id]; return m => m[3][ti].some(c => num[c] >= min); }
       if (kind === 'r') return m => vals.some(v => rHolds(id, m[0], v));
+      if (K.filterKinds?.[kind]) return K.filterKinds[kind].test(id, vals);
       return () => true;
     });
     return { q, cons, unresolved, base, tests };

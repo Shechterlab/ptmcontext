@@ -156,7 +156,7 @@
       questions: [int(D.analyses.length), D.analyses.length === 1 ? 'question' : 'questions', 'overview'],
       tests: [int(D.rows.length), 'tests', 'statistics'],
     };
-    const tiles = (D.stats || ['marks', 'proteins', 'questions', 'tests']).map(t => typeof t === 'string' ? ALL[t] : [int((D.attribute_counts || {})[t.attribute] ?? 0), t.label, 'method/sources']).filter(Boolean);
+    const tiles = (D.stats || ['marks', 'proteins', 'questions', 'tests']).map(t => typeof t === 'string' ? ALL[t] : [int((D.attribute_counts || {})[t.attribute] ?? 0), t.label, t.opens && A[t.opens] ? 'overview/' + t.opens : 'method/sources']).filter(Boolean);
     $('#hero-stats').innerHTML = tiles.map(([b, s, v]) => `<button class="stat" type="button" data-go="${v}"><b>${b}</b><span>${esc(s)}</span></button>`).join('');
   }
   function scope() {
@@ -422,6 +422,7 @@
     return { a, rows, shown, more, left, whole, made, foot };
   }
   function tile(card) {
+    if (A[card.analysis].tile) return A[card.analysis].tile(card);    // a question a module draws (kit-counts.js)
     const { a, rows, shown, more, left, whole, made, foot } = tileState(card);
     // its downloads on hover (none on a touch screen): the tile as a figure, the question's rows as a TSV, its Method
     const exp = `<div class="exp texp" role="group" aria-label="Download ${esc(card.title || a.title)}">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-texp="${k}" data-aid="${esc(a.id)}" title="${k === 'tsv' ? 'TSV: every row of the question, ' + EXP_HELP.tsv.replace(/^TSV: the rows, /, '') : EXP_HELP[k].replace(/^(\w+)/, '$1 of this tile')}">${k.toUpperCase()}</button>`).join('')}${methodLink(a.id)}</div>`;
@@ -499,8 +500,9 @@
   }
   function overview() {
     REG = [];
+    if (S.arg && A[S.arg]?.page) return focus(S.arg);
     if (selOn() && !K.sel.data()) return lead() + '<p class="muted">Loading the selection…</p>';
-    if (selOn() && !vsOn() && !selTestable()) return lead();
+    if (selOn() && !vsOn() && !selTestable()) return lead() + anySize();
     if (S.arg && A[S.arg] && (A[S.arg].kind !== 'attribute' || vsOn())) return focus(S.arg);
     if (vsOn() && !(K.sel.contrastGroups()?.g1.length >= K.sel.MIN_SIDE && K.sel.contrastGroups()?.g2.length >= K.sel.MIN_SIDE)) return lead();
     // with a selection, a section of protein-set questions is about its proteins: "Kinds of protein in your selection"
@@ -508,15 +510,19 @@
     return lead() + secList().map(x => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(head(x))}</h3><div class="tiles">${x.cards.map(tile).join('')}</div>`).join('') +
       (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
+  // the tiles of questions that hold for any selection (a module's counts), for a selection too small to test
+  const anySize = () => secList().map(x => [x, x.cards.filter(c => A[c.analysis]?.anySize)]).filter(([, cs]) => cs.length)
+    .map(([x, cs]) => `<h3 class="sec-label" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(x.name)}</h3><div class="tiles">${cs.map(tile).join('')}</div>`).join('');
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
   function focus(aid) {
     const cards = allCards(), i = cards.findIndex(c => c.analysis === aid), a = A[aid];
     const prev = cards[i - 1], next = cards[i + 1], card = cards[i] || { section: a.section };
-    const rows = chartRows(a, S.m, card);
-    return `<div class="focus-bar"><a href="${esc(link('overview'))}">‹ All sections</a><span class="crumb">Overview › ${esc(card.section || '')} › <b>${esc(card.title || a.title)}</b></span>` +
+    const bar = `<div class="focus-bar"><a href="${esc(link('overview'))}">‹ All sections</a><span class="crumb">Overview › ${esc(card.section || '')} › <b>${esc(card.title || a.title)}</b></span>` +
       (i >= 0 ? `<span class="muted">${i + 1} of ${cards.length}</span>` : '') +
-      `<span class="pn">${prev ? `<a href="${esc(link('overview', prev.analysis))}">‹ Previous · ${esc(prev.title || A[prev.analysis].title)}</a>` : ''}${next ? `<a href="${esc(link('overview', next.analysis))}">${esc(next.title || A[next.analysis].title)} · Next ›</a>` : ''}</span></div>` +
-      `<div class="page-head"><h2>${esc(card.title || a.title)}</h2><span class="tools">${a.kind === 'protein_sets' ? '' : `<span class="seg" role="group">${(vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher']).map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ''}>${cap(METHOD[m])}</button>`).join('')}</span>`}</span></div>` +
+      `<span class="pn">${prev ? `<a href="${esc(link('overview', prev.analysis))}">‹ Previous · ${esc(prev.title || A[prev.analysis].title)}</a>` : ''}${next ? `<a href="${esc(link('overview', next.analysis))}">${esc(next.title || A[next.analysis].title)} · Next ›</a>` : ''}</span></div>`;
+    if (a.page) return bar + a.page(card);                               // a question a module draws (kit-counts.js)
+    const rows = chartRows(a, S.m, card);
+    return bar + `<div class="page-head"><h2>${esc(card.title || a.title)}</h2><span class="tools">${a.kind === 'protein_sets' ? '' : `<span class="seg" role="group">${(vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher']).map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ''}>${cap(METHOD[m])}</button>`).join('')}</span>`}</span></div>` +
       `<p class="page-sub">${vsOn() ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}, tested in your browser (exploratory).` : esc(a.question || a.describe || '')}${selOn() && !vsOn() ? ` <b>Your selection</b>${rows.some(r => r.descriptive) ? ': ' + whyShown(a).replace(/^Your selection /, '') : vsOn() ? '' : ', tested again in your browser (exploratory: not adjusted for the other selections tried).'}` : ''} <span class="muted">Click a ${a.kind === 'protein_sets' ? 'set' : 'class'} to select its ${esc(W.marks)}.</span></p>` +
       `<section class="pcard">${cardBody(a, rows)}${selOn() && !vsOn() ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
   }
@@ -644,7 +650,7 @@
       `<section id="m-questions"><h3>Questions, and what made each</h3><p>Each question is a layer (built in, made from the site file’s parameters, or a plugin the site trusts, with its package and version) or a protein-set test; the inputs it reads are the roles it names.</p>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th><th>Reads</th><th>What it compares</th></tr></thead><tbody>` +
       D.analyses.map(a => `<tr><td>${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag">new</span>' : ''}</td><td class="wrapok">${esc(madeByText(a.id))}</td><td class="mono wrapok">${esc((a.roles || []).join(', '))}</td><td class="wrapok">${esc(a.describe || a.sub || '')}</td></tr>`).join('') +
-      `</tbody></table></div></section>` + D.analyses.map(questionMethod).join('') + par +
+      `</tbody></table></div></section>` + D.analyses.map(questionMethod).join('') + (K.methodParts || []).map(f => f()).join('') + par +
       citeSection() + downloadSection() + searchSection() + privacySection() +
       sourcesSection() +
       `<section id="m-made"><h3>How this site is made</h3><p>This site is one file, <span class="mono">${esc(D.site.config)}</span>: which mark, which sequences and regions, which questions, its colours and pictures. ptmcontext ${esc(D.kit.version)} (commit <span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(R.written))}. Its citation, version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>` +
