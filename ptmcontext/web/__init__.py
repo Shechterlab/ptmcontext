@@ -266,7 +266,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'tracks': _tracks(folder),
         'profile_uniprot': profile.data.get('uniprot_features', []),
         'overview': web.get('overview'), 'filters': web.get('filters'), 'stats': web.get('stats'),
-        'sites_view': web.get('sites'), 'protein_view': web.get('protein'), 'compare': web.get('compare'), 'legacy_links': web.get('legacy_links') or {}, 'search_aliases': web.get('search_aliases') or {},
+        'sites_view': web.get('sites'), 'protein_view': web.get('protein'), 'compare': web.get('compare'), 'legacy_links': web.get('legacy_links') or {}, 'search_aliases': web.get('search_aliases') or {}, 'dataset': web.get('dataset'), 'downloads': web.get('downloads') or [], 'download_terms': web.get('download_terms', ''),
         'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),
                  'lab': web.get('lab', {}).get('name', ''), 'config': f"sites/{site['id']}.yaml"},
         'words': {**profile.words, 'marked_long': profile.words.get('marked_long', profile.words['marked'])},
@@ -567,7 +567,14 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             if cit.get('doi'):
                 version += (f' · <a class="doi-badge" href="https://doi.org/{html.escape(cit["doi"])}"><span>DOI</span>'
                             f'<span>{html.escape(cit["doi"])}</span></a>')
-        version += f'{" · " if version else ""}<a href="#method">method</a> · <a href="#sites">download the sites</a>'
+        ds = web.get('dataset')
+        if ds:                                         # the data release shown, with its archive DOI
+            name = html.escape(ds.get('label', 'dataset'))
+            v = html.escape(ds['version'])
+            version += (f'{" · " if version else ""}{name} ' + (f'<a href="{html.escape(ds["url"])}">{v}</a>' if ds.get('url') else v)
+                        + (f' <a class="doi-badge" href="https://doi.org/{html.escape(ds["doi"])}"><span>DOI</span><span>{html.escape(ds["doi"])}</span></a>' if ds.get('doi') else ''))
+        version += (f'{" · " if version else ""}<a href="#method">method</a> · '
+                    + ('<a href="#method/download">download the data</a>' if web.get('downloads') else '<a href="#sites">download the sites</a>'))
         if inline:
             css = f'<style>{_asset("assets/kit.css").read_text()}</style>'
             js = (f'<script id="protein-data" type="application/json">{inline_proteins}</script>'

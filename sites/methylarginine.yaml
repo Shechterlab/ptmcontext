@@ -556,7 +556,8 @@ website:                  # the look and words of the website (ptmc web); layout
   art: sites/art/methylarginine-hero.svg
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
   links:
-    - {label: Method, url: "#method"}
+    - {label: Documentation, url: "#method"}
+    - {label: Download data, url: "#method/download"}
     - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
@@ -605,6 +606,19 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class]}
     - {name: Provenance, attributes: [studies, n_studies, localised_by]}
+  dataset: {label: dataset, version: v1.4.3, date: "2026-10-31", doi: "10.5281/zenodo.22696798", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3"}
+  download_terms: "The release's tables are under CC BY-NC-SA 4.0; PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the studies and databases that report the sites you use, and the archive (How to cite)."
+  downloads:               # the release's files, at the commit the site was built from
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/human_methylarginine_sites_v1.4.3.xlsx", format: Excel, note: "every site with its evidence, one row per site"}
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv", format: TSV, note: "the same, tab-separated"}
+    - {label: Proteins, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/human_methylarginine_proteins_v1.4.3.tsv", format: TSV, note: "every methylated protein with its classes, enrichment, clusters and evidence"}
+    - {label: Lower-confidence sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/human_methylarginine_lower_confidence_sites_v1.4.3.tsv", format: TSV, note: "arginines reported as methylated whose records each fail a site test, with the tests"}
+    - {label: Statistics, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/statistics_v1.4.3.tsv", format: TSV, note: "every test the site shows"}
+    - {label: Statistics with lower-confidence sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/statistics_with_lower_confidence_v1.4.3.tsv", format: TSV, note: "the same tests with the counted lower-confidence sites added"}
+    - {label: Studies, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/studies_v1.4.3.tsv", format: TSV, note: "the studies and databases, with their DOIs and counts"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/README.md", format: Markdown, note: "how the release was made, and every column"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
   search_aliases:          # the explorer's search keys, read as this site's questions and attributes
     disease: disease_family
     location: hpa_location

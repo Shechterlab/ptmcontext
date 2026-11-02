@@ -521,6 +521,28 @@
       `<section class="pcard">${cardBody(a, rows)}${selOn() && !vsOn() ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
   }
   // what the site keeps, what it asks other services for, and under which licences everything is
+  // the data a reader can download (website.downloads), under its terms, and the site's own tables
+  function downloadSection() {
+    const dl = D.downloads || [], ds = D.dataset;
+    if (!dl.length) return '';
+    return `<section id="m-download"><h3>Download the data</h3>` +
+      (ds ? `<p>${esc(cap(ds.label || 'dataset'))} ${ds.url ? `<a href="${esc(ds.url)}">${esc(ds.version)}</a>` : esc(ds.version)}${ds.date ? ` (${esc(hdate(ds.date))})` : ''}${ds.doi ? `, archived as <a href="https://doi.org/${esc(ds.doi)}">doi:${esc(ds.doi)}</a>` : ''}.</p>` : '') +
+      (D.download_terms ? `<p>${esc(D.download_terms)}</p>` : '') +
+      `<div class="tbl-card"><table class="tbl"><thead><tr><th>File</th><th>Format</th><th>What it holds</th></tr></thead><tbody>` +
+      dl.map(x => `<tr><td><a href="${esc(x.url)}">${esc(x.label)}</a></td><td>${esc(x.format || '')}</td><td class="wrapok">${esc(x.note || '')}</td></tr>`).join('') +
+      `</tbody></table></div><p class="note">Every table on this site downloads as TSV from its own page (Download TSV on the ${K.views.proteins ? '<a href="#proteins">Proteins</a> and ' : ''}${K.views.sites ? `<a href="#sites">${esc(cap(W.marks))}</a> pages` : 'pages'}), for your selection, with how it was made and how to cite it in its first lines.</p></section>`;
+  }
+  // the search's terms: each question and attribute a search can name (key:value), its values, and the older keys read
+  function searchSection() {
+    const al = Object.entries(D.search_aliases || {}), aliasOf = id => al.filter(([, v]) => v === id).map(([k]) => k);
+    const q = D.analyses.map(a => [a.id, a.title, Object.entries(a.labels || {}).filter(([c]) => c).slice(0, 4).map(([c, l]) => l || c), aliasOf(a.id)]);
+    const t = Object.entries(D.attribute_specs || {}).filter(([, x]) => x.filter).map(([k, x]) => [k, x.label, Object.values(x.values || {}).slice(0, 4), aliasOf(k)]);
+    const ex = (D.site.examples || []).filter(e => e.includes(':'));
+    return `<section id="m-search"><h3>Search terms</h3><p>The search takes genes, accessions and entry names (a list of them is a union), a site as "GENE R216", and terms <span class="mono">key:value</span>, each of which must hold. A term's value is a class, set or value by its code or name, or the start of a word in its name; several values, separated by <span class="mono">|</span> or commas, match any.${ex.length ? ` Examples: ${ex.map(e => `<button class="linkish mono" type="button" data-try="${esc(e)}">${esc(e)}</button>`).join(', ')}.` : ''}</p>` +
+      `<div class="tbl-card"><table class="tbl"><thead><tr><th>Key</th><th>What it names</th><th>Values, for example</th></tr></thead><tbody>` +
+      [...q, ...t].map(([k, lab, vals, aka]) => `<tr><td class="mono">${esc(k)}${aka.length ? `<br><span class="muted">or ${aka.map(esc).join(', ')}</span>` : ''}</td><td>${esc(lab)}</td><td class="wrapok">${vals.map(esc).join('; ')}</td></tr>`).join('') +
+      `</tbody></table></div></section>`;
+  }
   function privacySection() {
     const live = ['UniProt (rest.uniprot.org)', 'AlphaFold DB (alphafold.ebi.ac.uk)', 'PDBe (www.ebi.ac.uk/pdbe)', ...(D.partners ? ['STRING (string-db.org)'] : [])];
     return `<section id="m-privacy"><h3>Licences and privacy</h3>` +
@@ -529,8 +551,8 @@
   }
   K.sections.method = () => [['m-g1', 'The tests', 0], ['m-tests', 'How the tests work', 1], ['m-questions', 'Questions, and what made each', 1], ['m-parity', 'Checked against the release', 1],
     ['m-gq', 'Each question', 0], ...D.analyses.map(a => [`m-q-${a.id}`, a.title, 1]),
-    ['m-g2', 'The data', 0], ['m-data', 'Data', 1], ['m-sources', 'Sources', 1], ['m-g3', 'The site', 0], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1], ['m-privacy', 'Licences and privacy', 1]]
-    .filter(([id]) => (id !== 'm-parity' || D.run.parity) && (id !== 'm-sources' || Object.values(D.attribute_specs || {}).some(x => x.kind === 'list' && x.link)));
+    ['m-g2', 'The data', 0], ['m-data', 'Data', 1], ['m-sources', 'Sources', 1], ['m-g3', 'The site', 0], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1], ['m-download', 'Download the data', 1], ['m-search', 'Search terms', 1], ['m-privacy', 'Licences and privacy', 1]]
+    .filter(([id]) => (id !== 'm-parity' || D.run.parity) && (id !== 'm-download' || (D.downloads || []).length) && (id !== 'm-sources' || Object.values(D.attribute_specs || {}).some(x => x.kind === 'list' && x.link)));
   // the Overview's sections and their questions: jumps on the tiles, links from an opened question (keeping the
   // selection and the baseline)
   K.sections.overview = () => [
@@ -623,7 +645,7 @@
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th><th>Reads</th><th>What it compares</th></tr></thead><tbody>` +
       D.analyses.map(a => `<tr><td>${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag">new</span>' : ''}</td><td class="wrapok">${esc(madeByText(a.id))}</td><td class="mono wrapok">${esc((a.roles || []).join(', '))}</td><td class="wrapok">${esc(a.describe || a.sub || '')}</td></tr>`).join('') +
       `</tbody></table></div></section>` + D.analyses.map(questionMethod).join('') + par +
-      citeSection() + privacySection() +
+      citeSection() + downloadSection() + searchSection() + privacySection() +
       sourcesSection() +
       `<section id="m-made"><h3>How this site is made</h3><p>This site is one file, <span class="mono">${esc(D.site.config)}</span>: which mark, which sequences and regions, which questions, its colours and pictures. ptmcontext ${esc(D.kit.version)} (commit <span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(R.written))}. Its citation, version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>` +
       `<p>Every download carries the same block: what it shows and how it was tested, how to cite it and its data sources, the site’s and ptmcontext’s versions, the sequences and inputs it came from, and when and where it was exported. It is printed under each figure and kept in the file itself: the SVG’s metadata, the PNG’s text fields, the PDF’s properties and the TSV’s # lines.</p></section></div>`;
@@ -1176,6 +1198,7 @@
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.dataset.theme) render(); }); } catch (err) { /* old browsers */ }
   // the footer: licences and privacy, on every page (the Method page has the full text)
   $('#credit').innerHTML = `${esc(D.site.name)} · built with <a href="${esc(D.kit.url || '#method/made')}">ptmcontext</a> ${esc(D.kit.version)}` +
+    (D.dataset ? ` · ${esc(D.dataset.label || 'dataset')} ${esc(D.dataset.version)}${D.dataset.doi ? `, <a href="https://doi.org/${esc(D.dataset.doi)}">doi:${esc(D.dataset.doi)}</a>` : ''}` : '') +
     ` · code: ${esc(hlicence(D.kit.licence || 'MIT'))}${CIT.licence ? ` · data: ${esc(hlicence(CIT.licence))}` : ''}` +
     ` · <a href="#method/privacy">no cookies, no tracking; nothing you search leaves your browser</a>`;
   setTheme(document.documentElement.dataset.theme || 'auto'); themed = true;

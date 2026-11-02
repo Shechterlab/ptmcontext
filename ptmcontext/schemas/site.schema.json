@@ -1381,6 +1381,62 @@
             "type": "string"
           },
           "description": "an older site's search keys and the question or attribute each means here (disease: disease_family), so its links and habits keep working"
+        },
+        "dataset": {
+          "type": "object",
+          "required": [
+            "version"
+          ],
+          "additionalProperties": false,
+          "description": "the data release the site shows: its version, date, archive DOI and page, in the header's version line and the footer",
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "its name (default: dataset)"
+            },
+            "version": {
+              "type": "string"
+            },
+            "date": {
+              "type": "string"
+            },
+            "doi": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
+          }
+        },
+        "downloads": {
+          "type": "array",
+          "description": "the data a reader can download (Method › Download the data, linked from the header): each file with its format and what it holds",
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "url"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "format": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "download_terms": {
+          "type": "string",
+          "description": "the terms the downloads come under (licences, attribution), shown above the list"
         }
       }
     },
