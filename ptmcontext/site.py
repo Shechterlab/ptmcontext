@@ -8,6 +8,7 @@ from __future__ import annotations
 import copy
 
 import json
+import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -258,7 +259,7 @@ def website_problems(site: dict) -> list[str]:
     counts = web.get('counts') or {}
     out = count_problems(site)
     questions = ids | set(counts)                       # what a card, a header tile or an old link may open
-    out += cell_problems(site) + set_view_problems(site)
+    out += cell_problems(site) + set_view_problems(site) + table_view_problems(site)
     if (web.get('cell') or {}).get('id'):
         ids = ids | {web['cell']['id']}        # the maps of the cell are one question of the website's own
         questions = questions | {web['cell']['id']}
@@ -352,6 +353,71 @@ def website_problems(site: dict) -> list[str]:
     from .map_rows import problems as map_problems
     from .web.structure import problems as structure_problems     # the 3D viewer's tables (website.protein.structure)
     return out + map_problems(site) + structure_problems(site)
+
+
+def table_view_problems(site: dict) -> list[str]:
+    """What the Proteins and Sites pages' columns and downloads (website.proteins, website.sites, website.selection_cards)
+    name that the site file does not have: a protein attribute, a mark attribute, a question, a class or a table."""
+    web = site.get('website') or {}
+    attrs = (site.get('marks') or {}).get('attributes') or {}
+    pattrs = (site.get('proteins') or {}).get('attributes') or {}
+    words = _analysis_words(site)
+    kinds = {a['id']: a.get('test') for a in site.get('analyses', [])}
+    tables = web.get('tables') or {}
+    out = []
+
+    def need(where, name, pool, what):
+        if name and name not in pool:
+            out.append(f"{where}: no {what} {name!r}")
+
+    def classes(where, spec):
+        a = spec.get('analysis')
+        need(where, a, kinds, 'analysis')
+        labels = words.get(a, {}).get('classes') or set()
+        if a in kinds and labels:
+            out.extend(f"{where}: {a!r} has no class {c!r}" for c in spec.get('classes', []) if c not in labels)
+    pv = web.get('proteins') or {}
+    for c in pv.get('columns', []):
+        w = f"website.proteins.columns {c['id']!r}"
+        need(w, c.get('attribute'), pattrs, 'protein attribute (proteins.attributes)')
+        need(w, (c.get('counts') or {}).get('attribute'), attrs, 'attribute of the marks')
+        if c.get('classes'):
+            classes(w, c['classes'])
+        for n in re.findall(r'\{(\w+)\}', c.get('template', '')) + [(c.get('where') or {}).get('attribute'), c.get('sort')]:
+            need(w, n, pattrs, 'protein attribute (proteins.attributes)')
+    for c in pv.get('download', []):
+        w = f"website.proteins.download {c['name']!r}"
+        need(w, c.get('attribute'), pattrs, 'protein attribute (proteins.attributes)')
+        need(w, (c.get('counts') or {}).get('attribute'), attrs, 'attribute of the marks')
+        if c.get('classes'):
+            classes(w, c['classes'])
+    sv = web.get('sites') or {}
+    for c in sv.get('table', []):
+        w = f"website.sites.table {c['id']!r}"
+        need(w, c.get('attribute'), attrs, 'attribute of the marks')
+        for a in c.get('analyses', []):
+            need(w, a, kinds, 'analysis')
+        for n in ([c['sort']] if isinstance(c.get('sort'), str) else c.get('sort') or []):
+            need(w, n, attrs, 'attribute of the marks')
+    for c in sv.get('download', []):
+        w = f"website.sites.download {c['name']!r}"
+        need(w, c.get('attribute'), attrs, 'attribute of the marks')
+        need(w, c.get('analysis'), kinds, 'analysis')
+        need(w, c.get('protein'), pattrs, 'protein attribute (proteins.attributes)')
+        need(w, c.get('table'), tables, 'table in website.tables')
+        if c.get('table') and not (c.get('column') or c.get('field')):
+            out.append(f"{w}: a table's column (column, or field)")
+    for n in sv.get('short') or {}:
+        need('website.sites.short', n, attrs, 'attribute of the marks')
+    need('website.sites.site_tags', (sv.get('site_tags') or {}).get('attribute'), attrs, 'attribute of the marks')
+    for a in sv.get('tags') or {}:
+        need('website.sites.tags', a, kinds, 'analysis')
+    for k in web.get('selection_cards') or {}:
+        if k.startswith('@'):
+            need('website.selection_cards', k[1:], attrs, 'attribute of the marks')
+        elif kinds.get(k) != 'protein_sets':
+            out.append(f"website.selection_cards: {k!r} is not a protein-set question")
+    return out
 
 
 def cell_drawings() -> dict:
