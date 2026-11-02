@@ -28,6 +28,12 @@ jobs:
             inputs/annotation/cdcode_proteins_2026-03-18.csv
             inputs/annotation/cdcode_condensates_2026-03-18.csv
             inputs/interactions/cdcode_2.3_condensate_members_2026-10-16.tsv
+            inputs/layers/cell_map_hcm_go2021.tsv
+            inputs/layers/cell_map_organelle_ip_hein2025.tsv
+            inputs/layers/cell_map_chromatin_kustatscher2014.tsv
+            inputs/layers/depmap_24q4_gene_effect_summary.tsv
+            inputs/layers/depmap_24q4_arginine_changes.tsv
+            inputs/layers/tcga_mc3_arginine_changes.tsv
             releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
             releases/v1.4.3/statistics_v1.4.3.tsv
             releases/v1.4.3/human_methylarginine_lower_confidence_sites_v1.4.3.tsv

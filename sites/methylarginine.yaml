@@ -24,6 +24,12 @@ inputs:                # role the layers read: manifest input that fills it
   cdcode_proteins: cdcode_proteins
   cdcode_condensates: cdcode_condensates
   cdcode_members: cdcode_members_2_3
+  hcm: hcm_cell_map
+  organelle_ip: organelle_ip
+  chromatin: chromatin_probability
+  depmap_genes: depmap_gene_effect
+  tcga_changes: tcga_arginine_changes
+  depmap_changes: depmap_arginine_changes
 
 marks:
   # Until this repository builds the site union from the studies, the marks are the release's own sites.
@@ -502,6 +508,160 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     background: other proteins with an HPA 25.1 location (Approved or better)
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Where in the cell, beyond the Human Protein Atlas (scripts/cell_maps.py): each map tested against the proteins it
+  # places, compartment by compartment (compartments of at least 5 proteins), and again within PaxDb abundance deciles.
+  # The regions of the cell: each map's compartments gathered into the nucleus, the cytoplasm and the organelles and
+  # membranes (sites/data/methylarginine_cell_regions.yaml), in the three maps that place proteins all over the cell
+  - id: cell_region_hpa
+    test: protein_sets
+    title: Regions of the cell (Human Protein Atlas)
+    question: "Where do methylated proteins sit in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Methylated proteins against the other proteins with a Human Protein Atlas location (Approved or better), its locations gathered into three regions of the cell; cilia and sperm structures in none (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets:
+      input: hpa
+      set: location
+      protein: canonical_UniProtAC
+      exclude: [{column: reliability, equals: Uncertain}]
+      families: {rules: sites/data/methylarginine_cell_regions.yaml}
+    whole_universe: true
+    min_size: 5
+    background: "other proteins with an HPA 25.1 location (Approved or better). A region is the Human Protein Atlas locations it holds (scripts/cell_maps.py, REGION_OF)"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_region_hcm
+    test: protein_sets
+    title: Regions of the cell (Human Cell Map)
+    question: "Where do methylated proteins sit in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets:
+      input: hcm
+      set: nmf_compartment
+      protein: canonical_UniProtAC
+      families: {rules: sites/data/methylarginine_cell_regions.yaml}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments). A region is the Human Cell Map compartments it holds (scripts/cell_maps.py, REGION_OF)"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_region_organelle_ip
+    test: protein_sets
+    title: Regions of the cell (organelle IP)
+    question: "Where do methylated proteins sit in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Methylated proteins against the other proteins organelle IP classifies (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets:
+      input: organelle_ip
+      set: compartment
+      protein: canonical_UniProtAC
+      exclude: [{column: compartment, equals: unclassified}]
+      families: {rules: sites/data/methylarginine_cell_regions.yaml}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins organelle IP classifies (HEK293T). A region is the Organelle IP it holds (scripts/cell_maps.py, REGION_OF)"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_hcm_compartment
+    test: protein_sets
+    title: Human Cell Map compartments
+    question: "Where do methylated proteins sit in the cell, by the Human Cell Map's compartments?"
+    sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID from 192 baits; Go et al. 2021), by NMF compartment (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets: {input: hcm, set: nmf_compartment, protein: canonical_UniProtAC}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_hcm_domain
+    test: protein_sets
+    title: Human Cell Map domains
+    question: "Where do methylated proteins sit in the cell, by the Human Cell Map's finer domains?"
+    sub: "Methylated proteins against the other proteins the Human Cell Map places in a SAFE domain (HEK293 BioID; Go et al. 2021), domain by domain (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets: {input: hcm, set: safe_domain, protein: canonical_UniProtAC, exclude: [{column: safe_domain, equals: ""}]}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins the Human Cell Map places in a SAFE domain
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_organelle_ip
+    test: protein_sets
+    title: Organelle IP
+    question: "Where do methylated proteins sit in the cell, by the organelle each comes down with?"
+    sub: "Methylated proteins against the other proteins organelle IP classifies (HEK293T; Hein et al. 2025), cluster by cluster (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets: {input: organelle_ip, set: compartment, protein: canonical_UniProtAC, exclude: [{column: compartment, equals: unclassified}]}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins organelle IP classifies (HEK293T)
+    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granule,
+             p-body: P-body, actin_cytoskeleton: Actin cytoskeleton, centrosome: Centrosome, proteasome: Proteasome,
+             14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
+             early_endosome: Early endosome, recycling_endosome: Recycling endosome, lysosome: Lysosome,
+             mitochondrion: Mitochondrion, peroxisome: Peroxisome, plasma_membrane: Plasma membrane}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_chromatin
+    test: protein_sets
+    title: Chromatin probability
+    question: "Are methylated proteins on chromatin more often than other proteins?"
+    sub: "Methylated proteins against the other proteins with an interphase chromatin probability (chromatin enrichment for proteomics; Kustatscher et al. 2014), in four bins (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets:
+      input: chromatin
+      protein: canonical_UniProtAC
+      rules:                       # each protein in the first bin it reaches (scripts/cell_maps.py, CHEP_BINS)
+        - {set: "ICP >= 0.8 (chromatin)", when: [{column: interphase_chromatin_probability, at_least: 0.8}]}
+        - {set: "ICP 0.5-0.8", when: [{column: interphase_chromatin_probability, at_least: 0.5}]}
+        - {set: "ICP 0.2-0.5", when: [{column: interphase_chromatin_probability, at_least: 0.2}]}
+        - {set: "ICP < 0.2 (not chromatin)"}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins with an interphase chromatin probability
+    labels: {"ICP >= 0.8 (chromatin)": "Chromatin (probability ≥ 0.8)", "ICP 0.5-0.8": "Probability 0.5–0.8", "ICP 0.2-0.5": "Probability 0.2–0.5",
+             "ICP < 0.2 (not chromatin)": "Not chromatin (probability < 0.2)"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Cancer cell lines (scripts/release_layers.py, CANCER): cancer cell genetics beside the sites, not evidence about
+  # methylation. The dependency classes partition the entries whose gene DepMap 24Q4 screened (gene_effect)
+  - id: depmap_dependency
+    test: protein_sets
+    title: Cancer cell dependency
+    question: "Do cancer cell lines depend on these proteins more than on others? (DepMap CRISPR screens)"
+    sub: "DepMap Public 24Q4 dependency classes, methylated proteins vs all screened reviewed proteins (one per gene); how much 1,178 cancer cell lines depend on them in CRISPR knockout screens. Cancer cell genetics, not evidence about methylation (one-sided hypergeometric test)"
+    section: Disease and cancer
+    sets:
+      input: depmap_genes
+      protein: canonical_UniProtAC
+      rules:                       # the share of the screened lines whose dependency probability is at least 0.5
+        - {set: common_essential, when: [{column: common_essential, equals: "True"}]}
+        - {set: most_lines, when: [{ratio: [dependent_lines, lines_with_probability], at_least: 0.5}]}
+        - {set: some_lines, when: [{ratio: [dependent_lines, lines_with_probability], at_least: 0.05}]}
+        - {set: few_or_none}
+    whole_universe: true
+    order: [{categories: [common_essential, most_lines, some_lines, few_or_none]}]
+    background: other reviewed human proteins whose gene DepMap 24Q4 screened (CRISPR, Chronos)
+    labels: {common_essential: Commonly essential, most_lines: "Most lines (≥ 50%)", some_lines: "Some lines (5–50%)", few_or_none: "Few or none (< 5%)"}
+    help:
+      common_essential: "DepMap 24Q4 calls the gene commonly essential (CRISPRInferredCommonEssentials: it ranks among the strongest dependencies of at least 90% of lines)"
+      most_lines: "not commonly essential, and at least 50% of the screened lines depend on it"
+      some_lines: "not commonly essential, and 5% to under 50% of the lines depend on it (selective dependencies)"
+      few_or_none: "fewer than 5% of the lines depend on it"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Changes at methylarginines in tumours and cell lines: a missense or stop change in at least one TCGA tumour (MC3) or
+  # DepMap cell line, against the other arginines of the methylated proteins whose gene DepMap screened; every mark of
+  # those proteins counts, one on a protein with no other arginine too (it adds nothing within proteins)
+  - id: cancer_change
+    layer: residue_lists
+    with:
+      flags: {tcga_tumours: tcga_changes, depmap_cell_lines: depmap_changes}
+      noun: changed arginine
+      title: Changes in tumours and cell lines
+      question: "Is a methylated arginine changed in tumours or cancer cell lines more or less often than the other arginines of its protein?"
+      sub: "Methylarginines against the other arginines of the methylated proteins whose gene DepMap screened: a missense or stop change in at least one TCGA tumour (MC3) or DepMap 24Q4 cell line. Not adjusted for codon: arginine codons with a CpG (CGN) mutate most in cancers, and the codons of methylated and other arginines may differ"
+      section: Disease and cancer
+      labels: {tcga_tumours: Changed in a TCGA tumour, depmap_cell_lines: Changed in a DepMap cell line}
+      help:
+        tcga_tumours: "A missense or stop change of the arginine in at least one TCGA tumour (MC3 public calls from the GDC, 33 projects; FILTER PASS, and in OV and LAML also wga alone)"
+        depmap_cell_lines: "A missense or stop change of the arginine in at least one DepMap 24Q4 cell line (OmicsSomaticMutations, on the canonical UniProt isoform)"
+    proteins: {input: depmap_genes, column: canonical_UniProtAC, label: " whose gene DepMap screened"}
+    marks_alone: count
+    order: [{categories: [tcga_tumours, depmap_cell_lines]}]
   - {id: motif, layer: motif}
   - {id: disorder, layer: disorder}
   - {id: domain_context, layer: domain_context}
@@ -561,6 +721,8 @@ website:                  # the look and words of the website (ptmc web); layout
         cards:
           - {analysis: disease_family, title: Disease}
           - {analysis: disease_family_additional, title: "More disease families (rule-based, not audited)"}
+          - depmap_dependency
+          - cancer_change
       - name: Kinds of protein
         cards:
           - {analysis: panther_group, title: Protein classes}
@@ -568,6 +730,15 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: hpa_location, title: Where in the cell}
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
+      - name: Where in the cell           # the original's one question, its maps as tiles: regions first, then compartments
+        cards:
+          - {analysis: cell_region_hpa, title: Regions of the cell (Protein Atlas)}
+          - {analysis: cell_region_hcm, title: Regions of the cell (Human Cell Map)}
+          - {analysis: cell_region_organelle_ip, title: Regions of the cell (organelle IP)}
+          - {analysis: hpa_location, title: Human Protein Atlas locations}
+          - cell_hcm_compartment
+          - cell_organelle_ip
+          - cell_chromatin
       - name: Where in the protein
         cards:
           - {analysis: motif, title: Sequence motifs}
@@ -575,10 +746,11 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
       - name: In more detail
-        cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
+        cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, cell_hcm_domain, disorder, domain_context]
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
-    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional], attributes: [tcga_any, depmap_any]}
-    - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, hpa_location, reactome_top_level]}
+    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, depmap_dependency, cancer_change], attributes: [tcga_any, depmap_any]}
+    - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, reactome_top_level]}
+    - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
     - {name: Methylation state, attributes: [state, methyl_ip, neutral_loss]}
     - {name: "PRMT inhibitors, knockouts and knockdowns", attributes: [gsk591, ms023, perturbation]}
     - {name: Sequence motif, analyses: [motif]}

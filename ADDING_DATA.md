@@ -201,7 +201,8 @@ its manifest entry: `"columns": {"sep": ","}`.
 
 Which sets make a family is curated vocabulary: it goes in a site's own data file under `sites/data/`, never in code
 (`ptmcontext/schemas/set_families.schema.json`; `sites/data/methylarginine_disease_families.yaml` gathers DisGeNET's
-terms into the release's disease families). Each family is a list of regular expressions matched against the set's
+terms into the release's disease families; `sites/data/methylarginine_cell_regions.yaml` the compartments of three
+maps of the cell into its regions). Each family is a list of regular expressions matched against the set's
 name; exact-name `overrides` come first; families sit in ordered `lists`, a name taking the first family that matches,
 list by list, and each analysis tests the families of the lists it names. A set no rule places is in no family, but its
 identifiers still count as annotated (the background). `ptmc check` reads the rules file, the lists an analysis names
