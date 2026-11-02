@@ -1374,6 +1374,13 @@
             "type": "string"
           },
           "description": "an older site's Overview anchors (#overview/<key>) and what they open now: a question's id, or ?<parameters> for the Overview (?vs=marks)"
+        },
+        "search_aliases": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "an older site's search keys and the question or attribute each means here (disease: disease_family), so its links and habits keep working"
         }
       }
     },

@@ -126,7 +126,10 @@
     return out;
   }
   // a term key:value: an analysis (its class or set), or an attribute of the marks
-  function termFilter([key, val]) {
+  // an older site's search keys, read as this site's (website.search_aliases: disease -> disease_family)
+  const ALIAS = Object.fromEntries(Object.entries(D.search_aliases || {}).map(([k, v]) => [k.toLowerCase(), v]));
+  function termFilter([key0, val]) {
+    const key = ALIAS[key0] || key0;
     const vals = val.split(/[|,]/).map(v => v.trim()).filter(Boolean), low = v => String(v).toLowerCase();
     if (A[key] && SD && A[key].kind !== 'protein_sets') {
       const codes = SD.classes[key] || [];
@@ -185,8 +188,9 @@
       SD.marks.forEach((m, i) => { if (M.base(m) && M.tests.every(t => t(m))) marks.push(i); });
       proteins = new Set(marks.map(i => SD.marks[i][0]));
     }
-    // nothing at all named by the search: no marks (the bar says which words and terms matched nothing)
-    if (SD && active && !q.genes.length && !q.words.length && !q.sites.length && !cons.length) { marks = []; proteins = new Set(); }
+    // every part of a search must hold: a word or a term that matches nothing leaves no marks, as nothing can match all
+    // of it (the bar says which); in a list of proteins, a name with no marked protein is reported and the rest kept
+    if (SD && active && (q.unmatched.length || unresolved.length || (!q.genes.length && !q.words.length && !q.sites.length && !cons.length))) { marks = []; proteins = new Set(); }
     return { active, marks, proteins, cons, q, unresolved };
   }
   let cache = { key: null };

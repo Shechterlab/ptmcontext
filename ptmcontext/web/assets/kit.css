@@ -650,3 +650,5 @@ a.exp-btn { display: inline-flex; align-items: center; text-decoration: none; }
   .qrow .cnt { font-size: 0.7rem; }
   .qaxis .ticks .minor { visibility: hidden; }
 }
+/* print: every text in the Arial-like face of the exports (monospace stays monospace) */
+@media print { body *:not(.mono):not(code):not(pre):not(.win):not(.win *) { font-family: Arial, 'Helvetica Neue', Helvetica, Arimo, 'Liberation Sans', sans-serif !important; } }

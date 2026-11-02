@@ -125,12 +125,14 @@
     return '#' + path + (p.toString() ? '?' + p : '');
   }
   const link = (view, arg, extra) => carry('#' + view + (arg ? '/' + pathOf(view, arg) : '') + (extra ? '?' + new URLSearchParams(extra) : ''));
+  let shown = null;                   // the address the page is drawn for (onNav skips a change to it)
   function writeHash(push) {
     const p = selParams();
     if (S.view === 'statistics') { if (S.a) p.set('a', S.a); if (S.sq) p.set('sq', S.sq); if (S.sort !== 'q') p.set('sort', S.sort); if (S.desc !== (S.sort !== 'q')) p.set('dir', S.desc ? 'desc' : 'asc'); }
 
     const h = '#' + S.view + (S.arg ? '/' + pathOf(S.view, S.arg) : '') + (p.toString() ? '?' + p : '');
     if (h !== location.hash) (push ? history.pushState : history.replaceState).call(history, null, '', h);
+    shown = location.hash;            // the page shows this address: Back to an earlier one draws that one again
   }
   const go = (view, extra = {}) => { Object.assign(S, { view, arg: '' }, extra); writeHash(true); render(); scrollTo(0, 0); };
   // a protein's own facts (the site file's proteins.attributes): by accession, a number for a number attribute
@@ -1136,7 +1138,7 @@
   K.openIfOne = openIfOne;
   $('#q').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(timer); S.q = e.target.value.trim(); typing = false; if (!openIfOne()) { writeHash(true); render(); } } });
   $('#q-clear').addEventListener('click', () => { S.q = ''; writeHash(true); render(); $('#q').focus(); });
-  let shown = null, byLink = false;
+  let byLink = false;
   // where each page was scrolled to, for Back and Forward; a link opens its page at the top
   const scrolled = {};
   const pageOf = () => S.view + '/' + S.arg;

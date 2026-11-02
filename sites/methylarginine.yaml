@@ -605,6 +605,14 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class]}
     - {name: Provenance, attributes: [studies, n_studies, localised_by]}
+  search_aliases:          # the explorer's search keys, read as this site's questions and attributes
+    disease: disease_family
+    location: hpa_location
+    study: studies
+    condensate: condensate_proteome
+    panther: panther_class
+    domain: domain_class
+    bound: nucleic_acid_type
   legacy_links:            # the explorer's Overview anchors (#overview/ov-pan, ...) open the same questions here
     ov-pan: panther_group
     ov-dis: disease_family

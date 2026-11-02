@@ -189,6 +189,9 @@ def website_problems(site: dict) -> list[str]:
             bad = [c for c in f['classes'] if c not in words[f['analysis']]['classes']]
             if bad:
                 out.append(f"website.protein.facts: {f['analysis']!r} has no class {bad} (it has {sorted(words[f['analysis']]['classes'])})")
+    for key, to in (web.get('search_aliases') or {}).items():
+        if to not in ids and to not in attrs:
+            out.append(f"website.search_aliases: {key!r} means {to!r}, which is neither a question nor an attribute of this site")
     for key, to in (web.get('legacy_links') or {}).items():
         if not to.startswith('?') and to not in ids:
             out.append(f"website.legacy_links: {key!r} opens {to!r}, which is not a question of this site")
