@@ -646,11 +646,13 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     inline_values = (out / 'data' / 'units.json').read_text().replace('</', '<\\/') if values else ''
     inline_proteins = json.dumps({f'{k:02d}': v for k, v in shards.items()}, separators=(',', ':')).replace('</', '<\\/')
     inline_selection = (out / 'data' / 'selection.json').read_text().replace('</', '<\\/') if (out / 'data' / 'selection.json').exists() else ''
-    if len(inline_proteins) > 12_000_000:
-        log(f'  the one-file copy leaves out the protein pages ({len(inline_proteins) / 1e6:.0f} MB); index.html has them')
+    # the one-file copy holds the protein pages and their tables up to the site's limit (website.one_file_max_mb)
+    cap = int(web.get('one_file_max_mb', 64) * 1_000_000)
+    if len(inline_proteins) > cap:
+        log(f'  the one-file copy leaves out the protein pages ({len(inline_proteins) / 1e6:.0f} MB, over {cap / 1e6:.0f} MB); index.html has them')
         inline_proteins = '{}'
     inline_tables = json.dumps({f'{k:02d}': v for k, v in ev_shards.items()}, separators=(',', ':'), default=int).replace('</', '<\\/')
-    if inline_proteins == '{}' or len(inline_proteins) + len(inline_tables) > 12_000_000:
+    if inline_proteins == '{}' or len(inline_proteins) + len(inline_tables) > cap:
         inline_tables = '{}'
 
     def page(inline: bool) -> str:

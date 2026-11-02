@@ -2421,6 +2421,11 @@
               }
             }
           }
+        },
+        "one_file_max_mb": {
+          "type": "number",
+          "minimum": 0,
+          "description": "the largest the one-file copy's protein pages and their tables may be, in MB (default 64); over it, the copy leaves them out and points to index.html"
         }
       }
     },
