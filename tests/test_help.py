@@ -65,4 +65,4 @@ def test_the_start_panel_and_help_reach_the_page_and_the_landing_page(tmp_path):
 
 def test_the_check_names_a_start_the_site_cannot_search(tmp_path):
     _, p = _toy(tmp_path, 'toyc', {'examples': [{'query': 'disease:ALS'}]})
-    assert any("'disease:ALS' names neither an analysis nor an attribute" in x for x in S.website_problems(S.load_site(p)))
+    assert any("'disease:ALS' names no search key of this site" in x for x in S.website_problems(S.load_site(p)))
