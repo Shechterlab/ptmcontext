@@ -146,3 +146,22 @@ references:   # the data sources: cited with every export (DOIs checked on Cross
     end: 676
     year: 2023
     doi: "10.1038/s41592-023-01831-0"
+  # the two PRMT perturbation studies the PRMT inhibitors, knockouts and knockdowns question reads that report no site of
+  # their own; Maron et al. 2021, Hartel et al. 2019, Lu et al. 2024 and Li et al. 2021 are cited as studies reporting
+  # sites (Method > Sources). Both checked on Crossref (2 Nov 2026): CC BY 4.0
+  - type: article   # Crossref: Nat Commun 8:15571, published 24 May 2017; 7 authors
+    authors: [{family-names: Shishkova, given-names: E}, {family-names: Zeng, given-names: H}, {family-names: Liu, given-names: F}, {name: "et al."}]
+    title: "Global mapping of CARM1 substrates defines enzyme specificity and substrate recognition"
+    journal: "Nat Commun"
+    volume: 8
+    start: 15571
+    year: 2017
+    doi: "10.1038/ncomms15571"
+  - type: article   # Crossref: Nat Commun 11:2396, published 14 May 2020; 31 authors
+    authors: [{family-names: Szewczyk, given-names: MM}, {family-names: Ishikawa, given-names: Y}, {family-names: Organ, given-names: S}, {name: "et al."}]
+    title: "Pharmacological inhibition of PRMT7 links arginine monomethylation to the cellular stress response"
+    journal: "Nat Commun"
+    volume: 11
+    start: 2396
+    year: 2020
+    doi: "10.1038/s41467-020-16271-z"

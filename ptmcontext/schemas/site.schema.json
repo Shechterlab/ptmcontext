@@ -285,6 +285,73 @@
             }
           },
           "description": "further tables whose rows are marks too, appended to the marks table before it is read"
+        },
+        "tables": {
+          "type": "object",
+          "description": "tables with several rows per mark (each experiment that measured a mark, say), kept for the website: ptmc run keeps their rows for the counted marks (marks_<name>.tsv); no test reads them. A count question (website.counts) reads them by name",
+          "propertyNames": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "input",
+              "key",
+              "columns"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "input": {
+                "type": "string",
+                "description": "manifest name of the table"
+              },
+              "key": {
+                "description": "how a row names its mark: a column of the marks table and the table's column holding the same value ({marks: site_id, table: site_id}), or the table's accession and position columns",
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "marks",
+                      "table"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "marks": {
+                        "type": "string"
+                      },
+                      "table": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "accession",
+                      "position"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "accession": {
+                        "type": "string"
+                      },
+                      "position": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              },
+              "columns": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                },
+                "description": "the columns kept, as text"
+              }
+            }
+          }
         }
       }
     },
@@ -1090,7 +1157,7 @@
                       "oneOf": [
                         {
                           "type": "string",
-                          "description": "an analysis id"
+                          "description": "an analysis id, or a count question (website.counts)"
                         },
                         {
                           "type": "object",
@@ -1100,7 +1167,8 @@
                           "additionalProperties": false,
                           "properties": {
                             "analysis": {
-                              "type": "string"
+                              "type": "string",
+                              "description": "an analysis id, or a count question (website.counts)"
                             },
                             "title": {
                               "type": "string"
@@ -1119,6 +1187,10 @@
                                 "q"
                               ],
                               "description": "the classes' order on the tile and its question: by effect (default) or by evidence (q), for sets where a small set reaches the largest fold when every member is marked"
+                            },
+                            "wide": {
+                              "type": "boolean",
+                              "description": "spans two columns where the page has room"
                             }
                           }
                         }
@@ -1279,6 +1351,10 @@
                   },
                   "label": {
                     "type": "string"
+                  },
+                  "opens": {
+                    "type": "string",
+                    "description": "the question the tile opens (an analysis or a count question; default: Method's list of sources)"
                   }
                 }
               }
@@ -1380,7 +1456,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "an older site's Overview anchors (#overview/<key>) and what they open now: a question's id, or ?<parameters> for the Overview (?vs=marks)"
+          "description": "an older site's Overview anchors (#overview/<key>) and what they open now: a question's id (an analysis or a count question), or ?<parameters> for the Overview (?vs=marks)"
         },
         "search_aliases": {
           "type": "object",
@@ -1444,6 +1520,185 @@
         "download_terms": {
           "type": "string",
           "description": "the terms the downloads come under (licences, attribution), shown above the list"
+        },
+        "counts": {
+          "type": "object",
+          "description": "questions answered by counting the marks rather than by a test: each a tile and a page of its own (kit-counts.js), placed on the Overview by naming its id among the cards. 'values': how many marks each value of an attribute has (and, for a list, how many only that value, and how many values each mark has); 'responses': a table of experiments, each counting the marks it measured and those whose call went down or up, with the median change",
+          "propertyNames": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "kind",
+              "title"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "values",
+                  "responses"
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "question": {
+                "type": "string"
+              },
+              "sub": {
+                "type": "string",
+                "description": "under the figure title"
+              },
+              "head": {
+                "type": "string",
+                "description": "the tile's line under its picture (default: a count of what it shows)"
+              },
+              "note": {
+                "type": "string",
+                "description": "under the figure: what to keep in mind"
+              },
+              "method": {
+                "type": "string",
+                "description": "its section of the Method page: how the counts were made"
+              },
+              "attribute": {
+                "type": "string",
+                "description": "values: a list or category attribute of the marks"
+              },
+              "number": {
+                "type": "string",
+                "description": "values: a number attribute counting the list's values (its 'at least' filter serves the distribution); default: the list's length"
+              },
+              "top": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "values: the values the tile shows (default 5)"
+              },
+              "bins": {
+                "type": "integer",
+                "minimum": 2,
+                "description": "values: the distribution 1, 2, ..., bins or more (default 5)"
+              },
+              "unit": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "values: one value and several, as the distribution names them (default [value, values])"
+              },
+              "noun": {
+                "type": "string",
+                "description": "values: the values in the plural, in running text (default: the attribute's label)"
+              },
+              "distribution": {
+                "type": "string",
+                "description": "values: the distribution's title ({mark} is the profile's word)"
+              },
+              "two_or_more": {
+                "type": "string",
+                "description": "values: what a mark with two or more values is, in running text (default: with two or more <unit>)"
+              },
+              "group": {
+                "type": "string",
+                "description": "responses: the second column's heading (default Group)"
+              },
+              "first": {
+                "type": "string",
+                "description": "responses: the first column's heading (default Experiment)"
+              },
+              "calls": {
+                "type": "object",
+                "required": [
+                  "down",
+                  "up"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "down": {
+                    "type": "string"
+                  },
+                  "up": {
+                    "type": "string"
+                  }
+                },
+                "description": "responses: the call codes counted as down and up (decreased, increased)"
+              },
+              "rows": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z][A-Za-z0-9_]*$",
+                      "description": "the row in links and filters (default: the attribute value, else the where values joined by _)"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "its name, in bold"
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "beside the name, muted: the study, the cells, the rule"
+                    },
+                    "short": {
+                      "type": "string",
+                      "description": "its label on the tile (default: name and group)"
+                    },
+                    "group": {
+                      "type": "string",
+                      "description": "the second column, as a tag (an antibody, a condition)"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "description": "the second column, as plain words, where there is no group (the kind of experiment)"
+                    },
+                    "attribute": {
+                      "type": "string",
+                      "description": "the calls from a paired list attribute (marks.attributes ... pair_with): the partner of 'value'"
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "with attribute: the value whose partner is the call"
+                    },
+                    "table": {
+                      "type": "string",
+                      "description": "a marks.tables name: the rows this row reads"
+                    },
+                    "where": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "with table: the table's rows that are this row (column: value)"
+                    },
+                    "call": {
+                      "type": "string",
+                      "description": "with table and no attribute: the column holding each mark's call (default call)"
+                    },
+                    "change": {
+                      "type": "string",
+                      "description": "with table: a column of numbers; the row shows their median over its marks"
+                    },
+                    "listed": {
+                      "type": "boolean",
+                      "description": "the experiment lists only its changed marks: its count has no share"
+                    }
+                  }
+                },
+                "description": "responses: the experiments, in order"
+              }
+            }
+          }
         }
       }
     },

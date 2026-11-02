@@ -222,6 +222,33 @@
       "licence": "CC BY-NC-SA 4.0",
       "role": "reference_output",
       "note": "The release's protein table: per-protein facts (arginine enrichment, clusters) the website shows, through proteins.attributes."
+    },
+    "maron2021_inhibitors_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/maron2021_inhibitors_v1.4.3.tsv",
+      "md5": "53261fec99cb1cbb731a525cdf3f8eed",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3 (supporting/maron2021_inhibitors_v1.4.3.tsv); from Maron et al. 2021 Table S3, https://ars.els-cdn.com/content/image/1-s2.0-S2589004221009391-mmc4.xlsx (Maron MI et al., iScience 24:102971 (2021), doi:10.1016/j.isci.2021.102971)",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), supporting table: Maron et al. 2021 inhibitors per methyl-IP",
+      "licence": "CC BY-NC-ND 4.0: its source, Maron et al. 2021 Table S3 (open-access article; supplement redistributed unmodified, with attribution; PTM_Pipeline inputs/MANIFEST.tsv). The release (CC BY-NC-SA 4.0) redistributes the records derived from it, not the table itself",
+      "role": "input",
+      "note": "One row per site, methyl-IP antibody (MMA, ADMA, SDMA) and inhibitor (GSK591, MS023) of Maron et al. 2021 Table S3: peptides, those decreased and increased at adjusted p <= 0.05, the call and the median log2 difference (3,416 rows). Read for the counts of the PRMT inhibitors, knockouts and knockdowns question, per methyl-IP; no test reads it."
+    },
+    "carm1_ko_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/carm1_ko_v1.4.3.tsv",
+      "md5": "1421435d03bec729120fd941f11390d0",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3 (supporting/carm1_ko_v1.4.3.tsv); from Shishkova et al. 2017 Supplementary Data 1, https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fncomms15571/MediaObjects/41467_2017_BFncomms15571_MOESM422_ESM.xlsx (Shishkova E et al., Nat Commun 8:15571 (2017), doi:10.1038/ncomms15571)",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), supporting table: CARM1 knockout per cell line",
+      "licence": "CC BY 4.0 (Shishkova et al. 2017, as PTM_Pipeline inputs/MANIFEST.tsv records its source)",
+      "role": "input",
+      "note": "One row per site and cell line (MCF7, MDA-MB-231) of the CARM1 knockout of Shishkova et al. 2017: peptides, median log2 knockout / parental, the call at twofold and BH q < 0.05, and the published call (542 rows). Read for the median change of the CARM1 knockout rows; no test reads it."
+    },
+    "writer_perturbations_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/writer_perturbations_v1.4.3.tsv",
+      "md5": "368e601f1752b6282ccff412cc0bc804",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3 (supporting/writer_perturbations_v1.4.3.tsv); from Shishkova et al. 2017 (doi:10.1038/ncomms15571), Szewczyk et al. 2020 (doi:10.1038/s41467-020-16271-z), Hartel et al. 2019 (doi:10.1074/mcp.RA119.001625), Lu et al. 2024 (doi:10.1021/acs.jproteome.3c00724) and Li et al. 2021 (doi:10.1038/s41467-021-21963-1)",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), supporting table: PRMT knockouts, knockdowns and inhibitors",
+      "licence": "Each perturbation keeps its source's terms (PTM_Pipeline inputs/MANIFEST.tsv): CC BY-NC 4.0 for the PRMT5 inhibitor rows (Lu et al. 2024 supporting information, ACS figshare; the article is not open access); CC BY 4.0 for the others: the CARM1 knockout (Shishkova et al. 2017), the PRMT7 knockout (Szewczyk et al. 2020: the article's licence, taken to cover its Supplementary Data, the lab's decision of 2026-10-25), the PRMT1 knockdown (Hartel et al. 2019, from 2020-09-15) and the Li et al. 2021 arms (the article's licence, taken to cover its Supplementary Data)",
+      "role": "input",
+      "note": "One row per site and knockout, knockdown or inhibitor (9 perturbations): peptides, median log2 perturbed / control, the call (twofold at q < 0.05, or the published call where the perturbation says so) and both calls beside it (4,954 rows). Its calls equal the site table's perturbation_calls, which the website reads; this table gives the median change. No test reads it."
     }
   }
 }

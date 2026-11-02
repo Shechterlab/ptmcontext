@@ -25,6 +25,7 @@ from ..inputs import load as load_manifest
 from ..inputs import role_inputs, site_input_names
 from ..profile import load_profile
 from ..site import code_commit, load_site, manifest_of, root_of
+from .counts import counts_data
 
 FONTS = {
     'heading': "'IBM Plex Serif', Georgia, 'Times New Roman', serif",
@@ -35,7 +36,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-start.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-map.js', 'kit-proteins.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-start.js', 'kit-counts.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -251,6 +252,10 @@ def site_data(site: dict, folder: Path, profile) -> dict:
             roles.setdefault(name, []).append(role)
             prev = uses.get(name)
             uses[name] = (prev + '; ' if prev and name in roles and len(roles[name]) > 1 else '') + (what if rule == 'one' or i == 0 else f"{what}, for proteins with none from the row{'s' if i > 1 else ''} above" if rule == 'first_of' else f'{what}, with the row{"s" if i > 1 else ""} above')
+    counts = web.get('counts') or {}
+    for name, t in (site['marks'].get('tables') or {}).items():   # per-mark tables: the count questions that read them
+        titles = [c['title'] for c in counts.values() if any(r.get('table') == name for r in c.get('rows', []))]
+        uses[t['input']] = f"each {profile.words['mark']}'s rows" + (f", for {'; '.join(titles)}" if titles else '')
     if site.get('reference', {}).get('statistics'):
         uses[site['reference']['statistics']] = 'the parity check'
     inputs = {name: {'version': entries.get(name, {}).get('version', ''), 'licence': entries.get(name, {}).get('licence', ''),
@@ -508,10 +513,15 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
                                     for a, s in site['marks'].get('attributes', {}).items() if f'a.{a}' in mk.columns}
     data['attribute_specs'] = site['marks'].get('attributes', {})
     data['reporters'] = reporters(site, folder)
+    # questions answered by counting the marks (website.counts): the whole dataset's counts in the page, each
+    # experiment's marks in selection.json
+    data['count_questions'], sel_counts = counts_data(site, folder)
     data['unit_sources'] = unit_sources
     data['shards'] = SHARDS if shards else 0
     if listing:
         sel = selection_data(folder, listing, mark_columns, site['marks'].get('attributes', {}))
+        if sel_counts:
+            sel['count_questions'] = sel_counts
         (out / 'data').mkdir(parents=True, exist_ok=True)
         (out / 'data' / 'selection.json').write_text(json.dumps(sel, separators=(',', ':')))
         log(f"  selection data: {len(sel['marks']):,} marks, {(out / 'data' / 'selection.json').stat().st_size / 1e6:.1f} MB")

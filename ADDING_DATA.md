@@ -202,6 +202,29 @@ marks:
                filter: true}                                                       # each value "<perturbation>:<call>"
 ```
 
+A question answered by counting rather than testing (how many marks each source reports; how many marks each experiment
+measured and changed) is a count question, `website.counts` (CONTRACTS.md, Per-mark tables and count questions). Its
+data are an attribute of the marks, or a table with several rows per mark, kept under `marks.tables` with the column that
+names each row's mark and the columns to keep; the site file maps the table's own columns (`where`, `call`, `change`),
+so a release's supporting table and a user's own table in the same shape give the same question:
+
+```yaml
+marks:
+  tables:
+    experiments: {input: <manifest name>, key: {marks: site_id, table: site_id}, columns: [treatment, call, log2_change]}
+website:
+  counts:
+    sources: {kind: values, attribute: studies, number: n_studies, title: Provenance, unit: [source, sources]}
+    responses:
+      kind: responses
+      title: Responses
+      calls: {down: decreased, up: increased}
+      rows:
+        - {name: Drug A, table: experiments, where: {treatment: A}, change: log2_change}
+        - {name: Knockout B, attribute: <a pair_with attribute>, value: ko_b}       # calls from '<value>:<call>' pairs
+  overview: {sections: [{name: Sources, cards: [sources, {analysis: responses, wide: true}]}]}
+```
+
 The website's Overview tiles, filter groups and header tiles are `website.overview`, `website.filters` and
 `website.stats`; the Sites tab's columns `website.sites.columns`; the protein page's fact tiles and extra links
 `website.protein.facts` and `website.protein.links: [{label, url: "...{acc}..."}]` (`sites/methylarginine.yaml` shows

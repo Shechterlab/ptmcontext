@@ -87,7 +87,10 @@ others register with it through `window.PTMC_MODULES`: `kit-stats.js` (the tests
 (search, filters, the sidebar, selections and their tests), `kit-map.js` (the protein map: rows, hovers, pins, zoom,
 read-out, exports), `kit-proteins.js` (the Proteins tab and the protein page), `kit-sites.js` (the Sites tab),
 `kit-idrs.js` (the IDRs tab, from a track whose values include `fcr` and `ncpr`) and `kit-compare.js` (what sets a
-selection apart from the other marks, and two selections side by side). A new view is a new module.
+selection apart from the other marks, and two selections side by side) and `kit-counts.js` (questions answered by
+counting the marks rather than testing them, `website.counts`: their tiles, pages, filters, downloads and Method
+sections; a module's question draws its own tile and page through `A[id].tile` and `A[id].page`, and may add a kind of
+filter, `K.filterKinds`). A new view is a new module.
 
 **Comparisons.** What a selection is compared with is the Overview's baseline: the other residues of its proteins (the
 site's own tests), the site's other marks ("what sets it apart"), or another selection's marks (`vs=cmp`, `cmp=` its
@@ -104,6 +107,14 @@ for every baseline. The browser's within-study test equals `ptmcontext.stats.man
 **The protein page** also shows, from data the site already has: the protein's sets in each protein-set question with
 the site's result for each and its abundance decile as the tests used it; every region the questions read, with the
 marks inside; and the sequence with its marks, as FASTA.
+
+**Count questions** (`website.counts`) describe rather than test: how many marks each value of an attribute has (the
+studies or databases that report them, say) and how many values each mark has; or a table of experiments, each with
+the marks it measured, those whose call went down and up, and the median change. They read the marks' attributes and
+per-mark tables (`marks.tables`: several rows per mark, kept by `ptmc run` for the website), in the formats CONTRACTS.md
+gives, so any site with such data gets them from its site file alone. A selection is counted again in the browser; a
+selection too small to test still gets them, as counts hold for any selection. A click on a value or an experiment
+sets its filter and opens the Sites page.
 
 **The header's citation line** names the studies and databases that report the most marks (the list attribute a header
 tile counts), each linked to its paper, and how many there are in all.

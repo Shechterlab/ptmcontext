@@ -65,7 +65,8 @@ def cmd_check(a) -> int:
                 if entries[given[0]].get('columns'):    # its separator, if not a tab
                     formats[str(files[role])] = entries[given[0]]['columns']
     sets = [p for x in site['analyses'] if 'sets' in x for p in spec_problems(x, S.root_of(site), files, formats)]
-    web = S.website_problems(site) + S.roles_missing(site) + (S.mapping_problems(site, a.root) if a.root else []) + sets
+    web = (S.website_problems(site) + S.roles_missing(site) + (S.mapping_problems(site, a.root) + S.mark_table_problems(site, a.root) if a.root else [])
+           + sets)
     print(f"{site['id']}: mark {profile.id} ({', '.join(profile.residues)}), {len(site['analyses'])} analyses")
     for problem, items in (('inputs not in the manifest', missing), ('layers not found or not made', unknown)):
         if items:

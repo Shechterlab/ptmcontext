@@ -315,6 +315,20 @@ marks:
         not_a_protein: A partner that is not a protein
         self: Another copy of the same protein
         predicted: A predicted complex only
+  tables:              # several rows per site, for the website's count questions (no test reads these): each row names
+                       # its site by the marks table's site_id (CONTRACTS.md, Per-mark tables)
+    maron_inhibitors:  # each site, methyl-IP antibody and inhibitor of Maron et al. 2021 Table S3
+      input: maron2021_inhibitors_v1_4_3
+      key: {marks: site_id, table: site_id}
+      columns: [inhibitor, antibody, call, log2_diff_median]
+    carm1_ko:          # each site and cell line of the CARM1 knockout (Shishkova et al. 2017)
+      input: carm1_ko_v1_4_3
+      key: {marks: site_id, table: site_id}
+      columns: [cell_line, call, log2_ko_over_wt]
+    writer_perturbations:   # each site and knockout, knockdown or inhibitor; its calls are the perturbation attribute's
+      input: writer_perturbations_v1_4_3
+      key: {marks: site_id, table: site_id}
+      columns: [perturbation, call, log2_treated_over_control]
 analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel)
   # protein sets: clusterProfiler's enricher, as the release ran it (scripts/release_layers.py, release_tables.py)
   # PANTHER protein classes (scripts/03b_panther_class_enrichment.py): every reviewed protein is the universe and the
@@ -576,7 +590,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
   examples: [FUS, FUS R216, TAF15 EWSR1 FUS, "motif:RGG", "state:Rme2", "disease_family:ALS", "tcga_any:yes"]
-  stats: [marks, proteins, {attribute: studies, label: studies and databases}]
+  stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
     question: "What kinds of proteins are arginine methylated?"
     rows: 7
@@ -610,8 +624,53 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: structure_context}
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
+      - name: Sources and responses   # counted, not tested (website.counts)
+        cards: [provenance, {analysis: perturbations, wide: true}]
       - name: In more detail
         cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, disorder, domain_context]
+  counts:                  # questions answered by counting the sites, not by a test (CONTRACTS.md, count questions)
+    provenance:
+      kind: values
+      attribute: studies
+      number: n_studies
+      title: Provenance
+      question: "Which studies and databases report the methylarginines?"
+      sub: "Methylarginines reported by each study or database"
+      distribution: "Studies or databases reporting each {mark}"
+      unit: [source, sources]
+      noun: studies and databases
+      two_or_more: reported by two or more
+      top: 5
+      bins: 5
+      note: "Databases such as PhosphoSitePlus compile published studies, so two sources can rest on the same measurement."
+      method: "Each methylarginine lists the studies and databases that report it (the release's studies column) and how many they are (n_studies). A study's count is the methylarginines it reports; only, those no other study or database reports. PhosphoSitePlus and ProMetheusDB compile published studies, so a site they share with a study may rest on one measurement."
+    perturbations:
+      kind: responses
+      title: PRMT inhibitors, knockouts and knockdowns
+      question: "Which methylarginines carry a peptide that decreases when PRMTs are inhibited or knocked out?"
+      sub: "Methylarginines that change when a PRMT is inhibited, knocked out or knocked down: inhibitors of PRMT5 and type I PRMTs (Maron et al. 2021), CARM1 knockout (Shishkova et al. 2017), and PRMT1, PRMT5, PRMT7 or CARM1 knockouts, knockdowns and inhibitors (Szewczyk et al. 2020, Hartel et al. 2019, Lu et al. 2024, Li et al. 2021)"
+      head: "Methylarginines with a peptide that decreased with each PRMT inhibitor, knockout or knockdown"
+      first: Perturbation
+      group: Methyl-IP
+      calls: {down: decreased, up: increased}
+      note: "Each row counts the methylarginines an experiment measured and those that changed: decreased when a peptide carrying the site went down and none went up (increased, the reverse); a peptide carrying several methylarginines gives each the same change. Maron rows: the sites measured in that methyl-IP, a peptide changing at adjusted p ≤ 0.05. CARM1 knockout rows: the sites measured in that cell line, a peptide changing at least twofold at BH q < 0.05. The other rows: the sites each quantified, called at twofold and q < 0.05, or by the published call where the row says so: the PRMT1 knockdown (2 against 2 samples) and the Li et al. 2021 arms (one SILAC experiment each, no test). The PRMT5 knockdown of Li et al. lists only its decreased sites. Median change: the median over the sites of each site's median log2 change (inhibitor minus DMSO for the Maron rows; perturbed over control for the others)."
+      method: "The release's supporting tables give each site's call and change per experiment: maron2021_inhibitors per methyl-IP antibody and inhibitor (Maron et al. 2021 Table S3), carm1_ko per cell line (Shishkova et al. 2017) and writer_perturbations per knockout, knockdown or inhibitor; the calls of the last two are the site table's perturbation_calls (the perturbation filter). Counts and medians describe; nothing here is a test."
+      rows:
+        - {name: GSK591, note: PRMT5 inhibitor, group: Rme1, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: MMA}, change: log2_diff_median}
+        - {name: GSK591, note: PRMT5 inhibitor, group: Rme2a, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: ADMA}, change: log2_diff_median}
+        - {name: GSK591, note: PRMT5 inhibitor, group: Rme2s, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: SDMA}, change: log2_diff_median}
+        - {name: MS023, note: type I PRMT inhibitor, group: Rme1, table: maron_inhibitors, where: {inhibitor: MS023, antibody: MMA}, change: log2_diff_median}
+        - {name: MS023, note: type I PRMT inhibitor, group: Rme2a, table: maron_inhibitors, where: {inhibitor: MS023, antibody: ADMA}, change: log2_diff_median}
+        - {name: MS023, note: type I PRMT inhibitor, group: Rme2s, table: maron_inhibitors, where: {inhibitor: MS023, antibody: SDMA}, change: log2_diff_median}
+        - {name: CARM1 KO, note: MCF7 cells, short: CARM1 KO MCF7, group: Rme2a, attribute: perturbation, value: carm1_ko_mcf7, table: carm1_ko, where: {cell_line: MCF7}, change: log2_ko_over_wt}
+        - {name: CARM1 KO, note: MDA-MB-231 cells, short: CARM1 KO MDA-MB-231, group: Rme2a, attribute: perturbation, value: carm1_ko_mdamb231, table: carm1_ko, where: {cell_line: MDA-MB-231}, change: log2_ko_over_wt}
+        - {name: "PRMT7 KO, HCT116", note: "Szewczyk et al. 2020 · twofold, q < 0.05", kind: knockout, attribute: perturbation, value: prmt7_ko_hct116, table: writer_perturbations, where: {perturbation: prmt7_ko_hct116}, change: log2_treated_over_control}
+        - {name: "PRMT1 KD, HEK293T", note: "Hartel et al. 2019 · published call", kind: knockdown, attribute: perturbation, value: prmt1_kd_hek293t, table: writer_perturbations, where: {perturbation: prmt1_kd_hek293t}, change: log2_treated_over_control}
+        - {name: "PRMT5i EPZ015666, HeLa", note: "Lu et al. 2024 · twofold, q < 0.05", kind: inhibitor, attribute: perturbation, value: prmt5i_epz015666_hela, table: writer_perturbations, where: {perturbation: prmt5i_epz015666_hela}, change: log2_treated_over_control}
+        - {name: "PRMT7 KD, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: prmt7_kd_hek293, table: writer_perturbations, where: {perturbation: prmt7_kd_hek293}, change: log2_treated_over_control}
+        - {name: "PRMT7i SGC3027, HEK293", note: "Li WJ et al. 2021 · published call", kind: inhibitor, attribute: perturbation, value: prmt7i_sgc3027_hek293, table: writer_perturbations, where: {perturbation: prmt7i_sgc3027_hek293}, change: log2_treated_over_control}
+        - {name: "CARM1 KD, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: carm1_kd_hek293, table: writer_perturbations, where: {perturbation: carm1_kd_hek293}, change: log2_treated_over_control}
+        - {name: "PRMT5 KD, HEK293", note: "Li WJ et al. 2021 · published call; lists its decreased sites only", kind: knockdown, listed: true, attribute: perturbation, value: prmt5_kd_hek293, table: writer_perturbations, where: {perturbation: prmt5_kd_hek293}, change: log2_treated_over_control}
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional], attributes: [tcga_any, depmap_any]}
     - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, hpa_location, reactome_top_level], proteins: [marks, arg_enrichment_q]}
@@ -651,6 +710,8 @@ website:                  # the look and words of the website (ptmc web); layout
     ov-path: reactome_top_level
     ov-motif: motif
     ov-struct: structure_context
+    ov-study: provenance
+    ov-treat: perturbations
     sel-enriched: "?vs=marks"
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   compare: {stratify: studies}      # "compared with other methylarginines, within studies": the same reporting sources
