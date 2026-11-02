@@ -301,6 +301,8 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 | `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used; for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; with a `hierarchy`, `parents: {set: [parent sets]}` (each tested set's parents among the tested sets) and `root`; for sets gathered into families, `gathers: {family: [set ids]}` (each tested family's own sets, which a website's table of member sets groups by); absent when the site has no protein-set question |
 | `set_names.tsv` | per set | `analysis, set, name` |
 | `marks_<name>.tsv` | per row of a per-mark table (`marks.tables.<name>`) on a counted mark | `accession, position`, then the columns it keeps (text), in the table's order; `run.json` records each table's rows read and kept (`mark_tables`) |
+| `shown_marks.tsv` | one per residue `marks.left_out` (or a variant's `marks_add` `left_out`) keeps pending, on a protein of the snapshot, at a residue it has, and not itself a counted mark | `accession, position, residue, window_15`, then `a.<attribute>` (and `.link`) as `marks.tsv` (from the pending rows): shown on the website, never counted or tested. Header only where the site leaves nothing out |
+| `shown_proteins.tsv` | one per protein of `shown_marks.tsv` with no counted mark | `accession, gene, name, entry, length, sequence_md5` |
 
 `ptmc web` turns these into `data/p/NN.json` (64 shards of protein records: marks with their classes and attributes,
 units as `[kind, start, end, label, source index, class, ref]`) and `data/selection.json`: `analyses`, `classes` and
@@ -316,6 +318,15 @@ proteins' identifiers; a covariate's `counts` for the questions `website.cell` n
 when a track has `values`, `data/units.json`: by kind, `{columns, classes, rows}`, a row
 `[protein index, start, end, class code, the values (null for missing), marks, other_candidates]`. A track whose values
 include `fcr` and `ncpr` gives the site an IDRs page (`kit-idrs.js`). The one-file copy inlines them when they fit.
+
+With rows in `shown_marks.tsv`, each protein record gets `shown: [[position, window, [], [attribute values]]]` (laid out as
+its `marks`, the values in the order of `mark_attributes`), each protein of `shown_proteins.tsv` a record of its own
+(`marks: []`, `shown_only: true`), and the page data `shown_marks: {n, proteins: [[accession, gene, name, length,
+entry]], rows: [[accession, position, window, [attribute values]]], counted_like}` (`counted_like`: the counted marks
+that `website.shown_marks.counted.when` holds for) and `shown_view` (the site file's `website.shown_marks`). They are
+not in `data/selection.json`, `counts`, or any test; the map draws them as hatched ticks, the protein page and the
+Sites page (behind a toggle, on by default) list them with the tag, and the note gives the numbers
+(`kit-shown.js`). A site without them gets none of these keys.
 
 With `website.counts`, the page data carry `count_questions`: per count id, its words and the whole dataset's counts. A values
 count: `{kind: 'values', attribute, list, number, top, bins, unit, noun, distribution, total, values: [[value, label,

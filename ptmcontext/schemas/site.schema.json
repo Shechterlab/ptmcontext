@@ -3598,6 +3598,112 @@
               }
             }
           }
+        },
+        "shown_marks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "label"
+          ],
+          "description": "the marks a site shows and counts nowhere (the rows marks.left_out, or a variant's marks_add left_out, keeps pending: shown_marks.tsv), and the counted marks like them: their tag, its hover and the variant's note. Only used where there are such marks; nothing here is counted or tested",
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "the tag beside each (\"lower confidence\")"
+            },
+            "help": {
+              "type": "string",
+              "description": "the tag's hover, first: what such a mark is"
+            },
+            "row": {
+              "type": "string",
+              "description": "what the Sites page and the protein's sites table say of a mark shown and not counted (default: \"<label>, not counted\")"
+            },
+            "shown_help": {
+              "type": "string",
+              "description": "the hover's last words for a mark shown and counted nowhere"
+            },
+            "counted": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the counted marks that carry the tag too (a variant's added marks)",
+              "properties": {
+                "when": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "attribute"
+                    ],
+                    "properties": {
+                      "attribute": {
+                        "type": "string"
+                      },
+                      "has": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "holds any of these values"
+                      },
+                      "lacks": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "holds none of these values"
+                      },
+                      "matches": {
+                        "type": "string",
+                        "description": "a value matches this regular expression"
+                      },
+                      "empty": {
+                        "type": "boolean",
+                        "description": "true: holds no value; false: holds one"
+                      }
+                    }
+                  },
+                  "description": "every condition holds; a condition on an attribute the marks lack never holds (so a site without the attribute shows no tag)"
+                },
+                "help": {
+                  "type": "string",
+                  "description": "the hover's last words for such a counted mark"
+                }
+              }
+            },
+            "tests": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "attributes"
+              ],
+              "description": "attributes the hover lists as the results of tests, each as '<its label> <its value's label>'",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "the words before them (default \"Tests\")"
+                },
+                "attributes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "also": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "more attributes the hover lists after the tests, as '<label>: <values>'"
+            },
+            "note": {
+              "type": "string",
+              "description": "the note above the Overview and the Sites table where there are such marks: {all} the marks with the tag, {counted} those counted, {shown} those shown only, {others} the other counted marks"
+            }
+          }
         }
       }
     },

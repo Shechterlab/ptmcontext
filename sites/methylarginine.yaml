@@ -816,6 +816,14 @@ variants:                # the same questions on other marks; ptmc run --variant
         colours: {"no": "#334155", "yes": "#C9A227"}
         filter: true
         help: "A lower-confidence site: an arginine a study reports as methylated whose records each fail a site test, counted here because its own evidence covers the arginine and leaves the methyl group on an arginine"
+      # the site tests of the record that passes most (the release's test_* columns), for the "lower confidence" tag's
+      # hover (website.shown_marks.tests); no kind, so neither a filter nor a question of the page
+      test_evidence: {column: test_evidence_at_site, label: Evidence at the site, values: {pass: passes, fail: fails, untested: untested}}
+      test_named: {column: test_named_entry, label: In a named protein, values: {pass: passes, fail: fails, untested: untested}}
+      test_unique: {column: test_unique_in_proteome, label: Unique in the proteome, values: {pass: passes, paralogs: passes under the paralog rule, fail: fails, untested: untested}}
+      test_methyl: {column: test_methyl_on_arginine, label: Methyl group on an arginine, values: {pass: passes, fail: fails, untested: untested}}
+      test_localised: {column: test_localised, label: Localised, values: {pass: passes, fail: fails, untested: untested}}
+      earlier: {column: in_earlier_versions, label: A site of}
 
 
 outputs: {folder: out/methylarginine}
@@ -1145,6 +1153,19 @@ website:                  # the look and words of the website (ptmc web); layout
     panther_class: {eyebrow: PANTHER protein class}
     panther_subclass: {eyebrow: PANTHER protein subclass}
     "@studies": {eyebrow: Study or database}
+  shown_marks:             # the lower-confidence view's sites shown and not counted (variants.with_lower_confidence left_out), as the explorer's "lower confidence" tag
+    label: lower confidence
+    help: Lower-confidence site, not counted as a site
+    row: lower confidence, not counted
+    shown_help: Not counted in any statistics
+    counted:
+      when: [{attribute: confidence, has: ["yes"]}]
+      help: Counted in the statistics with lower-confidence sites
+    tests:
+      label: Tests (the record that passes most)
+      attributes: [test_evidence, test_named, test_unique, test_methyl, test_localised]
+    also: [earlier]
+    note: "{all} lower-confidence sites shown, hatched, beside the {others} sites. Counts, charts and tests include the {counted} whose own evidence covers the arginine and leaves the methyl group on an arginine; the other {shown} are shown only."
   sites:                   # the Sites page: the explorer's columns (kit-sites.js)
     state_label: State
     short: {state: {Rme1: Rme1, Rme2: Rme2, Rme1_Rme2: Rme1 + Rme2, "": No assigned state}}   # short labels in the table

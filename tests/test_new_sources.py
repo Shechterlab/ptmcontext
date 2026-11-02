@@ -283,3 +283,66 @@ def test_a_question_s_class_order_and_groups_come_from_its_layer_or_the_site_fil
     conf['groups'][0]['classes'].append('very_high')
     path.write_text(yaml.safe_dump(site, sort_keys=False))
     assert any("no class ['very_high']" in p for p in S.website_problems(S.load_site(path)))
+
+
+def test_marks_left_out_are_shown_and_counted_nowhere(tmp_path):
+    """The rows a variant sets aside (marks_add left_out) are written for the website (shown_marks.tsv, and the proteins
+    with only these, shown_proteins.tsv): each protein record and the page carry them with the site file's words
+    (website.shown_marks), and neither the counts, the selection nor a test does. The site itself shows none."""
+    root = _toy_site(tmp_path)
+    data = root / 'data'
+    P3 = 'MAAARAAAAR'
+    with open(data / 'toy.fasta', 'a') as f:
+        f.write(f'>sp|P3|THREE_TOY Three protein OS=Toy OX=1 GN=THREE PE=1 SV=1\n{P3}\n')
+    # counted: P1 R11; shown: P1 R22 (a marked protein), P3 R5 (a protein with no mark), not P1 R2 (a counted mark)
+    pd.DataFrame({'acc': ['P1', 'P1', 'P3', 'P1'], 'pos': [11, 22, 5, 2], 'counted': ['true', 'false', 'false', 'false'],
+                  'test': ['pass', 'fail', 'fail', 'fail']}).to_csv(data / 'extra.tsv', sep='\t', index=False)
+    man = json.loads((root / 'sites' / 'toy.inputs.json').read_text())
+    man['inputs']['toy_fasta']['md5'] = md5_file(data / 'toy.fasta')
+    man['inputs']['toy_extra'] = {'file': 'extra.tsv', 'md5': md5_file(data / 'extra.tsv'), 'source': 'synthetic, for a test',
+                                  'version': 'test 1', 'licence': 'CC0 1.0'}
+    (root / 'sites' / 'toy.inputs.json').write_text(json.dumps(man, indent=1))
+    site = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
+    site['variants'] = {'more': {'label': 'With more marks', 'marks_add': [
+        {'input': 'toy_extra', 'include': [{'column': 'counted', 'equals': 'true'}], 'left_out': [{'column': 'counted', 'equals': 'false'}]}],
+        'attributes': {'tier': {'column': 'counted', 'present': True, 'label': 'Tier', 'kind': 'category', 'values': {'no': 'Mark', 'yes': 'Added mark'}},
+                       'test': {'column': 'test', 'label': 'The test', 'values': {'pass': 'passes', 'fail': 'fails'}}}}}
+    site['website']['shown_marks'] = {'label': 'tier two', 'help': 'A mark of the second tier', 'counted': {'when': [{'attribute': 'tier', 'has': ['yes']}], 'help': 'Counted here'},
+                                      'shown_help': 'Counted nowhere', 'tests': {'attributes': ['test']}, 'note': '{all} of tier two beside {others}: {counted} counted, {shown} shown'}
+    (root / 'sites' / 'toy.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
+    assert S.website_problems(S.load_site(root / 'sites' / 'toy.yaml')) == []
+    base = S.run(root / 'sites' / 'toy.yaml', root=data, log=lambda *_: None)
+    more = S.run(root / 'sites' / 'toy.yaml', root=data, log=lambda *_: None, variant='more')
+    assert more.record['marks']['counted'] == base.record['marks']['counted'] + 1
+    out = root / 'out' / 'toy'
+    read = lambda p: pd.read_csv(p, sep='\t', dtype=str, keep_default_na=False)  # noqa: E731
+    sm = read(out / 'variants' / 'more' / 'shown_marks.tsv')
+    assert list(zip(sm['accession'], sm['position'].astype(int))) == [('P1', 22), ('P3', 5)]
+    assert list(sm['a.test']) == ['fail', 'fail'] and list(sm['window_15'])[1] == '___MAAARAAAAR__'
+    assert list(read(out / 'variants' / 'more' / 'shown_proteins.tsv')['accession']) == ['P3']
+    assert 'P3' not in set(read(out / 'variants' / 'more' / 'proteins.tsv')['accession'])
+    assert len(read(out / 'shown_marks.tsv')) == 0 and len(read(out / 'shown_proteins.tsv')) == 0
+
+    page = lambda p: json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', p.read_text(), re.S).group(1))  # noqa: E731
+    main = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None)
+    var = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None, variant='more')
+    assert 'shown_marks' not in page(main) and 'shown_view' not in page(main)     # the site itself: as before
+    v = page(var)
+    names = v['mark_attributes']
+    assert v['shown_marks']['n'] == 2 and v['shown_marks']['counted_like'] == 1
+    assert v['shown_marks']['proteins'] == [['P3', 'THREE', 'Three protein', len(P3), 'THREE_TOY']]
+    assert [r[:3] for r in v['shown_marks']['rows']] == [['P1', 22, sm['window_15'][0]], ['P3', 5, sm['window_15'][1]]]
+    assert v['shown_marks']['rows'][0][3][names.index('test')] == 'fail' and v['shown_view']['label'] == 'tier two'
+    assert v['counts']['marks'] == more.record['marks']['counted']              # the number of marks is the counted one
+    shard = lambda a: json.loads((var.parent / 'data' / 'p' / f'{web.shard_of(a):02d}.json').read_text())[a]  # noqa: E731
+    assert [m[0] for m in shard('P1')['shown']] == [22] and 22 not in [m[0] for m in shard('P1')['marks']]
+    assert shard('P3')['marks'] == [] and shard('P3')['shown_only'] and [m[0] for m in shard('P3')['shown']] == [5]
+    assert 'shown' not in shard('P2')
+    sel = json.loads((var.parent / 'data' / 'selection.json').read_text())
+    assert len(sel['marks']) == more.record['marks']['counted'] and 'shown' not in json.dumps(sel)
+    # the site file's words are checked against the attributes it names
+    site['website']['shown_marks']['tests'] = {'attributes': ['nothing']}
+    site['website']['shown_marks']['note'] = '{all} and {many}'
+    (root / 'sites' / 'toy.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
+    probs = '\n'.join(S.website_problems(S.load_site(root / 'sites' / 'toy.yaml')))
+    assert "shown_marks.tests: no attribute 'nothing'" in probs and "shown_marks.note: no number ['many']" in probs

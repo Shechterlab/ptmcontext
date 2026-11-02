@@ -2,7 +2,9 @@
    (domains, disordered regions and the marks, with AlphaFold's confidence once it has loaded), how its marks compare
    with its own other residues, its marks one by one, and live cards from UniProt (function, and a check that the
    sequence has not changed), AlphaFold DB (the model in 3D), PDBe (experimental structures) and STRING (interaction
-   partners, if the site file names the organism's taxon). Live sources add to the page; they never change a number. A module of the site kit: it registers with the core (kit.js), which starts it. */
+   partners, if the site file names the organism's taxon). The marks the site shows and counts nowhere (kit-shown.js)
+   follow the marks in its sites table, tagged, with a card of their own; a protein with only these has a page with its
+   map, those marks, its sequence and 3D. Live sources add to the page; they never change a number. A module of the site kit: it registers with the core (kit.js), which starts it. */
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
   const { D, W, A, S, esc, int, fxn, pct, cap } = K;
@@ -155,7 +157,19 @@
   const plddtAt = (p, pos) => (PV.af?.plddt && PV.af.plddt.length === p.len ? PV.af.plddt[pos - 1] : null);
   const plddtHtml = (p, pos) => { const v = plddtAt(p, pos); return v == null ? '<span class="muted">–</span>' : `<span class="pl-sq" style="--c:${afColour(v)}"></span>${Number(v).toFixed(0)}`; };
   const flagTags = (aid, v) => (v ? `<div class="tags">${v.split(';').map(c => `<span class="tag" title="${esc(help(aid, c))}">${esc(label(aid, c))}</span>`).join('')}</div>` : '');
+  // the card of a mark shown and counted nowhere (K.shown): its window, attributes and tag, said to be not counted
+  function shownCard(p, rec, m) {
+    const kv = (dt, dd, tip) => (dd ? `<div><dt${tip ? ` title="${esc(tip)}"` : ''}>${dt}</dt><dd>${dd}</dd></div>` : '');
+    const skip = new Set([...(K.shown.cfg.tests?.attributes || []), ...(K.shown.cfg.also || []), ...(K.shown.cfg.counted?.when || []).map(c => c.attribute)]);   // the counted ones' attribute says nothing of these
+    const rows = kv('Window ±7', `<span class="mono">${winHtml(m[1])}</span>`) + kv(esc(cap(K.shown.label())), esc(K.shown.tip(m, true))) +
+      shownAttrs(m).filter(n => !skip.has(n) && attrVal(m, n) !== '').map(n => kv(esc(SPECS[n].label), attrHtml(m, n, true), SPECS[n].help)).join('');
+    return `<section class="site-card" id="site-card"><div class="card-head"><div><p class="eyebrow">Selected ${esc(W.residue.replace(/^an? /, ''))} · ${esc(K.shown.row())}</p><h3>${esc(p.gene || p.acc)} ${esc(siteOf(p, m[0]))} ${statePill(m)} ${K.shown.tag(m, true)}</h3></div>` +
+      `<span class="tools">${typeof K.show3d === 'function' ? '<button type="button" class="btn small" data-site-3d>Show in 3D</button>' : ''}<button type="button" class="btn small" data-site-close aria-label="Close">×</button></span></div>` +
+      `<p class="note small">Shown only: not one of the ${int(D.counts.marks)} ${esc(W.marks)} this site counts, and in no count, chart or test.</p><dl class="sc-kv">${rows}</dl></section>`;
+  }
+  const shownAt = (rec, pos) => (rec.shown || []).find(x => x[0] === pos);
   function siteCard(p, rec) {
+    const sm = !rec.marks.some(x => x[0] === PV.site) && K.shown?.on ? shownAt(rec, PV.site) : null; if (sm) return shownCard(p, rec, sm);
     const m = rec.marks.find(x => x[0] === PV.site); if (!m) return '';
     const c = cardCtx(p, rec, m), num = numOf(p);
     const uniAt = (PV.uniJson?.features || []).filter(f => (f.location?.start?.value === m[0] && f.location?.end?.value === m[0]) && ['Modified residue', 'Natural variant', 'Mutagenesis', 'Cross-link'].includes(f.type));
@@ -169,7 +183,8 @@
     };
     const kv = (dt, dd, tip) => (dd ? `<div><dt${tip ? ` title="${esc(tip)}"` : ''}>${dt}</dt><dd>${dd}</dd></div>` : '');
     const ready = !!PV.tb, wait = '<span class="muted">loading…</span>';
-    const rest = shownAttrs(m).filter(n => !USED.has(n));
+    const tagged = new Set(K.shown?.on ? [...(K.shown.cfg.tests?.attributes || []), ...(K.shown.cfg.also || [])] : []);
+    const rest = shownAttrs(m).filter(n => !USED.has(n) && !tagged.has(n));
     const siteRows = kv('Window ±7', `<span class="mono">${winHtml(m[1])}</span>`) +
       markClasses(m).map(([aid, v]) => kv(esc(A[aid]?.title || aid), A[aid]?.shape === 'flags' ? (flagTags(aid, v) || '<span class="muted">none</span>') : `<span title="${esc(help(aid, v))}">${esc(classText(aid, v))}</span>`)).join('') +
       ((CC.states || []).length ? kv(esc(CL_WORDS.states), ready ? K.card.states(c) : wait) : '') +
@@ -177,12 +192,13 @@
       (CC.calls ? kv(esc(CL_WORDS.calls), ready ? K.card.calls(c) : wait) : '') +
       ((CC.changes || []).length ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait) : '') +
       rest.map(n => kv(esc(SPECS[n].label), attrHtml(m, n, true), SPECS[n].help)).join('') +
+      (K.shown?.on && K.shown.counted(m) ? kv(esc(cap(K.shown.label())), esc(K.shown.tip(m, false))) : '') +
       (pl != null ? kv('AlphaFold confidence', `pLDDT ${Number(pl).toFixed(1)} <span class="muted">(model v${esc(PV.af.version)})</span>`) : '') +
       kv(`UniProt at ${esc(siteOf(p, m[0]))}`, PV.uniJson ? (uniAt.length ? uniAt.map(featLine).join('<br>') : '<span class="muted">no feature at this residue</span>') + ` <span class="muted">· <a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry#ptm_processing">UniProt ${esc(p.acc)}</a>, read live</span>` : '<span class="muted">asking UniProt…</span>') +
       (CC.cite?.attribute && SPECS[CC.cite.attribute] ? kv(esc(CL_WORDS.reported), K.card.reportedBy(c)) : '');
     const ev = ready ? K.card.evidenceBlock(c) : '', recs = ready ? K.card.recordsBlock(c) : '', wr = ready ? K.card.writerBlock(c) : '';
     const hasEvRow = ready && (K.card.has(CC.sources?.table) || (CC.tables || []).some(x => K.card.has(x.table)) || (CC.calls?.tables || []).some(K.card.has));
-    return `<section class="site-card" id="site-card"><div class="card-head"><div><p class="eyebrow">Selected ${esc(W.mark)}</p><h3>${esc(p.gene || p.acc)} ${esc(siteOf(p, m[0]))} ${statePill(m)}</h3>` +
+    return `<section class="site-card" id="site-card"><div class="card-head"><div><p class="eyebrow">Selected ${esc(W.mark)}</p><h3>${esc(p.gene || p.acc)} ${esc(siteOf(p, m[0]))} ${statePill(m)}${K.shown?.on ? ' ' + K.shown.tag(m, false) : ''}</h3>` +
       (num ? `<p class="muted small">${esc(num.note || num.label || 'Numbered as papers do')} · UniProt ${esc(resAt(p, m[0]))}${m[0]}</p>` : '') + '</div>' +
       `<span class="tools">${typeof K.show3d === 'function' ? '<button type="button" class="btn small" data-site-3d>Show in 3D</button>' : ''}${hasEvRow ? '<button type="button" class="btn small" data-site-ev>Source evidence</button>' : ''}` +
       `<button type="button" class="btn small" data-site-copy title="Copy a link that opens this page with ${esc(siteOf(p, m[0]))} selected">Copy link</button>${K.expBar(['pdf', 'png', 'tsv'], 'cexp', 'the site card', 'sources')}<button type="button" class="btn small" data-site-close aria-label="Close">×</button></span></div>` +
@@ -239,6 +255,7 @@
       const i = parts.findIndex(accOf);
       if (i >= 0) return accOf(parts[i]) + readAt(accOf(parts[i]), parts[i + 1]);
       const g = nameOf(parts[0]); if (g) return g + readAt(g, parts[1]);
+      const sp = K.shown?.protein(parts[0]); if (sp) return sp.acc + readAt(sp.acc, parts[1]);   // only marks shown, not counted
       // a protein without marks: its accession (or a name the light pages' index resolves), its light page
       return parts.length ? (ACC_RE.test(parts[0]) ? parts[0].toUpperCase() : parts[0]) : String(path);
     },
@@ -333,6 +350,14 @@
     return h || '<span class="muted">–</span>';
   };
   const evRowOn = () => K.card.has(CC.sources?.table) || (CC.tables || []).some(x => K.card.has(x.table)) || (CC.calls?.tables || []).some(K.card.has);
+  // the marks shown and counted nowhere (K.shown), after the marks, hatched, each with its tag; a row opens its card
+  function shownRows(p, rec, shown, flt, fv) {
+    return (rec.shown || []).filter(m => !(fv && attrVal(m, flt) !== fv)).map(m => `<tr data-site="${m[0]}" tabindex="0" class="lc-row${PV.site === m[0] ? ' on' : ''}"><td class="mono" data-label="Site"><b>${esc(siteOf(p, m[0]))}</b>${numOf(p) ? `<br><span class="muted small">UniProt ${m[0]}</span>` : ''}<div class="tags">${K.shown.tag(m, true)}</div></td>` +
+      (colourAttr ? `<td data-label="${esc(SPECS[colourAttr].label)}">${pillOf(m, colourAttr)}</td>` : '') +
+      `<td class="cwin" data-label="Window ±7"><span class="mono">${winHtml(m[1])}</span></td>` +
+      shown.map(col => `<td class="cw" data-label="${esc(col.label)}">${col.attribute ? cellOf(col, null, m) : '<span class="muted">–</span>'}</td>`).join('') +
+      `<td class="nw" data-label=""><span class="row-acts">${typeof K.show3d === 'function' ? `<button type="button" class="btn small" data-site-3d="${m[0]}" title="Show ${esc(siteOf(p, m[0]))} in the 3D structure">3D</button>` : ''}</span></td></tr>`).join('');
+  }
   function sitesTable(p, rec, sel) {
     const cols = tableCols(), defaults = cols.filter(c => c.default).map(c => c.id), table = 'protein-sites';
     const on = new Set(K.columns.on(table, cols, defaults)), shown = cols.filter(c => on.has(c.id));
@@ -345,14 +370,14 @@
       const c = cardCtx(p, rec, m), off = sel && !sel.has(m[0]), open = PV.evOpen.has(m[0]);
       const src = posList ? [...new Set(String((K.card.at(c.tb, posList.table, m[0])[0] || {})[posList.column] || '').split(/;\s*/).filter(Boolean))] : [];
       const srcNote = src.length && !(src.length === 1 && +src[0] === m[0]) ? `<br><span class="muted small" title="Positions the sources gave before mapping to the current sequence">source position${src.length > 1 ? 's' : ''} ${esc(src.join(', '))}</span>` : '';
-      return `<tr data-site="${m[0]}" tabindex="0" class="${off ? 'faded' : ''}${PV.site === m[0] ? ' on' : ''}"><td class="mono" data-label="Site"><b>${esc(siteOf(p, m[0]))}</b>${numOf(p) ? `<br><span class="muted small">UniProt ${m[0]}</span>` : ''}${srcNote}</td>` +
+      return `<tr data-site="${m[0]}" tabindex="0" class="${off ? 'faded' : ''}${PV.site === m[0] ? ' on' : ''}"><td class="mono" data-label="Site"><b>${esc(siteOf(p, m[0]))}</b>${numOf(p) ? `<br><span class="muted small">UniProt ${m[0]}</span>` : ''}${srcNote}${K.shown?.on && K.shown.counted(m) ? `<div class="tags">${K.shown.tag(m, false)}</div>` : ''}</td>` +
         (colourAttr ? `<td data-label="${esc(SPECS[colourAttr].label)}">${pillOf(m, colourAttr)}</td>` : '') +
         `<td class="cwin" data-label="Window ±7"><span class="mono">${winHtml(m[1])}</span>${FLAGS.map(aid => flagTags(aid, m[2][COLS.indexOf(aid)])).join('')}</td>` +
         shown.map(col => `<td class="cw" data-label="${esc(col.label)}">${cellOf(col, c, m)}</td>`).join('') +
         `<td class="nw" data-label=""><span class="row-acts">${typeof K.show3d === 'function' ? `<button type="button" class="btn small" data-site-3d="${m[0]}" title="Show ${esc(siteOf(p, m[0]))} in the 3D structure">3D</button>` : ''}` +
         `${evRowOn() || !PV.tb ? `<button type="button" class="btn small" data-ev-toggle="${m[0]}" aria-expanded="${open}" title="Every source record and measurement of the site">${open ? 'Hide' : 'Evidence'}</button>` : ''}</span></td></tr>` +
         (open ? `<tr class="ev-row" data-for="${m[0]}"><td colspan="${n}">${PV.tb ? K.card.evidenceRow(c) : '<p class="muted">Loading…</p>'}</td></tr>` : '');
-    }).join('');
+    }).join('') + shownRows(p, rec, shown, flt, fv);
     const counts = flt ? Object.entries(rec.marks.reduce((o, m) => { const v = attrVal(m, flt); o[v] = (o[v] || 0) + 1; return o; }, {})) : [];
     const order = flt ? Object.keys(SPECS[flt].values || {}) : [];
     const seg = flt ? `<div class="ix-seg"><span class="flabel">${esc(SPECS[flt].label)} at these ${esc(W.marks)}</span> <span class="seg" role="group">${(order.length ? order : counts.map(([v]) => v)).map(v => { const k = (counts.find(([x]) => x === v) || [, 0])[1];
@@ -368,6 +393,7 @@
   function proteinView(arg) {
     const [key, sitePos] = String(arg).split('/');
     let p = byAcc[key];
+    if (!p && K.shown?.protein(key)) return shownOnlyView(K.shown.protein(key), sitePos);
     if (!p) return lightView(key);
     const acc = p.acc;
     // #protein/ACC/216 opens a mark's card; #protein/ACC/120-180 opens the map zoomed to a region (an IDR, from its page);
@@ -380,7 +406,7 @@
       const a = Math.max(1, +span[1]), b = Math.min(p.len, +span[2]), pad = Math.max(5, Math.round((b - a + 1) * 0.15));
       PV.span = [a, b]; PV.spanArg = sitePos; PV.scrolled = null; K.map.state.zoom = [Math.max(1, a - pad), Math.min(p.len, b + pad)];
     }
-    if (PV.rec && PV.site && !PV.rec.marks.some(m => m[0] === PV.site)) { PV.site = null; PV.cleanArg = true; }
+    if (PV.rec && PV.site && !PV.rec.marks.some(m => m[0] === PV.site) && !shownAt(PV.rec, PV.site)) { PV.site = null; PV.cleanArg = true; }
     const selTxt = K.sel?.active() ? `${int(K.sel.nMarks())} ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)} · selection` : `all ${esc(W.marks)}`;
     const head = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> <span class="muted">(${selTxt})</span> › <b>${esc(p.gene || p.acc)}</b>${PV.site ? ` › ${esc(PV.rec ? siteOf(p, PV.site) : PV.site)}` : PV.span ? ` › ${int(PV.span[0])}–${int(PV.span[1])}` : ''}</p>` +
       protHead(p);
@@ -392,7 +418,7 @@
       (sel && sel.size < rec.marks.length ? `<p class="note">${int(sel.size)} of ${int(rec.marks.length)} ${esc(W.marks)} match your selection; the others are faded. <button class="linkish" type="button" data-sel-clear-all>Clear filters</button></p>` : '') +
       fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''}`, `<div class="card-head"><p class="sub">The ${esc(W.marks)} over the protein, and rows from the site’s data and live sources. Hover anything for what it is and where it comes from; click it to pin it with its links.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mexp', 'the map', 'sources')}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
       (headline(p, rec) || legacyFacts(p, rec, nSrc)) +
-      fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}${nSrc ? `, each with the ${esc(SPECS[nSrc].label.toLowerCase())} that report it` : ''}`, sitesTable(p, rec, sel), true) +
+      fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}${nSrc ? `, each with the ${esc(SPECS[nSrc].label.toLowerCase())} that report it` : ''}${rec.shown?.length ? ` · ${int(rec.shown.length)} more ${esc(K.shown.row())}` : ''}`, sitesTable(p, rec, sel), true) +
       fold('p-score', `Its ${esc(W.marks)}, against its other ${esc(W.residues)}`, 'counted in this protein', `<p class="sub">The classes its ${esc(W.marks)} fall in, and how often its other ${esc(W.residues)} do. A row opens every class.</p><div class="hub">${scoreRows(p, rec)}</div>`, false) +
       (D.analyses.some(a => a.kind === 'protein_sets') ? fold('p-kinds', 'Kinds of protein', 'its classes, pathways and locations, with the site’s result for each', kindsHtml(p), false) : '') +
       (K.proteinFolds || []).map(f => f(p, rec, fold)).join('') +
@@ -413,6 +439,28 @@
     `<div class="prot-chips"><span class="chip mono">${esc(p.acc)}</span>${(PV.rec?.entry || p.entry) ? `<span class="chip mono">${esc(PV.rec?.entry || p.entry)}</span>` : ''}<a class="btn small" href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}" target="_blank" rel="noopener">UniProt ↗</a>` +
     `<span class="more-links"><button type="button" class="btn small" data-more-links aria-expanded="${PV.more}">More links ▾</button><span class="menu" id="more-menu"${PV.more ? '' : ' hidden'}>${LINKS(p.acc).map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)} ↗</a>`).join('')}</span></span>` +
     `${light ? '' : '<button type="button" class="btn small accent" data-page-pdf>Download PDF</button>'}<button type="button" class="btn small" data-print>Print</button></div></div><div id="drift" class="drift" hidden></div>`;
+
+  // ---- a protein with only marks shown and counted nowhere (K.shown): its map, those marks with their tag, its
+  // sequence and 3D; nothing of it is counted, so it has no counts, questions or kinds -------------------------------
+  function shownOnlyView(sp, sitePos) {
+    load(sp.acc); PV.lightP = sp;
+    PV.site = sitePos && /^\d+$/.test(sitePos) ? +sitePos : null;
+    if (PV.rec && PV.site && !shownAt(PV.rec, PV.site)) { PV.site = null; PV.cleanArg = true; }
+    const p = sp, n = PV.rec?.shown?.length || 0;
+    const head = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">${esc(K.shown.row())}</span>${PV.site ? ` › ${esc(siteOf(p, PV.site))}` : ''}</p>` + protHead(p, true);
+    if (!PV.rec) return head + `<p class="empty">${PV.err ? esc(PV.err) : 'Loading…'}</p>`;
+    const rec = PV.rec;
+    const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${(PV.open[id] ?? open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
+    const cols = tableCols().filter(c => c.attribute), on = new Set(K.columns.on('protein-sites', cols, cols.filter(c => c.default).map(c => c.id))), shown = cols.filter(c => on.has(c.id));
+    const table = `<div class="tbl-card"><table class="tbl stbl stackable"><thead><tr><th>Site</th>${colourAttr ? `<th>${esc(SPECS[colourAttr].label)}</th>` : ''}<th>Window ±7</th>${shown.map(c => `<th>${esc(c.label)}</th>`).join('')}<th><span class="vh">Actions</span></th></tr></thead><tbody>${shownRows(p, rec, shown, null, '')}</tbody></table></div>`;
+    return head +
+      `<p class="note"><b>No counted ${esc(W.mark)} on ${esc(p.gene || p.acc)} in this site.</b> It has ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} shown here and counted nowhere (${esc(K.shown.label())}): not among the ${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins, and in no count, chart or test.</p>` +
+      `<div class="facts"><div class="fact"><b>${int(p.len)}</b><span>Residues</span></div><div class="fact"><b>${int(n)}</b><span>${esc(cap(K.shown.row()))}</span></div></div>` +
+      fold('p-map', 'Protein map', `${int(n)} ${esc(K.shown.row())} on ${int(p.len)} aa`, `<div class="card-head"><p class="sub">The protein, its ${esc(W.marks)} shown and not counted (hatched), and rows from live sources. Hover anything for what it is; click it to pin it with its links.</p>${K.expBar(['pdf', 'svg', 'png'], 'mexp', 'the map', 'sources')}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
+      fold('p-sites', esc(cap(W.marks)), `${int(n)} ${esc(K.shown.row())}`, `<p class="sub">Each with the 15 residues around it; a row opens its card. The tag’s hover gives the tests.</p>${table}`, true) +
+      fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
+      fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false);
+  }
 
   // ---- a protein without marks: a light page with its map, the records that name it as a partner, and the proteins
   // with marks that the site's partner table associates with it ------------------------------------------------------
@@ -448,7 +496,9 @@
     idx.find(r => String(r[2]).toUpperCase() === u) || (norm(key).length >= 3 ? idx.find(r => norm(r[1]) === norm(key)) : null); };
   let lightIdx = null;
   K.openLight = q => {
-    const t = String(q || '').trim(); if (!t || /[\s:]/.test(t) || nameOf(t) || accOf(t) || !K.card) return false;
+    const t = String(q || '').trim(); if (!t || /[\s:]/.test(t) || nameOf(t) || accOf(t)) return false;
+    const sp = K.shown?.protein(t); if (sp) { S.q = ''; K.go('protein', { arg: sp.acc }); return true; }
+    if (!K.card) return false;
     if (!lightIdx) { K.card.lightIndex().then(ix => { lightIdx = ix; if (S.q === t && lightFind(ix, t)) K.openLight(t); }); return false; }
     const hit = lightFind(lightIdx, t); if (!hit) return false;
     S.q = ''; K.go('protein', { arg: hit[0] }); return true;
@@ -683,8 +733,9 @@
   function sitesTsv() {
     const p = byAcc[PV.acc], rec = PV.rec;
     return K.preamble(`${W.marks} of ${p.gene || p.acc} (${p.acc})`, `each ${W.mark} of ${p.gene || p.acc} (${p.name}) with the 15 residues around it and its class in every question; the sequence is ${D.run.snapshot?.release} (MD5 ${rec.md5}).`) +
-      ['site', 'position', 'window_15', ...COLS, ...AT].join('\t') + '\n' +
-      rec.marks.map(m => [site(m[0]), m[0], m[1], ...markClasses(m).map(([aid, v]) => classText(aid, v)), ...(m[3] || [])].join('\t')).join('\n') + '\n';
+      ['site', 'position', 'window_15', ...COLS, ...AT, ...(rec.shown?.length ? ['counted'] : [])].join('\t') + '\n' +
+      rec.marks.map(m => [site(m[0]), m[0], m[1], ...markClasses(m).map(([aid, v]) => classText(aid, v)), ...(m[3] || []), ...(rec.shown?.length ? ['yes'] : [])].join('\t')).join('\n') + '\n' +
+      (rec.shown || []).map(m => [site(m[0]), m[0], m[1], ...COLS.map(() => ''), ...(m[3] || []), 'no'].join('\t')).join('\n') + (rec.shown?.length ? '\n' : '');
   }
 
   // ---- register with the core -------------------------------------------------------------------------------------
@@ -742,12 +793,15 @@
   K.clicks.unshift(['[data-site-3d]', el => { const pos = +(el.dataset.site3d || PV.site); if (typeof K.show3d === 'function') K.show3d(PV.acc, pos); }],
   ['[data-ev-toggle]', el => { const pos = +el.dataset.evToggle; if (PV.evOpen.has(pos)) PV.evOpen.delete(pos); else PV.evOpen.add(pos); const y = scrollY; K.render(); scrollTo(0, y); }]);
   K.tips.push(['[data-hl-tip]', el => el.dataset.hlTip || '']);
+  // the attributes the shown marks' tag lists in its hover (website.shown_marks), not listed again
+  const tagAttrs = new Set(K.shown?.on ? [...(K.shown.cfg.tests?.attributes || []), ...(K.shown.cfg.also || [])] : []);
   K.tips.push(['[data-msite]', el => {
     const pos = +el.dataset.msite, m = PV.rec?.marks.find(x => x[0] === pos); if (!m) return '';
     const c = K.map.siteColour(m);
     return `<b>${esc(site(pos))}</b>${c.label ? ' · ' + esc(c.label) : ''}<br><span class="win">${winHtml(m[1])}</span><br>` +
       markClasses(m).map(([aid, v]) => `${esc(A[aid]?.title || aid)}: ${esc(classText(aid, v))}`).join('<br>') +
-      shownAttrs(m).map(n => `<br><span class="muted">${esc(SPECS[n].label)}:</span> ${attrHtml(m, n, false)}`).join('') +
+      shownAttrs(m).filter(n => !tagAttrs.has(n)).map(n => `<br><span class="muted">${esc(SPECS[n].label)}:</span> ${attrHtml(m, n, false)}`).join('') +
+      (K.shown?.on && K.shown.counted(m) ? `<br><b>${esc(cap(K.shown.label()))}</b>: ${esc(K.shown.tip(m, false))}` : '') +
       '<br><span class="muted">Click for its card</span>';
   }]);
 });
