@@ -70,7 +70,10 @@
   // ---- state in the hash ---------------------------------------------------------------------------------------------
   const S = { view: 'overview', arg: '', q: '', sq: '', m: 'mantel_haenszel', a: '', vs: 'residues', cmp: '', sort: 'q', desc: false, nStat: 200, open: new Set(), all: new Set(), how: false };
   // modules (kit-*.js) register views, tabs, click handlers, tooltips and search hints here; the core starts them last
-  const K = window.PTMC = { D, W, A, S, esc, int, fx, fxn, fq, pct, cap, decorate, views: {}, tabs: [], clicks: [], tips: [], scopeHints: [], sections: {}, routes: {} };
+  const K = window.PTMC = { D, W, A, S, esc, int, fx, fxn, fq, pct, cap, decorate, views: {}, tabs: [], clicks: [], tips: [], scopeHints: [], sections: {}, routes: {},
+    // a module's own question (kit-cell.js) or its own drawing of one (kit-values.js): id -> { tile(card), page(card,
+    // body) }, either returning null for the kit's own; and Method sections of its own ({ id, title, html })
+    questions: {}, methods: [] };
   const BUILT_IN_VIEWS = ['overview', 'statistics', 'method'];
   // a question's title in running text, as the site file writes it (lower-casing would break PRMT, DNA, Reactome)
   const inText = t => String(t || '');
@@ -136,7 +139,7 @@
     if (h !== location.hash) (push ? history.pushState : history.replaceState).call(history, null, '', h);
   }
   const go = (view, extra = {}) => { Object.assign(S, { view, arg: '' }, extra); writeHash(true); render(); scrollTo(0, 0); };
-  Object.assign(K, { go, writeHash, link, carry, render: () => render(), holds, holdStatus, effText, SETS });
+  Object.assign(K, { go, writeHash, link, carry, render: () => render(), holds, holdStatus, effText, SETS, rowsFor, strat: (aid, cat) => STRAT[aid + '\u0000' + cat] });
   // a link written without the selection (the header's, the footer's, a module's) gets it when followed or copied
   const carryLink = e => { const a = e.target.closest?.('a[href^="#"]'); if (!a || 'jump' in a.dataset) return; const base = a.dataset.base ?? a.getAttribute('href'); a.dataset.base = base; a.setAttribute('href', carry(base)); };
   ['click', 'auxclick', 'pointerdown', 'contextmenu'].forEach(t => document.addEventListener(t, carryLink, true));
@@ -293,6 +296,8 @@
       `<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div>`;
   }
   function tile(card) {
+    const own = K.questions[card.analysis]?.tile?.(card);
+    if (own != null) return own;
     const a = A[card.analysis], max = card.rows || OV.rows || 7;
     const rows = rowsOf(a, S.m), { shown, more } = pick(rows, max, card);
     const whole = selOn() && !vsOn() ? rowsFor(a, S.m) : null;
@@ -361,14 +366,14 @@
   function focus(aid) {
     const cards = allCards(), i = cards.findIndex(c => c.analysis === aid), a = A[aid];
     const prev = cards[i - 1], next = cards[i + 1], card = cards[i] || { section: a.section };
-    const ORDER = { more: 0, same: 1, ns: 2, less: 3 };
-    const rows = rowsOf(a, S.m).slice().sort(a.kind === 'protein_sets' ? (x, y) => ORDER[x.dir] - ORDER[y.dir] || byOrder(card)(x, y) : byOrder(card));
+    const ORDER = { more: 0, same: 1, ns: 2, less: 3 }, Q = K.questions[aid], mod = a.kind === 'module';
+    const rows = mod ? [] : rowsOf(a, S.m).slice().sort(a.kind === 'protein_sets' ? (x, y) => ORDER[x.dir] - ORDER[y.dir] || byOrder(card)(x, y) : byOrder(card));
     return `<div class="focus-bar"><a href="${esc(link('overview'))}">‹ All sections</a><span class="crumb">Overview › ${esc(card.section || '')} › <b>${esc(card.title || a.title)}</b></span>` +
       (i >= 0 ? `<span class="muted">${i + 1} of ${cards.length}</span>` : '') +
       `<span class="pn">${prev ? `<a href="${esc(link('overview', prev.analysis))}">‹ Previous · ${esc(prev.title || A[prev.analysis].title)}</a>` : ''}${next ? `<a href="${esc(link('overview', next.analysis))}">${esc(next.title || A[next.analysis].title)} · Next ›</a>` : ''}</span></div>` +
-      `<div class="page-head"><h2>${esc(card.title || a.title)}</h2><span class="tools">${a.kind === 'protein_sets' ? '' : `<span class="seg" role="group">${(vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher']).map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ''}>${cap(METHOD[m])}</button>`).join('')}</span>`}</span></div>` +
+      `<div class="page-head"><h2>${esc(card.title || a.title)}</h2><span class="tools">${a.kind === 'protein_sets' || mod ? '' : `<span class="seg" role="group">${(vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher']).map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ''}>${cap(METHOD[m])}</button>`).join('')}</span>`}</span></div>` +
       `<p class="page-sub">${vsOn() ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}, tested in your browser (exploratory).` : esc(a.question || a.describe || '')}${selOn() && !vsOn() ? ` <b>Your selection</b>${rows.some(r => r.descriptive) ? ': ' + whyShown(a).replace(/^Your selection /, '') : vsOn() ? '' : ', tested again in your browser (exploratory: not adjusted for the other selections tried).'}` : ''} <span class="muted">Click a ${a.kind === 'protein_sets' ? 'set' : 'class'} to select its ${esc(W.marks)}.</span></p>` +
-      `<section class="pcard">${cardBody(a, rows)}${selOn() && !vsOn() ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
+      `<section class="pcard">${(Q?.page && Q.page(card, () => cardBody(a, rows))) ?? cardBody(a, rows)}${selOn() && !vsOn() && !mod ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
   }
   // what the site keeps, what it asks other services for, and under which licences everything is
   function privacySection() {
@@ -378,7 +383,7 @@
       `<p><b>Privacy.</b> The site sets no cookies and uses no tracking or analytics. Your searches, filters and selections stay in this page and its address; every test on them runs in your browser, and nothing is sent to a server. This browser keeps only your preferences (theme, the sidebar’s pin and width, the protein map’s rows) and the selections you save, in its local storage; clear them with your browser’s site data. A protein page asks these services for that protein’s public data, by its accession only: ${esc(live.join(', '))}. Downloads are made in the browser.</p></section>`;
   }
   K.sections.method = () => [['m-g1', 'The tests', 0], ['m-tests', 'How the tests work', 1], ['m-questions', 'Questions, and what made each', 1], ['m-parity', 'Checked against the release', 1],
-    ['m-gq', 'Each question', 0], ...D.analyses.map(a => [`m-q-${a.id}`, a.title, 1]),
+    ['m-gq', 'Each question', 0], ...D.analyses.map(a => [`m-q-${a.id}`, a.title, 1]), ...K.methods.map(x => [`m-q-${x.id}`, x.title, 1]),
     ['m-g2', 'The data', 0], ['m-data', 'Data', 1], ['m-sources', 'Sources', 1], ['m-g3', 'The site', 0], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1], ['m-privacy', 'Licences and privacy', 1]]
     .filter(([id]) => (id !== 'm-parity' || D.run.parity) && (id !== 'm-sources' || Object.values(D.attribute_specs || {}).some(x => x.kind === 'list' && x.link)));
   // the Overview's sections and their questions: jumps on the tiles, links from an opened question (keeping the
@@ -471,7 +476,7 @@
       `<section id="m-questions"><h3>Questions, and what made each</h3><p>Each question is a layer (built in, made from the site file’s parameters, or a plugin the site trusts, with its package and version) or a protein-set test; the inputs it reads are the roles it names.</p>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th><th>Reads</th><th>What it compares</th></tr></thead><tbody>` +
       D.analyses.map(a => `<tr><td>${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag">new</span>' : ''}</td><td class="wrapok">${esc(madeByText(a.id))}</td><td class="mono wrapok">${esc((a.roles || []).join(', '))}</td><td class="wrapok">${esc(a.describe || a.sub || '')}</td></tr>`).join('') +
-      `</tbody></table></div></section>` + D.analyses.map(questionMethod).join('') + par +
+      `</tbody></table></div></section>` + D.analyses.map(questionMethod).join('') + K.methods.map(x => x.html()).join('') + par +
       citeSection() + privacySection() +
       sourcesSection() +
       `<section id="m-made"><h3>How this site is made</h3><p>This site is one file, <span class="mono">${esc(D.site.config)}</span>: which mark, which sequences and regions, which questions, its colours and pictures. ptmcontext ${esc(D.kit.version)} (commit <span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(R.written))}. Its citation, version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>` +
@@ -812,7 +817,7 @@
   // the export buttons of a card, and its Method link (the question's own section, or a section of the Method page)
   const methodLink = (aid, sec) => `<a class="exp-btn" href="${esc(link('method', aid ? 'q-' + aid : sec || ''))}" title="How ${aid ? 'this question was' : 'these were'} made and tested, and from what data">Method</a>`;
   const expBar = (kinds, attrs, label, method) => `<div class="exp" role="group" aria-label="Download ${esc(label)}">${kinds.map(k => `<button type="button" class="exp-btn" data-${attrs}="${k}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}${method ? methodLink(A[method] ? method : '', A[method] ? '' : method) : ''}</div>`;
-  Object.assign(K, { CIT, PAL, FF, FFH, tw, wrap, figureFrame, exportFigure, expBar, preamble, creditLines, provenance, download, hdate, htime, hlicence, shortCommit, testWords, PADJ, MIN_EFFECT, dir });
+  Object.assign(K, { CIT, PAL, FF, FFH, tw, wrap, figureFrame, exportFigure, expBar, preamble, creditLines, provenance, download, hdate, htime, hlicence, shortCommit, testWords, PADJ, MIN_EFFECT, dir, selOn, vsOn });
 
   // ---- render, events ------------------------------------------------------------------------------------------------
   function render() {

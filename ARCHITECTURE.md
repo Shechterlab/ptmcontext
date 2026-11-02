@@ -89,8 +89,8 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 others register with it through `window.PTMC_MODULES`: `kit-stats.js` (the tests, for selections), `kit-select.js`
 (search, filters, the sidebar, selections and their tests), `kit-map.js` (the protein map: rows, hovers, pins, zoom,
 read-out, exports), `kit-proteins.js` (the Proteins tab and the protein page), `kit-sites.js` (the Sites tab),
-`kit-idrs.js` (the IDRs tab, from a track whose values include `fcr` and `ncpr`) and `kit-compare.js` (what sets a
-selection apart from the other marks, and two selections side by side). A new view is a new module.
+`kit-idrs.js` (the IDRs tab, from a track whose values include `fcr` and `ncpr`), `kit-cell.js` (several maps of the cell as one question: `website.cell`; the drawings' parts in `config/cell_drawings.json`), `kit-values.js` (a protein-set question with its proteins' numbers: `website.set_views`) and `kit-compare.js` (what sets a
+selection apart from the other marks, and two selections side by side). A new view is a new module; a module may draw a question of its own or its own tile and page for one (`K.questions`) and add a Method section (`K.methods`).
 
 **Comparisons.** What a selection is compared with is the Overview's baseline: the other residues of its proteins (the
 site's own tests), the site's other marks ("what sets it apart"), or another selection's marks (`vs=cmp`, `cmp=` its
@@ -144,7 +144,7 @@ Arimo (an Arial-like face) embedded; every export is set in Arial, Helvetica or 
 ## Not yet built
 
 Isoform-to-canonical placement of marks; the site union from study tables; the remaining protein-set sources
-(functional classes, cell maps);
+(functional classes, the nuclear-body proteomes, GO binding, the eCLIP maps of RNA);
 measured backgrounds (candidates limited to residues covered by detected peptides); unit-level tests (IDRs as the
 unit); the release writer (sites and proteins tables, data dictionary, README, CHANGES, MD5SUMS). On the website:
 comparing two selections, "what sets it apart", the Figures view, and the protein page's class, pathway, abundance,

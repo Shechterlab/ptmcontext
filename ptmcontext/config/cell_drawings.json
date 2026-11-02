@@ -1,0 +1,24 @@
+{
+  "note": "The parts of the kit's drawings of a cell (kit-cell.js): the names a site's website.cell rows use (part, also) to say which compartment colours which part. Geometry only: what each part is called on a page comes from the site file. A part no row colours is drawn outlined (not measured) and not labelled.",
+  "drawings": {
+    "cell": {
+      "title": "a eukaryotic cell, the nucleus drawn whole",
+      "parts": {
+        "cytosol": "the cytoplasm's ground", "microtubules": "rays from the centrosome", "actin": "the cortex under the membrane",
+        "pm": "the plasma membrane", "er": "rough ER wrapped round the nucleus", "ribosomes": "ribosomes on the ER and free polysomes",
+        "nucleus": "the nucleus, whole", "golgi": "stacked cisternae with vesicles", "mito": "mitochondria",
+        "endolyso": "endosomes and lysosomes", "perox": "peroxisomes", "granules": "membraneless granules (large droplets)",
+        "pbodies": "membraneless granules (small droplets)", "centrosome": "a pair of centrioles"
+      }
+    },
+    "nucleus": {
+      "title": "the nucleus: chromosome territories, the channels between them, its bodies and envelope",
+      "parts": {
+        "nucleoplasm": "the channels between the territories", "chromatin": "chromosome territories", "periphery": "chromatin along the envelope",
+        "perinucleolar": "chromatin round the nucleolus", "nucleolus": "the nucleolus", "speckles": "clusters at channel junctions",
+        "paraspeckles": "small core-shell bodies beside them", "pml": "ring-shaped bodies in the channels", "cajal": "round bodies in the channels",
+        "bodies": "nuclear bodies (labelled at the round bodies)", "envelope": "the double membrane", "pores": "pore complexes in it"
+      }
+    }
+  }
+}

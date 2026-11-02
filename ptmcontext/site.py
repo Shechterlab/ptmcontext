@@ -151,7 +151,9 @@ def website_problems(site: dict) -> list[str]:
     ids = {x['id'] for x in site.get('analyses', [])}
     attrs = (site.get('marks') or {}).get('attributes') or {}
     web = site.get('website') or {}
-    out = []
+    out = cell_problems(site) + set_view_problems(site)
+    if (web.get('cell') or {}).get('id'):
+        ids = ids | {web['cell']['id']}        # the maps of the cell are one question of the website's own
     for sec in (web.get('overview') or {}).get('sections', []):
         for c in sec.get('cards', []):
             aid = c if isinstance(c, str) else c.get('analysis')
@@ -199,6 +201,69 @@ def website_problems(site: dict) -> list[str]:
             out += [f"marks.attributes.{name}: a colour for {v!r}, which is not among its values" for v in a['colours'] if v not in a['values']]
         if a.get('records') and a.get('kind') != 'list':
             out.append(f"marks.attributes.{name}: records are for a list attribute")
+    return out
+
+
+def cell_drawings() -> dict:
+    """The kit's drawings of a cell and the parts each has (config/cell_drawings.json), which website.cell rows colour."""
+    return json.loads((Path(__file__).parent / 'config' / 'cell_drawings.json').read_text())['drawings']
+
+
+def cell_problems(site: dict) -> list[str]:
+    """What website.cell names that the site does not have: a map that is not a protein-set question, a row's set in a
+    map it does not list, a part no drawing it shows has (ptmc check)."""
+    cell = (site.get('website') or {}).get('cell')
+    if not cell:
+        return []
+    sets = {a['id']: a for a in site.get('analyses', []) if a.get('test') == 'protein_sets'}
+    out = []
+    if cell['id'] in {a['id'] for a in site.get('analyses', [])}:
+        out.append(f"website.cell.id: {cell['id']!r} is also an analysis: give the maps of the cell an id of their own")
+    maps = [m['analysis'] for m in cell['maps']]
+    for m in cell['maps']:
+        for key in ('analysis', 'regions'):
+            if m.get(key) and m[key] not in sets:
+                out.append(f"website.cell.maps: {m[key]!r} is not a protein-set question of this site")
+    drawings = cell_drawings()
+    parts = {p for d in cell.get('drawings', []) for p in drawings[d['drawing']]['parts']}
+    rows = [('regions', r) for r in cell.get('regions', [])] + [(g['group'], r) for g in cell['compartments'] for r in g['rows']]
+    for where, r in rows:
+        out += [f"website.cell.compartments ({where}), {r['label']!r}: {a!r} is not one of website.cell.maps" for a in r.get('sets', {}) if a not in maps]
+        bad = [p for p in [r.get('part'), *r.get('also', [])] if p and p not in parts]
+        if bad:
+            out.append(f"website.cell ({where}), {r['label']!r}: no drawing shown has the part {bad} (the drawings' parts: {sorted(parts)})")
+    if cell.get('regions') and not any(m.get('regions') for m in cell['maps']):
+        out.append('website.cell.regions: no map names its regions question (maps: regions:)')
+    return out
+
+
+def set_view_problems(site: dict) -> list[str]:
+    """What website.set_views names that the site does not have: a question without values, a column its values do not
+    list (ptmc check)."""
+    analyses = {a['id']: a for a in site.get('analyses', [])}
+    out = []
+    for v in (site.get('website') or {}).get('set_views') or []:
+        a = analyses.get(v['analysis'])
+        if not a or a.get('test') != 'protein_sets':
+            out.append(f"website.set_views: {v['analysis']!r} is not a protein-set question of this site")
+            continue
+        cols = {(c['name'] if isinstance(c, dict) else c): (c if isinstance(c, dict) else {}) for c in (a.get('values') or {}).get('columns', [])}
+        if not cols:
+            out.append(f"website.set_views: {v['analysis']!r} has no values (values: columns)")
+            continue
+        box = (v.get('box') or {}).get('value')
+        if box and not cols.get(box, {}).get('background'):
+            out.append(f"website.set_views, {v['analysis']!r}: box: {box!r} is not a column of its values with background: true")
+        for ch in v.get('chips', []):
+            out += [f"website.set_views, {v['analysis']!r}: chips {ch['title']!r}: {c!r} is not a column of its values"
+                    for c in [ch.get('value'), *(ch.get('share') or [])] if c and c not in cols]
+        rules = {r['set'] for r in (a.get('sets') or {}).get('rules', [])}
+        named = [v.get('meter'), *[s for ch in v.get('chips', []) for s in ch.get('sets', [])]]
+        if rules:
+            out += [f"website.set_views, {v['analysis']!r}: no set {s!r} (its rules make {sorted(rules)})" for s in named if s and s not in rules]
+        r = v.get('residue')
+        if r and (r not in analyses or analyses[r].get('test') == 'protein_sets'):
+            out.append(f"website.set_views, {v['analysis']!r}: residue: {r!r} is not a residue question of this site")
     return out
 
 

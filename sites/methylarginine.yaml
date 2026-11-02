@@ -643,6 +643,11 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       some_lines: "not commonly essential, and 5% to under 50% of the lines depend on it (selective dependencies)"
       few_or_none: "fewer than 5% of the lines depend on it"
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    values:                        # each screened protein's numbers, for the website (website.set_views); no test reads them
+      columns:
+        - {name: median, label: median gene effect, background: true}
+        - {name: dependent_lines, label: lines that depend on it}
+        - {name: lines_with_probability, label: lines screened}
   # Changes at methylarginines in tumours and cell lines: a missense or stop change in at least one TCGA tumour (MC3) or
   # DepMap cell line, against the other arginines of the methylated proteins whose gene DepMap screened; every mark of
   # those proteins counts, one on a protein with no other arginine too (it adds nothing within proteins)
@@ -721,24 +726,15 @@ website:                  # the look and words of the website (ptmc web); layout
         cards:
           - {analysis: disease_family, title: Disease}
           - {analysis: disease_family_additional, title: "More disease families (rule-based, not audited)"}
-          - depmap_dependency
-          - cancer_change
+          - {analysis: depmap_dependency, title: Cancer cell dependency}
+          - {analysis: cancer_change, title: Changes in tumours and cell lines}
       - name: Kinds of protein
         cards:
           - {analysis: panther_group, title: Protein classes}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
-          - {analysis: hpa_location, title: Where in the cell}
+          - where_in_the_cell     # website.cell: the maps of the cell as one question (the explorer's)
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
-      - name: Where in the cell           # the original's one question, its maps as tiles: regions first, then compartments
-        cards:
-          - {analysis: cell_region_hpa, title: Regions of the cell (Protein Atlas)}
-          - {analysis: cell_region_hcm, title: Regions of the cell (Human Cell Map)}
-          - {analysis: cell_region_organelle_ip, title: Regions of the cell (organelle IP)}
-          - {analysis: hpa_location, title: Human Protein Atlas locations}
-          - cell_hcm_compartment
-          - cell_organelle_ip
-          - cell_chromatin
       - name: Where in the protein
         cards:
           - {analysis: motif, title: Sequence motifs}
@@ -746,7 +742,82 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
       - name: In more detail
-        cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, cell_hcm_domain, disorder, domain_context]
+        cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)},
+                {analysis: hpa_location, title: Human Protein Atlas locations}, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, disorder, domain_context]
+  cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
+    id: where_in_the_cell
+    title: Where in the cell
+    question: "Where do methylated proteins sit in the cell?"
+    intro: "Five maps from four studies place proteins in the cell, made by imaging, proximity labelling, organelle pull-down and chromatin fractionation in different cells."
+    note: "A proteomic map of nuclear bodies (Dyakov et al., bioRxiv 2024) is not shown: its licence (CC BY-NC-ND) does not allow derived works. The speckle, lamina and PML-body proteomes of Barutcu et al. 2022 are not shown until their licence is confirmed."
+    maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
+      - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
+         how: "antibody staining in many cell lines; the locations seen with approved or better reliability (those holding 20 or more proteins)",
+         ref: HPA 25.1, doi: 10.1126/science.aal3321, url: "https://www.proteinatlas.org/humanproteome/subcellular", licence: CC BY 4.0, min_members: 20}
+      - {analysis: cell_hcm_compartment, regions: cell_region_hcm, name: Human Cell Map, short: Cell Map, method: Proximity labelling, cells: HEK293,
+         how: "proximity labelling from 192 baits; each protein sits in the compartment whose baits label it most",
+         ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
+      - {analysis: cell_hcm_domain, name: "Human Cell Map, finer domains", short: Cell Map domains, method: Proximity labelling, cells: HEK293,
+         how: "the same map at a finer scale: neighbourhoods of proteins that label one another (SAFE domains)",
+         ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
+      - {analysis: cell_organelle_ip, regions: cell_region_organelle_ip, name: Organelle IP, short: Organelle IP, method: Organelle pull-down, cells: HEK293T,
+         how: "organelles pulled out of the cell one at a time; each protein belongs to the organelle it comes down with",
+         ref: Hein et al. 2025, doi: 10.1016/j.cell.2024.11.028, url: "https://github.com/czbiohub-sf/Organelle_IP_analyses_and_figures", licence: BSD-3-Clause (analysis repository)}
+      - {analysis: cell_chromatin, name: Chromatin probability, short: ChEP, method: Fractionation, cells: human cell lines,
+         how: "how reliably a protein comes down with chromatin across many conditions, as a probability",
+         ref: Kustatscher et al. 2014, doi: 10.1002/embj.201387614, url: "https://doi.org/10.1002/embj.201387614", licence: CC BY}
+    regions:               # the sets of each map's regions question, and the part of the drawings each colours
+      - {label: Nucleus, part: nucleus, in_text: the nucleus}
+      - {label: Cytoplasm, in_text: the cytoplasm}
+      - {label: Organelles and membranes, in_text: the organelles and membranes}
+    compartments:          # the grid's rows: each a set in some maps, and the part of the drawings it colours (also: parts
+      - group: Nucleus     # it colours when they have no row of their own); the release's groups (data/subcellular.json)
+        rows:
+          - {label: Chromatin, part: chromatin, also: [periphery, perinucleolar], sets: {cell_hcm_compartment: chromatin, cell_chromatin: "ICP >= 0.8 (chromatin)"}}
+          - {label: Nucleoplasm, part: nucleoplasm, also: [nucleus], sets: {cell_hcm_compartment: nucleoplasm, cell_organelle_ip: nucleus, hpa_location: Nucleoplasm}}
+          - {label: Nucleolus, part: nucleolus, sets: {cell_hcm_compartment: nucleolus, cell_organelle_ip: nucleolus, hpa_location: Nucleoli}}
+          - {label: Nuclear speckles, part: speckles, sets: {cell_hcm_domain: "splicing speckles, nucleolus", hpa_location: Nuclear speckles}}
+          - {label: Paraspeckles, part: paraspeckles, sets: {cell_hcm_domain: paraspeckles}}
+          - {label: "Nuclear bodies (PML, Cajal …)", name: Nuclear bodies, part: bodies, also: [cajal, pml], sets: {cell_hcm_compartment: nuclear body, hpa_location: Nuclear bodies}}
+          - {label: Nuclear envelope and lamina, name: Nuclear envelope, part: envelope, sets: {cell_hcm_compartment: nuclear outer membrane-ER membrane network, hpa_location: Nuclear membrane}}
+          - {label: Nuclear pores, part: pores, sets: {cell_hcm_domain: nuclear pore}}
+          - {label: Mitotic chromosome, sets: {hpa_location: Mitotic chromosome}}
+      - group: Cytoplasm
+        rows:
+          - {label: "RNA granules (stress granules, P-bodies)", name: Stress granules, part: granules, sets: {cell_hcm_compartment: cytoplasmic ribonucleoprotein granule, cell_hcm_domain: cytoplasmic ribonucleoprotein granule, cell_organelle_ip: stress_granule}}
+          - {label: P-bodies, part: pbodies, in_text: P-bodies, sets: {cell_organelle_ip: p-body, cell_hcm_domain: "centrosome enriched, P-body enriched"}}
+          - {label: Translation, name: Ribosomes and translation, part: ribosomes, sets: {cell_organelle_ip: translation}}
+          - {label: Cytosol, part: cytosol, sets: {cell_hcm_compartment: "actin cytoskeleton, cytosol", cell_organelle_ip: cytosol, hpa_location: Cytosol}}
+          - {label: Actin cytoskeleton, name: Actin cortex, part: actin, sets: {cell_organelle_ip: actin_cytoskeleton, cell_hcm_domain: actin cytoskeleton, hpa_location: Actin filaments}}
+          - {label: Microtubules, part: microtubules, sets: {cell_hcm_compartment: microtubule cytoskeleton, hpa_location: Microtubules}}
+          - {label: Centrosome, part: centrosome, sets: {cell_hcm_compartment: centrosome, cell_organelle_ip: centrosome, hpa_location: Centrosome}}
+          - {label: Proteasome, sets: {cell_organelle_ip: proteasome}}
+      - group: Organelles and membranes
+        rows:
+          - {label: Mitochondria, part: mito, sets: {cell_hcm_compartment: mitochondrial matrix, cell_organelle_ip: mitochondrion, hpa_location: Mitochondria}}
+          - {label: Endoplasmic reticulum, part: er, in_text: the ER, sets: {cell_hcm_compartment: ER membrane, cell_organelle_ip: ER, hpa_location: Endoplasmic reticulum}}
+          - {label: Golgi, name: Golgi apparatus, part: golgi, in_text: the Golgi, sets: {cell_hcm_compartment: Golgi apparatus, cell_organelle_ip: Golgi, hpa_location: Golgi apparatus}}
+          - {label: Endosomes and lysosomes, part: endolyso, sets: {cell_hcm_compartment: "endosome, lysosome", cell_organelle_ip: lysosome, hpa_location: Vesicles}}
+          - {label: Peroxisomes, part: perox, sets: {cell_hcm_compartment: "mitochondrial outer membrane, peroxisome", cell_organelle_ip: peroxisome}}
+          - {label: Plasma membrane, part: pm, sets: {cell_hcm_compartment: plasma membrane, cell_organelle_ip: plasma_membrane, hpa_location: Plasma membrane}}
+    drawings:              # the kit's drawings (CONTRACTS.md names their parts), in order
+      - {drawing: cell, title: "Within them: the cell"}
+      - {drawing: nucleus, title: "Within them: the nucleus"}
+  set_views:               # a protein-set question drawn with its proteins' numbers (kit-values.js): DepMap's dependency
+    - analysis: depmap_dependency
+      meter: common_essential                   # the class whose share the tile shows
+      meter_words: commonly essential in cancer cell lines
+      population: screened proteins
+      intro: "{n} of {the} {total} {who} were screened (DepMap 24Q4, 1,178 cell lines). A protein's score is its median gene effect across the lines (Chronos: 0 no effect, −1 the median of commonly essential genes; lower is a stronger dependency)."
+      box: {value: median, title: Median gene effect of each protein, axis: "median gene effect per protein (Chronos)",
+            sub: "DepMap Public 24Q4 CRISPR (Chronos): each protein's median gene effect across the 1,178 lines; boxes the middle half of the proteins, whiskers the 5th to 95th percentile; lower is a stronger dependency"}
+      caveat: "Essential proteins are abundant, and abundant proteins are the ones mass spectrometry finds most often, so methylated proteins are expected to look more essential than the proteome whatever their methylation does. A selection is also compared with the other methylated proteins, which share that bias, and that comparison is the fairer one."
+      chips:
+        - {title: Strongest dependencies, value: median, order: ascending}
+        - {title: Selective dependencies, note: "not commonly essential; 5% to under half of the lines depend on them, share shown", sets: [some_lines],
+           share: [dependent_lines, lines_with_probability], order: descending}
+      residue: cancer_change                    # a residue question shown with it (changes at the marks)
+      credit: "DepMap Public 24Q4 (doi:10.25452/figshare.plus.27993248; CC BY 4.0; Tsherniak et al. 2017; Chronos, Dempster et al. 2021). Commonly essential: DepMap's list of genes that at least 90% of lines rank among their strongest dependencies. A line depends on a gene when DepMap's dependency probability is at least 0.5. The results on tumours are in whole or part based upon data generated by the TCGA Research Network (https://www.cancer.gov/tcga): MC3 somatic calls (Ellrott et al. 2018)."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, depmap_dependency, cancer_change], attributes: [tcga_any, depmap_any]}
     - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, reactome_top_level]}
@@ -761,7 +832,8 @@ website:                  # the look and words of the website (ptmc web); layout
     ov-pan: panther_group
     ov-dis: disease_family
     ov-cond: condensate_proteome
-    ov-cell: hpa_location
+    ov-cell: where_in_the_cell
+    ov-dep: depmap_dependency
     ov-path: reactome_top_level
     ov-motif: motif
     ov-struct: structure_context

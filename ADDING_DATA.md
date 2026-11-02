@@ -152,6 +152,7 @@ reading different roles may share a `kind`: each keeps its own row of the map.
     whole_universe: true
     order: [{categories: [essential, most, rest]}]       # the rows in this order (default: by p)
     labels: {most: "Most lines (≥ 50%)"}                 # names on the website; help: {set: definition}
+    values: {columns: [{name: <column>, background: true}, <column>]}   # numbers per protein for website.set_views
   - id: <analysis>                                       # sets of another identifier (genes), gathered into families
     test: protein_sets
     identifiers:                                         # each protein's identifiers, through these tables in turn
@@ -234,6 +235,12 @@ tile, its filter, its rows in All tests and the downloads, its column if named, 
 of the protein map (`tests/test_new_sources.py` builds such a site from scratch).
 
 **Check:** `ptmc run sites/<site>.yaml --root DATA` runs, and `out/<site>/run.json` lists every input with its MD5.
+
+Maps of the cell need no code either: make each map a protein-set question (its sets the compartments; optionally a
+second one, its regions, by `sets.families`), then name them in `website.cell` with the rows of the grids and the part
+of the kit's drawings each colours (CONTRACTS.md lists the parts; a yeast vacuole may colour `endolyso`, named
+"Vacuole"). A table of numbers per protein (a screen's scores) becomes classes by `sets.rules`, and `values` plus
+`website.set_views` draw its numbers beside them.
 
 ## 5. Prove it
 
