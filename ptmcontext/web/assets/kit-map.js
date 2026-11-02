@@ -520,7 +520,14 @@
     };
     const uniRow = (row, types, fill, stroke, labOf, keyFill, filter = () => true) => {
       if (!uni) { msg(row[1], row[3], ctx.uniFailed ? 'UniProt did not answer' : 'asking UniProt…'); return; }
-      const all = (uni.features || []).filter(f => types.includes(f.type) && filter(f)); if (!all.length) return;
+      let all = (uni.features || []).filter(f => types.includes(f.type) && filter(f)); if (!all.length) return;
+      // five or more repeats of one kind (EWSR1's 31 tandem repeats) are one band, "31 × <kind>", not a stack of boxes
+      const kindOf = f => String(f.description || '').replace(/\s*\d+\s*$/, '').trim(), groups = {};
+      all.filter(f => f.type === 'Repeat').forEach(f => (groups[kindOf(f)] ||= []).push(f));
+      Object.entries(groups).filter(([, g]) => g.length >= 5).forEach(([k, g]) => {
+        const lo = Math.min(...g.map(f => fpos(f)[0])), hi = Math.max(...g.map(f => fpos(f)[1]));
+        all = all.filter(f => !g.includes(f)).concat([{ ...g[0], description: `${g.length} × ${k || 'repeat'}`, location: { start: { value: lo }, end: { value: hi } } }]);
+      });
       const fs = all.filter(f => inView(...fpos(f))).map(f => ({ a: fpos(f)[0], b: fpos(f)[1], u: f }));
       if (!fs.length) { if (zoomed) noneIn(row[1], row[3]); return; }
       const h = namedBoxes(fs, f => fill(f.u), f => stroke(f.u), P.boxInk, f => labOf(f.u), (f, full) => `<b>${esc(f.u.type)}</b> ${esc(f.u.description || '')}<br>${f.a}–${f.b}${insideHtml(f.a, f.b, full)}` + featureProv(p.acc, f.u, full));
