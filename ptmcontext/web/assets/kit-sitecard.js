@@ -80,12 +80,13 @@
       if (seen.has(key)) continue; seen.add(key);
       const ps = partnersOf([v]), names = [...new Set(ps.map(r => r.partner).filter(Boolean))];
       const label = named.has(v) && names.length ? names.slice(0, 2).join(', ') + (names.length > 2 ? ` +${names.length - 2}` : '') : short;
-      out.push(`<span class="tag t-${esc((tg.tone || {})[v] || 'x')}" title="${esc(vLabel(tg.attribute, v) + (names.length ? ': ' + names.join(', ') : ''))}">${esc(label)}</span>`);
+      const kinds = vals.filter(x => !pred.has(x) && ((tg.short || {})[x] ?? vLabel(tg.attribute, x)) + '|' + ((tg.tone || {})[x] || '') === key);   // the kinds this tag stands for (data-ev-kind: a page may open them)
+      out.push(`<span class="tag t-${esc((tg.tone || {})[v] || 'x')}" data-ev-kind="${esc(kinds.join(','))}" title="${esc(vLabel(tg.attribute, v) + (names.length ? ': ' + names.join(', ') : ''))}">${esc(label)}</span>`);
     }
     if (predVals.length) {
       const ps = partnersOf(predVals), names = [...new Set(ps.map(r => r.partner).filter(Boolean))];
       const tip = predVals.map(v => vLabel(tg.attribute, v)).join(', ') + (ps.length ? ': ' + [...new Map(ps.map(r => [r.partner, r])).values()].slice(0, 20).map(r => `${r.partner}${r.score ? ' ' + Number(r.score).toFixed(2) : ''}`).join(', ') : '');
-      out.push(`<span class="tag t-pred" title="${esc(tip)}">${esc((tg.short || {})[predVals[0]] || 'pred.')}${names.length ? ' ' + esc(names[0]) + (names.length > 1 ? ` +${names.length - 1}` : '') : ''}</span>`);
+      out.push(`<span class="tag t-pred" data-ev-kind="${esc(predVals.join(','))}" title="${esc(tip)}">${esc((tg.short || {})[predVals[0]] || 'pred.')}${names.length ? ' ' + esc(names[0]) + (names.length > 1 ? ` +${names.length - 1}` : '') : ''}</span>`);
     }
     return out.length ? `<div class="tags ev-tags">${(max ? out.slice(0, max) : out).join(' ')}${max && out.length > max ? ` <span class="tag">+${out.length - max}</span>` : ''}</div>` : '';
   }

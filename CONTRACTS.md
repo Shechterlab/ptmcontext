@@ -289,3 +289,52 @@ The site card and the sites table read the site file's `website.protein.card` an
 words: the codes' labels, the sentences, the marks of each call, which columns the Columns menu offers and which show
 first. `website.protein.numbering` numbers some proteins as papers do (a gene or name pattern and an offset: histones
 without their initiator methionine): their positions are shown and read in links with it.
+
+## The Proteins and Sites pages
+
+Both pages read only data in the formats above, named in the site file, so another site, or a user's tables in the same
+formats, gets the same pages with no code (`kit-tables.js`, `kit-sites.js`; `ptmc check` names what a block gets wrong,
+`site.table_view_problems`; `tests/test_tables_pages.py`). A block a site does not write is replaced by a default; a
+column whose data a site lacks is left out.
+
+**`website.proteins`** (the Proteins page). `columns`: the table's columns after the protein and its count of marks (of
+the selection, "/ total" when that differs), offered in the Columns menu (`default: true` shows at first; the reader's
+choice is kept in the browser). Each `{id, label, menu?, default?, help? (the header's hover), hide? (xs: dropped below
+36rem; sm: below 56rem)}` and one of:
+
+| Key | Value | Shows |
+|---|---|---|
+| `show` | `map`, `length`, `share`, `candidates` | the marks as ticks along the protein (the selection's tall, coloured by the colour attribute), its length, its marks over its candidate residues, its candidate residues |
+| `counts` | `{attribute, values: {code: label}, dashed?: [codes]}` | the protein's marks (of the selection) with each value of a mark attribute, as chips |
+| `classes` | `{analysis, classes: [codes]}` | the share of the protein's marks in these classes of a residue question |
+| `attribute` | a protein attribute (`proteins.attributes`), with `format?`: `count` (a list's length), `l2` (signed, true minus), `p`, `int` | the value |
+| `template` | `"{a} in {b} aa"` over protein attributes, `where?: {attribute, max?, min?}`, `sort?: <attribute>` | the words, when the condition holds |
+
+Default: a site map, the length and the share. `download`: the TSV's columns, each `{name}` and one of `value`
+(`accession, gene, entry, protein, aliases, length, candidates, marks, marks_shown`), `attribute` (a protein attribute;
+a list joined with `;`), `classes` (the count of the protein's marks in them), `counts: {attribute, value}`.
+
+**`website.sites`** (the Sites page). Fixed columns: the protein, the site (numbered as `website.protein.numbering` says,
+"UniProt R3" below; tags for the values of a list attribute, `site_tags: {attribute, values: {code: tag}}`), the colour
+attribute (a dot and `short` labels: `{attribute: {code: label}}`, heading `state_label`) and the window ±7 (the site
+boxed, the profile's residues bold, `window.colours: {letter: colour}`, `·` past the ends) with the tags of each flags
+question (`tags: {analysis: {order?, hide?}}`; when given, only those questions). `table`: the optional columns, in the
+protein page's column format (`website.protein.table.columns`, which is the default): `attribute`, `analyses`, or
+`show` of the site card's blocks (`status, tags, sequences, around, calls, states, changes, nearest_domain`, read from
+`website.tables`, and `nearest`: the distance to the protein's nearest other mark), with `sort?` (mark attributes: a
+category by its values' order, a list by how many values, a call by its mark), `help?`, `hide?`. An evidence tag
+(`data-ev-kind`) opens what the site's `site_evidence` and `residue_evidence` rows say of those kinds at the site,
+without peptide sequences. `download`: each `{name}` and one of `value` (`accession, gene, entry, protein, site,
+position, numbering, window, residue, nearest`), `attribute` (codes; `labels: true` for labels, `links: true` for its
+link column, `lookup: <column>` for the citation lookup's column), `analysis` (codes or `labels`), `protein` (a protein
+attribute), or `table` with `column` (the rows' values) or `field` (distinct values, lists split; `count: true` for
+their number; `with: <column>` writes `value:number`), filtered by `kinds` and `where: {column: value}`. Every row of
+the selection, in the table's order, under the kit's `#` lines; lists joined with `;`; the file
+`<marks>_<proteins|sites>[_selection]_<date>.tsv`.
+
+**`website.selection_cards`**: "Your selection" for a selection of one set of a protein-set question (keyed by the
+question: the site's own test of that set) or one value of a list attribute (`@<name>`: its reference from the citation
+lookup): `{eyebrow?, url? (with {set}), link? (its label), note?}`.
+
+**Enriched features** (both pages) read only the selection data: every class of each residue question and every value
+of each mark attribute, the selection's marks against the others (the selection module's contrast, pooled).

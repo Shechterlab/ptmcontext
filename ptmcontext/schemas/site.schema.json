@@ -1569,6 +1569,267 @@
                 "type": "string"
               },
               "description": "the attributes of the marks shown as the Sites table's columns, in order (default: every attribute coloured by or linked)"
+            },
+            "state_label": {
+              "type": "string",
+              "description": "the coloured attribute's column heading"
+            },
+            "short": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "description": "per attribute, short labels of its values in the table"
+            },
+            "site_tags": {
+              "type": "object",
+              "required": [
+                "attribute",
+                "values"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "attribute": {
+                  "type": "string"
+                },
+                "values": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              },
+              "description": "values of a list attribute shown as tags beside the site"
+            },
+            "window": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "colours": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              },
+              "description": "residues coloured in the window"
+            },
+            "tags": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "order": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "hide": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "description": "per flags question, the order of its tags under the window and those not shown"
+            },
+            "table": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "label"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "menu": {
+                    "type": "string"
+                  },
+                  "default": {
+                    "type": "boolean"
+                  },
+                  "attribute": {
+                    "type": "string"
+                  },
+                  "analyses": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "show": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "help": {
+                    "type": "string",
+                    "description": "the header's hover"
+                  },
+                  "hide": {
+                    "enum": [
+                      "xs",
+                      "sm"
+                    ],
+                    "description": "dropped on narrow screens: xs below 36rem, sm below 56rem"
+                  },
+                  "sort": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ],
+                    "description": "attributes of the marks a block column sorts by (a status by its values' order, a list by how many values)"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "description": "the optional columns (the Columns menu); default: the protein page's sites table's"
+            },
+            "download": {
+              "type": "array",
+              "description": "the download's columns, in order: each a name and where its value comes from",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "enum": [
+                      "accession",
+                      "gene",
+                      "entry",
+                      "protein",
+                      "aliases",
+                      "length",
+                      "candidates",
+                      "marks",
+                      "marks_shown",
+                      "site",
+                      "position",
+                      "numbering",
+                      "window",
+                      "residue",
+                      "nearest"
+                    ],
+                    "description": "a built-in value of the protein or the mark"
+                  },
+                  "attribute": {
+                    "type": "string",
+                    "description": "an attribute (the Proteins page: proteins.attributes; the Sites page: marks.attributes)"
+                  },
+                  "labels": {
+                    "type": "boolean",
+                    "description": "the values' labels rather than their codes"
+                  },
+                  "links": {
+                    "type": "boolean",
+                    "description": "a list attribute's link column (DOIs), item by item"
+                  },
+                  "lookup": {
+                    "type": "string",
+                    "description": "a column of the citation box's lookup table, for each value"
+                  },
+                  "analysis": {
+                    "type": "string",
+                    "description": "a residue question's classes"
+                  },
+                  "protein": {
+                    "type": "string",
+                    "description": "the Sites page: a protein attribute of the mark's protein"
+                  },
+                  "classes": {
+                    "type": "object",
+                    "required": [
+                      "analysis",
+                      "classes"
+                    ],
+                    "properties": {
+                      "analysis": {
+                        "type": "string"
+                      },
+                      "classes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "description": "the Proteins page: the protein's marks in these classes"
+                  },
+                  "counts": {
+                    "type": "object",
+                    "required": [
+                      "attribute",
+                      "value"
+                    ],
+                    "properties": {
+                      "attribute": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "the Proteins page: the protein's marks (of the selection) with this value"
+                  },
+                  "table": {
+                    "type": "string",
+                    "description": "the Sites page: a table of website.tables, its rows at the mark"
+                  },
+                  "column": {
+                    "type": "string",
+                    "description": "the table's column, its rows' values joined"
+                  },
+                  "field": {
+                    "type": "string",
+                    "description": "the table's column, its distinct values (lists split)"
+                  },
+                  "with": {
+                    "type": "string",
+                    "description": "a number column written after each value (value:number)"
+                  },
+                  "count": {
+                    "type": "boolean",
+                    "description": "how many distinct values"
+                  },
+                  "kinds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the rows of these kinds only"
+                  },
+                  "where": {
+                    "type": "object",
+                    "description": "the rows whose columns have these values"
+                  }
+                }
+              }
             }
           }
         },
@@ -2417,6 +2678,292 @@
                 "type": "string"
               },
               "variant": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "proteins": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the Proteins page (kit-tables.js)",
+          "properties": {
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "label"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "menu": {
+                    "type": "string"
+                  },
+                  "default": {
+                    "type": "boolean"
+                  },
+                  "help": {
+                    "type": "string"
+                  },
+                  "hide": {
+                    "enum": [
+                      "xs",
+                      "sm"
+                    ]
+                  },
+                  "show": {
+                    "enum": [
+                      "map",
+                      "length",
+                      "share",
+                      "candidates"
+                    ],
+                    "description": "a site map, the protein's length, its marks' share of its candidate residues, its candidate residues"
+                  },
+                  "counts": {
+                    "type": "object",
+                    "required": [
+                      "attribute",
+                      "values"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "attribute": {
+                        "type": "string"
+                      },
+                      "values": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "dashed": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "description": "the protein's marks (of the selection) with each value of an attribute of the marks, labelled"
+                  },
+                  "classes": {
+                    "type": "object",
+                    "required": [
+                      "analysis",
+                      "classes"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "analysis": {
+                        "type": "string"
+                      },
+                      "classes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "description": "the share of the protein's marks in these classes"
+                  },
+                  "attribute": {
+                    "type": "string",
+                    "description": "a protein attribute (proteins.attributes)"
+                  },
+                  "format": {
+                    "enum": [
+                      "count",
+                      "l2",
+                      "p",
+                      "int"
+                    ],
+                    "description": "count: the number of a list's values; l2: a signed log2; p: a p or q value"
+                  },
+                  "template": {
+                    "type": "string",
+                    "description": "protein attributes in words: \"{a} in {b} aa\""
+                  },
+                  "where": {
+                    "type": "object",
+                    "required": [
+                      "attribute"
+                    ],
+                    "properties": {
+                      "attribute": {
+                        "type": "string"
+                      },
+                      "max": {
+                        "type": "number"
+                      },
+                      "min": {
+                        "type": "number"
+                      }
+                    },
+                    "description": "the template shows only when this attribute is within these bounds"
+                  },
+                  "sort": {
+                    "type": "string",
+                    "description": "a template's sort: a protein attribute"
+                  }
+                }
+              },
+              "description": "the table's columns after the protein and its marks: the Columns menu (default: true shows at first)"
+            },
+            "download": {
+              "type": "array",
+              "description": "the download's columns, in order: each a name and where its value comes from",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "enum": [
+                      "accession",
+                      "gene",
+                      "entry",
+                      "protein",
+                      "aliases",
+                      "length",
+                      "candidates",
+                      "marks",
+                      "marks_shown",
+                      "site",
+                      "position",
+                      "numbering",
+                      "window",
+                      "residue",
+                      "nearest"
+                    ],
+                    "description": "a built-in value of the protein or the mark"
+                  },
+                  "attribute": {
+                    "type": "string",
+                    "description": "an attribute (the Proteins page: proteins.attributes; the Sites page: marks.attributes)"
+                  },
+                  "labels": {
+                    "type": "boolean",
+                    "description": "the values' labels rather than their codes"
+                  },
+                  "links": {
+                    "type": "boolean",
+                    "description": "a list attribute's link column (DOIs), item by item"
+                  },
+                  "lookup": {
+                    "type": "string",
+                    "description": "a column of the citation box's lookup table, for each value"
+                  },
+                  "analysis": {
+                    "type": "string",
+                    "description": "a residue question's classes"
+                  },
+                  "protein": {
+                    "type": "string",
+                    "description": "the Sites page: a protein attribute of the mark's protein"
+                  },
+                  "classes": {
+                    "type": "object",
+                    "required": [
+                      "analysis",
+                      "classes"
+                    ],
+                    "properties": {
+                      "analysis": {
+                        "type": "string"
+                      },
+                      "classes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "description": "the Proteins page: the protein's marks in these classes"
+                  },
+                  "counts": {
+                    "type": "object",
+                    "required": [
+                      "attribute",
+                      "value"
+                    ],
+                    "properties": {
+                      "attribute": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "the Proteins page: the protein's marks (of the selection) with this value"
+                  },
+                  "table": {
+                    "type": "string",
+                    "description": "the Sites page: a table of website.tables, its rows at the mark"
+                  },
+                  "column": {
+                    "type": "string",
+                    "description": "the table's column, its rows' values joined"
+                  },
+                  "field": {
+                    "type": "string",
+                    "description": "the table's column, its distinct values (lists split)"
+                  },
+                  "with": {
+                    "type": "string",
+                    "description": "a number column written after each value (value:number)"
+                  },
+                  "count": {
+                    "type": "boolean",
+                    "description": "how many distinct values"
+                  },
+                  "kinds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the rows of these kinds only"
+                  },
+                  "where": {
+                    "type": "object",
+                    "description": "the rows whose columns have these values"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "selection_cards": {
+          "type": "object",
+          "description": "\"Your selection\": per protein-set question (or @<list attribute>), the card's words and link",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "eyebrow": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "description": "with {set}"
+              },
+              "link": {
+                "type": "string",
+                "description": "the link's label, with {set}"
+              },
+              "note": {
                 "type": "string"
               }
             }

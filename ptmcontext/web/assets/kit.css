@@ -830,3 +830,83 @@ html.pdf-export .exp, html.pdf-export .tools, html.pdf-export .prot-chips .btn, 
 }
 /* print: every text in the Arial-like face of the exports (monospace stays monospace) */
 @media print { body *:not(.mono):not(code):not(pre):not(.win):not(.win *) { font-family: Arial, 'Helvetica Neue', Helvetica, Arimo, 'Liberation Sans', sans-serif !important; } }
+
+/* ---- the Proteins and Sites tables (kit-tables.js, kit-sites.js), as the explorer's ---------------------------------- */
+.results-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 0.6rem 1rem; flex-wrap: wrap; }
+.results-head h2 { margin: 0; }
+.results-head .cx { margin: 0.25rem 0 0; color: var(--muted); }
+.results-head .actions { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.t-card { margin: 0.8rem 0; overflow: visible; }
+.tbl-tools { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; padding: 0.5rem 0.9rem; border-bottom: 1px solid var(--line); }
+.tbl-wrap { overflow-x: auto; }
+.tbl-foot { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; padding: 0.55rem 0.9rem; color: var(--muted); font-size: 0.85rem; }
+.t-card .tbl th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.t-card .tbl th[aria-sort] { color: var(--brand-ink); }
+.t-card .tbl th[aria-sort="descending"]::after { content: ' ▼'; color: var(--accent); }
+.t-card .tbl th[aria-sort="ascending"]::after { content: ' ▲'; color: var(--accent); }
+.t-card .tbl td { vertical-align: middle; }
+.t-card tr.row, .sites-tbl tr[data-goto] { cursor: pointer; }
+.t-card a.gene { font-weight: 700; color: var(--ink); text-decoration: none; }
+.t-card a.gene:hover { text-decoration: underline; }
+.ptbl2 .acc-in { font-size: 0.74rem; color: var(--muted); }
+.ptbl2 .pname { max-width: 15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); font-size: 0.82rem; }
+.ptbl2 td.mapcell { min-width: 90px; }
+.minimap { display: block; max-width: 100%; min-width: 80px; height: auto; }
+.ixs.dashed { border-style: dashed; background: var(--surface); font-weight: 500; }
+.sites-tbl td { vertical-align: top; }
+.sites-tbl .acc { display: block; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+.sites-tbl td.cwin { white-space: nowrap; }
+.sites-tbl .tags { display: flex; flex-wrap: wrap; gap: 0.2rem; max-width: 14rem; }
+.sites-tbl .src-tags { max-width: 11rem; display: block; white-space: normal; }
+.sites-tbl .cv { max-width: 17rem; white-space: normal; }
+.sites-tbl [data-ev-kind] { cursor: pointer; }
+.sites-tbl [data-ev-kind]:hover { border-color: var(--accent); }
+.tag.t-flag { border-color: var(--ink-2); }
+.sdot { display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
+.sdot i { width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--c); flex: none; }
+.win.swin b { color: var(--brand-ink); font-weight: 700; }
+.win.swin b.wc { color: #fff; background: var(--brand-ink); border-radius: 2px; padding: 0 0.08em; }
+.win.swin .gap { color: var(--muted); }
+#sites-quick .quick { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; margin: 0 0 0.45rem; }
+#sites-quick .flabel { margin: 0 0.4rem 0 0; min-width: 12rem; }
+.fchip .ixd { margin-right: 0.3rem; }
+.fchip:disabled { opacity: 0.45; cursor: not-allowed; }
+.ctx-card { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0.8rem; padding: 0.8rem 1rem; margin: 0.8rem 0; }
+.ctx-card .eyebrow { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-dark, var(--accent)); }
+.ctx-card h3 { margin: 0.15rem 0 0.3rem; font-size: 1.15rem; }
+.ctx-card p { margin: 0; color: var(--ink-2); font-size: 0.9rem; }
+.ctx-card .actions { flex: none; }
+.en-fold { margin: 0.8rem 0; }
+.en-fold .fsum b { color: var(--ink); }
+.prof-tbl tr[data-feat] { cursor: pointer; }
+.prof-tbl tr.dim td { color: var(--muted); }
+.empty-card { background: var(--surface); border: 1px solid var(--line); border-radius: 0.8rem; padding: 1rem 1.1rem; margin: 0.8rem 0; }
+.empty-card > b { display: block; font-size: 1.05rem; margin-bottom: 0.3rem; }
+.empty-tries { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.4rem 0; }
+.empty-tries .chip { cursor: pointer; text-decoration: none; color: var(--ink); font-size: 0.85rem; }
+.evpop { position: absolute; z-index: 60; background: var(--surface); border: 1px solid var(--line); border-radius: 0.7rem; box-shadow: var(--shadow-hover); padding: 0.6rem 0.85rem; font-size: 0.84rem; }
+.evpop .evp-head { display: flex; justify-content: space-between; gap: 0.6rem; }
+.evpop .evp-list { margin: 0.4rem 0; padding-left: 1.1rem; }
+.evpop .evp-list li { margin: 0 0 0.35rem; }
+.na-tip { max-width: 30rem; }
+.na-tip .sc-na { padding-left: 1rem; margin: 0.3rem 0; }
+@media (max-width: 56rem) { .t-card .hide-sm, .prof-tbl .hide-sm { display: none; } }
+@media (max-width: 36rem) {
+  .t-card .hide-xs, .prof-tbl .hide-xs { display: none !important; }
+  .ptbl2 .pname { max-width: none; white-space: normal; }
+  .sites-tbl td.cwin { white-space: normal; word-break: break-all; }
+  .sites-tbl .cv, .sites-tbl .tags { max-width: none; }
+  .ctx-card { flex-direction: column; }
+  #sites-quick .flabel { min-width: 0; width: 100%; }
+  .tbl-wrap { overflow-x: visible; }
+}
+.sites-tbl .win { font-size: 0.8rem; }
+.sites-tbl td, .sites-tbl th { padding-left: 0.5rem; padding-right: 0.5rem; }
+.t-card .tbl th { white-space: normal; vertical-align: bottom; }
+.sites-tbl .cv { max-width: 13rem; }
+.sites-tbl .src-tags { max-width: 9rem; }
+.sites-tbl td, .sites-tbl th { padding-left: 0.4rem; padding-right: 0.4rem; }
+.sites-tbl .sdot { white-space: normal; }
+.evpop { overflow-wrap: anywhere; }
+.en-fold > summary h3 { white-space: nowrap; }
+@media (max-width: 40rem) { table.stackable td.num { text-align: left; } table.stackable td[data-label]:not([data-label=""])::before { text-align: left; } }

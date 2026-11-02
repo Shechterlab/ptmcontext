@@ -718,6 +718,15 @@ proteins:                  # the release's protein table: facts of each methylat
     go_rna: {column: go_rna_binding, label: GO RNA binding, kind: category}
     go_dna: {column: go_dna_binding, label: GO DNA binding, kind: category}
     hpa: {column: hpa_locations, label: Locations in the Human Protein Atlas, kind: list}
+    # for the Proteins table and its download (website.proteins): the release's own columns
+    condensates: {column: condensates, label: CD-CODE condensates, kind: list, help: "CD-CODE condensates (human, not synthetic) the protein is a member of"}
+    dense_start: {column: best_window_start, label: Start of the densest window, kind: number}
+    dense_end: {column: best_window_end, label: End of the densest window, kind: number}
+    disease_families: {column: disease_families, label: Disease families (DisGeNET), kind: list}
+    disease_family_terms: {column: disease_family_terms, label: DisGeNET terms per disease family, kind: list}
+    als_ftd_gene: {column: als_ftd_family_gene, label: Audited ALS/FTD gene, kind: category}
+    panther_group: {column: panther_group, label: PANTHER group, kind: category}
+    panther_class: {column: panther_class, label: PANTHER class, kind: category}
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites
@@ -977,7 +986,136 @@ website:                  # the look and words of the website (ptmc web); layout
     sel-enriched: "?vs=marks"
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   compare: {stratify: studies}      # "compared with other methylarginines, within studies": the same reporting sources
-  sites: {columns: [structure_context], attributes: [state, interaction, studies]}   # the explorer's default columns                            # the Sites tab's context column
+  proteins:                # the Proteins page (kit-tables.js): its table's columns after the protein and its sites, in the Columns
+                           # menu (default: true shows at first), and its download's columns; the explorer's
+    columns:
+      - {id: map, label: Site map, show: map, default: true, hide: xs}
+      - {id: ix, label: Interaction evidence, menu: Interaction evidence (sites), default: true,
+         counts: {attribute: interaction, values: {experimental: exp., predicted_only: pred.}, dashed: [predicted_only]},
+         help: "Sites in this selection with experimental interaction evidence, and with predicted evidence only"}
+      - {id: idr, label: In IDR, classes: {analysis: disorder, classes: [disordered]}, default: true, hide: xs, help: "The share of the protein's sites in an IDR"}
+      - {id: cond, label: Condensates, attribute: condensates, format: count, default: true, hide: sm, help: "CD-CODE condensates (human, not synthetic) the protein is a member of"}
+      - {id: loc, label: Location (HPA), attribute: hpa, hide: sm,
+         help: "Subcellular locations in the Human Protein Atlas (reliability Approved or better)"}
+      - {id: density, label: Top cluster window, template: "{dense_sites} in {dense_window} aa", where: {attribute: dense_q, max: 0.05}, sort: dense_sites, default: true, hide: sm,
+         help: "The window most significant against the same-protein arginine null (lowest q), not necessarily the densest"}
+      - {id: arg, label: Arg enrichment, attribute: arg_enrichment, format: l2, hide: sm,
+         help: "log2 of the shrinkage-estimated methylated share of this protein's arginines over the proteome-wide rate (negative when below it)"}
+      - {id: len, label: Length, show: length}
+      - {id: share, label: Share of its arginines, show: share, help: "Methylarginine sites over the protein's arginines"}
+    download:              # the explorer's 27 columns but its functional classes (unpublished labels; not shown)
+      - {name: gene, value: gene}
+      - {name: uniprot_accession, value: accession}
+      - {name: uniprot_id, value: entry}
+      - {name: protein_name, value: protein}
+      - {name: gene_aliases, value: aliases}
+      - {name: methyl_r_sites_shown, value: marks_shown}
+      - {name: methyl_r_sites_total, value: marks}
+      - {name: length, value: length}
+      - {name: arginines, value: candidates}
+      - {name: shrinkage_log2_enrichment, attribute: arg_enrichment}
+      - {name: arg_odds_q, attribute: arg_enrichment_q}
+      - {name: sites_in_idr, classes: {analysis: disorder, classes: [disordered]}}
+      - {name: condensates, attribute: condensates}
+      - {name: disease_families_by_enriched_terms, attribute: disease_families}
+      - {name: disease_family_gene_sets, attribute: disease_family_terms}
+      - {name: als_ftd_audited_gene, attribute: als_ftd_gene}
+      - {name: panther_group, attribute: panther_group}
+      - {name: panther_class, attribute: panther_class}
+      - {name: best_window_aa, attribute: dense_window}
+      - {name: best_window_sites, attribute: dense_sites}
+      - {name: best_window_start, attribute: dense_start}
+      - {name: best_window_end, attribute: dense_end}
+      - {name: best_window_q, attribute: dense_q}
+      - {name: architecture_class, attribute: architecture}
+      - {name: hpa_locations, attribute: hpa}
+  selection_cards:         # "Your selection" for a selection of one set or one source: its words and its link
+    condensate_proteome: {eyebrow: CD-CODE condensate, url: "https://cd-code.org/condensates/{set}", link: "CD-CODE {set}"}
+    condensate: {eyebrow: CD-CODE condensate, url: "https://cd-code.org/condensates/{set}", link: "CD-CODE {set}"}
+    reactome_top_level: {eyebrow: Reactome pathway, url: "https://reactome.org/content/detail/{set}", link: "Reactome {set}"}
+    reactome_pathway: {eyebrow: Reactome pathway, url: "https://reactome.org/content/detail/{set}", link: "Reactome {set}"}
+    disease_family: {eyebrow: Disease family (DisGeNET)}
+    disease_family_additional: {eyebrow: "Disease family (DisGeNET, rule-based)"}
+    panther_group: {eyebrow: PANTHER protein class group}
+    panther_class: {eyebrow: PANTHER protein class}
+    panther_subclass: {eyebrow: PANTHER protein subclass}
+    "@studies": {eyebrow: Study or database}
+  sites:                   # the Sites page: the explorer's columns (kit-sites.js)
+    state_label: State
+    short: {state: {Rme1: Rme1, Rme2: Rme2, Rme1_Rme2: Rme1 + Rme2, "": No assigned state}}   # short labels in the table
+    site_tags: {attribute: flags, values: {paralog_assigned: paralog}}                       # tags beside the site
+    window: {colours: {G: "#15803d"}}                                                         # residues coloured in the window
+    tags:                  # the motif tags under the window: which, in what order (the CARM1-like proline motifs are not shown)
+      motif: {order: [RG, RGG, GRG, GAR, RXR, DR, RD, ER, RE], hide: [CARM1_proline_rich, CARM1_hydrophobic_proline]}
+    table:                 # the optional columns (the Columns menu): the explorer's defaults first; site card blocks read website.tables
+      - {id: ix, label: Interaction evidence, show: [status, tags], default: true,
+         help: "Experimental: an RNA or DNA crosslink at the residue, an RBDmap fragment covering it, or a PDB interface; predicted only: an AlphaFold-Multimer interface or a confident predicted contact. Click a tag for what the tables hold"}
+      - {id: na, label: RNA/DNA contacts, menu: "RNA/DNA contacts (structures) and crosslinks (cells)", show: [sequences, around], sort: [nucleic_acid, evidence], default: true, hide: xs,
+         help: "RNA or DNA within 4 Å of the arginine side chain in PDB structures, within 8 Å in a complex without direct contact, or in contact via a residue at i ± 1–5; and UV-crosslinked residues and RNA-bound stretches within i ± 3 in living cells. Hover a cell for every sequence"}
+      - {id: prmt, label: PRMT perturbation, menu: "PRMT inhibitors, knockouts and knockdowns", show: [calls], sort: [gsk591, ms023, perturbation], default: true,
+         help: "Change after GSK591 (PRMT5i) or MS023 (type I PRMTi), Maron 2021 Table S3, adj. p ≤ 0.05; or in the knockouts, knockdowns and inhibitors of the release, each by the rule it names"}
+      - {id: src, label: Reported by, attribute: studies, default: true, hide: sm}
+      - {id: ctx, label: Context, menu: Disorder and domain context, analyses: [disorder, domain_context], hide: xs}
+      - {id: nn, label: Nearest methyl‑R, show: [nearest], hide: sm}
+      - {id: ip, label: Maron IP, menu: Maron methyl-IP, attribute: methyl_ip, hide: sm}
+      - {id: dom, label: Nearest domain, show: [nearest_domain], hide: sm}
+      - {id: struct, label: Structural context, analyses: [structure_context], hide: sm}
+      - {id: tcga, label: Changed in TCGA tumours, attribute: tcga_any, hide: sm}
+    download:              # the explorer's 54 columns where the release has them, and its own additions
+      - {name: gene, value: gene}
+      - {name: uniprot_accession, value: accession}
+      - {name: uniprot_id, value: entry}
+      - {name: protein_name, value: protein}
+      - {name: site, value: site}
+      - {name: position, value: position}
+      - {name: numbering, value: numbering}
+      - {name: state, attribute: state, labels: true}
+      - {name: maron_s2_state, table: site, column: maron2021_s2_states}
+      - {name: maron_ip, attribute: methyl_ip}
+      - {name: sources, attribute: studies}
+      - {name: source_count, attribute: n_studies}
+      - {name: window_15, value: window}
+      - {name: window_31, table: site, column: window_31}
+      - {name: motifs, analysis: motif, labels: true}
+      - {name: disorder_context, analysis: disorder, labels: true}
+      - {name: disorder_edge_distance, table: site, column: disorder_edge_distance}
+      - {name: domain_context, analysis: domain_context, labels: true}
+      - {name: nearest_interpro, table: site, column: nearest_domain_interpro}
+      - {name: nearest_domain_name, table: site, column: nearest_domain_name}
+      - {name: nearest_domain_class, analysis: domain_class, labels: true}
+      - {name: domain_edge_distance, table: site, column: domain_edge_distance}
+      - {name: domain_side, table: site, column: domain_side}
+      - {name: structure_context, analysis: structure_context, labels: true}
+      - {name: nearest_methyl_r_distance, value: nearest}
+      - {name: GSK591_response, attribute: gsk591}
+      - {name: GSK591_response_single_site_peptides, table: inhibitors, column: call_single_site_peptides, where: {inhibitor: GSK591}}
+      - {name: MS023_response, attribute: ms023}
+      - {name: MS023_response_single_site_peptides, table: inhibitors, column: call_single_site_peptides, where: {inhibitor: MS023}}
+      - {name: CARM1_KO_response, table: site, column: carm1_ko_call}
+      - {name: perturbations, attribute: perturbation}
+      - {name: condensates, protein: condensates}
+      - {name: reported_by, attribute: studies, labels: true}
+      - {name: localised_by, attribute: localised_by}
+      - {name: curated_only, table: site, column: curated_only}
+      - {name: references, attribute: studies, lookup: citation}
+      - {name: reported_by_doi, attribute: studies, links: true}
+      - {name: interaction_status, attribute: interaction}
+      - {name: interaction_evidence, attribute: evidence}
+      - {name: pdb_interface_partners, table: interactions, kinds: [pdb_protein], field: partner}
+      - {name: pdb_interface_entries, table: interactions, kinds: [pdb_protein, pdb_rna, pdb_dna, pdb_self], field: ids}
+      - {name: pdb_interface_entries_total, table: interactions, kinds: [pdb_protein, pdb_rna, pdb_dna, pdb_self], field: ids, count: true}
+      - {name: predicted_interface_partners_score, table: interactions, kinds: [predicted_interface, predicted_contact], field: partner, with: score}
+      - {name: predicted_interface_partners_total, table: interactions, kinds: [predicted_interface, predicted_contact], field: partner, count: true}
+      - {name: intact_records, table: records, field: id, where: {source: IntAct}}
+      - {name: bound_rna_dna, attribute: nucleic_acid}
+      - {name: bound_types, attribute: nucleic_acid_type}
+      - {name: bound_sequence, table: site, column: bound_sequence}
+      - {name: bound_sequence_offset, table: site, column: bound_sequence_offset}
+      - {name: shared_with_paralogs, table: site, column: shared_with_paralogs}
+      - {name: flags, attribute: flags}
+      - {name: tcga_changes, attribute: tcga}
+      - {name: depmap_changes, attribute: depmap}
+      - {name: neutral_loss, attribute: neutral_loss}
   tables:                  # tables the protein pages show (no test reads them), each in a format of CONTRACTS.md ("Tables
                            # the protein pages show"); here the release's own tables, their columns mapped to the format's
     site:
@@ -985,7 +1123,8 @@ website:                  # the look and words of the website (ptmc web); layout
       format: site_values
       columns: {site: site_id}
       values: [methyl_states_reported, maron2021_s2_states, uniprot_states, states_by_study_design, tcga_change_tumours, depmap_change_lines,
-               reported_positions, nearest_domain_interpro, nearest_domain_name, domain_side, domain_edge_distance]
+               reported_positions, nearest_domain_interpro, nearest_domain_name, domain_side, domain_edge_distance,
+               window_31, disorder_edge_distance, carm1_ko_call, curated_only, bound_sequence, bound_sequence_offset, shared_with_paralogs]   # the last: the Sites download
     proteins:                            # other names a search or an old link may use (#TDP-43); the facts are proteins.attributes
       input: methylarginine_proteins_v1_4_3
       format: protein_values
