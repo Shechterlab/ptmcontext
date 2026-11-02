@@ -33,7 +33,9 @@ ECO = {'ECO:0000269': 'experimental', 'ECO:0007744': 'large_scale', 'ECO:0000250
        'ECO:0000255': 'sequence_analysis', 'ECO:0000305': 'curator_inference'}
 
 
-def _get(url: str, retries: int = 4) -> tuple[bytes, dict]:
+def _get(url: str, retries: int = 6) -> tuple[bytes, dict]:
+    """A download, tried up to six times with waits of 2, 4, 8, 16 and 32 s: an upstream server error (UniProt
+    answers 500 when busy) does not fail a deploy unless it lasts over a minute."""
     for attempt in range(retries):
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'ptmcontext-stage'})
