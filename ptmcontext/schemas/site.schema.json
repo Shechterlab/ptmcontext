@@ -1767,6 +1767,9 @@
                 }
               },
               "additionalProperties": false
+            },
+            "map": {
+              "$ref": "#/$defs/protein_map"
             }
           }
         },
@@ -2897,6 +2900,623 @@
             "type": "string"
           },
           "description": "compartments: the set in each map, by its analysis"
+        }
+      }
+    },
+    "protein_map": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "the protein map: more ways to colour the marks, the papers behind its sources, and rows of the site's own evidence (CONTRACTS.md, Map rows)",
+      "properties": {
+        "colour_by": {
+          "type": "array",
+          "description": "the ways to colour the marks, in this order: an attribute with colour: true by its name, or a mode made from the marks' attributes (each mark takes the first class whose conditions hold, else otherwise). Colour attributes not named follow",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "label",
+                  "classes"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "help": {
+                    "type": "string"
+                  },
+                  "classes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "colour"
+                      ],
+                      "properties": {
+                        "label": {
+                          "type": "string"
+                        },
+                        "help": {
+                          "type": "string"
+                        },
+                        "colour": {
+                          "type": "string",
+                          "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                        },
+                        "colour_dark": {
+                          "type": "string",
+                          "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                        },
+                        "hollow": {
+                          "type": "boolean",
+                          "description": "drawn as an empty, dashed head (measured, unchanged; predicted only)"
+                        },
+                        "when": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "attribute"
+                            ],
+                            "properties": {
+                              "attribute": {
+                                "type": "string"
+                              },
+                              "has": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "holds any of these values"
+                              },
+                              "lacks": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "holds none of these values"
+                              },
+                              "matches": {
+                                "type": "string",
+                                "description": "a value matches this regular expression"
+                              },
+                              "empty": {
+                                "type": "boolean",
+                                "description": "true: holds no value; false: holds one"
+                              }
+                            }
+                          },
+                          "description": "every condition holds"
+                        }
+                      }
+                    },
+                    "minItems": 1
+                  },
+                  "otherwise": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "label",
+                      "colour"
+                    ],
+                    "properties": {
+                      "label": {
+                        "type": "string"
+                      },
+                      "colour": {
+                        "type": "string",
+                        "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                      },
+                      "colour_dark": {
+                        "type": "string",
+                        "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                      },
+                      "hollow": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "sources": {
+          "type": "object",
+          "description": "each source name the rows' items carry: its words and its paper",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "cite": {
+                "type": "string"
+              },
+              "doi": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "pdb_contacts": {
+          "type": "boolean",
+          "description": "false: no rows of PDB interface residues (PDBe-KB, live)"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "help": {
+                "type": "string"
+              },
+              "from": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "one table a row reads, in the map-row format (CONTRACTS.md) by a column mapping",
+                    "properties": {
+                      "role": {
+                        "type": "string",
+                        "description": "a role of inputs: (its manifest inputs)"
+                      },
+                      "marks": {
+                        "type": "boolean",
+                        "description": "true: the marks table itself (accession and position default to the marks' own)"
+                      },
+                      "sep": {
+                        "type": "string",
+                        "description": "the table's separator (default a tab)"
+                      },
+                      "columns": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "accession": {
+                            "type": "string"
+                          },
+                          "start": {
+                            "type": "string"
+                          },
+                          "end": {
+                            "type": "string"
+                          },
+                          "position": {
+                            "type": "string"
+                          },
+                          "class": {
+                            "oneOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "minItems": 1
+                              }
+                            ],
+                            "description": "the column whose codes the row's classes describe; several are joined with ':'"
+                          },
+                          "label": {
+                            "type": "string",
+                            "description": "a column, or a template naming columns: {column} or {column:.2g}"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "ref": {
+                            "type": "string"
+                          },
+                          "sources": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "include": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/$defs/condition"
+                        }
+                      },
+                      "exclude": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/$defs/condition"
+                        }
+                      },
+                      "split": {
+                        "type": "string",
+                        "description": "cells of class, label, value and ref holding lists in step, by this separator: each entry one item"
+                      },
+                      "values": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "description": "codes of a column in words, before the label is made: {column: {code: words}}"
+                      },
+                      "classes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "keep only items of these classes from this table (a list column of codes, of which a few are this row's)"
+                      }
+                    }
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "description": "one table a row reads, in the map-row format (CONTRACTS.md) by a column mapping",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "description": "a role of inputs: (its manifest inputs)"
+                        },
+                        "marks": {
+                          "type": "boolean",
+                          "description": "true: the marks table itself (accession and position default to the marks' own)"
+                        },
+                        "sep": {
+                          "type": "string",
+                          "description": "the table's separator (default a tab)"
+                        },
+                        "columns": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "accession": {
+                              "type": "string"
+                            },
+                            "start": {
+                              "type": "string"
+                            },
+                            "end": {
+                              "type": "string"
+                            },
+                            "position": {
+                              "type": "string"
+                            },
+                            "class": {
+                              "oneOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "minItems": 1
+                                }
+                              ],
+                              "description": "the column whose codes the row's classes describe; several are joined with ':'"
+                            },
+                            "label": {
+                              "type": "string",
+                              "description": "a column, or a template naming columns: {column} or {column:.2g}"
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "ref": {
+                              "type": "string"
+                            },
+                            "sources": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "include": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/condition"
+                          }
+                        },
+                        "exclude": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/condition"
+                          }
+                        },
+                        "split": {
+                          "type": "string",
+                          "description": "cells of class, label, value and ref holding lists in step, by this separator: each entry one item"
+                        },
+                        "values": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string"
+                            }
+                          },
+                          "description": "codes of a column in words, before the label is made: {column: {code: words}}"
+                        },
+                        "classes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "keep only items of these classes from this table (a list column of codes, of which a few are this row's)"
+                        }
+                      }
+                    },
+                    "minItems": 1
+                  }
+                ]
+              },
+              "sequence": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "motif",
+                  "min"
+                ],
+                "description": "runs of a motif found in each protein's sequence: at least min matches, each within gap residues of the one before",
+                "properties": {
+                  "motif": {
+                    "type": "string",
+                    "description": "a regular expression"
+                  },
+                  "min": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "gap": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "words": {
+                    "type": "string",
+                    "description": "what a run holds: {n} matches, {strong} strong ones"
+                  },
+                  "strong": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "motif",
+                      "min",
+                      "label"
+                    ],
+                    "properties": {
+                      "motif": {
+                        "type": "string"
+                      },
+                      "min": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "label": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "place": {
+                "enum": [
+                  "row",
+                  "backbone"
+                ],
+                "description": "backbone: a band behind the marks, listed with the backbone's overlays"
+              },
+              "after": {
+                "type": "string",
+                "description": "the row it follows by default (the kit's rows: uni_dom, regions, composition, charge, hydropathy, aromatic, residues, uni_mark, variants, mutagen, ptm, pdb, plddt; or another of these rows)"
+              },
+              "default": {
+                "enum": [
+                  "on",
+                  "off"
+                ]
+              },
+              "mark": {
+                "enum": [
+                  "tick",
+                  "box",
+                  "pred",
+                  "dot",
+                  "diamond",
+                  "named"
+                ],
+                "description": "how an item is drawn (default: a tick for a residue, a box for a region)"
+              },
+              "colour": {
+                "type": "string",
+                "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+              },
+              "colour_dark": {
+                "type": "string",
+                "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+              },
+              "ink": {
+                "type": "string",
+                "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+              },
+              "ink_dark": {
+                "type": "string",
+                "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "classes": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "label"
+                  ],
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "help": {
+                      "type": "string"
+                    },
+                    "mark": {
+                      "enum": [
+                        "tick",
+                        "box",
+                        "pred",
+                        "dot",
+                        "diamond",
+                        "named"
+                      ]
+                    },
+                    "colour": {
+                      "type": "string",
+                      "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                    },
+                    "colour_dark": {
+                      "type": "string",
+                      "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                    },
+                    "opacity": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "the sources behind every item of this class, when its table has no sources column"
+                    }
+                  }
+                },
+                "description": "the classes of its items, in drawing order (first underneath), with their words; items of other classes are left out"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "one": {
+                    "type": "string"
+                  },
+                  "many": {
+                    "type": "string"
+                  },
+                  "size": {
+                    "type": "boolean",
+                    "description": "a taller tick for a larger value"
+                  },
+                  "opacity": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "darker from the first value to the second"
+                  }
+                },
+                "description": "the words for an item's value, {n} for the number (one: 'in {n} tumour', many: 'in {n} tumours')"
+              },
+              "labels": {
+                "enum": [
+                  "marks",
+                  "none"
+                ],
+                "description": "marks: an item at a mark is labelled there"
+              },
+              "merge": {
+                "type": "boolean",
+                "description": "items of one class, label and ref that overlap are drawn as one"
+              },
+              "key": {
+                "type": "string",
+                "description": "the key's words for the row's items when they have no class (default: its title)"
+              }
+            }
+          }
+        },
+        "hatch": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "attribute"
+            ],
+            "properties": {
+              "attribute": {
+                "type": "string"
+              },
+              "has": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "holds any of these values"
+              },
+              "lacks": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "holds none of these values"
+              },
+              "matches": {
+                "type": "string",
+                "description": "a value matches this regular expression"
+              },
+              "empty": {
+                "type": "boolean",
+                "description": "true: holds no value; false: holds one"
+              }
+            }
+          },
+          "description": "marks drawn hatched, whatever their colour, when every condition holds (a variant's lower-confidence sites); a condition on an attribute the marks lack never holds"
+        },
+        "hatch_label": {
+          "type": "string",
+          "description": "the key's words for a hatched head (default: the value the first hatch condition names)"
         }
       }
     }

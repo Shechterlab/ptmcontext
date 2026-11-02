@@ -1,6 +1,6 @@
 # Contracts
 
-Eight plain-data formats, and the tables the protein pages show (at the end). Code on either side of a contract can change freely; a contract changes only with its
+Nine plain-data formats, and the tables the protein pages show (at the end). Code on either side of a contract can change freely; a contract changes only with its
 `schema_version`, and every file is checked against its schema before it is used.
 
 | Contract | Format | Schema | Written by | Read by |
@@ -12,6 +12,7 @@ Eight plain-data formats, and the tables the protein pages show (at the end). Co
 | **Statistics row** | TSV | `ptmcontext/schemas/statistics.schema.json` | every test | releases, websites, parity |
 | **Set families** | YAML | `ptmcontext/schemas/set_families.schema.json` | a person (a site's own data file, `sites/data/`) | protein-set questions that gather sets into families |
 | **Per-mark table** | TSV (any columns; the site file names its key and the columns kept) | `marks.tables` in `ptmcontext/schemas/site.schema.json` | a source, another repository, a user | the website's count questions (`website.counts`) |
+| **Map rows** | TSV in any layout, mapped to the format's columns in the site file | `ptmcontext/schemas/site.schema.json` (`website.protein.map.rows`) | a backend's release, or a person | `ptmc run` (map_items.tsv), the protein map |
 | **Citation** | YAML (CITATION.cff 1.2.0) | [citation-file-format.github.io](https://citation-file-format.github.io/) | a person | every page and download; GitHub and Zenodo read it too |
 
 ## Statistics row
@@ -178,6 +179,41 @@ kind`) come from the site file. The Overview places it by naming its id among th
 a header tile opens it with `opens: <id>`; `legacy_links` may name it. Its id may not be an analysis's or an
 attribute's (the search reads `key:value` by those names); `ptmc check` names any attribute, table or column a count
 names that the site file does not keep. A site without counts has none of this.
+
+## Map rows
+
+The protein map's own rows: evidence along a protein that no question tests (crosslinks, interfaces, changes in
+tumours, dense windows, ...). One format serves three shapes; a table in any layout is mapped to it in the site file
+(`website.protein.map.rows[].from[].columns`), so a release's table, a backend's export or a user's own file in the same
+shape gives the same row:
+
+| Field | Type | Required | Is |
+|---|---|---|---|
+| `accession` | string | yes | the protein (an entry of the snapshot; other accessions are left out) |
+| `start`, `end` | integer | a region | 1-based, inclusive, on the snapshot's sequence; items outside it are left out |
+| `position` | integer | a residue | instead of start and end |
+| `class` | code | no | what the item is; the row's `classes` give each code its words, mark (`tick`, `box`, `pred`, `dot`, `diamond`, `named`) and colour, in drawing order, and items of other codes are left out. Several columns may be named: their values are joined with `:` (`dna_crosslink:candidate_residue`) |
+| `label` | string | no | its words: a column, or a template naming columns, `{column}` or `{column:.2g}` for a number |
+| `value` | number | no | a count or score: a per-site count (tumours carrying a change), partners at an interface; the row's `value` gives its words (`one`, `many`, with `{n}`), and may size ticks (`size`) or shade boxes (`opacity: [from, to]`) by it |
+| `ref` | string | no | an accession of its own (an InterPro entry), linked by `config/ref_links.json` |
+| `sources` | list (`; `) | no | the sources behind it; `website.protein.map.sources` gives each its words and paper (`cite`, `doi`) |
+
+- a **per-residue list**: `accession`, `position`, and `class` or `label` (RNA-crosslinked residues);
+- a **region list**: `accession`, `start`, `end`, and `class`, `label`, `ref` (fragments, binding regions, windows);
+- a **per-site count**: `accession`, `position`, `label` and `value` (each change of a site and the tumours carrying it).
+
+Options of a table: `role` (a role of `inputs:`, so the file is in a manifest) or `marks: true` (the marks table, its
+accession and position by default); `include`/`exclude` conditions as for marks; `split`, a separator: cells of
+`class`, `label`, `value` and `ref` holding lists in step become one item per entry (lists of different lengths are an
+error); `values`, codes of a column in words (`{column: {code: words}}`); `sep` for a table that is not tab-separated.
+A row may instead be found in each protein's sequence (`sequence: {motif, min, gap, label, strong}`: runs of at least
+`min` matches of a regular expression, each within `gap` residues of the one before). A row whose data a protein lacks is
+not drawn on it, and a site without rows has none.
+
+`ptmc run` writes `map_items.tsv` (`accession, row, start, end, class, label, value, ref, sources`, for the proteins
+with a mark); `ptmc web` splits it into `data/map/NN.json` (64 shards by the protein files' rule: `{accession: [[row
+index, start, end, class, label, value, ref, sources], ...]}`, empty trailing fields left out) and names the rows in
+order in the site data (`map_rows`).
 
 ## Input manifest entries
 

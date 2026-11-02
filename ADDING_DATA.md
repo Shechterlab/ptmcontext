@@ -258,6 +258,13 @@ every question and offers every filterable attribute. A new question appears on 
 tile, its filter, its rows in All tests and the downloads, its column if named, and, if its layer draws regions, a row
 of the protein map (`tests/test_new_sources.py` builds such a site from scratch).
 
+Evidence along the proteins that no question tests (crosslinks, interfaces, changes in tumours, dense windows) is a row
+of the protein map: `website.protein.map.rows`, each reading a role (or the marks table, `marks: true`) with a column
+mapping into the map-row format (CONTRACTS.md, Map rows), its classes with their words, marks and colours, and the
+papers of its sources in `website.protein.map.sources`. A residue list, a region list and a per-site count are the
+same format with different columns filled (`tests/test_map_rows.py` builds such a site from scratch). Rows the source
+may not republish are left out by the mapping's `include`/`exclude`: the website then never holds them.
+
 **Check:** `ptmc run sites/<site>.yaml --root DATA` runs, and `out/<site>/run.json` lists every input with its MD5.
 
 Maps of the cell need no code either: make each map a protein-set question (its sets the compartments; optionally a

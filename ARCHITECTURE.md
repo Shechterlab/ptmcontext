@@ -116,6 +116,15 @@ gives, so any site with such data gets them from its site file alone. A selectio
 selection too small to test still gets them, as counts hold for any selection. A click on a value or an experiment
 sets its filter and opens the Sites page.
 
+**The protein map's own rows** (`website.protein.map`) show evidence along a protein that no question tests: each row
+reads tables in one format (CONTRACTS.md, Map rows: a residue list, a region list or a per-site count), named by a role
+and mapped column by column in the site file, so a release's table, a backend's export or a user's file gives the same
+row; or it finds runs of a motif in the sequence. `ptmc run` writes the items (`map_items.tsv`, `ptmcontext/map_rows.py`),
+`ptmc web` one file per protein shard (`data/map/`), and `kit-map.js` draws them by the classes, marks and colours the
+site file gives, with the papers of their sources. The same block adds colour modes made from the marks' attributes
+(hollow classes; hatched marks) and the papers behind the rows' sources. A row a protein has no data for is absent, and
+a site without the block has none of this. PDB interfaces (PDBe-KB) are a live row of the kit's own, for any site.
+
 **The header's citation line** names the studies and databases that report the most marks (the list attribute a header
 tile counts), each linked to its paper, and how many there are in all.
 

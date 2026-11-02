@@ -150,7 +150,10 @@ def mapping_problems(site: dict, root: str | Path) -> list[str]:
         missing = [c for c in source_columns(tb) if c not in have]
         if missing:
             out.append(f"website.tables.{tid}: {path.name} has no columns {missing}")
-    return out
+    from . import map_rows as MR                 # the protein map's rows: their own column mappings
+    files = {role: [Path(root) / entries.get(n, {}).get('file', '') for n in I.role_inputs(v)[1]] for role, v in (site.get('inputs') or {}).items()}
+    marks = entries.get(site['marks']['input'], {}).get('file')
+    return out + MR.mapping_problems(site, files, Path(root) / marks if marks else None)
 
 
 def count_row_id(row: dict) -> str:
@@ -346,7 +349,8 @@ def website_problems(site: dict) -> list[str]:
             known = words.get(a['id'], {}).get('classes')
             if known is not None and set(g['classes']) - known:
                 out.append(f"analyses.{a['id']}.groups, group {g['name']!r}: no class {sorted(set(g['classes']) - known)} (it has {sorted(known)})")
-    return out
+    from .map_rows import problems as map_problems
+    return out + map_problems(site)
 
 
 def cell_drawings() -> dict:
@@ -969,6 +973,14 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         for stale in folder.glob('marks_*.tsv'):       # a table the site file no longer keeps
             if stale.name not in outs:
                 stale.unlink()
+        from . import map_rows as MR             # the protein map's own rows, from the site's tables (website.protein.map)
+        if MR.input_rows(site):
+            accs = set(marked['accession'])
+            files = {role: (I.role_inputs(v)[0], [paths[n] for n in I.role_inputs(v)[1]]) for role, v in roles.items()}
+            outs['map_items.tsv'] = MR.items(site, files, table, accs, {a: snap.length(a) for a in accs})
+            record['map_rows'] = {r['id']: int((outs['map_items.tsv']['row'] == r['id']).sum()) for r in MR.input_rows(site)}
+        elif (folder / 'map_items.tsv').exists():
+            (folder / 'map_items.tsv').unlink()
         if set_keep:                                   # for testing a selection again on the website
             (folder / 'protein_sets.json').write_text(json.dumps(set_keep, separators=(',', ':')) + '\n')
             record['output']['protein_sets.json'] = md5_file(folder / 'protein_sets.json')

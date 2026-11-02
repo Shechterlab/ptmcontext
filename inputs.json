@@ -401,6 +401,25 @@
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
       "note": "STRING physical partners (score 0.7 or more) of the methylated proteins, with whether each is methylated and its class: the site card's writer and reader, and a protein's methylated STRING partners on its page. STRING CC BY 4.0."
+    },
+    "density_windows_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/density_windows_v1.4.3.tsv",
+      "md5": "d707433811f76cd9659ff6c61e892c86",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "The release's windows holding more sites than expected (supporting/density_windows), checked against the release's MD5SUMS. Read for the protein map only."
+    },
+    "interpro_all_entries": {
+      "file": "inputs/annotation/interpro_108.0_all_entry_intervals.tsv",
+      "md5": "e9210822dfcd5217ae9497095cfc4a4f",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/interpro/releases/108.0/protein2ipr.dat.gz and entry.list",
+      "version": "InterPro 108.0",
+      "licence": "CC0 1.0",
+      "role": "input",
+      "note": "Every InterPro 108.0 entry interval of the reviewed human entries (families and superfamilies too). Staged by PTM_Pipeline scripts/00_stage_context_sources.py --interpro-source bulk (inputs/MANIFEST.tsv); this repository checks the bytes. Read for the protein map only.",
+      "record": "https://www.ebi.ac.uk/interpro/protein/UniProt/{acc}/"
     }
   }
 }

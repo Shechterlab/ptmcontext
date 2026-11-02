@@ -249,6 +249,9 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         hist = ((spec.get('sets') or {}).get('history') or {}).get('input')
         if hist:                                                          # members' older accessions to current entries
             readers.setdefault(hist, []).append(f"older accessions of the members of {a['title']}")
+    from ..map_rows import roles_read                  # the tables the protein map's own rows read
+    for role, titles in roles_read(site).items():
+        readers.setdefault(role, []).append('the protein map: ' + ', '.join(dict.fromkeys(titles)))
     for role, value in site.get('inputs', {}).items():
         rule, names = role_inputs(value)
         what = '; '.join(dict.fromkeys(readers.get(role, []))) or role.replace('_', ' ')
@@ -351,6 +354,29 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
                 rec['totals'][aid] = [int(g['marks_total'].iloc[0]), int(g['others_total'].iloc[0])]
         shards.setdefault(shard_of(a), {})[a] = rec
     return (listing, analyses, sources, [c[2:] for c in attrs]), shards
+
+
+def map_data(folder: Path, site: dict) -> tuple[list[str], dict]:
+    """The protein map's own rows (map_items.tsv, website.protein.map.rows): the rows' ids, and each protein's items
+    by shard, an item [row index, start, end, class, label, value, ref, sources] without its empty tail."""
+    from ..map_rows import input_rows
+    ids = [r['id'] for r in input_rows(site)]
+    if not ids or not (folder / 'map_items.tsv').exists():
+        return [], {}
+    import pandas as pd
+    df = pd.read_csv(folder / 'map_items.tsv', sep='\t', dtype=str, keep_default_na=False)
+    index = {r: k for k, r in enumerate(ids)}
+    shards: dict[int, dict] = {}
+    for rec in df.to_dict('records'):
+        if rec['row'] not in index:
+            continue
+        v = float(rec['value']) if rec['value'] != '' else None
+        item = [index[rec['row']], int(rec['start']), int(rec['end']), rec['class'], rec['label'],
+                (int(v) if v is not None and v.is_integer() else v), rec['ref'], rec['sources']]
+        while len(item) > 3 and item[-1] in ('', None):
+            item.pop()
+        shards.setdefault(shard_of(rec['accession']), {}).setdefault(rec['accession'], []).append(item)
+    return ids, shards
 
 
 def selection_data(folder: Path, listing: list, analyses: list, specs: dict | None = None, strata_for: set | None = None) -> dict:
@@ -628,6 +654,17 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         (out / 'data' / 'p').mkdir(parents=True, exist_ok=True)
         for k, recs in shards.items():
             (out / 'data' / 'p' / f'{k:02d}.json').write_text(json.dumps(recs, separators=(',', ':')))
+    # the protein map's own rows: one file per shard, which the map reads when a protein opens
+    map_ids, map_shards = map_data(folder, site)
+    data['map_rows'], data['map_shards'] = map_ids, (SHARDS if map_shards else 0)
+    if (out / 'data' / 'map').exists():
+        shutil.rmtree(out / 'data' / 'map')
+    if map_shards:
+        (out / 'data' / 'map').mkdir(parents=True, exist_ok=True)
+        for k, recs in map_shards.items():
+            (out / 'data' / 'map' / f'{k:02d}.json').write_text(json.dumps(recs, separators=(',', ':')))
+        log(f"  map rows: {sum(len(v) for sh in map_shards.values() for v in sh.values()):,} items in {', '.join(map_ids)}")
+    inline_map = json.dumps({f'{k:02d}': v for k, v in map_shards.items()}, separators=(',', ':')).replace('</', '<\\/') if map_shards else ''
     # the regions whose track carries numbers (the IDRs and their charge), read by the page that shows them
     values = unit_value_data(folder, listing, data['tracks']) if listing else {}
     if values:
@@ -652,6 +689,8 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     inline_tables = json.dumps({f'{k:02d}': v for k, v in ev_shards.items()}, separators=(',', ':'), default=int).replace('</', '<\\/')
     if inline_proteins == '{}' or len(inline_proteins) + len(inline_tables) > 12_000_000:
         inline_tables = '{}'
+    if inline_proteins == '{}' or len(inline_proteins) + len(inline_map) > 12_000_000:
+        inline_map = ''
 
     def page(inline: bool) -> str:
         icon_href = 'data:image/svg+xml;base64,' + base64.b64encode(icon.encode()).decode() if inline else 'assets/icon.svg'
@@ -695,6 +734,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             css = f'<style>{_asset("assets/kit.css").read_text()}</style>'
             js = (f'<script id="protein-data" type="application/json">{inline_proteins}</script>'
                   + (f'<script id="table-data" type="application/json">{inline_tables}</script>' if inline_tables != '{}' else '')
+                  + (f'<script id="map-data" type="application/json">{inline_map}</script>' if inline_map else '')
                   + (f'<script id="selection-data" type="application/json">{inline_selection}</script>' if inline_selection else '')
                   + (f'<script id="unit-values" type="application/json">{inline_values}</script>' if inline_values else '')
                   + ''.join(f'<script>{_asset("assets/" + n).read_text()}</script>' for n in MODULES))
