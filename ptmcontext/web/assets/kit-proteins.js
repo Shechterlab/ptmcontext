@@ -141,6 +141,9 @@
     const s = SPECS[name], v = attrVal(m, name); if (!s) return esc(v);
     if (s.kind === 'list') {
       const sep = s.separator || '; ', vals = v ? v.split(sep) : [], ids = s.link ? attrVal(m, name + '.link').split(sep) : [];
+      if (K.density.compact() && !full && vals.length > 1) {   // compact rows: the first one and "+n" (all on hover)
+        return `<span class="src-tags">${K.sel.listHtml(name, vals.slice(0, 1), ids.slice(0, 1), PV.acc, full)}<span class="tag more" title="${esc(vals.map(x => vLabel(name, x)).join('\n'))}">+${vals.length - 1}</span></span>`;
+      }
       return K.sel.listHtml(name, vals, ids, PV.acc, full);
     }
     return esc(K.sel?.valueLabel ? K.sel.valueLabel(name, v) : v);
@@ -389,7 +392,9 @@
       ...COLS.filter(aid => !FLAGS.includes(aid)).map(aid => ({ id: 'q:' + aid, label: A[aid]?.title || aid, analyses: [aid], default: (D.sites_view?.columns || []).includes(aid) }))];
   }
   const SHOW = {
-    status: c => K.card.badge(c), tags: c => K.card.tags(c, 4), sequences: c => K.card.sequences(c, true), around: c => K.card.around(c, true), calls: c => K.card.calls(c),
+    status: c => K.card.badge(c), tags: c => (K.density.compact() ? K.card.tags(c, -1) : K.card.tags(c, 4)),
+    sequences: c => { if (!K.density.compact()) return K.card.sequences(c, true); const ws = K.card.windowsOf(c) || []; return ws.length ? `<span class="tag t-a more" title="${esc(ws.map(w => w.names[0] || '').filter(Boolean).join('\n'))}">${ws.length} bound</span>` : ''; },
+    around: c => K.card.around(c, K.density.compact() ? 'brief' : true), calls: c => K.card.calls(c, K.density.compact()),
     plddt: c => plddtHtml(c.p, c.pos), nearest: c => { const x = nearestOf(c.rec, c.pos); return x == null ? '' : `${int(Math.abs(x - c.pos))} aa`; },
     states: c => K.card.states(c, true), changes: c => K.card.changes(c),
     nearest_domain: c => { const nd = TC?.nearest_domain; if (!nd || !K.card.has(nd.table)) return ''; const r = K.card.at(c.tb, nd.table, c.pos)[0]; if (!r || !r[nd.name]) return '';
@@ -417,7 +422,7 @@
     const on = new Set(K.columns.on(table, cols, defaults)), shown = cols.filter(c => on.has(c.id));
     const flt = TC?.filter && SPECS[TC.filter] ? TC.filter : null, fv = flt ? PV.pf : '';
     const posList = TC?.positions && K.card.has(TC.positions.table) ? TC.positions : null;
-    const head = `<tr><th aria-sort="ascending" title="In order along the chain">Site</th>${colourAttr ? `<th>${esc(SPECS[colourAttr].label)}</th>` : ''}<th>Window ±7${FLAGS.length ? ' · ' + esc(FLAGS.map(a => A[a]?.title || a).join(', ').toLowerCase()) : ''}</th>${shown.map(c => `<th>${esc(c.label)}</th>`).join('')}<th><span class="vh">Actions</span></th></tr>`;
+    const head = `<tr><th aria-sort="ascending" title="In order along the chain">Site</th>${colourAttr ? `<th>${esc(SPECS[colourAttr].label)}</th>` : ''}<th${FLAGS.length ? ` title="Window ±7 and its ${esc(FLAGS.map(a => A[a]?.title || a).join(', ').toLowerCase())}"` : ''}>Window ±7${FLAGS.length ? ' · tags' : ''}</th>${shown.map(c => `<th>${esc(c.label)}</th>`).join('')}<th><span class="vh">Actions</span></th></tr>`;
     const n = 3 + (colourAttr ? 1 : 0) + shown.length;
     const body = [...rec.marks].sort((x, y) => x[0] - y[0]).map(m => {      // along the chain, as the original explorer lists them
       if (fv && attrVal(m, flt) !== fv) return '';

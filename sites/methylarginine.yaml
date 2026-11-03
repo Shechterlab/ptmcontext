@@ -1216,7 +1216,7 @@ website:                  # the look and words of the website (ptmc web); layout
         #  counted from the partner classes (website.search.partners), not tested
         cards: [reader_classes, {analysis: perturbations, wide: true}]
       - name: Interactions and binding
-        about: "Whether methylated arginines touch RNA, DNA or other proteins. The Binding and contacts page has the tests."
+        about: "Whether methylated arginines touch RNA, DNA or other proteins. The Interactions page has the tests."
         #  the Interactions page's tile (website.pages[].overview)
         cards: []
       - name: Studies and sources
@@ -1518,7 +1518,7 @@ website:                  # the look and words of the website (ptmc web); layout
     proteins: {label: Proteins, hint: "The proteins with a methylarginine, with the sites on each; filter, sort and download."}
     sites: {label: Sites, hint: "Every methylarginine, one row each, with its evidence; filter, sort and download."}
     idrs: {label: Disordered regions, hint: "Intrinsically disordered regions (IDRs) of the proteins, and where the methylarginines sit in them."}
-    interactions: {label: Binding and contacts, hint: "Methylarginines at contacts with RNA, DNA or other proteins."}
+    interactions: {label: Interactions, hint: "Methylarginines at contacts with RNA, DNA or other proteins."}
     statistics: {label: All tests, hint: "The table of every test behind the site: one row per class, with its odds ratio, interval and q value."}
     method: {label: Methods & data, hint: "How each question was asked and tested, the data it came from, and downloads."}
     help: {label: Help, hint: "How to use the site: searching, filters, selections, keys."}
@@ -2369,7 +2369,7 @@ website:                  # the look and words of the website (ptmc web); layout
           opacity: 0.75
   pages:
     - id: interactions
-      tab: Binding and contacts
+      tab: Interactions
       title: Are methylarginines enriched at contacts with RNA, DNA or other proteins?
       sub: "Each methylarginine against the other arginines of its own protein that the evidence could reach: in living cells (crosslinks and RNA-bound peptides), in solved structures and in predicted complexes; and the proteins and partners that carry them."
       method: |

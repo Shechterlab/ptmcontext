@@ -219,6 +219,19 @@
     const nf = K.sel ? K.sel.nFilters() : 0, fbtn = K.sel ? `<button type="button" class="btn small filter-btn${nf ? ' on' : ''}" data-rail-open="filters" title="Open the filters: narrow every page to the ${esc(W.marks)} that match"><span aria-hidden="true">⏚</span> Filter${nf ? ` <span class="badge">${nf}</span>` : ''}</button>` : '';
     $('#scope').innerHTML = fbtn + (bar || (`<span>All <b>${int(D.counts.marks)}</b> ${esc(W.marks)} on <b>${int(D.counts.proteins)}</b> proteins</span>` + (ex ? `<span class="scope-hint">Try</span>${ex}` : '')));
   }
+  // the pages that follow the selection: the Overview, the tables, the disordered regions and the interaction pages
+  const follows = v => ['overview', 'proteins', 'sites', 'idrs'].includes(v) || !!K.views[v]?.follows;
+  K.followsSelection = follows;
+  function selLine() {
+    if (!K.sel?.active()) return '';
+    const v = S.view;
+    if (v === 'protein' && K.sel.protSelected(String(S.arg).split('/')[0])) return '';   // a protein of the selection: its page fades the sites outside it, and says so
+    if (follows(v)) {
+      const n = K.sel.nMarks(), np = K.sel.nProteins(), one = np === 1 ? ((D.proteins[K.sel.compute().q?.genes?.[0]] || [])[1] || '') : '';
+      return `<p class="sel-line" role="status"><span>Showing your selection: <b>${int(n)}</b> ${esc(n === 1 ? W.mark : W.marks)} on ${one ? '<b>' + esc(one) + '</b>' : `<b>${int(np)}</b> protein${np === 1 ? '' : 's'}`}</span> <button type="button" class="linkish" data-sel-clear-all>Clear</button></p>`;
+    }
+    return `<p class="sel-line off" role="status">Not filtered by your selection.</p>`;
+  }
   function tabs() {
     const sel = K.sel?.active();
     // K.tabsEnd: a module's page after Method (kit-help.js: Help)
@@ -226,7 +239,7 @@
       .map(([v, name, n]) => [v, tabName(v, name), n]);
     const on = v => S.view === v || (K.views[S.view]?.tab === v);
     $('#tabs').innerHTML = `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>` + t.map(([v, name, n]) => `<a class="tab" href="${esc(link(v))}"${tabHint(v) ? ` title="${esc(tabHint(v))}"` : ''}${on(v) ? ' aria-current="page"' : ''}>${name}` +
-      (n != null ? ` <span class="count${n === 'selection' ? ' sel' : ''}"${n === 'selection' ? ' title="Every question here is tested again on your selection"' : ''}>${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + '</a>').join('') + variantSwitch();
+      (n != null && n !== 'selection' ? ` <span class="count">${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + (sel && follows(v) ? ' <span class="selmark" title="Follows your selection" aria-label="follows your selection">●</span>' : '') + '</a>').join('') + variantSwitch();
   }
   // the site's variants (the same questions on other marks, such as with lower-confidence sites): a switch to each,
   // and in a variant the switch back; the page, its selection and its place are kept
@@ -1175,7 +1188,7 @@
     $('#q-clear').hidden = !S.q;
     scope();
     const mod = K.views[S.view];
-    $('#view').innerHTML = mod ? mod.render(S.arg) : S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview();
+    $('#view').innerHTML = selLine() + (mod ? mod.render(S.arg) : S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview());
     document.title = S.view === 'overview' ? D.site.name : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`;   // the page first: "FUS R216 · <site>"
     document.body.classList.toggle('slim', S.view !== 'overview');      // the header band in full on the Overview only
     pageHint();

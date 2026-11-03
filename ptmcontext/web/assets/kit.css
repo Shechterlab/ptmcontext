@@ -1398,3 +1398,27 @@ html[data-density="compact"] .sites-tbl .src-tags a { max-width: 8rem; }
   .tbl td a, .tbl td button, .gene-chip { display: inline-block; min-height: 24px; line-height: 24px; }
   .links-list a, .sc-refs a, .crumb a { display: inline-block; min-height: 24px; line-height: 24px; }
 }
+html[data-density="compact"] .stbl td { vertical-align: middle; white-space: nowrap; padding-top: 0.2rem; padding-bottom: 0.2rem; }
+html[data-density="compact"] .stbl td.cw, html[data-density="compact"] .stbl td.cwin { white-space: nowrap; max-width: none; min-width: 0; }
+html[data-density="compact"] .stbl td > br { display: none; }
+html[data-density="compact"] .stbl td .muted.small { margin-left: 0.4rem; }
+html[data-density="compact"] .stbl td .tags, html[data-density="compact"] .stbl td .cv, html[data-density="compact"] .stbl .na-meta, html[data-density="compact"] .stbl .src-tags { display: inline-flex; flex-wrap: nowrap; gap: 0.25rem; margin: 0 0 0 0.3rem; align-items: center; white-space: nowrap; }
+html[data-density="compact"] .stbl td.cwin .tag { border: 0; background: none; padding: 0 0.1rem; font-size: 0.72rem; color: var(--muted); }
+html[data-density="compact"] .stbl .src-tags a { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: bottom; }
+@media (max-width: 36rem) { html[data-density="compact"] .stbl td { white-space: normal; } }
+.stbl th { white-space: normal; vertical-align: bottom; }
+html[data-density="compact"] .stbl td.cwin > .tags ~ .tags { display: none; }   /* the first group of window tags (motifs); the others are in the card */
+html[data-density="compact"] .stbl td.cwin > .tags { max-width: 16rem; overflow: hidden; }
+
+/* ---- the selection line on every page, and its marker on the tabs that follow it ----------------------------------- */
+.sel-line { display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; align-items: baseline; margin: 0 0 0.6rem; padding: 0.3rem 0.7rem; font-size: 0.85rem; background: var(--wash); border-left: 3px solid var(--accent); border-radius: 0.3rem; }
+.sel-line.off { border-left-color: var(--line-strong); background: var(--surface-2); color: var(--muted); }
+.tab .selmark { color: var(--accent); font-size: 0.6rem; vertical-align: middle; }
+html[data-density="compact"] .tbl td { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+html[data-density="compact"] .tbl th { padding-top: 0.3rem; padding-bottom: 0.3rem; }
+@media (max-width: 36rem) {   /* phone: the selection banner in about a quarter of the screen (the page's own selection line says what is shown) */
+  #scope .sel-tools { flex-wrap: nowrap; gap: 0.25rem; margin-left: 0; }
+  #scope .sel-tools .btn { padding-inline: 0.45rem; font-size: 0.75rem; }
+  #scope [data-sel-copy], .q-note { display: none; }
+  #scope .sel-chip:has([data-sel-clear-q]) { display: none; }   /* the search box above says it */
+}

@@ -120,3 +120,10 @@ console.log(JSON.stringify(out));"""
     assert out['dep']['sum'] == '7 of 100 lines depend on it'
     assert 'Lung' in out['dep']['html'] and '<svg' in out['dep']['html']
     assert out['ex'] == {'hide': True, 'html': '', 'sum': ''}                              # no rows, no card
+
+
+def test_groups_name_each_fold_once():
+    ok = {'website': {'protein': {'groups': [{'id': 'g-a', 'title': 'A', 'folds': ['p-map']}, {'id': 'g-b', 'title': 'B', 'folds': ['p-sites']}]}}}
+    assert pcards.problems(ok) == []
+    twice = {'website': {'protein': {'groups': [{'id': 'g-a', 'title': 'A', 'folds': ['p-map']}, {'id': 'g-b', 'title': 'B', 'folds': ['p-map']}]}}}
+    assert any("'p-map' is in both" in x for x in pcards.problems(twice))

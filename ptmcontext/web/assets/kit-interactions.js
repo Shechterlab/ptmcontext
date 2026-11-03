@@ -724,7 +724,7 @@
 
   // ---- registration ------------------------------------------------------------------------------------------------
   PAGES.forEach(pg => {
-    K.views[pg.id] = { render: arg => view(pg, arg), title: arg => (arg && pg.sections.find(s => s.id === arg)?.title) || pg.tab, after: () => drawExample() };
+    K.views[pg.id] = { follows: true, render: arg => view(pg, arg), title: arg => (arg && pg.sections.find(s => s.id === arg)?.title) || pg.tab, after: () => drawExample() };
     K.tabs.push(() => [pg.id, pg.tab, selOn() ? 'selection' : null]);
     K.sections[pg.id] = () => [['view', pg.tab, 1, K.link(pg.id)], ...(pg.overview ? [['ixov', pg.overview.title || 'At a glance', 1, K.link(pg.id, 'overview')]] : []),
       ...pg.groups.flatMap(g => [[`ixg-${g.name}`, g.name, 0], ...g.sections.map(s => [`ix-${s.id}`, s.title, 1, K.link(pg.id, s.id)])])];
