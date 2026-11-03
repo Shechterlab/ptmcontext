@@ -15,12 +15,12 @@
   const DK = 'ptmc-density';
   let dens = 'compact';
   try { if (localStorage.getItem(DK) === 'comfortable') dens = 'comfortable'; } catch (e) { /* storage may be blocked */ }
-  document.documentElement.dataset.density = dens;
+  try { document.documentElement.dataset.density = dens; } catch (e) { /* no page (a test) */ }
   const compact = () => dens === 'compact';
   const densityBtn = () => `<button type="button" class="btn small density-btn" data-density aria-pressed="${compact()}" title="Table rows: compact (one line each) or comfortable (everything wrapped)">${compact() ? 'Compact' : 'Comfortable'} rows</button>`;
   document.addEventListener('click', e => {
     if (!e.target.closest?.('[data-density]')) return;
-    dens = compact() ? 'comfortable' : 'compact'; document.documentElement.dataset.density = dens;
+    dens = compact() ? 'comfortable' : 'compact'; try { document.documentElement.dataset.density = dens; } catch (err) { /* no page */ }
     try { localStorage.setItem(DK, dens); } catch (err) { /* storage may be blocked */ }
     K.render();
   });
