@@ -79,7 +79,8 @@
       const short = (tg.short || {})[v] ?? vLabel(tg.attribute, v), key = short + '|' + ((tg.tone || {})[v] || '');
       if (seen.has(key)) continue; seen.add(key);
       const ps = partnersOf([v]), names = [...new Set(ps.map(r => r.partner).filter(Boolean))];
-      const label = named.has(v) && names.length ? names.slice(0, 2).join(', ') + (names.length > 2 ? ` +${names.length - 2}` : '') : short;
+      const ids = [...new Set(ps.flatMap(r => list(r.ids)))].map(x => x.toUpperCase());      // a named kind also gives the entries that show it: "TNPO1 4FDD, 4FQ3 +4"
+      const label = named.has(v) && names.length ? names.slice(0, 2).join(', ') + (names.length > 2 ? ` +${names.length - 2}` : '') + (ids.length ? ' ' + ids.slice(0, 3).join(', ') + (ids.length > 3 ? ` +${ids.length - 3}` : '') : '') : short;
       const kinds = vals.filter(x => !pred.has(x) && ((tg.short || {})[x] ?? vLabel(tg.attribute, x)) + '|' + ((tg.tone || {})[x] || '') === key);   // the kinds this tag stands for (data-ev-kind: a page may open them)
       out.push(`<span class="tag t-${esc((tg.tone || {})[v] || 'x')}" data-ev-kind="${esc(kinds.join(','))}" title="${esc(vLabel(tg.attribute, v) + (names.length ? ': ' + names.join(', ') : ''))}">${esc(label)}</span>`);
     }

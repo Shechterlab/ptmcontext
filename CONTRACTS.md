@@ -18,6 +18,7 @@ Nine plain-data formats, and the tables the protein pages show (at the end). Cod
 | **Citation** | YAML (CITATION.cff 1.2.0) | [citation-file-format.github.io](https://citation-file-format.github.io/) | a person | every page and download; GitHub and Zenodo read it too |
 | **Structure evidence** | TSV, columns named in the site file | `website.protein.structure` in `ptmcontext/schemas/site.schema.json` | a release, a lab, any table mapped to it | the protein page's 3D viewer (`kit-3d.js`) |
 | **Conservation across species** | none (read live) | `website.protein.conservation` in `ptmcontext/schemas/site.schema.json` | any site | the protein page's conservation card and the selection's logo (`kit-conserve.js`) |
+| **RNA and DNA interactions** | TSV, columns named in the site file | `website.protein.nucleic` in `ptmcontext/schemas/site.schema.json` | a release, a lab, any table mapped to it | the protein page's RNA and DNA card (`kit-prna.js`) |
 
 ## Statistics row
 
@@ -358,6 +359,7 @@ shows). Every value is text unless said otherwise; empty means not known. Lists 
 | `site_values` | site | any columns, listed under `values:` and kept under their own names | blocks naming a column: the methylation state by source, the counts beside a list of changes, the nearest domain, source positions |
 | `site_table` | site | any columns, under `values:` | a table in a site's Evidence row (`card.tables`), each column labelled and formatted by the site file |
 | `protein_values` | `accession` | `aliases` (other names a search or an old link may use), and any columns under `values:` | the whole-protein line of the card, a headline card's hover; `aliases` make `#TDP-43` and a search for an alias find the protein |
+| `protein_records` | `accession` | any columns, under `values:`; several rows a protein | the RNA and DNA interactions card: bound regions, DNA-binding profiles, RNA Bind-n-Seq and eCLIP experiments |
 | `lookup` | `key` | any columns under `values:` | the sources of the citation box and of the card's links (`label`, `citation`, `doi`, `licence`) |
 | `site_evidence` | site | **`kind`** (a code: the values of the card's evidence attribute), `partner`, `partner_accession`, `ids` (a list of entry ids, e.g. PDB), `score` (number), `detail` | the card's interaction evidence: the entries at the site by kind, the partners named in a tag |
 | `bound_windows` | site | **`window`** (the bound chain around the contacted unit: one letter a unit, `[X]` a contacted unit, `-` past the chain's end), **`kind`** (a code: rna, dna, …), `type` (a code), `name`, `entry` (an id), `entries` (a count, for a row that stands for several), `distance` (Å), `offset` (k when the residue i + k makes the contact; empty or 0: the site), `preparation`, `chain`, `nucleotides`, `numbers`, `distances` (the contacted units, their author numbers and Å, lists in the same order) | the card's bound sequences, aligned on the contacted unit; the sites table's contacts column |
@@ -446,6 +448,42 @@ the map, each segments track by its classes, and the marks by the map's colour a
 
 and the page's data a `structure` block: the components (`code, state, label`), each part's `label` and `help`, the
 manifest input each part's table reads (`inputs`) and the colourings without their conditions.
+
+## RNA and DNA interactions
+
+A card on the protein page (`kit-prna.js`, the fold `p-na`) with the RNA and DNA a protein meets, one tab per kind. It is read
+from `website.protein.nucleic`, through the tables of `website.tables`, and reuses what the 3D viewer reads (above, "Structure
+evidence": `contacts` and `bound`). A site without the block lacks the card, a part it does not write is absent, and so is
+the card of a protein that has no data in any part (`ptmc check`: `web.nucleic.problems`).
+
+```yaml
+website:
+  protein:
+    nucleic:
+      title: RNA and DNA interactions
+      kinds: {rna: RNA, dna: DNA}            # the card's kinds (the viewer's kinds) and their words
+      near: {table: contacts_near, label: "in contact through a neighbouring residue"}
+      regions: {table: nucleic_regions, kinds: {rna: rna, dna: dna}, fields: {start: start, end: end, kind: nucleic_acid, entries: n_entries, sites: methylarginines}}
+      crosslinks: {table: residues, span: 5, kinds: {rna_crosslink: rna, dna_crosslink: dna}}
+      flags: {attribute: evidence, kind: rna, values: {rbdmap_fragment: RBDmap, pclap_peptide: pCLAP}}
+      motifs: {table: dna_motifs, kind: dna, url: "https://jaspar.elixir.no/matrix/{id}/", fields: {id: matrix_id, name: name, class: tf_class, family: tf_family, consensus: consensus}}
+      rbns: {table: rna_bind_n_seq, kind: rna, url: "...{id}", fields: {id: ..., conc: ..., kmers: ..., scores: ...}}
+      eclip: {table: eclip, kind: rna, url: {ENCODE: "...{id}"}, fields: {id, source, cell, peaks, genes, gene_peaks, kmers, ratios, same, regions: {CDS: col, ...}}}
+```
+
+| Part | Table format | What the card shows |
+|---|---|---|
+| (viewer) `structure.bound` | `bound_windows` | per kind, the marks in contact (4 Å), their bound sequences and entries (the viewer's `s3d.b`); `structure.contacts` adds the PDB interfaces (`s3d.c`) |
+| `near` | `bound_windows` | rows with `offset`: the marks that touch RNA or DNA through a neighbouring residue (not shown again when in contact) |
+| `regions` | `protein_records` | runs of residues bound in structures: `start`, `end`, `kind`, `entries` (a count), `sites` (marks inside, `; `-separated, `<accession>:<residue><position>`) |
+| `crosslinks` | `residue_evidence` | residues crosslinked in cells: only rows with `start` = `end` are listed, `kinds` maps the table's codes to the card's kinds; `span` is how near a mark counts |
+| `flags` | none | the marks whose attribute `values` hold a listed code, as a per-mark flag with its label: no peptide, fragment or extent is ever listed |
+| `motifs`, `rbns`, `eclip` | `protein_records` | one row per profile or experiment, each field named by `fields`; `kmers` and `scores`, `genes` and `gene_peaks` are `; `-lists in the same order; `eclip.fields.regions` maps a region label to the column of its peak count; `url` (a string, or one per value of the `source` field) takes `{id}` |
+
+The card's summary and tab titles count what it finds: the marks in contact, those in contact through a neighbouring
+residue, the residues crosslinked (and the marks within `span` of one), the bound regions, and which in-vitro or in-cell
+data exist. A part with `kind` belongs to that tab only. Measured peptides and their extents (pCLAP, RBDmap) are never
+published here: a site leaves them out of the tables it names and gives only a per-mark flag.
 
 ## The Proteins and Sites pages
 

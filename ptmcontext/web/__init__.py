@@ -31,6 +31,7 @@ from ..site import code_commit, load_site, manifest_of, root_of
 from .counts import counts_data
 from .glance import glance
 from . import structure as S3D
+from . import nucleic as NUC
 
 FONTS = {
     'heading': "'IBM Plex Serif', Georgia, 'Times New Roman', serif",
@@ -41,7 +42,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-prna.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -280,7 +281,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         uses[site['reference']['statistics']] = 'the parity check'
     for tid, tb in (web.get('tables') or {}).items():      # the tables the protein pages show
         uses[tb['input']] = (uses[tb['input']] + '; ' if uses.get(tb['input']) else '') + f"the protein pages ({tid.replace('_', ' ')})"
-    for name, what in S3D.roles(site).items():                            # the 3D viewer reads some of them
+    for name, what in [*S3D.roles(site).items(), *NUC.roles(site).items()]:     # the 3D viewer and the RNA and DNA card read some of them
         uses[name] = (uses[name] + '; ' if uses.get(name) else '') + what
     titles = {a['id']: a.get('title', a['id']) for a in site['analyses']}
     for aid, x in ((site.get('reference') or {}).get('tables') or {}).items():   # a published table of one question

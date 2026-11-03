@@ -1955,9 +1955,18 @@
               "additionalProperties": false,
               "description": "proteins drawn at random on the opening Overview, each end to end as one row, with a button to draw others (kit-random.js)",
               "properties": {
-                "n": {"type": "integer", "minimum": 1, "maximum": 12},
-                "title": {"type": "string"},
-                "min_marks": {"type": "integer", "minimum": 0}
+                "n": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 12
+                },
+                "title": {
+                  "type": "string"
+                },
+                "min_marks": {
+                  "type": "integer",
+                  "minimum": 0
+                }
               }
             }
           }
@@ -2780,6 +2789,404 @@
                 }
               }
             },
+            "nucleic": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the protein page's RNA and DNA interactions card (CONTRACTS.md, RNA and DNA interactions); a site without this block lacks it, and so does a protein without any of its data",
+              "required": [
+                "kinds"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "sub": {
+                  "type": "string"
+                },
+                "kinds": {
+                  "type": "object",
+                  "description": "the card's kinds (the codes of website.protein.structure's kinds) -> their words",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "minProperties": 1
+                },
+                "near": {
+                  "type": "object",
+                  "description": "a bound_windows table of RNA and DNA touching a residue next to a mark (offset): contact through a neighbouring residue",
+                  "required": [
+                    "table"
+                  ],
+                  "properties": {
+                    "table": {
+                      "type": "string",
+                      "description": "the website.tables table that holds it"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "description": "the card's field names -> the table's columns",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "kind": {
+                      "type": "string",
+                      "description": "the kind (a key of nucleic.kinds) the rows belong to"
+                    },
+                    "kinds": {
+                      "type": "object",
+                      "description": "the table's kind codes -> the card's kinds",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "url": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        }
+                      ],
+                      "description": "a link for an id: {id} is replaced; an object gives one per value of the source field"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "help": {
+                      "type": "string"
+                    },
+                    "span": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "regions": {
+                  "type": "object",
+                  "description": "a protein_records table of runs of residues in contact with RNA or DNA in structures (fields: start, end, kind, entries, sites)",
+                  "required": [
+                    "table"
+                  ],
+                  "properties": {
+                    "table": {
+                      "type": "string",
+                      "description": "the website.tables table that holds it"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "description": "the card's field names -> the table's columns",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "kind": {
+                      "type": "string",
+                      "description": "the kind (a key of nucleic.kinds) the rows belong to"
+                    },
+                    "kinds": {
+                      "type": "object",
+                      "description": "the table's kind codes -> the card's kinds",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "url": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        }
+                      ],
+                      "description": "a link for an id: {id} is replaced; an object gives one per value of the source field"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "help": {
+                      "type": "string"
+                    },
+                    "span": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "crosslinks": {
+                  "type": "object",
+                  "description": "a residue_evidence table of residues crosslinked to RNA or DNA in living cells (kinds: its kind codes -> rna or dna); only single residues are listed, never a peptide or its extent",
+                  "required": [
+                    "table"
+                  ],
+                  "properties": {
+                    "table": {
+                      "type": "string",
+                      "description": "the website.tables table that holds it"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "description": "the card's field names -> the table's columns",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "kind": {
+                      "type": "string",
+                      "description": "the kind (a key of nucleic.kinds) the rows belong to"
+                    },
+                    "kinds": {
+                      "type": "object",
+                      "description": "the table's kind codes -> the card's kinds",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "url": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        }
+                      ],
+                      "description": "a link for an id: {id} is replaced; an object gives one per value of the source field"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "help": {
+                      "type": "string"
+                    },
+                    "span": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "flags": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "marks inside an RNA-bound peptide or fragment, as flags of a mark attribute only (no peptide, no extent)",
+                  "required": [
+                    "attribute",
+                    "values"
+                  ],
+                  "properties": {
+                    "attribute": {
+                      "type": "string"
+                    },
+                    "values": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "kind": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "help": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "motifs": {
+                  "type": "object",
+                  "description": "a protein_records table of DNA-binding profiles (fields: id, name, class, family, consensus)",
+                  "required": [
+                    "table"
+                  ],
+                  "properties": {
+                    "table": {
+                      "type": "string",
+                      "description": "the website.tables table that holds it"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "description": "the card's field names -> the table's columns",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "kind": {
+                      "type": "string",
+                      "description": "the kind (a key of nucleic.kinds) the rows belong to"
+                    },
+                    "kinds": {
+                      "type": "object",
+                      "description": "the table's kind codes -> the card's kinds",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "url": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        }
+                      ],
+                      "description": "a link for an id: {id} is replaced; an object gives one per value of the source field"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "help": {
+                      "type": "string"
+                    },
+                    "span": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "rbns": {
+                  "type": "object",
+                  "description": "a protein_records table of RNA Bind-n-Seq experiments (fields: id, conc, kmers, scores)",
+                  "required": [
+                    "table"
+                  ],
+                  "properties": {
+                    "table": {
+                      "type": "string",
+                      "description": "the website.tables table that holds it"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "description": "the card's field names -> the table's columns",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "kind": {
+                      "type": "string",
+                      "description": "the kind (a key of nucleic.kinds) the rows belong to"
+                    },
+                    "kinds": {
+                      "type": "object",
+                      "description": "the table's kind codes -> the card's kinds",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "url": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        }
+                      ],
+                      "description": "a link for an id: {id} is replaced; an object gives one per value of the source field"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "help": {
+                      "type": "string"
+                    },
+                    "span": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "eclip": {
+                  "type": "object",
+                  "description": "a protein_records table of eCLIP experiments (fields: id, source, cell, peaks, regions: a map of region -> column, genes, kmers)",
+                  "required": [
+                    "table"
+                  ],
+                  "properties": {
+                    "table": {
+                      "type": "string",
+                      "description": "the website.tables table that holds it"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "kind": {
+                      "type": "string",
+                      "description": "the kind (a key of nucleic.kinds) the rows belong to"
+                    },
+                    "kinds": {
+                      "type": "object",
+                      "description": "the table's kind codes -> the card's kinds",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "url": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        }
+                      ],
+                      "description": "a link for an id: {id} is replaced; an object gives one per value of the source field"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "help": {
+                      "type": "string"
+                    },
+                    "span": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
             "conservation": {
               "type": "object",
               "additionalProperties": false,
@@ -3393,6 +3800,7 @@
                   "site_values",
                   "site_table",
                   "protein_values",
+                  "protein_records",
                   "lookup",
                   "site_evidence",
                   "bound_windows",

@@ -1458,8 +1458,61 @@ website:                  # the look and words of the website (ptmc web); layout
       input: methylarginine_other_ptm_sites_v1_4_3
       format: residue_evidence
       columns: {accession: uniprot_accession, start: position, end: position, kind: ptm_type, source: evidence}
+    nucleic_regions:       # runs of residues within 4 Å of RNA or DNA in PDB structures (the RNA and DNA interactions card)
+      input: methylarginine_nucleic_acid_regions_v1_4_3
+      format: protein_records
+      columns: {accession: uniprot_accession}
+      values: [start, end, nucleic_acid, n_entries, methylarginines]
+    dna_motifs:            # JASPAR profiles of the protein
+      input: methylarginine_dna_motifs_v1_4_3
+      format: protein_records
+      columns: {accession: uniprot_accession}
+      values: [matrix_id, name, tf_class, tf_family, consensus]
+    rna_bind_n_seq:        # ENCODE RNA Bind-n-Seq, in vitro
+      input: methylarginine_rna_bind_n_seq_v1_4_3
+      format: protein_records
+      columns: {accession: uniprot_accession}
+      values: [encode_experiment, concentration, top_5mers, top_5mer_R]
+    eclip:                 # ENCODE and ENCORE eCLIP, in cells
+      input: methylarginine_eclip_v1_4_3
+      format: protein_records
+      columns: {accession: uniprot_accession}
+      values: [source, experiment, cell_line, n_peaks, peaks_CDS, peaks_UTR3, peaks_UTR5, peaks_noncoding_exon, peaks_intron, peaks_intergenic,
+               top_target_genes, top_target_peaks, top_5mers, top_5mer_ratios, same_data_as]
   protein:                 # the protein page
     open_partners: true    # the Interaction partners fold is open when the protein has partners in the site's table
+    nucleic:               # the RNA and DNA interactions card (CONTRACTS.md, RNA and DNA interactions)
+      title: RNA and DNA interactions
+      kinds: {rna: RNA, dna: DNA}
+      near: {table: contacts_near, label: "in contact through a neighbouring residue"}
+      regions:
+        table: nucleic_regions
+        kinds: {rna: rna, dna: dna}
+        fields: {start: start, end: end, kind: nucleic_acid, entries: n_entries, sites: methylarginines}
+      crosslinks:          # single residues only: no peptide or fragment is listed
+        table: residues
+        span: 5
+        kinds: {rna_crosslink: rna, dna_crosslink: dna}
+      flags:               # per-site flags only: the marks inside an RNA-bound peptide or fragment, never its sequence or extent
+        attribute: evidence
+        kind: rna
+        values: {rbdmap_fragment: RBDmap, capri_xl_peptide: CAPRI, capri_adj_peptide: CAPRI, pclap_peptide: pCLAP, pclap_lysc_region: pCLAP, rbrid_residue: RBR-ID, rbrid_region: RBR-ID}
+      motifs:
+        table: dna_motifs
+        kind: dna
+        url: "https://jaspar.elixir.no/matrix/{id}/"
+        fields: {id: matrix_id, name: name, class: tf_class, family: tf_family, consensus: consensus}
+      rbns:
+        table: rna_bind_n_seq
+        kind: rna
+        url: "https://www.encodeproject.org/experiments/{id}/"
+        fields: {id: encode_experiment, conc: concentration, kmers: top_5mers, scores: top_5mer_R}
+      eclip:
+        table: eclip
+        kind: rna
+        url: {ENCODE: "https://www.encodeproject.org/experiments/{id}/", ENCORE: "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE315407"}
+        fields: {id: experiment, source: source, cell: cell_line, peaks: n_peaks, genes: top_target_genes, gene_peaks: top_target_peaks, kmers: top_5mers, ratios: top_5mer_ratios, same: same_data_as,
+                 regions: {CDS: peaks_CDS, "3′ UTR": peaks_UTR3, "5′ UTR": peaks_UTR5, "non-coding exon": peaks_noncoding_exon, intron: peaks_intron, intergenic: peaks_intergenic}}
     conservation:          # orthologues live from Ensembl Compara, and the selection's logo (CONTRACTS.md, Conservation across species)
       ensembl: {rest: "https://rest.ensembl.org", xref: Ensembl, source: human}
       species:             # mouse to yeast
@@ -1554,6 +1607,7 @@ website:                  # the look and words of the website (ptmc web); layout
                  predicted_interface: pred, predicted_contact: pred}
           predicted: [predicted_interface, predicted_contact]     # values that alone make a status "predicted only" (the badge says "+ pred.")
           partners: interactions             # a site_evidence table: the partner named in a predicted tag, the rest in its hover
+          named: [pdb_protein]               # a tag of these kinds names the partner and the PDB entries that show it ("TNPO1 4FDD, 4FQ3 +4")
         entries:                             # the site's entries in structures, by kind (a site_evidence table)
           table: interactions
           kinds: {pdb_rna: RNA, pdb_dna: DNA, pdb_protein: "", pdb_self: another copy}   # "": the partner's name

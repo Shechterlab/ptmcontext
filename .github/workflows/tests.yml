@@ -42,6 +42,10 @@ jobs:
             releases/v1.4.3/human_methylarginine_proteins_v1.4.3.tsv
             releases/v1.4.3/supporting/nucleic_acid_contacts_v1.4.3.tsv
             releases/v1.4.3/supporting/nucleic_acid_near_sites_v1.4.3.tsv
+            releases/v1.4.3/supporting/dna_motifs_v1.4.3.tsv
+            releases/v1.4.3/supporting/eclip_v1.4.3.tsv
+            releases/v1.4.3/supporting/nucleic_acid_regions_v1.4.3.tsv
+            releases/v1.4.3/supporting/rna_bind_n_seq_v1.4.3.tsv
             releases/v1.4.3/supporting/protein_partners_v1.4.3.tsv
             releases/v1.4.3/supporting/other_ptm_sites_v1.4.3.tsv
             releases/v1.4.3/supporting/residue_evidence_v1.4.3.tsv

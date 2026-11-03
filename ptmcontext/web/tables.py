@@ -5,7 +5,7 @@ without marks as a partner on that protein's own page (data/u/NN.json).
 
 A format names its key (a site, a protein or a lookup key), the columns it requires and those it may have. A site is
 named by one column, '<accession>:<residue><position>' or '<accession>:<position>', or by an accession and a position
-column. 'Free' formats (site_values, protein_values, site_table, lookup) keep the value columns the site file lists,
+column. 'Free' formats (site_values, protein_values, protein_records, site_table, lookup) keep the value columns the site file lists,
 under their own names; the blocks that show them name them in the site file.
 """
 from __future__ import annotations
@@ -17,6 +17,7 @@ FORMATS: dict[str, dict] = {
     'site_values': {'key': 'site', 'free': True},
     'site_table': {'key': 'site', 'free': True},
     'protein_values': {'key': 'accession', 'free': True, 'optional': ['aliases']},
+    'protein_records': {'key': 'accession', 'free': True},
     'lookup': {'key': 'key', 'free': True},
     'site_evidence': {'key': 'site', 'required': ['kind'], 'optional': ['partner', 'partner_accession', 'ids', 'score', 'detail']},
     'bound_windows': {'key': 'site', 'required': ['window', 'kind'],
@@ -57,7 +58,7 @@ def problems(name: str, spec: dict) -> list[str]:
     elif fmt['key'] != 'site' and fmt['key'] not in cols:
         out.append(f"{where}: the {spec['format']} format is keyed by {fmt['key']!r}: map it")
     if spec.get('values') and not fmt.get('free'):
-        out.append(f"{where}: values: is for the free formats (site_values, site_table, protein_values, lookup)")
+        out.append(f"{where}: values: is for the free formats (site_values, site_table, protein_values, protein_records, lookup)")
     return out
 
 
