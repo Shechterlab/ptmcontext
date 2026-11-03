@@ -536,6 +536,8 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
     for aid, g in counts[counts['others_in'].astype(int) > 0].groupby('analysis'):
         per = {}
         for r in g.itertuples(index=False):
+            if r.accession not in pidx:          # a protein a test counts that has no mark the site lists: no selection holds it
+                continue
             per.setdefault(pidx[r.accession], {})[codes[aid][r.category]] = int(r.others_in)
         others[aid] = per
     # each protein's other candidate residues, the same for every question (a protein with none is left out of the
@@ -560,7 +562,8 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
         g = counts[counts['analysis'] == aid]
         per: dict = {}
         for r in g.itertuples(index=False):
-            per.setdefault(codes[aid][r.category], {})[pidx[r.accession]] = [int(r.others_total), []]
+            if r.accession in pidx:             # a protein without a mark the site lists: no selection holds it
+                per.setdefault(codes[aid][r.category], {})[pidx[r.accession]] = [int(r.others_total), []]
         for acc, pos, cnt in zip(marks['accession'], marks['position'], marks[col]):
             have = set(cnt.split(';')) if cnt else set()
             pi = pidx[acc]
