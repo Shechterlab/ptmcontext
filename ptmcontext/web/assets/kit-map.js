@@ -456,7 +456,7 @@
       const t = trackOf(kind), over = segs.filter(([k2, is, ie]) => is <= e && ie >= s && (trackOf(k2).roles || []).some(r => (t.roles || []).includes(r))).slice(0, 6);
       const tip = full => `<b>${esc(t.title)} ${span2(s, e)}</b>${over.map(([k2, is, ie, lab]) => `<br>${esc(trackOf(k2).title)} ${is}–${ie}${lab ? ': ' + esc(lab) : ''}`).join('')}<br><span class="muted">${esc(tracksVersion(t))}</span>${full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`;
       const k = it({ tip: tip(false), card: tip(true), a: s, b: e });
-      parts.push(`<path d="${d}" fill="none" stroke="${P.muted}" stroke-width="1.6" data-mi="${k}" pointer-events="stroke"/>`);
+      parts.push(`<path d="${d}" fill="none" stroke="${P.muted}" stroke-width="1.6" data-mi="${k}" pointer-events="stroke"/>`, `<rect x="${r1(a)}" y="${yB - 7}" width="${r1(b - a)}" height="14" fill="transparent" data-mi="${k}"/>`);
       key(SW.wave(P.muted), t.title);
     });
     // a short name for a domain: the UniProt domain over most of it, else the site's name before any " · "
@@ -629,7 +629,7 @@
     // PDB interfaces (PDBe-KB, live): one row per kind of partner
     const pdbRows = row => {
       const st = PDBK[p.acc];
-      if (!st || st.state === 'loading') { msg(row[1], row[3], 'asking PDBe-KB…'); return; }
+      if (!st || st.state === 'loading') { msg(row[1], row[3], 'asking PDBe-KB…'); y += 20 * (PDB_KEYS.length - 1); return; }   // room for the rows it will bring, so the rows below stay put
       if (st.state === 'failed') { msg(row[1], row[3], 'PDBe-KB did not answer'); return; }
       if (st.state !== 'ok') return;
       for (const [k, title, what] of PDB_KEYS) {
@@ -818,9 +818,12 @@
     if (PDB_ON && isOn('pdb')) loadPdbk(ctx.p.acc);
     M.d3 = [];
     const m = draw(ctx, { Wd: widthOf(el) });
+    // the live rows arrive in turn and each redraw can change the height: for the first seconds on a protein the box keeps the tallest height seen
+    const hold = M.hold && M.hold.acc === ctx.p.acc && M.hold.el === el && Date.now() < M.hold.until ? M.hold : (M.hold = { acc: ctx.p.acc, until: Date.now() + 6000, h: 0, el });
+    el.style.minHeight = hold.h ? hold.h + 'px' : '';
     el.innerHTML = controls() + `<div class="map-svg"><svg viewBox="0 0 ${m.Wd} ${m.H}" role="img" aria-label="Map of ${esc(ctx.p.gene || ctx.p.acc)}"${m.Wd < 1000 ? ` style="max-width:${m.Wd}px"` : ''}>${m.svg}</svg></div>` +
       `<p class="map-read muted" id="map-read">Hover the map for the residue under the pointer; click an item to pin it here with its links.</p><div id="map-pin" class="map-pin" hidden></div>` + keyHtml(ctx, m);
-    M.geom = m;
+    M.geom = m; hold.h = Math.max(hold.h, el.offsetHeight);
     // laid out again when the box's width class changes (a narrow screen, a fold opened, the window resized)
     if (!observed.has(el) && window.ResizeObserver) { observed.add(el); new ResizeObserver(() => { if (M.geom && el.isConnected && widthOf(el) !== M.geom.Wd && M.ctx) render(el, M.ctx); }).observe(el); }
     const svg = el.querySelector('svg'), cross = el.querySelector('#map-cross'), drag = el.querySelector('#map-drag');

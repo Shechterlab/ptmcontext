@@ -769,7 +769,7 @@
     ['[data-pfilter]', el => { PV.pf = PV.pf === el.dataset.pfilter ? '' : el.dataset.pfilter; const y = scrollY; K.render(); scrollTo(0, y); }],
     ['[data-hl-open]', el => { const d = document.getElementById(el.dataset.hlOpen); if (d) { d.open = true; PV.open[d.id] = true; d.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }],
     ['[data-page-pdf]', el => { const p = byAcc[PV.acc]; document.querySelectorAll('details.pfold').forEach(d => { d.open = true; }); K.pagePdf?.(document.getElementById('view'), `${p.gene || p.acc} (${p.acc})`, `${D.site.id}_${p.gene || p.acc}_${p.acc}.pdf`, el); }],
-    ['[data-cexp]', el => { const card = document.getElementById('site-card'), p = byAcc[PV.acc], name = `${D.site.id}_${p.gene || p.acc}_${site(PV.site)}`;
+    ['#site-card [data-cexp]', el => { const card = document.getElementById('site-card'), p = byAcc[PV.acc], name = `${D.site.id}_${p.gene || p.acc}_${site(PV.site)}`;
       if (el.dataset.cexp === 'tsv') K.exportFigure('tsv', null, name, el, siteCardTsv); else if (el.dataset.cexp === 'pdf') K.pagePdf?.(card, `${p.gene || p.acc} ${site(PV.site)}`, name + '.pdf', el); else K.elementPng?.(card, name + '.png', el); }],
     ['[data-light-all]', () => { PV.lightAll = !PV.lightAll; K.render(); }],
     ['[data-rec-tsv]', el => { const p = byAcc[PV.acc], m = PV.rec.marks.find(x => x[0] === +el.dataset.recTsv); if (m) K.exportFigure('tsv', null, `${D.site.id}_${p.gene || p.acc}_${site(m[0])}_records`, el, () => K.card.recordsTsv(cardCtx(p, PV.rec, m))); }],
