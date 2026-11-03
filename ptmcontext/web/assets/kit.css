@@ -1423,4 +1423,6 @@ html[data-density="compact"] .tbl th { padding-top: 0.3rem; padding-bottom: 0.3r
   #scope .sel-chip:has([data-sel-clear-q]) { display: none; }   /* the search box above says it */
 }
 
-.fchip > .muted { margin-left: 0.35em; }   /* the count beside its label */
+
+/* a count beside its label in any chip or pill: flex boxes drop the space between them */
+:is(.ppill, .fchip, .start-pill, .try-chip, .chip, .pill, .tag, .ixs, .stat, .seg button, .tabs a, .tab, .sel-chip, .doi-badge, .pn-opt, .lk-chip) { column-gap: 0.35em; }
