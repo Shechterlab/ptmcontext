@@ -18,6 +18,7 @@
   const STRING_API = 'https://string-db.org/api/json/', CALLER = 'ptmcontext';
   const CITE = 'Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113';
   const CHANNELS = [['escore', 'experiments'], ['dscore', 'databases'], ['tscore', 'text mining'], ['ascore', 'co-expression'], ['nscore', 'neighbourhood'], ['fscore', 'gene fusion'], ['pscore', 'co-occurrence']];
+  const CH_LETTER = 'edtanfp';                 // the channels in order; the physical network scores the first three only
   const VW = 800, VH = 520, CX = VW / 2, CY = VH / 2;
   const getJson = (url, opt) => fetch(url, opt).then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))));
   const today = () => K.hdate(new Date().toISOString());
@@ -35,7 +36,8 @@
 
   // ---- the options, remembered in this browser -----------------------------------------------------------------------
   const KEY = 'ptmc-pnet:' + (D.site?.id || '');
-  const OPT = { conf: Math.round((IXP?.min_score ?? 0.7) * 1000), n: 20, color: 'methyl', layout: 'force', net: IXP?.network || 'physical', only: 'all', view: 'network' };
+  const OPT = { conf: Math.round((IXP?.min_score ?? 0.7) * 1000), n: 20, color: 'methyl', layout: 'force', net: IXP?.network || 'physical', only: 'all', view: 'network', ch: 'edtanfp', labels: 'all', size: 'marks', ring: false, pins: '' };
+  const OPT0 = { ...OPT };
   try { Object.assign(OPT, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* private window */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(OPT)); } catch (e) { /* no storage */ } };
   const CONFS = [[400, '0.4 (medium)'], [700, '0.7 (high)'], [900, '0.9 (highest)']];
@@ -90,27 +92,40 @@
       .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status))))), 20000).catch(() => null));
   }
 
+  // STRING's combined score from the channels left on: the prior (0.041) is taken off each channel score, the rest combined, and the prior added back once (STRING FAQ)
+  const chOn = () => { const on = OPT.ch.split('').filter(c => CH_LETTER.includes(c)); return OPT.net === 'physical' ? on.filter(c => 'edt'.includes(c)) : on; };
+  const allCh = () => chOn().length === (OPT.net === 'physical' ? 3 : 7);
+  function rescore(row) {
+    if (allCh()) return +row.score;
+    const prior = 0.041, on = chOn(); let rest = 1;
+    CHANNELS.forEach(([f], k) => { if (on.includes(CH_LETTER[k])) rest *= 1 - Math.max(0, ((+row[f] || 0) - prior) / (1 - prior)); });
+    const tot = 1 - rest; return tot + prior * (1 - tot);
+  }
+  const pinList = () => OPT.pins.split(/[\s,;]+/).map(x => x.trim().toUpperCase()).filter(Boolean);
+
   // ---- the nodes and links the options select -----------------------------------------------------------------------
   const LAY = {};                               // acc:options -> { nodes, edges } (positions survive a redraw of the page)
-  const shownRows = st => st.rows.filter(e => e.score * 1000 >= OPT.conf).map(e => {
-    const acc = st.acc.get(e.stringId_B) || '', p = acc ? siteProtein(acc) : null;
-    return { e, acc, p, marks: p ? p.marks : 0, cls: acc ? classOf(acc) : null };
-  });
+  const rowOf = (e, sc) => { const acc = ACCS(e.stringId_B), p = acc ? siteProtein(acc) : null; return { e, sc, acc, p, marks: p ? p.marks : 0, cls: acc ? classOf(acc) : null }; };
+  let ACCS = () => '';
+  const shownRows = st => { ACCS = id => st.acc.get(id) || ''; return st.rows.map(e => rowOf(e, rescore(e))).filter(x => x.sc * 1000 >= OPT.conf).sort((a, b) => b.sc - a.sc || String(a.e.preferredName_B).localeCompare(String(b.e.preferredName_B))); };
   function nodesFor(acc, self, st) {
     let rows = shownRows(st);
     if (OPT.only === 'marked') rows = rows.filter(x => x.marks > 0);
     const all = rows.length;
-    rows = rows.slice(0, OPT.n);
+    const top = rows.slice(0, OPT.n), have = new Set(top.map(x => x.e.stringId_B)), pins = pinList();
+    const pinned = pins.length ? st.rows.map(e => rowOf(e, rescore(e))).filter(x => !have.has(x.e.stringId_B) && pins.includes(String(x.e.preferredName_B).toUpperCase())) : [];
+    rows = top.concat(pinned);
+    const rad = x => (OPT.size === 'equal' ? 8 : 6 + 2.2 * Math.sqrt(Math.min(x.marks, 30)));
     const nodes = [{ id: st.self, name: self.gene || self.acc, acc: self.acc, p: self, marks: self.marks || 0, cls: null, score: 1, self: true, r: 17 }]
-      .concat(rows.map(x => ({ id: x.e.stringId_B, name: x.e.preferredName_B, acc: x.acc, p: x.p, marks: x.marks, cls: x.cls, score: x.e.score, ev: x.e, self: false, r: 6 + 2.2 * Math.sqrt(Math.min(x.marks, 30)) })));
-    return { nodes, total: all, shown: rows.length };
+      .concat(rows.map(x => ({ id: x.e.stringId_B, name: x.e.preferredName_B, acc: x.acc, p: x.p, marks: x.marks, cls: x.cls, score: x.sc, ev: x.e, self: false, pinned: pinned.includes(x), r: rad(x) })));
+    return { nodes, total: all, shown: rows.length, missing: pins.filter(g => !st.rows.some(e => String(e.preferredName_B).toUpperCase() === g)) };
   }
-  function layoutKey(acc, st) { return [acc, OPT.net, OPT.conf, OPT.n, OPT.only, OPT.layout, st.rows.length].join('|'); }
+  function layoutKey(acc, st) { return [acc, OPT.net, OPT.conf, OPT.n, OPT.only, OPT.layout, st.rows.length, chOn().join(''), OPT.size, OPT.pins, OPT.ring].join('|'); }
   function build(acc, self, st) {
     const key = layoutKey(acc, st);
     if (LAY[key]) return LAY[key];
-    const { nodes, total, shown } = nodesFor(acc, self, st);
-    const L = LAY[key] = { key, nodes, total, shown, edges: [], pending: null, edgesOk: null };
+    const { nodes, total, shown, missing } = nodesFor(acc, self, st);
+    const L = LAY[key] = { key, nodes, total, shown, missing, edges: [], pending: null, edgesOk: null, ringP: null, zv: null };
     nodes.forEach((nd, i) => { nd.i = i; });
     L.edges = nodes.slice(1).map(nd => ({ a: 0, b: nd.i, s: nd.score }));
     place(L);
@@ -168,6 +183,7 @@
   }
   const tipOf = (nd, st) => {
     if (nd.self) return `<b>${esc(nd.name)}</b> ${esc(nd.acc)}<br>The protein this page is about`;
+    if (nd.ring) return `<b>${esc(nd.name)}</b> ${esc(nd.acc || 'no accession')}<br>Second ring: STRING ${esc(OPT.net)} score ${nd.score.toFixed(3)} to ${esc(nd.via)}<br>${nd.p ? `${int(nd.marks)} ${esc(nd.marks === 1 ? W.mark : W.marks)} in this site` : ''}${nd.cls ? (nd.p ? '<br>' : '') + esc(className(nd.cls)) : ''}`;
     const ev = CHANNELS.filter(([f]) => +nd.ev[f] > 0).sort(([a], [b]) => nd.ev[b] - nd.ev[a]).map(([f, n]) => `${n} ${(+nd.ev[f]).toFixed(2)}`).join(', ');
     return `<b>${esc(nd.name)}</b> ${esc(nd.acc || 'no accession')}<br>STRING ${esc(OPT.net)} score ${nd.score.toFixed(3)}${ev ? ` (${esc(ev)})` : ''}<br>` +
       (nd.p ? `${int(nd.marks)} ${esc(nd.marks === 1 ? W.mark : W.marks)} in this site${nd.p.gene && nd.cls ? '' : ''}` : `No ${esc(W.mark)} in this site`) + (nd.cls ? `<br>${esc(className(nd.cls))}` : '') +
@@ -177,7 +193,8 @@
     const N = L.nodes;
     const lines = L.edges.map((e, k) => `<line data-e="${k}" ${ex ? `stroke="${EXPORT.edge}" stroke-opacity="${r1(0.25 + 0.6 * e.s)}"` : `class="pn-edge${e.a === 0 ? '' : ' pn-edge2'}" style="stroke-opacity:${r1(e.a === 0 ? 0.3 + 0.6 * e.s : 0.1 + 0.3 * e.s)}"`} stroke-width="${r1(0.6 + 2.6 * e.s)}" x1="${r1(N[e.a].x)}" y1="${r1(N[e.a].y)}" x2="${r1(N[e.b].x)}" y2="${r1(N[e.b].y)}"/>`).join('');
     const nodes = N.map(nd => {
-      const lab = `<text data-nl="${nd.i}" ${ex ? `font-size="11" fill="${EXPORT.ink}" stroke="${EXPORT.halo}" stroke-width="3" paint-order="stroke"` : 'class="pn-lbl"'} x="${r1(nd.x)}" y="${r1(nd.y + nd.r + 12)}" text-anchor="middle">${esc(nd.name)}</text>`;
+      const showLab = OPT.labels === 'all' || nd.self || nd.pinned || (OPT.labels === 'methyl' && (nd.marks > 0 || nd.ring));
+      const lab = !showLab ? '' : `<text data-nl="${nd.i}" ${ex ? `font-size="11" fill="${EXPORT.ink}" stroke="${EXPORT.halo}" stroke-width="3" paint-order="stroke"` : 'class="pn-lbl"'} x="${r1(nd.x)}" y="${r1(nd.y + nd.r + 12)}" text-anchor="middle">${esc(nd.name)}</text>`;
       const circle = `<circle data-nc="${nd.i}"${ex ? '' : ` data-pn-tip="${esc(tipOf(nd))}"`} r="${r1(nd.r)}" cx="${r1(nd.x)}" cy="${r1(nd.y)}" ${nodeLook(nd, ex)}/>`;
       if (ex) return circle + lab;
       const attrs = `class="pn-n${nd.p && !nd.self ? ' pn-link' : ''}" data-ni="${nd.i}" aria-label="${esc(nd.name)}: ${nd.self ? 'this protein' : `STRING score ${nd.score.toFixed(2)}, ${nd.marks} ${W.marks} here`}. Arrow keys move it."`;
@@ -208,14 +225,50 @@
       sel('only', 'Show', [['all', 'All partners'], ['marked', `Only with ${W.marks} here`]], OPT.only) + sel('color', 'Colour by', colors, OPT.color) +
       sel('layout', 'Layout', [['force', 'Force-directed'], ['circle', 'Circle'], ['rings', 'Rings by score']], OPT.layout) + sel('net', 'Network', [['physical', 'Physical'], ['functional', 'Functional']], OPT.net) +
       `<span class="seg" role="group" aria-label="View"><button type="button" data-pn-view="network" aria-pressed="${OPT.view === 'network'}">Network</button><button type="button" data-pn-view="table" aria-pressed="${OPT.view === 'table'}">Table</button></span>` +
-      `<button type="button" class="linkish" data-pn-reset title="Put the nodes back where the layout puts them">Reset layout</button></div>`;
+      `<button type="button" class="linkish" data-pn-reset title="Put the nodes back where the layout puts them">Reset layout</button></div>` + moreOptionsHtml();
+  };
+  const moreOptionsHtml = () => {
+    const sel = (id, label, opts, v) => `<label class="pn-opt" for="pn-${id}"><span>${esc(label)}</span><select id="pn-${id}">${opts.map(([val, t]) => `<option value="${val}"${String(val) === String(v) ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
+    const phys = OPT.net === 'physical';
+    const chs = CHANNELS.map(([, n], k) => { const c = CH_LETTER[k], off = phys && !'edt'.includes(c); return `<label class="pn-chk${off ? ' muted' : ''}"${off ? ' title="The physical network uses experiments, databases and text mining only"' : ''}><input type="checkbox" data-pn-ch="${c}"${OPT.ch.includes(c) ? ' checked' : ''}${off ? ' disabled' : ''}> ${esc(n)}</label>`; }).join('');
+    return `<div class="pn-opts pn-opts2" role="group" aria-label="More network options"><span class="pn-opts-h" title="Unticking a channel rescores every link from the rest, as STRING combines them">Evidence channels</span>${chs}</div>` +
+      `<div class="pn-opts pn-opts2" role="group" aria-label="Labels, size and extra nodes">` +
+      sel('labels', 'Labels', [['all', 'Every node'], ['methyl', `Nodes with ${W.marks} and the second ring`], ['none', 'This protein only']], OPT.labels) +
+      sel('size', 'Node size', [['marks', `By ${W.mark} count`], ['equal', 'All the same']], OPT.size) +
+      `<label class="pn-chk" title="Add the proteins that STRING links to these partners and that have ${esc(W.marks)} here${PT ? ' or are in a partner class' : ''}, to trace paths through the partners"><input type="checkbox" id="pn-ring"${OPT.ring ? ' checked' : ''}> Second ring of partners’ partners</label>` +
+      `<label class="pn-opt" for="pn-pins"><span>Always include</span><input type="text" id="pn-pins" size="22" placeholder="Gene symbols, e.g. PRMT5, SMN1" value="${esc(OPT.pins)}"></label>` +
+      `<button type="button" class="linkish" data-pn-optreset>Reset network options</button>` +
+      `<button type="button" class="btn quiet small" id="pn-string" data-pn-string title="Open this network on string-db.org with the same settings">Open in STRING ↗</button>` +
+      `<span class="pn-zoom" role="group" aria-label="Zoom the network"><button type="button" class="btn quiet small" data-pn-zoom="in" aria-label="Zoom in">+</button><button type="button" class="btn quiet small" data-pn-zoom="out" aria-label="Zoom out">−</button><button type="button" class="btn quiet small" data-pn-zoom="fit" title="Show the whole network (double-click the background)">Reset zoom</button></span></div>` +
+      `<p class="muted small pn-zhelp">Zoom with the buttons or Ctrl and the wheel; drag the background to pan.</p>`;
   };
   function ixFold(p, rec, fold) {
     if (!IXP) return '';
     const g = p.gene || p.acc;
     return fold('p-ix', 'Protein interactions', 'STRING, live; drag the nodes', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, drawn as a network you can drag, coloured by whether they have ${esc(W.marks)} in this site. Matched to the site’s proteins by accession. The Table view lists the same partners and is the keyboard route.</p>` +
       `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${optionsHtml()}<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>` +
-      `<div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>`, true);
+      `<div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` + ifaceHtml(p, rec), true);
+  }
+  // ---- who binds the marks: the site's structure tables (contacts and predicted, per mark) ---------------------------------
+  const rcsb = id => `<a href="https://www.rcsb.org/structure/${encodeURIComponent(String(id).toUpperCase())}" target="_blank" rel="noopener">${esc(String(id).toUpperCase())}</a>`;
+  const partnerName = (g, a) => { const sp = a ? siteProtein(a) : null; return sp ? `<a href="${esc(K.link('protein', sp.acc))}"><b>${esc(g || sp.gene)}</b></a>` : `<b>${esc(g || a || 'a partner')}</b>`; };
+  const siteBtn = (acc, pos) => `<button type="button" class="linkish mono" data-cc-pos="${pos}" data-cc-acc="${esc(acc)}">${esc(K.prot ? K.prot.siteLabel(acc, pos) : pos)}</button>`;
+  function ifaceHtml(p, rec) {
+    const s3 = rec?.s3d; if (!s3 || !(SD.contacts || SD.predicted)) return '';
+    const obs = (s3.c || []).filter(r => r[1] === 'protein' || r[1] === 'self'), pred = s3.p || [], M = W.marks, m1 = W.mark;
+    if (!obs.length && !pred.length) return `<div class="pn-iface"><h4>Who binds its ${esc(M)}</h4><p class="muted">The site’s structure tables name no protein at an interface with a ${esc(m1)} of ${esc(p.gene || p.acc)}.</p></div>`;
+    const by = new Map();      // partner -> { name, acc, sites: Map(pos -> { obs: ids, pred: score }) }
+    const put = (g, a, pos, f) => { const k = a || g; if (!k) return; const o = by.get(k) || { g, a, sites: new Map() }; const s = o.sites.get(pos) || {}; f(s); o.sites.set(pos, s); by.set(k, o); };
+    obs.forEach(([pos, kind, ids, g, a]) => put(kind === 'self' ? '' : g, kind === 'self' ? p.acc : a, pos, s => { s.obs = ids || []; if (kind === 'self') s.self = true; }));
+    pred.forEach(([pos, g, a, , , sc]) => put(g, a, pos, s => { s.pred = sc; }));
+    const parts = [...by.values()].sort((x, y) => y.sites.size - x.sites.size);
+    const who = parts.map(o => `<li>${o.self ? '<b>another copy of this protein</b>' : partnerName(o.g, o.a)} <span class="muted small">at</span> ${[...o.sites.entries()].sort((x, y) => x[0] - y[0]).map(([pos, s]) => siteBtn(p.acc, pos) + (s.obs ? '' : ' <span class="muted small">(predicted)</span>')).join(' ')}</li>`).join('');
+    const obsLines = [...new Map(obs.map(r => [r[0], r])).keys()].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} contacts ` + obs.filter(r => r[0] === pos).map(r => `${r[1] === 'self' ? '<b>another copy</b>' : partnerName(r[3], r[4])} <span class="muted small">(${(r[2] || []).slice(0, 4).map(rcsb).join(', ')}${(r[2] || []).length > 4 ? ` +${r[2].length - 4}` : ''})</span>`).join('; ') + '</li>').join('');
+    const predLines = [...new Set(pred.map(r => r[0]))].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} ` + pred.filter(r => r[0] === pos).slice(0, 6).map(r => `${partnerName(r[1], r[2])}${r[5] != null ? ` <span class="muted small">pDockQ ${(+r[5]).toFixed(2)}</span>` : ''}`).join(', ') + (pred.filter(r => r[0] === pos).length > 6 ? ' +' + (pred.filter(r => r[0] === pos).length - 6) : '') + '</li>').join('');
+    return `<div class="pn-iface"><h4>Who binds its ${esc(M)}</h4><ul class="pn-ilist">${who}</ul>` +
+      `<p class="note">Proteins in contact with a ${esc(m1)} in a PDB structure, or at its interface in a predicted complex, from the site’s structure tables. Associations of the whole protein are in the network above.</p>` +
+      `<div class="pn-igrid"><section><h4>${esc(cap0(M))} at protein interfaces</h4>${obsLines ? `<ul class="pn-ilist">${obsLines}</ul>` : `<p class="muted">None is at a protein interface in a PDB structure.</p>`}</section>` +
+      `<section><h4>Predicted protein interfaces</h4>${predLines ? `<ul class="pn-ilist">${predLines}</ul>` : `<p class="muted">None is at a predicted interface.</p>`}</section></div></div>`;
   }
   function mount() {
     const b = box(); if (!b) { CUR = null; return; }
@@ -228,32 +281,56 @@
       if (st.phase === 'ok') paint(); else if (st.phase === 'unknown') msg(`STRING has no entry for ${esc(acc)} (taxon ${esc(IXP.species)}).`); else msg('STRING did not answer. Nothing on this page depends on it.');
     });
   }
+  const vb = L => { const z = L.zv || [0, 0, VW, VH]; return z.map(r1).join(' '); };
   function paint() {
     const c = CUR; if (!c || !c.st || c.st.phase !== 'ok' || !box()) return;
     const st = c.st;
     c.L = build(c.acc, c.self, st);
     const L = c.L, src = document.getElementById('pn-src'), g = c.self.gene || c.acc;
     if (src) src.textContent = `STRING${st.ver ? ' v' + st.ver : ''} ${OPT.net} network, score ${(OPT.conf / 1000).toFixed(1)} or more (${CITE}), retrieved ${today()}. Partners are matched to this site’s proteins by UniProt accession` +
-      `${st.mapped ? '' : ' (UniProt did not answer, so none could be matched)'}, isoforms by their canonical accession. An association is to the whole protein and does not show that a partner binds or modifies a ${W.mark}.`;
+      `${st.mapped ? '' : ' (UniProt did not answer, so none could be matched)'}, isoforms by their canonical accession. An association is to the whole protein and does not show that a partner binds or modifies a ${W.mark}.` +
+      `${allCh() ? '' : ` Scored on ${CHANNELS.filter((_, k) => chOn().includes(CH_LETTER[k])).map(c => c[1]).join(', ')} only.`}${L.missing?.length ? ` Not among STRING’s partners of ${g}: ${L.missing.join(', ')}.` : ''}`;
     if (L.nodes.length < 2) { msg(st.rows.length ? `No ${OPT.only === 'marked' ? `partner with ${esc(W.marks)} here` : 'partner'} at STRING score ${(OPT.conf / 1000).toFixed(1)} or more.` : `STRING lists no ${esc(OPT.net)} partner for ${esc(g)}.`); return; }
     if (OPT.view === 'table') { box().classList.add('pn-tablebox'); box().innerHTML = tableHtml(L); document.getElementById('pn-legend').innerHTML = ''; return; }
     box().classList.remove('pn-tablebox');
     const s = svgOf(L);
-    box().innerHTML = `<svg class="pn-svg" viewBox="0 0 ${VW} ${VH}" role="group" aria-label="STRING partners of ${esc(g)}: ${L.shown} shown. Nodes can be dragged or moved with the arrow keys; the Table view lists them."><g class="pn-edges">${s.lines}</g><g class="pn-nodes">${s.nodes}</g></svg>` +
+    box().innerHTML = `<svg class="pn-svg" viewBox="${vb(L)}" role="group" aria-label="STRING partners of ${esc(g)}: ${L.shown} shown. Nodes can be dragged or moved with the arrow keys; the Table view lists them."><g class="pn-edges">${s.lines}</g><g class="pn-nodes">${s.nodes}</g></svg>` +
       `<p class="pn-count">${int(L.shown)} of ${int(L.total)} partner${L.total === 1 ? '' : 's'}</p>`;
     document.getElementById('pn-legend').innerHTML = legendHtml(L);
+    if (OPT.ring && !L.ringP) L.ringP = askRing(L, c).then(added => { if (added && CUR?.L === L && box() && OPT.view === 'network') paint(); });
     if (L.edgesOk == null && !L.pending) {
       const ids = L.nodes.map(n => n.id);
       L.pending = askEdges(c.acc + ':' + OPT.net + ':' + OPT.conf, ids).then(rows => {
         L.edgesOk = !!rows;
         if (rows) {
           const at = new Map(L.nodes.map(n => [n.id, n.i])), seen = new Set(L.edges.map(e => e.a + '-' + e.b));
-          rows.forEach(e => { const a = at.get(e.stringId_A), b = at.get(e.stringId_B); if (a > 0 && b > 0 && a !== b) { const k = Math.min(a, b) + '-' + Math.max(a, b); if (!seen.has(k)) { seen.add(k); L.edges.push({ a: Math.min(a, b), b: Math.max(a, b), s: +e.score }); } } });
+          rows.forEach(e => { const a = at.get(e.stringId_A), b = at.get(e.stringId_B); if (a > 0 && b > 0 && a !== b && rescore(e) * 1000 >= OPT.conf) { const k = Math.min(a, b) + '-' + Math.max(a, b); if (!seen.has(k)) { seen.add(k); L.edges.push({ a: Math.min(a, b), b: Math.max(a, b), s: rescore(e) }); } } });
           if (OPT.layout === 'force') relax(L, 120, 0.5);
         }
         if (CUR?.L === L && box() && OPT.view === 'network') paint();
       });
     }
+  }
+  // the second ring: partners of the shown partners that have marks here or are in a partner class (live, at the confidence asked)
+  function askRing(L, c) {
+    const first = L.nodes.filter(n => !n.self).slice(0, 25), at = new Map(first.map(n => [n.id, n]));
+    if (!first.length) return Promise.resolve(false);
+    return timed(fetch(STRING_API + 'interaction_partners', { method: 'POST', body: new URLSearchParams({ identifiers: first.map(n => n.id).join('\r'), species: String(IXP.species), network_type: OPT.net, required_score: String(OPT.conf), limit: '40', caller_identity: CALLER }) })
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status))))), 25000).then(async rows => {
+      const have = new Set(L.nodes.map(n => n.id)), best = new Map();
+      rows.forEach(e => { const sc = rescore(e); if (!have.has(e.stringId_B) && at.has(e.stringId_A) && sc * 1000 >= OPT.conf && (!best.has(e.stringId_B) || best.get(e.stringId_B).sc < sc)) best.set(e.stringId_B, { e, sc }); });
+      const cand = [...best.values()].sort((a, b) => b.sc - a.sc).slice(0, 120), m = await mapAccessions(cand.map(x => x.e.stringId_B));
+      const keep = cand.map(x => { const acc = m.map.get(x.e.stringId_B) || '', p = acc ? siteProtein(acc) : null; return { ...x, acc, p, marks: p ? p.marks : 0, cls: acc ? classOf(acc) : null }; })
+        .filter(x => x.marks > 0 || x.cls).slice(0, 15);
+      if (L.key !== c.L?.key || !keep.length) return false;
+      keep.forEach(x => {
+        const via = at.get(x.e.stringId_A), nd = { id: x.e.stringId_B, name: x.e.preferredName_B, acc: x.acc, p: x.p, marks: x.marks, cls: x.cls, score: x.sc, ev: x.e, self: false, ring: true, via: via.name,
+          r: OPT.size === 'equal' ? 8 : 6 + 2.2 * Math.sqrt(Math.min(x.marks, 30)), i: L.nodes.length, x: via.x + 30, y: via.y + 30, vx: 0, vy: 0 };
+        L.nodes.push(nd); L.edges.push({ a: via.i, b: nd.i, s: x.sc });
+      });
+      if (OPT.layout === 'force') relax(L, 160, 0.6);
+      return true;
+    }).catch(() => false);
   }
   const evText = e => CHANNELS.filter(([f]) => +e[f] > 0).sort(([a], [b]) => e[b] - e[a]).map(([f, n]) => `${n} ${(+e[f]).toFixed(2)}`).join(', ');
   function tableRows(st) { let rows = shownRows(st); if (OPT.only === 'marked') rows = rows.filter(x => x.marks > 0); return rows; }
@@ -261,7 +338,7 @@
     const rows = tableRows(CUR.st), gene = CUR.self.gene || CUR.acc;
     return `<div class="tbl-card"><table class="tbl"><caption class="pn-sr">STRING partners of ${esc(gene)}</caption><thead><tr><th>Partner</th><th>UniProt</th><th class="num">Score</th><th>Evidence</th>${PD ? '<th>Class</th>' : ''}<th class="num">${esc(cap0(W.marks))} here</th></tr></thead><tbody>` +
       rows.map(x => `<tr><td>${x.p ? `<a href="${esc(K.link('protein', x.p.acc))}"><b>${esc(x.e.preferredName_B)}</b></a>` : `<span title="${esc(x.e.stringId_B)}">${esc(x.e.preferredName_B)}</span>`}</td><td class="mono">${esc(x.acc || '–')}</td>` +
-        `<td class="num">${(+x.e.score).toFixed(3)}</td><td class="wrapok">${esc(evText(x.e))}</td>${PD ? `<td>${x.cls ? esc(className(x.cls)) : '–'}</td>` : ''}<td class="num">${x.p ? int(x.marks) : '–'}</td></tr>`).join('') +
+        `<td class="num">${x.sc.toFixed(3)}</td><td class="wrapok">${esc(evText(x.e))}</td>${PD ? `<td>${x.cls ? esc(className(x.cls)) : '–'}</td>` : ''}<td class="num">${x.p ? int(x.marks) : '–'}</td></tr>`).join('') +
       `</tbody></table></div>${rows.length ? '' : '<p class="muted">No partner at this confidence.</p>'}`;
   }
   function tsv() {
@@ -269,7 +346,7 @@
     return K.preamble(`STRING partners of ${gene} (${c.acc})`, `the proteins STRING associates with ${gene}: ${OPT.net} network, score ${(OPT.conf / 1000).toFixed(1)} or more${c.st.ver ? ', v' + c.st.ver : ''}, retrieved live on ${today()} (${CITE}; licence CC BY 4.0). ` +
       `Partners are matched to this site’s proteins by UniProt accession (isoforms by canonical accession); ${W.marks}_here counts their ${W.marks} in this site. A STRING association is to the whole protein.`) +
       ['partner', 'partner_string_id', 'partner_accession', 'accession_here', 'score', ...CHANNELS.map(([, n]) => n.replace(/\W+/g, '_')), 'class', `${W.marks.replace(/\W+/g, '_')}_here`].join('\t') + '\n' +
-      tableRows(c.st).map(x => [x.e.preferredName_B, x.e.stringId_B, x.acc, x.p?.acc || '', x.e.score, ...CHANNELS.map(([f]) => x.e[f] ?? ''), x.cls ? className(x.cls) : '', x.marks].join('\t')).join('\n') + '\n';
+      tableRows(c.st).map(x => [x.e.preferredName_B, x.e.stringId_B, x.acc, x.p?.acc || '', x.sc.toFixed(3), ...CHANNELS.map(([f]) => x.e[f] ?? ''), x.cls ? className(x.cls) : '', x.marks].join('\t')).join('\n') + '\n';
   }
   function figure() {
     const L = CUR.L, g = CUR.self.gene || CUR.acc, s = svgOf(L, true), items = legendItems(L, true);
@@ -328,20 +405,65 @@
   // ---- the options -----------------------------------------------------------------------------------------------------
   document.addEventListener('change', e => {
     const id = e.target.id || ''; if (!id.startsWith('pn-') || !box()) return;
-    const k = id.slice(3); if (!(k in OPT) || k === 'view') return;
-    OPT[k] = ['conf', 'n'].includes(k) ? +e.target.value : e.target.value; save();
-    if (k === 'net') { CUR = null; document.getElementById('pn-box') && msg('Asking STRING…'); mount(); } else paint();
+    const k = id.slice(3); if (!(k in OPT) || k === 'view' || k === 'ch') return;
+    OPT[k] = ['conf', 'n'].includes(k) ? +e.target.value : k === 'ring' ? e.target.checked : k === 'pins' ? e.target.value.replace(/[^\w\s,;.-]/g, '').trim() : e.target.value; save();
+    if (k === 'net') { document.querySelectorAll('.pn-opts2,.pn-zhelp').forEach(n => n.remove()); document.querySelector('.pn-opts')?.insertAdjacentHTML('afterend', moreOptionsHtml()); CUR = null; document.getElementById('pn-box') && msg('Asking STRING…'); mount(); } else paint();
+  });
+  // zoom and pan are the svg's viewBox, kept per layout; nodes keep their places
+  function zoomBy(how, cx, cy, k) {
+    const L = CUR?.L, svg = document.querySelector('.pn-svg'); if (!L || !svg) return;
+    if (how === 'fit') L.zv = null;
+    else {
+      const [x, y, w, h] = L.zv || [0, 0, VW, VH], f = how === 'in' ? 1 / (k || 1.4) : (k || 1.4), nw = Math.min(VW, Math.max(VW / 8, w * f)), nh = nw * VH / VW;
+      const px = cx == null ? x + w / 2 : cx, py = cy == null ? y + h / 2 : cy;
+      const nx = Math.max(0, Math.min(VW - nw, px - (px - x) * nw / w)), ny = Math.max(0, Math.min(VH - nh, py - (py - y) * nh / h));
+      L.zv = nw >= VW ? null : [nx, ny, nw, nh];
+    }
+    svg.setAttribute('viewBox', vb(L));
+  }
+  document.addEventListener('wheel', e => {
+    const svg = e.target.closest?.('.pn-svg'); if (!svg || !(e.ctrlKey || e.metaKey) || !CUR?.L) return;
+    e.preventDefault(); const pt = svgPoint(svg, e); zoomBy(e.deltaY < 0 ? 'in' : 'out', pt.x, pt.y, 1.15);
+  }, { passive: false });
+  let pan = null;
+  document.addEventListener('pointerdown', e => {
+    const svg = e.target.closest?.('.pn-svg'); if (!svg || e.target.closest('.pn-n') || e.button > 0 || !CUR?.L?.zv) return;
+    pan = { svg, id: e.pointerId, sx: e.clientX, sy: e.clientY, zv: CUR.L.zv.slice(), L: CUR.L };
+    try { svg.setPointerCapture(e.pointerId); } catch (err) { /* not capturable */ }
+  });
+  document.addEventListener('pointermove', e => {
+    if (!pan || e.pointerId !== pan.id) return;
+    const r = pan.svg.getBoundingClientRect(), [x, y, w, h] = pan.zv, nx = x - (e.clientX - pan.sx) / r.width * w, ny = y - (e.clientY - pan.sy) / r.height * h;
+    pan.L.zv = [Math.max(0, Math.min(VW - w, nx)), Math.max(0, Math.min(VH - h, ny)), w, h]; pan.svg.setAttribute('viewBox', vb(pan.L));
+  });
+  const endPan = e => { if (pan && e.pointerId === pan.id) pan = null; };
+  document.addEventListener('pointerup', endPan); document.addEventListener('pointercancel', endPan);
+  document.addEventListener('dblclick', e => { if (e.target.closest?.('.pn-svg') && !e.target.closest('.pn-n')) zoomBy('fit'); });
+  document.addEventListener('change', e => {
+    const c = e.target.closest?.('[data-pn-ch]'); if (!c || !box()) return;
+    const on = [...document.querySelectorAll('[data-pn-ch]')].filter(x => x.checked).map(x => x.dataset.pnCh);
+    if (!on.some(x => OPT.net !== 'physical' || 'edt'.includes(x))) { c.checked = true; return; }      // at least one channel the network scores
+    OPT.ch = CH_LETTER.split('').filter(x => on.includes(x)).join(''); save(); paint();
   });
   const redrawAll = () => { if (CUR?.L) paint(); };
   K.clicks.push(
     ['[data-pn-view]', el => { OPT.view = el.dataset.pnView; save(); document.querySelectorAll('[data-pn-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pnView === OPT.view))); redrawAll(); }],
+    ['[data-pn-optreset]', () => { Object.assign(OPT, { ...OPT0, view: OPT.view, conf: OPT.conf, n: OPT.n, color: OPT.color, layout: OPT.layout, net: OPT.net, only: OPT.only }); save(); document.querySelectorAll('.pn-opts2,.pn-zhelp').forEach(n => n.remove()); document.querySelector('.pn-opts')?.insertAdjacentHTML('afterend', moreOptionsHtml()); paint(); }],
+    ['[data-pn-string]', btn => {
+      if (!CUR?.L) return;
+      const ids = CUR.L.nodes.filter(n => !n.ring).map(n => n.id), w = window.open('', '_blank'); btn.disabled = true;
+      getJson(STRING_API + 'get_link?' + new URLSearchParams({ identifiers: ids.join('\r'), species: String(IXP.species), network_type: OPT.net, required_score: String(OPT.conf), network_flavor: 'evidence', caller_identity: CALLER }))
+        .then(d => { const url = d && (typeof d[0] === 'string' ? d[0] : d[0] && d[0].url); if (url && w) { w.opener = null; w.location.href = url; } else if (w) w.close(); })
+        .catch(() => { if (w) w.close(); }).then(() => { btn.disabled = false; });
+    }],
+    ['[data-pn-zoom]', btn => zoomBy(btn.dataset.pnZoom)],
     ['[data-pn-reset]', () => { if (!CUR?.L) return; delete LAY[CUR.L.key]; paint(); }],
     ['[data-pnexp]', btn => {
       if (!CUR?.L || CUR.st?.phase !== 'ok') return;
       K.exportFigure(btn.dataset.pnexp, figure, `${D.site.id}_${CUR.acc}_${OPT.net}_network`, btn, tsv);
     }],
     ['[data-ccexp]', btn => { if (CC.cur) K.exportFigure(btn.dataset.ccexp, () => ccFigure(CC.cur), `${D.site.id}_${CC.cur.acc}_interaction_evidence`, btn, () => ''); }],
-    ['[data-cc-pos]', el => { if (CC.cur) K.site?.focus(CC.cur.acc, +el.dataset.ccPos, { from: 'glance' }); }],
+    ['[data-cc-pos]', el => { const a = el.dataset.ccAcc || CC.cur?.acc; if (a) K.site?.focus(a, +el.dataset.ccPos, { from: 'glance' }); }],
   );
   K.tips.push(['[data-pn-tip]', el => el.dataset.pnTip || '']);
 

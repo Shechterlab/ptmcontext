@@ -796,7 +796,7 @@
     return `<div class="map-ctl"><label>Colour ${esc(W.marks)} by <select data-map-colour>${MODES.map(md => `<option value="${esc(md.id)}"${mode().id === md.id ? ' selected' : ''}${md.help ? ` title="${esc(md.help)}"` : ''}>${esc(md.label)}</option>`).join('')}</select></label>` +
       `<span class="lbl">Labels <span class="seg">${[['auto', 'Auto', 'Up to three lines of labels; neighbours too close share one (R213 +3), and none above 120 marks. Zoom in to separate them'], ['all', 'All', 'Every mark its own label, on as many lines as it needs'], ['none', 'None', 'No labels']].map(([k, l, t]) => `<button type="button" data-map-labels="${k}" aria-pressed="${M.labels === k}" title="${esc(t)}">${l}</button>`).join('')}</span></span>` +
       `<span class="rows-wrap"><button type="button" class="btn small" data-map-rows aria-expanded="${M.rowsMenu}">Rows ▾</button>${M.rowsMenu ? rowsMenu() : ''}</span>` +
-      (M.zoom ? `<button type="button" class="btn small" data-map-unzoom>Reset zoom (${int(M.zoom[0])}–${int(M.zoom[1])})</button>` : `<span class="muted small">Drag across the map to zoom</span>`) + '</div>';
+      (M.zoom ? `<span class="map-range small" id="map-range">residues ${int(M.zoom[0])}–${int(M.zoom[1])} of ${int(M.ctx?.p?.len || 0)}</span><button type="button" class="btn small" data-map-unzoom title="Show the whole protein again (double-click the map, or press Esc)">Reset zoom</button>` : `<span class="muted small">Drag across the map to zoom</span>`) + '</div>';
   }
   // the exports' size and resolution: a menu beside the PDF, SVG and PNG buttons, not a row of the map's controls
   function exportOpts() {
@@ -836,6 +836,25 @@
   }
   const observed = new WeakSet();
   const widthOf = el => { const w = el.clientWidth; return w > 0 && w < 700 ? Math.max(300, Math.round(w)) : 1000; };
+  const plain = h => String(h || '').replace(/<br>/g, '. ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 240);
+  // the pinned detail: the item's full text and links, until it is closed, Esc is pressed, or the same item is clicked again
+  function showPin(p) {
+    const pin = document.getElementById('map-pin'); if (!pin) return;
+    pin.hidden = false; pin.innerHTML = `<button type="button" class="pin-x" data-pin-close aria-label="Close the pinned detail">×</button>${p.html}`;
+  }
+  function closePin(focus) {
+    const was = M.pin; M.pin = null;
+    const pin = document.getElementById('map-pin'); if (pin) { pin.hidden = true; pin.innerHTML = ''; }
+    if (focus && was) { const n = [...document.querySelectorAll('#pmap [data-mi]')].find(e => M.items[+e.dataset.mi]?.tip === was.key); n?.focus?.({ preventScroll: true }); }
+  }
+  function togglePin(x) {
+    if (!x) return;
+    if (M.pin && M.pin.key === x.tip) { closePin(); return; }
+    M.pin = { key: x.tip, acc: M.ctx?.p?.acc, html: typeof x.card === 'function' ? x.card() : x.card || x.tip };
+    showPin(M.pin);
+    const pin = document.getElementById('map-pin'), r = pin?.getBoundingClientRect();
+    if (r && (r.bottom > innerHeight || r.top < 0)) pin.scrollIntoView({ block: 'nearest' });
+  }
   function render(el, ctx) {
     M.ctx = ctx; if (!el) return;
     if (PDB_ON && isOn('pdb')) loadPdbk(ctx.p.acc);
@@ -845,7 +864,12 @@
     const hold = M.hold && M.hold.acc === ctx.p.acc && M.hold.el === el && Date.now() < M.hold.until ? M.hold : (M.hold = { acc: ctx.p.acc, until: Date.now() + 6000, h: 0, el });
     el.style.minHeight = hold.h ? hold.h + 'px' : '';
     el.innerHTML = controls() + `<div class="map-svg"><svg viewBox="0 0 ${m.Wd} ${m.H}" role="img" aria-label="Map of ${esc(ctx.p.gene || ctx.p.acc)}"${m.Wd < 1000 ? ` style="max-width:${m.Wd}px"` : ''}>${m.svg}</svg></div>` +
-      `<p class="map-read muted" id="map-read">Hover for the residue under the pointer. Click an item to pin it here.</p><div id="map-pin" class="map-pin" hidden></div>` + keyHtml(ctx, m);
+      `<p class="map-read muted" id="map-read">Hover for the residue under the pointer. Click an item to pin it here.</p><div id="map-pin" class="map-pin" role="region" aria-label="Pinned detail" hidden></div>` + keyHtml(ctx, m);
+    // items are reachable by keyboard: one tab stop, the arrow keys move along the rows, Enter or Space pins the detail
+    // (an item drawn as a visible shape under a transparent hit target has both carry its number: the topmost one is the button)
+    const top = new Map(); el.querySelectorAll('[data-mi]:not([data-msite])').forEach(n => top.set(n.dataset.mi, n));
+    [...top.values()].forEach((n, i) => { n.setAttribute('tabindex', i === 0 ? '0' : '-1'); n.setAttribute('role', 'button'); n.setAttribute('aria-label', plain(M.items[+n.dataset.mi]?.tip)); });
+    if (M.pin && M.pin.acc === ctx.p.acc) showPin(M.pin);
     M.geom = m; hold.h = Math.max(hold.h, el.offsetHeight);
     if (!hold.t) hold.t = setTimeout(() => release(hold), Math.max(0, hold.until - Date.now()) + 50);
     // laid out again when the box's width class changes (a narrow screen, a fold opened, the window resized)
@@ -967,8 +991,8 @@
     ['[data-map-defaults]', () => { M.off = new Set(DEFAULT_OFF); M.order = DEFAULT_ORDER.slice(); saveRows(); redraw(); }],
     ['[data-map-unzoom]', () => { M.zoom = null; redraw(); }],
     ['[data-map3d]', el => { const x = M.d3[+el.dataset.map3d]; if (x && typeof K.show3d === 'function') K.show3d(x); }],
-    ['[data-mi]', el => { const x = M.items[+el.dataset.mi]; const pin = document.getElementById('map-pin'); if (x && pin) { pin.hidden = false; pin.innerHTML = `<button type="button" class="pin-x" data-pin-close aria-label="Close">×</button>${typeof x.card === 'function' ? x.card() : x.card || x.tip}`; } }],
-    ['[data-pin-close]', () => { const pin = document.getElementById('map-pin'); if (pin) pin.hidden = true; }],
+    ['[data-mi]', el => { if (!el.closest('#pmap') || el.hasAttribute('data-msite')) return; togglePin(M.items[+el.dataset.mi]); }],
+    ['[data-pin-close]', () => closePin(true)],
   );
   document.addEventListener('change', e => {
     const d = e.target.dataset || {};
@@ -979,6 +1003,17 @@
   document.addEventListener('toggle', e => { if (e.target.matches?.('[data-map-key]')) { M.keyOpen = e.target.open; } }, true);
   // a theme switch redraws the map in the theme's colours
   new MutationObserver(() => redraw()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  document.addEventListener('keydown', e => {
+    const n = e.target.closest?.('#pmap [data-mi]:not([data-msite])');
+    if (n && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); togglePin(M.items[+n.dataset.mi]); return; }
+    if (n && ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+      const all = [...document.querySelectorAll('#pmap [data-mi][role=button]:not([data-msite])')], j = all.indexOf(n) + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1);
+      if (all[j]) { e.preventDefault(); n.setAttribute('tabindex', '-1'); all[j].setAttribute('tabindex', '0'); all[j].focus(); }
+      return;
+    }
+    if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector('dialog[open]') || !document.getElementById('pmap')) return;
+    if (M.pin) { closePin(true); e.stopPropagation(); } else if (M.zoom) { M.zoom = null; redraw(); }
+  });
   K.tips.push(['[data-mi]', el => M.items[+el.dataset.mi]?.tip || ''], ['[data-rowhelp]', el => esc(el.dataset.rowhelp)]);
   // black or white text, whichever reads better on a colour (WCAG relative luminance)
   function textOn(hex) {
@@ -1002,5 +1037,5 @@
   }
   // what other modules may read: the mark's colour in the mode chosen (a 3D view follows it), the modes, the figure
   K.map = { render, exportOpts, cross: pos => M.cross?.(pos), figure, fileName, siteColour, attrColour, textOn, readable, modes: () => MODES.map(md => ({ id: md.id, label: md.label })), mode: () => mode().id,
-    reset: () => { M.zoom = null; M.rowsMenu = false; }, state: M };
+    reset: () => { M.zoom = null; M.rowsMenu = false; M.pin = null; }, state: M };
 });
