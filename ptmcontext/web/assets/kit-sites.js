@@ -339,7 +339,7 @@
   }]);
   K.tips.push(['[data-na-tip]', el => {
     const [pi, pos] = el.dataset.naTip.split('/').map(Number), m = SD().marks.find(x => x[0] === pi && x[1] === pos); if (!m || TB[pr(pi).acc] === undefined) return '';
-    const c = ctxOf(m), h = K.card.sequences(c, false) + K.card.around(c, false) + K.card.wholeProtein(c);
-    return h ? `<div class="na-tip"><b>${esc(c.gene)} ${esc(c.label)}</b>${h}<p class="muted small">Click the row to open the site; its protein page has every sequence.</p></div>` : '';
+    const c = ctxOf(m), h = K.card.sequences(c, false) + K.card.around(c, false);
+    return h ? `<div class="na-tip"><b>${esc(c.gene)} ${esc(c.label)}</b>${h}<p class="muted small">Click the row for the site.</p></div>` : '';
   }]);
 });

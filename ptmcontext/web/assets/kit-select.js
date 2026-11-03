@@ -697,7 +697,7 @@
   function filtersTab() {
     const gs = groups();
     return `<div class="rail-sel">${bar() || `<span>All <b>${int(D.counts.marks)}</b> ${esc(W.marks)} on <b>${int(D.counts.proteins)}</b> proteins</span>`}</div>${savedHtml()}` +
-      `<p class="rail-note">Each filter narrows the selection; a ${esc(W.mark)} must match all of them. Every page then shows the selection, and its tests run again on it.</p>` +
+      `<p class="rail-note">A ${esc(W.mark)} must match every filter. Every page then shows the selection and tests it again.</p>` +
       gs.map((g, gi) => {
         const keys = keysOf(g), n = keys.filter(k => S.f[k]?.length || termValues(k).length).length;
         return `<details class="fgroup${n ? ' active' : ''}" data-g="${gi}"${R.openGroups?.has(gi) ? ' open' : ''}><summary><span>${esc(g.name)}</span>${n ? `<span class="badge">${n}</span><button type="button" class="linkish small" data-fgroup-clear="${gi}">Clear</button>` : ''}</summary>` +
