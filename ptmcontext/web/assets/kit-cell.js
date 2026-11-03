@@ -522,16 +522,16 @@
     return K.figureFrame({ title, sub, W: Math.round(f.W * s) + 40, body: `<g transform="translate(20,0) scale(${s})">${inlined(f)}</g>`, bodyH: f.H * s,
       note: note || `${keyWords()} ${testWords()}`, extra: { question: ID } });
   }
-  const keyWords = () => `Colours: red where ${who(scopedNow())} are more likely to sit there than ${alike}, slate where less likely (deeper for larger odds ratios), grey where there is no clear difference or the maps disagree; a dashed outline where no map measures it.`;
-  const testWords = () => (allStrat ? `In each map, ${who(scopedNow())} against ${alike}: a Mantel–Haenszel odds ratio across the abundance strata, the continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg within the map; coloured at q ≤ ${PADJ} and 1.1× or more. A part of a drawing takes the median odds ratio of the maps that place proteins there, coloured when at least half of them find a difference that way.`
+  const keyWords = () => `Red: ${who(scopedNow())} are more likely to sit there than ${alike}. Slate: less likely, deeper for larger odds ratios. Grey: no clear difference, or the maps disagree. Dashed outline: no map measures it.`;
+  const testWords = () => (allStrat ? `In each map, ${who(scopedNow())} against ${alike}: Mantel–Haenszel odds ratio across the abundance strata, continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg within the map, coloured at q ≤ ${PADJ} and 1.1× or more. A part of a drawing takes the median odds ratio of the maps that place proteins there, coloured when at least half of them find a difference that way.`
     : `In each map, ${who(scopedNow())} against the other proteins the map places (fold enrichment, one-sided hypergeometric test, Benjamini–Hochberg within the map). A part takes the median of the maps that have it.`);
   const FIGS = {
     regions: { title: () => `${C.title || 'Where in the cell'}: regions against maps`, sub: () => `The odds ratio of ${who(scopedNow())} against ${alike}, for each region in each map.`, make: () => gridSvg(LAYERS.region, scopedNow()), tsv: () => gridTsv(LAYERS.region, scopedNow()) },
     grid: { title: () => `${C.title || 'Where in the cell'}: compartments against maps`, sub: () => `The odds ratio of ${who(scopedNow())} against ${alike}, for each compartment in each map.`, make: () => gridSvg(LAYERS.part, scopedNow()), tsv: () => gridTsv(LAYERS.part, scopedNow()) },
     one: { title: () => `${C.title || 'Where in the cell'}: ${DS(UI.map).name}`, sub: () => { const d = DS(UI.map), at = [d.ref, d.cells].filter(Boolean).join(', '); return `${d.name}${at ? ' (' + at + ')' : ''}${d.how ? ': ' + d.how : ''}`; }, make: () => barsSvg(UI.map, scopedNow()), tsv: () => barsTsv(UI.map, scopedNow()),
-      note: () => `Bars: the share of ${who(scopedNow())} among the ${here}, as a multiple of their share of all the proteins the map places (log2), filled where q ≤ ${PADJ}. Marks: the same comparison against ${alike} (✓ more likely, ≈ about the same, ○ no clear difference, ▼ less likely).` },
+      note: () => `Bars: share of ${who(scopedNow())} among the ${here} over their share of all the proteins the map places (log2), filled at q ≤ ${PADJ}. Marks: the same against ${alike} (✓ more likely, ≈ about the same, ○ no clear difference, ▼ less likely).` },
   };
-  DRAWINGS.forEach(d => { FIGS[d.drawing] = { title: () => d.title || C.title || 'Where in the cell', sub: () => `Each part coloured by the odds ratio of ${who(scopedNow())} against ${alike} (the median of the maps that have it).`, make: () => DRAW[d.drawing](scopedNow()), tsv: () => gridTsv(LAYERS.part, scopedNow()) }; });
+  DRAWINGS.forEach(d => { FIGS[d.drawing] = { title: () => d.title || C.title || 'Where in the cell', sub: () => `Odds ratio of ${who(scopedNow())} against ${alike}, as the median of the maps that have each part.`, make: () => DRAW[d.drawing](scopedNow()), tsv: () => gridTsv(LAYERS.part, scopedNow()) }; });
   const figName = k => `${D.site.id}_${ID}_${k === 'one' ? UI.map : k}`;
   const block = (k, head, cls) => `<div class="cell-block ${cls}" id="cell-${k}"><div class="fig-head"><span class="flabel">${esc(head)}</span>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', head, ID).replace(/data-cell-exp="(\w+)"/g, `data-cell-exp="$1" data-cell-fig="${k}"`)}</div>` +
     `<div class="cell-scroll">${svgOf(FIGS[k].make(), 'cell-svg cell-' + k)}</div></div>`;
@@ -605,7 +605,7 @@
     if (!row) return '';
     const s = rowSummary(L, row, scoped), wh = who(scoped), sig = s.tone[0] === 'u' || s.tone[0] === 'd';
     const verdict = sig ? `${cap(wh)} are <b>${s.tone[0] === 'u' ? 'more' : 'less'} likely</b> to sit here than ${esc(alike)} (${esc(orWords(s.a))}${s.cells.length > 1 ? ', the median of ' + s.maps : ''}).`
-      : s.tone === 'ns' ? (s.value === 'maps disagree' ? `The maps disagree: in some, ${esc(wh)} are more likely to sit here than ${esc(alike)}; in others, less likely.` : `${cap(wh)} sit here about as often as ${esc(alike)}.`) : `No map compares ${esc(wh)} here.`;
+      : s.tone === 'ns' ? (s.value === 'maps disagree' ? `The maps disagree. In some, ${esc(wh)} are more likely to sit here than ${esc(alike)}, in others less likely.` : `${cap(wh)} sit here about as often as ${esc(alike)}.`) : `No map compares ${esc(wh)} here.`;
     const cols = L.cols.filter(aid => row.map[aid]);
     const two = (k1, n1, w1, k2, n2, w2) => `${int(k1)} of ${int(n1)} ${esc(w1)} (${pc(k1, n1)}%)<br>${int(k2)} of ${int(n2)} ${esc(w2)} (${pc(k2, n2)}%)`;
     const cmp = a => (!a || a.l2 == null ? '–' : `<b>${esc(orText(a))}</b>${a.lo != null && a.hi != null ? ` <span class="muted">(${K.fx(2 ** a.lo)}–${K.fx(2 ** a.hi)})</span>` : ''}, q ${fq(a.q)} · ${esc(MARK[markOf(a)]?.[1] || '')}`);
@@ -635,7 +635,7 @@
         ds.universe ? `${int(ds.universe)} proteins placed, ${pc(ds.marked, ds.universe)}% ${esc(W.marked)}` : '', `<a href="${esc(K.link('overview', m.analysis))}">its question</a>`].filter(Boolean);
       return `${esc(ds.name)} (${bits.join('; ')})`; }).join('; ');
     return `<div class="card-body cell-page"><p class="cell-lead">${lead(regs, up, scoped, false)}</p>` +
-      `<p class="small">${esc(C.intro || '')} A part is red where ${esc(who(scoped))} are more likely to sit there than ${esc(alike)}, slate where they are less likely, grey where there is no clear difference; each map compares only the proteins it places.${selNote} <b>Click a region, a part, a label or a row of a grid</b> for its numbers and its proteins.</p>` +
+      `<p class="small">${esc(C.intro || '')} Red: ${esc(who(scoped))} are more likely to sit there than ${esc(alike)}. Slate: less likely. Grey: no clear difference. Each map compares only the proteins it places.${selNote} Click a region, part, label or grid row for its numbers and proteins.</p>` +
       colourKey() + regionsBlock + drawings + block('grid', 'Compartments against maps', 'cell-grid') + (at === 'grid' ? dt() : '') +
       `<div class="cell-block cell-one" id="cell-one"><div class="fig-head"><span class="flabel">One map at a time</span><span class="seg cell-maps" role="group" aria-label="Map">` +
       MAPS.map(m => `<button type="button" data-cellmap="${esc(m.analysis)}" aria-pressed="${m.analysis === UI.map}">${esc(m.short || m.name)}</button>`).join('') + '</span>' +
@@ -650,8 +650,8 @@
   K.questions[ID] = { tile, page: () => page() };
   K.methods.push({ id: ID, title: C.title || 'Where in the cell', html: () => `<section id="m-q-${esc(ID)}" class="qm"><h3>${esc(C.title || 'Where in the cell')}</h3>` +
     (C.question ? `<p class="qm-q">${esc(C.question)}</p>` : '') +
-    `<p>One question drawn from ${MAPS.length} maps of the cell, each a protein-set question of this site: ${MAPS.map(m => `<a href="${esc(K.link('method', 'q-' + m.analysis))}">${esc(DS(m.analysis).name)}</a>`).join(', ')}${REGMAPS.length ? `, and the regions of the cell in ${REGMAPS.map(m => `<a href="${esc(K.link('method', 'q-' + m.regions))}">${esc(DS(m.regions).name)}</a>`).join(', ')}` : ''}. ${esc(testWords())}</p>` +
-    `<p>The site file (website.cell) says which compartment of which map is each row of the grids, and which part of the drawings it colours. A selection is tested again in the browser, map by map, the same way${allStrat ? ', over the abundance strata of each map’s proteins' : ''}; it is not compared with a map it was made with, nor when it names its proteins.</p>` +
+    `<p>One question drawn from ${MAPS.length} maps of the cell, each a protein-set question: ${MAPS.map(m => `<a href="${esc(K.link('method', 'q-' + m.analysis))}">${esc(DS(m.analysis).name)}</a>`).join(', ')}${REGMAPS.length ? `, and the regions of the cell in ${REGMAPS.map(m => `<a href="${esc(K.link('method', 'q-' + m.regions))}">${esc(DS(m.regions).name)}</a>`).join(', ')}` : ''}. ${esc(testWords())}</p>` +
+    `<p>The site file (website.cell) maps each grid row to a compartment of each map and to the part of the drawings it colours. A selection is tested again in the browser, map by map, the same way${allStrat ? ', over the abundance strata of each map’s proteins' : ''}. It is not tested against a map it was made with, nor when it names its proteins.</p>` +
     `<p class="qm-links"><a href="${esc(K.link('overview', ID))}">Its figure</a></p></section>` });
   const open = (id, at) => { if (UI.row !== id) UI.all = false; UI.row = id; UI.at = at; K.render(); requestAnimationFrame(() => document.getElementById('cell-detail')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); };
   const atOf = el => (el.closest('.cell-block')?.id || '').replace(/^cell-/, '');

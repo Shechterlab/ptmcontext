@@ -44,7 +44,7 @@
   function proteinsView() {
     const rows = shownProteins(), shown = rows.slice(0, PS.n);
     return `<div class="page-head"><h2>Proteins</h2>${K.expBar(['tsv'], 'pexp', 'the protein list', 'data')}</div>` +
-      `<p class="page-sub">Every protein with at least one ${esc(W.mark)}${K.sel?.active() ? ' in your selection' : ''}. Search above by gene, accession or name (a list of genes works too), or filter. A row opens the protein.</p>` +
+      `<p class="page-sub">Every protein with at least one ${esc(W.mark)}${K.sel?.active() ? ' in your selection' : ''}. Search by gene, accession or name, or filter. A row opens the protein.</p>` +
       `<div class="filters"><span class="muted">${int(rows.length)} of ${int(P.length)} proteins${K.sel?.active() ? ' in your selection' : ''}</span></div>` +
       `<div class="tbl-card" id="proteins-table"><table class="tbl ptbl"><thead><tr>${PCOLS.map(([k, t, n]) => `<th class="${n ? 'num' : ''}" data-psort="${k}" tabindex="0"${PS.sort === k ? ` aria-sort="${PS.desc ? 'descending' : 'ascending'}"` : ''}>${esc(t)}${PS.sort === k ? (PS.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
       shown.map(p => `<tr data-acc="${esc(p.acc)}"><td><a href="${esc(K.link('protein', p.acc))}"><b>${esc(p.gene || '–')}</b></a></td><td class="wrapok">${esc(p.name)}</td><td class="mono">${esc(p.acc)}</td>` +
@@ -417,7 +417,7 @@
     const nSrc = Object.keys(SPECS).find(n => SPECS[n].kind === 'list' && SPECS[n].link);
     return head +
       (sel && sel.size < rec.marks.length ? `<p class="note">${int(sel.size)} of ${int(rec.marks.length)} ${esc(W.marks)} match your selection; the others are faded. <button class="linkish" type="button" data-sel-clear-all>Clear filters</button></p>` : '') +
-      fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''}`, `<div class="card-head"><p class="sub">The ${esc(W.marks)} over the protein, and rows from the site’s data and live sources. Hover anything for what it is and where it comes from; click it to pin it with its links.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mexp', 'the map', 'sources')}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
+      fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''}`, `<div class="card-head"><p class="sub">The ${esc(W.marks)} on the protein, with rows from the site’s data and live sources. Hover for what an item is, click to pin it.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mexp', 'the map', 'sources')}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
       (headline(p, rec) || legacyFacts(p, rec, nSrc)) +
       fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}${nSrc ? `, each with the ${esc(SPECS[nSrc].label.toLowerCase())} that report it` : ''}${rec.shown?.length ? ` · ${int(rec.shown.length)} more ${esc(K.shown.row())}` : ''}`, sitesTable(p, rec, sel), true) +
       fold('p-score', `Its ${esc(W.marks)}, against its other ${esc(W.residues)}`, 'counted in this protein', `<p class="sub">The classes its ${esc(W.marks)} fall in, and how often its other ${esc(W.residues)} do. A row opens every class.</p><div class="hub">${scoreRows(p, rec)}</div>`, false) +
@@ -455,9 +455,9 @@
     const cols = tableCols().filter(c => c.attribute), on = new Set(K.columns.on('protein-sites', cols, cols.filter(c => c.default).map(c => c.id))), shown = cols.filter(c => on.has(c.id));
     const table = `<div class="tbl-card"><table class="tbl stbl stackable"><thead><tr><th>Site</th>${colourAttr ? `<th>${esc(SPECS[colourAttr].label)}</th>` : ''}<th>Window ±7</th>${shown.map(c => `<th>${esc(c.label)}</th>`).join('')}<th><span class="vh">Actions</span></th></tr></thead><tbody>${shownRows(p, rec, shown, null, '')}</tbody></table></div>`;
     return head +
-      `<p class="note"><b>No counted ${esc(W.mark)} on ${esc(p.gene || p.acc)} in this site.</b> It has ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} shown here and counted nowhere (${esc(K.shown.label())}): not among the ${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins, and in no count, chart or test.</p>` +
+      `<p class="note">No counted ${esc(W.mark)} on ${esc(p.gene || p.acc)}. It has ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} shown here (${esc(K.shown.label())}) but not among the ${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins, and in no count, chart or test.</p>` +
       `<div class="facts"><div class="fact"><b>${int(p.len)}</b><span>Residues</span></div><div class="fact"><b>${int(n)}</b><span>${esc(cap(K.shown.row()))}</span></div></div>` +
-      fold('p-map', 'Protein map', `${int(n)} ${esc(K.shown.row())} on ${int(p.len)} aa`, `<div class="card-head"><p class="sub">The protein, its ${esc(W.marks)} shown and not counted (hatched), and rows from live sources. Hover anything for what it is; click it to pin it with its links.</p>${K.expBar(['pdf', 'svg', 'png'], 'mexp', 'the map', 'sources')}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
+      fold('p-map', 'Protein map', `${int(n)} ${esc(K.shown.row())} on ${int(p.len)} aa`, `<div class="card-head"><p class="sub">The protein, its ${esc(W.marks)} shown but not counted (hatched), and rows from live sources. Hover for what an item is, click to pin it.</p>${K.expBar(['pdf', 'svg', 'png'], 'mexp', 'the map', 'sources')}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
       fold('p-sites', esc(cap(W.marks)), `${int(n)} ${esc(K.shown.row())}`, `<p class="sub">Each with the 15 residues around it; a row opens its card. The tag’s hover gives the tests.</p>${table}`, true) +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
       fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false);
@@ -481,7 +481,7 @@
     const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${(PV.open[id] ?? open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
     const asP = K.card.asPartner(x, p.gene || p.acc, (a, pos) => `${byAcc[a]?.gene || a} ${siteOf(byAcc[a] || { acc: a }, pos)}`);
     return `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">no ${esc(W.mark)}</span></p>` + protHead(p, true) +
-      `<p class="note"><b>No ${esc(W.mark)} on ${esc(p.gene || p.acc)} in this site.</b> None of its sources reports one; absent here means not reported, not shown to be un${esc(W.marked)}. This page shows what the site holds on it: its map, the ${esc(W.marks)} of other proteins it is recorded binding, and its partners with ${esc(W.marks)}.</p>` +
+      `<p class="note">No ${esc(W.mark)} on ${esc(p.gene || p.acc)}. None of its sources reports one, which means not reported, not shown to be un${esc(W.marked)}. This page shows its map, the ${esc(W.marks)} of other proteins it is recorded binding, and its partners with ${esc(W.marks)}.</p>` +
       `<div class="facts"><div class="fact"><b>${int(p.len)}</b><span>Residues</span></div><div class="fact"><b>${int(nRes)}</b><span>${esc(cap(W.residues))}</span></div>` +
       (ptab ? `<div class="fact"><b>${int(partners.length)}</b><span>Partners with ${esc(W.marks)}</span></div>` : '') + '</div>' +
       fold('p-map', 'Protein map', `${int(p.len)} aa, no ${esc(W.mark)}`, `<div class="card-head"><p class="sub">The protein and the rows from live sources; it has no ${esc(W.mark)} in this site.</p>${K.expBar(['pdf', 'svg', 'png'], 'mexp', 'the map', 'sources')}</div><div id="pmap" class="pmap"></div>`, true) +
@@ -556,7 +556,7 @@
         (mine.length > 10 ? `<button class="linkish" type="button" data-kinds-all="${esc(a.id)}">${PV.open['kinds:' + a.id] ? 'Fewer' : `All ${int(mine.length)}`}</button>` : '') + '</div>';
     }).join('');
     const covLine = cov ? `<p class="kind-cov"><b>Abundance</b>: ${cov.me[0] == null ? 'no value' : `${esc(cov.value)} ${K.fxn(cov.me[0])}`}${cov.me[1] !== 'none' ? `, decile ${esc(cov.me[1])} of ${int(cov.strata)}` : ''} <span class="muted">(${esc((Object.values(D.inputs).find(x => (x.roles || [x.role]).includes(cov.input)) || {}).version || cov.input)}; the decile the protein-set tests stratify by)</span></p>` : '';
-    return covLine + `<div class="kinds">${blocks}</div><p class="note">Each set’s result is the site’s own (all ${esc(W.marked)} proteins against the background), not this protein’s. A set’s name selects the ${esc(W.marks)} on its proteins.</p>`;
+    return covLine + `<div class="kinds">${blocks}</div><p class="note">Each result is the site’s own, over all ${esc(W.marked)} proteins against the background, not this protein’s. A set’s name selects the ${esc(W.marks)} on its proteins.</p>`;
   }
 
   // ---- domains and regions: every region the site's questions read, as a table, with the marks inside each --------
@@ -711,12 +711,12 @@
       const more = shownAll.length > 15 ? `<p><button class="linkish" type="button" data-ix-all>${IXS.all ? 'Show the best 15' : 'Show all ' + int(shownAll.length)}</button></p>` : '';
       fill('live-ix', controls + head + table + more +
         `<p><button class="linkish" type="button" data-ix-string>Open this network in STRING</button></p>` +
-        `<p class="src">${esc(ixDesc())} (${esc(STRING_CITE)}), retrieved ${esc(today())}. Partners are matched to this site’s proteins by gene name. A STRING association is to the whole protein: it does not show that a partner binds or modifies a ${esc(W.mark)}.</p>`);
+        `<p class="src">${esc(ixDesc())} (${esc(STRING_CITE)}), retrieved ${esc(today())}. Partners are matched to this site’s proteins by gene name. A STRING association is to the whole protein and does not show that a partner binds or modifies a ${esc(W.mark)}.</p>`);
     });
   }
   function ixTsv() {
     const p = byAcc[PV.acc], list = PV.ix?.list || [];
-    return K.preamble(`interaction partners of ${p.gene || p.acc} (${p.acc})`, `the proteins STRING associates with ${p.gene || p.acc}: ${ixDesc()}, retrieved live on ${today()} (${STRING_CITE}; licence CC BY 4.0). Partners are matched to this site’s proteins by gene name; ${W.marks}_here counts their ${W.marks} in this site. A STRING association is to the whole protein: it does not show that a partner binds or modifies a ${W.mark}.`) +
+    return K.preamble(`interaction partners of ${p.gene || p.acc} (${p.acc})`, `the proteins STRING associates with ${p.gene || p.acc}: ${ixDesc()}, retrieved live on ${today()} (${STRING_CITE}; licence CC BY 4.0). Partners are matched to this site’s proteins by gene name, and ${W.marks}_here counts their ${W.marks} in this site. A STRING association is to the whole protein and does not show that a partner binds or modifies a ${W.mark}.`) +
       ['partner', 'partner_string_id', 'partner_accession_here', 'score', ...IX_CHANNELS.map(([, n]) => n.replace(/\W+/g, '_')), `${W.marks.replace(/\W+/g, '_')}_here`].join('\t') + '\n' +
       list.map(x => [x.preferredName_B, x.stringId_B, x.here?.acc || '', x.score, ...IX_CHANNELS.map(([f]) => x[f] ?? ''), x.here ? x.here.marks : 0].join('\t')).join('\n') + '\n';
   }

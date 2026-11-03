@@ -191,7 +191,7 @@
       h += `<div class="tbl-wrap vm-tbl"><table class="tbl compact"><thead><tr><th>Compared with</th><th>${esc(setName)}</th><th title="Odds ratio with its 95% interval (Woolf)">Odds ratio</th><th title="Fisher’s exact test, two-sided">p</th>` +
         `<th>${esc(cap((G.ps.values.columns.find(c => c.name === v.box?.value) || {}).label || 'median'))}, median</th><th title="Mann–Whitney test, two-sided">p</th></tr></thead><tbody>` +
         (c1 ? cmpRow(`The other ${W.marked} proteins (${int(c1.n2)})`, c1) : '') + cmpRow(`The other ${v.population || 'proteins'} (${int(c2.n2)})`, c2) + '</tbody></table></div>' +
-        `<p class="small muted">${esc(v.caveat || '')} The table gives single tests (p, not adjusted): the share in ${esc(setName.toLowerCase())} by a two-sided Fisher test with the sample odds ratio and its Woolf 95% interval, and the numbers by a two-sided Mann–Whitney test. The chart above gives the site’s test of the same classes.</p>`;
+        `<p class="small muted">${esc(v.caveat || '')} The table gives unadjusted p: two-sided Fisher test for the share in ${esc(setName.toLowerCase())}, with the sample odds ratio and its Woolf 95% interval, and two-sided Mann–Whitney for the numbers. The chart above gives the site’s test of the same classes.</p>`;
     }
     h += (v.chips || []).map(ch => chips(v, ch, G)).join('') + residueLine(v) + (v.credit ? `<p class="note small muted">${esc(v.credit)}</p>` : '') + '</div>';
     return h;

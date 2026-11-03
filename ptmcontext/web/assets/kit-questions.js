@@ -99,8 +99,8 @@
     const nSig = [...site.keys()].filter(enr).length;
     const drawn = chart(a, items.map(([k, s, d]) => (k === 'head' ? { head: s } : { r: rowOf(s), depth: d, gloss: (o.glosses || {})[s] })));
     const u = unitOf(a.id);
-    const note = tree ? `Indented rows are ${nouns} under the row above, of at least ${int(o.tree || 100)} ${u}; their ${u} are among its ${u}, and ${nouns} overlap, so they do not add up.`
-      : `A ${o.noun || 'set'} holds the ${u} of every ${o.noun || 'set'} under it, so broad ${nouns} repeat the narrower ones: the list keeps the narrowest enriched ${o.noun || 'set'} of each branch, of at least ${int(o.short || 50)} ${u}.`;
+    const note = tree ? `Indented rows are ${nouns} under the row above, of at least ${int(o.tree || 100)} ${u}. Their ${u} are among its ${u}, and ${nouns} overlap, so they do not add up.`
+      : `A ${o.noun || 'set'} holds the ${u} of every ${o.noun || 'set'} under it, so broad ${nouns} repeat the narrower ones. The list keeps the narrowest enriched ${o.noun || 'set'} of each branch, of at least ${int(o.short || 50)} ${u}.`;
     const tbl = UI.table.has(a.id);
     return `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3><p class="sub">${esc(a.sub)}. <a href="#method">How it was tested</a> · <a href="${esc(K.link('statistics', '', { a: a.id }))}">all tests</a></p></div>${expButtons('qoexp', a.id)}</div>` +
       `${drawn}<p class="note">${note}</p>` +
@@ -174,7 +174,7 @@
     }
     LAST[key + ':members'] = { rows: shown, where: s => { const f = where(s); return f ? labelOf(groups[f[0]].aid, f[1]) : ''; }, m };
     const sel = K.selOn();
-    const note = (shownOnly ? `Your selection was made with these data (or names its proteins), so its ${esc(nouns)} are shown, not tested: the ${int(pool.length)} that hold its ${esc(unitOf(m.id))}, most first. `
+    const note = (shownOnly ? `Your selection was made with these data (or names its proteins), so its ${esc(nouns)} are shown, not tested. These ${int(pool.length)} hold its ${esc(unitOf(m.id))}, most first. `
       : `${int(pool.length)} of the ${int(nTested)} ${esc(nouns)} tested are enriched (q ≤ ${PADJ})${sel ? ' for your selection, tested again in your browser' : ''}. `) +
       groups.map(g => `${int(count('g' + g.k))} belong to the ${esc(g.label)}`).join('; ') + (mem.none ? `; ${int(count('none'))} to none` : '') + `. ${esc(m.sub)}.`;
     return `<div class="qv-links">${btn}</div><section class="qv-members"><div class="card-head"><p class="note">${note}</p>${K.expBar(['tsv'], 'qmexp', 'the table', m.id).replace('data-qmexp="tsv"', `data-qmexp="tsv" data-qaid="${esc(key)}"`)}</div>${picker}` +
@@ -261,7 +261,7 @@
         (enr.length ? `<ul class="kind-list">${(all ? enr : enr.slice(0, 10)).map(s => `<li>${pick(aid, s)} ${idLink(aid, s)} ${resText(siteRow(aid, s))}</li>`).join('')}</ul>` +
           (enr.length > 10 ? `<button class="linkish" type="button" data-qallm="${esc(key)}">${all ? 'Fewer' : `All ${int(enr.length)}`}</button>` : '') : '') + '</div>';
     }).join('');
-    return `<div class="kinds qv-psets">${blocks}</div><p class="note">Each set’s result is the site’s own (all ${esc(W.marked)} proteins against the background), not this protein’s. A name selects the ${esc(W.marks)} on its proteins; ↗ opens the set’s own page.</p>`;
+    return `<div class="kinds qv-psets">${blocks}</div><p class="note">Each result is the site’s own, over all ${esc(W.marked)} proteins against the background, not this protein’s. A name selects the ${esc(W.marks)} on its proteins, and ↗ opens the set’s page.</p>`;
   }
   K.proteinFolds = [...(K.proteinFolds || []), ...PCARDS.map((c, k) => (p, rec, fold) => fold(`p-sets-${k}`, esc(c.title), esc(c.summary || ''), proteinSetsHtml(c, p), false))];
   K.proteinFoldSections = [...(K.proteinFoldSections || []), ...PCARDS.map((c, k) => [`p-sets-${k}`, c.title, 1])];

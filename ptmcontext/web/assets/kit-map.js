@@ -101,7 +101,7 @@
     ['variants', 'Variants', 'live', `Natural variants of the UniProt entry, read live; inked and labelled where they change a ${W.mark}`],
     ['mutagen', 'Mutagenesis', 'live', `Mutagenesis features of the UniProt entry (diamonds), read live; inked and labelled where they change a ${W.mark}`],
     ['ptm', 'Other PTMs', 'live', 'Modified residues, cross-links, glycosylation and lipidation of the UniProt entry, read live, one row per kind'],
-    ...(PDB_ON ? [['pdb', 'Contacts in PDB structures', 'live', 'Residues at an interface with RNA, DNA, another protein or another copy of the same protein in experimentally determined structures (PDBe-KB interface residues, read live); click for the PDB entries']] : []),
+    ...(PDB_ON ? [['pdb', 'Contacts in PDB structures', 'live', 'Residues at an interface with RNA, DNA, another protein or another copy in experimental structures (PDBe-KB, read live). Click for the PDB entries']] : []),
     ['plddt', 'AlphaFold', 'live', 'The AlphaFold DB model’s confidence (pLDDT) per residue, read live; drawn only where the model’s sequence is this one'],
   ];
   // the site file's own rows, each placed after the row it names (after:), else at the end
@@ -822,7 +822,7 @@
     const hold = M.hold && M.hold.acc === ctx.p.acc && M.hold.el === el && Date.now() < M.hold.until ? M.hold : (M.hold = { acc: ctx.p.acc, until: Date.now() + 6000, h: 0, el });
     el.style.minHeight = hold.h ? hold.h + 'px' : '';
     el.innerHTML = controls() + `<div class="map-svg"><svg viewBox="0 0 ${m.Wd} ${m.H}" role="img" aria-label="Map of ${esc(ctx.p.gene || ctx.p.acc)}"${m.Wd < 1000 ? ` style="max-width:${m.Wd}px"` : ''}>${m.svg}</svg></div>` +
-      `<p class="map-read muted" id="map-read">Hover the map for the residue under the pointer; click an item to pin it here with its links.</p><div id="map-pin" class="map-pin" hidden></div>` + keyHtml(ctx, m);
+      `<p class="map-read muted" id="map-read">Hover for the residue under the pointer. Click an item to pin it here.</p><div id="map-pin" class="map-pin" hidden></div>` + keyHtml(ctx, m);
     M.geom = m; hold.h = Math.max(hold.h, el.offsetHeight);
     // laid out again when the box's width class changes (a narrow screen, a fold opened, the window resized)
     if (!observed.has(el) && window.ResizeObserver) { observed.add(el); new ResizeObserver(() => { if (M.geom && el.isConnected && widthOf(el) !== M.geom.Wd && M.ctx) render(el, M.ctx); }).observe(el); }
