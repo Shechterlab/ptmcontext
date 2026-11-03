@@ -13,9 +13,7 @@ Read AGENTS.md first; its rules hold. Also:
   "domain flanks". Don't call code from the other lab repositories.
 - **Modular.** New data formats go in CONTRACTS.md and are mapped in the site file (the schema, plus
   `site.website_problems`). No site-specific literal goes in `ptmcontext/`. Add a toy-site test.
-- **Commit messages:** a subject line, a blank line, an optional body, a blank line, then exactly these two trailer
-  lines. Copy them verbatim, whatever model you are, and put no model name anywhere else:
-  `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
-  `Claude-Session: https://claude.ai/code/session_01SNBUrqDAzYEHsFg3P4eyga`
+- **Commit messages:** a subject line, a blank line, then an optional body. No trailers, no co-author lines, no session
+  links and no model or assistant names anywhere. Commit with the repository's configured identity; don't set an author.
 - **Report in at most 250 words:** what changed (files, commit), the checks you ran and their result, and what is
   left. No recap of the task.
