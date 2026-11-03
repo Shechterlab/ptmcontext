@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /* Scripted site audit: hovers, layout shifts and wording, page by page, as JSON on stdout (no screenshots).
-   node tools/audit/audit.js <base-url> [--checks hovers,shifts,words,motion,clicks,net] [--pages "#overview,#sites"] [--width 1440]
+   node tools/audit/audit.js <base-url> [--checks hovers,shifts,words,prose,motion,clicks,net] [--pages "#overview,#sites"] [--width 1440]
+   prose: words of body text and of hover text (tip functions and title attributes, called in the page, no mouse), hover median/p95/max
+   words and the count over 40, semicolons and colons per 100 words, mean sentence length, Flesch-Kincaid grade.
    motion: boxes of tiles, bars and headings sampled every 200 ms for 4 s after load, after hovers and after a selection change.
    clicks: every fold, tab and button is clicked; those that throw or change nothing are listed. net: failed requests.
    Pages default to the Overview, the first questions, Proteins, Sites, Method, Help, a selection, and three protein
@@ -189,6 +191,29 @@ const BAD = /\bundefined\b|\bNaN\b|(^|[\s:=(])null([\s,.)]|$)(?!model)|\[object 
         const n = re => (txt.match(re) || []).length + (titles.match(re) || []).length;
         return { words, title_words: tw, sentences: sents.length, mean_sentence: sents.length ? +(sents.reduce((s, x) => s + x.split(/\s+/).length, 0) / sents.length).toFixed(1) : 0,
           em_dash: n(/—/g), semicolon: n(/;/g), colon_clause: n(/: [a-z]/g), parens: n(/\([^)]{25,}\)/g) };
+      });
+    }
+    if (checks.includes('prose')) {
+      rec.prose = await page.evaluate(() => {
+        const W = t => (t.match(/[A-Za-z0-9][\w'’-]*/g) || []);
+        const main = document.querySelector('main') || document.body, txt = main.innerText, body = W(txt).length;
+        const hov = new Set(), K = window.PTMC;
+        if (K && K.tips) for (const [sel, fn] of K.tips) {
+          let els = []; try { els = [...document.querySelectorAll(sel)]; } catch (e) { /* bad selector */ }
+          const seen = new Set();
+          for (const el of els.slice(0, 400)) { let h = ''; try { h = fn(el) || ''; } catch (e) { continue; }
+            if (!h || seen.has(h)) continue; seen.add(h); const d = document.createElement('div'); d.innerHTML = h; hov.add(d.textContent.trim()); }
+        }
+        document.querySelectorAll('[title]').forEach(e => { const t = e.getAttribute('title').trim(); if (t) hov.add(t); });
+        const hw = [...hov].map(t => W(t).length).filter(n => n > 0).sort((a, b) => a - b);
+        const q = f => hw.length ? hw[Math.min(hw.length - 1, Math.floor(f * hw.length))] : 0;
+        const sents = txt.split(/(?<=[.!?])\s+|\n+/).filter(x => W(x).length > 5);
+        const syl = w => { w = w.toLowerCase().replace(/[^a-z]/g, ''); if (w.length <= 3) return 1; const m = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '').replace(/^y/, '').match(/[aeiouy]{1,2}/g); return m ? m.length : 1; };
+        const sw = sents.join(' '), nw = W(sw).length || 1, ns = sents.length || 1;
+        const per100 = re => body ? +((txt.match(re) || []).length * 100 / body).toFixed(2) : 0;
+        return { body_words: body, hover_unique: hw.length, hover_words_total: hw.reduce((a, b) => a + b, 0), hover_median: q(0.5), hover_p95: q(0.95), hover_max: hw.length ? hw[hw.length - 1] : 0,
+          hover_over_40: hw.filter(n => n > 40).length, semicolons_per_100: per100(/;/g), colons_per_100: per100(/:/g),
+          mean_sentence: +(nw / ns).toFixed(1), fk_grade: +(0.39 * nw / ns + 11.8 * W(sw).reduce((a, w) => a + syl(w), 0) / nw - 15.59).toFixed(1) };
       });
     }
     if (errors.length) rec.page_errors = [...new Set(errors)].slice(0, 4);
