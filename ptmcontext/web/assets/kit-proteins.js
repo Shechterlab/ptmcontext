@@ -384,7 +384,7 @@
     const seg = flt ? `<div class="ix-seg"><span class="flabel">${esc(SPECS[flt].label)} at these ${esc(W.marks)}</span> <span class="seg" role="group">${(order.length ? order : counts.map(([v]) => v)).map(v => { const k = (counts.find(([x]) => x === v) || [, 0])[1];
       return `<button type="button" data-pfilter="${esc(v)}" aria-pressed="${fv === v}"${k ? '' : ' disabled'}><i class="ixd" style="--c:${K.map.attrColour(flt, v)}"></i>${esc(vLabel(flt, v))} <b>${int(k)}</b></button>`; }).join('')}</span></div>` : '';
     return `<div class="card-head"><p class="sub">Each ${esc(W.mark)} with the 15 residues around it and what the site knows of it. A row opens its card${evRowOn() ? '. Evidence lists every source record and measurement' : ''}.</p><span class="tools">${K.columns.menu(table, cols, defaults)}${K.expBar(['tsv'], 'sexp', 'the sites')}</span></div>` + seg +
-      `<div class="tbl-card"><table class="tbl stbl stackable"><thead>${head}</thead><tbody>${body}</tbody></table></div>` +
+      `<div class="tbl-card lk-box"><table class="tbl stbl stackable"><thead>${head}</thead><tbody>${body}</tbody></table></div>` +
       (fv ? `<p class="note">Showing the ${esc(W.marks)} with ${esc(vLabel(flt, fv).toLowerCase())} ${esc(SPECS[flt].label.toLowerCase())}. <button class="linkish" type="button" data-pfilter="">Show all</button></p>` : '') +
       (CC.cite ? K.card.citeBox(`the ${int(rec.marks.length)} ${rec.marks.length === 1 ? W.mark : W.marks} on ${p.gene || p.acc}`, rec.marks, (m, n) => attrVal(m, n), false) : '');
   }
@@ -400,7 +400,7 @@
     // #protein/ACC/216 opens a mark's card; #protein/ACC/120-180 opens the map zoomed to a region (an IDR, from its page);
     // #protein/ACC/p-na opens a section
     const span = /^(\d+)-(\d+)$/.exec(sitePos || ''), sec = /^p-[a-z0-9]+$/.exec(sitePos || '');
-    load(acc); PV.site = sitePos && !span && !sec ? +sitePos : null;
+    load(acc); PV.site = sitePos && !span && !sec ? +sitePos : null; K.site.state.focus = PV.site;
     if (sec) { PV.focus = SECTION[sec[0]] || ''; if (PV.focus) PV.open[PV.focus] = true; }
     if (!span) { PV.span = null; PV.spanArg = ''; }
     else if (PV.spanArg !== sitePos) {
@@ -445,7 +445,7 @@
   // sequence and 3D; nothing of it is counted, so it has no counts, questions or kinds -------------------------------
   function shownOnlyView(sp, sitePos) {
     load(sp.acc); PV.lightP = sp;
-    PV.site = sitePos && /^\d+$/.test(sitePos) ? +sitePos : null;
+    PV.site = sitePos && /^\d+$/.test(sitePos) ? +sitePos : null; K.site.state.focus = PV.site;
     if (PV.rec && PV.site && !shownAt(PV.rec, PV.site)) { PV.site = null; PV.cleanArg = true; }
     const p = sp, n = PV.rec?.shown?.length || 0;
     const head = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">${esc(K.shown.row())}</span>${PV.site ? ` › ${esc(siteOf(p, PV.site))}` : ''}</p>` + protHead(p, true);
@@ -587,8 +587,8 @@
   function sequenceHtml(p, rec, sel) {
     const seq = rec.seq || ''; if (!seq) return `<p class="muted">No sequence in this copy of the site.</p>`;
     const at = new Map(rec.marks.map(m => [m[0], m]));
-    const res = i => { const m = at.get(i), aa = esc(seq[i - 1]); if (!m) return aa; const c = K.map.siteColour(m), off = sel && !sel.has(i);
-      return `<b class="sq-m${off ? ' faded' : ''}" style="--c:${c.c}" data-msite="${i}" title="${esc(site(i))}${c.label ? ' · ' + esc(c.label) : ''}">${aa}</b>`; };
+    const res = i => { const m = at.get(i), aa = esc(seq[i - 1]); if (!m) return `<i data-r="${i}"${K.site.state.residue === i ? ' class="lk-res"' : ''}>${aa}</i>`; const c = K.map.siteColour(m), off = sel && !sel.has(i);
+      return `<b class="sq-m${off ? ' faded' : ''}${PV.site === i ? ' on' : ''}" style="--c:${c.c}" data-msite="${i}" tabindex="0" role="button" aria-label="${esc(site(i))}${c.label ? ', ' + esc(c.label) : ''}" title="${esc(site(i))}${c.label ? ' · ' + esc(c.label) : ''}">${aa}</b>`; };
     const lines = [];
     for (let s = 1; s <= seq.length; s += 60) {
       const blocks = []; for (let b = s; b < Math.min(s + 60, seq.length + 1); b += 10) { let t = ''; for (let i = b; i < Math.min(b + 10, seq.length + 1); i++) t += res(i); blocks.push(t); }
@@ -731,8 +731,25 @@
   const mapFigure = () => K.map.figure(mapCtx());
   // a site's card, opened without leaving the page's place (the card is scrolled into view)
   // a site's card, opened without leaving the page's place, and without a step in the history (opening a protein is one)
-  function openSite(pos) { const y = scrollY; S.arg = `${PV.acc}/${pos}`; K.writeHash(false); K.render(); scrollTo(0, y); document.title = K.views.protein.title(S.arg) + ' · ' + D.site.name; }
-  document.addEventListener('keydown', e => { const tr = e.target.closest?.('tr[data-site]'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openSite(+tr.dataset.site); } });
+  // every way in goes through the channel (kit-link.js), so the map, the sequence, the tables and the 3D follow
+  const openSite = (pos, from) => K.site.focus(PV.acc, pos, { from: from || 'table' });
+  function showSite(pos) { const y = scrollY; S.arg = `${PV.acc}/${pos}`; K.writeHash(false); K.render(); scrollTo(0, y); document.title = K.views.protein.title(S.arg) + ' · ' + D.site.name; rowIntoView(pos); }
+  // the row scrolls inside its own box; the page stays where it is
+  function rowIntoView(pos) {
+    requestAnimationFrame(() => { const tr = document.querySelector(`tr[data-site="${pos}"]`), box = tr?.closest('.lk-box'); if (!tr || !box) return;
+      const a = tr.getBoundingClientRect(), b = box.getBoundingClientRect(), head = box.querySelector('thead')?.offsetHeight || 0;
+      if (a.top < b.top + head || a.bottom > b.bottom) box.scrollTop += a.top - b.top - head - (b.height - head - a.height) / 2; });
+  }
+  K.site.on(e => {
+    if (e.kind !== 'focus' || e.acc !== PV.acc || !PV.rec) return;
+    if (e.pos == null) { if (PV.site != null) { const y = scrollY; S.arg = PV.acc; PV.site = null; K.writeHash(false); K.render(); scrollTo(0, y); document.title = K.views.protein.title(S.arg) + ' · ' + D.site.name; } return; }
+    if (e.pos !== PV.site) showSite(e.pos); else rowIntoView(e.pos);
+  });
+  K.site.on(e => {                                                   // a position that is not a site: the map's crosshair, the sequence
+    if (e.kind !== 'residue' || e.acc !== PV.acc) return;
+    const x = document.getElementById('map-cross'); if (x) K.map.cross?.(e.pos);
+  });
+  document.addEventListener('keydown', e => { const tr = e.target.closest?.('tr[data-site]'); if (tr && e.target === tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openSite(+tr.dataset.site); } });
   function sitesTsv() {
     const p = byAcc[PV.acc], rec = PV.rec;
     return K.preamble(`${W.marks} of ${p.gene || p.acc} (${p.acc})`, `each ${W.mark} of ${p.gene || p.acc} (${p.name}) with the 15 residues around it and its class in every question; the sequence is ${D.run.snapshot?.release} (MD5 ${rec.md5}).`) +
@@ -753,7 +770,7 @@
     ['[data-pexp]', el => K.exportFigure('tsv', null, `${D.site.id}_proteins`, el, proteinsTsv)],
     ['[data-sexp]', el => K.exportFigure('tsv', null, `${D.site.id}_${PV.acc}_sites`, el, sitesTsv)],
     ['[data-mexp]', el => K.exportFigure(el.dataset.mexp, mapFigure, K.map.fileName ? K.map.fileName(el.dataset.mexp) : `${D.site.id}_${PV.acc}_map`, el, sitesTsv)],
-    ['[data-msite]', el => openSite(+el.dataset.msite)],
+    ['[data-msite]', el => openSite(+el.dataset.msite, el.closest('.seq') ? 'sequence' : 'map')],
     ['[data-site-open]', el => openSite(+el.dataset.siteOpen)],
     ['[data-all-cols]', () => { PV.allCols = !PV.allCols; PV.open['p-sites'] = true; K.render(); }],
     ['[data-kinds-all]', el => { const k = 'kinds:' + el.dataset.kindsAll; PV.open[k] = !PV.open[k]; PV.open['p-kinds'] = true; K.render(); }],
@@ -763,7 +780,7 @@
       const done = t => { const o = el.textContent; el.textContent = t; setTimeout(() => { el.textContent = o; }, 1500); };
       if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => done('Copied'), () => done('Copy failed')); else done('Copy failed'); }],
     ['tr[data-site]', (el, e) => { if (!e.target.closest('a, button, summary, input')) openSite(+el.dataset.site); }],
-    ['[data-site-close]', () => { const y = scrollY; S.arg = PV.acc; PV.site = null; K.writeHash(false); K.render(); scrollTo(0, y); document.title = K.views.protein.title(S.arg) + ' · ' + D.site.name; }],
+    ['[data-site-close]', () => K.site.focus(PV.acc, null, { from: 'card' })],
     // the readable link to the site, without the reader's selection
     ['[data-site-copy]', el => { const url = location.origin + location.pathname + '#protein/' + K.routes.protein.path(`${PV.acc}/${PV.site}`).split('/').map(encodeURIComponent).join('/');
       navigator.clipboard?.writeText(url).then(() => { el.textContent = 'Link copied'; setTimeout(() => { el.textContent = 'Copy link'; }, 1500); }); }],

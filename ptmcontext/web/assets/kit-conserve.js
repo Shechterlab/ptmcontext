@@ -242,7 +242,7 @@
     return s;
   };
   K.clicks.push(
-    ['[data-cv-pos]', el => { UI.pos = +el.dataset.cvPos; redraw(); }],
+    ['[data-cv-pos]', el => { UI.pos = +el.dataset.cvPos; redraw(); K.site?.focus(curAcc(), UI.pos, { from: 'conserve' }); }],
     ['[data-cv-retry]', el => K.loadProtein(el.dataset.cvRetry).then(rec => start(el.dataset.cvRetry, rec, true))],
     ['[data-cv-open]', () => { const f = document.getElementById('p-cons'); if (f) { f.open = true; f.scrollIntoView({ block: 'start' }); } }],
     ['[data-cvexp]', btn => { const acc = curAcc(), st = ST[acc]; if (st?.phase !== 'ok') return;
@@ -254,6 +254,8 @@
     document.querySelectorAll('[data-cv-pos]').forEach(b => b.classList.toggle('cur', +b.dataset.cvPos === UI.pos));
     const sel = document.getElementById('cv-pos'); if (sel) sel.value = String(UI.pos);
   }
+  // a site focused in another view is the one shown here, where this protein's table has it
+  K.site?.on(e => { if (e.kind !== 'focus' || e.pos == null || e.from === 'conserve' || e.acc !== curAcc() || !ST[e.acc]?.sites?.includes(e.pos) || UI.pos === e.pos) return; UI.pos = e.pos; redraw(); });
   document.addEventListener('change', e => {
     if (e.target.id === 'cv-pos') { UI.pos = +e.target.value; redraw(); }
     else if (e.target.id === 'cv-flank') { UI.flank = +e.target.value; redraw(); }

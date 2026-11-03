@@ -148,6 +148,14 @@ MD5) and every input's MD5, the run's date, and when and from where it was expor
 and in the file's own metadata: SVG `<metadata>` (JSON), PNG text fields and its 300 dpi, PDF document properties with
 Arimo (an Arial-like face) embedded; every export is set in Arial, Helvetica or Arimo, and the TSV's `#` lines (readers skip them: `pandas.read_csv(..., comment='#')`).
 
+### Linked sites
+
+`kit-link.js` is the one channel between the views of a protein's sites: `K.site.hover(acc, pos, {from})` (a light highlight),
+`K.site.focus(acc, pos, {from})` (the focused site, `null` clears it), `K.site.residue(acc, pos, {from})` (a position that is not a
+site) and `K.site.on(fn)`. The map, the sequence, the sites table, the site card, the 3D viewer and the conservation table each
+subscribe and none calls another; the protein page turns a focus into the card and the address. Elements with `data-msite`,
+`tr[data-site]` and `data-cv-pos` are linked by delegation. The residue's label comes from the profile. `tests/test_site_link.py`.
+
 ## Rules the structure enforces
 
 - **Change a site by changing its file.** Mark, organism, inputs and analyses are in `sites/<site>.yaml`; no code

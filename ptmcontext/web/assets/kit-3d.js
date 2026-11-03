@@ -566,12 +566,13 @@
     const hoverSel = { predicate: a => (!pdbMode || a.chain === pdb.chain) && sc.has(a.resi) && a.atom === tipName(a) };
     const toUnp = a => (pdbMode ? (pdb.toUnp.get(a.resi) ?? null) : a.resi);
     v.setHoverable(hoverSel, true, (a, vv) => {
+      const hp = toUnp(a); if (hp != null) K.site.hover(T.acc, hp, { from: '3d' });
       if (a.hoverLabel || V.labels) return;
       const pos = toUnp(a), pl = mol.mode === 'af' || pdb?.pred ? a.b : null;
       a.hoverLabel = vv.addLabel(pos != null ? `${rl(pos)}${pdbMode && !pdb.pred ? ` (${a.chain}${a.resi})` : ''}${pl != null ? ' · pLDDT ' + Math.round(pl) : ''}` : `${a.resn} ${a.chain}${a.resi}`,
         { position: { x: a.x, y: a.y, z: a.z }, backgroundColor: '#12202C', backgroundOpacity: 0.85, fontColor: '#FFFFFF', fontSize: 12, inFront: true });
-    }, (a, vv) => { if (a.hoverLabel) { vv.removeLabel(a.hoverLabel); delete a.hoverLabel; } });
-    v.setClickable(hoverSel, true, a => { const pos = toUnp(a); if (pos == null) focusAtom(a); else focusPos(pos); });
+    }, (a, vv) => { K.site.hover(T.acc, null, { from: '3d' }); if (a.hoverLabel) { vv.removeLabel(a.hoverLabel); delete a.hoverLabel; } });
+    v.setClickable(hoverSel, true, a => { const pos = toUnp(a); if (pos == null) focusAtom(a); else { focusPos(pos); tell(pos); } });
     if (reSurface !== false) surface(tinted);
     v.render();
     fill('s3d-key', keyHtml(key));
@@ -588,11 +589,33 @@
       });
     } catch (e) { message('The surface could not be drawn here.'); }
   }
+  // the linked views (kit-link.js): a click here says so; a site hovered or focused elsewhere is lit or zoomed to here
+  const tell = pos => K.site.focus(T.acc, pos, { from: '3d' });
+  function hoverShape(pos) {
+    const mol = T.mol; if (!mol || mol.acc !== T.acc) return;
+    if (mol.hoverShape) { try { mol.viewer.removeShape(mol.hoverShape); } catch (e) { /* gone */ } mol.hoverShape = null; }
+    if (pos != null) {
+      const pdbMode = mol.mode === 'pdb', auth = pdbMode ? (mol.pdb.toAuth.has(pos) ? mol.pdb.toAuth.get(pos) : unpToAuth(pos)) : pos;
+      const atoms = auth == null ? [] : mol.viewer.selectedAtoms(Object.assign({ resi: auth }, pdbMode ? { chain: mol.pdb.chain } : {})), at = atoms.find(a => a.atom === tipName(a)) || atoms.find(a => a.atom === 'CA');
+      if (at) mol.hoverShape = mol.viewer.addSphere({ center: { x: at.x, y: at.y, z: at.z }, radius: 1.9, color: '#F59E0B', alpha: 0.4 });
+    }
+    mol.viewer.render();
+  }
+  K.site.on(e => {
+    if (e.acc !== T.acc || !T.mol || e.from === '3d') return;
+    if (e.kind === 'hover') hoverShape(e.pos);
+    else if (e.kind === 'focus') {
+      hoverShape(null);
+      if (e.pos != null && markAt(e.pos)) focusPos(e.pos);
+      else if (e.pos == null && T.mol.focusPos != null) { const mol = T.mol; if (mol.label) { mol.viewer.removeLabel(mol.label); mol.label = null; } mol.focus = null; mol.focusPos = null; T.highlight = null; restyle(false); paintSide(); }
+    }
+  });
   // focus a residue clicked in the view: zoom to it, label it in UniProt numbering where known, show its contacts
   function focusAtom(a) {
     const mol = T.mol, v = mol.viewer, pdbMode = mol.mode === 'pdb', pred = pdbMode && mol.pdb.pred;
     const unp = pdbMode ? (a.chain === mol.pdb.chain ? authToUnp(a.resi) : null) : a.resi;
-    if (unp != null && markAt(unp) && (!pdbMode || a.chain === mol.pdb.chain)) { focusPos(unp); return; }
+    if (unp != null && markAt(unp) && (!pdbMode || a.chain === mol.pdb.chain)) { focusPos(unp); tell(unp); return; }
+    if (unp != null) K.site.residue(T.acc, unp, { from: '3d' });
     mol.focus = { chain: a.chain, resi: a.resi }; mol.focusPos = null;
     restyle(false);
     if (mol.label) v.removeLabel(mol.label);

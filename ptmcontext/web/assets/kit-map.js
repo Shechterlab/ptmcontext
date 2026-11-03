@@ -477,7 +477,7 @@
     // sticks and heads
     marks.forEach(m => {
       const x = X(m[0]), y = headY(level.get(m[0])), c = siteColour(m, ex), faded = sel && !sel.has(m[0]), on = ctx.site === m[0] && !ex;
-      const op = faded && !on ? ' opacity="0.28"' : '', attr = `${op}${ex ? '' : ` data-msite="${m[0]}"`}`;
+      const op = faded && !on ? ' opacity="0.28"' : '', attr = `${op}${ex ? '' : ` data-msite="${m[0]}" tabindex="0" role="button" aria-label="${esc(resName(m[0]))}${c.label ? ', ' + esc(c.label) : ''}"`}`;
       parts.push(`<line x1="${r1(x)}" x2="${r1(x)}" y1="${yB - 3}" y2="${r1(y + 5)}" stroke="${P.line}" stroke-width="1"${faded ? ' opacity="0.28"' : ''}/>`);
       parts.push(c.hatched ? MK.hatch(P, x, y, on ? 6.5 : 5, c.c, attr, on ? P.ink : null) : MK.head(P, x, y, on ? 6.5 : 5, c.c, c.hollow, attr, on ? P.ink : null));
     });
@@ -836,6 +836,7 @@
       if (d0 != null) { const a = Math.min(m.X(d0), m.X(pos)), b = Math.max(m.X(d0), m.X(pos)); drag.setAttribute('x', a.toFixed(1)); drag.setAttribute('width', (b - a).toFixed(1)); drag.setAttribute('visibility', 'visible'); }
     });
     svg.addEventListener('mouseleave', () => { cross.setAttribute('visibility', 'hidden'); });
+    M.cross = pos => { if (pos == null || pos < m.za || pos > m.zb) { cross.setAttribute('visibility', 'hidden'); return; } const x = m.X(pos).toFixed(1); cross.setAttribute('x1', x); cross.setAttribute('x2', x); cross.setAttribute('visibility', 'visible'); };
     svg.addEventListener('pointerdown', ev => { if (ev.button !== 0 || ev.target.closest('[data-mi],[data-msite]')) return; d0 = toPos(ev); if (d0 == null) return; svg.setPointerCapture(ev.pointerId); ev.preventDefault(); });
     const end = ev => {
       if (d0 == null) return; const p1 = toPos(ev) ?? d0, a = Math.min(d0, p1), b = Math.max(d0, p1); d0 = null;
@@ -976,6 +977,6 @@
     return { bg, fg: '#ffffff' };
   }
   // what other modules may read: the mark's colour in the mode chosen (a 3D view follows it), the modes, the figure
-  K.map = { render, figure, fileName, siteColour, attrColour, textOn, readable, modes: () => MODES.map(md => ({ id: md.id, label: md.label })), mode: () => mode().id,
+  K.map = { render, cross: pos => M.cross?.(pos), figure, fileName, siteColour, attrColour, textOn, readable, modes: () => MODES.map(md => ({ id: md.id, label: md.label })), mode: () => mode().id,
     reset: () => { M.zoom = null; M.rowsMenu = false; }, state: M };
 });
