@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /* Scripted site audit: hovers, layout shifts and wording, page by page, as JSON on stdout (no screenshots).
-   node tools/audit/audit.js <base-url> [--checks hovers,shifts,words] [--pages "#overview,#sites"] [--width 1440]
+   node tools/audit/audit.js <base-url> [--checks hovers,shifts,words,motion,clicks,net] [--pages "#overview,#sites"] [--width 1440]
+   motion: boxes of tiles, bars and headings sampled every 200 ms for 4 s after load, after hovers and after a selection change.
+   clicks: every fold, tab and button is clicked; those that throw or change nothing are listed. net: failed requests.
    Pages default to the Overview, the first questions, Proteins, Sites, Method, Help, a selection, and three protein
    pages drawn from the site's own data. Works on any ptmcontext site, and on the original explorer for 'words'. */
 'use strict';
@@ -9,15 +11,57 @@ const args = process.argv.slice(2);
 const base = args[0];
 if (!base) { console.error('usage: audit.js <base-url> [--checks ..] [--pages ..] [--width N]'); process.exit(2); }
 const opt = k => { const i = args.indexOf('--' + k); return i > 0 ? args[i + 1] : null; };
-const checks = (opt('checks') || 'hovers,shifts,words').split(',');
+const checks = (opt('checks') || 'hovers,shifts,words,motion,clicks,net').split(',');
 const width = +(opt('width') || 1440);
 const BAD = /\bundefined\b|\bNaN\b|(^|[\s:=(])null([\s,.)]|$)(?!model)|\[object |\$\{/;
 
 (async () => {
   const b = await chromium.launch();
-  const page = await b.newPage({ viewport: { width, height: 1000 } });
+  const ctx = await b.newContext({ viewport: { width, height: 1000 }, permissions: ['clipboard-read', 'clipboard-write'] });
+  const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(String(e.message).slice(0, 160)));
+  await page.addInitScript(() => { window.print = () => { window.__printed = (window.__printed || 0) + 1; }; });   // a print dialog would hold the page; the call counts as a change
+  const netfail = [];
+  page.on('requestfailed', r => netfail.push(`${r.failure() ? r.failure().errorText : 'failed'} ${r.url().slice(0, 140)}`));
+  page.on('response', r => { if (r.status() >= 400) netfail.push(`HTTP ${r.status()} ${r.url().slice(0, 140)}`); });
+  const MOTION_SEL = '.tile, .vm-bar, .idr-bar, .focus-bar, svg .bar, svg rect[class*=bar], .bar, h1, h2, h3, summary';
+  // Samples boxes (document coordinates) every `every` ms, `n` times; resolves with the list.
+  const sampler = (n, every) => page.evaluate(([sel, n, every]) => new Promise(res => {
+    const out = [], t0 = performance.now();
+    const snap = () => {
+      const seen = {}, boxes = {};
+      [...document.querySelectorAll(sel)].slice(0, 400).forEach(el => {
+        const r = el.getBoundingClientRect(); if (r.width === 0 && r.height === 0) return;
+        const base = el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/)[0] : '') + '|' + (el.textContent || '').trim().slice(0, 24);
+        const k = base + '#' + (seen[base] = (seen[base] || 0) + 1);
+        boxes[k] = [r.left + scrollX, r.top + scrollY, r.width, r.height].map(v => Math.round(v * 10) / 10);
+      });
+      out.push({ t: Math.round(performance.now() - t0), boxes });
+      if (out.length >= n) res(out); else setTimeout(snap, every);
+    };
+    snap();
+  }), [MOTION_SEL, n, every]);
+  const motion = list => {
+    const first = list[0].boxes, ch = {}; let settled = 0, added = 0, removed = 0;
+    for (let i = 1; i < list.length; i++) {
+      const a = list[i - 1].boxes, c = list[i].boxes;
+      for (const k in c) {
+        if (!(k in a)) { added++; settled = list[i].t; continue; }
+        const d = c[k].map((v, j) => +(v - a[k][j]).toFixed(1));
+        if (d.some(v => Math.abs(v) > 1)) {
+          settled = list[i].t;
+          const o = ch[k] = ch[k] || { first_ms: list[i].t, dx: 0, dy: 0, dw: 0, dh: 0 };
+          o.dx += d[0]; o.dy += d[1]; o.dw += d[2]; o.dh += d[3];
+        }
+      }
+      for (const k in a) if (!(k in c)) { removed++; settled = list[i].t; }
+    }
+    const mag = o => Math.abs(o.dy) + Math.abs(o.dx) + Math.abs(o.dh) + Math.abs(o.dw);
+    const ent = Object.entries(ch).sort((x, y) => mag(y[1]) - mag(x[1]));
+    return { tracked: Object.keys(first).length, moved_or_resized: ent.length, appeared: added, vanished: removed, settled_ms: settled,
+      top: ent.slice(0, 6).map(([k, o]) => ({ el: k.slice(0, 50), first_ms: o.first_ms, dx: +o.dx.toFixed(1), dy: +o.dy.toFixed(1), dw: +o.dw.toFixed(1), dh: +o.dh.toFixed(1) })) };
+  };
   await page.addInitScript(() => {
     window.__shifts = [];
     try { new PerformanceObserver(l => { for (const e of l.getEntries()) if (!(e.sources || []).every(s => s.node && s.node.id === 'tip')) window.__shifts.push({ v: e.value, t: e.startTime,
@@ -40,6 +84,41 @@ const BAD = /\bundefined\b|\bNaN\b|(^|[\s:=(])null([\s,.)]|$)(?!model)|\[object 
       });
       pages.push(...extra);
     }
+  }
+  const clickPages = ['#overview', '#protein/FUS', '?q='];
+  const qpage = pages.find(h => h.startsWith('#overview/')); if (qpage) clickPages.push(qpage);
+  const CLICK_SEL = 'summary, button, [role=tab], .tab, .tabs a, [role=button]';
+  const sigOf = () => page.evaluate(() => { const m = document.body;
+    return [location.hash, location.search, m.innerHTML.length, document.querySelectorAll('*').length, document.querySelectorAll('[open]').length,
+      [...document.querySelectorAll('[aria-selected],[aria-pressed],[aria-expanded]')].map(e => e.getAttribute('aria-selected') + e.getAttribute('aria-pressed') + e.getAttribute('aria-expanded')).join(''),
+      document.querySelectorAll('.on,.active,.sel,.selected').length, document.body.className, (document.getElementById('tip') || {}).hidden === false, window.__printed || 0].join('|'); });
+  // the visible controls, each named; the same function runs in the page for the list and for the lookup
+  const named = (sel, want) => page.evaluateHandle(([sel, want]) => {
+    const f = [...document.querySelectorAll(sel)].filter(el => { const r = el.getBoundingClientRect(); return !(r.width < 2 || r.height < 2 || el.disabled || el.classList.contains('skip') || el.closest('[hidden]') || getComputedStyle(el).visibility === 'hidden'); });
+    const nm = el => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/)[0] : '') + ' "' + (el.innerText || el.getAttribute('aria-label') || el.title || '').trim().slice(0, 30).replace(/\n/g, ' ') + '"' + (() => { const a = [...el.attributes].find(x => x.name.startsWith('data-')); return a ? ' [' + a.name + (a.value.length < 14 ? '=' + a.value : '') + ']' : ''; })();
+    return want === null ? f.map(nm) : f.find(el => nm(el) === want) || null;
+  }, [sel, want]);
+  async function clickAll(url) {
+    const res = { tried: 0, silent: [], errors: [] }, t0 = Date.now(), budget = +(opt('budget') || 120) * 1000;
+    await page.goto('about:blank'); await page.goto(url, { waitUntil: 'load' }); await page.waitForTimeout(2000);
+    const names = [...new Set(await (await named(CLICK_SEL, null)).jsonValue())];
+    for (let i = 0; i < names.length && i < 45; i++) {
+      if (Date.now() - t0 > budget) { res.not_reached = names.length - i; break; }
+      if (opt('verbose')) console.error(i + '/' + names.length, names[i], Math.round((Date.now() - t0) / 1000) + 's');
+      const el = (await named(CLICK_SEL, names[i])).asElement(); if (!el) continue;
+      const before = await sigOf(); const e0 = errors.length; const tc = Date.now(); let dl = false; const onDl = () => { dl = true; }; page.once('download', onDl);
+      try { await el.scrollIntoViewIfNeeded({ timeout: 800 });
+        const host = await el.evaluateHandle(e => e.closest('.tile, article, .card, details') || e.parentElement), hb = await host.asElement().boundingBox();
+        if (hb) await page.mouse.move(hb.x + Math.min(hb.width / 2, 60), hb.y + Math.min(hb.height / 2, 30)); // controls shown on hover
+        await el.click({ timeout: 6000 }); } catch (e) { res.silent.push(names[i] + ' (not clickable: ' + String(e.message).split('\n').find(l => /intercept|visible|stable|outside|detached|Timeout/.test(l) && !/waiting for|attempt/.test(l) ) + ')'); continue; }
+      const took = Date.now() - tc; if (took > 1500) (res.slow = res.slow || []).push(names[i] + ' ' + took + 'ms');
+      await page.waitForTimeout(250); res.tried++;
+      const after = await sigOf(); page.off('download', onDl); if (opt('verbose')) console.error('  sig');
+      if (errors.length > e0) res.errors.push(names[i] + ' -> ' + errors.slice(e0).join(' / ').slice(0, 140));
+      else if (before === after && !dl) res.silent.push(names[i]);
+      if (after !== before || dl) { await page.goto('about:blank'); await page.goto(url, { waitUntil: 'load' }); await page.waitForTimeout(1200); }
+    }
+    return res;
   }
   const out = { base, width, kit, pages: [] };
   for (const hash of pages) {
@@ -69,7 +148,7 @@ const BAD = /\bundefined\b|\bNaN\b|(^|[\s:=(])null([\s,.)]|$)(?!model)|\[object 
       const res = { tried: 0, none: {}, bad: {}, ok: 0 };
       for (let i = 0; i < targets.length && i < 150; i++) {
         const el = await page.$(`[data-audit="${i}"]`); if (!el) continue;
-        try { await el.scrollIntoViewIfNeeded({ timeout: 1000 }); const bx = await el.boundingBox(); if (!bx) continue;
+        try { await el.evaluate(e => e.scrollIntoView({ block: 'center' })); const bx = await el.boundingBox(); if (!bx) continue;
           await page.mouse.move(bx.x + Math.min(bx.width / 2, 40), bx.y + bx.height / 2); await page.waitForTimeout(60); } catch (e) { continue; }
         res.tried++;
         const t = await page.evaluate(() => { const tp = document.getElementById('tip'); return tp && !tp.hidden ? tp.innerText.trim() : ''; });
@@ -84,6 +163,22 @@ const BAD = /\bundefined\b|\bNaN\b|(^|[\s:=(])null([\s,.)]|$)(?!model)|\[object 
         rec.shift_hover = +hv.reduce((s, x) => s + x.v, 0).toFixed(3); rec.shift_hover_top = top(hv);
       }
     }
+    if (checks.includes('motion')) {
+      // sample from the load event itself, then again while hovering visible targets
+      await page.goto('about:blank'); await page.goto(url, { waitUntil: 'load' });
+      rec.motion_load = motion(await sampler(21, 200));
+      const hp = sampler(21, 200);
+      const vis = await page.evaluate(() => { const K = window.PTMC, sels = ['.drow', '.trow', 'tr[data-i]', ...(K ? K.tips.map(t => t[0]) : [])], pts = [];
+        for (const sel of sels) { let els; try { els = [...document.querySelectorAll(sel)]; } catch (e) { continue; }
+          for (const el of els) { const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 0 && r.top >= 0 && r.bottom < innerHeight && pts.length < 10) pts.push([r.left + Math.min(r.width / 2, 40), r.top + r.height / 2]); } }
+        return pts; });
+      for (const [x, y] of vis) { await page.mouse.move(x, y); await page.waitForTimeout(250); }
+      await page.mouse.move(2, 2);
+      rec.motion_hover = motion(await hp);
+    }
+    if (checks.includes('net')) rec.net_failed = [...new Set(netfail)].slice(0, 8);
+    netfail.length = 0;
+    if (checks.includes('clicks') && clickPages.some(c => hash.startsWith(c))) rec.clicks = await clickAll(url);
     if (checks.includes('words')) {
       rec.words = await page.evaluate(() => {
         const main = document.querySelector('main') || document.body, txt = main.innerText;
@@ -107,6 +202,13 @@ const BAD = /\bundefined\b|\bNaN\b|(^|[\s:=(])null([\s,.)]|$)(?!model)|\[object 
     if (box) { await box.fill('motif:RGG'); await box.press('Enter'); await page.waitForTimeout(2500); }
     const sh = await page.evaluate(() => window.__shifts.splice(0));
     out.selection_change = { shift: +sh.reduce((s, x) => s + x.v, 0).toFixed(3), top: top(sh) };
+  }
+  if (checks.includes('motion') && kit) {
+    await page.goto('about:blank'); await page.goto(base + '#overview', { waitUntil: 'load' }); await page.waitForTimeout(2500);
+    const sp = sampler(21, 200);
+    const box = await page.$('input[type=search], #q');
+    if (box) { await page.waitForTimeout(200); await box.fill('motif:RGG'); await box.press('Enter'); }
+    out.selection_motion = motion(await sp);
   }
   console.log(JSON.stringify(out, null, 1));
   await b.close();

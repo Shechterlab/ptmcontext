@@ -62,3 +62,15 @@ def test_web_build_from_a_synthetic_run(tmp_path):
     assert data['partners'] == {'species': 4932}            # the partners card asks STRING for budding yeast
     one_file = (index.parent / 'yeast_phospho.html').read_text()
     assert 'src="assets/kit.js"' not in one_file and 'function figure(' in one_file
+
+
+def test_page_holds_still_while_script_fills_it():
+    """The page keeps room for what script fills in later, and a control's handler is scoped to its own card."""
+    wd = REPO / 'ptmcontext' / 'web'
+    tpl, css = (wd / 'template.html').read_text(), (wd / 'assets' / 'kit.css').read_text()
+    # the narrow header is chosen before first paint, by the same rule as the router (the Overview alone is wide)
+    assert "classList.add('slim')" in tpl.split('<script id="site-data"')[0]
+    for rule in ('#view {', '.hero-stats {', '.tabs {', '.scope {', '.fn {'):
+        assert re.search(r'^' + re.escape(rule) + r'[^}]*min-height', css, re.M), rule
+    # the protein site card and the count cards both use data-cexp: the site card's handler must not take the others
+    assert "'#site-card [data-cexp]'" in (wd / 'assets' / 'kit-proteins.js').read_text()
