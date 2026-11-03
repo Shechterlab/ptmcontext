@@ -533,6 +533,7 @@ classes in `except`; when classes are given this way the table's `classes` colum
 PMID. `attribute` adds a list attribute to the marks (the classes of the partners of a mark's protein, written into the run's `marks.tsv` as `a.<id>` when the
 website is built), which a `kind: values` count question can tile. Site-file defaults the kit keeps off when absent: `website.sites.sort: {by: <column id>, desc?}`,
 `website.protein.open_partners`, `website.protein.conservation.logo_mode: freq | bits`, `website.overview.statistic_label`.
+`website.overview.random_maps: {n: 3, title?, min_marks?}` (kit-random.js) draws `n` proteins at random on the opening Overview, each end to end as one row (domains, disordered regions, marks), with a "Draw three others" button; absent, nothing is drawn.
 
 A filter group of `website.filters` places these filters by key (`keys: ["d:marks", "o:other_ptms", "m:at", "b:class", "b:gene",
 "b:score"]`); a module may add kinds of its own (`K.filterKinds[kind]`: `valid`, `test`, and optionally `control`, `label`,

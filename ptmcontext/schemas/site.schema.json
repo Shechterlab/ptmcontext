@@ -1949,6 +1949,16 @@
             "statistic_label": {
               "type": "boolean",
               "description": "each tile names its statistic (within each protein, pooled)"
+            },
+            "random_maps": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "proteins drawn at random on the opening Overview, each end to end as one row, with a button to draw others (kit-random.js)",
+              "properties": {
+                "n": {"type": "integer", "minimum": 1, "maximum": 12},
+                "title": {"type": "string"},
+                "min_marks": {"type": "integer", "minimum": 0}
+              }
             }
           }
         },

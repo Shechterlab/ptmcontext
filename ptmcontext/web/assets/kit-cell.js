@@ -59,7 +59,7 @@
     '.cell-chips{display:flex;flex-wrap:wrap;gap:.3rem;margin:.4rem 0}.cell-chip{display:inline-block;padding:.1rem .45rem;border:1px solid var(--line);border-radius:999px;font-size:.82rem;text-decoration:none;color:var(--ink)}',
     '.cell-chip:hover{border-color:var(--accent);color:var(--accent)}.cell-chip sup{color:var(--muted);margin-left:1px}',
     '.cell-page .small,.vm-page .small{font-size:.86rem}.cell-page .btn.small{padding:.15rem .55rem;font-size:.78rem}.cell-page .btn.quiet{border-color:var(--line-strong);color:var(--ink-2)}',
-    '.cell-thead{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:.3rem}',
+    '.cell-thead{font-size:.75rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:.3rem}',
   ].join('');
 
   // ---- the site's rows of each map: the enricher row (counts, fold, q) and its repeat within the strata ----------------
@@ -569,7 +569,7 @@
       const d = dirOf(x.tone), l2 = x.a.l2 == null ? null : Number.isFinite(x.a.l2) ? x.a.l2 : x.a.l2 > 0 ? hi : lo;
       return `<div class="trow"${tipAttr(x.tip)}><span class="lab">${esc(x.name)}</span><svg aria-hidden="true">${grid.join('')}` +
         (l2 == null ? '' : `<circle class="dot ${d}" cx="${X(l2)}" cy="50%" r="4.6"/>`) + `</svg><span class="val ${d}">${esc(x.a.l2 == null ? '–' : orText(x.a))}</span></div>`;
-    }).join('') + `<div class="taxis"><span></span><span class="one-lab" style="--x:${X(0)}">1×</span><span></span></div>`;
+    }).join('') + `<div class="taxis"><span></span><span class="one-lab" style="--x:${X(0)}">1×</span><span></span></div>` + (K.LESS_MORE || '');
   }
   const sumTip = (x, scoped) => `<b>${esc(rowName(x.row))}</b><br>${esc(cap(who(scoped)))} against ${esc(alike)}${x.cells.length > 1 ? ', the median of ' + esc(x.maps) : ''}:<br>` +
     x.cells.map(([aid, c]) => esc(DS(aid).name) + ' ' + (c.circular ? 'not compared' : esc(orText(c.a)) + (c.a.q != null ? ', q ' + fq(c.a.q) : ''))).join('<br>');

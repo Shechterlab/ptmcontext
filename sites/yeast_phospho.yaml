@@ -52,6 +52,8 @@ website:
     share: {analysis: disorder, classes: [disordered, disorder_boundary, ordered], labels: {disordered: in IDRs, disorder_boundary: next to an IDR, ordered: in ordered regions}}
     findings: [{analysis: disorder, class: disordered}, {analysis: motif, class: proline_directed}, {analysis: structure_context, class: domain_folded}]
     protein: SEC16
+  overview:
+    random_maps: {n: 3, title: Randomly selected proteins}   # proteins drawn at random, each end to end, with "Draw three others"
   partners: {species: 4932}         # STRING files budding yeast under taxon 4932 (UniProt's proteome is strain S288c, 559292)
   sites: {columns: [structure_context]}
   search:

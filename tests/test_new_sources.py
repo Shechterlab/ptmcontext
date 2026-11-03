@@ -346,3 +346,22 @@ def test_marks_left_out_are_shown_and_counted_nowhere(tmp_path):
     (root / 'sites' / 'toy.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
     probs = '\n'.join(S.website_problems(S.load_site(root / 'sites' / 'toy.yaml')))
     assert "shown_marks.tests: no attribute 'nothing'" in probs and "shown_marks.note: no number ['many']" in probs
+
+
+def test_random_maps_are_configured_in_the_site_file(tmp_path):
+    """website.overview.random_maps turns on the Overview's randomly drawn proteins: the module ships with the page, the
+    setting reaches the page's data, and a setting out of bounds is refused by the schema."""
+    root = _toy_site(tmp_path)
+    site = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
+    site['website']['overview'] = {'random_maps': {'n': 2, 'title': 'Proteins at random'}}
+    (root / 'sites' / 'toy.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
+    assert S.website_problems(S.load_site(root / 'sites' / 'toy.yaml')) == []
+    S.run(root / 'sites' / 'toy.yaml', root=root / 'data', log=lambda *_: None)
+    index = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None)
+    d = json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1))
+    assert d['overview']['random_maps'] == {'n': 2, 'title': 'Proteins at random'}
+    assert 'kit-random.js' in index.read_text() and (index.parent / 'assets' / 'kit-random.js').exists()
+    site['website']['overview']['random_maps'] = {'n': 0}
+    (root / 'sites' / 'bad.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
+    with pytest.raises(Exception, match='minimum'):                                    # the schema bounds n
+        S.load_site(root / 'sites' / 'bad.yaml')

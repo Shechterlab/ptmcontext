@@ -866,6 +866,7 @@ website:                  # the look and words of the website (ptmc web); layout
     statistic_label: true  # each tile names its statistic
     question: "What kinds of proteins are arginine methylated?"
     rows: 7
+    random_maps: {n: 3, title: Randomly selected proteins}   # proteins drawn at random, each end to end, with "Draw three others"
     starting_points:       # under the sections: proteins to start from, and ready-made selections (the explorer's)
       lists:
         - {title: Most sites, by: marks, n: 6, help: Proteins with the most methylarginine sites}

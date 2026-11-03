@@ -102,7 +102,7 @@
     if (c.template) return tmplText(c, p.i) ? esc(tmplText(c, p.i)) : dash;
     if (c.attribute) {
       const sp = PSP[c.attribute] || {}, v = pv(c.attribute, p.i);
-      if (c.format === 'count') { const k = listOf(c.attribute, v).length; return k ? int(k) : '<span class="muted">0</span>'; }
+      if (c.format === 'count') { const k = listOf(c.attribute, v).length; return int(k); }
       if (sp.kind === 'number') return v == null || v === '' ? dash : fmtNum(v, c.format);
       if (sp.kind === 'list') { const xs = listOf(c.attribute, v).map(x => (sp.values || {})[x] || x); return xs.length ? esc(xs.join(', ')) : dash; }
       return v == null || v === '' ? dash : esc((sp.values || {})[v] || v);
