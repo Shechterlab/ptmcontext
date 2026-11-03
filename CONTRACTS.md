@@ -479,6 +479,8 @@ website:
     conservation:
       ensembl: {rest: "https://rest.ensembl.org", xref: Ensembl, source: human}
       species: [{id: mus_musculus, label: Mouse}, {id: saccharomyces_cerevisiae, label: Yeast}]
+      presets: [{id: to_yeast, label: To yeast, species: [mus_musculus, saccharomyces_cerevisiae]}]
+      default: to_yeast
       similar: [K]
       logo: true
 ```
@@ -489,6 +491,10 @@ website:
   has no Compara set with suitable species for an organism, the site leaves the block out and has neither card.
 - `species`: Ensembl species names with the label shown, in the order shown. For each, the orthologue with the highest
   identity is used, with Ensembl's pairwise protein alignment.
+- `presets` (optional): the sets of species the reader chooses between, as `{id, label, species: [ids of `species`], note?}`; the card
+  shows a select, remembers the choice in the browser and asks Ensembl again for the new set. `default` is the id used until the
+  reader chooses (the first preset without it). Without presets every species listed is aligned. Choose sets that still
+  align: close relatives, then a spread across the clade. An orthologue Ensembl lacks for a gene is listed as having none.
 - `similar`: residue letters shown as a conservative change (they do not count as kept). Optional.
 - `logo`: offer the selection's alignment and logo (needs `website.search.patterns`). Optional.
 

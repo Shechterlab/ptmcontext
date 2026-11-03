@@ -17,7 +17,15 @@
   if (!CV || !(CV.species || []).length || !CV.ensembl) return;
   const RES = D.residues || [];
   const KEPT = RES.length === 1 ? RES[0] : 'the same residue';        // "still R"
-  const SPECIES = CV.species, SIMILAR = new Set(CV.similar || []), ENS = CV.ensembl;
+  const CATALOGUE = CV.species, SIMILAR = new Set(CV.similar || []), ENS = CV.ensembl;
+  // The reader's set of species: one of the site file's presets (each names species of the catalogue), remembered in this
+  // browser. A site without presets aligns every species it lists.
+  const PRESETS = (CV.presets || []).map(p => ({ ...p, list: (p.species || []).map(id => CATALOGUE.find(s => s.id === id)).filter(Boolean) })).filter(p => p.list.length);
+  const SET_KEY = `ptmc-cons-set-${D.site?.id}`;
+  const UI = { pos: null, flank: 10, set: '' };
+  try { UI.set = localStorage.getItem(SET_KEY) || ''; } catch (e) { /* storage blocked: the default set */ }
+  const preset = () => PRESETS.find(p => p.id === UI.set) || PRESETS.find(p => p.id === CV.default) || PRESETS[0];
+  const SPECIES = () => (PRESETS.length ? preset().list : CATALOGUE);
   const PCT = v => Math.round(100 * v);
   const timed = (pr, ms) => Promise.race([pr, new Promise((ok, no) => setTimeout(() => no(new Error('timeout')), ms))]);
   const getJson = url => fetch(url).then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))));
@@ -55,17 +63,17 @@
   // =================================================================================================================
   const UNI = acc => `https://rest.uniprot.org/uniprotkb/${acc}.json`;       // the address the protein page's own card reads
   const orthoUrl = ensg => `${String(ENS.rest).replace(/\/$/, '')}/homology/id/${encodeURIComponent(ENS.source)}/${encodeURIComponent(ensg)}?type=orthologues;aligned=1;sequence=protein;cigar_line=0;${ENS.compara ? 'compara=' + encodeURIComponent(ENS.compara) + ';' : ''}` +
-    SPECIES.map(s => 'target_species=' + s.id).join(';') + ';content-type=application/json';
+    SPECIES().map(s => 'target_species=' + s.id).join(';') + ';content-type=application/json';
   const ensgOf = j => [...new Set((j.uniProtKBCrossReferences || []).filter(x => x.database === ENS.xref)
     .map(x => ((x.properties || []).find(pp => pp.key === 'GeneId') || {}).value || '').filter(Boolean).map(g => g.split('.')[0]))][0] || '';
   // the orthologue of highest identity for each species, in the site file's order
-  const orthologs = ensg => live('ortho:' + ensg, () => timed(getJson(orthoUrl(ensg)), 60000).then(d => {
+  const orthologs = ensg => live('ortho:' + ensg + ':' + SPECIES().map(s => s.id).join(','), () => timed(getJson(orthoUrl(ensg)), 60000).then(d => {
     const best = new Map();
     for (const h of ((d.data || [])[0] || {}).homologies || []) {
       const sp = h.target?.species;
       if (sp && (!best.has(sp) || h.target.perc_id > best.get(sp).target.perc_id)) best.set(sp, h);
     }
-    return SPECIES.filter(s => best.has(s.id)).map(s => ({ sp: s.id, name: s.label, h: best.get(s.id) }));
+    return SPECIES().filter(s => best.has(s.id)).map(s => ({ sp: s.id, name: s.label, h: best.get(s.id) }));
   }));
 
   // Carry each position of the snapshot sequence to the Ensembl human protein (identical, contained, or by a unique
@@ -123,7 +131,7 @@
     (ck.other == null ? '' : ck.p == null ? ' (too few to test)' : ` (rank-sum p ${K.fq(ck.p)})`));
 
   // ---- the state of each protein's lookup ------------------------------------------------------------------------------
-  const ST = {}, UI = { pos: null, flank: 10 };
+  const ST = {};
   const curAcc = () => (S.view === 'protein' ? String(S.arg || '').split('/')[0] : '');
   const fail = e => (String(e && e.message) === 'timeout' ? 'did not answer in time' : 'could not be reached');
   function start(acc, rec, force) {
@@ -157,16 +165,19 @@
   // ---- the card ---------------------------------------------------------------------------------------------------------
   const cls = (a, human) => (a == null ? 'cv-u' : a === '-' ? 'cv-g' : a === human ? 'cv-k' : SIMILAR.has(a) ? 'cv-s' : 'cv-o');
   const lab = (acc, pos) => K.prot?.siteLabel(acc, pos) || String(pos);
+  // the species to compare with: the site file's presets as a select, with what the chosen one holds
+  const setPicker = () => (PRESETS.length > 1 ? `<p class="cv-set"><label>Species <select id="cv-set">${PRESETS.map(p => `<option value="${esc(p.id)}"${p === preset() ? ' selected' : ''}>${esc(p.label)}</option>`).join('')}</select></label>` +
+    (preset().note ? ` <span class="muted small">${esc(preset().note)}</span>` : '') + '</p>' : '');
   function bodyHtml(acc) {
     const st = ST[acc], g = esc(gene(acc));
-    const head = `<div class="card-head"><p class="sub">Each ${esc(W.mark)} of ${g} in the orthologues of ${esc(SPECIES.map(s => s.label).join(', '))} (Ensembl Compara${ENS.compara ? ', ' + esc(ENS.compara) : ''}), and whether it is still ${esc(KEPT)}.</p>` +
+    const head = `<div class="card-head"><div><p class="sub">Each ${esc(W.mark)} of ${g} in the orthologues of ${esc(SPECIES().map(s => s.label).join(', '))} (Ensembl Compara${ENS.compara ? ', ' + esc(ENS.compara) : ''}), and whether it is still ${esc(KEPT)}.</p>${setPicker()}</div>` +
       K.expBar(['svg', 'png', 'tsv'], 'cvexp', 'the conservation of ' + gene(acc), 'conserve') + '</div>';
     if (!st || ['idle', 'ens', 'ortho'].includes(st.phase)) return head + `<p class="note">Looking up ${g}’s orthologues${st?.phase === 'ortho' ? ` in Ensembl Compara (${esc(st.ensg)}); usually 5–30 s` : ' (UniProt, then Ensembl Compara)'}…</p>`;
     if (st.phase === 'no_gene') return head + `<p class="note">UniProt lists no ${esc(ENS.xref)} gene for ${esc(acc)}, so there are no orthologues to look up.</p>`;
     if (st.phase === 'none') return head + `<p class="note">Ensembl lists no orthologue of ${g} in these species.</p>`;
     if (st.phase === 'fail') return head + `<p class="note">${esc(st.who)} ${esc(st.err)}. Nothing else on this page depends on it. <button class="linkish" type="button" data-cv-retry="${esc(acc)}">Try again</button></p>`;
     const { model, ck, seq, sites } = st, per = model.rows.map(r => { const v = sites.map(q => r.at(q)); return { r, v, nK: v.filter((a, i) => a === seq[sites[i] - 1]).length, nMap: v.filter(a => a != null).length }; });
-    const absent = SPECIES.filter(s => !model.rows.some(r => r.sp === s.id)).map(s => s.label);
+    const absent = SPECIES().filter(s => !model.rows.some(r => r.sp === s.id)).map(s => s.label);
     const test = ck.me != null && ck.other != null ? `<p class="cv-test"><b>${esc(W.marks)} against the other ${esc(W.residues)} of ${g}:</b> on average a ${esc(W.mark)} is still ${esc(KEPT)} in <b>${PCT(ck.me)}%</b> of the species that align it, ` +
       `the other ${esc(W.residues)} in <b>${PCT(ck.other)}%</b> (${int(ck.n1)} and ${int(ck.n2)} ${esc(W.residues)}; ${ck.p == null ? 'too few to test' : 'Wilcoxon rank-sum p = ' + K.fq(ck.p)}).</p>` : '';
     const row = (name, sub, vals) => `<tr><th>${esc(name)}${sub ? ` <span class="muted">${esc(sub)}</span>` : ''}</th>${vals}</tr>`;
@@ -261,7 +272,14 @@
   // a site focused in another view is the one shown here, where this protein's table has it
   K.site?.on(e => { if (e.kind !== 'focus' || e.pos == null || e.from === 'conserve' || e.acc !== curAcc() || !ST[e.acc]?.sites?.includes(e.pos) || UI.pos === e.pos) return; UI.pos = e.pos; redraw(); });
   document.addEventListener('change', e => {
-    if (e.target.id === 'cv-pos') { UI.pos = +e.target.value; redraw(); }
+    if (e.target.id === 'cv-set') {
+      UI.set = e.target.value;
+      try { localStorage.setItem(SET_KEY, UI.set); } catch (err) { /* storage blocked: this visit only */ }
+      const acc = curAcc();
+      Object.keys(ST).forEach(k => { if (k !== acc) delete ST[k]; });      // other proteins start again, with the new set, when opened
+      if (acc) K.loadProtein(acc).then(rec => { if (curAcc() === acc) start(acc, rec, true); });
+    }
+    else if (e.target.id === 'cv-pos') { UI.pos = +e.target.value; redraw(); }
     else if (e.target.id === 'cv-flank') { UI.flank = +e.target.value; redraw(); }
   });
 
@@ -378,8 +396,17 @@
     if (!CV.logo || !haveWindows() || !sets().sel.length) return '';
     return `<details class="apart cv-logo" id="sel-logo"${LUI.open ? ' open' : ''}><summary><span class="apart-h">Logo and comparison</span> <span class="apart-sum muted" id="cv-logo-sum">${esc(summaryText())}</span></summary><div id="cv-logo-body"></div></details>`;
   };
-  (K.selLead ||= []).push(logoSection);
-  (K.selSmall ||= []).push(logoSection);
+  // high on a selection's Overview: before the other blocks, for a selection too small to test as for one that can be
+  (K.selLead ||= []).unshift(logoSection);
+  (K.selSmall ||= []).unshift(logoSection);
+  // "Sequence logo" in the selection line: opens it (and goes to the Overview that holds it)
+  (K.selTools ||= []).push(() => (CV.logo && haveWindows() && sets().sel.length ? `<button class="btn small" type="button" data-go-logo title="The selected ${esc(W.marks)}' sequence windows aligned, as a logo and against the other ${esc(W.marks)}">Sequence logo</button>` : ''));
+  K.clicks.push(['[data-go-logo]', () => {
+    LUI.open = true;
+    if (S.view !== 'overview' || S.arg || S.vs !== 'residues') K.go('overview', { arg: '', vs: 'residues' });
+    const show = () => { const d = document.getElementById('sel-logo'); if (!d) return; d.open = true; fillLogo(); d.scrollIntoView({ block: 'start' }); };
+    show(); setTimeout(show, 60);
+  }]);
   function fillLogo() {
     const el = document.getElementById('sel-logo'), body = document.getElementById('cv-logo-body');
     if (!el || !body || !el.open) return;
@@ -410,7 +437,7 @@
   // ---- Method ---------------------------------------------------------------------------------------------------------
   const doi = (id, t) => `<a href="https://doi.org/${esc(id)}">${esc(t)}</a>`;
   (K.methodParts ||= []).push(() => `<section id="m-conserve"><h3>Conservation across species</h3>` +
-    `<p>On a protein’s page, the ${esc(ENS.xref)} gene from UniProt’s cross-references is sent from your browser to Ensembl Compara (REST at ${esc(ENS.rest)}) for orthologues in ${esc(SPECIES.map(s => s.label.toLowerCase()).join(', '))}. ` +
+    `<p>On a protein’s page, the ${esc(ENS.xref)} gene from UniProt’s cross-references is sent from your browser to Ensembl Compara (REST at ${esc(ENS.rest)}) for orthologues in the species of the set you choose (${esc(PRESETS.length ? PRESETS.map(p => `${p.label}: ${p.list.map(s => s.label).join(', ')}`).join('; ') : CATALOGUE.map(s => s.label).join(', '))}). ` +
     `Each species uses its orthologue of highest identity, with Ensembl’s pairwise protein alignment. Positions of the ${esc(D.run.snapshot?.release || 'snapshot')} sequence map to the Ensembl ${esc(ENS.source)} protein directly when the sequences are identical or nested, otherwise through a unique 15-residue anchor around each ${esc(W.mark)}. Without one, the position shows as not mapped. ` +
     `Columns follow the ${esc(ENS.source)} sequence, so insertions in other species are not shown. A residue is kept when the orthologue has the same residue there${SIMILAR.size ? `. ${esc([...SIMILAR].join(', '))} is shown as a conservative change and not counted as kept` : ''}.</p>` +
     `<p>The chip (“${RES.length === 1 ? 'still ' + esc(KEPT) : 'conserved'} in orthologues”) is the mean, over the protein’s ${esc(W.marks)}, of the share of species that align the ${esc(W.mark)} and keep it. It is compared with the protein’s other ${esc(W.residues)} (${esc(RES.join(', ') || 'the profile’s residues')}) by a two-sided Wilcoxon rank-sum test (normal approximation, with tie and continuity corrections). Each residue counts once however many species align it, and fewer than three on either side are not tested. ` +
@@ -434,6 +461,7 @@
   css.textContent = `.cv-chip { cursor: pointer; color: var(--ink-2); font: inherit; font-size: 0.85rem; }
 .cv-chip:hover { border-color: var(--accent); color: var(--accent-dark); }
 .cv-test { margin: 0.5rem 0; }
+.cv-set { margin: 0.3rem 0 0; } .cv-set select { font: inherit; padding: 0.15rem 0.35rem; border: 1px solid var(--line-strong); border-radius: 0.35rem; background: var(--surface); color: var(--ink); }
 .cv-sum { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin: 0.5rem 0; }
 .cv-wrap { overflow-x: auto; margin: 0.4rem 0; }
 .cv-tbl { border-collapse: collapse; font-size: 0.82rem; }

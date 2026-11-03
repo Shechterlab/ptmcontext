@@ -455,7 +455,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Disease families (DisGeNET)
     question: "Which disease gene sets are over-represented?"
-    sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by disease family: the eight audited families (one-sided hypergeometric test). Association, not causation"
+    sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by disease family: the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
     section: Protein classes and pathways
     identifiers:
       noun: gene
@@ -473,9 +473,9 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
   - id: disease_family_additional
     test: protein_sets
-    title: Disease families, additional (rule-based, not audited)
+    title: Disease families, additional (grouped automatically from disease terms)
     question: "Which of the additional disease families, mostly clinical signs, are over-represented?"
-    sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by additional disease family: rule-based and not audited, mostly clinical signs, tested apart from the audited families (one-sided hypergeometric test). Association, not causation"
+    sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by additional disease family: grouped automatically by matching words in the disease terms, not checked by hand, mostly clinical signs; tested apart from the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
     section: Protein classes and pathways
     identifiers:
       noun: gene
@@ -1160,7 +1160,7 @@ website:                  # the look and words of the website (ptmc web); layout
             views:               # one question, two vocabularies: a switch on its page
               - label: DisGeNET families
                 analysis: disease_family
-                more: {analysis: disease_family_additional, label: "Show {n} more families (rule-based, not audited)", head: "Additional families (rule-based, not audited; tested separately)"}
+                more: {analysis: disease_family_additional, label: "Show {n} more families (grouped automatically from disease terms)", head: "Additional families (grouped automatically from disease terms; tested separately)"}
                 members:
                   analysis: disease_term
                   label: Show the DisGeNET terms
@@ -1169,7 +1169,7 @@ website:                  # the look and words of the website (ptmc web); layout
                   id_label: UMLS CUI
                   none: terms in no family
                   of:
-                    - {analysis: disease_family, label: audited disease families}
+                    - {analysis: disease_family, label: disease families checked by hand}
                     - {analysis: disease_family_additional, label: "additional families, mostly clinical signs"}
               - label: Disease Ontology
                 analysis: disease_ontology
@@ -1189,7 +1189,7 @@ website:                  # the look and words of the website (ptmc web); layout
                     "DOID:7": [by organ system, "A disease that manifests in a defined anatomical structure."]
                     "DOID:0014667": [inherited and acquired metabolic, "A disease that involves errors in metabolic processes of building or degradation of molecules."]
                     "DOID:0050117": ["viral, bacterial, parasitic, fungal"]
-          - {analysis: disease_family_additional, title: "More disease families (rule-based, not audited)"}
+          - {analysis: disease_family_additional, title: "More disease families (grouped automatically from disease terms)"}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
           - {analysis: cancer_change, title: Changes in tumours and cell lines}
       - name: Protein classes and pathways
@@ -1586,7 +1586,7 @@ website:                  # the look and words of the website (ptmc web); layout
     reactome_top_level: {eyebrow: Reactome pathway, url: "https://reactome.org/content/detail/{set}", link: "Reactome {set}"}
     reactome_pathway: {eyebrow: Reactome pathway, url: "https://reactome.org/content/detail/{set}", link: "Reactome {set}"}
     disease_family: {eyebrow: Disease family (DisGeNET)}
-    disease_family_additional: {eyebrow: "Disease family (DisGeNET, rule-based)"}
+    disease_family_additional: {eyebrow: "Disease family (DisGeNET, grouped automatically)"}
     panther_group: {eyebrow: PANTHER protein class group}
     panther_class: {eyebrow: PANTHER protein class}
     panther_subclass: {eyebrow: PANTHER protein subclass}
@@ -1841,13 +1841,13 @@ website:                  # the look and words of the website (ptmc web); layout
       values: [experiment, source, cell_line, n_peaks, top_target_genes, top_5mers]
   protein:                 # the protein page
     open_partners: true    # the Interaction partners fold is open when the protein has partners in the site's table
-    order: [p-map, p-cc, p-ix, p-na, p-sites, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cons, p-cluster, p-ptm, p-seq]   # the explorer's order
+    order: [p-map, p-cc, p-ix, p-na, p-sites, p-cons, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cluster, p-ptm, p-seq]   # the explorer's order, with the orthologues after the sites
     groups:                # about five headings, each holding its folds (website.protein.groups)
       - {id: g-overview, title: Overview and map, folds: [p-map, p-kinds]}
-      - {id: g-sites, title: Sites, folds: [p-sites, p-score, p-pert, p-exp, p-cluster, p-ptm]}
+      - {id: g-sites, title: Sites, folds: [p-sites, p-cons, p-score, p-pert, p-exp, p-cluster, p-ptm]}
       - {id: g-binding, title: Binding and contacts, folds: [p-cc, p-ix, p-na]}
       - {id: g-context, title: "Context: location, condensates, disease, cancer", folds: [p-cond, p-dis, p-depmap]}
-      - {id: g-structure, title: Structure and sequence, folds: [p-struct, p-regions, p-cons, p-seq]}
+      - {id: g-structure, title: Structure and sequence, folds: [p-struct, p-regions, p-seq]}
     open: [p-map, p-sites, p-cons, p-ix]   # the explorer's folds are all shut; here the map and the sites, and the orthologues and the network once they have data
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
       location:
@@ -1931,14 +1931,32 @@ website:                  # the look and words of the website (ptmc web); layout
                  regions: {CDS: peaks_CDS, "3′ UTR": peaks_UTR3, "5′ UTR": peaks_UTR5, "non-coding exon": peaks_noncoding_exon, intron: peaks_intron, intergenic: peaks_intergenic}}
     conservation:          # orthologues live from Ensembl Compara, and the selection's logo (CONTRACTS.md, Conservation across species)
       ensembl: {rest: "https://rest.ensembl.org", xref: Ensembl, source: human}
-      species:             # mouse to yeast
+      species:             # every species a set below can name, with the label shown (all in Ensembl Compara's vertebrate set)
         - {id: mus_musculus, label: Mouse}
+        - {id: rattus_norvegicus, label: Rat}
+        - {id: canis_lupus_familiaris, label: Dog}
+        - {id: bos_taurus, label: Cow}
+        - {id: macaca_mulatta, label: Macaque}
+        - {id: monodelphis_domestica, label: Opossum}
         - {id: gallus_gallus, label: Chicken}
+        - {id: anolis_carolinensis, label: Lizard}
         - {id: xenopus_tropicalis, label: Frog}
         - {id: danio_rerio, label: Zebrafish}
+        - {id: callorhinchus_milii, label: Elephant shark}
+        - {id: ciona_intestinalis, label: Sea squirt}
         - {id: drosophila_melanogaster, label: Fly}
         - {id: caenorhabditis_elegans, label: Worm}
         - {id: saccharomyces_cerevisiae, label: Yeast}
+      presets:             # the reader's choice, remembered in the browser; each set spans a range that still aligns well
+        - {id: mammals, label: Mammals, species: [mus_musculus, rattus_norvegicus, canis_lupus_familiaris, bos_taurus, macaca_mulatta, monodelphis_domestica],
+           note: "close relatives: almost every site aligns"}
+        - {id: vertebrates, label: Vertebrates, species: [mus_musculus, gallus_gallus, anolis_carolinensis, xenopus_tropicalis, danio_rerio, callorhinchus_milii],
+           note: "from mouse to the elephant shark"}
+        - {id: animals, label: Animals, species: [mus_musculus, gallus_gallus, xenopus_tropicalis, danio_rerio, ciona_intestinalis, drosophila_melanogaster, caenorhabditis_elegans],
+           note: "vertebrates, a sea squirt, the fly and the worm"}
+        - {id: to_yeast, label: To yeast, species: [mus_musculus, gallus_gallus, xenopus_tropicalis, danio_rerio, drosophila_melanogaster, caenorhabditis_elegans, saccharomyces_cerevisiae],
+           note: "the explorer's set: mouse to budding yeast; few proteins have a yeast relative"}
+      default: to_yeast
       similar: [K]         # lysine is a conservative change from arginine
       logo: true
       logo_mode: freq      # the logo's first stack is residue frequency, as the explorer's; bits is a switch

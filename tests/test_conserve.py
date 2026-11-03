@@ -41,6 +41,15 @@ def test_the_block_is_checked():
     assert conserve.problems(_site(dict(GOOD, species=[]))) == ['website.protein.conservation.species: no species to align']
 
 
+def test_the_presets_are_checked():
+    ok = dict(GOOD, presets=[{'id': 'a', 'label': 'A', 'species': ['mus_musculus']}, {'id': 'b', 'label': 'B', 'species': ['mus_musculus', 'danio_rerio']}], default='b')
+    assert conserve.problems(_site(ok)) == []
+    bad = dict(ok, presets=[{'id': 'a', 'label': 'A', 'species': ['mus_musculus']}, {'id': 'a', 'label': 'A', 'species': ['xx_yy']}], default='zzz')
+    out = ' | '.join(conserve.problems(_site(bad)))
+    for part in ("'a' listed twice", "'xx_yy' is not in website.protein.conservation.species", "'zzz' is not the id of a preset"):
+        assert part in out
+
+
 def test_the_schema_takes_the_block_and_the_bundled_sites_pass():
     schema = json.loads((ROOT / 'ptmcontext' / 'schemas' / 'site.schema.json').read_text())
     for name in ('methylarginine', 'yeast_phospho'):
