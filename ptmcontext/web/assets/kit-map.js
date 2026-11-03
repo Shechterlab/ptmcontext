@@ -818,6 +818,22 @@
       modeLegend(ctx, false).map(e => `<span>${swatchHtml(SW.head(e.c, e.hollow), P)}${esc(e.label)}</span>`).join('') + '</div>' +
       groups.map(g => `<div class="map-legend lg-group"><b>${esc(g.row)}</b>${g.items.map(e => `<span class="rl">${swatchHtml(e.draw, P)}${esc(e.label)}</span>`).join('')}</div>`).join('') + '</details>';
   }
+  // The reserved height is let go when the rows have had their six seconds, so the box is no taller than its drawing
+  // (the key, collapsed, would otherwise sit above a blank band). Letting go moves what is under the map, so it waits
+  // until nothing under the map is on screen (the map's bottom edge is below the window, or above it, where the browser
+  // keeps the place), and is tried again as the page scrolls. A box whose drawing already fills it is simply released.
+  function release(hold) {
+    hold.t = 0;
+    const el = hold.el; if (M.hold !== hold || !el.isConnected || !el.style.minHeight) return;
+    const natural = () => { const keep = el.style.minHeight; el.style.minHeight = ''; const h = el.offsetHeight; el.style.minHeight = keep; return h; };
+    const safe = () => { const b = el.getBoundingClientRect().bottom; return b > innerHeight || b < 0; };
+    const go = () => {
+      if (M.hold !== hold || !el.isConnected || !el.style.minHeight) { removeEventListener('scroll', go); return true; }
+      if (natural() >= el.offsetHeight - 1 || safe()) { el.style.minHeight = ''; removeEventListener('scroll', go); return true; }
+      return false;
+    };
+    if (!go()) addEventListener('scroll', go, { passive: true });
+  }
   const observed = new WeakSet();
   const widthOf = el => { const w = el.clientWidth; return w > 0 && w < 700 ? Math.max(300, Math.round(w)) : 1000; };
   function render(el, ctx) {
@@ -831,6 +847,7 @@
     el.innerHTML = controls() + `<div class="map-svg"><svg viewBox="0 0 ${m.Wd} ${m.H}" role="img" aria-label="Map of ${esc(ctx.p.gene || ctx.p.acc)}"${m.Wd < 1000 ? ` style="max-width:${m.Wd}px"` : ''}>${m.svg}</svg></div>` +
       `<p class="map-read muted" id="map-read">Hover for the residue under the pointer. Click an item to pin it here.</p><div id="map-pin" class="map-pin" hidden></div>` + keyHtml(ctx, m);
     M.geom = m; hold.h = Math.max(hold.h, el.offsetHeight);
+    if (!hold.t) hold.t = setTimeout(() => release(hold), Math.max(0, hold.until - Date.now()) + 50);
     // laid out again when the box's width class changes (a narrow screen, a fold opened, the window resized)
     if (!observed.has(el) && window.ResizeObserver) { observed.add(el); new ResizeObserver(() => { if (M.geom && el.isConnected && widthOf(el) !== M.geom.Wd && M.ctx) render(el, M.ctx); }).observe(el); }
     const svg = el.querySelector('svg'), cross = el.querySelector('#map-cross'), drag = el.querySelector('#map-drag');

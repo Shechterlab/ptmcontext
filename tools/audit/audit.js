@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /* Scripted site audit: hovers, layout shifts and wording, page by page, as JSON on stdout (no screenshots).
-   node tools/audit/audit.js <base-url> [--checks hovers,shifts,words,prose,motion,clicks,net] [--pages "#overview,#sites"] [--width 1440]
+   node tools/audit/audit.js <base-url> [--checks hovers,shifts,words,prose,motion,clicks,links,net] [--pages "#overview,#sites"] [--width 1440]
    prose: words of body text and of hover text (tip functions and title attributes, called in the page, no mouse), hover median/p95/max
    words and the count over 40, semicolons and colons per 100 words, mean sentence length, Flesch-Kincaid grade.
    motion: boxes of tiles, bars and headings sampled every 200 ms for 4 s after load, after hovers and after a selection change.
+   links: per page, elements that look clickable (cursor:pointer, outermost, not inside a[href], not summary or form controls) but are not links; tiles and rows with a data-href (Ctrl/Cmd or middle click opens it) are counted apart, by tag, and external a[href^=http] without target=_blank.
    clicks: every fold, tab and button is clicked; those that throw or change nothing are listed. net: failed requests.
    Pages default to the Overview, the first questions, Proteins, Sites, Method, Help, a selection, and three protein
    pages drawn from the site's own data. Works on any ptmcontext site, and on the original explorer for 'words'. */
@@ -177,6 +178,22 @@ const BAD = /\bundefined\b|\bNaN\b|(^|[\s:=(])null([\s,.)]|$)(?!model)|\[object 
       for (const [x, y] of vis) { await page.mouse.move(x, y); await page.waitForTimeout(250); }
       await page.mouse.move(2, 2);
       rec.motion_hover = motion(await hp);
+    }
+    if (checks.includes('links')) {
+      rec.links = await page.evaluate(() => {
+        const skip = /^(A|SUMMARY|INPUT|SELECT|TEXTAREA|LABEL|OPTION|HTML|BODY)$/, by = {}; let n = 0, handled = 0;
+        for (const el of document.querySelectorAll('body *')) {
+          if (skip.test(el.tagName) || el.closest('a[href]') || el.closest('[hidden]')) continue;
+          if (el.hasAttribute('data-href')) handled++;
+          if (el.closest('[data-href]')) continue;   // opens in a new tab on Ctrl/Cmd or middle click
+          const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) continue;
+          if (getComputedStyle(el).cursor !== 'pointer') continue;
+          if (el.parentElement && getComputedStyle(el.parentElement).cursor === 'pointer' && !skip.test(el.parentElement.tagName)) continue;
+          n++; const k = el.tagName.toLowerCase() + (typeof el.className === 'string' && el.className ? '.' + el.className.trim().split(/\s+/)[0] : ''); by[k] = (by[k] || 0) + 1;
+        }
+        const ext = [...document.querySelectorAll('a[href^="http"]')], same = ext.filter(a => a.target !== '_blank' || !/noopener/.test(a.rel));
+        return { clickable_not_link: n, row_or_tile_handlers: handled, by_kind: Object.fromEntries(Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 6)), external: ext.length, external_same_tab: same.length };
+      });
     }
     if (checks.includes('net')) rec.net_failed = [...new Set(netfail)].slice(0, 8);
     netfail.length = 0;

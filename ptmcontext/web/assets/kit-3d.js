@@ -1257,6 +1257,29 @@
     if (T.mol?.el.offsetWidth) requestAnimationFrame(() => { T.mol.viewer.resize(); T.mol.viewer.render(); });
   }
 
+  // ---- the viewer on a page of its own: ?solo3d=<entry>.<chain> (or af) beside the protein's address, same entry, chain and mark ----
+  function soloHref(acc) {
+    const m = T.mol && T.mol.acc === acc ? T.mol : null, pdb = m && m.pdb;
+    const tag = pdb ? pdb.e.id + (pdb.chain ? '.' + pdb.chain : '') : m ? 'af' : '';
+    const pos = T.highlight != null ? T.highlight : K.site.state.focus;
+    return location.pathname + (tag ? '?solo3d=' + encodeURIComponent(tag) : '?solo3d') + K.link('protein', acc + (pos != null ? '/' + pos : ''));
+  }
+  const refreshSolo = e => { const a = e.target.closest?.('#s3d-newtab'); if (a && T.acc) a.href = soloHref(T.acc); };   // the address follows the viewer as it changes
+  ['pointerdown', 'focusin', 'mouseover', 'contextmenu'].forEach(ev => document.addEventListener(ev, refreshSolo, true));
+  const SOLO = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('solo3d') : null;
+  if (SOLO != null) {
+    document.body.classList.add('solo3d');
+    let done = false;
+    (K.afterRender ||= []).push(() => {
+      const card = document.getElementById('s3d'), acc = String(K.S.arg || '').split('/')[0];
+      if (done || !card || K.S.view !== 'protein' || !byAcc[acc]) return;
+      done = true;
+      const [entry, chain] = SOLO.split('.'), pos = K.site.state.focus;
+      if (SOLO === 'af') V.src = 'af';
+      K.show3d(acc, { pos, entry: SOLO && SOLO !== 'af' ? entry : null, chain: chain || null });
+    });
+  }
+
   // ---- the section, and its life on the page -----------------------------------------------------------------------------------
   const sub = (id, title, body) => `<details class="s3d-sub" id="${id}"${T.open[id] ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h4>${esc(title)}</h4><span class="s3d-ssum"></span></summary><div class="s3d-sub-body">${body}</div></details>`;
   function html(p, rec) {
@@ -1268,7 +1291,7 @@
       .map(([k, l, t]) => `<button type="button" class="exp-btn" data-s3d-file="${k}" data-s3d-need disabled title="${esc(t)}">${l}</button>`).join('');
     const hasTables = Object.keys(SD.inputs || {}).length > 0;
     return `<div class="s3d" id="s3d"><div class="s3d-head card-head"><p class="sub">The experimental chain that models most of ${esc(p.gene || p.acc)} (or any PDB entry and chain from the menu) or the AlphaFold model, coloured like the protein map, its ${esc(NOUNS)} as side chains. Drag to turn, scroll to zoom, right-drag or the arrows to slide; click a residue to focus it.</p>` +
-      `<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}<span class="s3d-sep"></span>${exp}<span class="s3d-sep"></span>${files}<a class="exp-btn" href="${esc(K.link('method', 'structure'))}" title="Where the structures, the placing of the ${esc(NOUNS)} and the colours come from">Method</a></div></div>` +
+      `<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}<span class="s3d-sep"></span>${exp}<span class="s3d-sep"></span>${files}<a class="exp-btn" href="${esc(K.link('method', 'structure'))}" title="Where the structures, the placing of the ${esc(NOUNS)} and the colours come from">Method</a><a class="exp-btn" id="s3d-newtab" href="${esc(soloHref(p.acc))}" target="_blank" rel="noopener" title="The viewer on a page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a></div></div>` +
       `<div class="s3d-src" id="s3d-src"></div><div class="s3d-controls" id="s3d-controls"></div>` +
       `<div class="s3d-wrap"><div class="s3d-stage"><div class="s3d-viewer" id="s3d-viewer"><div class="s3d-ph">The structure loads when this section is open.</div></div>` +
       `<div class="s3d-pan" role="group" aria-label="Slide the structure">${[['up', 0, -1, '↑'], ['left', -1, 0, '←'], ['right', 1, 0, '→'], ['down', 0, 1, '↓']].map(([k, x, y, t]) => `<button type="button" class="pan-${k}" data-s3d-pan="${x},${y}" aria-label="Slide ${k}">${t}</button>`).join('')}</div>` +
@@ -1471,6 +1494,8 @@
 .s3d-tbl tr.on td { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
 .s3d-what { display: grid; font-size: .78rem; color: var(--ink-2); max-width: 36rem; white-space: normal; }
 .s3d-hl { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
+.solo3d #view *:not(:has(#s3d)):not(#s3d):not(#s3d *), .solo3d .hero, .solo3d .toolbar, .solo3d .rail, .solo3d footer.site, .solo3d .skip, .solo3d #s3d-newtab { display: none !important; }
+.solo3d #s3d { position: fixed; inset: 0; z-index: 200; overflow: auto; padding: 1rem; background: var(--bg); }
 .s3d-dialog { width: 96vw; max-width: 96vw; height: 94vh; max-height: 94vh; border: 1px solid var(--line); border-radius: .8rem; background: var(--surface); color: var(--ink); padding: 1rem; }
 .s3d-dialog .s3d-viewer { height: calc(94vh - 13rem); }
 .s3d-dialog .s3d-side { max-height: calc(94vh - 13rem); }

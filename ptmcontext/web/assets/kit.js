@@ -174,10 +174,10 @@
       tests: [int(D.rows.length), 'tests', 'statistics'],
     };
     const tiles = (D.stats || ['marks', 'proteins', 'questions', 'tests']).map(t => typeof t === 'string' ? ALL[t] : [int((D.attribute_counts || {})[t.attribute] ?? 0), t.label, t.opens && A[t.opens] ? 'overview/' + t.opens : 'method/sources']).filter(Boolean);
-    $('#hero-stats').innerHTML = tiles.map(([b, s, v]) => `<button class="stat" type="button" data-go="${v}"><b>${b}</b><span>${esc(s)}</span></button>`).join('');
+    $('#hero-stats').innerHTML = tiles.map(([b, s, v]) => `<a class="stat" href="${esc(link(v.split('/')[0], v.split('/').slice(1).join('/')))}" data-go="${v}"><b>${b}</b><span>${esc(s)}</span></a>`).join('');
   }
   function scope() {
-    const ex = (D.site.examples || []).slice(0, 3).map(e => `<button class="try-chip" type="button" data-try="${esc(e)}">${esc(e)}</button>`).join('');
+    const ex = (D.site.examples || []).slice(0, 3).map(e => `<a class="try-chip" href="${esc(carry('#overview?' + new URLSearchParams({ q: e })))}" data-try="${esc(e)}">${esc(e)}</a>`).join('');
     const site = (D.site.examples || []).find(e => /\s[A-Z]?\d+$/.test(e)), term = (D.site.examples || []).find(e => e.includes(':'));
     $('#q').placeholder = `Gene, accession, ${site ? `site (${site}), ` : ''}gene list${term ? `, or a filter such as ${term}` : ''}`;
     const bar = K.sel?.bar();
@@ -1089,7 +1089,7 @@
     const old = btn ? btn.textContent : ''; if (btn) { btn.disabled = true; btn.textContent = '…'; }
     try {
       if (kind === 'tsv') download(name + '.tsv', tsv(), 'text/tab-separated-values');
-      else { const f = make(); if (kind === 'svg') download(name + '.svg', f.svg, 'image/svg+xml'); else if (kind === 'png') await pngExport(f, name); else await pdfExport(f, name); }
+      else { const f = make(); if (kind === 'opensvg') window.open(URL.createObjectURL(new Blob([f.svg], { type: 'image/svg+xml' })), '_blank'); else if (kind === 'svg') download(name + '.svg', f.svg, 'image/svg+xml'); else if (kind === 'png') await pngExport(f, name); else await pdfExport(f, name); }
     } catch (err) { alert((err && err.message) || 'The download failed.'); } finally { if (btn) { btn.disabled = false; btn.textContent = old; } }
   }
   // the export buttons of a card, and its Method link (the question's own section, or a section of the Method page)
@@ -1114,7 +1114,44 @@
     if (S.view === 'method' && S.arg) document.getElementById('m-' + S.arg)?.scrollIntoView({ block: 'start' });
     K.rail?.();
     (K.afterRender || []).forEach(f => f());         // the modules' own touches after a page is drawn (kit-search.js)
+    linkPass();
   }
+  // ---- links and new tabs: one pass after each render, and after content that arrives later --------------------------
+  // Tiles and table rows carry their page (data-href) so Ctrl/Cmd-click and middle-click open it in a new tab; a tile's
+  // title is a real link. Every external link opens in a new tab with an icon (CSS) and hidden text; every figure's
+  // export menu gets "Open as SVG". Idempotent, so it may run on any change.
+  const newTab = href => { window.open(href, '_blank', 'noopener'); };
+  function linkPass() {
+    const root = document.body;
+    root.querySelectorAll('.tile[data-tile]').forEach(t => {
+      const h = link('overview', t.dataset.tile); if (t.dataset.href === h) return; t.dataset.href = h;
+      const h3 = t.querySelector('header h3'); if (h3 && !h3.querySelector('a')) { const a = document.createElement('a'); a.className = 'tile-link'; a.href = h; a.append(...h3.childNodes); h3.append(a); }
+    });
+    root.querySelectorAll('tr[data-acc]:not([data-href])').forEach(r => { r.dataset.href = link('protein', r.dataset.acc); });
+    root.querySelectorAll('tr[data-goto]:not([data-href])').forEach(r => { r.dataset.href = link('protein', r.dataset.goto); });
+    root.querySelectorAll('a[href^="http"]:not([data-ext])').forEach(a => {
+      a.dataset.ext = ''; a.target = '_blank'; a.rel = [...new Set((a.rel + ' noopener').trim().split(/\s+/))].join(' ');
+      if (a instanceof SVGElement) return;
+      const txt = a.textContent.trim();
+      if (/↗$/.test(txt)) a.dataset.ext = 'arrow';
+      const n = document.createElement('span'); n.className = 'vh'; n.textContent = ' (opens in a new tab)'; a.append(n);
+    });
+    root.querySelectorAll('button.exp-btn').forEach(b => {
+      const at = [...b.attributes].find(x => x.name.startsWith('data-') && x.value === 'svg'); if (!at || b.nextElementSibling?.dataset?.[at.name.slice(5).replace(/-(\w)/g, (m, c) => c.toUpperCase())] === 'opensvg') return;
+      const c = b.cloneNode(false); c.setAttribute(at.name, 'opensvg'); c.title = 'Open the figure as an SVG in a new tab'; c.textContent = 'Open as SVG'; b.after(c);
+    });
+  }
+  K.linkPass = linkPass;
+  { let raf = 0; new MutationObserver(() => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; linkPass(); }); }).observe(document.body, { childList: true, subtree: true }); }
+  document.addEventListener('click', e => {      // Ctrl/Cmd-click on a tile or row opens its page in a new tab
+    const el = e.target.closest('[data-href]');
+    if (el && (e.metaKey || e.ctrlKey) && !e.target.closest('a, button, input, select, summary')) { e.preventDefault(); e.stopPropagation(); newTab(el.dataset.href); }
+  }, true);
+  document.addEventListener('mousedown', e => { if (e.button === 1 && e.target.closest('[data-href]') && !e.target.closest('a, button')) e.preventDefault(); });   // no autoscroll
+  document.addEventListener('auxclick', e => {
+    const el = e.button === 1 && e.target.closest('[data-href]');
+    if (el && !e.target.closest('a, button, input, select, summary')) { e.preventDefault(); newTab(el.dataset.href); }
+  });
   const tip = $('#tip');
   function showTip(e, r) {
     const selNote = (r.selection ? `<br><span class="muted">Your selection, tested again in the browser${r.descriptive ? ': shown, not tested' : ' (exploratory)'}</span>` : '') +
@@ -1156,6 +1193,7 @@
     if (tl && !e.target.closest('a,button')) { go('overview', { arg: tl.dataset.tile }); return; }
     const t = e.target.closest('[data-go],[data-try],[data-m],[data-vs],th[data-sort],#dl,#dl-cff,#copy-cite,#how,[data-all],[data-exp],[data-theme-choice],[data-stat-more],[data-skip]');
     if (!t) return;
+    if (t.tagName === 'A') { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return; e.preventDefault(); }   // a modified click is the browser's: a new tab
     if (t.dataset.go) { const [v, ...rest] = t.dataset.go.split('/'); go(v, { arg: rest.join('/') }); }
     else if (t.dataset.try) { S.q = t.dataset.try; if (!openIfOne()) { writeHash(true); render(); } }
     else if (t.dataset.m) { S.m = t.dataset.m; writeHash(false); render(); }
@@ -1215,7 +1253,7 @@
     else if (!samePage && !(S.view === 'method' && S.arg)) scrollTo(0, 0);
     byLink = false;
   };
-  document.addEventListener('click', e => { if (e.target.closest?.('a[href^="#"]:not([data-jump])')) byLink = true; }, true);
+  document.addEventListener('click', e => { if (e.target.closest?.('a[href^="#"]:not([data-jump]):not([data-go]):not([data-try])')) byLink = true; }, true);
   addEventListener('hashchange', onNav);
   addEventListener('popstate', onNav);
   function setTheme(choice) {
