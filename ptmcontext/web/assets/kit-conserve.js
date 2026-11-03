@@ -262,7 +262,7 @@
   // =================================================================================================================
   // The selection's sequence logo and comparison (Overview)
   // =================================================================================================================
-  const LUI = { flank: 7, mode: 'bits', order: 'protein', rows: 50, open: false };
+  const LUI = { flank: 7, mode: CV.logo_mode === 'freq' ? 'freq' : 'bits', order: 'protein', rows: 50, open: false };
   const FLANKS = [3, 5, 7, 10, 15];
   const AA_BITS = Math.log2(20);
   // Residue frequencies at each position of the windows (padding and unknown letters left out) and the information

@@ -171,7 +171,8 @@ def count_problems(site: dict) -> list[str]:
     per-mark table it does not keep, a table column it does not keep, a row without calls. Its id must not be an
     analysis or an attribute (the search reads 'key:value' terms by those names)."""
     ids = {x['id'] for x in site.get('analyses', [])}
-    attrs = (site.get('marks') or {}).get('attributes') or {}
+    from .web.search import derived_attribute
+    attrs = {**((site.get('marks') or {}).get('attributes') or {}), **derived_attribute(site)}
     tables = (site.get('marks') or {}).get('tables') or {}
     out = []
     for cid, c in ((site.get('website') or {}).get('counts') or {}).items():

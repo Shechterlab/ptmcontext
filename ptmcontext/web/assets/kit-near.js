@@ -85,6 +85,8 @@
   const classOk = (k, c) => (c === 'marked' ? !!PD.marked[k] : c === 'other' ? !PD.marked[k] && !PD.bits[k] : PD.classes.includes(c) && !!(PD.bits[k] & (1 << PD.classes.indexOf(c))));
   const partnerTest = (pred, t) => m => { const r = PD.rows[m[0]]; if (!r) return false; for (let k = 0; k < r.length; k += 2) if (r[k + 1] >= t && pred(r[k])) return true; return false; };
   const classLabel = c => (c === 'marked' ? PT?.marked || `another ${W.marked} protein` : c === 'other' ? PT?.other || 'any other protein' : (PT?.classes || {})[c] || c);
+  // a class the site file describes: its role, what it reads and its paper, as the chip's hover
+  const classTip = c => { const i = (PT?.class_info || {})[c]; if (!i) return ''; const t = [i.role, i.reads && `reads ${i.reads}`, i.help, i.pmid && `PMID ${i.pmid}`].filter(Boolean).join('. '); return ` title="${esc(t)}"`; };
   if (PT) kinds.b = {
     valid: id => ['class', 'gene', 'score'].includes(id),
     test: (id, vals, cons) => {
@@ -100,7 +102,7 @@
       const on = ctx.on;
       if (id === 'class') {
         const codes = [...Object.keys(PT.classes || {}), 'marked', 'other'];
-        return fctl(PT.label || 'Has a partner that is', PT.help, `<div class="fchips">${codes.map(c => `<button type="button" class="fchip" data-f="b:class" data-v="${esc(c)}" aria-pressed="${on.has(c)}">${esc(classLabel(c))}</button>`).join('')}</div>`, ' <span class="muted">(proteins; match any)</span>');
+        return fctl(PT.label || 'Has a partner that is', PT.help, `<div class="fchips">${codes.map(c => `<button type="button" class="fchip" data-f="b:class" data-v="${esc(c)}" aria-pressed="${on.has(c)}"${classTip(c)}>${esc(classLabel(c))}</button>`).join('')}</div>`, ' <span class="muted">(proteins; match any)</span>');
       }
       if (id === 'score') {
         const cur = S.f['b:score']?.[0] || '';

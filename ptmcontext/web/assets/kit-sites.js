@@ -13,7 +13,7 @@
   const { D, W, A, S, esc, int, cap } = K;
   if (!D.proteins || !D.proteins.length) return;
   const SPECS = D.attribute_specs || {}, SV = D.sites_view || {}, CC = D.protein_view?.card || {};
-  const T = { sort: 'protein', desc: false, n: 100, key: null, shown: true };
+  const T = { sort: SV.sort?.by || 'protein', desc: !!SV.sort?.desc, n: 100, key: null, shown: true };   // website.sites.sort: the site's first order
   const SD = () => K.sel.data();
   const AN = () => SD().analyses;
   const pr = i => K.tables.P[i];
@@ -187,7 +187,7 @@
       const a = key.get(x), b = key.get(y);
       if (a == null || b == null) { if (a != null) return -1; if (b != null) return 1; }
       else { const r = typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b)); if (r) return T.desc ? -r : r; }
-      return x[0] - y[0] || x[1] - y[1];
+      return (SV.sort && String(pr(x[0]).gene || '').localeCompare(String(pr(y[0]).gene || ''))) || x[0] - y[0] || x[1] - y[1];   // then by gene
     });
     return out;
   }
