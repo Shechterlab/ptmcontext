@@ -370,8 +370,9 @@ def website_problems(site: dict) -> list[str]:
             if known is not None and set(g['classes']) - known:
                 out.append(f"analyses.{a['id']}.groups, group {g['name']!r}: no class {sorted(set(g['classes']) - known)} (it has {sorted(known)})")
     from .map_rows import problems as map_problems
+    from .web.conserve import problems as conserve_problems       # the conservation card (website.protein.conservation)
     from .web.structure import problems as structure_problems     # the 3D viewer's tables (website.protein.structure)
-    return out + map_problems(site) + structure_problems(site)
+    return out + map_problems(site) + structure_problems(site) + conserve_problems(site)
 
 
 def table_view_problems(site: dict) -> list[str]:

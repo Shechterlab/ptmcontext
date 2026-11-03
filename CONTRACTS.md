@@ -17,6 +17,7 @@ Nine plain-data formats, and the tables the protein pages show (at the end). Cod
 | **Published set results** | TSV (any columns) | below (`reference.tables` in the site schema) | a release, another pipeline | the parity check of one protein-set question |
 | **Citation** | YAML (CITATION.cff 1.2.0) | [citation-file-format.github.io](https://citation-file-format.github.io/) | a person | every page and download; GitHub and Zenodo read it too |
 | **Structure evidence** | TSV, columns named in the site file | `website.protein.structure` in `ptmcontext/schemas/site.schema.json` | a release, a lab, any table mapped to it | the protein page's 3D viewer (`kit-3d.js`) |
+| **Conservation across species** | none (read live) | `website.protein.conservation` in `ptmcontext/schemas/site.schema.json` | any site | the protein page's conservation card and the selection's logo (`kit-conserve.js`) |
 
 ## Statistics row
 
@@ -376,6 +377,36 @@ The site card and the sites table read the site file's `website.protein.card` an
 words: the codes' labels, the sentences, the marks of each call, which columns the Columns menu offers and which show
 first. `website.protein.numbering` numbers some proteins as papers do (a gene or name pattern and an offset: histones
 without their initiator methionine): their positions are shown and read in links with it.
+
+## Conservation across species
+
+A protein page can show each mark in the orthologues of other species, and a selection can show its marks' sequence windows
+aligned and as a logo. Neither reads a table: the orthologues come live from Ensembl Compara, and the windows are the
+motif finder's (`website.search.patterns`, which builds them from the snapshot sequences). A site without
+`website.protein.conservation` lacks the card and the logo; `ptmc check` reports what the block misses.
+
+```yaml
+website:
+  protein:
+    conservation:
+      ensembl: {rest: "https://rest.ensembl.org", xref: Ensembl, source: human}
+      species: [{id: mus_musculus, label: Mouse}, {id: saccharomyces_cerevisiae, label: Yeast}]
+      similar: [K]
+      logo: true
+```
+
+- `ensembl.rest`: the REST address (https); `ensembl.xref`: the database in the protein's UniProt cross-references that
+  names its Ensembl gene (the first one is used); `ensembl.source`: the query species' name in the homology endpoint;
+  `ensembl.compara` (optional): the Compara set when the species are not vertebrates (`fungi` for yeast). Where Ensembl
+  has no Compara set with suitable species for an organism, the site leaves the block out and has neither card.
+- `species`: Ensembl species names with the label shown, in the order shown. For each, the orthologue with the highest
+  identity is used, with Ensembl's pairwise protein alignment.
+- `similar`: residue letters shown as a conservative change (they do not count as kept). Optional.
+- `logo`: offer the selection's alignment and logo (needs `website.search.patterns`). Optional.
+
+The residues compared are the profile's (`D.residues`): a mark is kept in a species when that species' aligned residue
+equals the human residue at the mark; the marks are compared with the protein's other residues of the profile's
+letters, each counted once, by the means of their shares and a two-sided Wilcoxon rank-sum test.
 
 ## Structure evidence
 
