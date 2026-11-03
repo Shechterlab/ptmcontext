@@ -17,7 +17,6 @@ FORMATS: dict[str, dict] = {
     'site_values': {'key': 'site', 'free': True},
     'site_table': {'key': 'site', 'free': True},
     'protein_values': {'key': 'accession', 'free': True, 'optional': ['aliases']},
-    'protein_records': {'key': 'accession', 'free': True},
     'lookup': {'key': 'key', 'free': True},
     'site_evidence': {'key': 'site', 'required': ['kind'], 'optional': ['partner', 'partner_accession', 'ids', 'score', 'detail']},
     'bound_windows': {'key': 'site', 'required': ['window', 'kind'],
