@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "One proteome background, many units and marks: the Shechter lab's shared model of the human proteome (sequence, regions, domains, modifications) and the tests and release format built on it"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-dependencies = ["numpy>=1.24", "pandas>=2.0", "scipy>=1.10", "statsmodels>=0.14", "jsonschema>=4.0", "pyyaml>=6.0"]
+dependencies = ["numpy>=1.24", "pandas>=2.0", "scipy>=1.10", "statsmodels>=0.14", "jsonschema>=4.0", "pyyaml>=6.0", "ptmstats>=0.1"]
 
 [project.optional-dependencies]
 test = ["pytest>=7"]
@@ -23,4 +23,4 @@ packages = ["ptmcontext", "ptmcontext.layers", "ptmcontext.web"]
 ptmcontext = ["profiles/*.yaml", "schemas/*.json", "config/*.json", "web/*.html", "web/assets/*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "packages/ptmstats/tests"]

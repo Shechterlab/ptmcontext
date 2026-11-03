@@ -18,6 +18,8 @@ from importlib import resources
 from pathlib import Path
 from urllib.parse import quote
 
+import ptmstats
+
 from .. import __version__
 from .. import layers as L
 from .. import statistics as ST
@@ -44,6 +46,8 @@ DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
 def _asset(name: str) -> Path:
+    if name == 'assets/kit-stats.js':  # the statistics are the package ptmstats' ptmstats.js
+        return Path(ptmstats.js_path())
     return Path(str(resources.files('ptmcontext') / 'web' / name))
 
 

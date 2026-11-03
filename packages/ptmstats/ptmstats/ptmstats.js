@@ -1,4 +1,4 @@
-/* Statistics in the browser, for a selection: the same tests as ptmcontext/stats.py and set_tests.py, so that a
+/* Statistics in the browser, for a selection: the same tests as the Python module ptmstats, so that a
    selection made on the page is tested as the site's own rows were.
      mh(tables)       Mantel–Haenszel odds ratio over strata [a, b, c, d] (each protein a stratum), its
                       Robins–Breslow–Greenland 95% CI and the continuity-corrected CMH p (bracket floored at 0)
@@ -6,7 +6,7 @@
      hyperSF(k,N,M,n) P(X >= k) for the hypergeometric (one-sided enrichment test, as clusterProfiler's enricher)
      bh(ps)           Benjamini–Hochberg q values; null stays null
    Exact to about 1e-10 relative against SciPy over the counts a site has; results computed here are labelled as
-   retested on the selection, never as the site's published rows. A module of the site kit. */
+   retested on the selection, never as the site's published rows. Plain JavaScript, no build step; ptmcontext's site kit loads it as kit-stats.js. */
 (function () {
   const K = window.PTMC_STATS = {};
   // log Γ (Lanczos, g = 7): accurate to ~1e-15 relative for the arguments used here

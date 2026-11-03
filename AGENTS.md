@@ -19,7 +19,7 @@ Start with [ADDING_DATA.md](ADDING_DATA.md) to add data, [ARCHITECTURE.md](ARCHI
 Run before every commit:
 
 ```bash
-pip install -e ".[test]"
-ruff check ptmcontext tests --select E,F,W --ignore E501
+pip install -e packages/ptmstats -e ".[test]"
+ruff check ptmcontext tests packages --select E,F,W --ignore E501
 pytest -q                       # the parity test needs the inputs: set PTMCONTEXT_ROOT
 ```

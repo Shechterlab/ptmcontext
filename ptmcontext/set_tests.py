@@ -33,7 +33,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy.stats import hypergeom
 
 from . import stats
 
@@ -502,7 +501,7 @@ def enricher(targets: set, universe: set, pairs: pd.DataFrame, whole_universe: b
     for s, genes in members.items():
         k, M = len(genes & hits), len(genes)
         if k and min_size <= M <= max_size:
-            rows.append({'set': s, 'k': k, 'n': n, 'M': M, 'N': N, 'fold': (k / n) / (M / N), 'p': float(hypergeom.sf(k - 1, N, M, n))})
+            rows.append({'set': s, 'k': k, 'n': n, 'M': M, 'N': N, 'fold': (k / n) / (M / N), 'p': stats.hypergeom_sf(k, N, M, n)})
     out = pd.DataFrame(rows, columns=['set', 'k', 'n', 'M', 'N', 'fold', 'p'])
     out['q'] = stats.benjamini_hochberg(out['p']) if len(out) else []
     return out

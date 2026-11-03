@@ -63,8 +63,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: pip install -e ".[test]" ruff
-      - run: ruff check ptmcontext tests --select E,F,W --ignore E501
+      - run: pip install -e packages/ptmstats -e ".[test]" ruff
+      - run: ruff check ptmcontext tests packages --select E,F,W --ignore E501
       - run: pytest -q
         env:
           PTMCONTEXT_ROOT: reference

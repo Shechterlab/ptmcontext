@@ -1,5 +1,4 @@
-"""The browser's statistics (web/assets/kit-stats.js), which test a selection again, equal the kit's own (stats.py,
-set_tests.py) on random tables. Needs Node; skipped without it."""
+"""ptmstats.js equals the Python module on random tables, and both equal SciPy / statsmodels. Needs Node; skipped without it."""
 import json
 import shutil
 import subprocess
@@ -9,9 +8,9 @@ import numpy as np
 import pytest
 from scipy.stats import hypergeom
 
-from ptmcontext import stats
+import ptmstats as stats
 
-JS = Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets' / 'kit-stats.js'
+JS = Path(__file__).resolve().parents[1] / 'ptmstats' / 'ptmstats.js'
 
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
