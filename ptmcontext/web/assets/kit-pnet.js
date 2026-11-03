@@ -517,7 +517,7 @@
   }
   function ccFold(p, rec, fold) {
     if (!LN.length || !rec) return '';
-    return fold('p-cc', 'Interaction evidence', `${LN.length} kinds of evidence, site by site`, `<div class="card-head"><p class="sub">Each ${esc(W.mark)} above the interaction evidence at the same residue. Solid: observed; hollow: predicted only. A dot opens its site.</p>` +
+    return fold('p-cc', 'Interaction evidence', `${LN.length} types of evidence, site by site`, `<div class="card-head"><p class="sub">Each ${esc(W.mark)} above the interaction evidence at the same residue. Solid: observed; hollow: predicted only. A dot opens its site.</p>` +
       `${K.expBar(['svg', 'png'], 'ccexp', 'the evidence summary')}</div><div class="pn-cc" id="pn-cc" data-acc="${esc(p.acc)}" style="aspect-ratio:900/${ccH()}"><p class="muted pn-msg">Loading…</p></div>`, true);
   }
   function ccMount() {

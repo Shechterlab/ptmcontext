@@ -92,7 +92,7 @@ marks:
       values: {Rme1: Monomethyl (Rme1), Rme2: Dimethyl (Rme2), Rme1_Rme2: Mono- and dimethyl, "": No assigned state}
       colour: true
       filter: true
-      help: The methylation state the studies report for the site; Rme2 is dimethylarginine, asymmetric or symmetric not resolved
+      help: Methylation state reported for the site. Rme2 is dimethylarginine, asymmetric or symmetric unresolved
     studies:
       column: studies
       provenance: true                       # how the site was found, not what it is
@@ -319,7 +319,7 @@ marks:
       separator: "; "
       control: select
       filter: true
-      help: "The kinds of evidence that the site meets a partner: crosslinks and RNA-bound peptides in cells, PDB interfaces, predicted complexes and IntAct records"
+      help: "Evidence that the site contacts a partner: crosslinks and RNA-bound peptides in cells, PDB interfaces, predicted complexes and IntAct records"
       values:
         rna_crosslink: RNA-crosslinked residue
         rbdmap_fragment: RBDmap RNA-bound fragment
@@ -387,7 +387,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: panther_group
     test: protein_sets
     title: Protein classes (PANTHER), grouped
-    question: "Which kinds of protein hold more methylated proteins than expected?"
+    question: "Which protein classes hold more methylated proteins than expected?"
     sub: "Methylated proteins against the reviewed human proteome, by PANTHER protein class (grouped); every protein is in one group (one-sided hypergeometric test)"
     section: Protein classes and pathways
     sets:
@@ -500,7 +500,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Disease Ontology
     question: "Which Disease Ontology terms hold more genes of methylated proteins than expected?"
-    sub: "Genes of methylated proteins vs all reviewed human genes with a Disease Ontology term, every term of at least 10 genes; a term holds the genes of the terms under it (one-sided hypergeometric test, as DOSE's enrichDO). Association, not causation"
+    sub: "Genes of methylated proteins vs all reviewed human genes with a Disease Ontology term, every term of at least 10 genes; a term includes the genes of its child terms (one-sided hypergeometric test, as DOSE's enrichDO). Association, not causation"
     section: Protein classes and pathways
     identifiers:
       noun: gene
@@ -676,8 +676,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_region_hpa
     test: protein_sets
     title: Regions of the cell (Human Protein Atlas)
-    question: "Where do methylated proteins sit in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
-    sub: "Methylated proteins against the other proteins with a Human Protein Atlas location (Approved or better), its locations gathered into three regions of the cell; cilia and sperm structures in none (one-sided hypergeometric test)"
+    question: "Where do methylated proteins localise in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Methylated proteins against the other proteins with a Human Protein Atlas location (Approved or better), with locations grouped into three regions of the cell (cilia and sperm structures are in none) (one-sided hypergeometric test)"
     section: Where in the cell
     sets:
       input: hpa
@@ -692,7 +692,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_region_hcm
     test: protein_sets
     title: Regions of the cell (Human Cell Map)
-    question: "Where do methylated proteins sit in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    question: "Where do methylated proteins localise in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Where in the cell
     sets:
@@ -707,8 +707,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_region_organelle_ip
     test: protein_sets
     title: Regions of the cell (organelle IP)
-    question: "Where do methylated proteins sit in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
-    sub: "Methylated proteins against the other proteins organelle IP classifies (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
+    question: "Where do methylated proteins localise in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Methylated proteins against the other proteins classified by organelle IP (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Where in the cell
     sets:
       input: organelle_ip
@@ -718,12 +718,12 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       families: {rules: sites/data/methylarginine_cell_regions.yaml}
     whole_universe: true
     min_size: 5
-    background: "the other proteins organelle IP classifies (HEK293T). A region is the Organelle IP it holds (scripts/cell_maps.py, REGION_OF)"
+    background: "the other proteins classified by organelle IP (HEK293T). A region is the Organelle IP it holds (scripts/cell_maps.py, REGION_OF)"
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_hcm_compartment
     test: protein_sets
     title: Human Cell Map compartments
-    question: "Where do methylated proteins sit in the cell, by the Human Cell Map's compartments?"
+    question: "Where do methylated proteins localise in the cell, by the Human Cell Map's compartments?"
     sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID from 192 baits; Go et al. 2021), by NMF compartment (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: hcm, set: nmf_compartment, protein: canonical_UniProtAC}
@@ -734,7 +734,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_hcm_domain
     test: protein_sets
     title: Human Cell Map domains
-    question: "Where do methylated proteins sit in the cell, by the Human Cell Map's finer domains?"
+    question: "Where do methylated proteins localise in the cell, by the Human Cell Map's finer domains?"
     sub: "Methylated proteins against the other proteins the Human Cell Map places in a SAFE domain (HEK293 BioID; Go et al. 2021), domain by domain (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: hcm, set: safe_domain, protein: canonical_UniProtAC, exclude: [{column: safe_domain, equals: ""}]}
@@ -746,12 +746,12 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Organelle IP
     question: "Which organelles are methylated proteins enriched in, by organelle immunoprecipitation?"
-    sub: "Methylated proteins against the other proteins organelle IP classifies (HEK293T; Hein et al. 2025), cluster by cluster (one-sided hypergeometric test)"
+    sub: "Methylated proteins against the other proteins classified by organelle IP (HEK293T; Hein et al. 2025), cluster by cluster (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: organelle_ip, set: compartment, protein: canonical_UniProtAC, exclude: [{column: compartment, equals: unclassified}]}
     whole_universe: true
     min_size: 5
-    background: the other proteins organelle IP classifies (HEK293T)
+    background: the other proteins classified by organelle IP (HEK293T)
     labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granule,
              p-body: P-body, actin_cytoskeleton: Actin cytoskeleton, centrosome: Centrosome, proteasome: Proteasome,
              14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
@@ -784,7 +784,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Bound RNAs by APEX-seq
     question: "Where do the RNAs that methylated proteins bind gather in the cell, by APEX-seq?"
-    sub: "Proteins with eCLIP data whose bound RNAs gather in a compartment that APEX-seq maps (HEK293T; Fazal et al. 2019), methylated against the others (one-sided hypergeometric test)"
+    sub: "Proteins with eCLIP data whose bound RNAs localise to an APEX-seq compartment (HEK293T; Fazal et al. 2019), methylated against the others (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: apexseq}],
            member_when: [{column: gathers, equals: "true"}]}
@@ -797,7 +797,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Bound RNAs by TSA-seq
     question: "Do the RNAs that methylated proteins bind come from genes near nuclear speckles?"
-    sub: "Proteins with eCLIP data whose bound RNAs come from genes TSA-seq places near nuclear speckles (K562; Chen et al. 2018), methylated against the others (one-sided hypergeometric test)"
+    sub: "Proteins with eCLIP data whose bound RNAs come from genes near nuclear speckles by TSA-seq (K562; Chen et al. 2018), methylated against the others (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: tsaseq}],
            member_when: [{column: gathers, equals: "true"}]}
@@ -825,7 +825,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Cancer cell dependency
     question: "Do cancer cell lines depend on these proteins more than on others? (DepMap CRISPR screens)"
-    sub: "DepMap Public 24Q4 dependency classes, methylated proteins vs all screened reviewed proteins (one per gene); how much 1,178 cancer cell lines depend on them in CRISPR knockout screens. Cancer cell genetics, not evidence about methylation (one-sided hypergeometric test)"
+    sub: "DepMap Public 24Q4 dependency classes, methylated proteins vs all screened reviewed proteins (one per gene); the dependency of 1,178 cancer cell lines on them in CRISPR knockout screens. Cancer genetics, not evidence about methylation (one-sided hypergeometric test)"
     section: Disease and cancer
     sets:
       input: depmap_genes
@@ -882,7 +882,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: pdb_interface
     title: PDB interfaces
     question: "Are methylarginines at interfaces in experimental structures?"
-    sub: "Methylarginines against the other arginines of the same proteins that a PDB structure observes, at a PDBe-KB interface with RNA, DNA, a protein or any partner; all, ordered (outside UniProt disordered regions) and in domains"
+    sub: "Methylarginines against the other arginines of the same proteins observed in a PDB structure, at a PDBe-KB interface with RNA, DNA, a protein or any partner; all, ordered (outside UniProt disordered regions) and in domains"
     section: Interactions and binding
     counting: every_candidate
     candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
@@ -1032,7 +1032,7 @@ proteins:                  # the release's protein table: facts of each methylat
     dense_sites: {column: best_window_sites, label: Sites in the densest window, kind: number}
     architecture: {column: architecture_class, label: Clustered architecture, kind: category,
                    values: {"broad across IDR": Broad across an IDR, "domain-distal clustered": Domain-distal clusters, "domain-proximal clustered": Domain-proximal clusters},
-                   help: "How the protein's clustered disordered sites (at least 3 within 20 residues) sit against its domains"}
+                   help: "How the protein's clustered disordered sites (at least 3 within 20 residues) lie relative to its domains"}
     dense_q: {column: best_window_q, label: Protein has a significant dense region, kind: number, levels: [0.05, 0.01], direction: max,
               help: "q of the protein's most significant cluster of methylarginines (permutation test against the protein's own arginines)"}
     string_partners: {column: n_string_partners, label: STRING physical partners, kind: number, help: "STRING physical associations at score 0.7 or more"}
@@ -1089,7 +1089,7 @@ variants:                # the same questions on other marks; ptmc run --variant
         values: {"no": Site, "yes": Lower-confidence site}
         colours: {"no": "#334155", "yes": "#C9A227"}
         filter: true
-        help: "A lower-confidence site: an arginine a study reports as methylated whose records each fail a site test, counted here because its own evidence covers the arginine and leaves the methyl group on an arginine"
+        help: "A lower-confidence site: an arginine a study reports as methylated whose records each fail a site test, counted here because the evidence covers the arginine and leaves the methyl group on an arginine"
       # the site tests of the record that passes most (the release's test_* columns), for the "lower confidence" tag's
       # hover (website.shown_marks.tests); no kind, so neither a filter nor a question of the page
       test_evidence: {column: test_evidence_at_site, label: Evidence at the site, values: {pass: passes, fail: fails, untested: untested}}
@@ -1126,7 +1126,7 @@ website:                  # the look and words of the website (ptmc web); layout
     share: {analysis: disorder, classes: [disordered, disorder_boundary, ordered], labels: {disordered: in disordered regions (IDRs), disorder_boundary: next to an IDR, ordered: in ordered regions}}
     findings: [{analysis: motif, class: RGG}, {analysis: panther_group, class: RNA processing and translation}, {analysis: disorder, class: ordered}]
     protein: FUS
-    text: "Human arginine methylation sites from published studies and databases: where they fall, on which proteins, in which diseases. Each tile is one question, comparing the methylarginines with the other arginines of the same proteins. Search a protein, a gene list or a disease to test your own selection."
+    text: "Human arginine methylation sites from published studies and databases: their positions, proteins and disease links. Each tile is one question, comparing the methylarginines with the other arginines of the same proteins. Search a protein, a gene list or a disease to test your own selection."
     examples:
       - {label: A list of genes, query: TAF15 EWSR1 FUS, help: "Every question is tested again on their methylarginines."}
       - {label: A disease, query: "disease_family:ALS", help: "Methylarginines on proteins linked to a disease family, and what sets them apart."}
@@ -1151,7 +1151,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - {label: proteins with dense clusters, query: "f=r:dense_q~0.05", view: proteins}
     sections:
       - name: Disease and cancer
-        about: "Which kinds of disease the methylated proteins are linked to."
+        about: "Diseases linked to the methylated proteins."
         show: 1
         more: More on disease
         cards:
@@ -1193,14 +1193,14 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: depmap_dependency, title: Cancer cell dependency}
           - {analysis: cancer_change, title: Changes in tumours and cell lines}
       - name: Protein classes and pathways
-        about: "The kinds of protein and the pathways that carry methylated arginines."
+        about: "Protein classes and pathways of the methylated proteins."
         cards:
           - {analysis: panther_group, title: Protein classes}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
       - name: Where in the cell
-        about: "Which parts of the cell the methylated proteins sit in."
+        about: "Where in the cell the methylated proteins localise."
         #  its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
         cards:
           - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
@@ -1224,22 +1224,22 @@ website:                  # the look and words of the website (ptmc web); layout
         #  counted, not tested (website.counts)
         cards: [provenance]
       - name: More questions
-        about: "Further classes, pathways, maps of the cell and of RNA contacts, each its own question."
+        about: "Further protein classes, pathways, cell maps and RNA-contact maps, one question each."
         cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)},
                 {analysis: hpa_location, title: Human Protein Atlas locations}, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin,
                 eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, disorder, domain_context]
   cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
     id: where_in_the_cell
     title: Where in the cell
-    question: "Where do methylated proteins sit in the cell?"
+    question: "Where do methylated proteins localise in the cell?"
     intro: "Five maps from four studies place proteins in the cell, by imaging, proximity labelling, organelle pull-down and chromatin fractionation."
     note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose licence (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map, pending their licence. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
     maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
       - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
-         how: "antibody staining in many cell lines; locations of approved or better reliability holding 20 or more proteins",
+         how: "antibody staining in many cell lines; locations of Approved or better reliability with 20 or more proteins",
          ref: HPA 25.1, doi: 10.1126/science.aal3321, url: "https://www.proteinatlas.org/humanproteome/subcellular", licence: CC BY 4.0, min_members: 20}
       - {analysis: cell_hcm_compartment, regions: cell_region_hcm, name: Human Cell Map, short: Cell Map, method: Proximity labelling, cells: HEK293,
-         how: "proximity labelling from 192 baits; each protein sits in the compartment whose baits label it most",
+         how: "proximity labelling from 192 baits; each protein is assigned to the compartment whose baits label it most",
          ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
       - {analysis: cell_hcm_domain, name: "Human Cell Map, finer domains", short: Cell Map domains, method: Proximity labelling, cells: HEK293,
          how: "the same map at a finer scale: neighbourhoods of proteins that label one another (SAFE domains)",
@@ -1342,7 +1342,7 @@ website:                  # the look and words of the website (ptmc web); layout
       group: Methyl-IP
       calls: {down: decreased, up: increased}
       note: "Rows count the methylarginines an experiment measured and those that changed. A site is decreased when a peptide carrying it went down and none went up, and increased for the reverse. A peptide with several methylarginines gives each the same change. Maron rows: sites measured in that methyl-IP, with a peptide changing at adjusted p ≤ 0.05. CARM1 knockout rows: sites measured in that cell line, with a peptide changing at least twofold at BH q < 0.05. Other rows: sites quantified, called at twofold and q < 0.05, or by the published call where the row says so (the PRMT1 knockdown, 2 against 2 samples, and the Li et al. 2021 arms, one SILAC experiment each, untested). The Li et al. PRMT5 knockdown lists only decreased sites. Median change is the median over sites of each site's median log2 change (inhibitor minus DMSO for Maron rows, perturbed over control for the rest)."
-      method: "The release's supporting tables give each site's call and change per experiment: maron2021_inhibitors (Maron et al. 2021 Table S3), carm1_ko (Shishkova et al. 2017) and writer_perturbations. The calls of the last two are the site table's perturbation_calls (the perturbation filter). Counts and medians describe; nothing here is a test."
+      method: "The release's supporting tables give each site's call and change per experiment: maron2021_inhibitors (Maron et al. 2021 Table S3), carm1_ko (Shishkova et al. 2017) and writer_perturbations. The calls of the last two are the site table's perturbation_calls (the perturbation filter). Counts and medians are descriptive. No test is run here."
       rows:
         - {name: GSK591, note: PRMT5 inhibitor, group: Rme1, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: MMA}, change: log2_diff_median}
         - {name: GSK591, note: PRMT5 inhibitor, group: Rme2a, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: ADMA}, change: log2_diff_median}
@@ -1358,7 +1358,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - {name: "PRMT7 KD, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: prmt7_kd_hek293, table: writer_perturbations, where: {perturbation: prmt7_kd_hek293}, change: log2_treated_over_control}
         - {name: "PRMT7i SGC3027, HEK293", note: "Li WJ et al. 2021 · published call", kind: inhibitor, attribute: perturbation, value: prmt7i_sgc3027_hek293, table: writer_perturbations, where: {perturbation: prmt7i_sgc3027_hek293}, change: log2_treated_over_control}
         - {name: "CARM1 KD, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: carm1_kd_hek293, table: writer_perturbations, where: {perturbation: carm1_kd_hek293}, change: log2_treated_over_control}
-        - {name: "PRMT5 KD, HEK293", note: "Li WJ et al. 2021 · published call; lists its decreased sites only", kind: knockdown, listed: true, attribute: perturbation, value: prmt5_kd_hek293, table: writer_perturbations, where: {perturbation: prmt5_kd_hek293}, change: log2_treated_over_control}
+        - {name: "PRMT5 KD, HEK293", note: "Li WJ et al. 2021 · published call; decreased sites only", kind: knockdown, listed: true, attribute: perturbation, value: prmt5_kd_hek293, table: writer_perturbations, where: {perturbation: prmt5_kd_hek293}, change: log2_treated_over_control}
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change], attributes: [tcga_any, depmap_any]}
     - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, reactome_top_level], proteins: [marks, arg_enrichment_q]}
@@ -1616,7 +1616,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: ix, label: Interaction evidence, show: [status, tags], default: true,
          help: "Experimental: an RNA or DNA crosslink at the residue, an RBDmap fragment covering it, or a PDB interface. Predicted only: an AlphaFold-Multimer interface or a confident predicted contact. Click a tag for the tables"}
       - {id: na, label: RNA/DNA contacts, menu: "RNA/DNA contacts (structures) and crosslinks (cells)", show: [sequences, around], sort: [nucleic_acid, evidence], default: true, hide: xs,
-         help: "RNA or DNA within 4 Å of the side chain in PDB structures, within 8 Å in a complex without direct contact, or touching a residue at i ± 1–5; and UV-crosslinked residues and RNA-bound stretches within i ± 3 in living cells. Hover a cell for the sequences"}
+         help: "RNA or DNA within 4 Å of the side chain in PDB structures (within 8 Å, or at a residue i ± 1–5, without direct contact), or UV-crosslinked or RNA-bound within i ± 3 in cells. Hover for sequences"}
       - {id: prmt, label: PRMT perturbation, menu: "PRMT inhibitors, knockouts and knockdowns", show: [calls], sort: [gsk591, ms023, perturbation], default: true,
          help: "Change after GSK591 (PRMT5i) or MS023 (type I PRMTi), Maron 2021 Table S3, adj. p ≤ 0.05, or in the release's knockouts, knockdowns and inhibitors by the rule each names"}
       - {id: src, label: Reported by, attribute: studies, default: true, hide: sm}
@@ -1884,7 +1884,7 @@ website:                  # the look and words of the website (ptmc web); layout
         title: Methylation experiments
         table: experiments
         sub: "Curated from the papers: what was done, what was measured and what changed. Kept apart from the site table and every statistic."
-        note: "The table is in the release (supporting/functional_experiments). The curation is small and growing; a protein without rows has not been curated, not shown to lack experiments."
+        note: "The table is in the release (supporting/functional_experiments). The curation is small and growing. A protein without rows is not yet curated, which does not mean it lacks experiments."
       clustering:
         title: Clustering
         table: clusters
@@ -2032,7 +2032,7 @@ website:                  # the look and words of the website (ptmc web); layout
         sentences:
           experimental: This arginine has experimental interaction evidence.
           experimental_pred: This arginine has experimental interaction evidence and is also at a predicted interface.
-          predicted_only: Predicted to sit at a protein interface; no experimental interaction evidence recorded yet.
+          predicted_only: Predicted to lie at a protein interface. No experimental interaction evidence recorded yet.
           none: No interaction evidence is recorded at this residue. Most proteins were never crystallised, crosslinked or mutated, so this does not show there is none.
         tags:
           attribute: evidence
@@ -2109,7 +2109,7 @@ website:                  # the look and words of the website (ptmc web); layout
           binds_unmodified: structures that model an unmodified arginine here (PDBe-KB interface)
           binds_other_residue: "structures with another residue here: a mutated construct or a natural variant"
           binds_state_not_read: PDBe-KB places an interface here, but the entry's sequence could not be matched to the site
-          binds_region: IntAct binding regions of at most 20 residues; whether the site was methylated is not recorded
+          binds_region: IntAct binding regions of at most 20 residues. Whether the site was methylated is not recorded
           other_reaction: IntAct reactions that IntAct does not place at this residue
           nucleic_acid: contacts in structures, crosslinks and RNA-bound peptides in cells, UniProt DNA-binding regions
           not_a_protein: "IntAct: a gene locus in chromatin immunoprecipitation, or a small molecule"
@@ -2152,11 +2152,11 @@ website:                  # the look and words of the website (ptmc web); layout
           sequence_position_verified: Reported position is an arginine inside the matching peptide
           sequence_unique_canonical: Peptide fits one place in the canonical sequence
           sequence_unique_candidate: Peptide fits one place (reported on another isoform)
-          sequence_closest_supported: Peptide fits several places; the nearest supported position is used
-          same_accession_evidence_near_match: Peptide or window not in the current sequence; matched within 2 residues of the reported arginine
-          canonical_evidence_near_match: Peptide or window not in the current sequence; matched within 2 residues of the reported arginine
+          sequence_closest_supported: Peptide fits several places. The nearest supported position is used
+          same_accession_evidence_near_match: Peptide or window not in the current sequence. Matched within 2 residues of the reported arginine
+          canonical_evidence_near_match: Peptide or window not in the current sequence. Matched within 2 residues of the reported arginine
         warn: [sequence_closest_supported, same_accession_evidence_near_match, canonical_evidence_near_match]
-        tables: {maron2021_s5: via Maron et al. 2021 Table S5 (compiled sites), prometheusdb_mmc2: ProMetheusDB supplementary table mmc2}
+        tables: {maron2021_s5: from Maron et al. 2021 Table S5 (compiled sites), prometheusdb_mmc2: ProMetheusDB supplementary table mmc2}
       tables:              # site_table tables shown in the Evidence row, each with its words
         - table: inhibitors
           title: PRMT inhibitor response
@@ -2364,7 +2364,7 @@ website:                  # the look and words of the website (ptmc web); layout
             include: [{column: evidence_type, equals: predicted_interface}]
           mark: pred
           value: {one: "with up to {n} partner", many: "with up to {n} partners", opacity: [1, 5]}
-          key: "Protein contact (predicted; darker: more partners)"
+          key: "Protein contact (predicted; darker with more partners)"
           colour: "#0E7490"
           colour_dark: "#3FB5CF"
         - id: lower_confidence
@@ -2389,7 +2389,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - id: interactions
       tab: Interactions
       title: Are methylarginines enriched at contacts with RNA, DNA or other proteins?
-      sub: "Each methylarginine against the other arginines of its own protein that the evidence could reach: in living cells (crosslinks and RNA-bound peptides), in solved structures and in predicted complexes; and the proteins and partners that carry them."
+      sub: "Each methylarginine against the other arginines of its protein that the evidence could reach, in living cells (crosslinks and RNA-bound peptides), in solved structures and in predicted complexes. Also the proteins and partners with such evidence."
       method: |
         Each residue test compares the methylarginines with the other arginines of the same proteins, as the release does, but each against the arginines its evidence could have reached: the proteins with that kind of evidence, the residues a PDB structure observed (SIFTS), or the residues an experiment measured. Within each protein: a Mantel–Haenszel odds ratio with its 95% CI, each protein a stratum; pooled: Fisher's exact test. In these questions every candidate arginine counts in the pooled test, as in the release. q is Benjamini–Hochberg within each question and test.
 
@@ -2439,7 +2439,7 @@ website:                  # the look and words of the website (ptmc web); layout
         tf_family: {label: Family}
         matrix_id: {label: JASPAR profile}
       answer:
-        more: "In living cells, {marks} sit {list} more often than the other {residues} of the same proteins."
+        more: "In living cells, {marks} are found {list} more often than the other {residues} of the same proteins."
         none: "In living cells, {marks} are not enriched at RNA or DNA contacts."
         rows:
           - {analysis: crosslink, category: capri_adj_peptide_among_measured, phrase: in RNA-bound peptides}
@@ -2524,13 +2524,13 @@ website:                  # the look and words of the website (ptmc web); layout
                 - {kind: shares, attribute: interaction, title: Interaction evidence at the site}
                 - kind: combinations
                   attribute: evidence
-                  title: Which kinds of evidence each site carries
-                  sub: "Each column a kind of evidence; each row a combination, with its sites. Click a total or a row to select them."
+                  title: Types of evidence per site
+                  sub: "Columns are evidence types, rows are combinations. Click a total or a row to select its sites."
                   values: [rna_crosslink, rbdmap_fragment, capri_adj_peptide, capri_xl_peptide, pclap_peptide, rbrid_residue, dna_crosslink, pdb_rna, pdb_dna, pdb_protein, intact_mutation, intact_binding_region, intact_methylated, predicted_interface, predicted_contact]
                   top: 15
             - id: ix-cm
               title: Which sites carry which evidence
-              question: Do sites with a feature (motif, disorder, methylation class) carry a kind of evidence more often? Check one site.
+              question: Do sites with a feature (motif, disorder, methylation class) have a type of evidence more often? Check one site.
               tile: 0
               blocks:
                 - kind: matrix
@@ -2552,7 +2552,7 @@ website:                  # the look and words of the website (ptmc web); layout
                 - {kind: checker, title: Check one site, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], tables: [interactions]}
             - id: ix-ex
               title: The evidence on one protein
-              question: What the evidence looks like along one protein; type any protein to redraw it.
+              question: Evidence along one protein. Type any protein to redraw it.
               place: top
               blocks:
                 - {kind: example, protein: HNRNPA1, tracks: [rna_cells, rbrid, dna_cells, intact, predicted]}

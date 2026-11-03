@@ -563,7 +563,7 @@
     return K.figureFrame({ title, sub, W: Math.round(f.W * s) + 40, body: `<g transform="translate(20,0) scale(${s})">${inlined(f)}</g>`, bodyH: f.H * s,
       note: note || `${keyWords()} ${testWords()}`, extra: { question: ID } });
   }
-  const keyWords = () => `Red: ${who(scopedNow())} are more likely to sit there than ${alike}. Slate: less likely, deeper for larger odds ratios. Grey: no clear difference, or the maps disagree. Dashed outline: no map measures it.`;
+  const keyWords = () => `Red: ${who(scopedNow())} are more likely to be found there than ${alike}. Slate: less likely, deeper for larger odds ratios. Grey: no clear difference, or the maps disagree. Dashed outline: no map measures it.`;
   const testWords = () => (allStrat ? `In each map, ${who(scopedNow())} against ${alike}: Mantel–Haenszel odds ratio across the abundance strata, continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg within the map, coloured at q ≤ ${PADJ} and 1.1× or more. A part of a drawing takes the median odds ratio of the maps that place proteins there, coloured when at least half of them find a difference that way.`
     : `In each map, ${who(scopedNow())} against the other proteins the map places (fold enrichment, one-sided hypergeometric test, Benjamini–Hochberg within the map). A part takes the median of the maps that have it.`);
   const FIGS = {
@@ -592,8 +592,8 @@
       if (more.length || less.length) return cap((more.length ? 'more often in ' + and(more.map(one)) : '') + (more.length && less.length ? '. Less in ' : less.length ? 'less often in ' : '') + and(less.map(one))) + '.';
       return regs.length ? `About as often in each region as ${esc(alike)}.` : up.length ? `Most of all in ${and(up.slice(0, 3).map(one))}.` : none;
     }
-    let t = more.length || less.length ? `${cap(who(scoped))} sit ${more.length ? 'more often in ' + and(more.map(one)) : ''}${more.length && less.length ? ', and ' : ''}${less.length ? 'less often in ' + and(less.map(one)) : ''} than ${esc(alike)}${regs.some(x => x.cells.length > 1) ? ' (the median of the maps)' : ''}`
-      : regs.length ? `${cap(who(scoped))} sit in each region about as often as ${esc(alike)}` : '';
+    let t = more.length || less.length ? `${cap(who(scoped))} are found ${more.length ? 'more often in ' + and(more.map(one)) : ''}${more.length && less.length ? ', and ' : ''}${less.length ? 'less often in ' + and(less.map(one)) : ''} than ${esc(alike)}${regs.some(x => x.cells.length > 1) ? ' (the median of the maps)' : ''}`
+      : regs.length ? `${cap(who(scoped))} are found in each region about as often as ${esc(alike)}` : '';
     const most = up.slice(0, 3).map(one);
     if (most.length) t += t ? `. Within them, most of all in ${and(most)}` : `${cap(who(scoped))} are most enriched in ${and(most)}`;
     return t ? t + '.' : none;
@@ -649,8 +649,8 @@
     const [L, row] = UI.row ? rowOf(UI.row) : [null, null];
     if (!row) return '';
     const s = rowSummary(L, row, scoped), wh = who(scoped), sig = s.tone[0] === 'u' || s.tone[0] === 'd';
-    const verdict = sig ? `${cap(wh)} are <b>${s.tone[0] === 'u' ? 'more' : 'less'} likely</b> to sit here than ${esc(alike)} (${esc(orWords(s.a))}${s.cells.length > 1 ? ', the median of ' + s.maps : ''}).`
-      : s.tone === 'ns' ? (s.value === 'maps disagree' ? `The maps disagree. In some, ${esc(wh)} are more likely to sit here than ${esc(alike)}, in others less likely.` : `${cap(wh)} sit here about as often as ${esc(alike)}.`) : `No map compares ${esc(wh)} here.`;
+    const verdict = sig ? `${cap(wh)} are <b>${s.tone[0] === 'u' ? 'more' : 'less'} likely</b> to be found here than ${esc(alike)} (${esc(orWords(s.a))}${s.cells.length > 1 ? ', the median of ' + s.maps : ''}).`
+      : s.tone === 'ns' ? (s.value === 'maps disagree' ? `The maps disagree. In some, ${esc(wh)} are more likely to be found here than ${esc(alike)}, in others less likely.` : `${cap(wh)} are found here about as often as ${esc(alike)}.`) : `No map compares ${esc(wh)} here.`;
     const cols = L.cols.filter(aid => row.map[aid]);
     const two = (k1, n1, w1, k2, n2, w2) => `${int(k1)} of ${int(n1)} ${esc(w1)} (${pc(k1, n1)}%)<br>${int(k2)} of ${int(n2)} ${esc(w2)} (${pc(k2, n2)}%)`;
     const cmp = a => (!a || a.l2 == null ? '–' : `<b>${esc(orText(a))}</b>${a.lo != null && a.hi != null ? ` <span class="muted">(${K.fx(2 ** a.lo)}–${K.fx(2 ** a.hi)})</span>` : ''}, q ${fq(a.q)} · ${esc(MARK[markOf(a)]?.[1] || '')}`);
@@ -674,13 +674,13 @@
     const at = UI.row ? UI.at : null, dt = () => detail(scoped);
     const regionsBlock = LAYERS.region.groups.length ? block('regions', C.regions_title || 'Regions of the cell', 'cell-regions') + (at === 'regions' ? dt() : '') : '';
     const drawings = DRAWINGS.map(d => block(d.drawing, d.title || d.drawing, 'cell-fig') + (at === d.drawing ? dt() : '')).join('');
-    const selNote = scoped ? ` Your selection is tested map by map: ${int(selTests(MAPS[0].analysis)?.n || 0)} of its proteins are placed by ${esc(DS(MAPS[0].analysis).name)}; each map counts its own.`
+    const selNote = scoped ? ` Your selection is tested map by map: ${int(selTests(MAPS[0].analysis)?.n || 0)} of its proteins are placed by ${esc(DS(MAPS[0].analysis).name)}; each map counts its own proteins.`
       : K.selOn() ? ` <b>Your selection</b> ${K.vsOn() ? 'is compared with other marks; the maps compare proteins, so this page shows' : 'is too small to test; this page shows'} all ${esc(W.marked)} proteins.` : '';
     const maps = MAPS.map(m => { const ds = DS(m.analysis); const bits = [ds.doi ? `<a href="https://doi.org/${esc(ds.doi)}" target="_blank" rel="noopener">${esc(ds.ref || ds.doi)}</a>` : esc(ds.ref || ''), esc(ds.cells || ''), esc(ds.licence || ''),
         ds.universe ? `${int(ds.universe)} proteins placed, ${pc(ds.marked, ds.universe)}% ${esc(W.marked)}` : '', `<a href="${esc(K.link('overview', m.analysis))}">its question</a>`].filter(Boolean);
       return `${esc(ds.name)} (${bits.join('; ')})`; }).join('; ');
     return `<div class="card-body cell-page"><p class="cell-lead">${lead(regs, up, scoped, false)}</p>` +
-      `<p class="small">${esc(C.intro || '')} Red: ${esc(who(scoped))} are more likely to sit there than ${esc(alike)}. Slate: less likely. Grey: no clear difference. Each map compares only the proteins it places.${selNote} Click a region, part, label or grid row for its numbers and proteins.</p>` +
+      `<p class="small">${esc(C.intro || '')} Red: ${esc(who(scoped))} are more likely to be found there than ${esc(alike)}. Slate: less likely. Grey: no clear difference. Each map compares only the proteins it places.${selNote} Click a region, part, label or grid row for its numbers and proteins.</p>` +
       colourKey() + regionsBlock + drawings + block('grid', 'Compartments against maps', 'cell-grid') + (at === 'grid' ? dt() : '') +
       `<div class="cell-block cell-one" id="cell-one"><div class="fig-head"><span class="flabel">One map at a time</span><span class="seg cell-maps" role="group" aria-label="Map">` +
       MAPS.map(m => `<button type="button" data-cellmap="${esc(m.analysis)}" aria-pressed="${m.analysis === UI.map}">${esc(m.short || m.name)}</button>`).join('') + '</span>' +

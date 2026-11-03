@@ -1108,7 +1108,7 @@ def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None,
     page = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Modifications in proteins · ptmcontext</title>
-<meta name="description" content="Websites, one per modification and proteome, that test where modification sites sit in proteins and which protein classes carry them.">
+<meta name="description" content="Websites, one per modification and proteome, that test where modification sites lie in proteins and which protein classes are enriched for them.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="{html.escape(FONTS['stylesheet'])}">
 <link rel="stylesheet" href="{html.escape(site_paths and load_site(site_paths[0])['id'])}/assets/kit.css">
@@ -1141,7 +1141,7 @@ def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None,
 </style></head>
 <body><a class="skip" href="#sites">Skip to the sites</a>
 <header class="hero"><div class="wrap"><div class="brand"><h1>Modifications in proteins</h1><div class="brand-side">{lab_html}</div></div>
-<div class="lede"><p class="lede-what">Position of each modification in proteins, and the proteins that carry it.</p></div></div></header>
+<div class="lede"><p class="lede-what">Position of each modification in proteins, and which proteins are modified.</p></div></div></header>
 <main class="wrap" id="sites">
 <h2 class="vh">The sites</h2>
 <div class="sites">{''.join(cards)}</div></main>

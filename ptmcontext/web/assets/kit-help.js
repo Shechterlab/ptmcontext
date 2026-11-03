@@ -25,7 +25,7 @@
   const isList = e => !isTerm(e) && !isSite(e) && /\s/.test(e.trim());
   const KIND = {
     list: ['A list of genes', `Paste gene names or accessions. Every question is tested again on their ${W.marks}.`],
-    term: ['A class or a term', `Select the ${W.marks} of one class (key:value) to see where they sit${SETQ ? ' and which proteins carry them' : ''}.`],
+    term: ['A class or a term', `Select the ${W.marks} of one class (key:value) to see where they lie${SETQ ? ' and which proteins have them' : ''}.`],
     site: [`One ${W.mark}`, `Open its protein at that ${W.mark}, with its regions, evidence and structures.`],
     one: ['One protein', `Open its page: its ${W.marks} on a map, the evidence for each, and its structures.`],
   };
@@ -40,7 +40,7 @@
   }
   const startButtons = cls => `<ol class="${cls}">${starts().map(x => `<li><button type="button" class="sp-start" data-try="${esc(x.query)}">` +
     `<span class="sp-label">${esc(x.label)}</span><span class="sp-q mono">${esc(x.query)}</span>${x.help ? `<span class="sp-help">${esc(x.help)}</span>` : ''}</button></li>`).join('')}</ol>`;
-  const whatText = (where = 'below') => D.start?.text || `${D.site.tagline ? D.site.tagline + ' ' : ''}Each tile ${where} is one question about where ${W.marks} sit${SETQ ? ' and which proteins carry them' : ''}, each compared with the other ${W.residues} of the same proteins. Search a protein, a gene list or a class to test your own selection.`;
+  const whatText = (where = 'below') => D.start?.text || `${D.site.tagline ? D.site.tagline + ' ' : ''}Each tile ${where} is one question about where ${W.marks} lie${SETQ ? ' and which proteins have them' : ''}, each compared with the other ${W.residues} of the same proteins. Search a protein, a gene list or a class to test your own selection.`;
 
   // ---- the start panel: on the Overview, until the reader hides it (remembered in this browser) ---------------------
   (K.overviewTop ||= []).push(() => {
@@ -97,7 +97,7 @@
       sec('h-compare', `<p>Under Compared with, the Overview compares your selection with the other ${esc(W.residues)} of the same proteins, with the other ${esc(W.marks)}, or with a saved selection. Each class shows your selection's share (filled) and the comparison's (hollow).</p>`) +
       sec('h-read', `<p>Each tile is a question and each row a class. The dot is the effect on a log scale with its 95% confidence interval, and 1× is no difference.</p>` +
         `<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and at least 1.1×</li><li><i class="kd less"></i> less often</li><li><i class="kd same"></i> about the same: significant, but within 1.1×</li><li><i class="kd ns"></i> no difference: q > 0.05</li></ul>` +
-        `<p>Within each protein compares each protein's ${esc(W.marks)} with the other ${esc(W.residues)} of the same protein. Across all proteins puts all the ${esc(W.residues)} together. The first separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}. ${SETQ ? `Questions about kinds of protein show the fold enrichment of ${esc(W.marked)} proteins in each set. ` : ''}Hover a row, or Tab to it, for its counts. Select a tile for every class, and a class to select its ${esc(W.marks)}.</p>` +
+        `<p>Within each protein compares each protein's ${esc(W.marks)} with the other ${esc(W.residues)} of the same protein. Across all proteins puts all the ${esc(W.residues)} together. The first separates where ${esc(W.marks)} lie from which proteins were found ${esc(W.marked)}. ${SETQ ? `Questions about protein classes show the fold enrichment of ${esc(W.marked)} proteins in each set. ` : ''}Hover a row, or Tab to it, for its counts. Select a tile for every class, and a class to select its ${esc(W.marks)}.</p>` +
         `<p class="gloss-line"><b>Terms.</b> ${['fold', 'odds ratio', 'q', 'within each protein', 'pooled', 'strata'].map(t => `<i>${esc(t)}</i>: ${esc(K.GLOSS[t])}`).join(' ')}</p>`) +
       sec('h-export', `<p>Figures download as PDF, SVG, PNG (300 dpi) or TSV, and tables as TSV. Each file carries its test, citation, sources, versions and export date, in the file's metadata or a TSV's <span class="mono">#</span> lines. The Method button beside a figure opens how it was made.</p>`) +
       sec('h-cite', `<p>${mlink('cite', 'How to cite')} has the citation, a copy button and CITATION.cff. Cite also the sources that report the ${esc(W.marks)} you use.</p>`) +
