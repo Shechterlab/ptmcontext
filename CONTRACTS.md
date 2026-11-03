@@ -459,6 +459,9 @@ questions of the card, that gather them; a term in none is "Other / unassigned")
 lacks is skipped. Without it the folds keep the page's own order. `sites/methylarginine.yaml` lists the explorer's order:
 `p-map`, `p-cc`, `p-ix`, `p-na`, `p-sites`, `p-score`, `p-pert`, `p-exp`, `p-struct`, `p-cond`, `p-dis`, `p-depmap`, `p-kinds`,
 `p-regions`, `p-cons`, `p-cluster`, `p-ptm`, `p-seq`.
+`website.protein.groups` gathers the folds under a few headings: a list of `{id: g-..., title, folds: [p-...]}`. Each group is a
+fold of its own that holds its folds in `order`, and "Open all" and "Close all" sit above them. A group starts open when one of its
+folds does; a fold no group lists follows the one before it; a fold in two groups is a `ptmc check` problem.
 `website.protein.open` lists the folds that start open (without it, each fold's own default: the map and the sites). A
 fold that shows live or optional data opens only when the protein has it: the orthologues (`p-cons`) when they arrive, the
 network (`p-ix`) when the site's partner table has partners. A reader's own opening or closing is kept.

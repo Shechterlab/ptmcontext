@@ -357,7 +357,7 @@
   // o.Wd lays the map out at another width (a narrow screen, a journal column); o.ex draws it for export, in light colours
   function draw(ctx, o = {}) {
     const ex = !!o.ex, Wd = o.Wd || 1000, narrow = Wd < 700;
-    const ML = narrow ? Math.min(110, Math.round(Wd * 0.3)) : 168, MR = narrow ? 14 : 18, X0 = ML, X1 = Wd - MR;
+    const ML = narrow ? Math.min(128, Math.round(Wd * 0.35)) : 168, MR = narrow ? 14 : 18, X0 = ML, X1 = Wd - MR;
     const P = pal(ex);
     const { p, rec, uni, af } = ctx, L = p.len, seq = rec.seq || '';
     const [za, zb] = M.zoom || [1, L], span = zb - za + 1;
@@ -421,6 +421,16 @@
       if (!aside) drawnRows.push(lab);
       cur = lab;
       const size = 11; let t = lab;          // track labels are never smaller than 11; one that does not fit is cut, its hover has the whole
+      if (narrow && K.tw(t, size, 600) > ML - 6) {   // a phone: the label wraps onto two lines at a space (the hover has the whole), the second cut only if it still does not fit
+        const cut = x => { while (x.length > 3 && K.tw(x + '…', 10, 600) > ML - 6) x = x.slice(0, -1); return x + '…'; };
+        const ws = lab.split(' '); let a = '', k = 0;
+        while (k < ws.length && K.tw((a ? a + ' ' : '') + ws[k], 10, 600) <= ML - 6) a += (a ? ' ' : '') + ws[k++];
+        const b0 = ws.slice(k).join(' ') || '', b = b0 && K.tw(b0, 10, 600) > ML - 6 ? cut(b0) : b0;
+        if (a && b) {
+          parts.push(`<text x="2" y="${r1(yMid - 1)}" font-size="10" font-weight="600" fill="${P.muted}"${ex ? '' : ` data-rowhelp="${esc(lab + ': ' + help)}"`}>${esc(a)}</text><text x="2" y="${r1(yMid + 10)}" font-size="10" font-weight="600" fill="${P.muted}">${esc(b)}</text>`);
+          return;
+        }
+      }
       if (K.tw(t, size, 600) > ML - 6) { while (t.length > 3 && K.tw(t + '…', size, 600) > ML - 6) t = t.slice(0, -1); t += '…'; }
       parts.push(`<text x="2" y="${r1(yMid + size * 0.36)}" font-size="${r1(size)}" font-weight="600" fill="${P.muted}"${ex ? '' : ` data-rowhelp="${esc(lab + ': ' + help)}"`}>${esc(t)}</text>`);
     };

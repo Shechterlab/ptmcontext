@@ -11,6 +11,19 @@
   const read = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
   const write = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage may be blocked */ } };
   const state = {}, defs = {}, open = new Set();
+  // Density of the tables: compact (one line a row; the default) or comfortable (wrapped chips); remembered in the browser.
+  const DK = 'ptmc-density';
+  let dens = 'compact';
+  try { if (localStorage.getItem(DK) === 'comfortable') dens = 'comfortable'; } catch (e) { /* storage may be blocked */ }
+  document.documentElement.dataset.density = dens;
+  const compact = () => dens === 'compact';
+  const densityBtn = () => `<button type="button" class="btn small density-btn" data-density aria-pressed="${compact()}" title="Table rows: compact (one line each) or comfortable (everything wrapped)">${compact() ? 'Compact' : 'Comfortable'} rows</button>`;
+  document.addEventListener('click', e => {
+    if (!e.target.closest?.('[data-density]')) return;
+    dens = compact() ? 'comfortable' : 'compact'; document.documentElement.dataset.density = dens;
+    try { localStorage.setItem(DK, dens); } catch (err) { /* storage may be blocked */ }
+    K.render();
+  });
   function on(table, cols, defaults) {
     defs[table] = defaults || [];
     if (!state[table]) {
@@ -26,10 +39,10 @@
   function menu(table, cols, defaults) {
     on(table, cols, defaults);
     const opt = (cols || []).filter(c => !c.fixed);
-    if (!opt.length) return '';
-    return `<details class="col-menu"${open.has(table) ? ' open' : ''} data-col-menu="${esc(table)}"><summary class="btn small">Columns</summary><div class="col-pop" role="group" aria-label="Optional columns">` +
+    if (!opt.length) return `<span class="tbl-opts">${densityBtn()}</span>`;
+    return `<span class="tbl-opts">${densityBtn()}` + `<details class="col-menu"${open.has(table) ? ' open' : ''} data-col-menu="${esc(table)}"><summary class="btn small">Columns</summary><div class="col-pop" role="group" aria-label="Optional columns">` +
       opt.map(c => `<label class="check"><input type="checkbox" data-col-table="${esc(table)}" data-col="${esc(c.id)}"${state[table].has(c.id) ? ' checked' : ''}> ${esc(c.menu || c.label)}</label>`).join('') +
-      `<button class="linkish" type="button" data-col-reset="${esc(table)}">Default columns</button></div></details>`;
+      `<button class="linkish" type="button" data-col-reset="${esc(table)}">Default columns</button></div></details></span>`;
   }
   const redraw = {};
   const after = table => { open.add(table); (redraw[table] || K.render)(); };
@@ -46,4 +59,5 @@
     if (open.size && !e.target.closest?.('.col-menu')) document.querySelectorAll('details.col-menu[open]').forEach(d => { d.open = false; });
   });
   K.columns = { menu, on, reset, redraw };
+  K.density = { compact, btn: densityBtn };
 });

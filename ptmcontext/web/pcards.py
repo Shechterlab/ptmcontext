@@ -30,6 +30,12 @@ def problems(site: dict) -> list[str]:
         out += [f'website.protein.{key}: {x!r} is not a fold id (p-, lower case)' for x in cfg.get(key) or [] if not FOLD.match(str(x))]
         dup = sorted({x for x in cfg.get(key) or [] if (cfg.get(key) or []).count(x) > 1})
         out += [f'website.protein.{key}: {x!r} listed twice' for x in dup]
+    seen: dict[str, str] = {}
+    for g in cfg.get('groups') or []:
+        for x in g.get('folds') or []:
+            if x in seen:
+                out.append(f"website.protein.groups: {x!r} is in both {seen[x]!r} and {g.get('id')!r}")
+            seen[x] = g.get('id')
     ids = {a['id'] for a in site.get('analyses', [])}
     fold_ids = []
     for k, c in enumerate(cfg.get('sets') or []):

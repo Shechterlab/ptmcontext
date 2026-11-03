@@ -776,8 +776,8 @@
     // the floating button on narrow screens: the sidebar's way in once the toolbar has scrolled away
     let fab = document.querySelector('.rail-fab');
     if (!fab) { document.body.insertAdjacentHTML('beforeend', '<button class="rail-fab" type="button" data-rail-open="filters"></button>'); fab = document.querySelector('.rail-fab'); }
-    // it steps aside while the page is scrolled, so it never rests on a figure or a number
-    if (!fab.dataset.sc) { fab.dataset.sc = '1'; let t; addEventListener('scroll', () => { document.body.classList.add('fab-away'); clearTimeout(t); t = setTimeout(() => document.body.classList.remove('fab-away'), 800); }, { passive: true }); }
+    // it steps aside while the page is read (scrolled down), so it never rests on a figure or a number, and comes back when the page is scrolled up or is at its top
+    if (!fab.dataset.sc) { fab.dataset.sc = '1'; let y0 = scrollY; addEventListener('scroll', () => { const y = scrollY; if (y < 160 || y < y0 - 8) document.body.classList.remove('fab-away'); else if (y > y0 + 8) document.body.classList.add('fab-away'); y0 = y; }, { passive: true }); }
     const nf = K.sel.nFilters();
     fab.innerHTML = `☰ Filters${nf ? ` <span class="badge">${nf}</span>` : ''}`; fab.setAttribute('aria-label', `Sections and filters${nf ? `, ${nf} in use` : ''}`);
     document.body.classList.toggle('rail-open', open);

@@ -77,7 +77,7 @@
   }
   function tags(c, max) {
     const tg = EV.tags; if (!tg?.attribute || !SPECS[tg.attribute]) return '';
-    const { vals, pred } = evidenceParts(c), ptab = tg.partners, named = new Set(tg.named || []), out = [], seen = new Set();
+    const { vals, pred } = evidenceParts(c), ptab = tg.partners, named = new Set(tg.named || []), out = [], seen = new Set(), labs = [];
     const partnersOf = kinds => { const rs = has(ptab) ? at(c.tb, ptab, c.pos).filter(r => kinds.includes(r.kind)) : []; return rs.sort((a, b) => (+b.score || 0) - (+a.score || 0)); };
     const predVals = vals.filter(v => pred.has(v));
     for (const v of vals) {
@@ -88,13 +88,16 @@
       const ids = [...new Set(ps.flatMap(r => list(r.ids)))].map(x => x.toUpperCase());      // a named kind also gives the entries that show it: "TNPO1 4FDD, 4FQ3 +4"
       const label = named.has(v) && names.length ? names.slice(0, 2).join(', ') + (names.length > 2 ? ` +${names.length - 2}` : '') + (ids.length ? ' ' + ids.slice(0, 3).join(', ') + (ids.length > 3 ? ` +${ids.length - 3}` : '') : '') : short;
       const kinds = vals.filter(x => !pred.has(x) && ((tg.short || {})[x] ?? vLabel(tg.attribute, x)) + '|' + ((tg.tone || {})[x] || '') === key);   // the kinds this tag stands for (data-ev-kind: a page may open them)
+      labs.push(label);
       out.push(`<span class="tag t-${esc((tg.tone || {})[v] || 'x')}" data-ev-kind="${esc(kinds.join(','))}" title="${esc(vLabel(tg.attribute, v) + (names.length ? ': ' + names.join(', ') : ''))}">${esc(label)}</span>`);
     }
     if (predVals.length) {
       const ps = partnersOf(predVals), names = [...new Set(ps.map(r => r.partner).filter(Boolean))];
       const tip = predVals.map(v => vLabel(tg.attribute, v)).join(', ') + (ps.length ? ': ' + [...new Map(ps.map(r => [r.partner, r])).values()].slice(0, 20).map(r => `${r.partner}${r.score ? ' ' + Number(r.score).toFixed(2) : ''}`).join(', ') : '');
+      labs.push((tg.short || {})[predVals[0]] || 'pred.');
       out.push(`<span class="tag t-pred" data-ev-kind="${esc(predVals.join(','))}" title="${esc(tip)}">${esc((tg.short || {})[predVals[0]] || 'pred.')}${names.length ? ' ' + esc(names[0]) + (names.length > 1 ? ` +${names.length - 1}` : '') : ''}</span>`);
     }
+    if (max < 0) return out.length ? `<span class="tag more" title="${esc(labs.join(', '))}">+${out.length}</span>` : '';   // compact rows: the count, the kinds on hover
     return out.length ? `<div class="tags ev-tags">${(max ? out.slice(0, max) : out).join(' ')}${max && out.length > max ? ` <span class="tag">+${out.length - max}</span>` : ''}</div>` : '';
   }
   const entryBtn = (id, c) => `<a class="entry3d mono" href="${esc((EV.entries?.url || '').replace('{id}', encodeURIComponent(id)))}" target="_blank" rel="noopener" data-entry3d="${esc(id)}" data-acc="${esc(c.acc)}" data-pos="${c.pos}" title="${esc(id.toUpperCase())}${K.show3d ? ': show it in 3D at ' + esc(c.label) : ''}">${esc(id.toUpperCase())}</a>`;
@@ -161,6 +164,10 @@
     const lab = AR.labels || {}, short = { ...(EV.tags?.short || {}), ...(AR.short || {}) }, by = new Map();
     rs.forEach(r => { if (!by.has(r.kind)) by.set(r.kind, []); by.get(r.kind).push(r); });
     const seq = c.seq || '';
+    if (compact === 'brief') {   // one tag and "+n" (the kinds on hover), for a one-line row
+      const ks = [...by.keys()], first = ks[0];
+      return `<div class="na-meta"><span class="tag t-${esc((EV.tags?.tone || {})[first] || 'x')}" title="${esc(lab[first] || first)}">${esc(short[first] || first)}</span>${ks.length > 1 ? `<span class="tag more" title="${esc(ks.map(k => lab[k] || k).join('\n'))}">+${ks.length - 1}</span>` : ''}</div>`;
+    }
     if (compact) return `<div class="na-meta">${[...by.entries()].map(([k, xs]) => { const pts = xs.filter(r => r.start === r.end).map(r => r.start - c.pos).sort((a, b) => Math.abs(a) - Math.abs(b));
       return `<span class="tag t-${esc((EV.tags?.tone || {})[k] || 'x')}" title="${esc(lab[k] || k)}">${esc(short[k] || k)}${pts.length ? ' ' + (pts[0] === 0 ? 'at i' : rel(pts[0])) : ''}</span>`; }).join('')}</div>`;
     return `<p class="small sc-around">${cap([...by.entries()].map(([k, xs]) => {
@@ -222,12 +229,16 @@
     for (const [a, lab] of Object.entries(CL.attributes || {})) attrVals(c, a).forEach(v => { if (!skip.has(v)) out.push({ label: lab, call: v, attribute: a }); });
     return out;
   }
-  function calls(c) {
+  function calls(c, compact) {
     if (!(CL.tables || []).some(has) && !Object.keys(CL.attributes || {}).some(a => SPECS[a])) return '';
     const rs = callRows(c); if (!rs.length) return '<span class="muted">–</span>';
     const marked = rs.filter(r => (CL.marks || {})[r.call]);
     const tip = r => [`${r.label}: ${(CL.words || {})[r.call] || r.call}`, r.n ? `${r.n} peptide${+r.n === 1 ? '' : 's'}${r.n_down || r.n_up ? ` (${r.n_down || 0} down, ${r.n_up || 0} up)` : ''}` : '', r.value !== undefined && r.value !== '' ? `log2 ${num(r.value, 'l2')}` : '', r.q ? `q ${num(r.q, 'p')}` : '', r.rule ? `rule: ${String(r.rule).replace(/_/g, ' ')}` : ''].filter(Boolean).join(' · ');
     if (!marked.length) return `<span class="muted" title="${esc('Measured: ' + rs.map(r => r.label).join(', ') + '; no significant change')}">${esc(CL.quiet || 'n.s.')}</span>`;
+    if (compact) {   // one symbol and a count per kind of call; the legend (each measurement) on hover
+      const by = new Map(); marked.forEach(r => { if (!by.has(r.call)) by.set(r.call, []); by.get(r.call).push(r); });
+      return [...by.entries()].map(([k, xs]) => `<span class="trend c-${esc(k)}" title="${esc(xs.map(tip).join('\n'))}"><b>${esc(CL.marks[k])}</b>${xs.length > 1 ? xs.length : ''}</span>`).join(' ');
+    }
     return marked.map(r => `<span class="trend c-${esc(r.call)}" title="${esc(tip(r))}"><b>${esc(CL.marks[r.call])}</b>${esc(r.label)}</span>`).join(' ');
   }
   function callsTable(c) {

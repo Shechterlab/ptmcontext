@@ -1842,6 +1842,12 @@ website:                  # the look and words of the website (ptmc web); layout
   protein:                 # the protein page
     open_partners: true    # the Interaction partners fold is open when the protein has partners in the site's table
     order: [p-map, p-cc, p-ix, p-na, p-sites, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cons, p-cluster, p-ptm, p-seq]   # the explorer's order
+    groups:                # about five headings, each holding its folds (website.protein.groups)
+      - {id: g-overview, title: Overview and map, folds: [p-map, p-kinds]}
+      - {id: g-sites, title: Sites, folds: [p-sites, p-score, p-pert, p-exp, p-cluster, p-ptm]}
+      - {id: g-binding, title: Binding and contacts, folds: [p-cc, p-ix, p-na]}
+      - {id: g-context, title: "Context: location, condensates, disease, cancer", folds: [p-cond, p-dis, p-depmap]}
+      - {id: g-structure, title: Structure and sequence, folds: [p-struct, p-regions, p-cons, p-seq]}
     open: [p-map, p-sites, p-cons, p-ix]   # the explorer's folds are all shut; here the map and the sites, and the orthologues and the network once they have data
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
       location:

@@ -110,6 +110,10 @@
     if (c.attribute) {
       const s = SPECS[c.attribute], v = vals(m, c.attribute);
       if (s.kind === 'category' && s.colour) return `<span class="sdot"><i style="--c:${K.map.attrColour(c.attribute, v[0] ?? '')}"></i>${esc(short(c.attribute, v[0] ?? ''))}</span>`;
+      if (s.kind === 'list' && K.density.compact()) {   // the first one and "+n" (all on hover)
+        const xs = v.filter(Boolean), links = SD().attribute_links?.[c.attribute] || {};
+        return xs.length ? `<div class="tags src-tags">${K.sel.listHtml(c.attribute, xs.slice(0, 1), [links[xs[0]]], pr(m[0]).acc, false)}${xs.length > 1 ? `<span class="tag more" title="${esc(xs.map(x => short(c.attribute, x)).join('\n'))}">+${xs.length - 1}</span>` : ''}</div>` : dash;
+      }
       if (s.kind === 'list') { const links = SD().attribute_links?.[c.attribute] || {}; return v.filter(Boolean).length ? `<div class="tags src-tags">${K.sel.listHtml(c.attribute, v, v.map(x => links[x]), pr(m[0]).acc, false)}</div>` : dash; }
       return v.filter(x => x !== '').length ? esc(v.map(x => short(c.attribute, x)).join(', ')) : dash;
     }
@@ -124,6 +128,12 @@
       if (k === 'nearest_domain') return nearestDomain(ctx);
       if (k === 'status') return K.card.badge(ctx);
       if (!K.card[k]) return '';
+      if (K.density.compact()) {
+        if (k === 'tags') return K.card.tags(ctx, -1);
+        if (k === 'calls') return K.card.calls(ctx, true);
+        if (k === 'sequences') { const ws = K.card.windowsOf(ctx) || []; return ws.length ? `<span class="tag t-a more" title="${esc(ws.map(w => w.names[0] || '').filter(Boolean).join('\n'))}">${ws.length} bound</span>` : ''; }
+        if (k === 'around') return K.card.around(ctx, 'brief');
+      }
       return k === 'tags' ? K.card.tags(ctx, 4) : k === 'sequences' || k === 'around' || k === 'states' ? K.card[k](ctx, true) : K.card[k](ctx);
     }).join('');
     const tip = c.show.some(k => k === 'sequences' || k === 'around') ? ` data-na-tip="${m[0]}/${m[1]}"` : '';

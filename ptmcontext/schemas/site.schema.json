@@ -3664,6 +3664,20 @@
               },
               "description": "the protein page's folds, first to last, by id (p-map, p-sites, p-score, p-kinds, p-regions, p-seq, p-struct, p-ix, p-cons, and the cards' p-cond, p-dis, p-depmap, p-pert, p-exp, p-cluster, p-ptm); a fold the list lacks follows the one before it, and without the list the page's own order stands"
             },
+            "groups": {
+              "type": "array",
+              "description": "the protein page's folds gathered under a few headings, each a fold of its own that holds its folds (about five), with Open all and Close all above; a fold no group lists follows the one before it, and the folds keep website.protein.order inside a group",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "title", "folds"],
+                "properties": {
+                  "id": {"type": "string", "pattern": "^g-[a-z0-9-]+$"},
+                  "title": {"type": "string"},
+                  "folds": {"type": "array", "items": {"type": "string", "pattern": "^p-[a-z0-9-]+$"}}
+                }
+              }
+            },
             "open": {
               "type": "array",
               "items": {

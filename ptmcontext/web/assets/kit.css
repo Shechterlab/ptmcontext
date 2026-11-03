@@ -1346,3 +1346,55 @@ abbr.gloss { text-decoration: underline dotted var(--muted); text-underline-offs
 .idr-gloss dt { font-weight: 700; color: var(--ink); min-width: 3.4rem; }
 .idr-gloss dd { margin: 0; flex: 1 1 14rem; }
 
+
+/* ---- density: compact rows (the default, one line each) or comfortable (wrapped), the toggle beside Columns ------- */
+.tbl-opts { display: inline-flex; gap: 0.4rem; align-items: center; }
+.tag.more { font-weight: 600; color: var(--muted); background: transparent; cursor: help; }
+html[data-density="compact"] body { font-size: 14px; }
+html[data-density="compact"] .t-card .tbl td { padding-top: 0.2rem; padding-bottom: 0.2rem; vertical-align: middle; white-space: nowrap; line-height: 1.35; }
+html[data-density="compact"] .sites-tbl td { vertical-align: middle; }
+html[data-density="compact"] .sites-tbl td.cwin { white-space: nowrap; }
+html[data-density="compact"] .sites-tbl td.cwin > .mono, html[data-density="compact"] .sites-tbl td.cwin > .tags { display: inline-flex; vertical-align: middle; }
+html[data-density="compact"] .sites-tbl .tags, html[data-density="compact"] .sites-tbl .cv, html[data-density="compact"] .sites-tbl .src-tags { flex-wrap: nowrap; max-width: none; white-space: nowrap; }
+html[data-density="compact"] .sites-tbl .cv { display: inline-flex; gap: 0.25rem; align-items: center; }
+html[data-density="compact"] .sites-tbl .acc, html[data-density="compact"] .t-card .acc { display: inline; margin-left: 0.4rem; }
+html[data-density="compact"] .sites-tbl .src-tags { display: inline-flex; align-items: center; }
+html[data-density="compact"] .sites-tbl .src-tags a { max-width: 11rem; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: bottom; }
+html[data-density="compact"] .sites-tbl .sdot { white-space: nowrap; }
+html[data-density="compact"] .ixs { padding-block: 0; }
+html[data-density="compact"] .ptbl2 .pname { max-width: 15rem; }
+@media (max-width: 36rem) {
+  html[data-density="compact"] .t-card .tbl td { white-space: normal; }
+  html[data-density="compact"] .sites-tbl .tags, html[data-density="compact"] .sites-tbl .cv { flex-wrap: wrap; }
+}
+html[data-density="compact"] .sites-tbl td > .tags, html[data-density="compact"] .sites-tbl td > .cv, html[data-density="compact"] .sites-tbl .na-meta { display: inline-flex; flex-wrap: nowrap; gap: 0.25rem; margin-left: 0.3rem; align-items: center; }
+html[data-density="compact"] .sites-tbl td.cwin .win-mot { margin-left: 0.5rem; }
+html[data-density="compact"] .sites-tbl .win-mot .tag { border: 0; background: none; padding: 0 0.1rem; font-size: 0.72rem; color: var(--muted); }
+html[data-density="compact"] .sites-tbl th { white-space: nowrap; }
+html[data-density="compact"] .sites-tbl .src-tags a { max-width: 8rem; }
+.tbl-card, .tbl-wrap { position: relative; }   /* a .vh span inside a wide table is clipped with it, not left to widen the page */
+
+/* ---- the protein page's folds under a few headings (website.protein.groups) ---------------------------------------- */
+.pgroup-tools { display: flex; gap: 0.4rem; justify-content: flex-end; margin: 0.4rem 0; }
+.pgroup { margin: 0 0 0.8rem; border-left: 3px solid var(--line-strong); padding-left: 0.6rem; }
+.pgroup[open] { border-left-color: var(--accent); }
+.pgroup > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 0.7rem; padding: 0.45rem 0; min-height: 24px; }
+.pgroup > summary::-webkit-details-marker { display: none; }
+.pgroup > summary .pfm::before { content: '+'; display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; border: 1.5px solid var(--line-strong); border-radius: 50%; color: var(--muted); font-size: 0.9rem; }
+.pgroup[open] > summary .pfm::before { content: '−'; border-color: var(--accent); color: var(--accent); }
+.pgroup > summary h2 { font-size: var(--fs-section); margin: 0; }
+.pgroup > summary .fsum { color: var(--muted); font-size: 0.88rem; }
+.pgroup-body { min-width: 0; }
+@media print { .pgroup-tools { display: none; } .pgroup { border: 0; padding: 0; } }
+@media (max-width: 36rem) {   /* the protein page at phone width: the export row wraps instead of widening the page */
+  .card-head { flex-wrap: wrap; }
+  .pfold .card-head .exp, .idr-card .card-head .exp, .site-card .card-head .exp { flex: 1 1 100%; min-width: 0; }
+}
+@media (max-width: 36rem) {   /* phone: touch targets of at least 24 px, a shorter toolbar */
+  .btn, button, summary, .chip, .fchip, .tab, .tabs a, [role=tab], select, input[type=search] { min-height: 24px; }
+  .btn.small, button.linkish, .check, label.check { min-height: 28px; }
+  input[type=checkbox], input[type=radio] { min-width: 24px; min-height: 24px; }
+  #scope .scope-hint, #scope .try-chip { display: none; }
+  .tbl td a, .tbl td button, .gene-chip { display: inline-block; min-height: 24px; line-height: 24px; }
+  .links-list a, .sc-refs a, .crumb a { display: inline-block; min-height: 24px; line-height: 24px; }
+}

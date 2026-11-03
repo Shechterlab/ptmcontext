@@ -68,18 +68,31 @@
   K.foldTouched = id => id in PV.open;             // the reader has opened or closed it
   K.foldStarts = id => !!PRO.open?.includes(id);    // the site starts it open (when it has what it shows)
   const foldOpen = (id, dflt) => (PRO.open ? PRO.open.includes(id) && (K.hasData[id] ? !!K.hasData[id]() : true) : dflt);
+  const GROUPS = PRO.groups || [];
   function arrangeFolds(html) {
-    if (!FOLD_ORDER.length) return html;
-    const parts = html.split(/(?=<details class="pfold" id=")/);
-    let at = -1;
-    const keyed = parts.map((h, k) => { const id = (/^<details class="pfold" id="([^"]+)"/.exec(h) || [])[1], i = FOLD_ORDER.indexOf(id); if (i >= 0) at = i; return [at + (i >= 0 ? 0 : 0.5), k, h]; });
-    return keyed.sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(x => x[2]).join('');
+    if (!FOLD_ORDER.length && !GROUPS.length) return html;
+    const parts = html.split(/(?=<details class="pfold" id=")/), lead = /^<details class="pfold" id=/.test(parts[0]) ? '' : parts.shift();
+    let at = -1, gi = 0;
+    const keyed = parts.map((h, k) => {
+      const id = (/^<details class="pfold" id="([^"]+)"/.exec(h) || [])[1], i = FOLD_ORDER.indexOf(id), g = GROUPS.findIndex(x => (x.folds || []).includes(id));
+      if (i >= 0) at = i; if (g >= 0) gi = g;
+      return [gi, at, k, h];
+    });
+    keyed.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]);
+    if (!GROUPS.length) return lead + keyed.map(x => x[3]).join('');
+    // each group is a fold holding its folds; open when the reader opened it or one of its folds is open
+    const out = GROUPS.map((g, n) => {
+      const hs = keyed.filter(x => x[0] === n).map(x => x[3]); if (!hs.length) return '';
+      const kids = hs.map(h => /^<details class="pfold" id="[^"]+" open/.test(h)), open = PV.open[g.id] ?? kids.some(Boolean), n0 = kids.filter(Boolean).length;
+      return `<details class="pgroup" id="${esc(g.id)}"${open ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h2>${esc(g.title)}</h2><span class="fsum">${hs.length} section${hs.length === 1 ? '' : 's'}${n0 ? `, ${n0} open` : ''}</span></summary><div class="pgroup-body">${hs.join('')}</div></details>`;
+    }).join('');
+    return lead + `<div class="pgroup-tools"><button type="button" class="btn small" data-folds="open">Open all</button> <button type="button" class="btn small" data-folds="close">Close all</button></div>` + out;
   }
 
   // ---- a protein's page: as the Methylarginine Site Explorer's ------------------------------------------------------
   const PV = { acc: '', rec: null, err: '', af: null, uni: null, uniJson: null, pdb: null, pdbAll: false, ix: null, site: null, span: null, spanArg: '', more: false, fn: false, open: {}, scrolled: null,
     tb: null, evOpen: new Set(), pf: '', focus: '', qDone: false, light: null, lightP: null, lightAll: false, cleanArg: false };
-  document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('pfold')) PV.open[d.id] = d.open; }, true);
+  document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('pfold') || d.classList?.contains('pgroup')) PV.open[d.id] = d.open; }, true);
   document.addEventListener('click', e => { if (PV.more && !e.target.closest('.more-links')) { PV.more = false; const m = document.getElementById('more-menu'); if (m) m.hidden = true; } });
   const SPECS = D.attribute_specs || {}, AT = D.mark_attributes || [];
   function load(acc) {
@@ -441,7 +454,7 @@
     // #protein/ACC/p-na opens a section
     const span = /^(\d+)-(\d+)$/.exec(sitePos || ''), sec = /^p-[a-z0-9]+$/.exec(sitePos || '');
     load(acc); PV.site = sitePos && !span && !sec ? +sitePos : null; K.site.state.focus = PV.site; K.site.state.acc = acc;
-    if (sec) { PV.focus = SECTION[sec[0]] || ''; if (PV.focus) PV.open[PV.focus] = true; }
+    if (sec) { PV.focus = SECTION[sec[0]] || ''; if (PV.focus) { PV.open[PV.focus] = true; const g = GROUPS.find(x => (x.folds || []).includes(PV.focus)); if (g) PV.open[g.id] = true; } }
     if (!span) { PV.span = null; PV.spanArg = ''; }
     else if (PV.spanArg !== sitePos) {
       const a = Math.max(1, +span[1]), b = Math.min(p.len, +span[2]), pad = Math.max(5, Math.round((b - a + 1) * 0.15));
@@ -757,6 +770,7 @@
     ['[data-mexp]', el => K.exportFigure(el.dataset.mexp, mapFigure, K.map.fileName ? K.map.fileName(el.dataset.mexp) : `${D.site.id}_${PV.acc}_map`, el, sitesTsv)],
     ['[data-msite]', el => openSite(+el.dataset.msite, el.closest('.seq') ? 'sequence' : 'map')],
     ['[data-site-open]', el => openSite(+el.dataset.siteOpen)],
+    ['[data-folds]', el => { const on = el.dataset.folds === 'open'; document.querySelectorAll('details.pgroup, details.pfold').forEach(d => { d.open = on; PV.open[d.id] = on; }); }],
     ['[data-all-cols]', () => { PV.allCols = !PV.allCols; PV.open['p-sites'] = true; K.render(); }],
     ['[data-kinds-all]', el => { const k = 'kinds:' + el.dataset.kindsAll; PV.open[k] = !PV.open[k]; PV.open['p-kinds'] = true; K.render(); }],
     ['[data-regexp]', el => K.exportFigure('tsv', null, `${D.site.id}_${PV.acc}_regions`, el, regionsTsv)],
@@ -771,8 +785,8 @@
       navigator.clipboard?.writeText(url).then(() => { el.textContent = 'Link copied'; setTimeout(() => { el.textContent = 'Copy link'; }, 1500); }); }],
     ['[data-site-ev]', () => { PV.evOpen.add(PV.site); PV.open['p-sites'] = true; K.render(); requestAnimationFrame(() => document.querySelector(`tr[data-site="${PV.site}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' })); }],
     ['[data-pfilter]', el => { PV.pf = PV.pf === el.dataset.pfilter ? '' : el.dataset.pfilter; const y = scrollY; K.render(); scrollTo(0, y); }],
-    ['[data-hl-open]', el => { const d = document.getElementById(el.dataset.hlOpen); if (d) { d.open = true; PV.open[d.id] = true; d.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }],
-    ['[data-page-pdf]', el => { const p = byAcc[PV.acc]; document.querySelectorAll('details.pfold').forEach(d => { d.open = true; }); K.pagePdf?.(document.getElementById('view'), `${p.gene || p.acc} (${p.acc})`, `${D.site.id}_${p.gene || p.acc}_${p.acc}.pdf`, el); }],
+    ['[data-hl-open]', el => { const d = document.getElementById(el.dataset.hlOpen); if (d) { d.open = true; PV.open[d.id] = true; const g = d.closest('details.pgroup'); if (g) { g.open = true; PV.open[g.id] = true; } d.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }],
+    ['[data-page-pdf]', el => { const p = byAcc[PV.acc]; document.querySelectorAll('details.pgroup, details.pfold').forEach(d => { d.open = true; }); K.pagePdf?.(document.getElementById('view'), `${p.gene || p.acc} (${p.acc})`, `${D.site.id}_${p.gene || p.acc}_${p.acc}.pdf`, el); }],
     ['#site-card [data-cexp]', el => { const card = document.getElementById('site-card'), p = byAcc[PV.acc], name = `${D.site.id}_${p.gene || p.acc}_${site(PV.site)}`;
       if (el.dataset.cexp === 'tsv') K.exportFigure('tsv', null, name, el, siteCardTsv); else if (el.dataset.cexp === 'pdf') K.pagePdf?.(card, `${p.gene || p.acc} ${site(PV.site)}`, name + '.pdf', el); else K.elementPng?.(card, name + '.png', el); }],
     ['[data-light-all]', () => { PV.lightAll = !PV.lightAll; K.render(); }],
@@ -781,7 +795,7 @@
     ['[data-fn-more]', () => { PV.fn = !PV.fn; document.querySelector('.fn-text')?.classList.toggle('open', PV.fn); const b = document.querySelector('[data-fn-more]'); if (b) b.textContent = PV.fn ? 'Less' : 'More'; }],
     ['[data-print]', () => {
       // printed in light colours, every section open, with the page's address and how to cite it at the foot
-      document.querySelectorAll('details.pfold').forEach(d => { d.open = true; });
+      document.querySelectorAll('details.pgroup, details.pfold').forEach(d => { d.open = true; });
       const theme = document.documentElement.dataset.theme; document.documentElement.dataset.theme = 'light';
       document.body.dataset.printFoot = `${D.site.name} · ${location.href} · printed ${K.hdate(new Date().toISOString())}. ${K.creditLines()[0] || ''}`;
       setTimeout(() => { print(); if (theme) document.documentElement.dataset.theme = theme; else delete document.documentElement.dataset.theme; }, 150);
