@@ -19,7 +19,7 @@
     <div class="wrap">
       <div class="brand">
         <h1><a href="#overview" title="Back to the overview"><img class="site-mark" src="{{ICON_HREF}}" alt="" width="52" height="52"><span>{{NAME}}</span></a></h1>
-        <div class="brand-side">{{LAB}}<nav class="brand-links" aria-label="Site and lab links">{{LINKS}}</nav></div>
+        <div class="brand-side">{{LAB}}<nav class="brand-links" aria-label="Site and lab links"><details class="links-menu" open><summary>Links</summary><div class="links-list">{{LINKS}}</div></details></nav></div>
       </div>
       <div class="lede">
         <p class="lede-what">{{TAGLINE}}</p>
@@ -41,6 +41,8 @@
       <nav class="tabs" id="tabs" aria-label="Pages"></nav>
     </div>
   </div>
+
+  <script>/* the links are a menu on narrow screens, open on wide ones */try { var lm = document.querySelector(".links-menu"), mq = matchMedia("(max-width: 640px)"); var fit = function () { lm.open = !mq.matches; }; fit(); mq.addEventListener("change", fit); } catch (e) {}</script>
 
   <div class="wrap layout">
     <aside class="rail" id="rail" aria-label="Sections and filters"></aside>

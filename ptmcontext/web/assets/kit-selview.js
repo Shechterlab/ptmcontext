@@ -47,12 +47,12 @@
     for (let k = lo; k <= hi; k++) parts.push(`<line x1="${X(2 ** k).toFixed(1)}" x2="${X(2 ** k).toFixed(1)}" y1="0" y2="${rows.length * rowH}" stroke="${k === 0 ? ink : grid}" stroke-width="${k === 0 ? 1.2 : 0.6}"${k === 0 ? '' : ' stroke-dasharray="2 3"'}/>`);
     rows.forEach((r, i) => {
       const y = i * rowH + rowH / 2, c = r.dir === 'more' ? more : less;
-      parts.push(`<text x="0" y="${y + 4}" font-size="11.5" fill="${ink}">${esc(r.label.length > 40 ? r.label.slice(0, 39) + '…' : r.label)}<tspan fill="${light ? '#6b7280' : 'var(--muted)'}" font-size="10"> · ${esc(qTitle(r).length > 26 ? qTitle(r).slice(0, 25) + '…' : qTitle(r))}</tspan></text>`);
+      parts.push(`<text x="0" y="${y + 4}" font-size="12" fill="${ink}">${esc(r.label.length > 40 ? r.label.slice(0, 39) + '…' : r.label)}<tspan fill="${light ? '#6b7280' : 'var(--muted)'}" font-size="12"> · ${esc(qTitle(r).length > 26 ? qTitle(r).slice(0, 25) + '…' : qTitle(r))}</tspan></text>`);
       if (r.lo != null && r.hi != null) parts.push(`<line x1="${X(r.lo).toFixed(1)}" x2="${X(r.hi).toFixed(1)}" y1="${y}" y2="${y}" stroke="${c}" stroke-width="2"/>`);
-      parts.push(`<circle cx="${X(r.or).toFixed(1)}" cy="${y}" r="4.5" fill="${c}"/><text x="${w}" y="${y + 4}" font-size="11" text-anchor="end" fill="${c}">${esc(fx(r.or))} · ${esc(pc(r.a / (r.a + r.b)))}/${esc(pc(r.c / (r.c + r.d)))}</text>`);
+      parts.push(`<circle cx="${X(r.or).toFixed(1)}" cy="${y}" r="4.5" fill="${c}"/><text x="${w}" y="${y + 4}" font-size="12" text-anchor="end" fill="${ink}">${esc(fx(r.or))} · ${esc(pc(r.a / (r.a + r.b)))}/${esc(pc(r.c / (r.c + r.d)))}</text>`);
     });
     const yA = rows.length * rowH + 14;
-    [[0.25, '¼×'], [1, '1×'], [4, '4×'], [16, '16×']].forEach(([v, t]) => parts.push(`<text x="${X(v).toFixed(1)}" y="${yA}" font-size="10" text-anchor="middle" fill="${light ? '#6b7280' : 'var(--muted)'}">${t}</text>`));
+    [[0.25, '¼×'], [1, '1×'], [4, '4×'], [16, '16×']].forEach(([v, t]) => parts.push(`<text x="${X(v).toFixed(1)}" y="${yA}" font-size="12" text-anchor="middle" fill="${light ? '#6b7280' : 'var(--muted)'}">${t}</text>`));
     return { svg: parts.join(''), H: yA + 6 };
   }
   const apartTsv = m => K.preamble(`What sets the selection apart`, `the selection's ${W.marks} against the site's other ${W.marks}: each class of each question and each attribute of the ${W.marks}, Fisher's exact test (pooled), Haldane odds ratio with Woolf's 95% CI, Benjamini-Hochberg q within each question`) +
@@ -96,9 +96,9 @@
       ps.map(({ pi, n, p }) => `<div class="drawn-row"><a href="${esc(K.link('protein', p[0]))}"><b>${esc(p[1] || p[0])}</b> <span class="muted">${esc(p[2] || '')}</span></a><span class="muted small">${int(n)} of ${int(p[4])} ${esc(W.marks)} selected · ${int(p[3])} aa</span><svg class="drawn-map" data-drawn="${pi}" viewBox="0 0 700 44" preserveAspectRatio="none" aria-label="${esc(p[1] || p[0])}, drawn"></svg></div>`).join('') + '</section>';
   });
   const recs = {};
-  function mapSvg(pi, rec, w, light) {
+  function mapSvg(pi, rec, w, light, all) {
     const p = D.proteins[pi], len = p[3] || 1, X = x => 6 + (x - 0.5) / len * (w - 12), y0 = 30;
-    const sel = K.sel.selectedPositions(p[0]) || new Set(), ink = light ? '#1f2937' : 'currentColor', grey = '#A3AEB3', mark = '#B42318', parts = [];
+    const sel = all ? new Set((rec?.marks || []).map(m => m[0])) : K.sel.selectedPositions(p[0]) || new Set(), ink = light ? '#1f2937' : 'currentColor', grey = '#A3AEB3', mark = '#B42318', parts = [];
     parts.push(`<line x1="${X(0.5)}" x2="${X(len + 0.5)}" y1="${y0}" y2="${y0}" stroke="#CBD5E1" stroke-width="2"/>`);
     (rec?.units || []).forEach(([k, s, e, lab]) => {
       const t = TR[k]; if (!t || t.style === 'segments') return;
@@ -111,6 +111,7 @@
     [...sel].forEach(pos => parts.push(`<line x1="${X(pos).toFixed(1)}" x2="${X(pos).toFixed(1)}" y1="${y0 - 10}" y2="${y0 - 24}" stroke="${mark}" stroke-width="1.6"/><circle cx="${X(pos).toFixed(1)}" cy="${y0 - 25}" r="3.4" fill="${mark}"><title>${shown(pos)} (selected)</title></circle>`));
     return parts.join('').replace(/currentColor/g, ink);
   }
+  K.rowMap = mapSvg;      // a protein end to end as one row: (index in D.proteins, its record, width, light, all marks inked); kit-random.js
   function fillDrawn() {
     const svgs = [...document.querySelectorAll('svg[data-drawn]')]; if (!svgs.length || !K.loadProtein) return;
     svgs.forEach(el => {

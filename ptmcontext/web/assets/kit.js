@@ -420,6 +420,9 @@
     const grid = []; for (let k = lo; k <= hi; k++) grid.push(k);
     return { X: v => (Math.min(Math.max(l2(v), lo), hi) - lo) / (hi - lo), grid };
   }
+  // the end labels of every forest mini-chart: which way is less and which more (the axis is logarithmic)
+  const LESS_MORE = '<div class="taxis taxis-cap" title="Logarithmic scale; the line is the 95% interval"><span></span><span class="lm"><span>‹ less</span><span>more ›</span></span><span></span></div>';
+  K.LESS_MORE = LESS_MORE;
   function tileRows(rows) {
     if (!rows.length) return '';
     if (rows.some(r => r.vs)) return shareRows(rows);
@@ -428,7 +431,7 @@
     return rows.map(r => `<div class="trow" data-r="${reg(r)}"><span class="lab">${esc(r.label)}</span><svg aria-hidden="true">${grid.join('')}` +
       (r.lo != null && r.hi != null ? `<line class="whisker ${r.dir}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" y2="50%"/>` : '') +
       `<circle class="dot ${r.dir}" cx="${X(r.eff)}" cy="50%" r="4.6"/>${r.ref ? `<line class="ref" x1="${X(r.ref.eff)}" x2="${X(r.ref.eff)}" y1="15%" y2="85%"/>` : ''}</svg><span class="val ${r.dir}">${fx(r.eff)}</span></div>`).join('') +
-      `<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div>`;
+      `<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div>` + LESS_MORE;
   }
   // what a tile shows, for the tile and its exports
   function tileState(card) {
@@ -475,9 +478,10 @@
   }]);
   function lead() {
     const q = OV.question || `Which parts of proteins are ${W.marked_long}?`;
-    const key = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (q > ${PADJ})</span>${vsOn() ? `<span><i class="kd more"></i> your selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>` : ''}` +
-      `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">How to read</button></p>` +
-      (S.how ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a log scale (the solid line is no difference). For questions about where ${esc(W.marks)} sit, × is an odds ratio: the odds that a ${esc(W.mark)} is in the class over the odds for another ${esc(W.residue)}. It is not the ratio of the two shares, which is closer to 1. The hover gives both shares${D.analyses.some(a => a.kind === 'protein_sets') ? '. For questions about kinds of protein, × is the fold enrichment: the share of ' + esc(W.marked) + ' proteins in the set over the share of all proteins' : ''}. Within each protein, every protein is a stratum and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)} (Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}. Pooled puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact test). ${D.analyses.some(a => a.kind === 'protein_sets') ? `Questions about kinds of protein show the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). ` : ''}Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Grey: significant but within 1.1×. Hollow: no significant difference. A tile shows the classes that differ most and opens to every class. Hover a row for its counts.</p>` : '');
+    const keyP = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (q > ${PADJ})</span>${vsOn() ? `<span><i class="kd more"></i> your selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>` : ''}` +
+      `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">How to read</button></p>`;
+    const howP = (S.how ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a log scale (the solid line is no difference). For questions about where ${esc(W.marks)} sit, × is an odds ratio: the odds that a ${esc(W.mark)} is in the class over the odds for another ${esc(W.residue)}. It is not the ratio of the two shares, which is closer to 1. The hover gives both shares${D.analyses.some(a => a.kind === 'protein_sets') ? '. For questions about kinds of protein, × is the fold enrichment: the share of ' + esc(W.marked) + ' proteins in the set over the share of all proteins' : ''}. Within each protein, every protein is a stratum and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)} (Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}. Pooled puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact test). ${D.analyses.some(a => a.kind === 'protein_sets') ? `Questions about kinds of protein show the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). ` : ''}Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Grey: significant but within 1.1×. Hollow: no significant difference. A tile shows the classes that differ most and opens to every class. Hover a row for its counts.</p>` : '');
+    const key = keyP + howP;
     const methods = vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher'];
     const tools = `<span class="tools"><span class="seg" role="group" aria-label="Test">${methods.map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ''}>${cap(METHOD[m])}</button>`).join('')}</span></span>`;
     // the marks the site shows and counts nowhere (kit-shown.js): the note says how many, beside how many are counted
@@ -494,9 +498,11 @@
       (S.vs === 'cmp' ? `<button type="button" data-vs="cmp" aria-pressed="true">${esc(cmpName())}</button>` : '') +
       (K.views.compare ? `<button type="button" class="linkish" data-go-compare title="Compare with a saved selection">a saved selection…</button>` : '') + `</span></p>`;
     const head = `<div class="page-head"><h2>Your selection</h2>${K.sel.testable() || vsOn() ? tools : ''}</div><p class="sel-lead">${esc(K.sel.describe())} · <b>${int(n)}</b> ${esc(n === 1 ? W.mark : W.marks)} on <b>${int(np)}</b> protein${np === 1 ? '' : 's'}</p>` +
-      `<div class="ppills">${pills}${np > 30 ? `<a href="${esc(link('proteins'))}" class="muted">+${int(np - 30)} more on the Proteins page</a>` : ''}</div>` + against;
-    if (vsOn()) return head + vsLead() + key;
-    return head + (K.sel.testable() ? key : `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. Compare it with the other ${esc(W.marks)} instead, or see its ${esc(W.marks)} on the Proteins${K.views.sites ? ' and Sites pages' : ' page'}.</p>`);
+      `<div class="ppills">${pills}${np > 30 ? `<a href="${esc(link('proteins'))}" class="muted">+${int(np - 30)} more on the Proteins page</a>` : ''}</div>` + '';
+    // the comparison choice and the legend share one row
+    const row = `<div class="ctl-row">${against}${keyP}</div>${howP}`;
+    if (vsOn()) return head + row + vsLead();
+    return head + (K.sel.testable() ? row : against + `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. Compare it with the other ${esc(W.marks)} instead, or see its ${esc(W.marks)} on the Proteins${K.views.sites ? ' and Sites pages' : ' page'}.</p>`);
   }
   // against other marks: who is compared with whom, the strongest differences in a sentence (each with whether it holds
   // under the other two tests), and how the marks were found, as a caveat rather than a finding

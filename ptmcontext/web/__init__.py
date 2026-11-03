@@ -39,7 +39,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -898,6 +898,7 @@ def _card_pictures(gl: dict, sid: str) -> str:
                  f'<span class="gl-name">{html.escape(f["label"])}</span><span class="gl-axis" aria-hidden="true"><i class="gl-fill {f["dir"]}" style="{side}:50%;width:{w:.0f}%"></i></span>'
                  f'<span class="gl-val {f["dir"]}">{vtxt}× {f["dir"]}</span></a></li>')
     if rows:
+        rows += '<li class="gl-ax"><span></span><span class="gl-axcap"><span>‹ less</span><b>1×</b><span>more ›</span></span><span></span></li>'
         out += f'<ol class="gl-finds gl-card-finds">{rows}</ol>'
     return out
 
@@ -953,7 +954,7 @@ def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None,
 <link rel="stylesheet" href="{html.escape(FONTS['stylesheet'])}">
 <link rel="stylesheet" href="{html.escape(site_paths and load_site(site_paths[0])['id'])}/assets/kit.css">
 <style>
-.sites {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(min(24rem, 100%), 1fr)); gap: 1rem; padding-block: 0.5rem 1rem; }}
+.sites {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); align-items: start; gap: 1rem; padding-block: 0.5rem 1rem; }}
 .land-card {{ position: relative; display: grid; grid-template-rows: auto 1fr; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow); color: var(--ink); }}
 .land-card:hover, .land-card:focus-within {{ box-shadow: var(--shadow-hover); }}
 .land-card .band {{ padding: 1.1rem 1.1rem 1rem; border-bottom: 3px solid var(--accent-l); }}
@@ -964,7 +965,8 @@ def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None,
 .land-card .body {{ display: grid; align-content: start; gap: 0.5rem; padding: 0.9rem 1.1rem 1.1rem; font-size: 0.92rem; }}
 .land-card .body p {{ margin: 0; }}
 .facts {{ margin: 0; padding-left: 1.1rem; color: var(--ink-2); display: grid; gap: 0.15rem; }}
-.gl-card-finds a {{ grid-template-columns: minmax(0, 1fr) 7rem 5.5rem; }}
+.gl-card-finds a, .gl-card-finds .gl-ax {{ grid-template-columns: minmax(0, 1fr) 7rem 5.5rem; }}
+.gl-card-finds .gl-name {{ white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.3; }}
 .land-card .gl-big {{ font-size: 1.7rem; }}
 .starts {{ list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }}
 .starts a {{ display: inline-flex; gap: 0.4rem; align-items: center; min-height: 32px; padding: 0.2rem 0.7rem; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-2); color: var(--ink); text-decoration: none; }}
