@@ -80,7 +80,8 @@ def _rule_holds(frame: pd.DataFrame, cond: dict) -> pd.Series:
 def rule_sets(src: dict, frame: pd.DataFrame) -> pd.DataFrame:
     """(set, protein) pairs from rules (sets.rules): each row of the table goes to the set of the first rule whose
     conditions (when) all hold for it; a rule without conditions takes every row left; a row no rule takes is in no
-    set. A protein on several rows is in the set of each."""
+    set. A protein on several rows is in the set of each. With exclusive: false each rule takes every row whose
+    conditions hold, so a row may be in several sets (a membership with the roles driver and member is in both)."""
     rest = pd.Series(True, index=frame.index)
     out = []
     for rule in src['rules']:
@@ -88,7 +89,8 @@ def rule_sets(src: dict, frame: pd.DataFrame) -> pd.DataFrame:
         for cond in rule.get('when', []):
             hit &= _rule_holds(frame, cond)
         out.append(pd.DataFrame({'set': rule['set'], 'protein': frame.loc[hit, src['protein']].astype(str).to_numpy()}))
-        rest &= ~hit
+        if src.get('exclusive', True):
+            rest &= ~hit
     return pd.concat(out, ignore_index=True) if out else pd.DataFrame(columns=['set', 'protein'])
 
 

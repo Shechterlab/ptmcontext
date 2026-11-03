@@ -376,7 +376,8 @@
           "test": {
             "enum": [
               "residue",
-              "protein_sets"
+              "protein_sets",
+              "conditional_logit"
             ],
             "default": "residue"
           },
@@ -644,6 +645,17 @@
                   },
                   "protein": {
                     "type": "string"
+                  },
+                  "where": {
+                    "$ref": "#/properties/analyses/items/properties/sets/oneOf/0/properties/where"
+                  },
+                  "history": {
+                    "$ref": "#/properties/analyses/items/properties/sets/oneOf/0/properties/history"
+                  },
+                  "exclusive": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "false: a row is in the set of every rule whose conditions hold, not only the first"
                   },
                   "rules": {
                     "type": "array",
@@ -1070,6 +1082,99 @@
               }
             }
           },
+          "only_in": {
+            "description": "residue and conditional_logit: count only the marks and candidate residues inside the IDRs ('idr') or inside the regions of an interval table ({role, kind})",
+            "oneOf": [
+              {
+                "const": "idr"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "role"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "role": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          },
+          "covariates": {
+            "type": "array",
+            "minItems": 1,
+            "description": "conditional_logit: the factors of one conditional logistic regression (one stratum per protein; the marked residues against the other candidate residues of their proteins), each a yes-or-no factor from a layer's classes (is) or flags, or a number summed over a window of the sequence (window_sum)",
+            "items": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "help": {
+                  "type": "string"
+                },
+                "layer": {
+                  "type": "string"
+                },
+                "with": {
+                  "type": "object"
+                },
+                "is": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "flags": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "window_sum": {
+                  "type": "object",
+                  "required": [
+                    "window",
+                    "weights"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "window": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "weights": {
+                      "type": "object",
+                      "minProperties": 1,
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "per": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "description": "a numeric factor's unit: its odds ratio is per this many units (default 1)"
+                }
+              }
+            }
+          },
           "new": {
             "type": "boolean",
             "description": "not in the site's reference: no parity check, and the website marks it new"
@@ -1409,6 +1514,17 @@
             "properties": {
               "test": {
                 "const": "protein_sets"
+              }
+            }
+          },
+          {
+            "required": [
+              "test",
+              "covariates"
+            ],
+            "properties": {
+              "test": {
+                "const": "conditional_logit"
               }
             }
           },
@@ -7119,6 +7235,10 @@
                     }
                   }
                 }
+              },
+              "link": {
+                "type": "string",
+                "description": "a page about the row's evidence, for a pinned item that has no link of its own: a URL with {gene}, {label} (the item's label) and {position} (its residue or start), each URL-encoded; a row the pipeline computes links to its Method section instead"
               },
               "place": {
                 "enum": [

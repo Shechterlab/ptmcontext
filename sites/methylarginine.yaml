@@ -591,6 +591,41 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
     background: other human proteins in CD-CODE condensates (export of 2026-03-18)
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Roles in condensates: CD-CODE 2.3 gives each membership its roles (driver, client, regulator, member, or unknown; a
+  # membership may have several). A protein is in a role's set when it has that role in any human condensate; each set is
+  # tested against the other proteins of the human condensates. Not in the release
+  - id: condensate_role
+    test: protein_sets
+    new: true
+    title: Roles in condensates
+    question: "Are methylated proteins more often drivers of condensates than clients or other members (CD-CODE)?"
+    sub: "Proteins by their role in CD-CODE 2.3 condensates (human, not synthetic): driver, client, regulator, member or unknown, a protein in the role of every membership that lists it. Each role's proteins against the other proteins in these condensates (one-sided hypergeometric test). This export lists drivers, members and unknown roles only"
+    section: Protein classes and pathways
+    sets:
+      input: cdcode_members
+      protein: uniprot_accession
+      exclusive: false
+      where:
+        - {column: condensate_uid, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
+      rules:
+        - {set: driver, when: [{column: roles, contains: driver}]}
+        - {set: client, when: [{column: roles, contains: client}]}
+        - {set: regulator, when: [{column: roles, contains: regulator}]}
+        - {set: member, when: [{column: roles, contains: member}]}
+        - {set: unknown, when: [{column: roles, contains: unknown}]}
+    universe: annotated
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}]
+    labels: {driver: Drivers, client: Clients, regulator: Regulators, member: Other members, unknown: Role unknown}
+    help:
+      driver: "Proteins that CD-CODE lists as a driver of at least one human condensate: the condensate depends on them to form"
+      client: "Proteins that CD-CODE lists as a client of at least one human condensate: they are recruited but do not drive it"
+      regulator: "Proteins that CD-CODE lists as a regulator of at least one human condensate"
+      member: "Proteins that CD-CODE lists as a member of at least one human condensate, with no further role stated"
+      unknown: "Proteins whose role CD-CODE does not state"
+    background: other human proteins in CD-CODE 2.3 condensates (export of 2026-10-16)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   # Proteins that bind RNA or DNA (scripts/37_export_interaction_data.py): GO annotations, against every reviewed protein;
   # and the proteins each in-cell experiment found binding, each against the proteins that experiment measured where it
   # lists them (else every reviewed protein): one test per set, BH over the sets, again within PaxDb abundance deciles
@@ -875,6 +910,59 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - {id: domain_class, layer: domain_class}
   - {id: structure_context, layer: structure_context}
   - {id: idr_charge, layer: idr_charge, new: true}   # not in the release: CIDER's charge classes of IDRs
+  # Stickers: aromatic residues pair with arginine (cation-pi), and methylation weakens those contacts (Hofweber 2018, Qamar
+  # 2018; Wang 2018 for the aromatic and arginine stickers of FUS-like proteins). Not in the release: how many aromatic
+  # residues lie within 3 or 5 residues of each arginine, in the whole protein and in IDRs alone. The sticker set is the
+  # profile's (stickers), or with: residues
+  - id: sticker_context_3
+    layer: neighbours
+    with: {window: 3, noun: aromatic residue}
+    new: true
+    title: Next to aromatic residues (within 3)
+    question: "Are methylarginines more often next to aromatic residues than the other arginines of their protein?"
+    sub: "Methylarginines against the other arginines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) lie within 3 residues on either side. Aromatic residues pair with arginine in condensates (cation–π), and methylation weakens that contact"
+    section: Position in the protein
+  - id: sticker_context_5
+    layer: neighbours
+    with: {window: 5, noun: aromatic residue}
+    new: true
+    title: Next to aromatic residues (within 5)
+    question: "Are methylarginines more often next to aromatic residues than the other arginines of their protein?"
+    sub: "Methylarginines against the other arginines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) lie within 5 residues on either side"
+    section: Position in the protein
+  - id: sticker_context_3_idr
+    layer: neighbours
+    with: {window: 3, noun: aromatic residue}
+    only_in: idr
+    new: true
+    title: Next to aromatic residues, in IDRs (within 3)
+    question: "Inside disordered regions, are methylarginines more often next to aromatic residues than the other arginines there?"
+    sub: "Only arginines inside IDRs of 20 or more residues: methylarginines against the other arginines of the same proteins in IDRs, by how many aromatic residues lie within 3 residues on either side"
+    section: Position in the protein
+  - id: sticker_context_5_idr
+    layer: neighbours
+    with: {window: 5, noun: aromatic residue}
+    only_in: idr
+    new: true
+    title: Next to aromatic residues, in IDRs (within 5)
+    question: "Inside disordered regions, are methylarginines more often next to aromatic residues than the other arginines there?"
+    sub: "Only arginines inside IDRs of 20 or more residues: methylarginines against the other arginines of the same proteins in IDRs, by how many aromatic residues lie within 5 residues on either side"
+    section: Position in the protein
+  # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
+  # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
+  - id: which_factor
+    test: conditional_logit
+    new: true
+    title: Which factor matters most?
+    question: "Taking all factors together, which ones set a methylarginine apart from the other arginines of its protein?"
+    sub: "One model: each methylarginine against the other arginines of its protein, all five factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
+    section: Position in the protein
+    covariates:
+      - {name: in_idr, label: In a disordered region, help: "Inside an IDR of 20 or more residues", layer: idr, is: [idr]}
+      - {name: aromatic_within_5, label: Aromatic residue within 5, help: "At least one Tyr, Phe or Trp within 5 residues on either side", layer: neighbours, with: {window: 5, noun: aromatic residue}, is: [one, two_plus]}
+      - {name: rg_motif, label: In an RG or RGG motif, help: "Gly right after the arginine (RG), alone or as RGG", layer: motif, flags: [RG, RGG]}
+      - {name: net_charge, label: "Local net charge (per +1)", help: "Lys and Arg minus Asp and Glu within 7 residues on either side, the arginine itself left out; the odds ratio is for each extra +1", window_sum: {window: 7, weights: {K: 1, R: 1, D: -1, E: -1}}}
+      - {name: domain_distal, label: Far from any domain, help: "More than 20 residues from a domain, and not between two domains", layer: domain_context, is: [distal]}
   # Interactions and binding (scripts/37_export_interaction_data.py): each a question of yes-or-no tests, each against
   # the arginines its evidence could have reached (the measured background): the proteins with that evidence, the
   # residues a structure observed or an experiment measured. Every candidate counts in the pooled test, and the
@@ -1199,6 +1287,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
+          - {analysis: condensate_role, title: Roles in condensates}
       - name: Where in the cell
         about: "Where in the cell the methylated proteins localise."
         #  its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
@@ -1211,6 +1300,11 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: structure_context}
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
+          - {analysis: sticker_context_3}
+          - {analysis: sticker_context_5}
+          - {analysis: sticker_context_3_idr}
+          - {analysis: sticker_context_5_idr}
+          - {analysis: which_factor, wide: true}
       - name: Interactions and binding
         about: "Whether methylated arginines touch RNA, DNA or other proteins. The Interactions page has the tests."
         #  the Interactions page's tile (website.pages[].overview)
@@ -2284,6 +2378,7 @@ website:                  # the look and words of the website (ptmc web); layout
           labels: marks
           value: {one: "in {n} tumour", many: "in {n} tumours", size: true}
           key: Change in tumours (TCGA)
+          link: "https://www.cbioportal.org/results/mutations?cancer_study_list=acc_tcga_pan_can_atlas_2018,blca_tcga_pan_can_atlas_2018,brca_tcga_pan_can_atlas_2018,cesc_tcga_pan_can_atlas_2018,chol_tcga_pan_can_atlas_2018,coadread_tcga_pan_can_atlas_2018,dlbc_tcga_pan_can_atlas_2018,esca_tcga_pan_can_atlas_2018,gbm_tcga_pan_can_atlas_2018,hnsc_tcga_pan_can_atlas_2018,kich_tcga_pan_can_atlas_2018,kirc_tcga_pan_can_atlas_2018,kirp_tcga_pan_can_atlas_2018,laml_tcga_pan_can_atlas_2018,lgg_tcga_pan_can_atlas_2018,lihc_tcga_pan_can_atlas_2018,luad_tcga_pan_can_atlas_2018,lusc_tcga_pan_can_atlas_2018,meso_tcga_pan_can_atlas_2018,ov_tcga_pan_can_atlas_2018,paad_tcga_pan_can_atlas_2018,pcpg_tcga_pan_can_atlas_2018,prad_tcga_pan_can_atlas_2018,sarc_tcga_pan_can_atlas_2018,skcm_tcga_pan_can_atlas_2018,stad_tcga_pan_can_atlas_2018,tgct_tcga_pan_can_atlas_2018,thca_tcga_pan_can_atlas_2018,thym_tcga_pan_can_atlas_2018,ucec_tcga_pan_can_atlas_2018,ucs_tcga_pan_can_atlas_2018,uvm_tcga_pan_can_atlas_2018&case_set_id=all&gene_list={gene}&geneset_list=%20&tab_index=tab_visualize&Action=Submit"   # cBioPortal, the gene in the 32 TCGA PanCancer Atlas studies (MC3 calls); checked 2026-11-03: the study ids are cBioPortal's, the page answers
         - id: depmap
           title: Cell lines (DepMap)
           help: "Missense and stop changes of the site's arginine in DepMap 24Q4 cancer cell lines; a taller tick means more lines (depmap_changes, depmap_change_lines)"
@@ -2293,6 +2388,7 @@ website:                  # the look and words of the website (ptmc web); layout
           labels: marks
           value: {one: "in {n} cell line", many: "in {n} cell lines", size: true}
           key: Change in cell lines (DepMap)
+          link: "https://depmap.org/portal/gene/{gene}?tab=overview"   # the page the protein card already links; checked 2026-11-03: the page answers
         - id: rna_cells
           title: RNA in cells
           help: "Residues UV-crosslinked to RNA in living cells (pepR-MS compendium: Kramer 2014 re-analysis, XRNAX, RBS-ID, pRBS-ID, pepR-MS), RBDmap RNA-bound fragments (Castello et al. 2016, HeLa) and CAPRI RNA-bound peptides (Panhale et al. 2019, HEK293; paler for ADJ-peptides next to a crosslink). pCLAP (Mullari et al. 2017) is a flag at sites inside its peptides only"

@@ -37,6 +37,12 @@
   const regionNo = cls => +(/(\d+)$/.exec(String(cls))?.[1] || 0);
   const colour = cls => (TR.colours || {})[cls] || FALLBACK[(regionNo(cls) || 6) - 1] || FALLBACK[5];
   const clsLabel = cls => (QA?.labels || {})[cls] || DP[regionNo(cls)]?.[0] || String(cls);
+  const STK = D.stickers || null;                          // the profile's sticker residues (Martin et al. 2020: aromatic patterning)
+  // one descriptive line per IDR: how many sticker residues, how far apart, the longest stretch without one (no test)
+  const patterning = x => (STK && x.st != null
+    ? `${esc(STK.heading)}: ${int(x.st)} ${esc(x.st === 1 ? STK.noun : STK.nouns)} (${esc(STK.residues.join(', '))})` +
+      (x.st > 1 ? `, median spacing ${int(x.gap)} aa` : '') + (x.st ? `, longest stretch without one ${int(x.free)} aa` : ', none in this IDR')
+    : '');
   const pr = x => D.proteins[x.p];
   const gene = x => pr(x)[1] || pr(x)[0];
   const f2 = v => (v == null ? '–' : Number(v).toFixed(2));
@@ -65,7 +71,7 @@
     const idrs = d.rows.map((r, i) => {
       const cls = d.classes[r[3]] ?? '';
       return { i, p: r[0], s: r[1], e: r[2], len: r[2] - r[1] + 1, cls, reg: get(r, 'region') ?? regionNo(cls), fp: get(r, 'f_plus'), fm: get(r, 'f_minus'),
-        fcr: get(r, 'fcr'), ncpr: get(r, 'ncpr'), kappa: get(r, 'kappa'), vals: r.slice(4, 4 + nc), marks: r[4 + nc], others: r[5 + nc] };
+        fcr: get(r, 'fcr'), ncpr: get(r, 'ncpr'), kappa: get(r, 'kappa'), st: get(r, 'stickers'), gap: get(r, 'sticker_spacing'), free: get(r, 'sticker_free'), vals: r.slice(4, 4 + nc), marks: r[4 + nc], others: r[5 + nc] };
     });
     const byP = {};
     idrs.forEach(x => { (byP[x.p] ||= []).push(x); });
@@ -247,6 +253,7 @@
     ['fcr', 'FCR', x => x.fcr ?? -9, x => f2(x.fcr), true],
     ['ncpr', 'NCPR', x => x.ncpr ?? -9, x => s2(x.ncpr), true],
     ['kappa', 'κ', x => x.kappa ?? -1, x => f2(x.kappa), true],
+    ...(STK ? [['stickers', () => cap(STK.nouns), x => x.st ?? -1, x => `<span title="${esc(patterning(x))}">${x.st == null ? '–' : int(x.st)}</span>`, true]] : []),
     ['region', 'Region', x => x.reg, x => `<span title="${esc(clsLabel(x.cls))}"><i class="idr-sw" style="--c:${colour(x.cls)}"></i>R${regionNo(x.cls)} <span class="muted small">${esc(DP[regionNo(x.cls)]?.[3] || clsLabel(x.cls))}</span></span>`, false],
     ['marks', () => cap(W.marks), x => marksOf(x), x => (marksOf(x) ? `<b>${int(marksOf(x))}</b>` : '<span class="muted">0</span>') + (SC.on && x.marks > marksOf(x) ? ` <span class="muted">of ${int(x.marks)}</span>` : ''), true],
     ['cand', () => resHead(), x => candOf(x), x => int(candOf(x)), true],
@@ -257,7 +264,7 @@
     const toks = T.q.toLowerCase().split(/[\s,]+/).filter(Boolean);
     const hay = x => `${pr(x)[1] || ''} ${pr(x)[0]} ${pr(x)[2] || ''} r${regionNo(x.cls)} ${clsLabel(x.cls)}`.toLowerCase();
     const rows = scoped().filter(x => (!T.reg || x.cls === T.reg) && (!T.only || marksOf(x) > 0) && (!toks.length || toks.every(t => hay(x).includes(t))));
-    const col = COLS.find(c => c[0] === T.sort) || COLS[7];
+    const col = COLS.find(c => c[0] === T.sort) || COLS.find(c => c[0] === 'marks');
     rows.sort((x, y) => { const a = col[2](x), b = col[2](y); const r = (typeof a === 'number' ? a - b : String(a).localeCompare(String(b))) || x.p - y.p || x.s - y.s; return T.desc ? -r : r; });
     return rows;
   }
@@ -284,6 +291,7 @@
     return `<b>${esc(gene(x))}</b> <span class="muted mono">${esc(pr(x)[0])}</span> ${int(x.s)}–${int(x.e)} <span class="muted">(${int(x.len)} aa)</span>` +
       `<br><i class="idr-sw" style="--c:${colour(x.cls)}"></i>R${regionNo(x.cls)} ${esc(clsLabel(x.cls))}` +
       `<br>FCR ${f2(x.fcr)} · NCPR ${s2(x.ncpr)} · f+ ${f2(x.fp)} · f− ${f2(x.fm)} · κ ${x.kappa == null ? 'none (no charged residue)' : f2(x.kappa)}` +
+      (patterning(x) ? `<br>${patterning(x)}` : '') +
       `<br>${SC.on ? `${int(m)} selected of its ${int(x.marks)} ${esc(x.marks === 1 ? W.mark : W.marks)}` : `${int(x.marks)} ${esc(x.marks === 1 ? W.mark : W.marks)}`}${list}; ${int(x.marks + x.others)} candidate ${esc(W.residues)} in all` +
       `<br><span class="muted">Click to open it on ${esc(gene(x))}’s map</span>`;
   };
@@ -317,7 +325,7 @@
       `<p class="sub">Every IDR of the ${esc(W.marked)} proteins${SC.on ? ' in your selection' : ''}, with charge (FCR, fraction of residues charged; NCPR, net charge per residue), how evenly the charges are mixed (κ) and the ${esc(W.marks)} inside it. These are the row “${esc(TR.title)}” of the protein maps: ${esc(TR.help || '')}. The diagram’s axes are Das & Pappu’s f+ and f− turned 45°, so that the boundaries are level (FCR 0.25 and 0.35) and upright (NCPR ±0.35).</p>` +
       `<p class="sub">The percentages and bars describe and count; the statistics are the Overview’s residue tests (${testLink}). IDRs are pooled in the counts, so a protein with many IDRs or many ${esc(W.marks)} counts for more; the test compares within each protein and does not have this weakness.${SC.on ? ` With a selection, its ${esc(W.marks)} are counted against the other candidate ${esc(W.residues)} of its proteins’ IDRs; ${esc(W.marks)} not selected are left out of both.` : ''}</p>` +
       `<p class="sub">Each IDR’s parameters are as the run wrote them (<span class="mono">${esc(TR.values.table || '')}</span>), defined as Das & Pappu define them and CIDER computes them. The kit computes them itself from the published definitions; it runs no code of CIDER’s.</p>` +
-      `<dl class="idr-defs">${(TR.values.columns || []).map(c => `<dt>${esc(c.label)}</dt><dd>${esc(c.help)}</dd>`).join('')}</dl><ul>${REFS.map(([t, doi, what]) => `<li>${esc(t)}. <a href="https://doi.org/${esc(doi)}">doi:${esc(doi)}</a> <span class="muted">(${esc(what)})</span></li>`).join('')}</ul></details>`;
+      `<dl class="idr-defs">${(TR.values.columns || []).filter(c => STK || !/^sticker/.test(c.name) && c.name !== 'stickers').map(c => `<dt>${esc(c.label)}</dt><dd>${esc(c.help)}</dd>`).join('')}</dl><ul>${REFS.map(([t, doi, what]) => `<li>${esc(t)}. <a href="https://doi.org/${esc(doi)}">doi:${esc(doi)}</a> <span class="muted">(${esc(what)})</span></li>`).join('')}</ul></details>`;
   }
   const diagramBody = () => (d => `<svg viewBox="0 0 ${DW} ${d.H}" class="idr-svg" role="img" aria-label="Diagram of states: IDRs by FCR and NCPR">${d.body}</svg>`)(diagram(false));
   const chips = key => `<button type="button" class="fchip" data-idr-chip="${key}" data-v="" aria-pressed="${!T[key]}">All</button>` +

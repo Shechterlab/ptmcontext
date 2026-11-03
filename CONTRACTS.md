@@ -38,6 +38,11 @@ Conventions:
   candidate residues of the proteins a table lists (`proteins:`; its `label` is added to the pooled rows' background).
 - Rows are in the order the analysis gives (`order:`, a list of categories), else: pooled residue rows by odds ratio,
   within-protein rows by category, protein-set rows by p.
+- A residue question may count only the residues inside the IDRs (`only_in: idr`) or inside the regions of an interval
+  table (`only_in: {role, kind}`): the marks and candidate residues outside are counted on neither side (and a class
+  layer is needed, so that the website can tell the marks outside). The `neighbours` layer (`with: {window, residues,
+  many, noun}`) places a residue in `none`, `one` or `two_plus` (`many` or more) according to how many residues of a
+  set lie within `window` residues of it on either side; the set is `with.residues` or the mark profile's `stickers`.
 - `enricher`: protein-set tests (clusterProfiler's `enricher`). `a, b, c, d` are k, n − k, M − k and N − M − n + k
   (marked proteins in the set; other marked proteins; other proteins in the set; the rest of the background). One-sided
   hypergeometric p; `fold_enrichment` (k/n)/(M/N). The background is the universe's proteins in at least one set, or
@@ -63,6 +68,20 @@ Conventions:
   conditions all hold for it (`equals`, `in`, `contains` on text; `at_least` and `below` on a column's number or the
   `ratio` of two columns, missing where the second is 0 or empty; a rule without conditions takes every row left);
   the source annotates every protein of the table's rows.
+- `enricher` on sets made by overlapping rules (`sets.exclusive: false`): each rule takes every row whose conditions
+  hold, so a row may be in several sets (a CD-CODE membership whose roles are "driver; member" is in the driver set and
+  in the member set). A protein is in a set when any of its rows is.
+- `conditional_logit` (`test: conditional_logit`, `covariates:`; `ptmcontext/model.py`): one conditional logistic
+  regression (`ptmstats.conditional_logit`; Breslow & Day 1980, the several-factor form of Mantel–Haenszel) with a
+  stratum for each protein, the marks the cases and the other candidate residues the controls, on the whole dataset (the
+  browser does not refit it for a selection). One row per factor and model: `category` the factor's name, `stratum`
+  `adjusted` (all factors together) or `alone` (that factor in a model by itself), `odds_ratio` with its Wald 95% CI,
+  Wald `p`, `q` (Benjamini–Hochberg over the factors of the model), `n_strata` the proteins with a mark and another
+  candidate residue. `a, b, c, d`: for a yes-or-no factor the marks with and without it and the other candidate residues
+  with and without it; for a number, `a` marks and `c` other candidate residues only. A factor is a layer's classes
+  (`is`), a flags layer's flags (`flags`), or a number summed over a window of the sequence with weights
+  (`window_sum: {window, weights}`, the residue itself left out, `per` its unit). A factor that does not vary is left
+  out and the run says so. Mark such an analysis `new: true`.
 - `enricher` on calls (`sets.member_when: [conditions]`): the table has a row for each protein and set the source
   tests; every protein of its rows is in the background, and a member of a row's set only where the conditions hold
   (a per-protein call, such as "its bound RNAs gather here").
@@ -283,7 +302,9 @@ Options of a table: `role` (a role of `inputs:`, so the file is in a manifest) o
 accession and position by default); `include`/`exclude` conditions as for marks; `split`, a separator: cells of
 `class`, `label`, `value` and `ref` holding lists in step become one item per entry (lists of different lengths are an
 error); `values`, codes of a column in words (`{column: {code: words}}`); `sep` for a table that is not tab-separated.
-A row may instead be found in each protein's sequence (`sequence: {motif, min, gap, label, strong}`: runs of at least
+A row's `link` is a page about its evidence for a pinned item with no link of its own: a URL with `{gene}`, `{label}` (the
+item's label) and `{position}`; a row the pipeline computes (a track, a motif found in the sequence) links to its Method
+section instead. A row may instead be found in each protein's sequence (`sequence: {motif, min, gap, label, strong}`: runs of at least
 `min` matches of a regular expression, each within `gap` residues of the one before). A row whose data a protein lacks is
 not drawn on it, and a site without rows has none.
 
@@ -349,7 +370,7 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 | `proteins.tsv` | one per protein with a mark | `accession, gene, name, entry, length, sequence_md5, marks, candidates` |
 | `units.tsv` | one per drawn unit | `accession, kind, start, end, label, source, class, ref` |
 | `tracks.json` | per kind of drawn unit | `{kind, title, style, help, roles, analysis, colours?, values?}`: `style` is `domains` (boxes on the backbone), `disorder` (the backbone's wave) or `segments` (a row of boxes); `analysis` names the question whose classes colour it; `values`, for a kind whose units carry numbers (a layer's `Track.values`), is `{table, columns: [{name, label, help}]}` |
-| `units_<kind>.tsv` | one per unit of a kind with `values`, on a protein with a mark | `accession, start, end, length, class`, the value columns (up to 6 significant digits, empty for missing), `marks` (the counted marks inside) and `other_candidates` (the other candidate residues inside; left-out marks on neither side, as the tests count them). The IDR charge layer writes `units_idr.tsv`: each IDR with `f_plus, f_minus, fcr, ncpr, kappa, region` (its Das–Pappu region, 1 to 5; `class` r1 to r5) |
+| `units_<kind>.tsv` | one per unit of a kind with `values`, on a protein with a mark | `accession, start, end, length, class`, the value columns (up to 6 significant digits, empty for missing), `marks` (the counted marks inside) and `other_candidates` (the other candidate residues inside; left-out marks on neither side, as the tests count them). The IDR charge layer writes `units_idr.tsv`: each IDR with `f_plus, f_minus, fcr, ncpr, kappa, region` (its Das–Pappu region, 1 to 5; `class` r1 to r5) and, when the mark profile names `stickers` (aromatic residues, say), `stickers, sticker_spacing, sticker_free` (how many, the median distance between neighbours, the longest stretch without one; a description for the IDRs page, never tested) |
 | `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used, and `counts: {codes, N, sets}`, the background's proteins in each stratum overall and in each set (from the lowest decile, then `none`); with `values`, `values: {columns, marked: {accession: [number or null per column]}, others: {column: sorted numbers}}` (columns with `background: true`); for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; absent when the site has no protein-set question |
 | `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used; for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; with a `hierarchy`, `parents: {set: [parent sets]}` (each tested set's parents among the tested sets) and `root`; for sets gathered into families, `gathers: {family: [set ids]}` (each tested family's own sets, which a website's table of member sets groups by); absent when the site has no protein-set question |
 | `set_names.tsv` | per set | `analysis, set, name` |

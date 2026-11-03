@@ -32,7 +32,21 @@ VALUES = (('f_plus', 'f+', 'Fraction of the IDR’s residues that are positive (
           ('ncpr', 'NCPR', 'Net charge per residue: f+ − f−'),
           ('kappa', 'κ', 'How far the IDR’s charges are segregated from each other: 0 well mixed, 1 fully segregated (Das & Pappu 2013); '
                     'none without charged residues'),
-          ('region', 'Das–Pappu region', 'Its region of the diagram of states, 1 to 5 (the class r1 to r5)'))
+          ('region', 'Das–Pappu region', 'Its region of the diagram of states, 1 to 5 (the class r1 to r5)'),
+          # the mark profile's sticker residues (aromatic residues for arginine) along the IDR: described, not tested (Martin et al. 2020)
+          ('stickers', 'Stickers', 'Number of sticker residues (the mark profile’s: aromatic residues for arginine) in the IDR; empty when the profile names none'),
+          ('sticker_spacing', 'Sticker spacing', 'Median distance, in residues, between neighbouring sticker residues of the IDR (evenly spaced stickers have a small spread, clustered ones a few short gaps and long stretches); none with fewer than two stickers'),
+          ('sticker_free', 'Longest stretch without a sticker', 'Longest run of residues of the IDR with no sticker residue, counted to its ends'))
+
+
+def sticker_patterning(segment: str, letters: set) -> tuple[int, float | None, int]:
+    """(number of sticker residues, median spacing between neighbours, longest stretch without one) of an IDR's sequence."""
+    at = [i for i, c in enumerate(segment) if c in letters]
+    if not at:
+        return 0, None, len(segment)
+    gaps = [b - a for a, b in zip(at, at[1:])]
+    free = max([at[0], len(segment) - 1 - at[-1], *[g - 1 for g in gaps]])
+    return len(at), (float(np.median(gaps)) if gaps else None), free
 
 
 def idr_charge_units(ctx: Context, accessions: set) -> pd.DataFrame:
@@ -46,6 +60,10 @@ def idr_charge_units(ctx: Context, accessions: set) -> pd.DataFrame:
         params = [CH.charge(ctx.snapshot.sequences[a][s - 1:e]) for a, s, e in zip(units['accession'], units['start'], units['end'])]
         for f in ('f_plus', 'f_minus', 'fcr', 'ncpr', 'kappa', 'region'):
             units[f] = [getattr(c, f) for c in params]
+        st = ctx.profile.stickers if ctx.profile is not None else None
+        pat = [sticker_patterning(ctx.snapshot.sequences[a][s - 1:e], set(st['residues'])) if st else (None, None, None)
+               for a, s, e in zip(units['accession'], units['start'], units['end'])]
+        units['stickers'], units['sticker_spacing'], units['sticker_free'] = ([x[i] for x in pat] for i in range(3))
         units['class'] = [f'r{c.region}' for c in params]
         units['label'] = [f"{LABELS[f'r{c.region}']}: FCR {c.fcr:.2f}, NCPR {c.ncpr:+.2f}, κ {c.kappa:.2f}" if c.kappa is not None
                           else f"{LABELS[f'r{c.region}']}: no charged residue" for c in params]

@@ -56,17 +56,21 @@ def candidates_and_marks(ctx: L.Context, marked: pd.DataFrame, left_out: pd.Data
 def residue_test(ctx: L.Context, marked: pd.DataFrame, layer: str | L.Layer, analysis: str, *,
                  left_out: pd.DataFrame | None = None, methods: Iterable[str] = ('fisher', 'mantel_haenszel'),
                  stratum: str = 'all', keep: dict | None = None, proteins: set | None = None, alone: str = 'drop',
-                 order: list | None = None, pooled_label: str = '') -> pd.DataFrame:
+                 order: list | None = None, pooled_label: str = '', only_in=None) -> pd.DataFrame:
     """Statistics rows (statistics.COLUMNS) of the marked residues against the other candidate residues of the same
     proteins, for each class (or flag) of the layer. left_out: residues counted on neither side (sites kept pending).
     proteins: count only the marks (and so the candidate residues) of these proteins. alone: 'drop' (default) leaves
     out the marks of a protein with no other candidate residue, 'count' counts them. order: the rows' order, as a
     protein-set question's (default: pooled rows by odds ratio, within-protein rows by category). pooled_label:
-    added to the pooled rows' background."""
+    added to the pooled rows' background. only_in: count only the marks and candidate residues inside the regions of
+    'idr' (the IDRs) or of {role, kind} (any interval table)."""
     layer = L.get(layer, ctx) if isinstance(layer, str) else layer
     if proteins is not None:
         marked = marked[marked['accession'].isin(proteins)]
     cand, is_marked, is_left = candidates_and_marks(ctx, marked, left_out)
+    if only_in:
+        inside = inside_regions(ctx, cand, only_in)
+        cand, is_marked, is_left = cand[inside], is_marked[inside], is_left[inside]
     annotated = pd.concat([cand, layer(cand, ctx)], axis=1)
     if layer.shape == 'class':
         columns = None
@@ -76,7 +80,7 @@ def residue_test(ctx: L.Context, marked: pd.DataFrame, layer: str | L.Layer, ana
     targets = annotated[is_marked]
     background = annotated[~is_marked & ~is_left]
     if keep is not None:   # for the per-protein outputs: every candidate residue, annotated, and which are marks
-        keep.update(annotated=annotated, is_marked=is_marked, is_left=is_left, columns=columns)
+        keep.update(annotated=annotated, is_marked=is_marked, is_left=is_left, columns=columns, restricted=bool(only_in))
     if alone not in ('drop', 'count'):
         raise ValueError(f"{analysis}: alone must be 'drop' or 'count', not {alone!r}")
     # sites on a protein with no other candidate residue have no background: neither test counts them, unless the
@@ -90,6 +94,19 @@ def residue_test(ctx: L.Context, marked: pd.DataFrame, layer: str | L.Layer, ana
         rows += _within_protein(same, background, columns, analysis, stratum, ctx.profile.background('same_protein'), order,
                                 alone == 'count')
     return pd.DataFrame(rows)
+
+
+def inside_regions(ctx: L.Context, cand: pd.DataFrame, only_in) -> np.ndarray:
+    """Whether each candidate residue is inside a region of 'idr' (the IDRs) or of {role, kind} (an interval table)."""
+    from .question import covered
+    if only_in == 'idr':
+        from .layers.context import idr_units
+        units = idr_units(ctx)
+    elif isinstance(only_in, dict) and 'role' in only_in:
+        units = ctx.units(only_in['role'], only_in.get('kind', only_in['role']))
+    else:
+        raise ValueError(f"only_in must be 'idr' or {{role, kind}}, not {only_in!r}")
+    return covered(cand['accession'].to_numpy(), cand['position'].to_numpy(dtype=np.int64), units)
 
 
 def _ordered(rows: list[dict], order: list | None) -> list[dict]:

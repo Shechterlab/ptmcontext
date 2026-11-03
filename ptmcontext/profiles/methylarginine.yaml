@@ -49,6 +49,12 @@ motifs:            # read in the 15-residue window centred on the arginine (wind
     - {name: RGG, help: "Gly at +1 and +2", all: [{at: 1, in: G}, {at: 2, in: G}]}
     - {name: RXR, help: "Another Arg at −2 or +2", any: [{at: -2, in: R}, {at: 2, in: R}]}
 
+stickers:          # aromatic residues pair with arginine (cation-pi) and are the stickers that hold condensates together
+  residues: [Y, F, W]   # Wang et al. 2018 Cell, doi:10.1016/j.cell.2018.06.006; Choi, Holehouse & Pappu 2020, doi:10.1146/annurev-biophys-121219-081629
+  noun: aromatic residue
+  nouns: aromatic residues
+  heading: Aromatic patterning   # the IDRs page's line on the spacing of the stickers (Martin et al. 2020, doi:10.1126/science.aaw8653)
+
 words:             # the nouns every text and figure uses
   mark: methylarginine
   marks: methylarginines

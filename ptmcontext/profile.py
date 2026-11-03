@@ -57,6 +57,13 @@ class Profile:
     def motif_families(self) -> list[dict]:
         return list(self.data.get('motifs', {}).get('families', []))
 
+    @property
+    def stickers(self) -> dict | None:
+        """The profile's sticker residues ({residues, noun, nouns}), or None when it names none."""
+        s = self.data.get('stickers')
+        return None if not s else {'residues': list(s['residues']), 'noun': s.get('noun', 'sticker residue'),
+                                   'nouns': s.get('nouns', s.get('noun', 'sticker residue') + 's'), 'heading': s.get('heading', 'Sticker patterning')}
+
     def background(self, scope: str) -> str:
         """The background wording of a statistics row, from the profile's words (e.g. 'other arginines of the
         methylated proteins')."""
