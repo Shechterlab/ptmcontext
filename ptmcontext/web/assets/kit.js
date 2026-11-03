@@ -41,7 +41,7 @@
     pooled: `All the ${W.residues} are put in one group and compared together.`,
     strata: 'The groups inside which a test compares like with like, such as single proteins, before the groups are combined.',
   };
-  const gloss = (term, text) => `<abbr class="gl" tabindex="0" title="${esc(GLOSS[String(term).toLowerCase()] || '')}">${esc(text || term)}</abbr>`;
+  const gloss = (term, text) => `<abbr class="gloss" tabindex="0" title="${esc(GLOSS[String(term).toLowerCase()] || '')}">${esc(text || term)}</abbr>`;
   // what a tile's fold is relative to, in a few words
   const baseline = (a, m) => (a.kind === 'protein_sets' ? `against ${a.describe || 'other proteins'}`
     : m === 'fisher' ? `against all other ${W.residues} of the ${W.marked} proteins` : m === 'study' ? `against other ${W.residues} in the same study` : `against other ${W.residues} in the same proteins`);
@@ -518,7 +518,7 @@
   }]);
   function lead() {
     const q = OV.question || `Which parts of proteins are ${W.marked_long}?`;
-    const keyP = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (${gloss('q')} > ${PADJ})</span>${vsOn() ? `<span><i class="kd more"></i> your selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>` : ''}` +
+    const keyP = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i><span>no difference (${gloss('q')} > ${PADJ})</span></span>${vsOn() ? `<span><i class="kd more"></i> your selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>` : ''}` +
       `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">How to read</button></p>`;
     const howP = (S.how ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a log scale (the solid line is no difference). For questions about where ${esc(W.marks)} sit, × is an odds ratio: the odds that a ${esc(W.mark)} is in the class over the odds for another ${esc(W.residue)}. It is not the ratio of the two shares, which is closer to 1. The hover gives both shares${D.analyses.some(a => a.kind === 'protein_sets') ? '. For questions about kinds of protein, × is the fold enrichment: the share of ' + esc(W.marked) + ' proteins in the set over the share of all proteins' : ''}. Within each protein, each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein (Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}. Pooled puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact test). ${D.analyses.some(a => a.kind === 'protein_sets') ? `Questions about kinds of protein show the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). ` : ''}Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Grey: significant but within 1.1×. Hollow: no significant difference. A tile shows the classes that differ most and opens to every class. Hover a row for its counts.</p>` : '');
     const key = keyP + howP;
@@ -572,7 +572,7 @@
   // on a first visit, one line on the rows: a class row selects, a title opens (dismissed for good with its ×)
   const HINT_KEY = 'ptmc-pick-hint';
   const hintSeen = () => { try { return localStorage.getItem(HINT_KEY) === '1'; } catch (e) { return false; } };
-  const pickHint = () => (hintSeen() || vsOn() ? '' : `<p class="pick-hint" role="note"><b>Click a row to select it.</b> A row in a tile selects its ${esc(W.marks)} as a filter, and stays here; a tile's title or <i>details ›</i> opens the question. <button type="button" class="linkish" data-pick-hint aria-label="Dismiss this hint">Got it</button></p>`);
+  const pickHint = () => (hintSeen() || vsOn() ? '' : `<p class="pick-hint" role="note"><b>Click a row to select it.</b> A row in a tile selects its ${esc(W.marks)} as a filter and stays here. A tile's title or <i>details ›</i> opens the question. <button type="button" class="linkish" data-pick-hint aria-label="Dismiss this hint">Got it</button></p>`);
   K.clicks.push(['[data-pick-hint]', el => { try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* storage blocked: this visit only */ } el.closest('.pick-hint').remove(); }]);
   function overview() {
     REG = [];
