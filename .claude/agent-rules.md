@@ -6,6 +6,8 @@ Read AGENTS.md first; its rules hold. Also:
   (`PTM_Pipeline/docs/assets/explorer.js`, about 18k lines) is grep-only. Prefer a script that measures over a
   screenshot that you look at, and take a screenshot only to confirm a fix. Don't rerun the full pipeline unless
   your change can alter its output; `pytest -q -k <area>` comes before the full suite.
+- **Never `pip install`** (it repoints the shared `ptmc` command and packages for everyone). Run your copy's code as
+  `PYTHONPATH=$PWD:$PWD/packages/ptmstats python3 -m ptmcontext.cli ...` and test with the same `PYTHONPATH`.
 - **Scope.** Do only the task you were given. List other problems you find in your report; don't fix them.
 - **Commit as you go**, in the worktree you are given. It may be detached (no branch); that's intended. Never create,
   push or delete branches, and never merge. The owner keeps a single branch, `develop`; your commits are merged by hash.
