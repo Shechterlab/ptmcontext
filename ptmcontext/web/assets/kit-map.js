@@ -543,10 +543,10 @@
         return { f, a, w, l, text, how };
       });
     };
-    const namedBoxes = (list, fill, stroke, ink, labOf, tipOf) => {
+    const namedBoxes = (list, fill, stroke, ink, labOf, tipOf, srcOf) => {
       const placed = lanes(list.slice().sort((p1, p2) => p1.a - p2.a || (p2.b - p2.a) - (p1.b - p1.a)), 5, labOf), nl = Math.max(1, ...placed.map(x => x.l + 1));
       placed.forEach(({ f, a, w, l, text, how }) => {
-        const yy = y + l * 15, k = it({ tip: tipOf(f, false), card: tipOf(f, true), a: f.a, b: f.b });
+        const yy = y + l * 15, k = it({ tip: tipOf(f, false), card: tipOf(f, true), a: f.a, b: f.b, src: srcOf ? srcOf(f) : undefined });
         parts.push(`<rect x="${r1(a)}" y="${yy}" width="${r1(w)}" height="12" rx="3" fill="${fill(f)}"${stroke(f) ? ` stroke="${stroke(f)}" stroke-width="0.8"` : ''} data-mi="${k}"/>`);
         if (how === 'in' || how === 'cut') parts.push(`<text x="${r1(how === 'in' ? a + w / 2 : a + 3)}" y="${yy + 9}" font-size="9.5"${how === 'in' ? ' text-anchor="middle"' : ''} fill="${ink}" pointer-events="none">${esc(text)}</text>`);
         else if (how === 'after') parts.push(`<text x="${r1(a + w + 4)}" y="${yy + 9}" font-size="9.5" fill="${ink}">${esc(text)}</text>`);
@@ -606,7 +606,7 @@
           (cs.help ? `<br><span class="muted">${esc(cs.help)}</span>` : '') + `<br><span class="muted">${esc(r.title)}${full ? ': ' + esc(ownHelp(r)) : r.sequence ? ', found in the sequence' : ownVersion(r) ? ' · ' + esc(ownVersion(r)) : ''}</span>`;
       };
       if (shown.every(x => markOf(x) === 'named')) {
-        const h = namedBoxes(shown.map(x => ({ a: x[1], b: x[2], x })), f => colourOf(f.x), () => '', ink, f => f.x[4], (f, full) => tipOf(f.x, full));
+        const h = namedBoxes(shown.map(x => ({ a: x[1], b: x[2], x })), f => colourOf(f.x), () => '', ink, f => f.x[4], (f, full) => tipOf(f.x, full), f => ({ own: r, x: f.x }));
         rowLabel(row[1], y + 6, row[3]); y += h + 6;
         [...new Set(shown.map(x => x[3]))].forEach(c => key(SW.box(cfgColour(CL[c], 'colour', P, base)), CL[c]?.label || r.title));
         return;

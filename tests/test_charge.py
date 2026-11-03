@@ -77,10 +77,10 @@ def test_the_run_writes_each_idr_with_its_charge_and_what_is_inside(tmp_path):
     out = protein_outputs(snap, ctx.profile, marked, kept, ctx, layers={'idr_charge': layer})
     track = next(t for t in out['tracks.json'] if t['kind'] == 'idr')
     assert track['values']['table'] == 'units_idr.tsv'
-    assert [c['name'] for c in track['values']['columns']] == ['f_plus', 'f_minus', 'fcr', 'ncpr', 'kappa', 'region']
+    assert [c['name'] for c in track['values']['columns']] == ['f_plus', 'f_minus', 'fcr', 'ncpr', 'kappa', 'region', 'stickers', 'sticker_spacing', 'sticker_free']
     t = out['units_idr.tsv']
     assert list(t.columns) == ['accession', 'start', 'end', 'length', 'class', 'f_plus', 'f_minus', 'fcr', 'ncpr', 'kappa',
-                               'region', 'marks', 'other_candidates']
+                               'region', 'stickers', 'sticker_spacing', 'sticker_free', 'marks', 'other_candidates']
     # only the marked proteins' IDRs: C has one, but no mark; B has a mark and no IDR
     assert t[['accession', 'start', 'end', 'length', 'class']].values.tolist() == [['A', 31, 54, 24, 'r2'], ['A', 85, 106, 22, 'r4']]
     first, second = t.iloc[0], t.iloc[1]
