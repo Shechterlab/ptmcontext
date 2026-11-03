@@ -31,3 +31,7 @@ Write as a careful scientist would for colleagues.
 
 Check that the site still builds and that `pytest -q -k "web or help or search"` passes. In your report, give
 before-and-after word counts per file.
+
+Never edit an analysis's `background:` text (or any other text written into the statistics table): the parity test
+compares it with the release word for word. Run the parity test (`pytest tests/test_parity_v1_4_3.py`) after any
+change to a site file.

@@ -718,7 +718,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       families: {rules: sites/data/methylarginine_cell_regions.yaml}
     whole_universe: true
     min_size: 5
-    background: "the other proteins classified by organelle IP (HEK293T). A region is the Organelle IP it holds (scripts/cell_maps.py, REGION_OF)"
+    background: "the other proteins organelle IP classifies (HEK293T). A region is the Organelle IP it holds (scripts/cell_maps.py, REGION_OF)"
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_hcm_compartment
     test: protein_sets
@@ -751,7 +751,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sets: {input: organelle_ip, set: compartment, protein: canonical_UniProtAC, exclude: [{column: compartment, equals: unclassified}]}
     whole_universe: true
     min_size: 5
-    background: the other proteins classified by organelle IP (HEK293T)
+    background: the other proteins organelle IP classifies (HEK293T)
     labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granule,
              p-body: P-body, actin_cytoskeleton: Actin cytoskeleton, centrosome: Centrosome, proteasome: Proteasome,
              14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
