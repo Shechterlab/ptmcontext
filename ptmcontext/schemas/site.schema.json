@@ -1399,6 +1399,55 @@
                   }
                 }
               }
+            },
+            "share": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "where the marks fall, as one bar: a question whose classes partition the marks (else the first that does), the classes to show in order (at most three are coloured; the rest is 'other'), and shorter labels",
+              "properties": {
+                "analysis": {
+                  "type": "string"
+                },
+                "classes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 3
+                },
+                "labels": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "findings": {
+              "type": "array",
+              "maxItems": 3,
+              "description": "the strongest findings to draw as small bars, each linking to its question; without it, the largest effects at q <= 0.05 on at least 20 marks, one per question",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "analysis",
+                  "class"
+                ],
+                "properties": {
+                  "analysis": {
+                    "type": "string"
+                  },
+                  "class": {
+                    "type": "string",
+                    "description": "the class (or protein set) of that question"
+                  }
+                }
+              }
+            },
+            "protein": {
+              "type": "string",
+              "description": "the example protein drawn as a map on the start panel: a gene or accession; without it, the protein with the most marks"
             }
           }
         },
@@ -3991,6 +4040,62 @@
             "note": {
               "type": "string",
               "description": "the note above the Overview and the Sites table where there are such marks: {all} the marks with the tag, {counted} those counted, {shown} those shown only, {others} the other counted marks"
+            }
+          }
+        },
+        "landing": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the landing page's card for this site; share and findings default to the start panel's",
+          "properties": {
+            "share": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "where the marks fall, as one bar: a question whose classes partition the marks (else the first that does), the classes to show in order (at most three are coloured; the rest is 'other'), and shorter labels",
+              "properties": {
+                "analysis": {
+                  "type": "string"
+                },
+                "classes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 3
+                },
+                "labels": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "findings": {
+              "type": "array",
+              "maxItems": 3,
+              "description": "the strongest findings to draw as small bars, each linking to its question; without it, the largest effects at q <= 0.05 on at least 20 marks, one per question",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "analysis",
+                  "class"
+                ],
+                "properties": {
+                  "analysis": {
+                    "type": "string"
+                  },
+                  "class": {
+                    "type": "string",
+                    "description": "the class (or protein set) of that question"
+                  }
+                }
+              }
+            },
+            "tagline": {
+              "type": "string",
+              "description": "a line of at most ten words for the card; defaults to website.tagline"
             }
           }
         }

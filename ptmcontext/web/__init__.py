@@ -27,6 +27,7 @@ from ..inputs import role_inputs, site_input_names
 from ..profile import load_profile
 from ..site import code_commit, load_site, manifest_of, root_of
 from .counts import counts_data
+from .glance import glance
 from . import structure as S3D
 
 FONTS = {
@@ -38,7 +39,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-help.js', 'kit-conserve.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -306,6 +307,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'mark': profile.id, 'residues': profile.residues,
         'counts': {'marks': run['marks']['counted'], 'proteins': run['marks']['proteins']},
         'analyses': analyses, 'rows': rows, 'run': run,
+        'glance': glance(analyses, rows, run['marks']['counted'], web.get('start'), web.get('landing')),
         'citation': site_citation(site),
         'kit': {**kit_citation(), 'version': __version__, 'commit': run.get('code_commit') or code_commit()},
         'statistics_tsv': (folder / 'statistics.tsv').read_text(),
@@ -877,6 +879,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     (out / 'assets' / 'icon.svg').write_text(icon)
     if logo:
         (out / 'assets' / 'lab.svg').write_text(logo)
+    (out / 'glance.json').write_text(json.dumps(data['glance'], separators=(',', ':'), default=int))      # the landing page's card
     (out / 'index.html').write_text(page(inline=False))
     (out / f'{site["id"]}.html').write_text(page(inline=True))
     log(f'  -> {out / "index.html"} (with assets/) and {out / (site["id"] + ".html")} (one file)')
@@ -886,6 +889,35 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
 def _licence_words(spdx: str) -> str:
     """CC-BY-NC-SA-4.0 -> CC BY-NC-SA 4.0; MIT stays MIT."""
     return spdx.replace('CC-', 'CC ', 1).rsplit('-', 1)[0] + ' ' + spdx.rsplit('-', 1)[1] if spdx.startswith('CC-') else spdx
+
+
+def _card_pictures(gl: dict, sid: str) -> str:
+    """A landing card's pictures, the same marks as the site's own first screen (kit-glance.js): the bar of where the
+    marks fall, with its legend, and the strongest findings as small bars, each linking to its question."""
+    out = ''
+    s = gl.get('share')
+
+    def pct(n):
+        return f'{100 * n / s["total"]:.0f}' if 100 * n / s['total'] >= 1 else '< 1'
+    if s and s.get('parts'):
+        top = max((p for p in s['parts'] if p['slot']), key=lambda p: p['n'], default=s['parts'][0])
+        label = ', '.join(f'{p["label"]} {pct(p["n"])}%' for p in s['parts'])
+        out += (f'<div class="gl-share"><p class="gl-lead"><b class="gl-big">{pct(top["n"])}%</b> <span>{html.escape(top["label"])}</span></p>'
+                f'<div class="gl-bar" role="img" aria-label="{html.escape(label)}">' + ''.join(f'<i class="gl-seg s{p["slot"]}" style="flex:{p["n"]} 1 0"></i>' for p in s['parts']) + '</div>'
+                '<ul class="gl-legend">' + ''.join(f'<li><i class="gl-sw s{p["slot"]}"></i>{html.escape(p["label"])} <b>{pct(p["n"])}%</b></li>' for p in s['parts']) + '</ul></div>')
+    rows = ''
+    for f in gl.get('findings') or []:
+        e = f['eff']
+        v = e if e >= 1 else 1 / e
+        w = min(1, abs(math.log2(e)) / 4) * 50
+        vtxt = format(v, '.0f' if v >= 10 else '.1f')
+        side = 'left' if f['dir'] == 'more' else 'right'
+        rows += (f'<li><a href="{sid}/#overview/{html.escape(quote(f["analysis"]))}" title="{html.escape(f["title"])}: {html.escape(f["label"])}. Open the question.">'
+                 f'<span class="gl-name">{html.escape(f["label"])}</span><span class="gl-axis" aria-hidden="true"><i class="gl-fill {f["dir"]}" style="{side}:50%;width:{w:.0f}%"></i></span>'
+                 f'<span class="gl-val {f["dir"]}">{vtxt}× {f["dir"]}</span></a></li>')
+    if rows:
+        out += f'<ol class="gl-finds gl-card-finds">{rows}</ol>'
+    return out
 
 
 def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None, log=print, skip_missing: bool = False) -> Path:
@@ -910,32 +942,22 @@ def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None,
             shutil.rmtree(dest)
         shutil.copytree(src, dest)
         run = json.loads((src.parent / 'run.json').read_text())
-        cit = site_citation(site)
         profile = load_profile(site['mark'])
         band = web.get('band', DEFAULT_BAND)
         lab = lab or web.get('lab')
-        # each site's card: what it holds (its tagline, how many marks on how many proteins, its questions, its
-        # sequences, version and licence) and three ways to start in it, the same as its own start panel
+        # each site's card: its marks, where they fall (one bar), its strongest findings and three ways to start; the
+        # pictures are the site's own (web/glance.json, chosen in website.landing or website.start)
         sid, name, marks_word = html.escape(site['id']), html.escape(web.get('name', site['title'])), html.escape(profile.words['marks'])
-        # the questions, named as the site's Overview groups them (its sections), else by their own titles
-        n_q = len(run.get('analyses') or {})
-        titles = [x['name'] for x in ((web.get('overview') or {}).get('sections') or []) if x.get('name')] \
-            or [(site_analysis.get('title') if isinstance(site_analysis, dict) else None) or a.get('title') or k
-                for (k, a), site_analysis in zip((run.get('analyses') or {}).items(), [*(site.get('analyses') or []), *[None] * n_q])]
         starts = [x for x in ((web.get('start') or {}).get('examples') or []) if x.get('query')] or [{'query': e} for e in (web.get('examples') or [])]
-        start_links = ''.join(f'<li><a href="{sid}/#overview?q={html.escape(quote(x["query"]))}">{html.escape(x.get("label") or x["query"])}'
-                              + (f' <span class="mono">{html.escape(x["query"])}</span>' if x.get('label') else '') + '</a></li>' for x in starts[:3])
-        facts = [f'{run["marks"]["counted"]:,} {marks_word} on {run["marks"]["proteins"]:,} proteins',
-                 f'{n_q} question{"s" if n_q != 1 else ""}' + (f': {html.escape(", ".join(t for t in titles[:5]))}{", …" if len(titles) > 5 else ""}' if titles else ''),
-                 f'sequences: {html.escape(run["snapshot"]["release"])}']
-        if cit:
-            facts.append(f'version {html.escape(cit["version"])}' + (f' · data {html.escape(_licence_words(cit.get("licence", "")))}' if cit.get('licence') else ''))
+        start_links = ''.join(f'<li><a href="{sid}/#overview?q={html.escape(quote(x["query"]))}">{html.escape(x.get("query"))}</a></li>' for x in starts[:3])
+        gl = json.loads((src / 'glance.json').read_text()) if (src / 'glance.json').exists() else {}
+        pictures = _card_pictures(gl, sid)
+        tagline = (web.get('landing') or {}).get('tagline') or web.get('tagline', '')
         cards.append(
             f'<article class="land-card" aria-labelledby="card-{sid}"><div class="band" style="background:linear-gradient(160deg,{band[0]},{band[1]})">'
-            f'<h2 id="card-{sid}"><a href="{sid}/">{name}</a></h2></div><div class="body"><p>{html.escape(web.get("tagline", ""))}</p>'
-            f'<ul class="facts">{"".join(f"<li>{f}</li>" for f in facts)}</ul>'
-            + (f'<p class="start-h">Start with</p><ul class="starts">{start_links}</ul>' if start_links else '')
-            + f'<p><a class="open" href="{sid}/">Open the {name} ›</a></p></div></article>')
+            f'<h2 id="card-{sid}"><a href="{sid}/">{name}</a></h2></div><div class="body"><p>{html.escape(tagline)} '
+            f'<span class="muted">{run["marks"]["counted"]:,} {marks_word}, {run["marks"]["proteins"]:,} proteins.</span></p>{pictures}'
+            + (f'<ul class="starts" aria-label="Start with">{start_links}</ul>' if start_links else '') + '</div></article>')
         log(f'  {site["id"]} -> {dest}')
     kit = kit_citation()
     lab_html = (f'<a class="brand-mark" href="{html.escape(lab.get("url", "#"))}"><span>{html.escape(lab.get("name", ""))}'
@@ -960,7 +982,8 @@ def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None,
 .land-card .body {{ display: grid; align-content: start; gap: 0.5rem; padding: 0.9rem 1.1rem 1.1rem; font-size: 0.92rem; }}
 .land-card .body p {{ margin: 0; }}
 .facts {{ margin: 0; padding-left: 1.1rem; color: var(--ink-2); display: grid; gap: 0.15rem; }}
-.start-h {{ font-weight: 600; margin-top: 0.3rem !important; }}
+.gl-card-finds a {{ grid-template-columns: minmax(0, 1fr) 7rem 5.5rem; }}
+.land-card .gl-big {{ font-size: 1.7rem; }}
 .starts {{ list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }}
 .starts a {{ display: inline-flex; gap: 0.4rem; align-items: center; min-height: 32px; padding: 0.2rem 0.7rem; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-2); color: var(--ink); text-decoration: none; }}
 .starts a:hover {{ border-color: var(--accent); }}
@@ -975,20 +998,11 @@ def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None,
 </style></head>
 <body><a class="skip" href="#sites">Skip to the sites</a>
 <header class="hero"><div class="wrap"><div class="brand"><h1>Where modifications fall in proteins</h1><div class="brand-side">{lab_html}</div></div>
-<div class="lede"><p class="lede-what">Each website below holds the sites of one protein modification in one proteome, and asks where they fall: in disordered
-regions, domains and motifs, and on which kinds of protein. Every question is tested two ways, within each protein (Mantel–Haenszel) and pooled
-(Fisher), and tested again on any selection you make: a protein, a list of genes, a class.</p>
-<p class="lede-note">The websites are built by {kit_link} {html.escape(kit['version'])}, which makes each one from a single file that names its modification,
-its sequences, its data and its questions, so every site has the same pages, tests and downloads.</p></div></div></header>
+<div class="lede"><p class="lede-what">Where each modification falls in proteins, and which proteins carry it.</p></div></div></header>
 <main class="wrap" id="sites">
-<section class="how" aria-labelledby="how-h"><h2 id="how-h">How to start</h2><ol>
-<li>Pick a site below, or one of its starts: a list of genes, a class or one site.</li>
-<li>Type a gene, a list of genes or a term in its search box: the Overview tests every question again on your selection, in your browser.</li>
-<li>Open a protein for its map, the evidence for each site and its structures; every figure and table downloads as PDF, SVG, PNG or TSV with how to cite it.</li>
-</ol><p class="muted">On every site, <b>Help</b> explains the search, the figures and the downloads, and <kbd>?</kbd> lists the keyboard shortcuts.</p></section>
 <h2 class="vh">The sites</h2>
 <div class="sites">{''.join(cards)}</div></main>
-<footer class="wrap land-foot"><p>Code: {kit_link}, {html.escape(_licence_words(kit.get('licence', 'MIT')))} licence. Each site's data are under the licence its page states.</p>
+<footer class="wrap land-foot"><p>Built with {kit_link} {html.escape(kit['version'])}, {html.escape(_licence_words(kit.get('licence', 'MIT')))} licence. Each site's data carry the licence its page states.</p>
 <p>No cookies, no tracking: every test runs in your browser, and nothing you search or select leaves it.</p></footer></body></html>
 """
     (out / 'index.html').write_text(page)

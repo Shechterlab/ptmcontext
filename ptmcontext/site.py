@@ -346,6 +346,10 @@ def website_problems(site: dict) -> list[str]:
     for key, to in (web.get('legacy_links') or {}).items():
         if not to.startswith('?') and to not in questions:
             out.append(f"website.legacy_links: {key!r} opens {to!r}, which is not a question of this site")
+    for where, blk in (('start', web.get('start') or {}), ('landing', web.get('landing') or {})):
+        if (blk.get('share') or {}).get('analysis') not in (None, *ids):
+            out.append(f"website.{where}.share: {blk['share']['analysis']!r} is not a question of this site")
+        out += [f"website.{where}.findings: {f['analysis']!r} is not a question of this site" for f in blk.get('findings') or [] if f['analysis'] not in ids]
     from .web.search import problems as search_problems, search_keys
     out += search_problems(site)
     keys = search_keys(site)

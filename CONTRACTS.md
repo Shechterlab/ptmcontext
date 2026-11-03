@@ -530,3 +530,11 @@ A filter group of `website.filters` places these filters by key (`keys: ["d:mark
 "b:score"]`); a module may add kinds of its own (`K.filterKinds[kind]`: `valid`, `test`, and optionally `control`, `label`,
 `value`) and search keys (`K.searchTerms[key]`: values → `[filter key, values]` or `{error}`). A protein attribute with
 `control: chips` is offered as chips (match any). A term that cannot be read selects nothing and says why under the search.
+
+## The entry pictures
+
+The Overview's start panel and each landing-page card draw three pictures from the site's own statistics (`web/glance.json`,
+`D.glance`): one bar of where the marks fall (a question whose classes add up to the marks), the three strongest findings
+(one per question, q <= 0.05, at least 20 marks) and, on the site only, one example protein as a map. Without a choice
+in the site file they are computed; `website.start` (`share: {analysis, classes, labels}`, `findings: [{analysis, class}]`,
+`protein`) names them, and `website.landing` (`share`, `findings`, `tagline`) overrides them for the landing card.

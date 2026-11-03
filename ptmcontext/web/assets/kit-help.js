@@ -46,12 +46,13 @@
   // ---- the start panel: on the Overview, until the reader hides it (remembered in this browser) ---------------------
   (K.overviewTop ||= []).push(() => {
     if (store.get(START_KEY) || K.sel?.active() || S.arg || S.vs !== 'residues' || !starts().length) return '';
-    return `<section class="start-panel" aria-labelledby="sp-title"><div class="sp-head"><h2 id="sp-title">${esc(D.start?.title || 'New here? Start from a question of your own')}</h2>` +
+    const gl = K.glance?.html() || '';
+    return `<section class="start-panel${gl ? ' glance' : ''}" aria-labelledby="sp-title"><div class="sp-head"><h2 id="sp-title">${esc(D.start?.title || (gl ? `Where the ${W.marks} fall` : 'New here? Start from a question of your own'))}</h2>` +
       `<button type="button" class="sp-close" data-start-hide aria-label="Hide this introduction">×</button></div>` +
-      `<p class="sp-what">${esc(whatText())} <span class="muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins.</span></p>` +
-      startButtons('sp-starts') +
-      `<p class="sp-foot"><a href="${esc(K.link('help'))}">How to use this site</a><span aria-hidden="true"> · </span><span class="sp-keys">Press <kbd>/</kbd> to search, <kbd>?</kbd> for every shortcut</span>` +
-      `<span aria-hidden="true"> · </span><button type="button" class="linkish" data-start-hide>Hide this introduction</button></p></section>`;
+      (gl || `<p class="sp-what">${esc(whatText())} <span class="muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins.</span></p>` + startButtons('sp-starts')) +
+      `<p class="sp-foot"><a href="${esc(K.link('help'))}">How to use this site</a><span aria-hidden="true"> · </span>` +
+      (gl ? '' : `<span class="sp-keys">Press <kbd>/</kbd> to search, <kbd>?</kbd> for every shortcut</span><span aria-hidden="true"> · </span>`) +
+      `<button type="button" class="linkish" data-start-hide>Hide this introduction</button></p></section>`;
   });
   K.clicks.push(['[data-start-hide]', () => { store.set(START_KEY, '1'); K.render(); announce('Introduction hidden. It is on the Help page.'); }],
     ['[data-start-show]', () => { store.set(START_KEY, null); K.go('overview'); }],

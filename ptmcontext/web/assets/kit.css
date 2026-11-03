@@ -1051,3 +1051,35 @@ th[data-sort] { cursor: pointer; }
 .idr-fold > summary h3 { margin: 0; }
 .idr-fold > summary .sub { margin: 0; font-size: 0.86rem; color: var(--muted); }
 .idr-fold[open] > summary { margin-bottom: 0.6rem; }
+
+/* ---- the entry pictures (kit-glance.js, and the landing page's cards): series colours follow the class, text stays in ink ---- */
+:root { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --gl-dom: #6b7a82; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --gl-dom: #93a8b0; } }
+:root[data-theme="dark"] { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --gl-dom: #93a8b0; }
+.gl { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1rem 2rem; margin: 0.7rem 0 0.2rem; align-items: start; }
+.gl-col { display: grid; gap: 0.9rem; align-content: start; min-width: 0; }
+.gl-lead { margin: 0 0 0.35rem; color: var(--ink-2); }
+.gl-big { font-family: var(--serif, inherit); font-size: 2rem; line-height: 1; color: var(--ink); font-weight: 700; margin-right: 0.2rem; }
+.gl-bar { display: flex; gap: 2px; height: 10px; }
+.gl-seg { display: block; min-width: 2px; border-radius: 3px; }
+.gl-seg.s1, .gl-sw.s1 { background: var(--s1); } .gl-seg.s2, .gl-sw.s2 { background: var(--s2); } .gl-seg.s3, .gl-sw.s3 { background: var(--s3); } .gl-seg.s0, .gl-sw.s0 { background: var(--same); }
+.gl-sw.dom { background: transparent; border: 1.5px solid var(--gl-dom); } .gl-sw.mk { background: var(--accent); width: 4px; border-radius: 2px; }
+.gl-legend { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; font-size: 0.85rem; color: var(--ink-2); }
+.gl-legend li { display: inline-flex; align-items: center; gap: 0.35rem; }
+.gl-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.gl-legend b { font-weight: 600; color: var(--ink); }
+.gl-finds { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; }
+.gl-finds a { display: grid; grid-template-columns: minmax(7rem, 14rem) minmax(5rem, 1fr) 6.5rem 6rem; gap: 0.2rem 0.7rem; align-items: center; min-height: 32px; color: var(--ink); text-decoration: none; padding: 0.1rem 0.3rem; border-radius: 0.4rem; }
+.gl-finds a:hover { background: var(--wash); }
+.gl-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gl-axis { position: relative; height: 8px; background: linear-gradient(var(--line-strong), var(--line-strong)) center / 1px 100% no-repeat; }
+.gl-fill { position: absolute; top: 1px; height: 6px; border-radius: 3px; } .gl-fill.more { background: var(--more); } .gl-fill.less { background: var(--less); }
+.gl-val { font-weight: 600; white-space: nowrap; } .gl-q { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+.gl-prot { min-width: 0; }
+.gl-map { display: block; width: 100%; height: auto; aspect-ratio: 400 / 44; }
+.gl-dis { fill: var(--s1); } .gl-dom { fill: none; stroke: var(--gl-dom); stroke-width: 1.2; } .gl-mk { stroke: var(--accent); stroke-width: 1.4; } .gl-mkc { fill: var(--accent); }
+@media (max-width: 900px) { .gl { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) {
+  .gl-finds a { grid-template-columns: minmax(0, 1fr) auto; }
+  .gl-name { grid-column: 1 / -1; } .gl-axis { grid-column: 1 / 2; } .gl-q { display: none; }
+}
