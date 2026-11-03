@@ -23,6 +23,12 @@ motifs:
     - {name: acidophilic_CK2, label: "S/T-x-x-D/E", help: "Asp or Glu at +3 (CK2-like, acidophilic)", all: [{at: 3, in: DE}]}
     - {name: basophilic_RxxS, label: "R/K-x-x-S/T", help: "Arg or Lys at −3 (basophilic kinases)", all: [{at: -3, in: RK}]}
 
+stickers:          # aromatic residues are the stickers of condensates and prion-like domains (Martin et al. 2020, doi:10.1126/science.aaw8653; Choi, Holehouse & Pappu 2020, doi:10.1146/annurev-biophys-121219-081629)
+  residues: [Y, F, W]
+  noun: aromatic residue
+  nouns: aromatic residues
+  heading: Aromatic patterning
+
 words:
   mark: phosphosite
   marks: phosphosites

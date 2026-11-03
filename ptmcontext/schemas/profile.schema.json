@@ -177,6 +177,35 @@
         "type": "string"
       },
       "description": "the mark as UniProt names it in Modified residue features (the protein map draws these in their own row)"
+    },
+    "stickers": {
+      "description": "The residues that act as stickers for the mark's residue (aromatic Tyr, Phe and Trp pair with Arg by cation-pi): the default set of the sticker-context question and of the IDRs' aromatic patterning; a site file may name another",
+      "type": "object",
+      "required": [
+        "residues"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "residues": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]$"
+          }
+        },
+        "noun": {
+          "type": "string",
+          "description": "a singular noun for the set, in running text (aromatic residue)"
+        },
+        "nouns": {
+          "type": "string"
+        },
+        "heading": {
+          "type": "string",
+          "description": "the heading of the IDRs' patterning line (Aromatic patterning)"
+        }
+      }
     }
   },
   "$defs": {

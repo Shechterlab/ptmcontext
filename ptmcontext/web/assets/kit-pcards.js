@@ -1,5 +1,5 @@
 /* The protein page's context cards (website.protein.cards, CONTRACTS.md "Protein page cards"): Location and condensates,
-   Cancer cell lines and tumours, PRMT inhibitors and the like, Experiments, Clustering, Other PTMs; and the live parts of
+   Cancer cell lines and tumours, enzyme inhibitors and the like, Experiments, Clustering, Other PTMs; and the live parts of
    a protein-set card (website.protein.sets[].live: UniProt's diseases and Open Targets' scores, asked by accession).
    Each card is on when the site file names it and reads tables of website.tables in the formats of CONTRACTS.md; it knows
    no mark, source or organism by name, and a protein without rows in a card's tables says so. The folds are made through
@@ -175,7 +175,7 @@
     return { html, sum };
   }
 
-  // ---- PRMT inhibitors, knockouts and knockdowns: a site against each experiment, a mark per call -----------------------
+  // ---- inhibitors, knockouts and knockdowns of the mark's enzymes: a site against each experiment, a mark per call -----------------------
   function perturbationsBuild(p, rec, tb) {
     const cfg = PC.perturbations, CL = D.protein_view?.card?.calls || {}, marks = CL.marks || {}, words = CL.words || {}, skip = new Set(CL.skip || []);
     const cols = [...Object.entries(CL.attributes || {}).filter(([a]) => SPECS[a]).map(([a, lab]) => ({ key: 'a:' + a, label: lab, attr: a })),
@@ -292,7 +292,7 @@
   // ---- the folds -----------------------------------------------------------------------------------------------------
   const CARDS = [
     ['location', 'p-cond', 'Location and condensates', locationBuild], ['dependency', 'p-depmap', 'Cancer cell lines and tumours', dependencyBuild],
-    ['perturbations', 'p-pert', 'PRMT inhibitors, knockouts and knockdowns', perturbationsBuild], ['experiments', 'p-exp', 'Experiments', experimentsBuild],
+    ['perturbations', 'p-pert', `${W.writer ? cap(W.writer) : 'Enzyme'} inhibitors, knockouts and knockdowns`, perturbationsBuild], ['experiments', 'p-exp', 'Experiments', experimentsBuild],
     ['clustering', 'p-cluster', 'Clustering', clusteringBuild], ['other_ptms', 'p-ptm', 'Other PTMs', ptmsBuild],
   ].filter(([k]) => PC[k]);
   const BUILD = { live: liveBuild };

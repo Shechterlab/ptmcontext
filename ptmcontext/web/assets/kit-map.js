@@ -449,7 +449,7 @@
       const its = ownItems(p.acc, r) || [], c = cfgColour(r, 'colour', P, P.ink), op = r.opacity ?? 0.08;
       its.filter(x => inView(x[1], x[2])).forEach(x => {
         const tip = full => `<b>${esc(r.title)}</b> ${x[1]}–${x[2]}${x[4] ? '<br>' + esc(x[4]) : ''}${insideHtml(x[1], x[2], full)}<br><span class="muted">${esc(ownHelp(r))}</span>`;
-        const k = it({ tip: tip(false), card: tip(true), a: x[1], b: x[2] });
+        const k = it({ tip: tip(false), card: tip(true), a: x[1], b: x[2], src: { own: r, x } });
         back.push(MK.box(XA(x[1]), top + 2, XB(x[2]) - XA(x[1]), yB + 8 - top - 2, c, op, ` rx="3" data-mi="${k}"`));
       });
       if (its.some(x => inView(x[1], x[2]))) key(SW.box(c, Math.min(1, op * 3)), r.title);
@@ -467,7 +467,7 @@
       // the other regions here that come from the same input (an IDR made from this disorder), not every track's
       const t = trackOf(kind), over = segs.filter(([k2, is, ie]) => is <= e && ie >= s && (trackOf(k2).roles || []).some(r => (t.roles || []).includes(r))).slice(0, 6);
       const tip = full => `<b>${esc(t.title)} ${span2(s, e)}</b>${over.map(([k2, is, ie, lab]) => `<br>${esc(trackOf(k2).title)} ${is}–${ie}${lab ? ': ' + esc(lab) : ''}`).join('')}<br><span class="muted">${esc(tracksVersion(t))}</span>${full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`;
-      const k = it({ tip: tip(false), card: tip(true), a: s, b: e });
+      const k = it({ tip: tip(false), card: tip(true), a: s, b: e, src: { track: t } });
       parts.push(`<path d="${d}" fill="none" stroke="${P.muted}" stroke-width="1.6" data-mi="${k}" pointer-events="stroke"/>`, `<rect x="${r1(a)}" y="${yB - 7}" width="${r1(b - a)}" height="14" fill="transparent" data-mi="${k}"/>`);
       key(SW.wave(P.muted), t.title);
     });
@@ -480,7 +480,7 @@
       const from = (D.unit_sources || [])[src] || ver, short = shortName(s, e, lab);
       const link = refLink(ref);
       const tip = full => `<b>${esc(lab || t.title)}</b>${ref ? ` (${full && link ? `<a href="${esc(link)}">${esc(ref)}</a>` : esc(ref)})` : ''}<br>${span2(s, e)}${insideHtml(s, e, full)}<br><span class="muted">${esc(t.title)}: ${esc(from)}${ver && !from.includes(ver) ? ' (' + esc(ver) + ')' : ''}</span>${full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`;
-      const k = it({ tip: tip(false), card: tip(true), a: s, b: e });
+      const k = it({ tip: tip(false), card: tip(true), a: s, b: e, src: { track: t } });
       parts.push(`<rect x="${r1(a)}" y="${yB - 8}" width="${r1(w)}" height="16" rx="4" fill="${P.dom}" stroke="${P.domEdge}" stroke-width="1" data-mi="${k}"/>`);
       if (short && K.tw(short, 10, 600) + 8 < w) parts.push(`<text x="${r1((a + b) / 2)}" y="${yB + 3.5}" font-size="10" font-weight="600" text-anchor="middle" fill="${P.domInk}" pointer-events="none">${esc(short)}</text>`);
       else if (short) below.push([(a + b) / 2, short]);
@@ -543,10 +543,10 @@
         return { f, a, w, l, text, how };
       });
     };
-    const namedBoxes = (list, fill, stroke, ink, labOf, tipOf) => {
+    const namedBoxes = (list, fill, stroke, ink, labOf, tipOf, srcOf) => {
       const placed = lanes(list.slice().sort((p1, p2) => p1.a - p2.a || (p2.b - p2.a) - (p1.b - p1.a)), 5, labOf), nl = Math.max(1, ...placed.map(x => x.l + 1));
       placed.forEach(({ f, a, w, l, text, how }) => {
-        const yy = y + l * 15, k = it({ tip: tipOf(f, false), card: tipOf(f, true), a: f.a, b: f.b });
+        const yy = y + l * 15, k = it({ tip: tipOf(f, false), card: tipOf(f, true), a: f.a, b: f.b, src: srcOf ? srcOf(f) : undefined });
         parts.push(`<rect x="${r1(a)}" y="${yy}" width="${r1(w)}" height="12" rx="3" fill="${fill(f)}"${stroke(f) ? ` stroke="${stroke(f)}" stroke-width="0.8"` : ''} data-mi="${k}"/>`);
         if (how === 'in' || how === 'cut') parts.push(`<text x="${r1(how === 'in' ? a + w / 2 : a + 3)}" y="${yy + 9}" font-size="9.5"${how === 'in' ? ' text-anchor="middle"' : ''} fill="${ink}" pointer-events="none">${esc(text)}</text>`);
         else if (how === 'after') parts.push(`<text x="${r1(a + w + 4)}" y="${yy + 9}" font-size="9.5" fill="${ink}">${esc(text)}</text>`);
@@ -606,7 +606,7 @@
           (cs.help ? `<br><span class="muted">${esc(cs.help)}</span>` : '') + `<br><span class="muted">${esc(r.title)}${full ? ': ' + esc(ownHelp(r)) : r.sequence ? ', found in the sequence' : ownVersion(r) ? ' · ' + esc(ownVersion(r)) : ''}</span>`;
       };
       if (shown.every(x => markOf(x) === 'named')) {
-        const h = namedBoxes(shown.map(x => ({ a: x[1], b: x[2], x })), f => colourOf(f.x), () => '', ink, f => f.x[4], (f, full) => tipOf(f.x, full));
+        const h = namedBoxes(shown.map(x => ({ a: x[1], b: x[2], x })), f => colourOf(f.x), () => '', ink, f => f.x[4], (f, full) => tipOf(f.x, full), f => ({ own: r, x: f.x }));
         rowLabel(row[1], y + 6, row[3]); y += h + 6;
         [...new Set(shown.map(x => x[3]))].forEach(c => key(SW.box(cfgColour(CL[c], 'colour', P, base)), CL[c]?.label || r.title));
         return;
@@ -615,7 +615,7 @@
       baseLine(mid);
       const rank = x => (order.length ? order.indexOf(x[3]) : 0);
       shown.slice().sort((x1, x2) => rank(x1) - rank(x2) || (x2[2] - x2[1]) - (x1[2] - x1[1])).forEach(x => {
-        const mk = markOf(x), c = colourOf(x), op = opOf(x), k = it({ tip: tipOf(x, false), card: tipOf(x, true), a: x[1], b: x[2] }), attr = ` data-mi="${k}"`;
+        const mk = markOf(x), c = colourOf(x), op = opOf(x), k = it({ tip: tipOf(x, false), card: tipOf(x, true), a: x[1], b: x[2], src: { own: r, x } }), attr = ` data-mi="${k}"`;
         const a = XA(x[1]), w = Math.max(1.6, XB(x[2]) - a), hit = x[1] === x[2] && atMark.has(x[1]);
         if (mk === 'tick') { const th = r.value?.size && x[5] != null ? Math.min(16, 6 + 3 * Math.log2(Math.max(1, x[5]))) : 12; parts.push(MK.tick(X(x[1]), mid, th, r.labels === 'marks' && hit && !CL[x[3]]?.colour ? P.ink : c, attr, Math.max(2, Math.min(3, XB(x[1]) - XA(x[1]))), op)); }
         else if (mk === 'dot') parts.push(MK.dot(X(x[1]), mid, c, op, attr));
@@ -681,7 +681,7 @@
         shown.forEach(([, s, e, lab, , code, ref]) => {
           const a = XA(s), b = XB(e), link = refLink(ref);
           const tip = full => `<b>${esc(t.title)} ${span2(s, e)}</b>${lab ? '<br>' + esc(lab) : code ? '<br>' + esc(segLabels(t)[code] || code) : ''}${ref ? `<br>${full && link ? `<a href="${esc(link)}">${esc(ref)}</a>` : esc(ref)}` : ''}${insideHtml(s, e, full)}<br><span class="muted">${esc(t.help || '')}${tracksVersion(t) ? ' (' + esc(tracksVersion(t)) + ')' : ''}${what ? '; ' + esc(what) : ''}</span>${full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`;
-          const k = it({ tip: tip(false), card: tip(true), a: s, b: e });
+          const k = it({ tip: tip(false), card: tip(true), a: s, b: e, src: { track: t } });
           parts.push(`<rect x="${r1(a)}" y="${y}" width="${r1(Math.max(2, b - a))}" height="12" rx="3" fill="${segColour(t, code)}" data-mi="${k}"/>`);
         });
         const here = new Set(shown.map(u => u[5]).filter(Boolean));
@@ -847,6 +847,19 @@
   const observed = new WeakSet();
   const widthOf = el => { const w = el.clientWidth; return w > 0 && w < 700 ? Math.max(300, Math.round(w)) : 1000; };
   const plain = h => String(h || '').replace(/<br>/g, '. ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 240);
+  // a pinned item whose card has no link of its own gets one line saying where it comes from. A row the pipeline computes
+  // (a track the layers draw, a motif found in the sequence) links to its Method section; a row from the site's own
+  // tables links to the page its `link` names ({gene}, {label}, {position}), when the site file gives one
+  const sourceLine = x => {
+    const s = x.src; if (!s) return '';
+    const line = (href, text) => `<br><span class="muted">Source: <a href="${esc(href)}"${/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : ''}>${esc(text)}</a></span>`;
+    if (s.track) return line(K.link('method', s.track.analysis && K.A[s.track.analysis] ? 'q-' + s.track.analysis : 'map-' + s.track.kind), `${s.track.title}, how it was made`);
+    const r = s.own; if (!r) return '';
+    if (r.sequence) return line(K.link('method', 'map-' + r.id), `${r.title}, how it was found`);
+    if (!r.link) return '';
+    const p = M.ctx?.p || {}, enc = v => encodeURIComponent(String(v ?? '').split(/[;,]/)[0].trim());
+    return line(r.link.replace('{gene}', enc(String(p.gene || p.acc || '').split(/[\s;,]+/)[0])).replace('{label}', enc(s.x?.[4])).replace('{position}', enc(s.x?.[1])), `${r.title}, at its source`);
+  };
   // the pinned detail: the item's full text and links, until it is closed, Esc is pressed, or the same item is clicked again
   function showPin(p) {
     const pin = document.getElementById('map-pin'); if (!pin) return;
@@ -860,7 +873,8 @@
   function togglePin(x) {
     if (!x) return;
     if (M.pin && M.pin.key === x.tip) { closePin(); return; }
-    M.pin = { key: x.tip, acc: M.ctx?.p?.acc, html: typeof x.card === 'function' ? x.card() : x.card || x.tip };
+    const card = typeof x.card === 'function' ? x.card() : x.card || x.tip;
+    M.pin = { key: x.tip, acc: M.ctx?.p?.acc, html: card + (/<a [^>]*href=/.test(card) ? '' : sourceLine(x)) };
     showPin(M.pin);
     const pin = document.getElementById('map-pin'), r = pin?.getBoundingClientRect();
     if (r && (r.bottom > innerHeight || r.top < 0)) pin.scrollIntoView({ block: 'nearest' });
@@ -1024,7 +1038,16 @@
     if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector('dialog[open]') || !document.getElementById('pmap')) return;
     if (M.pin) { closePin(true); e.stopPropagation(); } else if (M.zoom) { M.zoom = null; redraw(); }
   });
-  K.tips.push(['[data-mi]', el => M.items[+el.dataset.mi]?.tip || ''], ['[data-rowhelp]', el => esc(el.dataset.rowhelp)]);
+  // the Method sections those links open: one for each row the pipeline computes, without a question of its own
+  (K.methodParts ||= []).push(() => {
+    const sec = (id, title, body) => `<section id="m-map-${esc(id)}" class="qm"><h3>${esc(title)} <span class="muted small">protein map</span></h3>${body}</section>`;
+    const rows = OWN_ROWS.filter(r => r.sequence).map(r => sec(r.id, r.title, `<p>${esc(r.help || r.title)}.</p><p>Found in each protein’s sequence as the site file states (${esc(r.sequence.motif)}${r.sequence.min ? `, at least ${int(r.sequence.min)} within ${int(r.sequence.gap ?? 0)} residues of each other` : ''}); nothing is read from a table, and no test is run.</p>`));
+    const tracks = (D.tracks || []).filter(t => !(t.analysis && K.A[t.analysis])).map(t => sec(t.kind, t.title, `<p>${esc(t.help || t.title)}.</p>${tracksVersion(t) ? `<p>From ${esc(tracksVersion(t))}.</p>` : ''}`));
+    return rows.concat(tracks).join('');
+  });
+  // every hover ends with the same muted line (a mark's own click opens its card instead)
+  const CLICK = '<br><span class="muted">Click for details and links</span>';
+  K.tips.push(['[data-mi]', el => { const x = M.items[+el.dataset.mi]; return x && x.tip ? x.tip + (el.hasAttribute('data-msite') ? '' : CLICK) : ''; }], ['[data-rowhelp]', el => esc(el.dataset.rowhelp)]);
   // black or white text, whichever reads better on a colour (WCAG relative luminance)
   function textOn(hex) {
     const v = String(hex).replace('#', ''), c = [0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16) / 255).map(x => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4));

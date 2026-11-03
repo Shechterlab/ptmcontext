@@ -137,6 +137,9 @@ def roles_missing(site: dict) -> list[str]:
     out = [f"{aid}: reads role {r!r}, which inputs: does not fill" for aid, w in _analysis_words(site).items() for r in w['needs'] if r not in roles]
     out += [f"{a['id']}: proteins: reads role {a['proteins']['input']!r}, which inputs: does not fill" for a in site.get('analyses', [])
             if a.get('proteins') and a['proteins']['input'] not in roles]
+    words = _analysis_words(site)
+    out += [f"{a['id']}: only_in: needs a layer of classes (a flags layer cannot say which marks lie outside the regions)" for a in site.get('analyses', [])
+            if a.get('only_in') and a.get('test') != 'conditional_logit' and (words.get(a['id']) or {}).get('shape') == 'flags']
     from .question import expand
     for a in site.get('analyses', []):
         if a.get('tests'):
@@ -144,6 +147,12 @@ def roles_missing(site: dict) -> list[str]:
                 expand(a)
             except ValueError as exc:
                 out.append(str(exc))
+        if a.get('test') == 'conditional_logit':          # several factors in one model: each factor's layer must exist and read a role
+            from .model import covariate_problems, covariate_roles
+            out += covariate_problems(a)
+            out += [f"{a['id']}: reads role {r!r}, which inputs: does not fill" for r in covariate_roles(a) if r not in roles]
+            if a.get('only_in') and a['only_in'] != 'idr' and a['only_in'].get('role') not in roles:
+                out.append(f"{a['id']}: only_in reads role {a['only_in'].get('role')!r}, which inputs: does not fill")
     return out
 
 
@@ -1078,7 +1087,7 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
            'proteins.tsv': proteins, 'units.tsv': units, 'tracks.json': tracks}
     if valued:
         # the candidate residues as the tests counted them (any question's: they are the same residues)
-        k = next((v for v in kept.values() if 'annotated' in v), None)
+        k = next((v for v in kept.values() if 'annotated' in v and not v.get('restricted')), None)
         if k is not None:
             cand, is_m, is_l = k['annotated'][['accession', 'position']], k['is_marked'], k['is_left']
         else:
@@ -1258,6 +1267,18 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
                     layers_used[analysis['id']][k] = analysis['sets'][k]
             log(f"  {analysis['id']:18s} {len(rows_):3d} rows")
             continue
+        if analysis.get('test') == 'conditional_logit':    # several factors at once, within protein (whole dataset)
+            from .model import conditional_model
+            only = listed_proteins(analysis['proteins'], ctx) if analysis.get('proteins') else None
+            rows_, fit = conditional_model(ctx, marked, analysis, left_out=pending if len(pending) else None, proteins=only)
+            parts.append(rows_)
+            layers_used[analysis['id']] = {'test': 'conditional_logit', 'layer': 'model', 'origin': 'ptmcontext', 'model': fit,
+                                           **({'only_in': analysis['only_in']} if analysis.get('only_in') else {})}
+            for d in fit['dropped']:
+                log(f"  {analysis['id']}: factor {d} does not vary, left out of the model")
+            log(f"  {analysis['id']:18s} {len(rows_):3d} rows  ({fit['strata']:,} proteins, {fit['marks']:,} {profile.word('marks')}"
+                f"{'' if fit.get('converged', True) else '; the fit did not converge'})")
+            continue
         if analysis.get('tests'):                          # a question of several tests, each with its own background
             from .question import Question, question_layer
             q, layer = Question(ctx, analysis), question_layer(analysis)
@@ -1284,10 +1305,12 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
                 'not_counted': sorted(set(marked['accession']) - only)}
         if analysis.get('marks_alone'):
             layers_used[analysis['id']]['marks_alone'] = analysis['marks_alone']
+        if analysis.get('only_in'):
+            layers_used[analysis['id']]['only_in'] = analysis['only_in']
         parts.append(RT.residue_test(ctx, marked, layer, analysis['id'], methods=methods, keep=kept[analysis['id']],
                                      left_out=pending if len(pending) else None, proteins=only,
                                      alone=analysis.get('marks_alone', 'drop'), order=analysis.get('order'),
-                                     pooled_label=(analysis.get('proteins') or {}).get('label', '')))
+                                     pooled_label=(analysis.get('proteins') or {}).get('label', ''), only_in=analysis.get('only_in')))
         log(f"  {analysis['id']:18s} {len(parts[-1]):3d} rows")
     rows = pd.concat(parts, ignore_index=True)
     record = {

@@ -12,7 +12,7 @@ import math
 from typing import Iterable
 
 import numpy as np
-from scipy.stats import chi2, fisher_exact, hypergeom
+from scipy.stats import chi2, fisher_exact, hypergeom, norm
 
 
 def benjamini_hochberg(p_values: Iterable[float]) -> np.ndarray:
@@ -103,6 +103,141 @@ def mantel_haenszel_ci(tables):
     st = StratifiedTable([np.array([[a, b], [c, d]], dtype=float) for a, b, c, d in strata])
     lo, hi = st.oddsratio_pooled_confint(alpha=0.05)
     return odds, (float(lo) if math.isfinite(lo) else None), (float(hi) if math.isfinite(hi) else None), p, used
+
+
+# Several factors at once, within protein: conditional logistic regression (the multi-covariate Mantel-Haenszel).
+def _stratum_chunks(groups, size=256):
+    """Strata (each a (k, X) pair: k cases among the rows of X) in chunks of similar size, to be summed together."""
+    order = sorted(range(len(groups)), key=lambda i: groups[i][1].shape[0])
+    for i in range(0, len(order), size):
+        yield [groups[j] for j in order[i:i + size]]
+
+
+def _clogit_chunk(chunk, beta):
+    """The strata's part of the log likelihood, score and information that the cases do not carry, exactly: each stratum's conditional probability of the cases
+    among all the subsets of its rows of the same size (the elementary symmetric functions of exp(X beta), with their
+    first and second derivatives, by the standard recursion over the rows). Strata are summed side by side."""
+    s, p = len(chunk), len(beta)
+    n = max(g[1].shape[0] for g in chunk)
+    kmax = max(g[0] for g in chunk)
+    x = np.zeros((s, n, p))
+    eta = np.full((s, n), -np.inf)
+    ks = np.array([g[0] for g in chunk])
+    for i, (_, xs) in enumerate(chunk):
+        x[i, :xs.shape[0]] = xs
+        eta[i, :xs.shape[0]] = xs @ beta
+    shift = np.max(eta, axis=1)                          # w <= 1 per stratum: the sums stay in range
+    w = np.exp(eta - shift[:, None])                     # padded rows: w = 0, x = 0, and they add nothing
+    z = np.zeros((s, kmax + 1))
+    z[:, 0] = 1.0
+    g = np.zeros((s, kmax + 1, p))
+    h = np.zeros((s, kmax + 1, p, p))
+    for j in range(n):
+        wj, xj = w[:, j][:, None], x[:, j]
+        zp, gp, hp = z[:, :-1], g[:, :-1], h[:, :-1]
+        xg = np.einsum('sp,stq->stpq', xj, gp)
+        h[:, 1:] += wj[:, :, None, None] * (hp + xg + xg.transpose(0, 1, 3, 2) + zp[:, :, None, None] * (xj[:, None, :, None] * xj[:, None, None, :]))
+        g[:, 1:] += wj[:, :, None] * (gp + zp[:, :, None] * xj[:, None, :])
+        z[:, 1:] += wj * zp
+    r = np.arange(s)
+    zk, gk, hk = z[r, ks], g[r, ks], h[r, ks]
+    mean = gk / zk[:, None]
+    ll = -np.sum(ks * shift) - np.sum(np.log(zk))
+    score = -mean.sum(axis=0)
+    info = (hk / zk[:, None, None] - mean[:, :, None] * mean[:, None, :]).sum(axis=0)
+    return float(ll), score, info
+
+
+def conditional_logit(y, X, strata, names=None, tol=1e-10, max_iter=50):
+    """Conditional (fixed-effects) logistic regression of y (1 for a case) on the columns of X, one stratum per value
+    of strata: the multi-covariate generalisation of the Mantel-Haenszel test (Breslow and Day 1980, ch. 7). Exact
+    (no Breslow or Efron approximation for several cases in a stratum). A stratum without a case or without a
+    control carries no information and is left out.
+
+    Returns a dict: names, coef, se (inverse observed information), odds_ratio, ci_low and ci_high (Wald 95%), z, p
+    (Wald, two-sided), loglik, null_loglik, lr_p (likelihood ratio, all coefficients 0), score_chi2 (the score test
+    of all coefficients 0; with one binary covariate, the Cochran-Mantel-Haenszel statistic without continuity
+    correction), n_strata, n_cases, n_rows, converged. Coefficients that diverge (a covariate that separates the cases
+    from the controls) are returned with converged False and no standard errors."""
+    y = np.asarray(y).astype(int)
+    X = np.asarray(X, dtype=float)
+    if X.ndim == 1:
+        X = X[:, None]
+    p = X.shape[1]
+    names = list(names) if names is not None else [f'x{i}' for i in range(p)]
+    strata = np.asarray(strata)
+    order = np.argsort(strata, kind='stable')
+    y, X, strata = y[order], X[order], strata[order]
+    cut = np.flatnonzero(np.r_[True, strata[1:] != strata[:-1], True])
+    groups, case_x = [], np.zeros(p)
+    n_cases = n_rows = 0
+    for a, b in zip(cut[:-1], cut[1:]):
+        k = int(y[a:b].sum())
+        if k == 0 or k == b - a:
+            continue
+        groups.append((k, X[a:b]))
+        case_x += X[a:b][y[a:b] == 1].sum(axis=0)
+        n_cases += k
+        n_rows += b - a
+    nan = float('nan')
+    out = {'names': names, 'coef': [nan] * p, 'se': [nan] * p, 'odds_ratio': [nan] * p, 'ci_low': [nan] * p, 'ci_high': [nan] * p,
+           'z': [nan] * p, 'p': [nan] * p, 'loglik': nan, 'null_loglik': nan, 'lr_p': nan, 'score_chi2': nan,
+           'n_strata': len(groups), 'n_cases': n_cases, 'n_rows': n_rows, 'converged': False}
+    if not groups:
+        return out
+
+    def evaluate(beta):
+        ll, score, info = 0.0, np.zeros(p), np.zeros((p, p))
+        for chunk in _stratum_chunks(groups):
+            l_, s_, i_ = _clogit_chunk(chunk, beta)
+            ll += l_
+            score += s_
+            info += i_
+        return ll + case_x @ beta, score + case_x, info
+    beta = np.zeros(p)
+    ll, score, info = evaluate(beta)
+    out['null_loglik'] = ll
+    try:
+        out['score_chi2'] = float(score @ np.linalg.solve(info, score))
+    except np.linalg.LinAlgError:
+        return out
+    for _ in range(max_iter):
+        try:
+            step = np.linalg.solve(info, score)
+        except np.linalg.LinAlgError:
+            return out
+        t = 1.0
+        while True:                                       # halve the step until the likelihood does not fall
+            new = beta + t * step
+            ll_new, score_new, info_new = evaluate(new)
+            if ll_new >= ll - 1e-12 or t < 1e-8:
+                break
+            t /= 2
+        done = abs(ll_new - ll) < tol * (1 + abs(ll)) and np.max(np.abs(step)) * t < 1e-7
+        beta, ll, score, info = new, ll_new, score_new, info_new
+        if done:
+            out['converged'] = True
+            break
+        if np.max(np.abs(beta)) > 25:                     # separation: the estimate runs away
+            break
+    out['coef'] = [float(b) for b in beta]
+    out['loglik'] = float(ll)
+    if not out['converged']:
+        return out
+    try:
+        cov = np.linalg.inv(info)
+    except np.linalg.LinAlgError:
+        out['converged'] = False
+        return out
+    se = np.sqrt(np.diag(cov))
+    z = beta / se
+    out.update(se=[float(v) for v in se], z=[float(v) for v in z],
+               odds_ratio=[float(v) for v in np.exp(beta)],
+               ci_low=[float(v) for v in np.exp(beta - 1.959963984540054 * se)],
+               ci_high=[float(v) for v in np.exp(beta + 1.959963984540054 * se)],
+               p=[float(v) for v in 2 * norm.sf(np.abs(z))],
+               lr_p=float(chi2.sf(max(0.0, 2 * (ll - out['null_loglik'])), p)))
+    return out
 
 
 def hypergeom_sf(k: int, N: int, M: int, n: int) -> float:

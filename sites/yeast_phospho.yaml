@@ -32,6 +32,28 @@ analyses:
   - {id: domain_class, layer: domain_class}
   - {id: structure_context, layer: structure_context}
   - {id: idr_charge, layer: idr_charge}
+  # Stickers and the factors together, as for human methylarginine (not in a release)
+  - {id: sticker_context_3, layer: neighbours, with: {window: 3, noun: aromatic residue}, new: true, section: Position in the protein,
+     title: "Next to aromatic residues (within 3)", question: "Are phosphosites more often next to aromatic residues than the other serines, threonines and tyrosines of their protein?"}
+  - {id: sticker_context_5, layer: neighbours, with: {window: 5, noun: aromatic residue}, new: true, section: Position in the protein,
+     title: "Next to aromatic residues (within 5)", question: "Are phosphosites more often next to aromatic residues than the other serines, threonines and tyrosines of their protein?"}
+  - {id: sticker_context_3_idr, layer: neighbours, with: {window: 3, noun: aromatic residue}, only_in: idr, new: true, section: Position in the protein,
+     title: "Next to aromatic residues, in IDRs (within 3)", question: "Inside disordered regions, are phosphosites more often next to aromatic residues than the other serines, threonines and tyrosines there?"}
+  - {id: sticker_context_5_idr, layer: neighbours, with: {window: 5, noun: aromatic residue}, only_in: idr, new: true, section: Position in the protein,
+     title: "Next to aromatic residues, in IDRs (within 5)", question: "Inside disordered regions, are phosphosites more often next to aromatic residues than the other serines, threonines and tyrosines there?"}
+  - id: which_factor
+    test: conditional_logit
+    new: true
+    title: Which factor matters most?
+    question: "Taking all factors together, which ones set a phosphosite apart from the other serines, threonines and tyrosines of its protein?"
+    sub: "One model: each phosphosite against the other serines, threonines and tyrosines of its protein, all five factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
+    section: Position in the protein
+    covariates:
+      - {name: in_idr, label: In a disordered region, help: "Inside an IDR of 20 or more residues", layer: idr, is: [idr]}
+      - {name: aromatic_within_5, label: Aromatic residue within 5, help: "At least one Tyr, Phe or Trp within 5 residues on either side", layer: neighbours, with: {window: 5, noun: aromatic residue}, is: [one, two_plus]}
+      - {name: proline_directed, label: Followed by a proline, help: "Pro right after the site (S/T-P, proline-directed kinases)", layer: motif, flags: [proline_directed]}
+      - {name: net_charge, label: "Local net charge (per +1)", help: "Lys and Arg minus Asp and Glu within 7 residues on either side, the site itself left out; the odds ratio is for each extra +1", window_sum: {window: 7, weights: {K: 1, R: 1, D: -1, E: -1}}}
+      - {name: domain_distal, label: Far from any domain, help: "More than 20 residues from a domain, and not between two domains", layer: domain_context, is: [distal]}
 
 outputs: {folder: out/yeast_phospho}
 citation: sites/yeast_phospho.citation.cff

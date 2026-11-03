@@ -6,6 +6,9 @@
                    the site's thresholds (a role filled by a per-residue table mapped with `columns`)
   residue_lists    flags: whether a residue is listed in each of several tables (a change seen in tumours, a crosslink),
                    each table a role filled by a list of residues mapped with `columns` {accession, position}
+  neighbours       residues by how many residues of a set (the profile's stickers, or with: residues) lie within a
+                   window along the chain, the residue itself left out: none, one, two_plus (with: window, and
+                   two_plus, the count that makes the last class, default 2)
 
 An analysis names one with its parameters:
 
@@ -20,6 +23,7 @@ The classes they make (for filters, website.protein.facts and labels):
   residue_values   the classes given, from the lowest bin up (a value equal to a threshold goes to the class above
                    it), and missing (default no_value) for a residue without a value
   residue_lists    the flags given, in their order (a residue may carry several, or none)
+  neighbours       none, one, two_plus (a residue is in exactly one)
 
 Their classes have an order (inside to far, the lowest bin up), which the website keeps (ordered; the site file's
 analysis may say `ordered: false`, or give headed `groups` of them). Each draws its regions (or its runs of residues in
@@ -48,7 +52,8 @@ def _words(params: dict, default_title: str, default_question: str, default_sub:
 WORDS = {'title', 'question', 'sub', 'section', 'labels', 'help', 'noun', 'track', 'track_help', 'colours'}
 ALLOWED = {'regions': WORDS | {'role', 'kind', 'window', 'nouns', 'code'},
            'residue_values': WORDS | {'role', 'kind', 'bins', 'classes', 'missing'},
-           'residue_lists': WORDS - {'track', 'track_help', 'colours'} | {'flags'}}
+           'residue_lists': WORDS - {'track', 'track_help', 'colours'} | {'flags'},
+           'neighbours': WORDS - {'track', 'track_help', 'colours'} | {'residues', 'window', 'many'}}
 
 
 def _need(params: dict, aid: str, *keys: str, layer: str = '') -> None:
@@ -173,3 +178,55 @@ def residue_lists(params: dict, aid: str) -> Layer:
                  labels=labels, help=helps,
                  **_words(params, _cap(noun + 's'), f'Are {{marks}} {noun}s more often than the other {{residues}} of the same proteins?',
                           f'{{Marks}} against the other {{residues}} of the same proteins: {noun}s'))
+
+
+def sticker_counts(residues: pd.DataFrame, sequences: dict, letters: set, window: int) -> np.ndarray:
+    """For each (accession, position) row, how many residues of the set lie within window residues of it along the
+    chain, the residue itself left out (positions are 1-based; the ends of a chain have fewer neighbours)."""
+    out = np.zeros(len(residues), dtype=np.int64)
+    pos = residues['position'].to_numpy(dtype=np.int64)
+    for acc, idx in residues.groupby('accession', sort=False).indices.items():
+        seq = sequences.get(acc, '')
+        hit = np.fromiter((c in letters for c in seq), dtype=np.int64, count=len(seq))
+        cum = np.concatenate([[0], np.cumsum(hit)])
+        p = pos[idx]
+        lo, hi = np.clip(p - window - 1, 0, len(seq)), np.clip(p + window, 0, len(seq))
+        valid = (p >= 1) & (p <= len(seq))
+        own = np.zeros(len(p), dtype=np.int64)
+        own[valid] = hit[p[valid] - 1]
+        out[idx] = cum[hi] - cum[lo] - own
+    return out
+
+
+@factory('neighbours')
+def neighbours(params: dict, aid: str) -> Layer:
+    """Residues by how many residues of a set (stickers) lie within a window along the chain: none, one, two or more."""
+    _need(params, aid, 'window', layer='neighbours')
+    window, many = int(params['window']), int(params.get('many', 2))
+    given = params.get('residues')
+    given = list(given) if given else None
+    noun = params.get('noun', 'sticker residue')
+    codes = ('none', 'one', 'two_plus')
+
+    def letters(ctx) -> set:
+        st = ctx.profile.stickers if ctx.profile is not None else None
+        if given:
+            return set(given)
+        if not st:
+            raise ValueError(f'analysis {aid!r}: with: residues is needed, because the mark profile names no stickers')
+        return set(st['residues'])
+    labels = {'none': f'No {noun} within ±{window}', 'one': f'One {noun} within ±{window}', 'two_plus': f'{many} or more {noun}s within ±{window}'}
+    helps = {'none': f'No {noun} among the {2 * window} residues on either side (±{window} along the chain)',
+             'one': f'Exactly one {noun} within {window} residues on either side',
+             'two_plus': f'{many} or more {noun}s within {window} residues on either side'}
+    labels.update(params.get('labels', {}))
+    helps.update(params.get('help', {}))
+
+    def compute(residues: pd.DataFrame, ctx) -> pd.DataFrame:
+        n = sticker_counts(residues, ctx.snapshot.sequences, letters(ctx), window)
+        return pd.DataFrame({'category': np.where(n == 0, codes[0], np.where(n < many, codes[1], codes[2])).astype(object)}, index=residues.index)
+    return Layer('neighbours', 'class', f'residues by the number of sticker residues within ±{window}: none, one, {many} or more', compute,
+                 labels=labels, help=helps, ordered=True,
+                 **_words(params, params.get('title', f'Next to {noun}s (±{window})'),
+                          f'Are {{marks}} more often next to {noun}s, within {window} residues on either side, than the other {{residues}} of the same proteins?',
+                          f'{{Marks}} against the other {{residues}} of the same proteins, by how many {noun}s lie within {window} residues on either side'))

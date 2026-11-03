@@ -25,7 +25,7 @@
   const PADJ = 0.05, MIN_EFFECT = 1.1;
   const dir = r => r.eff == null || r.q == null || r.q > PADJ ? 'ns' : r.eff >= MIN_EFFECT ? 'more' : r.eff <= 1 / MIN_EFFECT ? 'less' : 'same';
   const DIR_WORDS = { more: 'more often', less: 'less often', same: 'about the same (within 1.1×)', ns: 'no difference (q > 0.05)' };
-  const METHOD = { mantel_haenszel: 'within each protein', fisher: 'pooled', study: 'within studies', mann_whitney: 'by size (Mann–Whitney)' };
+  const METHOD = { mantel_haenszel: 'within each protein', fisher: 'pooled', study: 'within studies', mann_whitney: 'by size (Mann–Whitney)', conditional_logit: 'all factors together' };
   const METHOD_PHRASE = { mantel_haenszel: 'compared within each protein (Mantel–Haenszel)', fisher: 'pooled (Fisher’s exact test)',
     study: 'compared within the marks reported by the same sources (Mantel–Haenszel)' };
   const A = Object.fromEntries(D.analyses.map(a => [a.id, a]));
@@ -52,7 +52,7 @@
     labels: s.kind === 'number' ? { 2: '2 or more', 3: '3 or more', 5: '5 or more' } : { ...(s.values || {}) }, help: {},
     sub: s.help || '', question: '', section: s.provenance ? 'How they were found' : 'About the sites' }));
   ATTRQ.forEach(a => { A[a.id] = a; });
-  const label = r => (A[r.analysis]?.labels || {})[r.category] || r.category.replace(/_/g, ' ');
+  const label = r => ((A[r.analysis]?.labels || {})[r.category] || r.category.replace(/_/g, ' ')) + (r.method === 'conditional_logit' && r.stratum === 'alone' ? ' (on its own)' : '');
   const SETS = a => A[a]?.kind === 'protein_sets';
   // what a protein-set question counts: proteins, or another identifier of theirs (genes), as the site file says
   const setUnit = a => A[a]?.unit || 'proteins';
@@ -66,7 +66,7 @@
     const num = v => (v === '' || v === 'nan' ? null : v === 'inf' ? 1e300 : v === '-inf' ? 0 : Number(v));
     D.rows = lines.map(l => { const x = l.split('\t'), g = c => x[col[c]];
       return { analysis: g('analysis'), category: g('category'), method: g('method'), a: +g('a'), b: +g('b'), c: +g('c'), d: +g('d'), or: num(g('odds_ratio')), fold: num(g('fold_enrichment')),
-        lo: num(g('odds_ratio_ci_low')), hi: num(g('odds_ratio_ci_high')), p: num(g('p')), q: num(g('q')), strata: g('n_strata') ? +g('n_strata') : null }; });
+        lo: num(g('odds_ratio_ci_low')), hi: num(g('odds_ratio_ci_high')), p: num(g('p')), q: num(g('q')), strata: g('n_strata') ? +g('n_strata') : null, ...(g('method') === 'conditional_logit' ? { stratum: g('stratum') } : {}) }; });
   }
   D.rows.forEach((r, i) => { r.i = i; });
   decorate(D.rows);
@@ -85,7 +85,7 @@
   };
   const holds = r => { const h = holdStatus(r); return h == null ? null : h === 'holds'; };
   const testName = (aid, m) => SETS(aid) ? (m === 'enricher' ? 'proteins, hypergeometric' : 'within abundance deciles') : (METHOD[m] || m);
-  const methodName = r => testName(r.analysis, r.method);
+  const methodName = r => (r.method === 'conditional_logit' && r.stratum === 'alone' ? 'one factor, within each protein' : testName(r.analysis, r.method));
   const effText = r => r.eff == null ? '–' : r.method === 'enricher' ? fxn(r.eff) + '-fold' : 'OR ' + fxn(r.eff);
   const rowsFor = (a, m) => D.rows.filter(r => r.analysis === a.id && (a.kind === 'protein_sets' ? r.method === 'enricher' : r.method === m) && r.eff != null);
 
@@ -756,7 +756,7 @@
     return `<div class="page-head"><h2>${esc(tabName('statistics', 'All tests'))}</h2><button class="btn" type="button" id="dl">Download TSV</button></div>` +
       `<p class="page-sub">One row per class and test. Questions about where ${esc(W.marks)} lie compare the ${esc(W.marks)} in a class with the other ${esc(W.residues)} of the same proteins${D.analyses.some(a => a.kind === 'protein_sets') ? `, and questions about kinds of protein compare the ${esc(W.marked)} proteins in a set with the other proteins` : ''}. ${gloss('strata', 'Strata')} are the proteins of a within-protein test${D.analyses.some(a => a.stratified) ? ' or the abundance deciles of a protein-set test' : ''}. ${gloss('q')} is the p value corrected for the tests of each question (Benjamini–Hochberg). A class counts as more or less often at q ≤ 0.05 and at least 1.1×. The ${gloss('odds ratio')} is the odds of being in the class for a ${esc(W.mark)} over the odds for another ${esc(W.residue)}.</p>` +
       `<div class="filters"><label>Question <select id="f-a">${opts.map(([v, t]) => `<option value="${esc(v)}"${v === S.a ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>` +
-      `<label>Test <select id="f-m">${[['mantel_haenszel', 'Within each protein (or abundance decile)'], ['fisher', 'Pooled'], ['both', 'Both']].map(([v, t]) => `<option value="${v}"${v === S.m ? ' selected' : ''}>${t}</option>`).join('')}</select></label>` +
+      `<label>Test <select id="f-m">${[['mantel_haenszel', 'Within each protein (or abundance decile)'], ['fisher', 'Pooled'], ...(D.models ? [['conditional_logit', 'All factors together']] : []), ['both', 'Both']].map(([v, t]) => `<option value="${v}"${v === S.m ? ' selected' : ''}>${t}</option>`).join('')}</select></label>` +
       `<label>Class <input id="f-sq" type="search" value="${esc(S.sq)}" placeholder="a class or set"></label>` +
       `<button type="button" class="btn small" data-sort-strength aria-pressed="${S.sort === 'strength'}" title="The largest differences first, up or down (|log2 OR|); click again to reverse">Sort by strength${S.sort === 'strength' ? (S.desc ? ' ▾' : ' ▴') : ''}</button>` +
       `<span class="muted">${int(rows.length)} ${rows.length === 1 ? 'test' : 'tests'}${selOn() ? ' (the whole dataset: the Overview tests your selection)' : ''}</span></div>` +

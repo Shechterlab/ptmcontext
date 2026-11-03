@@ -42,7 +42,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-busy.js', 'kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit.js')
+MODULES = ('kit-busy.js', 'kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-factors.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -214,7 +214,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
     tested = {a['id'] for a in site['analyses'] if a.get('tests')}
     code = lambda r: r['category'] if r['analysis'] not in tested or r['stratum'] in ('all', '') else f"{r['category']}_{r['stratum']}"  # noqa: E731
     rows = [{'analysis': r['analysis'], 'category': code(r), 'method': r['method'],
-             'a': int(r['a']), 'b': int(r['b']) if r['b'] != '' else None, 'c': int(r['c']), 'd': int(r['d']) if r['d'] != '' else None,   # none: a test of sizes
+             'a': int(r['a']), 'b': int(r['b']) if r['b'] != '' else None, 'c': int(r['c']), 'd': int(r['d']) if r['d'] != '' else None,   # none: a test of sizes or a numeric factor
              'or': num(r['odds_ratio']), 'fold': num(r['fold_enrichment']), 'lo': num(r['odds_ratio_ci_low']), 'hi': num(r['odds_ratio_ci_high']),
              'p': num(r['p']), 'q': num(r['q']), 'strata': int(r['n_strata']) if r['n_strata'] else None}
             for r in stats.to_dict('records')]
@@ -227,7 +227,22 @@ def site_data(site: dict, folder: Path, profile) -> dict:
     kept = json.loads((folder / 'protein_sets.json').read_text()) if (folder / 'protein_sets.json').exists() else {}
     ref_tables = (site.get('reference') or {}).get('tables') or {}
     ontology = set_structure(site, kept)
+    models = {}
     for a in site['analyses']:
+        if a.get('test') == 'conditional_logit':
+            # a question the kit draws itself (kit-factors.js): the whole dataset's model, not refitted for a selection
+            from ..model import covariate_roles
+            fit = (run.get('analyses') or {}).get(a['id'], {}).get('model') or {}
+            models[a['id']] = {'covariates': [{'name': c['name'], 'label': c.get('label', c['name']), 'help': c.get('help', ''), 'per': c.get('per', 1),
+                                               'numeric': bool(c.get('window_sum'))} for c in a['covariates']],
+                               'fit': fit, **({'only_in': a['only_in']} if a.get('only_in') else {})}
+            analyses.append({'id': a['id'], 'kind': 'module', 'model': True, 'shape': 'model', 'anySize': True, 'roles': covariate_roles(a),
+                             'title': a.get('title', a['id']), 'question': a.get('question', ''), 'sub': a.get('sub', ''),
+                             'section': a.get('section', ''), 'layer': 'model', 'describe': a.get('background', ''),
+                             'labels': {c['name']: c.get('label', c['name']) for c in a['covariates']},
+                             'help': {c['name']: c.get('help', '') for c in a['covariates']}, 'new': bool(a.get('new')),
+                             'ordered': True, 'groups': []})
+            continue
         if a.get('test') == 'protein_sets':
             from ..set_tests import question_roles
             analyses.append({'id': a['id'], 'kind': 'protein_sets', 'shape': 'sets', 'stratified': bool(a.get('abundance')), 'roles': question_roles(a),
@@ -251,7 +266,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                          'sub': a.get('sub') or _fill(lw.get('sub', ''), profile.words), 'layer': a.get('layer', 'tests'),
                          **({'counting': a.get('counting', 'proteins_with_both')} if a.get('tests') else {}),
                          'section': a.get('section') or lw.get('section', ''),
-                         'describe': lw.get('describe', ''), 'labels': labels, 'help': helps, 'new': bool(a.get('new')), **_class_order(a, lw)})
+                         'describe': lw.get('describe', ''), 'labels': labels, 'help': helps, 'new': bool(a.get('new')),
+                         **({'only_in': True} if a.get('only_in') else {}), **_class_order(a, lw)})
     web = site['website']
     # each input by its name and version, and what this site uses it for
     entries = load_manifest(manifest_of(site))
@@ -317,6 +333,9 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         # drawn with their proteins' numbers (kit-values.js)
         **({'cell': web['cell'], 'cell_drawings': _cell_drawings()} if web.get('cell') else {}),
         **({'set_views': web['set_views']} if web.get('set_views') else {}),
+        **({'models': models} if models else {}),
+        # the profile's sticker residues, for the IDRs' patterning line (kit-idrs.js)
+        **({'stickers': profile.stickers} if profile.stickers else {}),
         # the start panel's words and examples (kit-help.js); without them it chooses from the examples
         **({'start': web['start']} if web.get('start') else {}),
         'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),
@@ -580,6 +599,19 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
                 if pi in prot and classes[aid][ci] not in have:
                     prot[pi][1].append(int(pos))
         by_test[aid] = {str(ci): {str(p): v for p, v in prot.items()} for ci, prot in per.items()}
+    # a residue question that counts only the residues inside some regions (only_in) counts, for each of its classes, the
+    # other candidates inside them, and not the marks outside them: the same shape
+    for aid in analyses:
+        if aid in by_test or not ((run.get('analyses') or {}).get(aid) or {}).get('only_in'):
+            continue
+        g = counts[counts['analysis'] == aid]
+        total = g.drop_duplicates('accession').set_index('accession')['others_total'].astype(int)
+        outside: dict = {}
+        for acc, pos, cls in zip(marks['accession'], marks['position'], marks[aid]):
+            if not cls:
+                outside.setdefault(pidx[acc], []).append(int(pos))
+        by_test[aid] = {str(ci): {str(pidx[a]): [int(n), outside.get(pidx[a], [])] for a, n in total.items() if a in pidx}
+                        for ci in range(len(classes[aid]))}
     # protein-set questions: each tested set's size in the background and its marked proteins (protein_sets.json)
     sets = {}
     if (folder / 'protein_sets.json').exists():

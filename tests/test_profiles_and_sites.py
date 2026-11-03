@@ -35,6 +35,9 @@ def test_site_configs_name_known_inputs_layers_and_profiles(path):
         elif a.get('tests'):                     # a question of several tests: every role its tests read is filled
             from ptmcontext.question import roles_of as test_roles
             assert all(r in site['inputs'] for r in test_roles(a)), test_roles(a)
+        elif a.get('test') == 'conditional_logit':   # several factors: each reads a layer whose roles are filled
+            from ptmcontext.model import covariate_problems, covariate_roles
+            assert covariate_problems(a) == [] and all(r in site['inputs'] for r in covariate_roles(a)), covariate_roles(a)
         else:
             assert a['layer'] in L.BUILT_IN or a['layer'] in L.FACTORIES or a['layer'] in site.get('trusted_plugins', []), a['layer']
 
