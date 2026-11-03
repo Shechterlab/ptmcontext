@@ -855,11 +855,11 @@ website:                  # the look and words of the website (ptmc web); layout
     share: {analysis: disorder, classes: [disordered, disorder_boundary, ordered], labels: {disordered: in IDRs, disorder_boundary: next to an IDR, ordered: in ordered regions}}
     findings: [{analysis: motif, class: RGG}, {analysis: panther_group, class: RNA processing and translation}, {analysis: disorder, class: ordered}]
     protein: FUS
-    text: "Human arginine methylation sites from published studies and databases, and where they fall: in disordered regions, domains and motifs, on which kinds of protein, in which diseases. Each tile of the Overview is one question, tested within each protein and pooled; search a protein, a list of genes or a disease to test a selection of your own, and download any figure or table with how to cite it."
+    text: "Human arginine methylation sites from published studies and databases: where they fall, on which proteins, in which diseases. Each tile is one question, tested within each protein and pooled. Search a protein, a gene list or a disease to test your own selection."
     examples:
-      - {label: A list of genes, query: TAF15 EWSR1 FUS, help: "Paste your genes: every question is tested again on their methylarginines, and the Proteins page lists them."}
-      - {label: A disease, query: "disease_family:ALS", help: "The methylarginines on proteins linked to a disease family, and what sets them apart."}
-      - {label: One site in its structure, query: FUS R216, help: "Its protein's map of domains and disordered regions, the evidence for the site, and its AlphaFold model and PDB structures."}
+      - {label: A list of genes, query: TAF15 EWSR1 FUS, help: "Every question is tested again on their methylarginines."}
+      - {label: A disease, query: "disease_family:ALS", help: "Methylarginines on proteins linked to a disease family, and what sets them apart."}
+      - {label: One site in its structure, query: FUS R216, help: "Its protein's domain and disorder map, the evidence for the site, and its structures."}
   stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
     statistic_label: true  # each tile names its statistic
@@ -941,11 +941,11 @@ website:                  # the look and words of the website (ptmc web); layout
     id: where_in_the_cell
     title: Where in the cell
     question: "Where do methylated proteins sit in the cell?"
-    intro: "Five maps from four studies place proteins in the cell, made by imaging, proximity labelling, organelle pull-down and chromatin fractionation in different cells."
-    note: "A proteomic map of nuclear bodies (Dyakov et al., bioRxiv 2024) is not shown: its licence (CC BY-NC-ND) does not allow derived works. The speckle, lamina and PML-body proteomes of Barutcu et al. 2022 are not shown until their licence is confirmed."
+    intro: "Five maps from four studies place proteins in the cell, by imaging, proximity labelling, organelle pull-down and chromatin fractionation."
+    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose licence (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022, pending their licence."
     maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
       - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
-         how: "antibody staining in many cell lines; the locations seen with approved or better reliability (those holding 20 or more proteins)",
+         how: "antibody staining in many cell lines; locations of approved or better reliability holding 20 or more proteins",
          ref: HPA 25.1, doi: 10.1126/science.aal3321, url: "https://www.proteinatlas.org/humanproteome/subcellular", licence: CC BY 4.0, min_members: 20}
       - {analysis: cell_hcm_compartment, regions: cell_region_hcm, name: Human Cell Map, short: Cell Map, method: Proximity labelling, cells: HEK293,
          how: "proximity labelling from 192 baits; each protein sits in the compartment whose baits label it most",
@@ -954,7 +954,7 @@ website:                  # the look and words of the website (ptmc web); layout
          how: "the same map at a finer scale: neighbourhoods of proteins that label one another (SAFE domains)",
          ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
       - {analysis: cell_organelle_ip, regions: cell_region_organelle_ip, name: Organelle IP, short: Organelle IP, method: Organelle pull-down, cells: HEK293T,
-         how: "organelles pulled out of the cell one at a time; each protein belongs to the organelle it comes down with",
+         how: "organelles pulled out one at a time; each protein goes with the organelle it comes down with",
          ref: Hein et al. 2025, doi: 10.1016/j.cell.2024.11.028, url: "https://github.com/czbiohub-sf/Organelle_IP_analyses_and_figures", licence: BSD-3-Clause (analysis repository)}
       - {analysis: cell_chromatin, name: Chromatin probability, short: ChEP, method: Fractionation, cells: human cell lines,
          how: "how reliably a protein comes down with chromatin across many conditions, as a probability",
@@ -1001,10 +1001,10 @@ website:                  # the look and words of the website (ptmc web); layout
       meter: common_essential                   # the class whose share the tile shows
       meter_words: commonly essential in cancer cell lines
       population: screened proteins
-      intro: "{n} of {the} {total} {who} were screened (DepMap 24Q4, 1,178 cell lines). A protein's score is its median gene effect across the lines (Chronos: 0 no effect, −1 the median of commonly essential genes; lower is a stronger dependency)."
+      intro: "{n} of {the} {total} {who} were screened (DepMap 24Q4, 1,178 cell lines). A protein's score is its median Chronos gene effect across the lines: 0 is no effect, −1 the median of commonly essential genes, and lower is a stronger dependency."
       box: {value: median, title: Median gene effect of each protein, axis: "median gene effect per protein (Chronos)",
-            sub: "DepMap Public 24Q4 CRISPR (Chronos): each protein's median gene effect across the 1,178 lines; boxes the middle half of the proteins, whiskers the 5th to 95th percentile; lower is a stronger dependency"}
-      caveat: "Essential proteins are abundant, and abundant proteins are the ones mass spectrometry finds most often, so methylated proteins are expected to look more essential than the proteome whatever their methylation does. A selection is also compared with the other methylated proteins, which share that bias, and that comparison is the fairer one."
+            sub: "DepMap Public 24Q4 CRISPR (Chronos), median gene effect per protein across 1,178 lines. Boxes span the middle half of proteins, whiskers the 5th to 95th percentile. Lower is a stronger dependency"}
+      caveat: "Essential proteins are abundant, and mass spectrometry finds abundant proteins most often, so methylated proteins look more essential than the proteome whatever their methylation does. A selection is also compared with the other methylated proteins, which share that bias, and that comparison is fairer."
       chips:
         - {title: Strongest dependencies, value: median, order: ascending}
         - {title: Selective dependencies, note: "not commonly essential; 5% to under half of the lines depend on them, share shown", sets: [some_lines],
@@ -1017,15 +1017,15 @@ website:                  # the look and words of the website (ptmc web); layout
       attribute: bound_by
       title: Writers and readers
       question: "Which methylarginines are on proteins that bind a writer, a reader or a cofactor?"
-      sub: "Methylarginines on proteins with a STRING physical partner (score 0.7 or more) in each class of writers, readers and cofactors"
+      sub: "Methylarginines on proteins with a STRING physical partner (score 0.7 or more) in each writer, reader or cofactor class"
       distribution: "Classes of partner of each protein carrying a {mark}"
       unit: [class, classes]
       noun: partner classes
       two_or_more: on proteins with partners in two or more classes
       top: 8
       bins: 4
-      note: "A class is the protein's physical partners, not a direct reading of the site: STRING associations are to the whole protein, so a count here does not show that a partner writes or reads that arginine. Readers of methyllysine are in the Tudor class that is not curated."
-      method: "The partner classes are listed in the site file (website.search.partners.classes) by gene and InterPro id, each with the paper that shows its role; a protein belongs to a class when one of its STRING physical partners does."
+      note: "A class describes the protein's physical partners. STRING associations are to the whole protein, so a count does not show that a partner writes or reads that arginine. Methyllysine readers fall in the uncurated Tudor class."
+      method: "The site file lists the partner classes (website.search.partners.classes) by gene and InterPro id, each with the paper that shows its role. A protein is in a class when one of its STRING physical partners is."
     provenance:
       kind: values
       attribute: studies
@@ -1040,18 +1040,18 @@ website:                  # the look and words of the website (ptmc web); layout
       top: 5
       bins: 5
       note: "Databases such as PhosphoSitePlus compile published studies, so two sources can rest on the same measurement."
-      method: "Each methylarginine lists the studies and databases that report it (the release's studies column) and how many they are (n_studies). A study's count is the methylarginines it reports; only, those no other study or database reports. PhosphoSitePlus and ProMetheusDB compile published studies, so a site they share with a study may rest on one measurement."
+      method: "Each methylarginine lists the studies and databases that report it (the release's studies column) and their number (n_studies). A study's count is the methylarginines it reports. Only counts those no other source reports. PhosphoSitePlus and ProMetheusDB compile published studies, so a site they share with a study may rest on one measurement."
     perturbations:
       kind: responses
       title: PRMT inhibitors, knockouts and knockdowns
       question: "Which methylarginines carry a peptide that decreases when PRMTs are inhibited or knocked out?"
-      sub: "Methylarginines that change when a PRMT is inhibited, knocked out or knocked down: inhibitors of PRMT5 and type I PRMTs (Maron et al. 2021), CARM1 knockout (Shishkova et al. 2017), and PRMT1, PRMT5, PRMT7 or CARM1 knockouts, knockdowns and inhibitors (Szewczyk et al. 2020, Hartel et al. 2019, Lu et al. 2024, Li et al. 2021)"
+      sub: "Methylarginines that change when a PRMT is inhibited, knocked out or knocked down (Maron et al. 2021; Shishkova et al. 2017; Szewczyk et al. 2020; Hartel et al. 2019; Lu et al. 2024; Li et al. 2021)"
       head: "Methylarginines with a peptide that decreased with each PRMT inhibitor, knockout or knockdown"
       first: Perturbation
       group: Methyl-IP
       calls: {down: decreased, up: increased}
-      note: "Each row counts the methylarginines an experiment measured and those that changed: decreased when a peptide carrying the site went down and none went up (increased, the reverse); a peptide carrying several methylarginines gives each the same change. Maron rows: the sites measured in that methyl-IP, a peptide changing at adjusted p ≤ 0.05. CARM1 knockout rows: the sites measured in that cell line, a peptide changing at least twofold at BH q < 0.05. The other rows: the sites each quantified, called at twofold and q < 0.05, or by the published call where the row says so: the PRMT1 knockdown (2 against 2 samples) and the Li et al. 2021 arms (one SILAC experiment each, no test). The PRMT5 knockdown of Li et al. lists only its decreased sites. Median change: the median over the sites of each site's median log2 change (inhibitor minus DMSO for the Maron rows; perturbed over control for the others)."
-      method: "The release's supporting tables give each site's call and change per experiment: maron2021_inhibitors per methyl-IP antibody and inhibitor (Maron et al. 2021 Table S3), carm1_ko per cell line (Shishkova et al. 2017) and writer_perturbations per knockout, knockdown or inhibitor; the calls of the last two are the site table's perturbation_calls (the perturbation filter). Counts and medians describe; nothing here is a test."
+      note: "Rows count the methylarginines an experiment measured and those that changed. A site is decreased when a peptide carrying it went down and none went up, and increased for the reverse. A peptide with several methylarginines gives each the same change. Maron rows: sites measured in that methyl-IP, with a peptide changing at adjusted p ≤ 0.05. CARM1 knockout rows: sites measured in that cell line, with a peptide changing at least twofold at BH q < 0.05. Other rows: sites quantified, called at twofold and q < 0.05, or by the published call where the row says so (the PRMT1 knockdown, 2 against 2 samples, and the Li et al. 2021 arms, one SILAC experiment each, untested). The Li et al. PRMT5 knockdown lists only decreased sites. Median change is the median over sites of each site's median log2 change (inhibitor minus DMSO for Maron rows, perturbed over control for the rest)."
+      method: "The release's supporting tables give each site's call and change per experiment: maron2021_inhibitors (Maron et al. 2021 Table S3), carm1_ko (Shishkova et al. 2017) and writer_perturbations. The calls of the last two are the site table's perturbation_calls (the perturbation filter). Counts and medians describe; nothing here is a test."
       rows:
         - {name: GSK591, note: PRMT5 inhibitor, group: Rme1, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: MMA}, change: log2_diff_median}
         - {name: GSK591, note: PRMT5 inhibitor, group: Rme2a, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: ADMA}, change: log2_diff_median}
@@ -1080,7 +1080,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
     - {name: Provenance, attributes: [studies, n_studies, localised_by]}
   dataset: {label: dataset, version: v1.4.3, date: "2026-10-31", doi: "10.5281/zenodo.22696798", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3"}
-  download_terms: "The release's tables are under CC BY-NC-SA 4.0; PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the studies and databases that report the sites you use, and the archive (How to cite)."
+  download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/human_methylarginine_sites_v1.4.3.xlsx", format: Excel, note: "every site with its evidence, one row per site"}
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv", format: TSV, note: "the same, tab-separated"}
@@ -1132,13 +1132,13 @@ website:                  # the look and words of the website (ptmc web); layout
       other_ptms:
         key: ptm
         label: Other PTM nearby
-        help: "Another modification of the protein within some residues of the site, from the PTM master table (iPTMnet export; not exhaustive)"
+        help: "Another modification near the site, from the PTM master table (iPTMnet export, not exhaustive)"
         kinds: {phospho: "Phospho (S, T, Y)", lys_acyl: Lys acylation, ub_sumo: "Ub or SUMO (K)", lys_methyl: Lys methylation}
         within: [2, 5, 10, 20]
       residues:
         key: incell
         label: Crosslinked residue at the site or nearby
-        help: "A residue UV-crosslinked to RNA or DNA in living cells, or a bound region, at the site or within some residues of it"
+        help: "A residue UV-crosslinked to RNA or DNA in living cells, or a bound region, at or near the site"
         kinds: {rna_crosslink: RNA-crosslinked residue, dna_crosslink: DNA-crosslinked residue, rbdmap_fragment: RBDmap RNA-bound fragment,
                 capri_xl_peptide: CAPRI XL peptide, capri_adj_peptide: CAPRI ADJ peptide, rbrid_residue: RBR-ID+ residue, rbrid_region: RBR-ID+ region,
                 dna_binding_region: UniProt DNA-binding region}
@@ -1165,14 +1165,14 @@ website:                  # the look and words of the website (ptmc web); layout
           role: cofactor
           genes: [WDR77, CLNS1A, RIOK1]
           pmid: "23071334"
-          help: "WDR77 (MEP50) is part of the PRMT5 complex, and pICln (CLNS1A) and RIOK1 are PRMT5 substrate adaptors; they are not readers (Antonysamy et al. 2012; Guderian et al. 2011)"
+          help: "WDR77 (MEP50) is in the PRMT5 complex, and pICln (CLNS1A) and RIOK1 are PRMT5 substrate adaptors. They are not readers (Antonysamy et al. 2012; Guderian et al. 2011)"
         reader_tudor:
           label: a methylarginine-reading Tudor protein
           role: reader
           reads: sDMA (SMN, SPF30, SND1); aDMA and sDMA (TDRD3)
           genes: [SMN1, SMN2, SMNDC1, TDRD3, SND1]
           pmid: "22363433"
-          help: "Tudor domains shown to bind methylarginine: SMN, SPF30 (SMNDC1) and TDRD3 (Liu et al. 2012), TDRD3 on histone tails (Yang et al. 2010) and the extended Tudor of SND1 (Liu et al. 2010)"
+          help: "Tudor domains shown to bind methylarginine: SMN, SPF30 (SMNDC1) and TDRD3 (Liu et al. 2012), TDRD3 on histone tails (Yang et al. 2010), and the extended Tudor of SND1 (Liu et al. 2010)"
         tudor_other:
           label: another Tudor-domain protein
           role: reader
@@ -1180,7 +1180,7 @@ website:                  # the look and words of the website (ptmc web); layout
           interpro: [IPR002999]
           except: [reader_tudor]
           pmid: "37013969"
-          help: "Tudor domain (IPR002999) proteins without a curated methylarginine reading; many read methyllysine, so this is not a list of arginine readers (Wang et al. 2023, review)"
+          help: "Tudor domain (IPR002999) proteins without a curated methylarginine reading. Many read methyllysine, so these are not all arginine readers (Wang et al. 2023, review)"
         reader_spindlin:
           label: Spindlin1 (reader)
           role: reader
@@ -1201,7 +1201,7 @@ website:                  # the look and words of the website (ptmc web); layout
           reads: sDMA on GAR motifs
           genes: [SART3]
           pmid: "38985674"
-          help: "SART3 reads methylarginine in glycine- and arginine-rich motifs through its HAT repeats, not a Tudor domain (Wang et al. 2024)"
+          help: "SART3 reads methylarginine in glycine- and arginine-rich motifs through its HAT repeats (Wang et al. 2024)"
         antireader_uhrf1:
           label: UHRF1 (blocked by methylation)
           role: anti-reader
@@ -1250,7 +1250,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: density, label: Top cluster window, template: "{dense_sites} in {dense_window} aa", where: {attribute: dense_q, max: 0.05}, sort: dense_sites, default: true, hide: sm,
          help: "The window most significant against the same-protein arginine null (lowest q), not necessarily the densest"}
       - {id: arg, label: Arg enrichment, attribute: arg_enrichment, format: l2, hide: sm,
-         help: "log2 of the shrinkage-estimated methylated share of this protein's arginines over the proteome-wide rate (negative when below it)"}
+         help: "log2 of the shrinkage-estimated share of this protein's arginines that are methylated, over the proteome-wide rate"}
       - {id: len, label: Length, show: length}
       - {id: share, label: Share of its arginines, show: share, help: "Methylarginine sites over the protein's arginines"}
     download:              # the explorer's 27 columns but its functional classes (unpublished labels; not shown)
@@ -1302,7 +1302,7 @@ website:                  # the look and words of the website (ptmc web); layout
       label: Tests (the record that passes most)
       attributes: [test_evidence, test_named, test_unique, test_methyl, test_localised]
     also: [earlier]
-    note: "{all} lower-confidence sites shown, hatched, beside the {others} sites. Counts, charts and tests include the {counted} whose own evidence covers the arginine and leaves the methyl group on an arginine; the other {shown} are shown only."
+    note: "{all} lower-confidence sites are shown hatched beside the {others} sites. Counts, charts and tests include the {counted} whose own evidence covers the arginine and leaves the methyl group on it. The other {shown} are shown only."
   sites:                   # the Sites page: the explorer's columns (kit-sites.js)
     sort: {by: src, desc: true}            # the sites reported by most studies first, then by gene
     state_label: State
@@ -1313,11 +1313,11 @@ website:                  # the look and words of the website (ptmc web); layout
       motif: {order: [RG, RGG, GRG, GAR, RXR, DR, RD, ER, RE], hide: [CARM1_proline_rich, CARM1_hydrophobic_proline]}
     table:                 # the optional columns (the Columns menu): the explorer's defaults first; site card blocks read website.tables
       - {id: ix, label: Interaction evidence, show: [status, tags], default: true,
-         help: "Experimental: an RNA or DNA crosslink at the residue, an RBDmap fragment covering it, or a PDB interface; predicted only: an AlphaFold-Multimer interface or a confident predicted contact. Click a tag for what the tables hold"}
+         help: "Experimental: an RNA or DNA crosslink at the residue, an RBDmap fragment covering it, or a PDB interface. Predicted only: an AlphaFold-Multimer interface or a confident predicted contact. Click a tag for the tables"}
       - {id: na, label: RNA/DNA contacts, menu: "RNA/DNA contacts (structures) and crosslinks (cells)", show: [sequences, around], sort: [nucleic_acid, evidence], default: true, hide: xs,
-         help: "RNA or DNA within 4 Å of the arginine side chain in PDB structures, within 8 Å in a complex without direct contact, or in contact via a residue at i ± 1–5; and UV-crosslinked residues and RNA-bound stretches within i ± 3 in living cells. Hover a cell for every sequence"}
+         help: "RNA or DNA within 4 Å of the side chain in PDB structures, within 8 Å in a complex without direct contact, or touching a residue at i ± 1–5; and UV-crosslinked residues and RNA-bound stretches within i ± 3 in living cells. Hover a cell for the sequences"}
       - {id: prmt, label: PRMT perturbation, menu: "PRMT inhibitors, knockouts and knockdowns", show: [calls], sort: [gsk591, ms023, perturbation], default: true,
-         help: "Change after GSK591 (PRMT5i) or MS023 (type I PRMTi), Maron 2021 Table S3, adj. p ≤ 0.05; or in the knockouts, knockdowns and inhibitors of the release, each by the rule it names"}
+         help: "Change after GSK591 (PRMT5i) or MS023 (type I PRMTi), Maron 2021 Table S3, adj. p ≤ 0.05, or in the release's knockouts, knockdowns and inhibitors by the rule each names"}
       - {id: src, label: Reported by, attribute: studies, default: true, hide: sm}
       - {id: ctx, label: Context, menu: Disorder and domain context, analyses: [disorder, domain_context], hide: xs}
       - {id: nn, label: Nearest methyl‑R, show: [nearest], hide: sm}
@@ -1477,11 +1477,11 @@ website:                  # the look and words of the website (ptmc web); layout
         include: [{column: kind, in: [pdb_rna, pdb_dna, pdb_protein, pdb_self]}]
         kinds: {pdb_rna: rna, pdb_dna: dna, pdb_protein: protein, pdb_self: self}
         label: PDBe-KB interfaces at the methylarginines
-        help: "PDB entries in which the methylarginine is at an interface with RNA, DNA, another protein or another copy of the protein (PDBe-KB), as the release lists them"
+        help: "PDB entries where the methylarginine is at an interface with RNA, DNA, another protein or another copy (PDBe-KB)"
       bound:               # the RNA or DNA each site touches (side chain within 4 Å), entry by entry
         table: contacts
         label: RNA and DNA bound at the methylarginine
-        help: "Nucleotides within 4 Å of the arginine side chain (CD, NE, CZ, NH1, NH2) in each PDB entry the release analysed"
+        help: "Nucleotides within 4 Å of the side chain (CD, NE, CZ, NH1, NH2) in each PDB entry analysed"
       predicted:           # partners of predicted complexes with the site at the interface
         table: interactions
         include: [{column: kind, in: [predicted_interface, predicted_contact]}]
@@ -1493,7 +1493,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - id: crosslinks
             label: RNA/DNA crosslinks (cells)
             none: No crosslink recorded
-            help: "Residues crosslinked to RNA or DNA in living cells, and the fragments and peptides found bound (the release's residue evidence)"
+            help: "Residues crosslinked to RNA or DNA in living cells, and the fragments and peptides found bound"
             classes:
               - {id: both, label: Crosslinked to RNA and to DNA, colour: ev, all: [rna, dna]}
               - {id: rna, label: RNA-crosslinked residue, colour: rna, where: [{column: kind, contains: "rna_crosslink;"}]}
@@ -1505,7 +1505,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - id: interfaces
             label: Interfaces in the PDB (PDBe-KB)
             none: At no interface in the PDB
-            help: "Residues at an interface in a PDB entry (PDBe-KB): with RNA, DNA, another protein or another copy of the protein"
+            help: "Residues at an interface in a PDB entry (PDBe-KB) with RNA, DNA, another protein or another copy"
             classes:
               - {id: rna, label: RNA interface, colour: rna, where: [{column: kind, equals: "pdb_rna; at_residue"}]}
               - {id: dna, label: DNA interface, colour: dna, where: [{column: kind, equals: "pdb_dna; at_residue"}]}
@@ -1526,7 +1526,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {analysis: disorder, classes: [disordered], label: in disordered regions, kind: Position in the protein, glyph: wave, opens: p-regions}
       - {attribute: evidence, values: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, rbrid_residue_published_rule, rbrid_region],
          label: in RNA-bound regions, kind: RNA · in living cells, glyph: squiggle, opens: p-sites,
-         tip: "Methylarginines crosslinked to RNA, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or under an RBR-ID+ peptide, in living cells"}
+         tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RBR-ID+ peptide"}
       - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
       - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds}
     card:                  # the site card: its blocks, each reading an attribute or a table above (a block without its data is absent)
@@ -1539,7 +1539,7 @@ website:                  # the look and words of the website (ptmc web); layout
           experimental: This arginine has experimental interaction evidence.
           experimental_pred: This arginine has experimental interaction evidence and is also at a predicted interface.
           predicted_only: Predicted to sit at a protein interface; no experimental interaction evidence recorded yet.
-          none: No interaction evidence is recorded at this residue. Most proteins were never crystallised, crosslinked or mutated, so this is not evidence of no interaction.
+          none: No interaction evidence is recorded at this residue. Most proteins were never crystallised, crosslinked or mutated, so this does not show there is none.
         tags:
           attribute: evidence
           short: {rna_crosslink: RNA xl, rbdmap_fragment: RBDmap, capri_xl_peptide: CAPRI, capri_adj_peptide: CAPRI, pclap_peptide: pCLAP, pclap_lysc_region: pCLAP,
@@ -1606,10 +1606,10 @@ website:                  # the look and words of the website (ptmc web); layout
         table: records
         groups: partner_class                # the attribute whose values name the groups
         help:
-          writes: IntAct methylation reactions with the methylarginine curated at this residue, or in which mutating it changes the reaction
+          writes: IntAct methylation reactions that curate this residue, or where mutating it changes the reaction
           removes: IntAct demethylation reactions with the methylarginine curated at this residue
-          binds_methylated: "the residue is a methylarginine in the experiment: modelled as one in a structure (2MR, DA2, NMM), or curated as methylated in IntAct"
-          mutation_changes_binding: "IntAct: a mutation of this residue (alone or with up to two neighbours) decreased, disrupted or increased the binding"
+          binds_methylated: "the residue is a methylarginine in the experiment, modelled as one in a structure (2MR, DA2, NMM) or curated as methylated in IntAct"
+          mutation_changes_binding: "IntAct: mutating this residue (alone or with up to two neighbours) decreased, disrupted or increased binding"
           mutation_no_effect: "IntAct: a mutation of this residue had no effect on the binding"
           binds_unmodified: structures that model an unmodified arginine here (PDBe-KB interface)
           binds_other_residue: "structures with another residue here: a mutated construct or a natural variant"
@@ -1641,14 +1641,14 @@ website:                  # the look and words of the website (ptmc web); layout
             - {attribute: ms023, has: [decreased], suggests: type I PRMTs, because: "a peptide carrying it decreased with the type I PRMT inhibitor MS023, and none increased"}
             - {attribute: perturbation, has: ["carm1_ko_mcf7:decreased", "carm1_ko_mdamb231:decreased"], suggests: CARM1, replaces: type I PRMTs,
                because: "a peptide carrying it decreased in CARM1 knockout cells, and none increased"}
-          none: "No writer suggested: no peptide carrying it was recovered by the ADMA or SDMA antibodies or decreased with a PRMT inhibitor or knockout"
+          none: "No writer suggested: no peptide carrying it was recovered by the ADMA or SDMA antibodies or fell with a PRMT inhibitor or knockout"
           sources: [Maron2021]
         partners:                            # a protein_partners table: its partners of some classes
           table: string
           classes: {prmt: "PRMTs associated with {gene}", tudor: "Tudor proteins associated with {gene}"}
           note: STRING physical, whole protein
           none: none at STRING ≥ 0.7
-        note: "The suggestion is indirect: the antibodies and the inhibitor and knockout responses measure peptides, and a peptide with several methylarginines answers for any of them; no total-protein correction was made, and a decrease after PRMT loss does not show a direct substrate. STRING associations are to the whole protein and do not show that a partner methylates or reads this arginine; the records at the residue are under \"Who binds it\" above. Several Tudor domains read methyllysine instead."
+        note: "The suggestion is indirect. Antibodies, inhibitors and knockouts measure peptides, and a peptide with several methylarginines answers for any of them. No total-protein correction was made, and a decrease after PRMT loss does not show a direct substrate. STRING associations are to the whole protein and do not show that a partner methylates or reads this arginine. The records at the residue are under \"Who binds it\" above. Several Tudor domains read methyllysine instead."
       sources:             # a source_records table: every report of the site, in the sites table's Evidence row
         table: sources
         attribute: studies                   # the provenance attribute whose values name the sources
@@ -1665,7 +1665,7 @@ website:                  # the look and words of the website (ptmc web); layout
       tables:              # site_table tables shown in the Evidence row, each with its words
         - table: inhibitors
           title: PRMT inhibitor response
-          note: "Maron et al. 2021 Table S3, over the peptides carrying this site. A call says a peptide carrying the site changed (adj. p ≤ 0.05); a peptide with several methylarginines changes for any of them, so only the single-site column speaks for this arginine alone. The median is descriptive."
+          note: "Maron et al. 2021 Table S3, over the peptides carrying this site. A call means a peptide carrying the site changed (adj. p ≤ 0.05). A peptide with several methylarginines changes for any of them, so only the single-site column speaks for this arginine alone. The median is descriptive."
           source: Maron2021
           columns:
             - {column: antibody, label: Methyl-IP}
@@ -1707,7 +1707,7 @@ website:                  # the look and words of the website (ptmc web); layout
           otherwise: {label: Not in Maron IP, colour: "#A3AEB3", colour_dark: "#6D7D84"}
         - id: prmt_inhibitor
           label: PRMT inhibitor response
-          help: "Maron et al. 2021: a site called decreased with the PRMT5 inhibitor GSK591 or the type I PRMT inhibitor MS023 (a peptide down, none up); a decrease is coloured by the methylation the inhibited enzymes make (PRMT5 symmetric, type I asymmetric). Hollow: measured, not decreased"
+          help: "Maron et al. 2021: decreased with the PRMT5 inhibitor GSK591 or the type I inhibitor MS023 (a peptide down, none up), coloured by the methylation the enzyme makes (PRMT5 symmetric, type I asymmetric). Hollow: measured, not decreased"
           classes:
             - {label: "↓ GSK591 (PRMT5i)", colour: "#A23B12", colour_dark: "#F4A26B", when: [{attribute: gsk591, has: [decreased]}, {attribute: ms023, lacks: [decreased]}]}
             - {label: "↓ MS023 (type I PRMTi)", colour: "#EB6834", colour_dark: "#D95926", when: [{attribute: ms023, has: [decreased]}, {attribute: gsk591, lacks: [decreased]}]}
@@ -1716,7 +1716,7 @@ website:                  # the look and words of the website (ptmc web); layout
           otherwise: {label: Not measured, colour: "#A3AEB3", colour_dark: "#6D7D84"}
         - id: carm1_ko
           label: CARM1 knockout
-          help: "Shishkova et al. 2017: a site decreased in CARM1 knockout cells (twofold at q < 0.05 in either cell line). Hollow: measured, not decreased"
+          help: "Shishkova et al. 2017: decreased in CARM1 knockout cells (twofold at q < 0.05 in either line). Hollow: measured, not decreased"
           classes:
             - {label: "↓ in CARM1 KO", colour: "#EB6834", colour_dark: "#D95926", when: [{attribute: perturbation, matches: "^carm1_ko_[^:]+:decreased$"}]}
             - {label: "Measured, not decreased", colour: "#A3AEB3", colour_dark: "#6D7D84", hollow: true, when: [{attribute: perturbation, matches: "^carm1_ko_[^:]+:(increased|mixed|no_significant_change)$"}]}
@@ -1744,7 +1744,7 @@ website:                  # the look and words of the website (ptmc web); layout
       rows:                # each read from a release table, mapped to the map-row format (CONTRACTS.md, Map rows)
         - id: dense
           title: Dense methyl-R windows
-          help: "Windows holding more methylarginine sites than expected from the protein's arginines (release supporting/density_windows: observed against a null of shuffled sites, q ≤ 0.05)"
+          help: "Windows holding more methylarginines than the protein's arginines predict (release supporting/density_windows: shuffled-site null, q ≤ 0.05)"
           place: backbone
           from:
             role: density_windows
@@ -1772,7 +1772,7 @@ website:                  # the look and words of the website (ptmc web); layout
           ink_dark: "#F0E6C8"
         - id: rg
           title: RG/RGG-rich
-          help: "At least 3 RG dipeptides whose consecutive RG arginines are at most 12 residues apart, found in the sequence; RGG-rich when 2 or more are RGG"
+          help: "At least 3 RG dipeptides, consecutive ones at most 12 residues apart; RGG-rich when 2 or more are RGG"
           after: composition
           sequence: {motif: "RGG?", min: 3, gap: 12, label: RG-rich, words: "{n} RG dipeptides, {strong} RGG", strong: {motif: "^RGG$", min: 2, label: RGG-rich}}
           mark: named
@@ -1782,7 +1782,7 @@ website:                  # the look and words of the website (ptmc web); layout
           ink_dark: "#F6C9D6"
         - id: tcga
           title: Tumours (TCGA)
-          help: "Somatic missense and stop changes of the site's arginine in TCGA tumours (MC3 public calls from the GDC: 33 projects), a taller tick where more tumours carry one (the release's tcga_changes and tcga_change_tumours)"
+          help: "Somatic missense and stop changes of the site's arginine in TCGA tumours (MC3 public calls from the GDC, 33 projects); a taller tick means more tumours (tcga_changes, tcga_change_tumours)"
           after: mutagen
           from: {marks: true, columns: {label: tcga_changes, value: tcga_change_tumours}, split: "; "}
           mark: tick
@@ -1791,7 +1791,7 @@ website:                  # the look and words of the website (ptmc web); layout
           key: Change in tumours (TCGA)
         - id: depmap
           title: Cell lines (DepMap)
-          help: "Missense and stop changes of the site's arginine in DepMap 24Q4 cancer cell lines, a taller tick where more lines carry one (the release's depmap_changes and depmap_change_lines)"
+          help: "Missense and stop changes of the site's arginine in DepMap 24Q4 cancer cell lines; a taller tick means more lines (depmap_changes, depmap_change_lines)"
           after: tcga
           from: {marks: true, columns: {label: depmap_changes, value: depmap_change_lines}, split: "; "}
           mark: tick
@@ -1800,7 +1800,7 @@ website:                  # the look and words of the website (ptmc web); layout
           key: Change in cell lines (DepMap)
         - id: rna_cells
           title: RNA in cells
-          help: "Residues UV-crosslinked to RNA in living cells (pepR-MS compendium: re-analysis of Kramer 2014, XRNAX, RBS-ID, pRBS-ID and pepR-MS), RBDmap RNA-bound fragments (Castello et al. 2016, HeLa) and CAPRI RNA-bound peptides (Panhale et al. 2019, HEK293; paler: ADJ-peptides next to a crosslink); pCLAP (Mullari et al. 2017) as a flag at the sites inside its peptides only"
+          help: "Residues UV-crosslinked to RNA in living cells (pepR-MS compendium: Kramer 2014 re-analysis, XRNAX, RBS-ID, pRBS-ID, pepR-MS), RBDmap RNA-bound fragments (Castello et al. 2016, HeLa) and CAPRI RNA-bound peptides (Panhale et al. 2019, HEK293; paler for ADJ-peptides next to a crosslink). pCLAP (Mullari et al. 2017) is a flag at sites inside its peptides only"
           after: ptm
           from:
             - role: residue_evidence
@@ -1811,14 +1811,14 @@ website:                  # the look and words of the website (ptmc web); layout
             capri_adj_peptide: {label: "CAPRI RNA-bound peptide (ADJ)", mark: box, opacity: 0.16, help: "a Lys-C peptide released next to an RNA crosslink (Panhale et al. 2019, HEK293)"}
             rbdmap_fragment: {label: RBDmap RNA-bound fragment, mark: box, opacity: 0.28, help: "an RNA-bound proteolytic fragment (Castello et al. 2016, HeLa)"}
             capri_xl_peptide: {label: "CAPRI RNA-crosslinked peptide (XL)", mark: box, opacity: 0.45, help: "identified with an RNA adduct (Panhale et al. 2019, HEK293)"}
-            pclap_lysc_region: {label: "In a pCLAP RNA-binding region (site only)", mark: dot, opacity: 0.4, sources: [pCLAP], help: "the site lies in the Lys-C peptide around a pCLAP RNA-binding peptide (Mullari et al. 2017, HEK293); the region itself is not shown"}
-            pclap_peptide: {label: "In a pCLAP RNA-binding peptide (site only)", mark: dot, opacity: 0.85, sources: [pCLAP], help: "the site lies in a peptide enriched from UV-crosslinked RNA-protein complexes (Mullari et al. 2017, HEK293); the peptide itself is not shown"}
+            pclap_lysc_region: {label: "In a pCLAP RNA-binding region (site only)", mark: dot, opacity: 0.4, sources: [pCLAP], help: "the site lies in the Lys-C peptide around a pCLAP RNA-binding peptide (Mullari et al. 2017, HEK293); the region is not shown"}
+            pclap_peptide: {label: "In a pCLAP RNA-binding peptide (site only)", mark: dot, opacity: 0.85, sources: [pCLAP], help: "the site lies in a peptide enriched from UV-crosslinked RNA-protein complexes (Mullari et al. 2017, HEK293); the peptide is not shown"}
             rna_crosslink: {label: RNA-crosslinked residue, mark: tick, help: "a residue UV-crosslinked to RNA in living cells"}
           colour: "#7B4FBF"
           colour_dark: "#A98BE0"
         - id: rbrid
           title: RBR-ID
-          help: "RBR-ID (Oksuz et al. 2023, K562 nuclei): residues under a peptide depleted when RNA is 4SU-labelled and crosslinked, and regions whose smoothed residue score reaches the release's threshold"
+          help: "RBR-ID (Oksuz et al. 2023, K562 nuclei): residues under a peptide depleted when RNA is 4SU-labelled and crosslinked, and regions whose smoothed score reaches the release's threshold"
           after: rna_cells
           from:
             role: residue_evidence
@@ -1831,7 +1831,7 @@ website:                  # the look and words of the website (ptmc web); layout
           colour_dark: "#A98BE0"
         - id: dna_cells
           title: DNA in cells
-          help: "Residues UV-crosslinked to DNA in MCF7 cells, alone or as candidates, and crosslinked peptides (Trendel et al. 2025); UniProt DNA-binding regions"
+          help: "Residues UV-crosslinked to DNA in MCF7 cells, alone or as candidates, and crosslinked peptides (Trendel et al. 2025), plus UniProt DNA-binding regions"
           after: rbrid
           from:
             role: residue_evidence
@@ -1846,7 +1846,7 @@ website:                  # the look and words of the website (ptmc web); layout
           colour_dark: "#D9A548"
         - id: intact
           title: IntAct
-          help: "IntAct curated features of interaction participants: binding regions mapped for a partner, and mutations that change an interaction"
+          help: "IntAct features of interaction participants: binding regions mapped for a partner, and mutations that change an interaction"
           after: pdb
           default: "off"
           from:
@@ -1874,7 +1874,7 @@ website:                  # the look and words of the website (ptmc web); layout
           colour_dark: "#3FB5CF"
         - id: lower_confidence
           title: Lower confidence
-          help: "Arginines a study reports as methylated whose records each fail a site test (the release's lower-confidence sites): not counted as sites"
+          help: "Arginines a study reports as methylated whose records each fail a site test (the release's lower-confidence sites). Not counted as sites"
           after: predicted
           default: "off"
           key: Lower-confidence evidence (not a site)
