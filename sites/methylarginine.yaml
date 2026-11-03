@@ -1378,6 +1378,18 @@ website:                  # the look and words of the website (ptmc web); layout
       format: residue_evidence
       columns: {accession: uniprot_accession, start: position, end: position, kind: ptm_type, source: evidence}
   protein:                 # the protein page
+    conservation:          # orthologues live from Ensembl Compara, and the selection's logo (CONTRACTS.md, Conservation across species)
+      ensembl: {rest: "https://rest.ensembl.org", xref: Ensembl, source: human}
+      species:             # mouse to yeast
+        - {id: mus_musculus, label: Mouse}
+        - {id: gallus_gallus, label: Chicken}
+        - {id: xenopus_tropicalis, label: Frog}
+        - {id: danio_rerio, label: Zebrafish}
+        - {id: drosophila_melanogaster, label: Fly}
+        - {id: caenorhabditis_elegans, label: Worm}
+        - {id: saccharomyces_cerevisiae, label: Yeast}
+      similar: [K]         # lysine is a conservative change from arginine
+      logo: true
     structure:             # the 3D viewer's evidence at the sites (CONTRACTS.md, Structure evidence), through the tables above
       contacts:            # PDBe-KB interfaces at the sites, with the PDB entries that show each
         table: interactions

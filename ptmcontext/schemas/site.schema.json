@@ -2700,6 +2700,74 @@
                   }
                 }
               }
+            },
+            "conservation": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the protein page's conservation card (orthologues live from Ensembl Compara) and the selection's sequence logo; a site without this block lacks both (CONTRACTS.md, Conservation across species)",
+              "required": [
+                "ensembl",
+                "species"
+              ],
+              "properties": {
+                "ensembl": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "rest",
+                    "xref",
+                    "source"
+                  ],
+                  "description": "the lookup: Ensembl REST address, the UniProt cross-reference database naming the protein's Ensembl gene, and the source species' name in Ensembl's homology endpoint; optionally the Compara set",
+                  "properties": {
+                    "rest": {
+                      "type": "string"
+                    },
+                    "xref": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "compara": {
+                      "type": "string",
+                      "description": "Ensembl's Compara set to search when the species are not vertebrates (e.g. fungi); left out, the vertebrate set"
+                    }
+                  }
+                },
+                "species": {
+                  "type": "array",
+                  "minItems": 1,
+                  "description": "the orthologues' species, nearest first: Ensembl's species name and the label shown",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "label"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "similar": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "residue letters that count as a conservative change from a marked residue (shown, not counted as kept)"
+                },
+                "logo": {
+                  "type": "boolean",
+                  "description": "offer the selection's site alignment and sequence logo (needs website.search.patterns for the windows)"
+                }
+              }
             }
           }
         },

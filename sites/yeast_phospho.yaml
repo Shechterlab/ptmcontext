@@ -49,4 +49,18 @@ website:
   examples: [SEC16, SEC16 S73, "motif:S/T-P", "disorder:IDR", "idr_charge:Janus"]
   partners: {species: 4932}         # STRING files budding yeast under taxon 4932 (UniProt's proteome is strain S288c, 559292)
   sites: {columns: [structure_context]}
-  protein: {facts: [{analysis: idr, classes: [idr]}]}
+  search:
+    patterns: {at: pattern, near: window, span: 15}   # the sequence windows the selection's logo is drawn from
+  protein:
+    facts: [{analysis: idr, classes: [idr]}]
+    conservation:          # orthologues from Ensembl Compara's fungal set (UniProt names the gene under EnsemblFungi)
+      ensembl: {rest: "https://rest.ensembl.org", xref: EnsemblFungi, source: saccharomyces_cerevisiae, compara: fungi}
+      species:
+        - {id: candida_glabrata, label: C. glabrata}
+        - {id: candida_albicans, label: C. albicans}
+        - {id: yarrowia_lipolytica, label: Y. lipolytica}
+        - {id: schizosaccharomyces_pombe, label: S. pombe}
+        - {id: neurospora_crassa, label: N. crassa}
+        - {id: ustilago_maydis, label: U. maydis}
+        - {id: cryptococcus_neoformans, label: C. neoformans}
+      logo: true
