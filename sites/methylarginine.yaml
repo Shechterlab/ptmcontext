@@ -1515,13 +1515,13 @@ website:                  # the look and words of the website (ptmc web); layout
     bound: nucleic_acid_type
   tabs:                    # the top tabs' words (the addresses #idrs, #statistics and #method stay)
     overview: {label: Overview, hint: "Click a class row to select its sites, or a tile's title to open the question."}
-    proteins: {label: Proteins, hint: "The proteins with a methylarginine, with the sites on each; filter, sort and download."}
-    sites: {label: Sites, hint: "Every methylarginine, one row each, with its evidence; filter, sort and download."}
-    idrs: {label: Disordered regions, hint: "Intrinsically disordered regions (IDRs) of the proteins, and where the methylarginines sit in them."}
+    proteins: {label: Proteins, hint: "One row per protein with methylarginines. Filter, sort and download."}
+    sites: {label: Sites, hint: "One row per methylarginine, with its evidence. Filter, sort and download."}
+    idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of methylated proteins, and the methylarginines in them."}
     interactions: {label: Interactions, hint: "Methylarginines at contacts with RNA, DNA or other proteins."}
-    statistics: {label: All tests, hint: "The table of every test behind the site: one row per class, with its odds ratio, interval and q value."}
-    method: {label: Methods & data, hint: "How each question was asked and tested, the data it came from, and downloads."}
-    help: {label: Help, hint: "How to use the site: searching, filters, selections, keys."}
+    statistics: {label: All tests, hint: "Every test on the site, one row per class, with odds ratio, interval and q value."}
+    method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
+    help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
   legacy_links:            # the explorer's Overview anchors (#overview/ov-pan, ...) open the same questions here
     ov-pan: panther_group
     ov-dis: disease_family

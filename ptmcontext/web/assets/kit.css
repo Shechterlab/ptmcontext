@@ -1015,7 +1015,7 @@ kbd { font-family: var(--font-mono); font-size: 0.8em; padding: 0.05rem 0.4rem; 
 .search-field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .tile:focus-visible, .drow:focus-visible, .tbl-card:focus-visible, tr[tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #view h2[tabindex="-1"]:focus { outline: none; }
-#view h2[tabindex="-1"]:focus-visible { outline: 2px dashed var(--accent); outline-offset: 4px; }
+#view h2[tabindex="-1"]:focus-visible { outline: none; }   /* focus moved here for screen readers after navigation; no ring */
 /* targets of at least 24 px (WCAG 2.5.8): small buttons and links that stand alone */
 .exp-btn, .theme-switch button, .seg button, .try-chip, .btn.small { min-height: 24px; }
 a.tmore { display: inline-block; padding-block: 0.15rem; min-height: 24px; }
@@ -1422,3 +1422,5 @@ html[data-density="compact"] .tbl th { padding-top: 0.3rem; padding-bottom: 0.3r
   #scope [data-sel-copy], .q-note { display: none; }
   #scope .sel-chip:has([data-sel-clear-q]) { display: none; }   /* the search box above says it */
 }
+
+.fchip > .muted { margin-left: 0.35em; }   /* the count beside its label */

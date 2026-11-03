@@ -55,9 +55,9 @@ website:
   overview:
     random_maps: {n: 3, title: Randomly selected proteins}   # proteins drawn at random, each end to end, with "Draw three others"
   tabs:                    # the top tabs' words (the addresses #idrs, #statistics and #method stay)
-    idrs: {label: Disordered regions, hint: "Intrinsically disordered regions (IDRs) of the proteins, and the phosphosites in them."}
-    statistics: {label: All results, hint: "The table of every test behind the site: one row per class, with its odds ratio, interval and q value."}
-    method: {label: Methods & data, hint: "How each question was asked and tested, the data it came from, and downloads."}
+    idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of phosphorylated proteins, and the phosphosites in them."}
+    statistics: {label: All tests, hint: "Every test on the site, one row per class, with odds ratio, interval and q value."}
+    method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
   partners: {species: 4932}         # STRING files budding yeast under taxon 4932 (UniProt's proteome is strain S288c, 559292)
   sites: {columns: [structure_context]}
   search:

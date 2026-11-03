@@ -104,7 +104,7 @@
   const tabHint = v => TABS[v]?.hint || ({
     overview: `Click a class row to select its ${W.marks}.`,
     proteins: `The proteins with ${W.marks}, and the ${W.marks} on each.`,
-    sites: `Every ${W.mark}, one row each, with its evidence.`,
+    sites: `One row per ${W.mark}, with its evidence.`,
     idrs: `Intrinsically disordered regions of the proteins, and the ${W.marks} in them.`,
     statistics: 'Every test behind the site, one row per class, with its effect, interval and q value.',
     method: 'How each question was asked and tested, and the data it came from.',
