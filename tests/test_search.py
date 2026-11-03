@@ -132,6 +132,8 @@ def test_partner_classes_are_read_from_the_site_file_by_gene_and_interpro_id(tmp
     assert members == {'curated': {'P2'}, 'family': {'P3'}}            # the gene, and the InterPro id less the curated class
     info = _page_data(index)['search']['partners']
     assert info['classes'] == {'curated': 'a curated reader', 'family': 'the family, less the curated'} and info['class_info']['curated']['role'] == 'reader'
+    run = json.loads((index.parent.parent / 'run.json').read_text())        # the website build left the run's output as recorded
+    assert run['output']['marks.tsv'] == md5_file(index.parent.parent / 'marks.tsv')
     marks = pd.read_csv(index.parent.parent / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
     assert dict(zip(marks['accession'] + marks['position'], marks['a.bound_by'])) == {'P12': 'curated; family', 'P15': 'curated; family', 'P132': 'curated; family',
                                                                                       'P22': 'family', 'P225': 'family', 'P229': 'family'}

@@ -1158,5 +1158,10 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
                 frame.to_csv(folder / name, sep='\t', index=False, lineterminator='\n')
             record['output'][name] = md5_file(folder / name)
         (folder / 'run.json').write_text(json.dumps(record, indent=1) + '\n')
+        from .web import search as SE                  # a mark attribute derived from the site's partners (website.search)
+        if SE.derived_attribute(site):
+            SE.derive(site, folder, log, write=True)
+            record['output']['marks.tsv'] = md5_file(folder / 'marks.tsv')
+            (folder / 'run.json').write_text(json.dumps(record, indent=1) + '\n')
         log(f'  -> {folder}')
     return result

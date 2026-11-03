@@ -157,11 +157,21 @@ def derived_attribute(site: dict) -> dict:
                       'help': a.get('help', ''), 'derived': True}}
 
 
-def derive(site: dict, folder: Path, log=print) -> None:
-    """Add the derived attribute (a list of partner class codes) to the marks of the run's output and to the site's
-    attributes, in step with the table's partners; run again to refresh. Nothing else in marks.tsv changes."""
+def derive(site: dict, folder: Path, log=print, write: bool = False) -> None:
+    """The derived attribute (a list of partner class codes): with write (the run, before it records its outputs'
+    MD5s), added to the marks of the run's output; without (the web build), only registered among the site's
+    attributes when the run wrote it, so that a website build never changes a run's output. Nothing else in
+    marks.tsv changes."""
     spec = derived_attribute(site)
     if not spec:
+        return
+    if not write:
+        name = next(iter(spec))
+        head = (folder / 'marks.tsv').open().readline().rstrip('\n').split('\t') if (folder / 'marks.tsv').exists() else []
+        if f'a.{name}' in head:
+            site['marks'].setdefault('attributes', {})[name] = spec[name]
+        else:
+            log(f'  website.search.partners.attribute: the run has no a.{name} column; run the site again to add it')
         return
     import pandas as pd
     name = next(iter(spec))
