@@ -239,6 +239,28 @@ identifiers still count as annotated (the background). `ptmc check` reads the ru
 and every column its tables must have; the run records the file's MD5. Record each mapping table in the manifest like
 any input: the identifiers are only as good as the map.
 
+A question of several yes-or-no tests, each against the residues its evidence could reach (an RNA crosslink among
+the residues of the proteins with one, an interface among the residues a structure observed), needs no code either:
+
+```yaml
+  - id: <analysis>
+    counting: every_candidate              # or proteins_with_both (as the other residue tests)
+    tests:
+      - {category: <code>, inside: <role>, proteins_with: <role>, label: <words>}          # in a unit of the role
+      - {category: <code>, inside: <role>, within: 3, proteins_with: <role>}               # within 3 residues of one
+      - {category: <code>, inside: {role: <role>, where: [{column: class, at_most: 4}]}, covered_by: <measured role>}
+      - {category: <code>, inside: <role>, unless: {any: [{at: 1, in: G}]}}                # not where the motif rule holds
+    strata: [{stratum: all}, {stratum: ordered, outside_of: <disorder role>}]              # optional: every test again
+```
+
+A file whose terms forbid copying it is recorded with `"redistribution": "checksum_only"`: a build reads it from its
+root when it is there, and leaves out (and says so) the tests that need it otherwise. A role may name it first and a
+republishable source second (`first_of`), as the methylarginine site does for pCLAP's peptides.
+
+A page of its own (`website.pages`: the Interactions page of `sites/methylarginine.yaml`) lays out sections of blocks
+that read the statistics, the marks' attributes and the tables of `website.tables` (add `page_rows` for rows of no site
+or protein); CONTRACTS.md, "Website pages", lists the blocks. A block whose data a site lacks is left out.
+
 Columns of the marks table the website should keep (to colour sites, filter them, and show where each comes from)
 go under `marks.attributes`; no test reads them:
 

@@ -528,6 +528,853 @@
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0); component databases keep their own terms",
       "role": "input",
       "note": "Experiments from the literature on a methylarginine or a methylated region (the curated table of the release, 6 rows): the system, the perturbation, the readout, the direction of the change and the finding, each with its paper. Kept apart from the site table and every statistic; the protein page's Experiments card."
+    },
+    "uniprot_disordered_regions": {
+      "file": "inputs/interactions/uniprot_human_regions_2026-10-16.tsv",
+      "md5": "97667601b93c986c7efb83c1ff6c650e",
+      "source": "https://rest.uniprot.org/uniprotkb/stream (fields ft_region, ft_domain, ft_repeat, ft_zn_fing)",
+      "version": "UniProt release 2026_03, downloaded 2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. UniProt Region features noted \"Disordered\": the disordered regions the interaction tests read. Citation: UniProt Consortium, Nucleic Acids Res 53:D609 (2025).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "label": "note",
+        "include": [
+          {
+            "column": "feature",
+            "equals": "disordered_region"
+          }
+        ]
+      }
+    },
+    "uniprot_domain_regions": {
+      "file": "inputs/interactions/uniprot_human_regions_2026-10-16.tsv",
+      "md5": "97667601b93c986c7efb83c1ff6c650e",
+      "source": "https://rest.uniprot.org/uniprotkb/stream (fields ft_region, ft_domain, ft_repeat, ft_zn_fing)",
+      "version": "UniProt release 2026_03, downloaded 2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. UniProt domains, repeats and zinc fingers (the same file, its other features). Citation: UniProt Consortium, Nucleic Acids Res 53:D609 (2025).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "label": "note",
+        "subtype": "feature",
+        "exclude": [
+          {
+            "column": "feature",
+            "equals": "disordered_region"
+          }
+        ]
+      }
+    },
+    "pdbe_kb_interfaces_2026_10_16": {
+      "file": "inputs/interactions/pdbe_kb_interface_residues_2026-10-16.tsv",
+      "md5": "f105ffa11c507c7aeada79fb2637002d",
+      "source": "https://www.ebi.ac.uk/pdbe/graph-api/uniprot/interface_residues/{acc}",
+      "version": "PDBe-KB graph API, answers saved 2026-10-16 to 2026-10-19",
+      "licence": "EMBL-EBI terms of use (free use with attribution)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per stretch of residues in contact with a partner (a UniProt accession, RNA, DNA or another kind) in a PDB entry; the class is the partner. Citation: PDBe-KB consortium, Nucleic Acids Res 50:D534 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "class": "partner",
+        "label": "partner_name",
+        "ref": "pdb_entries"
+      }
+    },
+    "pdbe_kb_interfaces_2026_10_20": {
+      "file": "inputs/interactions/pdbe_kb_interface_residues_2026-10-20.tsv",
+      "md5": "cf1fd3091f35e94eb6a94c45b432eeb0",
+      "source": "https://www.ebi.ac.uk/pdbe/graph-api/uniprot/interface_residues/{acc}",
+      "version": "PDBe-KB graph API, answers saved 2026-10-20",
+      "licence": "EMBL-EBI terms of use (free use with attribution)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per stretch of residues in contact with a partner (a UniProt accession, RNA, DNA or another kind) in a PDB entry; the class is the partner. Citation: PDBe-KB consortium, Nucleic Acids Res 50:D534 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "class": "partner",
+        "label": "partner_name",
+        "ref": "pdb_entries"
+      }
+    },
+    "pdbe_kb_interfaces_2026_10_21": {
+      "file": "inputs/interactions/pdbe_kb_interface_residues_2026-10-21.tsv",
+      "md5": "e90870502680a5654d1d76da45409c37",
+      "source": "https://www.ebi.ac.uk/pdbe/graph-api/uniprot/interface_residues/{acc}",
+      "version": "PDBe-KB graph API, answers saved 2026-10-21",
+      "licence": "EMBL-EBI terms of use (free use with attribution)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per stretch of residues in contact with a partner (a UniProt accession, RNA, DNA or another kind) in a PDB entry; the class is the partner. Citation: PDBe-KB consortium, Nucleic Acids Res 50:D534 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "class": "partner",
+        "label": "partner_name",
+        "ref": "pdb_entries"
+      }
+    },
+    "pdbe_kb_interfaces_2026_10_21_2": {
+      "file": "inputs/interactions/pdbe_kb_interface_residues_2026-10-21_2.tsv",
+      "md5": "1626404200f820782946c25f0f0f8f28",
+      "source": "https://www.ebi.ac.uk/pdbe/graph-api/uniprot/interface_residues/{acc}",
+      "version": "PDBe-KB graph API, answers saved 2026-10-21",
+      "licence": "EMBL-EBI terms of use (free use with attribution)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per stretch of residues in contact with a partner (a UniProt accession, RNA, DNA or another kind) in a PDB entry; the class is the partner. Citation: PDBe-KB consortium, Nucleic Acids Res 50:D534 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "class": "partner",
+        "label": "partner_name",
+        "ref": "pdb_entries"
+      }
+    },
+    "pdbe_kb_interfaces_2026_10_21_3": {
+      "file": "inputs/interactions/pdbe_kb_interface_residues_2026-10-21_3.tsv",
+      "md5": "ae74176fb85a34c2680e2264c1b4992a",
+      "source": "https://www.ebi.ac.uk/pdbe/graph-api/uniprot/interface_residues/{acc}",
+      "version": "PDBe-KB graph API, answers saved 2026-10-21",
+      "licence": "EMBL-EBI terms of use (free use with attribution)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per stretch of residues in contact with a partner (a UniProt accession, RNA, DNA or another kind) in a PDB entry; the class is the partner. Citation: PDBe-KB consortium, Nucleic Acids Res 50:D534 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "class": "partner",
+        "label": "partner_name",
+        "ref": "pdb_entries"
+      }
+    },
+    "pdbe_kb_interfaces_2026_10_25": {
+      "file": "inputs/interactions/pdbe_kb_interface_residues_2026-10-25.tsv",
+      "md5": "a29673bea952180b96b6218e1d94a7d5",
+      "source": "https://www.ebi.ac.uk/pdbe/graph-api/uniprot/interface_residues/{acc}",
+      "version": "PDBe-KB graph API, answers saved 2026-10-25",
+      "licence": "EMBL-EBI terms of use (free use with attribution)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per stretch of residues in contact with a partner (a UniProt accession, RNA, DNA or another kind) in a PDB entry; the class is the partner. Citation: PDBe-KB consortium, Nucleic Acids Res 50:D534 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "class": "partner",
+        "label": "partner_name",
+        "ref": "pdb_entries"
+      }
+    },
+    "sifts_observed_ranges": {
+      "file": "inputs/interactions/sifts_observed_ranges_human_2026-10-16.tsv",
+      "md5": "f3650bb31a6efc5a6bcba84c7be16a9c",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/uniprot_segments_observed.tsv.gz",
+      "version": "SIFTS, downloaded 2026-10-16",
+      "licence": "EMBL-EBI terms of use",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The residues a PDB chain models: the measured background of the PDB interface tests. Citation: Dana et al., Nucleic Acids Res 47:D482 (2019).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end"
+      }
+    },
+    "protvar_interfaces": {
+      "file": "inputs/interactions/protvar_predicted_interfaces_2024.05.28_pdockq0.23.tsv",
+      "md5": "1706c5dad8ea3a7350a925a57cd2337a",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/ProtVar/predictions/interfaces/2024.05.28_interface_summary_5A.tsv.gz",
+      "version": "2024.05.28_interface_summary_5A, downloaded 2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Each side of a heterodimer of two reviewed proteins: its interface residues (a side whose residue letters disagree with the sequence is left out); the class is the pair model's pDockQ. Citation: Stephenson et al., Nucleic Acids Res 52:W140 (2024); Burke et al., Nat Struct Mol Biol 30:216 (2023).",
+      "columns": [
+        {
+          "accession": "uniprot_id1",
+          "residues": "ifresid1",
+          "class": "pdockq",
+          "label": "interaction_id",
+          "include": [
+            {
+              "column": "uniprot_id1",
+              "on_snapshot": true
+            },
+            {
+              "column": "uniprot_id2",
+              "on_snapshot": true
+            }
+          ],
+          "exclude": [
+            {
+              "column": "uniprot_id1",
+              "same_as": "uniprot_id2"
+            }
+          ]
+        },
+        {
+          "accession": "uniprot_id2",
+          "residues": "ifresid2",
+          "class": "pdockq",
+          "label": "interaction_id",
+          "include": [
+            {
+              "column": "uniprot_id1",
+              "on_snapshot": true
+            },
+            {
+              "column": "uniprot_id2",
+              "on_snapshot": true
+            }
+          ],
+          "exclude": [
+            {
+              "column": "uniprot_id1",
+              "same_as": "uniprot_id2"
+            }
+          ]
+        }
+      ]
+    },
+    "intact_mutations": {
+      "file": "inputs/interactions/intact_mutations_human_2026-10-19.tsv",
+      "md5": "f41f6198b43b723ae0271447b0cdbb84",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/features/mutations.tsv",
+      "version": "IntAct release finished Mon 12 Jan 21:28:56 GMT 2026; downloaded 2026-10-19",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Single-residue mutations with a stated effect on the interaction (the feature types of the IntAct mutation-effect branch), on ranges whose sequence check passes; the class is the feature type (MI:2226: no effect). Citation: del Toro et al., Nucleic Acids Res 50:D648 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "ranges": "ranges",
+        "class": "feature_type_mi",
+        "label": "feature_type",
+        "max_length": 1,
+        "include": [
+          {
+            "column": "sequence_check",
+            "in": [
+              "matches",
+              "no curated sequence"
+            ]
+          },
+          {
+            "column": "feature_type_mi",
+            "in": [
+              "MI:2226",
+              "MI:0573",
+              "MI:1128",
+              "MI:1129",
+              "MI:0119",
+              "MI:1133",
+              "MI:1130",
+              "MI:0382",
+              "MI:1132",
+              "MI:1131",
+              "MI:2227"
+            ]
+          }
+        ]
+      }
+    },
+    "intact_binding_regions": {
+      "file": "inputs/interactions/intact_binding_regions_human_2026-10-19.tsv",
+      "md5": "633149a91e85d6c005deb134d066071a",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/features/bindings_regions.tsv",
+      "version": "IntAct release finished Mon 12 Jan 21:28:56 GMT 2026; downloaded 2026-10-19",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Binding regions of at most 20 residues (peptide-level mappings), on ranges whose sequence check passes. Citation: del Toro et al., Nucleic Acids Res 50:D648 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "ranges": "ranges",
+        "class": "feature_type_mi",
+        "label": "feature_type",
+        "max_length": 20,
+        "include": [
+          {
+            "column": "sequence_check",
+            "in": [
+              "matches",
+              "no curated sequence"
+            ]
+          }
+        ]
+      }
+    },
+    "pepr_crosslinks": {
+      "file": "inputs/interactions/pepr_ms_v2_table_s2_rna_crosslinked_peptides.tsv",
+      "md5": "dbaa86d0da61cc4b37b1de02b93bb2d2",
+      "source": "https://www.biorxiv.org/content/biorxiv/early/2026/09/21/2025.09.05.674461/DC1/embed/media-1.zip?download=true",
+      "version": "bioRxiv v2 (2026) supplement, downloaded 2026-10-16",
+      "licence": "CC BY-NC",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Each RNA-crosslinked residue whose letter matches the sequence. Citation: Sha, Kuster & Trendel, bioRxiv (2025), doi:10.1101/2025.09.05.674461; re-analysed: Kramer et al., Nat Methods 11:1064 (2014); Trendel et al., Cell 176:391 (2019); Bae et al., Nat Struct Mol Biol 27:678 (2020); Bae et al., Nat Commun 12:6026 (2021).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "position",
+        "residue": "crosslinked_residue",
+        "label": "dataset"
+      }
+    },
+    "pepr_crosslinks_single": {
+      "file": "inputs/interactions/pepr_ms_v2_table_s2_rna_crosslinked_peptides.tsv",
+      "md5": "dbaa86d0da61cc4b37b1de02b93bb2d2",
+      "source": "https://www.biorxiv.org/content/biorxiv/early/2026/09/21/2025.09.05.674461/DC1/embed/media-1.zip?download=true",
+      "version": "bioRxiv v2 (2026) supplement, downloaded 2026-10-16",
+      "licence": "CC BY-NC",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The crosslinked residues of the spectra (dataset, peptide, RNA mass) that place their crosslink on one residue only. Citation: Sha, Kuster & Trendel, bioRxiv (2025), doi:10.1101/2025.09.05.674461; re-analysed: Kramer et al., Nat Methods 11:1064 (2014); Trendel et al., Cell 176:391 (2019); Bae et al., Nat Struct Mol Biol 27:678 (2020); Bae et al., Nat Commun 12:6026 (2021).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "position",
+        "residue": "crosslinked_residue",
+        "label": "dataset",
+        "unique_within": [
+          "dataset",
+          "uniprot_accession",
+          "peptide",
+          "rna_mass"
+        ]
+      }
+    },
+    "pepr_focused": {
+      "file": "inputs/interactions/pepr_ms_v2_table_s3_focused_sites.tsv",
+      "md5": "f90b7461d7d49bc8d25b3f0fbf5fa5bb",
+      "source": "https://www.biorxiv.org/content/biorxiv/early/2026/09/21/2025.09.05.674461/DC1/embed/media-1.zip?download=true",
+      "version": "bioRxiv v2 (2026) supplement, downloaded 2026-10-16",
+      "licence": "CC BY-NC",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Each focused crosslinking site whose letter matches the sequence. Citation: Sha, Kuster & Trendel, bioRxiv (2025), doi:10.1101/2025.09.05.674461; re-analysed: Kramer et al., Nat Methods 11:1064 (2014); Trendel et al., Cell 176:391 (2019); Bae et al., Nat Struct Mol Biol 27:678 (2020); Bae et al., Nat Commun 12:6026 (2021).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "focused_positions",
+        "residue": "focused_residues",
+        "separator": "; "
+      }
+    },
+    "pepr_focused_single": {
+      "file": "inputs/interactions/pepr_ms_v2_table_s3_focused_sites.tsv",
+      "md5": "f90b7461d7d49bc8d25b3f0fbf5fa5bb",
+      "source": "https://www.biorxiv.org/content/biorxiv/early/2026/09/21/2025.09.05.674461/DC1/embed/media-1.zip?download=true",
+      "version": "bioRxiv v2 (2026) supplement, downloaded 2026-10-16",
+      "licence": "CC BY-NC",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The crosslinks focused on one residue. Citation: Sha, Kuster & Trendel, bioRxiv (2025), doi:10.1101/2025.09.05.674461; re-analysed: Kramer et al., Nat Methods 11:1064 (2014); Trendel et al., Cell 176:391 (2019); Bae et al., Nat Struct Mol Biol 27:678 (2020); Bae et al., Nat Commun 12:6026 (2021).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "focused_positions",
+        "residue": "focused_residues",
+        "separator": "; ",
+        "max_per_row": 1
+      }
+    },
+    "rbdmap_fragments": {
+      "file": "inputs/interactions/rbdmap_castello2016_rna_bound_fragments.tsv",
+      "md5": "dad2ab8d0557114a153671786e342bcd",
+      "source": "https://ora.ox.ac.uk/objects/uuid:092f4366-cac9-4ed7-8283-89dc6032834a/files/ma75a36ddd2e91c194d65041242e5a683",
+      "version": "Table S1, downloaded 2026-10-16",
+      "licence": "CC BY 4.0 (open access article and its supplement; PMC5003815)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Each RNA-bound fragment on the sequence (an isoform as its entry; an accession not among the sequences by its gene), at the place the table gives or, if the sequence does not read it there, the only place it does. Citation: Castello et al., Mol Cell 63:696 (2016), doi:10.1016/j.molcel.2016.06.029.",
+      "columns": {
+        "accession": "protein_id",
+        "canonical": true,
+        "gene": "gene",
+        "start": "fragment_start",
+        "end": "fragment_end",
+        "sequence": "fragment_sequence",
+        "relocate": true
+      }
+    },
+    "capri_xl_peptides": {
+      "file": "inputs/interactions/capri_panhale2019_xl_peptides.tsv",
+      "md5": "9e01218433c937f5f74b5fc74204b96a",
+      "source": "https://static-content.springer.com/esm/art%3A10.1038%2Fs41467-019-10585-3/MediaObjects/41467_2019_10585_MOESM12_ESM.xlsx",
+      "version": "Supplementary Data 9, downloaded 2026-10-22",
+      "licence": "CC BY 4.0 (open access article and its supplementary data)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Each XL-peptide placed on the sequence as the RBDmap fragments are. Citation: Panhale et al., Nat Commun 10:2682 (2019), doi:10.1038/s41467-019-10585-3.",
+      "columns": {
+        "accession": "uniprot_id",
+        "canonical": true,
+        "gene": "gene",
+        "start": "peptide_start",
+        "end": "peptide_end",
+        "sequence": "xl_peptide",
+        "relocate": true
+      }
+    },
+    "capri_adj_peptides": {
+      "file": "inputs/interactions/capri_panhale2019_adj_peptides.tsv",
+      "md5": "cd118d852599247aa1d30edb85e4773c",
+      "source": "https://static-content.springer.com/esm/art%3A10.1038%2Fs41467-019-10585-3/MediaObjects/41467_2019_10585_MOESM6_ESM.xlsx",
+      "version": "Supplementary Data 3, downloaded 2026-10-22",
+      "licence": "CC BY 4.0 (open access article and its supplementary data)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Each ADJ-peptide placed on the sequence as the RBDmap fragments are (its starts count from 0). Citation: Panhale et al., Nat Commun 10:2682 (2019), doi:10.1038/s41467-019-10585-3.",
+      "columns": {
+        "accession": "uniprot_id",
+        "canonical": true,
+        "gene": "gene",
+        "start": "peptide_start",
+        "end": "peptide_end",
+        "sequence": "adj_peptide",
+        "relocate": true,
+        "start_offset": 1
+      }
+    },
+    "capri_measured": {
+      "file": "inputs/interactions/capri_panhale2019_measured_peptides.tsv",
+      "md5": "b68da55dadff42d07af20228946800ae",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2019/07/PXD013338/20160811_human_CAPRI_Adjacent_MaxQuant_augs2016.zip (20160811_adj_radj_combined_augs2016_Max_txt/peptides.txt)",
+      "version": "PRIDE PXD013338 (public 2019-07-02; MaxQuant 1.5.2.8, search written 2016-08-10), downloaded 2026-10-22",
+      "licence": "Creative Commons Public Domain (CC0) (PRIDE PXD013338)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Every peptide the adjacent-peptide runs measured whose sequence the reference reads at its place: the measured background. Citation: Panhale et al., Nat Commun 10:2682 (2019), doi:10.1038/s41467-019-10585-3.",
+      "columns": {
+        "accession": "uniprot_id",
+        "start": "start",
+        "end": "end",
+        "sequence": "sequence"
+      }
+    },
+    "capri_measured_adjacent": {
+      "file": "inputs/interactions/capri_panhale2019_measured_peptides.tsv",
+      "md5": "b68da55dadff42d07af20228946800ae",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2019/07/PXD013338/20160811_human_CAPRI_Adjacent_MaxQuant_augs2016.zip (20160811_adj_radj_combined_augs2016_Max_txt/peptides.txt)",
+      "version": "PRIDE PXD013338 (public 2019-07-02; MaxQuant 1.5.2.8, search written 2016-08-10), downloaded 2026-10-22",
+      "licence": "Creative Commons Public Domain (CC0) (PRIDE PXD013338)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The measured peptides that are adjacent peptides (RNA-bound). Citation: Panhale et al., Nat Commun 10:2682 (2019), doi:10.1038/s41467-019-10585-3.",
+      "columns": {
+        "accession": "uniprot_id",
+        "start": "start",
+        "end": "end",
+        "sequence": "sequence",
+        "include": [
+          {
+            "column": "adjacent_peptide",
+            "equals": "true"
+          }
+        ]
+      }
+    },
+    "rbdmap_measured": {
+      "file": "inputs/interactions/rbdmap_castello2016_measured_peptides.tsv",
+      "md5": "a22f191dba68cbc7fe6ccf49e96122f4",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2016/08/PXD000883/RBDmap_{LysC,ArgC}_{peptideID,QUAN}.txt; calls from https://ora.ox.ac.uk/objects/uuid:092f4366-cac9-4ed7-8283-89dc6032834a/files/ma75a36ddd2e91c194d65041242e5a683",
+      "version": "PRIDE PXD000883 (public 2016-08-08; MaxQuant 1.3.0.5), downloaded 2026-10-22",
+      "licence": "EBI terms of use (PRIDE PXD000883: no licence from the submitters); the calls are from Table S1 of the open access article (CC BY 4.0). Not redistributed",
+      "role": "input",
+      "redistribution": "checksum_only",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv) and never redistributed: read from the root a build is given, by its MD5; the tests that need it are left out where it is absent. Every peptide quantified in the RNA-bound or the released fraction. Citation: Castello et al., Mol Cell 63:696 (2016), doi:10.1016/j.molcel.2016.06.029.",
+      "columns": {
+        "accession": "uniprot_id",
+        "start": "start",
+        "end": "end",
+        "sequence": "sequence",
+        "include": [
+          {
+            "column": "quantified_bound_or_released",
+            "at_least": 1
+          }
+        ]
+      }
+    },
+    "rbdmap_measured_bound": {
+      "file": "inputs/interactions/rbdmap_castello2016_measured_peptides.tsv",
+      "md5": "a22f191dba68cbc7fe6ccf49e96122f4",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2016/08/PXD000883/RBDmap_{LysC,ArgC}_{peptideID,QUAN}.txt; calls from https://ora.ox.ac.uk/objects/uuid:092f4366-cac9-4ed7-8283-89dc6032834a/files/ma75a36ddd2e91c194d65041242e5a683",
+      "version": "PRIDE PXD000883 (public 2016-08-08; MaxQuant 1.3.0.5), downloaded 2026-10-22",
+      "licence": "EBI terms of use (PRIDE PXD000883: no licence from the submitters); the calls are from Table S1 of the open access article (CC BY 4.0). Not redistributed",
+      "role": "input",
+      "redistribution": "checksum_only",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv) and never redistributed: read from the root a build is given, by its MD5; the tests that need it are left out where it is absent. The quantified peptides of the authors' RNA-bound fragments (RBDpep). Citation: Castello et al., Mol Cell 63:696 (2016), doi:10.1016/j.molcel.2016.06.029.",
+      "columns": {
+        "accession": "uniprot_id",
+        "start": "start",
+        "end": "end",
+        "sequence": "sequence",
+        "include": [
+          {
+            "column": "quantified_bound_or_released",
+            "at_least": 1
+          },
+          {
+            "column": "rna_bound",
+            "equals": "true"
+          }
+        ]
+      }
+    },
+    "pclap_measured": {
+      "file": "inputs/interactions/pclap_mullari2017_peptides.tsv",
+      "md5": "49f18be9e04b50d6427f9411040175eb",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2018/06/PXD005739/MaxQuantOutput.tar.gz (MaxQuantOutput/peptides.txt)",
+      "version": "PRIDE PXD005739 (public 2018-06-18; MaxQuant 1.5.0.38, search written 2016-08-19), downloaded 2026-10-22",
+      "licence": "EBI terms of use (PRIDE PXD005739: no licence from the submitters); the article is not open access (ACS; not AuthorChoice, not in PMC). Not redistributed",
+      "role": "input",
+      "redistribution": "checksum_only",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv) and never redistributed: read from the root a build is given, by its MD5; the tests that need it are left out where it is absent. Every peptide measured whose sequence the reference reads at its place: the measured background. Citation: Mullari et al., J Proteome Res 16:2762 (2017), doi:10.1021/acs.jproteome.7b00042; rule from Mullari et al., Nat Commun 14:4348 (2023), doi:10.1038/s41467-023-39936-x.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "sequence": "sequence"
+      }
+    },
+    "pclap_peptides": {
+      "file": "inputs/interactions/pclap_mullari2017_peptides.tsv",
+      "md5": "49f18be9e04b50d6427f9411040175eb",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2018/06/PXD005739/MaxQuantOutput.tar.gz (MaxQuantOutput/peptides.txt)",
+      "version": "PRIDE PXD005739 (public 2018-06-18; MaxQuant 1.5.0.38, search written 2016-08-19), downloaded 2026-10-22",
+      "licence": "EBI terms of use (PRIDE PXD005739: no licence from the submitters); the article is not open access (ACS; not AuthorChoice, not in PMC). Not redistributed",
+      "role": "input",
+      "redistribution": "checksum_only",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv) and never redistributed: read from the root a build is given, by its MD5; the tests that need it are left out where it is absent. The RNA-binding peptides. Citation: Mullari et al., J Proteome Res 16:2762 (2017), doi:10.1021/acs.jproteome.7b00042; rule from Mullari et al., Nat Commun 14:4348 (2023), doi:10.1038/s41467-023-39936-x.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "sequence": "sequence",
+        "include": [
+          {
+            "column": "rna_binding",
+            "equals": "true"
+          }
+        ]
+      }
+    },
+    "pclap_lysc_regions": {
+      "file": "inputs/interactions/pclap_mullari2017_peptides.tsv",
+      "md5": "49f18be9e04b50d6427f9411040175eb",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2018/06/PXD005739/MaxQuantOutput.tar.gz (MaxQuantOutput/peptides.txt)",
+      "version": "PRIDE PXD005739 (public 2018-06-18; MaxQuant 1.5.0.38, search written 2016-08-19), downloaded 2026-10-22",
+      "licence": "EBI terms of use (PRIDE PXD005739: no licence from the submitters); the article is not open access (ACS; not AuthorChoice, not in PMC). Not redistributed",
+      "role": "input",
+      "redistribution": "checksum_only",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv) and never redistributed: read from the root a build is given, by its MD5; the tests that need it are left out where it is absent. The Lys-C peptides around the RNA-binding peptides (the authors' RNA-binding regions). Citation: Mullari et al., J Proteome Res 16:2762 (2017), doi:10.1021/acs.jproteome.7b00042; rule from Mullari et al., Nat Commun 14:4348 (2023), doi:10.1038/s41467-023-39936-x.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "lysc_start",
+        "end": "lysc_end",
+        "sequence": "sequence",
+        "sequence_start": "start",
+        "sequence_end": "end",
+        "include": [
+          {
+            "column": "rna_binding",
+            "equals": "true"
+          }
+        ]
+      }
+    },
+    "rbrid_positive": {
+      "file": "inputs/interactions/rbrid_oksuz2023_k562_positive_residues.tsv",
+      "md5": "c23ffe3d17035fc280778fd72b011191",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2023/07/PXD035484/report.tsv",
+      "version": "PRIDE PXD035484 (public 2023-07-02), streamed 2026-10-22",
+      "licence": "CC0 (PRIDE project licence, \"Creative Commons Public Domain (CC0)\", read from the PRIDE API)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The residues under an RBR-ID+ peptide (the primary call), each whose letter matches the sequence. Citation: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012; RBR-ID: He et al., Mol Cell 64:416 (2016), doi:10.1016/j.molcel.2016.09.034.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "position",
+        "residue": "residue",
+        "include": [
+          {
+            "column": "rbrid_positive_peptides",
+            "at_least": 1
+          }
+        ]
+      }
+    },
+    "rbrid_positive_published_rule": {
+      "file": "inputs/interactions/rbrid_oksuz2023_k562_positive_residues.tsv",
+      "md5": "c23ffe3d17035fc280778fd72b011191",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2023/07/PXD035484/report.tsv",
+      "version": "PRIDE PXD035484 (public 2023-07-02), streamed 2026-10-22",
+      "licence": "CC0 (PRIDE project licence, \"Creative Commons Public Domain (CC0)\", read from the PRIDE API)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The residues under a peptide the published rule calls RBR-ID+ (technical replicates as observations, nominal p). Citation: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012; RBR-ID: He et al., Mol Cell 64:416 (2016), doi:10.1016/j.molcel.2016.09.034.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "position",
+        "residue": "residue",
+        "include": [
+          {
+            "column": "published_rule_peptides",
+            "at_least": 1
+          }
+        ]
+      }
+    },
+    "rbrid_regions": {
+      "file": "inputs/interactions/rbrid_oksuz2023_k562_segments.tsv",
+      "md5": "83f2edc90ad61e9c3eab0909fbf924b3",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2023/07/PXD035484/report.tsv",
+      "version": "PRIDE PXD035484 (public 2023-07-02), streamed 2026-10-22",
+      "licence": "CC0 (PRIDE project licence, \"Creative Commons Public Domain (CC0)\", read from the PRIDE API)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. RBR-ID regions of residue score at or above the staged threshold (2). Citation: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012; RBR-ID: He et al., Mol Cell 64:416 (2016), doi:10.1016/j.molcel.2016.09.034.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end"
+      }
+    },
+    "rbrid_quantified": {
+      "file": "inputs/interactions/rbrid_oksuz2023_k562_coverage.tsv",
+      "md5": "00deac2d5e477058269ea9b96d2bc594",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2023/07/PXD035484/report.tsv",
+      "version": "PRIDE PXD035484 (public 2023-07-02), streamed 2026-10-22",
+      "licence": "CC0 (PRIDE project licence, \"Creative Commons Public Domain (CC0)\", read from the PRIDE API)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The residues under a quantified peptide: the measured background. Citation: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012; RBR-ID: He et al., Mol Cell 64:416 (2016), doi:10.1016/j.molcel.2016.09.034.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "include": [
+          {
+            "column": "coverage",
+            "equals": "quantified"
+          }
+        ]
+      }
+    },
+    "trendel_dna_crosslinks": {
+      "file": "inputs/interactions/trendel2025_dna_crosslink_localisation.tsv",
+      "md5": "19c32200f9241755121db8a140b2dfd8",
+      "source": "https://ars.els-cdn.com/content/image/1-s2.0-S0092867425005070-mmc{1,2}.xlsx",
+      "version": "Tables S1-S2, downloaded 2026-10-16",
+      "licence": "CC BY-NC 4.0 (open access article and its supplement)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. DNA crosslinks localised to one residue (one lower-case letter), each whose letter matches the sequence. Citation: Trendel et al., Cell 188:4424 (2025), doi:10.1016/j.cell.2025.04.037.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "peptide_start",
+        "marked_in": "sequence_with_localization",
+        "max_per_row": 1
+      }
+    },
+    "trendel_dna_crosslink_candidates": {
+      "file": "inputs/interactions/trendel2025_dna_crosslink_localisation.tsv",
+      "md5": "19c32200f9241755121db8a140b2dfd8",
+      "source": "https://ars.els-cdn.com/content/image/1-s2.0-S0092867425005070-mmc{1,2}.xlsx",
+      "version": "Tables S1-S2, downloaded 2026-10-16",
+      "licence": "CC BY-NC 4.0 (open access article and its supplement)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Every residue a DNA crosslink may sit on (the lower-case letters), each whose letter matches the sequence. Citation: Trendel et al., Cell 188:4424 (2025), doi:10.1016/j.cell.2025.04.037.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "peptide_start",
+        "marked_in": "sequence_with_localization"
+      }
+    },
+    "trendel_dna_peptides": {
+      "file": "inputs/interactions/trendel2025_dna_crosslinked_peptides.tsv",
+      "md5": "bef8fe7413ad6f423aa96b13725b6ec8",
+      "source": "https://ars.els-cdn.com/content/image/1-s2.0-S0092867425005070-mmc{1,2}.xlsx",
+      "version": "Tables S1-S2, downloaded 2026-10-16",
+      "licence": "CC BY-NC 4.0 (open access article and its supplement)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. DNA-crosslinked peptides as protein ranges. Citation: Trendel et al., Cell 188:4424 (2025), doi:10.1016/j.cell.2025.04.037.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "peptide_start",
+        "end": "peptide_end"
+      }
+    },
+    "trendel_dna_interactome": {
+      "file": "inputs/interactions/trendel2025_mcf7_dna_interactome.tsv",
+      "md5": "c13632c51df55e48a717e13c230920f4",
+      "source": "https://ars.els-cdn.com/content/image/1-s2.0-S0092867425005070-mmc{1,2}.xlsx",
+      "version": "Tables S1-S2, downloaded 2026-10-16",
+      "licence": "CC BY-NC 4.0 (open access article and its supplement)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The proteins of the MCF7 DNA interactome. Citation: Trendel et al., Cell 188:4424 (2025), doi:10.1016/j.cell.2025.04.037."
+    },
+    "uniprot_dna_binding_regions": {
+      "file": "inputs/interactions/uniprot_human_dna_binding_regions_2026-10-16.tsv",
+      "md5": "3787ee11b127c3e624423afc9a258e34",
+      "source": "https://rest.uniprot.org/uniprotkb/stream?query=reviewed:true+AND+organism_id:9606+AND+ft_dna_bind:*&fields=accession,ft_dna_bind&format=tsv",
+      "version": "UniProt release 2026_03, downloaded 2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. UniProt DNA-binding regions. Citation: UniProt Consortium, Nucleic Acids Res 53:D609 (2025).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "label": "note"
+      }
+    },
+    "quickgo_rna_dna_binding": {
+      "file": "inputs/interactions/quickgo_human_rna_dna_binding_2026-10-16.tsv",
+      "md5": "82d4b9a0d114a040e991c8b650cc98b9",
+      "source": "https://www.ebi.ac.uk/QuickGO/services/annotation/downloadSearch (goUsage descendants, taxonId 9606, geneProductType protein)",
+      "version": "2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per protein, GO term and evidence code: RNA binding (GO:0003723), DNA binding (GO:0003677) and their descendants. Citation: Gene Ontology Consortium, Genetics 224:iyad031 (2023); Binns et al., Bioinformatics 25:3045 (2009)."
+    },
+    "release_pclap_peptides": {
+      "file": "releases/v1.4.3/supporting/residue_evidence_v1.4.3.tsv",
+      "md5": "8a7764aa518675e594fdaffb4f8c3cc7",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "Release v1.4.3's runs of residues of the proteins of its site table with the same interaction evidence (supporting/residue_evidence_v1.4.3.tsv). Its pCLAP RNA-binding peptides, as the release publishes them on the proteins it has sites on: the per-protein evidence the residue tests need where the pCLAP peptide table itself (checksum_only) is not under the root. Citation: Mullari et al., J Proteome Res 16:2762 (2017).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "label": "sources",
+        "include": [
+          {
+            "column": "evidence_type",
+            "equals": "pclap_peptide"
+          }
+        ]
+      }
+    },
+    "release_pclap_lysc_regions": {
+      "file": "releases/v1.4.3/supporting/residue_evidence_v1.4.3.tsv",
+      "md5": "8a7764aa518675e594fdaffb4f8c3cc7",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "Release v1.4.3's runs of residues of the proteins of its site table with the same interaction evidence (supporting/residue_evidence_v1.4.3.tsv). Its pCLAP Lys-C regions (the Lys-C peptides around the RNA-binding peptides), on the proteins it has sites on. Citation: Mullari et al., J Proteome Res 16:2762 (2017).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "label": "sources",
+        "include": [
+          {
+            "column": "evidence_type",
+            "equals": "pclap_lysc_region"
+          }
+        ]
+      }
+    },
+    "release_arginine_rna_distances": {
+      "file": "releases/v1.4.3/supporting/arginine_nucleic_acid_distances_v1.4.3.tsv",
+      "md5": "78f34a90f671ebdf75e8e1c19862d403",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the structures: wwPDB data, CC0)",
+      "role": "input",
+      "note": "Release v1.4.3's arginines of methylated proteins modelled in a PDB entry with RNA (supporting/arginine_nucleic_acid_distances_v1.4.3.tsv): each a unit at its residue, its class the minimum side-chain distance to RNA (empty beyond 8 Å). Computed by PTM_Pipeline from RCSB ModelServer residue surroundings and SIFTS.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "position",
+        "class": "rna_distance_a",
+        "ref": "rna_example_pdb",
+        "label": "rna_type",
+        "include": [
+          {
+            "column": "entries_with_rna",
+            "at_least": 1
+          }
+        ]
+      }
+    },
+    "release_arginine_dna_distances": {
+      "file": "releases/v1.4.3/supporting/arginine_nucleic_acid_distances_v1.4.3.tsv",
+      "md5": "78f34a90f671ebdf75e8e1c19862d403",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the structures: wwPDB data, CC0)",
+      "role": "input",
+      "note": "The same table's arginines modelled in a PDB entry with DNA: each a unit at its residue, its class the minimum side-chain distance to DNA (empty beyond 8 Å).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "position",
+        "class": "dna_distance_a",
+        "ref": "dna_example_pdb",
+        "label": "dna_type",
+        "include": [
+          {
+            "column": "entries_with_dna",
+            "at_least": 1
+          }
+        ]
+      }
+    },
+    "release_complexes": {
+      "file": "releases/v1.4.3/supporting/complexes_v1.4.3.tsv",
+      "md5": "e7b088eed51884aa6cd45e277763bcab",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "Release v1.4.3's Complex Portal (curated, CC0) and hu.MAP 3.0 (predicted) complexes with a methylated member, with the release's enrichment test of each. Read by the website's Interactions page only."
+    },
+    "release_rna_bind_n_seq": {
+      "file": "releases/v1.4.3/supporting/rna_bind_n_seq_v1.4.3.tsv",
+      "md5": "7d2bccc6ce1482943997613d3ef741c8",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "Release v1.4.3's ENCODE RNA Bind-n-Seq experiments of methylated proteins: their most enriched 5-mers (ENCODE: no use restrictions). Read by the website's Interactions page only."
+    },
+    "release_htr_selex": {
+      "file": "releases/v1.4.3/supporting/htr_selex_v1.4.3.tsv",
+      "md5": "c89d0a813e1309bcb13fead0ca817229",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "Release v1.4.3's HTR-SELEX RNA-binding models of methylated proteins (Jolma et al., Genome Res 30:962 (2020), CC BY-NC 4.0). Read by the website's Interactions page only."
+    },
+    "release_dna_motifs": {
+      "file": "releases/v1.4.3/supporting/dna_motifs_v1.4.3.tsv",
+      "md5": "b5ee0ac01e31897bd36ca2b7bc3cef0b",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "Release v1.4.3's JASPAR 2026 DNA-binding profiles of methylated proteins (JASPAR CC BY 4.0). Read by the website's Interactions page only."
+    },
+    "release_eclip": {
+      "file": "releases/v1.4.3/supporting/eclip_v1.4.3.tsv",
+      "md5": "acfdad3a4a6f82f9d07866e3ced0a249",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "Release v1.4.3's ENCODE and ENCORE eCLIP experiments of methylated proteins: peaks by transcript region and the genes with most peaks (ENCODE: no use restrictions; ENCORE, GEO GSE315407: no licence stated). Read by the website's Interactions page only."
+    },
+    "release_arginine_background": {
+      "file": "releases/v1.4.3/supporting/arginine_background_v1.4.3.tsv",
+      "md5": "1632ace3df199a4d6263da727aff0e64",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), supporting/arginine_background",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "reference_output",
+      "note": "Release v1.4.3's denominators of its residue tests (motif, disorder, domain_context, domain_class, structure_context): each protein's arginines that are not sites, in all (*) and in each class or motif. The parity check compares the rebuild's per-protein counts (protein_counts.tsv) with it, row by row; no test reads it."
+    },
+    "release_eclip_rna_compartments": {
+      "file": "releases/v1.4.3/supporting/eclip_rna_compartments_v1.4.3.tsv",
+      "md5": "feaed0917ea9ed25898d6f179b12b608",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), supporting/eclip_rna_compartments",
+      "licence": "CC BY-NC-SA 4.0 (the maps: APEX-seq, Fazal et al. 2019, GEO GSE116008; TSA-seq, Chen et al. 2018, GEO GSE81553; Hi-C subcompartments, Rao et al. 2014, GEO GSE63525: no use restrictions; eCLIP: ENCODE, no use restrictions)",
+      "role": "input",
+      "note": "Release v1.4.3's call, for each protein with eCLIP data and each map of RNA or DNA, of whether its bound RNAs gather in a compartment (q <= 0.05 and Mantel-Haenszel odds ratio above 1 within expression and gene-length deciles; computed by PTM_Pipeline scripts/cell_maps.py). Read by the eclip_* protein-set questions. Its nuclear-body rows (map nuclear_body) derive from Barutcu et al. 2022, whose licence is pending: each question keeps only its own map (sets.include), so nothing reads or shows them."
     }
   }
 }

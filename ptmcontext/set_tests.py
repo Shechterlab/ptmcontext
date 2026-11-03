@@ -92,10 +92,26 @@ def rule_sets(src: dict, frame: pd.DataFrame) -> pd.DataFrame:
     return pd.concat(out, ignore_index=True) if out else pd.DataFrame(columns=['set', 'protein'])
 
 
+def _refs(v) -> list:
+    return [] if v is None else list(v) if isinstance(v, list) else [v]
+
+
+def _role(ref) -> str:
+    return ref['role'] if isinstance(ref, dict) else ref
+
+
+def item_roles(item: dict) -> list[str]:
+    """The roles one set of sets.each reads: its units or table, and its universe."""
+    return list(dict.fromkeys([_role(r) for r in _refs(item.get('units'))] + ([item['table']['input']] if item.get('table') else [])
+                              + [_role(r) for r in _refs(item.get('universe_units'))]))
+
+
 def question_roles(spec: dict) -> list[str]:
     """The roles holding what a protein-set analysis asks about: its sets (their ontology, the tables whose rows keep
-    them, their members' scores) and their names."""
+    them, their members' scores) and their names; for sets.each, every item's units, table and universe."""
     src = spec['sets']
+    if src.get('each'):
+        return list(dict.fromkeys(r for it in src['each'] for r in item_roles(it)))
     roles = [src['input'], src.get('ontology', {}).get('input'), *(w['input'] for w in src.get('where', [])),
              (spec.get('scores') or {}).get('input'), spec.get('names', {}).get('input'), (spec.get('hierarchy') or {}).get('input')]
     return list(dict.fromkeys(r for r in roles if r))
@@ -373,7 +389,14 @@ def read_sets(spec: dict, paths: dict, universe: set | None = None, root=None, f
     if 'rules' in src:                                   # sets by rules on the table's columns: the source annotates
         pairs = rule_sets(src, t.assign(**{src['protein']: members}))   # every protein of its rows, in a set or not
         return pairs.drop_duplicates(), {}, set(members)
-    pairs = pd.DataFrame({'set': t[src['set']].astype(str).to_numpy(), 'protein': members.to_numpy()}).drop_duplicates()
+    pairs = pd.DataFrame({'set': t[src['set']].astype(str).to_numpy(), 'protein': members.to_numpy()})
+    held = None
+    if src.get('member_when'):                           # rows of every protein the source tests; members only where
+        hold = pd.Series(True, index=t.index)            # these hold (the others are the background)
+        for cond in src['member_when']:
+            hold &= _rule_holds(t, cond)
+        held, pairs = set(members), pairs[hold.to_numpy()]
+    pairs = pairs.drop_duplicates()
     names = {}
     if spec.get('names'):
         nm = spec['names']
@@ -381,7 +404,7 @@ def read_sets(spec: dict, paths: dict, universe: set | None = None, root=None, f
         names = dict(zip(n[nm['set']].astype(str), n[nm['name']].astype(str)))
         if nm.get('include') or nm.get('exclude'):          # a filter on the names restricts the sets tested
             pairs = pairs[pairs['set'].isin(set(names))]
-    annotated = set(pairs['protein'])
+    annotated = set(pairs['protein']) if held is None else held
     if src.get('families'):
         fam = src['families']
         rules = load_families(families_file(spec, root))
@@ -407,6 +430,18 @@ def spec_problems(spec: dict, root=None, files: dict | None = None, formats: dic
     of other identifiers, an order by a column the rows do not have; and, given files (role -> path; formats: path ->
     its manifest entry's columns, for its separator), columns its tables do not have."""
     out, src, aid = [], spec['sets'], spec['id']
+    if src.get('each'):                                  # one set per item: its table's columns, its roles filled
+        for it in src['each']:
+            tb = it.get('table')
+            if not tb and not it.get('units'):
+                out.append(f"{aid}: set {it['set']!r} needs units: or table:")
+            path = (files or {}).get(tb['input']) if tb else None
+            if tb and path is not None and Path(path).exists():
+                have = set(pd.read_csv(path, sep='\t', nrows=0).columns)
+                cols = {tb['protein']} | {c['column'] for c in tb.get('include', []) + tb.get('exclude', [])}
+                if cols - have:
+                    out.append(f"{aid}: set {it['set']!r}: role {tb['input']} ({Path(path).name}) has no column {sorted(cols - have)}")
+        return out
     fam = src.get('families')
     if fam:
         path = families_file(spec, root)
@@ -589,14 +624,99 @@ def membership_scores(spec: dict, paths: dict, entries: set, formats: dict | Non
     return out
 
 
+def _proteins_of(refs, ctx, select) -> set:
+    out = set()
+    for ref in _refs(refs):
+        role = _role(ref)
+        u = ctx.units(role, role)
+        if isinstance(ref, dict) and ref.get('where'):
+            u = select(u, {'include': ref['where']}, ctx.snapshot)
+        out |= set(u['accession'])
+    return out
+
+
+def each_set_test(spec: dict, ctx, marked_proteins: set, snapshot_proteins: set, keep: dict | None = None,
+                  left_out: list | None = None, formats: dict | None = None) -> tuple[pd.DataFrame, dict]:
+    """Protein-set rows for sets.each: one set per item, the proteins with a unit in its roles or listed in its table,
+    each tested against its own universe (the proteins with a unit in its universe_units roles, among the site's
+    proteins; else the analysis's universe), as one enricher job per set; BH over the sets; the abundance strata are the
+    deciles of each set's own universe. An item reading an input that is not present is left out (left_out)."""
+    from .units import select_rows
+    universe = set(snapshot_proteins)
+    targets_all = set(marked_proteins)
+    found, own_bg, pairs_all, bgs = [], {}, [], {}
+    values = covariate(spec, ctx.inputs, formats=formats) if spec.get('abundance') else None
+    for it in spec['sets']['each']:
+        missing = [r for r in item_roles(it) if r not in ctx.inputs]
+        if missing:
+            if left_out is not None:
+                left_out.append({'code': it['set'], 'roles': missing})
+            continue
+        members = _proteins_of(it.get('units'), ctx, select_rows)
+        if it.get('table'):
+            tb = it['table']
+            t = _select(_read(ctx.inputs[tb['input']], formats), tb)
+            members |= set(t[tb['protein']].astype(str).str.split('-').str[0])
+        U = (_proteins_of(it['universe_units'], ctx, select_rows) & universe) if it.get('universe_units') else universe
+        res = enricher(targets_all & U, U, pd.DataFrame({'set': it['set'], 'protein': sorted(members & U)}, columns=['set', 'protein']),
+                       whole_universe=True, min_size=spec.get('min_size', 1), max_size=spec.get('max_size', 10 ** 6))
+        if not len(res):
+            continue
+        r = res.iloc[0].to_dict()
+        r['background'] = it.get('background', spec.get('background', 'other proteins of the universe'))
+        found.append(r)
+        bgs[it['set']] = U
+        own_bg[it['set']] = bool(it.get('universe_units'))
+        pairs_all.append(pd.DataFrame({'set': it['set'], 'protein': sorted(members & U)}))
+    res = pd.DataFrame(found, columns=['set', 'k', 'n', 'M', 'N', 'fold', 'p', 'background'])
+    res['q'] = stats.benjamini_hochberg(res['p']) if len(res) else []
+    if spec.get('order') != 'as_listed':                # by the order's keys, else ascending p, then set
+        res = res.sort_values(['p', 'set'], kind='stable').reset_index(drop=True)
+        keyed = ordered(pd.DataFrame({'category': res['set'], 'a': res['k'], 'b': res['n'] - res['k'], 'c': res['M'] - res['k'],
+                                      'd': res['N'] - res['M'] - res['n'] + res['k'], 'fold_enrichment': res['fold'], 'p': res['p'],
+                                      'q': res['q'], 'row': range(len(res))}), spec.get('order'))
+        res = res.iloc[list(keyed['row'])]
+    pairs = pd.concat(pairs_all, ignore_index=True) if pairs_all else pd.DataFrame(columns=['set', 'protein'])
+    rows = [{'analysis': spec['id'], 'category': r['set'], 'stratum': 'all', 'a': r['k'], 'b': r['n'] - r['k'], 'c': r['M'] - r['k'],
+             'd': r['N'] - r['M'] - r['n'] + r['k'], 'fold_enrichment': r['fold'],
+             'log2_fold_enrichment': math.log2(r['fold']) if r['fold'] > 0 else np.nan, 'p': r['p'], 'q': r['q'],
+             'method': 'enricher', 'background': r['background'], 'n_strata': ''} for r in res.to_dict('records')]
+    out = pd.DataFrame(rows)
+    if keep is not None:
+        keep.update({'N': len(universe), 'marked_in_background': sorted(targets_all & universe), 'sets': {}})
+        for r in res.to_dict('records'):
+            g = set(pairs.loc[pairs['set'] == r['set'], 'protein'])
+            keep['sets'][r['set']] = {'M': len(g), 'marked': sorted(g & targets_all),
+                                      **({'N': len(bgs[r['set']]), 'marked_in_background': sorted(targets_all & bgs[r['set']])} if own_bg[r['set']] else {})}
+        if values is not None:
+            ab = spec['abundance']
+            bg = sorted(universe)
+            dec = dict(zip(bg, deciles(bg, values, ab.get('strata', 10))))
+            keep['covariate'] = {'input': ab['input'], 'value': ab['value'], 'strata': ab.get('strata', 10),
+                                 'proteins': {u: [float(values[u]) if u in values.index else None, dec[u]] for u in sorted(targets_all & universe)}}
+    if values is not None and len(out):
+        parts = [stratified_rows(spec, out[out['category'] == r['category']], pairs[pairs['set'] == r['category']], targets_all & bgs[r['category']],
+                                 bgs[r['category']], values) for r in rows]
+        mh = pd.concat(parts, ignore_index=True)
+        mh['q'] = stats.benjamini_hochberg(mh['p'].astype(float))
+        out = pd.concat([out, mh], ignore_index=True)
+    return out, {it['set']: it['name'] for it in spec['sets']['each'] if it.get('name')}
+
+
 def protein_set_test(spec: dict, paths: dict, marked_proteins: set, snapshot_proteins: set,
-                     keep: dict | None = None, root=None, formats: dict | None = None) -> tuple[pd.DataFrame, dict]:
+                     keep: dict | None = None, root=None, formats: dict | None = None, ctx=None,
+                     left_out: list | None = None) -> tuple[pd.DataFrame, dict]:
     """Statistics rows of one protein-set analysis of a site, and the names of its sets. keep, if given, receives what
     a website needs to test a selection of the marked proteins again: the background's size, which marked proteins (or
     their identifiers) are in it, each tested set's size and marked members, and, for sets of other identifiers, each
     marked protein's identifiers; and, for its filters, the marked proteins (identifiers) in any of the source's sets
     and, with a scores table, each set's marked members' scores. root: the site's repository, which a families rules
-    file is relative to; formats: path -> its manifest entry's columns (a file's separator)."""
+    file is relative to; formats: path -> its manifest entry's columns (a file's separator). ctx: the site's layer
+    context, for sets made from units (sets.each); left_out receives the sets.each items whose inputs are absent."""
+    if spec['sets'].get('each'):
+        if ctx is None:
+            raise ValueError(f"{spec['id']}: sets.each reads units: it needs the site's context")
+        return each_set_test(spec, ctx, marked_proteins, snapshot_proteins, keep, left_out, formats)
     if spec['sets'].get('unclassified') and spec.get('universe') != 'snapshot':
         raise ValueError(f"{spec['id']}: an unclassified set needs universe: snapshot")
     if spec['sets'].get('families') and spec.get('names'):
@@ -665,4 +785,32 @@ def protein_set_test(spec: dict, paths: dict, marked_proteins: set, snapshot_pro
     out = ordered(pd.DataFrame(rows), spec.get('order'))
     if spec.get('abundance') and len(out):
         out = pd.concat([out, stratified_rows(spec, out, pairs, targets & universe, background, values)], ignore_index=True)
+    if spec.get('sizes'):
+        out = pd.concat([out, size_rows(spec, paths, pairs, targets & universe, background, formats)], ignore_index=True)
     return out, names
+
+
+def size_rows(spec: dict, paths: dict, pairs: pd.DataFrame, targets: set, background: set, formats: dict | None = None) -> pd.DataFrame:
+    """For each set of the background's size limits (min_size, max_size; with a marked member or not), a number every protein of the background has for it (sizes.value, a column of the sets'
+    table on the row of that protein and set, called a member or not; log2 of it with sizes.log2), the marked proteins
+    against the others: a two-sided Mann-Whitney U test, BH over the sets (a p that cannot be computed counts as 1).
+    a and c count the proteins compared. Whether the marked proteins' values differ, not only their calls."""
+    src, sz = spec['sets'], spec['sizes']
+    t, members = set_table(spec, paths, None, formats)
+    v = pd.to_numeric(t[sz['value']], errors='coerce')
+    if sz.get('log2'):
+        v = v.map(lambda x: (math.log2(x) if x > 0 else -math.inf) if pd.notna(x) else np.nan)
+    frame = pd.DataFrame({'set': t[src['set']].astype(str).to_numpy(), 'protein': members.to_numpy(), 'v': v.to_numpy()})
+    frame = frame[frame['protein'].isin(background) & frame['v'].notna()]
+    out = []
+    sizes = pairs[pairs['protein'].isin(background)].groupby('set')['protein'].nunique()
+    for c in sorted(sizes[sizes.between(spec.get('min_size', 1), spec.get('max_size', 10 ** 6))].index.astype(str)):
+        f = frame[frame['set'] == c].drop_duplicates('protein')
+        yes, no = f.loc[f['protein'].isin(targets), 'v'].tolist(), f.loc[~f['protein'].isin(targets), 'v'].tolist()
+        out.append({'analysis': spec['id'], 'category': c, 'stratum': 'all', 'a': len(yes), 'b': None, 'c': len(no), 'd': None,
+                    'p': stats.mann_whitney_p(yes, no), 'method': 'mann_whitney', 'n_strata': '',
+                    'background': sz.get('background', f"the {sz['value']} of each other protein of the background")})
+    res = pd.DataFrame(out)
+    if len(res):
+        res['q'] = stats.benjamini_hochberg([1.0 if math.isnan(p) else p for p in res['p']])
+    return res

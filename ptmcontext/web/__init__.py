@@ -42,7 +42,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -203,8 +203,12 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         if x is None or math.isnan(x):
             return None
         return 1e300 if x == math.inf else 0.0 if x == -math.inf else x
-    rows = [{'analysis': r['analysis'], 'category': r['category'], 'method': r['method'],
-             'a': int(r['a']), 'b': int(r['b']), 'c': int(r['c']), 'd': int(r['d']),
+    # a question of several tests codes a test of another stratum as <category>_<stratum> (question.expand), so each
+    # of its rows is one class of the question
+    tested = {a['id'] for a in site['analyses'] if a.get('tests')}
+    code = lambda r: r['category'] if r['analysis'] not in tested or r['stratum'] in ('all', '') else f"{r['category']}_{r['stratum']}"  # noqa: E731
+    rows = [{'analysis': r['analysis'], 'category': code(r), 'method': r['method'],
+             'a': int(r['a']), 'b': int(r['b']) if r['b'] != '' else None, 'c': int(r['c']), 'd': int(r['d']) if r['d'] != '' else None,   # none: a test of sizes
              'or': num(r['odds_ratio']), 'fold': num(r['fold_enrichment']), 'lo': num(r['odds_ratio_ci_low']), 'hi': num(r['odds_ratio_ci_high']),
              'p': num(r['p']), 'q': num(r['q']), 'strata': int(r['n_strata']) if r['n_strata'] else None}
             for r in stats.to_dict('records')]
@@ -238,7 +242,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         analyses.append({'id': a['id'], 'kind': 'residue', 'shape': lw.get('shape', 'class'), 'roles': list(lw.get('needs', [])),
                          'title': a.get('title') or lw.get('title') or a['id'],
                          'question': a.get('question') or _fill(lw.get('question', ''), profile.words),
-                         'sub': a.get('sub') or _fill(lw.get('sub', ''), profile.words), 'layer': a['layer'],
+                         'sub': a.get('sub') or _fill(lw.get('sub', ''), profile.words), 'layer': a.get('layer', 'tests'),
+                         **({'counting': a.get('counting', 'proteins_with_both')} if a.get('tests') else {}),
                          'section': a.get('section') or lw.get('section', ''),
                          'describe': lw.get('describe', ''), 'labels': labels, 'help': helps, 'new': bool(a.get('new')), **_class_order(a, lw)})
     web = site['website']
@@ -379,7 +384,7 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
     sources = sorted(set(units['source']))
     src_index = {s: i for i, s in enumerate(sources)}
     seqs = parse_fasta(snapshot_fasta) if snapshot_fasta and snapshot_fasta.exists() else {}
-    analyses = [c for c in marks.columns if c not in ('accession', 'position', 'residue', 'window_15') and not c.startswith('a.')]
+    analyses = [c for c in marks.columns if c not in ('accession', 'position', 'residue', 'window_15') and not c.startswith(('a.', 'n.'))]
     attrs = [c for c in marks.columns if c.startswith('a.')]          # a.<name> and a.<name>.link: the site file's marks.attributes
     listing = [[r['accession'], r['gene'], r['name'], int(r['length']), int(r['marks']), int(r['candidates']), r.get('entry', '')]
                for r in prot.to_dict('records')]
@@ -395,7 +400,11 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
                'counts': {}, 'totals': {}, 'units': [[u['kind'], int(u['start']), int(u['end']), u['label'], src_index[u['source']], u.get('class', ''), u.get('ref', '')] for u in ug.to_dict('records')] if ug is not None else []}
         if cg is not None:
             for aid, g in cg.groupby('analysis'):
-                rec['counts'][aid] = [[c['category'], int(c['marks_in']), int(c['others_in'])] for c in g.to_dict('records')]
+                # a question of several tests (its marks.tsv has n.<analysis>) counts each class against its own
+                # background: each class carries its own totals, the marks and others its test counts
+                own = f'n.{aid}' in marks.columns
+                rec['counts'][aid] = [[c['category'], int(c['marks_in']), int(c['others_in'])]
+                                      + ([int(c['marks_total']), int(c['others_total'])] if own else []) for c in g.to_dict('records')]
                 rec['totals'][aid] = [int(g['marks_total'].iloc[0]), int(g['others_total'].iloc[0])]
         shards.setdefault(shard_of(a), {})[a] = rec
     return (listing, analyses, sources, [c[2:] for c in attrs]), shards
@@ -528,6 +537,8 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
     for aid, g in counts[counts['others_in'].astype(int) > 0].groupby('analysis'):
         per = {}
         for r in g.itertuples(index=False):
+            if r.accession not in pidx:          # a protein a test counts that has no mark the site lists: no selection holds it
+                continue
             per.setdefault(pidx[r.accession], {})[codes[aid][r.category]] = int(r.others_in)
         others[aid] = per
     # each protein's other candidate residues, the same for every question (a protein with none is left out of the
@@ -541,6 +552,26 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
         if aid in analyses and (used.get('proteins') or used.get('marks_alone') == 'count'):
             counted[aid] = {'skip': sorted(pidx[a] for a in (used.get('proteins') or {}).get('not_counted', []) if a in pidx),
                             'alone': used.get('marks_alone') == 'count'}
+    # a question of several tests: each test (class) counts its own candidates. Per class, per protein it counts:
+    # [its other candidates, the positions of the protein's marks it does not count]; a protein it does not count is
+    # absent. the browser reads it as by_test.
+    by_test = {}
+    for aid in analyses:
+        col = f'n.{aid}'
+        if col not in marks.columns:
+            continue
+        g = counts[counts['analysis'] == aid]
+        per: dict = {}
+        for r in g.itertuples(index=False):
+            if r.accession in pidx:             # a protein without a mark the site lists: no selection holds it
+                per.setdefault(codes[aid][r.category], {})[pidx[r.accession]] = [int(r.others_total), []]
+        for acc, pos, cnt in zip(marks['accession'], marks['position'], marks[col]):
+            have = set(cnt.split(';')) if cnt else set()
+            pi = pidx[acc]
+            for ci, prot in per.items():
+                if pi in prot and classes[aid][ci] not in have:
+                    prot[pi][1].append(int(pos))
+        by_test[aid] = {str(ci): {str(p): v for p, v in prot.items()} for ci, prot in per.items()}
     # protein-set questions: each tested set's size in the background and its marked proteins (protein_sets.json)
     sets = {}
     if (folder / 'protein_sets.json').exists():
@@ -582,7 +613,7 @@ def selection_data(folder: Path, listing: list, analyses: list, specs: dict | No
                 sets[aid]['values'] = {'columns': v['columns'], 'marked': {pidx[a]: x for a, x in v['marked'].items() if a in pidx},
                                        'others': v['others']}
     return {'analyses': analyses, 'classes': classes, 'attributes': avals, 'attribute_names': [c[2:] for c in attrs], 'attribute_links': links, 'marks': rows, 'others': others,
-            'others_total': others_total, 'counted': counted, 'protein_sets': sets}
+            'others_total': others_total, 'counted': counted, 'by_test': by_test, 'protein_sets': sets}
 
 
 def unit_value_data(folder: Path, listing: list, tracks: list[dict]) -> dict:
@@ -802,6 +833,9 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         (out / 'data').mkdir(parents=True, exist_ok=True)
         (out / 'data' / 'selection.json').write_text(json.dumps(sel, separators=(',', ':')))
         log(f"  selection data: {len(sel['marks']):,} marks, {(out / 'data' / 'selection.json').stat().st_size / 1e6:.1f} MB")
+    # the site's pages (website.pages) and the whole tables they read, one file each, read when a page first needs one
+    data['page_tables'], inline_page_tables = page_tables(site, web.get('tables') or {}, run, listing, out, log) if listing else ({}, '')
+    data['pages'] = web.get('pages') or []
     inline_values = (out / 'data' / 'units.json').read_text().replace('</', '<\\/') if values else ''
     inline_proteins = json.dumps({f'{k:02d}': v for k, v in shards.items()}, separators=(',', ':')).replace('</', '<\\/')
     inline_selection = (out / 'data' / 'selection.json').read_text().replace('</', '<\\/') if (out / 'data' / 'selection.json').exists() else ''
@@ -846,6 +880,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
                   + (f'<script id="selection-data" type="application/json">{inline_selection}</script>' if inline_selection else '')
                   + (f'<script id="partners-data" type="application/json">{inline_partners}</script>' if inline_partners else '')
                   + (f'<script id="unit-values" type="application/json">{inline_values}</script>' if inline_values else '')
+                  + (f'<script id="page-table-data" type="application/json">{inline_page_tables}</script>' if inline_page_tables else '')
                   + ''.join(f'<script>{_asset("assets/" + n).read_text()}</script>' for n in MODULES))
         else:
             css = '<link rel="stylesheet" href="assets/kit.css">'
@@ -871,6 +906,107 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     (out / f'{site["id"]}.html').write_text(page(inline=True))
     log(f'  -> {out / "index.html"} (with assets/) and {out / (site["id"] + ".html")} (one file)')
     return out / 'index.html'
+
+
+TABLE_INLINE_MAX = 1_500_000        # bytes: a table larger than this is left to its file in the one-file copy
+
+
+# a page table's column, by its name in a format of CONTRACTS.md, is shown as this type (a free column: as text, unless
+# the page's columns: say otherwise)
+COLUMN_TYPES = {'partner_accession': 'accession', 'ids': 'list', 'classes': 'list', 'aliases': 'list', 'partner_marked': 'flag',
+                'score': 'number', 'distance': 'number', 'entries': 'number', 'offset': 'number', 'n': 'number', 'n_down': 'number',
+                'n_up': 'number', 'value': 'number', 'q': 'number', 'start': 'number', 'end': 'number', 'pubmed': 'pubmed',
+                'doi': 'doi', 'window': 'sequence', 'peptide': 'sequence'}
+LIST_TYPES = ('list', 'accessions', 'pdb')
+
+
+def page_tables(site: dict, specs: dict, run: dict, listing: list, out: Path, log=print) -> tuple[dict, str]:
+    """data/pages/<name>.json for each of the site's tables (website.tables, in a format of CONTRACTS.md) that a page
+    (website.pages) reads, whole: {key, columns, rows}, a row's protein an index into the page's protein list (rows of
+    proteins without a mark are left out of a keyed table), lists as arrays, flags as 0 or 1, numbers as numbers, missing
+    as null. Returns what the page needs to know of them ({name: {key, columns, n}}) and the JSON of the small ones,
+    for the one-file copy."""
+    from ..snapshot import md5_file
+    from . import tables as T
+    pdir = out / 'data' / 'pages'
+    if pdir.exists():
+        shutil.rmtree(pdir)
+    pages = (site.get('website') or {}).get('pages') or []
+    used = {b['table'] for pg in pages for g in pg['groups'] for sec in g['sections'] for b in sec['blocks'] if b.get('table')}
+    used |= {b for pg in pages for g in pg['groups'] for sec in g['sections'] for bl in sec['blocks'] for b in bl.get('tables') or []}
+    used |= {h['share']['table'] for pg in pages for h in pg.get('highlights') or [] if h.get('share')}
+    shown = {}
+    for pg in pages:
+        shown.update(pg.get('columns') or {})
+    pidx = {r[0]: i for i, r in enumerate(listing)}
+    meta, inline = {}, {}
+    for name in sorted(used & set(specs)):
+        spec = specs[name]
+        rec = (run.get('inputs') or {}).get(spec['input'])
+        f = Path(rec['file']) if rec else None
+        if f is None or not f.exists() or md5_file(f) != rec.get('md5'):
+            log(f'  page table {name}: its input {spec["input"]} is missing or changed since the run; left out')
+            continue
+        key = {'site': 'residue', 'accession': 'protein'}.get(T.FORMATS[spec['format']]['key'], 'none')
+        t = T.read(spec, f)
+        # only what the page's blocks read: the rows their where conditions keep (all, if one block has none) and the
+        # columns they name (all, for a checker, which shows a mark's every row)
+        blocks = [b for pg in pages for g in pg['groups'] for sec in g['sections'] for b in sec['blocks'] if b.get('table') == name]
+        whole = any(name in (b.get('tables') or []) for pg in pages for g in pg['groups'] for sec in g['sections'] for b in sec['blocks'])
+        if blocks and not whole and all(b.get('where') for b in blocks):
+            keep = None
+            for b in blocks:
+                hold = None
+                for w in b['where']:
+                    h = t[w['column']].astype(str).apply(lambda v, ok=set(w['in']): bool(ok & set(v.split('; '))))
+                    hold = h if hold is None else hold & h
+                keep = hold if keep is None else keep | hold
+            t = t[keep]
+        named = set()
+        for b in blocks:
+            named |= set(b.get('columns') or []) | {b.get(k) for k in ('group_by', 'chips', 'label', 'partner', 'value', 'members', 'sort', 'among')}
+            named |= {w['column'] for w in b.get('where') or []} | {(b.get(k) or {}).get('column') for k in ('groups', 'rows', 'cols') if isinstance(b.get(k), dict)}
+        for pg in pages:
+            named |= {v for h in pg.get('highlights') or [] if (h.get('share') or {}).get('table') == name for v in (h['share']['of'], h['share']['flag'])}
+        cols = [c for c in t.columns if c not in ('accession', 'position') and (whole or c in named)]
+        how = {c: shown.get(f'{name}.{c}') or shown.get(c) or {} for c in cols}     # a table's own column first
+        types = {c: how[c].get('type') or COLUMN_TYPES.get(c, 'text') for c in cols}
+
+        def conv(v, kind):
+            if v is None or (isinstance(v, float) and math.isnan(v)) or v == '':
+                return [] if kind in LIST_TYPES else None
+            if kind in LIST_TYPES:
+                return [x for x in str(v).split('; ') if x]
+            if kind == 'flag':
+                return 1 if str(v).lower() in ('true', 'yes', '1') else 0
+            if kind == 'number':
+                try:
+                    x = float(v)
+                except ValueError:
+                    return None
+                return (int(x) if x.is_integer() and abs(x) < 2 ** 53 else x) if math.isfinite(x) else None
+            return str(v)
+        rows = []
+        for r in t.to_dict('records'):
+            head = []
+            if key != 'none':
+                p = pidx.get(str(r['accession']).split('-')[0])
+                if p is None:
+                    continue
+                head = [p] + ([int(r['position'])] if key == 'residue' else [])
+            rows.append(head + [conv(r[c], types[c]) for c in cols])
+        columns = [{'name': c, 'type': types[c], 'label': how[c].get('label') or c.replace('_', ' ').capitalize(),
+                    **{k: how[c][k] for k in ('help', 'values') if how[c].get(k)}} for c in cols]
+        body = {'key': key, 'columns': columns, 'rows': rows}
+        pdir.mkdir(parents=True, exist_ok=True)
+        text = json.dumps(body, separators=(',', ':'), allow_nan=False)
+        (pdir / f'{name}.json').write_text(text)
+        meta[name] = {'key': key, 'columns': columns, 'n': len(rows)}
+        if len(text) <= TABLE_INLINE_MAX:
+            inline[name] = body
+    if meta:
+        log('  page tables: ' + ', '.join(f"{k} {v['n']:,}" for k, v in meta.items()))
+    return meta, (json.dumps(inline, separators=(',', ':'), allow_nan=False).replace('</', '<\\/') if inline else '')
 
 
 def _licence_words(spdx: str) -> str:

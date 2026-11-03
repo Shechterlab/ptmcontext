@@ -16,3 +16,10 @@ def test_fisher_haldane_hypergeom_and_bh():
 def test_mantel_haenszel_single_stratum_is_the_table_odds_ratio():
     odds, p, used = ptmstats.mantel_haenszel([(10, 5, 4, 20)])
     assert used == 1 and abs(odds - (10 * 20) / (5 * 4)) < 1e-9 and 0 < p < 1
+
+
+def test_mann_whitney_is_scipys_two_sided_test():
+    from scipy.stats import mannwhitneyu
+    x, y = [0.1, 1.2, 2.5, -0.3, 4.0, 1.1], [0.0, -1.0, 0.4, 0.2, -2.0, 0.3, 0.5, -0.1, 0.05]
+    assert ptmstats.mann_whitney_p(x, y) == float(mannwhitneyu(x, y).pvalue)
+    assert np.isnan(ptmstats.mann_whitney_p([], y))

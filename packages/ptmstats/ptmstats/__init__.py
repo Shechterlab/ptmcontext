@@ -110,6 +110,15 @@ def hypergeom_sf(k: int, N: int, M: int, n: int) -> float:
     return float(hypergeom.sf(k - 1, N, M, n))
 
 
+def mann_whitney_p(x: Iterable[float], y: Iterable[float]) -> float:
+    """Two-sided Mann-Whitney U test of two samples (SciPy's default: exact for small samples without ties, else the
+    normal approximation with tie and continuity corrections); NaN when either is empty. As the release's
+    scripts/cell_maps.py size_tests."""
+    from scipy.stats import mannwhitneyu
+    x, y = list(x), list(y)
+    return float(mannwhitneyu(x, y).pvalue) if x and y else math.nan
+
+
 def js_path() -> str:
     """Where ptmstats.js, the same tests for the browser, is installed."""
     from importlib import resources

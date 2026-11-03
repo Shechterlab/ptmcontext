@@ -14,6 +14,7 @@ inputs:                # role the layers read: manifest input that fills it
   reactome_names: reactome_pathways
   hpa: hpa_locations
   abundance: paxdb_abundance
+  eclip_maps: release_eclip_rna_compartments    # where the RNAs of proteins with eCLIP data gather, per map
   panther_classes: panther_protein_classes
   panther_ontology: panther_class_ontology
   uniprot_entries: uniprot_entries
@@ -37,6 +38,43 @@ inputs:                # role the layers read: manifest input that fills it
   density_windows: density_windows_v1_4_3
   lower_confidence_sites: methylarginine_lower_confidence_sites_v1_4_3
   interpro_entries: interpro_all_entries
+  # interactions and binding (scripts/37_export_interaction_data.py of the release): each role one kind of evidence
+  uniprot_disorder: uniprot_disordered_regions
+  uniprot_domains: uniprot_domain_regions
+  pdb_interfaces: {all_of: [pdbe_kb_interfaces_2026_10_16, pdbe_kb_interfaces_2026_10_20, pdbe_kb_interfaces_2026_10_21,
+                            pdbe_kb_interfaces_2026_10_21_2, pdbe_kb_interfaces_2026_10_21_3, pdbe_kb_interfaces_2026_10_25]}
+  pdb_observed: sifts_observed_ranges
+  predicted_interfaces: protvar_interfaces
+  intact_mutations: intact_mutations
+  intact_binding_regions: intact_binding_regions
+  rna_crosslinks: {all_of: [pepr_crosslinks, pepr_focused]}
+  rna_crosslinks_single: {all_of: [pepr_crosslinks_single, pepr_focused_single]}
+  rbdmap_fragments: rbdmap_fragments
+  rbdmap_measured: rbdmap_measured                  # checksum_only
+  rbdmap_measured_bound: rbdmap_measured_bound      # checksum_only
+  capri_xl: capri_xl_peptides
+  capri_adj: capri_adj_peptides
+  capri_measured: capri_measured
+  capri_measured_adjacent: capri_measured_adjacent
+  # pCLAP's peptides are checksum_only: read from the root when it holds them, else the release's own runs of them on
+  # the proteins it has sites on (all the residue tests need)
+  pclap_peptides: {first_of: [pclap_peptides, release_pclap_peptides]}
+  pclap_lysc_regions: {first_of: [pclap_lysc_regions, release_pclap_lysc_regions]}
+  pclap_measured: pclap_measured                    # checksum_only
+  rbrid_residues: rbrid_positive
+  rbrid_residues_published_rule: rbrid_positive_published_rule
+  rbrid_regions: rbrid_regions
+  rbrid_quantified: rbrid_quantified
+  dna_crosslinks: trendel_dna_crosslinks
+  dna_crosslink_candidates: trendel_dna_crosslink_candidates
+  dna_crosslinked_peptides: trendel_dna_peptides
+  dna_interactome: trendel_dna_interactome
+  uniprot_dna_binding: uniprot_dna_binding_regions
+  go_binding: quickgo_rna_dna_binding
+  # arginines of methylated proteins modelled in a PDB entry with RNA or DNA, each with its side-chain distance to it
+  na_rna: release_arginine_rna_distances
+  na_dna: release_arginine_dna_distances
+  na_any: {all_of: [release_arginine_rna_distances, release_arginine_dna_distances]}
 
 marks:
   # Until this repository builds the site union from the studies, the marks are the release's own sites.
@@ -553,6 +591,52 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
     background: other human proteins in CD-CODE condensates (export of 2026-03-18)
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Proteins that bind RNA or DNA (scripts/37_export_interaction_data.py): GO annotations, against every reviewed protein;
+  # and the proteins each in-cell experiment found binding, each against the proteins that experiment measured where it
+  # lists them (else every reviewed protein): one test per set, BH over the sets, again within PaxDb abundance deciles
+  - id: go_binding
+    test: protein_sets
+    title: RNA and DNA binding (GO)
+    question: "Are methylated proteins more often annotated to bind RNA or DNA?"
+    sub: "Methylated proteins against every reviewed human protein, by Gene Ontology annotation to RNA binding (GO:0003723) or DNA binding (GO:0003677) or a term below them, any evidence or experimental evidence only (one-sided hypergeometric test)"
+    section: Interactions and binding
+    sets:
+      each:
+        - {set: rna_binding, name: RNA binding (GO), table: {input: go_binding, protein: uniprot_accession, include: [{column: binding, equals: rna}]}}
+        - {set: rna_binding_experimental, name: "RNA binding (GO, experimental evidence)",
+           table: {input: go_binding, protein: uniprot_accession, include: [{column: binding, equals: rna}, {column: evidence_code, in: &go_experimental [EXP, IDA, IPI, IMP, IGI, IEP, HTP, HDA, HMP, HGI, HEP]}]}}
+        - {set: dna_binding, name: DNA binding (GO), table: {input: go_binding, protein: uniprot_accession, include: [{column: binding, equals: dna}]}}
+        - {set: dna_binding_experimental, name: "DNA binding (GO, experimental evidence)",
+           table: {input: go_binding, protein: uniprot_accession, include: [{column: binding, equals: dna}, {column: evidence_code, in: *go_experimental}]}}
+    universe: snapshot
+    whole_universe: true
+    background: all reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: binding_protein
+    test: protein_sets
+    title: Proteins found binding RNA or DNA in cells
+    question: "Are methylated proteins among the proteins found binding RNA or DNA in cells?"
+    sub: "Methylated proteins among the proteins each in-cell experiment found binding RNA or DNA, against the other proteins the experiment measured where it lists them, else every reviewed human protein (one-sided hypergeometric test)"
+    section: Interactions and binding
+    order: as_listed
+    sets:
+      each:
+        - {set: rna_xl, name: RNA-crosslinked residue (pepR-MS compendium), units: rna_crosslinks, background: other reviewed human proteins}
+        - {set: rna_rbdmap, name: RNA-bound fragment (RBDmap), units: [rbdmap_measured_bound, rbdmap_fragments], universe_units: rbdmap_measured,
+           background: other reviewed human proteins the experiment measured}
+        - {set: rna_capri, name: Peptide next to an RNA crosslink (CAPRI), units: [capri_measured_adjacent, capri_adj], universe_units: capri_measured,
+           background: other reviewed human proteins the experiment measured}
+        - {set: rna_pclap, name: RNA-binding peptide (pCLAP), units: pclap_peptides, universe_units: [pclap_measured, pclap_peptides],
+           background: other reviewed human proteins the experiment measured}
+        - {set: rna_rbrid, name: RBR-ID+ residue (RBR-ID), units: rbrid_residues, universe_units: rbrid_quantified,
+           background: other reviewed human proteins the experiment measured}
+        - {set: dna_xl, name: DNA-crosslinked residue or peptide (Trendel 2025), units: [dna_crosslink_candidates, dna_crosslinked_peptides],
+           background: other reviewed human proteins}
+        - {set: dna_interactome, name: DNA interactome protein (Trendel 2025), table: {input: dna_interactome, protein: uniprot_accession},
+           background: other reviewed human proteins}
+    universe: snapshot
+    whole_universe: true
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: reactome_top_level
     test: protein_sets
     title: Reactome pathways, top level
@@ -694,6 +778,47 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     labels: {"ICP >= 0.8 (chromatin)": "Chromatin (probability ≥ 0.8)", "ICP 0.5-0.8": "Probability 0.5–0.8", "ICP 0.2-0.5": "Probability 0.2–0.5",
              "ICP < 0.2 (not chromatin)": "Not chromatin (probability < 0.2)"}
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Where the RNAs bound by proteins with eCLIP data gather (scripts/cell_maps.py, GENE_MAPS): the release's calls per
+  # protein and map (supporting/eclip_rna_compartments). The nuclear-body map (Barutcu et al. 2022) stays out: licence pending
+  - id: eclip_rna_apexseq
+    test: protein_sets
+    title: Bound RNAs by APEX-seq
+    question: "Where do the RNAs that methylated proteins bind gather in the cell, by APEX-seq?"
+    sub: "Proteins with eCLIP data whose bound RNAs gather in a compartment that APEX-seq maps (HEK293T; Fazal et al. 2019), methylated against the others (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: apexseq}],
+           member_when: [{column: gathers, equals: "true"}]}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins with eCLIP data that APEX-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein APEX-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
+  - id: eclip_gene_tsaseq
+    test: protein_sets
+    title: Bound RNAs by TSA-seq
+    question: "Do the RNAs that methylated proteins bind come from genes near nuclear speckles?"
+    sub: "Proteins with eCLIP data whose bound RNAs come from genes TSA-seq places near nuclear speckles (K562; Chen et al. 2018), methylated against the others (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: tsaseq}],
+           member_when: [{column: gathers, equals: "true"}]}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins with eCLIP data that TSA-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein TSA-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
+  - id: eclip_gene_hic
+    test: protein_sets
+    title: Bound RNAs by Hi-C subcompartment
+    question: "Do the RNAs that methylated proteins bind come from one Hi-C subcompartment?"
+    sub: "Proteins with eCLIP data whose bound RNAs come from genes of a Hi-C subcompartment (GM12878; Rao et al. 2014), methylated against the others (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: hic}],
+           member_when: [{column: gathers, equals: "true"}]}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins with eCLIP data that Hi-C subcompartments tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein Hi-C subcompartments tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   # Cancer cell lines (scripts/release_layers.py, CANCER): cancer cell genetics beside the sites, not evidence about
   # methylation. The dependency classes partition the entries whose gene DepMap 24Q4 screened (gene_effect)
   - id: depmap_dependency
@@ -750,9 +875,145 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - {id: domain_class, layer: domain_class}
   - {id: structure_context, layer: structure_context}
   - {id: idr_charge, layer: idr_charge, new: true}   # not in the release: CIDER's charge classes of IDRs
+  # Interactions and binding (scripts/37_export_interaction_data.py): each a question of yes-or-no tests, each against
+  # the arginines its evidence could have reached (the measured background): the proteins with that evidence, the
+  # residues a structure observed or an experiment measured. Every candidate counts in the pooled test, and the
+  # within-protein row reports those counts (counting: every_candidate), as the release counts them.
+  - id: pdb_interface
+    title: PDB interfaces
+    question: "Are methylarginines at interfaces in experimental structures?"
+    sub: "Methylarginines against the other arginines of the same proteins that a PDB structure observes, at a PDBe-KB interface with RNA, DNA, a protein or any partner; all, ordered (outside UniProt disordered regions) and in domains"
+    section: Interactions and binding
+    counting: every_candidate
+    candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
+    background: other arginines of the same proteins observed in a PDB structure
+    proteins_with: pdb_interfaces                       # proteins PDBe-KB lists with an interface
+    covered_by: pdb_observed                            # residues a PDB chain models (SIFTS)
+    tests:
+      - {category: rna, inside: {role: pdb_interfaces, where: [{column: class, equals: RNA}]}, label: RNA interface}
+      - {category: dna, inside: {role: pdb_interfaces, where: [{column: class, equals: DNA}]}, label: DNA interface}
+      - {category: protein, inside: {role: pdb_interfaces, where: [{column: class, matches: "([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2})(-[0-9]+)?"}]}, label: Protein interface}
+      - {category: any, inside: {role: pdb_interfaces, where: [{column: class, matches: "RNA|DNA|([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2})(-[0-9]+)?"}]}, label: Any interface}
+    strata:
+      - {stratum: all}
+      - {stratum: ordered, outside_of: uniprot_disorder}
+      - {stratum: domain, covered_by: uniprot_domains}
+  - id: predicted_interface
+    title: Predicted interfaces
+    question: "Are methylarginines at predicted protein interfaces?"
+    sub: "Methylarginines against the other arginines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt)"
+    section: Interactions and binding
+    counting: every_candidate
+    candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
+    background: other arginines of the same proteins
+    tests:
+      - {category: pdockq_0.23, inside: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}]},
+         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}], on_candidates: true}, label: "pDockQ ≥ 0.23"}
+      - {category: pdockq_0.5, inside: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}]},
+         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}], on_candidates: true}, label: "pDockQ ≥ 0.5"}
+    strata:
+      - {stratum: all}
+      - {stratum: ordered, outside_of: uniprot_disorder}
+      - {stratum: disordered, covered_by: uniprot_disorder}
+  - id: crosslink
+    title: RNA and DNA crosslinks in cells
+    question: "Are methylarginines where RNA or DNA crosslinks to proteins in cells?"
+    sub: "Methylarginines against the other arginines of the proteins with each kind of evidence: crosslinked residues, RNA-bound fragments and peptides, RBR-ID residues and regions, DNA crosslinks and DNA-binding regions"
+    section: Interactions and binding
+    counting: every_candidate
+    candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
+    background: other arginines of the same proteins (proteins with that evidence)
+    tests:
+      - {category: rna_crosslink, inside: rna_crosslinks, proteins_with: rna_crosslinks, label: RNA-crosslinked residue}
+      - {category: rna_crosslink_single_residue, inside: rna_crosslinks_single, proteins_with: rna_crosslinks_single, label: "RNA crosslink, one residue"}
+      - {category: rna_crosslink_within_3, inside: rna_crosslinks, within: 3, proteins_with: rna_crosslinks, label: "≤3 aa from an RNA crosslink"}
+      - {category: rbdmap_fragment, inside: rbdmap_fragments, proteins_with: rbdmap_fragments, label: RNA-bound fragment (RBDmap)}
+      - {category: dna_crosslink, inside: dna_crosslinks, proteins_with: dna_crosslinks, label: DNA-crosslinked residue}
+      - {category: dna_crosslink_or_candidate, inside: dna_crosslink_candidates, proteins_with: dna_crosslink_candidates, label: DNA crosslink or candidate}
+      - {category: dna_crosslinked_peptide, inside: dna_crosslinked_peptides, proteins_with: dna_crosslinked_peptides, label: DNA-crosslinked peptide}
+      - {category: dna_binding_region, inside: uniprot_dna_binding, proteins_with: uniprot_dna_binding, label: DNA-binding region (UniProt)}
+      - {category: rna_crosslink_outside_rg, inside: rna_crosslinks, proteins_with: rna_crosslinks, unless: &rg {any: [{at: 1, in: G}, {at: -1, in: G}]}, label: "RNA crosslink, outside RG/GR"}
+      - {category: rbdmap_fragment_outside_rg, inside: rbdmap_fragments, proteins_with: rbdmap_fragments, unless: *rg, label: "RBDmap fragment, outside RG/GR"}
+      - {category: capri_xl_peptide, inside: capri_xl, proteins_with: capri_xl, label: CAPRI XL-peptide}
+      - {category: capri_adj_peptide, inside: capri_adj, proteins_with: capri_adj, label: CAPRI adjacent peptide}
+      - {category: capri_xl_peptide_outside_rg, inside: capri_xl, proteins_with: capri_xl, unless: *rg, label: "CAPRI XL-peptide, outside RG/GR"}
+      - {category: capri_adj_peptide_outside_rg, inside: capri_adj, proteins_with: capri_adj, unless: *rg, label: "CAPRI adjacent peptide, outside RG/GR"}
+      - {category: pclap_lysc_region, inside: pclap_lysc_regions, proteins_with: pclap_lysc_regions, label: pCLAP RNA-binding region}
+      - {category: pclap_lysc_region_outside_rg, inside: pclap_lysc_regions, proteins_with: pclap_lysc_regions, unless: *rg, label: "pCLAP region, outside RG/GR"}
+      - {category: pclap_peptide, inside: pclap_peptides, proteins_with: pclap_peptides, label: pCLAP RNA-binding peptide}
+      - {category: rbrid_residue, inside: rbrid_residues, proteins_with: rbrid_residues, label: RBR-ID+ residue}
+      - {category: rbrid_residue_outside_rg, inside: rbrid_residues, proteins_with: rbrid_residues, unless: *rg, label: "RBR-ID+ residue, outside RG/GR"}
+      - {category: rbrid_residue_published_rule, inside: rbrid_residues_published_rule, proteins_with: rbrid_residues_published_rule, label: "RBR-ID+ residue, published rule"}
+      - {category: rbrid_region, inside: rbrid_regions, proteins_with: rbrid_regions, label: RBR-ID region}
+      - {category: pclap_peptide_among_measured, inside: pclap_peptides, proteins_with: pclap_peptides, covered_by: pclap_measured, label: "pCLAP peptide, among measured"}
+      - {category: capri_adj_peptide_among_measured, inside: capri_measured_adjacent, proteins_with: capri_measured_adjacent, covered_by: capri_measured, label: "CAPRI adjacent peptide, among measured"}
+      - {category: rbdmap_peptide_among_measured, inside: rbdmap_measured_bound, proteins_with: rbdmap_measured_bound, covered_by: rbdmap_measured, label: "RBDmap peptide, among measured"}
+      - {category: rbrid_residue_among_measured, inside: rbrid_residues, proteins_with: rbrid_residues, covered_by: rbrid_quantified, label: "RBR-ID+ residue, among measured"}
+  - id: sequence_proximity
+    title: Distance along the chain to RNA evidence
+    question: "Are methylarginines near RNA-crosslinked residues along the sequence?"
+    sub: "Methylarginines against the other arginines of the proteins with each kind of RNA evidence, within 0, 3, 5, 10 or 20 residues of it along the sequence"
+    section: Interactions and binding
+    counting: every_candidate
+    candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
+    background: other arginines of the same proteins (proteins with that evidence)
+    tests:
+      - {category: rna_crosslink, inside: rna_crosslinks, proteins_with: rna_crosslinks, label: RNA-crosslinked residue}
+      - {category: rbdmap_fragment, inside: rbdmap_fragments, proteins_with: rbdmap_fragments, label: RBDmap fragment}
+      - {category: capri_adj_peptide, inside: capri_adj, proteins_with: capri_adj, label: CAPRI adjacent peptide}
+      - {category: capri_xl_peptide, inside: capri_xl, proteins_with: capri_xl, label: CAPRI XL-peptide}
+      - {category: pclap_peptide, inside: pclap_peptides, proteins_with: pclap_peptides, label: pCLAP peptide}
+      - {category: rbrid_residue, inside: rbrid_residues, proteins_with: rbrid_residues, label: RBR-ID+ residue}
+    strata:
+      - {stratum: within_0_residues, within: 0}
+      - {stratum: within_3_residues, within: 3}
+      - {stratum: within_5_residues, within: 5}
+      - {stratum: within_10_residues, within: 10}
+      - {stratum: within_20_residues, within: 20}
+  - id: nucleic_acid_distance
+    title: Distance to RNA and DNA in structures
+    question: "Are methylarginines closer to RNA or DNA in solved structures?"
+    sub: "Methylarginines against the other arginines of the same proteins modelled in a PDB entry with RNA, DNA or either, whose side chain comes within 4 or 8 Å of it"
+    section: Interactions and binding
+    counting: every_candidate
+    candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
+    tests:
+      - {category: any_within_4a, inside: {role: na_any, where: [{column: class, at_most: 4}]}, covered_by: na_any, label: "RNA or DNA within 4 Å",
+         background: other arginines of the same proteins modelled in a PDB entry with RNA or DNA}
+      - {category: any_within_8a, inside: {role: na_any, where: [{column: class, at_most: 8}]}, covered_by: na_any, label: "RNA or DNA within 8 Å",
+         background: other arginines of the same proteins modelled in a PDB entry with RNA or DNA}
+      - {category: dna_within_4a, inside: {role: na_dna, where: [{column: class, at_most: 4}]}, covered_by: na_dna, label: "DNA within 4 Å",
+         background: other arginines of the same proteins modelled in a PDB entry with DNA}
+      - {category: dna_within_8a, inside: {role: na_dna, where: [{column: class, at_most: 8}]}, covered_by: na_dna, label: "DNA within 8 Å",
+         background: other arginines of the same proteins modelled in a PDB entry with DNA}
+      - {category: rna_within_4a, inside: {role: na_rna, where: [{column: class, at_most: 4}]}, covered_by: na_rna, label: "RNA within 4 Å",
+         background: other arginines of the same proteins modelled in a PDB entry with RNA}
+      - {category: rna_within_8a, inside: {role: na_rna, where: [{column: class, at_most: 8}]}, covered_by: na_rna, label: "RNA within 8 Å",
+         background: other arginines of the same proteins modelled in a PDB entry with RNA}
+  - id: intact
+    title: IntAct mutations and binding regions
+    question: "Are methylarginines where IntAct maps interactions?"
+    sub: "Methylarginines whose mutation changes an interaction, against the other mutated arginines; and inside an IntAct binding region of at most 20 residues, against the other arginines of the proteins with one (all, and in UniProt disordered regions)"
+    section: Interactions and binding
+    counting: every_candidate
+    candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
+    tests:
+      - {category: mutation_changes_interaction, inside: {role: intact_mutations, where: [{column: class, matches: "(?!MI:2226$).*"}]},
+         covered_by: intact_mutations, background: other arginines of the same proteins with an IntAct mutation, label: Mutation changes an interaction}
+      - {category: binding_region, inside: intact_binding_regions, proteins_with: intact_binding_regions,
+         background: other arginines of the same proteins with an IntAct binding region, label: IntAct binding region}
+      - {category: binding_region_disordered, inside: intact_binding_regions, proteins_with: intact_binding_regions, covered_by: uniprot_disorder,
+         background: other arginines of the same proteins with an IntAct binding region, label: "Binding region, disordered residues"}
 
 reference:
   statistics: methylarginine_statistics_v1_4_3
+  # the residue questions' denominators: each protein's other arginines, in all and per class or motif
+  background: {input: release_arginine_background, accession: uniprot_accession, analysis: analysis, category: category, others: other_arginines}
+  excused:                 # rows the published inputs cannot rebuild, each with why
+    - analysis: eclip_rna_apexseq
+      method: mann_whitney
+      category: Mitochondrial matrix
+      why: "the release's supporting table gives each odds ratio to 6 significant digits, and two proteins compared (HNRNPA1, methylated, and LIN28B) share 1.00353 there, a tie the release's exact values did not have; q is compared"
   tables:                  # questions the statistics table does not hold, checked against the release's supporting tables
     disease_ontology:
       input: methylarginine_disease_ontology_v1_4_3
@@ -802,6 +1063,11 @@ variants:                # the same questions on other marks; ptmc run --variant
         left_out: [{column: in_analyses_with_lower_confidence, equals: "false"}]   # the others are on neither side
     reference:
       statistics: methylarginine_statistics_lower_confidence_v1_4_3
+      excused:             # the same tie as the main view's (reference.excused)
+        - analysis: eclip_rna_apexseq
+          method: mann_whitney
+          category: Mitochondrial matrix
+          why: "the release's supporting table gives each odds ratio to 6 significant digits, and two proteins compared (HNRNPA1, methylated, and LIN28B) share 1.00353 there, a tie the release's exact values did not have; q is compared"
       tables:              # the view's own disease tables (analyses_with_lower_confidence/disease)
         disease_ontology:
           input: methylarginine_lc_disease_ontology_v1_4_3
@@ -810,6 +1076,10 @@ variants:                # the same questions on other marks; ptmc run --variant
           input: methylarginine_lc_disease_terms_v1_4_3
           columns: {set: ID, a: Count, fold_enrichment: FoldEnrichment, p: pvalue, q: p.adjust}
           rows: enriched
+    not_compared:          # run, but not checked: their release tables cover the main view's proteins only
+      crosslink: "pCLAP's peptides here are the release's runs of them on the main view's proteins"
+      sequence_proximity: "pCLAP's peptides here are the release's runs of them on the main view's proteins"
+      nucleic_acid_distance: "the release's arginine distances cover the main view's proteins only"
     attributes:
       confidence:
         column: in_analyses_with_lower_confidence
@@ -934,17 +1204,20 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: structure_context}
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
+      - name: Interactions and binding   # the Interactions page's tile (website.pages[].overview)
+        cards: []
       - name: Sources and responses   # counted, not tested (website.counts)
         cards: [provenance]
       - name: In more detail
         cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)},
-                {analysis: hpa_location, title: Human Protein Atlas locations}, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, disorder, domain_context]
+                {analysis: hpa_location, title: Human Protein Atlas locations}, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin,
+                eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, disorder, domain_context]
   cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
     id: where_in_the_cell
     title: Where in the cell
     question: "Where do methylated proteins sit in the cell?"
     intro: "Five maps from four studies place proteins in the cell, by imaging, proximity labelling, organelle pull-down and chromatin fractionation."
-    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose licence (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022, pending their licence."
+    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose licence (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map, pending their licence. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
     maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
       - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
          how: "antibody staining in many cell lines; locations of approved or better reliability holding 20 or more proteins",
@@ -1236,6 +1509,7 @@ website:                  # the look and words of the website (ptmc web); layout
     ov-study: provenance
     ov-treat: perturbations
     sel-enriched: "?vs=marks"
+    ov-ix: "#interactions"            # the explorer's Interactions and binding question: the Interactions page
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   compare: {stratify: studies}      # "compared with other methylarginines, within studies": the same reporting sources
   proteins:                # the Proteins page (kit-tables.js): its table's columns after the protein and its sites, in the Columns
@@ -1509,6 +1783,37 @@ website:                  # the look and words of the website (ptmc web); layout
                 max_10: max_sites_10aa, max_20: max_sites_20aa, max_50: max_sites_50aa, window_size: best_window_aa, window_start: best_window_start,
                 window_end: best_window_end, window_sites: best_window_sites, window_log2: best_window_log2_obs_null, window_q: best_window_q,
                 architecture: architecture_class, clusters: architecture_clusters}
+    # tables only the Interactions page reads (website.pages)
+    distances:             # every arginine of a methylated protein modelled with RNA or DNA, and its distance to each
+      input: release_arginine_rna_distances
+      format: site_table
+      columns: {accession: uniprot_accession, position: position}
+      values: [rna_distance_a, dna_distance_a, entries_with_rna, entries_with_dna]
+    complexes:
+      input: release_complexes
+      format: page_rows
+      columns: {}
+      values: [complex_id, complex_name, curation, n_members, n_members_methylated, methylated_members, fold_enrichment, q]
+    rbns:
+      input: release_rna_bind_n_seq
+      format: protein_values
+      columns: {accession: uniprot_accession}
+      values: [encode_experiment, concentration, top_5mers]
+    htr_selex:
+      input: release_htr_selex
+      format: protein_values
+      columns: {accession: uniprot_accession}
+      values: [model_id, motif_kind, consensus]
+    ix_dna_motifs:
+      input: release_dna_motifs
+      format: protein_values
+      columns: {accession: uniprot_accession}
+      values: [matrix_id, name, tf_family, consensus]
+    ix_eclip:
+      input: release_eclip
+      format: protein_values
+      columns: {accession: uniprot_accession}
+      values: [experiment, source, cell_line, n_peaks, top_target_genes, top_5mers]
   protein:                 # the protein page
     open_partners: true    # the Interaction partners fold is open when the protein has partners in the site's table
     order: [p-map, p-cc, p-ix, p-na, p-sites, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cons, p-cluster, p-ptm, p-seq]   # the explorer's order
@@ -2031,3 +2336,311 @@ website:                  # the look and words of the website (ptmc web); layout
           colour: "#5F6F78"
           colour_dark: "#93A8B0"
           opacity: 0.75
+  pages:
+    - id: interactions
+      tab: Interactions
+      title: Are methylarginines enriched at contacts with RNA, DNA or other proteins?
+      sub: "Each methylarginine against the other arginines of its own protein that the evidence could reach: in living cells (crosslinks and RNA-bound peptides), in solved structures and in predicted complexes; and the proteins and partners that carry them."
+      method: |
+        Each residue test compares the methylarginines with the other arginines of the same proteins, as the release does, but each against the arginines its evidence could have reached: the proteins with that kind of evidence, the residues a PDB structure observed (SIFTS), or the residues an experiment measured. Within each protein: a Mantel–Haenszel odds ratio with its 95% CI, each protein a stratum; pooled: Fisher's exact test. In these questions every candidate arginine counts in the pooled test, as in the release. q is Benjamini–Hochberg within each question and test.
+
+        The protein-set tests (proteins found binding RNA or DNA in cells; Gene Ontology RNA and DNA binding) count proteins: the methylated proteins in each set against the other proteins each experiment measured, or every reviewed human protein (one-sided hypergeometric test), again within PaxDb abundance deciles.
+
+        pCLAP's and RBDmap's measured peptides may not be republished: the tests that need them run only where the build's root holds those files (otherwise they are left out, and the Method page's parity section says so); pCLAP's RNA-binding peptides and regions are read from the release's own per-residue runs. The tables of this page (who acts, partners, complexes, bound RNA and DNA, binding profiles) are the release's supporting tables, read through the site file's mapping; no test reads them.
+      columns:             # how the page shows the tables' columns (a table's own: <table>.<column>)
+        interactions.kind: {label: Evidence, values: {rna_crosslink: RNA-crosslinked residue, rbdmap_fragment: RBDmap RNA-bound fragment, capri_xl_peptide: CAPRI XL-peptide, capri_adj_peptide: CAPRI ADJ-peptide, pclap_peptide: pCLAP peptide, pclap_lysc_region: pCLAP region, rbrid_residue: RBR-ID+ residue, dna_crosslink: DNA crosslink, dna_binding_region: UniProt DNA-binding region, pdb_protein: PDB protein interface, pdb_rna: PDB RNA interface, pdb_dna: PDB DNA interface, pdb_self: PDB interface with another copy, predicted_interface: Predicted interface (ProtVar), predicted_contact: Contact in a predicted model, intact_mutation: IntAct mutation, intact_binding_region: IntAct binding region, intact_methylated: IntAct records it methylated}}
+        interactions.ids: {label: Structures or models}
+        interactions.score: {label: pDockQ, help: "pDockQ of a predicted model"}
+        partner_accession: {label: Partner}
+        partner: {label: Partner gene}
+        records.group: {label: Record, values: {writes: Methylates it, removes: Demethylates it, binds_methylated: Binds it methylated, mutation_changes_binding: Mutating it changes the binding}}
+        records.source: {label: Evidence}
+        state_detail: {label: The site in it}
+        context: {label: What it shows}
+        pubmed: {label: Paper}
+        window: {label: "Bound sequence ([contact])"}
+        contacts.type: {label: Type, values: {rrna: rRNA, trna: tRNA, snrna: snRNA, mrna: mRNA, other_ncrna: Other ncRNA, viral_rna: Viral RNA, rna_oligo: RNA oligo, other_rna: Other RNA, nucleosomal_dna: Nucleosomal DNA, telomeric_dna: Telomeric DNA, other_dna: Other DNA}}
+        contacts.name: {label: Molecule}
+        contacts.distance: {label: Closest (Å)}
+        contacts.entry: {label: PDB, type: pdb}
+        rna_distance_a: {label: Distance to RNA (Å), type: number}
+        dna_distance_a: {label: Distance to DNA (Å), type: number}
+        entries_with_rna: {label: Modelled with RNA, type: number}
+        entries_with_dna: {label: Modelled with DNA, type: number}
+        string.classes: {label: Partner class, values: {prmt: PRMT, tudor: Tudor domain, wd40: WD40 repeat, phd: PHD finger}}
+        complex_id: {label: Complex}
+        complex_name: {label: Name}
+        curation: {label: Curation, values: {curated: Curated (Complex Portal), predicted: Predicted (hu.MAP 3.0)}}
+        n_members: {label: Members, type: number}
+        n_members_methylated: {label: Methylated members, type: number}
+        methylated_members: {label: Methylated proteins, type: accessions}
+        fold_enrichment: {label: Fold, type: number}
+        complexes.q: {label: q, type: number}
+        top_5mers: {label: Most enriched 5-mers, type: list}
+        concentration: {label: Protein}
+        encode_experiment: {label: ENCODE experiment}
+        consensus: {label: Consensus, type: sequence}
+        motif_kind: {label: Kind}
+        model_id: {label: Model}
+        cell_line: {label: Cells}
+        n_peaks: {label: Peaks, type: number}
+        top_target_genes: {label: Genes with most peaks, type: list}
+        experiment: {label: Experiment}
+        name: {label: Name}
+        tf_family: {label: Family}
+        matrix_id: {label: JASPAR profile}
+      answer:
+        more: "In living cells, {marks} sit {list} more often than the other {residues} of the same proteins."
+        none: "In living cells, {marks} are not enriched at RNA or DNA contacts."
+        rows:
+          - {analysis: crosslink, category: capri_adj_peptide_among_measured, phrase: in RNA-bound peptides}
+          - {analysis: crosslink, category: pclap_peptide_among_measured, phrase: in RNA-bound peptides}
+          - {analysis: crosslink, category: rbdmap_peptide_among_measured, phrase: in RNA-bound peptides}
+          - {analysis: crosslink, category: dna_crosslink_or_candidate, phrase: at DNA crosslinks}
+          - {analysis: crosslink, category: rna_crosslink, phrase: at RNA-crosslinked residues}
+      highlights:
+        - {rows: [{analysis: crosslink, category: capri_adj_peptide_among_measured}, {analysis: crosslink, category: pclap_peptide_among_measured}, {analysis: crosslink, category: rbdmap_peptide_among_measured}, {analysis: crosslink, category: rbrid_residue_among_measured}],
+           label: in RNA-bound peptides and residues, tag: RNA · in living cells, section: ixs-cells, glyph: rna}
+        - {rows: [{analysis: crosslink, category: dna_crosslink_or_candidate}], label: at DNA-crosslinked residues, tag: DNA · in living cells, section: ixs-cells, glyph: dna}
+        - {rows: [{analysis: crosslink, category: rna_crosslink}], label: at the crosslinked residue itself, tag: RNA · in living cells, section: ixs-cells, glyph: rna}
+        - {share: {table: string, of: partner_accession, flag: partner_marked}, label: of their partners are methylated (22% of human proteins), tag: Protein partners, section: ixs-partners, glyph: protein}
+        - {counts: [{attribute: nucleic_acid, values: [rna_at]}, {attribute: nucleic_acid, values: [dna_at]}], label: methylarginines in contact with RNA · with DNA, tag: Solved structures · to explore, section: ix-na, glyph: structure}
+      overview:
+        section: Interactions and binding
+        title: Interactions and binding
+        question: How many sites have interaction evidence, and are they enriched at contacts with RNA, DNA or other proteins? Each test against the other arginines of the same proteins that the evidence could reach (within each protein).
+        bar: interaction
+        lead: experimental
+        checker: [interaction, evidence, nucleic_acid, partner_class]
+        findings:          # the explorer's four, each said with its direction, significant or not (the first three on the tile)
+          - {lead: In living cells, section: ixs-cells, rows: [{analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue, phrase: the residue crosslinked to RNA}]}
+          - {lead: In PDB structures, section: ixs-pdb, rows: [{analysis: pdb_interface, category: rna, label: RNA interface, phrase: at RNA interfaces},
+                                                               {analysis: pdb_interface, category: protein, label: Protein interface, phrase: at protein interfaces}]}
+          - {lead: In predicted complexes, section: ixs-predicted, rows: [{analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, phrase: "at the interface (AlphaFold-Multimer models, pDockQ ≥ 0.23)"}]}
+          - {share: {table: string, of: partner_accession, flag: partner_marked}, label: "of the physical partners of methylated proteins (STRING ≥ 0.7) are themselves methylated (22% of human proteins)", section: ixs-partners}
+        rows:
+          - {analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue, group: In living cells, phrase: the residue crosslinked to RNA}
+          - {analysis: crosslink, category: capri_adj_peptide_among_measured, label: "CAPRI peptide (measured)", group: In living cells, phrase: inside a CAPRI RNA-bound peptide (among the arginines CAPRI measured)}
+          - {analysis: crosslink, category: pclap_peptide_among_measured, label: "pCLAP peptide (measured)", group: In living cells, phrase: inside a pCLAP RNA-binding peptide (among the arginines pCLAP measured)}
+          - {analysis: crosslink, category: rbdmap_peptide_among_measured, label: "RBDmap peptide (measured)", group: In living cells, phrase: inside an RBDmap RNA-bound peptide (among the arginines RBDmap measured)}
+          - {analysis: crosslink, category: rbrid_residue_among_measured, label: "RBR-ID+ residue (measured)", group: In living cells, phrase: an RBR-ID+ residue (among the arginines RBR-ID measured)}
+          - {analysis: crosslink, category: dna_crosslink_or_candidate, label: DNA-crosslinked residue, group: In living cells, phrase: at a DNA crosslink or one of its candidate residues}
+          - {analysis: pdb_interface, category: protein, label: Protein interface (PDB), group: Protein contacts, phrase: at a protein interface in PDB structures}
+          - {analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, group: Protein contacts, phrase: at the interface of a predicted complex}
+      groups:
+        - name: Summary
+          sections:
+            - id: ix-nac
+              title: RNA and DNA contact tests
+              question: Are methylarginines at RNA and DNA contacts more often than the other arginines of the same proteins?
+              place: link
+              blocks:
+                - kind: forest
+                  rows:
+                    - {analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rna_crosslink_single_residue, label: … crosslink localised to it alone, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rna_crosslink_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rna_crosslink_within_3, label: Within 3 residues of an RNA crosslink, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbdmap_fragment, label: Inside an RNA-bound fragment (RBDmap), group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbdmap_fragment_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbdmap_peptide_among_measured, label: … among arginines RBDmap measured, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_adj_peptide, label: Inside an RNA-bound peptide (CAPRI ADJ), group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_adj_peptide_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_adj_peptide_among_measured, label: … among arginines CAPRI measured, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_xl_peptide, label: Inside an RNA-crosslinked peptide (CAPRI XL), group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_xl_peptide_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: pclap_lysc_region, label: Inside an RNA-binding region (pCLAP), group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: pclap_lysc_region_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: pclap_peptide, label: Inside an RNA-binding peptide (pCLAP), group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: pclap_peptide_among_measured, label: … among arginines pCLAP measured, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue, label: An RBR-ID+ residue, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue_among_measured, label: … among arginines RBR-ID measured, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue_published_rule, label: … by the published rule (sensitivity), group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_region, label: In an RBR-ID region (high score), group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: dna_crosslink, label: DNA crosslink localised to the residue, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: dna_crosslink_or_candidate, label: … or one of its candidate residues, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: dna_crosslinked_peptide, label: Inside a DNA-crosslinked peptide, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: pdb_interface, category: rna, label: At an RNA interface (PDBe-KB), group: "In structures: PDB"}
+                    - {analysis: pdb_interface, category: dna, label: At a DNA interface (PDBe-KB), group: "In structures: PDB"}
+                    - {analysis: nucleic_acid_distance, category: rna_within_4a, label: Side chain within 4 Å of RNA, group: "In structures: PDB"}
+                    - {analysis: nucleic_acid_distance, category: rna_within_8a, label: … within 8 Å of RNA, group: "In structures: PDB"}
+                    - {analysis: nucleic_acid_distance, category: dna_within_4a, label: Side chain within 4 Å of DNA, group: "In structures: PDB"}
+                    - {analysis: nucleic_acid_distance, category: dna_within_8a, label: … within 8 Å of DNA, group: "In structures: PDB"}
+                    - {analysis: crosslink, category: dna_binding_region, label: Inside a UniProt DNA-binding region, group: Annotation}
+            - id: ix-evmap
+              title: How the evidence fits together
+              question: How do crosslink, structure, prediction and IntAct evidence overlap on the sites?
+              blocks:
+                - {kind: shares, attribute: interaction, title: Interaction evidence at the site}
+                - kind: combinations
+                  attribute: evidence
+                  title: Which kinds of evidence each site carries
+                  sub: "Each column a kind of evidence; each row a combination, with its sites. Click a total or a row to select them."
+                  values: [rna_crosslink, rbdmap_fragment, capri_adj_peptide, capri_xl_peptide, pclap_peptide, rbrid_residue, dna_crosslink, pdb_rna, pdb_dna, pdb_protein, intact_mutation, intact_binding_region, intact_methylated, predicted_interface, predicted_contact]
+                  top: 15
+            - id: ix-cm
+              title: Which sites carry which evidence
+              question: Do sites with a feature (motif, disorder, methylation class) carry a kind of evidence more often? Check one site.
+              tile: 0
+              blocks:
+                - kind: matrix
+                  attribute: evidence
+                  values: [rna_crosslink, rbdmap_fragment, capri_adj_peptide, pclap_peptide, rbrid_residue, dna_crosslink, pdb_rna, pdb_dna, pdb_protein, intact_mutation, intact_binding_region, intact_methylated, predicted_interface]
+                  rows:
+                    - {filter: "t:methyl_ip", value: SDMA, label: Rme2s IP (SDMA antibody), group: Writer}
+                    - {filter: "t:methyl_ip", value: ADMA, label: Rme2a IP (ADMA antibody), group: Writer}
+                    - {filter: "t:methyl_ip", value: MMA, label: Rme1 IP (MMA antibody), group: Writer}
+                    - {filter: "t:gsk591", value: decreased, label: Down with GSK591, group: Writer}
+                    - {filter: "t:ms023", value: decreased, label: Down with MS023, group: Writer}
+                    - {filter: "t:state", value: Rme2, label: Rme2 called, group: State}
+                    - {filter: "a:motif", value: RGG, label: RGG, group: Motif}
+                    - {filter: "a:motif", value: GAR, label: GAR, group: Motif}
+                    - {filter: "a:motif", value: RXR, label: RXR, group: Motif}
+                    - {filter: "a:motif", value: CARM1_proline_rich, label: Pro ±5, group: Motif}
+                    - {filter: "a:disorder", value: disordered, label: In an IDR, group: Context}
+                    - {filter: "a:domain_context", value: in_domain, label: In a domain, group: Context}
+                - {kind: checker, title: Check one site, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], tables: [interactions]}
+            - id: ix-ex
+              title: The evidence on one protein
+              question: What the evidence looks like along one protein; type any protein to redraw it.
+              place: top
+              blocks:
+                - {kind: example, protein: HNRNPA1, tracks: [rna_cells, rbrid, dna_cells, intact, predicted]}
+        - name: RNA and DNA
+          sections:
+            - id: ixs-cells
+              title: Crosslinking in living cells
+              question: Is the methylarginine the residue crosslinked to RNA or DNA, or inside an RNA-bound peptide?
+              tile: 1
+              blocks:
+                - {kind: sets, analysis: binding_protein, title: Proteins that bind RNA or DNA in cells}
+                - kind: forest
+                  title: The methylarginine against the other arginines of the same proteins
+                  rows:
+                    - {analysis: crosslink, category: capri_adj_peptide_among_measured, label: CAPRI}
+                    - {analysis: crosslink, category: pclap_peptide_among_measured, label: pCLAP}
+                    - {analysis: crosslink, category: rbdmap_peptide_among_measured, label: RBDmap}
+                    - {analysis: crosslink, category: rbrid_residue_among_measured, label: RBR-ID+}
+                    - {analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue}
+                    - {analysis: crosslink, category: rna_crosslink_single_residue, label: … localised to it alone}
+                    - {analysis: crosslink, category: rbdmap_fragment, label: RBDmap fragment}
+                    - {analysis: crosslink, category: pclap_peptide, label: pCLAP peptide}
+                    - {analysis: crosslink, category: pclap_lysc_region, label: pCLAP region}
+                    - {analysis: crosslink, category: rbrid_residue, label: RBR-ID+ residue}
+                    - {analysis: crosslink, category: dna_crosslink_or_candidate, label: DNA crosslink or candidate}
+                    - {analysis: crosslink, category: dna_crosslinked_peptide, label: DNA-crosslinked peptide}
+                - {kind: table, table: interactions, title: The crosslinks and RNA-bound peptides at each site, chips: kind, columns: [accession, kind, detail], limit: 25,
+                   where: [{column: kind, in: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, dna_crosslink, dna_binding_region]}]}
+            - id: ix-prox
+              title: Sequence proximity to RNA-binding residues
+              question: How far along the sequence do methylarginines lie from residues that bind RNA in cells, against the other arginines of the same proteins?
+              blocks:
+                - kind: lines
+                  analysis: sequence_proximity
+                  series: [rna_crosslink, rbdmap_fragment, capri_adj_peptide, capri_xl_peptide, pclap_peptide, rbrid_residue]
+                  x: {within_0_residues: 0, within_3_residues: 3, within_5_residues: 5, within_10_residues: 10, within_20_residues: 20}
+                  x_label: within this many residues of the evidence (aa)
+            - id: ix-na
+              title: Bound RNA and DNA
+              question: Which RNA and DNA do methylarginines contact in structures, and how close do they come?
+              tile: 1
+              blocks:
+                - {kind: table, table: contacts, title: RNA and DNA at methylarginines, sub: "Each PDB chain of RNA or DNA within 4 Å of a site’s side chain, with the bound sequence around the closest nucleotide.", chips: type, columns: [accession, window, type, name, distance, entry], sort: distance, descending: false}
+                - {kind: histogram, table: distances, value: rna_distance_a, among: entries_with_rna, step: 0.5, max: 8, title: Distance to RNA, x_label: side-chain distance to RNA (Å)}
+                - {kind: histogram, table: distances, value: dna_distance_a, among: entries_with_dna, step: 0.5, max: 8, title: Distance to DNA, x_label: side-chain distance to DNA (Å)}
+                - kind: forest
+                  title: Within 4 and 8 Å
+                  rows:
+                    - {analysis: nucleic_acid_distance, category: rna_within_4a}
+                    - {analysis: nucleic_acid_distance, category: rna_within_8a}
+                    - {analysis: nucleic_acid_distance, category: dna_within_4a}
+                    - {analysis: nucleic_acid_distance, category: dna_within_8a}
+                    - {analysis: nucleic_acid_distance, category: any_within_4a}
+                    - {analysis: nucleic_acid_distance, category: any_within_8a}
+            - id: ix-pref
+              title: Preferred RNA and DNA, by protein
+              question: What do these proteins prefer to bind, in vitro and in cells?
+              sub: methylated proteins with RNA Bind-n-Seq data
+              blocks:
+                - {kind: table, table: rbns, title: RNA in vitro (RNA Bind-n-Seq), columns: [accession, top_5mers, concentration, encode_experiment]}
+                - {kind: table, table: htr_selex, title: RNA in vitro (HTR-SELEX), columns: [accession, consensus, motif_kind, model_id]}
+                - {kind: table, table: ix_eclip, title: RNA in cells (eCLIP), columns: [accession, cell_line, n_peaks, top_target_genes, top_5mers, experiment], sort: n_peaks}
+                - {kind: table, table: ix_dna_motifs, title: DNA (JASPAR), columns: [accession, consensus, name, tf_family, matrix_id]}
+            - id: ixs-go
+              title: RNA- and DNA-binding proteins (Gene Ontology)
+              question: Are methylated proteins annotated as RNA- or DNA-binding more often than human proteins?
+              blocks:
+                - {kind: sets, analysis: go_binding, title: Gene Ontology}
+        - name: Structures and models
+          sections:
+            - id: ixs-pdb
+              title: Interfaces in PDB structures
+              question: Are methylarginines at protein, RNA or DNA interfaces in experimental structures?
+              blocks:
+                - kind: forest
+                  rows:
+                    - {analysis: pdb_interface, category: protein, label: Protein, group: All observed arginines}
+                    - {analysis: pdb_interface, category: rna, label: RNA, group: All observed arginines}
+                    - {analysis: pdb_interface, category: dna, label: DNA, group: All observed arginines}
+                    - {analysis: pdb_interface, category: any, label: Any partner, group: All observed arginines}
+                    - {analysis: pdb_interface, category: protein_ordered, label: Protein, group: Ordered regions only}
+                    - {analysis: pdb_interface, category: rna_ordered, label: RNA, group: Ordered regions only}
+                    - {analysis: pdb_interface, category: dna_ordered, label: DNA, group: Ordered regions only}
+                    - {analysis: pdb_interface, category: any_ordered, label: Any partner, group: Ordered regions only}
+                    - {analysis: pdb_interface, category: protein_domain, label: Protein, group: Inside domains only}
+                    - {analysis: pdb_interface, category: rna_domain, label: RNA, group: Inside domains only}
+                    - {analysis: pdb_interface, category: dna_domain, label: DNA, group: Inside domains only}
+                    - {analysis: pdb_interface, category: any_domain, label: Any partner, group: Inside domains only}
+                - {kind: table, table: interactions, title: The PDB interfaces at each site, chips: kind, columns: [accession, kind, partner_accession, ids, detail], limit: 25,
+                   where: [{column: kind, in: [pdb_protein, pdb_rna, pdb_dna, pdb_self]}], partner: partner_accession, label: partner}
+            - id: ixs-predicted
+              title: Predicted complexes
+              question: Are methylarginines at the interfaces of AlphaFold-Multimer models of human protein pairs?
+              blocks:
+                - kind: forest
+                  rows:
+                    - {analysis: predicted_interface, category: pdockq_0.23, label: "pDockQ ≥ 0.23", group: All arginines}
+                    - {analysis: predicted_interface, category: pdockq_0.5, label: "pDockQ ≥ 0.5", group: All arginines}
+                    - {analysis: predicted_interface, category: pdockq_0.23_ordered, label: "pDockQ ≥ 0.23", group: Ordered}
+                    - {analysis: predicted_interface, category: pdockq_0.5_ordered, label: "pDockQ ≥ 0.5", group: Ordered}
+                    - {analysis: predicted_interface, category: pdockq_0.23_disordered, label: "pDockQ ≥ 0.23", group: Disordered}
+                    - {analysis: predicted_interface, category: pdockq_0.5_disordered, label: "pDockQ ≥ 0.5", group: Disordered}
+                - {kind: table, table: interactions, title: Contacts in predicted models, sub: "Each site’s contacts in a predicted complex, with the model's pDockQ, the closest distance and the contact (salt bridge, hydrogen bond) with pLDDT.", columns: [accession, partner_accession, score, detail, ids], sort: score, limit: 25,
+                   where: [{column: kind, in: [predicted_contact]}], partner: partner_accession, label: partner}
+        - name: Partners and complexes
+          sections:
+            - id: ix-who
+              title: Who acts on the methylarginine
+              question: Which partners methylate these sites, demethylate them, or bind them methylated, and in which experiments?
+              sub: methylarginines with a record
+              blocks:
+                - {kind: table, table: records, group_by: group, columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
+                   where: [{column: group, in: [writes, removes, binds_methylated, mutation_changes_binding]}]}
+            - id: ixs-partners
+              title: Writers, readers and other partners
+              question: Which PRMTs and reader-domain proteins bind the methylated proteins?
+              blocks:
+                - {kind: bars, table: string, label: partner, partner: partner_accession, groups: {column: classes, values: {prmt: Protein arginine methyltransferases, tudor: Tudor-domain proteins, wd40: WD40-repeat proteins, phd: PHD-finger proteins}}, top: 12}
+            - id: ix-wr
+              title: PRMTs and Tudor proteins with shared partners
+              question: Which methylated proteins are bound by both a PRMT and a Tudor-domain protein?
+              blocks:
+                - {kind: pairs, table: string, label: partner, rows: {column: classes, value: prmt}, cols: {column: classes, value: tudor}, top: 12}
+            - id: ixs-complexes
+              title: Protein complexes
+              question: Which complexes have more methylated members than expected?
+              sub: complexes with a methylated member
+              blocks:
+                - {kind: table, table: complexes, chips: curation, columns: [complex_id, complex_name, n_members, n_members_methylated, fold_enrichment, q, methylated_members], sort: q, descending: false, limit: 15, members: methylated_members}
+            - id: ixs-intact
+              title: Curated interaction features (IntAct)
+              question: Are methylarginines at curated mutation sites and short binding regions more often?
+              blocks:
+                - kind: forest
+                  rows:
+                    - {analysis: intact, category: mutation_changes_interaction, label: "Mutated alone, with an effect on binding"}
+                    - {analysis: intact, category: binding_region, label: Inside a binding region of ≤ 20 aa}
+                    - {analysis: intact, category: binding_region_disordered, label: … disordered arginines only}
+                - {kind: table, table: interactions, title: The IntAct records at each site, chips: kind, columns: [accession, kind, partner_accession, detail], limit: 25,
+                   where: [{column: kind, in: [intact_mutation, intact_binding_region, intact_methylated]}], partner: partner_accession, label: partner}
