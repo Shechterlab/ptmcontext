@@ -7,7 +7,8 @@ Read AGENTS.md first; its rules hold. Also:
   screenshot that you look at, and take a screenshot only to confirm a fix. Don't rerun the full pipeline unless
   your change can alter its output; `pytest -q -k <area>` comes before the full suite.
 - **Scope.** Do only the task you were given. List other problems you find in your report; don't fix them.
-- **Commit as you go**, on your own branch in your own worktree. Never push or merge unless told to.
+- **Commit as you go**, in the worktree you are given. It may be detached (no branch); that's intended. Never create,
+  push or delete branches, and never merge. The owner keeps a single branch, `develop`; your commits are merged by hash.
 - **Data that stays out:** unpublished lab data (functional-class labels), the Barutcu nuclear-body calls (licence
   pending), pCLAP/RBDmap peptide sequences or extents, and CPLM tables. Never write "dtIDR", "domain-tethered" or
   "domain flanks". Don't call code from the other lab repositories.
