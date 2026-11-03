@@ -377,6 +377,7 @@ body.has-selection .tabs { box-shadow: inset 0 -2px 0 var(--accent); }
 @media (hover: none) { .tile .texp { display: none; } }
 .trow line.ref { stroke: var(--ink); stroke-width: 2; }
 .tmore { align-self: flex-end; font-size: 0.86rem; font-weight: 600; text-decoration: none; margin-top: 0.3rem; }
+.tstat { font-size: 0.8rem; color: var(--ink-2); margin: -0.15rem 0 0.4rem; }   /* the statistic a tile reports (website.overview.statistic_label) */
 .tfoot { font-size: 0.86rem; color: var(--ink-2); margin: auto 0 0; padding-top: 0.6rem; }
 .tnone { font-size: 0.88rem; }
 .twhole { font-size: 0.8rem; color: var(--muted); margin: 0.35rem 0 0; }

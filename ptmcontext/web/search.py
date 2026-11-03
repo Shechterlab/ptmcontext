@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 FILTER_KINDS = ('a', 'p', 's', 't', 'n', 'r', 'c')
@@ -75,6 +76,20 @@ def problems(site: dict) -> list[str]:
         t = tables.get(pt['table'])
         if t is None or t.get('format') != 'protein_partners':
             out.append(f"website.search.partners.table: {pt['table']!r} is not a protein_partners table of website.tables")
+        for code, c in (pt.get('classes') or {}).items():
+            if not isinstance(c, dict):
+                continue
+            where = f"website.search.partners.classes.{code}"
+            if c.get('role') not in ROLES:
+                out.append(f"{where}: role is one of {', '.join(ROLES)}")
+            if c.get('interpro') and not pt.get('interpro'):
+                out.append(f"{where}: interpro ids need website.search.partners.interpro (a role of the site's inputs)")
+            if pt.get('interpro') and pt['interpro'] not in (site.get('inputs') or {}):
+                out.append(f"website.search.partners.interpro: {pt['interpro']!r} is not a role of the site's inputs")
+            out += [f"{where}: {i!r} is not an InterPro id (IPR plus six digits)" for i in c.get('interpro') or [] if not re.fullmatch(r'IPR\d{6}', str(i))]
+            out += [f"{where}: except {x!r} is not a class" for x in c.get('except') or [] if x not in pt['classes']]
+            if not (c.get('interpro') or c.get('genes')):
+                out.append(f"{where}: name its members, by interpro ids or genes")
     pat = sc.get('patterns') or {}
     if pat.get('near') and (pat['near'] in ids or pat['near'] in attrs):
         out.append(f"website.search.patterns.near: {pat['near']!r} is a question or an attribute; name another key")
@@ -93,6 +108,87 @@ def problems(site: dict) -> list[str]:
             elif kind not in ('d', 'm', 'o', 'b'):
                 out.append(f"{where}: keys are for the modules' filters (d:, m:, o:, b:); name questions and attributes under analyses and attributes")
     return out
+
+
+ROLES = ('writer', 'reader', 'anti-reader', 'cofactor', 'eraser')
+
+
+def class_words(pt: dict) -> tuple[dict, dict]:
+    """(code: label, code: {role, reads, pmid, help}) of website.search.partners.classes; a class may be just its label
+    (its members then come from the table's classes column)."""
+    labels, info = {}, {}
+    for code, c in (pt.get('classes') or {}).items():
+        if isinstance(c, dict):
+            labels[code] = c['label']
+            info[code] = {k: c[k] for k in ('role', 'reads', 'pmid', 'help') if c.get(k)}
+        else:
+            labels[code] = c
+    return labels, info
+
+
+def _members(pt: dict, run: dict, paths: dict, accessions: set) -> dict:
+    """code: the accessions in the class (explicit genes are matched later, by symbol), from InterPro ids."""
+    want = {code: set(c.get('interpro') or []) for code, c in (pt.get('classes') or {}).items() if isinstance(c, dict) and c.get('interpro')}
+    if not want:
+        return {}
+    import pandas as pd
+    name = (run.get('roles') or {}).get(pt.get('interpro'), pt.get('interpro'))
+    path = paths.get(name)
+    if path is None:
+        return {}
+    ids = set().union(*want.values())
+    frame = pd.read_csv(path, sep='\t', dtype=str, keep_default_na=False, usecols=['canonical_UniProtAC', 'interpro_accession'])
+    frame = frame[frame['interpro_accession'].isin(ids)]
+    have = {}
+    for acc, ipr in zip(frame['canonical_UniProtAC'], frame['interpro_accession']):
+        have.setdefault(acc, set()).add(ipr)
+    return {code: {a for a, v in have.items() if v & ids_} for code, ids_ in want.items()}
+
+
+def derived_attribute(site: dict) -> dict:
+    """{name: spec} of the mark attribute website.search.partners.attribute asks for: the classes of the partners of a
+    mark's protein, so that a count question can tile them (the page's filter for the same is b:class)."""
+    pt = ((site.get('website') or {}).get('search') or {}).get('partners') or {}
+    a = pt.get('attribute')
+    if not a:
+        return {}
+    labels, _ = class_words(pt)
+    return {a['id']: {'label': a.get('label', 'Partner classes'), 'kind': 'list', 'separator': '; ', 'values': labels,
+                      'help': a.get('help', ''), 'derived': True}}
+
+
+def derive(site: dict, folder: Path, log=print) -> None:
+    """Add the derived attribute (a list of partner class codes) to the marks of the run's output and to the site's
+    attributes, in step with the table's partners; run again to refresh. Nothing else in marks.tsv changes."""
+    spec = derived_attribute(site)
+    if not spec:
+        return
+    import pandas as pd
+    name = next(iter(spec))
+    pt = site['website']['search']['partners']
+    run = json.loads((folder / 'run.json').read_text())
+    paths = _paths(run)
+    tspec = (site['website'].get('tables') or {}).get(pt['table'])
+    path = paths.get((tspec or {}).get('input'))
+    if tspec is None or path is None:
+        log(f'  website.search.partners.attribute: the partners table is not in the run record; {name} left out')
+        return
+    marks = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
+    accs = sorted(set(marks['accession'])) if 'accession' in marks.columns else sorted(set(marks.iloc[:, 0]))
+    p = partners([[a] for a in accs], tspec, path, pt, run, paths)
+    codes = [c for c in p['classes'] if c in spec[name]['values']]
+    mask = {c: 1 << p['classes'].index(c) for c in codes}
+    by = {}
+    for k, row in p['rows'].items():
+        got = set()
+        for i in range(0, len(row), 2):
+            got |= {c for c, m in mask.items() if p['bits'][row[i]] & m}
+        by[accs[int(k)]] = '; '.join(c for c in codes if c in got)
+    col = f'a.{name}'
+    marks[col] = [by.get(a, '') for a in (marks['accession'] if 'accession' in marks.columns else marks.iloc[:, 0])]
+    marks.to_csv(folder / 'marks.tsv', sep='\t', index=False)
+    site['marks'].setdefault('attributes', {})[name] = spec[name]
+    log(f"  {name}: {sum(1 for v in marks[col] if v):,} {site['mark']} marks on proteins with a partner of a class")
 
 
 def _paths(run: dict) -> dict:
@@ -149,7 +245,7 @@ def nearby(sel: dict, listing: list, spec: dict, path: Path, within: int) -> dic
     return {'kinds': kinds, 'd': dist}
 
 
-def partners(listing: list, spec: dict, path: Path, classes: list) -> dict:
+def partners(listing: list, spec: dict, path: Path, pt: dict, run: dict | None = None, paths: dict | None = None) -> dict:
     """data/partners.json: the partners of the marked proteins (a protein_partners table)."""
     from . import tables as T
     t = T.read(spec, path)
@@ -158,17 +254,30 @@ def partners(listing: list, spec: dict, path: Path, classes: list) -> dict:
     accs = sorted(set(t['partner_accession']))
     aidx = {a: i for i, a in enumerate(accs)}
     gene, bits, marked = [''] * len(accs), [0] * len(accs), [0] * len(accs)
-    codes = list(classes)
+    codes = list(pt.get('classes') or {})
+    defs = {c: v for c, v in (pt.get('classes') or {}).items() if isinstance(v, dict)}
+    by_ipr = _members(pt, run or {}, paths or {}, set(accs))
     for r in t.to_dict('records'):
         k = aidx[r['partner_accession']]
         gene[k] = gene[k] or r.get('partner', '')
         marked[k] = 1 if str(r.get('partner_marked', '')).lower() in ('true', '1', 'yes') or r['partner_accession'] in pidx else marked[k]
         for c in str(r.get('classes', '') or '').split(';'):
             c = c.strip()
-            if c:
+            if c and (c in codes or not defs):          # classes defined in the site file take their members from it alone
                 if c not in codes:
                     codes.append(c)
                 bits[k] |= 1 << codes.index(c)
+    for code, c in defs.items():                      # members named in the site file: by gene (or accession) and by InterPro id
+        genes = {str(g).upper() for g in c.get('genes') or []}
+        for k, a in enumerate(accs):
+            if a.upper() in genes or gene[k].upper() in genes or a in by_ipr.get(code, ()):
+                bits[k] |= 1 << codes.index(code)
+    for code, c in defs.items():                      # a class less the members of others (the Tudor domains less the curated readers)
+        gone = sum(1 << codes.index(x) for x in c.get('except') or [])
+        if gone:
+            for k in range(len(accs)):
+                if bits[k] & gone:
+                    bits[k] &= ~(1 << codes.index(code))
     rows: dict[int, list] = {}
     for r in t.to_dict('records'):
         try:
@@ -219,8 +328,10 @@ def data(site: dict, run: dict, sel: dict, listing: list, fasta: Path | None, ou
             log('  website.search.partners: its table is not in the run record; left out')
             sc.pop('partners')
         else:
-            p = partners(listing, spec, path, list((pt.get('classes') or {})))
+            p = partners(listing, spec, path, pt, run, paths)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(json.dumps(p, separators=(',', ':')))
+            labels, info = class_words(pt)
+            sc['partners'] = {**pt, 'classes': labels, **({'class_info': info} if info else {})}
             log(f"  partners: {sum(len(v) for v in p['rows'].values()) // 2:,} pairs on {len(p['rows']):,} proteins ({target.stat().st_size / 1e6:.1f} MB)")
     return sc

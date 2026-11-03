@@ -426,7 +426,7 @@
       fold('p-regions', 'Domains and regions', `${int(rec.units.length)} region${rec.units.length === 1 ? '' : 's'} the site’s questions read`, regionsHtml(p, rec), false) +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, sel), false) +
       fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) +           // kit-3d.js
-      (IXP ? fold('p-ix', 'Interaction partners', 'STRING, live', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(p.gene || p.acc)}, best first, and which of them have ${esc(W.marks)} in this site.</p>${K.expBar(['tsv'], 'ixexp', 'the partners')}</div><div id="live-ix" class="live"><p class="muted">Asking STRING…</p></div>`, false) : '');
+      (IXP ? fold('p-ix', 'Interaction partners', 'STRING, live', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(p.gene || p.acc)}, best first, and which of them have ${esc(W.marks)} in this site.</p>${K.expBar(['tsv'], 'ixexp', 'the partners')}</div><div id="live-ix" class="live"><p class="muted">Asking STRING…</p></div>`, partnersOpen()) : '');
   }
   // the facts as tiles, for a site without headline cards
   function legacyFacts(p, rec, nSrc) {
@@ -663,6 +663,8 @@
   // ---- interaction partners: live from STRING, matched to this site's proteins by gene name ------------------------
   // The site file turns the card on and names the taxon STRING files the organism under (website.partners).
   const IXP = D.partners || null;
+  // website.protein.open_partners: the partners fold opens when the site's own partner table has partners for the protein
+  const partnersOpen = () => { const t = CC.writer?.partners?.table; return !!(D.protein_view?.open_partners && t && PV.tb && K.card.rows(PV.tb, t).length); };
   const IXS = { net: IXP?.network || 'physical', min: Math.round((IXP?.min_score ?? 0.7) * 1000), only: false, all: false };
   const STRING_API = 'https://string-db.org/api/json/', STRING_CALLER = 'ptmcontext';
   const STRING_CITE = 'Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113';

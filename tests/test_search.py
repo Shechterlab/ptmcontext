@@ -111,6 +111,42 @@ def test_the_search_data_reach_the_page_in_their_formats(tmp_path):
     assert pt['rows'][str(acc.index('P1'))] == [1, 950, 0, 750]
 
 
+def test_partner_classes_are_read_from_the_site_file_by_gene_and_interpro_id(tmp_path):
+    root = _toy(tmp_path)
+    data = root / 'data'
+    pd.DataFrame({'canonical_UniProtAC': ['P2', 'P3'], 'interpro_accession': ['IPR000001', 'IPR000001']}).to_csv(data / 'ipr.tsv', sep='\t', index=False)
+    mf = json.loads((root / 'sites' / 'toy.inputs.json').read_text())
+    mf['inputs']['toy_ipr'] = {'file': 'ipr.tsv', 'md5': md5_file(data / 'ipr.tsv'), 'source': 'synthetic, for a test', 'version': 'test 1', 'licence': 'CC0 1.0'}
+    (root / 'sites' / 'toy.inputs.json').write_text(json.dumps(mf))
+    cfg = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
+    cfg['inputs']['entries'] = 'toy_ipr'
+    cfg['website']['search']['partners'].update({
+        'interpro': 'entries', 'attribute': {'id': 'bound_by'},
+        'classes': {'curated': {'label': 'a curated reader', 'role': 'reader', 'reads': 'sDMA', 'genes': ['two'], 'pmid': '1'},
+                    'family': {'label': 'the family, less the curated', 'role': 'cofactor', 'interpro': ['IPR000001'], 'except': ['curated']}}})
+    (root / 'sites' / 'toy.yaml').write_text(yaml.safe_dump(cfg, sort_keys=False))
+    assert S.website_problems(S.load_site(root / 'sites' / 'toy.yaml')) == []
+    index = _build(root)
+    pt = json.loads((index.parent / 'data' / 'partners.json').read_text())
+    members = {c: {pt['accessions'][k] for k, b in enumerate(pt['bits']) if b >> i & 1} for i, c in enumerate(pt['classes'])}
+    assert members == {'curated': {'P2'}, 'family': {'P3'}}            # the gene, and the InterPro id less the curated class
+    info = _page_data(index)['search']['partners']
+    assert info['classes'] == {'curated': 'a curated reader', 'family': 'the family, less the curated'} and info['class_info']['curated']['role'] == 'reader'
+    marks = pd.read_csv(index.parent.parent / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
+    assert dict(zip(marks['accession'] + marks['position'], marks['a.bound_by'])) == {'P12': 'curated; family', 'P15': 'curated; family', 'P132': 'curated; family',
+                                                                                      'P22': 'family', 'P225': 'family', 'P229': 'family'}
+
+
+def test_a_class_that_names_what_the_site_lacks_is_named(tmp_path):
+    root = _toy(tmp_path)
+    cfg = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
+    cfg['website']['search']['partners']['classes'] = {'x': {'label': 'x', 'role': 'reader', 'interpro': ['IPR000001'], 'except': ['y']}}
+    (root / 'sites' / 'bad.yaml').write_text(yaml.safe_dump(cfg, sort_keys=False))
+    problems = S.website_problems(S.load_site(root / 'sites' / 'bad.yaml'))
+    assert any("classes.x: except 'y' is not a class" in p for p in problems)
+    assert any('need website.search.partners.interpro' in p for p in problems)
+
+
 def test_a_site_without_a_search_block_has_none_of_it(tmp_path):
     root = _toy(tmp_path, with_search=False)
     site = S.load_site(root / 'sites' / 'toy.yaml')

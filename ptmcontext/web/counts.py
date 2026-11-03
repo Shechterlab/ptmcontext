@@ -130,7 +130,8 @@ def counts_data(site: dict, folder: Path) -> tuple[dict, dict]:
     if not counts or not (folder / 'marks.tsv').exists():
         return {}, {}
     marks = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
-    attrs = site['marks'].get('attributes') or {}
+    from .search import derived_attribute
+    attrs = {**(site['marks'].get('attributes') or {}), **derived_attribute(site)}
     page, sel = {}, {}
     for cid, c in counts.items():
         words = {k: c[k] for k in ('title', 'question', 'sub', 'head', 'note', 'method') if c.get(k)}

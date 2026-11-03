@@ -1945,6 +1945,10 @@
                   }
                 }
               }
+            },
+            "statistic_label": {
+              "type": "boolean",
+              "description": "each tile names its statistic (within each protein, pooled)"
             }
           }
         },
@@ -2304,6 +2308,22 @@
                     "type": "object",
                     "description": "the rows whose columns have these values"
                   }
+                }
+              }
+            },
+            "sort": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "by"
+              ],
+              "description": "the Sites page's first order: a column's id, and whether most or highest first; ties by gene (the kit sorts by protein otherwise)",
+              "properties": {
+                "by": {
+                  "type": "string"
+                },
+                "desc": {
+                  "type": "boolean"
                 }
               }
             }
@@ -2815,8 +2835,19 @@
                 "logo": {
                   "type": "boolean",
                   "description": "offer the selection's site alignment and sequence logo (needs website.search.patterns for the windows)"
+                },
+                "logo_mode": {
+                  "enum": [
+                    "freq",
+                    "bits"
+                  ],
+                  "description": "the selection logo's first stack: residue frequency (the explorer's) or information in bits (default)"
                 }
               }
+            },
+            "open_partners": {
+              "type": "boolean",
+              "description": "open the Interaction partners fold when the protein has partners in card.writer.partners' table"
             }
           }
         },
@@ -3917,8 +3948,66 @@
                 },
                 "classes": {
                   "type": "object",
+                  "description": "the partner classes: a code and its label, or an object that says who is in the class (members: InterPro ids and/or genes, less the classes in except), what it does (role) and what it reads",
                   "additionalProperties": {
-                    "type": "string"
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "label",
+                          "role"
+                        ],
+                        "properties": {
+                          "label": {
+                            "type": "string"
+                          },
+                          "role": {
+                            "enum": [
+                              "writer",
+                              "reader",
+                              "anti-reader",
+                              "cofactor",
+                              "eraser"
+                            ]
+                          },
+                          "reads": {
+                            "type": "string",
+                            "description": "the state it reads or writes (aDMA, sDMA, ...)"
+                          },
+                          "interpro": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^IPR\\d{6}$"
+                            }
+                          },
+                          "genes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "except": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "codes of other classes whose members are left out of this one"
+                          },
+                          "pmid": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "help": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    ]
                   }
                 },
                 "marked": {
@@ -3931,6 +4020,29 @@
                   "type": "array",
                   "items": {
                     "type": "number"
+                  }
+                },
+                "interpro": {
+                  "type": "string",
+                  "description": "the role (in inputs) of the InterPro entry intervals that classes' interpro ids are read from"
+                },
+                "attribute": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id"
+                  ],
+                  "description": "a list attribute of the marks derived from the classes (the classes of the partners of a mark's protein), for a count question to tile",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "help": {
+                      "type": "string"
+                    }
                   }
                 }
               }

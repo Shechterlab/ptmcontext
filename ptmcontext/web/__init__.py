@@ -706,6 +706,8 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     icon = (root / web['icon']).read_text() if web.get('icon') else default_icon(band[0], accent_dark)
     art = (root / web['art']).read_text() if web.get('art') else default_art(profile)
     logo = (root / web['lab']['logo']).read_text() if web.get('lab', {}).get('logo') else ''
+    from . import search as SE
+    SE.derive(site, folder, log)
     data = site_data(site, folder, profile)
     # the switch between the site and its variants: each variant that has been run, and the way back
     if variant:
