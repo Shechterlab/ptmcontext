@@ -838,6 +838,7 @@ citation: sites/methylarginine.citation.cff   # the citation, data sources, vers
 website:                  # the look and words of the website (ptmc web); layout and behaviour are the kit's
   name: Methylarginine Site Explorer
   tagline: "Human arginine methylation sites from published studies."
+  landing: {tagline: "Human sites from published studies."}
   band: ["#155e75", "#0f3b47"]      # the header gradient: teal
   accent: "#c2410c"                 # the orange rule, active tab and links; shared by the lab's sites
   accent_dark: "#fb923c"
