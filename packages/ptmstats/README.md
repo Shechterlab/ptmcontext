@@ -14,12 +14,13 @@ v1.4.3 (Shechterlab/PTM_Pipeline `scripts/common.py` at b0d9049); a change that 
 | `cmh_statistic` | continuity-corrected CMH: (max(0, abs(O - E) - 0.5))^2 / V, O = sum a, E = sum (a+b)(a+c)/n, V = sum (a+b)(c+d)(a+c)(b+d) / (n^2 (n-1)) (Mantel and Haenszel 1959); p = chi-square survival, 1 df |
 | `mantel_haenszel` / `mh().or, .p` | common odds ratio of the strata (statsmodels `StratifiedTable`, Mantel-Haenszel 1959) with the CMH p |
 | `mantel_haenszel_ci` / `mh().lo, .hi` | the same with the Robins-Breslow-Greenland 95% CI (Robins et al. 1986) |
+| `conditional_logit` (Python only) | conditional logistic regression, one stratum per group, several covariates at once: the multi-covariate generalisation of Mantel-Haenszel (Breslow and Day 1980, ch. 7). Exact likelihood, Newton's method, Wald intervals; its score test for one binary covariate is the uncorrected CMH statistic. Checked against statsmodels' `ConditionalLogit` to 1e-6. Not in `ptmstats.js`: a site runs it on the whole dataset |
 
 JS exactness: about 1e-10 relative to SciPy over the counts a site has.
 
 References: Benjamini Y, Hochberg Y. J R Stat Soc B 1995;57:289. Mantel N, Haenszel W. J Natl Cancer Inst 1959;22:719.
 Robins J, Breslow N, Greenland S. Biometrics 1986;42:311. Haldane JBS. Ann Hum Genet 1956;20:309. Anscombe FJ.
-Biometrika 1956;43:461.
+Biometrika 1956;43:461. Breslow NE, Day NE. Statistical Methods in Cancer Research, vol. 1: the analysis of case-control studies. IARC Scientific Publications 32, 1980.
 
 ## Tests
 
