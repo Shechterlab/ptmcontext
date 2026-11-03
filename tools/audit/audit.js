@@ -148,7 +148,7 @@ const BAD = /\bundefined\b|\bNaN\b|(^|[\s:=(])null([\s,.)]|$)(?!model)|\[object 
       const res = { tried: 0, none: {}, bad: {}, ok: 0 };
       for (let i = 0; i < targets.length && i < 150; i++) {
         const el = await page.$(`[data-audit="${i}"]`); if (!el) continue;
-        try { await el.scrollIntoViewIfNeeded({ timeout: 1000 }); const bx = await el.boundingBox(); if (!bx) continue;
+        try { await el.evaluate(e => e.scrollIntoView({ block: 'center' })); const bx = await el.boundingBox(); if (!bx) continue;
           await page.mouse.move(bx.x + Math.min(bx.width / 2, 40), bx.y + bx.height / 2); await page.waitForTimeout(60); } catch (e) { continue; }
         res.tried++;
         const t = await page.evaluate(() => { const tp = document.getElementById('tip'); return tp && !tp.hidden ? tp.innerText.trim() : ''; });
