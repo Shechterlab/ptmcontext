@@ -1886,6 +1886,13 @@
                               "type": "boolean",
                               "description": "spans two columns where the page has room"
                             },
+                            "drawing": {
+                              "type": [
+                                "boolean",
+                                "string"
+                              ],
+                              "description": "the maps of the cell's card (website.cell) only: draw the cell itself on the tile; true takes the first of website.cell.drawings, a string takes the drawing of that name"
+                            },
                             "views": {
                               "type": "array",
                               "minItems": 2,
@@ -3956,6 +3963,24 @@
             "stratify": {
               "type": "string",
               "description": "the list attribute whose sources define the within-study strata (default: the first provenance list attribute with a link)"
+            }
+          }
+        },
+        "tabs": {
+          "type": "object",
+          "description": "the top tabs' words, by page: overview, proteins, sites, idrs, statistics, method, help, or a website.pages id. The tab and the page's heading take the label; the hint is the line on hover and under the heading. The page's address (#idrs, #statistics, #method) is unchanged.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "the tab's name (default: the kit's)"
+              },
+              "hint": {
+                "type": "string",
+                "description": "one line on what the page holds (default: the kit's, for the pages it draws)"
+              }
             }
           }
         },

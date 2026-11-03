@@ -61,7 +61,8 @@ def _toy(tmp_path):
         'outputs': {'folder': 'out/toy'},
         'website': {
             'name': 'Toy Explorer',
-            'overview': {'sections': [{'name': 'Where', 'cards': ['where', 'classes', 'motif']}]},
+            'overview': {'sections': [{'name': 'Where', 'cards': [{'analysis': 'where', 'drawing': True, 'wide': True}, 'classes', 'motif']}]},
+            'tabs': {'statistics': {'label': 'All results', 'hint': 'Every test.'}},
             'legacy_links': {'old-cell': 'where'},
             'cell': {'id': 'where', 'title': 'Where in the toy cell',
                      'maps': [{'analysis': 'map_a', 'regions': 'regions_a', 'name': 'Map A'}, {'analysis': 'map_b', 'name': 'Map B'}],
@@ -104,6 +105,7 @@ def test_maps_of_the_cell_and_numbers_reach_the_pages(tmp_path):
     assert data['cell']['id'] == 'where' and set(data['cell_drawings']) == {'cell', 'nucleus'} and 'nucleoplasm' in data['cell_drawings']['nucleus']
     assert data['set_views'][0]['analysis'] == 'classes' and data['legacy_links']['old-cell'] == 'where'
     assert 'kit-cell.js' in page and 'kit-values.js' in page
+    assert data['tabs']['statistics']['label'] == 'All results' and data['overview']['sections'][0]['cards'][0]['drawing'] is True
     sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
     # the strata only for the maps of the cell; the numbers coded by protein index
     assert 'counts' in sel['protein_sets']['map_a']['covariate'] and 'counts' in sel['protein_sets']['regions_a']['covariate']
@@ -122,7 +124,9 @@ def test_the_check_names_what_the_blocks_get_wrong(tmp_path):
     view['box'] = {'value': 'hit'}
     view['chips'][0]['value'] = 'nothing'
     view['meter'] = 'middle'
+    site['website']['tabs']['nowhere'] = {'label': 'x'}
     p = '\n'.join(S.website_problems(site))
+    assert "website.tabs: 'nowhere' is not a page" in p
     assert "'motif' is not a protein-set question" in p and "'map_c' is not one of website.cell.maps" in p and "['vacuole']" in p
     assert "box: 'hit' is not a column of its values with background: true" in p and "'nothing' is not a column" in p and "no set 'middle'" in p
 

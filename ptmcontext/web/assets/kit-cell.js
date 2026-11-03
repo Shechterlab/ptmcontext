@@ -620,7 +620,11 @@
     const items = [...regs.map(x => ({ ...x, name: rowName(x.row), tip: sumTip(x, scoped) })),
       ...(up.length ? [{ head: 'Most of all' }, ...up.slice(0, 3).map(x => ({ ...x, name: rowName(x.row), tip: sumTip(x, scoped) }))] : [])];
     const note = K.selOn() && !scoped ? `<p class="twhole"><span>Whole dataset</span> ${K.vsOn() ? 'the maps compare proteins, not marks: shown for all ' + esc(W.marked) + ' proteins' : 'the selection is too small to test'}</p>` : '';
-    return `<article class="tile" id="tile-${esc(ID)}" data-tile="${esc(ID)}" tabindex="0"><header><h3>${esc(card.title || C.title || 'Where in the cell')}</h3><span class="chev" aria-hidden="true">›</span></header>` +
+    // card.drawing: the drawing of the cell itself on the tile (true: the first of website.cell.drawings, or one by id);
+    // its parts keep their hover and lose their click, which here opens the question (selecting is on its page)
+    const dw = card.drawing ? DRAWINGS.find(d => d.drawing === card.drawing) || DRAWINGS[0] : null;
+    const fig = dw ? `<div class="cell-scroll cell-tile-fig">${svgOf(FIGS[dw.drawing].make(), 'cell-svg cell-' + dw.drawing).replace(/ (data-cell-(?:row|part|bar)|tabindex|role="button")(="[^"]*")?/g, '')}</div>` : '';
+    return `<article class="tile${dw ? ' wide' : ''}" id="tile-${esc(ID)}" data-tile="${esc(ID)}" tabindex="0"><header><h3>${esc(card.title || C.title || 'Where in the cell')}</h3>${K.detailsLink(ID)}</header>` + fig +
       `<div class="trows">${forest(items)}</div><p class="tfoot">${lead(regs, up, scoped, true)}</p>${note}</article>`;
   }
   const colourKey = () => `<p class="key cell-keys"><span class="cell-key"><i class="cg-k u3"></i><i class="cg-k u1"></i> more likely than ${esc(alike)}</span><span class="cell-key"><i class="cg-k ns"></i> no clear difference</span>` +
@@ -686,7 +690,7 @@
   }
 
   // ---- the question, its Method section, clicks and hovers --------------------------------------------------------------
-  A[ID] = { id: ID, kind: 'module', title: C.title || 'Where in the cell', question: C.question || '', sub: '', describe: '', section: '', labels: {}, help: {},
+  A[ID] = { id: ID, kind: 'module', anySize: true, title: C.title || 'Where in the cell', question: C.question || '', sub: '', describe: '', section: '', labels: {}, help: {},
     roles: [...new Set(MAPS.flatMap(m => [...(A[m.analysis].roles || []), ...(A[m.regions]?.roles || [])]))] };
   K.questions[ID] = { tile, page: () => page() };
   K.methods.push({ id: ID, title: C.title || 'Where in the cell', html: () => `<section id="m-q-${esc(ID)}" class="qm"><h3>${esc(C.title || 'Where in the cell')}</h3>` +

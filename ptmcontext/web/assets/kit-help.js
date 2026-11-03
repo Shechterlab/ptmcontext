@@ -61,7 +61,7 @@
   const SHORTCUTS = () => [
     ['/', 'Search: put the cursor in the search box'],
     ['Esc', 'Close a dialog, the sidebar or a hover; leave the search box'],
-    ...[['o', 'overview', 'Overview'], ['p', 'proteins', 'Proteins'], ['s', 'sites', cap(W.marks)], ['i', 'idrs', 'IDRs'], ['t', 'statistics', 'Statistics (all tests)'], ['m', 'method', 'Method'], ['h', 'help', 'Help']]
+    ...[['o', 'overview', 'Overview'], ['p', 'proteins', 'Proteins'], ['s', 'sites', cap(W.marks)], ['i', 'idrs', K.tabName('idrs', 'IDRs')], ['t', 'statistics', K.tabName('statistics', 'Statistics (all tests)')], ['m', 'method', K.tabName('method', 'Method')], ['h', 'help', 'Help']]
       .filter(([, v]) => has(v)).map(([k, , name]) => [`g ${k}`, `Go to ${name}`]),
     ['?', 'Show these shortcuts'],
     ['Tab, Shift+Tab', 'Move between links, buttons and rows; a row with a hover shows it on focus'],

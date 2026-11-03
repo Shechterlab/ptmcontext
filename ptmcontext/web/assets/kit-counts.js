@@ -79,11 +79,11 @@
   const rowFilter = (id, r) => (r.filter[0] ? r.filter : ['c:' + id, r.id]);
 
   // ---- tiles ------------------------------------------------------------------------------------------------------
-  const meter = (label, v, text, tip, cls = '') => `<div class="cm"${tip ? ` data-ctip="${esc(tip)}"` : ''}><span class="cm-l">${esc(label)}</span>` +
+  const meter = (label, v, text, tip, cls = '', f = null) => `<div class="cm${f ? ' pick' : ''}"${tip ? ` data-ctip="${esc(tip)}"` : ''}${f ? ` data-f="${esc(f[0])}" data-v="${esc(f[1])}" role="button" tabindex="0" aria-label="${esc(label)}: click to select these ${esc(W.marks)}"` : ''}><span class="cm-l">${esc(label)}</span>` +
     `<span class="cm-t"><i class="${cls}" style="width:${(100 * Math.max(0, Math.min(1, v || 0))).toFixed(1)}%"></i></span><span class="cm-v">${esc(text)}</span></div>`;
   // a tile: its downloads on hover (the question's figure and table, as on its page), its meters, its line
   const shell = (id, card, body, foot, whole) => `<article class="tile cnt-tile${card.wide ? ' wide' : ''}" id="tile-${esc(id)}" data-tile="${esc(id)}" data-count="${esc(id)}" tabindex="0">` +
-    `<header><h3>${esc(card.title || C[id].title)}</h3>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cexp', C[id].title, id).replace('class="exp"', 'class="exp texp"')}<span class="chev" aria-hidden="true">›</span></header>${body}` +
+    `<header><h3>${esc(card.title || C[id].title)}</h3>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cexp', C[id].title, id).replace('class="exp"', 'class="exp texp"')}${K.detailsLink(id)}</header>${body}` +
     (foot ? `<p class="tfoot">${foot}</p>` : '') + (whole ? `<p class="twhole"><span>Whole dataset</span> ${whole}</p>` : '') + '</article>';
   const loading = () => `<p class="muted tnone">Counting your selection…</p>`;
   function valuesHead(id, v, shown, mine) {
@@ -97,14 +97,14 @@
     if (c.kind === 'values') {
       const sv = on ? selValues(id) : null, n = v => (sv ? sv.n(v[0]) : v[2]);
       const top = c.values.filter(v => n(v) > 0).sort((x, y) => n(y) - n(x)).slice(0, c.top), mx = Math.max(1, ...top.map(n)), tot = sv ? sv.total : c.total;
-      const body = top.length ? `<div class="cmeters">${top.map(v => meter(v[1], n(v) / mx, int(n(v)), `<b>${esc(v[1])}</b><br>${int(n(v))} of ${int(tot)} ${on ? 'selected ' : ''}${esc(W.marks)} (${pc(n(v), tot)}%)`)).join('')}</div>` : `<p class="muted tnone">None of these ${esc(W.marks)} has a value</p>`;
+      const body = top.length ? `<div class="cmeters">${top.map(v => meter(v[1], n(v) / mx, int(n(v)), `<b>${esc(v[1])}</b><br>${int(n(v))} of ${int(tot)} ${on ? 'selected ' : ''}${esc(W.marks)} (${pc(n(v), tot)}%)`, '', ['t:' + c.attribute, v[0]])).join('')}</div>` : `<p class="muted tnone">None of these ${esc(W.marks)} has a value</p>`;
       return shell(id, card, body, valuesHead(id, sv || c, top.length, !!sv), sv ? valuesHead(id, c, Math.min(c.top, c.values.length), false) : '');
     }
     const rows = (on ? selRows(id) : c.rows).filter(r => r.n).sort((x, y) => y.down - x.down || y.n - x.n), mx = Math.max(1, ...rows.map(r => r.down));
     const tip = r => `<b>${esc(r.name)}</b>${r.note ? ` <span class="muted">${esc(r.note)}</span>` : ''}${r.group ? ` · ${esc(r.group)}` : ''}<br>` +
       (r.listed ? `${int(r.down)} ${esc(marksOf(r.down))} listed as ${esc(c.calls.down)}; the experiment lists only those, so there is no share`
         : `${int(r.down)} of ${int(r.n)} measured ${esc(W.marks)} ${esc(c.calls.down)} (${pc(r.down, r.n)}%)${r.up ? `; ${int(r.up)} ${esc(c.calls.up)}` : ''}`);
-    const body = rows.length ? `<div class="cmeters">${rows.map(r => meter(r.short, r.down / mx, int(r.down), tip(r), 'down')).join('')}</div>` : `<p class="muted tnone">None of these ${esc(W.marks)} was measured</p>`;
+    const body = rows.length ? `<div class="cmeters">${rows.map(r => meter(r.short, r.down / mx, int(r.down), tip(r), 'down', rowFilter(id, r))).join('')}</div>` : `<p class="muted tnone">None of these ${esc(W.marks)} was measured</p>`;
     const most = rs => { const t = rs.filter(r => r.n).sort((x, y) => y.down - x.down || y.n - x.n).slice(0, 2); return t.length ? `most ${esc(c.calls.down)}: ${t.map(r => `${esc(r.short)} <b>${int(r.down)}</b>${r.listed ? ' listed' : ` of ${int(r.n)}`}`).join(', ')}` : ''; };
     return shell(id, card, body, esc(c.head || ''), on ? most(c.rows) : '');
   }

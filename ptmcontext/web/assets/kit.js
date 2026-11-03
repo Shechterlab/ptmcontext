@@ -81,6 +81,20 @@
     // body) }, either returning null for the kit's own; and Method sections of its own ({ id, title, html })
     questions: {}, methods: [] };
   const BUILT_IN_VIEWS = ['overview', 'statistics', 'method'];
+  // the top tabs' words (website.tabs): a page's name, and one line on what it holds, for the tab's hover and under the
+  // page's heading. The kit's defaults serve a site that says nothing; the address of a page never changes.
+  const TABS = D.tabs || {};
+  const tabName = (v, dflt) => TABS[v]?.label || dflt;
+  const tabHint = v => TABS[v]?.hint || ({
+    overview: `Every question the site asks, one tile each. Click a class row to select those ${W.marks}.`,
+    proteins: `The proteins with ${W.marks}, and the ${W.marks} on each.`,
+    sites: `Every ${W.mark}, one row each, with its evidence.`,
+    idrs: `Intrinsically disordered regions of the proteins, and the ${W.marks} in them.`,
+    statistics: 'Every test behind the site, one row per class, with its effect, interval and q value.',
+    method: 'How each question was asked and tested, and the data it came from.',
+    help: 'How to use the site: searching, filters, selections and keys.',
+  })[v] || '';
+  K.tabName = tabName; K.tabHint = tabHint;
   // a question's title in running text, as the site file writes it (lower-casing would break PRMT, DNA, Reactome)
   const inText = t => String(t || '');
   function readHash() {
@@ -185,14 +199,17 @@
     const bar = K.sel?.bar();
     $('#scope').classList.toggle('selected', !!bar);
     document.body.classList.toggle('has-selection', !!bar);
-    $('#scope').innerHTML = bar || (`<span>All <b>${int(D.counts.marks)}</b> ${esc(W.marks)} on <b>${int(D.counts.proteins)}</b> proteins</span>` + (ex ? `<span class="scope-hint">Try</span>${ex}` : ''));
+    // the toolbar's own way into the filters, named, with how many are in use (the chips and Clear all follow it)
+    const nf = K.sel ? K.sel.nFilters() : 0, fbtn = K.sel ? `<button type="button" class="btn small filter-btn${nf ? ' on' : ''}" data-rail-open="filters" title="Open the filters: narrow every page to the ${esc(W.marks)} that match"><span aria-hidden="true">⏚</span> Filter${nf ? ` <span class="badge">${nf}</span>` : ''}</button>` : '';
+    $('#scope').innerHTML = fbtn + (bar || (`<span>All <b>${int(D.counts.marks)}</b> ${esc(W.marks)} on <b>${int(D.counts.proteins)}</b> proteins</span>` + (ex ? `<span class="scope-hint">Try</span>${ex}` : '')));
   }
   function tabs() {
     const sel = K.sel?.active();
     // K.tabsEnd: a module's page after Method (kit-help.js: Help)
-    const t = [['overview', 'Overview', sel ? 'selection' : null], ...K.tabs.map(f => f()).filter(Boolean), ['statistics', 'Statistics', D.rows.length], ['method', 'Method', null], ...(K.tabsEnd || []).map(f => f()).filter(Boolean)];
+    const t = [['overview', 'Overview', sel ? 'selection' : null], ...K.tabs.map(f => f()).filter(Boolean), ['statistics', 'Statistics', D.rows.length], ['method', 'Method', null], ...(K.tabsEnd || []).map(f => f()).filter(Boolean)]
+      .map(([v, name, n]) => [v, tabName(v, name), n]);
     const on = v => S.view === v || (K.views[S.view]?.tab === v);
-    $('#tabs').innerHTML = `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>` + t.map(([v, name, n]) => `<a class="tab" href="${esc(link(v))}"${on(v) ? ' aria-current="page"' : ''}>${name}` +
+    $('#tabs').innerHTML = `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>` + t.map(([v, name, n]) => `<a class="tab" href="${esc(link(v))}"${tabHint(v) ? ` title="${esc(tabHint(v))}"` : ''}${on(v) ? ' aria-current="page"' : ''}>${name}` +
       (n != null ? ` <span class="count${n === 'selection' ? ' sel' : ''}"${n === 'selection' ? ' title="Every question here is tested again on your selection"' : ''}>${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + '</a>').join('') + variantSwitch();
   }
   // the site's variants (the same questions on other marks, such as with lower-confidence sites): a switch to each,
@@ -403,11 +420,14 @@
     const left = [...up, ...dn, ...same].filter(r => !shown.includes(r)).map(r => r.category);
     return { shown, more: left.length, left };
   }
+  // a class row selects its marks (or the marks on its proteins), the same as the search term of its class: the
+  // click is the filter chip's, on the Overview as on a question's page; Enter selects (the role="button" keys)
+  const pickAttrs = r => { const a = A[r.analysis]; return a ? ` data-f="${esc(fkeyOf(a))}" data-v="${esc(r.category)}" role="button" tabindex="0" title="Click to select the ${esc(W.marks)} ${SETS(r.analysis) ? 'on proteins in' : 'in'} ${esc(r.label)}"` : ''; };
   // against other marks: each class as two shares on one axis, the selection's (filled) and the others' (hollow)
   function shareRows(rows, cls = 'trow') {
     const top = Math.max(0.05, ...rows.flatMap(r => [share1(r), share2(r)]));
     const scale = [0.1, 0.25, 0.5, 1].find(v => v >= top) || 1, X = v => (Math.min(v / scale, 1) * 100).toFixed(2) + '%';
-    return rows.map(r => `<div class="${cls} share" data-r="${reg(r)}"${cls === 'drow' ? ` data-f="${esc(fkeyOf(A[r.analysis]))}" data-v="${esc(r.category)}" role="button" tabindex="0" title="Select the ${esc(W.marks)} ${SETS(r.analysis) ? 'on proteins in' : 'in'} ${esc(r.label)}"` : ''}><span class="lab">${esc(r.label)}</span>` +
+    return rows.map(r => `<div class="${cls} share pick" data-r="${reg(r)}"${pickAttrs(r)}><span class="lab">${esc(r.label)}</span>` +
       `<svg aria-hidden="true"><line class="track" x1="0" x2="100%" y1="50%" y2="50%"/><line class="whisker ${r.dir}" x1="${X(share2(r))}" x2="${X(share1(r))}" y1="50%" y2="50%"/>` +
       `<circle class="dot other" cx="${X(share2(r))}" cy="50%" r="4"/><circle class="dot sel ${r.dir}" cx="${X(share1(r))}" cy="50%" r="4.6"/></svg>` +
       `<span class="val ${r.dir}">${pcS(share1(r))} <span class="muted">· ${pcS(share2(r))}</span><span class="vh"> of your selection, against ${pcS(share2(r))} of ${esc(vsName())}</span></span></div>`).join('') +
@@ -430,7 +450,7 @@
     if (rows.some(r => r.vs)) return shareRows(rows);
     const sc = tileScale(rows), X = v => (100 * sc.X(v)).toFixed(2) + '%';
     const grid = sc.grid.map(k => `<line class="${k === 0 ? 'one' : 'grid'}" x1="${X(2 ** k)}" x2="${X(2 ** k)}" y1="0" y2="100%"/>`);
-    return rows.map(r => `<div class="trow" data-r="${reg(r)}"><span class="lab">${esc(r.label)}</span><svg aria-hidden="true">${grid.join('')}` +
+    return rows.map(r => `<div class="trow pick" data-r="${reg(r)}"${pickAttrs(r)}><span class="lab">${esc(r.label)}</span><svg aria-hidden="true">${grid.join('')}` +
       (r.lo != null && r.hi != null ? `<line class="whisker ${r.dir}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" y2="50%"/>` : '') +
       `<circle class="dot ${r.dir}" cx="${X(r.eff)}" cy="50%" r="4.6"/>${r.ref ? `<line class="ref" x1="${X(r.ref.eff)}" x2="${X(r.ref.eff)}" y1="15%" y2="85%"/>` : ''}</svg><span class="val ${r.dir}">${fx(r.eff)}</span></div>`).join('') +
       `<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div>` + LESS_MORE;
@@ -444,6 +464,8 @@
     const foot = made ? whyShown(a) : shown.length || !vsOn() ? summaryLine(rows, card.summary, card) : '';
     return { a, rows, shown, more, left, whole, made, foot };
   }
+  const detailsLink = id => `<a class="tdetails" href="${esc(link('overview', id))}" title="Open the question: every class, the tests and the downloads">details ›</a>`;
+  K.detailsLink = detailsLink;
   function tile(card) {
     if (A[card.analysis].tile) return A[card.analysis].tile(card);    // a question a module draws (kit-counts.js)
     const own = K.questions[card.analysis]?.tile?.(card);            // or draws the tile of (kit-cell.js, kit-values.js)
@@ -451,7 +473,7 @@
     const { a, rows, shown, more, left, whole, made, foot } = tileState(card);
     // its downloads on hover (none on a touch screen): the tile as a figure, the question's rows as a TSV, its Method
     const exp = `<div class="exp texp" role="group" aria-label="Download ${esc(card.title || a.title)}">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-texp="${k}" data-aid="${esc(a.id)}" title="${k === 'tsv' ? 'TSV: every row of the question, ' + EXP_HELP.tsv.replace(/^TSV: the rows, /, '') : EXP_HELP[k].replace(/^(\w+)/, '$1 of this tile')}">${k.toUpperCase()}</button>`).join('')}${methodLink(a.id)}</div>`;
-    return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(card.title || a.title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</h3>${exp}<span class="chev" aria-hidden="true">›</span></header>` +
+    return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(card.title || a.title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</h3>${exp}${detailsLink(a.id)}</header>` +
       (OV.statistic_label ? `<p class="tstat">${esc(A[card.analysis].kind === 'protein_sets' ? 'pooled over proteins' : METHOD[vsMethod(S.m)])}</p>` : '') +
       (shown.length ? `<div class="trows">${tileRows(shown)}</div>` : made ? '' : `<p class="muted tnone">${rows.some(r => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'}</p>`) +
       (more ? `<a class="tmore" href="${esc(link('overview', a.id))}" data-more="${esc(JSON.stringify(left))}" title="Open the question at the ${more} not shown here">+${more} more ›</a>` : '') +
@@ -530,6 +552,11 @@
     const caveat = pv.length ? `<p class="vs-caveat"><b>How they were found.</b> ${pv.map(r => `<b>${esc(r.label)}</b> <span class="muted">(${esc(inText(A[r.analysis].title))})</span>: ${pcS(share1(r))} of these, against ${pcS(share2(r))} of the others`).join('; ')}. Differences above may reflect which sources report these ${esc(W.marks)}${K.sel.STUDY && S.m !== 'study' ? `: <button type="button" class="linkish" data-m="study">compare within studies</button>, where each ${esc(W.mark)} is compared only with ${esc(W.marks)} reported by the same sources.` : S.m === 'study' ? '; the comparison above is within studies, so they do not explain it.' : '.'}</p>` : '';
     return who + `<p class="vs-say">${say}</p>` + caveat + `<p class="muted small">Exploratory: ${esc(W.marks)} of one protein are not independent, and nothing is adjusted for the other selections tried. Each ${esc(W.mark)} row shows the selection’s share (filled) and ${esc(vsName())}’ (hollow).</p>`;
   }
+  // on a first visit, one line on the rows: a class row selects, a title opens (dismissed for good with its ×)
+  const HINT_KEY = 'ptmc-pick-hint';
+  const hintSeen = () => { try { return localStorage.getItem(HINT_KEY) === '1'; } catch (e) { return false; } };
+  const pickHint = () => (hintSeen() || vsOn() ? '' : `<p class="pick-hint" role="note"><b>Click a row to select it.</b> A row in a tile selects its ${esc(W.marks)} as a filter, and stays here; a tile's title or <i>details ›</i> opens the question. <button type="button" class="linkish" data-pick-hint aria-label="Dismiss this hint">Got it</button></p>`);
+  K.clicks.push(['[data-pick-hint]', el => { try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* storage blocked: this visit only */ } el.closest('.pick-hint').remove(); }]);
   function overview() {
     REG = [];
     if (S.arg && A[S.arg]?.page) return focus(S.arg);
@@ -545,7 +572,7 @@
     // a module's tile (a page's, website.pages[].overview) joins the section it names
     const more = name => vsOn() ? '' : (K.ovTiles || []).filter(t => t.section === name).map(t => t.html()).join('');
     // K.overviewTop: a module's block above the Overview's questions (kit-help.js: the start panel for a first visit)
-    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + lead() + (selOn() && !vsOn() ? selBlocks(K.selLead) : '') + secList().map(x => [x, x.cards.map(tile).join('') + more(x.name)]).filter(([, hh]) => hh).map(([x, hh]) => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(head(x))}</h3><div class="tiles">${hh}</div>`).join('') +
+    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + lead() + pickHint() + (selOn() && !vsOn() ? selBlocks(K.selLead) : '') + secList().map(x => [x, x.cards.map(tile).join('') + more(x.name)]).filter(([, hh]) => hh).map(([x, hh]) => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(head(x))}</h3><div class="tiles">${hh}</div>`).join('') +
       (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
   // the tiles of questions that hold for any selection (a module's counts), for a selection too small to test
@@ -648,7 +675,7 @@
   function statistics() {
     const rows = shownStatistics();
     const opts = [['', 'All questions'], ...D.analyses.map(a => [a.id, a.title])];
-    return `<div class="page-head"><h2>All tests</h2><button class="btn" type="button" id="dl">Download TSV</button></div>` +
+    return `<div class="page-head"><h2>${esc(tabName('statistics', 'All tests'))}</h2><button class="btn" type="button" id="dl">Download TSV</button></div>` +
       `<p class="page-sub">One row per class and test. Questions about where ${esc(W.marks)} sit compare the ${esc(W.marks)} in a class with the other ${esc(W.residues)} of the same proteins${D.analyses.some(a => a.kind === 'protein_sets') ? `, and questions about kinds of protein compare the ${esc(W.marked)} proteins in a set with the other proteins` : ''}. Strata are the proteins of a within-protein test${D.analyses.some(a => a.stratified) ? ' or the abundance deciles of a protein-set test' : ''}. q is Benjamini–Hochberg within each question and test. A class counts as more or less often at q ≤ 0.05 and at least 1.1×.</p>` +
       `<div class="filters"><label>Question <select id="f-a">${opts.map(([v, t]) => `<option value="${esc(v)}"${v === S.a ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>` +
       `<label>Test <select id="f-m">${[['mantel_haenszel', 'Within each protein (or abundance decile)'], ['fisher', 'Pooled'], ['both', 'Both']].map(([v, t]) => `<option value="${v}"${v === S.m ? ' selected' : ''}>${t}</option>`).join('')}</select></label>` +
@@ -681,7 +708,7 @@
       '</tbody></table></div>' +
       ((R.parity.new || []).length ? `<p>New in the rebuild, so not checked: ${R.parity.new.map(id => esc(A[id]?.title || id)).join(', ')}.</p>` : '') +
       '</section>' : '';
-    return `<div class="page-head"><h2>Method</h2></div><div class="doc">` +
+    return `<div class="page-head"><h2>${esc(tabName('method', 'Method'))}</h2></div><div class="doc">` +
       `<section id="m-tests"><h3>How the tests work</h3><p>Each question asks whether a ${esc(W.mark)} is more or less likely than another ${esc(W.residue)} of the same protein to sit in a class, such as a disordered region, a domain or a motif. Each class is tested two ways.</p><ul>` +
       `<li>Within each protein, every protein is a stratum and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)}: Mantel–Haenszel odds ratio, 95% confidence interval (Robins–Breslow–Greenland), continuity-corrected Cochran–Mantel–Haenszel test. This separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}, since abundant proteins are detected more often and differ in structure.</li>` +
       `<li>Pooled, all the ${esc(W.residues)} of the ${esc(W.marked)} proteins are taken together: Fisher’s exact test, Haldane–Anscombe odds ratio.</li></ul>` +
@@ -1107,6 +1134,12 @@
 
   // ---- render, events ------------------------------------------------------------------------------------------------
   let qPending = false;                                 // the search box holds letters not yet read
+  // one line under a tab page's heading: what the page holds (website.tabs; not on a page's section or a question)
+  function pageHint() {
+    const h = tabHint(S.view), head = $('#view .page-head');
+    if (!h || S.arg || (S.view === 'overview' && K.sel?.active()) || !head || $('#view .tab-hint')) return;
+    head.insertAdjacentHTML('afterend', `<p class="tab-hint">${esc(h)}</p>`);
+  }
   function render() {
     tabs();
     if (!qPending) $('#q').value = S.q;                // not over letters typed while the page was drawn (data arriving)
@@ -1114,8 +1147,9 @@
     scope();
     const mod = K.views[S.view];
     $('#view').innerHTML = mod ? mod.render(S.arg) : S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview();
-    document.title = S.view === 'overview' ? D.site.name : `${mod?.title ? mod.title(S.arg) : cap(S.view)} · ${D.site.name}`;   // the page first: "FUS R216 · <site>"
+    document.title = S.view === 'overview' ? D.site.name : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`;   // the page first: "FUS R216 · <site>"
     document.body.classList.toggle('slim', S.view !== 'overview');      // the header band in full on the Overview only
+    pageHint();
     if (mod?.after) mod.after(S.arg);
     if (S.view === 'method' && S.arg) document.getElementById('m-' + S.arg)?.scrollIntoView({ block: 'start' });
     K.rail?.();

@@ -703,10 +703,12 @@
   function filtersTab() {
     const gs = groups();
     return `<div class="rail-sel">${bar() || `<span>All <b>${int(D.counts.marks)}</b> ${esc(W.marks)} on <b>${int(D.counts.proteins)}</b> proteins</span>`}</div>${savedHtml()}` +
-      `<p class="rail-note">A ${esc(W.mark)} must match every filter. Every page then shows the selection and tests it again.</p>` +
+      `<p class="rail-note rail-what"><b>What filters do.</b> They narrow every page to the ${esc(W.marks)} that match, and test that selection again. A ${esc(W.mark)} must match every group you use, and any one of the values chosen within a control.` +
+      `${gs.length > 1 ? ` <span class="muted">Example: pick a value under <i>${esc(gs[0].name)}</i> and another under <i>${esc(gs[1].name)}</i> to see only the ${esc(W.marks)} that match both.</span>` : ''} Each chip shows how many ${esc(W.marks)} it holds.` +
+      ` Clicking a row in a tile does the same as ticking its chip here.</p>` +
       gs.map((g, gi) => {
         const keys = keysOf(g), n = keys.filter(k => S.f[k]?.length || termValues(k).length).length;
-        return `<details class="fgroup${n ? ' active' : ''}" data-g="${gi}"${R.openGroups?.has(gi) ? ' open' : ''}><summary><span>${esc(g.name)}</span>${n ? `<span class="badge">${n}</span><button type="button" class="linkish small" data-fgroup-clear="${gi}">Clear</button>` : ''}</summary>` +
+        return `<details class="fgroup${n ? ' active' : ''}" data-g="${gi}"${R.openGroups?.has(gi) ? ' open' : ''}><summary><span>${esc(g.name)}</span><span class="gcount muted" title="${keys.length} filter${keys.length === 1 ? '' : 's'} in this group${n ? `, ${n} in use` : ''}">${n ? `${n} of ` : ''}${keys.length}</span>${n ? `<span class="badge">${n}</span><button type="button" class="linkish small" data-fgroup-clear="${gi}">Clear</button>` : ''}</summary>` +
           keys.map(control).join('') + '</details>';
       }).join('') +
       `<div class="rail-foot"><span><b>${int(nMarks())}</b> ${esc(nMarks() === 1 ? W.mark : W.marks)} on <b>${int(nProteins())}</b> protein${nProteins() === 1 ? '' : 's'}${active() ? '' : ' (all)'}</span>${active() ? '<button class="linkish" type="button" data-sel-clear-all>Clear all</button>' : ''}</div>`;
@@ -714,7 +716,7 @@
   // every page, and the current page's own sections under it: [id, label, level, href?]; a section with an href is a
   // link (another view), one without is a jump to the element with that id; group headings have level 0
   function sectionsTab() {
-    const pages = [['overview', 'Overview'], ...K.tabs.map(f => f()).filter(Boolean).map(([v, n]) => [v, n]), ['statistics', 'Statistics'], ['method', 'Method']];
+    const pages = [['overview', 'Overview'], ...K.tabs.map(f => f()).filter(Boolean).map(([v, n]) => [v, n]), ['statistics', 'Statistics'], ['method', 'Method']].map(([v, n]) => [v, K.tabName(v, n)]);
     const cur = v => S.view === v || K.views[S.view]?.tab === v;
     const here = K.sections?.[S.view]?.() || [];
     const item = ([id, lab, lvl, href]) => (lvl === 0 ? `<p class="toc-group">${esc(lab)}</p>`
@@ -750,7 +752,7 @@
     if (!fab) { document.body.insertAdjacentHTML('beforeend', '<button class="rail-fab" type="button" data-rail-open="filters"></button>'); fab = document.querySelector('.rail-fab'); }
     // it steps aside while the page is scrolled, so it never rests on a figure or a number
     if (!fab.dataset.sc) { fab.dataset.sc = '1'; let t; addEventListener('scroll', () => { document.body.classList.add('fab-away'); clearTimeout(t); t = setTimeout(() => document.body.classList.remove('fab-away'), 800); }, { passive: true }); }
-    const nf = Object.keys(S.f).length + (S.q ? 1 : 0);
+    const nf = K.sel.nFilters();
     fab.innerHTML = `☰ Filters${nf ? ` <span class="badge">${nf}</span>` : ''}`; fab.setAttribute('aria-label', `Sections and filters${nf ? `, ${nf} in use` : ''}`);
     document.body.classList.toggle('rail-open', open);
     if (open) { el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); } else { el.removeAttribute('role'); el.removeAttribute('aria-modal'); }
@@ -804,5 +806,5 @@
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('fgroup')) { (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g); } }, true);
   addEventListener('keydown', e => { if (e.key === 'Escape' && R.open) { R.open = false; rail(); } });
 
-  Object.assign(K, { watchSections, sel: { ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, STUDY, MIN_SIDE, refresh, lookup, nearSymbols, parsePattern, dropTerm, isTermKey, aliasesOf: i => aliasesOf[i] || [], nameOf, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
+  Object.assign(K, { watchSections, sel: { nFilters: () => Object.keys(S.f).length + (S.q ? 1 : 0), ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, STUDY, MIN_SIDE, refresh, lookup, nearSymbols, parsePattern, dropTerm, isTermKey, aliasesOf: i => aliasesOf[i] || [], nameOf, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
 });

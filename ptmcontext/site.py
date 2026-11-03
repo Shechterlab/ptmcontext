@@ -366,6 +366,8 @@ def website_problems(site: dict) -> list[str]:
     for k, card in enumerate((web.get('protein') or {}).get('sets', [])):
         out += [f"website.protein.sets[{k}] ({card['title']!r}): {a!r} is not a protein-set question" for a in card['analyses'] if a not in sets]
     page_ids = {pg['id'] for pg in web.get('pages') or []}
+    known_tabs = page_ids | {'overview', 'statistics', 'method', 'proteins', 'sites', 'idrs', 'help'}
+    out += [f"website.tabs: {k!r} is not a page of this site (it has {sorted(known_tabs)})" for k in (web.get('tabs') or {}) if k not in known_tabs]
     for key, to in (web.get('legacy_links') or {}).items():
         if to.startswith('#'):
             if to[1:].split('/')[0] not in page_ids | {'overview', 'statistics', 'method', 'proteins', 'sites', 'idrs'}:

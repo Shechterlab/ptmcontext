@@ -289,7 +289,7 @@
   };
   function view() {
     load();
-    const head = `<div class="page-head"><h2>IDRs</h2></div>`;
+    const head = `<div class="page-head"><h2>${esc(K.tabName('idrs', 'IDRs'))}</h2></div>`;
     if (VERR) return head + `<p class="empty">${esc(VERR)}</p>`;
     if (!V) return head + `<p class="muted">Loading the IDRs…</p>`;
     if (K.sel?.active() && !K.sel.data()) return head + `<p class="muted">Loading the selection…</p>`;
@@ -298,7 +298,7 @@
     const testLink = QA ? `<a href="${esc(href('overview', encodeURIComponent(QA.id)))}">${esc(QA.title)}</a>` : `<a href="${esc(href('overview'))}">the Overview</a>`;
     const question = QA?.question || `Within disordered regions, are ${W.marks} found in IDRs of a particular charge class?`;
     const sw = SC.on ? 'selected ' : '';
-    return `<div class="page-head"><h2>IDRs: ${int(xs.length)} on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</h2></div>` +
+    return `<div class="page-head"><h2>${esc(K.tabName('idrs', 'IDRs'))}: ${int(xs.length)} on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</h2></div>` +
       `<p class="idr-question">${esc(question)}</p>` +
       `<p class="page-sub">Each IDR falls in a region of the Das–Pappu diagram of states, set by its charge. The table counts the ${esc(W.residues)} inside each region’s IDRs that are ${sw}${esc(W.marked)}; the test beside it, from ${testLink}, compares each ${esc(W.mark)} with the other ${esc(W.residues)} of its own protein, so a region’s charge cannot decide the result. <button type="button" class="idr-goto" data-idr-goto="idr-refs">Method</button></p>` +
       `<section class="idr-card" id="idr-regions"><div class="card-head"><div><h3>${esc(cap(W.residues))} that are ${sw}${esc(W.marked)}, by region</h3><p class="sub">A row lists its IDRs below.</p></div>${K.expBar(['tsv'], 'idr-rexp', 'the regions')}</div>${regionsHtml()}</section>` +
@@ -330,12 +330,12 @@
   const openFold = id => { const el = document.getElementById(id); if (!el) return; if (el.tagName === 'DETAILS') el.open = true; el.scrollIntoView({ block: 'start' }); };
   const openIdr = i => { const x = V?.idrs[+i]; if (!x) return; const tip = document.getElementById('tip'); if (tip) tip.hidden = true; K.go('protein', { arg: `${pr(x)[0]}/${x.s}-${x.e}` }); };
 
-  K.views.idrs = { render: view, title: () => 'IDRs' };
+  K.views.idrs = { render: view, title: () => K.tabName('idrs', 'IDRs') };
   K.tabs.push(() => {
     if (K.sel?.active() && K.sel.data()) { if (!V) { load(); return ['idrs', 'IDRs', null]; } sel(); return ['idrs', 'IDRs', V.idrs.filter(x => SC.n[x.i] > 0).length]; }
     return ['idrs', 'IDRs', TR.values.n];
   });
-  K.sections.idrs = () => [['view', 'IDRs', 1], ['idr-regions', cap(W.residues) + ' ' + W.marked + ', by region', 1], ['idr-diagram', 'The diagram of states', 1], ...(POLY3() ? [['idr-kappa', 'κ in strong polyampholytes', 1]] : []),
+  K.sections.idrs = () => [['view', K.tabName('idrs', 'IDRs'), 1], ['idr-regions', cap(W.residues) + ' ' + W.marked + ', by region', 1], ['idr-diagram', 'The diagram of states', 1], ...(POLY3() ? [['idr-kappa', 'κ in strong polyampholytes', 1]] : []),
     ['idr-list', 'Every IDR', 1], ['idr-refs', 'Method', 1],
     ...(QA ? [['g-test', 'The test', 0], ['idr-test', QA.title, 1, href('overview', encodeURIComponent(QA.id))]] : [])];
   K.tips.push(['[data-di]', el => (V ? tipHtml(V.idrs[+el.dataset.di]) : '')]);

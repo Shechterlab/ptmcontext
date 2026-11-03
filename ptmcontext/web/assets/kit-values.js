@@ -51,7 +51,7 @@
     const max = Math.max(0.01, ...rows.map(([, k, n]) => (n ? k / n : 0)));
     const tipOf = ([label, k, n]) => `<b>${esc(label)}</b><br>${pcT(k, n)}% of ${int(n)} ${esc(pop)} ${esc(v.meter_words || 'in ' + setName)} (${int(k)})`;
     const loading = K.selOn() && !K.sel.data() ? '<p class="muted small">Loading the selection…</p>' : K.selOn() && !scoped ? '<p class="twhole"><span>Whole dataset</span> the selection is too small to test</p>' : '';
-    return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(card.title || a.title)}</h3><span class="chev" aria-hidden="true">›</span></header>` +
+    return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(card.title || a.title)}</h3>${K.detailsLink(a.id)}</header>` +
       `<div class="vm">${rows.map(r => meterRow(r[0], r[1], r[2], max, r[3], tipOf(r))).join('')}</div>` +
       `<p class="tfoot"><b>${pcT(s.k, s.n)}%</b> of ${scoped ? 'your' : esc(W.marked)} proteins ${esc(v.meter_words || 'in ' + setName)}, against ${pcT(s.M, s.N)}% of all ${esc(pop)}</p>${loading}</article>`;
   }
