@@ -128,7 +128,8 @@ def _clogit_chunk(chunk, beta):
         eta[i, :xs.shape[0]] = xs @ beta
     shift = np.max(eta, axis=1)                          # w <= 1 per stratum: the sums stay in range
     w = np.exp(eta - shift[:, None])                     # padded rows: w = 0, x = 0, and they add nothing
-    z = np.zeros((s, kmax + 1)); z[:, 0] = 1.0
+    z = np.zeros((s, kmax + 1))
+    z[:, 0] = 1.0
     g = np.zeros((s, kmax + 1, p))
     h = np.zeros((s, kmax + 1, p, p))
     for j in range(n):
@@ -189,7 +190,9 @@ def conditional_logit(y, X, strata, names=None, tol=1e-10, max_iter=50):
         ll, score, info = 0.0, np.zeros(p), np.zeros((p, p))
         for chunk in _stratum_chunks(groups):
             l_, s_, i_ = _clogit_chunk(chunk, beta)
-            ll += l_; score += s_; info += i_
+            ll += l_
+            score += s_
+            info += i_
         return ll + case_x @ beta, score + case_x, info
     beta = np.zeros(p)
     ll, score, info = evaluate(beta)

@@ -30,11 +30,16 @@ def _clogit_data(seed=1, n_strata=120, binary_only=False):
     rng = np.random.default_rng(seed)
     xs, ys, gs = [], [], []
     for g in range(n_strata):
-        n = int(rng.integers(3, 20)); k = int(rng.integers(1, min(4, n - 1) + 1))
+        n = int(rng.integers(3, 20))
+        k = int(rng.integers(1, min(4, n - 1) + 1))
         x = np.c_[rng.integers(0, 2, n), rng.integers(0, 2, n), rng.integers(0, 2, n) if binary_only else rng.normal(size=n)]
-        w = np.exp(0.8 * x[:, 0] - 0.5 * x[:, 1] + 0.3 * x[:, 2]); w /= w.sum()
-        y = np.zeros(n, int); y[rng.choice(n, size=k, replace=False, p=w)] = 1
-        xs.append(x); ys.append(y); gs.append(np.full(n, g))
+        w = np.exp(0.8 * x[:, 0] - 0.5 * x[:, 1] + 0.3 * x[:, 2])
+        w /= w.sum()
+        y = np.zeros(n, int)
+        y[rng.choice(n, size=k, replace=False, p=w)] = 1
+        xs.append(x)
+        ys.append(y)
+        gs.append(np.full(n, g))
     return np.concatenate(ys), np.vstack(xs), np.concatenate(gs)
 
 
@@ -58,7 +63,8 @@ def test_conditional_logit_likelihood_is_the_sum_over_all_subsets():
     beta = np.array([0.4, -0.2, 0.7])
     ll = 0.0
     for s in np.unique(g):
-        i = g == s; xs, ys = X[i], y[i]
+        i = g == s
+        xs, ys = X[i], y[i]
         den = sum(np.exp(xs[list(c)].sum(0) @ beta) for c in itertools.combinations(range(len(ys)), int(ys.sum())))
         ll += xs[ys == 1].sum(0) @ beta - np.log(den)
     from statsmodels.discrete.conditional_models import ConditionalLogit
@@ -74,12 +80,22 @@ def test_conditional_logit_score_test_is_the_uncorrected_mantel_haenszel_test():
     rng = np.random.default_rng(7)
     tables, ys, xs, gs = [], [], [], []
     for s in range(60):
-        n = int(rng.integers(4, 15)); x = rng.integers(0, 2, n); y = np.zeros(n, int); y[rng.choice(n, size=int(rng.integers(1, 3)), replace=False)] = 1
-        a = int(((x == 1) & (y == 1)).sum()); b = int(((x == 0) & (y == 1)).sum()); c = int(((x == 1) & (y == 0)).sum()); d = int(((x == 0) & (y == 0)).sum())
-        tables.append((a, b, c, d)); ys.append(y); xs.append(x); gs.append(np.full(n, s))
+        n = int(rng.integers(4, 15))
+        x = rng.integers(0, 2, n)
+        y = np.zeros(n, int)
+        y[rng.choice(n, size=int(rng.integers(1, 3)), replace=False)] = 1
+        a = int(((x == 1) & (y == 1)).sum())
+        b = int(((x == 0) & (y == 1)).sum())
+        c = int(((x == 1) & (y == 0)).sum())
+        d = int(((x == 0) & (y == 0)).sum())
+        tables.append((a, b, c, d))
+        ys.append(y)
+        xs.append(x)
+        gs.append(np.full(n, s))
     r = ptmstats.conditional_logit(np.concatenate(ys), np.concatenate(xs), np.concatenate(gs))
     used = ptmstats.informative_strata(tables)
-    o = sum(t[0] for t in used); e = sum((t[0] + t[1]) * (t[0] + t[2]) / sum(t) for t in used)
+    o = sum(t[0] for t in used)
+    e = sum((t[0] + t[1]) * (t[0] + t[2]) / sum(t) for t in used)
     v = sum((t[0] + t[1]) * (t[2] + t[3]) * (t[0] + t[2]) * (t[1] + t[3]) / (sum(t) ** 2 * (sum(t) - 1)) for t in used)
     assert abs(r['score_chi2'] - (o - e) ** 2 / v) < 1e-9
     # and its odds ratio is near the Mantel-Haenszel one
@@ -89,13 +105,16 @@ def test_conditional_logit_score_test_is_the_uncorrected_mantel_haenszel_test():
 def test_conditional_logit_one_case_per_stratum_is_a_softmax_and_matched_pairs_are_a_logistic_regression():
     from statsmodels.api import Logit
     rng = np.random.default_rng(3)
-    d = rng.normal(size=(200, 2)); true = np.array([0.7, -0.4])
+    d = rng.normal(size=(200, 2))
+    true = np.array([0.7, -0.4])
     case_first = rng.random(200) < 1 / (1 + np.exp(-(d @ true)))        # pair: x_case - x_control = d (or -d)
     X, y, g = [], [], []
     for i in range(200):
         a, b = (d[i], np.zeros(2)) if case_first[i] else (np.zeros(2), d[i])
         # the case is the member with the larger draw: build pairs whose case-control difference is sign * d
-        X += [a, b]; y += [1, 0] if case_first[i] else [0, 1]; g += [i, i]
+        X += [a, b]
+        y += [1, 0] if case_first[i] else [0, 1]
+        g += [i, i]
     r = ptmstats.conditional_logit(y, np.array(X), g)
     diff = np.array([X[2 * i] - X[2 * i + 1] for i in range(200)])
     out = np.array([y[2 * i] for i in range(200)])
@@ -104,7 +123,9 @@ def test_conditional_logit_one_case_per_stratum_is_a_softmax_and_matched_pairs_a
 
 
 def test_conditional_logit_leaves_out_uninformative_strata_and_reports_separation():
-    y = [1, 0, 0, 0, 0, 0, 1, 1, 1]; x = [1, 0, 1, 0, 1, 0, 1, 0, 1]; g = [0, 0, 0, 1, 1, 1, 2, 2, 2]
+    y = [1, 0, 0, 0, 0, 0, 1, 1, 1]
+    x = [1, 0, 1, 0, 1, 0, 1, 0, 1]
+    g = [0, 0, 0, 1, 1, 1, 2, 2, 2]
     r = ptmstats.conditional_logit(y, x, g)
     assert (r['n_strata'], r['n_cases'], r['n_rows']) == (1, 1, 3)       # stratum 1 has no case, stratum 2 no control
     sep = ptmstats.conditional_logit([1, 0, 0, 1, 0, 0], [1, 0, 0, 1, 0, 0], [0, 0, 0, 1, 1, 1])
