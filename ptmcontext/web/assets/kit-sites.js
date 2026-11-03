@@ -193,7 +193,7 @@
       const a = key.get(x), b = key.get(y);
       if (a == null || b == null) { if (a != null) return -1; if (b != null) return 1; }
       else { const r = typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b)); if (r) return T.desc ? -r : r; }
-      return (SV.sort && String(pr(x[0]).gene || '').localeCompare(String(pr(y[0]).gene || ''))) || x[0] - y[0] || x[1] - y[1];   // then by gene
+      return (SV.sort && String(pr(x[0])?.gene || '').localeCompare(String(pr(y[0])?.gene || ''))) || x[0] - y[0] || x[1] - y[1];   // then by gene
     });
     return out;
   }
