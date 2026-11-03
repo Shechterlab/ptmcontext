@@ -98,4 +98,5 @@ def test_the_run_writes_each_idr_with_its_charge_and_what_is_inside(tmp_path):
     listing = [['A', 'ONE', 'one', len(seq), 3, 11, ''], ['B', 'TWO', 'two', 45, 1, 5, '']]
     v = web.unit_value_data(folder, listing, out['tracks.json'])['idr']
     assert v['classes'] == ['r2', 'r4'] and v['columns'][2] == 'fcr'
-    assert v['rows'][0] == [0, 31, 54, 0, 0.333333, 0, 0.333333, 0.333333, v['rows'][0][8], 2, 2, 5]
+    assert v['rows'][0][:8] == [0, 31, 54, 0, 0.333333, 0, 0.333333, 0.333333] and v['rows'][0][9:11] == [2, v['rows'][0][10]] and v['rows'][0][-2:] == [2, 5]
+    assert v['columns'][-3:] == ['stickers', 'sticker_spacing', 'sticker_free']
