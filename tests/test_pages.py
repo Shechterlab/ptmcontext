@@ -84,7 +84,9 @@ def _toy_site(tmp_path, pages=True):
             'answer': {'more': '{marks} sit {list} more often.', 'rows': [{'analysis': 'xl', 'category': 'crosslink', 'phrase': 'at crosslinks'}]},
             'columns': {'records.group': {'label': 'Record', 'values': {'binds': 'Binds it'}}},
             'highlights': [{'share': {'table': 'partners', 'of': 'partner_accession', 'flag': 'partner_marked'}, 'label': 'of partners marked', 'section': 'who'}],
-            'overview': {'section': 'Contacts', 'bar': 'status', 'rows': [{'analysis': 'xl', 'category': 'crosslink'}]},
+            'overview': {'section': 'Contacts', 'bar': 'status', 'rows': [{'analysis': 'xl', 'category': 'crosslink'}],
+                         'findings': [{'lead': 'In cells', 'section': 'tests', 'rows': [{'analysis': 'xl', 'category': 'crosslink', 'phrase': 'at crosslinks'}]},
+                                      {'share': {'table': 'partners', 'of': 'partner_accession', 'flag': 'partner_marked'}, 'label': 'of partners marked'}]},
             'groups': [{'name': 'Tests', 'sections': [
                 {'id': 'tests', 'title': 'The tests', 'blocks': [
                     {'kind': 'forest', 'rows': [{'analysis': 'xl', 'category': 'crosslink'}, {'analysis': 'xl', 'category': 'crosslink_measured'}]},
@@ -161,6 +163,21 @@ def test_a_page_names_only_what_the_site_has(tmp_path):
     assert any("attribute 'ev' is not a category" in p for p in problems)
     assert any("'#nowhere', which is not a page" in p for p in problems)
     assert not any('old-key' in p for p in problems)
+    assert not any('findings' in p for p in problems)          # the toy's own findings name what it has
+
+
+def test_an_overview_finding_names_what_the_site_has(tmp_path):
+    root = _toy_site(tmp_path)
+    site = S.load_site(root / 'sites' / 'toy.yaml')
+    fs = site['website']['pages'][0]['overview']['findings']
+    fs.append({'rows': [{'analysis': 'xl', 'category': 'no_such_test'}], 'section': 'nowhere'})
+    fs.append({'label': 'neither rows nor a share'})
+    fs.append({'share': {'table': 'missing', 'of': 'a', 'flag': 'b'}, 'label': 'x'})
+    problems = [p for p in S.website_problems(site) if 'overview.findings' in p]
+    assert any("has no class 'no_such_test'" in p for p in problems)
+    assert any("no section 'nowhere'" in p for p in problems)
+    assert any('rows: or share:, one of them' in p for p in problems)
+    assert any("no table 'missing'" in p for p in problems)
 
 
 def test_a_site_without_pages_writes_no_tables(tmp_path):

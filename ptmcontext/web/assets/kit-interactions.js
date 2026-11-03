@@ -640,18 +640,42 @@
     return `<div class="focus-bar"><a href="${esc(K.link(pg.id))}">‹ All sections</a><span class="crumb">${esc(pg.tab)} › ${esc(sec.group)} › <b>${esc(sec.title)}</b></span><span class="muted">${i + 1} of ${pg.sections.length}</span>` +
       `<span class="pn">${prev ? `<a href="${esc(K.link(pg.id, prev.id))}">‹ Previous · ${esc(prev.title)}</a>` : ''}${next ? `<a href="${esc(K.link(pg.id, next.id))}">${esc(next.title)} · Next ›</a>` : ''}</span></div>` + selLine() + sectionCard(pg, sec);
   }
+  // the Overview question's findings, one sentence each: website.pages[].overview.findings (rows of tests, said with
+  // their direction whether or not it is significant, or a share of a table), else each overview row that differs
+  const WORD = { more: 'more often', less: 'less often', same: 'about as often', ns: 'not significantly more or less often' };
+  const numbers = r => `${pcS(r.a, r.a + r.b)} against ${pcS(r.c, r.c + r.d)} of the other ${esc(W.residues)}; OR ${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}, q ${fq(r.q)}`;
+  function findings(pg) {
+    const ov = pg.overview;
+    if (!ov.findings) return rowsFor(ov.rows, 'mantel_haenszel').map(x => { const r = shown(x), d = dirOf(r); return d === 'more' || d === 'less' ? { head: `${esc(cap(theMarks()))} are ${WORD[d]} ${esc(x.ref.phrase || x.label.toLowerCase())} (${numbers(r)}).` } : null; }).filter(Boolean);
+    return ov.findings.map(f => {
+      if (f.share) { const [v] = highlightValue({ share: f.share }); return v && v !== '…' ? { head: `<b>${esc(v)}</b> ${esc(f.label)}`, section: f.section } : null; }
+      const xs = rowsFor(f.rows, 'mantel_haenszel').filter(x => shown(x));
+      if (!xs.length) return null;
+      const parts = xs.map(x => `<b>${WORD[dirOf(shown(x))]}</b> ${esc(x.ref.phrase || x.label.toLowerCase())}`);
+      const nums = xs.map(x => (xs.length > 1 ? `${esc(x.label)}: ` : '') + numbers(shown(x)));
+      return { head: `${f.lead ? esc(f.lead) + ', ' + esc(theMarks()) : esc(cap(theMarks()))} are ${parts.join(' and ')} than the other ${esc(W.residues)} of the same proteins.`,
+               more: nums.join('; '), section: f.section };
+    }).filter(Boolean);
+  }
+  const findingLi = (pg, f) => `<li>${f.more ? `<details class="finding"><summary>${f.head}</summary><p>${f.more}.${f.section ? ` <a href="${esc(K.link(pg.id, f.section))}">Open the analysis →</a>` : ''}</p></details>` : `<span>${f.head}</span>${f.section ? ` <a href="${esc(K.link(pg.id, f.section))}">Open →</a>` : ''}`}</li>`;
+  function findingsList(pg, n) {
+    const fs = findings(pg);
+    if (!fs.length) return '';
+    const head = fs.slice(0, n), rest = fs.slice(n);
+    return `<ul class="ix-findings">${head.map(f => findingLi(pg, f)).join('')}</ul>` +
+      (rest.length ? `<details class="ix-more"><summary>Show ${int(rest.length)} more finding${rest.length === 1 ? '' : 's'}</summary><ul class="ix-findings">${rest.map(f => findingLi(pg, f)).join('')}</ul></details>` : '');
+  }
   // the Overview's question: the evidence at a glance, the tests with their CIs, findings, a checker, and the way in
   function ovQuestion(pg) {
-    const ov = pg.overview, rows = rowsFor(ov.rows, 'mantel_haenszel');
-    const finding = x => { const r = shown(x), d = dirOf(r); if (d !== 'more' && d !== 'less') return ''; return `<li>${esc(cap(theMarks()))} are ${d === 'more' ? 'more' : 'less'} often ${esc(x.ref.phrase || x.label.toLowerCase())} (${pcS(r.a, r.a + r.b)} against ${pcS(r.c, r.c + r.d)} of the other ${esc(W.residues)}; OR ${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}, q ${fq(r.q)}).</li>`; };
-    const fs = rows.map(finding).filter(Boolean);
+    const ov = pg.overview;
+    const fs = ready() ? findingsList(pg, 1e9) : '';
     const sec = { id: 'overview', title: ov.title || pg.tab, blocks: [] };
     const chk = ov.checker ? { kind: 'checker', attributes: ov.checker.filter(n => hasAttr(n)), tables: [] } : null;
     return `<div class="focus-bar"><a href="${esc(K.link('overview'))}">‹ Overview</a><span class="crumb">Overview › ${esc(ov.section)} › <b>${esc(ov.title || pg.tab)}</b></span><span class="pn"><a href="${esc(K.link(pg.id))}">Explore ${esc(pg.tab.toLowerCase())} →</a></span></div>` +
       `<div class="page-head"><h2>${esc(ov.title || pg.tab)}</h2></div><p class="page-sub">${esc(ov.question || pg.title)} <a href="${esc(K.link(pg.id))}">Explore ${esc(pg.tab.toLowerCase())} →</a></p>` + selLine() +
       (ov.bar ? `<section class="pcard"><h3>${esc(SPECS[ov.bar].label)}</h3>${ready() ? sharesHtml({ attribute: ov.bar }) : loading()}</section>` : '') +
       `<section class="pcard"><h3>The tests</h3>${keyLine()}${ready() ? forestHtml(pg, sec, { kind: 'forest', rows: ov.rows }, 'ov') : loading()}${K.expBar(['pdf', 'svg', 'png', 'tsv'], `ixexp="${esc(pg.id)}.overview.ov" data-k`, ov.title || pg.tab, `q-page-${pg.id}`)}</section>` +
-      (fs.length ? `<section class="pcard"><h3>Findings</h3><ul class="ix-findings">${fs.join('')}</ul></section>` : '') +
+      (fs ? `<section class="pcard"><h3>Findings${selOn() ? ' for your selection' : ''}</h3>${fs}</section>` : '') +
       (chk ? `<section class="pcard"><h3>Is a ${esc(W.mark)} in an interaction? Check one</h3>${ready() ? checkerHtml(pg, sec, chk, 'ovchk') : loading()}</section>` : '');
   }
   function view(pg, arg) {
@@ -666,7 +690,8 @@
     const bar = ov.bar && hasAttr(ov.bar, 'category') && ready() && SD() ? (() => { const sc = shareCounts(ov.bar), lead = sc.list.find(x => x.v === (ov.lead || sc.list[0]?.v)); return sharesHtml({ attribute: ov.bar }, true) + (lead ? `<p class="ix-head"><b>${int(lead.n)}</b> ${esc(marksWord(lead.n))} (${pcS(lead.n, sc.total)}) ${esc(vlabel(ov.bar, lead.v).toLowerCase())}</p>` : ''); })() : '';
     let grp = null;
     const forest = ov.rows.length ? (() => { const rows = rowsFor(ov.rows, 'mantel_haenszel'), groups = []; rows.forEach(x => { if (x.group !== grp) { grp = x.group; groups.push([x.group, []]); } groups[groups.length - 1][1].push(x.ref); }); return groups.map(([g, refs]) => (g ? `<p class="ix-tg">${esc(g)}</p>` : '') + miniForest(refs, 'mantel_haenszel', ov.rows)).join(''); })() : '';
-    return `<article class="tile ix-tile" data-ix-tile="${esc(K.link(pg.id, 'overview'))}" tabindex="0"><header><h3>${esc(ov.title || pg.tab)}</h3><span class="chev" aria-hidden="true">›</span></header>${bar}${forest}<p class="tfoot"><a href="${esc(K.link(pg.id))}">Explore ${esc(pg.tab.toLowerCase())} →</a></p></article>`;
+    const fs = ready() && ov.findings ? findingsList(pg, 3) : '';
+    return `<article class="tile ix-tile" data-ix-tile="${esc(K.link(pg.id, 'overview'))}" tabindex="0"><header><h3>${esc(ov.title || pg.tab)}</h3><span class="chev" aria-hidden="true">›</span></header>${bar}${forest}${fs ? `<div class="ix-tile-findings">${fs}</div>` : ''}<p class="tfoot"><a href="${esc(K.link(pg.id))}">Explore ${esc(pg.tab.toLowerCase())} →</a></p></article>`;
   }
   (K.ovTiles ||= []).push(...PAGES.filter(pg => pg.overview).map(pg => ({ section: pg.overview.section, html: () => ovTile(pg) })));
 
@@ -712,7 +737,7 @@
   }]);
   const keyOfEl = el => el.closest('[data-ixexp]')?.dataset.ixexp;
   K.clicks.push(
-    ['[data-ix-tile]', (el, e) => { if (e.target.closest('a,button,[data-f]')) return; location.hash = el.dataset.ixTile; }],
+    ['[data-ix-tile]', (el, e) => { if (e.target.closest('a,button,summary,details,[data-f]')) return; location.hash = el.dataset.ixTile; }],
     ['[data-ix-m]', el => { st(el.dataset.ixM, {}).m = el.dataset.v; K.render(); }],
     ['[data-ix-all]', el => { const s = st(el.dataset.ixAll, {}); s.all = !s.all; K.render(); }],
     ['[data-ix-chip]', el => { const s = st(el.dataset.ixChip, {}); s.chip = el.dataset.v || ''; s.n = 25; K.render(); }],
@@ -806,6 +831,11 @@
 .ix-glyph { width: 1.8rem; height: 1.3rem; color: var(--brand-ink); }
 .ix-links { margin: 0.2rem 0; }
 .ix-findings li { margin: 0.25rem 0; }
+.ix-findings { padding-left: 1.1rem; }
+.ix-findings details.finding > summary { cursor: pointer; }
+.ix-findings details.finding > p { margin: 0.25rem 0 0.5rem; color: var(--muted, inherit); }
+.ix-tile-findings { font-size: 0.875rem; margin-top: 0.5rem; }
+.ix-tile-findings .ix-more > summary { cursor: pointer; color: var(--accent, inherit); }
 .ix-tile .tfoot a { font-weight: 600; }
 @media (max-width: 760px) { .ixf-row { grid-template-columns: minmax(8rem, 1fr) minmax(6rem, 1fr) 6.5rem; } .ixf-row > :nth-child(n+4) { display: none; } }
 @media print { .ix-tools, .exp, .ix-check, .ix-tctl { display: none !important; } }

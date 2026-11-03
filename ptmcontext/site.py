@@ -700,6 +700,14 @@ def page_problems(site: dict) -> list[str]:
         rowrefs(f'{here}.overview', ov.get('rows'))
         if ov.get('bar'):
             attr(f'{here}.overview.bar', ov['bar'], 'category')
+        for f in ov.get('findings') or []:
+            if bool(f.get('rows')) == bool(f.get('share')):
+                out.append(f"{here}.overview.findings: a finding has rows: or share:, one of them")
+            rowrefs(f'{here}.overview.findings', f.get('rows'))
+            if f.get('share'):
+                table(f'{here}.overview.findings', f['share']['table'], [f['share']['of'], f['share']['flag']])
+            if f.get('section') and f['section'] not in secs:
+                out.append(f"{here}.overview.findings: no section {f['section']!r}")
         for h in pg.get('highlights') or []:
             rowrefs(f'{here}.highlights', h.get('rows'))
             for c in h.get('counts') or []:

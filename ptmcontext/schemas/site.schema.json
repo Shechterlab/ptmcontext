@@ -4784,6 +4784,81 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "findings": {
+                    "type": "array",
+                    "description": "the Overview question's findings, one sentence each (the tile shows the first three): rows of tests said with their direction, significant or not, after a lead ('In PDB structures'); or a share of a page table with its label. Without it, each overview row that differs",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "lead": {
+                          "type": "string"
+                        },
+                        "rows": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "analysis",
+                              "category"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "analysis": {
+                                "type": "string"
+                              },
+                              "category": {
+                                "type": "string",
+                                "description": "the class code (a question of several tests: <category> or <category>_<stratum>)"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "group": {
+                                "type": "string"
+                              },
+                              "phrase": {
+                                "type": "string",
+                                "description": "the row in the page's answer sentence"
+                              }
+                            }
+                          }
+                        },
+                        "share": {
+                          "type": "object",
+                          "required": [
+                            "table",
+                            "of",
+                            "flag"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "table": {
+                              "type": "string"
+                            },
+                            "of": {
+                              "type": "string"
+                            },
+                            "flag": {
+                              "type": "string"
+                            },
+                            "base": {
+                              "type": "number",
+                              "description": "the share among all proteins of the proteome, shown beside it"
+                            }
+                          }
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "section": {
+                          "type": "string",
+                          "description": "the page's section the finding opens"
+                        }
+                      }
+                    }
                   }
                 }
               },

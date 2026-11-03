@@ -2272,6 +2272,12 @@ website:                  # the look and words of the website (ptmc web); layout
         bar: interaction
         lead: experimental
         checker: [interaction, evidence, nucleic_acid, partner_class]
+        findings:          # the explorer's four, each said with its direction, significant or not (the first three on the tile)
+          - {lead: In living cells, section: ixs-cells, rows: [{analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue, phrase: the residue crosslinked to RNA}]}
+          - {lead: In PDB structures, section: ixs-pdb, rows: [{analysis: pdb_interface, category: rna, label: RNA interface, phrase: at RNA interfaces},
+                                                               {analysis: pdb_interface, category: protein, label: Protein interface, phrase: at protein interfaces}]}
+          - {lead: In predicted complexes, section: ixs-predicted, rows: [{analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, phrase: "at the interface (AlphaFold-Multimer models, pDockQ ≥ 0.23)"}]}
+          - {share: {table: string, of: partner_accession, flag: partner_marked}, label: "of the physical partners of methylated proteins (STRING ≥ 0.7) are themselves methylated (22% of human proteins)", section: ixs-partners}
         rows:
           - {analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue, group: In living cells, phrase: the residue crosslinked to RNA}
           - {analysis: crosslink, category: capri_adj_peptide_among_measured, label: "CAPRI peptide (measured)", group: In living cells, phrase: inside a CAPRI RNA-bound peptide (among the arginines CAPRI measured)}

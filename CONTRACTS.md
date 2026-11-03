@@ -620,7 +620,7 @@ website:
       method: <how it was made: the Method page's section for the page>
       answer: {rows: [<row refs>], more: "<sentence with {list}>", none: "<sentence>"}   # the answer sentence
       highlights: [<highlight>]          # cards under it
-      overview: {section: <Overview section>, title: <tile>, bar: <category attribute>, rows: [<row refs>], sub: <...>}
+      overview: {section: <Overview section>, title: <tile>, bar: <category attribute>, rows: [<row refs>], findings: [<finding>], sub: <...>}
       groups:
         - name: <group>
           sections:
@@ -631,7 +631,11 @@ A **row ref** is `{analysis, category, label?, group?}` (a statistics row; `cate
 of several tests `<category>` or `<category>_<stratum>`). A **highlight** is `{rows: [row refs], label, tag, section}`
 (the range of their effects where they differ, "1.3–1.7×"), `{count: {attribute, values}, label, tag, section}` (marks
 with any of those values of a list attribute, as "261 · 91" for several groups: `counts: [{attribute, values}]`), or
-`{share: {table, of, flag}, label, tag, section}` (the share of a table's distinct `of` values whose `flag` is true).
+`{share: {table, of, flag}, label, tag, section}` (the share of a table's distinct `of` values whose `flag` is true). The
+Overview question's **findings** (`overview.findings`, the first three also on its tile, the rest behind "Show N more")
+are each `{lead, rows: [row refs with phrase], section}`, one sentence that says every row's direction (more often,
+less often, about as often, or not significantly more or less often) with its numbers behind it, or `{share, label,
+section}`; with a selection, the rows are the selection's retest. Without `findings`, each overview row that differs.
 
 Blocks (`kind`):
 
