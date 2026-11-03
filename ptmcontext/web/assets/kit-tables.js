@@ -230,14 +230,20 @@
   const EXCL = /^(no |not |unknown|unassigned|none\b)/i;
   function features() {
     const c = K.sel?.compute(); if (!c?.active || !SD()) return null;
-    const G = K.sel.contrastGroups(); if (!G || G.g1.length < K.sel.MIN_SIDE || G.g2.length < K.sel.MIN_SIDE) return null;
+    const G = K.sel.contrastGroups(); if (!K.sel.contrastOK(G)) return null;
     const qs = [...D.analyses.filter(a => a.kind !== 'protein_sets').map(a => a.id), ...Object.keys(A).filter(id => id[0] === '@')];
     const all = qs.flatMap(id => (K.sel.contrast(id, 'fisher') || []).filter(r => !r.descriptive && r.q != null && r.a + r.c >= 10 && !EXCL.test(r.label) && r.category !== ''));
     const sig = all.filter(r => r.q <= K.PADJ && (r.dir === 'more' || r.dir === 'less'));
     // how the marks were found (provenance attributes) after what they are, as the Overview's caveat
     const prov = r => !!A[r.analysis]?.provenance, by = (x, y) => prov(x) - prov(y) || strength(y) - strength(x);
     const up = sig.filter(r => r.dir === 'more').sort(by), dn = sig.filter(r => r.dir === 'less').sort(by);
-    return { G, tested: all.length, up, dn, n: sig.length };
+    // near-duplicates (one class at several windows or cut-offs, or in several questions) count once: the best of each question's family, with how many more it stands for
+    const fam = list => { const m = new Map(); list.forEach(r => { const k = r.label.toLowerCase(); if (m.has(k)) m.get(k).related++; else m.set(k, { ...r, related: 0 }); }); return [...m.values()]; };
+    // circular for the selection: it names proteins, and the feature is a class named after one of them (a PRMT, in a list holding PRMT1)
+    const named = (K.sel.compute().q.genes || []).map(i => String(D.proteins[i]?.[1] || '').toUpperCase().replace(/[^A-Z]+/g, '')).filter(x => x.length >= 3);
+    const circ = r => !!named.length && (r.label.toUpperCase().match(/[A-Z]{3,}/g) || []).some(w => named.some(g => g.startsWith(w) || w.startsWith(g)));
+    const mark = list => { const o = fam(list); o.forEach(r => { r.circular = circ(r); }); return o; };
+    return { G, tested: all.length, up: mark(up), dn: mark(dn), n: sig.length, nFeat: fam(sig).length };
   }
   const fxR = v => (v == null ? '–' : K.fxn(v) + '×');
   const pcS = v => (v < 0.1 ? (100 * v).toFixed(1) : (100 * v).toFixed(0)) + '%';
@@ -246,22 +252,22 @@
   function enrichedCard() {
     const F = features(); if (!F) return '';
     const named = r => (r.label.length < 14 ? `${A[r.analysis]?.title || ''}: ${r.label}` : r.label);
-    const top = F.up.filter(r => !A[r.analysis]?.provenance).slice(0, 3).map(r => `${esc(named(r))} <b>${fxR(ratio(r))}</b>`).join(', ');
-    const row = (r, i, less) => `<tr${less ? ' class="dim" title="Less common here than in the other ' + esc(W.marks) + '"' : ` data-feat="${i}" tabindex="0" title="Narrow the selection to ${esc(W.marks)} with this feature"`}><td data-label="Feature">${esc(r.label)} <span class="muted small">${esc(A[r.analysis]?.title || '')}</span></td>` +
+    const top = F.up.filter(r => !A[r.analysis]?.provenance && !r.circular).slice(0, 3).map(r => `${esc(named(r))} <b>${fxR(ratio(r))}</b>`).join(', ');
+    const row = (r, i, less) => `<tr${less ? ' class="dim" title="Less common here than in the other ' + esc(W.marks) + '"' : ` data-feat="${i}" tabindex="0" title="Narrow the selection to ${esc(W.marks)} with this feature"`}><td data-label="Feature"><span title="${esc(r.label + ' · ' + (A[r.analysis]?.title || ''))}">${esc(r.label)}</span>${r.related ? ` <span class="muted small" title="${r.related} more ${r.related === 1 ? 'class' : 'classes'} with the same name, at other windows, cut-offs or questions, differ too">+${r.related} related</span>` : ''}${r.circular ? ' <span class="tag-circ small" title="The selection names proteins of this kind, so it restates the list; read it as a description, not a finding">circular</span>' : ''} <span class="muted small">${esc(A[r.analysis]?.title || '')}</span></td>` +
       `<td class="num" data-label="Here">${int(r.a)} (${pcS(share1(r))})</td><td class="num hide-xs" data-label="Other ${esc(W.marks)}">${pcS(share2(r))}</td><td class="num" data-label="Ratio"><b>${fxR(ratio(r))}</b></td><td class="num" data-label="q">${K.fq(r.q)}</td></tr>`;
     EN.rows = F.up.slice(0, 8);
     const body = F.n ? `<div class="tbl-card"><table class="tbl compact stackable prof-tbl"><thead><tr><th>Feature</th><th class="num">Here</th><th class="num hide-xs">Other ${esc(W.marks)}</th><th class="num">Ratio</th><th class="num">q</th></tr></thead><tbody>` +
       EN.rows.map((r, i) => row(r, i, false)).join('') + F.dn.slice(0, 4).map(r => row(r, -1, true)).join('') + '</tbody></table></div>'
       : `<p class="muted">No feature differs (q ≤ ${K.PADJ}) between this selection and the other ${esc(W.marks)}.</p>`;
-    return `<details class="pfold en-fold" id="sel-enriched"${EN.open ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>Enriched features</h3><span class="fsum">${top ? top + ' · ' : ''}${int(F.n)} of ${int(F.tested)} features differ (q ≤ ${K.PADJ})</span></summary><div class="pfold-body">` +
+    return `<details class="pfold en-fold" id="sel-enriched"${EN.open ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>Enriched features</h3><span class="fsum">${top ? top + ' · ' : ''}${int(F.n)} of ${int(F.tested)} features differ (q ≤ ${K.PADJ})${F.nFeat < F.n ? `, ${int(F.nFeat)} distinct` : ''}</span></summary><div class="pfold-body">` +
       `<div class="card-head"><p class="sub">Features more or less common in these ${int(F.G.g1.length)} ${esc(W.marks)} than in the other ${int(F.G.g2.length)}. Click one to narrow the selection.</p><span class="tools"><a class="btn small" href="${esc(K.link('overview', '', { vs: 'marks' }))}" title="Every question, with its tiles, compared with the other ${esc(W.marks)}">Compare question by question ›</a>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'enexp', 'the enriched features', 'q-tables')}</span></div>` + body +
       `<p class="note small">Fisher’s exact test per feature, Benjamini–Hochberg within each question, over ${int(F.tested)} features. ${cap(W.marks)} of one protein are not independent, so treat this as a pointer.</p></div></details>`;
   }
   function enrichedTsv() {
     const F = features(); if (!F) return '';
     return K.preamble('enriched features of the selection', `the features (classes of each question and values of each attribute) more or less common in the selection’s ${W.marks} than in the other ${W.marks}: Fisher’s exact test, Benjamini–Hochberg within each question; those at q ≤ ${K.PADJ}.`) +
-      ['question', 'feature', 'code', 'direction', 'here', 'here_total', 'others', 'others_total', 'share_here', 'share_others', 'ratio', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q'].join('\t') + '\n' +
-      [...F.up, ...F.dn].map(r => [A[r.analysis]?.title || r.analysis, r.label, r.category, r.dir, r.a, r.a + r.b, r.c, r.c + r.d, share1(r).toFixed(4), share2(r).toFixed(4), ratio(r)?.toFixed(3) ?? '', r.or?.toPrecision(4) ?? '', r.lo?.toPrecision(4) ?? '', r.hi?.toPrecision(4) ?? '', r.p.toExponential(3), r.q.toExponential(3)].join('\t')).join('\n') + '\n';
+      ['question', 'feature', 'code', 'direction', 'here', 'here_total', 'others', 'others_total', 'share_here', 'share_others', 'ratio', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q', 'related_classes', 'circular'].join('\t') + '\n' +
+      [...F.up, ...F.dn].map(r => [A[r.analysis]?.title || r.analysis, r.label, r.category, r.dir, r.a, r.a + r.b, r.c, r.c + r.d, share1(r).toFixed(4), share2(r).toFixed(4), ratio(r)?.toFixed(3) ?? '', r.or?.toPrecision(4) ?? '', r.lo?.toPrecision(4) ?? '', r.hi?.toPrecision(4) ?? '', r.p.toExponential(3), r.q.toExponential(3), r.related, r.circular ? 'yes' : ''].join('\t')).join('\n') + '\n';
   }
   function enrichedFigure() {
     const F = features(), rows = [...F.up.slice(0, 8), ...F.dn.slice(0, 4)], Wd = 760, rh = 22, lab = 300, bw = 300;

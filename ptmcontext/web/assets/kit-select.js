@@ -16,7 +16,7 @@
   'use strict';
   const { D, W, A, S, esc, int, cap } = K;
   const ST = window.PTMC_STATS;
-  const SEL_MIN = { proteins: 10, marks: 30 };
+  const SEL_MIN = { proteins: D.compare?.min_proteins ?? 10, marks: D.compare?.min_marks ?? 30 };   // website.compare.min_proteins / min_marks; the defaults are the original explorer's
   const SPECS = D.attribute_specs || {};
   const P = (D.proteins || []).map(([acc, gene, name, len, marks, cand, entry], i) => ({ i, acc, gene, name, len, marks, cand, entry }));
   const byAcc = Object.fromEntries(P.map(p => [p.acc, p]));
@@ -495,8 +495,12 @@
     const G = c.retests['groups|' + S.vs + '|' + (S.cmp || '')] ||= contrastPair();
     if (!G || G.g1.length < MIN_SIDE || G.g2.length < MIN_SIDE) return (c.retests[key] = null);
     const out = A[qid]?.kind === 'protein_sets' ? contrastSets(qid, G) : contrastResidue(qid, method === 'enricher' ? 'fisher' : method, G);
+    // a selection under the minimum (SEL_MIN) is described, not tested: counts and shares stay, no p, q, interval or direction
+    if (!testable()) out.forEach(r => { r.p = null; r.q = null; r.lo = null; r.hi = null; r.descriptive = true; });
     return (c.retests[key] = K.decorate(out));
   }
+  // the comparison is a test only when the selection reaches the minimum and each side has MIN_SIDE marks
+  const contrastOK = G => !!G && testable() && G.g1.length >= MIN_SIDE && G.g2.length >= MIN_SIDE;
   const contrastGroups = () => { const c = compute(); if (!SD || !c.active) return null; return c.retests['groups|' + S.vs + '|' + (S.cmp || '')] ||= contrastPair(); };
 
   // the rows of a question for the selection, shaped as the site's own (kit.js decorates them)
@@ -555,7 +559,8 @@
   }
   function chipsHtml() {
     const c = compute(), out = [], bad = new Set((c.unresolved || []).map(x => x.toLowerCase())), plain = plainOf(S.q).split(' ').filter(t => !bad.has(t.toLowerCase())).join(' ');
-    if (plain) out.push(`<span class="sel-chip">Search: <b>${esc(plain)}</b><button type="button" data-sel-clear-q aria-label="Remove the search">×</button></span>`);
+    const words = plain.split(' '), plainShown = words.length > 4 ? words.slice(0, 3).join(' ') + ` +${words.length - 3}` : plain;      // a pasted list: the first three, the rest on hover
+    if (plain) out.push(`<span class="sel-chip" title="${esc(plain)}">Search: <b>${esc(plainShown)}</b><button type="button" data-sel-clear-q aria-label="Remove the search">×</button></span>`);
     c.cons.filter(([, , fromSearch]) => fromSearch).forEach(([k, v, , raw]) => out.push(`<span class="sel-chip" title="${esc(raw)}">${esc(keyName(k))}: <b>${esc(v.map(x => valueName(k, x)).join(' or '))}</b><button type="button" data-sel-drop-term="${esc(raw)}" aria-label="Remove ${esc(raw)}">×</button></span>`));
     (c.unresolved || []).forEach(raw => { if (/:/.test(raw)) out.push(`<span class="sel-chip bad" title="Matches nothing: no ${esc(W.mark)} is selected while it stays">${esc(raw)}<button type="button" data-sel-drop-term="${esc(raw)}" aria-label="Remove ${esc(raw)}">×</button></span>`); });
     c.cons.filter(([, , fromSearch]) => !fromSearch).forEach(([k, v]) => out.push(`<span class="sel-chip">${esc(keyName(k))}: <b>${esc(v.map(x => valueName(k, x)).join(' or '))}</b><button type="button" data-sel-clear="${esc(k)}" aria-label="Remove">×</button></span>`));
@@ -806,5 +811,5 @@
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('fgroup')) { (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g); } }, true);
   addEventListener('keydown', e => { if (e.key === 'Escape' && R.open) { R.open = false; rail(); } });
 
-  Object.assign(K, { watchSections, sel: { nFilters: () => Object.keys(S.f).length + (S.q ? 1 : 0), ready, active, testable, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, STUDY, MIN_SIDE, refresh, lookup, nearSymbols, parsePattern, dropTerm, isTermKey, aliasesOf: i => aliasesOf[i] || [], nameOf, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
+  Object.assign(K, { watchSections, sel: { nFilters: () => Object.keys(S.f).length + (S.q ? 1 : 0), ready, active, testable, contrastOK, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, STUDY, MIN_SIDE, refresh, lookup, nearSymbols, parsePattern, dropTerm, isTermKey, aliasesOf: i => aliasesOf[i] || [], nameOf, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
 });

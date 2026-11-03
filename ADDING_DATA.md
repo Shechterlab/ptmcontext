@@ -271,6 +271,8 @@ marks:
     studies: {column: <column>, label: Studies, kind: list, separator: "; ", link: {column: <ids column>, url: "https://doi.org/{}"}, filter: true,
               provenance: true}   # how a mark was found, not what it is: a caveat when marks are compared, and the
                                   # within-study strata (website.compare.stratify names another)
+                                  # website.compare: {min_proteins: 10, min_marks: 30} is the smallest selection that is tested (these are the defaults);
+                                  # a smaller one gets counts and shares only, with no p, q or "enriched"
     changed: {column: <changes column>, present: true, label: Changed in tumours, kind: category,
               values: {"yes": Changed, "no": Not changed}, filter: true}           # a yes/no filter over a column of changes
     response: {column: <perturbations>, pair_with: <their calls>, label: Responses, kind: list, control: select,

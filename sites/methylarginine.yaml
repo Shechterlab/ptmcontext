@@ -1522,7 +1522,7 @@ website:                  # the look and words of the website (ptmc web); layout
     sel-enriched: "?vs=marks"
     ov-ix: "#interactions"            # the explorer's Interactions and binding question: the Interactions page
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
-  compare: {stratify: studies}      # "compared with other methylarginines, within studies": the same reporting sources
+  compare: {stratify: studies, min_proteins: 10, min_marks: 30}      # "compared with other methylarginines, within studies": the same reporting sources
   proteins:                # the Proteins page (kit-tables.js): its table's columns after the protein and its sites, in the Columns
                            # menu (default: true shows at first), and its download's columns; the explorer's
     columns:
@@ -1981,8 +1981,8 @@ website:                  # the look and words of the website (ptmc web); layout
       - {analysis: motif, best: true, label: "in {class} motifs", kind: Sequence motif, glyph: letters, opens: p-score}
       - {analysis: disorder, classes: [disordered], label: in disordered regions, kind: Position in the protein, glyph: wave, opens: p-regions}
       - {attribute: evidence, values: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, rbrid_residue_published_rule, rbrid_region],
-         label: in RNA-bound regions, kind: RNA · in living cells, glyph: squiggle, opens: p-sites,
-         tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RBR-ID+ peptide"}
+         label: in RNA-bound regions, kind: Bound region · crosslinking and RBDmap in cells, glyph: squiggle, opens: p-sites,
+         tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RBR-ID+ peptide. This is where RNA binds in cells, not a structural contact: the RNA and DNA interactions section counts the sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
       - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
       - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds}
     card:                  # the site card: its blocks, each reading an attribute or a table above (a block without its data is absent)

@@ -57,7 +57,7 @@
   // ---- words ----------------------------------------------------------------------------------------------------------
   function evidenceText(m) {
     const parts = [], contact = m.direct.size, via = m.near.size;
-    if (contact || via) parts.push((contact ? `${plural(contact, 'site')} in contact` : '') + (via ? `${contact ? ', ' + int(via) + ' more' : plural(via, 'site')} ${NC.near?.label || 'in contact through a neighbouring residue'}` : '') + ' in structures');
+    if (contact || via) parts.push((contact ? `${plural(contact, 'site')} in structural contact (side chain within 4 Å)` : '') + (via ? `${contact ? ', ' + int(via) + ' more' : plural(via, 'site')} ${NC.near?.label || 'in contact through a neighbouring residue'}` : '') + ' in structures');
     if (m.xl.length) parts.push(`${plural(m.xl.length, 'residue')} crosslinked in cells${m.xlSites.length ? ` (${plural(m.xlSites.length, 'site')} within ${NC.crosslinks?.span ?? 5} residues of one)` : ''}`);
     if (m.reg.length) parts.push(`${plural(m.reg.length, 'bound region')} in structures`);
     if (m.motifs.length) parts.push(plural(m.motifs.length, 'DNA-binding profile'));

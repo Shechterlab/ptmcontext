@@ -25,7 +25,7 @@
     let rows = [], G = null;
     try {
       G = K.sel.contrastGroups();
-      if (G && G.g1.length >= K.sel.MIN_SIDE && G.g2.length >= K.sel.MIN_SIDE) {
+      if (K.sel.contrastOK(G)) {
         const qs = Object.values(A).filter(a => a.kind === 'residue' || (a.kind === 'attribute' && !a.provenance));
         rows = qs.flatMap(a => (K.sel.contrast(a.id, 'fisher') || []).filter(r => !r.descriptive && !EXCL.test(r.label || '') && r.a + r.c >= 10));
       }

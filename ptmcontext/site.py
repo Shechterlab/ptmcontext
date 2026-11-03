@@ -306,6 +306,10 @@ def website_problems(site: dict) -> list[str]:
     st = (web.get('compare') or {}).get('stratify')
     if st and (st not in attrs or attrs[st].get('kind') != 'list'):
         out.append(f"website.compare.stratify: {st!r} is not a list attribute of the marks")
+    for k in ('min_proteins', 'min_marks'):
+        v = (web.get('compare') or {}).get(k)
+        if v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 1):
+            out.append(f"website.compare.{k}: {v!r} is not a whole number of at least 1")
     words = _analysis_words(site)
     for a in (web.get('sites') or {}).get('columns', []):
         if a not in ids:

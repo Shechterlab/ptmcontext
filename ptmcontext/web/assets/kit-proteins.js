@@ -150,6 +150,12 @@
         `</tbody></table></div></div></details>`;
     }).join('');
   }
+  // the one-line answer to "is that unusual?" for a single protein: what these counts can and cannot say, and where the dataset-wide answer is
+  function scoreVerdict(p, rec) {
+    const qs = D.analyses.filter(a => rec.counts[a.id] && a.kind !== 'protein_sets'), n = rec.marks.length, others = Math.max(0, (rec.totals[qs[0]?.id] || [0, 0])[1]);
+    return `<p class="verdict"><b>Unusual?</b> One protein cannot say: its ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} are not independent and only ${int(others)} other ${esc(W.residues)} are left to compare with, so no test is made here. ` +
+      `These counts describe ${esc(p.gene || p.acc)}. Whether a class is unusual for ${esc(W.marks)} is tested across the whole dataset, one question at a time: ${qs.slice(0, 8).map(a => `<a href="${esc(K.link('overview', a.id))}">${esc(a.title)}</a>`).join(', ')}${qs.length > 8 ? ', …' : ''}.</p>`;
+  }
   const winHtml = w => { const c = Math.floor(w.length / 2); return `<span class="win">${esc(w.slice(0, c))}<b>${esc(w[c])}</b>${esc(w.slice(c + 1))}</span>`; };
   // the links every protein has
   // the links every protein has: the kit's list (config/protein_links.json), the site's own (website.protein.links), and
@@ -398,9 +404,9 @@
     const on = new Set(K.columns.on(table, cols, defaults)), shown = cols.filter(c => on.has(c.id));
     const flt = TC?.filter && SPECS[TC.filter] ? TC.filter : null, fv = flt ? PV.pf : '';
     const posList = TC?.positions && K.card.has(TC.positions.table) ? TC.positions : null;
-    const head = `<tr><th>Site</th>${colourAttr ? `<th>${esc(SPECS[colourAttr].label)}</th>` : ''}<th>Window ±7${FLAGS.length ? ' · ' + esc(FLAGS.map(a => A[a]?.title || a).join(', ').toLowerCase()) : ''}</th>${shown.map(c => `<th>${esc(c.label)}</th>`).join('')}<th><span class="vh">Actions</span></th></tr>`;
+    const head = `<tr><th aria-sort="ascending" title="In order along the chain">Site</th>${colourAttr ? `<th>${esc(SPECS[colourAttr].label)}</th>` : ''}<th>Window ±7${FLAGS.length ? ' · ' + esc(FLAGS.map(a => A[a]?.title || a).join(', ').toLowerCase()) : ''}</th>${shown.map(c => `<th>${esc(c.label)}</th>`).join('')}<th><span class="vh">Actions</span></th></tr>`;
     const n = 3 + (colourAttr ? 1 : 0) + shown.length;
-    const body = rec.marks.map(m => {
+    const body = [...rec.marks].sort((x, y) => x[0] - y[0]).map(m => {      // along the chain, as the original explorer lists them
       if (fv && attrVal(m, flt) !== fv) return '';
       const c = cardCtx(p, rec, m), off = sel && !sel.has(m[0]), open = PV.evOpen.has(m[0]);
       const src = posList ? [...new Set(String((K.card.at(c.tb, posList.table, m[0])[0] || {})[posList.column] || '').split(/;\s*/).filter(Boolean))] : [];
@@ -455,7 +461,7 @@
       fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''}`, `<div class="card-head"><p class="sub">The ${esc(W.marks)} on the protein, with rows from the site’s data and live sources. Hover for what an item is, click to pin it.</p>${mapExp(['pdf', 'svg', 'png', 'tsv'])}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
       (headline(p, rec) || legacyFacts(p, rec, nSrc)) +
       fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}${nSrc ? `, each with the ${esc(SPECS[nSrc].label.toLowerCase())} that report it` : ''}${rec.shown?.length ? ` · ${int(rec.shown.length)} more ${esc(K.shown.row())}` : ''}`, sitesTable(p, rec, sel), true) +
-      fold('p-score', `Its ${esc(W.marks)}, against its other ${esc(W.residues)}`, 'counted in this protein', `<p class="sub">The classes its ${esc(W.marks)} fall in, and how often its other ${esc(W.residues)} do. A row opens every class.</p><div class="hub">${scoreRows(p, rec)}</div>`, false) +
+      fold('p-score', `Its ${esc(W.marks)}, against its other ${esc(W.residues)}`, 'counted in this protein', `${scoreVerdict(p, rec)}<p class="sub">The classes its ${esc(W.marks)} fall in, and how often its other ${esc(W.residues)} do. A row opens every class.</p><div class="hub">${scoreRows(p, rec)}</div>`, false) +
       (D.analyses.some(a => a.kind === 'protein_sets') ? fold('p-kinds', 'Kinds of protein', 'its classes, pathways and locations, with the site’s result for each', kindsHtml(p), false) : '') +
       (K.proteinFolds || []).map(f => f(p, rec, fold)).join('') +
       fold('p-regions', 'Domains and regions', `${int(rec.units.length)} region${rec.units.length === 1 ? '' : 's'} the site’s questions read`, regionsHtml(p, rec), false) +

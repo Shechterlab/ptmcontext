@@ -3963,7 +3963,9 @@
             "stratify": {
               "type": "string",
               "description": "the list attribute whose sources define the within-study strata (default: the first provenance list attribute with a link)"
-            }
+            },
+            "min_proteins": {"type": "integer", "minimum": 1, "description": "the fewest proteins a selection needs to be tested against the other marks (default 10, the original explorer's)"},
+            "min_marks": {"type": "integer", "minimum": 1, "description": "the fewest marks a selection needs to be tested (default 30); a smaller one shows counts and shares only, with no p or q"}
           }
         },
         "tabs": {

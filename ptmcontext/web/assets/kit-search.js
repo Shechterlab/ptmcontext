@@ -139,7 +139,17 @@
     if (active >= 0) input.setAttribute('aria-activedescendant', 'q-opt-' + active); else input.removeAttribute('aria-activedescendant');
   }
   const close = () => { items = []; active = -1; draw(); };
-  function update() { loadLight(); items = document.activeElement === input ? suggestions(input.value) : []; active = -1; draw(); }
+  // a pasted list (two or more words) is not being typed: no suggestions for its last word
+  let pasted = false;
+  input.addEventListener('paste', () => { pasted = true; });
+  input.addEventListener('keydown', () => { pasted = false; });
+  let nWords = 0;
+  function update() {
+    const n = (input.value.match(/\S+/g) || []).length, jump = n - nWords >= 2;      // two or more words arriving at once are a paste (or a fill)
+    nWords = n;
+    if ((pasted || jump) && n >= 2) { pasted = false; close(); return; }
+    pasted = false;
+    loadLight(); items = document.activeElement === input ? suggestions(input.value) : []; active = -1; draw(); }
   // the search as typed, applied as the box's own input does: a protein named alone opens it
   function apply(text, open) {
     input.value = text; S.q = text.trim(); close();
