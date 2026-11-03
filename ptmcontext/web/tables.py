@@ -186,3 +186,39 @@ def dedupe(shard: dict, min_len: int = 8) -> dict:
     for acc, rec in shard.items():
         out[acc] = {**rec, 'tables': recode(rec['tables'])} if 'tables' in rec else recode(rec)
     return out
+
+
+# the blocks of a site card the Sites page draws in its default columns, and the card settings naming the tables each reads
+DEFAULT_BLOCKS = ('status', 'tags', 'sequences', 'around', 'calls')
+
+
+def default_tables(card: dict) -> list[str]:
+    """The tables the card blocks of DEFAULT_BLOCKS read (website.protein.card): the partner table of the tags, the bound
+    windows' tables, the table of the residues around a site and the tables of the calls."""
+    ev = card.get('evidence') or {}
+    names = [(ev.get('tags') or {}).get('partners'), *((ev.get('sequences') or {}).get('tables') or []),
+             (ev.get('around') or {}).get('table'), *((card.get('calls') or {}).get('tables') or [])]
+    return list(dict.fromkeys(n for n in names if n))
+
+
+def compact_defaults(header: dict, rows: dict, names: list[str], positions: dict) -> dict:
+    """One small file for the Sites page's default columns: of each protein, the rows of `names` the blocks read. A table
+    keyed by site keeps the rows at the protein's marked positions (`positions`: accession to a set); any other keeps all
+    its rows, as the blocks read it by range. Same layout as a shard of data/e, strings written once."""
+    names = [n for n in names if n in header]
+    out = {}
+    for acc, tb in rows.items():
+        keep = {}
+        for n in names:
+            rs = tb.get(n)
+            if not rs:
+                continue
+            cols = header[n]['columns']
+            if 'position' in cols:
+                k, ok = cols.index('position'), positions.get(acc, set())
+                rs = [r for r in rs if r[k] in ok]
+            if rs:
+                keep[n] = rs
+        if keep:
+            out[acc] = keep
+    return dedupe(out)

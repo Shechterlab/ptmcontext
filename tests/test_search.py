@@ -235,3 +235,44 @@ window.PTMC_MODULES.forEach(m => m(K));
     assert out['binds_high']['marks'] == p1                                      # at 0.9, only P1's partner THREE (0.95)
     assert out['term']['marks'] == p1                                            # binding:yes stands for the protein attribute go
     assert out['spacing']['marks'] == ['P1:2', 'P1:5']                           # another mark within 3
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_a_selections_retest_counts_equal_the_per_feature_counts(tmp_path):
+    """The retest of a selection counts every class in one pass over its marks (featureCounts); the numbers are the ones
+    the per-class filters gave: for each question and attribute, over random subsets and strata of many marks."""
+    root = _toy(tmp_path)
+    index = _build(root)
+    data = _page_data(index)
+    sel = (index.parent / 'data' / 'selection.json').read_text()
+    script = f"""
+const noop = () => {{}};
+global.window = global; global.addEventListener = noop; global.innerWidth = 1400; global.requestAnimationFrame = f => 0;
+global.localStorage = {{ getItem: () => null, setItem: noop }}; global.CSS = {{ escape: s => s }};
+const inline = {{ 'selection-data': {json.dumps(sel)} }};
+global.document = {{ getElementById: id => (inline[id] ? {{ textContent: inline[id] }} : null), addEventListener: noop, querySelector: () => null,
+  querySelectorAll: () => [], documentElement: {{ style: {{ setProperty: noop }} }}, body: {{ classList: {{ toggle: noop, contains: () => false }} }} }};
+const fs = require('fs');
+for (const f of ['kit-select.js']) eval(fs.readFileSync({json.dumps(str(ASSETS))} + '/' + f, 'utf8'));
+const D = {json.dumps(data)}, esc = s => String(s ?? ''), A = Object.fromEntries(D.analyses.map(a => [a.id, a]));
+const K = {{ D, W: D.words, A, S: {{ q: '', f: {{}}, vs: 'residues' }}, esc, int: n => String(n), cap: t => t, clicks: [], render: noop, writeHash: noop,
+  link: v => '#' + v, decorate: r => r, sections: {{}}, views: {{}}, tabs: [] }};
+window.PTMC_MODULES.forEach(m => m(K));
+(async () => {{
+  const SD = await K.sel.ready; let seed = 7; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const base = SD.marks, ms = [];
+  for (let i = 0; i < 300; i++) {{ const m = base[i % base.length];
+    ms.push([m[0], m[1], m[2].map(cs => cs.filter(() => rnd() < 0.7).concat(rnd() < 0.2 ? cs.slice(0, 1) : [])), m[3].map(cs => cs.filter(() => rnd() < 0.7))]); }}
+  const ids = [...D.analyses.map(a => a.id).filter(a => SD.classes[a]), ...Object.keys(SD.attributes).map(n => '@' + n)];
+  const bad = []; let checked = 0;
+  for (const q of ids) {{
+    const f = K.sel.featuresOf(q);
+    for (const sub of [ms, ms.filter(() => rnd() < 0.5), []]) {{
+      const got = K.sel.featureCounts(q, sub), want = f.map(x => sub.filter(x.has).length); checked += f.length;
+      if (JSON.stringify(got) !== JSON.stringify(want)) bad.push([q, got, want]);
+    }}
+  }}
+  console.log(JSON.stringify({{ bad, checked, ids: ids.length }}));
+}})();"""
+    out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
+    assert out['bad'] == [] and out['checked'] > 3 and out['ids'] > 0

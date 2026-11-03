@@ -20,6 +20,12 @@
   // a protein's tables ({} when it has no rows, null when they cannot be read)
   // a shard writes its repeated strings once ('_s'); a number in a row (but a position) is an index there
   const load = acc => (Object.keys(TH).length ? getShard('e', shardOf(acc)).then(sh => ({ ...(sh[acc] || {}), _s: sh._s || [] }), () => null) : Promise.resolve({}));
+  // the Sites page's default columns read one small file (data/sites_default.json) for every protein, not a shard each;
+  // the one-file copy, which holds the shards, reads those
+  const SDF = Object.keys(inline).length ? null : D.sites_default || null;
+  let defLoad = null, defData = null; const defTb = {};
+  const loadDefault = () => (defLoad ||= fetch('data/sites_default.json').then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status))))).catch(() => ({})).then(f => (defData = f)));
+  const defaultTb = acc => (defData ? (defTb[acc] ||= { ...(defData[acc] || {}), _s: defData._s || [] }) : undefined);
   const light = acc => getShard('u', shardOf(acc)).then(sh => (sh[acc] ? { ...sh[acc], _s: sh._s || [] } : null), () => null);
   const str = (s, v) => (typeof v === 'number' ? (s[v] ?? '') : v);
   const NUMS = new Set(['position', 'start', 'end']);                  // the columns whose numbers are numbers
@@ -472,6 +478,6 @@
     ['[data-entry3d]', (el, e) => { if (typeof K.show3d === 'function') { e.preventDefault(); K.show3d(el.dataset.acc, +el.dataset.pos, { entry: el.dataset.entry3d }); } else window.open(el.href, '_blank', 'noopener'); }],
     ['[data-open-fold]', el => { const d = document.getElementById(el.dataset.openFold); if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); } }],
   );
-  K.card = { load, light, lightIndex, rows, at, has, badge, tags, entries, sequences, around, states, changes, calls, evidenceBlock, recordsBlock, recordsTsv,
+  K.card = { load, loadDefault, defaultTb, compact: SDF, light, lightIndex, rows, at, has, badge, tags, entries, sequences, around, states, changes, calls, evidenceBlock, recordsBlock, recordsTsv,
     writerBlock, evidenceRow, reportedBy, citeBox, asPartner, partnersOf, wholeProtein, aroundRows, windowsOf, callRows, num };
 });

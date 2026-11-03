@@ -26,14 +26,18 @@
 
   // ---- each protein's tables (website.tables), loaded as rows need them -------------------------------------------
   const TB = {}, WAIT = new Set();
-  let redraw = 0;
+  let redraw = 0, defAsked = false;
+  const again = () => { if (!redraw) redraw = requestAnimationFrame(() => { redraw = 0; if (S.view === 'sites') { const y = scrollY; K.render(); scrollTo(0, y); } }); };
   function need(acc) {
     if (TB[acc] !== undefined || WAIT.has(acc) || !K.card) return;
     WAIT.add(acc);
-    K.card.load(acc).then(tb => { TB[acc] = tb || {}; WAIT.delete(acc); if (!redraw) redraw = requestAnimationFrame(() => { redraw = 0; if (S.view === 'sites') { const y = scrollY; K.render(); scrollTo(0, y); } }); });
+    K.card.load(acc).then(tb => { TB[acc] = tb || {}; WAIT.delete(acc); again(); });
   }
-  const ctxOf = m => {
-    const p = pr(m[0]), tb = TB[p.acc] || {};
+  // the default columns' blocks read one small file for all the proteins (K.card.compact), once
+  const covered = c => { const cp = K.card?.compact; return !!cp && (c.show || []).every(k => k === 'nearest' || cp.blocks.includes(k)); };
+  const defTb = acc => { if (!defAsked) { defAsked = true; K.card.loadDefault().then(again); } return K.card.defaultTb(acc); };
+  const ctxOf = (m, tb0) => {
+    const p = pr(m[0]), tb = tb0 || TB[p.acc] || {};
     return { p, m, tb, acc: p.acc, pos: m[1], gene: K.tables.pLabel(p), label: siteName(p, m[1]), seq: '', window: m[4], rec: { marks: [] },
       shown: q => (K.prot?.shownPos ? K.prot.shownPos(p.acc, q) : q), attr: n => K.tables.attrStr(m, n), attrHtml: (n, v) => K.sel.listHtml(n, [v], [], p.acc, true), isListed: () => true };
   };
@@ -112,8 +116,10 @@
     if (c.analyses) return c.analyses.map((a, k) => `<span class="${k ? 'muted' : ''}" title="${esc(K.tables.classes(m, a).map(x => (A[a]?.help || {})[x] || '').filter(Boolean).join('; '))}">${esc(K.tables.classes(m, a).map(x => K.sel.classLabel(a, x)).join(', '))}</span>`).join('<br>');
     if ((c.show || []).length === 1 && c.show[0] === 'nearest') { const n = nearest(m); return n == null ? dash : `${int(n)} aa`; }
     const p = pr(m[0]);
-    if (TB[p.acc] === undefined) { need(p.acc); if (c.show.some(k => WAITS.has(k))) return '<span class="muted">…</span>'; }
-    const ctx = ctxOf(m), h = c.show.map(k => {
+    let dtb;
+    if (covered(c)) { dtb = defTb(p.acc); if (!dtb && c.show.some(k => WAITS.has(k) || k === 'tags')) return '<span class="muted">…</span>'; }
+    else if (TB[p.acc] === undefined) { need(p.acc); if (c.show.some(k => WAITS.has(k))) return '<span class="muted">…</span>'; }
+    const ctx = ctxOf(m, dtb), h = c.show.map(k => {
       if (k === 'nearest') { const n = nearest(m); return n == null ? '' : `${int(n)} aa`; }
       if (k === 'nearest_domain') return nearestDomain(ctx);
       if (k === 'status') return K.card.badge(ctx);

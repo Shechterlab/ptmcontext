@@ -421,6 +421,25 @@
     const ai = AN().indexOf(qid); if (ai < 0) return [];
     return SD.classes[qid].map((c, ci) => ({ code: c, has: m => m[2][ai].includes(ci) }));
   }
+  // how many of the marks `ms` each of featuresOf(qid) holds, in one pass over them (not one pass for each feature); a
+  // mark counts once for a class it lists twice, as `has` did
+  function featureCounts(qid, ms) {
+    const f = featuresOf(qid), n = new Array(f.length).fill(0);
+    if (qid[0] === '@') {
+      const name = qid.slice(1), ti = AT().indexOf(name), sp = SPECS[name] || {};
+      if (sp.kind === 'number') {
+        const nums = SD.numbers[name], ts = f.map(x => +x.code);
+        for (const m of ms) { const cs = m[3][ti]; ts.forEach((t, k) => { if (cs.some(c => nums[c] >= t)) n[k]++; }); }
+        return n;
+      }
+      const at = new Map(f.map((x, k) => [SD.attributes[name].indexOf(x.code), k]));
+      for (const m of ms) { const cs = m[3][ti]; for (let j = 0; j < cs.length; j++) { const k = at.get(cs[j]); if (k !== undefined && cs.indexOf(cs[j]) === j) n[k]++; } }
+      return n;
+    }
+    const ai = AN().indexOf(qid), at = new Map(f.map((x, k) => [SD.classes[qid].indexOf(x.code), k]));
+    for (const m of ms) { const cs = m[2][ai]; for (let j = 0; j < cs.length; j++) { const k = at.get(cs[j]); if (k !== undefined && cs.indexOf(cs[j]) === j) n[k]++; } }
+    return n;
+  }
   let studyOf = null;                          // mark index -> the set of sources that report it, as one key
   const studyKey = i => { if (!studyOf) { const ti = AT().indexOf(STUDY); studyOf = SD.marks.map(m => (ti < 0 ? '' : [...m[3][ti]].sort((x, y) => x - y).join(','))); } return studyOf[i]; };
   // the two groups: [group 1 (the selection), group 2, marks both hold, the constraints of both]
@@ -454,12 +473,14 @@
       G.g2.forEach((i, k) => { const s = keyOf(i); (by.get(s) || by.set(s, [[], []]).get(s))[1].push(m2[k]); });
       strata = [...by.values()].filter(([x, y]) => x.length && y.length);
     }
-    const rows = featuresOf(qid).map(f => {
-      let a = 0, c = 0; for (const m of m1) if (f.has(m)) a++; for (const m of m2) if (f.has(m)) c++;
+    const feats = featuresOf(qid), A1 = featureCounts(qid, m1), C1 = featureCounts(qid, m2);
+    const SX = strata && strata.map(([x, y]) => [featureCounts(qid, x), x.length, featureCounts(qid, y), y.length]);
+    const rows = feats.map((f, k) => {
+      const a = A1[k], c = C1[k];
       if (!a && !c) return null;
       const b = n1 - a, d = n2 - c;
       if (method === 'fisher') { const fi = ST.fisher(a, b, c, d), [lo, hi] = woolf(a, b, c, d); return { analysis: qid, category: f.code, a, b, c, d, or: fi.or, lo, hi, p: fi.p, strata: null, method, selection: true, vs: S.vs }; }
-      const r = ST.mh(strata.map(([x, y]) => { const ax = x.filter(f.has).length, cy = y.filter(f.has).length; return [ax, x.length - ax, cy, y.length - cy]; }));
+      const r = ST.mh(SX.map(([ax, nx, cy, ny]) => [ax[k], nx - ax[k], cy[k], ny - cy[k]]));
       return { analysis: qid, category: f.code, a, b, c, d, or: r.or, lo: r.lo, hi: r.hi, p: r.p, strata: r.strata, method, selection: true, vs: S.vs };
     }).filter(Boolean);
     const circ = circularFor(qid, G.cons);
@@ -811,5 +832,5 @@
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('fgroup')) { (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g); } }, true);
   addEventListener('keydown', e => { if (e.key === 'Escape' && R.open) { R.open = false; rail(); } });
 
-  Object.assign(K, { watchSections, sel: { nFilters: () => Object.keys(S.f).length + (S.q ? 1 : 0), ready, active, testable, contrastOK, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, STUDY, MIN_SIDE, refresh, lookup, nearSymbols, parsePattern, dropTerm, isTermKey, aliasesOf: i => aliasesOf[i] || [], nameOf, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
+  Object.assign(K, { watchSections, sel: { nFilters: () => Object.keys(S.f).length + (S.q ? 1 : 0), ready, active, testable, contrastOK, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, featureCounts, STUDY, MIN_SIDE, refresh, lookup, nearSymbols, parsePattern, dropTerm, isTermKey, aliasesOf: i => aliasesOf[i] || [], nameOf, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
 });

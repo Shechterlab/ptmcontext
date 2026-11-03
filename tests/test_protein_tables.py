@@ -181,3 +181,37 @@ console.log(JSON.stringify({{ ev: K.card.evidenceBlock(c), rec: K.card.recordsBl
     assert '<b>v</b>Knockout A' in out['calls'] and 'no change' in out['five']
     assert 'Placed well' in out['row'] and 'Placed near' in out['row'] and '⚠' in out['row'] and '<span class="c" title="This site">' in out['row']
     assert 'Ann et al., J 1:1 (2020)' in out['cite'] and 'doi:10.1/b' in out['cite']
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_the_sites_pages_one_small_file_draws_the_same_blocks_as_the_shards(tmp_path):
+    """data/sites_default.json holds only the rows the default columns' blocks read; each of those blocks, at every
+    marked site, comes out the same from it as from the protein's whole shard."""
+    root = _toy(tmp_path)
+    S.run(root / 'sites' / 'toy.yaml', root=root / 'data', log=lambda *_: None)
+    index = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None)
+    data = _page_data(index)
+    folder = index.parent / 'data'
+    assert data['sites_default']['blocks'] == ['status', 'tags', 'sequences', 'around', 'calls']
+    assert 'ev' in data['sites_default']['tables'] and 'meas' in data['sites_default']['tables']
+    small = json.loads((folder / 'sites_default.json').read_text())
+    whole = json.loads((folder / 'e' / f'{web.shard_of("P1"):02d}.json').read_text())
+    assert (folder / 'sites_default.json').stat().st_size < sum(f.stat().st_size for f in (folder / 'e').glob('*.json'))
+    script = f"""
+global.window = {{}}; global.document = {{ getElementById: () => null, addEventListener: () => {{}} }};
+eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-sitecard.js'))}, 'utf8'));
+const D = {json.dumps(data)}, esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}})[c]);
+const K = {{ D, W: D.words, esc, int: n => String(n), cap: t => String(t)[0].toUpperCase() + String(t).slice(1), clicks: [], link: (v, a) => '#' + v + '/' + a,
+  map: {{ attrColour: () => '#000' }}, preamble: () => '', CIT: {{}}, download: () => {{}} }};
+window.PTMC_MODULES[0](K);
+const attrs = {{ state: 'me1', ev: 'xl; pred', studies: 'LabA; LabB', rec_class: '' }};
+const full = {{ ...{json.dumps(whole)}['P1'], _s: {json.dumps(whole.get('_s', []))} }}, part = {{ ...({json.dumps(small)}['P1'] || {{}}), _s: {json.dumps(small.get('_s', []))} }};
+const draw = (tb, pos) => {{ const c = {{ p: {{ acc: 'P1' }}, tb, acc: 'P1', pos, gene: 'ONE', label: 'R' + pos, seq: '', window: '', shown: q => q,
+  attr: n => attrs[n] ?? '', attrHtml: (n, v) => v, isListed: () => true }};
+  return ['badge', 'tags', 'sequences', 'around', 'calls'].map(k => K.card[k](c, true)).join('|'); }};
+const out = {{}}; [2, 5, 32].forEach(p => {{ out[p] = [draw(full, p), draw(part, p)]; }});
+console.log(JSON.stringify(out));"""
+    out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
+    for pos, (a, b) in out.items():
+        assert a == b, pos
+    assert any(len(a) > 40 for a, _ in out.values())

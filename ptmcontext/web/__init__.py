@@ -42,7 +42,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit.js')
+MODULES = ('kit-busy.js', 'kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -646,7 +646,7 @@ def unit_value_data(folder: Path, listing: list, tracks: list[dict]) -> dict:
     return out
 
 
-def protein_tables(specs: dict, run: dict, data: dict, listing: list, fasta: Path, out: Path, log=print) -> tuple[dict, int]:
+def protein_tables(specs: dict, run: dict, data: dict, listing: list, fasta: Path, out: Path, log=print, records: dict | None = None) -> tuple[dict, int]:
     """Pack the site's website.tables (tables.py) for the protein pages: each protein's rows into data/e/NN.json (the
     shards of data/p), the rows that name a protein without marks into its light page's record in data/u/NN.json (with its
     name, length and sequence from the snapshot), and an index of those proteins (data/u/index.json). Adds the tables'
@@ -659,6 +659,8 @@ def protein_tables(specs: dict, run: dict, data: dict, listing: list, fasta: Pat
     for d in ('e', 'u'):
         if (out / 'data' / d).exists():
             shutil.rmtree(out / 'data' / d)
+    (out / 'data' / 'sites_default.json').unlink(missing_ok=True)
+    data.pop('sites_default', None)
     if not specs:
         return {}, 0
     paths = {}
@@ -683,6 +685,14 @@ def protein_tables(specs: dict, run: dict, data: dict, listing: list, fasta: Pat
                     if r[k]:
                         aliases[acc] = '; '.join(dict.fromkeys(filter(None, (aliases.get(acc, '') + '; ' + r[k]).split('; '))))
     data['protein_aliases'] = aliases
+    # the Sites page's default columns read a few tables at the marks: one small file, not a shard per protein
+    names = T.default_tables((data.get('protein_view') or {}).get('card') or {})
+    if records is not None and names:
+        pos = {a: {m[0] for m in (r.get('marks') or []) + (r.get('shown') or [])} for a, r in records.items()}
+        compact = T.compact_defaults(header, rows, names, pos)
+        (out / 'data' / 'sites_default.json').write_text(json.dumps(compact, separators=(',', ':'), default=int))
+        data['sites_default'] = {'blocks': list(T.DEFAULT_BLOCKS), 'tables': [n for n in names if n in header]}
+        log(f"  sites page default columns: {len(compact):,} proteins, {(out / 'data' / 'sites_default.json').stat().st_size / 1e6:.1f} MB in one file")
     shards: dict[int, dict] = {}
     for acc, tb in rows.items():
         shards.setdefault(shard_of(acc), {})[acc] = tb
@@ -823,7 +833,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         (out / 'data' / 'units.json').unlink()
     # the tables the protein pages show (website.tables, in the formats of CONTRACTS.md): each protein's rows beside its
     # page (data/e), the rows naming a protein without marks on its own light page (data/u), lookups in the page
-    ev_shards, light = protein_tables(web.get('tables') or {}, run, data, listing, fasta, out, log) if listing else ({}, 0)
+    ev_shards, light = protein_tables(web.get('tables') or {}, run, data, listing, fasta, out, log, {a: r for sh in shards.values() for a, r in sh.items()}) if listing else ({}, 0)
     data['light_pages'] = light
     if listing:
         # the search's words and the filters that read more than the marks' classes (website.search): windows and

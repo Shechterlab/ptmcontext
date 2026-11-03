@@ -1318,3 +1318,9 @@ a[href^="http"]:hover::after { opacity: 1; }
 .pn-ilist { margin: 0.2rem 0 0.6rem; padding-left: 1.1rem; font-size: 0.88rem; }
 .pn-igrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 0 1.5rem; }
 .tag-circ { color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3em; }
+/* progress: a bar on the window's top edge, only while a data file is slow (kit-busy.js); fixed, so it moves nothing */
+#busy { position: fixed; inset: 0 0 auto 0; height: 3px; z-index: 1000; pointer-events: none; overflow: hidden; background: color-mix(in srgb, var(--accent) 18%, transparent); }
+#busy[hidden] { display: none; }
+#busy i { display: block; height: 100%; width: 35%; background: var(--accent); animation: busy-slide 1.2s ease-in-out infinite; }
+@keyframes busy-slide { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+@media (prefers-reduced-motion: reduce) { #busy i { animation: none; width: 100%; opacity: 0.55; } }
