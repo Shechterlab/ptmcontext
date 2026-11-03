@@ -988,17 +988,9 @@ class SiteRun:
         return all(r.equal for r in self.parity)
 
 
-def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, ctx: L.Context,
-                    attributes: pd.DataFrame | None = None, layers: dict | None = None) -> dict:
-    """What the protein pages read: each marked residue with its window and its class in every analysis (marks.tsv);
-    each protein's marks and other candidate residues per class (protein_counts.tsv); the proteins (proteins.tsv); and
-    the regions the layers draw (units.tsv, and what each kind is: tracks.json); and, for a kind whose track carries
-    numbers (Track.values), each of its regions with them and with the marks and other candidate residues inside it
-    (units_<kind>.tsv)."""
-    from .snapshot import window
-    m = marked[['accession', 'position']].copy()
-    m['residue'] = [snap.residue_at(a, p) for a, p in zip(m['accession'], m['position'])]
-    m['window_15'] = [window(snap.sequences[a], p, 7) for a, p in zip(m['accession'], m['position'])]
+def class_counts(m: pd.DataFrame, kept: dict) -> list[pd.DataFrame]:
+    """Each protein's marks and other candidate residues per class of every residue question (protein_counts.tsv), and
+    each mark's class in it (a column of m, the marks, set here)."""
     counts = []
     for aid, k in kept.items():
         if k.get('question'):            # a question of several tests: a mark's tests in its class, and those that count it
@@ -1038,6 +1030,21 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
         g['others_total'] = g['accession'].map(tot[False]).astype(int)
         g.insert(1, 'analysis', aid)
         counts.append(g[g['marks_in'] + g['others_in'] > 0])
+    return counts
+
+
+def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, ctx: L.Context,
+                    attributes: pd.DataFrame | None = None, layers: dict | None = None) -> dict:
+    """What the protein pages read: each marked residue with its window and its class in every analysis (marks.tsv);
+    each protein's marks and other candidate residues per class (protein_counts.tsv); the proteins (proteins.tsv); and
+    the regions the layers draw (units.tsv, and what each kind is: tracks.json); and, for a kind whose track carries
+    numbers (Track.values), each of its regions with them and with the marks and other candidate residues inside it
+    (units_<kind>.tsv)."""
+    from .snapshot import window
+    m = marked[['accession', 'position']].copy()
+    m['residue'] = [snap.residue_at(a, p) for a, p in zip(m['accession'], m['position'])]
+    m['window_15'] = [window(snap.sequences[a], p, 7) for a, p in zip(m['accession'], m['position'])]
+    counts = class_counts(m, kept)
     if attributes is not None and len(attributes.columns) > 2:
         m = m.merge(attributes, on=['accession', 'position'], how='left').fillna('')
     accs = sorted(set(m['accession']))
@@ -1283,7 +1290,7 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     result = SiteRun(site, rows, record)
     ref = site.get('reference', {}).get('statistics')
     tables = site.get('reference', {}).get('tables') or {}
-    if ref or tables:
+    if ref or tables or site.get('reference', {}).get('background'):
         reference = ST.read(paths[ref]) if ref else None
         for analysis in site['analyses']:
             own = tables.get(analysis['id'])
@@ -1301,15 +1308,28 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
                 partial = [t['code'] for t in (layers_used.get(analysis['id']) or {}).get('left_out', [])]
                 found = compare(rows[rows['analysis'] == analysis['id']], reference, analysis['id'],
                                 leave_out=[(t['category'], t['stratum']) for t in layers_used[analysis['id']]['tests']
-                                           if t['code'] in partial] if partial else None)
+                                           if t['code'] in partial] if partial else None,
+                                excused=[e for e in site['reference'].get('excused') or [] if e['analysis'] == analysis['id']])
             for r in found:
                 result.parity.append(r)
                 log(f'  parity {r.analysis:18s} {r.method:16s} {r.rows:3d} rows  {"equal" if r.equal else "DIFFERENT"}'
                     + (f'  (against {r.reference})' if r.reference else '')
-                    + (f' (partial: {r.skipped} rows need absent inputs; q not compared)' if r.skipped else ''))
+                    + (f' (partial: {r.skipped} rows need absent inputs; q not compared)' if r.skipped else '')
+                    + ''.join(f' (excused: {w})' for w in r.excused))
+        bg = site['reference'].get('background')
+        if bg:                                               # the published denominators of the residue questions
+            from .parity import compare_background
+            counts = class_counts(marked[['accession', 'position']].copy(), kept)
+            counts = pd.concat(counts, ignore_index=True) if counts else pd.DataFrame(columns=['accession', 'analysis', 'category', 'others_in', 'others_total'])
+            published = pd.read_csv(paths[bg['input']], sep='\t', dtype=str, keep_default_na=False)
+            published = published[published[bg['analysis']].isin(set(kept))]     # the questions this run ran
+            for r in compare_background(counts, published, bg):
+                result.parity.append(r)
+                log(f'  parity {r.analysis:18s} {r.method:16s} {r.rows:6d} rows  {"equal" if r.equal else "DIFFERENT"}  (against {r.reference})')
         record['parity'] = {'reference': ref, 'equal': result.parity_ok, 'new': [a['id'] for a in site['analyses'] if a.get('new') and a['id'] not in tables],
                             'checked': [{'analysis': r.analysis, 'method': r.method, 'rows': r.rows, 'equal': r.equal, **({'reference': r.reference} if r.reference else {}),
-                                         **({'not_checked': r.skipped, 'q_compared': False} if r.skipped else {})}
+                                         **({'not_checked': r.skipped, 'q_compared': False} if r.skipped else {}),
+                                         **({'excused': r.excused} if r.excused else {})}
                                         for r in result.parity]}
     if write:
         folder = Path(out_root or root_of(site)) / site['outputs']['folder']

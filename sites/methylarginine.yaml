@@ -14,6 +14,7 @@ inputs:                # role the layers read: manifest input that fills it
   reactome_names: reactome_pathways
   hpa: hpa_locations
   abundance: paxdb_abundance
+  eclip_maps: release_eclip_rna_compartments    # where the RNAs of proteins with eCLIP data gather, per map
   panther_classes: panther_protein_classes
   panther_ontology: panther_class_ontology
   uniprot_entries: uniprot_entries
@@ -777,6 +778,47 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     labels: {"ICP >= 0.8 (chromatin)": "Chromatin (probability ≥ 0.8)", "ICP 0.5-0.8": "Probability 0.5–0.8", "ICP 0.2-0.5": "Probability 0.2–0.5",
              "ICP < 0.2 (not chromatin)": "Not chromatin (probability < 0.2)"}
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Where the RNAs bound by proteins with eCLIP data gather (scripts/cell_maps.py, GENE_MAPS): the release's calls per
+  # protein and map (supporting/eclip_rna_compartments). The nuclear-body map (Barutcu et al. 2022) stays out: licence pending
+  - id: eclip_rna_apexseq
+    test: protein_sets
+    title: Bound RNAs by APEX-seq
+    question: "Where do the RNAs that methylated proteins bind gather in the cell, by APEX-seq?"
+    sub: "Proteins with eCLIP data whose bound RNAs gather in a compartment that APEX-seq maps (HEK293T; Fazal et al. 2019), methylated against the others (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: apexseq}],
+           member_when: [{column: gathers, equals: "true"}]}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins with eCLIP data that APEX-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein APEX-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
+  - id: eclip_gene_tsaseq
+    test: protein_sets
+    title: Bound RNAs by TSA-seq
+    question: "Do the RNAs that methylated proteins bind come from genes near nuclear speckles?"
+    sub: "Proteins with eCLIP data whose bound RNAs come from genes TSA-seq places near nuclear speckles (K562; Chen et al. 2018), methylated against the others (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: tsaseq}],
+           member_when: [{column: gathers, equals: "true"}]}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins with eCLIP data that TSA-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein TSA-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
+  - id: eclip_gene_hic
+    test: protein_sets
+    title: Bound RNAs by Hi-C subcompartment
+    question: "Do the RNAs that methylated proteins bind come from one Hi-C subcompartment?"
+    sub: "Proteins with eCLIP data whose bound RNAs come from genes of a Hi-C subcompartment (GM12878; Rao et al. 2014), methylated against the others (one-sided hypergeometric test)"
+    section: Where in the cell
+    sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: hic}],
+           member_when: [{column: gathers, equals: "true"}]}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins with eCLIP data that Hi-C subcompartments tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein Hi-C subcompartments tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   # Cancer cell lines (scripts/release_layers.py, CANCER): cancer cell genetics beside the sites, not evidence about
   # methylation. The dependency classes partition the entries whose gene DepMap 24Q4 screened (gene_effect)
   - id: depmap_dependency
@@ -965,6 +1007,13 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
 
 reference:
   statistics: methylarginine_statistics_v1_4_3
+  # the residue questions' denominators: each protein's other arginines, in all and per class or motif
+  background: {input: release_arginine_background, accession: uniprot_accession, analysis: analysis, category: category, others: other_arginines}
+  excused:                 # rows the published inputs cannot rebuild, each with why
+    - analysis: eclip_rna_apexseq
+      method: mann_whitney
+      category: Mitochondrial matrix
+      why: "the release's supporting table gives each odds ratio to 6 significant digits, and two proteins compared (HNRNPA1, methylated, and LIN28B) share 1.00353 there, a tie the release's exact values did not have; q is compared"
   tables:                  # questions the statistics table does not hold, checked against the release's supporting tables
     disease_ontology:
       input: methylarginine_disease_ontology_v1_4_3
@@ -1014,6 +1063,11 @@ variants:                # the same questions on other marks; ptmc run --variant
         left_out: [{column: in_analyses_with_lower_confidence, equals: "false"}]   # the others are on neither side
     reference:
       statistics: methylarginine_statistics_lower_confidence_v1_4_3
+      excused:             # the same tie as the main view's (reference.excused)
+        - analysis: eclip_rna_apexseq
+          method: mann_whitney
+          category: Mitochondrial matrix
+          why: "the release's supporting table gives each odds ratio to 6 significant digits, and two proteins compared (HNRNPA1, methylated, and LIN28B) share 1.00353 there, a tie the release's exact values did not have; q is compared"
       tables:              # the view's own disease tables (analyses_with_lower_confidence/disease)
         disease_ontology:
           input: methylarginine_lc_disease_ontology_v1_4_3

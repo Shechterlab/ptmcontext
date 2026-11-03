@@ -1312,6 +1312,24 @@
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
       "note": "Release v1.4.3's ENCODE and ENCORE eCLIP experiments of methylated proteins: peaks by transcript region and the genes with most peaks (ENCODE: no use restrictions; ENCORE, GEO GSE315407: no licence stated). Read by the website's Interactions page only."
+    },
+    "release_arginine_background": {
+      "file": "releases/v1.4.3/supporting/arginine_background_v1.4.3.tsv",
+      "md5": "1632ace3df199a4d6263da727aff0e64",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), supporting/arginine_background",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "reference_output",
+      "note": "Release v1.4.3's denominators of its residue tests (motif, disorder, domain_context, domain_class, structure_context): each protein's arginines that are not sites, in all (*) and in each class or motif. The parity check compares the rebuild's per-protein counts (protein_counts.tsv) with it, row by row; no test reads it."
+    },
+    "release_eclip_rna_compartments": {
+      "file": "releases/v1.4.3/supporting/eclip_rna_compartments_v1.4.3.tsv",
+      "md5": "feaed0917ea9ed25898d6f179b12b608",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), supporting/eclip_rna_compartments",
+      "licence": "CC BY-NC-SA 4.0 (the maps: APEX-seq, Fazal et al. 2019, GEO GSE116008; TSA-seq, Chen et al. 2018, GEO GSE81553; Hi-C subcompartments, Rao et al. 2014, GEO GSE63525: no use restrictions; eCLIP: ENCODE, no use restrictions)",
+      "role": "input",
+      "note": "Release v1.4.3's call, for each protein with eCLIP data and each map of RNA or DNA, of whether its bound RNAs gather in a compartment (q <= 0.05 and Mantel-Haenszel odds ratio above 1 within expression and gene-length deciles; computed by PTM_Pipeline scripts/cell_maps.py). Read by the eclip_* protein-set questions. Its nuclear-body rows (map nuclear_body) derive from Barutcu et al. 2022, whose licence is pending: each question keeps only its own map (sets.include), so nothing reads or shows them."
     }
   }
 }

@@ -103,6 +103,8 @@ jobs:
             releases/v1.4.3/supporting/complexes_v1.4.3.tsv
             releases/v1.4.3/supporting/dna_motifs_v1.4.3.tsv
             releases/v1.4.3/supporting/eclip_v1.4.3.tsv
+            releases/v1.4.3/supporting/eclip_rna_compartments_v1.4.3.tsv
+            releases/v1.4.3/supporting/arginine_background_v1.4.3.tsv
             releases/v1.4.3/supporting/htr_selex_v1.4.3.tsv
             releases/v1.4.3/supporting/rna_bind_n_seq_v1.4.3.tsv
           sparse-checkout-cone-mode: false

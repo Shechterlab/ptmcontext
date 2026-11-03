@@ -538,6 +538,14 @@
                         "description": "the rules file's lists whose families this analysis tests (default: every list)"
                       }
                     }
+                  },
+                  "member_when": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/rule_condition"
+                    },
+                    "description": "rows of every protein the source tests: a protein is a member of a row's set only where these all hold; the others are the background (annotated, in no set)"
                   }
                 }
               },
@@ -1363,6 +1371,28 @@
             ],
             "default": "marks",
             "description": "a question of several tests: the candidate residues are those of the proteins with a counted mark (marks), or also of those whose only marks are left out (marks_and_left_out; the left-out marks themselves on neither side)"
+          },
+          "sizes": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value"
+            ],
+            "description": "each tested set again by a number of every background protein (a column of the sets' table, member or not): marked against the others, two-sided Mann-Whitney U, BH over the sets (method mann_whitney)",
+            "properties": {
+              "value": {
+                "type": "string",
+                "description": "the column of the sets' table"
+              },
+              "log2": {
+                "type": "boolean",
+                "description": "compare log2 of the value (0 is -inf)"
+              },
+              "background": {
+                "type": "string",
+                "description": "the background column of the rows"
+              }
+            }
           }
         },
         "anyOf": [
@@ -1462,6 +1492,74 @@
             }
           },
           "description": "for a protein-set question (its id) whose rows the statistics table does not hold: a published table of its own to equal"
+        },
+        "excused": {
+          "type": "array",
+          "description": "reference rows the rebuild cannot reproduce from its published inputs, each with why (a value the inputs give rounded, say): left out of the comparison and reported, never silently",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "analysis",
+              "method",
+              "category",
+              "why"
+            ],
+            "properties": {
+              "analysis": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "stratum": {
+                "type": "string",
+                "default": "all"
+              },
+              "why": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "background": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "input",
+            "accession",
+            "analysis",
+            "category",
+            "others"
+          ],
+          "description": "a published table of each protein's other candidate residues per residue question and class (a release's denominators): the run checks protein_counts against it row by row: others_in for each class, others_total for the class named all",
+          "properties": {
+            "input": {
+              "type": "string",
+              "description": "manifest name of the table (role reference_output)"
+            },
+            "accession": {
+              "type": "string"
+            },
+            "analysis": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            },
+            "others": {
+              "type": "string",
+              "description": "the column of the count"
+            },
+            "all": {
+              "type": "string",
+              "default": "*",
+              "description": "the category that means all the protein's other candidates"
+            }
+          }
         }
       }
     },
@@ -5131,6 +5229,74 @@
                   }
                 },
                 "description": "for a protein-set question (its id) whose rows the statistics table does not hold: a published table of its own to equal"
+              },
+              "excused": {
+                "type": "array",
+                "description": "reference rows the rebuild cannot reproduce from its published inputs, each with why (a value the inputs give rounded, say): left out of the comparison and reported, never silently",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "analysis",
+                    "method",
+                    "category",
+                    "why"
+                  ],
+                  "properties": {
+                    "analysis": {
+                      "type": "string"
+                    },
+                    "method": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string"
+                    },
+                    "stratum": {
+                      "type": "string",
+                      "default": "all"
+                    },
+                    "why": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "background": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "input",
+                  "accession",
+                  "analysis",
+                  "category",
+                  "others"
+                ],
+                "description": "a published table of each protein's other candidate residues per residue question and class (a release's denominators): the run checks protein_counts against it row by row: others_in for each class, others_total for the class named all",
+                "properties": {
+                  "input": {
+                    "type": "string",
+                    "description": "manifest name of the table (role reference_output)"
+                  },
+                  "accession": {
+                    "type": "string"
+                  },
+                  "analysis": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "others": {
+                    "type": "string",
+                    "description": "the column of the count"
+                  },
+                  "all": {
+                    "type": "string",
+                    "default": "*",
+                    "description": "the category that means all the protein's other candidates"
+                  }
+                }
               }
             }
           },

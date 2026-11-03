@@ -62,6 +62,13 @@ Conventions:
   conditions all hold for it (`equals`, `in`, `contains` on text; `at_least` and `below` on a column's number or the
   `ratio` of two columns, missing where the second is 0 or empty; a rule without conditions takes every row left);
   the source annotates every protein of the table's rows.
+- `enricher` on calls (`sets.member_when: [conditions]`): the table has a row for each protein and set the source
+  tests; every protein of its rows is in the background, and a member of a row's set only where the conditions hold
+  (a per-protein call, such as "its bound RNAs gather here").
+- `mann_whitney` on a protein-set analysis (`sizes: {value, log2, background}`): for each set within the size limits,
+  the number every background protein has for it (a column of the sets' table, member or not; log2 of it, 0 as
+  -inf), marked proteins against the others, two-sided Mann-Whitney U (SciPy's default); `a` and `c` count the
+  proteins compared, `b` and `d` are empty; q is Benjamini-Hochberg over the sets (a p that cannot be computed as 1).
 - `mantel_haenszel` on a protein-set analysis: the same 2×2 split by a protein covariate (PaxDb abundance decile, and
   `none` for proteins without a value); its `a, b, c, d` add up to the `enricher` row's. For sets of another
   identifier, an identifier takes the highest value of the proteins that map to it (`combine: max`), and the deciles
@@ -165,6 +172,16 @@ user's are mapped in the site file, never in code.
 `rows` says which of the question's tested sets the table lists: `all` (default; the same sets), `enriched` (exactly
 those at q ≤ 0.05) or `some` (each listed set is checked, the others are not). The run records each such check in
 `run.json` (`parity.checked`, with `reference` naming the table); a question checked this way is not marked new.
+
+`reference.excused: [{analysis, method, category, stratum?, why}]` names reference rows the published inputs cannot
+rebuild (a value a supporting table gives rounded, say): both sides' row is left out, every other row (q too) is
+compared, and the run logs and records the reason (`parity.checked[].excused`).
+
+`reference.background: {input, accession, analysis, category, others, all?}` is a table of each protein's other
+candidate residues per residue question and class (a release's denominators, one row per protein, question and class;
+`all`, default `*`, the class meaning every other candidate). The run compares it, row by row, with what it counts
+(`protein_counts.tsv`: `others_in`, and `others_total` for `all`), for each question it ran; a class the rebuild
+counts and the table lacks must hold none. Each question is one `parity.checked` entry, method `background`.
 
 ## Unit table
 

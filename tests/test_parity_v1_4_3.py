@@ -12,7 +12,11 @@ could reach), and the proteins found binding RNA or DNA in cells and by GO. Four
 rows read pCLAP's and RBDmap's measured peptides, which may not be republished (checksum_only): they are compared only
 when the root holds them, and q is then left out of those two questions' comparison. In the lower-confidence view,
 three of them read release tables of the main view's proteins only, so they are run but not compared there
-(variants.with_lower_confidence.not_compared)."""
+(variants.with_lower_confidence.not_compared). Three eCLIP questions (APEX-seq, TSA-seq, Hi-C subcompartments: where
+the RNAs bound by proteins with eCLIP data gather) are rebuilt from the release's per-protein calls
+(supporting/eclip_rna_compartments); one Mann-Whitney row is excused there (a tie its rounded odds ratios make). The
+nuclear-body eCLIP map and the nuclear-body proteomes (Barutcu et al. 2022) are held for their licence. The residue
+questions' denominators equal the release's supporting/arginine_background, protein by protein."""
 from pathlib import Path
 
 from ptmcontext import site as S
@@ -25,10 +29,13 @@ EXPECTED = {'motif': 22, 'disorder': 8, 'domain_context': 10, 'domain_class': 28
             'cell_region_hpa': 6, 'cell_region_hcm': 6, 'cell_region_organelle_ip': 6, 'cell_hcm_compartment': 40,
             'cell_hcm_domain': 46, 'cell_organelle_ip': 40, 'cell_chromatin': 8, 'depmap_dependency': 8, 'cancer_change': 4,
             'go_binding': 8, 'binding_protein': 10, 'pdb_interface': 24, 'predicted_interface': 12, 'crosslink': 46,
-            'sequence_proximity': 60, 'nucleic_acid_distance': 12, 'intact': 6}
+            'sequence_proximity': 60, 'nucleic_acid_distance': 12, 'intact': 6,
+            'eclip_rna_apexseq': 23, 'eclip_gene_tsaseq': 3, 'eclip_gene_hic': 3}
 # not in the release's statistics table: its supporting tables disease_ontology (every Disease Ontology term tested) and
 # disease_terms_tested (every DisGeNET term tested)
 SUPPORTING = {'disease_ontology': 1088, 'disease_term': 8334}
+# the residue questions' denominators, protein by protein (supporting/arginine_background): main view only
+BACKGROUND = {'motif': 35585, 'disorder': 16690, 'domain_context': 16264, 'domain_class': 10045, 'structure_context': 20271}
 # with pCLAP's and RBDmap's measured peptides under the root (checksum_only), every row of both questions
 FULL = {'crosslink': 50, 'binding_protein': 14}
 
@@ -43,14 +50,17 @@ def test_methylarginine_site_equals_release_v1_4_3(reference_root):
     result = S.run(REPO / 'sites' / 'methylarginine.yaml', reference_root, write=False, log=lambda *_: None, skip_new=True)
     failed = [(r.analysis, r.method, r.diffs) for r in result.parity if not r.equal]
     assert not failed, failed
-    rows, supporting = {}, {}
+    rows, supporting, background = {}, {}, {}
     for r in result.parity:
-        into = supporting if r.reference else rows
+        into = background if r.method == 'background' else supporting if r.reference else rows
         into[r.analysis] = into.get(r.analysis, 0) + r.rows
     assert rows == expected(result)
-    assert sum(EXPECTED.values()) == 4520         # of the release's 4,659 (4,528 with the measured peptides)
+    assert sum(EXPECTED.values()) == 4549         # of the release's 4,659 (4,557 with the measured peptides)
     # the questions the release keeps in supporting tables only, checked against them set by set
     assert supporting == SUPPORTING
+    assert background == BACKGROUND
+    # one row the release's rounded supporting table cannot rebuild, excused in the site file with why
+    assert [(r.analysis, r.method, len(r.excused)) for r in result.parity if r.excused] == [('eclip_rna_apexseq', 'mann_whitney', 1)]
 
 
 NOT_IN_VARIANT = ('crosslink', 'sequence_proximity', 'nucleic_acid_distance')
@@ -71,6 +81,6 @@ def test_with_lower_confidence_equals_the_release_view(reference_root):
         into = supporting if r.reference else rows
         into[r.analysis] = into.get(r.analysis, 0) + r.rows
     assert rows == {**EXPECTED_LOWER_CONFIDENCE, **({} if result.record.get('absent') else {'binding_protein': 14})}
-    assert sum(EXPECTED_LOWER_CONFIDENCE.values()) == 4412             # of the release's 4,669
+    assert sum(EXPECTED_LOWER_CONFIDENCE.values()) == 4441             # of the release's 4,669
     assert result.record['marks']['counted'] == 13469
     assert supporting == SUPPORTING_LOWER_CONFIDENCE

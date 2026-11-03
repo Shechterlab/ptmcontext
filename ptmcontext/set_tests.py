@@ -389,7 +389,14 @@ def read_sets(spec: dict, paths: dict, universe: set | None = None, root=None, f
     if 'rules' in src:                                   # sets by rules on the table's columns: the source annotates
         pairs = rule_sets(src, t.assign(**{src['protein']: members}))   # every protein of its rows, in a set or not
         return pairs.drop_duplicates(), {}, set(members)
-    pairs = pd.DataFrame({'set': t[src['set']].astype(str).to_numpy(), 'protein': members.to_numpy()}).drop_duplicates()
+    pairs = pd.DataFrame({'set': t[src['set']].astype(str).to_numpy(), 'protein': members.to_numpy()})
+    held = None
+    if src.get('member_when'):                           # rows of every protein the source tests; members only where
+        hold = pd.Series(True, index=t.index)            # these hold (the others are the background)
+        for cond in src['member_when']:
+            hold &= _rule_holds(t, cond)
+        held, pairs = set(members), pairs[hold.to_numpy()]
+    pairs = pairs.drop_duplicates()
     names = {}
     if spec.get('names'):
         nm = spec['names']
@@ -397,7 +404,7 @@ def read_sets(spec: dict, paths: dict, universe: set | None = None, root=None, f
         names = dict(zip(n[nm['set']].astype(str), n[nm['name']].astype(str)))
         if nm.get('include') or nm.get('exclude'):          # a filter on the names restricts the sets tested
             pairs = pairs[pairs['set'].isin(set(names))]
-    annotated = set(pairs['protein'])
+    annotated = set(pairs['protein']) if held is None else held
     if src.get('families'):
         fam = src['families']
         rules = load_families(families_file(spec, root))
@@ -778,4 +785,32 @@ def protein_set_test(spec: dict, paths: dict, marked_proteins: set, snapshot_pro
     out = ordered(pd.DataFrame(rows), spec.get('order'))
     if spec.get('abundance') and len(out):
         out = pd.concat([out, stratified_rows(spec, out, pairs, targets & universe, background, values)], ignore_index=True)
+    if spec.get('sizes'):
+        out = pd.concat([out, size_rows(spec, paths, pairs, targets & universe, background, formats)], ignore_index=True)
     return out, names
+
+
+def size_rows(spec: dict, paths: dict, pairs: pd.DataFrame, targets: set, background: set, formats: dict | None = None) -> pd.DataFrame:
+    """For each set of the background's size limits (min_size, max_size; with a marked member or not), a number every protein of the background has for it (sizes.value, a column of the sets'
+    table on the row of that protein and set, called a member or not; log2 of it with sizes.log2), the marked proteins
+    against the others: a two-sided Mann-Whitney U test, BH over the sets (a p that cannot be computed counts as 1).
+    a and c count the proteins compared. Whether the marked proteins' values differ, not only their calls."""
+    src, sz = spec['sets'], spec['sizes']
+    t, members = set_table(spec, paths, None, formats)
+    v = pd.to_numeric(t[sz['value']], errors='coerce')
+    if sz.get('log2'):
+        v = v.map(lambda x: (math.log2(x) if x > 0 else -math.inf) if pd.notna(x) else np.nan)
+    frame = pd.DataFrame({'set': t[src['set']].astype(str).to_numpy(), 'protein': members.to_numpy(), 'v': v.to_numpy()})
+    frame = frame[frame['protein'].isin(background) & frame['v'].notna()]
+    out = []
+    sizes = pairs[pairs['protein'].isin(background)].groupby('set')['protein'].nunique()
+    for c in sorted(sizes[sizes.between(spec.get('min_size', 1), spec.get('max_size', 10 ** 6))].index.astype(str)):
+        f = frame[frame['set'] == c].drop_duplicates('protein')
+        yes, no = f.loc[f['protein'].isin(targets), 'v'].tolist(), f.loc[~f['protein'].isin(targets), 'v'].tolist()
+        out.append({'analysis': spec['id'], 'category': c, 'stratum': 'all', 'a': len(yes), 'b': None, 'c': len(no), 'd': None,
+                    'p': stats.mann_whitney_p(yes, no), 'method': 'mann_whitney', 'n_strata': '',
+                    'background': sz.get('background', f"the {sz['value']} of each other protein of the background")})
+    res = pd.DataFrame(out)
+    if len(res):
+        res['q'] = stats.benjamini_hochberg([1.0 if math.isnan(p) else p for p in res['p']])
+    return res

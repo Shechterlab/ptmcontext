@@ -207,7 +207,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
     tested = {a['id'] for a in site['analyses'] if a.get('tests')}
     code = lambda r: r['category'] if r['analysis'] not in tested or r['stratum'] in ('all', '') else f"{r['category']}_{r['stratum']}"  # noqa: E731
     rows = [{'analysis': r['analysis'], 'category': code(r), 'method': r['method'],
-             'a': int(r['a']), 'b': int(r['b']), 'c': int(r['c']), 'd': int(r['d']),
+             'a': int(r['a']), 'b': int(r['b']) if r['b'] != '' else None, 'c': int(r['c']), 'd': int(r['d']) if r['d'] != '' else None,   # none: a test of sizes
              'or': num(r['odds_ratio']), 'fold': num(r['fold_enrichment']), 'lo': num(r['odds_ratio_ci_low']), 'hi': num(r['odds_ratio_ci_high']),
              'p': num(r['p']), 'q': num(r['q']), 'strata': int(r['n_strata']) if r['n_strata'] else None}
             for r in stats.to_dict('records')]
