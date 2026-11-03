@@ -54,139 +54,27 @@
           "note": {
             "type": "string"
           },
+          "redistribution": {
+            "enum": [
+              "redistributed",
+              "checksum_only"
+            ],
+            "description": "checksum_only: the source's terms forbid redistribution; the file is never copied into a repository, only its MD5 is recorded, and a build reads it from its root when it is there (the questions that need it are left out, and said so, when it is not)"
+          },
           "columns": {
-            "type": "object",
-            "additionalProperties": false,
-            "description": "how to read the file when no built-in reader knows it: the columns that hold each field. Intervals: accession, start, end (1-based, inclusive), and optionally label, ref, subtype, class; per-residue values: accession, position, value. include/exclude keep rows; kind, if given, is the kind of units the file holds.",
-            "properties": {
-              "accession": {
-                "type": "string"
+            "description": "how to read the file when no built-in reader knows it: one column mapping, or a list of them (several tables side by side in one file, each partner of a pair say)",
+            "oneOf": [
+              {
+                "$ref": "#/$defs/mapping"
               },
-              "start": {
-                "type": "string"
-              },
-              "end": {
-                "type": "string"
-              },
-              "position": {
-                "type": "string"
-              },
-              "value": {
-                "type": "string"
-              },
-              "label": {
-                "type": "string"
-              },
-              "ref": {
-                "type": "string"
-              },
-              "subtype": {
-                "type": "string"
-              },
-              "class": {
-                "type": "string"
-              },
-              "kind": {
-                "type": "string"
-              },
-              "sep": {
-                "type": "string"
-              },
-              "include": {
+              {
                 "type": "array",
+                "minItems": 1,
                 "items": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "column"
-                  ],
-                  "properties": {
-                    "column": {
-                      "type": "string"
-                    },
-                    "equals": {
-                      "type": "string"
-                    },
-                    "in": {
-                      "type": "array",
-                      "items": {
-                        "type": [
-                          "string",
-                          "number"
-                        ]
-                      }
-                    },
-                    "contains": {
-                      "type": "string"
-                    }
-                  },
-                  "oneOf": [
-                    {
-                      "required": [
-                        "equals"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "in"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "contains"
-                      ]
-                    }
-                  ]
-                }
-              },
-              "exclude": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "column"
-                  ],
-                  "properties": {
-                    "column": {
-                      "type": "string"
-                    },
-                    "equals": {
-                      "type": "string"
-                    },
-                    "in": {
-                      "type": "array",
-                      "items": {
-                        "type": [
-                          "string",
-                          "number"
-                        ]
-                      }
-                    },
-                    "contains": {
-                      "type": "string"
-                    }
-                  },
-                  "oneOf": [
-                    {
-                      "required": [
-                        "equals"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "in"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "contains"
-                      ]
-                    }
-                  ]
+                  "$ref": "#/$defs/mapping"
                 }
               }
-            }
+            ]
           },
           "record": {
             "type": "string",
@@ -195,6 +83,204 @@
           }
         }
       }
+    }
+  },
+  "$defs": {
+    "mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "how to read the file when no built-in reader knows it: the columns that hold each field. Intervals: accession, start, end (1-based, inclusive), and optionally label, ref, subtype, class; per-residue values: accession, position, value. include/exclude keep rows; kind, if given, is the kind of units the file holds. Besides start and end, a unit's place may be a position (or a list of them, with separator), ranges (a list of start-end), residues (a list such as R169,A203) or marked_in (a sequence whose lower-case letters mark residues); residue, sequence (with relocate), gene, canonical, start_offset, max_per_row and unique_within check and place them on the site's sequences (CONTRACTS.md).",
+      "properties": {
+        "accession": {
+          "type": "string"
+        },
+        "start": {
+          "type": "string"
+        },
+        "end": {
+          "type": "string"
+        },
+        "position": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "subtype": {
+          "type": "string"
+        },
+        "class": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "sep": {
+          "type": "string"
+        },
+        "ranges": {
+          "type": "string"
+        },
+        "residues": {
+          "type": "string"
+        },
+        "marked_in": {
+          "type": "string"
+        },
+        "residue": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "string"
+        },
+        "gene": {
+          "type": "string"
+        },
+        "separator": {
+          "type": "string"
+        },
+        "relocate": {
+          "type": "boolean",
+          "description": "with sequence: an interval whose sequence the snapshot does not read at its place is moved to the only place it does (else dropped)"
+        },
+        "canonical": {
+          "type": "boolean",
+          "description": "an isoform accession (P12345-2) is read as its entry"
+        },
+        "start_offset": {
+          "type": "integer",
+          "description": "added to every start (1 for a table counting from 0)"
+        },
+        "max_per_row": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "rows naming more residues than this are dropped"
+        },
+        "unique_within": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "rows grouped by these columns; a group is kept only if it places exactly one residue"
+        },
+        "include": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
+        },
+        "sequence_start": {
+          "type": "string",
+          "description": "with sequence: the column of the start where the sequence is read, when not at the unit (a peptide inside the region the row gives)"
+        },
+        "sequence_end": {
+          "type": "string"
+        },
+        "max_length": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "units longer than this are dropped"
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "column"
+      ],
+      "properties": {
+        "column": {
+          "type": "string"
+        },
+        "equals": {
+          "type": "string"
+        },
+        "in": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "contains": {
+          "type": "string"
+        },
+        "at_least": {
+          "type": "number"
+        },
+        "at_most": {
+          "type": "number"
+        },
+        "same_as": {
+          "type": "string",
+          "description": "another column: the row holds when both cells are equal"
+        },
+        "on_snapshot": {
+          "type": "boolean",
+          "description": "the cell, an accession, is (true) or is not (false) a protein of the site's sequences"
+        },
+        "matches": {
+          "type": "string",
+          "description": "a regular expression the whole cell matches"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "equals"
+          ]
+        },
+        {
+          "required": [
+            "in"
+          ]
+        },
+        {
+          "required": [
+            "contains"
+          ]
+        },
+        {
+          "required": [
+            "at_least"
+          ]
+        },
+        {
+          "required": [
+            "at_most"
+          ]
+        },
+        {
+          "required": [
+            "same_as"
+          ]
+        },
+        {
+          "required": [
+            "on_snapshot"
+          ]
+        },
+        {
+          "required": [
+            "matches"
+          ]
+        }
+      ]
     }
   }
 }

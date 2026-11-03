@@ -29,6 +29,7 @@ FORMATS: dict[str, dict] = {
     'source_records': {'key': 'site', 'required': ['source'],
                        'optional': ['doi', 'reference', 'pubmed', 'source_table', 'peptide', 'state', 'enzyme', 'sample', 'detail',
                                     'reported_accession', 'reported_position', 'check']},
+    'page_rows': {'key': 'none', 'free': True},          # rows of no site or protein (complexes, say): read by a page only
     'protein_partners': {'key': 'accession', 'required': ['partner_accession', 'score'], 'partner': 'partner_accession',
                          'optional': ['partner', 'partner_marked', 'classes']},
 }
@@ -38,7 +39,7 @@ SITE_ID = re.compile(r'^(.+):[A-Za-z]?(\d+)$')
 def key_columns(fmt: str) -> list[str]:
     """The contract columns that name a row's site, protein or key."""
     key = FORMATS[fmt]['key']
-    return ['site', 'accession', 'position'] if key == 'site' else [key]
+    return ['site', 'accession', 'position'] if key == 'site' else [] if key == 'none' else [key]
 
 
 def problems(name: str, spec: dict) -> list[str]:
@@ -54,7 +55,7 @@ def problems(name: str, spec: dict) -> list[str]:
     out += [f'{where}: the {spec["format"]} format has no column {c!r}' for c in cols if c not in known]
     if fmt['key'] == 'site' and 'site' not in cols and not ('accession' in cols and 'position' in cols):
         out.append(f'{where}: name the site of each row: a site column, or accession and position')
-    elif fmt['key'] != 'site' and fmt['key'] not in cols:
+    elif fmt['key'] not in ('site', 'none') and fmt['key'] not in cols:
         out.append(f"{where}: the {spec['format']} format is keyed by {fmt['key']!r}: map it")
     if spec.get('values') and not fmt.get('free'):
         out.append(f"{where}: values: is for the free formats (site_values, site_table, protein_values, lookup)")
@@ -129,6 +130,8 @@ def pack(specs: dict, paths: dict, proteins: set, everyone: set, log=print) -> t
             log(f'  website.tables.{name}: input {spec["input"]} is not in the run record (run the site again); left out')
             continue
         fmt = FORMATS[spec['format']]
+        if fmt['key'] == 'none':                      # a page's rows, not a protein's: the page reads them whole
+            continue
         t = read(spec, path)
         if fmt['key'] == 'key':
             lookups[name] = {r['key']: {c: r[c] for c in t.columns if c != 'key'} for r in t.to_dict('records')}

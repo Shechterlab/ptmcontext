@@ -40,6 +40,7 @@ class Several:
 
     rule: str
     paths: tuple[Path, ...]
+    names: tuple[str, ...] = ()        # their manifest names, in the same order (a name may carry its own column mapping)
 
 
 @dataclass
@@ -51,8 +52,14 @@ class Context:
     profile: Profile | None = None
     inputs: dict[str, Path | Several] = field(default_factory=dict)
     trusted_plugins: tuple[str, ...] = ()
-    formats: dict[str, dict] = field(default_factory=dict)     # an input's path -> its manifest column mapping
+    formats: dict[str, dict] = field(default_factory=dict)     # an input's manifest name (or path) -> its column mapping
+    names: dict[str, str] = field(default_factory=dict)        # a role filled by one input -> that input's manifest name
     _cache: dict = field(default_factory=dict, repr=False)
+
+    def mapping(self, path, name: str = ''):
+        """The column mapping of an input: by its manifest name (two entries may read one file in two ways), else by
+        its path."""
+        return self.formats.get(name) if name and name in self.formats else self.formats.get(str(path))
 
     def path(self, name: str) -> Path:
         if name not in self.inputs:
@@ -72,18 +79,19 @@ class Context:
                 raise KeyError(f'input {role!r} is not given (inputs: {sorted(self.inputs)})')
             given = self.inputs[role]
             if isinstance(given, Several):
-                return U.combine([U.load(p, kind, self.formats.get(str(p))) for p in given.paths], given.rule)
-            return U.load(given, kind, self.formats.get(str(given)))
+                names = given.names or ('',) * len(given.paths)
+                return U.combine([U.load(p, kind, self.mapping(p, n), self.snapshot) for p, n in zip(given.paths, names)], given.rule)
+            return U.load(given, kind, self.mapping(given, self.names.get(role, '')), self.snapshot)
         return self.cached(f'units:{role}:{kind}', make)          # two roles may hold units of one kind
 
     def values(self, role: str):
         """A per-residue table (accession, position, value) that fills a role, by its manifest column mapping."""
         from .. import units as U
         path = self.path(role)
-        cols = self.formats.get(str(path))
+        cols = self.mapping(path, self.names.get(role, ''))
         if not cols:
             raise ValueError(f'role {role!r}: a per-residue table needs a column mapping (columns: {{accession, position, value}}) in its manifest entry')
-        return self.cached(f'values:{role}', lambda: U.residue_values(path, cols))
+        return self.cached(f'values:{role}', lambda: U.residue_values(path, cols, self.snapshot))
 
     def listed(self, role: str):
         """The residues a table lists (accession, position) that fills a role, by its manifest column mapping."""

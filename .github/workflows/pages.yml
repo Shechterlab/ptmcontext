@@ -72,6 +72,39 @@ jobs:
             releases/v1.4.3/supporting/disease_terms_tested_v1.4.3.tsv
             releases/v1.4.3/analyses_with_lower_confidence/disease/disease_ontology.tsv
             releases/v1.4.3/analyses_with_lower_confidence/disease/disease_terms.tsv
+            inputs/interactions/capri_panhale2019_adj_peptides.tsv
+            inputs/interactions/capri_panhale2019_measured_peptides.tsv
+            inputs/interactions/capri_panhale2019_xl_peptides.tsv
+            inputs/interactions/intact_binding_regions_human_2026-10-19.tsv
+            inputs/interactions/intact_mutations_human_2026-10-19.tsv
+            inputs/interactions/pclap_mullari2017_peptides.tsv
+            inputs/interactions/pdbe_kb_interface_residues_2026-10-16.tsv
+            inputs/interactions/pdbe_kb_interface_residues_2026-10-20.tsv
+            inputs/interactions/pdbe_kb_interface_residues_2026-10-21.tsv
+            inputs/interactions/pdbe_kb_interface_residues_2026-10-21_2.tsv
+            inputs/interactions/pdbe_kb_interface_residues_2026-10-21_3.tsv
+            inputs/interactions/pdbe_kb_interface_residues_2026-10-25.tsv
+            inputs/interactions/pepr_ms_v2_table_s2_rna_crosslinked_peptides.tsv
+            inputs/interactions/pepr_ms_v2_table_s3_focused_sites.tsv
+            inputs/interactions/protvar_predicted_interfaces_2024.05.28_pdockq0.23.tsv
+            inputs/interactions/quickgo_human_rna_dna_binding_2026-10-16.tsv
+            inputs/interactions/rbdmap_castello2016_measured_peptides.tsv
+            inputs/interactions/rbdmap_castello2016_rna_bound_fragments.tsv
+            inputs/interactions/rbrid_oksuz2023_k562_coverage.tsv
+            inputs/interactions/rbrid_oksuz2023_k562_positive_residues.tsv
+            inputs/interactions/rbrid_oksuz2023_k562_segments.tsv
+            inputs/interactions/sifts_observed_ranges_human_2026-10-16.tsv
+            inputs/interactions/trendel2025_dna_crosslink_localisation.tsv
+            inputs/interactions/trendel2025_dna_crosslinked_peptides.tsv
+            inputs/interactions/trendel2025_mcf7_dna_interactome.tsv
+            inputs/interactions/uniprot_human_dna_binding_regions_2026-10-16.tsv
+            inputs/interactions/uniprot_human_regions_2026-10-16.tsv
+            releases/v1.4.3/supporting/arginine_nucleic_acid_distances_v1.4.3.tsv
+            releases/v1.4.3/supporting/complexes_v1.4.3.tsv
+            releases/v1.4.3/supporting/dna_motifs_v1.4.3.tsv
+            releases/v1.4.3/supporting/eclip_v1.4.3.tsv
+            releases/v1.4.3/supporting/htr_selex_v1.4.3.tsv
+            releases/v1.4.3/supporting/rna_bind_n_seq_v1.4.3.tsv
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v6
         with:

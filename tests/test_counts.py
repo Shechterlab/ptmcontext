@@ -148,7 +148,7 @@ def test_release_counts_equal_the_original_explorer(reference_root):
     """The Provenance and PRMT tiles of the original explorer (live, release v1.4.3), from the release's site table
     and its supporting tables as the site file maps them: every count, share and median change."""
     site = S.load_site(REPO / 'sites' / 'methylarginine.yaml')
-    paths = I.resolve(reference_root, I.site_input_names(site), manifest=S.manifest_of(site))
+    paths = I.resolve(reference_root, I.site_input_names(site), manifest=S.manifest_of(site), allow_absent=True)
     table = pd.read_csv(paths[site['marks']['input']], sep='\t', dtype=str, keep_default_na=False, low_memory=False)
     spec = site['marks']
     marked = pd.DataFrame({'accession': table[spec['accession']], 'position': table[spec['position']].astype(int)}).drop_duplicates()

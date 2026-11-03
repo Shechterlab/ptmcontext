@@ -101,8 +101,10 @@
     // its pages: #about and #docs are Method here; #overview/ov-<question> is the question
     else if (S.view === 'overview' && /^(about|docs)$/.test(view)) { S.view = 'method'; S.arg = ''; }
     // an older site's anchors (website.legacy_links): a question, or the Overview with parameters (?vs=marks)
-    const old = S.view === 'overview' && (D.legacy_links || {})[S.arg];
-    if (old && old[0] === '?') { S.arg = ''; new URLSearchParams(old.slice(1)).forEach((v, k) => p.set(k, v)); } else if (old) S.arg = old;
+    const old = S.view === 'overview' && ((D.legacy_links || {})[S.arg] || (!S.arg && (D.legacy_links || {})[view]));
+    if (old && old[0] === '?') { S.arg = ''; new URLSearchParams(old.slice(1)).forEach((v, k) => p.set(k, v)); }
+    else if (old && old[0] === '#') { const [v, ...a] = old.slice(1).split('/'); if (BUILT_IN_VIEWS.includes(v) || K.views[v]) { S.view = v; S.arg = a.join('/'); } }   // a page of this site
+    else if (old) S.arg = old;
     const ov = !!old || (S.view === 'overview' && /^ov-/.test(S.arg));
     if (ov && !old) S.arg = S.arg.slice(3);
     S.legacy = ov || routed || (S.view !== view && !!view);     // written back as this site's own link (replaceState)
@@ -540,8 +542,10 @@
     if (vsOn() && !(K.sel.contrastGroups()?.g1.length >= K.sel.MIN_SIDE && K.sel.contrastGroups()?.g2.length >= K.sel.MIN_SIDE)) return lead();
     // with a selection, a section of protein-set questions is about its proteins: "Kinds of protein in your selection"
     const head = x => (selOn() && x.cards.length && x.cards.every(c => A[c.analysis]?.kind === 'protein_sets') ? `${x.name} in your selection` : x.name);
+    // a module's tile (a page's, website.pages[].overview) joins the section it names
+    const more = name => vsOn() ? '' : (K.ovTiles || []).filter(t => t.section === name).map(t => t.html()).join('');
     // K.overviewTop: a module's block above the Overview's questions (kit-help.js: the start panel for a first visit)
-    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + lead() + (selOn() && !vsOn() ? selBlocks(K.selLead) : '') + secList().map(x => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(head(x))}</h3><div class="tiles">${x.cards.map(tile).join('')}</div>`).join('') +
+    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + lead() + (selOn() && !vsOn() ? selBlocks(K.selLead) : '') + secList().map(x => [x, x.cards.map(tile).join('') + more(x.name)]).filter(([, hh]) => hh).map(([x, hh]) => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(head(x))}</h3><div class="tiles">${hh}</div>`).join('') +
       (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
   // the tiles of questions that hold for any selection (a module's counts), for a selection too small to test

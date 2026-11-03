@@ -20,24 +20,34 @@ class Result:
     equal: bool
     diffs: list[tuple[str, str]] = field(default_factory=list)
     reference: str = ''          # a table of its own (an analysis's reference), not the site's statistics reference
+    skipped: int = 0              # reference rows not compared: their tests read inputs that are not present
 
 
-def compare(rows: pd.DataFrame, reference: pd.DataFrame, analysis: str) -> list[Result]:
+def compare(rows: pd.DataFrame, reference: pd.DataFrame, analysis: str, leave_out: list[tuple[str, str]] | None = None) -> list[Result]:
     """For each method of the analysis in the reference, whether the rebuilt rows equal the reference's, as written
-    (same rows, same order, same text)."""
+    (same rows, same order, same text). leave_out: (category, stratum) of tests that could not be run (they read a
+    checksum_only input the root does not hold); their reference rows are not compared, and neither is q in the
+    others' (Benjamini-Hochberg over the question's rows needs the rows left out): rows checks every other column."""
     got = ST.lines(rows)
     m = ST.NAMES.index('method')
+    qi = ST.NAMES.index('q')
     out = []
     ref = reference[reference['analysis'] == analysis]
     if ref.empty:
         return [Result(analysis, '-', 0, False, [('', f'the reference has no rows for {analysis}')])]
+    skip = set(leave_out or [])
     for method in sorted(set(ref['method'])):
-        exp = ['\t'.join(r) for r in ref[ref['method'] == method].reindex(columns=ST.NAMES).itertuples(index=False)]
+        r_m = ref[ref['method'] == method]
+        hold = ~pd.Series(list(zip(r_m['category'], r_m['stratum'])), index=r_m.index).isin(skip) if skip else pd.Series(True, index=r_m.index)
+        exp = ['\t'.join(r) for r in r_m[hold].reindex(columns=ST.NAMES).itertuples(index=False)]
         g = [line for line in got if line.split('\t')[m] == method]
+        if skip:
+            drop_q = lambda line: '\t'.join(v if k != qi else '' for k, v in enumerate(line.split('\t')))  # noqa: E731
+            exp, g = [drop_q(x) for x in exp], [drop_q(x) for x in g]
         diffs = [(a, b) for a, b in zip(g, exp) if a != b]
         if len(g) != len(exp):
             diffs.append((f'{len(g)} rows', f'{len(exp)} rows'))
-        out.append(Result(analysis, method, len(exp), g == exp, diffs[:5]))
+        out.append(Result(analysis, method, len(exp), g == exp, diffs[:5], skipped=int((~hold).sum())))
     return out
 
 

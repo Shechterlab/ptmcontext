@@ -357,12 +357,18 @@
   function residueRows(aid, method) {
     const ai = AN().indexOf(aid); if (ai < 0) return [];
     const codes = SD.classes[aid], others = SD.others[aid] || {}, cnt = SD.counted?.[aid], skip = new Set(cnt?.skip || []);
-    const byProt = {};
-    compute().marks.forEach(i => { const m = SD.marks[i]; if (!skip.has(m[0]) && (SD.others_total[m[0]] > 0 || cnt?.alone)) (byProt[m[0]] ||= []).push(m[2][ai]); });
+    // a question of several tests: each class counts its own candidates (SD.by_test[aid][class][protein]: its other
+    // candidates, and the positions of the marks it does not count); every_candidate counts proteins without others too
+    const own = SD.by_test?.[aid], every = (D.analyses.find(x => x.id === aid) || {}).counting === 'every_candidate';
+    const byProt = {}, posOf = {};
+    compute().marks.forEach(i => { const m = SD.marks[i]; if (!skip.has(m[0]) && (own || SD.others_total[m[0]] > 0 || cnt?.alone)) { (byProt[m[0]] ||= []).push(m[2][ai]); (posOf[m[0]] ||= []).push(m[1]); } });
     const rows = codes.map((cat, ci) => {
       const tables = []; let a = 0, b = 0, c = 0, d = 0;
-      for (const [p, ms] of Object.entries(byProt)) {
-        const ot = SD.others_total[p], oin = (others[p] || {})[ci] || 0, ain = ms.filter(x => x.includes(ci)).length;
+      for (const [p, all] of Object.entries(byProt)) {
+        const t = own ? (own[ci] || {})[p] : null; if (own && !t) continue;
+        const ms = t ? all.filter((x, k) => !t[1].includes(posOf[p][k])) : all;
+        const ot = t ? t[0] : SD.others_total[p], oin = (others[p] || {})[ci] || 0, ain = ms.filter(x => x.includes(ci)).length;
+        if (t && !every && (!ot || !ms.length)) { if (ot) { c += oin; d += ot - oin; } continue; }
         tables.push([ain, ms.length - ain, oin, ot - oin]); a += ain; b += ms.length - ain; c += oin; d += ot - oin;
       }
       // a class absent from the selection's proteins is no test; the pooled test still counts it in BH (p = 1), as the

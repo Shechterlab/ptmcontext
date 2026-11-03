@@ -106,47 +106,222 @@ def register_reader(name: str, detect: Callable[[set, str], bool], describe: str
     return wrap
 
 
-def _holds(frame: pd.DataFrame, cond: dict) -> pd.Series:
+def _holds(frame: pd.DataFrame, cond: dict, snapshot: Snapshot | None = None) -> pd.Series:
+    """Whether each row meets a condition: equals, in or contains (text); matches (a regular expression the whole cell
+    matches); at_least or at_most (a number; a cell that is
+    not a number meets neither); same_as (the cell equals another column's); on_snapshot (the cell, an accession with
+    any isoform suffix dropped, is a protein of the snapshot, or with false is not)."""
     col = frame[cond['column']].astype(str)
     if 'equals' in cond:
         return col == cond['equals']
     if 'in' in cond:
         return col.isin({str(x) for x in cond['in']})
-    return col.str.contains(cond['contains'], regex=False)
+    if 'contains' in cond:
+        return col.str.contains(cond['contains'], regex=False)
+    if 'matches' in cond:
+        return col.str.fullmatch(cond['matches']).fillna(False).astype(bool)
+    if 'at_least' in cond or 'at_most' in cond:
+        num = pd.to_numeric(col, errors='coerce')
+        return num >= float(cond['at_least']) if 'at_least' in cond else num <= float(cond['at_most'])
+    if 'same_as' in cond:
+        return col == frame[cond['same_as']].astype(str)
+    if 'on_snapshot' in cond:
+        if snapshot is None:
+            raise ValueError(f"a condition on_snapshot ({cond['column']}) needs the snapshot")
+        return col.str.split('-').str[0].isin(set(snapshot.sequences)) == bool(cond['on_snapshot'])
+    raise ValueError(f'a condition needs equals, in, contains, matches, at_least, at_most, same_as or on_snapshot: {cond}')
 
 
-def from_columns(path: str | Path, kind: str, columns: dict, source: str = '') -> pd.DataFrame:
-    """Units from any table of intervals, by a column mapping (a manifest entry's `columns`):
-    {accession, start, end} name its columns; label, ref, subtype, class (optional) name more; include/exclude keep
-    rows as a site's marks do ({column, equals | in | contains}); kind, if given, must match the kind asked for."""
+def select_rows(df: pd.DataFrame, columns: dict, snapshot: Snapshot | None = None) -> pd.DataFrame:
+    """The rows a column mapping keeps: every include condition holds, no exclude condition does."""
+    for cond in columns.get('include', []):
+        df = df[_holds(df, cond, snapshot)]
+    for cond in columns.get('exclude', []):
+        df = df[~_holds(df, cond, snapshot)]
+    return df
+
+
+# What a column mapping may give for where its units are, besides start and end:
+#   position   one residue per row, or a list of them (separator); with residue, the residue(s) the row names there
+#   ranges     a list of start-end ranges ("363-363,531-531"), each a unit
+#   residues   a list of residues written with their letter ("R169,A203"), each a unit; a row whose letters disagree
+#              with the snapshot anywhere is dropped (it numbers another sequence)
+#   marked_in  a sequence starting at start whose lower-case letters mark residues ("LYKEELEQTyhAK"), each a unit
+# and checks against the snapshot's sequences:
+#   residue    the residue a row names at its position: a residue that differs is dropped
+#   sequence   the interval's sequence: kept where the snapshot reads it there; with relocate, moved to the only place
+#              the snapshot reads it, else dropped
+#   gene       an accession not on the snapshot is replaced by the snapshot's entry of this gene (when one has it)
+#   canonical  an isoform accession (P12345-2) is read as its entry (with residue or sequence checks, which then hold)
+#   start_offset  added to start (1 for a table whose starts count from 0)
+#   sequence_start, sequence_end  where the sequence is read, when not at the unit itself (a peptide's, for the
+#                 longer region around it that the row gives)
+#   max_length    units longer than this are dropped
+#   max_per_row   rows naming more residues than this are dropped (before the checks)
+#   unique_within rows grouped by these columns: a group is kept only when it places exactly one residue
+MAPPING_KEYS = ('accession', 'start', 'end', 'position', 'ranges', 'residues', 'marked_in', 'residue', 'sequence', 'relocate',
+                'gene', 'canonical', 'start_offset', 'sequence_start', 'sequence_end', 'max_length', 'separator', 'max_per_row',
+                'unique_within', 'label', 'ref', 'subtype',
+                'class', 'kind', 'sep', 'include', 'exclude', 'value')
+
+
+def _gene_map(snapshot: Snapshot) -> dict[str, str]:
+    """Gene name -> the snapshot entry of that gene, for the gene names one entry holds (the last in accession order
+    otherwise, as a dict built in that order keeps it)."""
+    out = {}
+    for acc in sorted(snapshot.sequences):
+        g = snapshot.describe(acc).get('gene', '')
+        if g:
+            out[g] = acc
+    return out
+
+
+def mapped_spans(df: pd.DataFrame, columns: dict, snapshot: Snapshot | None = None) -> pd.DataFrame:
+    """(row, accession, start, end) of every unit a column mapping finds in the rows of a table (CONTRACTS.md, Input
+    manifest entries): one per row (start and end), or several (a list of positions, ranges or lettered residues, the
+    marked letters of a sequence), each checked against the snapshot where the mapping says so."""
+    unknown = sorted(set(columns) - set(MAPPING_KEYS))
+    if unknown:
+        raise ValueError(f'a column mapping has keys it does not know: {unknown} (known: {sorted(MAPPING_KEYS)})')
+    needs_seq = any(columns.get(k) for k in ('residues', 'marked_in', 'residue', 'sequence', 'gene'))
+    if needs_seq and snapshot is None:
+        raise ValueError('this column mapping checks residues or sequences: it needs the snapshot')
+    seqs = snapshot.sequences if snapshot is not None else {}
+    acc = df[columns['accession']].astype(str).str.strip()
+    if columns.get('canonical'):
+        acc = acc.str.split('-').str[0]
+    if columns.get('gene'):
+        genes = _gene_map(snapshot)
+        off = ~acc.isin(set(seqs))
+        acc = acc.where(~off, df[columns['gene']].astype(str).map(genes).fillna(acc))
+    sep = columns.get('separator')
+    rows: list[tuple[int, str, int, int]] = []
+    listed: dict[int, int] = {}                          # row -> how many residues it names, before the checks
+    offset = int(columns.get('start_offset', 0))
+
+    def num(v):
+        try:
+            return int(float(v))
+        except (TypeError, ValueError):
+            return None
+    if columns.get('ranges'):
+        for i, a, v in zip(df.index, acc, df[columns['ranges']].astype(str)):
+            parts = [x for x in v.split(sep or ',') if x.strip()]
+            listed[i] = len(parts)
+            for x in parts:
+                lo, _, hi = x.strip().partition('-')
+                lo, hi = num(lo), num(hi or lo)
+                if lo is not None and hi is not None:
+                    rows.append((i, a, lo, hi))
+    elif columns.get('residues'):
+        for i, a, v in zip(df.index, acc, df[columns['residues']].astype(str)):
+            items = [x.strip() for x in v.split(sep or ',') if x.strip()]
+            listed[i] = len(items)
+            s = seqs.get(a, '')
+            ok = bool(items) and all(x[1:].isdigit() and 1 <= int(x[1:]) <= len(s) and s[int(x[1:]) - 1] == x[0] for x in items)
+            if ok:
+                rows += [(i, a, int(x[1:]), int(x[1:])) for x in items]
+    elif columns.get('marked_in'):
+        for i, a, st, v in zip(df.index, acc, df[columns['start']], df[columns['marked_in']].astype(str)):
+            st = num(st)
+            marked = [k for k, c in enumerate(v) if c.islower()]
+            listed[i] = len(marked)
+            if st is None:
+                continue
+            s = seqs.get(a, '')
+            for k in marked:
+                q = st + offset + k
+                if 0 < q <= len(s) and s[q - 1] == v[k].upper():
+                    rows.append((i, a, q, q))
+    elif columns.get('position') and not columns.get('start'):
+        res_col = columns.get('residue')
+        for i, a, v, r in zip(df.index, acc, df[columns['position']].astype(str), df[res_col].astype(str) if res_col else [''] * len(df)):
+            ps = [x.strip() for x in (v.split(sep) if sep else [v])]
+            rs = [x.strip() for x in (r.split(sep) if sep else [r])] if res_col else [None] * len(ps)
+            listed[i] = len([x for x in ps if x])
+            s = seqs.get(a, '')
+            for p_, r_ in zip(ps, rs):
+                q = num(p_)
+                if q is None:
+                    continue
+                if res_col and not (r_ and 0 < q <= len(s) and s[q - 1] == r_):
+                    continue
+                rows.append((i, a, q, q))
+    else:
+        seq_col = columns.get('sequence')
+        apart = bool(columns.get('sequence_start'))          # the sequence is read elsewhere than at the unit
+        s0c, s1c = columns.get('sequence_start', columns['start']), columns.get('sequence_end', columns['end'])
+        for i, a, st, en, pep, q0, q1 in zip(df.index, acc, df[columns['start']], df[columns['end']],
+                                             df[seq_col].astype(str) if seq_col else [None] * len(df), df[s0c], df[s1c]):
+            st, en = num(st), num(en)
+            listed[i] = 1
+            if st is None or en is None:
+                continue
+            st += offset
+            if seq_col:
+                s = seqs.get(a, '')
+                if not s or not pep:
+                    continue
+                if apart:
+                    q0, q1 = num(q0), num(q1)
+                    if q0 is None or q1 is None or s[q0 + offset - 1:q1] != pep:
+                        continue
+                elif not (st > 0 and s[st - 1:en] == pep):
+                    if not columns.get('relocate'):
+                        continue
+                    hit = s.find(pep)
+                    if hit < 0 or s.find(pep, hit + 1) >= 0:
+                        continue
+                    st, en = hit + 1, hit + len(pep)
+            rows.append((i, a, st, en))
+    out = pd.DataFrame(rows, columns=['row', 'accession', 'start', 'end'])
+    if columns.get('max_length') is not None:
+        out = out[out['end'] - out['start'] + 1 <= int(columns['max_length'])]
+    if columns.get('max_per_row') is not None:
+        cap = int(columns['max_per_row'])
+        out = out[out['row'].map(listed).fillna(0) <= cap]
+    if columns.get('unique_within'):
+        keys = df.loc[out['row'], columns['unique_within']].astype(str).agg('\x1f'.join, axis=1).to_numpy()
+        one = pd.Series(list(zip(out['accession'], out['start'])), index=out.index).groupby(keys).transform('nunique') == 1
+        out = out[one.to_numpy()]
+    return out.reset_index(drop=True)
+
+
+def from_columns(path: str | Path, kind: str, columns: dict | list, source: str = '', snapshot: Snapshot | None = None) -> pd.DataFrame:
+    """Units from any table of intervals, by a column mapping (a manifest entry's `columns`): accession and where the
+    units are (start and end, or a position, ranges, lettered residues or marked letters: mapped_spans); label, ref,
+    subtype, class (optional) name more columns; include/exclude keep rows as a site's marks do; kind, if given, must
+    match the kind asked for. A list of mappings reads several tables side by side in one file (each partner of a
+    pair, say), their units together."""
+    if isinstance(columns, list):
+        parts = [from_columns(path, kind, c, source, snapshot) for c in columns]
+        return combine(parts, 'all_of') if parts else make_units(pd.DataFrame(columns=['accession', 'start', 'end']), kind, source)
     if columns.get('kind') and columns['kind'] != kind:
         raise ValueError(f'{path}: its manifest entry gives units of kind {columns["kind"]!r}, not {kind!r}')
     df = pd.read_csv(path, sep=columns.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False)
-    for cond in columns.get('include', []):
-        df = df[_holds(df, cond)]
-    for cond in columns.get('exclude', []):
-        df = df[~_holds(df, cond)]
+    df = select_rows(df, columns, snapshot)
     extra = {k: columns[k] for k in ('label', 'ref', 'subtype', 'class') if columns.get(k)}
-    missing = sorted(({columns[k] for k in ('accession', 'start', 'end')} | set(extra.values())) - set(df.columns))
+    where = [columns[k] for k in ('accession', 'start', 'end', 'position', 'ranges', 'residues', 'marked_in', 'residue', 'sequence', 'gene',
+                                  'sequence_start', 'sequence_end')
+             if columns.get(k)] + list(columns.get('unique_within') or [])
+    missing = sorted((set(where) | set(extra.values())) - set(df.columns))
     if missing:
         raise ValueError(f'{path}: the manifest entry names columns the file does not have: {missing}')
-    df = df.rename(columns={v: k for k, v in extra.items()})
-    units = make_units(df, kind, source or Path(path).name, accession=columns['accession'], start=columns['start'],
-                       end=columns['end'], keep=list(extra))
+    spans = mapped_spans(df, columns, snapshot)
+    frame = pd.DataFrame({'accession': spans['accession'].to_numpy(), 'start': spans['start'].to_numpy(), 'end': spans['end'].to_numpy()})
+    for k, col in extra.items():
+        frame[k] = df.loc[spans['row'], col].to_numpy()
+    units = make_units(frame, kind, source or Path(path).name, keep=list(extra))
     for c in DOMAIN_COLUMNS if kind == 'domain' else []:
         if c not in units.columns:
             units[c] = ''
     return units
 
 
-def residue_values(path: str | Path, columns: dict) -> pd.DataFrame:
+def residue_values(path: str | Path, columns: dict, snapshot: Snapshot | None = None) -> pd.DataFrame:
     """A per-residue table (accession, position, value) by a column mapping {accession, position, value}; rows without
     a number are dropped. One value per residue: the first row's."""
-    df = pd.read_csv(path, sep=columns.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False)
-    for cond in columns.get('include', []):
-        df = df[_holds(df, cond)]
-    for cond in columns.get('exclude', []):
-        df = df[~_holds(df, cond)]
+    df = select_rows(pd.read_csv(path, sep=columns.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False), columns, snapshot)
     missing = sorted({columns[k] for k in ('accession', 'position', 'value')} - set(df.columns))
     if missing:
         raise ValueError(f'{path}: the manifest entry names columns the file does not have: {missing}')
@@ -192,10 +367,10 @@ register_reader('interpro', lambda cols, kind: kind == 'domain' and 'interpro_ty
                 'InterPro domain and repeat intervals as staged')(lambda path, kind: interpro_domains(path))
 
 
-def load(path: str | Path, kind: str, columns: dict | None = None) -> pd.DataFrame:
+def load(path: str | Path, kind: str, columns: dict | list | None = None, snapshot: Snapshot | None = None) -> pd.DataFrame:
     """Units of a kind from a file: by its column mapping if it has one, else by the first reader that knows it."""
     if columns:
-        return from_columns(path, kind, columns)
+        return from_columns(path, kind, columns, snapshot=snapshot)
     cols = set(pd.read_csv(path, sep='\t', nrows=0).columns)
     for r in READERS:
         if r.detect(cols, kind):

@@ -66,6 +66,24 @@ Conventions:
   `none` for proteins without a value); its `a, b, c, d` add up to the `enricher` row's. For sets of another
   identifier, an identifier takes the highest value of the proteins that map to it (`combine: max`), and the deciles
   are those of the background's identifiers.
+- A **question of several tests** (an analysis with `tests:`, `ptmcontext/question.py`): each test is one category
+  (and stratum) with its own background, a yes-or-no class against the candidates its evidence could reach. A test puts a
+  candidate in its class by `inside: <role>` (inside a unit of the role, or `within: N` residues of one; `{role, where:
+  [conditions on the units' columns]}` keeps some units) or by `value: <role>` with one of `at_most, below, at_least,
+  above` (a per-residue table). It counts only the candidates every restriction keeps: `proteins_with: <role>` (proteins
+  with a unit; `on_candidates: true`, a unit holding a candidate), `covered_by` (inside a unit: the residues an experiment
+  measured), `outside_of`, `with_value`, `unless: <motif rule>` (not the residues whose window matches, the profile's
+  syntax). Restrictions add up from the analysis, the test and the stratum (`strata:`, every test again on part of its
+  candidates; the row's `stratum`, and its class code `<category>_<stratum>`). `counting: proteins_with_both` (default,
+  as above) or `every_candidate` (the pooled test counts every candidate the test keeps, and the within-protein row
+  reports those counts; no within-protein row for a test of one protein). `background` names the background per test.
+- `enricher` on **one set per item** (`sets.each`): each item is a set: the proteins with a unit in its `units` roles or
+  listed in its `table` (`{input, protein, include, exclude}`), tested against its own universe (`universe_units`: the
+  proteins with a unit there; else the analysis's universe), one hypergeometric test each, BH over the items;
+  `order: as_listed` keeps the items' order.
+- A test or set that reads an input which is absent (a `checksum_only` input the build's root does not hold) is left
+  out, and `run.json` says so (`analyses.<id>.left_out`); the parity check then leaves its reference rows out and does
+  not compare `q` of that question (BH needs every row).
 - `q`: Benjamini–Hochberg within (analysis, method).
 - An effect is reported at q ≤ 0.05 and at least 1.1× either way.
 
@@ -159,7 +177,8 @@ sequences. Domain units add `subtype` (domain, repeat), `ref` (the source's acce
 Any TSV with an accession column and a position column; the site file names them and selects rows with `include` and
 `exclude` conditions (`equals`, `in`, `contains`). Positions must be on the snapshot's sequences. `marks.add` appends the rows of
 further tables (each its manifest `input`, with its own `include`, `exclude` and `left_out`: rows counted on neither side).
-A site's `variants` run the same questions on other marks: each has a `label`, tables to add (`marks_add`) and its own
+A site's `variants` run the same questions on other marks (`not_compared`: questions a variant runs but does not
+check against its reference, each with why): each has a `label`, tables to add (`marks_add`) and its own
 `reference`, and `attributes` of the marks it adds; `ptmc run --variant <name>` writes it under
 `<outputs.folder>/variants/<name>` and records `variant` in run.json, and `ptmc web --variant <name>` builds its website in
 `<outputs.folder>/web/<name>/`. The site's own page lists the variants that have been run (`variants`: name, label,
@@ -257,12 +276,27 @@ order in the site data (`map_rows`).
 
 ## Input manifest entries
 
-`file, md5, source, version, licence` (required), `role` (`input` or `reference_output`), `note`, and two optional
+`file, md5, source, version, licence` (required), `role` (`input` or `reference_output`), `note`, and three optional
 fields: `columns`, a column mapping for a file no reader knows (intervals: `accession, start, end`, and `label, ref,
 subtype, class`; per-residue values: `accession, position, value`; lists of residues: `accession, position`;
-`include`/`exclude` conditions; `kind`; `sep`), and `record`, the source's own page for a protein (a URL with `{acc}`).
-A table a protein-set question reads that is not tab-separated says so with `columns: {sep: ","}` alone; every table of
-a protein-set question is read with it.
+`include`/`exclude` conditions; `kind`; `sep`),
+`record`, the source's own page for a protein (a URL with `{acc}`), and `redistribution: checksum_only` for a file whose
+terms forbid copying it: only its MD5 is recorded, it is read from the root a build is given, and what needs it is left
+out (and said so) where it is absent. A table a protein-set question reads that is not tab-separated says so with
+`columns: {sep: ","}` alone; every table of a protein-set question is read with it. Two entries may read one file in
+two ways (each its own name and mapping); `columns` may be a list of mappings (each partner of a pair, side by side in
+one row), whose units are read together.
+
+Where a mapping finds its units, besides `start` and `end`: `position` (one residue, or a list with `separator`; with
+`residue`, the letter there: a row whose letter differs from the snapshot is dropped), `ranges` (`"363-363,531-531"`),
+`residues` (`"R169,A203"`, every letter checked, else the row is dropped), `marked_in` (a sequence from `start` whose
+lower-case letters are the residues). Checks against the snapshot: `sequence` (the unit's own sequence; `relocate: true`
+moves a unit to the only place the snapshot reads it), `sequence_start`/`sequence_end` (read elsewhere than the unit),
+`gene` (an accession not on the snapshot replaced by its gene's entry), `canonical` (an isoform read as its entry),
+`start_offset`, `max_length`, `max_per_row`, `unique_within` (rows grouped by these columns kept only where the group
+places one residue). Conditions (`include`, `exclude`, `where`): `equals`, `in`, `contains`, `matches` (a regular
+expression the whole cell matches), `at_least`, `at_most` (numbers; a cell that is not a number meets neither),
+`same_as` (another column's value), `on_snapshot` (an accession, isoform suffix dropped, of the snapshot).
 
 ## What `ptmc run` writes for the website
 
@@ -539,6 +573,68 @@ A filter group of `website.filters` places these filters by key (`keys: ["d:mark
 "b:score"]`); a module may add kinds of its own (`K.filterKinds[kind]`: `valid`, `test`, and optionally `control`, `label`,
 `value`) and search keys (`K.searchTerms[key]`: values → `[filter key, values]` or `{error}`). A protein attribute with
 `control: chips` is offered as chips (match any). A term that cannot be read selects nothing and says why under the search.
+
+`page_rows` is a free format with no key (rows of no site or protein: complexes, say): only a page reads it. A table a
+page names (`website.pages`) is also written whole to `data/pages/<name>.json`: `{key, columns: [{name, type, label,
+help?, values?}], rows: [[protein index, position?, values...]]}`, its key `residue` (a site-keyed format), `protein`
+(keyed by accession) or `none`, a row's protein an index into the page's protein list (rows of proteins without a mark
+left out of a keyed table), lists as arrays, flags as 0 or 1, numbers as numbers, missing as null. A column's type comes
+from its name in the format (`partner_accession` a protein, `ids` and `classes` lists, `score` and `distance` numbers,
+`partner_marked` a flag, `pubmed`, `doi`, `window` a sequence), else the page's `columns:` (`<column>` or
+`<table>.<column>`: `label`, `type`, `values`, `help`); a free column is text unless the page says otherwise. With a
+selection, a `residue` table keeps the rows of selected marks (and, for a block that compares, the other residues of
+their proteins), a `protein` table the rows of proteins with a selected mark. `D.page_tables` gives each its key,
+columns and rows; the one-file copy inlines the small ones.
+
+## Website pages
+
+A page of sections (`website.pages`, `kit-interactions.js`), each section a list of blocks, every block reading
+the statistics rows, the marks' attributes or a table of `website.tables` (above) by name. A page registers its tab and its sections in the
+sidebar; `#<page id>/<section id>` opens one section alone, with Previous and Next. A block whose data the site does
+not have is left out; a section with no block left, and a page with no section left, are not shown.
+
+```yaml
+website:
+  pages:
+    - id: <id>                 # the address (#<id>) and the tab
+      tab: <label>
+      title: <the page's question>
+      sub: <one line under it>
+      method: <how it was made: the Method page's section for the page>
+      answer: {rows: [<row refs>], more: "<sentence with {list}>", none: "<sentence>"}   # the answer sentence
+      highlights: [<highlight>]          # cards under it
+      overview: {section: <Overview section>, title: <tile>, bar: <category attribute>, rows: [<row refs>], sub: <...>}
+      groups:
+        - name: <group>
+          sections:
+            - {id: <id>, title: <title>, question: <question>, tile: <block index for the tile, default 0>, blocks: [<block>]}
+```
+
+A **row ref** is `{analysis, category, label?, group?}` (a statistics row; `category` is the class code, for a question
+of several tests `<category>` or `<category>_<stratum>`). A **highlight** is `{rows: [row refs], label, tag, section}`
+(the range of their effects where they differ, "1.3–1.7×"), `{count: {attribute, values}, label, tag, section}` (marks
+with any of those values of a list attribute, as "261 · 91" for several groups: `counts: [{attribute, values}]`), or
+`{share: {table, of, flag}, label, tag, section}` (the share of a table's distinct `of` values whose `flag` is true).
+
+Blocks (`kind`):
+
+| Kind | Reads | Draws |
+|---|---|---|
+| `forest` | `rows: [row refs]` (with `group` headings), `method` (default within each protein) | odds ratios with 95% CIs, counts, q; with a selection, its rows tested again in the browser beside the whole dataset's |
+| `lines` | `analysis`, `series: [category]`, `x: {<stratum>: <number>}`, `x_label` | each series' odds ratio against x (a question's strata), with CI bands |
+| `sets` | `analysis` (a protein-set question) | each set: marked proteins in it against all, fold, q, and its reading within abundance deciles |
+| `shares` | `attribute` (a category attribute of the marks) | a stacked bar of its values among the (selected) marks |
+| `combinations` | `attribute` (a list attribute), `values` (columns, in order), `top` | an UpSet-style table: each value's marks, and the commonest combinations; a click selects them |
+| `matrix` | `attribute` (a list attribute: columns), `rows: [{filter, value, label, group}]` (a filter key as the Filters panel's: `a:<analysis>`, `t:<attribute>`) | odds ratio of each row feature among the marks with each column value against those without (pooled or within proteins), with n |
+| `checker` | `attributes: [names]`, `tables: [names]` | a search box: a mark's values and its rows in those tables |
+| `example` | `tracks: [kinds]`, `protein` (default accession or gene) | one protein's map with those tracks, chosen in a box |
+| `table` | `table`, `columns: [names]`, `group_by`, `chips` (a column whose values filter), `sort`, `limit`, `search` | the rows (a selection's own), sortable, with links |
+| `bars` | `table` (key protein), `label` (a column), `groups: {column, values: {code: title}}`, `top` | for each group value, the labels counted by distinct (selected) proteins |
+| `pairs` | `table` (key protein), `label`, `rows: {column, value}`, `cols: {column, value}` | a matrix: proteins that both a row label and a column label pair with |
+| `histogram` | `table` (key residue), `value` (a number column), `step`, `max` | the values of marks against the other residues, binned |
+| `text` | `text` | a paragraph |
+
+Every block offers PDF, SVG, PNG (figures) and TSV (its rows), each with the provenance block, and a Method link.
 
 ## The entry pictures
 

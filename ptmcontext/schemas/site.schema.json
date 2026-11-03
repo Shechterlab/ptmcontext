@@ -673,6 +673,72 @@
                     }
                   }
                 }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "each"
+                ],
+                "additionalProperties": false,
+                "description": "protein_sets: one set per item, each the proteins with a unit in its roles (units) or listed in a table (table), tested against its own universe (universe_units: the proteins with a unit in those roles, e.g. those an experiment measured; default: the analysis's universe)",
+                "properties": {
+                  "each": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "set"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "set": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "units": {
+                          "$ref": "#/$defs/roles"
+                        },
+                        "table": {
+                          "type": "object",
+                          "required": [
+                            "input",
+                            "protein"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "input": {
+                              "type": "string"
+                            },
+                            "protein": {
+                              "type": "string"
+                            },
+                            "include": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/condition"
+                              }
+                            },
+                            "exclude": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/condition"
+                              }
+                            }
+                          }
+                        },
+                        "universe_units": {
+                          "$ref": "#/$defs/roles"
+                        },
+                        "background": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
               }
             ]
           },
@@ -786,52 +852,60 @@
             "minimum": 1
           },
           "order": {
-            "type": "array",
-            "minItems": 1,
-            "description": "the order its rows are written in, the first key first (default: protein sets by ascending p, then the set's name, which also breaks every tie here; pooled residue rows by odds ratio, within-protein rows by category)",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "oneOf": [
-                {
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "required": [
-                    "categories"
-                  ]
-                }
-              ],
-              "properties": {
-                "categories": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "description": "the rows of these categories first, in this order, then the others as they were"
-                },
-                "by": {
-                  "enum": [
-                    "a",
-                    "b",
-                    "c",
-                    "d",
-                    "fold_enrichment",
-                    "p",
-                    "q",
-                    "category"
+            "oneOf": [
+              {
+                "const": "as_listed",
+                "description": "sets.each: the rows in the order the sets are listed"
+              },
+              {
+                "type": "array",
+                "minItems": 1,
+                "description": "the order its rows are written in, the first key first (default: protein sets by ascending p, then the set's name, which also breaks every tie here; pooled residue rows by odds ratio, within-protein rows by category)",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "oneOf": [
+                    {
+                      "required": [
+                        "by"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "categories"
+                      ]
+                    }
                   ],
-                  "description": "a column of the statistics rows"
-                },
-                "descending": {
-                  "type": "boolean",
-                  "default": false
+                  "properties": {
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 1,
+                      "description": "the rows of these categories first, in this order, then the others as they were"
+                    },
+                    "by": {
+                      "enum": [
+                        "a",
+                        "b",
+                        "c",
+                        "d",
+                        "fold_enrichment",
+                        "p",
+                        "q",
+                        "category"
+                      ],
+                      "description": "a column of the statistics rows"
+                    },
+                    "descending": {
+                      "type": "boolean",
+                      "default": false
+                    }
+                  }
                 }
               }
-            }
+            ]
           },
           "ordered": {
             "type": "boolean",
@@ -1153,6 +1227,142 @@
             "type": "string",
             "pattern": "\\{\\}",
             "description": "protein_sets: each set's own page, a URL with {} for the set's id (https://disease-ontology.org/?id={})"
+          },
+          "background_within": {
+            "type": "string",
+            "description": "a default for every test of the question: the within-protein row's background (default: background, each protein a stratum)"
+          },
+          "inside": {
+            "$ref": "#/$defs/role_ref",
+            "description": "a default for every test of the question: in the class: a residue inside a unit of this role"
+          },
+          "within": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "a default for every test of the question: with inside: or within this many residues of one"
+          },
+          "value": {
+            "$ref": "#/$defs/role_ref",
+            "description": "a default for every test of the question: in the class: a residue whose value (a per-residue table) passes the threshold"
+          },
+          "at_most": {
+            "type": "number",
+            "description": "a default for every test of the question: at_most"
+          },
+          "below": {
+            "type": "number",
+            "description": "a default for every test of the question: below"
+          },
+          "at_least": {
+            "type": "number",
+            "description": "a default for every test of the question: at_least"
+          },
+          "above": {
+            "type": "number",
+            "description": "a default for every test of the question: above"
+          },
+          "proteins_with": {
+            "$ref": "#/$defs/roles",
+            "description": "a default for every test of the question: candidates: only the proteins with a unit of the role(s)"
+          },
+          "covered_by": {
+            "$ref": "#/$defs/roles",
+            "description": "a default for every test of the question: candidates: only the residues inside a unit of the role(s): the measured background"
+          },
+          "outside_of": {
+            "$ref": "#/$defs/roles",
+            "description": "a default for every test of the question: candidates: only the residues outside every unit of the role(s)"
+          },
+          "with_value": {
+            "$ref": "#/$defs/roles",
+            "description": "a default for every test of the question: candidates: only the residues the per-residue table(s) give a value for"
+          },
+          "unless": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/motif_rule"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/motif_rule"
+                }
+              }
+            ],
+            "description": "a default for every test of the question: candidates: not the residues whose window matches the rule(s)"
+          },
+          "tests": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/question_test"
+            },
+            "description": "a question of several tests (question.py): one row per test and method, in this order, each test its own class and its own background; BH over the question's rows"
+          },
+          "strata": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/question_stratum"
+            },
+            "description": "every test again on part of its candidates (or with other parameters), test by test"
+          },
+          "counting": {
+            "enum": [
+              "proteins_with_both",
+              "every_candidate"
+            ],
+            "description": "proteins_with_both (default): as every residue test; every_candidate: every candidate counts in the pooled test and the within-protein row reports those counts"
+          },
+          "describe": {
+            "type": "string"
+          },
+          "kinds": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "the kind of units read from a role, where not the role's name"
+          },
+          "tracks": {
+            "type": "object",
+            "description": "the roles a question draws on the protein map, each a row: {title, help, style, colours, kind}",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "help": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "style": {
+                  "enum": [
+                    "segments",
+                    "domains",
+                    "disorder"
+                  ]
+                },
+                "colours": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "candidates_from": {
+            "enum": [
+              "marks",
+              "marks_and_left_out"
+            ],
+            "default": "marks",
+            "description": "a question of several tests: the candidate residues are those of the proteins with a counted mark (marks), or also of those whose only marks are left out (marks_and_left_out; the left-out marks themselves on neither side)"
           }
         },
         "anyOf": [
@@ -1171,6 +1381,11 @@
                 "const": "protein_sets"
               }
             }
+          },
+          {
+            "required": [
+              "tests"
+            ]
           }
         ]
       }
@@ -1955,9 +2170,18 @@
               "additionalProperties": false,
               "description": "proteins drawn at random on the opening Overview, each end to end as one row, with a button to draw others (kit-random.js)",
               "properties": {
-                "n": {"type": "integer", "minimum": 1, "maximum": 12},
-                "title": {"type": "string"},
-                "min_marks": {"type": "integer", "minimum": 0}
+                "n": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 12
+                },
+                "title": {
+                  "type": "string"
+                },
+                "min_marks": {
+                  "type": "integer",
+                  "minimum": 0
+                }
               }
             }
           }
@@ -3400,7 +3624,8 @@
                   "site_records",
                   "site_measurements",
                   "source_records",
-                  "protein_partners"
+                  "protein_partners",
+                  "page_rows"
                 ]
               },
               "columns": {
@@ -4220,6 +4445,554 @@
               "description": "a line of at most ten words for the card; defaults to website.tagline"
             }
           }
+        },
+        "pages": {
+          "type": "array",
+          "description": "pages of sections (CONTRACTS.md, Website pages; kit-interactions.js): each a tab, its sections in the sidebar, blocks reading the statistics, the marks' attributes or page tables",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "tab",
+              "title",
+              "groups"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]*$"
+              },
+              "tab": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "sub": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string"
+              },
+              "answer": {
+                "type": "object",
+                "required": [
+                  "rows",
+                  "more"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "rows": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "analysis",
+                        "category"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "analysis": {
+                          "type": "string"
+                        },
+                        "category": {
+                          "type": "string",
+                          "description": "the class code (a question of several tests: <category> or <category>_<stratum>)"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "group": {
+                          "type": "string"
+                        },
+                        "phrase": {
+                          "type": "string",
+                          "description": "the row in the page's answer sentence"
+                        }
+                      }
+                    }
+                  },
+                  "more": {
+                    "type": "string"
+                  },
+                  "none": {
+                    "type": "string"
+                  }
+                }
+              },
+              "highlights": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "label"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "analysis",
+                          "category"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "analysis": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string",
+                            "description": "the class code (a question of several tests: <category> or <category>_<stratum>)"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "group": {
+                            "type": "string"
+                          },
+                          "phrase": {
+                            "type": "string",
+                            "description": "the row in the page's answer sentence"
+                          }
+                        }
+                      }
+                    },
+                    "counts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "attribute",
+                          "values"
+                        ],
+                        "properties": {
+                          "attribute": {
+                            "type": "string"
+                          },
+                          "values": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "share": {
+                      "type": "object",
+                      "required": [
+                        "table",
+                        "of",
+                        "flag"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "table": {
+                          "type": "string"
+                        },
+                        "of": {
+                          "type": "string"
+                        },
+                        "flag": {
+                          "type": "string"
+                        },
+                        "base": {
+                          "type": "number",
+                          "description": "the share among all proteins of the proteome, shown beside it"
+                        }
+                      }
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "tag": {
+                      "type": "string"
+                    },
+                    "section": {
+                      "type": "string"
+                    },
+                    "glyph": {
+                      "enum": [
+                        "rna",
+                        "dna",
+                        "protein",
+                        "structure"
+                      ]
+                    }
+                  }
+                }
+              },
+              "overview": {
+                "type": "object",
+                "required": [
+                  "section"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "section": {
+                    "type": "string",
+                    "description": "the Overview section the page's tile goes in"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "question": {
+                    "type": "string"
+                  },
+                  "bar": {
+                    "type": "string",
+                    "description": "a category attribute of the marks: a stacked bar of its values"
+                  },
+                  "lead": {
+                    "type": "string",
+                    "description": "the bar's first value, counted in the tile's headline"
+                  },
+                  "rows": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "analysis",
+                        "category"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "analysis": {
+                          "type": "string"
+                        },
+                        "category": {
+                          "type": "string",
+                          "description": "the class code (a question of several tests: <category> or <category>_<stratum>)"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "group": {
+                          "type": "string"
+                        },
+                        "phrase": {
+                          "type": "string",
+                          "description": "the row in the page's answer sentence"
+                        }
+                      }
+                    }
+                  },
+                  "checker": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "groups": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "sections"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "sections": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "title",
+                          "blocks"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "question": {
+                            "type": "string"
+                          },
+                          "sub": {
+                            "type": "string"
+                          },
+                          "tile": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "which block the section's tile draws (default the first)"
+                          },
+                          "blocks": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "kind"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "enum": [
+                                    "forest",
+                                    "lines",
+                                    "sets",
+                                    "shares",
+                                    "combinations",
+                                    "matrix",
+                                    "checker",
+                                    "example",
+                                    "table",
+                                    "bars",
+                                    "pairs",
+                                    "histogram",
+                                    "text"
+                                  ]
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "sub": {
+                                  "type": "string"
+                                },
+                                "note": {
+                                  "type": "string"
+                                },
+                                "rows": {
+                                  "description": "forest: row refs; matrix: [{filter, value, label, group}]; pairs: {column, value}",
+                                  "type": [
+                                    "array",
+                                    "object"
+                                  ]
+                                },
+                                "method": {
+                                  "enum": [
+                                    "mantel_haenszel",
+                                    "fisher"
+                                  ]
+                                },
+                                "analysis": {
+                                  "type": "string"
+                                },
+                                "series": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "x": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "type": "number"
+                                  }
+                                },
+                                "x_label": {
+                                  "type": "string"
+                                },
+                                "attribute": {
+                                  "type": "string"
+                                },
+                                "attributes": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "values": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "top": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "tables": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "table": {
+                                  "type": "string"
+                                },
+                                "columns": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "group_by": {
+                                  "type": "string"
+                                },
+                                "chips": {
+                                  "type": "string"
+                                },
+                                "sort": {
+                                  "type": "string"
+                                },
+                                "descending": {
+                                  "type": "boolean"
+                                },
+                                "limit": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "search": {
+                                  "type": "boolean"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "partner": {
+                                  "type": "string"
+                                },
+                                "groups": {
+                                  "type": "object",
+                                  "required": [
+                                    "column",
+                                    "values"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "column": {
+                                      "type": "string"
+                                    },
+                                    "values": {
+                                      "type": "object",
+                                      "additionalProperties": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "cols": {
+                                  "type": "object"
+                                },
+                                "value": {
+                                  "type": "string"
+                                },
+                                "by": {
+                                  "type": "string"
+                                },
+                                "step": {
+                                  "type": "number"
+                                },
+                                "max": {
+                                  "type": "number"
+                                },
+                                "tracks": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "protein": {
+                                  "type": "string"
+                                },
+                                "text": {
+                                  "type": "string"
+                                },
+                                "where": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "column",
+                                      "in"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "column": {
+                                        "type": "string"
+                                      },
+                                      "in": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "description": "table: the rows whose column holds one of these values"
+                                },
+                                "members": {
+                                  "type": "string",
+                                  "description": "table: a column of proteins (accessions); with a selection, the rows with a selected member"
+                                },
+                                "among": {
+                                  "type": "string",
+                                  "description": "histogram: only the rows whose column is non-zero (the residues an evidence could reach)"
+                                }
+                              }
+                            }
+                          },
+                          "place": {
+                            "enum": [
+                              "tile",
+                              "top",
+                              "link"
+                            ],
+                            "default": "tile",
+                            "description": "tile: a tile in its group; top: drawn in full at the top of the page; link: a link under the highlights"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "columns": {
+                "type": "object",
+                "description": "how the page shows its tables' columns: <column> or <table>.<column> -> {label, type, values, help}",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "help": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "enum": [
+                        "text",
+                        "number",
+                        "flag",
+                        "list",
+                        "accession",
+                        "accessions",
+                        "pdb",
+                        "doi",
+                        "pubmed",
+                        "url",
+                        "sequence"
+                      ]
+                    },
+                    "values": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4462,6 +5235,13 @@
                 }
               }
             }
+          },
+          "not_compared": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "questions this variant runs but does not check against its reference, each with why (its inputs cannot rebuild it)"
           }
         }
       }
@@ -4639,7 +5419,10 @@
         "in": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": [
+              "string",
+              "number"
+            ]
           }
         },
         "contains": {
@@ -5377,6 +6160,351 @@
         "hatch_label": {
           "type": "string",
           "description": "the key's words for a hatched head (default: the value the first hatch condition names)"
+        }
+      }
+    },
+    "role_ref": {
+      "description": "a role of the site's inputs, or {role, where: [conditions on its units' columns, such as class], on_candidates: true (only a unit holding a candidate residue counts)}",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "required": [
+            "role"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "role": {
+              "type": "string"
+            },
+            "where": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/unit_condition"
+              }
+            },
+            "on_candidates": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "roles": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/role_ref"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/role_ref"
+          }
+        }
+      ]
+    },
+    "unit_condition": {
+      "type": "object",
+      "required": [
+        "column"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "type": "string"
+        },
+        "equals": {
+          "type": "string"
+        },
+        "in": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "contains": {
+          "type": "string"
+        },
+        "matches": {
+          "type": "string"
+        },
+        "at_least": {
+          "type": "number"
+        },
+        "at_most": {
+          "type": "number"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "equals"
+          ]
+        },
+        {
+          "required": [
+            "in"
+          ]
+        },
+        {
+          "required": [
+            "contains"
+          ]
+        },
+        {
+          "required": [
+            "matches"
+          ]
+        },
+        {
+          "required": [
+            "at_least"
+          ]
+        },
+        {
+          "required": [
+            "at_most"
+          ]
+        }
+      ]
+    },
+    "motif_condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "in"
+      ],
+      "properties": {
+        "at": {
+          "type": "integer"
+        },
+        "within": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "in": {
+          "type": "string"
+        }
+      }
+    },
+    "motif_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "a rule in the profile's motif syntax, read in the window around a residue",
+      "properties": {
+        "all": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/motif_condition"
+          }
+        },
+        "any": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/motif_condition"
+          }
+        }
+      }
+    },
+    "question_test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category"
+      ],
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "the statistics row's category"
+        },
+        "stratum": {
+          "type": "string",
+          "description": "the statistics row's stratum (default all)"
+        },
+        "label": {
+          "type": "string"
+        },
+        "help": {
+          "type": "string"
+        },
+        "background": {
+          "type": "string",
+          "description": "the pooled row's background, in words"
+        },
+        "background_within": {
+          "type": "string",
+          "description": "the within-protein row's background (default: background, each protein a stratum)"
+        },
+        "inside": {
+          "$ref": "#/$defs/role_ref",
+          "description": "in the class: a residue inside a unit of this role"
+        },
+        "within": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "with inside: or within this many residues of one"
+        },
+        "value": {
+          "$ref": "#/$defs/role_ref",
+          "description": "in the class: a residue whose value (a per-residue table) passes the threshold"
+        },
+        "at_most": {
+          "type": "number"
+        },
+        "below": {
+          "type": "number"
+        },
+        "at_least": {
+          "type": "number"
+        },
+        "above": {
+          "type": "number"
+        },
+        "proteins_with": {
+          "$ref": "#/$defs/roles",
+          "description": "candidates: only the proteins with a unit of the role(s)"
+        },
+        "covered_by": {
+          "$ref": "#/$defs/roles",
+          "description": "candidates: only the residues inside a unit of the role(s): the measured background"
+        },
+        "outside_of": {
+          "$ref": "#/$defs/roles",
+          "description": "candidates: only the residues outside every unit of the role(s)"
+        },
+        "with_value": {
+          "$ref": "#/$defs/roles",
+          "description": "candidates: only the residues the per-residue table(s) give a value for"
+        },
+        "unless": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/motif_rule"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/motif_rule"
+              }
+            }
+          ],
+          "description": "candidates: not the residues whose window matches the rule(s)"
+        }
+      }
+    },
+    "question_stratum": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stratum"
+      ],
+      "properties": {
+        "stratum": {
+          "type": "string",
+          "description": "the statistics row's stratum (default all)"
+        },
+        "background": {
+          "type": "string",
+          "description": "the pooled row's background, in words"
+        },
+        "background_within": {
+          "type": "string",
+          "description": "the within-protein row's background (default: background, each protein a stratum)"
+        },
+        "inside": {
+          "$ref": "#/$defs/role_ref",
+          "description": "in the class: a residue inside a unit of this role"
+        },
+        "within": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "with inside: or within this many residues of one"
+        },
+        "value": {
+          "$ref": "#/$defs/role_ref",
+          "description": "in the class: a residue whose value (a per-residue table) passes the threshold"
+        },
+        "at_most": {
+          "type": "number"
+        },
+        "below": {
+          "type": "number"
+        },
+        "at_least": {
+          "type": "number"
+        },
+        "above": {
+          "type": "number"
+        },
+        "proteins_with": {
+          "$ref": "#/$defs/roles",
+          "description": "candidates: only the proteins with a unit of the role(s)"
+        },
+        "covered_by": {
+          "$ref": "#/$defs/roles",
+          "description": "candidates: only the residues inside a unit of the role(s): the measured background"
+        },
+        "outside_of": {
+          "$ref": "#/$defs/roles",
+          "description": "candidates: only the residues outside every unit of the role(s)"
+        },
+        "with_value": {
+          "$ref": "#/$defs/roles",
+          "description": "candidates: only the residues the per-residue table(s) give a value for"
+        },
+        "unless": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/motif_rule"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/motif_rule"
+              }
+            }
+          ],
+          "description": "candidates: not the residues whose window matches the rule(s)"
+        }
+      }
+    },
+    "row_order": {
+      "type": "array",
+      "minItems": 1,
+      "description": "protein_sets: the order its rows are written in, the first key first (default: ascending p, then the set's name, which also breaks every tie here)",
+      "items": {
+        "type": "object",
+        "required": [
+          "by"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "by": {
+            "enum": [
+              "a",
+              "b",
+              "c",
+              "d",
+              "fold_enrichment",
+              "p",
+              "q",
+              "category"
+            ],
+            "description": "a column of the statistics rows"
+          },
+          "descending": {
+            "type": "boolean",
+            "default": false
+          }
         }
       }
     }

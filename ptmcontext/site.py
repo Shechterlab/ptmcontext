@@ -64,6 +64,8 @@ def with_variant(site: dict, name: str | None) -> dict:
         out['reference'] = v['reference']
     out['outputs'] = {**out['outputs'], 'folder': str(Path(out['outputs']['folder']) / 'variants' / name)}
     out['variant'] = {'name': name, 'label': v['label'], 'description': v.get('description', '')}
+    if v.get('not_compared'):          # questions the variant's inputs cannot rebuild: run, but not checked against its reference
+        out['variant']['not_compared'] = dict(v['not_compared'])
     return out
 
 
@@ -109,6 +111,14 @@ def _analysis_words(site: dict) -> dict:
     except Exception:              # noqa: BLE001  (a profile problem is reported elsewhere)
         fams = []
     for a in site.get('analyses', []):
+        if a.get('tests'):                               # a question of several tests: its tests are its classes
+            from .question import question_layer
+            try:
+                layer = question_layer(a)
+            except (ValueError, KeyError, TypeError):
+                continue
+            out[a['id']] = {'shape': 'flags', 'classes': set(layer.labels), 'needs': list(layer.needs)}
+            continue
         if a.get('test') == 'protein_sets' or not (a.get('layer') in L.BUILT_IN or a.get('layer') in L.FACTORIES):
             continue
         try:
@@ -121,11 +131,19 @@ def _analysis_words(site: dict) -> dict:
 
 
 def roles_missing(site: dict) -> list[str]:
-    """Residue analyses whose layer reads a role the site file does not fill."""
+    """Residue analyses whose layer reads a role the site file does not fill, and questions of several tests that do
+    not make (a test with neither inside nor value, two tests of one code, ...)."""
     roles = set(site.get('inputs', {}))
     out = [f"{aid}: reads role {r!r}, which inputs: does not fill" for aid, w in _analysis_words(site).items() for r in w['needs'] if r not in roles]
     out += [f"{a['id']}: proteins: reads role {a['proteins']['input']!r}, which inputs: does not fill" for a in site.get('analyses', [])
             if a.get('proteins') and a['proteins']['input'] not in roles]
+    from .question import expand
+    for a in site.get('analyses', []):
+        if a.get('tests'):
+            try:
+                expand(a)
+            except ValueError as exc:
+                out.append(str(exc))
     return out
 
 
@@ -133,15 +151,18 @@ def mapping_problems(site: dict, root: str | Path) -> list[str]:
     """Column mappings (a manifest entry's columns) that name a column its file does not have, read from the files."""
     out, entries = [], I.load(manifest_of(site))
     for name in I.site_input_names(site):
-        cols = entries.get(name, {}).get('columns')
+        maps = entries.get(name, {}).get('columns')
         path = Path(root) / entries.get(name, {}).get('file', '')
-        if not cols or not path.exists():
+        if not maps or not path.exists():
             continue
-        have = set(pd.read_csv(path, sep=cols.get('sep', '\t'), nrows=0).columns)
-        named = {cols[k] for k in ('accession', 'start', 'end', 'position', 'value', 'label', 'ref', 'subtype', 'class') if cols.get(k)}
-        named |= {c['column'] for c in cols.get('include', []) + cols.get('exclude', [])}
-        if named - have:
-            out.append(f"input {name}: its column mapping names columns {path.name} does not have: {sorted(named - have)} (it has {sorted(have)})")
+        for cols in (maps if isinstance(maps, list) else [maps]):
+            have = set(pd.read_csv(path, sep=cols.get('sep', '\t'), nrows=0).columns)
+            named = {cols[k] for k in ('accession', 'start', 'end', 'position', 'value', 'label', 'ref', 'subtype', 'class', 'ranges', 'residues',
+                                       'marked_in', 'residue', 'sequence', 'gene', 'sequence_start', 'sequence_end') if cols.get(k)}
+            named |= {c['column'] for c in cols.get('include', []) + cols.get('exclude', [])} | set(cols.get('unique_within') or [])
+            named |= {c['same_as'] for c in cols.get('include', []) + cols.get('exclude', []) if c.get('same_as')}
+            if named - have:
+                out.append(f"input {name}: its column mapping names columns {path.name} does not have: {sorted(named - have)} (it has {sorted(have)})")
     from .web.tables import source_columns
     for tid, tb in ((site.get('website') or {}).get('tables') or {}).items():      # the tables the protein pages show
         path = Path(root) / entries.get(tb['input'], {}).get('file', '')
@@ -344,13 +365,18 @@ def website_problems(site: dict) -> list[str]:
         out += [f"reference.tables: {aid!r} is not a protein-set question" for aid in (ref.get('tables') or {}) if aid not in sets]
     for k, card in enumerate((web.get('protein') or {}).get('sets', [])):
         out += [f"website.protein.sets[{k}] ({card['title']!r}): {a!r} is not a protein-set question" for a in card['analyses'] if a not in sets]
+    page_ids = {pg['id'] for pg in web.get('pages') or []}
     for key, to in (web.get('legacy_links') or {}).items():
-        if not to.startswith('?') and to not in questions:
+        if to.startswith('#'):
+            if to[1:].split('/')[0] not in page_ids | {'overview', 'statistics', 'method', 'proteins', 'sites', 'idrs'}:
+                out.append(f"website.legacy_links: {key!r} opens {to!r}, which is not a page of this site")
+        elif not to.startswith('?') and to not in questions:
             out.append(f"website.legacy_links: {key!r} opens {to!r}, which is not a question of this site")
     for where, blk in (('start', web.get('start') or {}), ('landing', web.get('landing') or {})):
         if (blk.get('share') or {}).get('analysis') not in (None, *ids):
             out.append(f"website.{where}.share: {blk['share']['analysis']!r} is not a question of this site")
         out += [f"website.{where}.findings: {f['analysis']!r} is not a question of this site" for f in blk.get('findings') or [] if f['analysis'] not in ids]
+    out += page_problems(site)
     from .web.search import problems as search_problems, search_keys
     out += search_problems(site)
     keys = search_keys(site)
@@ -625,6 +651,100 @@ def view_problems(card: dict, sets: dict, where: str) -> list[str]:
     return out
 
 
+def page_problems(site: dict) -> list[str]:
+    """What the website's pages (website.pages) and their tables (website.tables) name that the site does not have:
+    an analysis, a class, an attribute, a table or one of its columns, a section; and tables mapped wrongly."""
+    web = site.get('website') or {}
+    ids = {x['id']: x for x in site.get('analyses', [])}
+    attrs = (site.get('marks') or {}).get('attributes') or {}
+    tables = web.get('tables') or {}
+    words = _analysis_words(site)
+    out = []
+
+    def classes_of(aid):
+        a = ids.get(aid) or {}
+        if a.get('tests'):
+            from .question import expand
+            try:
+                return {t['code'] for t in expand(a)} | {t['category'] for t in expand(a)}
+            except ValueError:
+                return None
+        return (words.get(aid) or {}).get('classes')
+
+    def rowrefs(where, refs):
+        for r in refs or []:
+            if r['analysis'] not in ids:
+                out.append(f"{where}: no analysis {r['analysis']!r}")
+                continue
+            cl = classes_of(r['analysis'])
+            if cl is not None and ids[r['analysis']].get('test') != 'protein_sets' and r['category'] not in cl:
+                out.append(f"{where}: {r['analysis']!r} has no class {r['category']!r}")
+
+    def attr(where, name, kind=None):
+        if name not in attrs:
+            out.append(f"{where}: no attribute {name!r} in marks.attributes")
+        elif kind and attrs[name].get('kind') != kind:
+            out.append(f"{where}: attribute {name!r} is not a {kind}")
+
+    def table(where, name, cols=()):
+        if name not in tables:
+            out.append(f"{where}: no table {name!r} in website.tables")
+            return
+        have = (set(tables[name].get('columns') or {}) - {'site'}) | set(tables[name].get('values') or []) | {'accession', 'position'}
+        out.extend(f"{where}: table {name!r} has no column {c!r}" for c in cols if c and c not in have)
+    for pg in web.get('pages') or []:
+        here = f"website.pages.{pg['id']}"
+        secs = {s_['id'] for g in pg['groups'] for s_ in g['sections']}
+        rowrefs(f'{here}.answer', (pg.get('answer') or {}).get('rows'))
+        ov = pg.get('overview') or {}
+        rowrefs(f'{here}.overview', ov.get('rows'))
+        if ov.get('bar'):
+            attr(f'{here}.overview.bar', ov['bar'], 'category')
+        for h in pg.get('highlights') or []:
+            rowrefs(f'{here}.highlights', h.get('rows'))
+            for c in h.get('counts') or []:
+                attr(f'{here}.highlights', c['attribute'], 'list')
+            if h.get('share'):
+                table(f'{here}.highlights', h['share']['table'], [h['share']['of'], h['share']['flag']])
+            if h.get('section') and h['section'] not in secs:
+                out.append(f"{here}.highlights: no section {h['section']!r}")
+        for g in pg['groups']:
+            for sec in g['sections']:
+                w = f"{here}.{sec['id']}"
+                for b in sec['blocks']:
+                    k = b['kind']
+                    if k == 'forest':
+                        rowrefs(w, b.get('rows'))
+                    elif k in ('lines', 'sets'):
+                        if b.get('analysis') not in ids:
+                            out.append(f"{w}: {k} needs analysis: one of the site's questions (not {b.get('analysis')!r})")
+                        elif k == 'sets' and ids[b['analysis']].get('test') != 'protein_sets':
+                            out.append(f"{w}: sets reads a protein-set question; {b['analysis']!r} is not one")
+                    elif k == 'shares':
+                        attr(w, b.get('attribute', ''), 'category')
+                    elif k in ('combinations', 'matrix'):
+                        attr(w, b.get('attribute', ''), 'list')
+                        for r in (b.get('rows') or []) if k == 'matrix' else []:
+                            f = r.get('filter', '')
+                            if f.startswith('a:') and f[2:] not in ids:
+                                out.append(f"{w}: matrix row filter {f!r}: no analysis {f[2:]!r}")
+                            elif f.startswith('t:') and f[2:] not in attrs:
+                                out.append(f"{w}: matrix row filter {f!r}: no attribute {f[2:]!r}")
+                    elif k == 'checker':
+                        for a_ in b.get('attributes') or []:
+                            attr(w, a_)
+                        for t in b.get('tables') or []:
+                            table(w, t)
+                    elif k in ('table', 'bars', 'pairs', 'histogram'):
+                        if not b.get('table'):
+                            out.append(f"{w}: {k} needs table:")
+                            continue
+                        cols = list(b.get('columns') or []) + [b.get(x) for x in ('group_by', 'chips', 'sort', 'label', 'partner', 'value', 'by', 'among', 'members')]
+                        cols += [(b.get('groups') or {}).get('column')] + [(b.get(x) or {}).get('column') if isinstance(b.get(x), dict) else None for x in ('rows', 'cols')]
+                        table(w, b['table'], cols)
+    return out
+
+
 def root_of(site: dict) -> Path:
     return Path(site.get('__root__', REPO))
 
@@ -881,6 +1001,24 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
     m['window_15'] = [window(snap.sequences[a], p, 7) for a, p in zip(m['accession'], m['position'])]
     counts = []
     for aid, k in kept.items():
+        if k.get('question'):            # a question of several tests: a mark's tests in its class, and those that count it
+            inn, cnt, rows_ = {}, {}, []
+            for code in k['codes']:
+                t = k['tests'][code]
+                mk = t['counted'][t['counted']['marked']]
+                for a, p, i in zip(mk['accession'], mk['position'], mk['in']):
+                    cnt.setdefault((a, p), []).append(code)
+                    if i:
+                        inn.setdefault((a, p), []).append(code)
+                g = t['per_protein']
+                rows_.append(pd.DataFrame({'accession': g.index, 'analysis': aid, 'category': code, 'marks_in': g['a'].to_numpy(),
+                                           'others_in': g['c'].to_numpy(), 'marks_total': (g['a'] + g['b']).to_numpy(),
+                                           'others_total': (g['c'] + g['d']).to_numpy()}))
+            m[aid] = [';'.join(inn.get((a, p), [])) for a, p in zip(m['accession'], m['position'])]
+            m[f'n.{aid}'] = [';'.join(cnt.get((a, p), [])) for a, p in zip(m['accession'], m['position'])]
+            if rows_:
+                counts.append(pd.concat(rows_, ignore_index=True))
+            continue
         ann, is_m, is_l = k['annotated'], k['is_marked'], k['is_left']
         mk = ann[is_m].set_index(['accession', 'position'])
         if k['columns'] is None:
@@ -917,7 +1055,7 @@ def protein_outputs(snap: Snapshot, profile, marked: pd.DataFrame, kept: dict, c
            'proteins.tsv': proteins, 'units.tsv': units, 'tracks.json': tracks}
     if valued:
         # the candidate residues as the tests counted them (any question's: they are the same residues)
-        k = next(iter(kept.values()), None)
+        k = next((v for v in kept.values() if 'annotated' in v), None)
         if k is not None:
             cand, is_m, is_l = k['annotated'][['accession', 'position']], k['is_marked'], k['is_left']
         else:
@@ -998,6 +1136,19 @@ def drawn_tracks(layers: dict, ctx: L.Context, accs: set, values: dict | None = 
     return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=UNIT_OUT)), meta
 
 
+def input_formats(names: list[str], paths: dict, entries: dict) -> dict:
+    """Each input's column mapping, by its manifest name (two entries may read one file in two ways), and by its path
+    (a file's separator, which every mapping of one file shares)."""
+    out = {}
+    for n in names:
+        cols = entries.get(n, {}).get('columns')
+        if not cols or n not in paths:
+            continue
+        out[n] = cols
+        out.setdefault(str(paths[n]), cols if isinstance(cols, dict) else {'sep': cols[0].get('sep', '\t')})
+    return out
+
+
 def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, out_root: str | Path | None = None,
         write: bool = True, log=print, skip_new: bool = False, variant: str | None = None) -> SiteRun:
     """Run a site: its analyses, statistics rows and run record, and its parity check. skip_new leaves out the analyses
@@ -1009,7 +1160,10 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     roles = site.get('inputs', {})
     names = I.site_input_names(site)
     manifest = manifest_of(site)
-    paths = I.resolve(root, names, manifest=manifest, allow_untrusted=allow_untrusted)
+    paths = I.resolve(root, names, manifest=manifest, allow_untrusted=allow_untrusted, allow_absent=True)
+    absent = [n for n in names if n not in paths]          # checksum_only inputs this root does not hold
+    for n in absent:
+        log(f"  absent {n}: checksum_only (its terms forbid redistribution) and not under {root}")
     staged = I.load(manifest).get(site['snapshot']['input'], {}).get('version', '')
     release = site['snapshot']['release']
     if staged and release.split()[-1] not in staged:
@@ -1019,11 +1173,16 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     snap = Snapshot.from_fasta(paths[site['snapshot']['input']], release=site['snapshot']['release'])
     def fill(value):
         rule, given = I.role_inputs(value)
-        return paths[given[0]] if rule == 'one' else L.Several(rule, tuple(paths[n] for n in given))
+        given = [n for n in given if n in paths]        # an absent checksum_only input leaves its role's others
+        if not given:
+            return None
+        return paths[given[0]] if rule == 'one' else L.Several(rule, tuple(paths[n] for n in given), tuple(given))
     entries = I.load(manifest)
-    ctx = L.Context(snap, profile, {role: fill(value) for role, value in roles.items()},
+    filled = {role: fill(value) for role, value in roles.items()}
+    ctx = L.Context(snap, profile, {r: v for r, v in filled.items() if v is not None},
                     trusted_plugins=tuple(site.get('trusted_plugins', [])),
-                    formats={str(paths[n]): entries[n]['columns'] for n in names if entries.get(n, {}).get('columns')})
+                    formats=input_formats(names, paths, entries),
+                    names={role: I.role_inputs(v)[1][0] for role, v in roles.items() if I.role_inputs(v)[0] == 'one'})
     table, added = read_marks_table(site, paths)
     spec = marks_spec(site, table)
     marked, report = select_marks(spec, table, snap, profile)
@@ -1043,16 +1202,25 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
     for analysis in site['analyses']:
         if analysis.get('test') == 'protein_sets':
             from .set_tests import families_file, protein_set_test, roles_of
-            several = [r for r in roles_of(analysis) if isinstance(ctx.inputs.get(r), L.Several)]
+            unit_roles = {r['role'] if isinstance(r, dict) else r for it in analysis['sets'].get('each', [])
+                          for k in ('units', 'universe_units') for r in ([it[k]] if isinstance(it.get(k), (str, dict)) else it.get(k) or [])}
+            several = [r for r in roles_of(analysis) if isinstance(ctx.inputs.get(r), L.Several) and r not in unit_roles]
             if several:
                 raise ValueError(f"{analysis['id']}: a protein-set test reads one table per role, but {several} name several inputs")
             set_keep[analysis['id']] = {}
+            left = []
             rows_, names = protein_set_test(analysis, ctx.inputs, set(marked['accession']), set(snap.sequences), keep=set_keep[analysis['id']],
-                                            root=root_of(site), formats=ctx.formats)
+                                            root=root_of(site), formats=ctx.formats, ctx=ctx, left_out=left)
             parts.append(rows_)
             set_names += [(analysis['id'], k, names.get(k, '')) for k in rows_['category']] if len(rows_) else []
             set_names += [(analysis['id'], k, v['name']) for k, v in set_keep[analysis['id']].get('filter_sets', {}).items()]   # offered, not tested
-            layers_used[analysis['id']] = {'test': 'protein_sets', 'sets': analysis['sets']['input']}
+            layers_used[analysis['id']] = {'test': 'protein_sets', 'sets': analysis['sets'].get('input') or [it['set'] for it in analysis['sets']['each']]}
+            if analysis['sets'].get('each'):            # each set's code, so that parity can leave out the sets not run
+                layers_used[analysis['id']]['tests'] = [{'code': it['set'], 'category': it['set'], 'stratum': 'all'} for it in analysis['sets']['each']]
+            if left:
+                layers_used[analysis['id']]['left_out'] = left
+                for lt in left:
+                    log(f"  {analysis['id']}: set {lt['code']} left out (reads {', '.join(lt['roles'])}, not present)")
             if analysis['sets'].get('families'):          # the site's own rules file, as read
                 rules = families_file(analysis, root_of(site))
                 layers_used[analysis['id']]['families'] = {'file': analysis['sets']['families']['rules'], 'md5': md5_file(rules),
@@ -1066,6 +1234,19 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
                 if analysis['sets'].get(k):
                     layers_used[analysis['id']][k] = analysis['sets'][k]
             log(f"  {analysis['id']:18s} {len(rows_):3d} rows")
+            continue
+        if analysis.get('tests'):                          # a question of several tests, each with its own background
+            from .question import Question, question_layer
+            q, layer = Question(ctx, analysis), question_layer(analysis)
+            layer_objs[analysis['id']] = layer
+            kept[analysis['id']] = {}
+            parts.append(q.run(marked, left_out=pending if len(pending) else None, keep=kept[analysis['id']]))
+            layers_used[analysis['id']] = {'layer': 'tests', 'origin': layer.origin, 'counting': q.counting,
+                                           'tests': [{k: t[k] for k in ('code', 'category', 'stratum')} for t in q.tests],
+                                           **({'left_out': q.left_out_tests} if q.left_out_tests else {}), **layer_words(layer)}
+            for lt in q.left_out_tests:
+                log(f"  {analysis['id']}: test {lt['code']} left out (reads {', '.join(lt['roles'])}, not present)")
+            log(f"  {analysis['id']:18s} {len(parts[-1]):3d} rows")
             continue
         layer = L.get(analysis['layer'], ctx, analysis.get('with'), analysis['id'])
         layer_objs[analysis['id']] = layer
@@ -1094,6 +1275,7 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         'profile': profile.id, 'marks': report, 'analyses': layers_used, **({'variant': site['variant']} if site.get('variant') else {}),
         'manifest': str(manifest.relative_to(root_of(site))) if manifest.is_relative_to(root_of(site)) else str(manifest), 'roles': roles,
         'inputs': {n: {'file': str(p), 'md5': md5_file(p)} for n, p in sorted(paths.items())},
+        **({'absent': {n: 'checksum_only, not under the root' for n in absent}} if absent else {}),
         'trusted_plugins': list(ctx.trusted_plugins), 'seconds': round(time.time() - t0, 1),
     }
     if per_mark_report:                                # tables kept for the website: what each held and kept
@@ -1112,13 +1294,22 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
                 log(f"  new    {analysis['id']:18s} not in the reference")
                 continue
             else:
-                found = compare(rows[rows['analysis'] == analysis['id']], reference, analysis['id'])
+                why = ((site.get('variant') or {}).get('not_compared') or {}).get(analysis['id'])
+                if why:                                      # a variant whose inputs cannot rebuild it (it says why)
+                    log(f"  not compared {analysis['id']:18s} in this variant: {why}")
+                    continue
+                partial = [t['code'] for t in (layers_used.get(analysis['id']) or {}).get('left_out', [])]
+                found = compare(rows[rows['analysis'] == analysis['id']], reference, analysis['id'],
+                                leave_out=[(t['category'], t['stratum']) for t in layers_used[analysis['id']]['tests']
+                                           if t['code'] in partial] if partial else None)
             for r in found:
                 result.parity.append(r)
                 log(f'  parity {r.analysis:18s} {r.method:16s} {r.rows:3d} rows  {"equal" if r.equal else "DIFFERENT"}'
-                    + (f'  (against {r.reference})' if r.reference else ''))
+                    + (f'  (against {r.reference})' if r.reference else '')
+                    + (f' (partial: {r.skipped} rows need absent inputs; q not compared)' if r.skipped else ''))
         record['parity'] = {'reference': ref, 'equal': result.parity_ok, 'new': [a['id'] for a in site['analyses'] if a.get('new') and a['id'] not in tables],
-                            'checked': [{'analysis': r.analysis, 'method': r.method, 'rows': r.rows, 'equal': r.equal, **({'reference': r.reference} if r.reference else {})}
+                            'checked': [{'analysis': r.analysis, 'method': r.method, 'rows': r.rows, 'equal': r.equal, **({'reference': r.reference} if r.reference else {}),
+                                         **({'not_checked': r.skipped, 'q_compared': False} if r.skipped else {})}
                                         for r in result.parity]}
     if write:
         folder = Path(out_root or root_of(site)) / site['outputs']['folder']
@@ -1138,7 +1329,8 @@ def run(site_path: str | Path, root: str | Path, allow_untrusted: bool = False, 
         from . import map_rows as MR             # the protein map's own rows, from the site's tables (website.protein.map)
         if MR.input_rows(site):
             accs = set(marked['accession'])
-            files = {role: (I.role_inputs(v)[0], [paths[n] for n in I.role_inputs(v)[1]]) for role, v in roles.items()}
+            files = {role: (I.role_inputs(v)[0], [paths[n] for n in I.role_inputs(v)[1] if n in paths])   # absent checksum_only inputs left out
+                     for role, v in roles.items()}
             outs['map_items.tsv'] = MR.items(site, files, table, accs, {a: snap.length(a) for a in accs})
             record['map_rows'] = {r['id']: int((outs['map_items.tsv']['row'] == r['id']).sum()) for r in MR.input_rows(site)}
         elif (folder / 'map_items.tsv').exists():

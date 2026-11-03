@@ -123,11 +123,12 @@
   function scoreRows(p, rec) {
     return D.analyses.filter(a => rec.counts[a.id]).map(a => {
       const rows = rec.counts[a.id].filter(r => r[1] > 0).sort((x, y) => y[1] - x[1]), [mt, ot] = rec.totals[a.id] || [0, 0];
-      const ans = rows.slice(0, 2).map(([c, mi, oi]) => `${esc(label(a.id, c))}: <span class="an">${int(mi)} of ${int(mt)} (${pct(mi, mt)}) vs ${int(oi)} of ${int(ot)} other ${esc(W.residues)} (${pct(oi, ot)})</span>`).join('; ') || '<span class="muted">none</span>';
+      // a class with its own totals (a question of several tests, each counting its own background) uses them
+      const ans = rows.slice(0, 2).map(([c, mi, oi, m2 = mt, o2 = ot]) => `${esc(label(a.id, c))}: <span class="an">${int(mi)} of ${int(m2)} (${pct(mi, m2)}) vs ${int(oi)} of ${int(o2)} other ${esc(W.residues)} (${pct(oi, o2)})</span>`).join('; ') || '<span class="muted">none</span>';
       const all = rec.counts[a.id].slice().sort((x, y) => y[1] - x[1] || y[2] - x[2]);
       return `<details class="score small"><summary><span class="pm" aria-hidden="true"></span><span class="tq"><span class="t">${esc(a.title)}</span></span><span class="ans">${ans}</span><span class="go" aria-hidden="true"></span></summary>` +
         `<div class="card-body"><div class="tbl-card"><table class="tbl"><thead><tr><th>Class</th><th class="num">${esc(cap(W.marks))} here</th><th class="num">Other ${esc(W.residues)} here</th></tr></thead><tbody>` +
-        all.map(([c, mi, oi]) => `<tr><td title="${esc(help(a.id, c))}">${esc(label(a.id, c))}</td><td class="num">${int(mi)} of ${int(mt)} (${pct(mi, mt)})</td><td class="num">${int(oi)} of ${int(ot)} (${pct(oi, ot)})</td></tr>`).join('') +
+        all.map(([c, mi, oi, m2 = mt, o2 = ot]) => `<tr><td title="${esc(help(a.id, c))}">${esc(label(a.id, c))}</td><td class="num">${int(mi)} of ${int(m2)} (${pct(mi, m2)})</td><td class="num">${int(oi)} of ${int(o2)} (${pct(oi, o2)})</td></tr>`).join('') +
         `</tbody></table></div></div></details>`;
     }).join('');
   }
