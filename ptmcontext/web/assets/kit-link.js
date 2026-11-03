@@ -2,6 +2,7 @@
    One small channel; each view subscribes, and none calls another.
      K.site.hover(acc, pos|null, {from})    a light highlight, nothing moves
      K.site.focus(acc, pos|null, {from})    the focused site (null clears it); the protein page opens its card and the hash
+     K.site.follow(acc, pos|null)           the page's address changed to this site (Back, a link): the views follow, the hash is not written
      K.site.residue(acc, pos|null, {from})  a position that is not a site (a click in 3D): marked on the map and the sequence
      K.site.on(fn) -> off                   fn({kind: 'hover' | 'focus' | 'residue', acc, pos, from})
    Elements carrying data-msite (map marks, sequence), tr[data-site] (the sites table) and data-cv-pos (conservation) are
@@ -20,7 +21,8 @@
     state: st,
     on(fn) { subs.add(fn); return () => subs.delete(fn); },
     hover(acc, pos, o) { if (!same('hover', acc, pos)) emit('hover', acc, pos, o); },
-    focus(acc, pos, o) { st.hover = null; emit('focus', acc, pos, o); },
+    focus(acc, pos, o) { st.hover = null; if (!same('focus', acc, pos)) emit('focus', acc, pos, o); },     // the site already focused: nothing to redraw
+    follow(acc, pos) { st.hover = null; emit('focus', acc, pos, { from: 'history' }); },                  // the address changed (Back, a link): the views follow, nothing is written
     residue(acc, pos, o) { if (!same('residue', acc, pos)) emit('residue', acc, pos, o); },
   };
   if (typeof document === 'undefined' || !document.addEventListener) return;

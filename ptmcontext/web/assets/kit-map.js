@@ -357,7 +357,7 @@
   // o.Wd lays the map out at another width (a narrow screen, a journal column); o.ex draws it for export, in light colours
   function draw(ctx, o = {}) {
     const ex = !!o.ex, Wd = o.Wd || 1000, narrow = Wd < 700;
-    const ML = narrow ? Math.min(110, Math.round(Wd * 0.3)) : 150, MR = narrow ? 14 : 18, X0 = ML, X1 = Wd - MR;
+    const ML = narrow ? Math.min(110, Math.round(Wd * 0.3)) : 168, MR = narrow ? 14 : 18, X0 = ML, X1 = Wd - MR;
     const P = pal(ex);
     const { p, rec, uni, af } = ctx, L = p.len, seq = rec.seq || '';
     const [za, zb] = M.zoom || [1, L], span = zb - za + 1;
@@ -365,7 +365,8 @@
     const XA = a => X(Math.max(a, za) - 0.5), XB = b => X(Math.min(b, zb) + 0.5);    // a stretch's edges, in view
     const items = []; const it = x => items.push(x) - 1;
     const parts = [], back = [], legend = [], drawnRows = [];
-    const key = (draw, label) => { if (label && !legend.some(l => l.label === label)) legend.push({ draw, label }); };
+    let cur = 'Backbone';                                         // the key groups its entries by the track they belong to
+    const key = (draw, label) => { if (label && !legend.some(l => l.label === label)) legend.push({ draw, label, row: cur }); };
     const sel = ctx.selected;                                   // positions of the selected marks, or null
     const atMark = new Set(rec.marks.map(m => m[0]));
     const markAt = new Map(rec.marks.map(m => [m[0], m]));
@@ -418,8 +419,9 @@
     // a row's label: left, bold, as large as fits its column (and its hover: what it is and where it comes from)
     const rowLabel = (lab, yMid, help, aside) => {
       if (!aside) drawnRows.push(lab);
-      let size = Math.min(10, 10 * (ML - 10) / Math.max(1, K.tw(lab, 10, 600))), t = lab;
-      if (size < 7.5) { size = 7.5; while (t.length > 3 && K.tw(t + '…', 7.5, 600) > ML - 10) t = t.slice(0, -1); t += '…'; }
+      cur = lab;
+      const size = 11; let t = lab;          // track labels are never smaller than 11; one that does not fit is cut, its hover has the whole
+      if (K.tw(t, size, 600) > ML - 6) { while (t.length > 3 && K.tw(t + '…', size, 600) > ML - 6) t = t.slice(0, -1); t += '…'; }
       parts.push(`<text x="2" y="${r1(yMid + size * 0.36)}" font-size="${r1(size)}" font-weight="600" fill="${P.muted}"${ex ? '' : ` data-rowhelp="${esc(lab + ': ' + help)}"`}>${esc(t)}</text>`);
     };
     labels.forEach(l => {
@@ -794,9 +796,13 @@
     return `<div class="map-ctl"><label>Colour ${esc(W.marks)} by <select data-map-colour>${MODES.map(md => `<option value="${esc(md.id)}"${mode().id === md.id ? ' selected' : ''}${md.help ? ` title="${esc(md.help)}"` : ''}>${esc(md.label)}</option>`).join('')}</select></label>` +
       `<span class="lbl">Labels <span class="seg">${[['auto', 'Auto', 'Up to three lines of labels; neighbours too close share one (R213 +3), and none above 120 marks. Zoom in to separate them'], ['all', 'All', 'Every mark its own label, on as many lines as it needs'], ['none', 'None', 'No labels']].map(([k, l, t]) => `<button type="button" data-map-labels="${k}" aria-pressed="${M.labels === k}" title="${esc(t)}">${l}</button>`).join('')}</span></span>` +
       `<span class="rows-wrap"><button type="button" class="btn small" data-map-rows aria-expanded="${M.rowsMenu}">Rows ▾</button>${M.rowsMenu ? rowsMenu() : ''}</span>` +
-      (M.zoom ? `<button type="button" class="btn small" data-map-unzoom>Reset zoom (${int(M.zoom[0])}–${int(M.zoom[1])})</button>` : `<span class="muted small">Drag across the map to zoom</span>`) +
-      `<label class="map-size" title="The exports' size: the screen layout, or a journal column, laid out again at that width">Export size <select data-map-size>${PANEL.map(([v, l]) => `<option value="${v}"${String(M.size.mm) === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>` +
-      `<label class="map-size">PNG <select data-map-dpi${M.size.mm ? '' : ' disabled title="Pick a column width first"'}>${DPI.map(v => `<option value="${v}"${+M.size.dpi === v ? ' selected' : ''}>${v} dpi</option>`).join('')}</select></label></div>`;
+      (M.zoom ? `<button type="button" class="btn small" data-map-unzoom>Reset zoom (${int(M.zoom[0])}–${int(M.zoom[1])})</button>` : `<span class="muted small">Drag across the map to zoom</span>`) + '</div>';
+  }
+  // the exports' size and resolution: a menu beside the PDF, SVG and PNG buttons, not a row of the map's controls
+  function exportOpts() {
+    return `<details class="exp-opt"><summary title="The exports' size: the screen layout, or a journal column, laid out again at that width">Size</summary><div class="exp-opt-body">` +
+      `<label>Export size <select data-map-size>${PANEL.map(([v, l]) => `<option value="${v}"${String(M.size.mm) === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>` +
+      `<label>PNG <select data-map-dpi${M.size.mm ? '' : ' disabled title="Pick a column width first"'}>${DPI.map(v => `<option value="${v}"${+M.size.dpi === v ? ' selected' : ''}>${v} dpi</option>`).join('')}</select></label></div></details>`;
   }
   function rowsMenu() {
     return `<div class="rows-menu" role="menu"><p class="flabel">On the backbone</p>` + ROWS.filter(r => isBackbone(r[0])).map(r => `<label title="${esc(r[3])}"><input type="checkbox" data-map-row="${r[0]}"${isOn(r[0]) ? ' checked' : ''}> ${esc(r[1])}</label>`).join('') +
@@ -806,10 +812,11 @@
   // the key under the map, drawn with the map's own marks: the colour mode first, then what the rows drew
   function keyHtml(ctx, m) {
     const md = mode(), P = m.P;
-    const open = M.keyOpen ?? m.Wd >= 700;
-    return `<details class="map-key" data-map-key${open ? ' open' : ''}><summary>Key</summary><div class="map-legend"><b>${esc(md.label)}</b>` +
-      modeLegend(ctx, false).map(e => `<span>${swatchHtml(SW.head(e.c, e.hollow), P)}${esc(e.label)}</span>`).join('') +
-      (m.legend.length ? '<span class="lg-break"></span>' : '') + m.legend.map(e => `<span class="rl">${swatchHtml(e.draw, P)}${esc(e.label)}</span>`).join('') + '</div></details>';
+    const open = M.keyOpen ?? false;                    // collapsed until opened: the colour mode's entries and, by track, only the tracks on screen
+    const groups = []; m.legend.forEach(e => { let g = groups.find(x => x.row === e.row); if (!g) groups.push(g = { row: e.row, items: [] }); g.items.push(e); });
+    return `<details class="map-key" data-map-key${open ? ' open' : ''}><summary>Key <span class="muted">· ${esc(md.label)}${groups.length ? `, ${groups.length} track${groups.length === 1 ? '' : 's'}` : ''}</span></summary><div class="map-legend"><b>${esc(md.label)}</b>` +
+      modeLegend(ctx, false).map(e => `<span>${swatchHtml(SW.head(e.c, e.hollow), P)}${esc(e.label)}</span>`).join('') + '</div>' +
+      groups.map(g => `<div class="map-legend lg-group"><b>${esc(g.row)}</b>${g.items.map(e => `<span class="rl">${swatchHtml(e.draw, P)}${esc(e.label)}</span>`).join('')}</div>`).join('') + '</details>';
   }
   const observed = new WeakSet();
   const widthOf = el => { const w = el.clientWidth; return w > 0 && w < 700 ? Math.max(300, Math.round(w)) : 1000; };
@@ -949,7 +956,7 @@
   document.addEventListener('change', e => {
     const d = e.target.dataset || {};
     if (d.mapColour != null) { M.colour = e.target.value; store.set('ptmc-map-colour', M.colour); redraw(); }
-    if (d.mapSize != null) { M.size.mm = e.target.value; store.set('ptmc-map-size', M.size); redraw(); }
+    if (d.mapSize != null) { M.size.mm = e.target.value; store.set('ptmc-map-size', M.size); document.querySelectorAll('[data-map-dpi]').forEach(x => { x.disabled = !M.size.mm; x.title = M.size.mm ? '' : 'Pick a column width first'; }); }
     if (d.mapDpi != null) { M.size.dpi = +e.target.value; store.set('ptmc-map-size', M.size); }
   });
   document.addEventListener('toggle', e => { if (e.target.matches?.('[data-map-key]')) { M.keyOpen = e.target.open; } }, true);
@@ -977,6 +984,6 @@
     return { bg, fg: '#ffffff' };
   }
   // what other modules may read: the mark's colour in the mode chosen (a 3D view follows it), the modes, the figure
-  K.map = { render, cross: pos => M.cross?.(pos), figure, fileName, siteColour, attrColour, textOn, readable, modes: () => MODES.map(md => ({ id: md.id, label: md.label })), mode: () => mode().id,
+  K.map = { render, exportOpts, cross: pos => M.cross?.(pos), figure, fileName, siteColour, attrColour, textOn, readable, modes: () => MODES.map(md => ({ id: md.id, label: md.label })), mode: () => mode().id,
     reset: () => { M.zoom = null; M.rowsMenu = false; }, state: M };
 });

@@ -78,6 +78,21 @@
   const afColour = v => AF_BINS.find(([t]) => v > t || t === 0)[1];
   const mapCtx = () => ({ p: byAcc[PV.acc] || PV.lightP, rec: PV.rec, uni: PV.uniJson, uniFailed: PV.uniFailed, af: PV.af && !PV.af.failed && !PV.af.none ? PV.af : null, afFailed: PV.af?.failed, afNone: PV.af?.none,
     selected: K.sel?.active() ? K.sel.selectedPositions(PV.acc) : null, site: PV.site, span: PV.span });
+  // the headline tiles in as even rows as fit: the columns that leave no row with a single tile (--hl-cols; the CSS grid auto-fits within it)
+  const balanceTiles = () => document.querySelectorAll('.hl-cards').forEach(g => {
+    const n = g.children.length, em = parseFloat(getComputedStyle(g).fontSize) || 16, w = g.clientWidth;
+    if (!n || !w) return;
+    const gap = 0.7 * em, max = Math.max(1, Math.floor((w + gap) / (12 * em + gap))), rows = Math.ceil(n / max);
+    g.style.setProperty('--hl-cols', String(Math.ceil(n / rows)));
+  });
+  (K.afterRender ||= []).push(balanceTiles, () => {
+    if (S.view !== 'protein' || !PV.rec || PV.acc !== String(S.arg).split('/')[0]) return;
+    const now = PV.acc + '/' + (PV.site ?? '');
+    if (now !== followed) { followed = now; K.site.follow(PV.acc, PV.site); }
+  });
+  addEventListener('resize', balanceTiles);
+  // the map's downloads, with the export size and resolution folded into the same bar
+  const mapExp = kinds => K.expBar(kinds, 'mexp', 'the map', 'sources').replace(/<\/div>$/, (K.map?.exportOpts?.() || '') + '</div>');
   function drawMap() { const el = document.getElementById('pmap'); if (el && PV.rec) K.map.render(el, mapCtx()); }
   const site = pos => siteOf(byAcc[PV.acc] || PV.lightP || { acc: PV.acc }, pos);
   function markClasses(m) { return COLS.map((aid, k) => [aid, m[2][k]]); }
@@ -400,7 +415,7 @@
     // #protein/ACC/216 opens a mark's card; #protein/ACC/120-180 opens the map zoomed to a region (an IDR, from its page);
     // #protein/ACC/p-na opens a section
     const span = /^(\d+)-(\d+)$/.exec(sitePos || ''), sec = /^p-[a-z0-9]+$/.exec(sitePos || '');
-    load(acc); PV.site = sitePos && !span && !sec ? +sitePos : null; K.site.state.focus = PV.site;
+    load(acc); PV.site = sitePos && !span && !sec ? +sitePos : null; K.site.state.focus = PV.site; K.site.state.acc = acc;
     if (sec) { PV.focus = SECTION[sec[0]] || ''; if (PV.focus) PV.open[PV.focus] = true; }
     if (!span) { PV.span = null; PV.spanArg = ''; }
     else if (PV.spanArg !== sitePos) {
@@ -417,7 +432,7 @@
     const nSrc = Object.keys(SPECS).find(n => SPECS[n].kind === 'list' && SPECS[n].link);
     return head +
       (sel && sel.size < rec.marks.length ? `<p class="note">${int(sel.size)} of ${int(rec.marks.length)} ${esc(W.marks)} match your selection; the others are faded. <button class="linkish" type="button" data-sel-clear-all>Clear filters</button></p>` : '') +
-      fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''}`, `<div class="card-head"><p class="sub">The ${esc(W.marks)} on the protein, with rows from the site’s data and live sources. Hover for what an item is, click to pin it.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mexp', 'the map', 'sources')}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
+      fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''}`, `<div class="card-head"><p class="sub">The ${esc(W.marks)} on the protein, with rows from the site’s data and live sources. Hover for what an item is, click to pin it.</p>${mapExp(['pdf', 'svg', 'png', 'tsv'])}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
       (headline(p, rec) || legacyFacts(p, rec, nSrc)) +
       fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}${nSrc ? `, each with the ${esc(SPECS[nSrc].label.toLowerCase())} that report it` : ''}${rec.shown?.length ? ` · ${int(rec.shown.length)} more ${esc(K.shown.row())}` : ''}`, sitesTable(p, rec, sel), true) +
       fold('p-score', `Its ${esc(W.marks)}, against its other ${esc(W.residues)}`, 'counted in this protein', `<p class="sub">The classes its ${esc(W.marks)} fall in, and how often its other ${esc(W.residues)} do. A row opens every class.</p><div class="hub">${scoreRows(p, rec)}</div>`, false) +
@@ -445,7 +460,7 @@
   // sequence and 3D; nothing of it is counted, so it has no counts, questions or kinds -------------------------------
   function shownOnlyView(sp, sitePos) {
     load(sp.acc); PV.lightP = sp;
-    PV.site = sitePos && /^\d+$/.test(sitePos) ? +sitePos : null; K.site.state.focus = PV.site;
+    PV.site = sitePos && /^\d+$/.test(sitePos) ? +sitePos : null; K.site.state.focus = PV.site; K.site.state.acc = p.acc;
     if (PV.rec && PV.site && !shownAt(PV.rec, PV.site)) { PV.site = null; PV.cleanArg = true; }
     const p = sp, n = PV.rec?.shown?.length || 0;
     const head = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">${esc(K.shown.row())}</span>${PV.site ? ` › ${esc(siteOf(p, PV.site))}` : ''}</p>` + protHead(p, true);
@@ -457,7 +472,7 @@
     return head +
       `<p class="note">No counted ${esc(W.mark)} on ${esc(p.gene || p.acc)}. It has ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} shown here (${esc(K.shown.label())}) but not among the ${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins, and in no count, chart or test.</p>` +
       `<div class="facts"><div class="fact"><b>${int(p.len)}</b><span>Residues</span></div><div class="fact"><b>${int(n)}</b><span>${esc(cap(K.shown.row()))}</span></div></div>` +
-      fold('p-map', 'Protein map', `${int(n)} ${esc(K.shown.row())} on ${int(p.len)} aa`, `<div class="card-head"><p class="sub">The protein, its ${esc(W.marks)} shown but not counted (hatched), and rows from live sources. Hover for what an item is, click to pin it.</p>${K.expBar(['pdf', 'svg', 'png'], 'mexp', 'the map', 'sources')}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
+      fold('p-map', 'Protein map', `${int(n)} ${esc(K.shown.row())} on ${int(p.len)} aa`, `<div class="card-head"><p class="sub">The protein, its ${esc(W.marks)} shown but not counted (hatched), and rows from live sources. Hover for what an item is, click to pin it.</p>${mapExp(['pdf', 'svg', 'png'])}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
       fold('p-sites', esc(cap(W.marks)), `${int(n)} ${esc(K.shown.row())}`, `<p class="sub">Each with the 15 residues around it; a row opens its card. The tag’s hover gives the tests.</p>${table}`, true) +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
       fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false);
@@ -484,7 +499,7 @@
       `<p class="note">No ${esc(W.mark)} on ${esc(p.gene || p.acc)}. None of its sources reports one, which means not reported, not shown to be un${esc(W.marked)}. This page shows its map, the ${esc(W.marks)} of other proteins it is recorded binding, and its partners with ${esc(W.marks)}.</p>` +
       `<div class="facts"><div class="fact"><b>${int(p.len)}</b><span>Residues</span></div><div class="fact"><b>${int(nRes)}</b><span>${esc(cap(W.residues))}</span></div>` +
       (ptab ? `<div class="fact"><b>${int(partners.length)}</b><span>Partners with ${esc(W.marks)}</span></div>` : '') + '</div>' +
-      fold('p-map', 'Protein map', `${int(p.len)} aa, no ${esc(W.mark)}`, `<div class="card-head"><p class="sub">The protein and the rows from live sources; it has no ${esc(W.mark)} in this site.</p>${K.expBar(['pdf', 'svg', 'png'], 'mexp', 'the map', 'sources')}</div><div id="pmap" class="pmap"></div>`, true) +
+      fold('p-map', 'Protein map', `${int(p.len)} aa, no ${esc(W.mark)}`, `<div class="card-head"><p class="sub">The protein and the rows from live sources; it has no ${esc(W.mark)} in this site.</p>${mapExp(['pdf', 'svg', 'png'])}</div><div id="pmap" class="pmap"></div>`, true) +
       (asP ? `<div class="pfold-like">${asP}</div>` : '') +
       (ptab ? fold('p-partners', `Proteins with ${esc(W.marks)} associated with ${esc(p.gene || p.acc)}`, `${int(partners.length)}`, partners.length ? `<p class="sub">${esc(CC.writer?.partners?.note || 'Partners')}, most confident first; the number is each protein’s ${esc(W.marks)}.</p><div class="gene-chips">${shownP.map(chip).join('')}</div>` +
         `<p>${partners.length > 40 ? `<button class="linkish" type="button" data-light-all>${PV.lightAll ? 'Fewer' : `All ${int(partners.length)}`}</button> · ` : ''}<button class="linkish" type="button" data-try="${esc(partners.map(r => byAcc[r.acc]?.gene || r.acc).join(' '))}">Select these ${int(partners.length)}</button></p>` : `<p class="muted">None in the site’s partner table.</p>`, true) : '') +
@@ -733,16 +748,21 @@
   // a site's card, opened without leaving the page's place, and without a step in the history (opening a protein is one)
   // every way in goes through the channel (kit-link.js), so the map, the sequence, the tables and the 3D follow
   const openSite = (pos, from) => K.site.focus(PV.acc, pos, { from: from || 'table' });
-  function showSite(pos) { const y = scrollY; S.arg = `${PV.acc}/${pos}`; K.writeHash(false); K.render(); scrollTo(0, y); document.title = K.views.protein.title(S.arg) + ' · ' + D.site.name; rowIntoView(pos); }
+  function showSite(pos) { const y = scrollY; S.arg = `${PV.acc}/${pos}`; K.writeHash(true); K.render(); scrollTo(0, y); document.title = K.views.protein.title(S.arg) + ' · ' + D.site.name; rowIntoView(pos); }
   // the row scrolls inside its own box; the page stays where it is
   function rowIntoView(pos) {
     requestAnimationFrame(() => { const tr = document.querySelector(`tr[data-site="${pos}"]`), box = tr?.closest('.lk-box'); if (!tr || !box) return;
       const a = tr.getBoundingClientRect(), b = box.getBoundingClientRect(), head = box.querySelector('thead')?.offsetHeight || 0;
       if (a.top < b.top + head || a.bottom > b.bottom) box.scrollTop += a.top - b.top - head - (b.height - head - a.height) / 2; });
   }
+  // each focus is one step of the history (Back returns to the earlier site, or to the protein); a change of the address itself (Back,
+  // a link) is followed by the other views once the page is drawn, without writing it again
+  let followed = '';
   K.site.on(e => {
-    if (e.kind !== 'focus' || e.acc !== PV.acc || !PV.rec) return;
-    if (e.pos == null) { if (PV.site != null) { const y = scrollY; S.arg = PV.acc; PV.site = null; K.writeHash(false); K.render(); scrollTo(0, y); document.title = K.views.protein.title(S.arg) + ' · ' + D.site.name; } return; }
+    if (e.kind !== 'focus') return;
+    followed = e.acc + '/' + (e.pos ?? '');
+    if (e.from === 'history' || e.acc !== PV.acc || !PV.rec) return;
+    if (e.pos == null) { if (PV.site != null) { const y = scrollY; S.arg = PV.acc; PV.site = null; K.writeHash(true); K.render(); scrollTo(0, y); document.title = K.views.protein.title(S.arg) + ' · ' + D.site.name; } return; }
     if (e.pos !== PV.site) showSite(e.pos); else rowIntoView(e.pos);
   });
   K.site.on(e => {                                                   // a position that is not a site: the map's crosshair, the sequence

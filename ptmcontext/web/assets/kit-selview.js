@@ -63,15 +63,18 @@
       body: `<g transform="translate(20,0)">${f.svg}</g>`, bodyH: f.H, W: 760, note: `Pooled odds ratio and 95% CI (Woolf), Fisher's exact test, Benjamini-Hochberg q within each question. Shares are of your selection and of the other ${W.marks}. Exploratory: not adjusted for other selections tried.` }); };
   (K.selLead ||= []).push(() => {
     if (!K.sel.data() || !K.sel.testable()) return '';
-    return `<details class="apart" id="sel-apart"${memo.open ? ' open' : ''}><summary><span class="apart-h">What sets it apart from the other ${esc(W.marks)}?</span> <span class="apart-sum muted" id="apart-sum">Comparing…</span></summary><div id="apart-body"></div></details>`;
+    // the row is merged into the selection bar: its summary line sits there, and the bar's button opens this
+    return `<details class="apart" id="sel-apart"${memo.open ? ' open' : ' hidden'}><summary><span class="apart-h">What sets it apart from the other ${esc(W.marks)}?</span> <span class="apart-sum muted" id="apart-sum">Comparing…</span></summary><div id="apart-body"></div></details>`;
   });
+  const barSum = t => document.querySelectorAll('.sel-apart-sum').forEach(x => { x.textContent = t; x.title = t; });
+  K.apartLine = () => (memo.key === selKey() && memo.rows ? (memo.rows.length ? summaryText(memo) : '') : '');
   function fillApart() {
     const el = document.getElementById('sel-apart'); if (!el) return;
     const sum = document.getElementById('apart-sum'), body = document.getElementById('apart-body');
     const draw = () => {
       const m = apart();
-      if (!m.rows.length) { sum.textContent = `too few ${W.marks} on one side to compare`; body.innerHTML = ''; return; }
-      sum.textContent = summaryText(m);
+      if (!m.rows.length) { sum.textContent = `too few ${W.marks} on one side to compare`; body.innerHTML = ''; barSum(sum.textContent); return; }
+      sum.textContent = summaryText(m); barSum(sum.textContent);
       const f = forestSvg(m.shown, 680, false);
       body.innerHTML = `<div class="apart-card"><div class="apart-top"><p class="muted small">Your ${int(m.G.g1.length)} ${esc(W.marks)} against the other ${int(m.G.g2.length)}, pooled. The classes that differ most (q ≤ ${PADJ()}) with their odds ratio and both shares.</p>` +
         K.expBar(['pdf', 'svg', 'png', 'tsv'], 'apexp', 'what sets it apart', 'apart') + '</div>' +
@@ -80,7 +83,8 @@
     };
     if (memo.key === selKey() && memo.rows) draw(); else setTimeout(draw, 30);       // after the page is on screen
   }
-  document.addEventListener('toggle', e => { if (e.target.id === 'sel-apart') memo.open = e.target.open; }, true);
+  document.addEventListener('toggle', e => { if (e.target.id === 'sel-apart') { memo.open = e.target.open; if (!memo.open) e.target.hidden = true; } }, true);
+  K.clicks.push(['[data-apart-here]', () => { const d = document.getElementById('sel-apart'); if (!d) return K.go('overview', { vs: 'marks' }); d.hidden = false; d.open = true; d.scrollIntoView({ block: 'center', behavior: 'smooth' }); }]);
   K.clicks.push(['[data-apexp]', btn => K.exportFigure(btn.dataset.apexp, apartFigure, `${D.site.id}_what_sets_it_apart_selection`, btn, () => apartTsv(apart()))]);
 
   // ---- a selection too small to test: its proteins, drawn ------------------------------------------------------------
