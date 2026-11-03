@@ -11,7 +11,7 @@
   const { D, W, A, S, esc, int, fxn, fq, cap } = K;
   const SPECS = D.attribute_specs || {}, TB = D.page_tables || {};
   const ST = window.PTMC_STATS;
-  const METHOD = { mantel_haenszel: 'Within each protein', fisher: 'Pooled' };
+  const METHOD = { mantel_haenszel: 'Within each protein', fisher: 'Across all proteins' };
 
   // ---- what a site has: a block whose data are missing is left out ---------------------------------------------------
   const rowOf = (aid, cat, m) => D.rows.find(r => r.analysis === aid && r.category === cat && r.method === m);
@@ -199,11 +199,11 @@
         `<span class="ixf-n">${n}</span><span class="ixf-n">${o}</span><span class="ixf-q">${r ? fq(r.q) : '–'}</span><span class="ixf-n">${r?.strata != null ? `${int(r.strata)}` : '–'}</span></div>`;
     }).join('');
     const axis = `<div class="ixf-row ixf-axis" aria-hidden="true"><span></span><svg>${Array.from({ length: sc.hi - sc.lo + 1 }, (_, k) => sc.lo + k).map(k => `<text x="${X(2 ** k)}" y="11" text-anchor="middle">${2 ** k >= 1 ? 2 ** k : '1/' + 2 ** -k}×</text>`).join('')}</svg><span></span><span></span><span></span><span></span><span></span></div>`;
-    const head = `<div class="ixf-row ixf-head"><span>${esc(cap(W.residue))} is…</span><span>Odds ratio [95% CI]</span><span></span><span>${esc(cap(W.marks))}</span><span>Other ${esc(W.residues)}</span><span>q</span><span title="Proteins with ${esc(W.marks)} and other ${esc(W.residues)} on both sides of the class (within each protein)">Informative proteins</span></div>`;
+    const head = `<div class="ixf-row ixf-head"><span>${esc(cap(W.residue))} is…</span><span title="${esc(K.GLOSS['odds ratio'])}">Odds ratio [95% CI]</span><span></span><span>${esc(cap(W.marks))}</span><span>Other ${esc(W.residues)}</span><span title="${esc(K.GLOSS.q)}">q</span><span title="Proteins with ${esc(W.marks)} and other ${esc(W.residues)} on both sides of the class (within each protein)">Informative proteins</span></div>`;
     return seg(bkey(pg, sec, bi), s.m) + `<div class="ixf">${head}${body}${axis}</div>` + forestNote(rows, s.m);
   }
   const gridLines = (sc, X) => Array.from({ length: sc.hi - sc.lo + 1 }, (_, k) => sc.lo + k).map(k => `<line class="${k === 0 ? 'one' : 'grid'}" x1="${X(2 ** k)}" x2="${X(2 ** k)}" y1="0" y2="100%"/>`).join('');
-  const seg = (key, m) => `<div class="ix-tools"><span class="seg" role="group" aria-label="Test">${['mantel_haenszel', 'fisher'].map(x => `<button type="button" data-ix-m="${esc(key)}" data-v="${x}" aria-pressed="${m === x}">${METHOD[x]}</button>`).join('')}</span></div>`;
+  const seg = (key, m) => `<div class="ix-tools"><span class="seg" role="group" aria-label="Test">${['mantel_haenszel', 'fisher'].map(x => `<button type="button" data-ix-m="${esc(key)}" data-v="${x}" aria-pressed="${m === x}" title="${esc(K.GLOSS[x === 'fisher' ? 'pooled' : 'within each protein'])}">${METHOD[x]}</button>`).join('')}</span></div>`;
   function forestNote(rows, m) {
     if (!selOn()) return `<p class="muted small">${m === 'mantel_haenszel' ? 'Within each protein: a Mantel–Haenszel odds ratio with its 95% CI (Robins–Breslow–Greenland), each protein a stratum' : 'Pooled: Fisher’s exact test, the Haldane–Anscombe odds ratio'}; each ${esc(W.mark)} against the other ${esc(W.residues)} the evidence could reach (the release’s background for each test). q: Benjamini–Hochberg within the question. Click a row to select its ${esc(W.marks)}.</p>`;
     if (!testable()) return `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. The rows are the whole dataset’s.</p>`;
@@ -625,13 +625,13 @@
     const byP = K.sel.selectedCountByProtein(), pills = Object.entries(byP).sort((x, y) => y[1] - x[1]).slice(0, 12).map(([pi, k]) => `<a class="ppill" href="${esc(K.link('protein', prot(+pi)[0]))}">${esc(gene(+pi))} <span>${int(k)}</span></a>`).join('');
     return `<p class="sel-lead">Your selection: ${esc(K.sel.describe())} · <b>${int(K.sel.nMarks())}</b> ${esc(marksWord(K.sel.nMarks()))} on <b>${int(K.sel.nProteins())}</b> protein${K.sel.nProteins() === 1 ? '' : 's'}</p><div class="ppills">${pills}</div>`;
   }
-  const keyLine = () => `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (q > ${K.PADJ})</span></p>`;
+  const keyLine = () => `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (${K.gloss('q')} > ${K.PADJ})</span></p>`;
 
   // ---- the page, a section alone, and the Overview's question --------------------------------------------------------
   function hub(pg) {
     const top = pg.sections.filter(s => s.place === 'top'), links = pg.sections.filter(s => s.place === 'link');
     return `<div class="page-head"><h2>${esc(pg.title)}</h2><span class="tools"><button type="button" class="btn small" data-ix-print title="Print this page, or save it as a PDF">Download PDF</button></span></div>` +
-      (pg.sub ? `<p class="page-sub">${esc(pg.sub)}</p>` : '') + selLine() + top.map(s => sectionCard(pg, s)).join('') + answerHtml(pg) + highlightsHtml(pg) +
+      (pg.sub ? `<p class="page-sub">${esc(pg.sub)}</p>` : '') + selLine() + answerHtml(pg) + highlightsHtml(pg) + top.map(s => sectionCard(pg, s)).join('') +
       (links.length ? `<p class="ix-links">${links.map(s => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)} ›</a>`).join(' · ')}</p>` : '') + keyLine() +
       pg.groups.map(g => { const ts = g.sections.filter(s => !s.place || s.place === 'tile'); return ts.length ? `<h3 class="sec-label" id="ixg-${esc(g.name.replace(/\W+/g, '-').toLowerCase())}">${esc(g.name)}</h3><div class="tiles">${ts.map(s => sectionTile(pg, s)).join('')}</div>` : ''; }).join('');
   }

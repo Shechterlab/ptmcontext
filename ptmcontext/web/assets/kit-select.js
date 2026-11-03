@@ -569,7 +569,7 @@
     if (termValues(key).includes(v)) { dropTermValue(key, v); K.writeHash(true); K.render(); return; }
     const cur = new Set(S.f[key] || []); if (cur.has(v)) cur.delete(v); else cur.add(v); setFilter(key, [...cur]);
   }
-  function clearAll() { S.f = {}; S.q = ''; K.writeHash(true); K.render(); }
+  function clearAll() { S.f = {}; S.q = ''; Object.assign(S, { view: 'overview', arg: '' }); K.writeHash(true); K.render(); scrollTo(0, 0); }
 
   // ---- the selection bar -----------------------------------------------------------------------------------------
   // the search's plain words are one chip; each of its terms a chip of its own, readable, removed alone
@@ -826,7 +826,7 @@
     ['[data-rail-pin]', () => { R.pin = pinned() ? 'off' : innerWidth >= PIN_AUTO ? 'auto' : 'on'; R.open = false; try { localStorage.setItem('ptmc-rail', R.pin); } catch (e) { /* */ } rail(); if (!pinned()) { R.open = true; rail(); } }],
     ['[data-rail-close]', () => { R.open = false; rail(); }],
     ['[data-rail-open]', el => { R.opener = el; if (pinned()) { R.tab = el.dataset.railOpen || R.tab; rail(); document.querySelector('#rail [data-rail-tab]')?.focus(); return; } R.open = true; R.tab = el.dataset.railOpen || R.tab; rail(); }],
-    ['[data-jump]', (el, e) => { e.preventDefault(); const t = document.getElementById(el.dataset.jump); if (t) { if (t.tagName === 'DETAILS') t.open = true; t.scrollIntoView({ behavior: K.smooth?.() || 'smooth', block: 'start' }); } }],
+    ['[data-jump]', (el, e) => { e.preventDefault(); const t = document.getElementById(el.dataset.jump); if (t) { if (t.tagName === 'DETAILS') t.open = true; const mo = t.closest('details.sec-more'); if (mo) mo.open = true; t.scrollIntoView({ behavior: K.smooth?.() || 'smooth', block: 'start' }); } }],
   );
   document.addEventListener('change', e => { const k = e.target.dataset?.fsel; if (k != null) setFilter(k, e.target.value ? [e.target.value] : []); });
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('fgroup')) { (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g); } }, true);

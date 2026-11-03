@@ -1324,3 +1324,24 @@ a[href^="http"]:hover::after { opacity: 1; }
 #busy i { display: block; height: 100%; width: 35%; background: var(--accent); animation: busy-slide 1.2s ease-in-out infinite; }
 @keyframes busy-slide { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
 @media (prefers-reduced-motion: reduce) { #busy i { animation: none; width: 100%; opacity: 0.55; } }
+
+/* ==== Overview sections: a heading band, a line on what the section answers, room between sections ==================== */
+.ov-sec { margin: 2.2rem 0 0; padding: 0 0 0.4rem; border-top: 3px solid var(--line-strong); }
+.ov-sec:first-of-type { margin-top: 1.2rem; }
+.ov-sec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 1rem; margin: 0 0 1rem; padding: 0.7rem 0.9rem; background: var(--surface-2); border-radius: 0 0 var(--radius-card, 0.6rem) var(--radius-card, 0.6rem); border-left: 4px solid var(--accent); }
+.ov-sec-head .sec-label { margin: 0; }
+.ov-sec .sec-about { margin: 0; color: var(--ink-2); font-size: 0.9rem; flex: 1 1 18rem; }
+.ov-sec.caveat { border-top-style: dashed; }
+.sec-more { margin: -0.6rem 0 1.2rem; }
+.sec-more > summary { cursor: pointer; display: inline-block; padding: 0.4rem 0.9rem; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--accent-dark); font-weight: 600; font-size: 0.88rem; margin-bottom: 1rem; min-height: 1.5rem; }
+.sec-more > summary:hover { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.sec-more[open] > summary { margin-bottom: 1rem; }
+@media (max-width: 640px) { .ov-sec { margin-top: 1.6rem; } .ov-sec-head { padding: 0.6rem 0.7rem; } }
+/* plain words: a hover definition, one line each for the terms of a page */
+abbr.gl { text-decoration: underline dotted var(--muted); text-underline-offset: 2px; cursor: help; }
+.gloss-line { color: var(--ink-2); font-size: 0.9rem; }
+.gl-base { margin: 0.3rem 0 0; font-size: 0.8rem; }
+.idr-gloss { display: grid; gap: 0.15rem; margin: 0.4rem 0 1rem; font-size: 0.88rem; color: var(--ink-2); }
+.idr-gloss > div { display: flex; flex-wrap: wrap; gap: 0 0.5rem; }
+.idr-gloss dt { font-weight: 700; color: var(--ink); min-width: 3.4rem; }
+.idr-gloss dd { margin: 0; flex: 1 1 14rem; }

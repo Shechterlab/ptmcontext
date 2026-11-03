@@ -61,7 +61,7 @@ def _toy(tmp_path):
         'outputs': {'folder': 'out/toy'},
         'website': {
             'name': 'Toy Explorer',
-            'overview': {'sections': [{'name': 'Where', 'cards': [{'analysis': 'where', 'drawing': True, 'wide': True}, 'classes', 'motif']}]},
+            'overview': {'sections': [{'name': 'Where', 'about': 'Where it sits.', 'show': 1, 'more': 'More on where', 'cards': [{'analysis': 'where', 'drawing': True, 'wide': True}, 'classes', 'motif']}]},
             'tabs': {'statistics': {'label': 'All results', 'hint': 'Every test.'}},
             'legacy_links': {'old-cell': 'where'},
             'cell': {'id': 'where', 'title': 'Where in the toy cell',

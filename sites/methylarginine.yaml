@@ -1123,10 +1123,10 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
   examples: [FUS, TAF15 EWSR1 FUS, "disease:als", FUS R216, "motif:RGG"]   # the first three are the chips under the search box
   start:                   # the Overview's start panel for a first visit, and the Help page's starts (kit-help.js)
-    share: {analysis: disorder, classes: [disordered, disorder_boundary, ordered], labels: {disordered: in IDRs, disorder_boundary: next to an IDR, ordered: in ordered regions}}
+    share: {analysis: disorder, classes: [disordered, disorder_boundary, ordered], labels: {disordered: in disordered regions (IDRs), disorder_boundary: next to an IDR, ordered: in ordered regions}}
     findings: [{analysis: motif, class: RGG}, {analysis: panther_group, class: RNA processing and translation}, {analysis: disorder, class: ordered}]
     protein: FUS
-    text: "Human arginine methylation sites from published studies and databases: where they fall, on which proteins, in which diseases. Each tile is one question, tested within each protein and pooled. Search a protein, a gene list or a disease to test your own selection."
+    text: "Human arginine methylation sites from published studies and databases: where they fall, on which proteins, in which diseases. Each tile is one question, comparing the methylarginines with the other arginines of the same proteins. Search a protein, a gene list or a disease to test your own selection."
     examples:
       - {label: A list of genes, query: TAF15 EWSR1 FUS, help: "Every question is tested again on their methylarginines."}
       - {label: A disease, query: "disease_family:ALS", help: "Methylarginines on proteins linked to a disease family, and what sets them apart."}
@@ -1151,6 +1151,9 @@ website:                  # the look and words of the website (ptmc web); layout
         - {label: proteins with dense clusters, query: "f=r:dense_q~0.05", view: proteins}
     sections:
       - name: Disease and cancer
+        about: "Which kinds of disease the methylated proteins are linked to."
+        show: 1
+        more: More on disease
         cards:
           - analysis: disease_family
             title: Disease
@@ -1189,28 +1192,39 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: disease_family_additional, title: "More disease families (rule-based, not audited)"}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
           - {analysis: cancer_change, title: Changes in tumours and cell lines}
-      - name: Writers and readers   # counted from the partner classes (website.search.partners), not tested
-        cards: [reader_classes, {analysis: perturbations, wide: true}]
       - name: Protein classes and pathways
+        about: "The kinds of protein and the pathways that carry methylated arginines."
         cards:
           - {analysis: panther_group, title: Protein classes}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
-      - name: Where in the cell   # its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
+      - name: Where in the cell
+        about: "Which parts of the cell the methylated proteins sit in."
+        #  its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
         cards:
           - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
       - name: Position in the protein
+        about: "Where along the protein the methylated arginines fall: motifs, folded or disordered parts, domains."
         cards:
           - {analysis: motif, title: Sequence motifs}
           - {analysis: structure_context}
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
-      - name: Interactions and binding   # the Interactions page's tile (website.pages[].overview)
+      - name: Methylation enzymes and readers
+        about: "The enzymes that add methyl groups, the proteins that read them, and what happens when the enzymes are blocked."
+        #  counted from the partner classes (website.search.partners), not tested
+        cards: [reader_classes, {analysis: perturbations, wide: true}]
+      - name: Interactions and binding
+        about: "Whether methylated arginines touch RNA, DNA or other proteins. The Binding and contacts page has the tests."
+        #  the Interactions page's tile (website.pages[].overview)
         cards: []
-      - name: Studies and PRMT perturbations   # counted, not tested (website.counts)
+      - name: Studies and sources
+        about: "Which studies and databases reported the sites."
+        #  counted, not tested (website.counts)
         cards: [provenance]
-      - name: All classes and maps
+      - name: More questions
+        about: "Further classes, pathways, maps of the cell and of RNA contacts, each its own question."
         cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)},
                 {analysis: hpa_location, title: Human Protein Atlas locations}, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin,
                 eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, disorder, domain_context]
@@ -1292,7 +1306,7 @@ website:                  # the look and words of the website (ptmc web); layout
     reader_classes:
       kind: values
       attribute: bound_by
-      title: Writers and readers
+      title: Methylation enzymes and readers
       question: "Which methylarginines are on proteins that bind a writer, a reader or a cofactor?"
       sub: "Methylarginines on proteins with a STRING physical partner (score 0.7 or more) in each writer, reader or cofactor class"
       distribution: "Classes of partner of each protein carrying a {mark}"
@@ -1504,8 +1518,8 @@ website:                  # the look and words of the website (ptmc web); layout
     proteins: {label: Proteins, hint: "The proteins with a methylarginine, with the sites on each; filter, sort and download."}
     sites: {label: Sites, hint: "Every methylarginine, one row each, with its evidence; filter, sort and download."}
     idrs: {label: Disordered regions, hint: "Intrinsically disordered regions (IDRs) of the proteins, and where the methylarginines sit in them."}
-    interactions: {label: Interactions, hint: "Methylarginines at contacts with RNA, DNA or other proteins."}
-    statistics: {label: All results, hint: "The table of every test behind the site: one row per class, with its odds ratio, interval and q value."}
+    interactions: {label: Binding and contacts, hint: "Methylarginines at contacts with RNA, DNA or other proteins."}
+    statistics: {label: All tests, hint: "The table of every test behind the site: one row per class, with its odds ratio, interval and q value."}
     method: {label: Methods & data, hint: "How each question was asked and tested, the data it came from, and downloads."}
     help: {label: Help, hint: "How to use the site: searching, filters, selections, keys."}
   legacy_links:            # the explorer's Overview anchors (#overview/ov-pan, ...) open the same questions here
@@ -2349,7 +2363,7 @@ website:                  # the look and words of the website (ptmc web); layout
           opacity: 0.75
   pages:
     - id: interactions
-      tab: Interactions
+      tab: Binding and contacts
       title: Are methylarginines enriched at contacts with RNA, DNA or other proteins?
       sub: "Each methylarginine against the other arginines of its own protein that the evidence could reach: in living cells (crosslinks and RNA-bound peptides), in solved structures and in predicted complexes; and the proteins and partners that carry them."
       method: |

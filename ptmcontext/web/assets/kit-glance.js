@@ -26,8 +26,10 @@
       const w = Math.min(1, Math.abs(Math.log2(x.eff)) / 4) * 50;
       return `<li><a href="${esc(K.link('overview', x.analysis))}" title="${esc(x.title)}: ${esc(x.label)}, ${fx(x.eff)} ${x.dir === 'more' ? 'more' : 'less'} often (${esc(qx(x.q))}). Open the question.">` +
         `<span class="gl-name">${esc(x.label)}</span><span class="gl-axis" aria-hidden="true"><i class="gl-fill ${x.dir}" style="${x.dir === 'more' ? 'left:50%' : 'right:50%'};width:${w}%"></i></span>` +
-        `<span class="gl-val ${x.dir}">${fx(x.eff)} ${x.dir}</span><span class="gl-q">${esc(qx(x.q))}</span></a></li>`; }).join('')}<li class="gl-ax" aria-hidden="true"><span></span><span class="gl-axcap"><span>‹ less</span><b>1×</b><span>more ›</span></span><span></span><span></span></li></ol>`;
+        `<span class="gl-val ${x.dir}">${fx(x.eff)} ${x.dir}</span><span class="gl-q" title="${esc(K.GLOSS.q)}">${esc(qx(x.q))}</span></a></li>`; }).join('')}<li class="gl-ax" aria-hidden="true"><span></span><span class="gl-axcap"><span>‹ less</span><b>1×</b><span>more ›</span></span><span></span><span></span></li></ol>` +
+      `<p class="gl-base muted">Fold: how many times more often than ${esc(basis(f))}.</p>`;
   }
+  const basis = f => [...new Set(f.map(x => D.analyses.find(y => y.id === x.analysis)).filter(Boolean).map(a => K.baseline(a, 'mantel_haenszel').replace(/^against /, '')))].join(' or ') || 'other ' + W.residues;
   // the example protein: the site file's (gene or accession), else the one with the most marks
   const example = () => { const P = D.proteins || [], key = String(SPEC.protein || '').toUpperCase();
     return (key && P.find(p => p[0].toUpperCase() === key || (p[1] || '').toUpperCase() === key)) || P.slice().sort((a, b) => b[4] - a[4])[0]; };

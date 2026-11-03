@@ -1845,6 +1845,19 @@
                   "name": {
                     "type": "string"
                   },
+                  "about": {
+                    "type": "string",
+                    "description": "one plain line under the section's heading, saying what it answers"
+                  },
+                  "show": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "show only the first n tiles; the others are behind a 'More' expander (all show for a selection)"
+                  },
+                  "more": {
+                    "type": "string",
+                    "description": "the expander's words when show is set (the count follows), default 'More in <name>'"
+                  },
                   "cards": {
                     "type": "array",
                     "items": {
@@ -2268,7 +2281,7 @@
             },
             "statistic_label": {
               "type": "boolean",
-              "description": "each tile names its statistic (within each protein, pooled)"
+              "description": "each tile says what its fold is against, in a few words (on by default, false hides it)"
             },
             "random_maps": {
               "type": "object",

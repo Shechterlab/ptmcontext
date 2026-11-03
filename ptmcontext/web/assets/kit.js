@@ -29,6 +29,22 @@
   const METHOD_PHRASE = { mantel_haenszel: 'compared within each protein (Mantel–Haenszel)', fisher: 'pooled (Fisher’s exact test)',
     study: 'compared within the marks reported by the same sources (Mantel–Haenszel)' };
   const A = Object.fromEntries(D.analyses.map(a => [a.id, a]));
+  // the Overview's switch: its words, and what each compares
+  const BTN = { mantel_haenszel: ['Within each protein', `Compare each ${W.mark} with the other ${W.residues} of its own protein. A protein with many sites does not dominate.`],
+    fisher: ['Across all proteins', `Put all the ${W.residues} in one group and compare them together.`], study: ['Within studies', `Compare ${W.marks} only with those reported by the same sources.`] };
+  // plain words for the terms of the tests, shown on hover (an abbr) and in one line on the Help page
+  const GLOSS = {
+    fold: 'How many times more often than in the comparison group. 1× means no difference.',
+    'odds ratio': 'How many times higher the odds are inside the class than outside it. 2× means twice the odds.',
+    q: 'The p value corrected for the many tests made on this site. Below 0.05 counts as a real difference.',
+    'within each protein': `Each ${W.mark} is compared only with the other ${W.residues} of its own protein, so a protein with many sites does not dominate.`,
+    pooled: `All the ${W.residues} are put in one group and compared together.`,
+    strata: 'The groups inside which a test compares like with like, such as single proteins, before the groups are combined.',
+  };
+  const gloss = (term, text) => `<abbr class="gl" tabindex="0" title="${esc(GLOSS[String(term).toLowerCase()] || '')}">${esc(text || term)}</abbr>`;
+  // what a tile's fold is relative to, in a few words
+  const baseline = (a, m) => (a.kind === 'protein_sets' ? `against ${a.describe || 'other proteins'}`
+    : m === 'fisher' ? `against all other ${W.residues} of the ${W.marked} proteins` : m === 'study' ? `against other ${W.residues} in the same study` : `against other ${W.residues} in the same proteins`);
   // the marks' attributes as questions, for comparing marks with marks (id '@<name>'); never tested against other
   // residues, so not among the site's analyses. Those the site file marks provenance say how the marks were found.
   const ATTRQ = Object.entries(D.attribute_specs || {}).filter(([, s]) => ['category', 'list', 'number'].includes(s.kind)).map(([n, s]) => ({
@@ -171,7 +187,7 @@
   const proteinAttr = (acc, name) => { const v = D.protein_attributes?.values?.[name]; return v && PI[acc] != null ? v[PI[acc]] : null; };
   // smooth scrolling only for readers whose system does not ask for reduced motion
   K.smooth = () => (matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
-  Object.assign(K, { proteinAttr, go, writeHash, link, carry, render: () => render(), holds, holdStatus, effText, SETS, rowsFor, strat: (aid, cat) => STRAT[aid + '\u0000' + cat] });
+  Object.assign(K, { GLOSS, gloss, baseline, proteinAttr, go, writeHash, link, carry, render: () => render(), holds, holdStatus, effText, SETS, rowsFor, strat: (aid, cat) => STRAT[aid + '\u0000' + cat] });
   // a link written without the selection (the header's, the footer's, a module's) gets it when followed or copied
   const carryLink = e => { const a = e.target.closest?.('a[href^="#"]'); if (!a || 'jump' in a.dataset) return; const base = a.dataset.base ?? a.getAttribute('href'); a.dataset.base = base; a.setAttribute('href', carry(base)); };
   ['click', 'auxclick', 'pointerdown', 'contextmenu'].forEach(t => document.addEventListener(t, carryLink, true));
@@ -374,7 +390,7 @@
   const EXCL = /^(no |not |unknown|unassigned|other\b)/i;
   const OV = D.overview || {};
   function ovSections() {
-    if (OV.sections) return OV.sections.map(x => ({ name: x.name, cards: x.cards.map(c => (typeof c === 'string' ? { analysis: c } : c)).filter(c => A[c.analysis]) }));
+    if (OV.sections) return OV.sections.map(x => ({ name: x.name, about: x.about, show: x.show, more: x.more, cards: x.cards.map(c => (typeof c === 'string' ? { analysis: c } : c)).filter(c => A[c.analysis]) }));
     const out = [];
     D.analyses.forEach(a => { const name = a.section || 'Other questions'; let x = out.find(y => y.name === name); if (!x) out.push(x = { name, cards: [] }); x.cards.push({ analysis: a.id }); });
     return out;
@@ -474,7 +490,7 @@
     // its downloads on hover (none on a touch screen): the tile as a figure, the question's rows as a TSV, its Method
     const exp = `<div class="exp texp" role="group" aria-label="Download ${esc(card.title || a.title)}">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-texp="${k}" data-aid="${esc(a.id)}" title="${k === 'tsv' ? 'TSV: every row of the question, ' + EXP_HELP.tsv.replace(/^TSV: the rows, /, '') : EXP_HELP[k].replace(/^(\w+)/, '$1 of this tile')}">${k.toUpperCase()}</button>`).join('')}${methodLink(a.id)}</div>`;
     return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(card.title || a.title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</h3>${exp}${detailsLink(a.id)}</header>` +
-      (OV.statistic_label ? `<p class="tstat">${esc(A[card.analysis].kind === 'protein_sets' ? 'pooled over proteins' : METHOD[vsMethod(S.m)])}</p>` : '') +
+      (OV.statistic_label !== false && !vsOn() && rows.some(r => r.eff != null) ? `<p class="tstat">${gloss('fold', 'Fold')} ${esc(baseline(a, vsMethod(S.m)))}</p>` : '') +
       (shown.length ? `<div class="trows">${tileRows(shown)}</div>` : made ? '' : `<p class="muted tnone">${rows.some(r => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'}</p>`) +
       (more ? `<a class="tmore" href="${esc(link('overview', a.id))}" data-more="${esc(JSON.stringify(left))}" title="Open the question at the ${more} not shown here">+${more} more ›</a>` : '') +
       (foot ? `<p class="tfoot">${foot}</p>` : '') + (whole ? `<p class="twhole"><span>Whole dataset</span> ${answer(whole)}</p>` : '') + '</article>';
@@ -502,12 +518,12 @@
   }]);
   function lead() {
     const q = OV.question || `Which parts of proteins are ${W.marked_long}?`;
-    const keyP = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (q > ${PADJ})</span>${vsOn() ? `<span><i class="kd more"></i> your selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>` : ''}` +
+    const keyP = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (${gloss('q')} > ${PADJ})</span>${vsOn() ? `<span><i class="kd more"></i> your selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>` : ''}` +
       `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">How to read</button></p>`;
-    const howP = (S.how ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a log scale (the solid line is no difference). For questions about where ${esc(W.marks)} sit, × is an odds ratio: the odds that a ${esc(W.mark)} is in the class over the odds for another ${esc(W.residue)}. It is not the ratio of the two shares, which is closer to 1. The hover gives both shares${D.analyses.some(a => a.kind === 'protein_sets') ? '. For questions about kinds of protein, × is the fold enrichment: the share of ' + esc(W.marked) + ' proteins in the set over the share of all proteins' : ''}. Within each protein, every protein is a stratum and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)} (Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}. Pooled puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact test). ${D.analyses.some(a => a.kind === 'protein_sets') ? `Questions about kinds of protein show the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). ` : ''}Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Grey: significant but within 1.1×. Hollow: no significant difference. A tile shows the classes that differ most and opens to every class. Hover a row for its counts.</p>` : '');
+    const howP = (S.how ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a log scale (the solid line is no difference). For questions about where ${esc(W.marks)} sit, × is an odds ratio: the odds that a ${esc(W.mark)} is in the class over the odds for another ${esc(W.residue)}. It is not the ratio of the two shares, which is closer to 1. The hover gives both shares${D.analyses.some(a => a.kind === 'protein_sets') ? '. For questions about kinds of protein, × is the fold enrichment: the share of ' + esc(W.marked) + ' proteins in the set over the share of all proteins' : ''}. Within each protein, each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein (Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}. Pooled puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact test). ${D.analyses.some(a => a.kind === 'protein_sets') ? `Questions about kinds of protein show the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). ` : ''}Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Grey: significant but within 1.1×. Hollow: no significant difference. A tile shows the classes that differ most and opens to every class. Hover a row for its counts.</p>` : '');
     const key = keyP + howP;
     const methods = vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher'];
-    const tools = `<span class="tools"><span class="seg" role="group" aria-label="Test">${methods.map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ''}>${cap(METHOD[m])}</button>`).join('')}</span></span>`;
+    const tools = `<span class="tools"><span class="seg" role="group" aria-label="Test">${methods.map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ` title="${esc(BTN[m][1])}"`}>${esc(BTN[m][0])}</button>`).join('')}</span></span>`;
     // the marks the site shows and counts nowhere (kit-shown.js): the note says how many, beside how many are counted
     if (!selOn()) return `<div class="page-head"><h2>${esc(q)}</h2>${tools}</div>` + (K.shown?.note ? K.shown.note() : '') + key;
     const c = K.sel.compute(), n = (c.marks || []).length, np = c.proteins ? c.proteins.size : 0;
@@ -573,7 +589,19 @@
     // a module's tile (a page's, website.pages[].overview) joins the section it names
     const more = name => vsOn() ? '' : (K.ovTiles || []).filter(t => t.section === name).map(t => t.html()).join('');
     // K.overviewTop: a module's block above the Overview's questions (kit-help.js: the start panel for a first visit)
-    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + lead() + pickHint() + (selOn() && !vsOn() ? selBlocks(K.selLead) : '') + secList().map(x => [x, x.cards.map(tile).join('') + more(x.name)]).filter(([, hh]) => hh).map(([x, hh]) => `<h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(head(x))}</h3><div class="tiles">${hh}</div>`).join('') +
+    // a section's tiles: all of them, or (website.overview.sections[].show) the first few, the rest behind "More on ... (n)"
+    // (a selection shows them all: its tests are what was asked for)
+    const secBody = x => {
+      const cs = x.cards, k = x.show > 0 && !selOn() && cs.length > x.show ? x.show : cs.length;
+      return { main: cs.slice(0, k).map(tile).join('') + more(x.name), rest: cs.slice(k).map(tile).join(''), n: cs.length - k };
+    };
+    const sectionHtml = x => {
+      const b = secBody(x); if (!b.main && !b.rest) return '';
+      const id = esc(x.name.replace(/\W+/g, '-').toLowerCase());
+      return `<section class="ov-sec${x.caveat ? ' caveat' : ''}" aria-labelledby="sec-${id}"><header class="ov-sec-head"><h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${id}">${esc(head(x))}</h3>${x.about && !vsOn() ? `<p class="sec-about">${esc(x.about)}</p>` : ''}</header>` +
+        `<div class="tiles">${b.main}</div>` + (b.n ? `<details class="sec-more"><summary>${esc(x.more || 'More in ' + x.name)} (${b.n})</summary><div class="tiles">${b.rest}</div></details>` : '') + '</section>';
+    };
+    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + lead() + pickHint() + (selOn() && !vsOn() ? selBlocks(K.selLead) : '') + secList().map(sectionHtml).join('') +
       (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
   // the tiles of questions that hold for any selection (a module's counts), for a selection too small to test
@@ -590,7 +618,7 @@
       `<span class="pn">${prev ? `<a href="${esc(link('overview', prev.analysis))}">‹ Previous · ${esc(prev.title || A[prev.analysis].title)}</a>` : ''}${next ? `<a href="${esc(link('overview', next.analysis))}">${esc(next.title || A[next.analysis].title)} · Next ›</a>` : ''}</span></div>`;
     if (a.page) return bar + a.page(card);                               // a question a module draws (kit-counts.js)
     const rows = mod ? [] : chartRows(a, S.m, card);
-    return bar + `<div class="page-head"><h2>${esc(card.title || a.title)}</h2><span class="tools">${a.kind === 'protein_sets' || mod ? '' : `<span class="seg" role="group">${(vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher']).map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ''}>${cap(METHOD[m])}</button>`).join('')}</span>`}</span></div>` +
+    return bar + `<div class="page-head"><h2>${esc(card.title || a.title)}</h2><span class="tools">${a.kind === 'protein_sets' || mod ? '' : `<span class="seg" role="group">${(vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher']).map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ` title="${esc(BTN[m][1])}"`}>${esc(BTN[m][0])}</button>`).join('')}</span>`}</span></div>` +
       `<p class="page-sub">${vsOn() ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}, tested in your browser (exploratory).` : esc(a.question || a.describe || '')}${selOn() && !vsOn() ? ` <b>Your selection</b>${rows.some(r => r.descriptive) ? ': ' + whyShown(a).replace(/^Your selection /, '') : vsOn() ? '' : ', tested again in your browser (exploratory: not adjusted for the other selections tried).'}` : ''} <span class="muted">Click a ${a.kind === 'protein_sets' ? 'set' : 'class'} to select its ${esc(W.marks)}.</span></p>` +
       `<section class="pcard">${(Q?.page && Q.page(card, () => cardBody(a, rows))) ?? (K.questionBody && K.questionBody(a, rows, card)) ?? cardBody(a, rows)}${selOn() && !vsOn() && !mod ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
   }
@@ -677,12 +705,12 @@
     const rows = shownStatistics();
     const opts = [['', 'All questions'], ...D.analyses.map(a => [a.id, a.title])];
     return `<div class="page-head"><h2>${esc(tabName('statistics', 'All tests'))}</h2><button class="btn" type="button" id="dl">Download TSV</button></div>` +
-      `<p class="page-sub">One row per class and test. Questions about where ${esc(W.marks)} sit compare the ${esc(W.marks)} in a class with the other ${esc(W.residues)} of the same proteins${D.analyses.some(a => a.kind === 'protein_sets') ? `, and questions about kinds of protein compare the ${esc(W.marked)} proteins in a set with the other proteins` : ''}. Strata are the proteins of a within-protein test${D.analyses.some(a => a.stratified) ? ' or the abundance deciles of a protein-set test' : ''}. q is Benjamini–Hochberg within each question and test. A class counts as more or less often at q ≤ 0.05 and at least 1.1×.</p>` +
+      `<p class="page-sub">One row per class and test. Questions about where ${esc(W.marks)} sit compare the ${esc(W.marks)} in a class with the other ${esc(W.residues)} of the same proteins${D.analyses.some(a => a.kind === 'protein_sets') ? `, and questions about kinds of protein compare the ${esc(W.marked)} proteins in a set with the other proteins` : ''}. ${gloss('strata', 'Strata')} are the proteins of a within-protein test${D.analyses.some(a => a.stratified) ? ' or the abundance deciles of a protein-set test' : ''}. ${gloss('q')} is the p value corrected for the tests of each question (Benjamini–Hochberg). A class counts as more or less often at q ≤ 0.05 and at least 1.1×. The ${gloss('odds ratio')} is the odds of being in the class for a ${esc(W.mark)} over the odds for another ${esc(W.residue)}.</p>` +
       `<div class="filters"><label>Question <select id="f-a">${opts.map(([v, t]) => `<option value="${esc(v)}"${v === S.a ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>` +
       `<label>Test <select id="f-m">${[['mantel_haenszel', 'Within each protein (or abundance decile)'], ['fisher', 'Pooled'], ['both', 'Both']].map(([v, t]) => `<option value="${v}"${v === S.m ? ' selected' : ''}>${t}</option>`).join('')}</select></label>` +
       `<label>Class <input id="f-sq" type="search" value="${esc(S.sq)}" placeholder="a class or set"></label>` +
       `<span class="muted">${int(rows.length)} ${rows.length === 1 ? 'test' : 'tests'}${selOn() ? ' (the whole dataset: the Overview tests your selection)' : ''}</span></div>` +
-      `<div class="tbl-card"><table class="tbl"><thead><tr>${COLS.map(([k, t, , n]) => `<th class="${n ? 'num' : ''}" data-sort="${k}"${S.sort === k ? ` aria-sort="${S.desc ? 'descending' : 'ascending'}"` : ''}>${esc(t)}${S.sort === k ? (S.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
+      `<div class="tbl-card"><table class="tbl"><thead><tr>${COLS.map(([k, t, , n]) => `<th class="${n ? 'num' : ''}" data-sort="${k}"${S.sort === k ? ` aria-sort="${S.desc ? 'descending' : 'ascending'}"` : ''}${GLOSS[t.toLowerCase()] ? ` title="${esc(GLOSS[t.toLowerCase()])}"` : k === 'or' ? ` title="${esc(GLOSS['odds ratio'])}"` : ''}>${esc(t)}${S.sort === k ? (S.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
       rows.slice(0, S.nStat ||= 200).map(r => `<tr data-i="${r.i}"><td>${esc(r.title)}</td><td class="wrapok" title="${esc(r.help)}">${esc(r.label)}</td><td>${esc(methodName(r))}</td>` +
         `<td class="num">${int(r.a)} / ${int(r.a + r.b)}</td><td class="num">${int(r.c)} / ${int(r.c + r.d)}</td>` +
         `<td class="num">${esc(effText(r))}${r.lo != null ? ` <span class="muted">(${fxn(r.lo)} to ${fxn(r.hi)})</span>` : ''}</td><td class="num">${fq(r.q)}</td>` +

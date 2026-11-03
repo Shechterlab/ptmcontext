@@ -110,6 +110,16 @@
     const seen = new Set();
     return out.filter(x => !seen.has(x.text) && seen.add(x.text)).slice(0, 6);
   }
+  // a page by its tab's name, or by the word it had before: "Statistics" offers All tests, "IDRs" the Disordered regions
+  const OLD = { statistics: ['Statistics', 'Results'], idrs: ['IDRs', 'IDR'], method: ['Method', 'Methods'], interactions: ['Interactions'] };
+  function pageRows(phrase) {
+    const t = low(phrase.trim()); if (t.length < 3) return [];
+    const pages = [['overview', 'Overview'], ...K.tabs.map(f => f()).filter(Boolean), ['statistics', 'All tests'], ['method', 'Methods and data'], ...(K.tabsEnd || []).map(f => f()).filter(Boolean)];
+    const seen = new Set();
+    return pages.filter(([v]) => (['overview', 'statistics', 'method'].includes(v) || K.views[v]) && !seen.has(v) && seen.add(v)).map(([v, n]) => [v, K.tabName(v, n)])
+      .filter(([v, name]) => [name, v, ...(OLD[v] || [])].some(w => low(w).startsWith(t) || low(w).split(/[^a-z0-9]+/).some(x => x.length >= 3 && x.startsWith(t))))
+      .slice(0, 2).map(([v, name]) => ({ kind: 'page', view: v, text: name, label: name, sub: 'Open this page' }));
+  }
   function suggestions(text) {
     const toks = text.match(/[a-z_][\w]*:"[^"]*"?|\S+/gi) || [], tok = /\s$/.test(text) ? '' : toks[toks.length - 1] || '';
     if (!tok) return [];
@@ -122,6 +132,7 @@
     const out = [];
     if (tok.length >= 2 && !m) keys().filter(k => k.key.startsWith(low(tok))).slice(0, 4).forEach(k => out.push({ kind: 'key', text: k.key + ':', label: k.key + ':', sub: [k.label, k.help].filter(Boolean).join(' · ') }));
     out.push(...proteinRows(tok));
+    if (!m && !/^[a-z_][\w]*:/i.test(tok)) out.push(...pageRows(tok));
     // plain words naming no protein: the filters they may mean
     const plain = toks.filter(t => !/^[a-z_][\w]*:/i.test(t)).join(' ');
     if (out.length < 3 && plain === toks.join(' ')) out.push(...conceptRows(plain));
@@ -133,8 +144,8 @@
   function draw() {
     if (!items.length) { list.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); return; }
     list.innerHTML = items.map((x, k) => `<div class="q-opt${k === active ? ' on' : ''}" role="option" id="q-opt-${k}" aria-selected="${k === active}" data-q-opt="${k}">` +
-      `<span class="q-l${x.kind === 'protein' || x.kind === 'light' ? '' : ' mono'}">${esc(x.label)}</span>${x.sub ? `<span class="q-s">${esc(x.sub)}</span>` : ''}` +
-      `${x.n ? `<span class="q-n">${esc(x.n)}</span>` : ''}${x.kind === 'key' || x.kind === 'value' || x.kind === 'term' ? '<span class="q-k">filter</span>' : ''}</div>`).join('');
+      `<span class="q-l${x.kind === 'protein' || x.kind === 'light' || x.kind === 'page' ? '' : ' mono'}">${esc(x.label)}</span>${x.sub ? `<span class="q-s">${esc(x.sub)}</span>` : ''}` +
+      `${x.n ? `<span class="q-n">${esc(x.n)}</span>` : ''}${x.kind === 'key' || x.kind === 'value' || x.kind === 'term' ? '<span class="q-k">filter</span>' : x.kind === 'page' ? '<span class="q-k">page</span>' : ''}</div>`).join('');
     list.hidden = false; input.setAttribute('aria-expanded', 'true');
     if (active >= 0) input.setAttribute('aria-activedescendant', 'q-opt-' + active); else input.removeAttribute('aria-activedescendant');
   }
@@ -159,6 +170,7 @@
   function choose(k) {
     const x = items[k]; if (!x) return;
     const toks = input.value.match(/[a-z_][\w]*:"[^"]*"?|\S+/gi) || [], keepEnd = /\s$/.test(input.value);
+    if (x.kind === 'page') { const rest = toks.slice(0, -1).join(' '); input.value = rest; S.q = rest.trim(); close(); K.go(x.view); return; }
     if (x.kind === 'light') { input.value = x.text; S.q = x.text; close(); if (!K.openLight?.(x.text)) K.go('protein', { arg: x.acc }); return; }
     const before = x.replace ? toks.filter(t => /^[a-z_][\w]*:/i.test(t)) : keepEnd ? toks : toks.slice(0, -1);
     const text = [...before, x.text].join(' ');
