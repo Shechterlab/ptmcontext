@@ -1230,3 +1230,14 @@ a.try-chip { display: inline-flex; }
 .tile-link:hover { text-decoration: underline; }
 a[href^="http"]:not([data-ext="arrow"]):not(:has(img))::after { content: "\2197"; margin-left: 0.15em; font-size: 0.8em; opacity: 0.65; text-decoration: none; }
 a[href^="http"]:hover::after { opacity: 1; }
+
+/* the RNA and DNA interactions card (kit-prna.js) */
+#p-na .ix-tabs { margin: 0.2rem 0 0.6rem; }
+#p-na .na-sec { margin: 0.9rem 0 0; }
+#p-na .na-sec h4 { font-size: 0.95rem; margin: 0 0 0.3rem; }
+#p-na .na-sec .sc-na li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.5rem; }
+#p-na .na-sec .ec-list li { display: block; margin: 0.5rem 0; }
+#p-na .ec-bar { display: flex; height: 0.5rem; margin: 0.25rem 0; border-radius: 0.25rem; overflow: hidden; background: var(--line); max-width: 28rem; }
+#p-na .ec-bar i { display: block; min-width: 2px; background: var(--brand-ink); border-right: 1px solid var(--surface); opacity: 0.85; }
+#p-na .ec-bar i:nth-child(even) { opacity: 0.55; }
+#p-na .strong { font-weight: 700; }
