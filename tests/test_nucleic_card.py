@@ -119,7 +119,7 @@ console.log(JSON.stringify(out));"""
     assert out['P2'] == ''                                                  # no data in any part: no card
     f = json.loads(out['P1'])
     assert f['id'] == 'p-na'
-    assert 'RNA: 1 site in contact, 1 more' in f['sum'] and '1 residue crosslinked in cells (2 sites within 2 residues of one)' in f['sum']
+    assert 'RNA: 1 site in structural contact (side chain within 4 Å), 1 more' in f['sum'] and '1 residue crosslinked in cells (2 sites within 2 residues of one)' in f['sum']
     assert '2 bound regions in structures' in f['sum'] and 'eCLIP' in f['sum'] and 'DNA: none recorded' in f['sum']
     body = f['body']
     assert 'sites within' in f['sum'] and '8–12' not in body             # a crosslinked stretch is not listed: only single residues
