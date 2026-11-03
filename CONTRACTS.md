@@ -366,6 +366,7 @@ shows). Every value is text unless said otherwise; empty means not known. Lists 
 | `site_measurements` | site | **`condition`** (a code), **`call`** (a code: the site file gives each a mark and words), `n`, `n_down`, `n_up` (counts), `value` (a log2 change), `q`, `rule` | the perturbation marks of the card and the sites table, and every measurement in the Evidence row |
 | `source_records` | site | **`source`** (a code: a value of the site's provenance attribute), `doi`, `reference`, `pubmed` (ids), `source_table`, `peptide` (modifications in brackets after their residue: `GR(me)G`), `state`, `enzyme`, `sample`, `detail`, `reported_accession`, `reported_position`, `check` (a code: how the record was placed) | the Evidence row's source records, the site's residue marked in each peptide |
 | `protein_partners` | `accession` | **`partner_accession`**, **`score`** (number), `partner`, `partner_marked` (true/false), `classes` (a list of codes) | the card's partners of some classes (`card.writer.partners`), and on a protein without marks the proteins with marks associated with it |
+| `protein_records` | `accession` | any columns: the site file names each (`columns:` maps the input's column to the name the card reads; `values:` keeps others under their own names); several rows a protein | the protein page's cards (below): locations, condensate memberships, dependency, experiments, clustering |
 
 `ptmc web` keeps each protein's rows beside its page (`data/e/NN.json`, the shards of `data/p`), the rows that name a
 protein without marks as a partner (`site_records`, `protein_partners`) on that protein's light page (`data/u/NN.json`,
@@ -377,6 +378,37 @@ The site card and the sites table read the site file's `website.protein.card` an
 words: the codes' labels, the sentences, the marks of each call, which columns the Columns menu offers and which show
 first. `website.protein.numbering` numbers some proteins as papers do (a gene or name pattern and an offset: histones
 without their initiator methionine): their positions are shown and read in links with it.
+
+## Protein page cards
+
+Context cards on a protein's page, each a fold with an id, on when the site file names it under `website.protein.cards` and
+absent when it does not (`kit-pcards.js`; `ptmc check` reports what a card misses, `web/pcards.py`). Each reads tables of
+`website.tables` in the `protein_records` format (above), whose columns the card names; a protein with no row in them is told
+so, and the Experiments card is hidden for it. The words (titles, sources, labels, notes) are the site's; no source is named
+in the module. Live parts are asked by accession and fall back to a line saying the source did not answer.
+
+| Card (fold) | Table(s) and their columns | What it shows |
+|---|---|---|
+| `location` (`p-cond`) | `hpa.table`: `location`, `main` (`1` or `true`), `reliability`; `condensates.members`: `condensate` (id), `score` (0 to `max_score`), `roles`, `evidence`, `pmids` (`; `-separated); `condensates.names` (a `lookup` with `name`, `condensate_type`) | its locations, main first, each linking to the proteins at it (`hpa.analysis`); `maps: true` draws it in `website.cell`'s drawings, a part coloured when a map places it, and lists each map's compartments; every condensate membership, most confident first, with stars, role, evidence, papers (named live when `pubmed` gives the summary service's address) |
+| `dependency` (`p-depmap`) | `table`: `lines`, `dependent`, `median`, `common_essential`, `histogram` (bin counts, `; `-separated, over `histogram.from` to `.to`), `lineages` (`name|lines|mean`, `; `-separated) | how many lines depend on the gene, the histogram, the lineages; the marks' changes are `website.protein.card.changes` (the attributes and counts of the site card), listed per mark |
+| `perturbations` (`p-pert`) | none of its own: `website.protein.card.calls` (its `tables`, `attributes`, `conditions`, `marks`, `words`) | a mark per call, a row per mark, a column per experiment the protein has |
+| `experiments` (`p-exp`) | `table`: `position`, `region`, `perturbation`, `system`, `species`, `readout`, `direction` (`decreased`, `increased`, `no_change`), `finding`, `figure`, `reference`, `doi`, `read_from`, `in_release` | the curated experiments on the protein |
+| `clustering` (`p-cluster`) | `table`: `spacing_min`, `spacing_median`, `max_<n>` for each of `windows`, `window_size`, `window_start`, `window_end`, `window_sites`, `window_log2`, `window_q`, `architecture`, `clusters` (`; ` between clusters, `,` between positions) | median spacing, the most marks within n residues, the top window, the architecture |
+| `other_ptms` (`p-ptm`) | `table`: a `residue_evidence` table whose `kind` is the modification (`kinds` labels them, in order) | the count of each kind, and those within `near` residues of a mark |
+
+The Disease card is the protein-set card of `website.protein.sets`; an entry may take an `id` (the fold's), `live`
+(`uniprot: true` lists the diseases UniProt curates for the entry; `open_targets: {graphql, size, page}` the Open Targets
+Platform's association scores for the entry's Ensembl gene, named by the UniProt cross-reference the conservation card
+uses) and `term_groups: {terms, families}` (the protein's enriched terms of one question, grouped by the families, other
+questions of the card, that gather them; a term in none is "Other / unassigned").
+
+`website.protein.order` lists the folds, first to last, by id; a fold the list lacks follows the one before it, one the page
+lacks is skipped. Without it the folds keep the page's own order. `sites/methylarginine.yaml` lists the explorer's order:
+`p-map`, `p-cc`, `p-ix`, `p-na`, `p-sites`, `p-score`, `p-pert`, `p-exp`, `p-struct`, `p-cond`, `p-dis`, `p-depmap`, `p-kinds`,
+`p-regions`, `p-cons`, `p-cluster`, `p-ptm`, `p-seq`.
+`website.protein.open` lists the folds that start open (without it, each fold's own default: the map and the sites). A
+fold that shows live or optional data opens only when the protein has it: the orthologues (`p-cons`) when they arrive, the
+network (`p-ix`) when the site's partner table has partners. A reader's own opening or closing is kept.
 
 ## Conservation across species
 

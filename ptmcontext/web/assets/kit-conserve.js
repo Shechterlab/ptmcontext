@@ -140,6 +140,9 @@
         st.model = modelOf(st.seq, st.sites, orthos); st.ck = keepOf(st.seq, st.model); st.phase = 'ok';
         if (!st.sites.includes(UI.pos) || UI.acc !== acc) { UI.pos = st.sites[0]; UI.acc = acc; }
         paint(acc);
+        // website.protein.open: a fold the site starts open opens when its orthologues arrive, unless the reader has touched it
+        const f = document.getElementById('p-cons');
+        if (f && curAcc() === acc && K.foldStarts?.('p-cons') && !K.foldTouched?.('p-cons')) f.open = true;
       });
     }).catch(e => { st.phase = 'fail'; st.err = fail(e); st.who = st.ensg ? 'Ensembl Compara' : 'UniProt'; paint(acc); });
   }
@@ -230,6 +233,7 @@
     const html = `<button type="button" class="chip cv-chip" id="cv-chip" data-cv-open${tipAttr(tip)}>${esc(text)}</button>`;
     if (old) old.outerHTML = html; else host.insertAdjacentHTML('beforeend', html);
   }
+  (K.hasData ||= {})['p-cons'] = () => ST[curAcc()]?.phase === 'ok';
   (K.proteinFolds ||= []).push((p, rec, fold) => {
     if (!rec.seq) return '';
     ST[p.acc] ||= { phase: 'idle', seq: rec.seq, sites: (rec.marks || []).map(m => m[0]) };

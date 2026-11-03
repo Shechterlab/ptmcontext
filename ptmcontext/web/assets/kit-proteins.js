@@ -58,6 +58,24 @@
       shownProteins().map(p => [p.acc, p.gene, p.name, p.len, ...(sel ? [cnt[p.i] || 0] : []), p.marks, p.cand].join('\t')).join('\n') + '\n';
   };
 
+  // ---- website.protein.order / open: the folds in the site's order, and which of them start open --------------------------
+  // Without a list the folds keep the page's own order. A fold the list lacks follows the one before it; one the page lacks is skipped.
+  const PRO = D.protein_view || {};
+  const FOLD_ORDER = PRO.order || [];
+  K.hasData = { ...(K.hasData || {}) };            // fold id -> whether this protein has what it shows (the folds that open only then)
+  // `open` is the site's list; without one, each fold's own default
+  K.foldOrder = FOLD_ORDER;
+  K.foldTouched = id => id in PV.open;             // the reader has opened or closed it
+  K.foldStarts = id => !!PRO.open?.includes(id);    // the site starts it open (when it has what it shows)
+  const foldOpen = (id, dflt) => (PRO.open ? PRO.open.includes(id) && (K.hasData[id] ? !!K.hasData[id]() : true) : dflt);
+  function arrangeFolds(html) {
+    if (!FOLD_ORDER.length) return html;
+    const parts = html.split(/(?=<details class="pfold" id=")/);
+    let at = -1;
+    const keyed = parts.map((h, k) => { const id = (/^<details class="pfold" id="([^"]+)"/.exec(h) || [])[1], i = FOLD_ORDER.indexOf(id); if (i >= 0) at = i; return [at + (i >= 0 ? 0 : 0.5), k, h]; });
+    return keyed.sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(x => x[2]).join('');
+  }
+
   // ---- a protein's page: as the Methylarginine Site Explorer's ------------------------------------------------------
   const PV = { acc: '', rec: null, err: '', af: null, uni: null, uniJson: null, pdb: null, pdbAll: false, ix: null, site: null, span: null, spanArg: '', more: false, fn: false, open: {}, scrolled: null,
     tb: null, evOpen: new Set(), pf: '', focus: '', qDone: false, light: null, lightP: null, lightAll: false, cleanArg: false };
@@ -251,7 +269,7 @@
   const ACC_RE = /^([A-NR-Z][0-9][A-Z0-9]{3}[0-9]|[OPQ][0-9][A-Z0-9]{3}[0-9])(-\d+)?$/i;
   // an old section key (the explorer's #ACC/p-na) and the fold that holds that section here
   const SECTION = { 'p-map': 'p-map', 'p-sites': 'p-sites', 'p-seq': 'p-seq', 'p-dom': 'p-regions', 'p-3d': 'p-struct', 'p-ix': 'p-ix', 'p-na': 'p-ix',
-    'p-cond': 'p-kinds', 'p-dis': 'p-kinds', 'p-func': 'p-kinds', 'p-path': 'p-kinds', 'p-score': 'p-score', 'p-kinds': 'p-kinds', 'p-regions': 'p-regions', 'p-struct': 'p-struct', 'p-cons': 'p-cons' };
+    'p-cond': 'p-cond', 'p-dis': 'p-dis', 'p-depmap': 'p-depmap', 'p-pert': 'p-pert', 'p-exp': 'p-exp', 'p-cluster': 'p-cluster', 'p-ptm': 'p-ptm', 'p-func': 'p-kinds', 'p-path': 'p-kinds', 'p-score': 'p-score', 'p-kinds': 'p-kinds', 'p-regions': 'p-regions', 'p-struct': 'p-struct', 'p-cons': 'p-cons' };
   // a site's part of the address, read as the page numbers it: R2 or 2 on a protein numbered without its first residue
   const readAt = (acc, at) => {
     if (!at) return '';
@@ -428,10 +446,11 @@
       protHead(p);
     if (!PV.rec) return head + `<p class="empty">${PV.err ? esc(PV.err) : 'Loading…'}</p>`;
     const rec = PV.rec, sel = K.sel?.active() ? K.sel.selectedPositions(acc) : null;
-    const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${(PV.open[id] ?? open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
+    const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${(PV.open[id] ?? foldOpen(id, open)) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
     const nSrc = Object.keys(SPECS).find(n => SPECS[n].kind === 'list' && SPECS[n].link);
     return head +
       (sel && sel.size < rec.marks.length ? `<p class="note">${int(sel.size)} of ${int(rec.marks.length)} ${esc(W.marks)} match your selection; the others are faded. <button class="linkish" type="button" data-sel-clear-all>Clear filters</button></p>` : '') +
+      arrangeFolds(
       fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''}`, `<div class="card-head"><p class="sub">The ${esc(W.marks)} on the protein, with rows from the site’s data and live sources. Hover for what an item is, click to pin it.</p>${mapExp(['pdf', 'svg', 'png', 'tsv'])}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
       (headline(p, rec) || legacyFacts(p, rec, nSrc)) +
       fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}${nSrc ? `, each with the ${esc(SPECS[nSrc].label.toLowerCase())} that report it` : ''}${rec.shown?.length ? ` · ${int(rec.shown.length)} more ${esc(K.shown.row())}` : ''}`, sitesTable(p, rec, sel), true) +
@@ -441,7 +460,7 @@
       fold('p-regions', 'Domains and regions', `${int(rec.units.length)} region${rec.units.length === 1 ? '' : 's'} the site’s questions read`, regionsHtml(p, rec), false) +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, sel), false) +
       fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) +           // kit-3d.js
-      (IXP ? fold('p-ix', 'Interaction partners', 'STRING, live', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(p.gene || p.acc)}, best first, and which of them have ${esc(W.marks)} in this site.</p>${K.expBar(['tsv'], 'ixexp', 'the partners')}</div><div id="live-ix" class="live"><p class="muted">Asking STRING…</p></div>`, partnersOpen()) : '');
+      (IXP ? fold('p-ix', 'Interaction partners', 'STRING, live', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(p.gene || p.acc)}, best first, and which of them have ${esc(W.marks)} in this site.</p>${K.expBar(['tsv'], 'ixexp', 'the partners')}</div><div id="live-ix" class="live"><p class="muted">Asking STRING…</p></div>`, partnersOpen()) : ''));
   }
   // the facts as tiles, for a site without headline cards
   function legacyFacts(p, rec, nSrc) {
@@ -679,7 +698,9 @@
   // The site file turns the card on and names the taxon STRING files the organism under (website.partners).
   const IXP = D.partners || null;
   // website.protein.open_partners: the partners fold opens when the site's own partner table has partners for the protein
-  const partnersOpen = () => { const t = CC.writer?.partners?.table; return !!(D.protein_view?.open_partners && t && PV.tb && K.card.rows(PV.tb, t).length); };
+  const hasPartners = () => { const t = CC.writer?.partners?.table; return !!(t && PV.tb && K.card.rows(PV.tb, t).length); };
+  K.hasData['p-ix'] = hasPartners;
+  const partnersOpen = () => !!(D.protein_view?.open_partners && hasPartners());
   const IXS = { net: IXP?.network || 'physical', min: Math.round((IXP?.min_score ?? 0.7) * 1000), only: false, all: false };
   const STRING_API = 'https://string-db.org/api/json/', STRING_CALLER = 'ptmcontext';
   const STRING_CITE = 'Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113';

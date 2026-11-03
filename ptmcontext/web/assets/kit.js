@@ -586,7 +586,9 @@
       `</tbody></table></div></section>`;
   }
   function privacySection() {
-    const live = ['UniProt (rest.uniprot.org)', 'AlphaFold DB (alphafold.ebi.ac.uk)', 'PDBe (www.ebi.ac.uk/pdbe)', ...(D.partners ? ['STRING (string-db.org)'] : []), ...(D.protein_view?.conservation?.ensembl?.rest ? [`Ensembl (${String(D.protein_view.conservation.ensembl.rest).replace(/^https?:\/\//, '').replace(/\/$/, '')})`] : [])];
+    const live = ['UniProt (rest.uniprot.org)', 'AlphaFold DB (alphafold.ebi.ac.uk)', 'PDBe (www.ebi.ac.uk/pdbe)', ...(D.partners ? ['STRING (string-db.org)'] : []), ...(D.protein_view?.conservation?.ensembl?.rest ? [`Ensembl (${String(D.protein_view.conservation.ensembl.rest).replace(/^https?:\/\//, '').replace(/\/$/, '')})`] : []),
+      ...(D.protein_view?.sets || []).flatMap(c => (c.live?.open_targets?.graphql ? [`Open Targets (${new URL(c.live.open_targets.graphql).host})`] : [])),
+      ...(D.protein_view?.cards?.location?.condensates?.pubmed ? [`PubMed (${new URL(D.protein_view.cards.location.condensates.pubmed).host})`] : [])];
     return `<section id="m-privacy"><h3>Licences and privacy</h3>` +
       `<p>Licences: the code (ptmcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} licence${D.kit.url ? ` (<a href="${esc(D.kit.url)}">source</a>)` : ''}. This site’s data and figures are under ${esc(hlicence(CIT.licence || 'their sources’ terms'))}, and each source keeps its own terms (see the Data table).</p>` +
       `<p>Privacy: the site sets no cookies and uses no tracking. Searches, filters, selections and every test on them stay in your browser and its address. The browser’s local storage keeps only your preferences (theme, sidebar, protein map rows) and saved selections; clear them with the site data. A protein page asks these services for that protein’s public data, by accession only: ${esc(live.join(', '))}. Downloads are made in the browser.</p></section>`;

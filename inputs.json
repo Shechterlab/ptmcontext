@@ -483,6 +483,15 @@
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0); component databases keep their own terms",
       "role": "input",
       "note": "Other modifications (phosphorylation, lysine acylation, ubiquitination or SUMOylation, lysine methylation) on the methylated proteins, from the iPTMnet-format PTM master table, residues checked against the reference sequence; not exhaustive. The Filters panel's 'other modification nearby'."
+    },
+    "functional_experiments_v1_4_3": {
+      "file": "releases/v1.4.3/supporting/functional_experiments_v1.4.3.tsv",
+      "md5": "f8902195b280b87bb64f85860213ddec",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3",
+      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31)",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0); component databases keep their own terms",
+      "role": "input",
+      "note": "Experiments from the literature on a methylarginine or a methylated region (the curated table of the release, 6 rows): the system, the perturbation, the readout, the direction of the change and the finding, each with its paper. Kept apart from the site table and every statistic; the protein page's Experiments card."
     }
   }
 }

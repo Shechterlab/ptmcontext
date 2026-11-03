@@ -192,6 +192,7 @@
   }
   // every part a row colours, with its summary; a part a row colours only when it has no row of its own (also:)
   function parts(scoped) {
+    if (ONE) return oneParts();
     const P = {}, within = {};
     for (const L of [LAYERS.part, LAYERS.region]) {
       L.groups.forEach(([, rows], gi) => rows.forEach((row, ri) => {
@@ -201,6 +202,45 @@
     }
     return { P, within };
   }
+
+  // ---- one protein (the protein page's card): the same drawings, each part coloured when a map places the protein there ----
+  // ONE is the protein's row of the site's proteins while its drawings are made; a part no map places it in stays outlined
+  let ONE = null;
+  const withOne = (p, f) => { ONE = p; try { return f(); } finally { ONE = null; } };
+  function oneParts() {
+    const P = {}, within = {};
+    for (const L of [LAYERS.part, LAYERS.region]) {
+      L.groups.forEach(([, rows], gi) => rows.forEach((row, ri) => {
+        const hit = L.cols.filter(aid => row.map[aid] && K.sel.setHas(aid, row.map[aid], ONE.i));
+        if (row.part && hit.length) P[row.part] = { row, L, id: rowId(L, gi, ri), cells: hit.map(aid => [aid, null]), tone: 'u2', value: 'placed here', maps: hit.length + (hit.length === 1 ? ' map' : ' maps') };
+        (row.also || []).forEach(k => { within[k] ||= row.part; });
+      }));
+    }
+    return { P, within };
+  }
+  // each map's word on the protein: its compartments, or that it places it in none, or does not place it
+  function oneMaps(p) {
+    const sd = K.sel.data(); if (!sd) return null;
+    return MAPS.map(m => {
+      const aid = m.analysis, ps = sd.protein_sets?.[aid], d = DS(aid);
+      const sets = ps ? ps.sets.map(x => x[0]).filter(s => K.sel.setHas(aid, s, p.i)) : [];
+      const placed = !!ps && (sets.length > 0 || (ps.in_background || []).includes(p.i));
+      return { aid, name: d.name, method: d.method, cells: d.cells, placed, sets: sets.map(s => label(aid, s)) };
+    });
+  }
+  const oneTsv = p => () => K.preamble(`${C.title || 'Where in the cell'}: ${p.gene || p.acc}`, 'the compartments each map places the protein in') +
+    'map\tcompartment\n' + (oneMaps(p) || []).flatMap(r => (r.sets.length ? r.sets : [r.placed ? '(none of its compartments)' : '(not placed)']).map(x => [r.name, x].join('\t'))).join('\n') + '\n';
+  function oneDrawings(p) {
+    if (!K.sel.data() || !DRAWINGS.length) return '';
+    TIPS = [];
+    return DRAWINGS.map(d => {
+      const k = 'p-' + d.drawing;
+      FIGS[k] = { title: () => `${p.gene || p.acc}: the ${d.drawing}`, sub: () => `Where the maps of the cell place ${p.gene || p.acc}: a part is coloured when a map does.`,
+        make: () => withOne(p, () => DRAW[d.drawing](false)), tsv: oneTsv(p), note: () => 'Coloured: a map places the protein in that part. Dashed outline: no map does.' };
+      return block(k, `The ${d.drawing}`, 'cell-fig cell-onep');
+    }).join('');
+  }
+  K.cell = { maps: oneMaps, drawings: oneDrawings, name: m => DS(m).name };
 
   // ---- the page's drawing helpers: a registry of hover texts, the colour classes, labels with leader lines -------------
   let TIPS = [];
@@ -215,6 +255,7 @@
       const k = own(k0);
       if (!k) return '';
       const p = P[k];
+      if (ONE) return tipAttr(`<b>${esc(name || rowName(p.row))}</b>: this protein is placed here by ${and(p.cells.map(([aid]) => esc(DS(aid).name)))}`);
       return ` data-cell-part="${esc(k)}" role="button" tabindex="0"` + tipAttr(`<b>${esc(name || rowName(p.row))}</b>: ${sig(p) ? 'odds ratio ' : ''}${esc(p.value)}${sig(p) ? (p.maps === '1 map' ? ' (1 map)' : ', median of ' + esc(p.maps)) : ''}<br>` +
         p.cells.map(([aid, c]) => esc(DS(aid).name) + ': ' + (c.circular ? 'not compared' : esc(orText(c.a)) + (c.a.q != null ? ', q ' + fq(c.a.q) : '') + (c.tone === 'ns' ? ' (no difference)' : ''))).join('<br>') +
         '<br><span class="muted">Click for its numbers and proteins</span>');

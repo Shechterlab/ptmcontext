@@ -2776,6 +2776,39 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^p-[a-z0-9-]+$",
+                    "description": "the fold's id (default p-sets-N): website.protein.order and open name folds by it"
+                  },
+                  "term_groups": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["terms", "families"],
+                    "description": "the protein's enriched terms of one question, grouped by the families (other questions of the card) that gather them; a term in none is Other / unassigned",
+                    "properties": {
+                      "terms": {"type": "string"},
+                      "families": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+                    }
+                  },
+                  "live": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "what the card asks live sources, by the protein's accession, before its sets: the diseases curated in UniProt, and the association scores of Open Targets (for a human gene)",
+                    "properties": {
+                      "uniprot": {"type": "boolean"},
+                      "open_targets": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["graphql"],
+                        "properties": {
+                          "graphql": {"type": "string", "description": "the Platform's GraphQL address (https)"},
+                          "size": {"type": "integer", "description": "diseases listed (default 12)"},
+                          "page": {"type": "string", "description": "the Platform's page for a target ({gene}, {id})"}
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -2858,6 +2891,108 @@
             "open_partners": {
               "type": "boolean",
               "description": "open the Interaction partners fold when the protein has partners in card.writer.partners' table"
+            },
+            "order": {
+              "type": "array",
+              "items": {"type": "string", "pattern": "^p-[a-z0-9-]+$"},
+              "description": "the protein page's folds, first to last, by id (p-map, p-sites, p-score, p-kinds, p-regions, p-seq, p-struct, p-ix, p-cons, and the cards' p-cond, p-dis, p-depmap, p-pert, p-exp, p-cluster, p-ptm); a fold the list lacks follows the one before it, and without the list the page's own order stands"
+            },
+            "open": {
+              "type": "array",
+              "items": {"type": "string", "pattern": "^p-[a-z0-9-]+$"},
+              "description": "the folds that start open, by id (default: none set, each fold's own: the map and the sites). One that shows live or optional data (p-cons, p-ix, and the cards below) opens when the protein has it"
+            },
+            "cards": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the context cards of a protein page, each on when named (CONTRACTS.md, Protein page cards): location (p-cond), dependency (p-depmap), perturbations (p-pert), experiments (p-exp), clustering (p-cluster), other_ptms (p-ptm)",
+              "properties": {
+                "location": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Location and condensates: the protein's locations, drawn in the site's cell drawings (needs website.cell), and its condensate memberships",
+                  "properties": {
+                    "title": {"type": "string"},
+                    "summary": {"type": "string"},
+                    "hpa": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["table"],
+                      "properties": {
+                        "table": {"type": "string", "description": "a protein_records table with location, main (1 or true for a main location) and reliability"},
+                        "analysis": {"type": "string", "description": "the protein-set question whose sets are these locations: a location links to its proteins"},
+                        "title": {"type": "string"},
+                        "source": {"type": "string", "description": "the source and its release, as words"},
+                        "url": {"type": "string", "description": "the source's page for the protein ({acc}, {gene})"},
+                        "unsure": {"type": "string", "description": "the reliability value that is marked uncertain (?)"}
+                      }
+                    },
+                    "maps": {"type": "boolean", "description": "the protein drawn in website.cell's drawings, and the compartments each of its maps places it in"},
+                    "condensates": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["members"],
+                      "properties": {
+                        "members": {"type": "string", "description": "a protein_records table with condensate (id), score (0-5), roles, evidence, pmids"},
+                        "names": {"type": "string", "description": "a lookup table keyed by condensate id, with name and type"},
+                        "analysis": {"type": "string", "description": "the protein-set question whose sets are the condensates: a name links to its proteins"},
+                        "title": {"type": "string"},
+                        "source": {"type": "string"},
+                        "url": {"type": "string", "description": "the source's page for a condensate ({id})"},
+                        "max_score": {"type": "integer", "description": "the top of the score (stars)"},
+                        "default_type": {"type": "string", "description": "the condensate type that needs no tag; any other type is tagged"},
+                        "evidence": {"type": "object", "additionalProperties": {"type": "string"}, "description": "evidence code -> words"},
+                        "roles": {"type": "object", "additionalProperties": {"type": "string"}, "description": "role code -> words"},
+                        "pubmed": {"type": "string", "description": "the address of PubMed's summary service, to name papers; left out, papers are numbers"}
+                      }
+                    }
+                  }
+                },
+                "dependency": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["table"],
+                  "description": "Cancer cell lines and tumours: a protein_records table with lines (screened), dependent (lines depending), median, common_essential, histogram (counts, ;-separated) and lineages (name|lines|mean, ;-separated); the changes at the marks are the site card's (card.changes)",
+                  "properties": {
+                    "title": {"type": "string"},
+                    "summary": {"type": "string"},
+                    "table": {"type": "string"},
+                    "sub": {"type": "string", "description": "words under the title"},
+                    "unit": {"type": "string", "description": "what a line is called, plural (cancer cell lines)"},
+                    "histogram": {"type": "object", "additionalProperties": false, "properties": {"from": {"type": "number"}, "to": {"type": "number"}, "axis": {"type": "string"}, "marks": {"type": "array", "items": {"type": "object", "required": ["at", "label"], "properties": {"at": {"type": "number"}, "label": {"type": "string"}}}}}},
+                    "url": {"type": "string", "description": "the source's page for the protein ({gene})"},
+                    "note": {"type": "string"},
+                    "changes_note": {"type": "string"}
+                  }
+                },
+                "perturbations": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "PRMT inhibitors, knockouts and knockdowns: a column per condition of website.protein.card.calls (its tables and attributes), a row per mark, a mark per call",
+                  "properties": {"title": {"type": "string"}, "summary": {"type": "string"}, "sub": {"type": "string"}, "note": {"type": "string"}}
+                },
+                "experiments": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["table"],
+                  "description": "Experiments on its methylation: a protein_records table with position, region, perturbation, system, species, readout, direction, finding, figure, reference, doi, read_from; the card is absent for a protein without rows",
+                  "properties": {"title": {"type": "string"}, "summary": {"type": "string"}, "table": {"type": "string"}, "sub": {"type": "string"}, "note": {"type": "string"}}
+                },
+                "clustering": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["table"],
+                  "description": "Clustering: a protein_records table with spacing_min, spacing_median, max_<n> (marks within n residues, for the windows), window_size, window_start, window_end, window_sites, window_log2, window_q, architecture, clusters (; between clusters, , between positions)",
+                  "properties": {"title": {"type": "string"}, "summary": {"type": "string"}, "table": {"type": "string"}, "sub": {"type": "string"}, "windows": {"type": "array", "items": {"type": "integer"}}, "note": {"type": "string"}}
+                },
+                "other_ptms": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["table"],
+                  "description": "Other PTMs: a residue_evidence table of the protein's other modifications (kind = the modification)",
+                  "properties": {"title": {"type": "string"}, "summary": {"type": "string"}, "table": {"type": "string"}, "sub": {"type": "string"}, "kinds": {"type": "object", "additionalProperties": {"type": "string"}, "description": "kind -> its label (the order of the card)"}, "near": {"type": "integer", "description": "a modification within this many residues of a mark is listed"}, "note": {"type": "string"}}
+                }
+              }
             }
           }
         },
@@ -3400,7 +3535,8 @@
                   "site_records",
                   "site_measurements",
                   "source_records",
-                  "protein_partners"
+                  "protein_partners",
+                  "protein_records"
                 ]
               },
               "columns": {

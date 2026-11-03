@@ -233,6 +233,20 @@
   const siteRow = (aid, s) => (siteRows[aid] ||= new Map(K.rowsFor(A[aid], 'enricher').map(r => [r.category, r]))).get(s);
   const pick = (aid, s, name) => `<button class="linkish" type="button" data-f="p:${esc(aid)}" data-v="${esc(s)}" title="Select the ${esc(W.marks)} on proteins in it">${esc(name || labelOf(aid, s))}</button>`;
   const resText = r => (r ? `<span class="val ${r.dir}">${fxn(r.eff)}×</span> <span class="muted">q ${fq(r.q)}</span>` : '');
+  // the protein's enriched terms grouped by the family that gathers them (website.protein.sets[].term_groups): the first family
+  // of the list that holds a term names it, a term in none is "Other / unassigned"
+  function termGroupsHtml(c, aid, mine, title, gene) {
+    const enr = mine.filter(s => enriched(siteRow(aid, s))).sort((x, y) => siteRow(aid, x).q - siteRow(aid, y).q);
+    const famOf = new Map(), famAid = {};
+    for (const f of (c.term_groups.families || []).filter(x => A[x]?.gathers)) Object.entries(A[f].gathers).forEach(([fam, ts]) => { famAid[fam] ||= f; ts.forEach(t => { if (!famOf.has(t)) famOf.set(t, fam); }); });
+    const groups = new Map();
+    enr.forEach(s => { const g = famOf.get(s) || ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(s); });
+    const order = [...groups.keys()].sort((x, y) => (x === '') - (y === '') || groups.get(y).length - groups.get(x).length || x.localeCompare(y));
+    const ns = esc(asMembers(aid)?.nouns || 'sets');
+    return `<div class="kind">${title}<p class="note">${esc(gene)} is in ${int(mine.length)} of the tested ${ns}; ${int(enr.length)} of them are enriched across all ${esc(W.marked)} proteins${enr.length ? ', grouped by family:' : '.'}</p>` +
+      order.map(g => `<details class="dis-group"><summary>${g ? `<button class="linkish strong" type="button" data-f="p:${esc(famAid[g])}" data-v="${esc(g)}" title="Select the ${esc(W.marks)} on the proteins of this family">${esc(g)}</button>` : '<span class="strong">Other / unassigned</span>'} ` +
+        `<span class="muted">${int(groups.get(g).length)} ${groups.get(g).length === 1 ? 'term' : 'terms'}</span></summary><ul class="kind-list">${groups.get(g).map(s => `<li>${pick(aid, s)} ${idLink(aid, s)} ${resText(siteRow(aid, s))}</li>`).join('')}</ul></details>`).join('') + '</div>';
+  }
   function proteinSetsHtml(c, p) {
     const sd = K.sel?.data(); if (!sd) return '<p class="muted">Loading the sets…</p>';
     const gene = p.gene || p.acc;
@@ -255,6 +269,7 @@
           const ns = esc(mem?.nouns || 'sets');
           return `<li>${pick(aid, f)} ${resText(r)}${m ? ` <span class="muted">· ${named.length ? `in ${int(named.length)} of its ${int(own.length)} tested ${ns}, ${nEnr ? int(nEnr) + ' enriched' : 'none enriched'}` : `in none of its ${int(own.length)} tested ${ns} (only in ${ns} too small or too large to test)`}</span>` : ''}</li>`; }).join('')}</ul></div>`;
       }
+      if (c.term_groups?.terms === aid) return termGroupsHtml(c, aid, mine, title, gene);
       const enr = mine.filter(s => enriched(siteRow(aid, s))).sort((x, y) => siteRow(aid, x).q - siteRow(aid, y).q), key = 'psets:' + aid, all = UI.all.has(key);
       const ns = esc(asMembers(aid)?.nouns || 'sets');
       return `<div class="kind">${title}<p class="note">${esc(gene)} is in ${int(mine.length)} of the tested ${ns}; ${int(enr.length)} of them are enriched across all ${esc(W.marked)} proteins${enr.length ? ':' : '.'}</p>` +
@@ -263,8 +278,10 @@
     }).join('');
     return `<div class="kinds qv-psets">${blocks}</div><p class="note">Each result is the site’s own, over all ${esc(W.marked)} proteins against the background, not this protein’s. A name selects the ${esc(W.marks)} on its proteins, and ↗ opens the set’s page.</p>`;
   }
-  K.proteinFolds = [...(K.proteinFolds || []), ...PCARDS.map((c, k) => (p, rec, fold) => fold(`p-sets-${k}`, esc(c.title), esc(c.summary || ''), proteinSetsHtml(c, p), false))];
-  K.proteinFoldSections = [...(K.proteinFoldSections || []), ...PCARDS.map((c, k) => [`p-sets-${k}`, c.title, 1])];
+  // a card may take an id of its own (the explorer's p-dis), and its module's live parts before its sets (K.setsLive: kit-pcards.js)
+  const cardId = (c, k) => c.id || `p-sets-${k}`;
+  K.proteinFolds = [...(K.proteinFolds || []), ...PCARDS.map((c, k) => (p, rec, fold) => fold(cardId(c, k), esc(c.title), K.setsLive?.sum(c, p) ?? esc(c.summary || ''), (K.setsLive?.html(c, p) || '') + proteinSetsHtml(c, p), false))];
+  K.proteinFoldSections = [...(K.proteinFoldSections || []), ...PCARDS.map((c, k) => [cardId(c, k), c.title, 1])];
 
   // ---- events --------------------------------------------------------------------------------------------------------
   const flip = (set, k) => { if (set.has(k)) set.delete(k); else set.add(k); K.render(); };
