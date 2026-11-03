@@ -745,7 +745,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_organelle_ip
     test: protein_sets
     title: Organelle IP
-    question: "Where do methylated proteins sit in the cell, by the organelle each comes down with?"
+    question: "Which organelles are methylated proteins enriched in, by organelle immunoprecipitation?"
     sub: "Methylated proteins against the other proteins organelle IP classifies (HEK293T; Hein et al. 2025), cluster by cluster (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: organelle_ip, set: compartment, protein: canonical_UniProtAC, exclude: [{column: compartment, equals: unclassified}]}
@@ -1245,10 +1245,10 @@ website:                  # the look and words of the website (ptmc web); layout
          how: "the same map at a finer scale: neighbourhoods of proteins that label one another (SAFE domains)",
          ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
       - {analysis: cell_organelle_ip, regions: cell_region_organelle_ip, name: Organelle IP, short: Organelle IP, method: Organelle pull-down, cells: HEK293T,
-         how: "organelles pulled out one at a time; each protein goes with the organelle it comes down with",
+         how: "Organelles immunoprecipitated one by one. Each protein is assigned to the organelle it co-purifies with.",
          ref: Hein et al. 2025, doi: 10.1016/j.cell.2024.11.028, url: "https://github.com/czbiohub-sf/Organelle_IP_analyses_and_figures", licence: BSD-3-Clause (analysis repository)}
       - {analysis: cell_chromatin, name: Chromatin probability, short: ChEP, method: Fractionation, cells: human cell lines,
-         how: "how reliably a protein comes down with chromatin across many conditions, as a probability",
+         how: "probability that a protein is chromatin-bound, from chromatin enrichment across many conditions",
          ref: Kustatscher et al. 2014, doi: 10.1002/embj.201387614, url: "https://doi.org/10.1002/embj.201387614", licence: CC BY}
     regions:               # the sets of each map's regions question, and the part of the drawings each colours
       - {label: Nucleus, part: nucleus, in_text: the nucleus}
