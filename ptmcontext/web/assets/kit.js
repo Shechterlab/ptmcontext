@@ -25,7 +25,7 @@
   const PADJ = 0.05, MIN_EFFECT = 1.1;
   const dir = r => r.eff == null || r.q == null || r.q > PADJ ? 'ns' : r.eff >= MIN_EFFECT ? 'more' : r.eff <= 1 / MIN_EFFECT ? 'less' : 'same';
   const DIR_WORDS = { more: 'more often', less: 'less often', same: 'about the same (within 1.1×)', ns: 'no difference (q > 0.05)' };
-  const METHOD = { mantel_haenszel: 'within each protein', fisher: 'pooled', study: 'within studies' };
+  const METHOD = { mantel_haenszel: 'within each protein', fisher: 'pooled', study: 'within studies', mann_whitney: 'by size (Mann–Whitney)' };
   const METHOD_PHRASE = { mantel_haenszel: 'compared within each protein (Mantel–Haenszel)', fisher: 'pooled (Fisher’s exact test)',
     study: 'compared within the marks reported by the same sources (Mantel–Haenszel)' };
   const A = Object.fromEntries(D.analyses.map(a => [a.id, a]));
