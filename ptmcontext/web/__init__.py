@@ -825,34 +825,14 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             lab = (f'<a class="brand-mark" href="{html.escape(lb.get("url", "#"))}" title="{html.escape(lb.get("name", ""))}">{img}'
                    f'<span>{html.escape(lb.get("name", ""))}<small>{html.escape(lb.get("affiliation", ""))}</small></span></a>')
         links = ''.join(f'<a href="{html.escape(x["url"])}">{html.escape(x["label"])}</a>' for x in web.get('links', []))
-        pref = (cit or {}).get('preferred')
-        # the studies that report the marks, most first: the original asked readers to cite those whose marks they use
-        rep = data.get('reporters')
-        # the studies that report the marks, as one link to their list (the original asked readers to cite them)
-        studies = (f'the <a href="#method/sources">{len(rep["items"])} {html.escape(rep["label"].lower())}</a> that report the {html.escape(data["words"]["marks"])} you use'
-                   if rep and rep['items'] else '')
-        if not cit:
-            cite_html = ''
-        elif pref:
-            cite_html = (f'<p class="lede-cite">Please cite <a href="https://doi.org/{html.escape(pref["doi"])}">{html.escape(pref["short"])}</a>, '
-                         + (f'{studies}, ' if studies else '') + 'and the original data sources (<a href="#method/cite">how to cite</a>).</p>')
-        else:
-            cite_html = (f'<p class="lede-cite">Please cite {studies + " and " if studies else ""}the original data sources '
-                         f'(<a href="#method/cite">how to cite</a>).</p>')
+        # the header's citation line is one short line; "How to cite" and "Version" open the detail in Method
+        cite_html = ''
         version = ''
         if cit:
-            version = f'Version {html.escape(cit["version"])}' + (f' ({human_date(cit["date"])})' if cit.get('date') else '')
-            if cit.get('doi'):
-                version += (f' · <a class="doi-badge" href="https://doi.org/{html.escape(cit["doi"])}"><span>DOI</span>'
-                            f'<span>{html.escape(cit["doi"])}</span></a>')
-        ds = web.get('dataset')
-        if ds:                                         # the data release shown, with its archive DOI
-            name = html.escape(ds.get('label', 'dataset'))
-            v = html.escape(ds['version'])
-            version += (f'{" · " if version else ""}{name} ' + (f'<a href="{html.escape(ds["url"])}">{v}</a>' if ds.get('url') else v)
-                        + (f' <a class="doi-badge" href="https://doi.org/{html.escape(ds["doi"])}"><span>DOI</span><span>{html.escape(ds["doi"])}</span></a>' if ds.get('doi') else ''))
-        version += (f'{" · " if version else ""}<a href="#method">method</a> · '
-                    + ('<a href="#method/download">download the data</a>' if web.get('downloads') else '<a href="#sites">download the sites</a>'))
+            detail = '#method/download' if web.get('downloads') and web.get('dataset') else '#method/cite'
+            version = ('<a href="#method/cite">How to cite</a> · '
+                       + f'<a href="{detail}">Version {html.escape(cit["version"])}</a>'
+                       + (f' ({human_date(cit["date"])})' if cit.get('date') else ''))
         if inline:
             css = f'<style>{_asset("assets/kit.css").read_text()}</style>'
             js = (f'<script id="protein-data" type="application/json">{inline_proteins}</script>'
