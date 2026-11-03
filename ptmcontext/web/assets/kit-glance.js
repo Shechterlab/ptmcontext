@@ -53,6 +53,8 @@
     const p = (D.proteins || []).find(x => x[0] === el.dataset.glAcc); el.dataset.drawn = '1';
     K.loadProtein(el.dataset.glAcc).then(rec => { if (el.isConnected) drawMap(el, rec, p[3] || 1); }, () => {});
   });
+  // the big number, one bar and the findings; the example protein's map stays behind "Show an example" (a closed fold)
   K.glance = { html: () => { const a = shareHtml(), b = findingsHtml(), c = proteinHtml();
-    return a || b || c ? `<div class="gl"><div class="gl-col">${a}${b}</div>${c}</div>` : ''; } };
+    return (a || b ? `<div class="gl"><div class="gl-col">${a}${b}</div></div>` : '') +
+      (c ? `<details class="sp-example" id="sp-example"><summary>Show an example</summary>${c}</details>` : ''); } };
 });

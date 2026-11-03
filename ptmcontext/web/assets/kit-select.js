@@ -607,19 +607,19 @@
   // "Saved (n) ▾" beside the selection line: the saved selections of this browser, each to open or to compare the current one with
   function savedMenu() {
     const list = savedList(); if (!list.length) return '';
-    return `<details class="saved-dd"><summary class="btn small" title="Selections you saved in this browser">Saved (${list.length}) ▾</summary><div class="saved-pop">${list.map((x, i) => `<div class="saved-row"><a href="${esc(x.hash)}" title="Open ${esc(x.name)}">${esc(x.name)}</a> <span class="muted">${int(x.n)}</span>` +
+    return `<details class="saved-dd"><summary class="btn small" title="Selections you saved in this browser">Saved (${list.length}) ▾</summary><div class="saved-pop">${list.map((x, i) => `<div class="saved-row"><a href="${esc(x.hash)}" data-saved-open="${i}" title="Open ${esc(x.name)}">${esc(x.name)}</a> <span class="muted">${int(x.n)}</span>` +
       `${K.views.compare ? `<button type="button" class="linkish small" data-saved-cmp="${i}" title="Compare the ${esc(W.marks)} of the current selection with those of ${esc(x.name)}">Compare with this</button>` : ''}<button type="button" class="linkish small" data-saved-del="${i}" aria-label="Delete ${esc(x.name)}">×</button></div>`).join('')}</div></details>`;
   }
   document.addEventListener('click', e => { document.querySelectorAll('.saved-dd[open]').forEach(d => { if (!d.contains(e.target) || e.target.closest('[data-saved-cmp]')) d.open = false; }); });
   function savedHtml() {
     const list = savedList(); if (!list.length) return '';
-    return `<div class="saved"><p class="flabel">Saved selections</p>${list.map((x, i) => `<div class="saved-row"><a href="${esc(x.hash)}">${esc(x.name)}</a> <span class="muted">${int(x.n)}</span>${K.views.compare ? `<button type="button" class="linkish small" data-saved-cmp="${i}" title="Compare ${esc(x.name)} with the current selection">Compare</button>` : ''}<button type="button" class="linkish small" data-saved-del="${i}" aria-label="Delete ${esc(x.name)}">×</button></div>`).join('')}</div>`;
+    return `<div class="saved"><p class="flabel">Saved selections</p>${list.map((x, i) => `<div class="saved-row"><a href="${esc(x.hash)}" data-saved-open="${i}">${esc(x.name)}</a> <span class="muted">${int(x.n)}</span>${K.views.compare ? `<button type="button" class="linkish small" data-saved-cmp="${i}" title="Compare ${esc(x.name)} with the current selection">Compare</button>` : ''}<button type="button" class="linkish small" data-saved-del="${i}" aria-label="Delete ${esc(x.name)}">×</button></div>`).join('')}</div>`;
   }
   const describe = () => [S.q, ...compute().cons.filter(x => !x[2]).map(([k, v]) => `${keyName(k)}: ${v.map(x => valueName(k, x)).join(' or ')}`)].filter(Boolean).join('; ');
   function save() {
     const name = prompt('A name for this selection', describe().slice(0, 80));
     if (!name) return;
-    const list = savedList().filter(x => x.name !== name); list.unshift({ name, hash: location.hash, n: nMarks() });
+    const list = savedList().filter(x => x.name !== name); list.unshift({ name, hash: location.hash, n: nMarks(), ...(Object.keys(K.foldsForSave()).length ? { folds: K.foldsForSave() } : {}) });
     try { localStorage.setItem(`ptmc-saved-${D.site.id}`, JSON.stringify(list.slice(0, 40))); } catch (e) { /* storage blocked */ }
     K.render();
   }
@@ -628,7 +628,7 @@
   const R = { tab: (() => { try { return localStorage.getItem('ptmc-rail-tab') || 'sections'; } catch (e) { return 'sections'; } })(),
     // pinning is automatic (pinned whenever the window is wide enough, following its resizes) unless unpinned by hand
     // 'auto' pins from 1,280 px; 'on' (pinned by hand) from 1,100 px; 'off' keeps it in a drawer
-    pin: (() => { try { const v = localStorage.getItem('ptmc-rail'); return ['on', 'off'].includes(v) ? v : 'auto'; } catch (e) { return 'auto'; } })(), open: false,
+    pin: (() => { try { const v = localStorage.getItem('ptmc-rail'); return ['on', 'off', 'auto'].includes(v) ? v : 'off'; } catch (e) { return 'auto'; } })(), open: false,
     width: (() => { try { return +localStorage.getItem('ptmc-rail-w') || 0; } catch (e) { return 0; } })() };
   const PIN_MIN = 1100, PIN_AUTO = 1280;
   const setRailWidth = () => { document.documentElement.style.setProperty('--rail-w', R.width ? `${Math.min(Math.max(R.width, 224), Math.min(520, innerWidth * 0.4))}px` : ''); };
@@ -829,6 +829,7 @@
     ['[data-sel-save]', () => save()],
     ['[data-fgroup-clear]', (el, e) => { e.preventDefault(); keysOf(groups()[+el.dataset.fgroupClear]).forEach(k => delete S.f[k]); K.writeHash(true); K.render(); }],
     ['[data-rail-tab]', el => { R.tab = el.dataset.railTab; try { localStorage.setItem('ptmc-rail-tab', R.tab); } catch (e) { /* */ } rail(); }],
+    ['[data-saved-open]', el => { const x = savedList()[+el.dataset.savedOpen]; K.restoreFolds(x?.folds); if (x && x.hash === location.hash) K.render(); }],
     ['[data-saved-del]', el => { const list = savedList(); list.splice(+el.dataset.savedDel, 1); try { localStorage.setItem(`ptmc-saved-${D.site.id}`, JSON.stringify(list)); } catch (e) { /* */ } rail(); }],
     ['[data-rail-pin]', () => { R.pin = pinned() ? 'off' : innerWidth >= PIN_AUTO ? 'auto' : 'on'; R.open = false; try { localStorage.setItem('ptmc-rail', R.pin); } catch (e) { /* */ } rail(); if (!pinned()) { R.open = true; rail(); } }],
     ['[data-rail-close]', () => { R.open = false; rail(); }],

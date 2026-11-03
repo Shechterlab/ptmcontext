@@ -29,11 +29,12 @@
     const quick = SP.quick || [];
     if (!lists.length && !quick.length) return '';
     const col = (h, help, body) => `<div class="start-col"><h4 title="${esc(help || '')}">${esc(h)}</h4><div class="start-pills">${body}</div></div>`;
-    return `<h3 class="sec-label" id="sec-starting-points">Starting points</h3><section class="start-card">` +
+    const body = `<div class="start-card">` +
       (quick.length ? col('Quick selections', 'Ready-made selections', quick.map(q => { const n = quickN(q);
         return `<a class="start-pill" href="#${esc(q.view || 'overview')}?${esc(q.query)}">${esc(q.label)}${n != null ? `<b>${int(n)}</b>` : ''}</a>`; }).join('')) : '') +
       lists.map(([l, ps]) => col(l.title, l.help, ps.map(p => `<a class="start-pill" href="${esc(K.link('protein', p.acc))}" title="Open ${esc(p.gene || p.acc)}: ${esc(p.name || '')}">${esc(p.gene || p.acc)}<b>${esc(shown(p, l))}</b></a>`).join(''))).join('') +
-      '</section>';
+      '</div>';
+    return K.fold('sec-starting-points', 'Starting points', `${quick.length ? 'ready-made selections' : ''}${quick.length && lists.length ? ' and ' : ''}${lists.length ? 'proteins to start from' : ''}`, body, SP.open === true);
   });
   (K.overviewSections ||= []).push(() => [['sec-starting-points', 'Starting points', 1]]);
 });

@@ -406,12 +406,14 @@
     return prot(p >= 0 ? p : 0)[0];
   }
   function exampleHtml(pg, sec, b, bi) {
+    if (!K.foldOpen('ix-' + sec.id, sec.open === true)) return '';        // a closed fold draws nothing and fetches nothing: it draws when opened
     const s = st(bkey(pg, sec, bi), { acc: '' }), acc = exampleAcc(b, s), p = byAcc[acc];
     loadRec(acc);
     const box = `<form class="ix-check" data-ix-ex="${esc(bkey(pg, sec, bi))}"><input type="search" name="q" value="${esc(gene(p))}" aria-label="A protein" autocomplete="off" spellcheck="false"><button class="btn small" type="submit">Show</button><a class="btn small" href="${esc(K.link('protein', acc))}">Open ${esc(gene(p))} →</a></form>`;
     const rows = lanes(b).map(([, title, help]) => `<span class="ix-tag" title="${esc(help)}">${esc(title)}</span>`).join(' ');
     return box + (EX.err ? `<p class="muted">${esc(EX.err)}</p>` : EX.rec ? `<div id="ix-map" class="pmap"></div>` : loading()) + `<p class="muted small">The rows: ${rows}. Choose and order the rows in the map’s Rows menu; drag across the map to zoom. Every protein page has this view.</p>`;
   }
+  document.addEventListener('toggle', e => { const d = e.target; if (d.tagName === 'DETAILS' && /^ix-/.test(d.id) && d.querySelector('[data-ix-ex]') == null && PAGES.some(pg => pg.sections.some(s => 'ix-' + s.id === d.id && s.blocks.some(b => b.kind === 'example')))) { K.folds[d.id] = d.open; if (d.open) K.render(); } }, true);
   function drawExample() {
     const el = document.getElementById('ix-map'); if (!el || !EX.rec) return;
     const p = byAcc[EX.acc]; if (p == null) return;
@@ -631,9 +633,9 @@
   function hub(pg) {
     const top = pg.sections.filter(s => s.place === 'top'), links = pg.sections.filter(s => s.place === 'link');
     return `<div class="page-head"><h2>${esc(pg.title)}</h2><span class="tools"><button type="button" class="btn small" data-ix-print title="Print this page, or save it as a PDF">Download PDF</button></span></div>` +
-      (pg.sub ? `<p class="page-sub">${esc(pg.sub)}</p>` : '') + selLine() + answerHtml(pg) + highlightsHtml(pg) + top.map(s => sectionCard(pg, s)).join('') +
+      (pg.sub ? `<p class="page-sub">${esc(pg.sub)}</p>` : '') + selLine() + answerHtml(pg) + highlightsHtml(pg) + top.map(s => K.fold(`ix-${esc(s.id)}`, esc(s.title), esc(s.question || s.sub || ''), s.blocks.map((b, bi) => blockCard(pg, s, b, bi)).join(''), s.open === true)).join('') +
       (links.length ? `<p class="ix-links">${links.map(s => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)} ›</a>`).join(' · ')}</p>` : '') + keyLine() +
-      pg.groups.map(g => { const ts = g.sections.filter(s => !s.place || s.place === 'tile'); return ts.length ? `<h3 class="sec-label" id="ixg-${esc(g.name.replace(/\W+/g, '-').toLowerCase())}">${esc(g.name)}</h3><div class="tiles">${ts.map(s => sectionTile(pg, s)).join('')}</div>` : ''; }).join('');
+      pg.groups.map(g => { const ts = g.sections.filter(s => !s.place || s.place === 'tile'); return ts.length ? K.fold(`ixg-${esc(g.name.replace(/\W+/g, '-').toLowerCase())}`, esc(g.name), esc(ts.map(s => s.title).join(', ')), `<div class="tiles">${ts.map(s => sectionTile(pg, s)).join('')}</div>`, g.open === true) : ''; }).join('');
   }
   function focus(pg, sid) {
     const i = pg.sections.findIndex(s => s.id === sid), sec = pg.sections[i], prev = pg.sections[i - 1], next = pg.sections[i + 1];

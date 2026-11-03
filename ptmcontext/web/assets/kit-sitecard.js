@@ -235,9 +235,12 @@
     const marked = rs.filter(r => (CL.marks || {})[r.call]);
     const tip = r => [`${r.label}: ${(CL.words || {})[r.call] || r.call}`, r.n ? `${r.n} peptide${+r.n === 1 ? '' : 's'}${r.n_down || r.n_up ? ` (${r.n_down || 0} down, ${r.n_up || 0} up)` : ''}` : '', r.value !== undefined && r.value !== '' ? `log2 ${num(r.value, 'l2')}` : '', r.q ? `q ${num(r.q, 'p')}` : '', r.rule ? `rule: ${String(r.rule).replace(/_/g, ' ')}` : ''].filter(Boolean).join(' · ');
     if (!marked.length) return `<span class="muted" title="${esc('Measured: ' + rs.map(r => r.label).join(', ') + '; no significant change')}">${esc(CL.quiet || 'n.s.')}</span>`;
+    // the row's hover stays short (a sentence, not each measurement: the site card's table has those): the call, then up to
+    // three conditions with their log2, and how many more
+    const brief = (k, xs) => `${(CL.words || {})[k] || k}: ` + xs.slice(0, 3).map(r => r.label + (r.value !== undefined && r.value !== '' ? ` (log2 ${num(r.value, 'l2')})` : '')).join(', ') + (xs.length > 3 ? ` and ${xs.length - 3} more` : '');
     if (compact) {   // one symbol and a count per kind of call; the legend (each measurement) on hover
       const by = new Map(); marked.forEach(r => { if (!by.has(r.call)) by.set(r.call, []); by.get(r.call).push(r); });
-      return [...by.entries()].map(([k, xs]) => `<span class="trend c-${esc(k)}" title="${esc(xs.map(tip).join('\n'))}"><b>${esc(CL.marks[k])}</b>${xs.length > 1 ? xs.length : ''}</span>`).join(' ');
+      return [...by.entries()].map(([k, xs]) => `<span class="trend c-${esc(k)}" title="${esc(brief(k, xs))}"><b>${esc(CL.marks[k])}</b>${xs.length > 1 ? xs.length : ''}</span>`).join(' ');
     }
     return marked.map(r => `<span class="trend c-${esc(r.call)}" title="${esc(tip(r))}"><b>${esc(CL.marks[r.call])}</b>${esc(r.label)}</span>`).join(' ');
   }

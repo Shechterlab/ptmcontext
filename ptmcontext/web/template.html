@@ -11,14 +11,15 @@
   <style>:root { {{THEME}} }</style>
   <script>try { var t = localStorage.getItem('ptmc-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
-<body>
-  <script>/* the narrow header on every page but the Overview, from the first paint (kit.js sets the same class when it routes) */try { var h = location.hash; if (h && !/^#(overview|\?)/.test(h)) document.body.classList.add('slim'); } catch (e) {}</script>
+<body class="{{BODYCLASS}}">
+  <script>/* the narrow header on every page but the Overview, from the first paint (kit.js sets the same class when it routes) */try { var h = location.hash; if (h && !/^#(overview(\?|$)|\?)/.test(h) && !document.body.classList.contains('full-header')) document.body.classList.add('slim'); } catch (e) {}</script>
   <button type="button" class="skip" data-skip>Skip to results</button>
   <header class="hero">
     <div class="hero-art" aria-hidden="true">{{ART}}</div>
     <div class="wrap">
       <div class="brand">
         <h1><a href="#overview" title="Back to the overview"><img class="site-mark" src="{{ICON_HREF}}" alt="" width="52" height="52"><span>{{NAME}}</span></a></h1>
+        <button type="button" class="hero-intro" data-start-show>Show introduction</button>
         <div class="brand-side">{{LAB}}<nav class="brand-links" aria-label="Site and lab links"><details class="links-menu" open><summary>Links</summary><div class="links-list">{{LINKS}}</div></details></nav></div>
       </div>
       <div class="lede">

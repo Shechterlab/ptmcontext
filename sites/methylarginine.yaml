@@ -1136,7 +1136,7 @@ website:                  # the look and words of the website (ptmc web); layout
     statistic_label: true  # each tile names its statistic
     question: "Which proteins are arginine methylated?"
     rows: 7
-    random_maps: {n: 3, title: Randomly selected proteins}   # proteins drawn at random, each end to end, with "Draw three others"
+    random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end (open: true opens it; enabled: false leaves it out)
     starting_points:       # under the sections: proteins to start from, and ready-made selections (the explorer's)
       lists:
         - {title: Most sites, by: marks, n: 6, help: Proteins with the most methylarginine sites}
@@ -1211,14 +1211,14 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: structure_context}
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
-      - name: Methylation enzymes and readers
-        about: "The enzymes that add methyl groups, the proteins that read them, and what happens when the enzymes are blocked."
-        #  counted from the partner classes (website.search.partners), not tested
-        cards: [reader_classes, {analysis: perturbations, wide: true}]
       - name: Interactions and binding
         about: "Whether methylated arginines touch RNA, DNA or other proteins. The Interactions page has the tests."
         #  the Interactions page's tile (website.pages[].overview)
         cards: []
+      - name: Methylation enzymes and readers
+        about: "The enzymes that add methyl groups, the proteins that read them, and what happens when the enzymes are blocked."
+        #  counted from the partner classes (website.search.partners), not tested
+        cards: [reader_classes, {analysis: perturbations, wide: true}]
       - name: Studies and sources
         about: "Which studies and databases reported the sites."
         #  counted, not tested (website.counts)

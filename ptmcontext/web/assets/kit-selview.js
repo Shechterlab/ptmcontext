@@ -79,6 +79,7 @@
       body.innerHTML = `<div class="apart-card"><div class="apart-top"><p class="muted small">Your ${int(m.G.g1.length)} ${esc(W.marks)} against the other ${int(m.G.g2.length)}, pooled. The classes that differ most (q ≤ ${PADJ()}) with their odds ratio and both shares.</p>` +
         K.expBar(['pdf', 'svg', 'png', 'tsv'], 'apexp', 'what sets it apart', 'apart') + '</div>' +
         (m.shown.length ? `<svg class="apart-forest" viewBox="0 0 680 ${f.H}" role="img" aria-label="The classes that differ most">${f.svg}</svg>` : `<p class="muted">No class differs at q ≤ ${PADJ()} with at least 10 ${esc(W.marks)}.</p>`) +
+        K.l2Table('apart', m.diff) +
         `<p><button class="btn small" type="button" data-vs="marks">Every question against the other ${esc(W.marks)} ›</button></p></div>`;
     };
     if (memo.key === selKey() && memo.rows) draw(); else setTimeout(draw, 30);       // after the page is on screen

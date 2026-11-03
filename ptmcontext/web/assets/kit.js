@@ -557,6 +557,24 @@
     if (vsOn()) return head + row + vsLead();
     return head + (K.sel.testable() ? row : against + `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. Compare it with the other ${esc(W.marks)} instead, or see its ${esc(W.marks)} on the Proteins${K.views.sites ? ' and Sites pages' : ' page'}.</p>`);
   }
+  // log2 of the odds ratio or fold: the displayed value stays "2.0×" with an arrow for its direction; the table beside it
+  // sorts by log2 (signed) or by strength (|log2|, either direction). Charts of ORs and folds use a log2 axis centred on 1×.
+  K.l2 = r => { const v = r.eff ?? r.or; return v > 0 && Number.isFinite(v) ? Math.log2(v) : null; };
+  K.l2fmt = r => { const v = K.l2(r); return v == null ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2); };
+  K.dirArrow = r => (r.dir === 'more' ? '<span class="dirarrow more" aria-hidden="true">▲</span> ' : r.dir === 'less' ? '<span class="dirarrow less" aria-hidden="true">▼</span> ' : '');
+  K.l2State = {};
+  K.l2Table = (id, rows, o = {}) => {
+    const st = (K.l2State[id] ||= { k: 'strength', desc: true }), L = r => K.l2(r);
+    const val = { label: r => String(r.label || ''), l2: r => L(r) ?? -99, strength: r => Math.abs(L(r) ?? 0), q: r => r.q ?? 2 };
+    const rs = rows.filter(r => L(r) != null).sort((a, b) => { const x = val[st.k](a), y = val[st.k](b), c = typeof x === 'number' ? x - y : x.localeCompare(y); return st.desc ? -c : c; });
+    if (!rs.length) return '';
+    const btn = (k, t, help) => `<button type="button" class="btn small" data-l2sort="${esc(id)}|${k}" aria-pressed="${st.k === k}" title="${esc(help)}">${esc(t)}${st.k === k ? (st.desc ? ' ▾' : ' ▴') : ''}</button>`;
+    const body = rs.slice(0, 100).map(r => `<tr><td class="wrapok">${esc(r.label)}${r.analysis && A[r.analysis] ? ` <span class="muted">· ${esc(A[r.analysis].title)}</span>` : ''}</td><td class="num">${K.dirArrow(r)}${esc(o.fmt ? o.fmt(r) : fxn(r.eff ?? r.or) + '×')}</td><td class="num">${esc(K.l2fmt(r))}</td><td class="num">${fq(r.q)}</td></tr>`).join('');
+    return `<details class="l2-fold" id="l2-${esc(id)}"${K.foldOpen('l2-' + id, false) ? ' open' : ''}><summary>As a table, sortable by log2(OR) or by strength (${int(rs.length)})</summary>` +
+      `<div class="l2-sort" role="group" aria-label="Sort by"><span class="muted">Sort by</span>${btn('strength', 'Strength |log2 OR|', 'The largest differences first, up or down; click again to reverse')}${btn('l2', 'log2(OR)', 'Most more-often first; click again for most less-often first')}${btn('q', 'q', 'Most certain first')}${btn('label', 'Class', 'By name')}</div>` +
+      `<div class="tbl-card"><table class="tbl"><thead><tr><th>Class</th><th class="num">Effect</th><th class="num" title="log2 of the odds ratio: 0 is no difference, +1 twice as often, −1 half as often">log2(OR)</th><th class="num">q</th></tr></thead><tbody>${body}</tbody></table></div>${rs.length > 100 ? `<p class="muted small">The first 100 of ${int(rs.length)}.</p>` : ''}</details>`;
+  };
+  K.clicks.push(['[data-l2sort]', el => { const [id, k] = el.dataset.l2sort.split('|'), st = K.l2State[id] ||= { k: 'strength', desc: true }; if (st.k === k) st.desc = !st.desc; else { st.k = k; st.desc = k !== 'label' && k !== 'q'; } K.folds['l2-' + id] = true; K.render(); }]);
   // against other marks: who is compared with whom, the strongest differences in a sentence (each with whether it holds
   // under the other two tests), and how the marks were found, as a caveat rather than a finding
   function vsLead() {
@@ -580,13 +598,22 @@
     const prov = ATTRQ.filter(a => a.provenance).flatMap(a => (K.sel.contrast(a.id, 'fisher') || []).filter(r => enough(r) && r.q != null && r.q <= PADJ));
     const pv = prov.sort((x, y) => Math.abs(share1(y) - share2(y)) - Math.abs(share1(x) - share2(x))).slice(0, 3);
     const caveat = pv.length ? `<p class="vs-caveat"><b>How they were found.</b> ${pv.map(r => `<b>${esc(r.label)}</b> <span class="muted">(${esc(inText(A[r.analysis].title))})</span>: ${pcS(share1(r))} of these, against ${pcS(share2(r))} of the others`).join('; ')}. Differences above may reflect which sources report these ${esc(W.marks)}${K.sel.STUDY && S.m !== 'study' ? `: <button type="button" class="linkish" data-m="study">compare within studies</button>, where each ${esc(W.mark)} is compared only with ${esc(W.marks)} reported by the same sources.` : S.m === 'study' ? '; the comparison above is within studies, so they do not explain it.' : '.'}</p>` : '';
-    return who + `<p class="vs-say">${say}</p>` + caveat + `<p class="muted small">Exploratory: ${esc(W.marks)} of one protein are not independent, and nothing is adjusted for the other selections tried. Each ${esc(W.mark)} row shows the selection’s share (filled) and ${esc(vsName())}’ (hollow).</p>`;
+    const vsRows = all.filter(r => r.q != null && r.q <= PADJ && (r.dir === 'more' || r.dir === 'less'));
+    return who + `<p class="vs-say">${say}</p>` + K.l2Table('vs', vsRows.map(r => ({ ...r, label: r.label }))) + caveat + `<p class="muted small">Exploratory: ${esc(W.marks)} of one protein are not independent, and nothing is adjusted for the other selections tried. Each ${esc(W.mark)} row shows the selection’s share (filled) and ${esc(vsName())}’ (hollow).</p>`;
   }
   // on a first visit, one line on the rows: a class row selects, a title opens (dismissed for good with its ×)
   const HINT_KEY = 'ptmc-pick-hint';
   const hintSeen = () => { try { return localStorage.getItem(HINT_KEY) === '1'; } catch (e) { return false; } };
-  const pickHint = () => (hintSeen() || vsOn() ? '' : `<p class="pick-hint" role="note"><b>Click a row to select it.</b> A row in a tile selects its ${esc(W.marks)} as a filter and stays here. A tile's title or <i>details ›</i> opens the question. <button type="button" class="linkish" data-pick-hint aria-label="Dismiss this hint">Got it</button></p>`);
+  const pickHint = () => (hintSeen() || vsOn() ? '' : `<p class="pick-hint" role="note"><b>Click a row to select its ${esc(W.marks)};</b> a tile's title opens the question. <button type="button" class="linkish" data-pick-hint aria-label="Dismiss this hint">Got it</button></p>`);
+  (K.afterRender ||= []).push(() => { if (document.querySelector('.pick-hint')) { try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* storage blocked: shown again next visit */ } } });   // shown once
   K.clicks.push(['[data-pick-hint]', el => { try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* storage blocked: this visit only */ } el.closest('.pick-hint').remove(); }]);
+  K.ovOpen = new Set();                  // the later Overview sections the reader opened on this visit
+  K.clicks.push(['[data-ov-open]', el => { K.ovOpen.add(el.dataset.ovOpen); K.render(); }]);
+  (K.afterRender ||= []).push(() => {    // a later section draws when it comes within a screen of the view
+    const els = [...document.querySelectorAll('[data-ov-lazy]')]; if (!els.length || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(es => { const e = es.find(x => x.isIntersecting && x.boundingClientRect.top > 0); if (!e) return; io.disconnect(); K.ovOpen.add(e.target.dataset.ovLazy); K.render(); }, { rootMargin: '0px 0px 300px 0px' });
+    els.forEach(el => io.observe(el));
+  });
   function overview() {
     REG = [];
     if (S.arg && A[S.arg]?.page) return focus(S.arg);
@@ -608,13 +635,22 @@
       const cs = x.cards, k = x.show > 0 && !selOn() && cs.length > x.show ? x.show : cs.length;
       return { main: cs.slice(0, k).map(tile).join('') + more(x.name), rest: cs.slice(k).map(tile).join(''), n: cs.length - k };
     };
-    const sectionHtml = x => {
+    // the first sections are drawn in full; later ones are a heading with a line on what is in them, drawn when the reader
+    // opens them or scrolls to them (a selection draws them all; website.overview.draw_first sets how many)
+    const FIRST = D.overview?.draw_first ?? 2, lazyOn = !selOn() && !vsOn() && !S.arg && FIRST >= 0;
+    const lazyHtml = x => {
+      const n = x.cards.length + (K.ovTiles || []).filter(t => t.section === x.name).length, id = esc(x.name.replace(/\W+/g, '-').toLowerCase());
+      return `<section class="ov-sec ov-lazy" data-ov-lazy="${esc(x.name)}" aria-labelledby="sec-${id}"><header class="ov-sec-head"><h3 class="sec-label" id="sec-${id}">${esc(x.name)}</h3>` +
+        `<p class="sec-about">${x.about ? esc(x.about) + ' ' : ''}<button type="button" class="linkish" data-ov-open="${esc(x.name)}">Show ${n === 1 ? 'the question' : 'the ' + n + ' questions'}</button></p></header></section>`;
+    };
+    const sectionHtml = (x, i) => {
+      if (lazyOn && i >= FIRST && !K.ovOpen.has(x.name)) return lazyHtml(x);
       const b = secBody(x); if (!b.main && !b.rest) return '';
       const id = esc(x.name.replace(/\W+/g, '-').toLowerCase());
       return `<section class="ov-sec${x.caveat ? ' caveat' : ''}" aria-labelledby="sec-${id}"><header class="ov-sec-head"><h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${id}">${esc(head(x))}</h3>${x.about && !vsOn() ? `<p class="sec-about">${esc(x.about)}</p>` : ''}</header>` +
         `<div class="tiles">${b.main}</div>` + (b.n ? `<details class="sec-more"><summary>${esc(x.more || 'More in ' + x.name)} (${b.n})</summary><div class="tiles">${b.rest}</div></details>` : '') + '</section>';
     };
-    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + lead() + pickHint() + (selOn() && !vsOn() ? selBlocks(K.selLead) : '') + secList().map(sectionHtml).join('') +
+    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + lead() + pickHint() + (selOn() && !vsOn() ? selBlocks(K.selLead) : '') + secList().map((x, i) => sectionHtml(x, i)).join('') +
       (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
   // the tiles of questions that hold for any selection (a module's counts), for a selection too small to test
@@ -675,7 +711,7 @@
   K.sections.overview = () => [
     ...(selOn() ? [['view', vsOn() ? 'Your selection, against ' + vsName() : 'Your selection', 1]] : []),
     ...secList().flatMap(x => [[`sec-${x.name.replace(/\W+/g, '-').toLowerCase()}`, x.name, 0],
-      ...x.cards.map(c => (S.arg ? [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, link('overview', c.analysis)] : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1]))]),
+      ...(!selOn() && !S.arg && (D.overview?.draw_first ?? 2) >= 0 && secList().indexOf(x) >= (D.overview?.draw_first ?? 2) && !K.ovOpen.has(x.name) ? [] : x.cards).map(c => (S.arg ? [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, link('overview', c.analysis)] : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1]))]),
     ...(selOn() || S.arg ? [] : (K.overviewSections || []).flatMap(f => f()))];
   // All tests: every question, each opening its own tests
   K.sections.statistics = () => [['view', 'All tests', 1, link('statistics')], ...secList().filter(x => !x.caveat && x.name !== 'About the sites').flatMap(x => [[`stat-${x.name}`, x.name, 0],
@@ -705,12 +741,12 @@
   const COLS = [
     ['analysis', 'Question', r => r.title, false], ['label', 'Class or set', r => r.label, false], ['method', 'Test', r => methodName(r), false],
     ['a', `${cap(W.marked)}: in class / all`, r => r.a, true], ['c', 'Others: in class / all', r => r.c, true],
-    ['or', 'Effect (95% CI)', r => r.eff ?? -1, true], ['q', 'q', r => r.q ?? 2, true], ['dir', 'Reading', r => r.dir, false], ['strata', 'Strata', r => r.strata ?? -1, true],
+    ['or', 'Effect (95% CI)', r => r.eff ?? -1, true], ['log2', 'log2(OR)', r => K.l2(r) ?? -99, true], ['q', 'q', r => r.q ?? 2, true], ['dir', 'Reading', r => r.dir, false], ['strata', 'Strata', r => r.strata ?? -1, true],
   ];
   function shownStatistics() {
     // a protein-set question with no abundance repeat has its hypergeometric rows under either test
     const rows = D.rows.filter(r => (!S.a || r.analysis === S.a) && (S.m === 'both' || r.method === S.m || (r.method === 'enricher' && (S.m === 'fisher' || !A[r.analysis]?.stratified))) && rowHit(r));
-    const col = COLS.find(c => c[0] === S.sort) || COLS[6];
+    const col = S.sort === 'strength' ? ['strength', '', r => Math.abs(K.l2(r) ?? 0), true] : COLS.find(c => c[0] === S.sort) || COLS.find(c => c[0] === 'q');
     rows.sort((x, y) => { const a = col[2](x), b = col[2](y); const c = typeof a === 'number' ? a - b : String(a).localeCompare(String(b)); return S.desc ? -c : c; });
     return rows;
   }
@@ -722,11 +758,12 @@
       `<div class="filters"><label>Question <select id="f-a">${opts.map(([v, t]) => `<option value="${esc(v)}"${v === S.a ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>` +
       `<label>Test <select id="f-m">${[['mantel_haenszel', 'Within each protein (or abundance decile)'], ['fisher', 'Pooled'], ['both', 'Both']].map(([v, t]) => `<option value="${v}"${v === S.m ? ' selected' : ''}>${t}</option>`).join('')}</select></label>` +
       `<label>Class <input id="f-sq" type="search" value="${esc(S.sq)}" placeholder="a class or set"></label>` +
+      `<button type="button" class="btn small" data-sort-strength aria-pressed="${S.sort === 'strength'}" title="The largest differences first, up or down (|log2 OR|); click again to reverse">Sort by strength${S.sort === 'strength' ? (S.desc ? ' ▾' : ' ▴') : ''}</button>` +
       `<span class="muted">${int(rows.length)} ${rows.length === 1 ? 'test' : 'tests'}${selOn() ? ' (the whole dataset: the Overview tests your selection)' : ''}</span></div>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr>${COLS.map(([k, t, , n]) => `<th class="${n ? 'num' : ''}" data-sort="${k}"${S.sort === k ? ` aria-sort="${S.desc ? 'descending' : 'ascending'}"` : ''}${GLOSS[t.toLowerCase()] ? ` title="${esc(GLOSS[t.toLowerCase()])}"` : k === 'or' ? ` title="${esc(GLOSS['odds ratio'])}"` : ''}>${esc(t)}${S.sort === k ? (S.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
       rows.slice(0, S.nStat ||= 200).map(r => `<tr data-i="${r.i}"><td>${esc(r.title)}</td><td class="wrapok" title="${esc(r.help)}">${esc(r.label)}</td><td>${esc(methodName(r))}</td>` +
         `<td class="num">${int(r.a)} / ${int(r.a + r.b)}</td><td class="num">${int(r.c)} / ${int(r.c + r.d)}</td>` +
-        `<td class="num">${esc(effText(r))}${r.lo != null ? ` <span class="muted">(${fxn(r.lo)} to ${fxn(r.hi)})</span>` : ''}</td><td class="num">${fq(r.q)}</td>` +
+        `<td class="num">${K.dirArrow(r)}${esc(effText(r))}${r.lo != null ? ` <span class="muted">(${fxn(r.lo)} to ${fxn(r.hi)})</span>` : ''}</td><td class="num">${esc(K.l2fmt(r))}</td><td class="num">${fq(r.q)}</td>` +
         `<td><span class="dir ${r.dir}">${DIR_WORDS[r.dir]}</span></td><td class="num">${r.strata != null ? int(r.strata) : ''}</td></tr>`).join('') +
       `</tbody></table></div>` +
       (rows.length > S.nStat ? `<p><button class="linkish" type="button" data-stat-more>Show ${int(Math.min(200, rows.length - S.nStat))} more of ${int(rows.length)}</button> <span class="muted">(the download has every row)</span></p>` : '');
@@ -1190,7 +1227,8 @@
     const mod = K.views[S.view];
     $('#view').innerHTML = selLine() + (mod ? mod.render(S.arg) : S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview());
     document.title = S.view === 'overview' ? D.site.name : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`;   // the page first: "FUS R216 · <site>"
-    document.body.classList.toggle('slim', S.view !== 'overview');      // the header band in full on the Overview only
+    document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg) && D.header?.compact !== false);      // the header band in full on the Overview only (website.header.compact)
+    document.body.classList.remove('bar-hidden');
     pageHint();
     if (mod?.after) mod.after(S.arg);
     if (S.view === 'method' && S.arg) document.getElementById('m-' + S.arg)?.scrollIntoView({ block: 'start' });
@@ -1198,6 +1236,20 @@
     (K.afterRender || []).forEach(f => f());         // the modules' own touches after a page is drawn (kit-search.js)
     linkPass();
   }
+  // ---- folds: open or closed for this visit only (nothing is remembered, and the address does not carry them), unless the
+  // reader saves a selection: its open folds are saved with it and come back when it is opened (kit-select.js) ----------
+  K.folds = {};                                  // fold id -> open, for the folds of this page
+  let foldKey = '', foldPending = null;
+  K.foldOpen = (id, dflt) => (id in K.folds ? K.folds[id] : !!dflt);
+  K.fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${K.foldOpen(id, open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum || ''}</span></summary><div class="pfold-body">${body}</div></details>`;
+  K.foldsForSave = () => ({ ...K.folds });
+  K.restoreFolds = f => { foldPending = f && Object.keys(f).length ? { ...f } : null; };
+  document.addEventListener('click', e => { const d = e.target.closest?.('summary')?.parentElement; if (d && d.tagName === 'DETAILS' && d.id) setTimeout(() => { K.folds[d.id] = d.open; }, 0); });
+  (K.afterRender ||= []).push(() => {
+    const key = S.view + '/' + (S.arg || '');
+    if (foldPending) { K.folds = foldPending; foldPending = null; foldKey = key; } else if (key !== foldKey) { K.folds = {}; foldKey = key; }
+    Object.entries(K.folds).forEach(([id, on]) => { const d = document.getElementById(id); if (d && d.tagName === 'DETAILS' && d.open !== on) d.open = on; });
+  });
   // ---- links and new tabs: one pass after each render, and after content that arrives later --------------------------
   // Tiles and table rows carry their page (data-href) so Ctrl/Cmd-click and middle-click open it in a new tab; a tile's
   // title is a real link. Every external link opens in a new tab with an icon (CSS) and hidden text; every figure's
@@ -1273,7 +1325,7 @@
     for (const [sel, fn] of K.clicks) { const el = e.target.closest(sel); if (el) { fn(el, e); return; } }
     const tl = e.target.closest('.tile[data-tile]');
     if (tl && !e.target.closest('a,button')) { go('overview', { arg: tl.dataset.tile }); return; }
-    const t = e.target.closest('[data-go],[data-try],[data-m],[data-vs],th[data-sort],#dl,#dl-cff,#copy-cite,#how,[data-all],[data-exp],[data-theme-choice],[data-stat-more],[data-skip]');
+    const t = e.target.closest('[data-go],[data-try],[data-m],[data-vs],th[data-sort],[data-sort-strength],#dl,#dl-cff,#copy-cite,#how,[data-all],[data-exp],[data-theme-choice],[data-stat-more],[data-skip]');
     if (!t) return;
     if (t.tagName === 'A') { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return; e.preventDefault(); }   // a modified click is the browser's: a new tab
     if (t.dataset.go) { const [v, ...rest] = t.dataset.go.split('/'); go(v, { arg: rest.join('/') }); }
@@ -1282,6 +1334,7 @@
     else if (t.dataset.vs) { S.vs = t.dataset.vs; if (S.vs === 'residues' && S.m === 'study') S.m = 'mantel_haenszel'; if (S.vs === 'residues' && A[S.arg]?.kind === 'attribute') S.arg = ''; writeHash(true); render(); }
     else if ('statMore' in t.dataset) { S.nStat += 200; render(); }
     else if ('skip' in t.dataset) { const v = $('#view'); v.setAttribute('tabindex', '-1'); v.focus(); v.scrollIntoView({ block: 'start' }); }
+    else if ('sortStrength' in t.dataset) { S.desc = S.sort === 'strength' ? !S.desc : true; S.sort = 'strength'; S.nStat = 200; writeHash(false); render(); }
     else if (t.dataset.sort) { S.desc = S.sort === t.dataset.sort ? !S.desc : t.dataset.sort !== 'q'; S.sort = t.dataset.sort; S.nStat = 200; writeHash(false); render(); }
     else if (t.id === 'dl') download(`${D.site.id}_statistics${S.a ? '_' + S.a : ''}.tsv`, statisticsTsv(shownStatistics()), 'text/tab-separated-values');
     else if (t.dataset.exp) exportCard(t.dataset.exp, t.dataset.aid, t);
@@ -1353,12 +1406,23 @@
     if (barH != null && h !== barH && rail && document.body.classList.contains('rail-pinned') && rail.scrollTop > 0) rail.scrollTop += h - barH;
     barH = h; document.documentElement.style.setProperty('--toolbar-h', `${h}px`);
   };
+  // a phone: the search, selection line and tabs slide away on the way down and come back on the way up (a transform: no shift)
+  { let lastY = scrollY;
+    addEventListener('scroll', () => {
+      const y = scrollY, dy = y - lastY, tb = document.querySelector('.toolbar');
+      if (innerWidth > 700 || !tb) { document.body.classList.remove('bar-hidden'); lastY = y; return; }
+      if (Math.abs(dy) < 6) return;
+      lastY = y;
+      const busy = tb.contains(document.activeElement) && /input|textarea|select/i.test(document.activeElement.tagName);
+      document.body.classList.toggle('bar-hidden', dy > 0 && y > tb.offsetHeight && !busy);
+    }, { passive: true }); }
   try { new ResizeObserver(toolbarH).observe(document.querySelector('.toolbar')); } catch (e) { addEventListener('resize', toolbarH); }
   let themed = false;
   // the figures take their colours when drawn: draw again when the system theme changes under "auto"
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.dataset.theme) render(); }); } catch (err) { /* old browsers */ }
   // the footer: licences and privacy, on every page (the Method page has the full text)
-  $('#credit').innerHTML = `${esc(D.site.name)} · built with <a href="${esc(D.kit.url || '#method/made')}">ptmcontext</a> ${esc(D.kit.version)}` +
+  const upd = D.built || D.run?.written;      // when `ptmc web` built this site (else when the run was written)
+  $('#credit').innerHTML = `${esc(D.site.name)}${upd ? ` · updated <time datetime="${esc(upd)}">${esc(hdate(upd))}</time>` : ''} · built with <a href="${esc(D.kit.url || '#method/made')}">ptmcontext</a> ${esc(D.kit.version)}${D.kit.commit ? ` (${esc(shortCommit(D.kit.commit))})` : ''}` +
     (D.dataset ? ` · ${esc(D.dataset.label || 'dataset')} ${esc(D.dataset.version)}${D.dataset.doi ? `, <a href="https://doi.org/${esc(D.dataset.doi)}">doi:${esc(D.dataset.doi)}</a>` : ''}` : '') +
     ` · code: ${esc(hlicence(D.kit.licence || 'MIT'))}${CIT.licence ? ` · data: ${esc(hlicence(CIT.licence))}` : ''}` +
     ` · <a href="#method/privacy">no cookies, no tracking; nothing you search leaves your browser</a>`;

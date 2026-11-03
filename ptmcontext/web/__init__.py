@@ -179,6 +179,12 @@ def reporters(site: dict, folder: Path) -> dict | None:
             'items': [[v, (spec.get('values') or {}).get(v, v), ids.get(v, ''), n] for v, n in items if v]}
 
 
+def _now() -> str:
+    """The time of this `ptmc web` run, in UTC (the footer's "Updated")."""
+    import datetime as dt
+    return dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
 def human_date(iso: str) -> str:
     """2026-11-01 -> 1 November 2026."""
     import datetime as dt
@@ -303,6 +309,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'protein_links': json.loads((Path(__file__).resolve().parents[1] / 'config' / 'protein_links.json').read_text())['links'],
         'tracks': _tracks(folder),
         'profile_uniprot': profile.data.get('uniprot_features', []),
+        # the header (website.header.compact: false keeps the full band on every page) and when this build was made, for the footer
+        'header': web.get('header') or {}, 'built': _now(),
         'overview': web.get('overview'), 'filters': web.get('filters'), 'stats': web.get('stats'),
         'sites_view': web.get('sites'), 'proteins_view': web.get('proteins'), 'selection_cards': web.get('selection_cards') or {}, 'protein_view': web.get('protein'), 'compare': web.get('compare'), 'legacy_links': web.get('legacy_links') or {}, 'tabs': web.get('tabs') or {}, 'search_aliases': web.get('search_aliases') or {}, 'legacy_params': web.get('legacy_params') or {}, 'dataset': web.get('dataset'), 'downloads': web.get('downloads') or [], 'download_terms': web.get('download_terms', ''),
         # the maps of the cell as one question (kit-cell.js) and the parts of the kit's drawings; protein-set questions
@@ -898,7 +906,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         text = _asset('template.html').read_text()
         for key, value in {'{{NAME}}': html.escape(web['name']), '{{TAGLINE}}': html.escape(web.get('tagline', '')),
                            '{{ICON_HREF}}': icon_href, '{{THEME}}': theme, '{{ART}}': art, '{{LAB}}': lab,
-                           '{{LINKS}}': links, '{{CITE}}': cite_html, '{{VERSION}}': version,
+                           '{{LINKS}}': links, '{{CITE}}': cite_html, '{{BODYCLASS}}': '' if (web.get('header') or {}).get('compact', True) else 'full-header', '{{VERSION}}': version,
                            '{{FONTS}}': (f'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
                                          f'<link rel="stylesheet" href="{html.escape(fonts["stylesheet"])}">') if fonts.get('stylesheet') else '',
                            '<link rel="stylesheet" href="assets/kit.css">': css, '<script src="assets/kit.js"></script>': js,
@@ -1137,7 +1145,7 @@ def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None,
 <main class="wrap" id="sites">
 <h2 class="vh">The sites</h2>
 <div class="sites">{''.join(cards)}</div></main>
-<footer class="wrap land-foot"><p>Built with {kit_link} {html.escape(kit['version'])}, {html.escape(_licence_words(kit.get('licence', 'MIT')))} licence. Each site's data carry the licence its page states.</p>
+<footer class="wrap land-foot"><p>Updated {html.escape(human_date(_now()))}. Built with {kit_link} {html.escape(kit['version'])}, {html.escape(_licence_words(kit.get('licence', 'MIT')))} licence. Each site's data carry the licence its page states.</p>
 <p>No cookies, no tracking: every test runs in your browser, and nothing you search or select leaves it.</p></footer></body></html>
 """
     (out / 'index.html').write_text(page)

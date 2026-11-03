@@ -53,7 +53,7 @@ website:
     findings: [{analysis: disorder, class: disordered}, {analysis: motif, class: proline_directed}, {analysis: structure_context, class: domain_folded}]
     protein: SEC16
   overview:
-    random_maps: {n: 3, title: Randomly selected proteins}   # proteins drawn at random, each end to end, with "Draw three others"
+    random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end (open: true opens it; enabled: false leaves it out)
   tabs:                    # the top tabs' words (the addresses #idrs, #statistics and #method stay)
     idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of phosphorylated proteins, and the phosphosites in them."}
     statistics: {label: All tests, hint: "Every test on the site, one row per class, with odds ratio, interval and q value."}
