@@ -91,7 +91,7 @@
   function mapsHtml(p) {
     if (!K.cell || !K.sel.data()) return '';
     const ms = K.cell.maps(p); if (!ms) return '';
-    return `<h4 class="sub-h">Where the maps place it</h4><p class="sub">Where the maps of the cell place ${esc(gene(p))}. A part of the drawings is coloured when a map places it there.</p>` +
+    return `<h4 class="sub-h">Cell maps</h4><p class="sub">A part of the drawing is coloured when a map places ${esc(gene(p))} there.</p>` +
       `<div class="tbl-wrap"><table class="pc-maps"><tbody>${ms.map(m => `<tr><th scope="row">${esc(m.name)}<br><span class="muted small">${esc([m.method, m.cells].filter(Boolean).join(', '))}</span></th>` +
         `<td>${m.sets.length ? esc(m.sets.join(' · ')) : m.placed ? '<span class="muted">placed, in none of its compartments</span>' : '<span class="muted">not placed by this map</span>'}</td></tr>`).join('')}</tbody></table></div>` + K.cell.drawings(p);
   }
@@ -168,7 +168,7 @@
     }
     const html = `<p class="sub">${esc(cfg.sub || '')}</p>${cfg.url ? `<p class="actions">${ext(cfg.url.replace('{gene}', encodeURIComponent(g)), 'Source ↗')}</p>` : ''}` +
       `<div class="pc-grid"><section class="pc-sec"><h4>Dependency in CRISPR knockout screens</h4>${dep}</section>` +
-      (ch.length ? `<section class="pc-sec"><h4>Changes at its ${esc(W.residues)}</h4>${chg}${cfg.changes_note ? `<p class="note small">${esc(cfg.changes_note)}</p>` : ''}</section>` : '') + '</div>' +
+      (ch.length ? `<section class="pc-sec"><h4>Changes at ${esc(W.residues)}</h4>${chg}${cfg.changes_note ? `<p class="note small">${esc(cfg.changes_note)}</p>` : ''}</section>` : '') + '</div>' +
       (cfg.note ? `<p class="note small">${esc(cfg.note)}</p>` : '');
     const first = ch[0], sum = [r ? (/^true$/i.test(r.common_essential || '') ? 'commonly essential' : `${int(num(r.dependent))} of ${int(num(r.lines))} lines depend on it`) : 'not screened',
       ch.length ? `${nSites[0] ? plural(nSites[0], 'site') : 'no site'} changed in ${(first.unit || ['', 'records'])[1]}` : ''].filter(Boolean).join(' · ');
@@ -292,7 +292,7 @@
   // ---- the folds -----------------------------------------------------------------------------------------------------
   const CARDS = [
     ['location', 'p-cond', 'Location and condensates', locationBuild], ['dependency', 'p-depmap', 'Cancer cell lines and tumours', dependencyBuild],
-    ['perturbations', 'p-pert', 'PRMT inhibitors, knockouts and knockdowns', perturbationsBuild], ['experiments', 'p-exp', 'Experiments on its methylation', experimentsBuild],
+    ['perturbations', 'p-pert', 'PRMT inhibitors, knockouts and knockdowns', perturbationsBuild], ['experiments', 'p-exp', 'Experiments', experimentsBuild],
     ['clustering', 'p-cluster', 'Clustering', clusteringBuild], ['other_ptms', 'p-ptm', 'Other PTMs', ptmsBuild],
   ].filter(([k]) => PC[k]);
   const BUILD = { live: liveBuild };

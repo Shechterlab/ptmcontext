@@ -835,7 +835,7 @@
     const shown = T.pdbAll ? list : list.slice(0, 10);
     const ids = shown.map(x => x.e.id).filter(id => !(UP(id) in META)); if (ids.length) meta(ids).then(() => { if (document.getElementById('s3d-pdb-list')) { paintPdbList(); paintSrc(); } });
     const base = T.acc.split('-')[0], own = T.mol?.mode === 'pdb' && !T.mol.pdb.pred && !T.mol.pdb.homolog ? T.mol.pdb.e.id : null;
-    box.innerHTML = `<p class="sub">${int(list.length)} PDB entr${list.length === 1 ? 'y maps' : 'ies map'} to ${esc(base)}${res.modified.size ? `; <b>${res.modified.size}</b> model a ${esc(NOUN)}` : ''}${te.size ? `; the site’s tables name ${int(te.size)} with a contact at a ${esc(NOUN)}` : ''}.${res.failed ? ' The PDBe list did not answer, so only the entries named elsewhere are shown.' : ''}</p>` +
+    box.innerHTML = `<p class="sub">${int(list.length)} PDB entr${list.length === 1 ? 'y maps' : 'ies map'} to ${esc(base)}${res.modified.size ? `; <b>${res.modified.size}</b> model a ${esc(NOUN)}` : ''}${te.size ? `; ${int(te.size)} have a contact at a ${esc(NOUN)}` : ''}.${res.failed ? ' The PDBe list did not answer, so only the entries named elsewhere are shown.' : ''}</p>` +
       `<div class="tbl-card"><table class="tbl s3d-tbl"><thead><tr><th>Entry</th><th>Method</th><th class="num">Resolution</th><th>Chain · residues</th><th>${esc(cap(NOUNS))}</th><th><span class="sr-only">View</span></th></tr></thead><tbody>` +
       shown.map(({ e, n, mod, at }) => {
         const en = META[UP(e.id)], parts = en ? partnersText(en, base) : [], na = res.na.get(e.id);

@@ -259,8 +259,8 @@
         const specific = mine.filter(s => !(kids[s] || []).some(x => has.has(x))).sort((x, y) => labelOf(aid, x).localeCompare(labelOf(aid, y)));
         const up = mine.filter(s => !specific.includes(s) && s !== a.root && enriched(siteRow(aid, s))).sort((x, y) => (siteRow(aid, x).q - siteRow(aid, y).q));
         const ns = ontologyOf(aid)?.nouns || 'sets';
-        return `<div class="kind">${title}<p class="muted small">Its most specific ${esc(ns)}:</p><ul class="kind-list">${specific.map(s => `<li>${pick(aid, s)} ${idLink(aid, s)}${enriched(siteRow(aid, s)) ? ' <span class="qv-tag">enriched</span>' : ''}</li>`).join('')}</ul>` +
-          (up.length ? `<p class="note">Enriched ${esc(ns)} that include ${esc(gene)}, above its own: ${up.slice(0, 10).map(s => pick(aid, s)).join(', ')}${up.length > 10 ? ` and ${int(up.length - 10)} more` : ''}.</p>` : '') + '</div>';
+        return `<div class="kind">${title}<p class="muted small">Most specific ${esc(ns)}:</p><ul class="kind-list">${specific.map(s => `<li>${pick(aid, s)} ${idLink(aid, s)}${enriched(siteRow(aid, s)) ? ' <span class="qv-tag">enriched</span>' : ''}</li>`).join('')}</ul>` +
+          (up.length ? `<p class="note">Enriched broader ${esc(ns)} that include ${esc(gene)}: ${up.slice(0, 10).map(s => pick(aid, s)).join(', ')}${up.length > 10 ? ` and ${int(up.length - 10)} more` : ''}.</p>` : '') + '</div>';
       }
       if (a.gathers) {                                 // families: each with how many of its tested member sets name the protein
         const mem = membersOf(aid), m = mem && A[mem.analysis];
@@ -276,7 +276,7 @@
         (enr.length ? `<ul class="kind-list">${(all ? enr : enr.slice(0, 10)).map(s => `<li>${pick(aid, s)} ${idLink(aid, s)} ${resText(siteRow(aid, s))}</li>`).join('')}</ul>` +
           (enr.length > 10 ? `<button class="linkish" type="button" data-qallm="${esc(key)}">${all ? 'Fewer' : `All ${int(enr.length)}`}</button>` : '') : '') + '</div>';
     }).join('');
-    return `<div class="kinds qv-psets">${blocks}</div><p class="note">Each result is the site’s own, over all ${esc(W.marked)} proteins against the background, not this protein’s. A name selects the ${esc(W.marks)} on its proteins, and ↗ opens the set’s page.</p>`;
+    return `<div class="kinds qv-psets">${blocks}</div><p class="note">Each result is for all ${esc(W.marked)} proteins against the background, not for this protein. A name selects the ${esc(W.marks)} on its proteins, and ↗ opens the set’s page.</p>`;
   }
   // a card may take an id of its own (the explorer's p-dis), and its module's live parts before its sets (K.setsLive: kit-pcards.js)
   const cardId = (c, k) => c.id || `p-sets-${k}`;

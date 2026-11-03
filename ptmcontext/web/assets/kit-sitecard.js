@@ -386,7 +386,7 @@
   // the Evidence row: the measurements, the site's tables, the window ±15 and every source record
   function evidenceRow(c) {
     const out = siteTables(c) + callsTable(c) + (c.window31 ? `<p><b>Window ±15:</b> <span class="mono win">${esc(c.window31)}</span></p>` : '') + sourcesBlock(c);
-    return out || '<p class="muted">No further evidence in this site’s tables.</p>';
+    return out || '<p class="muted">No further evidence.</p>';
   }
 
   // ---- how to cite a protein's sites -------------------------------------------------------------------------------

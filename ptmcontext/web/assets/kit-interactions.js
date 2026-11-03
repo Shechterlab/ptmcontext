@@ -712,7 +712,7 @@
   function tsvOf(x) {
     const { pg, sec, b, bi } = x, m = st(bkey(pg, sec, bi), { m: b.method || 'mantel_haenszel' }).m;
     const body = b.kind === 'forest' ? forestTsv(b, m) : b.kind === 'lines' ? linesTsv(b, m) : b.kind === 'sets' ? setsTsv(b) : b.kind === 'shares' ? sharesTsv(b) : b.kind === 'combinations' ? combinationsTsv(b) : b.kind === 'matrix' ? matrixTsv(b, m) : b.kind === 'table' ? tableTsv(b) : b.kind === 'bars' ? barsTsv(b) : b.kind === 'pairs' ? pairsTsv(b) : b.kind === 'histogram' ? histTsv(b) : '';
-    const src = b.table ? ` From ${D.inputs?.[(D.run.inputs && Object.keys(D.run.inputs).find(k => k === b.table)) || ''] ? '' : 'the site’s table ' + b.table}.` : '';
+    const src = b.table ? ` From ${D.inputs?.[(D.run.inputs && Object.keys(D.run.inputs).find(k => k === b.table)) || ''] ? '' : 'table ' + b.table}.` : '';
     return K.preamble(`${pg.tab}: ${b.title || sec.title}`, `${sec.question || sec.title}${src}${b.kind === 'forest' || b.kind === 'lines' ? ` ${METHOD[m]}.` : ''}`) + body;
   }
   const fileName = x => `${D.site.id}_${x.pg.id}_${x.sec.id}${x.bi && x.bi !== '0' ? '_' + x.bi : ''}${selOn() ? '_selection' : ''}`;

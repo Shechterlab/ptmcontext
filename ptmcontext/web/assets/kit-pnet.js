@@ -245,7 +245,7 @@
   function ixFold(p, rec, fold) {
     if (!IXP) return '';
     const g = p.gene || p.acc;
-    return fold('p-ix', 'Protein interactions', 'STRING, live; drag the nodes', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, drawn as a network you can drag, coloured by whether they have ${esc(W.marks)} in this site. Matched to the site’s proteins by accession. The Table view lists the same partners and is the keyboard route.</p>` +
+    return fold('p-ix', 'Protein interactions', 'STRING, live; drag the nodes', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, drawn as a network you can drag, coloured by whether they have ${esc(W.marks)} in this dataset. Matched by accession. The Table view lists the same partners and is the keyboard route.</p>` +
       `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${optionsHtml()}<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>` +
       `<div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` + ifaceHtml(p, rec), true);
   }
@@ -256,7 +256,7 @@
   function ifaceHtml(p, rec) {
     const s3 = rec?.s3d; if (!s3 || !(SD.contacts || SD.predicted)) return '';
     const obs = (s3.c || []).filter(r => r[1] === 'protein' || r[1] === 'self'), pred = s3.p || [], M = W.marks, m1 = W.mark;
-    if (!obs.length && !pred.length) return `<div class="pn-iface"><h4>Who binds its ${esc(M)}</h4><p class="muted">The site’s structure tables name no protein at an interface with a ${esc(m1)} of ${esc(p.gene || p.acc)}.</p></div>`;
+    if (!obs.length && !pred.length) return `<div class="pn-iface"><h4>Proteins at ${esc(M)} interfaces</h4><p class="muted">No protein at an interface with a ${esc(m1)} of ${esc(p.gene || p.acc)} in the structure tables.</p></div>`;
     const by = new Map();      // partner -> { name, acc, sites: Map(pos -> { obs: ids, pred: score }) }
     const put = (g, a, pos, f) => { const k = a || g; if (!k) return; const o = by.get(k) || { g, a, sites: new Map() }; const s = o.sites.get(pos) || {}; f(s); o.sites.set(pos, s); by.set(k, o); };
     obs.forEach(([pos, kind, ids, g, a]) => put(kind === 'self' ? '' : g, kind === 'self' ? p.acc : a, pos, s => { s.obs = ids || []; if (kind === 'self') s.self = true; }));
@@ -265,8 +265,8 @@
     const who = parts.map(o => `<li>${o.self ? '<b>another copy of this protein</b>' : partnerName(o.g, o.a)} <span class="muted small">at</span> ${[...o.sites.entries()].sort((x, y) => x[0] - y[0]).map(([pos, s]) => siteBtn(p.acc, pos) + (s.obs ? '' : ' <span class="muted small">(predicted)</span>')).join(' ')}</li>`).join('');
     const obsLines = [...new Map(obs.map(r => [r[0], r])).keys()].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} contacts ` + obs.filter(r => r[0] === pos).map(r => `${r[1] === 'self' ? '<b>another copy</b>' : partnerName(r[3], r[4])} <span class="muted small">(${(r[2] || []).slice(0, 4).map(rcsb).join(', ')}${(r[2] || []).length > 4 ? ` +${r[2].length - 4}` : ''})</span>`).join('; ') + '</li>').join('');
     const predLines = [...new Set(pred.map(r => r[0]))].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} ` + pred.filter(r => r[0] === pos).slice(0, 6).map(r => `${partnerName(r[1], r[2])}${r[5] != null ? ` <span class="muted small">pDockQ ${(+r[5]).toFixed(2)}</span>` : ''}`).join(', ') + (pred.filter(r => r[0] === pos).length > 6 ? ' +' + (pred.filter(r => r[0] === pos).length - 6) : '') + '</li>').join('');
-    return `<div class="pn-iface"><h4>Who binds its ${esc(M)}</h4><ul class="pn-ilist">${who}</ul>` +
-      `<p class="note">Proteins in contact with a ${esc(m1)} in a PDB structure, or at its interface in a predicted complex, from the site’s structure tables. Associations of the whole protein are in the network above.</p>` +
+    return `<div class="pn-iface"><h4>Proteins at ${esc(M)} interfaces</h4><ul class="pn-ilist">${who}</ul>` +
+      `<p class="note">Proteins in contact with a ${esc(m1)} in a PDB structure, or at the interface of a predicted complex. Associations of the whole protein are in the network above.</p>` +
       `<div class="pn-igrid"><section><h4>${esc(cap0(M))} at protein interfaces</h4>${obsLines ? `<ul class="pn-ilist">${obsLines}</ul>` : `<p class="muted">None is at a protein interface in a PDB structure.</p>`}</section>` +
       `<section><h4>Predicted protein interfaces</h4>${predLines ? `<ul class="pn-ilist">${predLines}</ul>` : `<p class="muted">None is at a predicted interface.</p>`}</section></div></div>`;
   }
@@ -287,7 +287,7 @@
     const st = c.st;
     c.L = build(c.acc, c.self, st);
     const L = c.L, src = document.getElementById('pn-src'), g = c.self.gene || c.acc;
-    if (src) src.textContent = `STRING${st.ver ? ' v' + st.ver : ''} ${OPT.net} network, score ${(OPT.conf / 1000).toFixed(1)} or more (${CITE}), retrieved ${today()}. Partners are matched to this site’s proteins by UniProt accession` +
+    if (src) src.textContent = `STRING${st.ver ? ' v' + st.ver : ''} ${OPT.net} network, score ${(OPT.conf / 1000).toFixed(1)} or more (${CITE}), retrieved ${today()}. Partners are matched to this dataset’s proteins by UniProt accession` +
       `${st.mapped ? '' : ' (UniProt did not answer, so none could be matched)'}, isoforms by their canonical accession. An association is to the whole protein and does not show that a partner binds or modifies a ${W.mark}.` +
       `${allCh() ? '' : ` Scored on ${CHANNELS.filter((_, k) => chOn().includes(CH_LETTER[k])).map(c => c[1]).join(', ')} only.`}${L.missing?.length ? ` Not among STRING’s partners of ${g}: ${L.missing.join(', ')}.` : ''}`;
     if (L.nodes.length < 2) { msg(st.rows.length ? `No ${OPT.only === 'marked' ? `partner with ${esc(W.marks)} here` : 'partner'} at STRING score ${(OPT.conf / 1000).toFixed(1)} or more.` : `STRING lists no ${esc(OPT.net)} partner for ${esc(g)}.`); return; }
@@ -344,7 +344,7 @@
   function tsv() {
     const c = CUR, gene = c.self.gene || c.acc;
     return K.preamble(`STRING partners of ${gene} (${c.acc})`, `the proteins STRING associates with ${gene}: ${OPT.net} network, score ${(OPT.conf / 1000).toFixed(1)} or more${c.st.ver ? ', v' + c.st.ver : ''}, retrieved live on ${today()} (${CITE}; licence CC BY 4.0). ` +
-      `Partners are matched to this site’s proteins by UniProt accession (isoforms by canonical accession); ${W.marks}_here counts their ${W.marks} in this site. A STRING association is to the whole protein.`) +
+      `Partners are matched to this dataset’s proteins by UniProt accession (isoforms by canonical accession); ${W.marks}_here counts their ${W.marks} in this site. A STRING association is to the whole protein.`) +
       ['partner', 'partner_string_id', 'partner_accession', 'accession_here', 'score', ...CHANNELS.map(([, n]) => n.replace(/\W+/g, '_')), 'class', `${W.marks.replace(/\W+/g, '_')}_here`].join('\t') + '\n' +
       tableRows(c.st).map(x => [x.e.preferredName_B, x.e.stringId_B, x.acc, x.p?.acc || '', x.sc.toFixed(3), ...CHANNELS.map(([f]) => x.e[f] ?? ''), x.cls ? className(x.cls) : '', x.marks].join('\t')).join('\n') + '\n';
   }
@@ -512,12 +512,12 @@
   const cap0 = t => String(t).charAt(0).toUpperCase() + String(t).slice(1);
   function ccFigure(M) {
     const s = ccSvg(M, true);
-    return K.figureFrame({ title: `${CC.gene || M.acc}: interaction evidence at a glance`, sub: `${M.acc} · each ${W.mark} above the evidence at the same residue`, legend: [[cssAccent(), EXPORT.stroke, 'observed'], ['#ffffff', cssAccent(), 'predicted only']],
-      body: s.svg, bodyH: s.H, W: s.W, note: 'Solid: observed (experiment). Hollow: predicted only. Data: the site’s structure tables.', extra: { acc: M.acc } });
+    return K.figureFrame({ title: `${CC.gene || M.acc}: interaction evidence`, sub: `${M.acc} · each ${W.mark} above the evidence at the same residue`, legend: [[cssAccent(), EXPORT.stroke, 'observed'], ['#ffffff', cssAccent(), 'predicted only']],
+      body: s.svg, bodyH: s.H, W: s.W, note: 'Solid: observed (experiment). Hollow: predicted only. Data: structure tables of this dataset.', extra: { acc: M.acc } });
   }
   function ccFold(p, rec, fold) {
     if (!LN.length || !rec) return '';
-    return fold('p-cc', 'Interaction evidence at a glance', `${LN.length} kinds of evidence, site by site`, `<div class="card-head"><p class="sub">Each ${esc(W.mark)} above the interaction evidence at the same residue. Solid: observed; hollow: predicted only. A dot opens its site.</p>` +
+    return fold('p-cc', 'Interaction evidence', `${LN.length} kinds of evidence, site by site`, `<div class="card-head"><p class="sub">Each ${esc(W.mark)} above the interaction evidence at the same residue. Solid: observed; hollow: predicted only. A dot opens its site.</p>` +
       `${K.expBar(['svg', 'png'], 'ccexp', 'the evidence summary')}</div><div class="pn-cc" id="pn-cc" data-acc="${esc(p.acc)}" style="aspect-ratio:900/${ccH()}"><p class="muted pn-msg">Loading…</p></div>`, true);
   }
   function ccMount() {
@@ -533,6 +533,6 @@
   // ---- hooks into the protein page ------------------------------------------------------------------------------------
   (K.proteinFolds ||= []).push((p, rec, fold) => ccFold(p, rec, fold) + ixFold(p, rec, fold));
   (K.lightFolds ||= []).push((p, rec, fold) => ixFold(p, rec, fold));
-  K.proteinFoldSections = [...(K.proteinFoldSections || []), ...(LN.length ? [['p-cc', 'Interaction evidence at a glance', 1]] : []), ...(IXP ? [['p-ix', 'Protein interactions', 1]] : [])];
+  K.proteinFoldSections = [...(K.proteinFoldSections || []), ...(LN.length ? [['p-cc', 'Interaction evidence', 1]] : []), ...(IXP ? [['p-ix', 'Protein interactions', 1]] : [])];
   (K.afterRender ||= []).push(() => { mount(); ccMount(); });
 });

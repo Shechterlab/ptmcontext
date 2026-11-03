@@ -86,7 +86,7 @@
   const TABS = D.tabs || {};
   const tabName = (v, dflt) => TABS[v]?.label || dflt;
   const tabHint = v => TABS[v]?.hint || ({
-    overview: `Every question the site asks, one tile each. Click a class row to select those ${W.marks}.`,
+    overview: `Click a class row to select its ${W.marks}.`,
     proteins: `The proteins with ${W.marks}, and the ${W.marks} on each.`,
     sites: `Every ${W.mark}, one row each, with its evidence.`,
     idrs: `Intrinsically disordered regions of the proteins, and the ${W.marks} in them.`,

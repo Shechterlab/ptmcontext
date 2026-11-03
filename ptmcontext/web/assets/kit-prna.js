@@ -151,8 +151,8 @@
     UI.kind = k;
     const tabs = `<div class="seg ix-tabs" role="tablist">${KINDS.map(x => `<button type="button" role="tab" data-prna-tab="${esc(x)}" aria-pressed="${x === k}" aria-selected="${x === k}" title="${esc(word(x) + ': ' + evidenceText(M[x]))}">${esc(word(x))}</button>`).join('')}</div>`;
     const m = M[k];
-    return `<div class="card-head"><p class="sub">${esc(NC.sub || `The ${KINDS.map(x => word(x)).join(' and ')} ${p.gene || p.acc} meets: where its ${W.marks} touch them in structures and are crosslinked to them in living cells, the sequences they bind, and what it prefers in vitro and in cells.`)}</p></div>` +
-      tabs + `<div class="na-body">${[structuresHtml(p, rec, k, m), regionsHtml(p, rec, k, m), cellsHtml(p, rec, k, m), motifsHtml(m, k), rbnsHtml(m, k), eclipHtml(m, k)].join('') || `<p class="muted">No ${esc(word(k))} evidence in the site's tables.</p>`}</div>`;
+    return `<div class="card-head"><p class="sub">${esc(NC.sub || `${cap(KINDS.map(x => word(x)).join(' and '))} contacts of ${p.gene || p.acc}: ${W.marks} in structures and crosslinked in cells, bound sequences, and in vitro preference.`)}</p></div>` +
+      tabs + `<div class="na-body">${[structuresHtml(p, rec, k, m), regionsHtml(p, rec, k, m), cellsHtml(p, rec, k, m), motifsHtml(m, k), rbnsHtml(m, k), eclipHtml(m, k)].join('') || `<p class="muted">No ${esc(word(k))} evidence.</p>`}</div>`;
   }
 
   // ---- the fold --------------------------------------------------------------------------------------------------------

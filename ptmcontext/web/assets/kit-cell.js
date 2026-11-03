@@ -235,7 +235,7 @@
     TIPS = [];
     return DRAWINGS.map(d => {
       const k = 'p-' + d.drawing;
-      FIGS[k] = { title: () => `${p.gene || p.acc}: the ${d.drawing}`, sub: () => `Where the maps of the cell place ${p.gene || p.acc}: a part is coloured when a map does.`,
+      FIGS[k] = { title: () => `${p.gene || p.acc}: the ${d.drawing}`, sub: () => `A part is coloured when a map places ${p.gene || p.acc} there.`,
         make: () => withOne(p, () => DRAW[d.drawing](false)), tsv: oneTsv(p), note: () => 'Coloured: a map places the protein in that part. Dashed outline: no map does.' };
       return block(k, `The ${d.drawing}`, 'cell-fig cell-onep');
     }).join('');

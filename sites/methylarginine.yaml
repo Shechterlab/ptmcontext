@@ -389,7 +389,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Protein classes (PANTHER), grouped
     question: "Which kinds of protein hold more methylated proteins than expected?"
     sub: "Methylated proteins against the reviewed human proteome, by PANTHER protein class (grouped); every protein is in one group (one-sided hypergeometric test)"
-    section: Kinds of protein
+    section: Protein classes and pathways
     sets:
       input: panther_classes
       protein: uniprot_accession
@@ -417,7 +417,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Protein classes (PANTHER)
     question: "Which PANTHER protein classes hold more methylated proteins than expected?"
     sub: "Methylated proteins against the reviewed human proteome, by top-level PANTHER protein class; every protein is in one class (one-sided hypergeometric test)"
-    section: Kinds of protein
+    section: Protein classes and pathways
     sets:
       input: panther_classes
       protein: uniprot_accession
@@ -434,7 +434,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Protein subclasses (PANTHER)
     question: "Which PANTHER protein subclasses hold more methylated proteins than expected?"
     sub: "Methylated proteins against the reviewed human proteome, every PANTHER class below the top level with 10 or more proteins; subclasses overlap (one-sided hypergeometric test)"
-    section: Kinds of protein
+    section: Protein classes and pathways
     sets:
       input: panther_classes
       protein: uniprot_accession
@@ -456,7 +456,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Disease families (DisGeNET)
     question: "Which disease gene sets are over-represented?"
     sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by disease family: the eight audited families (one-sided hypergeometric test). Association, not causation"
-    section: Kinds of protein
+    section: Protein classes and pathways
     identifiers:
       noun: gene
       nouns: genes
@@ -476,7 +476,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Disease families, additional (rule-based, not audited)
     question: "Which of the additional disease families, mostly clinical signs, are over-represented?"
     sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by additional disease family: rule-based and not audited, mostly clinical signs, tested apart from the audited families (one-sided hypergeometric test). Association, not causation"
-    section: Kinds of protein
+    section: Protein classes and pathways
     identifiers:
       noun: gene
       nouns: genes
@@ -501,7 +501,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Disease Ontology
     question: "Which Disease Ontology terms hold more genes of methylated proteins than expected?"
     sub: "Genes of methylated proteins vs all reviewed human genes with a Disease Ontology term, every term of at least 10 genes; a term holds the genes of the terms under it (one-sided hypergeometric test, as DOSE's enrichDO). Association, not causation"
-    section: Kinds of protein
+    section: Protein classes and pathways
     identifiers:
       noun: gene
       nouns: genes
@@ -524,7 +524,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: DisGeNET terms
     question: "Which DisGeNET disease terms hold more genes of methylated proteins than expected?"
     sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, every term of 10 to 300 genes (one-sided hypergeometric test, as DOSE's enrichDGN). Association, not causation"
-    section: Kinds of protein
+    section: Protein classes and pathways
     identifiers:
       noun: gene
       nouns: genes
@@ -552,7 +552,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Biomolecular condensates
     question: "Which biomolecular condensates are over-represented (CD-CODE)?"
     sub: "CD-CODE condensates with a higher fraction of methylated members than the reviewed proteome: every human condensate (not synthetic) with at least five members, its members against all reviewed human proteins (one-sided hypergeometric test). Condensate proteins are about twice as often methylated as proteins in general, so most condensates are enriched relative to the proteome, and few relative to other condensates"
-    section: Kinds of protein
+    section: Protein classes and pathways
     sets:
       input: cdcode_membership
       set: condensate_id
@@ -576,7 +576,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Biomolecular condensates, against other condensate proteins
     question: "Which biomolecular condensates stand out among condensate proteins (CD-CODE)?"
     sub: "CD-CODE condensates with a higher fraction of methylated members than all condensate proteins: every human condensate (not synthetic) with at least five members, its members against the proteins in any of these condensates, about half of which are methylated (one-sided hypergeometric test)"
-    section: Kinds of protein
+    section: Protein classes and pathways
     sets:
       input: cdcode_membership
       set: condensate_id
@@ -642,7 +642,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Reactome pathways, top level
     question: "Which top-level Reactome pathways hold more methylated proteins than expected?"
     sub: "Methylated proteins against the other proteins with a Reactome pathway, by top-level pathway (one-sided hypergeometric test)"
-    section: Kinds of protein
+    section: Protein classes and pathways
     sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
     names: {input: reactome_names, set: pathway_id, name: name, include: [{column: depth, equals: "0"}]}
     background: other reviewed human proteins with at least one Reactome 97 pathway
@@ -652,7 +652,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Reactome pathways
     question: "Which Reactome pathways, at any level, hold more methylated proteins than expected?"
     sub: "Methylated proteins against the other proteins with a Reactome pathway, every pathway of 10 to 500 proteins (one-sided hypergeometric test)"
-    section: Kinds of protein
+    section: Protein classes and pathways
     sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
     names: {input: reactome_names, set: pathway_id, name: name}
     min_size: 10
@@ -1134,7 +1134,7 @@ website:                  # the look and words of the website (ptmc web); layout
   stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
     statistic_label: true  # each tile names its statistic
-    question: "What kinds of proteins are arginine methylated?"
+    question: "Which proteins are arginine methylated?"
     rows: 7
     random_maps: {n: 3, title: Randomly selected proteins}   # proteins drawn at random, each end to end, with "Draw three others"
     starting_points:       # under the sections: proteins to start from, and ready-made selections (the explorer's)
@@ -1191,7 +1191,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: cancer_change, title: Changes in tumours and cell lines}
       - name: Writers and readers   # counted from the partner classes (website.search.partners), not tested
         cards: [reader_classes, {analysis: perturbations, wide: true}]
-      - name: Kinds of protein
+      - name: Protein classes and pathways
         cards:
           - {analysis: panther_group, title: Protein classes}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
@@ -1200,7 +1200,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - name: Where in the cell   # its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
         cards:
           - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
-      - name: Where in the protein
+      - name: Position in the protein
         cards:
           - {analysis: motif, title: Sequence motifs}
           - {analysis: structure_context}
@@ -1208,9 +1208,9 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: idr_charge}
       - name: Interactions and binding   # the Interactions page's tile (website.pages[].overview)
         cards: []
-      - name: Sources and responses   # counted, not tested (website.counts)
+      - name: Studies and PRMT perturbations   # counted, not tested (website.counts)
         cards: [provenance]
-      - name: In more detail
+      - name: All classes and maps
         cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)},
                 {analysis: hpa_location, title: Human Protein Atlas locations}, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin,
                 eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, disorder, domain_context]
@@ -1500,7 +1500,7 @@ website:                  # the look and words of the website (ptmc web); layout
     domain: domain_class
     bound: nucleic_acid_type
   tabs:                    # the top tabs' words (the addresses #idrs, #statistics and #method stay)
-    overview: {label: Overview, hint: "Every question as a tile; click a class row to select those sites, or a tile's title to open its question."}
+    overview: {label: Overview, hint: "Click a class row to select its sites, or a tile's title to open the question."}
     proteins: {label: Proteins, hint: "The proteins with a methylarginine, with the sites on each; filter, sort and download."}
     sites: {label: Sites, hint: "Every methylarginine, one row each, with its evidence; filter, sort and download."}
     idrs: {label: Disordered regions, hint: "Intrinsically disordered regions (IDRs) of the proteins, and where the methylarginines sit in them."}
@@ -1858,10 +1858,10 @@ website:                  # the look and words of the website (ptmc web); layout
         note: "Data: DepMap Public 24Q4 (CRISPR, Chronos; CC BY 4.0) and TCGA tumours (MC3 somatic calls from the GDC, open access; based on data generated by the TCGA Research Network). A change counts only at an arginine of the canonical UniProt sequence."
       perturbations:
         title: PRMT inhibitors, knockouts and knockdowns
-        sub: "Its sites in PRMT knockouts, knockdowns and inhibitors: did a peptide carrying the site change?"
+        sub: "Did a peptide carrying the site change in PRMT knockouts, knockdowns or inhibitors?"
         note: "A call is a peptide-level change: a site is decreased when a peptide carrying it decreased and none increased (twofold at q < 0.05, or the study's own call for the knockdowns and the PRMT7 inhibitor). Not quantified is left blank."
       experiments:
-        title: Experiments on its methylation
+        title: Methylation experiments
         table: experiments
         sub: "Curated from the papers: what was done, what was measured and what changed. Kept apart from the site table and every statistic."
         note: "The table is in the release (supporting/functional_experiments). The curation is small and growing; a protein without rows has not been curated, not shown to lack experiments."

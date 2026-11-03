@@ -208,7 +208,7 @@
       const r = D.rows.find(x => x.analysis === t.id && x.category === t.value && x.method === 'enricher');
       const name = (a.labels || {})[t.value] || t.value, unit = a.unit || 'proteins';
       const body = r ? `${int(r.a)} of the ${int(r.a + r.c)} ${esc(unit)} in this set (${K.pct(r.a, r.a + r.c)}) are ${esc(W.marked)}${a.background ? `; against ${esc(a.background)}` : ''}: ${K.fx(r.eff)}, q ${K.fq(r.q)}.` +
-        (cfg.note ? ` ${esc(cfg.note)}` : '') : `Not tested on its own: ${esc(cfg.note || 'the set is outside the question’s tested sizes')}.`;
+        (cfg.note ? ` ${esc(cfg.note)}` : '') : `Not tested: ${esc(cfg.note || 'the set is outside the question’s tested sizes')}.`;
       return card(cfg.eyebrow || a.title, name, body + ` <a href="${esc(K.link('overview', t.id))}">The question ›</a>`, link);
     }
     if (t.kind === 't' && SPECS[t.id]?.kind === 'list') {
@@ -336,8 +336,8 @@
   // the Method page's section on these pages
   K.methods.push({ id: 'tables', title: 'Proteins and Sites pages', html: () => `<section id="m-q-tables" class="qm"><h3>Proteins and Sites pages</h3>` +
     `<p>The Proteins page lists every protein with a ${esc(W.mark)} in the selection, the Sites page every ${esc(W.mark)}. The site file names the columns, including those the Columns menu adds, and the browser keeps your choice. Downloads hold every row in the table’s order, under # lines.</p>` +
-    `<p>Enriched features compares the selection’s ${esc(W.marks)} with the site’s other ${esc(W.marks)} for each class of each residue question and each value of each attribute. Test: Fisher’s exact test on the 2×2 table (with the feature or not, in the selection or not), Benjamini–Hochberg within each question. Shown are features with q ≤ ${K.PADJ}, at least 1.1× either way and 10 ${esc(W.marks)}, with those saying how the ${esc(W.marks)} were found last. A question the selection was made with is not tested. ${cap(W.marks)} of one protein are not independent, so treat this as a pointer. The Overview compares the same groups question by question, also within proteins and within studies.</p>` +
-    `<p>For a selection of one set of a protein-set question, Your selection shows the site’s own test of that set, and for one source, its reference.</p></section>` });
+    `<p>Enriched features compares the selection’s ${esc(W.marks)} with the other ${esc(W.marks)} for each class of each residue question and each value of each attribute. Test: Fisher’s exact test on the 2×2 table (with the feature or not, in the selection or not), Benjamini–Hochberg within each question. Shown are features with q ≤ ${K.PADJ}, at least 1.1× either way and 10 ${esc(W.marks)}, with those saying how the ${esc(W.marks)} were found last. A question the selection was made with is not tested. ${cap(W.marks)} of one protein are not independent, so treat this as a pointer. The Overview compares the same groups question by question, also within proteins and within studies.</p>` +
+    `<p>For a selection of one set of a protein-set question, Your selection shows the test of that set, and for one source, its reference.</p></section>` });
 
   // ---- events -------------------------------------------------------------------------------------------------------
   const copy = (text, el) => { const done = t => { const o = el.textContent; el.textContent = t; setTimeout(() => { el.textContent = o; }, 1500); };
