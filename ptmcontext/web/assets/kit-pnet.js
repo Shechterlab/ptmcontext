@@ -256,7 +256,7 @@
   function ifaceHtml(p, rec) {
     const s3 = rec?.s3d; if (!s3 || !(SD.contacts || SD.predicted)) return '';
     const obs = (s3.c || []).filter(r => r[1] === 'protein' || r[1] === 'self'), pred = s3.p || [], M = W.marks, m1 = W.mark;
-    if (!obs.length && !pred.length) return `<div class="pn-iface"><h4>Proteins at ${esc(M)} interfaces</h4><p class="muted">No protein at an interface with a ${esc(m1)} of ${esc(p.gene || p.acc)} in the structure tables.</p></div>`;
+    if (!obs.length && !pred.length) return `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4><p class="muted">No protein at an interface with a ${esc(m1)} of ${esc(p.gene || p.acc)} in the structure tables.</p></div>`;
     const by = new Map();      // partner -> { name, acc, sites: Map(pos -> { obs: ids, pred: score }) }
     const put = (g, a, pos, f) => { const k = a || g; if (!k) return; const o = by.get(k) || { g, a, sites: new Map() }; const s = o.sites.get(pos) || {}; f(s); o.sites.set(pos, s); by.set(k, o); };
     obs.forEach(([pos, kind, ids, g, a]) => put(kind === 'self' ? '' : g, kind === 'self' ? p.acc : a, pos, s => { s.obs = ids || []; if (kind === 'self') s.self = true; }));
@@ -265,7 +265,7 @@
     const who = parts.map(o => `<li>${o.self ? '<b>another copy of this protein</b>' : partnerName(o.g, o.a)} <span class="muted small">at</span> ${[...o.sites.entries()].sort((x, y) => x[0] - y[0]).map(([pos, s]) => siteBtn(p.acc, pos) + (s.obs ? '' : ' <span class="muted small">(predicted)</span>')).join(' ')}</li>`).join('');
     const obsLines = [...new Map(obs.map(r => [r[0], r])).keys()].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} contacts ` + obs.filter(r => r[0] === pos).map(r => `${r[1] === 'self' ? '<b>another copy</b>' : partnerName(r[3], r[4])} <span class="muted small">(${(r[2] || []).slice(0, 4).map(rcsb).join(', ')}${(r[2] || []).length > 4 ? ` +${r[2].length - 4}` : ''})</span>`).join('; ') + '</li>').join('');
     const predLines = [...new Set(pred.map(r => r[0]))].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} ` + pred.filter(r => r[0] === pos).slice(0, 6).map(r => `${partnerName(r[1], r[2])}${r[5] != null ? ` <span class="muted small">pDockQ ${(+r[5]).toFixed(2)}</span>` : ''}`).join(', ') + (pred.filter(r => r[0] === pos).length > 6 ? ' +' + (pred.filter(r => r[0] === pos).length - 6) : '') + '</li>').join('');
-    return `<div class="pn-iface"><h4>Proteins at ${esc(M)} interfaces</h4><ul class="pn-ilist">${who}</ul>` +
+    return `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4><ul class="pn-ilist">${who}</ul>` +
       `<p class="note">Proteins in contact with a ${esc(m1)} in a PDB structure, or at the interface of a predicted complex. Associations of the whole protein are in the network above.</p>` +
       `<div class="pn-igrid"><section><h4>${esc(cap0(M))} at protein interfaces</h4>${obsLines ? `<ul class="pn-ilist">${obsLines}</ul>` : `<p class="muted">None is at a protein interface in a PDB structure.</p>`}</section>` +
       `<section><h4>Predicted protein interfaces</h4>${predLines ? `<ul class="pn-ilist">${predLines}</ul>` : `<p class="muted">None is at a predicted interface.</p>`}</section></div></div>`;
