@@ -548,7 +548,7 @@
     const more = regs.filter(x => x.tone[0] === 'u').sort((a, b) => b.a.l2 - a.a.l2), less = regs.filter(x => x.tone[0] === 'd').sort((a, b) => a.a.l2 - b.a.l2);
     const none = `${cap(who(scoped))} are not enriched in any part of the cell.`;
     if (short) {
-      if (more.length || less.length) return cap((more.length ? 'more often in ' + and(more.map(one)) : '') + (more.length && less.length ? '; less in ' : less.length ? 'less often in ' : '') + and(less.map(one))) + '.';
+      if (more.length || less.length) return cap((more.length ? 'more often in ' + and(more.map(one)) : '') + (more.length && less.length ? '. Less in ' : less.length ? 'less often in ' : '') + and(less.map(one))) + '.';
       return regs.length ? `About as often in each region as ${esc(alike)}.` : up.length ? `Most of all in ${and(up.slice(0, 3).map(one))}.` : none;
     }
     let t = more.length || less.length ? `${cap(who(scoped))} sit ${more.length ? 'more often in ' + and(more.map(one)) : ''}${more.length && less.length ? ', and ' : ''}${less.length ? 'less often in ' + and(less.map(one)) : ''} than ${esc(alike)}${regs.some(x => x.cells.length > 1) ? ' (the median of the maps)' : ''}`

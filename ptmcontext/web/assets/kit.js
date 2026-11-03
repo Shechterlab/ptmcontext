@@ -344,11 +344,11 @@
     if (rows.some(r => r.vs)) {
       const ok = rows.filter(enough), up = ok.filter(r => r.dir === 'more').sort((x, y) => strength(y) - strength(x))[0], dn = ok.filter(r => r.dir === 'less').sort((x, y) => strength(y) - strength(x))[0];
       const one = r => `<b>${esc(r.label)}</b> (${pcS(share1(r))} against ${pcS(share2(r))})`;
-      return up || dn ? [up ? 'More often: ' + one(up) : '', dn ? (up ? 'less often: ' : 'Less often: ') + one(dn) : ''].filter(Boolean).join('; ') : `None differs from ${esc(vsName())} (q ≤ 0.05 and at least 1.1×)`;
+      return up || dn ? [up ? 'More often: ' + one(up) : '', dn ? 'Less often: ' + one(dn) : ''].filter(Boolean).join('. ') : `None differs from ${esc(vsName())} (q ≤ 0.05 and at least 1.1×)`;
     }
     const top = rows.filter(r => r.dir === 'more').sort(byOrder(card))[0], low = rows.filter(r => r.dir === 'less').sort(card.order === 'q' ? byOrder(card) : (x, y) => x.eff - y.eff)[0];
     if (tmpl && top) return esc(tmpl).replace('{top}', `<b>${esc(top.label)}</b>`).replace('{fold}', fx(top.eff));
-    if (top) return `More often: <b>${esc(top.label)}</b> (${fx(top.eff)})` + (low ? `; less often: <b>${esc(low.label)}</b> (${fx(low.eff)})` : '');
+    if (top) return `More often: <b>${esc(top.label)}</b> (${fx(top.eff)})` + (low ? `. Less often: <b>${esc(low.label)}</b> (${fx(low.eff)})` : '');
     if (low) return `Least often: <b>${esc(low.label)}</b> (${fx(low.eff)})`;
     return 'None differs (q ≤ 0.05 and at least 1.1×)';
   }
@@ -679,8 +679,8 @@
       `${cap(W.marks)}: ${int(m.counted)} on ${int(m.proteins)} proteins, from ${int(m.selected)} records${dropped.length ? ' (' + dropped.join('; ') + ', left out)' : ''}. Each file was checked against its MD5 before it was read.</p>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Source</th><th>Used for</th><th>Licence</th><th>File</th><th>MD5</th></tr></thead><tbody>${inputs}</tbody></table></div></section>` +
       `<section id="m-questions"><h3>Questions, and what made each</h3>` +
-      `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th><th>Reads</th><th>What it compares</th></tr></thead><tbody>` +
-      D.analyses.map(a => `<tr><td>${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag">new</span>' : ''}</td><td class="wrapok">${esc(madeByText(a.id))}</td><td class="mono wrapok">${esc((a.roles || []).join(', '))}</td><td class="wrapok">${esc(a.describe || a.sub || '')}</td></tr>`).join('') +
+      `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th></tr></thead><tbody>` +
+      D.analyses.map(a => `<tr><td>${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag">new</span>' : ''}</td><td class="wrapok">${esc(madeByText(a.id))}</td></tr>`).join('') +
       `</tbody></table></div></section>` + D.analyses.map(questionMethod).join('') + (K.methodParts || []).map(f => f()).join('') + K.methods.map(x => x.html()).join('') + par +
       citeSection() + downloadSection() + searchSection() + privacySection() +
       sourcesSection() +
@@ -688,20 +688,14 @@
       `<p>Every download carries its citation, data sources, versions, inputs and export date, printed under each figure and kept in the file (SVG metadata, PNG text fields, PDF properties, TSV # lines).</p></section></div>`;
   }
 
-  // a question's own Method section (#method/q-<id>): what it asks, what made it, what it reads, how it is tested,
-  // its classes, and whether it equals the published release
+  // a question's own Method section (#method/q-<id>): what it asks, what it is compared with and its classes
   function questionMethod(a) {
     const IN = D.inputs || {}, R = D.run, set = a.kind === 'protein_sets';
-    const checked = (R.parity?.checked || []).filter(c => c.analysis === a.id), nRows = checked.reduce((n, c) => n + c.rows, 0);
-    const parity = !R.parity ? '' : a.new ? `<p>New in the rebuild, so not in the published release.</p>`
-      : checked.length ? `<p>${checked.every(c => c.equal) ? `Identical to the published release (${int(nRows)} rows).` : 'Some rows differ from the published release.'}${checked.filter(c => c.reference).map(c => ` Checked against ${esc(IN[c.reference]?.version || c.reference)}, not its statistics table.`).join('')}</p>` : '';
     const labels = Object.entries(a.labels || {}).filter(([c]) => c);
     const classes = labels.length && labels.length <= 40 ? `<details><summary>Its ${set ? 'sets' : 'classes'} (${int(labels.length)})</summary><dl class="qm-classes">${labels.map(([c, l]) => `<dt>${esc(l || c)}</dt><dd>${esc((a.help || {})[c] || '')}</dd>`).join('')}</dl></details>` : '';
-    const tests = set ? `${esc(W.marked)} proteins in each set against ${esc(a.describe || 'the other proteins')}, as under <a href="${esc(link('method', 'tests'))}">How the tests work</a>${a.stratified ? ', and again within abundance deciles' : ''}`
-      : `${esc(W.marks)} against the other ${esc(W.residues)} of the same proteins, within each protein and pooled, as under <a href="${esc(link('method', 'tests'))}">How the tests work</a>`;
     return `<section id="m-q-${esc(a.id)}" class="qm"><h3>${esc(a.title)}${a.new && R.parity ? ' <span class="newtag">new</span>' : ''}</h3>` +
       (a.question ? `<p class="qm-q">${esc(a.question)}</p>` : '') + (a.sub ? `<p>${esc(a.sub)}.</p>` : '') +
-      `<p>Compares ${tests}.</p>` + parity + classes +
+      (a.describe && a.describe !== 'other reviewed human proteins' ? `<p>${set ? 'Background: ' : ''}${esc(a.describe)}.</p>` : '') + classes +
       `<p class="qm-links"><a href="${esc(link('overview', a.id))}">Its figure</a> · <a href="${esc(link('statistics', '', { a: a.id }))}">Its tests</a></p></section>`;
   }
 

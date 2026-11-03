@@ -254,11 +254,11 @@
       : [...(c.attributes || []).map(n => `<li>${esc(SPECS[n]?.label || n)} <span class="muted">(an attribute of the ${esc(W.marks)})</span></li>`),
         ...(c.tables || []).map(([t, inp]) => `<li><span class="mono">${esc(t)}</span>: ${esc(IN[inp]?.version || inp)}${IN[inp]?.licence ? ` (${esc(K.hlicence(IN[inp].licence))})` : ''}</li>`)];
     const how = c.kind === 'values'
-      ? `each value’s ${esc(W.marks)}${c.list ? `, those with it alone, and how many values each ${esc(W.mark)} has (1 to ${c.bins} or more)` : ''}`
-      : `for each experiment, the ${esc(W.marks)} it measured, those ${esc(c.calls.down)} and ${esc(c.calls.up)}, and the median change over them (each ${esc(W.mark)}’s own median first)`;
+      ? `each value’s ${esc(W.marks)}${c.list ? `, those with it alone, and the number of values per ${esc(W.mark)} (1 to ${c.bins} or more)` : ''}`
+      : `per experiment, the ${esc(W.marks)} measured, those ${esc(c.calls.down)} and ${esc(c.calls.up)}, and the median change over them (each ${esc(W.mark)}’s own median first)`;
     return `<section id="m-q-${esc(id)}" class="qm"><h3>${esc(c.title)}</h3>${c.question ? `<p class="qm-q">${esc(c.question)}</p>` : ''}${c.sub ? `<p>${esc(c.sub)}.</p>` : ''}` +
-      `<p><b>Counted, not tested:</b> ${how}. A selection is counted again in the browser.${c.method ? ' ' + esc(c.method) : ''}</p>` +
-      `<p><b>Reads:</b></p><ul class="qm-reads">${reads.join('')}</ul><p class="qm-links"><a href="${esc(K.link('overview', id))}">Its figure</a></p></section>`;
+      `<p>Counted, not tested: ${how}. A selection is counted again in the browser.${c.method ? ' ' + esc(c.method) : ''}</p>` +
+      `<p>Reads:</p><ul class="qm-reads">${reads.join('')}</ul><p class="qm-links"><a href="${esc(K.link('overview', id))}">Its figure</a></p></section>`;
   }).join(''));
   const baseMethod = K.sections.method;
   K.sections.method = () => {
