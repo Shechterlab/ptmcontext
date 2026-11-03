@@ -99,7 +99,7 @@ lists:                     # a name takes the family of the first rule it matche
           - 'midface'
           - 'feeding difficulties'
   - name: additional
-    note: "rule-based and not audited, mostly clinical signs (HPO terms): tested apart from the audited families"
+    note: "grouped automatically by matching words in the disease terms and not checked by hand, mostly clinical signs (HPO terms): tested apart from the eight families checked by hand"
     families:
       - family: 'Cancer-related (other)'
         match:

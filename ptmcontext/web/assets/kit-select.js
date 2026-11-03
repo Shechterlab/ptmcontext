@@ -599,11 +599,18 @@
       (absent.length ? `<span class="sel-miss" title="Not a gene, accession or entry name of a protein with a ${esc(W.mark)} on this site">No ${esc(W.marked)} protein: ${absent.map(x => `<b>${esc(x)}</b>`).join(', ')}</span>` : '') +
       (ignored.length ? `<span class="sel-miss" title="In a list of proteins, words are not searched in protein names: search them on their own to do that">Not a protein, left out of the list: ${ignored.map(x => `<b>${esc(x)}</b>`).join(', ')}</span>` : '') +
       (amb.length ? `<span class="sel-miss" title="Write the protein first, or alone, to list it">${amb.map(([t, g]) => `<b>${esc(t)}</b> read as ${esc(g)}’s site, not the protein ${esc(t)}`).join('; ')}</span>` : '') +
-      `${K.selMid ? K.selMid() : ''}<span class="sel-tools">${(K.selTools || []).map(f => f()).join('')}<button class="btn small" type="button" data-sel-save title="Keep this selection in this browser; saved ones are listed under Filters">Save</button>` +
+      `${K.selMid ? K.selMid() : ''}<span class="sel-tools">${(K.selTools || []).map(f => f()).join('')}<button class="btn small" type="button" data-sel-save title="Keep this selection in this browser; saved ones are listed under Saved here and under Filters">Save</button>${savedMenu()}` +
       `<button class="btn small" type="button" data-sel-copy>Copy link</button><button class="btn small accent" type="button" data-sel-clear-all>Clear all</button></span>`;
   }
   // saved selections, in this browser
   const savedList = () => { try { return JSON.parse(localStorage.getItem(`ptmc-saved-${D.site.id}`) || '[]'); } catch (e) { return []; } };
+  // "Saved (n) ▾" beside the selection line: the saved selections of this browser, each to open or to compare the current one with
+  function savedMenu() {
+    const list = savedList(); if (!list.length) return '';
+    return `<details class="saved-dd"><summary class="btn small" title="Selections you saved in this browser">Saved (${list.length}) ▾</summary><div class="saved-pop">${list.map((x, i) => `<div class="saved-row"><a href="${esc(x.hash)}" title="Open ${esc(x.name)}">${esc(x.name)}</a> <span class="muted">${int(x.n)}</span>` +
+      `${K.views.compare ? `<button type="button" class="linkish small" data-saved-cmp="${i}" title="Compare the ${esc(W.marks)} of the current selection with those of ${esc(x.name)}">Compare with this</button>` : ''}<button type="button" class="linkish small" data-saved-del="${i}" aria-label="Delete ${esc(x.name)}">×</button></div>`).join('')}</div></details>`;
+  }
+  document.addEventListener('click', e => { document.querySelectorAll('.saved-dd[open]').forEach(d => { if (!d.contains(e.target) || e.target.closest('[data-saved-cmp]')) d.open = false; }); });
   function savedHtml() {
     const list = savedList(); if (!list.length) return '';
     return `<div class="saved"><p class="flabel">Saved selections</p>${list.map((x, i) => `<div class="saved-row"><a href="${esc(x.hash)}">${esc(x.name)}</a> <span class="muted">${int(x.n)}</span>${K.views.compare ? `<button type="button" class="linkish small" data-saved-cmp="${i}" title="Compare ${esc(x.name)} with the current selection">Compare</button>` : ''}<button type="button" class="linkish small" data-saved-del="${i}" aria-label="Delete ${esc(x.name)}">×</button></div>`).join('')}</div>`;

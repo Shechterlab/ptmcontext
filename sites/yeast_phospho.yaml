@@ -66,12 +66,19 @@ website:
     facts: [{analysis: idr, classes: [idr]}]
     conservation:          # orthologues from Ensembl Compara's fungal set (UniProt names the gene under EnsemblFungi)
       ensembl: {rest: "https://rest.ensembl.org", xref: EnsemblFungi, source: saccharomyces_cerevisiae, compara: fungi}
-      species:
+      species:             # every species a set below can name (all in the fungal Compara set)
         - {id: candida_glabrata, label: C. glabrata}
         - {id: candida_albicans, label: C. albicans}
+        - {id: candida_parapsilosis, label: C. parapsilosis}
         - {id: yarrowia_lipolytica, label: Y. lipolytica}
         - {id: schizosaccharomyces_pombe, label: S. pombe}
         - {id: neurospora_crassa, label: N. crassa}
         - {id: ustilago_maydis, label: U. maydis}
         - {id: cryptococcus_neoformans, label: C. neoformans}
+      presets:             # the reader's choice, remembered in the browser
+        - {id: saccharomycetes, label: Saccharomycetes, species: [candida_glabrata, candida_albicans, candida_parapsilosis, yarrowia_lipolytica],
+           note: "budding-yeast relatives: almost every site aligns"}
+        - {id: fungi, label: Fungi, species: [candida_glabrata, candida_albicans, yarrowia_lipolytica, schizosaccharomyces_pombe, neurospora_crassa, ustilago_maydis, cryptococcus_neoformans],
+           note: "from budding yeasts to moulds and basidiomycetes"}
+      default: fungi
       logo: true

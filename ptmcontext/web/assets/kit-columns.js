@@ -19,7 +19,7 @@
   const compact = () => dens === 'compact';
   const densityBtn = () => `<button type="button" class="btn small density-btn" data-density aria-pressed="${compact()}" title="Table rows: compact (one line each) or comfortable (everything wrapped)">${compact() ? 'Compact' : 'Comfortable'} rows</button>`;
   document.addEventListener('click', e => {
-    if (!e.target.closest?.('[data-density]')) return;
+    if (!e.target.closest?.('button[data-density]')) return;
     dens = compact() ? 'comfortable' : 'compact'; try { document.documentElement.dataset.density = dens; } catch (err) { /* no page */ }
     try { localStorage.setItem(DK, dens); } catch (err) { /* storage may be blocked */ }
     K.render();
