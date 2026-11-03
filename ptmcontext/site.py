@@ -377,8 +377,9 @@ def website_problems(site: dict) -> list[str]:
     from .map_rows import problems as map_problems
     from .web.conserve import problems as conserve_problems       # the conservation card (website.protein.conservation)
     from .web.structure import problems as structure_problems     # the 3D viewer's tables (website.protein.structure)
+    from .web.pcards import problems as pcards_problems           # the context cards, fold order and openness (website.protein)
     from .web.nucleic import problems as nucleic_problems         # the RNA and DNA interactions card (website.protein.nucleic)
-    return out + map_problems(site) + structure_problems(site) + conserve_problems(site) + nucleic_problems(site)
+    return out + map_problems(site) + structure_problems(site) + conserve_problems(site) + nucleic_problems(site) + pcards_problems(site)
 
 
 def table_view_problems(site: dict) -> list[str]:

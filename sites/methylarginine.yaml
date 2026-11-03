@@ -1479,8 +1479,88 @@ website:                  # the look and words of the website (ptmc web); layout
       columns: {accession: uniprot_accession}
       values: [source, experiment, cell_line, n_peaks, peaks_CDS, peaks_UTR3, peaks_UTR5, peaks_noncoding_exon, peaks_intron, peaks_intergenic,
                top_target_genes, top_target_peaks, top_5mers, top_5mer_ratios, same_data_as]
+    hpa:                                 # the Location and condensates card (CONTRACTS.md, Protein page cards)
+      input: hpa_locations
+      format: protein_records
+      columns: {accession: canonical_UniProtAC, location: location, main: main, reliability: reliability}
+    condensate_members:                  # every CD-CODE membership of the protein, with its confidence, roles, evidence and papers
+      input: cdcode_members_2_3
+      format: protein_records
+      columns: {accession: uniprot_accession, condensate: condensate_uid, score: confidence_score, roles: roles, evidence: experimental_evidence, pmids: pmids}
+    condensates:
+      input: cdcode_condensates
+      format: lookup
+      sep: ","
+      columns: {key: uid}
+      values: [name, condensate_type]
+    dependency:                          # the Cancer cell lines and tumours card
+      input: depmap_gene_effect
+      format: protein_records
+      columns: {accession: canonical_UniProtAC, lines: lines, dependent: dependent_lines, median: median, common_essential: common_essential, histogram: histogram, lineages: most_dependent_lineages}
+    experiments:                         # the Experiments on its methylation card
+      input: functional_experiments_v1_4_3
+      format: protein_records
+      columns: {accession: uniprot_accession, position: position, region: region, perturbation: perturbation, system: system, species: species,
+                readout: readout, direction: direction, finding: finding, figure: figure, reference: reference, doi: doi, read_from: read_from, in_release: in_release}
+    clusters:                            # the Clustering card
+      input: methylarginine_proteins_v1_4_3
+      format: protein_records
+      columns: {accession: uniprot_accession, spacing_min: nearest_spacing_min, spacing_median: nearest_spacing_median, max_3: max_sites_3aa, max_5: max_sites_5aa,
+                max_10: max_sites_10aa, max_20: max_sites_20aa, max_50: max_sites_50aa, window_size: best_window_aa, window_start: best_window_start,
+                window_end: best_window_end, window_sites: best_window_sites, window_log2: best_window_log2_obs_null, window_q: best_window_q,
+                architecture: architecture_class, clusters: architecture_clusters}
   protein:                 # the protein page
     open_partners: true    # the Interaction partners fold is open when the protein has partners in the site's table
+    order: [p-map, p-cc, p-ix, p-na, p-sites, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cons, p-cluster, p-ptm, p-seq]   # the explorer's order
+    open: [p-map, p-sites, p-cons, p-ix]   # the explorer's folds are all shut; here the map and the sites, and the orthologues and the network once they have data
+    cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
+      location:
+        title: Location and condensates
+        summary: Human Protein Atlas locations, where the subcellular maps place it, and CD-CODE condensates
+        hpa: {table: hpa, analysis: hpa_location, title: Subcellular location, source: Human Protein Atlas 25.1, url: "https://www.proteinatlas.org/search/{acc}", unsure: Uncertain}
+        maps: true
+        condensates:
+          members: condensate_members
+          names: condensates
+          analysis: condensate_proteome
+          title: Condensates
+          source: CD-CODE 2.3
+          url: "https://cd-code.org/condensates/{id}"
+          max_score: 5
+          default_type: biomolecular
+          pubmed: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
+          roles: {member: member, driver: driver, client: client, regulator: regulator, unknown: role not given}
+          evidence: {in_vivo: in vivo, in_cellulo: in cellulo, in_vitro: in vitro, frap: FRAP, colocalization: colocalisation, mass_spectrometry: mass spectrometry,
+                     emergent properties: emergent properties, others: other}
+      dependency:
+        title: Cancer cell lines and tumours
+        table: dependency
+        unit: cancer cell lines
+        sub: "Cancer genetics, not evidence about methylation: how much cancer cell lines depend on the gene in DepMap's CRISPR screens, and the protein changes at its arginines in TCGA tumours and DepMap cell lines."
+        histogram: {from: -3, to: 1, axis: gene effect per cell line (Chronos); lower is a stronger dependency, marks: [{at: 0, label: no effect}, {at: -1, label: median of common essentials}]}
+        url: "https://depmap.org/portal/gene/{gene}?tab=overview"
+        note: "Data: DepMap Public 24Q4 (CRISPR, Chronos; CC BY 4.0) and TCGA tumours (MC3 somatic calls from the GDC, open access; based on data generated by the TCGA Research Network). A change counts only at an arginine of the canonical UniProt sequence."
+      perturbations:
+        title: PRMT inhibitors, knockouts and knockdowns
+        sub: "Its sites in PRMT knockouts, knockdowns and inhibitors: did a peptide carrying the site change?"
+        note: "A call is a peptide-level change: a site is decreased when a peptide carrying it decreased and none increased (twofold at q < 0.05, or the study's own call for the knockdowns and the PRMT7 inhibitor). Not quantified is left blank."
+      experiments:
+        title: Experiments on its methylation
+        table: experiments
+        sub: "Curated from the papers: what was done, what was measured and what changed. Kept apart from the site table and every statistic."
+        note: "The table is in the release (supporting/functional_experiments). The curation is small and growing; a protein without rows has not been curated, not shown to lack experiments."
+      clustering:
+        title: Clustering
+        table: clusters
+        sub: How closely the methylarginines are spaced, and windows denser than chance.
+        windows: [3, 5, 10, 20, 50]
+      other_ptms:
+        title: Other PTMs
+        table: other_ptms
+        sub: Other modifications recorded on this protein.
+        kinds: {phospho: Phospho, lys_acyl: Lysine acylation, ub_sumo: Ubiquitin and SUMO, lys_methyl: Lysine methylation}
+        near: 10
+        note: "Not an exhaustive list: it holds only what the cross-PTM table used here contains (an iPTMnet export of HPRD, literature mining and other curated sources, plus UniProt), so modifications reported elsewhere may be missing."
     nucleic:               # the RNA and DNA interactions card (CONTRACTS.md, RNA and DNA interactions)
       title: RNA and DNA interactions
       kinds: {rna: RNA, dna: DNA}
@@ -1567,7 +1647,12 @@ website:                  # the look and words of the website (ptmc web); layout
               - {id: protein, label: Protein interface, colour: protein, where: [{column: kind, equals: "pdb_protein; at_residue"}]}
               - {id: self, label: Interface with another copy of the protein, colour: self, where: [{column: kind, equals: "pdb_self; at_residue"}]}
     sets:                  # cards of the protein's own sets, each linked to its page and selecting its proteins
-      - {title: Disease, summary: "its Disease Ontology terms, DisGeNET terms and disease families", analyses: [disease_ontology, disease_term, disease_family, disease_family_additional]}
+      - id: p-dis
+        title: Disease associations
+        summary: "UniProt, Open Targets, Disease Ontology, DisGeNET terms and disease families"
+        analyses: [disease_ontology, disease_term, disease_family, disease_family_additional]
+        term_groups: {terms: disease_term, families: [disease_family, disease_family_additional]}
+        live: {uniprot: true, open_targets: {graphql: "https://api.platform.opentargets.org/api/v4/graphql", size: 12, page: "https://platform.opentargets.org/target/{id}/associations"}}
     numbering:             # proteins numbered as papers do: histones without the initiator methionine (H3R2 is UniProt R3)
       - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
         names: "^(putative |core )?histone (h1|h2a|h2b|h3|h4|macro-h2a)\\b|^testis-specific h1 histone|^histone h3-like centromeric"

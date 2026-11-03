@@ -42,7 +42,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-pnet.js', 'kit-prna.js', 'kit.js')
+MODULES = ('kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 

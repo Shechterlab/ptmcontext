@@ -30,6 +30,7 @@ FORMATS: dict[str, dict] = {
     'source_records': {'key': 'site', 'required': ['source'],
                        'optional': ['doi', 'reference', 'pubmed', 'source_table', 'peptide', 'state', 'enzyme', 'sample', 'detail',
                                     'reported_accession', 'reported_position', 'check']},
+    'protein_records': {'key': 'accession', 'free': True, 'open': True},
     'protein_partners': {'key': 'accession', 'required': ['partner_accession', 'score'], 'partner': 'partner_accession',
                          'optional': ['partner', 'partner_marked', 'classes']},
 }
@@ -52,7 +53,8 @@ def problems(name: str, spec: dict) -> list[str]:
     cols = spec.get('columns') or {}
     out = [f'{where}: the {spec["format"]} format needs a column {c!r}' for c in fmt.get('required', []) if c not in cols]
     known = set(fmt.get('required', [])) | set(fmt.get('optional', [])) | set(key_columns(spec['format']))
-    out += [f'{where}: the {spec["format"]} format has no column {c!r}' for c in cols if c not in known]
+    if not fmt.get('open'):                           # an open format's columns are named by the card that reads them
+        out += [f'{where}: the {spec["format"]} format has no column {c!r}' for c in cols if c not in known]
     if fmt['key'] == 'site' and 'site' not in cols and not ('accession' in cols and 'position' in cols):
         out.append(f'{where}: name the site of each row: a site column, or accession and position')
     elif fmt['key'] != 'site' and fmt['key'] not in cols:
@@ -137,7 +139,7 @@ def pack(specs: dict, paths: dict, proteins: set, everyone: set, log=print) -> t
             log(f'  table {name}: {len(lookups[name]):,} rows (lookup)')
             continue
         site_keyed = fmt['key'] == 'site'
-        cols = ([] if not site_keyed else ['position']) + [c for c in t.columns if c not in ('accession', 'position')]
+        cols = ([] if not site_keyed else ['position']) + [c for c in t.columns if c != 'accession' and (c != 'position' or not site_keyed)]
         header[name] = {'format': spec['format'], 'columns': cols}
         kept = t[t['accession'].isin(proteins)]
         for acc, g in kept.groupby('accession', sort=False):
