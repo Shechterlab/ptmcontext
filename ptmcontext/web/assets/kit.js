@@ -566,7 +566,7 @@
       (D.download_terms ? `<p>${esc(D.download_terms)}</p>` : '') +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>File</th><th>Format</th><th>What it holds</th></tr></thead><tbody>` +
       dl.map(x => `<tr><td><a href="${esc(x.url)}">${esc(x.label)}</a></td><td>${esc(x.format || '')}</td><td class="wrapok">${esc(x.note || '')}</td></tr>`).join('') +
-      `</tbody></table></div><p class="note">Every table on this site downloads as TSV from its own page (Download TSV on the ${K.views.proteins ? '<a href="#proteins">Proteins</a> and ' : ''}${K.views.sites ? `<a href="#sites">${esc(cap(W.marks))}</a> pages` : 'pages'}), for your selection, with how it was made and how to cite it in its first lines.</p></section>`;
+      `</tbody></table></div><p class="note">Each table also downloads as TSV from its own page, for your selection, with citation lines at the top.</p></section>`;
   }
   // the search's terms: each question and attribute a search can name (key:value), its values, and the older keys read
   function searchSection() {
@@ -574,16 +574,16 @@
     const q = D.analyses.map(a => [a.id, a.title, Object.entries(a.labels || {}).filter(([c]) => c).slice(0, 4).map(([c, l]) => l || c), aliasOf(a.id)]);
     const t = Object.entries(D.attribute_specs || {}).filter(([, x]) => x.filter).map(([k, x]) => [k, x.label, Object.values(x.values || {}).slice(0, 4), aliasOf(k)]);
     const ex = (D.site.examples || []).filter(e => e.includes(':'));
-    return `<section id="m-search"><h3>Search terms</h3><p>The search takes genes, accessions and entry names (a list of them is a union), a site as "GENE R216", and terms <span class="mono">key:value</span>, each of which must hold. A term's value is a class, set or value by its code or name, or the start of a word in its name; several values, separated by <span class="mono">|</span> or commas, match any.${ex.length ? ` Examples: ${ex.map(e => `<button class="linkish mono" type="button" data-try="${esc(e)}">${esc(e)}</button>`).join(', ')}.` : ''}</p>` +
+    return `<section id="m-search"><h3>Search terms</h3><p>The search takes genes, accessions and entry names (a list is a union), a site as "GENE R216", and terms <span class="mono">key:value</span>, all of which must hold. A value is a class, set or value by code or name, or the start of a word in its name. Separate several values with <span class="mono">|</span> or commas to match any.${ex.length ? ` Examples: ${ex.map(e => `<button class="linkish mono" type="button" data-try="${esc(e)}">${esc(e)}</button>`).join(', ')}.` : ''}</p>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Key</th><th>What it names</th><th>Values, for example</th></tr></thead><tbody>` +
       [...q, ...t].map(([k, lab, vals, aka]) => `<tr><td class="mono">${esc(k)}${aka.length ? `<br><span class="muted">or ${aka.map(esc).join(', ')}</span>` : ''}</td><td>${esc(lab)}</td><td class="wrapok">${vals.map(esc).join('; ')}</td></tr>`).join('') +
       `</tbody></table></div></section>`;
   }
   function privacySection() {
-    const live = ['UniProt (rest.uniprot.org)', 'AlphaFold DB (alphafold.ebi.ac.uk)', 'PDBe (www.ebi.ac.uk/pdbe)', ...(D.partners ? ['STRING (string-db.org)'] : [])];
+    const live = ['UniProt (rest.uniprot.org)', 'AlphaFold DB (alphafold.ebi.ac.uk)', 'PDBe (www.ebi.ac.uk/pdbe)', ...(D.partners ? ['STRING (string-db.org)'] : []), ...(D.protein_view?.conservation?.ensembl?.rest ? [`Ensembl (${String(D.protein_view.conservation.ensembl.rest).replace(/^https?:\/\//, '').replace(/\/$/, '')})`] : [])];
     return `<section id="m-privacy"><h3>Licences and privacy</h3>` +
-      `<p><b>Licences.</b> The code (ptmcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} licence${D.kit.url ? ` (<a href="${esc(D.kit.url)}">source</a>)` : ''}. This site’s data and figures are under ${esc(hlicence(CIT.licence || 'their sources’ terms'))}; each source keeps its own terms (the Data table above lists them).</p>` +
-      `<p><b>Privacy.</b> The site sets no cookies and uses no tracking or analytics. Your searches, filters and selections stay in this page and its address; every test on them runs in your browser, and nothing is sent to a server. This browser keeps only your preferences (theme, the sidebar’s pin and width, the protein map’s rows) and the selections you save, in its local storage; clear them with your browser’s site data. A protein page asks these services for that protein’s public data, by its accession only: ${esc(live.join(', '))}. Downloads are made in the browser.</p></section>`;
+      `<p>Licences: the code (ptmcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} licence${D.kit.url ? ` (<a href="${esc(D.kit.url)}">source</a>)` : ''}. This site’s data and figures are under ${esc(hlicence(CIT.licence || 'their sources’ terms'))}, and each source keeps its own terms (see the Data table).</p>` +
+      `<p>Privacy: the site sets no cookies and uses no tracking. Searches, filters, selections and every test on them stay in your browser and its address. The browser’s local storage keeps only your preferences (theme, sidebar, protein map rows) and saved selections; clear them with the site data. A protein page asks these services for that protein’s public data, by accession only: ${esc(live.join(', '))}. Downloads are made in the browser.</p></section>`;
   }
   K.sections.method = () => [['m-g1', 'The tests', 0], ['m-tests', 'How the tests work', 1], ['m-questions', 'Questions, and what made each', 1], ['m-parity', 'Checked against the release', 1],
     ['m-gq', 'Each question', 0], ...D.analyses.map(a => [`m-q-${a.id}`, a.title, 1]), ...K.methods.map(x => [`m-q-${x.id}`, x.title, 1]),
@@ -662,49 +662,46 @@
     const dropped = [m.not_on_snapshot ? `${int(m.not_on_snapshot)} on other sequences (isoforms, unreviewed entries)` : '', m.residue_mismatch ? `${int(m.residue_mismatch)} not on a candidate residue` : ''].filter(Boolean);
     const nPar = R.parity ? R.parity.checked.reduce((n, c) => n + c.rows, 0) : 0;
     const refName = (IN[R.parity?.reference]?.version || R.parity?.reference || '').replace(/\s*\(.*\)$/, '');
-    const par = R.parity ? `<section id="m-parity"><h3>Checked against the published release</h3><p>The rebuild recomputes the published tests and compares them, row by row and character by character, with the statistics table of the ${esc(refName)}: ` +
+    const par = R.parity ? `<section id="m-parity"><h3>Checked against the published release</h3><p>The rebuild recomputes the published tests and compares them character by character with the statistics table of the ${esc(refName)}: ` +
       `<span class="${R.parity.equal ? 'ok' : ''}">${R.parity.equal ? `all ${int(nPar)} rows are identical` : 'some rows differ'}</span>.</p>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Test</th><th class="num">Rows</th><th>Identical</th></tr></thead><tbody>` +
       R.parity.checked.map(c => `<tr><td>${esc(A[c.analysis]?.title || c.analysis)}${c.reference ? ` <span class="muted">(against ${esc(IN[c.reference]?.version || c.reference)})</span>` : ''}</td><td>${esc(testName(c.analysis, c.method))}</td><td class="num">${int(c.rows)}</td><td>${c.equal ? '<span class="ok">✓</span>' : '✗'}</td></tr>`).join('') +
       '</tbody></table></div>' +
-      ((R.parity.new || []).length ? `<p>Not in the release, and so not checked against it: ${R.parity.new.map(id => esc(A[id]?.title || id)).join(', ')}. ${R.parity.new.length === 1 ? 'This question is' : 'These questions are'} new in the rebuild.</p>` : '') +
+      ((R.parity.new || []).length ? `<p>New in the rebuild, so not checked: ${R.parity.new.map(id => esc(A[id]?.title || id)).join(', ')}.</p>` : '') +
       '</section>' : '';
     return `<div class="page-head"><h2>Method</h2></div><div class="doc">` +
-      `<section id="m-tests"><h3>How the tests work</h3><p>Every question compares the ${esc(W.marks)} with the other ${esc(W.residues)} of the same proteins, class by class: is a ${esc(W.mark)} more or less likely than another ${esc(W.residue)} to sit in a disordered region, a domain, a motif? Each class is tested two ways.</p><ul>` +
-      `<li><b>Within each protein</b>, every protein is a stratum, and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)}: a Mantel–Haenszel odds ratio, with its 95% confidence interval (Robins–Breslow–Greenland) and the continuity-corrected Cochran–Mantel–Haenszel test. This separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}: abundant proteins are detected more often, and they differ in their structure.</li>` +
-      `<li><b>Pooled</b>, all the ${esc(W.residues)} of the ${esc(W.marked)} proteins are taken together: Fisher’s exact test, with the Haldane–Anscombe odds ratio.</li></ul>` +
-      `<p>Both count the same ${esc(W.marks)}: those on a protein with at least one other ${esc(W.residue)}. q is Benjamini–Hochberg across the classes of a question, for each test. A class counts as more or less often at q ≤ 0.05 and at least 1.1×.</p>` +
-      (D.analyses.some(a => a.kind === 'protein_sets') ? `<p><b>Questions about kinds of protein</b> (${esc(D.analyses.filter(a => a.kind === 'protein_sets').map(a => a.title).join(', '))}) count proteins, not residues: the ${esc(W.marked)} proteins in each set against the other proteins of the question’s universe, in a one-sided hypergeometric test as clusterProfiler’s enricher runs it, with the fold enrichment and Benjamini–Hochberg across the sets.${D.analyses.some(a => a.stratified) ? ` ${D.analyses.every(a => a.kind !== 'protein_sets' || a.stratified) ? 'Each is' : 'Those with an abundance input are'} repeated within protein-abundance deciles (a Mantel–Haenszel odds ratio across them), because mass spectrometry finds abundant proteins most often: an enrichment that holds there is not explained by abundance.` : ''}</p>` : '') + `</section>` +
+      `<section id="m-tests"><h3>How the tests work</h3><p>Each question asks whether a ${esc(W.mark)} is more or less likely than another ${esc(W.residue)} of the same protein to sit in a class, such as a disordered region, a domain or a motif. Each class is tested two ways.</p><ul>` +
+      `<li>Within each protein, every protein is a stratum and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)}: Mantel–Haenszel odds ratio, 95% confidence interval (Robins–Breslow–Greenland), continuity-corrected Cochran–Mantel–Haenszel test. This separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}, since abundant proteins are detected more often and differ in structure.</li>` +
+      `<li>Pooled, all the ${esc(W.residues)} of the ${esc(W.marked)} proteins are taken together: Fisher’s exact test, Haldane–Anscombe odds ratio.</li></ul>` +
+      `<p>Both count the same ${esc(W.marks)}, those on a protein with at least one other ${esc(W.residue)}. q is Benjamini–Hochberg across the classes of a question, for each test. A class counts as more or less often at q ≤ 0.05 and at least 1.1×.</p>` +
+      (D.analyses.some(a => a.kind === 'protein_sets') ? `<p>Questions about kinds of protein count proteins, not residues. The ${esc(W.marked)} proteins in each set are compared with the other proteins of the question’s universe, in a one-sided hypergeometric test as clusterProfiler’s enricher runs it, with fold enrichment and Benjamini–Hochberg q across the sets.${D.analyses.some(a => a.stratified) ? ` ${D.analyses.every(a => a.kind !== 'protein_sets' || a.stratified) ? 'Each is' : 'Those with an abundance input are'} repeated within protein-abundance deciles (Mantel–Haenszel odds ratio across them), because mass spectrometry finds abundant proteins most often. An enrichment that holds there is not explained by abundance.` : ''}</p>` : '') + `</section>` +
       `<section id="m-data"><h3>Data</h3><p>Sequences: ${esc(sn.release)}, ${int(sn.entries)} entries (FASTA MD5 <span class="mono">${esc(sn.fasta_md5)}</span>). ` +
-      `${cap(W.marks)}: ${int(m.counted)} on ${int(m.proteins)} proteins, from ${int(m.selected)} records${dropped.length ? ' (' + dropped.join('; ') + ', left out)' : ''}. Every file below was checked against its MD5 before it was read.</p>` +
+      `${cap(W.marks)}: ${int(m.counted)} on ${int(m.proteins)} proteins, from ${int(m.selected)} records${dropped.length ? ' (' + dropped.join('; ') + ', left out)' : ''}. Each file was checked against its MD5 before it was read.</p>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Source</th><th>Used for</th><th>Licence</th><th>File</th><th>MD5</th></tr></thead><tbody>${inputs}</tbody></table></div></section>` +
-      `<section id="m-questions"><h3>Questions, and what made each</h3><p>Each question is a layer (built in, made from the site file’s parameters, or a plugin the site trusts, with its package and version) or a protein-set test; the inputs it reads are the roles it names.</p>` +
+      `<section id="m-questions"><h3>Questions, and what made each</h3>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th><th>Reads</th><th>What it compares</th></tr></thead><tbody>` +
       D.analyses.map(a => `<tr><td>${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag">new</span>' : ''}</td><td class="wrapok">${esc(madeByText(a.id))}</td><td class="mono wrapok">${esc((a.roles || []).join(', '))}</td><td class="wrapok">${esc(a.describe || a.sub || '')}</td></tr>`).join('') +
       `</tbody></table></div></section>` + D.analyses.map(questionMethod).join('') + (K.methodParts || []).map(f => f()).join('') + K.methods.map(x => x.html()).join('') + par +
       citeSection() + downloadSection() + searchSection() + privacySection() +
       sourcesSection() +
-      `<section id="m-made"><h3>How this site is made</h3><p>This site is one file, <span class="mono">${esc(D.site.config)}</span>: which mark, which sequences and regions, which questions, its colours and pictures. ptmcontext ${esc(D.kit.version)} (commit <span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(R.written))}. Its citation, version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>` +
-      `<p>Every download carries the same block: what it shows and how it was tested, how to cite it and its data sources, the site’s and ptmcontext’s versions, the sequences and inputs it came from, and when and where it was exported. It is printed under each figure and kept in the file itself: the SVG’s metadata, the PNG’s text fields, the PDF’s properties and the TSV’s # lines.</p></section></div>`;
+      `<section id="m-made"><h3>How this site is made</h3><p>One file, <span class="mono">${esc(D.site.config)}</span>, sets the mark, the sequences and regions, the questions, the colours and the pictures. ptmcontext ${esc(D.kit.version)} (commit <span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(R.written))}. The citation, version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>` +
+      `<p>Every download carries its citation, data sources, versions, inputs and export date, printed under each figure and kept in the file (SVG metadata, PNG text fields, PDF properties, TSV # lines).</p></section></div>`;
   }
 
   // a question's own Method section (#method/q-<id>): what it asks, what made it, what it reads, how it is tested,
   // its classes, and whether it equals the published release
   function questionMethod(a) {
     const IN = D.inputs || {}, R = D.run, set = a.kind === 'protein_sets';
-    const reads = (a.roles || []).map(r => { const src = Object.values(IN).filter(x => x.role === r || (x.roles || []).includes(r)).map(x => `${x.version || ''}${x.licence ? ` (${hlicence(x.licence)})` : ''}`);
-      return `<li><span class="mono">${esc(r)}</span>${src.length ? ': ' + esc(src.join('; ')) : ''}</li>`; }).join('');
     const checked = (R.parity?.checked || []).filter(c => c.analysis === a.id), nRows = checked.reduce((n, c) => n + c.rows, 0);
-    const parity = !R.parity ? '' : a.new ? `<p><b>Release:</b> new in the rebuild; not in the published release, so not checked against it.</p>`
-      : checked.length ? `<p><b>Release:</b> ${checked.every(c => c.equal) ? `all ${int(nRows)} rows identical to the published release` : 'some rows differ from the published release'} (${checked.map(c => `${esc(testName(a.id, c.method))}: ${int(c.rows)}${c.reference ? `, against ${esc(IN[c.reference]?.version || c.reference)}, not its statistics table` : ''}`).join('; ')}).</p>` : '';
+    const parity = !R.parity ? '' : a.new ? `<p>New in the rebuild, so not in the published release.</p>`
+      : checked.length ? `<p>${checked.every(c => c.equal) ? `Identical to the published release (${int(nRows)} rows).` : 'Some rows differ from the published release.'}${checked.filter(c => c.reference).map(c => ` Checked against ${esc(IN[c.reference]?.version || c.reference)}, not its statistics table.`).join('')}</p>` : '';
     const labels = Object.entries(a.labels || {}).filter(([c]) => c);
     const classes = labels.length && labels.length <= 40 ? `<details><summary>Its ${set ? 'sets' : 'classes'} (${int(labels.length)})</summary><dl class="qm-classes">${labels.map(([c, l]) => `<dt>${esc(l || c)}</dt><dd>${esc((a.help || {})[c] || '')}</dd>`).join('')}</dl></details>` : '';
-    const tests = set ? `the ${esc(W.marked)} proteins in each set against the background (${esc(a.describe || 'the other proteins')}): one-sided hypergeometric test, fold enrichment, q Benjamini–Hochberg over the question's sets${a.stratified ? '; again within protein abundance deciles (Mantel–Haenszel), a check that abundance does not explain it' : ''}`
-      : `the ${esc(W.marks)} against the other ${esc(W.residues)} of the same proteins, class by class: within each protein (Mantel–Haenszel, Robins–Breslow–Greenland CI) and pooled (Fisher’s exact test, Haldane–Anscombe odds ratio); q Benjamini–Hochberg over the question's classes`;
+    const tests = set ? `${esc(W.marked)} proteins in each set against ${esc(a.describe || 'the other proteins')}, as under <a href="${esc(link('method', 'tests'))}">How the tests work</a>${a.stratified ? ', and again within abundance deciles' : ''}`
+      : `${esc(W.marks)} against the other ${esc(W.residues)} of the same proteins, within each protein and pooled, as under <a href="${esc(link('method', 'tests'))}">How the tests work</a>`;
     return `<section id="m-q-${esc(a.id)}" class="qm"><h3>${esc(a.title)}${a.new && R.parity ? ' <span class="newtag">new</span>' : ''}</h3>` +
       (a.question ? `<p class="qm-q">${esc(a.question)}</p>` : '') + (a.sub ? `<p>${esc(a.sub)}.</p>` : '') +
-      `<p><b>Made by:</b> ${esc(madeByText(a.id))}. <b>Tested:</b> ${tests}.</p>` +
-      (reads ? `<p><b>Reads:</b></p><ul class="qm-reads">${reads}</ul>` : '') + parity + classes +
+      `<p>Compares ${tests}.</p>` + parity + classes +
       `<p class="qm-links"><a href="${esc(link('overview', a.id))}">Its figure</a> · <a href="${esc(link('statistics', '', { a: a.id }))}">Its tests</a></p></section>`;
   }
 
@@ -1052,7 +1049,7 @@
       SD.marks.forEach(m => m[3][ti].forEach(c => { n[c]++; }));
       const links = SD.attribute_links?.[name] || {};
       const rows = vals.map((v, k) => [v, n[k]]).filter(([v]) => v).sort((x, y) => y[1] - x[1]);
-      return `<section id="m-sources"><h3>${esc(s.label)}</h3><p>The ${int(rows.length)} ${esc(s.label.toLowerCase())} that report the ${esc(W.marks)}, with how many ${esc(W.marks)} each reports. ${esc(s.help || '')} Please cite those whose ${esc(W.marks)} you use.</p>` +
+      return `<section id="m-sources"><h3>${esc(s.label)}</h3><p>${int(rows.length)} ${esc(s.label.toLowerCase())} report the ${esc(W.marks)}, with the number each reports. ${esc(s.help || '')} Cite those whose ${esc(W.marks)} you use.</p>` +
         `<div class="tbl-card"><table class="tbl"><thead><tr><th>${esc(s.label)}</th><th class="num">${esc(cap(W.marks))}</th><th>Reference</th></tr></thead><tbody>` +
         rows.map(([v, k]) => `<tr><td>${esc((s.values || {})[v] || v)}</td><td class="num">${int(k)}</td><td>${links[v] ? `<a href="${esc(s.link.url.replace('{}', links[v]))}">${esc(links[v])}</a>` : ''}</td></tr>`).join('') + '</tbody></table></div></section>';
     }).join('');
@@ -1060,8 +1057,8 @@
   function citeSection() {
     if (!CIT.version) return '';
     return `<section id="m-cite"><h3>How to cite</h3>` +
-      (CIT.preferred ? `<p>Please cite <b>${esc(CIT.preferred.text)}</b>${CIT.preferred.doi ? ` <a href="https://doi.org/${esc(CIT.preferred.doi)}">doi:${esc(CIT.preferred.doi)}</a>` : ''}</p>` : '') +
-      ((CIT.references || []).length ? `<p>${CIT.preferred ? 'and the' : 'Please cite the'} original data sources${Object.values(D.attribute_specs || {}).some(x => x.kind === 'list' && x.link) ? ` (and the ${esc(Object.values(D.attribute_specs).find(x => x.kind === 'list' && x.link).label.toLowerCase())} <a href="#method/sources">listed under Sources</a> whose ${esc(W.marks)} you use)` : ''}:</p><ul>${CIT.references.map(r => `<li>${esc(r.text)}${r.doi ? ` <a href="https://doi.org/${esc(r.doi)}">doi:${esc(r.doi)}</a>` : ''}</li>`).join('')}</ul>` : '') +
+      (CIT.preferred ? `<p>Please cite ${esc(CIT.preferred.text)}${CIT.preferred.doi ? ` <a href="https://doi.org/${esc(CIT.preferred.doi)}">doi:${esc(CIT.preferred.doi)}</a>` : ''}</p>` : '') +
+      ((CIT.references || []).length ? `<p>${CIT.preferred ? 'and the' : 'Please cite the'} original data sources${Object.values(D.attribute_specs || {}).some(x => x.kind === 'list' && x.link) ? ` and the ${esc(Object.values(D.attribute_specs).find(x => x.kind === 'list' && x.link).label.toLowerCase())} <a href="#method/sources">under Sources</a> you use` : ''}:</p><ul>${CIT.references.map(r => `<li>${esc(r.text)}${r.doi ? ` <a href="https://doi.org/${esc(r.doi)}">doi:${esc(r.doi)}</a>` : ''}</li>`).join('')}</ul>` : '') +
       `<p class="muted">This site: ${esc(CIT.title)}, version ${esc(CIT.version)}${CIT.date ? ' (' + esc(hdate(CIT.date)) + ')' : ''}${CIT.doi ? `, <a href="https://doi.org/${esc(CIT.doi)}">doi:${esc(CIT.doi)}</a>` : ''}${CIT.licence ? '; licence ' + esc(hlicence(CIT.licence)) : ''}.</p>` +
       `<p><button class="btn" type="button" id="copy-cite">Copy citations</button> <button class="btn" type="button" id="dl-cff">Download CITATION.cff</button></p></section>`;
   }
