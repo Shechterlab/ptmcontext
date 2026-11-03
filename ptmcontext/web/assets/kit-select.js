@@ -425,8 +425,10 @@
   // mark counts once for a class it lists twice, as `has` did
   function featureCounts(qid, ms) {
     const f = featuresOf(qid), n = new Array(f.length).fill(0);
+    if (!f.length) return n;                     // a question with no features here (as featuresOf's empty list): nothing to count
     if (qid[0] === '@') {
       const name = qid.slice(1), ti = AT().indexOf(name), sp = SPECS[name] || {};
+      if (ti < 0) return n;
       if (sp.kind === 'number') {
         const nums = SD.numbers[name], ts = f.map(x => +x.code);
         for (const m of ms) { const cs = m[3][ti]; ts.forEach((t, k) => { if (cs.some(c => nums[c] >= t)) n[k]++; }); }
@@ -436,7 +438,8 @@
       for (const m of ms) { const cs = m[3][ti]; for (let j = 0; j < cs.length; j++) { const k = at.get(cs[j]); if (k !== undefined && cs.indexOf(cs[j]) === j) n[k]++; } }
       return n;
     }
-    const ai = AN().indexOf(qid), at = new Map(f.map((x, k) => [SD.classes[qid].indexOf(x.code), k]));
+    const ai = AN().indexOf(qid); if (ai < 0) return n;
+    const at = new Map(f.map((x, k) => [SD.classes[qid].indexOf(x.code), k]));
     for (const m of ms) { const cs = m[2][ai]; for (let j = 0; j < cs.length; j++) { const k = at.get(cs[j]); if (k !== undefined && cs.indexOf(cs[j]) === j) n[k]++; } }
     return n;
   }
