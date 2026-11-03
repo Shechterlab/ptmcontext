@@ -68,7 +68,7 @@
     if (PV.acc === acc) return;
     Object.assign(PV, { acc, rec: null, err: '', af: null, uni: null, uniJson: null, pdb: null, pdbAll: false, ix: null, span: null, spanArg: '', more: false, fn: false, open: {}, scrolled: null,
       tb: null, evOpen: new Set(), pf: '', focus: '', qDone: false, light: null, lightP: null, lightAll: false });
-    IXS.all = false; K.map?.reset();
+    K.map?.reset();
     // the protein's tables (website.tables): the card, the sites table and the Evidence rows fill in when they arrive
     K.card?.load(acc).then(tb => { if (PV.acc === acc) { PV.tb = tb || {}; K.render(); } });
     loadProtein(acc).then(r => { if (PV.acc === acc) { PV.rec = r; K.render(); } },
@@ -441,7 +441,7 @@
       fold('p-regions', 'Domains and regions', `${int(rec.units.length)} region${rec.units.length === 1 ? '' : 's'} the site’s questions read`, regionsHtml(p, rec), false) +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, sel), false) +
       fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) +           // kit-3d.js
-      (IXP ? fold('p-ix', 'Interaction partners', 'STRING, live', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(p.gene || p.acc)}, best first, and which of them have ${esc(W.marks)} in this site.</p>${K.expBar(['tsv'], 'ixexp', 'the partners')}</div><div id="live-ix" class="live"><p class="muted">Asking STRING…</p></div>`, partnersOpen()) : '');
+      '';
   }
   // the facts as tiles, for a site without headline cards
   function legacyFacts(p, rec, nSrc) {
@@ -505,7 +505,7 @@
         `<p>${partners.length > 40 ? `<button class="linkish" type="button" data-light-all>${PV.lightAll ? 'Fewer' : `All ${int(partners.length)}`}</button> · ` : ''}<button class="linkish" type="button" data-try="${esc(partners.map(r => byAcc[r.acc]?.gene || r.acc).join(' '))}">Select these ${int(partners.length)}</button></p>` : `<p class="muted">None in the site’s partner table.</p>`, true) : '') +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
       fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) +           // kit-3d.js
-      (IXP ? fold('p-ix', 'Interaction partners', 'STRING, live', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(p.gene || p.acc)}, best first, and which of them have ${esc(W.marks)} in this site.</p>${K.expBar(['tsv'], 'ixexp', 'the partners')}</div><div id="live-ix" class="live"><p class="muted">Asking STRING…</p></div>`, false) : '');
+      (K.lightFolds || []).map(f => f(p, null, fold)).join('');
   }
   // a search for one name that only a protein without marks has (MAPT): Enter opens its light page; the search goes
   const lightFind = (idx, key) => { const u = String(key).toUpperCase(); return idx.find(r => r[0] === u.replace(/-\d+$/, '')) || idx.find(r => String(r[1]).toUpperCase() === u) ||
@@ -541,7 +541,7 @@
   K.sections.protein = () => { const p = byAcc[PV.acc] || PV.lightP; if (!byAcc[PV.acc]) return [['view', p ? `${p.gene || p.acc}: ${p.name || ''}` : 'This protein', 1]]; return [['view', p ? `${p.gene || p.acc}: ${p.name || ''}` : 'This protein', 1], ...(PV.site ? [['site-card', `The ${W.mark} ${site(PV.site)}`, 1]] : []),
     ['g-marks', `Its ${W.marks}`, 0], ['p-map', 'Protein map', 1], ['p-sites', cap(W.marks), 1], ['p-score', `Against its other ${W.residues}`, 1],
     ['g-protein', 'The protein', 0], ...(D.analyses.some(a => a.kind === 'protein_sets') ? [['p-kinds', 'Kinds of protein', 1]] : []), ...(K.proteinFoldSections || []), ['p-regions', 'Domains and regions', 1], ['p-seq', 'Sequence', 1],
-    ['g-live', 'Live sources', 0], ['p-struct', '3D structure', 1], ...(IXP ? [['p-ix', 'Interaction partners', 1]] : [])]; };
+    ['g-live', 'Live sources', 0], ['p-struct', '3D structure', 1],]; };
   // the Proteins page: its table, and the proteins with most marks (of the selection, if any)
   K.sections.proteins = () => {
     const cnt = K.sel?.active() ? K.sel.selectedCountByProtein() : null;
@@ -672,75 +672,10 @@
       if (af.failed || af.none) return;
       const first = !PV.af; PV.af = af; if (first) drawMap();
     });
-    drawIx();
     K.s3d.after(p, rec);                // the 3D structure (kit-3d.js)
   }
-  // ---- interaction partners: live from STRING, matched to this site's proteins by gene name ------------------------
-  // The site file turns the card on and names the taxon STRING files the organism under (website.partners).
+  // ---- interaction partners: the site file turns the card on and names the taxon STRING files the organism under (website.partners); the card is kit-pnet.js's
   const IXP = D.partners || null;
-  // website.protein.open_partners: the partners fold opens when the site's own partner table has partners for the protein
-  const partnersOpen = () => { const t = CC.writer?.partners?.table; return !!(D.protein_view?.open_partners && t && PV.tb && K.card.rows(PV.tb, t).length); };
-  const IXS = { net: IXP?.network || 'physical', min: Math.round((IXP?.min_score ?? 0.7) * 1000), only: false, all: false };
-  const STRING_API = 'https://string-db.org/api/json/', STRING_CALLER = 'ptmcontext';
-  const STRING_CITE = 'Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113';
-  const IX_SCORES = [[400, '≥ 0.4'], [700, '≥ 0.7'], [900, '≥ 0.9']];
-  // STRING's evidence channels: API field, name. The physical network scores the first three only.
-  const IX_CHANNELS = [['escore', 'experiments'], ['dscore', 'databases'], ['tscore', 'text mining'], ['ascore', 'co-expression'], ['nscore', 'neighbourhood'], ['fscore', 'gene fusion'], ['pscore', 'co-occurrence']];
-  let geneIndex = null, stringVersion = null;
-  const byGene = g => {
-    if (!geneIndex) { geneIndex = new Map(); P.forEach(p => String(p.gene || '').split(/[\s;]+/).filter(Boolean).forEach(x => { if (!geneIndex.has(x.toUpperCase())) geneIndex.set(x.toUpperCase(), p); })); }
-    return geneIndex.get(String(g || '').toUpperCase());
-  };
-  function ixAsk(acc) {
-    const key = `${acc}:${IXS.net}:${IXS.min}`;
-    stringVersion ||= getJson(STRING_API + 'version').then(j => (j && j[0] && j[0].string_version) || '', () => '');
-    (PV.ixReq ||= {})[key] ||= fetch(STRING_API + 'interaction_partners', {
-      method: 'POST',
-      body: new URLSearchParams({ identifiers: acc, species: String(IXP.species), network_type: IXS.net, required_score: String(IXS.min), limit: '2000', caller_identity: STRING_CALLER }),
-    }).then(r => (r.ok ? r.json() : r.status === 404 ? { unknown: true } : Promise.reject(new Error(String(r.status))))).catch(() => null);
-    return Promise.all([PV.ixReq[key], stringVersion]);
-  }
-  const ixDesc = () => `STRING${PV.ix?.ver ? ' v' + PV.ix.ver : ''} ${IXS.net} network, score ${(IXS.min / 1000).toFixed(1)} or more`;
-  const evidence = e => IX_CHANNELS.filter(([f]) => +e[f] > 0).sort(([a], [b]) => e[b] - e[a]).map(([f, n]) => `${n} ${Number(e[f]).toFixed(2)}`).join(', ');
-  function drawIx() {
-    const acc = PV.acc; if (!IXP || !PV.rec || !document.getElementById('live-ix')) return;
-    const seg = (key, opts) => `<span class="seg" role="group">${opts.map(([v, l]) => `<button type="button" data-ix-${key}="${v}" aria-pressed="${String(IXS[key]) === String(v)}">${esc(l)}</button>`).join('')}</span>`;
-    const controls = `<div class="ix-opts">${seg('net', [['physical', 'Physical'], ['functional', 'Functional']])} ${seg('min', IX_SCORES)} ${seg('only', [['false', 'All partners'], ['true', `With ${W.marks} here`]])}</div>`;
-    fill('live-ix', controls + '<p class="muted">Asking STRING…</p>');
-    ixAsk(acc).then(([rows, ver]) => {
-      if (PV.acc !== acc || !document.getElementById('live-ix')) return;
-      if (rows === null) { fill('live-ix', controls + '<p class="muted">STRING did not answer. Nothing on this page depends on it.</p>'); return; }
-      if (rows.unknown) { fill('live-ix', `<p class="muted">STRING has no entry for ${esc(acc)} (taxon ${esc(IXP.species)}).</p>`); return; }
-      const best = new Map();                                     // one row per partner, its best score
-      rows.forEach(e => { if (e.stringId_B !== e.stringId_A && (!best.has(e.stringId_B) || best.get(e.stringId_B).score < e.score)) best.set(e.stringId_B, e); });
-      const list = [...best.values()].map(e => ({ ...e, here: byGene(e.preferredName_B) }))
-        .sort((x, y) => y.score - x.score || String(x.preferredName_B).localeCompare(String(y.preferredName_B)));
-      PV.ix = { list, ver, self: rows[0]?.stringId_A || '' };
-      const withMarks = list.filter(x => x.here), shownAll = IXS.only ? withMarks : list, shown = IXS.all ? shownAll : shownAll.slice(0, 15);
-      const head = list.length
-        ? `<p>${int(list.length)} ${esc(IXS.net)} partner${list.length === 1 ? '' : 's'} at score ${(IXS.min / 1000).toFixed(1)} or more; <b>${int(withMarks.length)}</b> of them ${withMarks.length === 1 ? 'has' : 'have'} ${esc(W.marks)} in this site.</p>`
-        : `<p class="muted">STRING lists no ${esc(IXS.net)} partner at score ${(IXS.min / 1000).toFixed(1)} or more.</p>`;
-      const table = shown.length ? `<div class="tbl-card"><table class="tbl"><thead><tr><th>Partner</th><th class="num">Score</th><th>Evidence</th><th class="num">${esc(cap(W.marks))} here</th></tr></thead><tbody>` +
-        shown.map(x => `<tr><td>${x.here ? `<a href="${esc(K.link('protein', x.here.acc))}"><b>${esc(x.preferredName_B)}</b></a>` : `<span title="${esc(x.stringId_B)}">${esc(x.preferredName_B)}</span>`}</td>` +
-          `<td class="num">${Number(x.score).toFixed(3)}</td><td class="wrapok">${esc(evidence(x))}</td><td class="num">${x.here ? int(x.here.marks) : '–'}</td></tr>`).join('') + '</tbody></table></div>' : '';
-      const more = shownAll.length > 15 ? `<p><button class="linkish" type="button" data-ix-all>${IXS.all ? 'Show the best 15' : 'Show all ' + int(shownAll.length)}</button></p>` : '';
-      fill('live-ix', controls + head + table + more +
-        `<p><button class="linkish" type="button" data-ix-string>Open this network in STRING</button></p>` +
-        `<p class="src">${esc(ixDesc())} (${esc(STRING_CITE)}), retrieved ${esc(today())}. Partners are matched to this site’s proteins by gene name. A STRING association is to the whole protein and does not show that a partner binds or modifies a ${esc(W.mark)}.</p>`);
-    });
-  }
-  function ixTsv() {
-    const p = byAcc[PV.acc], list = PV.ix?.list || [];
-    return K.preamble(`interaction partners of ${p.gene || p.acc} (${p.acc})`, `the proteins STRING associates with ${p.gene || p.acc}: ${ixDesc()}, retrieved live on ${today()} (${STRING_CITE}; licence CC BY 4.0). Partners are matched to this site’s proteins by gene name, and ${W.marks}_here counts their ${W.marks} in this site. A STRING association is to the whole protein and does not show that a partner binds or modifies a ${W.mark}.`) +
-      ['partner', 'partner_string_id', 'partner_accession_here', 'score', ...IX_CHANNELS.map(([, n]) => n.replace(/\W+/g, '_')), `${W.marks.replace(/\W+/g, '_')}_here`].join('\t') + '\n' +
-      list.map(x => [x.preferredName_B, x.stringId_B, x.here?.acc || '', x.score, ...IX_CHANNELS.map(([f]) => x[f] ?? ''), x.here ? x.here.marks : 0].join('\t')).join('\n') + '\n';
-  }
-  function openString() {
-    const w = window.open('', '_blank');
-    const qs = new URLSearchParams({ identifiers: PV.acc, species: String(IXP.species), network_type: IXS.net, required_score: String(IXS.min), network_flavor: 'evidence', caller_identity: STRING_CALLER });
-    getJson(STRING_API + 'get_link?' + qs).then(d => { const url = d && (typeof d[0] === 'string' ? d[0] : d[0]?.url); if (url && w) { w.opener = null; w.location.href = url; } else if (w) w.close(); })
-      .catch(() => { if (w) w.close(); });
-  }
 
   // ---- downloads: the map as a figure, the sites and the proteins as tables ------------------------------------------
   const mapFigure = () => K.map.figure(mapCtx());
@@ -821,12 +756,6 @@
       document.body.dataset.printFoot = `${D.site.name} · ${location.href} · printed ${K.hdate(new Date().toISOString())}. ${K.creditLines()[0] || ''}`;
       setTimeout(() => { print(); if (theme) document.documentElement.dataset.theme = theme; else delete document.documentElement.dataset.theme; }, 150);
     }],
-    ['[data-ix-net]', el => { IXS.net = el.dataset.ixNet; IXS.all = false; drawIx(); }],
-    ['[data-ix-min]', el => { IXS.min = +el.dataset.ixMin; IXS.all = false; drawIx(); }],
-    ['[data-ix-only]', el => { IXS.only = el.dataset.ixOnly === 'true'; IXS.all = false; drawIx(); }],
-    ['[data-ix-all]', () => { IXS.all = !IXS.all; drawIx(); }],
-    ['[data-ix-string]', () => openString()],
-    ['[data-ixexp]', el => { if (PV.ix) K.exportFigure('tsv', null, `${D.site.id}_${PV.acc}_${IXS.net}_partners`, el, ixTsv); }],
     ['tr[data-acc]', (el, e) => { if (!e.target.closest('a')) K.go('protein', { arg: el.dataset.acc }); }],
   );
   // the row's own buttons come before the row's click (which opens the site's card)

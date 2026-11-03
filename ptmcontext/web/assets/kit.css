@@ -1230,3 +1230,48 @@ a.try-chip { display: inline-flex; }
 .tile-link:hover { text-decoration: underline; }
 a[href^="http"]:not([data-ext="arrow"]):not(:has(img))::after { content: "\2197"; margin-left: 0.15em; font-size: 0.8em; opacity: 0.65; text-decoration: none; }
 a[href^="http"]:hover::after { opacity: 1; }
+
+/* ---- Protein interactions and Interaction evidence at a glance (kit-pnet.js) ------------------------------------------ */
+:root {
+  --pn-c0: #0072B2; --pn-c1: #3d9bd6; --pn-c2: #D55E00; --pn-c3: #b87a00; --pn-c4: #00875f; --pn-c5: #b8527f; --pn-c6: #7B5EA7; --pn-c7: #5b6870;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --pn-c0: #5BA9E0; --pn-c1: #7CC4F0; --pn-c2: #F08A4B; --pn-c3: #F2B33D; --pn-c4: #2FC49A; --pn-c5: #E39CC3; --pn-c6: #A98BDB; --pn-c7: #9AA7AE; }
+}
+:root[data-theme="dark"] { --pn-c0: #5BA9E0; --pn-c1: #7CC4F0; --pn-c2: #F08A4B; --pn-c3: #F2B33D; --pn-c4: #2FC49A; --pn-c5: #E39CC3; --pn-c6: #A98BDB; --pn-c7: #9AA7AE; }
+.pn-opts { display: flex; flex-wrap: wrap; align-items: end; gap: 0.5rem 0.9rem; margin: 0.2rem 0 0.7rem; }
+.pn-opts-h { flex: 0 0 100%; font-size: var(--fs-cap); font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.pn-opt { display: flex; flex-direction: column; gap: 0.1rem; font-size: var(--fs-cap); color: var(--muted); }
+.pn-opt select { font: inherit; font-size: 0.85rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 0.4rem; padding: 0.25rem 0.4rem; min-height: var(--tap); }
+.pn-box { position: relative; width: 100%; aspect-ratio: 800 / 520; background: var(--surface-2); border: 1px solid var(--line); border-radius: 0.7rem; overflow: hidden; }
+.pn-box.pn-tablebox { aspect-ratio: auto; height: 520px; overflow: auto; background: var(--surface); }
+.pn-box .tbl-card { border: 0; box-shadow: none; border-radius: 0; }
+.pn-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; padding: 1rem; text-align: center; }
+.pn-svg { display: block; width: 100%; height: 100%; }
+.pn-count { position: absolute; left: 0.7rem; bottom: 0.4rem; margin: 0; font-size: var(--fs-cap); color: var(--muted); }
+.pn-edge { stroke: var(--muted); fill: none; }
+.pn-edge2 { stroke: var(--muted); }
+.pn-n { cursor: grab; touch-action: none; outline: none; }
+.pn-n:active { cursor: grabbing; }
+.pn-n:hover circle, .pn-n:focus-visible circle { stroke-width: 3; }
+.pn-n:focus-visible circle { stroke: var(--accent); }
+.pn-n.pn-link { text-decoration: none; }
+.pn-fill { stroke: var(--ink-2); stroke-width: 1.3; }
+.pn-me { fill: var(--accent); } .pn-no { fill: var(--surface); } .pn-self { fill: var(--ink); }
+.pn-c0 { fill: var(--pn-c0); } .pn-c1 { fill: var(--pn-c1); } .pn-c2 { fill: var(--pn-c2); } .pn-c3 { fill: var(--pn-c3); }
+.pn-c4 { fill: var(--pn-c4); } .pn-c5 { fill: var(--pn-c5); } .pn-c6 { fill: var(--pn-c6); } .pn-c7 { fill: var(--pn-c7); }
+.pn-lbl { font-size: 11px; fill: var(--ink); stroke: var(--surface-2); stroke-width: 3px; paint-order: stroke; pointer-events: none; user-select: none; }
+.pn-legend { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; min-height: 2.6rem; padding: 0.55rem 0 0.2rem; font-size: 0.82rem; color: var(--ink-2); }
+.pn-key { display: inline-flex; align-items: center; gap: 0.35rem; }
+.pn-src { min-height: 3.2rem; }
+.pn-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.pn-cc { position: relative; width: 100%; background: var(--surface-2); border: 1px solid var(--line); border-radius: 0.7rem; overflow: hidden; }
+.pn-cc-svg { display: block; width: 100%; height: 100%; }
+.pn-cc-t { font-size: 11px; fill: var(--ink); } .pn-cc-s { fill: var(--muted); font-size: 10px; }
+.pn-cc-axis { stroke: var(--muted); } .pn-cc-lane { stroke: var(--line-strong); }
+.pn-cc-mark { fill: var(--accent); }
+.pn-cc-obs { fill: var(--accent); stroke: var(--ink-2); stroke-width: 1; cursor: pointer; }
+.pn-cc-pred { fill: var(--surface-2); stroke: var(--accent); stroke-width: 1.8; cursor: pointer; }
+.pn-cc-obs:hover, .pn-cc-pred:hover, .lk-hover.pn-cc-mark { stroke-width: 3; }
+@media (max-width: 640px) { .pn-opt { flex: 1 1 8rem; } .pn-opt select { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .pn-n { transition: none; } }
