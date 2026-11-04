@@ -370,6 +370,7 @@
   function start() {
     if (T.started || !document.getElementById('s3d-viewer')) return;
     T.started = true;
+    placeholder('Loading the 3D viewer…');
     const w = T.want; T.want = null;
     if (w?.pos != null) T.highlight = w.pos;
     if (w?.entry) return loadPdb(T.acc).then(res => { const e = res.entries.find(x => x.id === w.entry) || { id: w.entry, method: '', resolution: null, chains: [], maps: [] }; V.src = 'pdb'; return showPdb(e, w.chain, w.pos); });
@@ -1368,8 +1369,14 @@
     K.go('protein', { arg: acc + (w.pos != null ? '/' + w.pos : '') });
     return true;
   }
+  // warm-up: the library and the best-entry lookup start when the reader reaches for the section (pointer or keyboard on
+  // its title, or on the group that holds it, or the group opening), so the one click that opens it finds them under way
+  const warm = () => { if (!T.acc || T.started || !document.getElementById('s3d-viewer')) return; load3Dmol().catch(() => {}); if (!T.best) { const acc = T.acc; bestPdb(acc).then(b => { if (T.acc === acc) T.best = b; }, () => {}); } };
+  const nearStruct = t => { const s = t.closest?.('details > summary'); const d = s && s.parentElement; return d && (d.id === 'p-struct' || (d.classList.contains('pgroup') && d.querySelector('#p-struct'))); };
+  ['pointerover', 'focusin'].forEach(ev0 => document.addEventListener(ev0, e => { if (nearStruct(e.target)) warm(); }, true));
   document.addEventListener('toggle', e => {
     const d = e.target;
+    if (d.open && d.classList?.contains('pgroup') && d.querySelector('#p-struct')) warm();
     if (d.id === 'p-struct' && d.open && T.acc) { begin(); if (T.want && T.started) { const w = T.want; apply(w); } }
     if (d.classList?.contains('s3d-sub')) { T.open[d.id] = d.open; if (d.open) paintLists(); }
   }, true);

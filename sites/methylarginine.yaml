@@ -456,6 +456,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Disease families (DisGeNET)
     question: "Which disease gene sets are over-represented?"
     sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by disease family: the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
+    set_note: "A family of DisGeNET disease terms gathered by name; one of the eight whose rules were checked by hand."
     section: Protein classes and pathways
     identifiers:
       noun: gene
@@ -476,6 +477,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Disease families, additional (grouped automatically from disease terms)
     question: "Which of the additional disease families, mostly clinical signs, are over-represented?"
     sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by additional disease family: grouped automatically by matching words in the disease terms, not checked by hand, mostly clinical signs; tested apart from the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
+    set_note: "A family of DisGeNET disease terms grouped automatically by matching words; not checked by hand."
     section: Protein classes and pathways
     identifiers:
       noun: gene
@@ -2113,7 +2115,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {analysis: motif, best: true, label: "in {class} motifs", kind: Sequence motif, glyph: letters, opens: p-score}
       - {analysis: disorder, classes: [disordered], label: in disordered regions, kind: Position in the protein, glyph: wave, opens: p-regions}
       - {attribute: evidence, values: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, rbrid_residue_published_rule, rbrid_region],
-         label: in RNA-bound regions, kind: Bound region · crosslinking and RBDmap in cells, glyph: squiggle, opens: p-sites,
+         label: in RNA-bound fragments or peptides, kind: Measured in cells · not a structural contact, glyph: squiggle, opens: p-sites,
          tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RBR-ID+ peptide. This is where RNA binds in cells, not a structural contact: the RNA and DNA interactions section counts the sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
       - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
       - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds}

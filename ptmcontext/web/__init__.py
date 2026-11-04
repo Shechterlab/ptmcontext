@@ -254,7 +254,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                              **({'scores': {k: a['scores'][k] for k in ('label', 'help', 'levels', 'max') if k in a['scores']}} if a.get('scores') else {}),
                              'title': a.get('title', a['id']), 'question': a.get('question', ''),
                              'sub': a.get('sub', ''), 'section': a.get('section', 'Protein classes and pathways'), 'layer': '', 'describe': a.get('background', ''),
-                             'labels': {**set_names.get(a['id'], {}), **(a.get('labels') or {})}, 'help': dict(a.get('help') or {}),
+                             'labels': {**set_names.get(a['id'], {}), **(a.get('labels') or {})}, 'help': dict(a.get('help') or {}), 'set_note': a.get('set_note', ''),
                              'new': bool(a.get('new')), **_class_order(a, {})})
             continue
         layer = _layer_words(a, run)

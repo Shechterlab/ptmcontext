@@ -237,18 +237,9 @@
     // how the marks were found (provenance attributes) after what they are, as the Overview's caveat
     const prov = r => !!A[r.analysis]?.provenance, by = (x, y) => prov(x) - prov(y) || strength(y) - strength(x);
     const up = sig.filter(r => r.dir === 'more').sort(by), dn = sig.filter(r => r.dir === 'less').sort(by);
-    // near-duplicates (one class at several windows or cut-offs, or in several questions) count once: the best of each question's family, with how many more it stands for
-    // near-duplicates: the same words (bracketed parts, case and punctuation aside), the same 2x2 table, or counts within 5% on both sides
-    // (one class given by several questions, windows or cut-offs); the strongest of each is kept, with how many more it stands for
-    const stem = r => r.label.toLowerCase().replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
-    const near = (x, y) => stem(x) === stem(y) || (x.a === y.a && x.b === y.b && x.c === y.c && x.d === y.d)
-      || (Math.abs(x.a - y.a) <= 0.05 * Math.max(x.a, y.a) && Math.abs(x.c - y.c) <= 0.05 * Math.max(x.c, y.c) && x.a + x.b === y.a + y.b && x.c + x.d === y.c + y.d && x.dir === y.dir);
-    const fam = list => { const o = []; list.forEach(r => { const f = o.find(k => near(k, r)); if (f) f.related++; else o.push({ ...r, related: 0 }); }); return o; };
-    // circular for the selection: it names proteins, and the feature is a class named after one of them (a PRMT, in a list holding PRMT1)
-    const named = (K.sel.compute().q.genes || []).map(i => String(D.proteins[i]?.[1] || '').toUpperCase().replace(/[^A-Z]+/g, '')).filter(x => x.length >= 3);
-    const circ = r => !!named.length && (r.label.toUpperCase().match(/[A-Z]{3,}/g) || []).some(w => named.some(g => g.startsWith(w) || w.startsWith(g)));
-    const mark = list => { const o = fam(list); o.forEach(r => { r.circular = circ(r); }); return o; };
-    return { G, tested: all.length, up: mark(up), dn: mark(dn), n: sig.length, nFeat: fam(sig).length };
+    // near-duplicates count once and circular features are flagged: the rule shared with the selection bar and What sets it apart (kit-select.js featureFamilies)
+    const mark = list => K.sel.featureFamilies(list);
+    return { G, tested: all.length, up: mark(up), dn: mark(dn), n: sig.length, nFeat: K.sel.featureFamilies(sig).length };
   }
   const fxR = v => (v == null ? '–' : K.fxn(v) + '×');
   const pcS = v => (v < 0.1 ? (100 * v).toFixed(1) : (100 * v).toFixed(0)) + '%';

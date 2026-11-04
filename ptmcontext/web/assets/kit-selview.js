@@ -33,11 +33,13 @@
     const diff = rows.filter(r => r.q != null && r.q <= PADJ() && (r.dir === 'more' || r.dir === 'less'));
     const strength = r => (r.dir === 'more' ? Math.log(r.lo ?? r.or) : -Math.log(r.hi ?? r.or));
     const up = diff.filter(r => r.dir === 'more').sort((x, y) => strength(y) - strength(x)), dn = diff.filter(r => r.dir === 'less').sort((x, y) => strength(y) - strength(x));
-    memo = { key: selKey(), rows, diff, up, dn, G, shown: [...up.slice(0, 8), ...dn.slice(0, 4)] };
+    // repeats count once and a class that restates the list is flagged (kit-select.js featureFamilies); the forest and the line show these
+    const fu = K.sel.featureFamilies(up), fd = K.sel.featureFamilies(dn);
+    memo = { key: selKey(), rows, diff, up, dn, fu, G, shown: [...fu.slice(0, 8), ...fd.slice(0, 4)] };
     return memo;
   }
   const qTitle = r => A[r.analysis]?.title || r.analysis;
-  const summaryText = m => (m.up.length ? m.up.slice(0, 3).map(r => `${r.label} ${fx(r.or)}`).join(', ') + ' · ' : '') + `${int(m.diff.length)} of ${int(m.rows.length)} features differ (q ≤ ${PADJ()})`;
+  const summaryText = m => (m.fu.some(r => !r.circular) ? m.fu.filter(r => !r.circular).slice(0, 3).map(r => `${r.label} ${fx(r.or)}`).join(', ') + ' · ' : '') + `${int(m.diff.length)} of ${int(m.rows.length)} features differ (q ≤ ${PADJ()})`;
   // the forest, as the page draws it and the figure exports it: each row's odds ratio and 95% CI on a log2 axis
   function forestSvg(rows, w, light) {
     const L = Math.min(300, w * 0.42), R = 96, X0 = L + 8, X1 = w - R, lo = -4, hi = 4, rowH = 22;
@@ -47,7 +49,7 @@
     for (let k = lo; k <= hi; k++) parts.push(`<line x1="${X(2 ** k).toFixed(1)}" x2="${X(2 ** k).toFixed(1)}" y1="0" y2="${rows.length * rowH}" stroke="${k === 0 ? ink : grid}" stroke-width="${k === 0 ? 1.2 : 0.6}"${k === 0 ? '' : ' stroke-dasharray="2 3"'}/>`);
     rows.forEach((r, i) => {
       const y = i * rowH + rowH / 2, c = r.dir === 'more' ? more : less;
-      parts.push(`<text x="0" y="${y + 4}" font-size="12" fill="${ink}">${esc(r.label.length > 40 ? r.label.slice(0, 39) + '…' : r.label)}<tspan fill="${light ? '#6b7280' : 'var(--muted)'}" font-size="12"> · ${esc(qTitle(r).length > 26 ? qTitle(r).slice(0, 25) + '…' : qTitle(r))}</tspan></text>`);
+      parts.push(`<text x="0" y="${y + 4}" font-size="12" fill="${ink}">${esc((r.label.length > 40 ? r.label.slice(0, 39) + '…' : r.label) + (r.related ? ` +${r.related}` : '') + (r.circular ? ' (restates the list)' : ''))}<tspan fill="${light ? '#6b7280' : 'var(--muted)'}" font-size="12"> · ${esc(qTitle(r).length > 26 ? qTitle(r).slice(0, 25) + '…' : qTitle(r))}</tspan></text>`);
       if (r.lo != null && r.hi != null) parts.push(`<line x1="${X(r.lo).toFixed(1)}" x2="${X(r.hi).toFixed(1)}" y1="${y}" y2="${y}" stroke="${c}" stroke-width="2"/>`);
       parts.push(`<circle cx="${X(r.or).toFixed(1)}" cy="${y}" r="4.5" fill="${c}"/><text x="${w}" y="${y + 4}" font-size="12" text-anchor="end" fill="${ink}">${esc(fx(r.or))} · ${esc(pc(r.a / (r.a + r.b)))}/${esc(pc(r.c / (r.c + r.d)))}</text>`);
     });

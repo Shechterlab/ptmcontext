@@ -169,9 +169,18 @@
   // the one-line answer to "is that unusual?" for a single protein: what these counts can and cannot say, and where the dataset-wide answer is
   function scoreVerdict(p, rec) {
     const qs = D.analyses.filter(a => rec.counts[a.id] && a.kind !== 'protein_sets'), n = rec.marks.length, others = Math.max(0, (rec.totals[qs[0]?.id] || [0, 0])[1]);
-    return `<p class="verdict"><b>Unusual?</b> One protein cannot say: its ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} are not independent and only ${int(others)} other ${esc(W.residues)} are left to compare with, so no test is made here. ` +
+    return `<p class="verdict"><b>Unusual?</b> One protein cannot say: its ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} are not independent and only ${int(others)} other ${esc(W.residues)} are left to compare with, so no test is made here. ${baseText() ? `Dataset-wide, the largest difference is ${esc(baseText())}. ` : ''}` +
       `These counts describe ${esc(p.gene || p.acc)}. Whether a class is unusual for ${esc(W.marks)} is tested across the whole dataset, one question at a time: ${qs.slice(0, 8).map(a => `<a href="${esc(K.link('overview', a.id))}">${esc(a.title)}</a>`).join(', ')}${qs.length > 8 ? ', …' : ''}.</p>`;
   }
+  // the dataset-wide base rate beside the verdict: the most over-represented class of the site's residue questions (pooled test,
+  // q within the cut-off), the figure a single protein is read against
+  function baseRate() {
+    const ids = new Set(D.analyses.filter(a => a.kind !== 'protein_sets').map(a => a.id)), cut = K.PADJ ?? 0.05;
+    let best = null;
+    D.rows.forEach(r => { if (ids.has(r.analysis) && r.method === 'fisher' && r.dir === 'more' && r.q != null && r.q <= cut && r.eff > 1 && r.eff < 1e299 && r.category !== '' && !/^(no |not |unknown|unassigned|other\b|none\b)/i.test(label(r.analysis, r.category)) && (!best || r.eff > best.eff)) best = r; });
+    return best;
+  }
+  const baseText = () => { const b = baseRate(); return b ? `${K.fxn(b.eff)}× in ${label(b.analysis, b.category)}` : ''; };
   const winHtml = w => { const c = Math.floor(w.length / 2); return `<span class="win">${esc(w.slice(0, c))}<b>${esc(w[c])}</b>${esc(w.slice(c + 1))}</span>`; };
   // the links every protein has
   // the links every protein has: the kit's list (config/protein_links.json), the site's own (website.protein.links), and
@@ -479,7 +488,7 @@
       fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''}`, `<div class="card-head"><p class="sub">Rows from this dataset and live sources. Hover for a description, click to pin.</p>${mapExp(['pdf', 'svg', 'png', 'tsv'])}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
       (headline(p, rec) || legacyFacts(p, rec, nSrc)) +
       fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}${nSrc ? ` · ${int(new Set(rec.marks.flatMap(m => (attrVal(m, nSrc) || '').split(SPECS[nSrc].separator || '; ').filter(Boolean))).size)} ${esc(SPECS[nSrc].label.toLowerCase())}` : ''}${rec.shown?.length ? ` · ${int(rec.shown.length)} more ${esc(K.shown.row())}` : ''}`, sitesTable(p, rec, sel), true) +
-      fold('p-score', `${esc(cap(W.marks))} vs other ${esc(W.residues)} in ${esc(p.gene || p.acc)}`, '', `${scoreVerdict(p, rec)}<p class="sub">Share of ${esc(W.marks)} and of other ${esc(W.residues)} in each class. Click a row to see every class.</p><div class="hub">${scoreRows(p, rec)}</div>`, false) +
+      fold('p-score', `${esc(cap(W.marks))} vs other ${esc(W.residues)} in ${esc(p.gene || p.acc)}`, esc(`Can't be tested for one protein${baseText() ? '; dataset-wide: ' + baseText() : ''}`), `${scoreVerdict(p, rec)}<p class="sub">Share of ${esc(W.marks)} and of other ${esc(W.residues)} in each class. Click a row to see every class.</p><div class="hub">${scoreRows(p, rec)}</div>`, false) +
       (D.analyses.some(a => a.kind === 'protein_sets') ? fold('p-kinds', 'Protein classes and pathways', '', kindsHtml(p), false) : '') +
       (K.proteinFolds || []).map(f => f(p, rec, fold)).join('') +
       fold('p-regions', 'Domains and regions', `${int(rec.units.length)} region${rec.units.length === 1 ? '' : 's'}`, regionsHtml(p, rec), false) +

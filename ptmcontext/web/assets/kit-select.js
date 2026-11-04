@@ -846,5 +846,35 @@
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('fgroup')) { (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g); } }, true);
   addEventListener('keydown', e => { if (e.key === 'Escape' && R.open) { R.open = false; rail(); } });
 
-  Object.assign(K, { watchSections, sel: { nFilters: () => Object.keys(S.f).length + (S.q ? 1 : 0), ready, active, testable, contrastOK, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, featureCounts, STUDY, MIN_SIDE, refresh, lookup, nearSymbols, parsePattern, dropTerm, isTermKey, aliasesOf: i => aliasesOf[i] || [], nameOf, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
+  // Features that repeat count once, everywhere enriched features appear (the selection bar, Enriched features, What sets it
+  // apart). Near-duplicates: the same words (bracketed parts, case and punctuation aside), the same 2x2 table, or counts
+  // within 5% on both sides (one class given by several questions, windows or cut-offs); the first of each (callers sort
+  // the strongest first) is kept, with how many more it stands for. A feature is circular when the selection names proteins
+  // and the feature is a class named after one of them (a PRMT, in a list holding PRMT1).
+  const featStem = r => String(r.label).toLowerCase().replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+  const featNear = (x, y) => featStem(x) === featStem(y) || (x.a === y.a && x.b === y.b && x.c === y.c && x.d === y.d)
+    || (Math.abs(x.a - y.a) <= 0.05 * Math.max(x.a, y.a) && Math.abs(x.c - y.c) <= 0.05 * Math.max(x.c, y.c) && x.a + x.b === y.a + y.b && x.c + x.d === y.c + y.d && x.dir === y.dir);
+  function featureFamilies(list) {
+    const o = []; list.forEach(r => { const f = o.find(k => featNear(k, r)); if (f) f.related++; else o.push({ ...r, related: 0 }); });
+    const named = (compute().q.genes || []).map(i => String(D.proteins[i]?.[1] || '').toUpperCase().replace(/[^A-Z]+/g, '')).filter(x => x.length >= 3);
+    o.forEach(r => { r.circular = !!named.length && (String(r.label).toUpperCase().match(/[A-Z]{3,}/g) || []).some(w => named.some(g => g.startsWith(w) || w.startsWith(g))); });
+    return o;
+  }
+  // a chip naming one set of a protein-set question ("disease:als"): what the set is, how many genes it holds, how it was made
+  // (the question's set_note: by hand, by rule); '' for any other term
+  function termTip(raw) {
+    const m = /^([^:\s]+):(.+)$/.exec(String(raw || '').trim()); if (!m || !SD) return '';
+    const r = termFilter([m[1].toLowerCase(), m[2].replace(/^"|"$/g, '')]);
+    if (!r || r.error || !/^p:/.test(r[0]) || !r[1].length) return '';
+    const aid = r[0].slice(2), a = A[aid], ps = SD.protein_sets?.[aid]; if (!a) return '';
+    return r[1].slice(0, 3).map(sn => {
+      const row = ps?.sets.find(x => x[0] === sn), size = row ? row[1] : null, here = setMembers[aid]?.[sn]?.size;
+      return `${classLabel(aid, sn)}: a set of the question "${a.title}"${(a.help || {})[sn] ? '. ' + a.help[sn] : ''}.` + (size != null ? ` ${int(size)} gene${size === 1 ? '' : 's'} in the background${here != null ? `, ${int(here)} of them on proteins with ${W.marks} here` : ''}.` : '') + (a.set_note ? ' ' + a.set_note : '');
+    }).join(' ') + (r[1].length > 3 ? ` (and ${r[1].length - 3} more)` : '');
+  }
+  ['pointerover', 'focusin'].forEach(ev0 => document.addEventListener(ev0, e => {
+    const c = e.target.closest?.('[data-try], .sel-chip'); if (!c || !SD || c.dataset.tipDone) return;
+    const t = termTip(c.dataset.try || (c.getAttribute('title') || '')); c.dataset.tipDone = '1'; if (t) c.title = t;
+  }, true));
+  Object.assign(K, { watchSections, sel: { nFilters: () => Object.keys(S.f).length + (S.q ? 1 : 0), ready, active, testable, contrastOK, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, featureCounts, featureFamilies, termTip, STUDY, MIN_SIDE, refresh, lookup, nearSymbols, parsePattern, dropTerm, isTermKey, aliasesOf: i => aliasesOf[i] || [], nameOf, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
 });

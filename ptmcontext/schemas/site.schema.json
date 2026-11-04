@@ -965,6 +965,10 @@
             "type": "string",
             "description": "the line under the figure's title"
           },
+          "set_note": {
+            "type": "string",
+            "description": "a protein-set question: how its sets were made (by hand, by rule), shown in the hover of a chip naming one of them"
+          },
           "abundance": {
             "type": "object",
             "required": [
