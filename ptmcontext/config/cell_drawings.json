@@ -1,8 +1,9 @@
 {
-  "note": "The parts of the kit's drawings of a cell (kit-cell.js): the names a site's website.cell rows use (part, also) to say which compartment colours which part. Geometry only: what each part is called on a page comes from the site file. A part no row colours is drawn outlined (not measured) and not labelled.",
+  "note": "The parts of the kit's drawings of a cell (kit-cell.js): the names a site's website.cell rows use (part, also) to say which compartment colours which part. Geometry only (crop: the view box a phone shows, with the labels left out): what each part is called on a page comes from the site file. A part no row colours is drawn outlined (not measured) and not labelled.",
   "drawings": {
     "cell": {
       "title": "a eukaryotic cell, the nucleus drawn whole",
+      "crop": [205, 40, 590, 420],
       "parts": {
         "cytosol": "the cytoplasm's ground", "microtubules": "rays from the centrosome", "actin": "the cortex under the membrane",
         "pm": "the plasma membrane", "er": "rough ER wrapped round the nucleus", "ribosomes": "ribosomes on the ER and free polysomes",
@@ -13,6 +14,7 @@
     },
     "nucleus": {
       "title": "the nucleus: chromosome territories, the channels between them, its bodies and envelope",
+      "crop": [210, 10, 580, 450],
       "parts": {
         "nucleoplasm": "the channels between the territories", "chromatin": "chromosome territories", "periphery": "chromatin along the envelope",
         "perinucleolar": "chromatin round the nucleolus", "nucleolus": "the nucleolus", "speckles": "clusters at channel junctions",

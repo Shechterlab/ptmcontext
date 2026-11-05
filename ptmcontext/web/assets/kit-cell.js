@@ -576,6 +576,45 @@
       note: () => `Bars: share of ${who(scopedNow())} among the ${here} over their share of all the proteins the map places (log2), filled at q ≤ ${PADJ}. Marks: the same against ${alike} (✓ more likely, ≈ about the same, ○ no clear difference, ▼ less likely).` },
   };
   DRAWINGS.forEach(d => { FIGS[d.drawing] = { title: () => d.title || C.title || 'Where in the cell', sub: () => `Odds ratio of ${who(scopedNow())} against ${alike}, as the median of the maps that have each part.`, make: () => DRAW[d.drawing](scopedNow()), tsv: () => gridTsv(LAYERS.part, scopedNow()) }; });
+  // ---- for another page's card: the drawings and the parts' values, without the cell page ----------------------------------
+  // K.cell.list() the drawings [{ drawing, title, parts, crop }]; K.cell.parts(scoped?) every part a row colours, with its value
+  // [{ part, drawings, row, id, tone, direction, value, l2, or, maps, cells }] ('more', 'less', 'ns' or 'na'; the median of the maps
+  // that have it, and each map's own); K.cell.draw(el, drawing, { scoped, crop, labels, onPart }) draws a drawing into el as the page does
+  // (crop: true for the kit's phone crop of it, or [x, y, w, h]; labels: false leaves out the leader-line labels; onPart(part, info)
+  // takes a click or Enter on a part in place of opening the cell page) and returns { drawing, W, H, parts }. Hover texts are kept
+  // for the last drawing made, so a page draws the cell once at a time.
+  const crops = D.cell_crops || {};
+  const toneDir = tn => (tn[0] === 'u' ? 'more' : tn[0] === 'd' ? 'less' : tn);
+  function partValues(scoped = scopedNow()) {
+    const { P } = parts(scoped);
+    return Object.entries(P).map(([part, p]) => ({
+      part, drawings: DRAWINGS.filter(d => PARTS[d.drawing].includes(part)).map(d => d.drawing), row: rowName(p.row), id: p.id, tone: p.tone, direction: toneDir(p.tone),
+      value: p.value, l2: p.a?.l2 ?? null, or: p.a?.l2 == null ? null : 2 ** p.a.l2, maps: p.cells.filter(([, c]) => !c.circular).length,
+      cells: p.cells.filter(([, c]) => !c.circular).map(([aid, c]) => ({ map: aid, name: DS(aid).name, l2: c.a.l2 ?? null, q: c.a.q ?? null, tone: c.tone })),
+    }));
+  }
+  function drawInto(el, drawing, o = {}) {
+    const d = DRAWINGS.find(x => x.drawing === (drawing || DRAWINGS[0]?.drawing));
+    if (!el || !d || !DRAW[d.drawing]) return null;
+    const scoped = o.scoped ?? scopedNow();
+    TIPS = [];
+    const f = DRAW[d.drawing](scoped);
+    el.innerHTML = svgOf(f, 'cell-svg cell-' + d.drawing);
+    const sv = el.firstElementChild, crop = o.crop === true ? crops[d.drawing] : Array.isArray(o.crop) ? o.crop : null;
+    if (crop) { sv.setAttribute('viewBox', crop.join(' ')); sv.style.maxWidth = crop[2] + 'px'; }
+    if (o.labels === false) sv.querySelectorAll('.cd-label').forEach(n => n.remove());
+    const info = Object.fromEntries(partValues(scoped).map(x => [x.part, x]));
+    if (el._cellOnPart) el.removeEventListener('click', el._cellOnPart, true);
+    el._cellOnPart = o.onPart ? (e => {
+      const g = e.target.closest?.('[data-cell-part]'); if (!g) return;
+      e.stopPropagation(); o.onPart(g.dataset.cellPart, info[g.dataset.cellPart] || null);
+    }) : null;
+    if (el._cellOnPart) el.addEventListener('click', el._cellOnPart, true);
+    requestAnimationFrame(grow);
+    return { drawing: d.drawing, W: f.W, H: f.H, parts: Object.values(info).filter(x => x.drawings.includes(d.drawing)) };
+  }
+  Object.assign(K.cell, { list: () => DRAWINGS.map(d => ({ drawing: d.drawing, title: d.title || d.drawing, parts: PARTS[d.drawing], crop: crops[d.drawing] || null })), parts: partValues, draw: drawInto });
+
   const figName = k => `${D.site.id}_${ID}_${k === 'one' ? UI.map : k}`;
   const block = (k, head, cls) => `<div class="cell-block ${cls}" id="cell-${k}"><div class="fig-head"><span class="flabel">${esc(head)}</span>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', head, ID).replace(/data-cell-exp="(\w+)"/g, `data-cell-exp="$1" data-cell-fig="${k}"`)}</div>` +
     `<div class="cell-scroll">${svgOf(FIGS[k].make(), 'cell-svg cell-' + k)}</div></div>`;

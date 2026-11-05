@@ -148,6 +148,11 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   least half of them differ that way (q ≤ 0.05 and 1.1× or more), grey otherwise.
 - `title, question, intro, note`: words.
 
+The kit draws the cell for other pages too: `K.cell.list()` (the drawings, their parts and phone crop, the crop from
+`config/cell_drawings.json`), `K.cell.parts(scoped?)` (every part a `website.cell` row colours: its row, tone, direction
+`more`/`less`/`ns`/`na`, the median log2 odds ratio and each map's own) and `K.cell.draw(el, drawing, {scoped, crop, labels, onPart})`
+(the drawing as the cell page draws it; `onPart` takes a click on a part).
+
 **`website.set_views`** (kit-values.js): a protein-set question drawn with its proteins' numbers. Each `{analysis,
 meter?, meter_words?, population?, intro?, box?: {value, title?, sub?, axis?}, caveat?, chips?: [{title, note?, value? |
 share?: [column, column], sets?, order?, max?}], residue?, credit?}`: the set whose share the tile shows, a column drawn
@@ -156,6 +161,7 @@ highest number or share of two columns (within some sets), and a residue questio
 numbers with **`values`**: `{input? (default the sets' table), protein? (default the sets' protein column), columns:
 [name | {name, label?, help?, background?}], include?, exclude?}`, each protein's first row; a column with `background:
 true` also keeps every other background protein's number. No test reads them.
+
 ## Set hierarchy
 
 For a protein-set question whose sets form an ontology (each set holding the members of the sets under it, as the

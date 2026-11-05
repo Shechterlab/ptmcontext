@@ -333,7 +333,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'sites_view': web.get('sites'), 'proteins_view': web.get('proteins'), 'selection_cards': web.get('selection_cards') or {}, 'protein_view': web.get('protein'), 'compare': web.get('compare'), 'legacy_links': web.get('legacy_links') or {}, 'tabs': web.get('tabs') or {}, 'search_aliases': web.get('search_aliases') or {}, 'legacy_params': web.get('legacy_params') or {}, 'dataset': web.get('dataset'), 'downloads': web.get('downloads') or [], 'download_terms': web.get('download_terms', ''),
         # the maps of the cell as one question (kit-cell.js) and the parts of the kit's drawings; protein-set questions
         # drawn with their proteins' numbers (kit-values.js)
-        **({'cell': web['cell'], 'cell_drawings': _cell_drawings()} if web.get('cell') else {}),
+        **({'cell': web['cell'], 'cell_drawings': _cell_drawings(), 'cell_crops': _cell_crops()} if web.get('cell') else {}),
         **({'set_views': web['set_views']} if web.get('set_views') else {}),
         **({'models': models} if models else {}),
         # the profile's sticker residues, for the IDRs' patterning line (kit-idrs.js)
@@ -396,6 +396,11 @@ SHARDS = 64
 def _cell_drawings() -> dict:
     from ..site import cell_drawings
     return {k: sorted(d['parts']) for k, d in cell_drawings().items()}
+
+
+def _cell_crops() -> dict:
+    from ..site import cell_drawings
+    return {k: d['crop'] for k, d in cell_drawings().items() if d.get('crop')}
 
 
 def stratum_questions(web: dict) -> set:
