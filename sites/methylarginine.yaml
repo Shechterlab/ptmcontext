@@ -319,6 +319,7 @@ marks:
       separator: "; "
       control: select
       filter: true
+      presence_only: [rbdmap_fragment, pclap_peptide, pclap_lysc_region]   # a flag at the site only: never the fragment's or peptide's start, end or sequence
       help: "Evidence that the site contacts a partner: crosslinks and RNA-bound peptides in cells, PDB interfaces, predicted complexes and IntAct records"
       values:
         rna_crosslink: RNA-crosslinked residue
@@ -1526,7 +1527,7 @@ website:                  # the look and words of the website (ptmc web); layout
         key: incell
         label: Crosslinked residue at the site or nearby
         help: "A residue UV-crosslinked to RNA or DNA in living cells, or a bound region, at or near the site"
-        kinds: {rna_crosslink: RNA-crosslinked residue, dna_crosslink: DNA-crosslinked residue, rbdmap_fragment: RBDmap RNA-bound fragment,
+        kinds: {rna_crosslink: RNA-crosslinked residue, dna_crosslink: DNA-crosslinked residue,
                 capri_xl_peptide: CAPRI XL peptide, capri_adj_peptide: CAPRI ADJ peptide, rbrid_residue: RBR-ID+ residue, rbrid_region: RBR-ID+ region,
                 dna_binding_region: UniProt DNA-binding region}
         within: [0, 3, 5]
@@ -1814,12 +1815,12 @@ website:                  # the look and words of the website (ptmc web); layout
       input: methylarginine_residue_evidence_v1_4_3
       format: residue_evidence
       columns: {accession: uniprot_accession, start: start, end: end, kind: evidence_type, source: sources}
-      include: [{column: evidence_type, in: [rna_crosslink, dna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, rbrid_residue, rbrid_region, dna_binding_region]}]
-    chain_evidence:        # the 3D viewer's colourings along the chain: each run's kind with where it falls (pCLAP left out:
-      input: methylarginine_residue_evidence_v1_4_3      # its peptide extents may not be republished)
+      include: [{column: evidence_type, in: [rna_crosslink, dna_crosslink, capri_xl_peptide, capri_adj_peptide, rbrid_residue, rbrid_region, dna_binding_region]}]
+    chain_evidence:        # the 3D viewer's colourings along the chain: each run's kind with where it falls (RBDmap and pCLAP left out:
+      input: methylarginine_residue_evidence_v1_4_3      # their extents may not be republished: marks.attributes.evidence.presence_only)
       format: residue_evidence
       columns: {accession: uniprot_accession, start: start, end: end, kind: [evidence_type, localisation], source: sources}
-      include: [{column: evidence_type, in: [rna_crosslink, dna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, rbrid_residue, rbrid_region,
+      include: [{column: evidence_type, in: [rna_crosslink, dna_crosslink, capri_xl_peptide, capri_adj_peptide, rbrid_residue, rbrid_region,
                                              dna_binding_region, pdb_rna, pdb_dna, pdb_protein, pdb_self]}]
     records:
       input: methylarginine_site_interaction_records_v1_4_3
@@ -2083,8 +2084,8 @@ website:                  # the look and words of the website (ptmc web); layout
               - {id: both, label: Crosslinked to RNA and to DNA, colour: ev, all: [rna, dna]}
               - {id: rna, label: RNA-crosslinked residue, colour: rna, where: [{column: kind, contains: "rna_crosslink;"}]}
               - {id: dna, label: DNA-crosslinked residue, colour: dna, where: [{column: kind, equals: "dna_crosslink; at_residue"}]}
-              - {id: rna_bound, label: "RNA-bound fragment or peptide (RBDmap, CAPRI, RBR-ID)", colour: rna_pale,
-                 where: [{column: kind, in: ["rbdmap_fragment; in_fragment", "capri_xl_peptide; in_peptide", "capri_adj_peptide; in_fragment", "rbrid_residue; in_region", "rbrid_region; in_region"]}]}
+              - {id: rna_bound, label: "RNA-bound peptide or region (CAPRI, RBR-ID)", colour: rna_pale,
+                 where: [{column: kind, in: ["capri_xl_peptide; in_peptide", "capri_adj_peptide; in_fragment", "rbrid_residue; in_region", "rbrid_region; in_region"]}]}
               - {id: dna_bound, label: "DNA crosslink candidate, crosslinked peptide or DNA-binding region", colour: dna_pale,
                  where: [{column: kind, in: ["dna_crosslink; candidate_residue", "dna_crosslink; in_peptide", "dna_binding_region; in_region"]}]}
           - id: interfaces
@@ -2160,7 +2161,7 @@ website:                  # the look and words of the website (ptmc web); layout
           table: residues
           span: 3
           labels: {rna_crosslink: UV-crosslinked to RNA in living cells, dna_crosslink: UV-crosslinked to DNA in living cells,
-                   rbdmap_fragment: inside RBDmap RNA-bound fragment, capri_xl_peptide: inside CAPRI RNA-crosslinked peptide,
+                   capri_xl_peptide: inside CAPRI RNA-crosslinked peptide,
                    capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RBR-ID+ peptide, rbrid_region: inside an RBR-ID region,
                    dna_binding_region: inside a UniProt DNA-binding region}
         protein:                             # the whole protein (proteins.attributes), labelled so it is not read as site evidence
@@ -2393,16 +2394,16 @@ website:                  # the look and words of the website (ptmc web); layout
           link: "https://depmap.org/portal/gene/{gene}?tab=overview"   # the page the protein card already links; checked 2026-11-03: the page answers
         - id: rna_cells
           title: RNA in cells
-          help: "Residues UV-crosslinked to RNA in living cells (pepR-MS compendium: Kramer 2014 re-analysis, XRNAX, RBS-ID, pRBS-ID, pepR-MS), RBDmap RNA-bound fragments (Castello et al. 2016, HeLa) and CAPRI RNA-bound peptides (Panhale et al. 2019, HEK293; paler for ADJ-peptides next to a crosslink). pCLAP (Mullari et al. 2017) is a flag at sites inside its peptides only"
+          help: "Residues UV-crosslinked to RNA in living cells (pepR-MS compendium: Kramer 2014 re-analysis, XRNAX, RBS-ID, pRBS-ID, pepR-MS), CAPRI RNA-bound peptides (Panhale et al. 2019, HEK293; paler for ADJ-peptides next to a crosslink). RBDmap (Castello et al. 2016, HeLa) and pCLAP (Mullari et al. 2017) are flags at sites inside their fragments or peptides only"
           after: ptm
           from:
             - role: residue_evidence
               columns: {accession: uniprot_accession, start: start, end: end, class: evidence_type, sources: sources}
-              include: [{column: evidence_type, in: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide]}]
-            - {marks: true, columns: {class: interaction_evidence}, split: "; ", classes: [pclap_peptide, pclap_lysc_region]}   # the site table's pCLAP flags: no extents
+              include: [{column: evidence_type, in: [rna_crosslink, capri_xl_peptide, capri_adj_peptide]}]
+            - {marks: true, columns: {class: interaction_evidence}, split: "; ", classes: [rbdmap_fragment, pclap_peptide, pclap_lysc_region]}   # the site table's flags (presence_only): no extents
           classes:
             capri_adj_peptide: {label: "CAPRI RNA-bound peptide (ADJ)", mark: box, opacity: 0.16, help: "a Lys-C peptide released next to an RNA crosslink (Panhale et al. 2019, HEK293)"}
-            rbdmap_fragment: {label: RBDmap RNA-bound fragment, mark: box, opacity: 0.28, help: "an RNA-bound proteolytic fragment (Castello et al. 2016, HeLa)"}
+            rbdmap_fragment: {label: "In an RBDmap RNA-bound fragment (site only)", mark: dot, opacity: 0.5, sources: [RBDmap], help: "the site lies in an RNA-bound proteolytic fragment (Castello et al. 2016, HeLa); the fragment is not shown"}
             capri_xl_peptide: {label: "CAPRI RNA-crosslinked peptide (XL)", mark: box, opacity: 0.45, help: "identified with an RNA adduct (Panhale et al. 2019, HEK293)"}
             pclap_lysc_region: {label: "In a pCLAP RNA-binding region (site only)", mark: dot, opacity: 0.4, sources: [pCLAP], help: "the site lies in the Lys-C peptide around a pCLAP RNA-binding peptide (Mullari et al. 2017, HEK293); the region is not shown"}
             pclap_peptide: {label: "In a pCLAP RNA-binding peptide (site only)", mark: dot, opacity: 0.85, sources: [pCLAP], help: "the site lies in a peptide enriched from UV-crosslinked RNA-protein complexes (Mullari et al. 2017, HEK293); the peptide is not shown"}

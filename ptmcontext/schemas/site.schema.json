@@ -176,6 +176,13 @@
                 },
                 "description": "value -> its label on the page, in the order shown"
               },
+              "presence_only": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "values of this attribute whose peptides, fragments and extents may not be published (pCLAP, RBDmap): the website keeps the flag at each mark, with its label from values, and never a start, an end or a sequence: rows of these kinds are left out of every website table and map row"
+              },
               "link": {
                 "type": "object",
                 "required": [

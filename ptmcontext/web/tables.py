@@ -101,6 +101,13 @@ def read(spec: dict, path: Path):
         frame = _keep(frame, [c], True)
     for c in spec.get('exclude', []):                 # a row any exclude condition holds for is dropped
         frame = _keep(frame, [c], False)
+    hide = set(spec.get('presence_only') or [])       # presence-only values (the site's marks.attributes): their rows never leave the run
+    if hide:
+        for c in ('kind', 'group'):
+            if c in cols and not isinstance(cols[c], list):
+                frame = frame[~frame[cols[c]].map(lambda v: bool(hide & set(str(v).split('; '))))]
+            elif isinstance(cols.get(c), list):
+                frame = frame[~frame[cols[c]].agg(lambda r: bool(hide & {x for v in r for x in str(v).split('; ')}), axis=1)]
     out = pd.DataFrame(index=frame.index)
     for c, src in cols.items():
         out[c] = frame[src].agg(lambda r: '; '.join(dict.fromkeys(x for v in r for x in str(v).split('; ') if x)), axis=1) \

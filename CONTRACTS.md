@@ -231,6 +231,14 @@ protein: a URL with `{acc}`), `colours`, `colour` (the map and Sites tab may col
 first, and each value becomes `<value>:<its partner>` (a perturbation and its call; lists of different lengths are an
 error). A mark on several rows takes the first kept row's values.
 
+`presence_only: [value, ...]` on an attribute names values of it (the RBDmap fragment and pCLAP peptide codes, say) whose
+peptides, fragments and extents may not be published. The website keeps the flag at each mark, with its label from
+`values`, and nothing that places the stretch: `ptmc web` leaves out of every `website.tables` table the rows whose `kind`
+or `group` is one of them, and from the protein map every stretch (`start` < `end`) of such a class, so a map row shows
+them only through `marks: true` (a dot at each flagged site). `ptmc check` names a value the attribute does not list and
+a map row that reads such a class from a table. Statistics and parity do not change: the tests read the inputs, not the
+website.
+
 `proteins` (optional) keeps facts of each marked protein for the website, from a table with one row per protein: its manifest
 `input`, its `accession` column, and `attributes` as for marks (name -> {column, label, kind, ...}; `present` too). The run
 writes `protein_attributes.tsv` (`accession`, then `p.<name>` per attribute, for every marked protein, empty where the table

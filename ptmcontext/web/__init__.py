@@ -27,7 +27,7 @@ from ..citation import kit_citation, site_citation
 from ..inputs import load as load_manifest
 from ..inputs import role_inputs, site_input_names
 from ..profile import load_profile
-from ..site import code_commit, load_site, manifest_of, root_of
+from ..site import code_commit, load_site, manifest_of, presence_only, root_of
 from .counts import counts_data
 from .glance import glance
 from . import structure as S3D
@@ -511,7 +511,9 @@ def map_data(folder: Path, site: dict) -> tuple[list[str], dict]:
     df = pd.read_csv(folder / 'map_items.tsv', sep='\t', dtype=str, keep_default_na=False)
     index = {r: k for k, r in enumerate(ids)}
     shards: dict[int, dict] = {}
-    for rec in df.to_dict('records'):
+    from ..map_rows import without_extents
+    df = without_extents(df.assign(start=pd.to_numeric(df['start']), end=pd.to_numeric(df['end'])), site)   # presence-only classes: flags, no stretches
+    for rec in df.astype(str).to_dict('records'):
         if rec['row'] not in index:
             continue
         v = float(rec['value']) if rec['value'] != '' else None
@@ -768,6 +770,9 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     if 'website' not in site:
         raise ValueError(f"{site_path}: no website block; add website: {{name: ...}} to the site file")
     web = site['website']
+    hide = sorted(presence_only(site))
+    for tb in (web.get('tables') or {}).values():      # presence-only values: no row of theirs is read from any table (tables.read)
+        tb['presence_only'] = hide
     profile = load_profile(site['mark'])
     root = root_of(site)
     folder = Path(out_root or root) / site['outputs']['folder']

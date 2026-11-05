@@ -178,6 +178,17 @@ def read_items(f: dict, table: pd.DataFrame, row: dict, marks_cols: tuple[str, s
     return out[ITEM_COLUMNS]
 
 
+def without_extents(frame: pd.DataFrame, site: dict) -> pd.DataFrame:
+    """The items minus any stretch (start < end) of a presence-only class (marks.attributes.<name>.presence_only): only the
+    per-mark flags of such a class are kept."""
+    from .site import presence_only
+    hide = presence_only(site)
+    if not hide or frame.empty:
+        return frame
+    cls = frame['class'].astype(str).map(lambda c: bool(hide & set(c.split(':'))))
+    return frame[~(cls & (frame['start'].astype(int) != frame['end'].astype(int)))]
+
+
 def items(site: dict, paths: dict, marks_table: pd.DataFrame, accessions: set, lengths: dict | None = None) -> pd.DataFrame:
     """Every item of every map row on the given proteins (map_items.tsv). paths: role -> (rule, the files that fill
     it, in the site's order; first_of: a protein's items from the first file that has any for it); marks_table: the
@@ -210,6 +221,7 @@ def items(site: dict, paths: dict, marks_table: pd.DataFrame, accessions: set, l
     if lengths:
         n = out['accession'].map(lengths)
         out = out[(out['start'] >= 1) & (out['start'] <= out['end']) & (out['end'] <= n.fillna(0))]
+    out = without_extents(out, site)
     out = out.drop_duplicates()
     out['value'] = [('' if pd.isna(v) else f'{v:.0f}' if float(v).is_integer() else f'{v:.6g}') for v in out['value']]
     order = {r['id']: k for k, r in enumerate(input_rows(site))}

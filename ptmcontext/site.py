@@ -49,6 +49,13 @@ def load_site(path: str | Path) -> dict:
     return site
 
 
+def presence_only(site: dict) -> set[str]:
+    """The values of mark attributes (marks.attributes.<name>.presence_only) whose peptides, fragments and extents may not
+    be published: the build keeps the per-mark flag with its label and never a start, an end or a sequence for them."""
+    attrs = (site.get('marks') or {}).get('attributes') or {}
+    return {v for a in attrs.values() for v in a.get('presence_only') or []}
+
+
 def with_variant(site: dict, name: str | None) -> dict:
     """The site with one of its variants applied (site['variants'][name]): its tables added to the marks, its own
     reference, and its outputs under <outputs.folder>/variants/<name>. The site itself when name is None."""
@@ -280,6 +287,26 @@ def mark_table_problems(site: dict, root: str | Path) -> list[str]:
     return out
 
 
+def presence_only_problems(site: dict) -> list[str]:
+    """A presence_only value that its attribute does not list, and a map row that draws a presence-only class as a
+    stretch (a row table, rather than the marks flagged with it) or lists it as a class of a table."""
+    hide = presence_only(site)
+    out = []
+    for name, a in ((site.get('marks') or {}).get('attributes') or {}).items():
+        out += [f'marks.attributes.{name}.presence_only: {v!r} is not one of its values' for v in a.get('presence_only') or [] if v not in (a.get('values') or {})]
+    if not hide:
+        return out
+    from .map_rows import input_rows, sources_of
+    for r in input_rows(site):
+        for f in sources_of(r):
+            if f.get('marks'):
+                continue
+            named = set((f.get('classes') or [])) | {x for c in f.get('include') or [] for x in (c.get('in') or [c.get('equals')] if 'in' in c or 'equals' in c else [])}
+            out += [f"website.protein.map.rows {r.get('id')!r}: draws {v!r} from a table, which would give its extent; it is presence-only: read the marks' flags (marks: true) instead"
+                    for v in sorted(named & hide)]
+    return out
+
+
 def website_problems(site: dict) -> list[str]:
     """What the website block names that the site file does not have: a tile, filter or example naming an analysis
     or a mark attribute that is not defined, or an attribute's colours for values it does not list. The schema checks
@@ -288,7 +315,7 @@ def website_problems(site: dict) -> list[str]:
     attrs = (site.get('marks') or {}).get('attributes') or {}
     web = site.get('website') or {}
     counts = web.get('counts') or {}
-    out = count_problems(site)
+    out = count_problems(site) + presence_only_problems(site)
     questions = ids | set(counts)                       # what a card, a header tile or an old link may open
     out += cell_problems(site) + set_view_problems(site) + table_view_problems(site)
     if (web.get('cell') or {}).get('id'):
