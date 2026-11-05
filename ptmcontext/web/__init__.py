@@ -43,7 +43,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-busy.js', 'kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-factors.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit.js')
+MODULES = ('kit-busy.js', 'kit-cols.js', 'kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-factors.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -400,6 +400,10 @@ def shard_of(accession: str) -> int:
     return sum(map(ord, accession)) % SHARDS
 
 
+# the fields of a row of the protein list (data.proteins), in order
+PROTEIN_COLUMNS = ('accession', 'gene', 'name', 'length', 'marks', 'candidates', 'entry')
+
+
 def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list, list, list], dict]:
     """((the protein list for the Proteins tab, the mark columns, the regions' sources), the per-protein records by
     shard) from a run's per-protein outputs. A region is [kind, start, end, label, index of its source]."""
@@ -420,7 +424,7 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
     analyses = [c for c in marks.columns if c not in ('accession', 'position', 'residue', 'window_15') and not c.startswith(('a.', 'n.'))]
     attrs = [c for c in marks.columns if c.startswith('a.')]          # a.<name> and a.<name>.link: the site file's marks.attributes
     listing = [[r['accession'], r['gene'], r['name'], int(r['length']), int(r['marks']), int(r['candidates']), r.get('entry', '')]
-               for r in prot.to_dict('records')]
+               for r in prot.to_dict('records')]      # in the order of PROTEIN_COLUMNS
     shards: dict[int, dict] = {}
     m_by = {a: g for a, g in marks.groupby('accession')}
     c_by = {a: g for a, g in counts.groupby('accession')}
@@ -833,6 +837,9 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
                                                                  for n in specs if f'p.{n}' in pa.columns}}
     data['mark_columns'] = mark_columns
     data['mark_attributes'] = mark_attrs
+    # each name's place in the arrays of a mark's record (and of a protein's row), so a page finds a value by name (kit-cols.js)
+    data['column_index'] = {'mark_columns': {n: i for i, n in enumerate(mark_columns)}, 'mark_attributes': {n: i for i, n in enumerate(mark_attrs)},
+                            'proteins': {n: i for i, n in enumerate(PROTEIN_COLUMNS)}}
     if listing:
         import pandas as pd
         mk = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)

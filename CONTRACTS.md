@@ -739,6 +739,15 @@ site does not have, a measure that does not fit the question, a question in two 
 `cell: true` without `website.cell`, a `home` that is not one of the card's facets, and, with `more: false`, a question no
 card holds (every question must be reachable).
 
+## Values by name (data.column_index)
+
+A mark's record in a protein file is `[position, window, classes, attributes]`: the classes follow `mark_columns` (one
+per question) and the attributes `mark_attributes` (one per `marks.attributes` entry), in the site's own order; a row of
+`proteins` follows `column_index.proteins` (accession, gene, name, length, marks, candidates, entry). The page's data
+carries `column_index` (`mark_columns`, `mark_attributes`, `proteins`: name to place). A page finds a value by name
+(`K.cols.markAttr(m, name)`, `K.cols.markClass(m, name)`, `K.cols.field(p, name)`; kit-cols.js), never by a fixed
+place, so a site with other questions or attributes gets its own values, and a name the site lacks gives nothing.
+
 ## Website pages
 
 A page of sections (`website.pages`, `kit-interactions.js`), each section a list of blocks, every block reading

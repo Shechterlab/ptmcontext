@@ -136,7 +136,7 @@
     return a.shape === 'flags' ? v.split(';').map(c => label(aid, c)).join(', ') : label(aid, v);
   }
   // a mark's attributes, as the site file describes them: with links for a list that has them (each study to its paper)
-  const attrVal = (m, name) => m[3]?.[AT.indexOf(name)] ?? '';
+  const attrVal = (m, name) => K.cols.markAttr(m, name) ?? '';
   function attrHtml(m, name, full) {
     const s = SPECS[name], v = attrVal(m, name); if (!s) return esc(v);
     if (s.kind === 'list') {
@@ -368,7 +368,7 @@
         tip = `<b>${esc(p.gene || p.acc)}</b> is in ${int(names.length)}: ${esc(names.slice(0, 12).map(setLab).join('; '))}${names.length > 12 ? ' …' : ''}` +
           (best ? `<br>${esc(setLab(best.category))}: across the site, ${esc(W.marked)} proteins are ${esc(K.fxn(best.eff))}× over-represented in it (q ${K.fq(best.q)})` : '');
       } else {
-        const k = COLS.indexOf(f.analysis); if (k < 0) return '';
+        const k = K.cols.cls(f.analysis); if (k < 0) return '';
         const at = rec.marks.map(m => String(m[2][k] || '').split(';').filter(Boolean));
         if (f.best) {
           const present = [...new Set(at.flat())], best = bestRow(f.analysis, present);
@@ -413,7 +413,7 @@
   const cellOf = (col, c, m) => {
     let h = '';
     if (col.attribute) h = SPECS[col.attribute]?.colour && SPECS[col.attribute].kind === 'category' ? pillOf(m, col.attribute) : attrHtml(m, col.attribute, false);
-    else if (col.analyses) h = col.analyses.map(aid => { const k = COLS.indexOf(aid), v = m[2][k]; return `<span title="${esc(help(aid, v))}">${esc(classText(aid, v))}</span>`; }).join('<br>');
+    else if (col.analyses) h = col.analyses.map(aid => { const k = K.cols.cls(aid), v = m[2][k]; return `<span title="${esc(help(aid, v))}">${esc(classText(aid, v))}</span>`; }).join('<br>');
     else if (col.show) h = PV.tb ? col.show.map(k => (SHOW[k] ? SHOW[k](c) : '')).join('') : '<span class="muted">…</span>';
     return h || '<span class="muted">–</span>';
   };
@@ -440,7 +440,7 @@
       const srcNote = src.length && !(src.length === 1 && +src[0] === m[0]) ? `<br><span class="muted small" title="Positions the sources gave before mapping to the current sequence">source position${src.length > 1 ? 's' : ''} ${esc(src.join(', '))}</span>` : '';
       return `<tr data-site="${m[0]}" tabindex="0" class="${off ? 'faded' : ''}${PV.site === m[0] ? ' on' : ''}"><td class="mono" data-label="Site"><b>${esc(siteOf(p, m[0]))}</b>${numOf(p) ? `<br><span class="muted small">UniProt ${m[0]}</span>` : ''}${srcNote}${K.shown?.on && K.shown.counted(m) ? `<div class="tags">${K.shown.tag(m, false)}</div>` : ''}</td>` +
         (colourAttr ? `<td data-label="${esc(SPECS[colourAttr].label)}">${pillOf(m, colourAttr)}</td>` : '') +
-        `<td class="cwin" data-label="Window ±7"><span class="mono">${winHtml(m[1])}</span>${FLAGS.map(aid => flagTags(aid, m[2][COLS.indexOf(aid)])).join('')}</td>` +
+        `<td class="cwin" data-label="Window ±7"><span class="mono">${winHtml(m[1])}</span>${FLAGS.map(aid => flagTags(aid, K.cols.markClass(m, aid))).join('')}</td>` +
         shown.map(col => `<td class="cw" data-label="${esc(col.label)}">${cellOf(col, c, m)}</td>`).join('') +
         `<td class="nw" data-label=""><span class="row-acts">${typeof K.show3d === 'function' ? `<button type="button" class="btn small" data-site-3d="${m[0]}" title="Show ${esc(siteOf(p, m[0]))} in the 3D structure">3D</button>` : ''}` +
         `${evRowOn() || !PV.tb ? `<button type="button" class="btn small" data-ev-toggle="${m[0]}" aria-expanded="${open}" title="Every source record and measurement of the site">${open ? 'Hide' : 'Evidence'}</button>` : ''}</span></td></tr>` +

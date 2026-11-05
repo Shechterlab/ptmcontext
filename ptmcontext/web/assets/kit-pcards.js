@@ -9,7 +9,7 @@
   const { D, W, A, esc, int, cap } = K;
   const PC = D.protein_view?.cards || {}, LIVE = (D.protein_view?.sets || []).filter(c => c.live);
   if (!Object.keys(PC).length && !LIVE.length) return;
-  const TH = D.tables || {}, LK = D.lookups || {}, SPECS = D.attribute_specs || {}, AT = D.mark_attributes || [], PADJ = K.PADJ;
+  const TH = D.tables || {}, LK = D.lookups || {}, SPECS = D.attribute_specs || {}, PADJ = K.PADJ;
   const has = name => !!(name && TH[name]);
   const rows = (tb, name) => (has(name) ? K.card.rows(tb, name) : []);
   const list = v => String(v ?? '').split(/;\s*/).filter(Boolean);
@@ -30,7 +30,7 @@
     return undefined;
   }
   const sets = aid => { const sd = K.sel.data(), ps = sd?.protein_sets?.[aid]; return ps ? new Set(ps.sets.map(x => x[0])) : null; };
-  const attrVal = (m, name) => m[3]?.[AT.indexOf(name)] ?? '';
+  const attrVal = (m, name) => K.cols.markAttr(m, name) ?? '';
   const letter = (rec, pos) => (rec.seq || '')[pos - 1] || '';
   const siteName = (rec, pos) => letter(rec, pos) + pos;
   const siteLink = (p, rec, pos) => `<a href="${esc(K.link('protein', `${p.acc}/${pos}`))}">${esc(siteName(rec, pos))}</a>`;

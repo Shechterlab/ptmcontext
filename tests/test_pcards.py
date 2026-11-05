@@ -101,6 +101,7 @@ const tb = {{
 const K = {{ D, W: {{ mark: 'site', marks: 'sites', residues: 'serines' }}, A: {{}}, S: {{}}, esc: s => String(s ?? ''), int: n => String(n), cap: s => s, fq: q => q.toExponential(1), PADJ: 0.05,
   link: (...a) => '#' + a.join('/'), sections: {{}}, proteinFolds: [], afterRender: [], hasData: {{}},
   card: {{ rows: (t, n) => t[n] || [], at: () => [], load: () => Promise.resolve({{}}) }}, sel: {{ data: () => null, setHas: () => false }} }};
+eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-cols.js'))}, 'utf8'));
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-pcards.js'))}, 'utf8'));
 window.PTMC_MODULES.forEach(m => m(K));
 const p = {{ acc: 'P1', gene: 'GENE', i: 0 }}, rec = {{ seq: 'AAAAAAAAAASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', marks: [[10, 0, [], []], [12, 0, [], []]] }};

@@ -163,7 +163,7 @@
   // a row [accession, position, window, values] as a row of this table: [protein index, position, [], [], window]
   // with its own protein (one with only these has none in the list) and its mark as a protein record lays it out
   const LCROWS = LC ? K.shown.rows().map(r => { const m = [PI[r[0]] ? PI[r[0]].i : 1e9, r[1], [], [], r[2]]; m.lc = { p: PI[r[0]] || K.shown.protein(r[0]) || { acc: r[0], gene: '', name: '' }, mk: K.shown.asMark(r) }; return m; }) : [];
-  const lcVals = (m, n) => { const v = String(m.lc.mk[3][(D.mark_attributes || []).indexOf(n)] ?? ''); return v === '' ? [] : SPECS[n]?.kind === 'list' ? v.split(SPECS[n].separator || '; ') : [v]; };
+  const lcVals = (m, n) => { const v = String(K.cols.markAttr(m.lc.mk, n) ?? ''); return v === '' ? [] : SPECS[n]?.kind === 'list' ? v.split(SPECS[n].separator || '; ') : [v]; };
   function lcCell(c, m) {
     const p = m.lc.p;
     if (c.id === 'protein') return `<a class="gene" href="${esc(K.link('protein', p.acc))}">${esc(K.tables.pLabel(p))}</a><span class="acc mono">${esc(p.acc)}</span>`;

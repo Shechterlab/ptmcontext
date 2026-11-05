@@ -11,7 +11,7 @@
   const DATA = D.shown_marks || null, CFG = D.shown_view || null;
   const SPECS = D.attribute_specs || {}, AT = D.mark_attributes || [];
   // a mark's values of an attribute, as a list (m[3] in the order of D.mark_attributes)
-  const valsOf = (m, name) => { const s = SPECS[name]; if (!s) return []; const v = String(m[3]?.[AT.indexOf(name)] ?? ''); return v === '' ? [] : s.kind === 'list' ? v.split(s.separator || '; ') : [v]; };
+  const valsOf = (m, name) => { const s = SPECS[name]; if (!s) return []; const v = String(K.cols.markAttr(m, name) ?? ''); return v === '' ? [] : s.kind === 'list' ? v.split(s.separator || '; ') : [v]; };
   const RX = {};
   const holds = (m, c) => {
     if (!SPECS[c.attribute] || AT.indexOf(c.attribute) < 0) return false;   // an attribute these marks lack never holds
