@@ -180,6 +180,8 @@ def test_the_selection_module_reads_names_sites_patterns_and_neighbours(tmp_path
     root = _toy(tmp_path)
     index = _build(root)
     data = _page_data(index)
+    if data.get('late'):          # the rest of the protein attributes' values come from data/site.json when asked for (kit-late.js)
+        data['protein_attributes']['values'].update(json.loads((index.parent / data['late']['file']).read_text())['protein_attributes'])
     sel = (index.parent / 'data' / 'selection.json').read_text()
     partners = (index.parent / 'data' / 'partners.json').read_text()
     queries = {

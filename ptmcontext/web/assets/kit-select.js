@@ -64,12 +64,14 @@
   // each protein's marked positions, for reading "GENE 12" as a site only when 12 is one
   let markPos = null;
   const isMark = (pi, pos) => { if (!SD) return false; if (!markPos) { markPos = {}; SD.marks.forEach(m => { (markPos[m[0]] ||= new Set()).add(m[1]); }); } return !!markPos[pi]?.has(pos); };
-  const ready = (() => {
-    const el = document.getElementById('selection-data');
-    if (el) { try { SD = JSON.parse(el.textContent); return Promise.resolve(SD); } catch (e) { /* fall back to the file */ } }
-    return fetch('data/selection.json').then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(d => { SD = d; prepare(); return d; }, () => null).then(d => { if (d) K.render(); return d; });
-  })();
+  // the one-file copy has it inline; the site's folder reads data/selection.json (10 MB) only when a search, a filter or
+  // a page first asks for it (K.sel.data(), a selection in the address, the Filters tab), never to show the first screen
+  const inlineSel = document.getElementById('selection-data');
+  if (inlineSel) { try { SD = JSON.parse(inlineSel.textContent); } catch (e) { /* fall back to the file */ } }
+  let loading = null;
+  const ready = () => (loading ||= SD ? Promise.resolve(SD) : fetch('data/selection.json').then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+    .then(d => { SD = d; prepare(); return d; }, () => null).then(d => { if (d) K.render(); return d; }));
+  const need = () => { if (!SD && !loading) ready(); };
   const AN = () => SD.analyses, AT = () => SD.attribute_names || Object.keys(SD.attributes);
   let setMembers = {}, anyMembers = {};        // analysis -> set name -> Set(protein index); analysis -> in any of its source's sets
   // a question whose sets hold other identifiers (genes; ps.of: protein index -> its identifiers' indices) counts
@@ -331,6 +333,7 @@
   const refresh = () => { gen++; K.render(); };
   const stateKey = () => JSON.stringify([S.q, S.f, !!SD, gen]);
   function compute() {
+    if (!SD && (S.q || Object.keys(S.f).length)) need();             // a selection needs the marks
     if (cache.key === stateKey()) return cache;
     cache = { key: stateKey(), ...select(S.q, S.f), retests: {} };
     return cache;
@@ -740,6 +743,7 @@
       ...(g.proteins || []).filter(k => RSPEC(k)).map(k => 'r:' + k), ...(g.keys || []).filter(k => validKey(k))];
   }
   function filtersTab() {
+    need();
     const gs = groups();
     return `<div class="rail-sel">${bar() || `<span>All <b>${int(D.counts.marks)}</b> ${esc(W.marks)} on <b>${int(D.counts.proteins)}</b> proteins</span>`}</div>${savedHtml()}` +
       `<p class="rail-note rail-what"><b>What filters do.</b> They narrow every page to the ${esc(W.marks)} that match, and test that selection again. A ${esc(W.mark)} must match every group you use, and any one of the values chosen within a control.` +
@@ -876,5 +880,5 @@
     const c = e.target.closest?.('[data-try], .sel-chip'); if (!c || !SD || c.dataset.tipDone) return;
     const t = termTip(c.dataset.try || (c.getAttribute('title') || '')); c.dataset.tipDone = '1'; if (t) c.title = t;
   }, true));
-  Object.assign(K, { watchSections, sel: { nFilters: () => Object.keys(S.f).length + (S.q ? 1 : 0), ready, active, testable, contrastOK, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, featureCounts, featureFamilies, termTip, STUDY, MIN_SIDE, refresh, lookup, nearSymbols, parsePattern, dropTerm, isTermKey, aliasesOf: i => aliasesOf[i] || [], nameOf, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
+  Object.assign(K, { watchSections, sel: { nFilters: () => Object.keys(S.f).length + (S.q ? 1 : 0), get ready() { return ready(); }, active, testable, contrastOK, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, bar, encode, decode, compute, data: () => { need(); return SD; }, peek: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, savedList, termFilter, contrast, contrastGroups, featuresOf, featureCounts, featureFamilies, termTip, STUDY, MIN_SIDE, refresh, lookup, nearSymbols, parsePattern, dropTerm, isTermKey, aliasesOf: i => aliasesOf[i] || [], nameOf, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); } }, rail });
 });

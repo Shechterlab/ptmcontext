@@ -21,8 +21,9 @@
     const dir = l.order === 'asc' ? 1 : -1;
     return P.filter(ok).sort((a, b) => dir * (value(a, l.by) - value(b, l.by)) || b.marks - a.marks).slice(0, l.n || 6);
   }
-  // each quick selection's size, counted in the browser from the selection data (once it has loaded)
-  const quickN = q => { const sd = K.sel?.data(); if (!sd) return null; const st = K.sel.stateOfHash('?' + q.query);
+  // each quick selection's size, counted in the browser from the selection data once something else has loaded it (the
+  // first screen does not ask for the 10 MB file for this)
+  const quickN = q => { const sd = K.sel?.peek(); if (!sd) return null; const st = K.sel.stateOfHash('?' + q.query);
     const r = K.sel.select(st.q, st.f); return (q.view === 'proteins' ? r.proteins?.size : r.marks?.length) ?? null; };
   (K.overviewBlocks ||= []).push(() => {
     const lists = (SP.lists || []).map(l => [l, ranked(l)]).filter(([, ps]) => ps.length);

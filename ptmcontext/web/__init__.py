@@ -13,6 +13,7 @@ import base64
 import html
 import json
 import math
+import re
 import shutil
 from importlib import resources
 from pathlib import Path
@@ -43,7 +44,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-busy.js', 'kit-cols.js', 'kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-factors.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit.js')
+MODULES = ('kit-busy.js', 'kit-cols.js', 'kit-late.js', 'kit-stats.js', 'kit-select.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-factors.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -355,6 +356,15 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'kit': {**kit_citation(), 'version': __version__, 'commit': run.get('code_commit') or code_commit()},
         'statistics_tsv': (folder / 'statistics.tsv').read_text(),
     }
+
+
+def first_screen_attributes(web: dict) -> set[str]:
+    """The protein attributes the Overview's first screen lists (its starting points: what they rank by, filter on and
+    show); the other attributes' values are read from data/site.json when a filter, a search or a page asks for them."""
+    out = set()
+    for lst in ((web.get('overview') or {}).get('starting_points') or {}).get('lists', []):
+        out |= {lst.get('by'), (lst.get('where') or {}).get('attribute')} | set(re.findall(r'\{(\w+)\}', lst.get('show') or ''))
+    return {x for x in out if x}
 
 
 def set_structure(site: dict, kept: dict) -> dict:
@@ -835,6 +845,16 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             return v
         data['protein_attributes'] = {'specs': specs, 'values': {n: [val(n, pa.at[r[0], f'p.{n}']) if r[0] in pa.index else None for r in listing]
                                                                  for n in specs if f'p.{n}' in pa.columns}}
+    # what the first screen does not list leaves the page's data for data/site.json, read on demand (kit-late.js); the
+    # one-file copy keeps it all inline
+    late = {}
+    if data.get('protein_attributes'):
+        first = first_screen_attributes(web)
+        vals = data['protein_attributes']['values']
+        late = {n: vals[n] for n in vals if n not in first}
+        if late:
+            data['protein_attributes'] = {**data['protein_attributes'], 'values': {n: v for n, v in vals.items() if n in first}}
+            data['late'] = {'file': 'data/site.json', 'protein_attributes': list(late)}
     data['mark_columns'] = mark_columns
     data['mark_attributes'] = mark_attrs
     # each name's place in the arrays of a mark's record (and of a protein's row), so a page finds a value by name (kit-cols.js)
@@ -921,6 +941,16 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
 
     # the rows travel once, as the statistics table's own text (for its downloads): the page reads its rows from it
     page_data = {k: v for k, v in data.items() if k != 'rows'}
+    one_file_data = page_data
+    if late:
+        (out / 'data').mkdir(parents=True, exist_ok=True)
+        (out / 'data' / 'site.json').write_text(json.dumps({'protein_attributes': late}, separators=(',', ':'), allow_nan=False))
+        log(f"  first screen: {len(json.dumps(page_data, separators=(',', ':'), allow_nan=False)) / 1e6:.1f} MB of data in the page; "
+            f"data/site.json holds {len(json.dumps(late, separators=(',', ':'), allow_nan=False)) / 1e6:.1f} MB for later")
+        one_file_data = {k: v for k, v in page_data.items() if k != 'late'}
+        one_file_data['protein_attributes'] = {**page_data['protein_attributes'], 'values': {**page_data['protein_attributes']['values'], **late}}
+    else:
+        (out / 'data' / 'site.json').unlink(missing_ok=True)
 
     def page(inline: bool) -> str:
         icon_href = 'data:image/svg+xml;base64,' + base64.b64encode(icon.encode()).decode() if inline else 'assets/icon.svg'
@@ -960,7 +990,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
                            '{{FONTS}}': (f'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
                                          f'<link rel="stylesheet" href="{html.escape(fonts["stylesheet"])}">') if fonts.get('stylesheet') else '',
                            '<link rel="stylesheet" href="assets/kit.css">': css, '<script src="assets/kit.js"></script>': js,
-                           '{{DATA}}': json.dumps(page_data, separators=(',', ':'), allow_nan=False).replace('</', '<\\/')}.items():
+                           '{{DATA}}': json.dumps(one_file_data if inline else page_data, separators=(',', ':'), allow_nan=False).replace('</', '<\\/')}.items():
             text = text.replace(key, value)
         return text
 

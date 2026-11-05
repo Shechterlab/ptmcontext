@@ -739,6 +739,17 @@ site does not have, a measure that does not fit the question, a question in two 
 `cell: true` without `website.cell`, a `home` that is not one of the card's facets, and, with `more: false`, a question no
 card holds (every question must be reachable).
 
+## What the page reads at once and what it reads later
+
+`index.html` holds the data of the first screen (`site-data`). Two files are read only when something asks for them:
+`data/selection.json` (every mark with its classes and attributes) when a search, a filter, a selection in the address, the
+Filters tab or a page that tests a selection first needs it (`K.sel.data()`), and `data/site.json` for the values of the
+protein attributes (`proteins.attributes`) that the Overview's starting points (`website.overview.starting_points`: what a
+list ranks by, filters on and shows) do not list. The page's data names them in `late: {file, protein_attributes: [name]}`;
+until the file is in, such an attribute reads as missing (`attribute_specs` and `protein_attributes.specs` stay inline,
+since filters name them) and the page draws again when it arrives (`kit-late.js`). The one-file copy
+(`<site id>.html`) has everything inline, no `late` and nothing to fetch.
+
 ## Values by name (data.column_index)
 
 A mark's record in a protein file is `[position, window, classes, attributes]`: the classes follow `mark_columns` (one
