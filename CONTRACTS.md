@@ -713,6 +713,32 @@ selection, a `residue` table keeps the rows of selected marks (and, for a block 
 their proteins), a `protein` table the rows of proteins with a selected mark. `D.page_tables` gives each its key,
 columns and rows; the one-file copy inlines the small ones.
 
+## The cards front end (website.front)
+
+A block of its own, not a regrouping of `website.overview.sections`: the classic Overview and the cards can hold
+different groupings. `mode: classic` (the default) leaves the site as it was and writes nothing of the block into the
+page; `mode: cards` opens the cards front end, and the page's data then carries `front`, the block as `ptmcontext/front.py`
+resolves it. Without a block (or without `cards:`), the cards derive from the analyses' `section` fields: one card per
+section in the order sections first appear, a switch for every question with rows to chart (a fold for a protein-set
+question, an odds ratio for a residue question; a model has none), and the strongest few rows of the first as its home rows.
+
+| key | what |
+| --- | --- |
+| `mode` | `classic` or `cards` |
+| `rows` | rows per home card (default 5) |
+| `cards[]` | `title`, and `key` (its address word), `short`, `chip` (the word for what a row selects), `sections` (the analyses' sections it holds), `analyses` (questions it names, in order), `cell` (the cell drawing; needs `website.cell`), `rows`, `facets[]` (`analysis`, `label`, `measure: fold or odds`), `home` (`analysis` of a facet, and `classes` to show or else `top` and `q_max`) |
+| `more` | heading of the card for the questions no card holds (default "More questions"); `false` when every question is in a card |
+| `short` | question id to a short name (4 words or fewer) |
+| `row_labels` | question id to class or set code to a short row label (a code is unique only within its question) |
+| `summary_only` | question id to class codes left out of a card's summary rows, still on the question's page |
+| `glossary` | the site's own terms and their hover text (fold, odds ratio and q are the kit's) |
+| `examples` | the example chips: a search, or `{label, query}` (default: `website.examples`) |
+
+`ptmc check` (`site.website_problems`) reports an analysis, section, facet, class or question the block names that the
+site does not have, a measure that does not fit the question, a question in two cards, a second card with the same key,
+`cell: true` without `website.cell`, a `home` that is not one of the card's facets, and, with `more: false`, a question no
+card holds (every question must be reachable).
+
 ## Website pages
 
 A page of sections (`website.pages`, `kit-interactions.js`), each section a list of blocks, every block reading

@@ -392,6 +392,8 @@ def website_problems(site: dict) -> list[str]:
         if to not in ids and to not in attrs:
             out.append(f"website.search_aliases: {key!r} means {to!r}, which is neither a question nor an attribute of this site")
     out += card_problems(site)
+    from .front import problems as front_problems
+    out += front_problems(site, words)
     sm = web.get('shown_marks')
     if sm:                                    # the shown marks' tag: attributes of the marks, or of a variant's marks
         known = set(attrs) | {n for v in (site.get('variants') or {}).values() for n in (v.get('attributes') or {})}

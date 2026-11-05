@@ -1213,6 +1213,130 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
   examples: [FUS, TAF15 EWSR1 FUS, "disease:als", FUS R216, "motif:RGG"]   # the first three are the chips under the search box
+  front:                   # the cards front end (CONTRACTS.md, 'The cards front end'); mode: classic keeps the classic Overview
+    mode: classic
+    rows: 5
+    cards:
+      - key: disease
+        title: "Disease"
+        short: "Disease"
+        chip: "Disease"
+        analyses: ["disease_family", "disease_family_additional", "disease_ontology", "disease_term", "cancer_change", "depmap_dependency"]
+        facets: [{analysis: disease_family, label: "Families"}, {analysis: disease_family_additional, label: "More groups"}]
+        home: {analysis: "disease_family", classes: ["ALS / motor neuron / FTD", "Ataxia / cerebellar degeneration", "Myopathy / muscle / cardiomyopathy", "Alzheimer / tau / dementia", "Cancer / neoplasia"]}
+      - key: classes
+        title: "Protein classes"
+        short: "Protein class"
+        chip: "Protein class"
+        analyses: ["panther_group", "panther_class", "panther_subclass"]
+        facets: [{analysis: panther_group, label: "Groups"}, {analysis: panther_class, label: "Classes"}]
+        home: {analysis: "panther_group"}
+      - key: cell
+        title: "Cell and condensates"
+        short: "Cell"
+        chip: "Location"
+        cell: true
+        analyses: ["where_in_the_cell", "hpa_location", "cell_region_hpa", "cell_region_hcm", "cell_region_organelle_ip", "cell_hcm_compartment", "cell_hcm_domain", "cell_organelle_ip", "cell_chromatin", "condensate_proteome", "condensate", "condensate_role", "eclip_rna_apexseq", "eclip_gene_tsaseq", "eclip_gene_hic"]
+        facets: [{analysis: condensate_proteome, label: "Condensates"}, {analysis: hpa_location, label: "Locations"}]
+      - key: position
+        title: "Position in the protein"
+        short: "Position"
+        chip: "Position"
+        analyses: ["disorder", "motif", "domain_context", "domain_class", "structure_context", "idr_charge", "sticker_context_3", "sticker_context_5", "sticker_context_3_idr", "sticker_context_5_idr", "which_factor"]
+        facets: [{analysis: disorder, label: "Disorder"}, {analysis: motif, label: "Motifs"}, {analysis: domain_context, label: "Domains"}, {analysis: structure_context, label: "Structure"}]
+        home: {analysis: "motif", classes: ["RGG", "RG", "RE"]}
+      - key: interactions
+        title: "RNA, DNA and protein contacts"
+        short: "Contacts"
+        chip: "Contact"
+        analyses: ["crosslink", "pdb_interface", "predicted_interface", "intact", "sequence_proximity", "nucleic_acid_distance", "binding_protein", "go_binding"]
+        facets: [{analysis: crosslink, label: "Crosslinks"}, {analysis: pdb_interface, label: "Structures"}, {analysis: predicted_interface, label: "Predicted"}, {analysis: binding_protein, label: "Binding proteins"}]
+        home: {analysis: "crosslink", classes: ["rna_crosslink", "capri_adj_peptide", "rbrid_residue", "dna_binding_region"]}
+      - key: pathways
+        title: "Pathways"
+        short: "Pathways"
+        chip: "Pathway"
+        analyses: ["reactome_top_level", "reactome_pathway"]
+        facets: [{analysis: reactome_top_level, label: "Reactome"}]
+        home: {analysis: "reactome_top_level"}
+    more: Enzymes and sources
+    short:
+      panther_group: "Protein class groups"
+      panther_class: "Protein classes (PANTHER)"
+      panther_subclass: "Protein subclasses"
+      disease_family: "Disease families (DisGeNET)"
+      disease_family_additional: "Disease families, extra"
+      disease_ontology: "Disease Ontology"
+      disease_term: "DisGeNET terms"
+      condensate_proteome: "Condensates"
+      condensate: "Condensates, among condensates"
+      condensate_role: "Roles in condensates"
+      go_binding: "RNA/DNA binding (GO)"
+      binding_protein: "RNA/DNA binding in cells"
+      reactome_top_level: "Reactome, top level"
+      reactome_pathway: "Reactome pathways"
+      where_in_the_cell: "Cell drawing and maps"
+      hpa_location: "Locations (HPA)"
+      cell_region_hpa: "Cell regions (HPA)"
+      cell_region_hcm: "Cell regions (Cell Map)"
+      cell_region_organelle_ip: "Cell regions (organelle IP)"
+      cell_hcm_compartment: "Cell Map compartments"
+      cell_hcm_domain: "Cell Map domains"
+      cell_organelle_ip: "Organelle IP"
+      cell_chromatin: "Chromatin probability"
+      eclip_rna_apexseq: "Bound RNAs (APEX-seq)"
+      eclip_gene_tsaseq: "Bound RNAs (TSA-seq)"
+      eclip_gene_hic: "Bound RNAs (Hi-C)"
+      depmap_dependency: "Cancer cell dependency"
+      cancer_change: "Tumour and cell-line changes"
+      motif: "Sequence motifs"
+      disorder: "Disorder context"
+      domain_context: "Domain context"
+      domain_class: "Nearest domain class"
+      structure_context: "Structural context"
+      idr_charge: "IDR charge"
+      sticker_context_3: "Aromatics within 3"
+      sticker_context_5: "Aromatics within 5"
+      sticker_context_3_idr: "Aromatics within 3, IDRs"
+      sticker_context_5_idr: "Aromatics within 5, IDRs"
+      which_factor: "Which factor matters most?"
+      pdb_interface: "PDB interfaces"
+      predicted_interface: "Predicted interfaces"
+      crosslink: "RNA/DNA crosslinks"
+      sequence_proximity: "Distance to RNA evidence"
+      nucleic_acid_distance: "Distance to RNA/DNA (PDB)"
+      intact: "IntAct mutations and regions"
+      reader_classes: "Enzymes and readers"
+      perturbations: "PRMT perturbations"
+      provenance: "Studies and databases"
+    row_labels:
+      disease_family: {"ALS / motor neuron / FTD": "ALS / FTD", "Ataxia / cerebellar degeneration": "Ataxia", "Myopathy / muscle / cardiomyopathy": "Muscle disease", "Alzheimer / tau / dementia": "Alzheimer", "Cancer / neoplasia": "Cancer", "Developmental / congenital syndromes": "Developmental", "Immune / inflammatory": "Immune"}
+      panther_group: {"RNA processing and translation": "RNA processing", "Scaffolds, adaptors and chaperones": "Scaffolds", "Transcription, chromatin and DNA": "Transcription", "Protein-modifying enzymes": "Modifying enzymes", "Cytoskeleton, adhesion and matrix": "Cytoskeleton"}
+      disorder: {"disordered": "In an IDR", "ordered": "Ordered"}
+      crosslink: {"capri_adj_peptide": "Next to RNA (CAPRI)", "rbrid_residue": "RNA contact (RBR-ID)", "rna_crosslink": "RNA crosslink", "dna_binding_region": "DNA-binding region"}
+      pdb_interface: {"protein": "Protein interface (PDB)"}
+      reactome_top_level: {"R-HSA-8953854": "RNA metabolism", "R-HSA-4839726": "Chromatin", "R-HSA-74160": "Transcription", "R-HSA-1640170": "Cell cycle"}
+    summary_only:          # classes the cards leave to the question's own page
+      disorder: ["no_disorder_annotation"]
+      domain_context: ["no_domain_annotation"]
+      structure_context: ["no_disorder_annotation"]
+      crosslink: ["capri_adj_peptide_among_measured", "rbrid_residue_among_measured", "pclap_lysc_region", "pclap_lysc_region_outside_rg", "pclap_peptide", "rbdmap_fragment", "rbdmap_fragment_outside_rg"]
+    glossary:
+      "IDR": "an intrinsically disordered region, a stretch with no fixed fold."
+      "CAPRI": "peptides crosslinked to RNA in living cells (UV crosslinking and mass spectrometry)."
+      "RBR-ID": "residues whose peptides drop after UV crosslinking to RNA in cells, a sign of RNA contact."
+      "pDockQ": "confidence of a predicted protein-protein interface (AlphaFold); 0.23 is likely, 0.5 confident."
+      "pCLAP": "peptides crosslinked to RNA in cells (summary test only)."
+      "RBDmap": "protein fragments that stay crosslinked to RNA (summary test only)."
+      "methylarginine": "an arginine carrying one methyl group (Rme1, monomethyl) or two (Rme2a asymmetric, Rme2s symmetric), added by PRMT enzymes."
+      "RGG": "RGG / RG: arginine-glycine(-glycine) repeats, the motifs PRMTs methylate most; often in disordered regions of RNA-binding proteins."
+    examples:
+      - {label: "FUS", query: "FUS"}
+      - {label: "FUS R216", query: "FUS R216"}
+      - {label: "ALS", query: "disease_family:ALS"}
+      - {label: "Stress granules", query: "cell_organelle_ip:stress_granule"}
+      - {label: "Rme2 in IDRs", query: "state:Rme2 disorder:IDR"}
+      - {label: "FUS TAF15 EWSR1 HNRNPA1", query: "FUS TAF15 EWSR1 HNRNPA1"}
   start:                   # the Overview's start panel for a first visit, and the Help page's starts (kit-help.js)
     share: {analysis: disorder, classes: [disordered, disorder_boundary, ordered], labels: {disordered: in disordered regions (IDRs), disorder_boundary: next to an IDR, ordered: in ordered regions}}
     findings: [{analysis: motif, class: RGG}, {analysis: panther_group, class: RNA processing and translation}, {analysis: disorder, class: ordered}]

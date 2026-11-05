@@ -4855,6 +4855,215 @@
             }
           }
         },
+        "front": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the cards front end (CONTRACTS.md, 'The cards front end'): a block of its own, so the classic Overview's sections stay as they are. mode: classic keeps the classic site; without cards, they derive from the analyses' section fields",
+          "properties": {
+            "mode": {
+              "enum": [
+                "classic",
+                "cards"
+              ],
+              "default": "classic",
+              "description": "which front end the site opens with"
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 5,
+              "description": "rows per home card"
+            },
+            "cards": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "title"
+                ],
+                "additionalProperties": false,
+                "description": "one home card: its questions are those it names (analyses) and those of the sections it names; they open from the card's page",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]*$",
+                    "description": "the card's address word (default: its title, lower case)"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "short": {
+                    "type": "string",
+                    "description": "the card's name in menus and on a phone (default: the title)"
+                  },
+                  "chip": {
+                    "type": "string",
+                    "description": "the word for what a row of this card selects in a filter chip, such as 'Disease'"
+                  },
+                  "sections": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "analyses sections whose questions belong to the card"
+                  },
+                  "analyses": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "questions (analysis ids) of the card, in order"
+                  },
+                  "cell": {
+                    "type": "boolean",
+                    "description": "the card holds the cell drawing (the site needs website.cell)"
+                  },
+                  "rows": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "rows this card shows on the home page (default: front.rows)"
+                  },
+                  "facets": {
+                    "type": "array",
+                    "minItems": 1,
+                    "description": "what the card charts, one switch each: default every question of the card with a fold or an odds ratio",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "analysis"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "analysis": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string",
+                          "description": "the switch's word (default: the question's title)"
+                        },
+                        "measure": {
+                          "enum": [
+                            "fold",
+                            "odds"
+                          ],
+                          "description": "fold enrichment for a protein-set question, odds ratio for a residue question (the default; stated to be checked)"
+                        }
+                      }
+                    }
+                  },
+                  "home": {
+                    "type": "object",
+                    "required": [
+                      "analysis"
+                    ],
+                    "additionalProperties": false,
+                    "description": "the rows the card shows on the home page: named classes, or the strongest few",
+                    "properties": {
+                      "analysis": {
+                        "type": "string",
+                        "description": "one of the card's facets"
+                      },
+                      "classes": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "class or set codes, in order"
+                      },
+                      "top": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "without classes: this many of the largest differences (default: rows)"
+                      },
+                      "q_max": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 1,
+                        "description": "without classes: only rows with q at most this (default 0.05)"
+                      }
+                    }
+                  }
+                }
+              },
+              "description": "the home cards, in order (default: one card per section of the analyses)"
+            },
+            "more": {
+              "description": "the heading of the card for the questions no card holds (default 'More questions'); false when every question is in a card",
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "const": false
+                }
+              ]
+            },
+            "short": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "a short name for a question (4 words or fewer) for menus and page rows: question id to label"
+            },
+            "row_labels": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "description": "a short label for a class or set in a card's row: question id to class code to label (a code is not unique across questions)"
+            },
+            "summary_only": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "description": "classes kept out of a card's summary rows and left to the question's own page: question id to class codes"
+            },
+            "glossary": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "the site's own terms, each with its hover text (generic terms such as fold, odds ratio and q come from the kit)"
+            },
+            "examples": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "label",
+                      "query"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "label": {
+                        "type": "string"
+                      },
+                      "query": {
+                        "type": "string",
+                        "description": "a search as the search box takes it"
+                      }
+                    }
+                  }
+                ]
+              },
+              "description": "example chips: a search, or a label and the search it runs (default: website.examples)"
+            }
+          }
+        },
         "one_file_max_mb": {
           "type": "number",
           "minimum": 0,

@@ -24,6 +24,7 @@ from .. import __version__
 from .. import layers as L
 from .. import statistics as ST
 from ..citation import kit_citation, site_citation
+from ..front import resolve as front_resolve
 from ..inputs import load as load_manifest
 from ..inputs import role_inputs, site_input_names
 from ..profile import load_profile
@@ -336,6 +337,11 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         **({'models': models} if models else {}),
         # the profile's sticker residues, for the IDRs' patterning line (kit-idrs.js)
         **({'stickers': profile.stickers} if profile.stickers else {}),
+        # the cards front end (website.front): only when the site opens with it, so a classic site's data is as it was
+        **({'front': front_resolve(site, {**{k: v.get('title') for k, v in (web.get('counts') or {}).items()},
+                                          **({web['cell']['id']: web['cell'].get('title')} if (web.get('cell') or {}).get('id') else {}),
+                                          **{x['id']: x['title'] for x in analyses}})}
+           if (web.get('front') or {}).get('mode') == 'cards' else {}),
         # the start panel's words and examples (kit-help.js); without them it chooses from the examples
         **({'start': web['start']} if web.get('start') else {}),
         'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),
