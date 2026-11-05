@@ -251,12 +251,15 @@
     const tn = k => (own(k) ? P[own(k)].tone : 'na');
     const fill = k => 'cg-c ' + tn(k), line = k => 'cg-line ' + tn(k);
     const sig = p => p.tone[0] === 'u' || p.tone[0] === 'd';
-    const tip = (k0, name) => {
+    // dup: the drawing's label repeats the part's shape; it keeps the click but is hidden from keyboard and screen reader
+    const tip = (k0, name, dup) => {
       const k = own(k0);
       if (!k) return '';
       const p = P[k];
       if (ONE) return tipAttr(`<b>${esc(name || rowName(p.row))}</b>: this protein is placed here by ${and(p.cells.map(([aid]) => esc(DS(aid).name)))}`);
-      return ` data-cell-part="${esc(k)}" role="button" tabindex="0"` + tipAttr(`<b>${esc(name || rowName(p.row))}</b>: ${sig(p) ? 'odds ratio ' : ''}${esc(p.value)}${sig(p) ? (p.maps === '1 map' ? ' (1 map)' : ', median of ' + esc(p.maps)) : ''}<br>` +
+      const only = p.cells.length === 1 && p.cells[0][1] && p.cells[0][1].M != null ? ', ' + p.cells[0][1].M + ' proteins' : '';
+      const nm = `${name || rowName(p.row)}, ${sig(p) ? 'odds ratio ' : ''}${p.value}${sig(p) && p.maps ? ', ' + p.maps : ''}${only}`;
+      return ` data-cell-part="${esc(k)}"` + (dup ? ' aria-hidden="true"' : ` role="button" tabindex="0" aria-label="${esc(nm)}"`) + tipAttr(`<b>${esc(name || rowName(p.row))}</b>: ${sig(p) ? 'odds ratio ' : ''}${esc(p.value)}${sig(p) ? (p.maps === '1 map' ? ' (1 map)' : ', median of ' + esc(p.maps)) : ''}<br>` +
         p.cells.map(([aid, c]) => esc(DS(aid).name) + ': ' + (c.circular ? 'not compared' : esc(orText(c.a)) + (c.a.q != null ? ', q ' + fq(c.a.q) : '') + (c.tone === 'ns' ? ' (no difference)' : ''))).join('<br>') +
         '<br><span class="muted">Click for its numbers and proteins</span>');
     };
@@ -270,7 +273,7 @@
         list.forEach((it, i) => {
           const p = P[it.k], y = ys[i], left = side === 'l', edge = left ? col : Wd - col, tx = left ? edge - 14 : edge + 14, anc = left ? 'end' : 'start', bx = left ? edge - 7 : edge + 1;
           const elbow = left ? edge + 12 : edge - 12;
-          g += `<g class="cd-label"${tip(it.k, it.name)}><polyline class="cd-lead" points="${edge},${y - 5} ${elbow},${y - 5} ${it.x},${it.y}"/><circle class="cd-dot" cx="${it.x}" cy="${it.y}" r="3"/>` +
+          g += `<g class="cd-label"${tip(it.k, it.name, true)}><polyline class="cd-lead" points="${edge},${y - 5} ${elbow},${y - 5} ${it.x},${it.y}"/><circle class="cd-dot" cx="${it.x}" cy="${it.y}" r="3"/>` +
             `<rect class="cd-hit" x="${left ? 0 : edge}" y="${y - 18}" width="${col}" height="38"/>` +
             `<rect class="${fill(it.k)} cd-o" x="${bx}" y="${y - 17}" width="6" height="32" rx="2"/>` +
             `<text class="cd-name" x="${tx}" y="${y}" text-anchor="${anc}">${esc(it.name || rowName(p.row))}</text>` +
@@ -537,7 +540,7 @@
   }
 
   // ---- the figures, on the page and exported ---------------------------------------------------------------------------
-  const svgOf = (f, cls) => `<svg class="${cls}" viewBox="0 0 ${f.W} ${f.H}" style="max-width:${f.W}px" role="img" aria-label="${esc(f.aria)}">${f.g}</svg>`;
+  const svgOf = (f, cls, role = 'group') => `<svg class="${cls}" viewBox="0 0 ${f.W} ${f.H}" style="max-width:${f.W}px" role="${role}" aria-label="${esc(f.aria)}">${f.g}</svg>`;
   // an export takes the light palette and inline styles (PDF and PNG renderers read no stylesheet)
   const EXPORT_VARS = '--ink:#111827;--ink-2:#374151;--muted:#5f6f78;--line:#e0e8eb;--line-strong:#c7d4d9;--surface:#ffffff;--accent:#c2410c;--more:#b42318;--less:#334155;' +
     TONES.light.map(([k, v]) => `--t-${k}:${v};`).join('');
@@ -545,7 +548,7 @@
     const holder = document.createElement('div');
     holder.className = 'cell-x';
     holder.style.cssText = `position:fixed;left:-100000px;top:0;width:${f.W}px;${EXPORT_VARS}`;
-    holder.innerHTML = svgOf(f, 'cell-x-svg');
+    holder.innerHTML = svgOf(f, 'cell-x-svg', 'img');
     document.body.appendChild(holder);
     const PROPS = ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'opacity', 'font-size', 'font-weight'];
     try {
@@ -623,7 +626,7 @@
     // card.drawing: the drawing of the cell itself on the tile (true: the first of website.cell.drawings, or one by id);
     // its parts keep their hover and lose their click, which here opens the question (selecting is on its page)
     const dw = card.drawing ? DRAWINGS.find(d => d.drawing === card.drawing) || DRAWINGS[0] : null;
-    const fig = dw ? `<div class="cell-scroll cell-tile-fig">${svgOf(FIGS[dw.drawing].make(), 'cell-svg cell-' + dw.drawing).replace(/ (data-cell-(?:row|part|bar)|tabindex|role="button")(="[^"]*")?/g, '')}</div>` : '';
+    const fig = dw ? `<div class="cell-scroll cell-tile-fig">${svgOf(FIGS[dw.drawing].make(), 'cell-svg cell-' + dw.drawing, 'img').replace(/<g [^>]*>/g, g => g.replace(/ (data-cell-(?:row|part|bar)|tabindex|role="button"|aria-label|aria-hidden)(="[^"]*")?/g, ''))}</div>` : '';
     return `<article class="tile${dw ? ' wide' : ''}" id="tile-${esc(ID)}" data-tile="${esc(ID)}" tabindex="0"><header><h3>${esc(card.title || C.title || 'Where in the cell')}</h3>${K.detailsLink(ID)}</header>` + fig +
       `<div class="trows">${forest(items)}</div><p class="tfoot">${lead(regs, up, scoped, true)}</p>${note}</article>`;
   }
@@ -726,6 +729,26 @@
     }],
     ['[data-cell-exp]', el => { const f = FIGS[el.dataset.cellFig]; if (f) K.exportFigure(el.dataset.cellExp, () => exported(f.make, f.title(), f.sub(), f.note?.()), figName(el.dataset.cellFig), el, f.tsv); }],
   );
+  // a part smaller than a finger gets an invisible circle around it (24 px; 44 px on a touch screen)
+  const grow = () => {
+    const min = matchMedia('(pointer: coarse)').matches ? 44 : 24;
+    document.querySelectorAll('svg.cell-svg').forEach(svg => {
+      svg.querySelectorAll('.cd-extra').forEach(n => n.remove());
+      const w = svg.getBoundingClientRect().width, vb = svg.viewBox.baseVal;
+      if (!w || !vb || !vb.width) return;
+      const sc = w / vb.width;
+      svg.querySelectorAll('g[data-cell-part]:not([aria-hidden])').forEach(g => {
+        let b; try { b = g.getBBox(); } catch (e) { return; }
+        if (!b.width || (b.width * sc >= min && b.height * sc >= min)) return;
+        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('class', 'cd-hit cd-extra');
+        c.setAttribute('cx', b.x + b.width / 2); c.setAttribute('cy', b.y + b.height / 2); c.setAttribute('r', min / 2 / sc);
+        g.appendChild(c);
+      });
+    });
+  };
+  (K.afterRender ||= []).push(grow);
+  let growT; addEventListener('resize', () => { clearTimeout(growT); growT = setTimeout(grow, 200); });
   K.tips.push(['[data-cell-tip]', el => TIPS[+el.dataset.cellTip] || '']);
   document.addEventListener('keydown', e => {
     const el = e.target.closest?.('[data-cell-row], [data-cell-part], [data-cell-bar]');

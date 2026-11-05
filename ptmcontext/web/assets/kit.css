@@ -175,7 +175,7 @@ footer.site .wrap { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; justify-
 .drow .one { stroke: var(--line-strong); stroke-width: 1.2; }
 :is(.drow, .trow) .whisker { stroke-width: 1.6; stroke-linecap: round; }
 :is(.drow, .trow) .dot { stroke: var(--surface); stroke-width: 1.5; }
-:is(.drow, .trow) .more { fill: var(--more); stroke: var(--more); } :is(.drow, .trow) .less { fill: var(--less); stroke: var(--less); }
+:is(.drow, .trow) .more { fill: var(--more); stroke: var(--more); } :is(.drow, .trow) .less { fill: color-mix(in srgb, var(--less) 30%, var(--surface)); stroke: var(--less); stroke-width: 2.4; }
 :is(.drow, .trow) .same { fill: var(--same); stroke: var(--same); }
 :is(.drow, .trow) .ns { fill: var(--surface); stroke: var(--muted); }
 :is(.drow, .trow) .dot.ns { stroke-width: 1.5; }
@@ -224,7 +224,7 @@ details.score[open] .pm::after { display: none; }
 .strip .track { stroke: var(--line); stroke-width: 1; } .strip .faint { stroke: var(--line); stroke-width: 1; }
 .strip .one { stroke: var(--line-strong); stroke-width: 1.2; }
 .strip .dot { stroke: var(--surface); stroke-width: 1.2; }
-.strip .more { fill: var(--more); } .strip .less { fill: var(--less); } .strip .same { fill: var(--same); } .strip .ns { fill: var(--surface); stroke: var(--muted); }
+.strip .more { fill: var(--more); } .strip .less { fill: color-mix(in srgb, var(--less) 30%, var(--surface)); stroke: var(--less); stroke-width: 2; } .strip .same { fill: var(--same); } .strip .ns { fill: var(--surface); stroke: var(--muted); }
 .ans { font-size: 0.86rem; color: var(--ink-2); line-height: 1.4; }
 .ans .an { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .go { width: 0.55rem; height: 0.55rem; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); justify-self: center; margin-top: -0.25rem; transition: transform 0.15s; }
@@ -332,7 +332,7 @@ body.rail-open .rail-scrim { display: block; position: fixed; inset: 0; z-index:
 .scope.selected { background: color-mix(in srgb, var(--accent) 9%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
 .sel-flag { background: var(--accent); color: var(--on-accent); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.1rem 0.5rem; border-radius: 0.3rem; }
 .sel-chip { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.84rem; color: var(--accent-dark); }
-.sel-chip button { border: 0; background: none; color: var(--accent-dark); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0.15rem; }
+.sel-chip button { border: 0; background: none; color: var(--accent-dark); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0.15rem; min-width: 24px; }
 .sel-and { font-size: 0.78rem; color: var(--muted); }
 .sel-tools { margin-left: auto; display: inline-flex; gap: 0.4rem; }
 .btn.small { font-size: 0.82rem; padding: 0.22rem 0.6rem; }
@@ -358,7 +358,7 @@ body.has-selection .tabs { box-shadow: inset 0 -2px 0 var(--accent); }
 .key { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 1.1rem; font-size: 0.9rem; color: var(--ink-2); margin: 0.4rem 0 0.4rem; }
 .key .chip-btn { margin-left: auto; }
 .kd { display: inline-block; width: 0.72rem; height: 0.72rem; border-radius: 50%; margin-right: 0.35rem; vertical-align: -0.05em; }
-.kd.more { background: var(--more); } .kd.less { background: var(--less); } .kd.same { background: var(--same); } .kd.ns { border: 1.6px solid var(--muted); }
+.kd.more { background: var(--more); } .kd.less { background: color-mix(in srgb, var(--less) 30%, var(--surface)); border: 2.4px solid var(--less); box-sizing: border-box; } .kd.same { background: var(--same); } .kd.ns { border: 1.6px solid var(--muted); }
 .how-text { font-size: 0.86rem; color: var(--ink-2); max-width: 60rem; background: var(--surface); border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.6rem 0.8rem; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr)); gap: 1rem; margin-bottom: 1.6rem; }
 .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow); padding: 1rem 1.1rem 0.9rem; cursor: pointer; display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; transition: box-shadow 0.15s, transform 0.15s; }
@@ -1016,7 +1016,7 @@ kbd { font-family: var(--font-mono); font-size: 0.8em; padding: 0.05rem 0.4rem; 
 .foot-help .linkish { font-size: inherit; }
 .empty-help { margin-top: 0.6rem; }
 /* focus: a ring that shows on the header band too (WCAG 2.4.7, 1.4.11) */
-.hero :focus-visible, .rail-fab:focus-visible { outline: 3px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.55); }
+.hero :focus-visible, header.band :focus-visible, .rail-fab:focus-visible { outline: 3px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.55); }
 .search-field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .tile:focus-visible, .drow:focus-visible, .tbl-card:focus-visible, tr[tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #view h2[tabindex="-1"]:focus { outline: none; }
@@ -1316,7 +1316,7 @@ a[href^="http"]:hover::after { opacity: 1; }
 /* STRING network: more options, zoom, who binds the marks */
 .pn-opts2 { margin-top: 0.4rem; align-items: center; }
 .pn-chk { display: inline-flex; gap: 0.3rem; align-items: center; font-size: 0.86rem; }
-.pn-chk.muted { opacity: 0.55; }
+.pn-chk.muted { color: var(--muted); }   /* not faded by opacity: the label keeps 4.5:1 */
 .pn-opts input[type=text] { padding: 0.2rem 0.35rem; border: 1px solid var(--line-strong); border-radius: 0.35rem; background: var(--surface); color: var(--ink, inherit); font: inherit; }
 .pn-zoom { display: inline-flex; gap: 0.25rem; }
 .pn-zhelp { margin: 0.2rem 0 0; }
@@ -1482,3 +1482,9 @@ body.slim .hero .brand { flex: 1 1 auto; }
 @media (max-width: 560px) { .stat b { font-size: 1.15rem; } }
 .brand-links, .scope { font-size: 0.8125rem; }
 @media (max-width: 560px) { body:not(.slim) .lede-cite, body:not(.slim) .lede-note { display: none; } }   /* a phone's first screen: the citation line is on the Help and Method pages */
+
+/* tap targets on a phone: 44px for the chip's remove button and the theme buttons, without growing the chip or the row */
+@media (max-width: 700px), (pointer: coarse) {
+  .sel-chip button { min-width: 44px; min-height: 44px; margin-block: -10px; margin-right: -0.4rem; }
+  .theme-switch button { min-width: 44px; min-height: 44px; }
+}

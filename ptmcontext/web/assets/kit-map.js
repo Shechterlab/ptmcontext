@@ -887,12 +887,23 @@
     // the live rows arrive in turn and each redraw can change the height: for the first seconds on a protein the box keeps the tallest height seen
     const hold = M.hold && M.hold.acc === ctx.p.acc && M.hold.el === el && Date.now() < M.hold.until ? M.hold : (M.hold = { acc: ctx.p.acc, until: Date.now() + 6000, h: 0, el });
     el.style.minHeight = hold.h ? hold.h + 'px' : '';
-    el.innerHTML = controls() + `<div class="map-svg"><svg viewBox="0 0 ${m.Wd} ${m.H}" role="img" aria-label="Map of ${esc(ctx.p.gene || ctx.p.acc)}"${m.Wd < 1000 ? ` style="max-width:${m.Wd}px"` : ''}>${m.svg}</svg></div>` +
+    el.innerHTML = controls() + `<div class="map-svg"><svg viewBox="0 0 ${m.Wd} ${m.H}" role="group" aria-label="Map of ${esc(ctx.p.gene || ctx.p.acc)}"${m.Wd < 1000 ? ` style="max-width:${m.Wd}px"` : ''}>${m.svg}</svg></div>` +
       `<p class="map-read muted" id="map-read">Hover for the residue under the pointer. Click an item to pin it here.</p><div id="map-pin" class="map-pin" role="region" aria-label="Pinned detail" hidden></div>` + keyHtml(ctx, m);
     // items are reachable by keyboard: one tab stop, the arrow keys move along the rows, Enter or Space pins the detail
     // (an item drawn as a visible shape under a transparent hit target has both carry its number: the topmost one is the button)
     const top = new Map(); el.querySelectorAll('[data-mi]:not([data-msite])').forEach(n => top.set(n.dataset.mi, n));
     [...top.values()].forEach((n, i) => { n.setAttribute('tabindex', i === 0 ? '0' : '-1'); n.setAttribute('role', 'button'); n.setAttribute('aria-label', plain(M.items[+n.dataset.mi]?.tip)); });
+    // the sites: one tab stop (the arrow keys move along them), and none smaller than 24 px to hit
+    const sites = [...el.querySelectorAll('svg [data-msite][role=button]')];
+    sites.forEach((n, i) => n.setAttribute('tabindex', i === 0 ? '0' : '-1'));
+    { const sv = el.querySelector('svg'), w = sv.getBoundingClientRect().width, sc = w / m.Wd;
+      if (sc > 0) sites.forEach(n => {
+        const b = n.getBBox(); if (b.width * sc >= 24 && b.height * sc >= 24) return;
+        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('cx', b.x + b.width / 2); c.setAttribute('cy', b.y + b.height / 2); c.setAttribute('r', 12 / sc);
+        c.setAttribute('fill', 'transparent'); c.setAttribute('data-msite', n.dataset.msite); c.setAttribute('aria-hidden', 'true');
+        n.parentNode.insertBefore(c, n);
+      }); }
     if (M.pin && M.pin.acc === ctx.p.acc) showPin(M.pin);
     M.geom = m; hold.h = Math.max(hold.h, el.offsetHeight);
     if (!hold.t) hold.t = setTimeout(() => release(hold), Math.max(0, hold.until - Date.now()) + 50);
@@ -1028,6 +1039,12 @@
   // a theme switch redraws the map in the theme's colours
   new MutationObserver(() => redraw()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   document.addEventListener('keydown', e => {
+    const st = e.target.closest?.('#pmap svg [data-msite][role=button]');
+    if (st && ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+      const all = [...document.querySelectorAll('#pmap svg [data-msite][role=button]')], j = all.indexOf(st) + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1);
+      if (all[j]) { e.preventDefault(); st.setAttribute('tabindex', '-1'); all[j].setAttribute('tabindex', '0'); all[j].focus(); }
+      return;
+    }
     const n = e.target.closest?.('#pmap [data-mi]:not([data-msite])');
     if (n && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); togglePin(M.items[+n.dataset.mi]); return; }
     if (n && ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
