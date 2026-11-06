@@ -123,15 +123,50 @@ jobs:
           ptmc run sites/methylarginine.yaml --root reference --variant with_lower_confidence
           ptmc web sites/methylarginine.yaml
           ptmc web sites/methylarginine.yaml --variant with_lower_confidence
+      - name: Last good yeast inputs
+        # the staged files are cached under the manifest's hash: a UniProt, MobiDB or SHEPHARD outage reuses the last run
+        # that staged them, instead of leaving the site out
+        id: yeast_cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/inputs
+            sites/yeast_phospho.inputs.json
+          key: yeast-inputs-${{ hashFiles('sites/yeast_phospho.inputs.json', 'sites/yeast_phospho.yaml') }}-${{ github.run_id }}
+          restore-keys: |
+            yeast-inputs-${{ hashFiles('sites/yeast_phospho.inputs.json', 'sites/yeast_phospho.yaml') }}-
       - name: Yeast phosphosites, staged from UniProt, MobiDB and SHEPHARD
         # an outage at one of these sources leaves the yeast site out of this deploy, not the methylarginine site
+        id: yeast
         continue-on-error: true
         run: |
-          ptmc stage uniprot UP000002311 --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
-          ptmc stage mobidb --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
-          ptmc stage shephard s_cerevisiae --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
-          ptmc run sites/yeast_phospho.yaml --root data
+          # what the cache restored (the files and the manifest that names their MD5s), kept aside before staging overwrites them
+          if [ "${{ steps.yeast_cache.outputs.cache-matched-key }}" != "" ] && [ -d data/inputs ]; then
+            cp -r data/inputs "$RUNNER_TEMP/yeast_cached"; cp sites/yeast_phospho.inputs.json "$RUNNER_TEMP/yeast_cached.json"
+          fi
+          if ptmc stage uniprot UP000002311 --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast \
+            && ptmc stage mobidb --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast \
+            && ptmc stage shephard s_cerevisiae --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast \
+            && ptmc run sites/yeast_phospho.yaml --root data; then :
+          elif [ -d "$RUNNER_TEMP/yeast_cached" ]; then
+            echo "::warning title=yeast_phospho staged afresh failed::using the last cached inputs"
+            rm -rf data/inputs && cp -r "$RUNNER_TEMP/yeast_cached" data/inputs && cp "$RUNNER_TEMP/yeast_cached.json" sites/yeast_phospho.inputs.json
+            ptmc run sites/yeast_phospho.yaml --root data
+          else
+            exit 1
+          fi
           ptmc web sites/yeast_phospho.yaml
+      - name: Name any skipped site
+        if: steps.yeast.outcome == 'failure'
+        run: |
+          echo "::warning title=Site skipped::yeast_phospho was left out of this deploy (see the yeast step); the report job opens or updates the pages-failure issue"
+          echo "skipped=yeast_phospho" >> "$GITHUB_STEP_SUMMARY"
+          echo "yeast_phospho" > skipped_sites.txt
+      - uses: actions/upload-artifact@v4
+        if: steps.yeast.outcome == 'failure'
+        with:
+          name: skipped-sites
+          path: skipped_sites.txt
       - run: ptmc pages sites/methylarginine.yaml sites/yeast_phospho.yaml --out _site --skip-missing
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -154,6 +189,11 @@ jobs:
     permissions:
       issues: write
     steps:
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: skipped-sites
+          path: skipped
       - env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -164,7 +204,12 @@ jobs:
         run: |
           gh label create pages-failure --repo "$REPO" --color B42318 --description "The Pages build or deploy failed" 2>/dev/null || true
           open=$(gh issue list --repo "$REPO" --label pages-failure --state open --json number --jq '.[0].number')
-          if [ "$RESULT" = "success/success" ]; then
+          skipped=$(cat skipped/skipped_sites.txt 2>/dev/null | tr '\n' ' ')
+          if [ "$RESULT" = "success/success" ] && [ -n "$skipped" ]; then
+            body="Deployed from $REF at ${SHA:0:7} without: $skipped. The site's staging or run step failed, so the published copy of it is stale or absent. Log: $RUN"
+            if [ -n "$open" ]; then gh issue comment "$open" --repo "$REPO" --body "$body"
+            else gh issue create --repo "$REPO" --label pages-failure --title "Pages deployed without $skipped" --body "$body"; fi
+          elif [ "$RESULT" = "success/success" ]; then
             [ -n "$open" ] && gh issue close "$open" --repo "$REPO" --comment "Deployed again from $REF at ${SHA:0:7}: $RUN" || true
           elif [ "$RESULT" != "cancelled/skipped" ] && [ "$RESULT" != "cancelled/cancelled" ]; then
             body="Build/deploy: $RESULT on $REF at ${SHA:0:7}. Log: $RUN"

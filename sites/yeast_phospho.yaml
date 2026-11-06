@@ -7,7 +7,7 @@ status: working
 mark: phospho
 manifest: sites/yeast_phospho.inputs.json      # written by ptmc stage
 
-snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}
+snapshot: {input: uniprot_fasta, release: "UniProt 2026_04"}
 inputs:
   disorder: mobidb_disorder                     # MobiDB consensus (prediction-disorder-th_50), as for human
   domains:                                      # each protein's domains from the first of these that has any:
