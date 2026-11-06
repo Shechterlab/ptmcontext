@@ -1973,3 +1973,13 @@ body.cards .sc-grid, .sc-grid:has(> .sc-tile) { display: grid; grid-template-col
 .pc-mapsfold > summary { cursor: pointer; padding: 0.5rem 0; min-height: 2.75rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.92rem; }
 .pc-mapsfold[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 0.5rem; }
 .pgroup-switch { margin: 0.2rem 0 0.6rem; }
+.pc .cell-pair .cell-svg { max-height: 17rem; }
+@media (max-width: 700px) { .pc .cell-pair .cell-svg { max-height: 11rem; } .pc .cell-pair { gap: 0.3rem; } }
+.pc-mapsfold > summary { display: block; }
+@media (max-width: 700px) {
+  .pc .cell-onep .exp { display: none; }
+  .pc .cell-onep .fig-head { margin: 0; }
+  .pix-who td:last-child, .pix-who th:last-child { display: none; }
+}
+@media (max-width: 700px) { .pc [data-pc="location_cell"] > .sub { display: none; } }
+@media (max-width: 700px) { .pc .cell-pair .cell-svg { max-height: 9.5rem; } .pix-sec .sub:not(:first-of-type) { display: none; } .cell-where { margin: 0.2rem 0; } }

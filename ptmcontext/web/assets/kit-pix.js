@@ -9,7 +9,7 @@
   const { D, W, esc, int, cap } = K;
   const CARD = D.protein_view?.card || {}, PT = CARD.writer?.partners || null;
   if (!PT || !K.card) return;
-  const UI = { tab: 'partners', all: false, rows: 12 };
+  const UI = { tab: 'partners', all: false, rows: matchMedia('(max-width: 700px)').matches ? 3 : 6 };
   const num = v => (v === '' || v == null || !isFinite(+v) ? null : +v);
   const pc = (k, n) => (n ? `${Math.round(100 * k / n)}%` : '–');
   const listed = a => !!(a && K.protState?.() && D.proteins.some(p => p[0] === a));
@@ -65,8 +65,8 @@
       if (UI.tab === 'partners') {
         out += `<p class="pix-head"><b>${int(marked)} of ${int(parts.length)} partners (${pc(marked, parts.length)})</b> carry ${esc(W.marks)} themselves${base != null ? `, against ${pc(D.counts.proteins, D.run.snapshot.entries)} of the reviewed proteome` : ''}. <span class="muted small">STRING physical associations of the whole protein, score ${esc(String(D.partners?.min_score ?? 0.7))} or more.</span></p>` +
           `<div class="tbl-card"><table class="tbl compact pix-parts"><thead><tr><th>Partner</th><th class="num">STRING score</th><th>${esc(cap(W.marks))}</th><th>Class</th></tr></thead><tbody>` +
-          parts.slice(0, UI.all ? 999 : 10).map(r => `<tr><td>${link(r.partner_accession, r.partner)}</td><td class="num">${esc(num(r.score) != null ? num(r.score).toFixed(3) : '')}</td><td>${r.partner_marked === 'true' ? `<span class="yes" title="This partner has ${esc(W.marks)} in this dataset">${esc(W.marks)}</span>` : '<span class="muted">–</span>'}</td><td>${r.classes ? esc(classWord(r.classes)) : '<span class="muted">–</span>'}</td></tr>`).join('') +
-          `</tbody></table></div>` + (parts.length > 10 ? `<p><button type="button" class="linkish small" data-pix-all>${UI.all ? 'Fewer partners' : `All ${int(parts.length)} partners`}</button></p>` : '');
+          parts.slice(0, UI.all ? 999 : UI.rows).map(r => `<tr><td>${link(r.partner_accession, r.partner)}</td><td class="num">${esc(num(r.score) != null ? num(r.score).toFixed(3) : '')}</td><td>${r.partner_marked === 'true' ? `<span class="yes" title="This partner has ${esc(W.marks)} in this dataset">${esc(W.marks)}</span>` : '<span class="muted">–</span>'}</td><td>${r.classes ? esc(classWord(r.classes)) : '<span class="muted">–</span>'}</td></tr>`).join('') +
+          `</tbody></table></div>` + (parts.length > UI.rows ? `<p><button type="button" class="linkish small" data-pix-all>${UI.all ? 'Fewer partners' : `All ${int(parts.length)} partners`}</button></p>` : '');
       } else if (!cx) out += '<p class="muted small">Loading the complexes…</p>';
       else out += cx.length ? `<p class="pix-head"><b>${int(cx.length)} complex${cx.length === 1 ? '' : 'es'}</b> hold ${esc(gene)} and at least one other protein with ${esc(W.marks)}. <span class="muted small">Curated first, then predicted; q is the dataset’s test of the complex.</span></p><div class="tbl-card"><table class="tbl compact pix-cx"><thead><tr><th>Complex</th><th>Source</th><th class="num">Members</th><th>With ${esc(W.marks)}</th></tr></thead><tbody>` +
         cx.slice(0, UI.all ? 999 : 8).map(r => `<tr><td>${esc(r[1] || r[0])}</td><td>${esc((D.page_tables?.complexes?.columns?.[2]?.values || {})[r[2]] || r[2])}</td><td class="num">${int(r[3])}</td><td>${int(r[4])}<span class="muted small"> · ${(r[5] || []).filter(a => a !== p.acc).slice(0, 4).map(a => link(a, IDX.get(a)?.[1])).join(', ')}${(r[5] || []).length > 5 ? ' …' : ''}</span></td></tr>`).join('') + `</tbody></table></div>` + (cx.length > 8 ? `<p><button type="button" class="linkish small" data-pix-all>${UI.all ? 'Fewer' : `All ${int(cx.length)}`}</button></p>` : '')

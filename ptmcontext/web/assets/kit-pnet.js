@@ -254,8 +254,8 @@
         `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network').replace(/<\/div>$/, '<button type="button" class="btn small" data-pn-cyto title="The network as Cytoscape tables: edges (File, Import, Network from File) and nodes (Import Table from File)">Cytoscape</button></div>')}</div>` +
         `<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div><div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` +
         `<details class="pn-optd"><summary>Network options <span class="muted">· confidence, partners, color, layout, evidence channels, second ring of PRMTs and Tudor proteins</span></summary>${optionsHtml()}</details>`;
-      return fold('p-ix', 'Protein interactions', 'who binds its ' + esc(W.marks) + ', partners, complexes and the network', K.pix.html(p, rec, K.prot.tables(p.acc)) + ifaceHtml(p, rec) +
-        `<details class="pn-fold"${hasIface ? ' open' : ''}><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING, live; drag the nodes${hasIface ? '' : `; folded, as no ${esc(W.mark)} sits at an interface`}</span></summary>${net}</details>`, true);
+      return fold('p-ix', 'Protein interactions', 'who binds its ' + esc(W.marks) + ', partners, complexes and the network', K.pix.html(p, rec, K.prot.tables(p.acc)) + (CARDS ? ifaceHtml(p, rec) : ifaceFold(p, rec)) +
+        `<details class="pn-fold"${CARDS && hasIface ? ' open' : ''}><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING, live; drag the nodes${hasIface ? (CARDS ? '' : '; open to draw it') : `; folded, as no ${esc(W.mark)} sits at an interface`}</span></summary>${net}</details>`, true);
     }
     return fold('p-ix', 'Protein interactions', 'STRING, live; drag the nodes', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, drawn as a network you can drag, colored by whether they have ${esc(W.marks)} in this dataset. Matched by accession. The Table view lists the same partners and is the keyboard route.</p>` +
       `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${CARDS ? '' : optionsHtml()}<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>` +
@@ -267,6 +267,12 @@
   const rcsb = id => `<a href="https://www.rcsb.org/structure/${encodeURIComponent(String(id).toUpperCase())}" target="_blank" rel="noopener">${esc(String(id).toUpperCase())}</a>`;
   const partnerName = (g, a) => { const sp = a ? siteProtein(a) : null; return sp ? `<a href="${esc(K.link('protein', sp.acc))}"><b>${esc(g || sp.gene)}</b></a>` : `<b>${esc(g || a || 'a partner')}</b>`; };
   const siteBtn = (acc, pos) => `<button type="button" class="linkish mono" data-cc-pos="${pos}" data-cc-acc="${esc(acc)}">${esc(K.prot ? K.prot.siteLabel(acc, pos) : pos)}</button>`;
+  // the classic page folds the interface lists (the records above already say who binds each site)
+  function ifaceFold(p, rec) {
+    const h = ifaceHtml(p, rec); if (!h) return '';
+    const s3 = rec?.s3d, n = new Set([...(s3?.c || []).filter(r => r[1] === 'protein' || r[1] === 'self').map(r => r[0]), ...(s3?.p || []).map(r => r[0])]).size;
+    return `<details class="pn-fold pn-ifold"><summary>Proteins at ${esc(W.mark)} interfaces <span class="muted">· ${n ? `${int(n)} ${esc(n === 1 ? W.mark : W.marks)}, in PDB structures or predicted complexes` : 'none in the structure tables'}</span></summary>${h}</details>`;
+  }
   function ifaceHtml(p, rec) {
     const s3 = rec?.s3d; if (!s3 || !(SD.contacts || SD.predicted)) return '';
     const sf = !!K.pix, obs = (s3.c || []).filter(r => r[1] === 'protein' || r[1] === 'self'), pred = s3.p || [], M = W.marks, m1 = W.mark;
