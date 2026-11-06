@@ -2108,9 +2108,9 @@ website:                  # the look and words of the website (ptmc web); layout
       values: [experiment, source, cell_line, n_peaks, top_target_genes, top_5mers]
   protein:                 # the protein page
     open_partners: true    # the Interaction partners fold is open when the protein has partners in the site's table
-    order: [p-map, p-cc, p-ix, p-na, p-sites, p-cons, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cluster, p-ptm, p-seq]   # the explorer's order, with the orthologs after the sites
+    order: [p-map, p-cell, p-cc, p-ix, p-na, p-sites, p-cons, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cluster, p-ptm, p-seq]   # the explorer's order, with the orthologs after the sites
     groups:                # about five headings, each holding its folds (website.protein.groups)
-      - {id: g-overview, title: Overview and map, folds: [p-map, p-kinds]}
+      - {id: g-overview, title: Overview and map, folds: [p-map, p-cell, p-kinds]}
       - {id: g-sites, title: Sites, folds: [p-sites, p-cons, p-score, p-pert, p-exp, p-cluster, p-ptm]}
       - {id: g-binding, title: Binding and contacts, folds: [p-cc, p-ix, p-na]}
       - {id: g-context, title: "Context: location, condensates, disease, cancer", switch: true, folds: [p-cond, p-dis, p-depmap]}
@@ -2123,7 +2123,7 @@ website:                  # the look and words of the website (ptmc web); layout
     context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
       p-cond: [condensate_proteome, hpa_location]
       p-dis: [disease_family]
-    open: [p-map, p-sites, p-cons, p-ix]   # the explorer's folds are all shut; here the map and the sites, and the orthologs and the network once they have data
+    open: [p-map, p-cell, p-sites, p-cons, p-ix]   # the explorer's folds are all shut; here the map and the sites, and the orthologs and the network once they have data
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
       location:
         title: Location and condensates
