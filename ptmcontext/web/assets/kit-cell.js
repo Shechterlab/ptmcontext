@@ -603,7 +603,7 @@
     const d = DRAWINGS.find(x => x.drawing === (drawing || DRAWINGS[0]?.drawing));
     if (!el || !d || !DRAW[d.drawing]) return null;
     const scoped = o.scoped ?? scopedNow();
-    TIPS = [];
+    if (!o.keep) TIPS = [];
     const f = DRAW[d.drawing](scoped);
     el.innerHTML = svgOf(f, 'cell-svg cell-' + d.drawing);
     const sv = el.firstElementChild, crop = o.crop === true ? crops[d.drawing] : Array.isArray(o.crop) ? o.crop : null;
@@ -668,7 +668,51 @@
   }
   const sumTip = (x, scoped) => `<b>${esc(rowName(x.row))}</b><br>${esc(cap(who(scoped)))} against ${esc(alike)}${x.cells.length > 1 ? ', the median of ' + esc(x.maps) : ''}:<br>` +
     x.cells.map(([aid, c]) => esc(DS(aid).name) + ' ' + (c.circular ? 'not compared' : esc(orText(c.a)) + (c.a.q != null ? ', q ' + fq(c.a.q) : ''))).join('<br>');
+  // ---- the Overview's first tile (a card with drawing: true): the cell and the nucleus side by side, drawn when the page is,
+  // their parts clickable to select their proteins, the one-line answer, and the parts that differ most as two short lists.
+  // A phone gets the drawings without their side labels, cropped to fit, and one list for each ---------------------------------
+  const narrow = () => matchMedia('(max-width: 700px)').matches;
+  const pname = x => (x.part ? partName(x.part) : rowName(x.row));
+  function cellAnswer(regs, up, scoped) {
+    const one = x => `<b>${esc(inText(x.row))}</b> (${esc(orText(x.a))})`;
+    const more = regs.filter(x => x.tone[0] === 'u').sort((a, b) => b.a.l2 - a.a.l2), less = regs.filter(x => x.tone[0] === 'd').sort((a, b) => a.a.l2 - b.a.l2), most = up.slice(0, 3);
+    const t = [more.length || most.length ? `${more.length ? 'More often in ' + and(more.map(one)) : ''}${more.length && most.length ? '; most of all in ' : most.length ? 'Most of all in ' : ''}${and(most.map(one))}` : '',
+      less.length ? `${more.length || most.length ? 'Less in ' : 'Less often in '}${and(less.map(one))}` : ''].filter(Boolean).join('. ');
+    return t ? t + '.' : regs.length ? `About as often in each region as ${esc(alike)}.` : `${cap(who(scoped))} are not enriched in any part of the cell.`;
+  }
+  function partList(d, ps) {
+    const on = new Set(S.f['w:' + ID] || []);
+    const rows = ps.filter(p => p.drawings.includes(d.drawing) && p.or != null && p.direction !== 'na');
+    const top = (rows.filter(p => p.maps >= 2).length >= 4 ? rows.filter(p => p.maps >= 2) : rows).sort((x, y) => Math.abs(y.l2) - Math.abs(x.l2)).slice(0, 6);
+    return `<section class="cp-col"><h4>${esc(d.title && /^Within them: /.test(d.title) ? d.title.replace(/^Within them: the /, 'The ') : cap(d.drawing))}</h4><ul class="cp-list">` +
+      top.map(p => `<li><button type="button" class="cp-row${on.has(p.part) ? ' on' : ''}" data-cell-sel="${esc(p.part)}" aria-pressed="${on.has(p.part)}" title="Select the ${esc(W.marks)} of ${esc(pname(p))}: odds ratio ${esc(fxv(p.or))}, the median of ${p.maps} map${p.maps === 1 ? '' : 's'}">` +
+        `<i class="kd ${p.direction === 'more' ? 'more' : p.direction === 'less' ? 'less' : 'ns'}"></i><span class="cp-n">${esc(pname(p))}</span><b>${esc(fxv(p.or))}×</b></button></li>`).join('') + '</ul></section>';
+  }
+  function bigTile(card) {
+    TIPS = [];
+    const scoped = scopedNow(), { regs, up } = summaries(scoped), ps = partValues(scoped);
+    const title = card.title || C.title || 'Where in the cell';
+    const note = K.selOn() && !scoped ? `<p class="twhole"><span>Whole dataset</span> ${K.vsOn() ? 'the maps compare proteins, not marks: shown for all ' + esc(W.marked) + ' proteins' : 'the selection is too small to test'}</p>` : '';
+    const figs = DRAWINGS.map(d => `<figure class="cell-fig"><figcaption>${esc(d.title && /^Within them: /.test(d.title) ? d.title.replace(/^Within them: the /, 'The ') : cap(d.drawing))}</figcaption><div class="cell-draw" data-cell-draw="${esc(d.drawing)}" role="group" aria-label="${esc(d.title || d.drawing)}"></div></figure>`).join('');
+    const kinds = ['pdf', 'svg', 'png'], bar = K.tilekit.dlMenu(title, [], 'cell-exp', ID).replace(/(<div class="exp fr-exp"[^>]*>)/, '$1' + DRAWINGS.map(d => kinds.map(k => `<button type="button" class="exp-btn" data-cell-exp="${k}" data-cell-fig="${esc(d.drawing)}" title="${esc(K.EXP_HELP[k])}">${esc(cap(d.drawing))} ${k.toUpperCase()}</button>`).join('')).join('') +
+        `<button type="button" class="exp-btn" data-cell-exp="tsv" data-cell-fig="${esc(DRAWINGS[0].drawing)}" title="${esc(K.EXP_HELP.tsv)}">TSV</button>`);
+    return `<article class="tile wide cell-tile" id="tile-${esc(ID)}" data-tile="${esc(ID)}" tabindex="0"><header><h3>${esc(title)}</h3>${K.detailsLink(ID)}</header>` +
+      `<p class="tans cell-ans">${cellAnswer(regs, up, scoped)}</p><div class="cell-pair">${figs}</div>` +
+      `<div class="cp-cols">${DRAWINGS.map(d => partList(d, ps)).join('')}</div>` +
+      `<p class="tkey">Odds ratio against ${esc(alike)}, the median of ${MAPS.length} maps · tap a part or a row to select its proteins.</p>${note}<div class="tact">${bar}</div></article>`;
+  }
+  const toggle = part => K.sel.toggle('w:' + ID, part);
+  function drawBig() {
+    const els = [...document.querySelectorAll('#view [data-cell-draw]')]; if (!els.length) return;
+    const nar = narrow();
+    els.forEach((el, i) => { drawInto(el, el.dataset.cellDraw, { crop: nar, labels: !nar, keep: i > 0, onPart: toggle }); el.dataset.narrow = nar ? '1' : ''; });
+  }
+  (K.afterRender ||= []).push(drawBig);
+  let bigT; addEventListener('resize', () => { clearTimeout(bigT); bigT = setTimeout(() => { const el = document.querySelector('#view [data-cell-draw]'); if (el && (el.dataset.narrow === '1') !== narrow()) drawBig(); }, 200); });
+  K.clicks.push(['[data-cell-sel]', el => toggle(el.dataset.cellSel)]);
+
   function tile(card) {
+    if (card.drawing === true && DRAWINGS.length) return bigTile(card);
     TIPS = [];
     const scoped = scopedNow(), { regs, up } = summaries(scoped);
     const items = [...regs.map(x => ({ ...x, name: rowName(x.row), tip: sumTip(x, scoped) })),

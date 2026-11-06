@@ -1,4 +1,4 @@
-/* The pathway view (website.front.pathways; the cards front end): a "Proteins" button on the rows of a pathway question opens
+/* The pathway view (website.front.pathways; the cards home, and the classic Overview's tiles and question pages): a "Proteins" button on the rows of a pathway question opens
    the pathway's sub-pathways as groups of protein chips. A methylated protein is filled, with its sites (those of the
    selection, when there is one); a protein of the pathway with none is an outline, muted; the methylated come first, and
    each group says "k of n methylated in your selection". Chips open the protein's page. The groups follow the filters,
@@ -10,7 +10,7 @@
   'use strict';
   const { D, A, S, esc, int } = K;
   const CFG = (D.front && D.front.pathways) || [];
-  if (!CFG.length || !K.front) return;
+  if (!CFG.length) return;
   const cfgOf = aid => CFG.find(c => c.analyses.includes(aid));
   const PI = Object.fromEntries((D.proteins || []).map((p, i) => [p[0], i]));
   const fileOf = id => String(id).replace(/[^A-Za-z0-9._-]/g, '_') + '.json';
@@ -81,7 +81,7 @@
     });
   }
   function after() {
-    if (S.view === 'overview' && !S.arg) homeButtons();
+    if (S.view === 'overview' && !S.arg) homeButtons();      // the home's rows, and the rows of the classic Overview's tiles
     const cfg = onPage() ? cfgOf(S.arg) : null; if (!cfg) return;
     document.querySelectorAll('#view .drow[data-cat]').forEach(r => {
       if (r.querySelector('[data-pw]')) return;

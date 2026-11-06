@@ -411,15 +411,21 @@
     return 'None differs (q ≤ 0.05 and at least 1.1×)';
   }
   const EXCL = /^(no |not |unknown|unassigned|other\b)/i;
-  const OV = D.overview || {};
+  const OV = D.overview || {}, FR = D.front || {};
   function ovSections() {
-    if (OV.sections) return OV.sections.map(x => ({ name: x.name, about: x.about, show: x.show, more: x.more, cards: x.cards.map(c => (typeof c === 'string' ? { analysis: c } : c)).filter(c => A[c.analysis]) }));
-    const out = [];
-    D.analyses.forEach(a => { const name = a.section || 'Other questions'; let x = out.find(y => y.name === name); if (!x) out.push(x = { name, cards: [] }); x.cards.push({ analysis: a.id }); });
-    return out;
+    let out;
+    if (OV.sections) out = OV.sections.map(x => ({ name: x.name, about: x.about, show: x.show, more: x.more, cards: x.cards.map(c => (typeof c === 'string' ? { analysis: c } : c)).filter(c => A[c.analysis]) }));
+    else {
+      out = [];
+      D.analyses.forEach(a => { const name = a.section || 'Other questions'; let x = out.find(y => y.name === name); if (!x) out.push(x = { name, cards: [] }); x.cards.push({ analysis: a.id }); });
+    }
+    // the cell and the nucleus, drawn (a card with drawing: true), open the Overview
+    const first = out.filter(x => x.cards.some(c => c.drawing === true && c.analysis === D.cell?.id));
+    return first.length ? [...first.map(x => ({ ...x, cell: true })), ...out.filter(x => !first.includes(x))] : out;
   }
   // against other marks the attributes are questions too: about the sites, and (last, as a caveat) how they were found
-  const secList = () => (vsOn() ? [...ovSections(), ...['About the sites', 'How they were found'].map(name => ({ name, caveat: name === 'How they were found', cards: ATTRQ.filter(a => a.section === name).map(a => ({ analysis: a.id })) })).filter(x => x.cards.length)] : ovSections());
+  const wholeTile = c => A[c.analysis]?.anySize || !(A[c.analysis]?.tile || K.questions[c.analysis]?.tile);     // a tile that reads the whole dataset: for a selection too small to test
+  const secList = () => (smallSel() ? ovSections().map(x => ({ ...x, cards: x.cards.filter(wholeTile) })).filter(x => x.cards.length) : vsOn() ? [...ovSections(), ...['About the sites', 'How they were found'].map(name => ({ name, caveat: name === 'How they were found', cards: ATTRQ.filter(a => a.section === name).map(a => ({ analysis: a.id })) })).filter(x => x.cards.length)] : ovSections());
   const allCards = () => secList().flatMap(x => x.cards.map(c => ({ ...c, section: x.name })));
   const selOn = () => !!K.sel?.active();
   // the rows of a question: the selection's, tested again, or the site's own
@@ -495,11 +501,22 @@
       `<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div>` + LESS_MORE;
   }
   // what a tile shows, for the tile and its exports
+  // a selection loaded but too small to test: the tiles read the whole dataset
+  const smallSel = () => selOn() && !vsOn() && !!K.sel.data() && !(K.sel.testable() && K.sel.nMarks() > 0);
   function tileState(card) {
     const a = A[card.analysis], max = card.rows || OV.rows || 7;
-    const rows = withRef(a, rowsOf(a, S.m), S.m), { shown, more, left } = pick(rows, max, card);
-    const whole = selOn() && !vsOn() ? rowsFor(a, S.m) : null;
+    const rows = smallSel() ? rowsFor(a, S.m) : withRef(a, rowsOf(a, S.m), S.m);
+    let { shown, more, left } = pick(rows, max, card);
+    const whole = selOn() && !vsOn() && !smallSel() ? rowsFor(a, S.m) : null;
     const made = selOn() && rows.some(r => r.descriptive);
+    // a selection keeps the rows the tile has without one: the same classes, each tested again (the whole dataset's value
+    // a ring); a class the selection does not hold is a faint row without a value; a selection made with this question is
+    // not tested again, so its tile shows the whole dataset's rows
+    if (whole) {
+      const base = pick(whole, max, card), by = Object.fromEntries(rows.filter(r => !r.descriptive).map(r => [r.category, r]));
+      shown = base.shown.map(w => (made ? w : by[w.category] || { analysis: w.analysis, category: w.category, label: w.label, eff: null, dir: 'ns', absent: true, ref: w }));
+      more = base.more; left = base.left;
+    }
     const foot = made ? whyShown(a) : shown.length || !vsOn() ? summaryLine(rows, card.summary, card) : '';
     return { a, rows, shown, more, left, whole, made, foot };
   }
@@ -510,14 +527,23 @@
     const own = K.questions[card.analysis]?.tile?.(card);            // or draws the tile of (kit-cell.js, kit-values.js)
     if (own != null) return own;
     const { a, rows, shown, more, left, whole, made, foot } = tileState(card);
-    // its downloads on hover (none on a touch screen): the tile as a figure, the question's rows as a TSV, its Method
-    const exp = `<div class="exp texp" role="group" aria-label="Download ${esc(card.title || a.title)}">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-texp="${k}" data-aid="${esc(a.id)}" title="${k === 'tsv' ? 'TSV: every row of the question, ' + EXP_HELP.tsv.replace(/^TSV: the rows, /, '') : EXP_HELP[k].replace(/^(\w+)/, '$1 of this tile')}">${k.toUpperCase()}</button>`).join('')}${methodLink(a.id)}</div>`;
-    return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(card.title || a.title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</h3>${exp}${detailsLink(a.id)}</header>` +
+    // its downloads, in a menu that opens on a tap: the tile as a figure (PDF, SVG, PNG), the question's rows (TSV), its Method
+    const title = card.title || FR.short?.[a.id] || a.title;
+    const exp = K.tilekit.dlMenu(title, ['pdf', 'svg', 'png', 'tsv'], 'texp', a.id).replace(/data-texp="(\w+)"/g, `data-texp="$1" data-aid="${esc(a.id)}"`);
+    const fr = !shown.some(r => r.vs) && shown.length;
+    const ms = fr ? shown.map(r => frModel(a, r)) : [], ax = fr ? K.tilekit.axisOf(K.tilekit.valsOf(ms)) : null;
+    const ans = fr && !made ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
+    return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</h3>${detailsLink(a.id)}</header>` +
+      (ans ? `<p class="tans">${ans}</p>` : '') +
       (OV.statistic_label !== false && !vsOn() && rows.some(r => r.eff != null) ? `<p class="tstat">${gloss('fold', 'Fold')} ${esc(baseline(a, vsMethod(S.m)))}</p>` : '') +
-      (shown.length ? `<div class="trows">${tileRows(shown)}</div>` : made ? '' : `<p class="muted tnone">${rows.some(r => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'}</p>`) +
-      (more ? `<a class="tmore" href="${esc(link('overview', a.id))}" data-more="${esc(JSON.stringify(left))}" title="Open the question at the ${more} not shown here">+${more} more ›</a>` : '') +
-      (foot ? `<p class="tfoot">${foot}</p>` : '') + (whole ? `<p class="twhole"><span>Whole dataset</span> ${answer(whole)}</p>` : '') + '</article>';
+      (shown.length ? `<div class="trows${fr ? ' fr-rows' : ''}">${fr ? K.tilekit.axisHtml(ax) + ms.map((x, i) => K.tilekit.rowHtml(x, ax, x.absent ? ` title="${esc(x.label)}: none in this selection"` : ` data-r="${reg(shown[i])}"${pickAttrs(shown[i])}`)).join('') : tileRows(shown)}</div>` : made ? '' : `<p class="muted tnone">${rows.some(r => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'}</p>`) +
+      (fr && ms.some(x => x.wv != null) ? '<p class="tkey">Dashed ring: the whole dataset.</p>' : '') +
+      (made ? `<p class="tfoot"><b>Whole dataset.</b> ${foot}</p>` : fr ? '' : foot ? `<p class="tfoot">${foot}</p>` : '') +
+      `<div class="tact">${exp}${more ? `<a class="tmore" href="${esc(link('overview', a.id))}" data-more="${esc(JSON.stringify(left))}" title="Open the question at the ${more} not shown here">+${more} more ›</a>` : ''}</div></article>`;
   }
+  // a tile row as the cards' rows read it: the short row label (website.front.row_labels), the interval, q, n and the whole dataset's ring
+  const frModel = (a, r) => ({ label: FR.row_labels?.[a.id]?.[r.category] || r.label, v: r.absent ? null : r.eff, lo: r.lo != null && r.hi != null ? [r.lo, r.hi] : null, q: r.q, dir: r.absent ? 'ns' : r.dir, n: r.absent ? null : r.a,
+    wv: r.ref ? r.ref.eff : null, desc: !!r.descriptive, absent: !!r.absent });
   // "+N more ›": the question opens with the classes the tile left out outlined for a few seconds, the first in view
   let MORE = null;
   K.clicks.push(['a.tmore[data-more]', el => { try { MORE = { aid: el.closest('[data-tile]').dataset.tile, cats: new Set(JSON.parse(el.dataset.more)), until: Date.now() + 6000, scroll: true }; } catch (err) { MORE = null; } }]);
@@ -634,11 +660,14 @@
     // a selection too small to test: its proteins drawn and the counts that hold for any selection; one that can be
     // tested: what sets it apart, in brief (the modules' blocks: kit-selview.js)
     const selBlocks = list => (list || []).map(f => f()).join('');
-    if (selOn() && !vsOn() && !selTestable()) return lead() + selBlocks(K.selSmall) + (K.sel.data() && !K.sel.nMarks() ? '' : anySize());   // nothing selected: no empty tiles
+    // a selection too small to test keeps the Overview, on the whole dataset, with a line that says so; one with no mark leaves it out
+    if (selOn() && !vsOn() && !selTestable() && K.sel.data() && !K.sel.nMarks()) return lead() + selBlocks(K.selSmall);
+    const small = smallSel();
+    const banner = small ? `<p class="note small-sel" role="status"><b>Showing the whole dataset.</b> Your selection is too small to test (it needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}), so each tile shows all ${esc(W.marks)}.</p>` : '';
     if (S.arg && A[S.arg] && (A[S.arg].kind !== 'attribute' || vsOn())) return focus(S.arg);
     if (vsOn() && !(K.sel.contrastGroups()?.g1.length >= K.sel.MIN_SIDE && K.sel.contrastGroups()?.g2.length >= K.sel.MIN_SIDE)) return lead();
     // with a selection, a section of protein-set questions is about its proteins: "Kinds of protein in your selection"
-    const head = x => (selOn() && x.cards.length && x.cards.every(c => A[c.analysis]?.kind === 'protein_sets') ? `${x.name} in your selection` : x.name);
+    const head = x => (selOn() && !small && x.cards.length && x.cards.every(c => A[c.analysis]?.kind === 'protein_sets') ? `${x.name} in your selection` : x.name);
     // a module's tile (a page's, website.pages[].overview) joins the section it names
     const more = name => vsOn() ? '' : (K.ovTiles || []).filter(t => t.section === name).map(t => t.html()).join('');
     // K.overviewTop: a module's block above the Overview's questions (kit-help.js: the start panel for a first visit)
@@ -663,7 +692,7 @@
       return `<section class="ov-sec${x.caveat ? ' caveat' : ''}" aria-labelledby="sec-${id}"><header class="ov-sec-head"><h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${id}">${esc(head(x))}</h3>${x.about && !vsOn() ? `<p class="sec-about">${esc(x.about)}</p>` : ''}</header>` +
         `<div class="tiles">${b.main}</div>` + (b.n ? `<details class="sec-more"><summary>${esc(x.more || 'More in ' + x.name)} (${b.n})</summary><div class="tiles">${b.rest}</div></details>` : '') + '</section>';
     };
-    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + lead() + pickHint() + (selOn() && !vsOn() ? selBlocks(K.selLead) : '') + secList().map((x, i) => sectionHtml(x, i)).join('') +
+    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + lead() + banner + pickHint() + (selOn() && !vsOn() && !small ? selBlocks(K.selLead) : '') + secList().map((x, i) => sectionHtml(x, i)).join('') +
       (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
   // the tiles of questions that hold for any selection (a module's counts), for a selection too small to test
@@ -681,7 +710,7 @@
     if (a.page) return bar + a.page(card);                               // a question a module draws (kit-counts.js)
     const rows = mod ? [] : chartRows(a, S.m, card);
     return bar + `<div class="page-head"><h2>${esc(K.front ? a.title : card.title || a.title)}</h2><span class="tools">${a.kind === 'protein_sets' || mod ? '' : `<span class="seg" role="group">${(vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher']).map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ` title="${esc(BTN[m][1])}"`}>${esc(BTN[m][0])}</button>`).join('')}</span>`}</span></div>` +
-      (K.front && selOn() && !mod && K.sel.testable() ? `<div class="ctl-row">${againstHtml()}</div>` : '') +
+      (selOn() && !mod && K.sel.testable() ? `<div class="ctl-row">${againstHtml()}</div>` : '') +
       `<p class="page-sub">${vsOn() ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}, tested in your browser (exploratory).` : esc(a.question || a.describe || '')}${selOn() && !vsOn() ? ` <b>Your selection</b>${rows.some(r => r.descriptive) ? ': ' + whyShown(a).replace(/^Your selection /, '') : vsOn() ? '' : ', tested again in your browser (exploratory: not adjusted for the other selections tried).'}` : ''} <span class="muted">Click a ${a.kind === 'protein_sets' ? 'set' : 'class'} to select its ${esc(W.marks)}.</span></p>` +
       `<section class="pcard">${(Q?.page && Q.page(card, () => cardBody(a, rows))) ?? (K.questionBody && K.questionBody(a, rows, card)) ?? cardBody(a, rows)}${selOn() && !vsOn() && !mod ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
   }
@@ -1060,6 +1089,7 @@
     shown.forEach(r => {
       const lab = wrap(r.label, LW, 11).slice(0, 2), h = Math.max(22, lab.length * 13 + 8), yc = y + h / 2;
       lab.forEach((t, k) => T(P, yc + 4 - (lab.length - 1) * 6.5 + k * 13, t));
+      if (r.absent) { T(VX, yc + 4, '–', { anchor: 'end', fill: PAL.muted }); y += h; return; }     // a class the selection does not hold
       const col = r.dir === 'more' || r.dir === 'less' || r.dir === 'same' ? PAL[r.dir] : PAL.muted;
       if (vs) {
         parts.push(`<line x1="${X0}" x2="${X1}" y1="${yc}" y2="${yc}" stroke="${PAL.line}"/><line x1="${X(share2(r)).toFixed(1)}" x2="${X(share1(r)).toFixed(1)}" y1="${yc}" y2="${yc}" stroke="${col}" stroke-width="1.6"/>` +

@@ -1,21 +1,23 @@
-/* The gene-list test (the cards front end; #list?q=<names>): a list of genes or proteins the reader pastes, against every
+/* The gene-list test (#list?q=<names>; a "Test this list" button in the selection bar of either layout): a list of genes or proteins the reader pastes, against every
    set of the site's protein-set questions (those the cards show). For each set, a one-sided hypergeometric test of the
    list's marked proteins within the marked proteins the set's source annotates (each source its own background, as the
    site's own tests), fold (k/n)/(M/N), and Benjamini–Hochberg q over every set tested, small sets included: kit-stats.js
    listTest, the twin of ptmstats.gene_list_test. A new test, computed in the browser; the release statistics do not hold
    it. The names are read by the search's own parser (K.sel.parse), so the box, this page and its links agree; a name read
-   by another name, or not found, is said, never dropped silently. A module of the site kit; without the cards front end,
-   or without protein-set questions, it does nothing. */
+   by another name, or not found, is said, never dropped silently. A module of the site kit; without website.front, or
+   without protein-set questions, it does nothing. */
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
   const { D, W, A, S, esc, int } = K;
   const fx = v => K.fx(v), fq = v => K.fq(v);
-  if (!K.front || !window.PTMC_STATS?.listTest) return;
+  if (!D.front || !window.PTMC_STATS?.listTest) return;
   const ST = window.PTMC_STATS, F = D.front;
+  const short = aid => F.short?.[aid] || A[aid]?.title || aid;
+  const trail = parts => (K.front ? K.front.trail(parts) : `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <b>${esc(parts[parts.length - 1][0])}</b></p>`);
   const SHOWN = 20;
   // the questions tested: the protein-set questions the cards show (their facets), in their order; a card's further
   // questions (every disease term, every pathway) are left out, as the home leaves them out
-  const QS = [...new Set(K.front.cards.flatMap(c => (c.facets || []).map(f => f.analysis)))].filter(aid => A[aid]?.kind === 'protein_sets');
+  const QS = [...new Set(F.cards.flatMap(c => (c.facets || []).map(f => f.analysis)))].filter(aid => A[aid]?.kind === 'protein_sets');
   if (!QS.length) return;
   K.paramsIn.push(p => { S.lall = p.get('all') === '1'; });
   K.paramsOut.push(p => { if (S.view === 'list' && S.lall) p.set('all', '1'); });
@@ -30,7 +32,7 @@
   const labelsOf = aid => { const m = {}; (K.rowsFor(A[aid], 'enricher') || []).forEach(r => { m[r.category] = r.label; }); return m; };
   const LABELS = {};
   const setLabel = (aid, c) => F.row_labels?.[aid]?.[c] || (LABELS[aid] ||= labelsOf(aid))[c] || K.sel.classLabel(aid, c);
-  const kindOf = (aid, ps) => K.front.short(aid) + (ps.of ? ' (genes)' : '');
+  const kindOf = (aid, ps) => short(aid) + (ps.of ? ' (genes)' : '');
   // the test: kit-stats.js listTest over the questions this site has data for
   function test(prots) {
     const SD = K.sel.data(), qs = QS.filter(aid => SD.protein_sets?.[aid]).map(aid => {
@@ -45,9 +47,9 @@
   // ---- the page -----------------------------------------------------------------------------------------------------------
   let last = null;
   function view() {
-    if (!K.sel.peek()) { K.sel.data(); K.sel.ready.then(() => { if (S.view === 'list') K.render(); }); return (K.front ? K.front.trail([['Your gene list']]) : '') + '<div class="page-head"><h2>Your gene list</h2></div><p class="muted" role="status">Reading your list…</p>'; }
+    if (!K.sel.peek()) { K.sel.data(); K.sel.ready.then(() => { if (S.view === 'list') K.render(); }); return trail([['Your gene list']]) + '<div class="page-head"><h2>Your gene list</h2></div><p class="muted" role="status">Reading your list…</p>'; }
     const L = readList(S.q), n = L.prots.length;
-    const head = (K.front ? K.front.trail([['Your gene list']]) : '') + `<div class="page-head"><h2>Your gene list</h2></div>`;
+    const head = trail([['Your gene list']]) + `<div class="page-head"><h2>Your gene list</h2></div>`;
     if (!S.q.trim()) { last = null; return head + `<p>Paste gene names or accessions in the search box (two or more, separated by spaces or commas) to test them against the ${int(QS.length)} protein-set questions.</p>`; }
     const rows = n ? test(L.prots) : [], hit = rows.filter(r => r.k >= 1).sort(order), shown = S.lall ? hit : hit.slice(0, SHOWN);
     last = { L, rows };
@@ -94,8 +96,10 @@
     if (L.prots.length + L.notFound.length < 2 || !L.prots.length || L.terms.length || L.q.sites.length || L.q.words.length) return false;
     K.go('list'); return true;
   };
-  K.front.listLink = () => (K.sel.namesProteins() && new Set(K.sel.compute().q.genes).size >= 2 ? `<a class="btn small" href="${esc(K.link('list'))}">Test this list</a>` : '');
-  (K.methodParts ||= []).push(() => `<section id="m-list"><h3>Your gene list</h3><p>A list of genes or proteins pasted in the search can be tested against the sets of the ${int(QS.length)} protein-set questions the home page’s cards show (${QS.map(a => esc(K.front.short(a))).join(', ')}). ` +
+  K.listLink = () => (K.sel.namesProteins() && new Set(K.sel.compute().q.genes).size >= 2 ? `<a class="btn small" href="${esc(K.link('list'))}">Test this list</a>` : '');
+  if (K.front) K.front.listLink = K.listLink;
+  else (K.selTools ||= []).push(K.listLink);            // the classic selection bar: a button when the search names two or more genes
+  (K.methodParts ||= []).push(() => `<section id="m-list"><h3>Your gene list</h3><p>A list of genes or proteins pasted in the search can be tested against the sets of the ${int(QS.length)} protein-set questions the Overview shows (${QS.map(a => esc(short(a))).join(', ')}). ` +
     `For each set, the list’s ${esc(W.marked)} proteins are compared with the ${esc(W.marked)} proteins that the set’s source annotates: that source’s own background, as in the site’s other tests (genes, not proteins, for a gene-based source). ` +
     `With n of the list in the background, N in the background, M of those in the set and k of the list in the set, p is the chance of k or more by a one-sided hypergeometric test, fold is (k/n)/(M/N), and q is Benjamini–Hochberg over every set tested, small sets included. ` +
     `Names are read as the search reads them; a name matched by another name, or not found, is listed above the table. This is a new test, computed in your browser and not part of the release statistics. A list is chosen, not drawn at random, so p and q describe the overlap, not ${esc(W.marks)}.</p></section>`);

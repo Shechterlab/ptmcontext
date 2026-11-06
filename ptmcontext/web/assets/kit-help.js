@@ -43,16 +43,15 @@
   const whatText = (where = 'below') => D.start?.text || `${D.site.tagline ? D.site.tagline + ' ' : ''}Each tile ${where} is one question about where ${W.marks} lie${SETQ ? ' and which proteins have them' : ''}, each compared with the other ${W.residues} of the same proteins. Search a protein, a gene list or a class to test your own selection.`;
 
   // ---- the start panel: on the Overview, until the reader hides it (remembered in this browser) ---------------------
+  // a site that opens with the cell and the nucleus drawn (a card with drawing: true) has no panel above them
+  const cellFirst = () => (D.overview?.sections || []).some(x => (x.cards || []).some(c => c && c.drawing === true && c.analysis === D.cell?.id));
   (K.overviewTop ||= []).push(() => {
-    if (K.sel?.active() || S.arg || S.vs !== 'residues' || !starts().length) return '';
+    if (K.sel?.active() || S.arg || S.vs !== 'residues' || !starts().length || cellFirst()) return '';
     if (store.get(START_KEY)) return `<p class="sp-show"><button type="button" class="linkish" data-start-show>Show introduction</button></p>`;   // hidden: a small way back, in its place
-    const gl = K.glance?.html() || '';
-    return `<section class="start-panel${gl ? ' glance' : ''}" aria-labelledby="sp-title"><div class="sp-head"><h2 id="sp-title">${esc(D.start?.title || (gl ? `${cap(W.marks)} by region` : 'New here? Start from a question of your own'))}</h2>` +
+    return `<section class="start-panel" aria-labelledby="sp-title"><div class="sp-head"><h2 id="sp-title">${esc(D.start?.title || 'New here? Start from a question of your own')}</h2>` +
       `<button type="button" class="sp-close" data-start-hide aria-label="Hide this introduction">×</button></div>` +
-      (gl || `<p class="sp-what">${esc(whatText())} <span class="muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins.</span></p>` + startButtons('sp-starts')) +
-      `<p class="sp-foot"><a href="${esc(K.link('help'))}">How to use this site</a>` +
-      (gl ? '' : `<span aria-hidden="true"> · </span><span class="sp-keys">Press <kbd>/</kbd> to search, <kbd>?</kbd> for every shortcut</span>`) +
-      `</p></section>`;
+      `<p class="sp-what">${esc(whatText())} <span class="muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins.</span></p>` + startButtons('sp-starts') +
+      `<p class="sp-foot"><a href="${esc(K.link('help'))}">How to use this site</a><span aria-hidden="true"> · </span><span class="sp-keys">Press <kbd>/</kbd> to search, <kbd>?</kbd> for every shortcut</span></p></section>`;
   });
   (K.afterRender ||= []).push(() => document.body.classList.toggle('intro-hidden', !!store.get(START_KEY)));
   K.clicks.push(['[data-start-hide]', () => { store.set(START_KEY, '1'); K.render(); announce('Introduction hidden. "Show introduction" brings it back.'); }],
