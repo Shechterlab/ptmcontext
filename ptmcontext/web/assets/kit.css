@@ -557,6 +557,9 @@ pre.seq { font-family: var(--mono, ui-monospace, Menlo, Consolas, monospace); fo
 .rail-grip::after { content: ''; position: absolute; top: 50%; left: 0.25rem; width: 3px; height: 2.4rem; transform: translateY(-50%); border-radius: 2px; background: var(--line-strong); opacity: 0; transition: opacity 0.15s; }
 .rail:hover .rail-grip::after, .rail-grip:focus-visible::after { opacity: 1; }
 .toc .toc-group { margin: 0.7rem 0 0.15rem 0.6rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.toc a.toc-group { display: block; padding: 0.2rem 0.5rem; border-radius: 0.4rem; text-decoration: none; }
+.toc a.toc-group:hover { color: var(--accent-dark); background: var(--wash); }
+.toc a.toc-group.on { color: var(--brand-ink); background: var(--wash); }
 .toc a.sub.on { color: var(--brand-ink); font-weight: 700; background: var(--wash); border-radius: 4px; }
 
 /* wide tables: long values wrap instead of widening the table */
@@ -1937,3 +1940,26 @@ body.cards .tabs a.tab { padding-block: 0.45rem 0.5rem; }
   .site-card .sc-kv { font-size: 0.84rem; }
 }
 .ptab[aria-pressed="true"] .pt-n { color: inherit; opacity: 0.85; }
+.tab .tab-ico { flex: none; opacity: 0.85; }
+
+/* ---- A large screen (1200 x 800 or more), classic layout: the site's name, counts and citation line stay in view above the sticky
+   toolbar. The strip is fixed (no room in the page) and the toolbar sticks 44 px below the top, so nothing moves when it shows. */
+.dock { display: none; }
+@media (min-width: 1200px) and (min-height: 800px) {
+  body:not(.cards) { --dock-h: 44px; }
+  body:not(.cards) .toolbar { top: var(--dock-h); }
+  body:not(.cards) .dock { display: block; position: fixed; top: 0; left: 0; right: 0; height: var(--dock-h); z-index: 31; box-sizing: border-box; color: #fff; background: linear-gradient(160deg, var(--band-1) 0%, var(--band-2) 100%); border-bottom: 3px solid var(--accent-l); transform: translateY(-100%); visibility: hidden; }
+  body:not(.cards).dock-on .dock { transform: none; visibility: visible; }
+  .dock .wrap { height: 100%; display: flex; align-items: center; gap: 1.4rem; min-width: 0; }
+  .dock a { color: #fff; }
+  .dock-name { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-heading); font-weight: 700; font-size: 1.05rem; text-decoration: none; white-space: nowrap; }
+  .dock-name img { border-radius: 6px; }
+  .dock-stats { display: inline-flex; gap: 1rem; font-size: 0.8125rem; white-space: nowrap; }
+  .dock-stats a { text-decoration: none; opacity: 0.92; }
+  .dock-stats a:hover { text-decoration: underline; }
+  .dock-cite { margin-left: auto; font-size: 0.8125rem; opacity: 0.92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .dock-cite p { display: inline; margin: 0; }
+  .dock-cite a { text-decoration: underline; }
+  .dock :focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+}
+@media (prefers-reduced-motion: no-preference) { .dock { transition: transform 0.15s ease; } }

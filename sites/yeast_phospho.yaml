@@ -70,7 +70,7 @@ website:
     - {label: Method, url: "#method"}
     - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
   examples: [SEC16, SEC16 S73, "motif:S/T-P", "disorder:IDR", "idr_charge:Janus"]
-  front: {mode: cards}      # the cards front end (CONTRACTS.md); without cards: the cards come from the analyses' sections. mode: classic keeps the classic Overview
+  front: {mode: classic}      # the cards front end (CONTRACTS.md); without cards: the cards come from the analyses' sections. mode: classic keeps the classic Overview
   start:                   # the Overview's first screen: one bar, three findings and one protein, drawn from the statistics
     share: {analysis: disorder, classes: [disordered, disorder_boundary, ordered], labels: {disordered: in disordered regions (IDRs), disorder_boundary: next to an IDR, ordered: in ordered regions}}
     findings: [{analysis: disorder, class: disordered}, {analysis: motif, class: proline_directed}, {analysis: structure_context, class: domain_folded}]

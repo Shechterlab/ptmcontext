@@ -243,10 +243,12 @@
   function tabs() {
     const sel = K.sel?.active();
     // K.tabsEnd: a module's page after Method (kit-help.js: Help)
-    const t = [['overview', 'Overview', sel ? 'selection' : null], ...K.tabs.map(f => f()).filter(Boolean), ['statistics', 'Statistics', D.rows.length], ['method', 'Method', null], ...(K.tabsEnd || []).map(f => f()).filter(Boolean)]
-      .map(([v, name, n]) => [v, tabName(v, name), n]);
-    const on = v => S.view === v || (K.views[S.view]?.tab === v);
-    $('#tabs').innerHTML = (K.front ? '' : `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>`) + t.map(([v, name, n]) => `<a class="tab" href="${esc(link(v))}"${tabHint(v) ? ` title="${esc(tabHint(v))}"` : ''}${on(v) ? ' aria-current="page"' : ''}>${name}` +
+    // the open protein is a tab of its own after the pages (classic), so the bar says where you are; the Proteins tab is then not the current one
+    const here = !K.front && S.view === 'protein' && S.arg ? K.views.protein?.title?.(S.arg) : '';
+    const t = [['overview', 'Overview', sel ? 'selection' : null], ...K.tabs.map(f => f()).filter(Boolean), ...(here ? [['protein', here, null]] : []), ['statistics', 'Statistics', D.rows.length], ['method', 'Method', null], ...(K.tabsEnd || []).map(f => f()).filter(Boolean)]
+      .map(([v, name, n]) => [v, v === 'protein' ? name : tabName(v, name), n]);
+    const on = v => (here ? v === 'protein' : S.view === v || (K.views[S.view]?.tab === v)) || (v === 'protein' && S.view === 'protein');
+    $('#tabs').innerHTML = (K.front ? '' : `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>`) + t.map(([v, name, n]) => `<a class="tab" href="${esc(v === 'protein' ? location.hash : link(v))}"${tabHint(v) ? ` title="${esc(tabHint(v))}"` : ''}${on(v) ? ' aria-current="page"' : ''}>${K.tabIcons?.[v] || ''}${name}` +
       (n != null && n !== 'selection' && !K.front ? ` <span class="count">${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + (sel && follows(v) ? ' <span class="selmark" title="Follows your selection" aria-label="follows your selection">●</span>' : '') + '</a>').join('') + (K.front ? '' : variantSwitch());
   }
   // the site's variants (the same questions on other marks, such as with lower-confidence sites): a switch to each,
@@ -738,8 +740,9 @@
   // selection and the baseline)
   K.sections.overview = () => [
     ...(selOn() ? [['view', vsOn() ? 'Your selection, against ' + vsName() : 'Your selection', 1]] : []),
-    ...secList().flatMap(x => [[`sec-${x.name.replace(/\W+/g, '-').toLowerCase()}`, x.name, 0],
-      ...(!selOn() && !S.arg && (D.overview?.draw_first ?? 2) >= 0 && secList().indexOf(x) >= (D.overview?.draw_first ?? 2) && !K.ovOpen.has(x.name) ? [] : x.cards).map(c => (S.arg ? [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, link('overview', c.analysis)] : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1]))]),
+    ...secList().flatMap((x, i, all) => [[`sec-${x.name.replace(/\W+/g, '-').toLowerCase()}`, x.name, 0],
+      // a section not drawn yet is its name alone; one drawn lists the tiles that show (not those behind its "More on ..." fold), so the list stays short
+      ...(!selOn() && !S.arg && (D.overview?.draw_first ?? 2) >= 0 && i >= (D.overview?.draw_first ?? 2) && !K.ovOpen.has(x.name) ? [] : (x.show > 0 && !selOn() && !S.arg && x.cards.length > x.show ? x.cards.slice(0, x.show) : x.cards)).map(c => (S.arg ? [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, link('overview', c.analysis)] : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1]))]),
     ...(selOn() || S.arg ? [] : (K.overviewSections || []).flatMap(f => f()))];
   // All tests: every question, each opening its own tests
   K.sections.statistics = () => [['view', 'All tests', 1, link('statistics')], ...secList().filter(x => !x.caveat && x.name !== 'About the sites').flatMap(x => [[`stat-${x.name}`, x.name, 0],
@@ -1444,8 +1447,25 @@
   // the pinned sidebar sits just under the sticky toolbar, whatever the toolbar's height
   // when the toolbar grows or shrinks (the selection bar wraps), the pinned sidebar's content keeps its place
   let barH = null;
+  // a large screen (CSS: min 1200 x 800): the site's name, counts and citation line stay in view above the toolbar, in a fixed strip that
+  // shows once the toolbar sticks. It is fixed and the toolbar sticks 44 px lower, so nothing in the page moves when it appears.
+  const dockH = () => parseFloat(getComputedStyle(document.body).getPropertyValue('--dock-h')) || 0;
+  function dock() {
+    const d = document.getElementById('dock'), a = document.querySelector('.hero h1 a'); if (!d || !a) return;
+    const stats = [...document.querySelectorAll('#hero-stats .stat')].map(s => `<a href="${esc(s.getAttribute('href'))}" data-go="${esc(s.dataset.go || '')}"><b>${esc(s.querySelector('b')?.textContent || '')}</b> ${esc(s.querySelector('span')?.textContent || '')}</a>`).join('');
+    const cite = [...document.querySelectorAll('.hero .lede > :not(.lede-what)')].map(p => p.innerHTML.replace(/\sid="[^"]*"/g, '')).join(' · ');
+    d.innerHTML = `<div class="wrap"><a class="dock-name" href="${esc(a.getAttribute('href'))}" title="Back to the overview">${a.querySelector('img') ? `<img src="${esc(a.querySelector('img').getAttribute('src'))}" alt="" width="28" height="28">` : ''}<span>${esc(a.textContent.trim())}</span></a>` +
+      `<span class="dock-stats">${stats}</span><span class="dock-cite">${cite}</span></div>`;
+  }
+  K.dock = dock;
+  const dockOn = () => {
+    const t = document.querySelector('.toolbar'), h = dockH(), on = h > 0 && !!t && t.getBoundingClientRect().top <= h + 0.5;
+    document.body.classList.toggle('dock-on', on);
+  };
+  addEventListener('scroll', dockOn, { passive: true }); addEventListener('resize', dockOn);
   const toolbarH = () => {
-    const t = document.querySelector('.toolbar'), h = t && getComputedStyle(t).position === 'sticky' ? Math.ceil(t.getBoundingClientRect().height) : 0;
+    dockOn();
+    const t = document.querySelector('.toolbar'), h = t && getComputedStyle(t).position === 'sticky' ? Math.ceil(t.getBoundingClientRect().height) + dockH() : 0;
     const rail = document.getElementById('rail');
     if (barH != null && h !== barH && rail && document.body.classList.contains('rail-pinned') && rail.scrollTop > 0) rail.scrollTop += h - barH;
     barH = h; document.documentElement.style.setProperty('--toolbar-h', `${h}px`);
@@ -1499,5 +1519,5 @@
     if (variant && !D.variant) { location.replace(variant.href + search + hash); return; }
     history.replaceState(null, '', location.pathname + search + hash);
   })();
-  readHash(); if (S.legacy) writeHash(false); hero(); render();
+  readHash(); if (S.legacy) writeHash(false); hero(); dock(); render();
 })();

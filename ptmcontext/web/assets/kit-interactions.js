@@ -729,6 +729,7 @@
   PAGES.forEach(pg => {
     K.views[pg.id] = { follows: true, render: arg => view(pg, arg), title: arg => (arg && pg.sections.find(s => s.id === arg)?.title) || pg.tab, after: () => drawExample() };
     K.tabs.push(() => [pg.id, pg.tab, selOn() ? 'selection' : null]);
+    (K.tabIcons ||= {})[pg.id] = '<svg class="tab-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="9" cy="18" r="2.5"/><path d="M8 7.2l7.8.5M7 8.3l1.6 7.2M11.3 17l5.2-7.3"/></svg>';
     K.sections[pg.id] = () => [['view', pg.tab, 1, K.link(pg.id)], ...(pg.overview ? [['ixov', pg.overview.title || 'At a glance', 1, K.link(pg.id, 'overview')]] : []),
       ...pg.groups.flatMap(g => [[`ixg-${g.name}`, g.name, 0], ...g.sections.map(s => [`ix-${s.id}`, s.title, 1, K.link(pg.id, s.id)])])];
   });

@@ -63,7 +63,7 @@
   const R = { tab: (() => { try { return localStorage.getItem('ptmc-rail-tab') || 'sections'; } catch (e) { return 'sections'; } })(),
     // pinning is automatic (pinned whenever the window is wide enough, following its resizes) unless unpinned by hand
     // 'auto' pins from 1,280 px; 'on' (pinned by hand) from 1,100 px; 'off' keeps it in a drawer
-    pin: (() => { try { const v = localStorage.getItem('ptmc-rail'); return ['on', 'off', 'auto'].includes(v) ? v : 'off'; } catch (e) { return 'auto'; } })(), open: false,
+    pin: (() => { try { const v = localStorage.getItem('ptmc-rail'); return ['on', 'off', 'auto'].includes(v) ? v : 'auto'; } catch (e) { return 'auto'; } })(), open: false,
     width: (() => { try { return +localStorage.getItem('ptmc-rail-w') || 0; } catch (e) { return 0; } })() };
   const PIN_MIN = 1100, PIN_AUTO = 1280;
   const setRailWidth = () => { document.documentElement.style.setProperty('--rail-w', R.width ? `${Math.min(Math.max(R.width, 224), Math.min(520, innerWidth * 0.4))}px` : ''); };
@@ -189,7 +189,7 @@
     const pages = [['overview', 'Overview'], ...K.tabs.map(f => f()).filter(Boolean).map(([v, n]) => [v, n]), ['statistics', 'Statistics'], ['method', 'Method']].map(([v, n]) => [v, K.tabName(v, n)]);
     const cur = v => S.view === v || K.views[S.view]?.tab === v;
     const here = K.sections?.[S.view]?.() || [];
-    const item = ([id, lab, lvl, href]) => (lvl === 0 ? `<p class="toc-group">${esc(lab)}</p>`
+    const item = ([id, lab, lvl, href]) => (lvl === 0 ? (/^sec-/.test(id) ? `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="toc-group">${esc(lab)}</a>` : `<p class="toc-group">${esc(lab)}</p>`)
       : href ? `<a href="${esc(href)}" class="sub l${lvl || 1}${K.link(S.view, S.arg).split('?')[0] === href.split('?')[0] ? ' on' : ''}">${esc(lab)}</a>`
       : `<a href="${esc(location.hash)}" data-jump="${esc(id)}"${id === 'view' ? '' : ` data-spy="${esc(id)}"`} class="sub l${lvl || 1}">${esc(lab)}</a>`);
     // the open protein is a page of its own, under Proteins; a page with no tab (Compare) is listed while open
