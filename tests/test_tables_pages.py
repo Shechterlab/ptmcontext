@@ -69,6 +69,8 @@ def test_the_blocks_are_checked(tmp_path):
 
 def _node(index, body):
     data = _page_data(index)
+    if data.get('late'):          # the rest of the protein attributes' values are read from data/site.json when asked for (kit-late.js)
+        data['protein_attributes']['values'].update(json.loads((index.parent / data['late']['file']).read_text())['protein_attributes'])
     sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
     files = [ASSETS / n for n in ('kit-columns.js', 'kit-sitecard.js', 'kit-tables.js', 'kit-sites.js')]
     script = f"""
