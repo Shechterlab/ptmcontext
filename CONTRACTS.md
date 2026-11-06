@@ -781,7 +781,7 @@ The one-file copy has no pathway files and so no button. A site without `pathway
 ### The gene-list test (cards mode)
 
 `#list?q=<names>` (kit-genelist.js) tests a pasted list of genes or proteins against every set of the protein-set questions
-the cards show (their `facets` and `questions` of kind `protein_sets`). Enter in the search on two or more names and nothing
+the cards show (their `facets` of kind `protein_sets`; a card's other questions are not tested). Enter in the search on two or more names and nothing
 else opens it, and the home's **Test this list** button links to it; both read the names with the search's own parser
 (`K.sel.parse`), so names matched by another name are listed ("Matched by another name: TLS -> FUS") and names not found are
 listed with any one-edit suggestion ("Not found"), never dropped silently. For each question its source's own background is

@@ -23,7 +23,7 @@ def _build(tmp_path):
     root = _site(tmp_path, views=False)
     p = root / 'sites' / 'toy.yaml'
     site = yaml.safe_load(p.read_text())
-    site['website']['front'] = {'mode': 'cards', 'cards': [{'title': 'Disease', 'analyses': ['onto', 'term'], 'home': {'analysis': 'onto'}}]}
+    site['website']['front'] = {'mode': 'cards', 'cards': [{'title': 'Disease', 'analyses': ['onto', 'term', 'fam'], 'facets': [{'analysis': 'onto'}, {'analysis': 'term'}], 'home': {'analysis': 'onto'}}]}
     p.write_text(yaml.safe_dump(site, sort_keys=False))
     S.run(p, root=root / 'data', log=lambda *_: None)
     return root, web.build(p, log=lambda *_: None)

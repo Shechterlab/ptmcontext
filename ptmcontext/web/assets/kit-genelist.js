@@ -13,8 +13,9 @@
   if (!K.front || !window.PTMC_STATS?.listTest) return;
   const ST = window.PTMC_STATS, F = D.front;
   const SHOWN = 20;
-  // the questions tested: every protein-set question of the cards, in their order
-  const QS = [...new Set(K.front.cards.flatMap(c => [...(c.facets || []).map(f => f.analysis), ...(c.questions || [])]))].filter(aid => A[aid]?.kind === 'protein_sets');
+  // the questions tested: the protein-set questions the cards show (their facets), in their order; a card's further
+  // questions (every disease term, every pathway) are left out, as the home leaves them out
+  const QS = [...new Set(K.front.cards.flatMap(c => (c.facets || []).map(f => f.analysis)))].filter(aid => A[aid]?.kind === 'protein_sets');
   if (!QS.length) return;
   K.paramsIn.push(p => { S.lall = p.get('all') === '1'; });
   K.paramsOut.push(p => { if (S.view === 'list' && S.lall) p.set('all', '1'); });
@@ -94,7 +95,7 @@
     K.go('list'); return true;
   };
   K.front.listLink = () => (K.sel.namesProteins() && new Set(K.sel.compute().q.genes).size >= 2 ? `<a class="btn small" href="${esc(K.link('list'))}">Test this list</a>` : '');
-  (K.methodParts ||= []).push(() => `<section id="m-list"><h3>Your gene list</h3><p>A list of genes or proteins pasted in the search can be tested against the sets of the ${int(QS.length)} protein-set questions on the home page. ` +
+  (K.methodParts ||= []).push(() => `<section id="m-list"><h3>Your gene list</h3><p>A list of genes or proteins pasted in the search can be tested against the sets of the ${int(QS.length)} protein-set questions the home page’s cards show (${QS.map(a => esc(K.front.short(a))).join(', ')}). ` +
     `For each set, the list’s ${esc(W.marked)} proteins are compared with the ${esc(W.marked)} proteins that the set’s source annotates: that source’s own background, as in the site’s other tests (genes, not proteins, for a gene-based source). ` +
     `With n of the list in the background, N in the background, M of those in the set and k of the list in the set, p is the chance of k or more by a one-sided hypergeometric test, fold is (k/n)/(M/N), and q is Benjamini–Hochberg over every set tested, small sets included. ` +
     `Names are read as the search reads them; a name matched by another name, or not found, is listed above the table. This is a new test, computed in your browser and not part of the release statistics. A list is chosen, not drawn at random, so p and q describe the overlap, not ${esc(W.marks)}.</p></section>`);
