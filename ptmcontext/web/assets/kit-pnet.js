@@ -246,7 +246,7 @@
   function ixFold(p, rec, fold) {
     if (!IXP) return '';
     const g = p.gene || p.acc;
-    if (CARDS && K.pix) {
+    if (K.pix) {
       // site first: who binds each mark, partners and complexes, writer and reader paths; then the interfaces and the network, folded
       // when no mark sits at an interface (the network is the protein's associations, not its sites')
       const s3 = rec?.s3d, hasIface = !!((s3?.c || []).some(r => r[1] === 'protein' || r[1] === 'self') || (s3?.p || []).length);
@@ -269,7 +269,7 @@
   const siteBtn = (acc, pos) => `<button type="button" class="linkish mono" data-cc-pos="${pos}" data-cc-acc="${esc(acc)}">${esc(K.prot ? K.prot.siteLabel(acc, pos) : pos)}</button>`;
   function ifaceHtml(p, rec) {
     const s3 = rec?.s3d; if (!s3 || !(SD.contacts || SD.predicted)) return '';
-    const obs = (s3.c || []).filter(r => r[1] === 'protein' || r[1] === 'self'), pred = s3.p || [], M = W.marks, m1 = W.mark;
+    const sf = !!K.pix, obs = (s3.c || []).filter(r => r[1] === 'protein' || r[1] === 'self'), pred = s3.p || [], M = W.marks, m1 = W.mark;
     if (!obs.length && !pred.length) return `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4><p class="muted">No protein at an interface with a ${esc(m1)} of ${esc(p.gene || p.acc)} in the structure tables.</p></div>`;
     const by = new Map();      // partner -> { name, acc, sites: Map(pos -> { obs: ids, pred: score }) }
     const put = (g, a, pos, f) => { const k = a || g; if (!k) return; const o = by.get(k) || { g, a, sites: new Map() }; const s = o.sites.get(pos) || {}; f(s); o.sites.set(pos, s); by.set(k, o); };
@@ -283,9 +283,9 @@
     const whoSplit = [['In PDB structures (observed)', whoKind('obs')], ['Predicted only (AlphaFold-Multimer models, not observed in a structure)', whoKind('pred')]].filter(x => x[1]).map(([t, l]) => `<h5 class="pn-ih">${t}</h5><ul class="pn-ilist">${l}</ul>`).join('');
     const obsLines = [...new Map(obs.map(r => [r[0], r])).keys()].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} contacts ` + obs.filter(r => r[0] === pos).map(r => `${r[1] === 'self' ? '<b>another copy</b>' : partnerName(r[3], r[4])} <span class="muted small">(${(r[2] || []).slice(0, 4).map(rcsb).join(', ')}${(r[2] || []).length > 4 ? ` +${r[2].length - 4}` : ''})</span>`).join('; ') + '</li>').join('');
     const predLines = [...new Set(pred.map(r => r[0]))].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} ` + pred.filter(r => r[0] === pos).slice(0, 6).map(r => `${partnerName(r[1], r[2])}${r[5] != null ? ` <span class="muted small">pDockQ ${(+r[5]).toFixed(2)}</span>` : ''}`).join(', ') + (pred.filter(r => r[0] === pos).length > 6 ? ' +' + (pred.filter(r => r[0] === pos).length - 6) : '') + '</li>').join('');
-    return `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4>${CARDS ? whoSplit : `<ul class="pn-ilist">${who}</ul>`}` +
-      `<p class="note">Proteins in contact with a ${esc(m1)} in a PDB structure, or at the interface of a predicted complex. Associations of the whole protein are in the network${CARDS ? ' below' : ' above'}.</p>` + (CARDS ? '</div>' : '') +
-      (CARDS ? '' : `<div class="pn-igrid"><section><h4>${esc(cap0(M))} at protein interfaces</h4>${obsLines ? `<ul class="pn-ilist">${obsLines}</ul>` : `<p class="muted">None is at a protein interface in a PDB structure.</p>`}</section>` +
+    return `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4>${sf ? whoSplit : `<ul class="pn-ilist">${who}</ul>`}` +
+      `<p class="note">Proteins in contact with a ${esc(m1)} in a PDB structure, or at the interface of a predicted complex. Associations of the whole protein are in the network${sf ? ' below' : ' above'}.</p>` + (sf ? '</div>' : '') +
+      (sf ? '' : `<div class="pn-igrid"><section><h4>${esc(cap0(M))} at protein interfaces</h4>${obsLines ? `<ul class="pn-ilist">${obsLines}</ul>` : `<p class="muted">None is at a protein interface in a PDB structure.</p>`}</section>` +
       `<section><h4>Predicted protein interfaces <span class="muted small">(models, not PDB)</span></h4>${predLines ? `<ul class="pn-ilist">${predLines}</ul>` : `<p class="muted">None is at a predicted interface.</p>`}</section></div></div>`);
   }
   function mount() {

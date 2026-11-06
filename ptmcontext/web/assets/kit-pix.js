@@ -1,4 +1,4 @@
-/* The cards front end's Interactions view of a protein, site first: who binds each of its marks (the records of
+/* The Interactions view (classic and cards front ends) of a protein, site first: who binds each of its marks (the records of
    website.tables, grouped by what they show), then its partners and the complexes that hold it (the partner table, with the
    share of partners that carry the mark against the dataset's share of all proteins), then the writers and readers among its
    partners and the marks of its other partners that they bind. The network and the interface lists follow (kit-pnet.js).
@@ -8,7 +8,7 @@
   'use strict';
   const { D, W, esc, int, cap } = K;
   const CARD = D.protein_view?.card || {}, PT = CARD.writer?.partners || null;
-  if (D.front?.mode !== 'cards' || !PT || !K.card) return;
+  if (!PT || !K.card) return;
   const UI = { tab: 'partners', all: false, rows: 12 };
   const num = v => (v === '' || v == null || !isFinite(+v) ? null : +v);
   const pc = (k, n) => (n ? `${Math.round(100 * k / n)}%` : '–');
