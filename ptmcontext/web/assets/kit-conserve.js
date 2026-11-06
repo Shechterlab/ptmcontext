@@ -243,7 +243,7 @@
     const tip = ck && ck.me != null ? `<b>Conservation across species</b><br>On average, the share of ${st.model.rows.length} species whose ortholog still has ${esc(KEPT)} at a ${esc(W.mark)} (${int(ck.n1)}) is ${PCT(ck.me)}%` +
       (ck.other != null ? `, and ${PCT(ck.other)}% at the other ${esc(W.residues)} of the protein (${int(ck.n2)})` : '') + (ck.p != null ? `; Wilcoxon rank-sum p ${esc(K.fq(ck.p))}` : '') + '.<br>Click to open the alignments.' : 'Asking UniProt and Ensembl Compara for the orthologs.';
     const tiles = document.querySelector('.hl-cards');
-    if (D.front?.mode === 'cards' && tiles) {           // the cards front end: a tile among the headline tiles, not a chip
+    if (tiles) {           // a tile among the headline tiles when the page has them, else a chip
       document.getElementById('cv-chip')?.remove(); let t = document.getElementById('cv-tile');
       if (!(st?.phase === 'ok' && ck?.me != null)) { t?.remove(); return; }
       if (!t) { t = document.createElement('button'); t.type = 'button'; t.id = 'cv-tile'; t.className = 'hl-card'; t.setAttribute('data-cv-open', ''); tiles.append(t); dispatchEvent(new Event('resize')); }
