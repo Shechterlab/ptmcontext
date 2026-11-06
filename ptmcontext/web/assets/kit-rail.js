@@ -82,6 +82,7 @@
     const [kind, id] = key.split(':'), out = {};
     if (kind === 'a' || kind === 't') {
       const col = kind === 'a' ? 2 : 3, at = kind === 'a' ? AN().indexOf(id) : M.AT().indexOf(id), names = kind === 'a' ? sd().classes[id] : sd().attributes[id];
+      if (!names || at < 0) return out;                       // a question whose classes the marks do not carry (not selectable)
       const n = new Array(names.length).fill(0);
       (idx || sd().marks.map((_, i) => i)).forEach(i => sd().marks[i][col][at].forEach(c => { n[c]++; }));
       names.forEach((v, c) => { out[v] = n[c]; });
@@ -166,7 +167,7 @@
   }
   function keysOf(g) {
     return [...(g.analyses || []).flatMap(aid => (A[aid]?.kind === 'protein_sets' ? ['p:' + aid, ...(A[aid].scores ? ['s:' + aid] : [])] : ['a:' + aid])), ...(g.attributes || []).map(k => (SPECS[k]?.kind === 'number' ? 'n:' : 't:') + k),
-      ...(g.proteins || []).filter(k => RSPEC(k)).map(k => 'r:' + k), ...(g.keys || []).filter(k => validKey(k))];
+      ...(g.proteins || []).filter(k => RSPEC(k)).map(k => 'r:' + k), ...(g.keys || []).filter(k => validKey(k))].filter(k => !k.startsWith('a:') || !sd() || sd().classes[k.slice(2)]);     // not a question whose classes the marks do not carry
   }
   function filtersTab() {
     M.need();
@@ -198,7 +199,8 @@
     return '<nav class="toc">' + list.map(([v, n]) => `<a href="${esc(K.link(v))}" class="page${cur(v) && S.view !== 'protein' ? ' on' : ''}">${esc(n)}</a>` +
       (v === 'proteins' && prot ? prot : cur(v) && S.view !== 'protein' ? here.map(item).join('') : '')).join('') + '</nav>';
   }
-  const pinned = () => (R.pin === 'on' && innerWidth >= PIN_MIN) || (R.pin === 'auto' && innerWidth >= PIN_AUTO);
+  const CARDS = D.front?.mode === 'cards';        // the cards front end: Filters only, a panel beside the page or a full-height drawer, never pinned
+  const pinned = () => !CARDS && (R.pin === 'on' && innerWidth >= PIN_MIN) || (R.pin === 'auto' && innerWidth >= PIN_AUTO);
   // scroll-spy: the section in view is marked in the list
   let spyTick = false;
   function watchSections() {
@@ -226,6 +228,12 @@
     document.body.classList.toggle('rail-open', open);
     if (open) { el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); } else { el.removeAttribute('role'); el.removeAttribute('aria-modal'); }
     ['#view', '.toolbar', '.hero', 'footer.site'].forEach(sel => { const x = document.querySelector(sel); if (x) x.inert = open; });
+    if (CARDS) {
+      R.tab = 'filters';
+      el.setAttribute('aria-labelledby', 'rail-title');
+      el.innerHTML = `<div class="rail-head"><h2 id="rail-title" tabindex="-1">Filters</h2>${K.variantSwitch ? K.variantSwitch() : ''}<button type="button" class="btn small" data-rail-close>Close</button></div>` +
+        `<div class="rail-body">${filtersTab()}</div><div class="rail-show"><button type="button" class="btn accent" data-rail-close>Show ${int(nMarks())} ${esc(nMarks() === 1 ? W.mark : W.marks)}</button></div>`;
+    } else
     el.innerHTML = `<div class="rail-head"><span class="seg" role="group"><button type="button" data-rail-tab="sections" aria-pressed="${R.tab === 'sections'}">☰ Sections</button>` +
       `<button type="button" data-rail-tab="filters" aria-pressed="${R.tab === 'filters'}">⏚ Filters${Object.keys(S.f).length ? ` <span class="badge">${Object.keys(S.f).length}</span>` : ''}</button></span>` +
       (innerWidth >= PIN_MIN ? `<button type="button" class="btn small" data-rail-pin title="${pinned() ? 'Show the sidebar only when asked (☰)' : 'Keep the sidebar beside the page'}">${pinned() ? 'Unpin' : 'Pin'}</button>` : '') + `${pinned() ? '' : '<button type="button" class="btn small" data-rail-close aria-label="Close">×</button>'}</div>` +
@@ -237,8 +245,8 @@
       kept.focus({ preventScroll: true });
       if (top0 != null) { const dy = kept.getBoundingClientRect().top - top0, sc = [el, el.querySelector('.rail-body')].find(x => x && x.scrollHeight > x.clientHeight && /auto|scroll/.test(getComputedStyle(x).overflowY)); if (sc) sc.scrollTop += dy; else scrollBy(0, dy); }
     }
-    else if (open && !wasOpen) el.querySelector('[data-rail-tab][aria-pressed="true"]')?.focus();
-    else if (!open && wasOpen) R.opener?.focus();
+    else if (open && !wasOpen) (el.querySelector('[data-rail-tab][aria-pressed="true"]') || el.querySelector('#rail-title'))?.focus();
+    else if (!open && wasOpen) (R.opener && document.contains(R.opener) ? R.opener : document.querySelector('.fr-filter') || document.querySelector('[data-rail-open="filters"]'))?.focus();
   }
   addEventListener('resize', () => { setRailWidth(); if (document.body.classList.contains('rail-pinned') !== pinned()) rail(); });
   // the width grip: drag (or arrow keys) to resize the pinned sidebar; double-click for the automatic width

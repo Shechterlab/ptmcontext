@@ -110,7 +110,7 @@
     method: 'How each question was asked and tested, and the data it came from.',
     help: 'How to use the site: searching, filters, selections and keys.',
   })[v] || '';
-  K.tabName = tabName; K.tabHint = tabHint;
+  K.tabName = tabName; K.tabHint = tabHint; K.paramsIn = []; K.paramsOut = [];
   // a question's title in running text, as the site file writes it (lower-casing would break PRMT, DNA, Reactome)
   const inText = t => String(t || '');
   function readHash() {
@@ -147,6 +147,7 @@
     if (S.vs === 'cmp' && !S.cmp) S.vs = 'marks';
     if (S.m === 'study' && S.vs === 'residues') S.m = 'mantel_haenszel';
     K.sel?.decode(p.get('f'));
+    (K.paramsIn || []).forEach(f => f(p));      // a module's own parameters (kit-front.js: the abundance check, the data version)
     S.sort = p.get('sort') || 'q'; S.desc = p.get('dir') ? p.get('dir') === 'desc' : S.sort !== 'q';
     S.open = new Set((p.get('open') || '').split(',').filter(k => A[k]));
   }
@@ -161,6 +162,7 @@
     const f = K.sel?.encode(); if (f) p.set('f', f);
     if (S.m !== 'mantel_haenszel') p.set('m', S.m);
     if (S.vs !== 'residues') { p.set('vs', S.vs); if (S.vs === 'cmp') p.set('cmp', S.cmp); }
+    (K.paramsOut || []).forEach(f => f(p));
     return p;
   }
   // every link inside the site carries the selection, so it follows the reader from page to page; a link that names
@@ -223,7 +225,7 @@
   const follows = v => ['overview', 'proteins', 'sites', 'idrs'].includes(v) || !!K.views[v]?.follows;
   K.followsSelection = follows;
   function selLine() {
-    if (!K.sel?.active()) return '';
+    if (!K.sel?.active() || (K.front && S.view === 'overview' && !S.arg)) return '';   // the cards' own chips row says it
     const v = S.view;
     if (v === 'protein' && K.sel.protSelected(String(S.arg).split('/')[0])) return '';   // a protein of the selection: its page fades the sites outside it, and says so
     if (follows(v)) {
@@ -616,6 +618,7 @@
   });
   function overview() {
     REG = [];
+    if (!S.arg && K.front) return K.front.home();      // the cards front end (kit-front.js; website.front.mode: cards)
     if (S.arg && A[S.arg]?.page) return focus(S.arg);
     if (selOn() && !K.sel.data()) return lead() + '<p class="muted">Loading the selection…</p>';
     // a selection too small to test: its proteins drawn and the counts that hold for any selection; one that can be
@@ -1207,7 +1210,7 @@
   // the export buttons of a card, and its Method link (the question's own section, or a section of the Method page)
   const methodLink = (aid, sec) => `<a class="exp-btn" href="${esc(link('method', aid ? 'q-' + aid : sec || ''))}" title="How ${aid ? 'this question was' : 'these were'} made and tested, and from what data">Method</a>`;
   const expBar = (kinds, attrs, label, method) => `<div class="exp" role="group" aria-label="Download ${esc(label)}">${kinds.map(k => `<button type="button" class="exp-btn" data-${attrs}="${k}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}${method ? methodLink(A[method] ? method : '', A[method] ? '' : method) : ''}</div>`;
-  Object.assign(K, { CIT, PAL, FF, FFH, tw, wrap, figureFrame, exportFigure, expBar, preamble, creditLines, provenance, download, hdate, htime, hlicence, shortCommit, testWords, PADJ, MIN_EFFECT, dir, selOn, vsOn });
+  Object.assign(K, { variantSwitch, CIT, PAL, FF, FFH, tw, wrap, figureFrame, exportFigure, expBar, preamble, creditLines, provenance, download, hdate, htime, hlicence, shortCommit, testWords, PADJ, MIN_EFFECT, dir, selOn, vsOn });
   // for modules that draw a question's card their own way (kit-questions.js)
   Object.assign(K, { cardBody, chartRows, chartModel, chartHtml, rowsOf, rowsFor, fkeyOf, allCards, cardOf, byOrder, methodLink, setWords, selWords, EXP_HELP, g6 });
 
@@ -1227,7 +1230,7 @@
     const mod = K.views[S.view];
     $('#view').innerHTML = selLine() + (mod ? mod.render(S.arg) : S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview());
     document.title = S.view === 'overview' ? D.site.name : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`;   // the page first: "FUS R216 · <site>"
-    document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg) && D.header?.compact !== false);      // the header band in full on the Overview only (website.header.compact)
+    document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg || !!K.front) && D.header?.compact !== false);      // the header band in full on the Overview only (website.header.compact)
     document.body.classList.remove('bar-hidden');
     pageHint();
     if (mod?.after) mod.after(S.arg);
