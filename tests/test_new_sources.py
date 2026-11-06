@@ -246,7 +246,10 @@ def test_a_protein_table_gives_facts_and_starting_points(tmp_path):
     d = json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1))
     order = [p[0] for p in d['proteins']]
     vals = dict(zip(order, d['protein_attributes']['values']['enrichment']))
-    assert vals == {'P1': 2.5, 'P2': None} and dict(zip(order, d['protein_attributes']['values']['kind']))['P2'] == 'scaffold'
+    assert vals == {'P1': 2.5, 'P2': None}                             # the starting points rank by it: on the page
+    assert 'kind' not in d['protein_attributes']['values'] and d['late']['protein_attributes'] == ['kind']
+    late = json.loads((index.parent / 'data' / 'site.json').read_text())['protein_attributes']   # the rest, read on demand
+    assert dict(zip(order, late['kind']))['P2'] == 'scaffold'
     bad = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
     bad['website']['overview']['starting_points']['lists'][0]['by'] = 'kind'          # a category, not a number
     bad['website']['filters'] = [{'name': 'Proteins', 'proteins': ['marks', 'enrichment', 'no_such']}]
