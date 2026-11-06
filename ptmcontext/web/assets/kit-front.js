@@ -198,5 +198,5 @@
   (K.afterRender ||= []).push(after);
   let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { const el = document.getElementById('fr-cell-draw'); if (el && (el.dataset.narrow === '1') !== narrow()) after(); }, 200); });
   document.addEventListener('change', e => { if (e.target.matches?.('[data-fr-ab]')) { S.ab = e.target.checked; K.writeHash(false); K.render(); } });
-  K.front = { home, cards: CARDS, say: '', homeRows, axisOf, short };
+  K.front = { home, cardTsv, chipLabel, cards: CARDS, say: '', homeRows, axisOf, short };
 });
