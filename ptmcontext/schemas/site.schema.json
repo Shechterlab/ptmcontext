@@ -7667,7 +7667,7 @@
                   "on",
                   "off"
                 ],
-                "description": "the row's default on the cards front end, where it differs from default"
+                "description": "the row's default in either front end (classic or cards), when it should differ from default"
               },
               "mark": {
                 "enum": [

@@ -124,7 +124,7 @@
   const OWN = Object.fromEntries(OWN_ROWS.map(r => [ownId(r), r]));
   // every row is drawn unless turned off, so a site's new row shows without anyone turning it on; a row new since the
   // reader's choices were saved takes its default
-  const DEFAULT_OFF = ['composition', 'aromatic', ...OWN_ROWS.filter(r => (D.front?.mode === 'cards' && r.cards_default ? r.cards_default : r.default) === 'off').map(ownId)];
+  const DEFAULT_OFF = ['composition', 'aromatic', ...OWN_ROWS.filter(r => (r.cards_default ?? r.default) === 'off').map(ownId)];
   const DEFAULT_ORDER = ROWS.map(r => r[0]);
   const known = new Set(store.get('ptmc-map-known', []));
   const M = {
