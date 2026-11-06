@@ -1233,7 +1233,8 @@
     scope();
     const mod = K.views[S.view];
     $('#view').innerHTML = selLine() + (mod ? mod.render(S.arg) : S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview());
-    document.title = S.view === 'overview' ? D.site.name : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`;   // the page first: "FUS R216 · <site>"
+    const qTitle = D.front?.mode === 'cards' && S.view === 'overview' && S.arg ? (A[S.arg]?.title || (S.arg === D.cell?.id ? (D.cell.title || 'Cell maps') : '')) : '';
+    document.title = qTitle ? `${qTitle} · ${D.site.name}` : S.view === 'overview' ? D.site.name : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`;   // the page first: "FUS R216 · <site>"
     document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg || !!K.front) && D.header?.compact !== false);      // the header band in full on the Overview only (website.header.compact)
     document.body.classList.remove('bar-hidden');
     pageHint();
