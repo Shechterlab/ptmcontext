@@ -105,3 +105,15 @@ def test_the_data_carries_the_front_only_in_cards_mode(tmp_path):
     assert 'front' not in data_of({'mode': 'classic'})
     d = data_of({'mode': 'cards', 'cards': [{'title': 'Contacts', 'analyses': ['xl']}]})['front']
     assert d['mode'] == 'cards' and d['cards'][0]['facets'][0]['label'] == 'Crosslinks' and d['more']['questions'] == ['near', 'bound']
+
+
+def test_topics_and_share_tiles_resolve_and_are_checked(tmp_path):
+    base = _site(tmp_path)
+    qs = question_ids(base)
+    site = _site(tmp_path, mode='cards', topics=[{'title': 'All', 'questions': qs}], tiles=[{'title': 'T', 'rows': [{'analysis': qs[0], 'class': 'x'}]}])
+    fr = resolve(site)
+    assert fr['topics'] == [{'title': 'All', 'questions': qs}] and fr['tiles'][0]['rows'][0]['analysis'] == qs[0]
+    assert not [p for p in problems(site) if 'topics' in p]
+    bad = _site(tmp_path, mode='cards', topics=[{'title': 'X', 'questions': ['nope']}], tiles=[{'title': 'T', 'rows': [{'analysis': 'nope', 'class': 'x'}]}])
+    msgs = problems(bad)
+    assert any('topics[0]' in m and 'nope' in m for m in msgs) and any('tiles[0]' in m for m in msgs)
