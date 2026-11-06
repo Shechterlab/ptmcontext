@@ -2093,6 +2093,7 @@ website:                  # the look and words of the website (ptmc web); layout
         summary: Human Protein Atlas locations, where the subcellular maps place it, and CD-CODE condensates
         hpa: {table: hpa, analysis: hpa_location, title: Subcellular location, source: Human Protein Atlas 25.1, url: "https://www.proteinatlas.org/search/{acc}", unsure: Uncertain}
         maps: true
+        rna_maps: [eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]
         condensates:
           members: condensate_members
           names: condensates

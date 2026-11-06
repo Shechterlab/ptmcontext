@@ -3918,6 +3918,11 @@
                   "additionalProperties": false,
                   "description": "Location and condensates: the protein's locations, drawn in the site's cell drawings (needs website.cell), and its condensate memberships",
                   "properties": {
+                    "rna_maps": {
+                      "type": "array",
+                      "items": {"type": "string"},
+                      "description": "protein-set questions that place the RNAs a protein binds (its eCLIP targets) in compartments: the card lists the compartments of the protein's own sets, with the dataset's test of each"
+                    },
                     "title": {
                       "type": "string"
                     },

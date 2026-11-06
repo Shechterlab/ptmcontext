@@ -16,7 +16,7 @@
   const IDX = new Map((D.proteins || []).map(p => [p[0], p]));
   const isListed = a => IDX.has(a);
   const link = (acc, name) => (isListed(acc) ? `<a href="${esc(K.link('protein', acc))}"><b>${esc(name || acc)}</b></a>` : `<b title="${esc(acc || '')}">${esc(name || acc)}</b>`);
-  const classWord = c => String((PT.classes || {})[c] || c).replace(/^an? /, '');
+  const classWord = c => String((PT.classes || {})[c] || c).replace(/^an? /, '').replace(/\s+associated with \{gene\}$/, '').replace(/\{gene\}/g, '');
 
   // ---- the complexes the protein is in: the page table of the Interactions page, read once, when the tab is on --------------
   let CX = null, cxAsk = false;

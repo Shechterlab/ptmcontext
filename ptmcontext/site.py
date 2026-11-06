@@ -618,6 +618,11 @@ def card_problems(site: dict) -> list[str]:
                 out.append(f"website.protein.card.merge[{k}]: no analysis {a!r}")
         if g.get('parts') and len(g['parts']) != len(g['analyses']):
             out.append(f"website.protein.card.merge[{k}]: parts and analyses differ in length")
+    for a in ((prot.get('cards') or {}).get('location') or {}).get('rna_maps') or []:
+        if a not in ids:
+            out.append(f"website.protein.cards.location.rna_maps: no analysis {a!r}")
+    for fold, aids in (prot.get('context') or {}).items():
+        out.extend(f"website.protein.context.{fold}: no analysis {a!r}" for a in aids if a not in ids)
     ev = card.get('evidence') or {}
     attr('card.evidence.status', ev.get('status'))
     if ev.get('tags'):

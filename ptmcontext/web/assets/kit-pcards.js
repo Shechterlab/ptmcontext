@@ -96,6 +96,18 @@
       `<div class="tbl-wrap"><table class="pc-maps"><tbody>${ms.map(m => `<tr><th scope="row">${esc(m.name)}<br><span class="muted small">${esc([m.method, m.cells].filter(Boolean).join(', '))}</span></th>` +
         `<td>${m.sets.length ? esc(m.sets.join(' · ')) : m.placed ? '<span class="muted">placed, in none of its compartments</span>' : '<span class="muted">not placed by this map</span>'}</td></tr>`).join('')}</tbody></table></div>` + K.cell.drawings(p);
   }
+  // where the RNAs the protein binds gather: for each map of the bound RNAs (protein-set questions), the compartments of the protein's own sets, each with the dataset's test of it
+  function rnaMapsHtml(cfg, p) {
+    const sd = K.sel.data(), out = [];
+    for (const aid of cfg.rna_maps) {
+      const a = (D.analyses || []).find(x => x.id === aid), ps = sd.protein_sets?.[aid]; if (!a || !ps) continue;
+      const names = ps.sets.map(s => s[0]).filter(s => K.sel.setHas(aid, s, p.i));
+      const lab = s => (a.labels || {})[s] || s.replace(/_/g, ' ');
+      const fold = s => { const rs = D.rows.filter(r => r.analysis === aid && r.category === s && r.dir === 'more'), r = rs.find(x => x.method === 'enricher') || rs[0]; return r ? ` <span class="muted small">(${K.fxn(r.eff)}× across the dataset)</span>` : ''; };
+      out.push(`<tr><th scope="row">${esc(a.title)}</th><td>${names.length ? names.map(s => esc(lab(s)) + fold(s)).join(' · ') : '<span class="muted">none of its map’s compartments</span>'}</td></tr>`);
+    }
+    return out.length ? `<h4 class="sub-h">Where the RNAs ${esc(gene(p))} binds gather</h4><p class="sub">Its eCLIP targets, placed by each map of RNA location; a compartment is listed when the targets gather in it.</p><div class="tbl-wrap"><table class="pc-maps"><tbody>${out.join('')}</tbody></table></div>` : '';
+  }
   function condensatesHtml(cfg, p, rec, tb) {
     const c = cfg.condensates, top = c.max_score || 5, names = LK[c.names] || {}, have = c.analysis ? sets(c.analysis) : null;
     const rs = rows(tb, c.members).map(r => { const id = r.condensate, nm = names[id] || {}; return { id, name: nm.name || id, type: nm.condensate_type || '', score: num(r.score) ?? -1, roles: list(r.roles), ev: list(r.evidence).sort((x, y) => Object.keys(c.evidence || {}).indexOf(x) - Object.keys(c.evidence || {}).indexOf(y)), pm: list(String(r.pmids || '').replace(/[,\s]+/g, '; ')) }; })
@@ -120,6 +132,7 @@
     let html = '', sum = [];
     if (cfg.hpa) { const h = hpaHtml(cfg, p, tb); html += h.html; sum.push(h.sum.length ? sumList(h.sum, 2) : ''); }
     if (cfg.maps) html += mapsHtml(p);
+    if (cfg.rna_maps?.length && K.sel.data()) html += rnaMapsHtml(cfg, p);
     if (cfg.condensates) {
       const c = condensatesHtml(cfg, p, rec, tb); html += c.html;
       const noun = (cfg.condensates.source || '').split(' ')[0];

@@ -70,7 +70,6 @@
       const runs = []; af.plddt.forEach((v, i) => { const b = v > 90 ? 0 : v > 70 ? 1 : v > 50 ? 2 : 3, l = runs[runs.length - 1]; if (l && l.b === b && l.z === i) l.z = i + 1; else runs.push({ b, a: i + 1, z: i + 1 }); });
       t3.push({ label: 'pLDDT', items: runs.map(r => ({ a: r.a, b: r.z, col: ['#0053d6', '#65cbf3', '#ffdb13', '#ff7d45'][r.b] })) });
     }
-    if (t3.length) set('p-struct', track(len, [...t3, SITES_LANE(rec)]));
     tabCounts(st);
   }
   const cap0 = t => String(t || '').charAt(0).toUpperCase() + String(t || '').slice(1);
