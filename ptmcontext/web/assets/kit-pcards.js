@@ -102,11 +102,14 @@
   const CELLFOLD = D.front?.mode !== 'cards' && !!PC.location?.maps;
   function cellBuild(p) {
     if (!K.cell || !K.sel.data()) return { html: '<p class="muted small">Loading…</p>', wait: true };
-    const ms = K.cell.maps(p), dr = ms ? K.cell.drawings(p) : '';
+    const ms = K.cell.maps(p), nar = matchMedia('(max-width: 700px)').matches, dr = ms ? (nar ? K.cell.drawingsNarrow(p) : K.cell.drawings(p)) : '';
     if (!ms || !dr) return { html: '', hide: true, pic: '' };
     const sets = [...new Set(ms.flatMap(m => m.sets))], nPl = ms.filter(m => m.sets.length).length;
-    return { html: `<p class="sub">A part is colored when a map places ${esc(gene(p))} there, and named in the list under the drawings; a part with a dashed outline is placed by no map.</p><div class="cell-pair">${dr}</div>` +
-      `<p class="cell-where">${sets.length ? `<b>Placed in:</b> ${esc(sets.join(' · '))}` : `<span class="muted">No map places ${esc(gene(p))} in a compartment.</span>`}</p>` +
+    // a phone: the drawings without their labels, then each place with the maps that put the protein there
+    const byPlace = new Map(); ms.forEach(m => m.sets.forEach(x => byPlace.set(x, [...(byPlace.get(x) || []), m.name])));
+    const where = nar && sets.length ? `<ul class="cell-places">${[...byPlace].map(([x, mn]) => `<li><b>${esc(x)}</b> <span class="muted small">${esc(mn.join(' · '))}</span></li>`).join('')}</ul>` : '';
+    return { html: `<p class="sub">${nar ? `A part is colored when a map places ${esc(gene(p))} there; the places and their maps are listed under the drawings.` : `A part is colored when a map places ${esc(gene(p))} there, and named in the list under the drawings; a part with a dashed outline is placed by no map.`}</p><div class="cell-pair">${dr}</div>` + where +
+      (nar && sets.length ? '' : `<p class="cell-where">${sets.length ? `<b>Placed in:</b> ${esc(sets.join(' · '))}` : `<span class="muted">No map places ${esc(gene(p))} in a compartment.</span>`}</p>`) +
       `<details class="pc-mapsfold"><summary>Cell maps table <span class="muted">· each map's words on ${esc(gene(p))}</span></summary>${mapsTable(p, ms)}</details>`,
     sum: sets.length ? `${nPl} of ${ms.length} maps place it: ${sumList(sets, 3)}` : `${ms.length} maps, none places it in a compartment`,
     pic: K.pfolds ? K.pfolds.bigN([[`${nPl}/${ms.length}`, 'maps place it']]) : '' };
@@ -364,8 +367,9 @@
       if (tb === undefined) { el.innerHTML = '<p class="muted small">Loading…</p>'; return; }
       if (kind !== 'live' && !K.sel.data() && kind === 'location' && PC.location.maps) { el.innerHTML = '<p class="muted small">Loading…</p>'; return; }
       const r = BUILD[kind](p, CUR.rec, tb, el);
-      el.innerHTML = r.html;
+      el.innerHTML = r.html; el.dataset.nar = matchMedia('(max-width: 700px)').matches ? '1' : '';
       if (!r.wait) el.dataset.pcOk = '1';
+      if (kind === 'location_cell') K.cell?.fillOne?.();
       const fold = el.closest('details');
       if (r.hide != null && fold) fold.hidden = !!r.hide;
       const s = document.querySelector(`[data-pc-sum="${kind}"]`); if (s && r.sum != null && kind !== 'live') s.textContent = r.sum;
@@ -373,6 +377,8 @@
     });
   }
   (K.afterRender ||= []).push(paintAll);
+  // the cell fold is built for the width it met; crossing the phone width builds it again
+  let cellT; addEventListener('resize', () => { clearTimeout(cellT); cellT = setTimeout(() => { const el = document.querySelector('[data-pc="location_cell"]'), n = matchMedia('(max-width: 700px)').matches; if (el && el.dataset.pcOk === '1' && (el.dataset.nar === '1') !== n) { delete el.dataset.pcOk; paintAll(); } }, 200); });
 
   // ---- the look -------------------------------------------------------------------------------------------------------
   const st = document.createElement('style');
@@ -385,6 +391,7 @@
     '.pc .cond-conf{margin:.15rem 0}.pc .cond-ev{color:var(--ink-2)}',
     '.pc-maps{border-collapse:collapse;font-size:.88rem;width:auto}.pc-maps th,.pc-maps td{text-align:left;vertical-align:top;padding:.3rem .8rem .3rem 0;border-bottom:1px solid var(--line)}.pc-maps th{font-weight:600;white-space:nowrap}',
     '.cell-onep{margin:.5rem 0;max-width:760px}.cell-onep .cell-svg{max-width:100%}',
+    '.cell-places{list-style:none;margin:.5rem 0;padding:0}.cell-places li{padding:.35rem 0;border-top:1px solid var(--rule,var(--line,#8884))}.cell-places li b{display:block}.cell-onen{margin:.4rem 0}.cell-onen .cell-draw{width:100%}.cell-onen .cell-svg,.cell-onen .cell-svg.cell-cell,.cell-onen .cell-svg.cell-nucleus{width:100%;height:auto;min-width:0;max-width:none!important;max-height:none!important}',
     '.pc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr));gap:1rem 2rem}.pc-sec h4{margin:.2rem 0 .4rem;font-size:.95rem}',
     '.pc-hist{width:100%;max-width:460px;height:auto;display:block}.pc-hist .hb{fill:var(--accent);opacity:.75}.pc-hist .ha{stroke:var(--line-strong)}.pc-hist .hm{stroke:var(--muted);stroke-dasharray:3 3}.pc-hist .ht{font-size:10px;fill:var(--muted)}',
     '.pc-tbl{border-collapse:collapse;font-size:.86rem}.pc-tbl th,.pc-tbl td{text-align:left;padding:.3rem .7rem .3rem 0;border-bottom:1px solid var(--line);vertical-align:top}.pc-tbl.pert td,.pc-tbl.pert th{padding-right:.6rem}.pc-tbl th{font-weight:600}',

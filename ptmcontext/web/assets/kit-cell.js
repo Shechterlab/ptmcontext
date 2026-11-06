@@ -246,7 +246,14 @@
       return block(k, `The ${d.drawing}`, 'cell-fig cell-onep');
     }).join('');
   }
-  K.cell = { maps: oneMaps, drawings: oneDrawings, name: m => DS(m).name };
+  // a phone's drawings of one protein: the fit-width drawings without their side labels (the page lists the parts instead)
+  const oneNarrowHtml = p => DRAWINGS.map(d => `<figure class="cell-fig cell-onen"><figcaption class="vh">${esc(cap(d.drawing))}</figcaption><div class="cell-draw" data-cell-one="${esc(d.drawing)}" data-i="${p.i}" role="img" aria-label="${esc(`${p.gene || p.acc}: the ${d.drawing}, the parts placed by a map colored`)}"></div></figure>`).join('');
+  function fillOne() {
+    document.querySelectorAll('[data-cell-one]:not([data-done])').forEach((el, k) => {
+      el.dataset.done = '1'; drawInto(el, el.dataset.cellOne, { crop: true, labels: false, keep: k > 0, one: { i: +el.dataset.i } });
+    });
+  }
+  K.cell = { maps: oneMaps, drawings: oneDrawings, name: m => DS(m).name, drawingsNarrow: oneNarrowHtml, fillOne };
 
   // ---- the page's drawing helpers: a registry of hover texts, the color classes, labels with leader lines -------------
   let TIPS = [];
@@ -600,6 +607,7 @@
     }));
   }
   function drawInto(el, drawing, o = {}) {
+    if (o.one) return withOne(o.one, () => drawInto(el, drawing, { ...o, one: null, scoped: false, noInfo: true }));
     const d = DRAWINGS.find(x => x.drawing === (drawing || DRAWINGS[0]?.drawing));
     if (!el || !d || !DRAW[d.drawing]) return null;
     const scoped = o.scoped ?? scopedNow();
@@ -609,7 +617,7 @@
     const sv = el.firstElementChild, crop = o.crop === true ? crops[d.drawing] : Array.isArray(o.crop) ? o.crop : null;
     if (crop) { sv.setAttribute('viewBox', crop.join(' ')); sv.style.maxWidth = crop[2] + 'px'; }
     if (o.labels === false) sv.querySelectorAll('.cd-label').forEach(n => n.remove());
-    const info = Object.fromEntries(partValues(scoped).map(x => [x.part, x]));
+    const info = o.noInfo ? {} : Object.fromEntries(partValues(scoped).map(x => [x.part, x]));
     if (el._cellOnPart) el.removeEventListener('click', el._cellOnPart, true);
     el._cellOnPart = o.onPart ? (e => {
       const g = e.target.closest?.('[data-cell-part]'); if (!g) return;
