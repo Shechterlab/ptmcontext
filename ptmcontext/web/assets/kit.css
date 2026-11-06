@@ -1821,3 +1821,10 @@ body.cards .tabs a.tab { padding-block: 0.45rem 0.5rem; }
   body.cards .card-head .exp a.exp-btn { display: none; }
   body.cards .card-head .exp-btn { min-height: 34px; padding: 0 0.55rem; }
 }
+/* card download menu, card notes behind a disclosure */
+.fr-dl { position: relative; flex: none; } .fr-dl summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; min-height: 32px; padding: 0 0.6rem; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 0.78rem; font-weight: 600; color: var(--ink-2); background: var(--surface); }
+.fr-dl summary::-webkit-details-marker { display: none; } .fr-dl summary::after { content: " ▾"; }
+.fr-dl .fr-exp { position: absolute; right: 0; top: calc(100% + 4px); z-index: 40; display: flex; flex-direction: column; gap: 2px; padding: 0.3rem; margin: 0; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 0.6rem; box-shadow: var(--shadow-hover); min-width: 9rem; }
+.fr-dl .fr-exp .exp-btn { justify-content: flex-start; text-align: left; border: 0; min-height: 36px; }
+.fr-cnote-d { margin: 0.3rem 0 0; font-size: 0.78rem; color: var(--muted); } .fr-cnote-d summary { cursor: pointer; font-weight: 600; min-height: 28px; display: flex; align-items: center; }
+@media (max-width: 700px) { body.cards .fr-dl summary { min-height: 36px; } body.cards .fr-exp a.exp-btn { display: inline-flex; } body.cards .fr-exp .exp-btn { min-height: 44px; } .fr-cnote-d summary { min-height: 44px; } }

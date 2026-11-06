@@ -247,7 +247,7 @@
       .map(([v, name, n]) => [v, tabName(v, name), n]);
     const on = v => S.view === v || (K.views[S.view]?.tab === v);
     $('#tabs').innerHTML = (K.front ? '' : `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>`) + t.map(([v, name, n]) => `<a class="tab" href="${esc(link(v))}"${tabHint(v) ? ` title="${esc(tabHint(v))}"` : ''}${on(v) ? ' aria-current="page"' : ''}>${name}` +
-      (n != null && n !== 'selection' && !K.front ? ` <span class="count">${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + (sel && follows(v) ? ' <span class="selmark" title="Follows your selection" aria-label="follows your selection">●</span>' : '') + '</a>').join('') + variantSwitch();
+      (n != null && n !== 'selection' && !K.front ? ` <span class="count">${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + (sel && follows(v) ? ' <span class="selmark" title="Follows your selection" aria-label="follows your selection">●</span>' : '') + '</a>').join('') + (K.front ? '' : variantSwitch());
   }
   // the site's variants (the same questions on other marks, such as with lower-confidence sites): a switch to each,
   // and in a variant the switch back; the page, its selection and its place are kept

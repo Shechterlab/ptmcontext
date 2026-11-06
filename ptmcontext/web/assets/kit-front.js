@@ -39,8 +39,9 @@
     if (h.classes) return h.classes.filter(c => whole.some(r => r.category === c));
     // the strongest rows at q ≤ q_max first; a card with fewer than its rows is filled with the next strongest (drawn hollow, q above the cut)
     const ok = whole.filter(r => !skip.has(r.category) && r.eff != null && r.eff > 0 && r.eff < 1e100 && !/^(no |not |unknown|unassigned)/i.test(r.label));
-    const strong = r => (r.q != null && r.q <= (h.q_max ?? 0.05) && (r.dir === 'more' || r.dir === 'less') ? 0 : 1), by = (x, y) => strong(x) - strong(y) || Math.abs(Math.log(y.eff)) - Math.abs(Math.log(x.eff));
-    return ok.sort(by).slice(0, card.rows || F.rows).map(r => r.category);
+    const strong = r => (r.q != null && r.q <= (h.q_max ?? 0.05) && (r.dir === 'more' || r.dir === 'less') ? 0 : 1), by = (x, y) => strong(x) - strong(y) || (x.q ?? 1) - (y.q ?? 1) || Math.abs(Math.log(y.eff)) - Math.abs(Math.log(x.eff));
+    const big = ok.filter(r => r.a == null || r.a >= MIN().proteins);       // the home shows robust rows: at least the site's minimum (the question's page lists all)
+    return (big.length ? big : ok).sort(by).slice(0, card.rows || F.rows).map(r => r.category);
   }
   // `over`: {aid, n} reads another question of the card (a topic tile on the Sections page) and sets the number of rows
   function homeRows(card, over = {}) {
@@ -71,7 +72,7 @@
     let a = Math.log2(Math.max(1 / 64, Math.min(...v))) - 0.1, b = Math.log2(Math.min(64, Math.max(...v))) + 0.1;
     if (b - a < min) { const mid = (a + b) / 2; a = mid - min / 2; b = mid + min / 2; }
     const lo = 2 ** a, hi = 2 ** b, L = x => (Math.log2(Math.min(hi, Math.max(lo, x))) - a) / (b - a);
-    const gap = narrow() ? 0.22 : 0.15, ticks = [1];
+    const gap = narrow() ? 0.32 : 0.2, ticks = [1];                  // about 36 px between labels
     NICE.filter(t => t >= lo && t <= hi && t !== 1).sort((p, q) => Math.abs(Math.log2(p)) - Math.abs(Math.log2(q))).forEach(t => { if (ticks.every(u => Math.abs(L(t) - L(u)) >= gap)) ticks.push(t); });
     return { L, ticks: ticks.sort((p, q) => p - q), lo, hi };
   }
@@ -246,13 +247,12 @@
       const tag = c.cell || !fold ? 'OR' : 'fold';
       return `<section class="fr-card${c.cell ? ' fr-cellcard' : ''}" data-card="${esc(c.key)}" aria-labelledby="fc-${esc(c.key)}"><header><h2 id="fc-${esc(c.key)}"><a href="${esc(href)}">${esc(c.title)}</a></h2>` +
         `${x.own ? '<span class="tag">Whole dataset</span>' : ''}<abbr class="tag" title="${tag === 'fold' ? 'Fold enrichment: how many times more often the set is among the marked proteins than among the others' : 'Odds ratio: the odds that a mark is in the class against the odds for the other residues of the same proteins'}" tabindex="0">${tag}</abbr>` +
-        `<a class="fr-open" href="${esc(href)}" aria-label="Open the question: ${esc(c.title)}" title="Open the question">›</a></header>` +
+        `<a class="fr-open" href="${esc(href)}" aria-label="Open the question: ${esc(c.title)}" title="Open the question">›</a>` +
+        (K.expBar ? `<details class="fr-dl"><summary aria-label="Download ${esc(c.title)}" title="Download this card">Download</summary>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'frexp', c.title, qid).replace('class="exp"', 'class="exp fr-exp"')}</details>` : '') + '</header>' +
         (x.answer ? `<p class="fr-answer">${esc(x.answer)}</p>` : '') +
         `${cell}<div class="fr-rows" role="group" aria-label="${esc(c.title)}">${rows}</div>${axisHtml(x.ax)}` +
         (x.own ? '<p class="fr-cnote">Whole dataset: your selection was made with this question.</p>' : '') +
-        (c.cell ? '<p class="fr-cnote">The cell rows summarise the cell maps (median, adjusted for abundance); they are not a test.</p>' : '') +
-        (c.note ? `<p class="fr-cnote fr-cnote-card">${esc(c.note)}</p>` : '') +
-        (K.expBar ? K.expBar(['pdf', 'svg', 'png', 'tsv'], 'frexp', c.title, qid).replace('class="exp"', 'class="exp fr-exp"') : '') +
+        ((c.cell ? 'The cell rows summarise the cell maps (median, adjusted for abundance); they are not a test. ' : '') + (c.note || '') ? `<details class="fr-cnote-d"><summary>Note</summary>${esc((c.cell ? 'The cell rows summarise the cell maps (median, adjusted for abundance); they are not a test. ' : '') + (c.note || ''))}</details>` : '') +
         (all.length > 1 ? `<details class="fr-qs"><summary>All ${all.length} questions</summary><ul>${all.map(q => `<li><a href="${esc(K.link('overview', q))}">${esc(short(q))}</a></li>`).join('')}</ul></details>` : '') + '</section>';
     }).join('');
     const more = F.more.questions.filter(q => A[q]);
