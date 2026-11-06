@@ -338,11 +338,12 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         **({'models': models} if models else {}),
         # the profile's sticker residues, for the IDRs' patterning line (kit-idrs.js)
         **({'stickers': profile.stickers} if profile.stickers else {}),
-        # the cards front end (website.front): only when the site opens with it, so a classic site's data is as it was
+        # the front end's words and data (website.front: short names, row labels, answers, pathways): the cards home reads them
+        # only in mode cards, the classic Overview's tiles, gene list and pathway buttons read them too
         **({'front': front_resolve(site, {**{k: v.get('title') for k, v in (web.get('counts') or {}).items()},
                                           **({web['cell']['id']: web['cell'].get('title')} if (web.get('cell') or {}).get('id') else {}),
                                           **{x['id']: x['title'] for x in analyses}})}
-           if (web.get('front') or {}).get('mode') == 'cards' else {}),
+           if web.get('front') else {}),
         # the start panel's words and examples (kit-help.js); without them it chooses from the examples
         **({'start': web['start']} if web.get('start') else {}),
         'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),

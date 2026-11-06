@@ -94,7 +94,7 @@ def test_every_question_is_reachable(tmp_path):
     assert problems(_site(tmp_path, cards=[{'title': 'A', 'analyses': ['xl', 'near', 'bound']}], more=False)) == []
 
 
-def test_the_data_carries_the_front_only_in_cards_mode(tmp_path):
+def test_the_data_carries_the_front_in_both_modes(tmp_path):
     def data_of(site_front):
         root = _toy_site(tmp_path / site_front['mode'])
         import yaml
@@ -105,7 +105,7 @@ def test_the_data_carries_the_front_only_in_cards_mode(tmp_path):
         S.run(p, root=root / 'data', log=lambda *_: None)
         page = web.build(p, log=lambda *_: None).read_text()
         return json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', page, re.S).group(1))
-    assert 'front' not in data_of({'mode': 'classic'})
+    assert data_of({'mode': 'classic'})['front']['mode'] == 'classic'     # the classic tiles read its short names, row labels and pathways
     d = data_of({'mode': 'cards', 'cards': [{'title': 'Contacts', 'analyses': ['xl']}]})['front']
     assert d['mode'] == 'cards' and d['cards'][0]['facets'][0]['label'] == 'Crosslinks' and d['more']['questions'] == ['near', 'bound']
 
