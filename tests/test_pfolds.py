@@ -51,3 +51,17 @@ def test_the_modules_are_listed_and_name_nothing_of_a_site():
         assert not re.search(r'methyl|arginine|yeast|phospho|FUS\b|human', text, re.I), name
         if shutil.which('node'):
             assert subprocess.run(['node', '--check', str(ASSETS / name)], capture_output=True).returncode == 0
+
+
+def test_the_classic_protein_page_uses_the_same_modules():
+    """The fold pictures, the site-first interactions and the folded 3D options are not gated on the cards front end; the classic
+    groups take a context switch, and the site card's variants box is on both layouts."""
+    for name in ('kit-pfolds.js', 'kit-pix.js'):
+        assert "mode !== 'cards'" not in (ASSETS / name).read_text()
+    assert 'K.pix) {' in (ASSETS / 'kit-pnet.js').read_text()
+    assert 'const varBlock = `' in (ASSETS / 'kit-proteins.js').read_text()
+    ma = yaml.safe_load((ROOT / 'sites' / 'methylarginine.yaml').read_text())
+    groups = ma['website']['protein']['groups']
+    assert any(g.get('switch') for g in groups) and any('p-cell' in g['folds'] for g in groups)
+    schema = json.loads((ROOT / 'ptmcontext' / 'schemas' / 'site.schema.json').read_text())
+    jsonschema.Draft202012Validator.check_schema(schema)
