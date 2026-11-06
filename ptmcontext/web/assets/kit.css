@@ -1776,7 +1776,7 @@ body.cards .tabs a.tab { padding-block: 0.45rem 0.5rem; }
   body.cards .fr-info-btn { width: 36px; height: 36px; }
 }
 /* the Sections grid and the question page's related toggle */
-.sc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); gap: 0.6rem; }
+body.cards .sc-grid, .sc-grid:has(> .sc-tile) { display: grid; grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); gap: 0.6rem; }   /* the classic site card has its own .sc-grid (above) */
 .sc-tile { display: grid; align-content: start; gap: 0.25rem; padding: 0.6rem 0.7rem; border: 1px solid var(--line); border-radius: var(--radius-card, 0.7rem); background: var(--surface); color: var(--ink); text-decoration: none; min-height: 44px; min-width: 0; }
 .sc-tile:hover { border-color: var(--accent); box-shadow: var(--shadow-hover); }
 .sc-t { font-size: 0.95rem; }
@@ -1799,7 +1799,7 @@ body.cards .tabs a.tab { padding-block: 0.45rem 0.5rem; }
 .fr-rel li a, .fr-rel li span { display: flex; align-items: center; min-height: 36px; padding: 0 0.5rem; font-size: 0.88rem; text-decoration: none; }
 .fr-rel li a:hover { background: var(--surface-2); } .fr-rel li span { font-weight: 700; }
 @media (max-width: 700px) {
-  .sc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; } .sc-tile { padding: 0.5rem 0.55rem; } .sc-f { font-size: 0.76rem; }
+  body.cards .sc-grid, .sc-grid:has(> .sc-tile) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; } .sc-tile { padding: 0.5rem 0.55rem; } .sc-f { font-size: 0.76rem; }
   .fr-nav { flex-wrap: nowrap; gap: 0.3rem; margin-bottom: 0.3rem; } .fr-nav .fr-here { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fr-nav .fr-pn { width: auto; margin-left: 0; gap: 0; flex: none; } .fr-nav .fr-pn a, .fr-nav .fr-pn .off { min-width: 44px; justify-content: center; display: inline-flex; align-items: center; min-height: 44px; }
   .fr-nav .fr-pn > span[aria-hidden] { display: none; } .fr-rel summary { min-height: 36px; }
