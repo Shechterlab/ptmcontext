@@ -266,12 +266,16 @@
     pred.forEach(([pos, g, a, , , sc]) => put(g, a, pos, s => { s.pred = sc; }));
     const parts = [...by.values()].sort((x, y) => y.sites.size - x.sites.size);
     const who = parts.map(o => `<li>${o.self ? '<b>another copy of this protein</b>' : partnerName(o.g, o.a)} <span class="muted small">at</span> ${[...o.sites.entries()].sort((x, y) => x[0] - y[0]).map(([pos, s]) => siteBtn(p.acc, pos) + (s.obs ? '' : ' <span class="muted small">(predicted)</span>')).join(' ')}</li>`).join('');
+    // the cards front end keeps observed (PDB) and predicted interfaces apart
+    const whoKind = kind => parts.map(o => ({ o, at: [...o.sites.entries()].filter(([, s]) => (kind === 'obs' ? !!s.obs : !s.obs)).sort((x, y) => x[0] - y[0]) })).filter(x => x.at.length)
+      .map(({ o, at }) => `<li>${o.self ? '<b>another copy of this protein</b>' : partnerName(o.g, o.a)} <span class="muted small">at</span> ${at.map(([pos]) => siteBtn(p.acc, pos)).join(' ')}</li>`).join('');
+    const whoSplit = [['In PDB structures (observed)', whoKind('obs')], ['Predicted only (AlphaFold-Multimer models, not observed in a structure)', whoKind('pred')]].filter(x => x[1]).map(([t, l]) => `<h5 class="pn-ih">${t}</h5><ul class="pn-ilist">${l}</ul>`).join('');
     const obsLines = [...new Map(obs.map(r => [r[0], r])).keys()].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} contacts ` + obs.filter(r => r[0] === pos).map(r => `${r[1] === 'self' ? '<b>another copy</b>' : partnerName(r[3], r[4])} <span class="muted small">(${(r[2] || []).slice(0, 4).map(rcsb).join(', ')}${(r[2] || []).length > 4 ? ` +${r[2].length - 4}` : ''})</span>`).join('; ') + '</li>').join('');
     const predLines = [...new Set(pred.map(r => r[0]))].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} ` + pred.filter(r => r[0] === pos).slice(0, 6).map(r => `${partnerName(r[1], r[2])}${r[5] != null ? ` <span class="muted small">pDockQ ${(+r[5]).toFixed(2)}</span>` : ''}`).join(', ') + (pred.filter(r => r[0] === pos).length > 6 ? ' +' + (pred.filter(r => r[0] === pos).length - 6) : '') + '</li>').join('');
-    return `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4><ul class="pn-ilist">${who}</ul>` +
+    return `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4>${CARDS ? whoSplit : `<ul class="pn-ilist">${who}</ul>`}` +
       `<p class="note">Proteins in contact with a ${esc(m1)} in a PDB structure, or at the interface of a predicted complex. Associations of the whole protein are in the network above.</p>` +
       `<div class="pn-igrid"><section><h4>${esc(cap0(M))} at protein interfaces</h4>${obsLines ? `<ul class="pn-ilist">${obsLines}</ul>` : `<p class="muted">None is at a protein interface in a PDB structure.</p>`}</section>` +
-      `<section><h4>Predicted protein interfaces</h4>${predLines ? `<ul class="pn-ilist">${predLines}</ul>` : `<p class="muted">None is at a predicted interface.</p>`}</section></div></div>`;
+      `<section><h4>Predicted protein interfaces <span class="muted small">(models, not PDB)</span></h4>${predLines ? `<ul class="pn-ilist">${predLines}</ul>` : `<p class="muted">None is at a predicted interface.</p>`}</section></div></div>`;
   }
   function mount() {
     const b = box(); if (!b) { CUR = null; return; }

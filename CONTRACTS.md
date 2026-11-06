@@ -732,7 +732,7 @@ question, an odds ratio for a residue question; a model has none), and the stron
 | --- | --- |
 | `mode` | `classic` or `cards` |
 | `rows` | rows per home card (default 5) |
-| `cards[]` | `title`, and `key` (its address word), `short`, `chip` (the word for what a row selects), `sections` (the analyses' sections it holds), `analyses` (questions it names, in order), `cell` (the cell drawing; needs `website.cell`), `rows`, `facets[]` (`analysis`, `label`, `measure: fold or odds`), `home` (`analysis` of a facet, and `classes` to show or else `top` and `q_max`) |
+| `cards[]` | `title`, and `key` (its address word), `short`, `chip` (the word for what a row selects), `note` (a line under the card and under its questions' titles), `sections` (the analyses' sections it holds), `analyses` (questions it names, in order), `cell` (the cell drawing; needs `website.cell`), `rows`, `facets[]` (`analysis`, `label`, `measure: fold or odds`), `home` (`analysis` of a facet, and `classes` to show or else `top` and `q_max`) |
 | `more` | heading of the card for the questions no card holds (default "More questions"); `false` when every question is in a card |
 | `short` | question id to a short name (4 words or fewer) |
 | `row_labels` | question id to class or set code to a short row label (a code is unique only within its question) |

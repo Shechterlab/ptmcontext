@@ -1642,3 +1642,5 @@ a.pchip:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
 @media (max-width: 700px) { .ptab { flex: 1 1 0; padding: 0.45rem 0.5rem; } .pview > .pfold > .pfold-body { padding-top: 0.5rem; } }
 .sc-vars { margin: 0.4rem 0 0.8rem; padding: 0.6rem 0.9rem; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0.5rem; background: var(--surface); }
 .sc-vars h4 { margin: 0 0 0.3rem; font-size: 1rem; }
+.fr-qnote { margin: 0.3rem 0 0.6rem; padding: 0.4rem 0.7rem; border-left: 3px solid var(--accent); background: var(--surface); font-size: 0.9rem; }
+.pn-ih { margin: 0.5rem 0 0.2rem; font-size: 0.92rem; color: var(--muted); }

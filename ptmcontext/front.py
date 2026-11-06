@@ -91,7 +91,7 @@ def resolve(site: dict, titles: dict | None = None) -> dict:
             home.setdefault('top', rows)
             home.setdefault('q_max', DEFAULT_Q_MAX)
         out.append({'key': c.get('key') or _slug(c['title']), 'title': c['title'], 'short': c.get('short') or c['title'],
-                    'chip': c.get('chip', ''), 'questions': qs, 'facets': facets, 'home': home, 'rows': c.get('rows', rows),
+                    'chip': c.get('chip', ''), 'note': c.get('note', ''), 'questions': qs, 'facets': facets, 'home': home, 'rows': c.get('rows', rows),
                     'cell': bool(c.get('cell') and (web.get('cell') or {}).get('id'))})
     more = fr.get('more', DEFAULT_MORE)
     left = [q for q in question_ids(site) if q not in seen]

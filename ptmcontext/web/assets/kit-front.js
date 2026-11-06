@@ -102,6 +102,7 @@
   // ---- chips ---------------------------------------------------------------------------------------------------------------
   function chipLabel(k, vals) {
     const id = k.split(':')[1], card = cardOfQ(id), name = (card && card.chip) || K.sel.keyName(k);
+    if (vals.length === 1 && vals[0] === '*') return `Any ${/^[A-Z][^A-Z]*$/.test(name) ? name.toLowerCase() : name}`;      // "Any condensate", not "Condensate: *"
     return `${name}: ${vals.map(v => (v === '*' ? 'any' : K.sel.valueName(k, v))).join(' or ')}`;
   }
   function chipsHtml() {
@@ -144,6 +145,7 @@
         `${x.own ? '<span class="tag">Whole dataset</span>' : ''}<abbr class="tag" title="${tag === 'fold' ? 'Fold enrichment: how many times more often the set is among the marked proteins than among the others' : 'Odds ratio: the odds that a mark is in the class against the odds for the other residues of the same proteins'}" tabindex="0">${tag === 'fold' ? 'fold' : 'OR'}</abbr></header>` +
         `${cell}<div class="fr-rows" role="group" aria-label="${esc(c.title)}">${rows}</div>${axisHtml(ax)}` +
         (x.own ? '<p class="fr-cnote">Whole dataset: your selection was made with this question.</p>' : '') +
+        (c.note ? `<p class="fr-cnote fr-cnote-card">${esc(c.note)}</p>` : '') +
         (fold ? `<p class="fr-cnote">Fold is a one-sided test: a value below 1× is not tested for depletion.</p>` : '') +
         (all.length > 1 ? `<details class="fr-qs"><summary>All ${all.length} questions</summary><ul>${all.map(q => `<li><a href="${esc(K.link('overview', q))}">${esc(short(q))}</a></li>`).join('')}</ul></details>` : '') + '</section>';
     }).join('');
