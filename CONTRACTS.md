@@ -778,6 +778,26 @@ lists. Genes of other proteins come from the snapshot's FASTA. The hierarchy tab
 the members table a set id and a UniProt accession per row. Nothing is asked of the source's service; the page links to it.
 The one-file copy has no pathway files and so no button. A site without `pathways` has none.
 
+### The gene-list test (cards mode)
+
+`#list?q=<names>` (kit-genelist.js) tests a pasted list of genes or proteins against every set of the protein-set questions
+the cards show (their `facets` and `questions` of kind `protein_sets`). Enter in the search on two or more names and nothing
+else opens it, and the home's **Test this list** button links to it; both read the names with the search's own parser
+(`K.sel.parse`), so names matched by another name are listed ("Matched by another name: TLS -> FUS") and names not found are
+listed with any one-edit suggestion ("Not found"), never dropped silently. For each question its source's own background is
+used: `selection.json` `protein_sets[<id>]`, `in_background` (the marked proteins, or genes through `of`, that the source
+annotates), and each set's members within it. With n of the list in the background, N the background, M of it in the set
+and k of the list in the set: fold = (k/n)/(M/N), p = P(X >= k) for X hypergeometric(N, M, n) (one-sided; p = 1 at k = 0),
+q = Benjamini-Hochberg over every set of every question tested, small sets and k = 0 included. The function is
+`ptmstats.gene_list_test` and its browser twin `PTMC_STATS.listTest` (kit-stats.js); `packages/ptmstats/tests/test_list_test.py`
+checks that both equal SciPy's `hypergeom.sf` and `benjamini_hochberg`. The page shows the sets with k >= 1 by p (20, then
+**Show all**; `all=1` in the address): Set, Kind (the question, "(genes)" for a gene source), In list (k of n), In set /
+background (M / N), Fold, p (one-sided hypergeometric), q (Benjamini-Hochberg, <sets> sets), under the labelled note "A new
+test, not in the release statistics" with the caveat that a chosen list is not a random draw. Its TSV (`<site>_gene_list_test.tsv`)
+has the usual `#` preamble (version, selection) and `# Input`, `# Genes tested`, `# Matched by another name`, `# Not found`,
+then `set, set_id, question, kind, in_list, list_in_background, in_set, background, fold, p, q` for every set tested. The
+test is computed in the browser only: `statistics.tsv` and the parity with the release do not change.
+
 ## What the page reads at once and what it reads later
 
 `index.html` holds the data of the first screen (`site-data`). Two files are read only when something asks for them:

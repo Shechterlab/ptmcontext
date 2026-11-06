@@ -125,7 +125,7 @@
     const nf = K.sel.nFilters(), bar = `<div class="fr-bar"><button type="button" class="btn fr-filter" data-rail-open="filters" aria-haspopup="dialog">Filter${nf ? ` <span class="badge">${nf}</span>` : ''}</button>` +
       (act ? `<b class="fr-count" role="status">${loading ? 'Loading the selection…' : esc(sitesOn())}</b>${ready() ? chipsHtml() : ''}<button type="button" class="linkish fr-all" data-sel-clear-all>Whole dataset</button>`
         : `<span class="fr-count muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins</span>`) +
-      `<span class="fr-tools">${act ? `<button type="button" class="btn small" data-sel-save>Save</button>${K.views.compare && K.sel.savedList().length ? '<button type="button" class="btn small" data-go-compare>Compare</button>' : ''}` +
+      `<span class="fr-tools">${act ? `${ready() ? K.front.listLink?.() || '' : ''}<button type="button" class="btn small" data-sel-save>Save</button>${K.views.compare && K.sel.savedList().length ? '<button type="button" class="btn small" data-go-compare>Compare</button>' : ''}` +
         `<button type="button" class="btn small" data-vs="${S.vs === 'marks' ? 'residues' : 'marks'}" aria-pressed="${S.vs === 'marks'}" title="Compare the selection with the site’s other ${esc(W.marks)}, not with the other ${esc(W.residues)} of its proteins">What sets it apart</button>` : ''}` +
         `<button type="button" class="btn small" data-sel-copy>Copy link</button></span></div>`;
     const ex = (F.examples || []).length ? `<div class="fr-examples" role="group" aria-label="Examples">${F.examples.map(e => `<button type="button" class="try-chip" data-try="${esc(e.query)}">${esc(e.label)}</button>`).join('')}</div>` : '';

@@ -1624,3 +1624,9 @@ a.pchip:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
 .pwbtn { margin-left: 0.4rem; font-size: 0.72rem; padding: 0 0.5rem; min-height: 24px; }
 @media (max-width: 700px) { .pchip { min-height: 44px; padding-inline: 0.8rem; } .pwbtn { min-height: 44px; } .pwgroup summary { min-height: 44px; flex-wrap: wrap; } }
 #pwcard { scroll-margin-top: 8.5rem; }
+/* the gene-list test (kit-genelist.js) */
+.gl-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.4rem 0; }
+.gl-chip { text-decoration: none; color: var(--ink); min-height: 32px; display: inline-flex; align-items: center; }
+.gl-note { font-size: 0.9rem; color: var(--ink-2); margin: 0.3rem 0; }
+.gl-new { font-size: 0.9rem; color: var(--ink-2); border-left: 3px solid var(--accent); padding: 0.3rem 0.7rem; margin: 0.5rem 0 0.8rem; max-width: 60rem; }
+.gl-tbl td.wrapok { min-width: 9rem; }

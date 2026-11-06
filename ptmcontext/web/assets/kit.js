@@ -1379,7 +1379,7 @@
     go('protein', { arg: acc + site }); return true;
   }
   K.openIfOne = openIfOne;
-  $('#q').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(timer); qPending = false; S.q = e.target.value.trim(); typing = false; if (!openIfOne() && !K.openLight?.(S.q)) { writeHash(true); render(); } } });
+  $('#q').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(timer); qPending = false; S.q = e.target.value.trim(); typing = false; if (!openIfOne() && !K.openLight?.(S.q) && !K.openList?.()) { writeHash(true); render(); } } });
   $('#q-clear').addEventListener('click', () => { S.q = ''; writeHash(true); render(); $('#q').focus(); });
   let byLink = false;
   // where each page was scrolled to, for Back and Forward; a link opens its page at the top
