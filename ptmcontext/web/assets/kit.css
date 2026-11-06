@@ -1555,5 +1555,7 @@ body.cards .rail-fab { display: none !important; }
   body.cards .btn, body.cards .try-chip, body.cards .sel-chip button, body.cards .fchip, body.cards .seg button, body.cards .fr-qs summary, body.cards .fr-ab, body.cards .tab { min-height: 44px; min-width: 44px; }
   body.cards .fr-qs a, body.cards .fr-pop a, body.cards .fr-more a { min-height: 44px; display: inline-flex; align-items: center; }
   .fr-bar .fr-tools { margin-left: 0; }
+  body.cards .fr-all, body.cards #rail select, body.cards #rail .fgroup > summary, body.cards .vswitch { min-height: 44px; display: inline-flex; align-items: center; }
+  body.cards #rail select { display: block; } body.cards #rail .linkish, body.cards #rail input:not([type=checkbox]) { min-height: 44px; min-width: 44px; }
 }
 body.fr-on-home #scope { display: none; }
