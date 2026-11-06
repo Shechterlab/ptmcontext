@@ -17,6 +17,7 @@
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
   const { D, W, esc, int, cap } = K;
+  const CARDS = D.front?.mode === 'cards';
   if (!D.proteins || !D.proteins.length) return;
   const SD = D.structure || {};
   const LIB = 'https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.5.3/3Dmol-min.js';
@@ -726,10 +727,12 @@
   function paintControls() {
     const box = document.getElementById('s3d-controls'); if (!box) return;
     const pdbMode = T.mol?.mode === 'pdb';
-    box.innerHTML = `<div class="s3d-row">${sel('style', 'Style', STYLES, V.style)}${sel('color', 'Colour', colourOptions(), colourKey())}${sel('surface', 'Surface', SURFACES, V.surface)}${sel('light', 'Lighting', LIGHTS, V.light)}` +
+    const rows = `<div class="s3d-row">${sel('style', 'Style', STYLES, V.style)}${sel('color', 'Colour', colourOptions(), colourKey())}${sel('surface', 'Surface', SURFACES, V.surface)}${sel('light', 'Lighting', LIGHTS, V.light)}` +
       `${sel('bright', 'Brightness', BRIGHT, V.bright)}${sel('ldir', 'Light from', LDIR, V.ldir)}${sel('bg', 'Background', BGS, V.bg)}</div>` +
       `<div class="s3d-row s3d-toggles">${TOGGLES.filter(t => !t[3] || pdbMode).map(t => `<button type="button" class="s3d-chip" data-s3d-toggle="${t[0]}" aria-pressed="${!!V[t[0]]}" title="${esc(t[2])}">${esc(t[1])}</button>`).join('')}` +
-      `<button type="button" class="linkish" data-s3d-default title="Style, colour, surface and lighting back to their defaults">Default settings</button></div>` +
+      `<button type="button" class="linkish" data-s3d-default title="Style, colour, surface and lighting back to their defaults">Default settings</button></div>`;
+    // the cards front end draws the structure first and folds the options below it; the key stays in sight
+    box.innerHTML = (CARDS ? `<details class="pn-optd" data-s3d-optd${T.optOpen ? ' open' : ''}><summary>3D options <span class="muted">· style, colour, surface, lighting, toggles</span></summary>${rows}</details>` : rows) +
       `<div class="s3d-key" id="s3d-key">${T.mol && T.mol.acc === T.acc ? keyHtml(colourKey()) : ''}</div>`;
   }
   const chip = pos => { const m = markAt(pos); return `<button type="button" class="s3d-site${T.mol?.focusPos === pos ? ' on' : ''}" data-s3d-pos="${pos}"><i class="dot" style="background:${m ? markColour(m) : tok().mark}"></i>${esc(rl(pos))}`; };
@@ -1293,10 +1296,11 @@
     const hasTables = Object.keys(SD.inputs || {}).length > 0;
     return `<div class="s3d" id="s3d"><div class="s3d-head card-head"><p class="sub">The experimental chain that models most of ${esc(p.gene || p.acc)} (or any PDB entry and chain from the menu) or the AlphaFold model, coloured like the protein map, its ${esc(NOUNS)} as side chains. Drag to turn, scroll to zoom, right-drag or the arrows to slide; click a residue to focus it.</p>` +
       `<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}<span class="s3d-sep"></span>${exp}<span class="s3d-sep"></span>${files}<a class="exp-btn" href="${esc(K.link('method', 'structure'))}" title="Where the structures, the placing of the ${esc(NOUNS)} and the colours come from">Method</a><a class="exp-btn" id="s3d-newtab" href="${esc(soloHref(p.acc))}" target="_blank" rel="noopener" title="The viewer on a page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a></div></div>` +
-      `<div class="s3d-src" id="s3d-src"></div><div class="s3d-controls" id="s3d-controls"></div>` +
+      `<div class="s3d-src" id="s3d-src"></div>${CARDS ? '' : '<div class="s3d-controls" id="s3d-controls"></div>'}` +
       `<div class="s3d-wrap"><div class="s3d-stage"><div class="s3d-viewer" id="s3d-viewer"><div class="s3d-ph">The structure loads when this section is open.</div></div>` +
       `<div class="s3d-pan" role="group" aria-label="Slide the structure">${[['up', 0, -1, '↑'], ['left', -1, 0, '←'], ['right', 1, 0, '→'], ['down', 0, 1, '↓']].map(([k, x, y, t]) => `<button type="button" class="pan-${k}" data-s3d-pan="${x},${y}" aria-label="Slide ${k}">${t}</button>`).join('')}</div>` +
       `<p class="s3d-msg" id="s3d-msg" aria-live="polite">${esc(T.msg)}</p></div><div class="s3d-side" id="s3d-side"></div></div>` +
+      (CARDS ? '<div class="s3d-controls" id="s3d-controls"></div>' : '') +
       sub('s3d-pdb', 'Experimental structures (PDB)', '<div id="s3d-pdb-list"></div>') +
       sub('s3d-hom', 'Homologous experimental structures', '<div id="s3d-hom-list"></div>') +
       sub('s3d-pred', 'Predicted complexes', `<p class="sub">AlphaFold-Multimer models of protein pairs, without modifications (pDockQ ≥ 0.23 acceptable, ≥ 0.5 confident).</p><div id="s3d-pred-list"></div>`) +
@@ -1378,6 +1382,7 @@
     const d = e.target;
     if (d.open && d.classList?.contains('pgroup') && d.querySelector('#p-struct')) warm();
     if (d.id === 'p-struct' && d.open && T.acc) { begin(); if (T.want && T.started) { const w = T.want; apply(w); } }
+    if (d.hasAttribute?.('data-s3d-optd')) T.optOpen = d.open;
     if (d.classList?.contains('s3d-sub')) { T.open[d.id] = d.open; if (d.open) paintLists(); }
   }, true);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('s3d-dialog')?.open) expand(false); });

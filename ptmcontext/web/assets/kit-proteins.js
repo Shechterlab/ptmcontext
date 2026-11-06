@@ -69,17 +69,17 @@
   K.foldStarts = id => !!PRO.open?.includes(id);    // the site starts it open (when it has what it shows)
   const foldOpen = (id, dflt) => (PRO.open ? PRO.open.includes(id) && (K.hasData[id] ? !!K.hasData[id]() : true) : dflt);
   const GROUPS = PRO.groups || [];
-  function arrangeFolds(html) {
-    if (!FOLD_ORDER.length && !GROUPS.length) return html;
+  function arrangeFolds(html, flat) {
+    if (!FOLD_ORDER.length && !(GROUPS.length && !flat)) return html;
     const parts = html.split(/(?=<details class="pfold" id=")/), lead = /^<details class="pfold" id=/.test(parts[0]) ? '' : parts.shift();
     let at = -1, gi = 0;
     const keyed = parts.map((h, k) => {
       const id = (/^<details class="pfold" id="([^"]+)"/.exec(h) || [])[1], i = FOLD_ORDER.indexOf(id), g = GROUPS.findIndex(x => (x.folds || []).includes(id));
       if (i >= 0) at = i; if (g >= 0) gi = g;
-      return [gi, at, k, h];
+      return [flat ? 0 : gi, at, k, h];
     });
     keyed.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]);
-    if (!GROUPS.length) return lead + keyed.map(x => x[3]).join('');
+    if (flat || !GROUPS.length) return lead + keyed.map(x => x[3]).join('');
     // each group is a fold holding its folds; open when the reader opened it or one of its folds is open
     const out = GROUPS.map((g, n) => {
       const hs = keyed.filter(x => x[0] === n).map(x => x[3]); if (!hs.length) return '';
@@ -88,6 +88,34 @@
     }).join('');
     return lead + `<div class="pgroup-tools"><button type="button" class="btn small" data-folds="open">Open all</button> <button type="button" class="btn small" data-folds="close">Close all</button></div>` + out;
   }
+
+  // ---- the cards front end's protein page: the map, then Network, 3D and Sites as one block, the other cards folded below ----
+  const CARDS = D.front?.mode === 'cards';
+  const narrow = () => matchMedia('(max-width: 700px)').matches;
+  const TABS = [['p-ix', 'Network'], ['p-struct', '3D'], ['p-sites', 'Sites']];
+  // the block shows one of its sections: the one the reader opened last (or an address named), else the network when the protein has
+  // partners in the site's table, else the sites
+  function tabState() {
+    const ids = TABS.map(t => t[0]), asked = ids.filter(id => PV.open[id] === true), dflt = IXP && hasPartners() ? 'p-ix' : 'p-sites';
+    const cur = asked.length ? asked[asked.length - 1] : dflt;
+    return { cur, on: Object.fromEntries(ids.map(id => [id, id === cur])) };
+  }
+  function cardsLayout(html, p, rec, tabs) {
+    const parts = html.split(/(?=<details class="pfold" id=")/), lead = /^<details class="pfold" id=/.test(parts[0]) ? '' : parts.shift();
+    const idOf = h => (/^<details class="pfold" id="([^"]+)"/.exec(h) || [])[1];
+    const take = id => { const k = parts.findIndex(h => idOf(h) === id); return k < 0 ? '' : parts.splice(k, 1)[0]; };
+    const map = take('p-map'), panes = TABS.map(([id, t]) => [id, t, take(id)]).filter(x => x[2]);
+    const bar = `<div class="ptabs" role="group" aria-label="${esc(p.gene || p.acc)}: network, 3D structure and sites">${panes.map(([id, t]) => `<button type="button" class="ptab" data-ptab="${id}" aria-pressed="${id === tabs.cur}">${esc(t)}</button>`).join('')}</div>`;
+    const more = arrangeFolds(parts.join(''), true);
+    return lead + map + (panes.length ? `<div class="pview">${bar}${panes.map(x => x[2]).join('')}</div>` : '') +
+      (more ? `<h2 class="p-more">More about ${esc(p.gene || p.acc)}</h2>${more}` : '');
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest?.('[data-ptab]'); if (!b) return;
+    const id = b.dataset.ptab;
+    TABS.forEach(([x]) => { const d = document.getElementById(x); if (d) d.open = x === id; });
+    document.querySelectorAll('[data-ptab]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  });
 
   // ---- a protein's page: as the Methylarginine Site Explorer's ------------------------------------------------------
   const PV = { acc: '', rec: null, err: '', af: null, uni: null, uniJson: null, pdb: null, pdbAll: false, ix: null, site: null, span: null, spanArg: '', more: false, fn: false, open: {}, scrolled: null,
@@ -480,12 +508,15 @@
       protHead(p);
     if (!PV.rec) return head + `<p class="empty">${PV.err ? esc(PV.err) : 'Loading…'}</p>`;
     const rec = PV.rec, sel = K.sel?.active() ? K.sel.selectedPositions(acc) : null;
-    const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${(PV.open[id] ?? foldOpen(id, open)) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
+    const tabs = CARDS ? tabState() : null;
+    const isOpen = (id, open) => (tabs && id in tabs.on ? tabs.on[id] : CARDS ? !!PV.open[id] || (id === 'p-map' && PV.open[id] !== false) : (PV.open[id] ?? foldOpen(id, open)));
+    const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${isOpen(id, open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
     const nSrc = Object.keys(SPECS).find(n => SPECS[n].kind === 'list' && SPECS[n].link);
+    const page = laid => (CARDS ? cardsLayout(laid, p, rec, tabs) : arrangeFolds(laid));
     return head +
       (sel && sel.size < rec.marks.length ? `<p class="note">${int(sel.size)} of ${int(rec.marks.length)} ${esc(W.marks)} match your selection; the others are faded. <button class="linkish" type="button" data-sel-clear-all>Clear filters</button></p>` : '') +
-      arrangeFolds(
-      fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''}`, `<div class="card-head"><p class="sub">Rows from this dataset and live sources. Hover for a description, click to pin.</p>${mapExp(['pdf', 'svg', 'png', 'tsv'])}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
+      page(
+      fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''}`, `<div class="card-head"><p class="sub">Rows from this dataset and live sources. ${CARDS && narrow() ? 'Tap' : 'Hover for a description, click'} to pin.</p>${CARDS ? '' : mapExp(['pdf', 'svg', 'png', 'tsv'])}</div><div id="pmap" class="pmap"></div>${CARDS ? `<div class="map-exp-below">${mapExp(['pdf', 'svg', 'png', 'tsv'])}</div>` : ''}${siteCard(p, rec)}`, true) +
       (headline(p, rec) || legacyFacts(p, rec, nSrc)) +
       fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}${nSrc ? ` · ${int(new Set(rec.marks.flatMap(m => (attrVal(m, nSrc) || '').split(SPECS[nSrc].separator || '; ').filter(Boolean))).size)} ${esc(SPECS[nSrc].label.toLowerCase())}` : ''}${rec.shown?.length ? ` · ${int(rec.shown.length)} more ${esc(K.shown.row())}` : ''}`, sitesTable(p, rec, sel), true) +
       fold('p-score', `${esc(cap(W.marks))} vs other ${esc(W.residues)} in ${esc(p.gene || p.acc)}`, esc(`Can't be tested for one protein${baseText() ? '; dataset-wide: ' + baseText() : ''}`), `${scoreVerdict(p, rec)}<p class="sub">Share of ${esc(W.marks)} and of other ${esc(W.residues)} in each class. Click a row to see every class.</p><div class="hub">${scoreRows(p, rec)}</div>`, false) +

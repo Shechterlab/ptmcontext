@@ -13,6 +13,7 @@
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
   const { D, W, esc, int } = K;
+  const CARDS = D.front?.mode === 'cards';
   const IXP = D.partners || null;
   const SD = D.structure || {}, PT = D.search?.partners || null;
   const STRING_API = 'https://string-db.org/api/json/', CALLER = 'ptmcontext';
@@ -246,8 +247,10 @@
     if (!IXP) return '';
     const g = p.gene || p.acc;
     return fold('p-ix', 'Protein interactions', 'STRING, live; drag the nodes', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, drawn as a network you can drag, coloured by whether they have ${esc(W.marks)} in this dataset. Matched by accession. The Table view lists the same partners and is the keyboard route.</p>` +
-      `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${optionsHtml()}<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>` +
-      `<div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` + ifaceHtml(p, rec), true);
+      `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${CARDS ? '' : optionsHtml()}<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>` +
+      `<div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` +
+      // the cards front end draws the network first and folds its options below it (the graph is what the reader came for)
+      (CARDS ? `<details class="pn-optd"><summary>Network options <span class="muted">· confidence, partners, colour, layout, evidence channels</span></summary>${optionsHtml()}</details>` : '') + ifaceHtml(p, rec), true);
   }
   // ---- who binds the marks: the site's structure tables (contacts and predicted, per mark) ---------------------------------
   const rcsb = id => `<a href="https://www.rcsb.org/structure/${encodeURIComponent(String(id).toUpperCase())}" target="_blank" rel="noopener">${esc(String(id).toUpperCase())}</a>`;

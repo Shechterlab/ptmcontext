@@ -1624,3 +1624,19 @@ a.pchip:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
 .pwbtn { margin-left: 0.4rem; font-size: 0.72rem; padding: 0 0.5rem; min-height: 24px; }
 @media (max-width: 700px) { .pchip { min-height: 44px; padding-inline: 0.8rem; } .pwbtn { min-height: 44px; } .pwgroup summary { min-height: 44px; flex-wrap: wrap; } }
 #pwcard { scroll-margin-top: 8.5rem; }
+
+/* the cards front end's protein page: the map, then Network / 3D / Sites as one block, the other cards folded below */
+.pview { margin: 0 0 1rem; }
+.ptabs { display: flex; gap: 0.4rem; margin: 0 0 0.6rem; flex-wrap: wrap; }
+.ptab { font: inherit; padding: 0.45rem 1.1rem; min-height: 2.75rem; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--ink, inherit); cursor: pointer; }
+.ptab[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.pview > .pfold { margin: 0; }
+.pview > .pfold > summary { display: none; }
+.pview > .pfold > .pfold-body { padding-top: 0.9rem; }
+.p-more { font-size: 1.25rem; margin: 1.4rem 0 0.6rem; }
+.map-exp-below { margin: 0.5rem 0 0.2rem; }
+.map-exp-below .exp { border-top: 0; padding-top: 0; }
+.pn-optd { margin: 0.6rem 0; border: 1px solid var(--line); border-radius: 0.5rem; padding: 0 0.8rem; }
+.pn-optd > summary { cursor: pointer; padding: 0.55rem 0; min-height: 2.75rem; display: flex; align-items: center; gap: 0.5rem; }
+.pn-optd[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 0.6rem; }
+@media (max-width: 700px) { .ptab { flex: 1 1 0; padding: 0.45rem 0.5rem; } .pview > .pfold > .pfold-body { padding-top: 0.5rem; } }
