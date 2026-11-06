@@ -509,7 +509,8 @@
     }
     if (PV.rec && PV.site && !PV.rec.marks.some(m => m[0] === PV.site) && !shownAt(PV.rec, PV.site)) { PV.site = null; PV.cleanArg = true; }
     const selTxt = K.sel?.active() ? `${int(K.sel.nMarks())} ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)} · selection` : `all ${esc(W.marks)}`;
-    const head = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> <span class="muted">(${selTxt})</span> › <b>${esc(p.gene || p.acc)}</b>${PV.site ? ` › ${esc(PV.rec ? siteOf(p, PV.site) : PV.site)}` : PV.span ? ` › ${int(PV.span[0])}–${int(PV.span[1])}` : ''}</p>` +
+    const nm = p.gene || p.acc, siteTxt = PV.site ? (PV.rec ? siteOf(p, PV.site) : String(PV.site)) : PV.span ? `${int(PV.span[0])}–${int(PV.span[1])}` : '';
+    const head = (K.front ? K.front.trail([[nm, K.link('protein', p.acc)], ...(siteTxt ? [[siteTxt]] : [])]) : `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> <span class="muted">(${selTxt})</span> › <b>${esc(p.gene || p.acc)}</b>${PV.site ? ` › ${esc(PV.rec ? siteOf(p, PV.site) : PV.site)}` : PV.span ? ` › ${int(PV.span[0])}–${int(PV.span[1])}` : ''}</p>`) +
       protHead(p);
     if (!PV.rec) return head + `<p class="empty">${PV.err ? esc(PV.err) : 'Loading…'}</p>`;
     const rec = PV.rec, sel = K.sel?.active() ? K.sel.selectedPositions(acc) : null;
@@ -552,7 +553,7 @@
     PV.site = sitePos && /^\d+$/.test(sitePos) ? +sitePos : null; K.site.state.focus = PV.site; K.site.state.acc = p.acc;
     if (PV.rec && PV.site && !shownAt(PV.rec, PV.site)) { PV.site = null; PV.cleanArg = true; }
     const p = sp, n = PV.rec?.shown?.length || 0;
-    const head = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">${esc(K.shown.row())}</span>${PV.site ? ` › ${esc(siteOf(p, PV.site))}` : ''}</p>` + protHead(p, true);
+    const head = (K.front ? K.front.trail([[p.gene || p.acc, K.link('protein', p.acc)], ...(PV.site ? [[siteOf(p, PV.site)]] : [])]) : `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">${esc(K.shown.row())}</span>${PV.site ? ` › ${esc(siteOf(p, PV.site))}` : ''}</p>`) + protHead(p, true);
     if (!PV.rec) return head + `<p class="empty">${PV.err ? esc(PV.err) : 'Loading…'}</p>`;
     const rec = PV.rec;
     const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${(PV.open[id] ?? open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
@@ -584,7 +585,7 @@
     const shownP = PV.lightAll ? partners : partners.slice(0, 40);
     const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${(PV.open[id] ?? open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
     const asP = K.card.asPartner(x, p.gene || p.acc, (a, pos) => `${byAcc[a]?.gene || a} ${siteOf(byAcc[a] || { acc: a }, pos)}`);
-    return `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">no ${esc(W.mark)}</span></p>` + protHead(p, true) +
+    return (K.front ? K.front.trail([[p.gene || p.acc]]) : `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">no ${esc(W.mark)}</span></p>`) + protHead(p, true) +
       `<p class="note">No ${esc(W.mark)} on ${esc(p.gene || p.acc)}. None of its sources reports one, which means not reported, not shown to be un${esc(W.marked)}. This page shows its map, the ${esc(W.marks)} of other proteins it is recorded binding, and its partners with ${esc(W.marks)}.</p>` +
       `<div class="facts"><div class="fact"><b>${int(p.len)}</b><span>Residues</span></div><div class="fact"><b>${int(nRes)}</b><span>${esc(cap(W.residues))}</span></div>` +
       (ptab ? `<div class="fact"><b>${int(partners.length)}</b><span>Partners with ${esc(W.marks)}</span></div>` : '') + '</div>' +

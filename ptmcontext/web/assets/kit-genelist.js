@@ -45,9 +45,9 @@
   // ---- the page -----------------------------------------------------------------------------------------------------------
   let last = null;
   function view() {
-    if (!K.sel.peek()) { K.sel.data(); K.sel.ready.then(() => { if (S.view === 'list') K.render(); }); return '<div class="page-head"><h2>Your gene list</h2></div><p class="muted" role="status">Reading your list…</p>'; }
+    if (!K.sel.peek()) { K.sel.data(); K.sel.ready.then(() => { if (S.view === 'list') K.render(); }); return (K.front ? K.front.trail([['Your gene list']]) : '') + '<div class="page-head"><h2>Your gene list</h2></div><p class="muted" role="status">Reading your list…</p>'; }
     const L = readList(S.q), n = L.prots.length;
-    const head = `<div class="page-head"><h2>Your gene list</h2></div>`;
+    const head = (K.front ? K.front.trail([['Your gene list']]) : '') + `<div class="page-head"><h2>Your gene list</h2></div>`;
     if (!S.q.trim()) { last = null; return head + `<p>Paste gene names or accessions in the search box (two or more, separated by spaces or commas) to test them against the ${int(QS.length)} protein-set questions.</p>`; }
     const rows = n ? test(L.prots) : [], hit = rows.filter(r => r.k >= 1).sort(order), shown = S.lall ? hit : hit.slice(0, SHOWN);
     last = { L, rows };

@@ -400,7 +400,9 @@
   (K.selLead ||= []).unshift(logoSection);
   (K.selSmall ||= []).unshift(logoSection);
   // "Sequence logo" in the selection line: opens it (and goes to the Overview that holds it)
-  (K.selTools ||= []).push(() => (CV.logo && haveWindows() && sets().sel.length ? `<button class="btn small" type="button" data-go-logo title="The selected ${esc(W.marks)}' sequence windows aligned, as a logo and against the other ${esc(W.marks)}">Sequence logo</button>` : ''));
+  const logoBtn = () => (CV.logo && haveWindows() && sets().sel.length ? `<button class="btn small" type="button" data-go-logo title="The selected ${esc(W.marks)}' sequence windows aligned, as a logo and against the other ${esc(W.marks)}">Sequence logo</button>` : '');
+  K.logoBtn = logoBtn; K.logoSection = logoSection;      // the cards front end's chip row and home (kit-front.js)
+  (K.selTools ||= []).push(logoBtn);
   K.clicks.push(['[data-go-logo]', () => {
     LUI.open = true;
     if (S.view !== 'overview' || S.arg || S.vs !== 'residues') K.go('overview', { arg: '', vs: 'residues' });

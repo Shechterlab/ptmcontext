@@ -214,6 +214,12 @@
     const ex = (D.site.examples || []).slice(0, 3).map(e => `<a class="try-chip" href="${esc(carry('#overview?' + new URLSearchParams({ q: e })))}" data-try="${esc(e)}">${esc(e)}</a>`).join('');
     const site = (D.site.examples || []).find(e => /\s[A-Z]?\d+$/.test(e)), term = (D.site.examples || []).find(e => e.includes(':'));
     $('#q').placeholder = `Gene, accession, ${site ? `site (${site}), ` : ''}gene list${term ? `, or a filter such as ${term}` : ''}`;
+    if (K.front?.bar) {      // the cards front end: the one header, on every view; the home draws its own row inside the page
+      const on = !!K.sel?.active();
+      $('#scope').classList.toggle('selected', on); document.body.classList.toggle('has-selection', on);
+      $('#scope').innerHTML = S.view === 'overview' && !S.arg ? '' : K.front.bar();
+      return;
+    }
     const bar = K.sel?.bar();
     $('#scope').classList.toggle('selected', !!bar);
     document.body.classList.toggle('has-selection', !!bar);
@@ -1257,7 +1263,10 @@
     $('#q-clear').hidden = !S.q;
     scope();
     const mod = K.views[S.view];
-    $('#view').innerHTML = selLine() + (mod ? mod.render(S.arg) : S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview());
+    const page = mod ? mod.render(S.arg) : S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview();
+    // the cards front end: every page but the home carries the "Home / …" trail; one that draws its own keeps it
+    const trail = K.front && !(S.view === 'overview' && !S.arg) && !/class="fr-nav"/.test(page) ? K.front.trail([[mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))]]) : '';
+    $('#view').innerHTML = trail + selLine() + page;
     const qTitle = D.front?.mode === 'cards' && S.view === 'overview' && S.arg ? (A[S.arg]?.title || (S.arg === D.cell?.id ? (D.cell.title || 'Cell maps') : '')) : '';
     document.title = qTitle ? `${qTitle} · ${D.site.name}` : S.view === 'overview' ? D.site.name : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`;   // the page first: "FUS R216 · <site>"
     document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg || !!K.front) && D.header?.compact !== false);      // the header band in full on the Overview only (website.header.compact)

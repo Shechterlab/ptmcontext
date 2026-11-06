@@ -1558,6 +1558,8 @@ body.cards .rail-fab { display: none !important; }
   body.cards #rail select { display: block; } body.cards #rail .linkish, body.cards #rail input:not([type=checkbox]) { min-height: 44px; min-width: 44px; }
 }
 body.fr-on-home #scope { display: none; }
+body.cards #scope .fr-bar { width: 100%; }
+body.cards #scope [data-sel-copy] { display: inline-flex; }
 
 /* ---- the cards front end's navigation (kit-sections.js) ---- */
 .hero-sections { display: none; }

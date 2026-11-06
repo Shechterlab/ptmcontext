@@ -135,6 +135,17 @@
   }
   // ---- the home ----------------------------------------------------------------------------------------------------------
   const sitesOn = () => `${int(K.sel.nMarks())} ${unit(K.sel.nMarks())} on ${plural(K.sel.nProteins(), 'protein')}`;
+  function barHtml() {
+    const act = selOn(), loading = act && !ready(), nf = K.sel.nFilters();
+    return `<div class="fr-bar"><button type="button" class="btn fr-filter" data-rail-open="filters" aria-haspopup="dialog">Filter${nf ? ` <span class="badge">${nf}</span>` : ''}</button>` +
+      (act ? `<b class="fr-count" role="status">${loading ? 'Loading the selection…' : esc(sitesOn())}</b>${ready() ? chipsHtml() : ''}<button type="button" class="linkish fr-all" data-sel-clear-all>Whole dataset</button>`
+        : `<span class="fr-count muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins</span>`) +
+      `<span class="fr-tools">${act ? `${ready() ? K.front.listLink?.() || '' : ''}${ready() ? K.logoBtn?.() || '' : ''}<button type="button" class="btn small" data-sel-save>Save</button>${K.views.compare && K.sel.savedList().length ? '<button type="button" class="btn small" data-go-compare>Compare</button>' : ''}` +
+        `<button type="button" class="btn small" data-vs="${S.vs === 'marks' ? 'residues' : 'marks'}" aria-pressed="${S.vs === 'marks'}" title="Compare the selection with the site’s other ${esc(W.marks)}, not with the other ${esc(W.residues)} of its proteins">What sets it apart</button>` : ''}` +
+        `<button type="button" class="btn small" data-sel-copy>Copy link</button></span></div>`;
+  }
+  // one trail for every page but the home: Home / a / b (the last, not a link; a part is [label, href])
+  const trail = parts => `<nav class="fr-nav" aria-label="Trail"><a href="${esc(K.link('overview'))}">Home</a>${parts.map(([t, h], i) => `<span aria-hidden="true">/</span>${h && i < parts.length - 1 ? `<a href="${esc(h)}">${esc(t)}</a>` : `<span class="fr-here"${i === parts.length - 1 ? ' aria-current="page"' : ''}>${esc(t)}</span>`}`).join('')}</nav>`;
   let lastLive = '';
   function home() {
     const act = selOn(), loading = act && !ready(), under = act && ready() && !live() && !K.vsOn();
@@ -142,12 +153,7 @@
     cards.forEach(x => { if (x.c.cell) { x.cellRows = cellRows(); } });
     const vals = cards.flatMap(x => [...x.rows, ...(x.cellRows || [])].map(r => r.v)).filter(v => v != null);
     const ax = axisOf(vals);
-    const nf = K.sel.nFilters(), bar = `<div class="fr-bar"><button type="button" class="btn fr-filter" data-rail-open="filters" aria-haspopup="dialog">Filter${nf ? ` <span class="badge">${nf}</span>` : ''}</button>` +
-      (act ? `<b class="fr-count" role="status">${loading ? 'Loading the selection…' : esc(sitesOn())}</b>${ready() ? chipsHtml() : ''}<button type="button" class="linkish fr-all" data-sel-clear-all>Whole dataset</button>`
-        : `<span class="fr-count muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins</span>`) +
-      `<span class="fr-tools">${act ? `${ready() ? K.front.listLink?.() || '' : ''}<button type="button" class="btn small" data-sel-save>Save</button>${K.views.compare && K.sel.savedList().length ? '<button type="button" class="btn small" data-go-compare>Compare</button>' : ''}` +
-        `<button type="button" class="btn small" data-vs="${S.vs === 'marks' ? 'residues' : 'marks'}" aria-pressed="${S.vs === 'marks'}" title="Compare the selection with the site’s other ${esc(W.marks)}, not with the other ${esc(W.residues)} of its proteins">What sets it apart</button>` : ''}` +
-        `<button type="button" class="btn small" data-sel-copy>Copy link</button></span></div>`;
+    const bar = barHtml();
     const ex = (F.examples || []).length ? `<div class="fr-examples" role="group" aria-label="Examples">${F.examples.map(e => `<button type="button" class="try-chip" data-try="${esc(e.query)}">${esc(e.label)}</button>`).join('')}</div>` : '';
     const c0 = act && ready() ? K.sel.compute() : null;
     const banner = under ? `<p class="fr-banner" role="status"><b>Showing the whole dataset.</b> Your selection (${esc(sitesOn())}) is under the minimum for a test (${MIN().proteins} proteins and ${MIN().marks} ${esc(W.marks)}), so every card shows the whole dataset.` +
@@ -176,7 +182,7 @@
       `<label class="fr-ab" title="Mark protein-set rows with the result within abundance deciles"><input type="checkbox" data-fr-ab${S.ab ? ' checked' : ''}> Abundance check</label>` +
       (resid ? `<span class="seg" role="group" aria-label="Test"><button type="button" data-m="mantel_haenszel" aria-pressed="${method() === 'mantel_haenszel'}">Within each protein</button><button type="button" data-m="fisher" aria-pressed="${method() === 'fisher'}">Pooled</button></span>` : '') + '</p>';
     K.front.say = act ? (loading ? 'Loading the selection' : under ? `Whole dataset: the selection of ${sitesOn()} is under the test minimum` : `Cards tested again on ${sitesOn()}`) : 'Whole dataset';
-    return `<div class="fr-home${loading ? ' fr-busy' : ''}"${loading ? ' aria-busy="true"' : ''}><h1 class="vh">${esc(D.site.name)}</h1>${ex}${bar}${banner}${dv}<div class="fr-grid">${html}${moreCard}</div>${key}</div>`;
+    return `<div class="fr-home${loading ? ' fr-busy' : ''}"${loading ? ' aria-busy="true"' : ''}><h1 class="vh">${esc(D.site.name)}</h1>${ex}${bar}${banner}${dv}${act && ready() ? K.logoSection?.() || '' : ''}<div class="fr-grid">${html}${moreCard}</div>${key}</div>`;
   }
   // Print and the PDF hide the toolbar, where the selection is named: a block that only Print shows keeps it, with the citation and the version
   function printCite() {
@@ -198,5 +204,5 @@
   (K.afterRender ||= []).push(after);
   let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { const el = document.getElementById('fr-cell-draw'); if (el && (el.dataset.narrow === '1') !== narrow()) after(); }, 200); });
   document.addEventListener('change', e => { if (e.target.matches?.('[data-fr-ab]')) { S.ab = e.target.checked; K.writeHash(false); K.render(); } });
-  K.front = { home, cardTsv, chipLabel, cards: CARDS, say: '', homeRows, axisOf, short };
+  K.front = { home, bar: barHtml, trail, cardTsv, chipLabel, cards: CARDS, say: '', homeRows, axisOf, short };
 });
