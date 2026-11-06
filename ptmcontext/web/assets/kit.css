@@ -378,9 +378,6 @@ body.has-selection .tabs { box-shadow: inset 0 -2px 0 var(--accent); }
 .taxis .one-lab { position: relative; left: calc(var(--x) - 0.5rem); }
 /* a tile's downloads: shown on hover or keyboard focus, never on a touch screen (as the explorer) */
 .tile > header { position: relative; }
-.tile .texp { position: absolute; top: -0.4rem; right: 1.3rem; z-index: 2; gap: 0.25rem; padding: 0.15rem; border-top: 0; border-radius: 0.45rem; background: var(--surface); opacity: 0; pointer-events: none; transition: opacity 0.15s; }
-.tile:hover .texp, .tile:focus-within .texp { opacity: 1; pointer-events: auto; }
-@media (hover: none) { .tile .texp { display: none; } }
 .trow line.ref { stroke: var(--ink); stroke-width: 2; }
 .tmore { align-self: flex-end; font-size: 0.86rem; font-weight: 600; text-decoration: none; margin-top: 0.3rem; }
 .tstat { font-size: 0.8rem; color: var(--ink-2); margin: -0.15rem 0 0.4rem; }   /* the statistic a tile reports (website.overview.statistic_label) */
@@ -1963,3 +1960,41 @@ body.cards .sc-grid, .sc-grid:has(> .sc-tile) { display: grid; grid-template-col
   .dock :focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 }
 @media (prefers-reduced-motion: no-preference) { .dock { transition: transform 0.15s ease; } }
+
+/* ==== The classic Overview in the cards layout's look (kit-tile.js, and the cell tile of kit-cell.js): a separate block,
+   so the cards layout's own rules above stay as they were ==== */
+.tile .trows.fr-rows { display: block; }
+.tile .fr-ax, .tile .fr-row { grid-template-columns: minmax(0, 34%) minmax(0, 1fr) 3.9rem 2.3rem; }
+.tile .fr-row.pick { margin: 0; }
+.tile .tans { margin: 0 0 0.35rem; font-size: 0.84rem; line-height: 1.35; color: var(--ink-2); }
+.tile .tkey { margin: 0.3rem 0 0; font-size: 0.75rem; color: var(--muted); }
+.tile .tact { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem 0.8rem; margin-top: auto; padding-top: 0.6rem; }
+.tile .tact .tmore { margin: 0; }
+.tile .tile-dl .fr-exp { left: 0; right: auto; }
+.tile .tile-dl summary { min-height: 36px; }
+.tile .pwbtn-home { min-height: 1.8rem; margin: -0.1rem 0 0.2rem auto; }
+.tiles .tile.wide.cell-tile { grid-column: 1 / -1; max-width: none; }
+.cell-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 0.3rem; }
+.cell-fig { margin: 0; min-width: 0; }
+.cell-tile .cell-draw { min-width: 0; }
+.cell-tile .cell-svg, .cell-tile .cell-svg.cell-cell, .cell-tile .cell-svg.cell-nucleus { width: 100%; height: auto; min-width: 0; max-width: none !important; max-height: none; }
+.cp-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem 1.6rem; margin-top: 0.7rem; }
+.cp-col h4 { margin: 0 0 0.25rem; font-family: var(--font-body); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); text-align: center; }
+.cp-list { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 1.6rem; }
+.cp-list li { break-inside: avoid; }
+.cp-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.5rem; width: 100%; min-height: 32px; padding: 0.2rem 0.15rem; border: 0; border-bottom: 1px dotted var(--line-strong); background: none; color: var(--ink); font: inherit; font-size: 0.86rem; text-align: left; cursor: pointer; }
+.cp-row .kd { margin: 0; }
+.cp-row b { font-variant-numeric: tabular-nums; }
+.cp-row:hover { background: var(--surface-2, rgba(0, 0, 0, 0.04)); }
+.cp-row.on { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
+.cell-ans b { color: var(--more); }
+@media (max-width: 700px) {
+  .cell-pair { gap: 0.3rem; }
+  .cp-cols { gap: 0.6rem 0.8rem; }
+  .cp-list { columns: 1; }
+  .cp-row { min-height: 40px; font-size: 0.84rem; }
+  .tile .tile-dl summary { min-height: 40px; }
+  .tile .tile-dl .exp-btn { min-height: 44px; }
+  .tile .fr-ax, .tile .fr-row { grid-template-columns: minmax(0, 31%) minmax(0, 1fr) 3.4rem 2rem; gap: 0.3rem; }
+  .tile .fr-row { min-height: 36px; }
+}

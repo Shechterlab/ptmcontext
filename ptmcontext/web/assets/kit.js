@@ -679,7 +679,7 @@
     };
     // the first sections are drawn in full; later ones are a heading with a line on what is in them, drawn when the reader
     // opens them or scrolls to them (a selection draws them all; website.overview.draw_first sets how many)
-    const FIRST = D.overview?.draw_first ?? 2, lazyOn = !selOn() && !vsOn() && !S.arg && FIRST >= 0;
+    const FIRST = (D.overview?.draw_first ?? 2) + secList().filter(x => x.cell).length, lazyOn = !selOn() && !vsOn() && !S.arg && FIRST >= 0;
     const lazyHtml = x => {
       const n = x.cards.length + (K.ovTiles || []).filter(t => t.section === x.name).length, id = esc(x.name.replace(/\W+/g, '-').toLowerCase());
       return `<section class="ov-sec ov-lazy" data-ov-lazy="${esc(x.name)}" aria-labelledby="sec-${id}"><header class="ov-sec-head"><h3 class="sec-label" id="sec-${id}">${esc(x.name)}</h3>` +
@@ -689,10 +689,12 @@
       if (lazyOn && i >= FIRST && !K.ovOpen.has(x.name)) return lazyHtml(x);
       const b = secBody(x); if (!b.main && !b.rest) return '';
       const id = esc(x.name.replace(/\W+/g, '-').toLowerCase());
-      return `<section class="ov-sec${x.caveat ? ' caveat' : ''}" aria-labelledby="sec-${id}"><header class="ov-sec-head"><h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${id}">${esc(head(x))}</h3>${x.about && !vsOn() ? `<p class="sec-about">${esc(x.about)}</p>` : ''}</header>` +
+      return `<section class="ov-sec${x.caveat ? ' caveat' : ''}" aria-labelledby="sec-${id}"><header class="ov-sec-head${x.cell ? ' vh' : ''}"><h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${id}">${esc(head(x))}</h3>${x.about && !vsOn() ? `<p class="sec-about">${esc(x.about)}</p>` : ''}</header>` +
         `<div class="tiles">${b.main}</div>` + (b.n ? `<details class="sec-more"><summary>${esc(x.more || 'More in ' + x.name)} (${b.n})</summary><div class="tiles">${b.rest}</div></details>` : '') + '</section>';
     };
-    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + lead() + banner + pickHint() + (selOn() && !vsOn() && !small ? selBlocks(K.selLead) : '') + secList().map((x, i) => sectionHtml(x, i)).join('') +
+    const secs = secList().map((x, i) => [x, sectionHtml(x, i)]), cellTop = secs.filter(([x]) => x.cell).map(y => y[1]).join(''), restSecs = secs.filter(([x]) => !x.cell).map(y => y[1]).join('');
+    // the cell and the nucleus come before the question's own heading (with a selection, after what the selection says)
+    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + (selOn() ? '' : cellTop) + lead() + banner + pickHint() + (selOn() && !vsOn() && !small ? selBlocks(K.selLead) : '') + (selOn() ? cellTop : '') + restSecs +
       (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
   // the tiles of questions that hold for any selection (a module's counts), for a selection too small to test

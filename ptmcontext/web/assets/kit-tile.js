@@ -16,7 +16,7 @@
     let a = Math.log2(Math.max(1 / 64, Math.min(...v))) - 0.1, b = Math.log2(Math.min(64, Math.max(...v))) + 0.1;
     if (b - a < min) { const mid = (a + b) / 2; a = mid - min / 2; b = mid + min / 2; }
     const lo = 2 ** a, hi = 2 ** b, L = x => (Math.log2(Math.min(hi, Math.max(lo, x))) - a) / (b - a);
-    const gap = narrow() ? 0.32 : 0.2, ticks = [1];
+    const gap = 0.3, ticks = [1];           // labels of five characters, 40 px apart on the narrowest track
     NICE.filter(t => t >= lo && t <= hi && t !== 1).sort((p, q) => Math.abs(Math.log2(p)) - Math.abs(Math.log2(q))).forEach(t => { if (ticks.every(u => Math.abs(L(t) - L(u)) >= gap)) ticks.push(t); });
     if (ticks.length < 2) { const far = NICE.filter(t => t >= lo && t <= hi && t !== 1).sort((p, q) => Math.abs(L(q) - L(1)) - Math.abs(L(p) - L(1)))[0]; if (far) ticks.push(far); }
     return { L, ticks: ticks.sort((p, q) => p - q), lo, hi };

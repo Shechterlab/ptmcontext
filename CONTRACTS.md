@@ -722,9 +722,10 @@ columns and rows; the one-file copy inlines the small ones.
 ## The cards front end (website.front)
 
 A block of its own, not a regrouping of `website.overview.sections`: the classic Overview and the cards can hold
-different groupings. `mode: classic` (the default) leaves the site as it was and writes nothing of the block into the
-page; `mode: cards` opens the cards front end, and the page's data then carries `front`, the block as `ptmcontext/front.py`
-resolves it. Without a block (or without `cards:`), the cards derive from the analyses' `section` fields: one card per
+different groupings. `mode: classic` (the default) keeps the classic Overview; `mode: cards` opens the cards front end. Either way the page's
+data carries `front`, the block as `ptmcontext/front.py` resolves it: the classic tiles read its short names, row labels and
+pathways, and its gene-list test. The classic Overview opens with the cell and the nucleus drawn when a section card is
+`{analysis: <website.cell.id>, drawing: true}`. Without a block (or without `cards:`), the cards derive from the analyses' `section` fields: one card per
 section in the order sections first appear, a switch for every question with rows to chart (a fold for a protein-set
 question, an odds ratio for a residue question; a model has none), and the strongest few rows of the first as its home rows.
 
