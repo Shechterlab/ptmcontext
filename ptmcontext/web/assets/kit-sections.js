@@ -155,9 +155,9 @@
   function navRow(aid) {
     const o = order(), i = o.indexOf(aid), prev = o[i - 1], next = o[i + 1];
     const pn = i < 0 ? '' : `<span class="fr-pn">${prev ? `<a href="${esc(K.link('overview', prev))}" rel="prev" title="${esc(short(prev))}">← previous</a>` : '<span class="off">← previous</span>'}` +
-      `<span aria-hidden="true">·</span>${next ? `<a href="${esc(K.link('overview', next))}" rel="next" title="${esc(short(next))}">next →</a>` : '<span class="off">next →</span>'}</span>`;
+      `<span class="fr-dot" aria-hidden="true">·</span>${next ? `<a href="${esc(K.link('overview', next))}" rel="next" title="${esc(short(next))}">next →</a>` : '<span class="off">next →</span>'}</span>`;
     const t = topicOf(aid), rel = t && t.qs.length > 1 ? `<details class="fr-rel"><summary>Related (${t.qs.length - 1})</summary><ul>${t.qs.map(q => (q === aid ? `<li><span aria-current="page">${esc(short(q))}</span></li>` : `<li><a href="${esc(K.link('overview', q))}">${esc(short(q))}</a></li>`)).join('')}</ul></details>` : '';
-    return `<nav class="fr-nav" aria-label="Trail"><a href="${esc(K.link('overview'))}">Home</a><span aria-hidden="true">/</span><span class="fr-here" aria-current="page">${esc(short(aid))}</span>${rel}${pn}</nav>` + (cardNote(aid) ? `<p class="fr-qnote">${esc(cardNote(aid))}</p>` : '');
+    return `<nav class="fr-nav" aria-label="Trail"><a href="${esc(K.link('overview'))}">Home</a><span aria-hidden="true">/</span><span class="fr-here" aria-current="page">${esc(short(aid))}</span>${rel}${pn}</nav>` + (cardNote(aid) ? `<details class="fr-qnote"${wide() || !matchMedia('(max-width: 700px)').matches ? ' open' : ''}><summary>Note</summary>${esc(cardNote(aid))}</details>` : '');
   }
 
   // ---- the left column on a question's page, at a desktop width ---------------------------------------------------------------------

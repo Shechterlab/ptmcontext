@@ -1813,3 +1813,11 @@ body.cards .tabs a.tab { padding-block: 0.45rem 0.5rem; }
   .fr-bar .fr-count { flex: 0 1 auto; min-width: 4.5rem; overflow: hidden; text-overflow: ellipsis; font-size: 0.78rem; }
   .fr-bar .fr-chips { flex: 1 1 3rem; }
 }
+.fr-qnote summary { cursor: pointer; font-weight: 600; color: var(--accent-dark); } .fr-qnote[open] summary { display: none; }
+@media (max-width: 700px) {
+  body.cards #scope:has(> .fr-bar.idle) { display: none; }
+  .fr-nav .fr-pn .fr-dot { display: none; } .fr-nav .fr-pn a { padding: 0 0.4rem; }
+  .fr-qnote { margin: 0.2rem 0; padding: 0.2rem 0.6rem; font-size: 0.82rem; }
+  body.cards .card-head .exp a.exp-btn { display: none; }
+  body.cards .card-head .exp-btn { min-height: 34px; padding: 0 0.55rem; }
+}

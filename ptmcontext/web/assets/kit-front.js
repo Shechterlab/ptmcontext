@@ -179,7 +179,7 @@
   const trail = parts => `<nav class="fr-nav" aria-label="Trail"><a href="${esc(K.link('overview'))}">Home</a>${parts.map(([t, h], i) => `<span aria-hidden="true">/</span>${h && i < parts.length - 1 ? `<a href="${esc(h)}">${esc(t)}</a>` : `<span class="fr-here"${i === parts.length - 1 ? ' aria-current="page"' : ''}>${esc(t)}</span>`}`).join('')}</nav>`;
   // the description and the citation, from the header band's own words
   function ledeHtml() {
-    const w = document.querySelector('.hero .lede-what'), ci = document.querySelector('.hero .lede-cite');
+    const q = x => (document.querySelector ? document.querySelector(x) : null), w = q('.hero .lede-what'), ci = q('.hero .lede-cite');
     return (w ? esc(w.textContent.trim()) : '') + (ci ? ` <span class="fr-cite">${ci.innerHTML}</span>` : '');
   }
   // ---- a card as a figure: the title, rows and credit, for the PDF, SVG and PNG --------------------------------------------------------
@@ -252,7 +252,7 @@
         (x.own ? '<p class="fr-cnote">Whole dataset: your selection was made with this question.</p>' : '') +
         (c.cell ? '<p class="fr-cnote">The cell rows summarise the cell maps (median, adjusted for abundance); they are not a test.</p>' : '') +
         (c.note ? `<p class="fr-cnote fr-cnote-card">${esc(c.note)}</p>` : '') +
-        K.expBar(['pdf', 'svg', 'png', 'tsv'], 'frexp', c.title, qid).replace('class="exp"', 'class="exp fr-exp"') +
+        (K.expBar ? K.expBar(['pdf', 'svg', 'png', 'tsv'], 'frexp', c.title, qid).replace('class="exp"', 'class="exp fr-exp"') : '') +
         (all.length > 1 ? `<details class="fr-qs"><summary>All ${all.length} questions</summary><ul>${all.map(q => `<li><a href="${esc(K.link('overview', q))}">${esc(short(q))}</a></li>`).join('')}</ul></details>` : '') + '</section>';
     }).join('');
     const more = F.more.questions.filter(q => A[q]);

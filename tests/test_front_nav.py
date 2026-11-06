@@ -42,9 +42,9 @@ def test_the_sections_list_names_every_question_of_the_site_file(tmp_path):
     out = _run(tmp_path, index, LOAD + """
       const html = K.front.listHtml(''), order = K.front.order();
       console.log(JSON.stringify({ order, links: [...html.matchAll(/href="#overview\\/([^"]+)"/g)].map(m => m[1]), headings: [...html.matchAll(/<h3>([^<]*)<\\/h3>/g)].map(m => m[1]), view: typeof K.views.sections.render }));""")
-    assert sorted(out['links']) == sorted(ids) and len(out['links']) == len(set(out['links']))     # every question once
-    assert out['order'] == out['links'] and out['view'] == 'function'
-    assert out['headings'][0] == 'Position'                                                       # the card, then More
+    assert sorted(out['order']) == sorted(ids) and len(out['order']) == len(set(out['order']))    # every question in one topic
+    assert set(out['links']) <= set(ids) and out['links'] and out['view'] == 'function'          # the list names the topics' pages
+    assert out['headings'][0] == 'Pages'                                                          # the topics, then the pages
 
 
 def test_a_questions_row_is_home_name_previous_and_next_in_the_menus_order(tmp_path):
