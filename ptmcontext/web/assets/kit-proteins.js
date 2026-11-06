@@ -559,13 +559,14 @@
     const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${(PV.open[id] ?? open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
     const cols = tableCols().filter(c => c.attribute), on = new Set(K.columns.on('protein-sites', cols, cols.filter(c => c.default).map(c => c.id))), shown = cols.filter(c => on.has(c.id));
     const table = `<div class="tbl-card"><table class="tbl stbl stackable"><thead><tr><th>Site</th>${colourAttr ? `<th>${esc(SPECS[colourAttr].label)}</th>` : ''}<th>Window ±7</th>${shown.map(c => `<th>${esc(c.label)}</th>`).join('')}<th><span class="vh">Actions</span></th></tr></thead><tbody>${shownRows(p, rec, shown, null, '')}</tbody></table></div>`;
-    return head +
+    const page = head +
       `<p class="note">No counted ${esc(W.mark)} on ${esc(p.gene || p.acc)}. It has ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} shown here (${esc(K.shown.label())}) but not among the ${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins, and in no count, chart or test.</p>` +
       `<div class="facts"><div class="fact"><b>${int(p.len)}</b><span>Residues</span></div><div class="fact"><b>${int(n)}</b><span>${esc(cap(K.shown.row()))}</span></div></div>` +
       fold('p-map', 'Protein map', `${int(n)} ${esc(K.shown.row())} on ${int(p.len)} aa`, `<div class="card-head"><p class="sub">The protein, its ${esc(W.marks)} shown but not counted (hatched), and rows from live sources. Hover for what an item is, click to pin it.</p>${mapExp(['pdf', 'svg', 'png'])}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
       fold('p-sites', esc(cap(W.marks)), `${int(n)} ${esc(K.shown.row())}`, `<p class="sub">Each with the 15 residues around it; a row opens its card. The tag’s hover gives the tests.</p>${table}`, true) +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
       fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false);
+    return CARDS ? cardsLayout(page, p, null, { cur: 'p-sites', on: {} }) : page;     // the cards layout here too: the map, then the rest under "More about"
   }
 
   // ---- a protein without marks: a light page with its map, the records that name it as a partner, and the proteins
@@ -585,7 +586,7 @@
     const shownP = PV.lightAll ? partners : partners.slice(0, 40);
     const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${(PV.open[id] ?? open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
     const asP = K.card.asPartner(x, p.gene || p.acc, (a, pos) => `${byAcc[a]?.gene || a} ${siteOf(byAcc[a] || { acc: a }, pos)}`);
-    return (K.front ? K.front.trail([[p.gene || p.acc]]) : `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">no ${esc(W.mark)}</span></p>`) + protHead(p, true) +
+    const page = (K.front ? K.front.trail([[p.gene || p.acc]]) : `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">no ${esc(W.mark)}</span></p>`) + protHead(p, true) +
       `<p class="note">No ${esc(W.mark)} on ${esc(p.gene || p.acc)}. None of its sources reports one, which means not reported, not shown to be un${esc(W.marked)}. This page shows its map, the ${esc(W.marks)} of other proteins it is recorded binding, and its partners with ${esc(W.marks)}.</p>` +
       `<div class="facts"><div class="fact"><b>${int(p.len)}</b><span>Residues</span></div><div class="fact"><b>${int(nRes)}</b><span>${esc(cap(W.residues))}</span></div>` +
       (ptab ? `<div class="fact"><b>${int(partners.length)}</b><span>Partners with ${esc(W.marks)}</span></div>` : '') + '</div>' +
@@ -596,6 +597,7 @@
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
       fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) +           // kit-3d.js
       (K.lightFolds || []).map(f => f(p, null, fold)).join('');
+    return CARDS ? cardsLayout(page, p, null, { cur: '', on: {} }) : page;
   }
   // a search for one name that only a protein without marks has (MAPT): Enter opens its light page; the search goes
   const lightFind = (idx, key) => { const u = String(key).toUpperCase(); return idx.find(r => r[0] === u.replace(/-\d+$/, '')) || idx.find(r => String(r[1]).toUpperCase() === u) ||

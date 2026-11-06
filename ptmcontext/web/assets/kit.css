@@ -1662,3 +1662,10 @@ a.pchip:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
 .pwbtn-home { display: block; margin: -0.15rem 0 0.35rem auto; min-height: 2.75rem; }
 .print-only { display: none; }
 @media print { .print-only { display: block; margin: 0 0 0.6rem; font-size: 9pt; color: #333; } .print-only p { margin: 0 0 0.15rem; } }
+
+/* the cards header's chip row above a page other than the home: one row on a phone */
+@media (max-width: 700px) {
+  body.cards #scope .fr-bar { flex-wrap: wrap; gap: 0.3rem 0.5rem; }
+  body.cards #scope .fr-bar .fr-count { flex: 1 1 9rem; min-width: 0; font-size: 0.8rem; }
+  body.cards #scope .fr-bar .fr-tools { margin-left: auto; }
+}
