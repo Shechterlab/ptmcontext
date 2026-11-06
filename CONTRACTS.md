@@ -740,6 +740,20 @@ question, an odds ratio for a residue question; a model has none), and the stron
 | `glossary` | the site's own terms and their hover text (fold, odds ratio and q are the kit's) |
 | `examples` | the example chips: a search, or `{label, query}` (default: `website.examples`) |
 
+What `mode: cards` shows (`kit-front.js`, the Overview's home; every other page, and a question's own page, is the classic
+one, reached from the Tabs and from the **Sections** menu, which lists every page and question under the cards' titles).
+The home is a compact header band, the search with the example chips, a bar with the **Filter** button (`kit-rail.js`: a
+panel beside the page, a full-height drawer on a phone, with "Show N sites" and the lower-confidence switch), the count
+("N sites on M proteins"), the selection as removable chips named by the card's `chip` word, Save, Compare, What sets it
+apart and Copy link, and the cards. A card's rows are the site's own values (`statistics.tsv`, read through the kit): a
+fold for a protein-set question, an odds ratio for a residue question, a thin 95% interval where the row has one, a q dot
+(filled at q ≤ 0.05) and the muted n, on one log scale shared by all the cards; a fold below 1 is "not tested for
+depletion". A selection is tested again in the browser (`K.sel`); the card whose question made the selection, and every
+card while the selection is under the site's minimum (`website.compare`, 10 proteins and 30 sites), keep the whole
+dataset and say so. The address records the filters (`f`, by name), the search (`q`), the test (`m`), the baseline (`vs`,
+`cmp`), the abundance check (`ab=1`, marks on protein-set rows) and the data version the link was made with (`dv`); older
+links keep working.
+
 `ptmc check` (`site.website_problems`) reports an analysis, section, facet, class or question the block names that the
 site does not have, a measure that does not fit the question, a question in two cards, a second card with the same key,
 `cell: true` without `website.cell`, a `home` that is not one of the card's facets, and, with `more: false`, a question no

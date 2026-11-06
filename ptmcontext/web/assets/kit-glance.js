@@ -48,10 +48,17 @@
     (rec.marks || []).forEach(m => out.push(`<line x1="${X(m[0]).toFixed(1)}" x2="${X(m[0]).toFixed(1)}" y1="${y0 - 9}" y2="${y0 - 20}" class="gl-mk"/><circle cx="${X(m[0]).toFixed(1)}" cy="${y0 - 21}" r="2.6" class="gl-mkc"/>`));
     el.innerHTML = out.join('');
   }
-  (K.afterRender ||= []).push(() => {
-    const el = document.querySelector('svg[data-gl-acc]'); if (!el || el.dataset.drawn) return;
+  // the example's map is drawn when its fold is opened: the protein's file is not read for a fold that stays closed
+  const load = el => {
+    if (!el || el.dataset.drawn) return;
     const p = (D.proteins || []).find(x => x[0] === el.dataset.glAcc); el.dataset.drawn = '1';
     K.loadProtein(el.dataset.glAcc).then(rec => { if (el.isConnected) drawMap(el, rec, p[3] || 1); }, () => {});
+  };
+  (K.afterRender ||= []).push(() => {
+    const el = document.querySelector('svg[data-gl-acc]'); if (!el || el.dataset.drawn) return;
+    const det = el.closest('details');
+    if (det && !det.open) det.addEventListener('toggle', () => { if (det.open) load(det.querySelector('svg[data-gl-acc]')); }, { once: true });
+    else load(el);
   });
   // the big number, one bar and the findings; the example protein's map stays behind "Show an example" (a closed fold)
   K.glance = { html: () => { const a = shareHtml(), b = findingsHtml(), c = proteinHtml();

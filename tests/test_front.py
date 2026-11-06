@@ -29,12 +29,12 @@ def _site(tmp_path, **front):
 
 
 def test_the_shipped_sites_agree_with_their_front_blocks():
-    for name, has in (('methylarginine', True), ('yeast_phospho', False)):
+    for name in ('methylarginine', 'yeast_phospho'):
         site = S.load_site(REPO / 'sites' / f'{name}.yaml')
-        assert ('front' in site['website']) is has
+        assert ('front' in site['website'])                                     # both sites say their mode
         assert S.website_problems(site) == []
         r = resolve(site)
-        assert r['mode'] == 'classic'                                           # stage 0: nothing visible changes
+        assert r['mode'] == 'cards'                                             # the shipped sites open with the cards (classic: set the mode back)
         placed = [q for c in r['cards'] for q in c['questions']] + r['more']['questions']
         assert sorted(placed) == sorted(question_ids(site)) and len(placed) == len(set(placed))   # every question once
 

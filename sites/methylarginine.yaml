@@ -1214,7 +1214,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
   examples: [FUS, TAF15 EWSR1 FUS, "disease:als", FUS R216, "motif:RGG"]   # the first three are the chips under the search box
   front:                   # the cards front end (CONTRACTS.md, 'The cards front end'); mode: classic keeps the classic Overview
-    mode: classic
+    mode: cards
     rows: 5
     cards:
       - key: disease

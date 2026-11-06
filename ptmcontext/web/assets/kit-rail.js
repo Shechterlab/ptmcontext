@@ -231,7 +231,7 @@
     if (CARDS) {
       R.tab = 'filters';
       el.setAttribute('aria-labelledby', 'rail-title');
-      el.innerHTML = `<div class="rail-head"><h2 id="rail-title" tabindex="-1">Filters</h2>${K.variantSwitch ? K.variantSwitch() : ''}<button type="button" class="btn small" data-rail-close>Close</button></div>` +
+      el.innerHTML = !open ? '' : `<div class="rail-head"><h2 id="rail-title" tabindex="-1">Filters</h2>${K.variantSwitch ? K.variantSwitch() : ''}<button type="button" class="btn small" data-rail-close>Close</button></div>` +
         `<div class="rail-body">${filtersTab()}</div><div class="rail-show"><button type="button" class="btn accent" data-rail-close>Show ${int(nMarks())} ${esc(nMarks() === 1 ? W.mark : W.marks)}</button></div>`;
     } else
     el.innerHTML = `<div class="rail-head"><span class="seg" role="group"><button type="button" data-rail-tab="sections" aria-pressed="${R.tab === 'sections'}">☰ Sections</button>` +
@@ -247,6 +247,7 @@
     }
     else if (open && !wasOpen) (el.querySelector('[data-rail-tab][aria-pressed="true"]') || el.querySelector('#rail-title'))?.focus();
     else if (!open && wasOpen) (R.opener && document.contains(R.opener) ? R.opener : document.querySelector('.fr-filter') || document.querySelector('[data-rail-open="filters"]'))?.focus();
+    if (CARDS && open && (!document.activeElement || document.activeElement === document.body)) el.querySelector('#rail-title')?.focus({ preventScroll: true });    // the panel was drawn again (its data arrived) under the reader's focus
   }
   addEventListener('resize', () => { setRailWidth(); if (document.body.classList.contains('rail-pinned') !== pinned()) rail(); });
   // the width grip: drag (or arrow keys) to resize the pinned sidebar; double-click for the automatic width
