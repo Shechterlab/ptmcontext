@@ -7622,6 +7622,13 @@
                   "off"
                 ]
               },
+              "cards_default": {
+                "enum": [
+                  "on",
+                  "off"
+                ],
+                "description": "the row's default on the cards front end, where it differs from default"
+              },
               "mark": {
                 "enum": [
                   "tick",

@@ -2500,6 +2500,7 @@ website:                  # the look and words of the website (ptmc web); layout
           help: "Families and homologous superfamilies from InterPro 108.0: each entry's member-database hits merged"
           after: uni_dom
           default: "off"
+          cards_default: "on"
           from:
             role: interpro_entries
             columns: {accession: canonical_UniProtAC, start: fragment_start, end: fragment_end, label: interpro_name, ref: interpro_accession, class: interpro_type}
@@ -2593,6 +2594,7 @@ website:                  # the look and words of the website (ptmc web); layout
           help: "IntAct features of interaction participants: binding regions mapped for a partner, and mutations that change an interaction"
           after: pdb
           default: "off"
+          cards_default: "on"
           from:
             role: residue_evidence
             columns: {accession: uniprot_accession, start: start, end: end, class: evidence_type, value: n_partners, sources: sources}
