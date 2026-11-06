@@ -2115,6 +2115,14 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: g-binding, title: Binding and contacts, folds: [p-cc, p-ix, p-na]}
       - {id: g-context, title: "Context: location, condensates, disease, cancer", folds: [p-cond, p-dis, p-depmap]}
       - {id: g-structure, title: Structure and sequence, folds: [p-struct, p-regions, p-seq]}
+    headings:              # the cards front end's folds under labelled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
+      - {id: h-ix, title: Interactions, folds: [p-cc, p-na]}
+      - {id: h-sites, title: Sites and structure, folds: [p-score, p-pert, p-exp]}
+      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cons]}
+      - {id: h-seq, title: Sequence features, folds: [p-cluster, p-ptm, p-seq]}
+    context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
+      p-cond: [condensate_proteome, hpa_location]
+      p-dis: [disease_family]
     open: [p-map, p-sites, p-cons, p-ix]   # the explorer's folds are all shut; here the map and the sites, and the orthologues and the network once they have data
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
       location:
@@ -2122,6 +2130,7 @@ website:                  # the look and words of the website (ptmc web); layout
         summary: Human Protein Atlas locations, where the subcellular maps place it, and CD-CODE condensates
         hpa: {table: hpa, analysis: hpa_location, title: Subcellular location, source: Human Protein Atlas 25.1, url: "https://www.proteinatlas.org/search/{acc}", unsure: Uncertain}
         maps: true
+        rna_maps: [eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]
         condensates:
           members: condensate_members
           names: condensates
@@ -2289,10 +2298,18 @@ website:                  # the look and words of the website (ptmc web); layout
          label: in RNA-bound fragments or peptides, kind: Measured in cells · not a structural contact, glyph: squiggle, opens: p-sites,
          tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RBR-ID+ peptide. This is where RNA binds in cells, not a structural contact: the RNA and DNA interactions section counts the sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
       - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
-      - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds}
+      - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds, hide_in: cards}
     card:                  # the site card: its blocks, each reading an attribute or a table above (a block without its data is absent)
       labels: {states: Methylation state, calls: PRMT perturbation, changes: In cancers, reported: Reported by}
-      hide: [perturbation, nucleic_acid, nucleic_acid_type]   # attributes the blocks show in full (calls, bound sequences)
+      hide: [perturbation, nucleic_acid, nucleic_acid_type, n_studies, partner_class]   # attributes the blocks show in full (calls, bound sequences; the study count the Reported by list gives; the partner classes the Writer and reader block gives)
+      hide_questions: [cancer_change]        # questions whose row repeats a block (the changes in cancers, under Variants)
+      primary_questions: [motif, disorder, domain_class, idr_charge]    # the question rows shown at once; the rest are behind "All site features"
+      merge:                                 # the same question asked at several windows: one row, equal answers once
+        - label: Aromatic residues nearby
+          analyses: [sticker_context_3, sticker_context_5, sticker_context_3_idr, sticker_context_5_idr]
+          parts: ["±3", "±5", "±3 in IDRs", "±5 in IDRs"]
+          strip: " within ±\\d+$"
+          primary: true
       evidence:            # interaction evidence: a badge, tags, PDB entries, bound RNA and DNA, crosslinks near it, the whole protein
         title: Interaction evidence
         status: interaction                  # the category attribute the badge shows
@@ -2520,6 +2537,7 @@ website:                  # the look and words of the website (ptmc web); layout
           help: "Families and homologous superfamilies from InterPro 108.0: each entry's member-database hits merged"
           after: uni_dom
           default: "off"
+          cards_default: "on"
           from:
             role: interpro_entries
             columns: {accession: canonical_UniProtAC, start: fragment_start, end: fragment_end, label: interpro_name, ref: interpro_accession, class: interpro_type}
@@ -2613,6 +2631,7 @@ website:                  # the look and words of the website (ptmc web); layout
           help: "IntAct features of interaction participants: binding regions mapped for a partner, and mutations that change an interaction"
           after: pdb
           default: "off"
+          cards_default: "on"
           from:
             role: residue_evidence
             columns: {accession: uniprot_accession, start: start, end: end, class: evidence_type, value: n_partners, sources: sources}

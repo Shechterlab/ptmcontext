@@ -175,6 +175,8 @@
     const el = document.querySelector('#p-na .pfold-body'); if (!el || !LAST) return;
     el.innerHTML = bodyHtml(LAST.p, LAST.rec, LAST.M);
   };
+  K.prnaModel = (p, rec, tb) => model(p, rec, tb);       // the pictures in the protein page's fold headers (kit-pfolds.js)
+  K.prnaWord = word;
   K.clicks.push(
     ['[data-prna-tab]', el => { UI.kind = el.dataset.prnaTab; repaint(); }],
     ['[data-prna-more]', el => { const k = el.dataset.prnaMore; UI.more[k] = !UI.more[k]; repaint(); }],

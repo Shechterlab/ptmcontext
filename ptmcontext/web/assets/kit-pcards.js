@@ -20,6 +20,7 @@
   const qf = q => (q >= 0.01 ? q.toFixed(2) : K.fq(q));
   const ext = (href, text, title) => `<a class="ext" href="${esc(href)}" target="_blank" rel="noopener"${title ? ` title="${esc(title)}"` : ''}>${text}</a>`;
   const CUR = { p: null, rec: null };
+  const meters1 = (label, v, text) => (K.pfolds ? K.pfolds.meters([{ label, v, text }]) : '');
   const word = (obj, k) => (obj || {})[k] ?? String(k).replace(/_/g, ' ');
 
   // ---- the protein's tables, asked once; every card is painted again when they arrive ---------------------------------
@@ -95,6 +96,18 @@
       `<div class="tbl-wrap"><table class="pc-maps"><tbody>${ms.map(m => `<tr><th scope="row">${esc(m.name)}<br><span class="muted small">${esc([m.method, m.cells].filter(Boolean).join(', '))}</span></th>` +
         `<td>${m.sets.length ? esc(m.sets.join(' · ')) : m.placed ? '<span class="muted">placed, in none of its compartments</span>' : '<span class="muted">not placed by this map</span>'}</td></tr>`).join('')}</tbody></table></div>` + K.cell.drawings(p);
   }
+  // where the RNAs the protein binds gather: for each map of the bound RNAs (protein-set questions), the compartments of the protein's own sets, each with the dataset's test of it
+  function rnaMapsHtml(cfg, p) {
+    const sd = K.sel.data(), out = [];
+    for (const aid of cfg.rna_maps) {
+      const a = (D.analyses || []).find(x => x.id === aid), ps = sd.protein_sets?.[aid]; if (!a || !ps) continue;
+      const names = ps.sets.map(s => s[0]).filter(s => K.sel.setHas(aid, s, p.i));
+      const lab = s => (a.labels || {})[s] || s.replace(/_/g, ' ');
+      const fold = s => { const rs = D.rows.filter(r => r.analysis === aid && r.category === s && r.dir === 'more'), r = rs.find(x => x.method === 'enricher') || rs[0]; return r ? ` <span class="muted small">(${K.fxn(r.eff)}× across the dataset)</span>` : ''; };
+      out.push(`<tr><th scope="row">${esc(a.title)}</th><td>${names.length ? names.map(s => esc(lab(s)) + fold(s)).join(' · ') : '<span class="muted">none of its map’s compartments</span>'}</td></tr>`);
+    }
+    return out.length ? `<h4 class="sub-h">Where the RNAs ${esc(gene(p))} binds gather</h4><p class="sub">Its eCLIP targets, placed by each map of RNA location; a compartment is listed when the targets gather in it.</p><div class="tbl-wrap"><table class="pc-maps"><tbody>${out.join('')}</tbody></table></div>` : '';
+  }
   function condensatesHtml(cfg, p, rec, tb) {
     const c = cfg.condensates, top = c.max_score || 5, names = LK[c.names] || {}, have = c.analysis ? sets(c.analysis) : null;
     const rs = rows(tb, c.members).map(r => { const id = r.condensate, nm = names[id] || {}; return { id, name: nm.name || id, type: nm.condensate_type || '', score: num(r.score) ?? -1, roles: list(r.roles), ev: list(r.evidence).sort((x, y) => Object.keys(c.evidence || {}).indexOf(x) - Object.keys(c.evidence || {}).indexOf(y)), pm: list(String(r.pmids || '').replace(/[,\s]+/g, '; ')) }; })
@@ -119,13 +132,15 @@
     let html = '', sum = [];
     if (cfg.hpa) { const h = hpaHtml(cfg, p, tb); html += h.html; sum.push(h.sum.length ? sumList(h.sum, 2) : ''); }
     if (cfg.maps) html += mapsHtml(p);
+    if (cfg.rna_maps?.length && K.sel.data()) html += rnaMapsHtml(cfg, p);
     if (cfg.condensates) {
       const c = condensatesHtml(cfg, p, rec, tb); html += c.html;
       const noun = (cfg.condensates.source || '').split(' ')[0];
       sum.push(c.n ? `${plural(c.n, `${noun} condensate`.trim())}${c.best && c.best.score > 0 ? `, most confident ${c.best.name} (${c.best.score} of ${cfg.condensates.max_score || 5} stars)` : ''}` : `no ${noun} condensate`.replace('  ', ' '));
     }
     bits.push(...sum.filter(Boolean));
-    return { html, sum: bits.join(' · '), wait: !!(cfg.maps && !K.sel.data()) };
+    const nLoc = cfg.hpa ? (rows(tb, cfg.hpa.table).filter(r => r.reliability !== cfg.hpa.unsure)).length : 0, nCond = cfg.condensates ? rows(tb, cfg.condensates.members).length : 0;
+    return { html, sum: bits.join(' · '), wait: !!(cfg.maps && !K.sel.data()), pic: K.pfolds && (nLoc || nCond) ? K.pfolds.bigN([[int(nCond), nCond === 1 ? 'condensate' : 'condensates'], [int(nLoc), nLoc === 1 ? 'location' : 'locations']]) : '' };
   }
 
   // ---- Cancer cell lines and tumours ----------------------------------------------------------------------------------
@@ -172,7 +187,8 @@
       (cfg.note ? `<p class="note small">${esc(cfg.note)}</p>` : '');
     const first = ch[0], sum = [r ? (/^true$/i.test(r.common_essential || '') ? 'commonly essential' : `${int(num(r.dependent))} of ${int(num(r.lines))} lines depend on it`) : 'not screened',
       ch.length ? `${nSites[0] ? plural(nSites[0], 'site') : 'no site'} changed in ${(first.unit || ['', 'records'])[1]}` : ''].filter(Boolean).join(' · ');
-    return { html, sum };
+    const depPic = r && !/^true$/i.test(r.common_essential || '') && num(r.lines) ? meters1('Dependent', num(r.dependent) / num(r.lines), `${int(num(r.dependent))} of ${int(num(r.lines))} lines`) : '';
+    return { html, sum, pic: depPic };
   }
 
   // ---- inhibitors, knockouts and knockdowns of the mark's enzymes: a site against each experiment, a mark per call -----------------------
@@ -199,7 +215,7 @@
       sites.map(pos => `<tr><th scope="row">${siteLink(p, rec, pos)}</th>${used.map(c => { const x = cell.get(`${pos}|${c.key}`); return x ? `<td title="${esc(x.tip)}"><span class="trend c-${esc(x.call)}"><b>${esc(mk(x.call))}</b></span></td>` : '<td class="muted" title="Not quantified">&nbsp;</td>'; }).join('')}</tr>`).join('') +
       `</tbody></table></div><p class="pc-key">${Object.entries(marks).map(([c, m]) => `<span><span class="trend c-${esc(c)}"><b>${esc(m)}</b></span> ${esc(word(words, c))}</span>`).join('')}<span>○ no significant change</span><span>blank: not quantified · hover a mark for its numbers</span></p>` +
       (cfg.note ? `<p class="note small">${esc(cfg.note)}</p>` : '');
-    return { html, sum: `${int(down)} of ${int(sites.length)} quantified sites decreased in at least one` };
+    return { html, sum: `${int(down)} of ${int(sites.length)} quantified sites decreased in at least one`, pic: meters1('Decreased', down / sites.length, `${int(down)} of ${int(sites.length)} sites`) };
   }
 
   // ---- Experiments on its methylation ----------------------------------------------------------------------------------
@@ -229,7 +245,9 @@
       (win != null && sites != null ? `<dt>Top cluster window <span class="muted small">(lowest q against a null drawn from its other ${esc(W.residues)}, not necessarily the densest)</span></dt><dd>${int(sites)} sites in ${int(win)} aa (${esc(range)}), log2 obs/null ${l2 > 0 ? '+' : ''}${l2 == null ? '–' : l2.toFixed(2)}, q ${q == null ? '–' : qf(q)}</dd>` : '') +
       (r.architecture ? `<dt>Architecture</dt><dd>${esc(r.architecture)}${clusters.length ? `<br><span class="muted small">clusters ${clusters.map(c => `${c[0]}–${c[c.length - 1]} (${c.length})`).join(', ')}</span>` : ''}</dd>` : '') + '</dl>' +
       (cfg.note ? `<p class="note small">${esc(cfg.note)}</p>` : '');
-    return { html, sum: [sp != null ? `median spacing ${int(sp)} aa` : '', win != null && sites != null ? `top window ${int(sites)} sites in ${int(win)} aa${q != null ? `, q ${qf(q)}${q > PADJ ? ' (not significant)' : ''}` : ''}` : ''].filter(Boolean).join(' · ') };
+    const len0 = p.len || (rec.seq || '').length || 1, bw = win != null && r.window_start ? [{ a: +r.window_start, b: +r.window_end, cls: 'fp-u fp-u1', tip: 'top window' }] : [];
+    const pic = K.pfolds ? K.pfolds.track(len0, [{ label: 'Clusters', items: [...clusters.map(c => ({ a: c[0], b: c[c.length - 1], cls: 'fp-u fp-u0' })), ...bw] }, { label: 'Sites', items: rec.marks.map(m => ({ a: m[0], dot: true, cls: 'fp-site' })) }]) : '';
+    return { pic, html, sum: [sp != null ? `median spacing ${int(sp)} aa` : '', win != null && sites != null ? `top window ${int(sites)} sites in ${int(win)} aa${q != null ? `, q ${qf(q)}${q > PADJ ? ' (not significant)' : ''}` : ''}` : ''].filter(Boolean).join(' · ') };
   }
 
   // ---- Other PTMs ------------------------------------------------------------------------------------------------------
@@ -244,7 +262,8 @@
         (near ? `<p class="small">${nr.length ? `${plural(nr.length, 'site')} within ${near} aa of a ${esc(W.mark)}` : `none within ${near} aa of a ${esc(W.mark)}`}${nr.length ? `: ` + nr.slice(0, 12).map(r => { const m = marks.reduce((a, b) => (Math.abs(b - r.start) < Math.abs(a - r.start) ? b : a)); return `<span class="tag" title="${esc(r.source || '')}">${esc(siteName(rec, r.start))} · ${esc(siteName(rec, m))}</span>`; }).join(' ') + (nr.length > 12 ? ` +${nr.length - 12}` : '') : ''}</p>` : '') + '</div>' };
     });
     const nNear = body.reduce((s, b) => s + b.near.length, 0);
-    return { html: `<p class="sub">${esc(cfg.sub || '')}</p>` + body.map(b => b.html).join('') + (cfg.note ? `<p class="note small">${esc(cfg.note)}</p>` : ''),
+    const len1 = p.len || (rec.seq || '').length || 1;
+    return { pic: K.pfolds ? K.pfolds.track(len1, [...body.slice(0, 2).map(b => ({ label: b.label.slice(0, 9), items: rs.filter(r => r.kind === b.k).map(r => ({ a: r.start, dot: true, cls: 'fp-ptm' })) })), { label: 'Sites', items: rec.marks.map(m => ({ a: m[0], dot: true, cls: 'fp-site' })) }]) : '', html: `<p class="sub">${esc(cfg.sub || '')}</p>` + body.map(b => b.html).join('') + (cfg.note ? `<p class="note small">${esc(cfg.note)}</p>` : ''),
       sum: body.map(b => `${b.label} ${int(b.n)}`).join(' · ') + (near && nNear ? ` · ${int(nNear)} within ${near} aa of a ${W.mark}` : '') };
   }
 
@@ -281,6 +300,7 @@
     }
     const fam = famNames(c, p), sumEl = document.querySelector(`[data-pc-sum="live${el.dataset.pcLive}"]`);
     if (sumEl && u !== undefined) sumEl.textContent = [u ? (u.diseases.length ? 'UniProt: ' + sumList(u.diseases.map(d => d.acronym || d.name), 2) : 'none curated in UniProt') : '', K.sel.data() ? (fam.length ? 'families: ' + sumList(fam, 2) : 'in no disease family') : ''].filter(Boolean).join(' · ') || c.summary || '';
+    const fold0 = el.closest('details'); if (fold0?.id && K.sel.data()) K.pfolds?.set(fold0.id, fam.length ? K.pfolds.bigN([[int(fam.length), fam.length === 1 ? 'disease family' : 'disease families']]) : '');
     return { html, wait: u === undefined || (ot && u && u.ensg[0] && OT[u.ensg[0]] === undefined) };
   }
   const liveAt = c => LIVE.findIndex(x => x.title === c.title);        // the page's card is a copy of the site's entry
@@ -333,6 +353,7 @@
       const fold = el.closest('details');
       if (r.hide != null && fold) fold.hidden = !!r.hide;
       const s = document.querySelector(`[data-pc-sum="${kind}"]`); if (s && r.sum != null && kind !== 'live') s.textContent = r.sum;
+      if (fold?.id && r.pic != null) K.pfolds?.set(fold.id, r.pic);
     });
   }
   (K.afterRender ||= []).push(paintAll);

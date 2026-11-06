@@ -92,11 +92,11 @@
   // ---- the cards front end's protein page: the map, then Network, 3D and Sites as one block, the other cards folded below ----
   const CARDS = D.front?.mode === 'cards';
   const narrow = () => matchMedia('(max-width: 700px)').matches;
-  const TABS = [['p-ix', 'Network'], ['p-struct', '3D'], ['p-sites', 'Sites']];
+  const TABS = [['p-sites', 'Sites'], ['p-ix', 'Interactions'], ['p-struct', '3D']];
   // the block shows one of its sections: the one the reader opened last (or an address named), else the network when the protein has
   // partners in the site's table, else the sites
   function tabState() {
-    const ids = TABS.map(t => t[0]), asked = ids.filter(id => PV.open[id] === true), dflt = IXP && hasPartners() ? 'p-ix' : 'p-sites';
+    const ids = TABS.map(t => t[0]), asked = ids.filter(id => PV.open[id] === true), dflt = 'p-sites';
     const cur = asked.length ? asked[asked.length - 1] : dflt;
     return { cur, on: Object.fromEntries(ids.map(id => [id, id === cur])) };
   }
@@ -106,7 +106,7 @@
     const take = id => { const k = parts.findIndex(h => idOf(h) === id); return k < 0 ? '' : parts.splice(k, 1)[0]; };
     const map = take('p-map'), panes = TABS.map(([id, t]) => [id, t, take(id)]).filter(x => x[2]);
     const bar = `<div class="ptabs" role="group" aria-label="${esc(p.gene || p.acc)}: network, 3D structure and sites">${panes.map(([id, t]) => `<button type="button" class="ptab" data-ptab="${id}" aria-pressed="${id === tabs.cur}">${esc(t)}</button>`).join('')}</div>`;
-    const more = arrangeFolds(parts.join(''), true);
+    const more = K.pfoldsLayout && PRO.headings?.length ? K.pfoldsLayout(arrangeFolds(parts.join(''), true)) : arrangeFolds(parts.join(''), true);
     return lead + map + (panes.length ? `<div class="pview">${bar}${panes.map(x => x[2]).join('')}</div>` : '') +
       (more ? `<h2 class="p-more">More about ${esc(p.gene || p.acc)}</h2>${more}` : '');
   }
@@ -151,6 +151,7 @@
   });
   addEventListener('resize', balanceTiles);
   // the map's downloads, with the export size and resolution folded into the same bar
+  K.protState = () => ({ acc: PV.acc, p: byAcc[PV.acc] || PV.lightP, rec: PV.rec, tb: PV.tb, af: PV.af, siteName: pos => siteOf(byAcc[PV.acc] || PV.lightP || { acc: PV.acc }, pos) });
   const mapExp = kinds => K.expBar(kinds, 'mexp', 'the map', 'sources').replace(/<\/div>$/, (K.map?.exportOpts?.() || '') + '</div>');
   function drawMap() { const el = document.getElementById('pmap'); if (el && PV.rec) K.map.render(el, mapCtx()); }
   const site = pos => siteOf(byAcc[PV.acc] || PV.lightP || { acc: PV.acc }, pos);
@@ -250,7 +251,12 @@
   const nearestOf = (rec, pos) => { const o = rec.marks.filter(x => x[0] !== pos).map(x => x[0]); return o.length ? o.reduce((b, x) => (Math.abs(x - pos) < Math.abs(b - pos) ? x : b)) : null; };
   const plddtAt = (p, pos) => (PV.af?.plddt && PV.af.plddt.length === p.len ? PV.af.plddt[pos - 1] : null);
   const plddtHtml = (p, pos) => { const v = plddtAt(p, pos); return v == null ? '<span class="muted">–</span>' : `<span class="pl-sq" style="--c:${afColour(v)}"></span>${Number(v).toFixed(0)}`; };
-  const flagTags = (aid, v) => (v ? `<div class="tags">${v.split(';').map(c => `<span class="tag" title="${esc(help(aid, c))}">${esc(label(aid, c))}</span>`).join('')}</div>` : '');
+  // a flag listed twice (one per bound region) is one tag with its count
+  const flagTags = (aid, v) => {
+    if (!v) return '';
+    const n = new Map(); v.split(';').forEach(c => n.set(c, (n.get(c) || 0) + 1));
+    return `<div class="tags">${[...n].map(([c, k]) => `<span class="tag" title="${esc(help(aid, c))}">${esc(label(aid, c))}${k > 1 ? ` ×${k}` : ''}</span>`).join('')}</div>`;
+  };
   // the card of a mark shown and counted nowhere (K.shown): its window, attributes and tag, said to be not counted
   function shownCard(p, rec, m) {
     const kv = (dt, dd, tip) => (dd ? `<div><dt${tip ? ` title="${esc(tip)}"` : ''}>${dt}</dt><dd>${dd}</dd></div>` : '');
@@ -262,6 +268,15 @@
       `<p class="note small">Shown only: not one of the ${int(D.counts.marks)} ${esc(W.marks)} this site counts, and in no count, chart or test.</p><dl class="sc-kv">${rows}</dl></section>`;
   }
   const shownAt = (rec, pos) => (rec.shown || []).find(x => x[0] === pos);
+  // opening an address with a site lands on the card's header (under the sticky bar); the page above it settles for a few seconds
+  // (UniProt's text, the map), so the landing is repeated until the reader scrolls
+  let moved = false;
+  ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(ev => addEventListener(ev, () => { moved = true; }, { passive: true }));
+  function landOnCard() {
+    moved = false;
+    const go = () => { const t = document.getElementById('site-card'); if (!t) return; const bar = document.querySelector('.toolbar, .app-bar, header.top'); const h = bar ? bar.getBoundingClientRect().bottom : 0; scrollTo(0, Math.max(0, t.getBoundingClientRect().top + scrollY - Math.max(0, h) - 8)); };
+    requestAnimationFrame(go); [700, 1800, 3500].forEach(ms => setTimeout(() => { if (!moved && PV.site) go(); }, ms));
+  }
   function siteCard(p, rec) {
     const sm = !rec.marks.some(x => x[0] === PV.site) && K.shown?.on ? shownAt(rec, PV.site) : null; if (sm) return shownCard(p, rec, sm);
     const m = rec.marks.find(x => x[0] === PV.site); if (!m) return '';
@@ -281,17 +296,40 @@
     const ready = !!PV.tb, wait = '<span class="muted">loading…</span>';
     const tagged = new Set(K.shown?.on ? [...(K.shown.cfg.tests?.attributes || []), ...(K.shown.cfg.also || [])] : []);
     const rest = shownAttrs(m).filter(n => !USED.has(n) && !tagged.has(n));
-    const siteRows = kv('Window ±7', `<span class="mono">${winHtml(m[1])}</span>`) +
-      markClasses(m).map(([aid, v]) => kv(esc(A[aid]?.title || aid), A[aid]?.shape === 'flags' ? (flagTags(aid, v) || '<span class="muted">none</span>') : `<span title="${esc(help(aid, v))}">${esc(classText(aid, v))}</span>`)).join('') +
+    // the question rows: one row for the questions a merge names (the same question at several windows), none for those hidden
+    // (they repeat a block above), the ones with nothing to say as one line, and the less used ones behind "All site features"
+    const MG = CC.merge || [], HQ = new Set(CC.hide_questions || []), PQ = CC.primary_questions ? new Set(CC.primary_questions) : null;
+    const used = new Set(MG.flatMap(g => g.analyses || [])), qv = Object.fromEntries(markClasses(m));
+    const merged = g => {
+      const parts = (g.analyses || []).map((aid, i) => ({ aid, part: (g.parts || [])[i] || '', v: qv[aid] })).filter(x => x.v && A[x.aid]);
+      if (!parts.length) return '';
+      const strip = g.strip ? new RegExp(g.strip) : null, by = new Map();
+      parts.forEach(x => { const t = classText(x.aid, x.v).replace(strip || /$^/, '').trim(); if (!by.has(t)) by.set(t, []); by.get(t).push(x); });
+      const lines = [...by].map(([t, xs]) => `<span title="${esc(xs.map(x => (A[x.aid]?.title || x.aid) + ': ' + classText(x.aid, x.v)).join('\n'))}">${esc(t)}${by.size === 1 && xs.length === parts.length ? '' : ''} <span class="muted small">(${xs.map(x => esc(x.part)).filter(Boolean).join(', ')})</span></span>`);
+      return kv(esc(g.label), lines.join('<br>'));
+    };
+    const qrows = [], qmore = [], nones = [];
+    markClasses(m).forEach(([aid, v]) => {
+      if (used.has(aid) || HQ.has(aid)) return;
+      const isFlags = A[aid]?.shape === 'flags';
+      if (isFlags && !v) { nones.push(A[aid]?.title || aid); return; }
+      const row = kv(esc(A[aid]?.title || aid), isFlags ? flagTags(aid, v) : `<span title="${esc(help(aid, v))}">${esc(classText(aid, v))}</span>`);
+      (!PQ || PQ.has(aid) ? qrows : qmore).push(row);
+    });
+    MG.forEach(g => { const r = merged(g); if (r) (!PQ || PQ.has(g.analyses[0]) || (g.primary) ? qrows : qmore).push(r); });
+    const amv = PV.af?.am?.get?.(m[0]), amCls = v => (v >= 0.564 ? 'likely pathogenic' : v >= 0.34 ? 'ambiguous' : 'likely benign');
+    const afRow = pl != null || amv ? kv('AlphaFold', `${pl != null ? `<span class="pl-sq" style="--c:${afColour(pl)}"></span>pLDDT ${Number(pl).toFixed(0)}` : ''}${amv?.n ? `${pl != null ? ' · ' : ''}<span title="Mean AlphaMissense pathogenicity of the ${amv.n} substitutions of this residue">AlphaMissense ${(amv.sum / amv.n).toFixed(2)} <span class="muted">(${amCls(amv.sum / amv.n)})</span></span>` : ''}`, 'AlphaFold DB: the model’s confidence at this residue and the mean AlphaMissense score of its substitutions') : '';
+    const siteRows = kv('Window ±7', `<span class="mono">${winHtml(m[1])}</span>`) + qrows.join('') + afRow +
       ((CC.states || []).length ? kv(esc(CL_WORDS.states), ready ? K.card.states(c) : wait) : '') +
       (near != null ? kv(`Nearest other ${esc(W.mark)}`, `${esc(siteOf(p, near))}, ${int(Math.abs(near - m[0]))} aa away`) : '') +
       (CC.calls ? kv(esc(CL_WORDS.calls), ready ? K.card.calls(c) : wait) : '') +
-      ((CC.changes || []).length && !CARDS ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait) : '') +
-      rest.map(n => kv(esc(SPECS[n].label), attrHtml(m, n, true), SPECS[n].help)).join('') +
-      (K.shown?.on && K.shown.counted(m) ? kv(esc(cap(K.shown.label())), esc(K.shown.tip(m, false))) : '') +
-      (pl != null ? kv('AlphaFold confidence', `pLDDT ${Number(pl).toFixed(1)} <span class="muted">(model v${esc(PV.af.version)})</span>`) : '') +
-      kv(`UniProt at ${esc(siteOf(p, m[0]))}`, PV.uniJson ? (uniShow.length ? uniShow.map(featLine).join('<br>') : '<span class="muted">no feature at this residue</span>') + ` <span class="muted">· <a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry#ptm_processing">UniProt ${esc(p.acc)}</a>, read live</span>` : '<span class="muted">asking UniProt…</span>') +
-      (CC.cite?.attribute && SPECS[CC.cite.attribute] ? kv(esc(CL_WORDS.reported), K.card.reportedBy(c)) : '');
+      ((CC.changes || []).length && !CARDS ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait) : '');
+    const uniRow = kv(`UniProt at ${esc(siteOf(p, m[0]))}`, PV.uniJson ? (uniShow.length ? uniShow.map(featLine).join('<br>') : '<span class="muted">no feature at this residue</span>') + ` <span class="muted">· <a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry#ptm_processing">UniProt ${esc(p.acc)}</a>, read live</span>` : '<span class="muted">asking UniProt…</span>');
+    const citeRow = CC.cite?.attribute && SPECS[CC.cite.attribute] ? kv(esc(CL_WORDS.reported), K.card.reportedBy(c)) : '';
+    const restRows = rest.map(n => kv(esc(SPECS[n].label), attrHtml(m, n, true), SPECS[n].help)).join('') + (K.shown?.on && K.shown.counted(m) ? kv(esc(cap(K.shown.label())), esc(K.shown.tip(m, false))) : '');
+    const nMore = qmore.length + (nones.length ? 1 : 0);
+    const siteHtml = CARDS ? `<dl class="sc-kv">${siteRows}${citeRow}</dl><details class="sc-more"><summary>All site features <span class="muted">· ${int(nMore + (restRows ? 1 : 0) + 1)} more</span></summary><dl class="sc-kv">${qmore.join('')}${nones.length ? kv('Nothing recorded', `<span class="muted">${esc(nones.join(' · '))}</span>`) : ''}${restRows}${uniRow}</dl></details>`
+      : `<dl class="sc-kv">${siteRows}${qmore.join('')}${restRows}${uniRow}${citeRow}</dl>`;
     const ev = ready ? K.card.evidenceBlock(c) : '', recs = ready ? K.card.recordsBlock(c) : '', wr = ready ? K.card.writerBlock(c) : '';
     const hasEvRow = ready && (K.card.has(CC.sources?.table) || (CC.tables || []).some(x => K.card.has(x.table)) || (CC.calls?.tables || []).some(K.card.has));
     const varBlock = !CARDS ? '' : `<section class="sc-vars" aria-label="Variants at ${esc(siteOf(p, m[0]))}"><h4>Variants at ${esc(siteOf(p, m[0]))}</h4><dl class="sc-kv">` +
@@ -301,7 +339,8 @@
       (num ? `<p class="muted small">${esc(num.note || num.label || 'Numbered as papers do')} · UniProt ${esc(resAt(p, m[0]))}${m[0]}</p>` : '') + '</div>' +
       `<span class="tools">${typeof K.show3d === 'function' ? '<button type="button" class="btn small" data-site-3d>Show in 3D</button>' : ''}${hasEvRow ? '<button type="button" class="btn small" data-site-ev>Source evidence</button>' : ''}` +
       `<a class="btn small" href="${esc(K.link('protein', p.acc + '/' + m[0]))}" target="_blank" rel="noopener" title="This ${esc(W.mark)}'s card on its own page">Open in a new tab</a><button type="button" class="btn small" data-site-copy title="Copy a link that opens this page with ${esc(siteOf(p, m[0]))} selected">Copy link</button>${K.expBar(['pdf', 'png', 'tsv'], 'cexp', 'the site card', 'sources')}<button type="button" class="btn small" data-site-close aria-label="Close">×</button></span></div>` +
-      varBlock + `<div class="sc-grid${ev ? '' : ' one'}">${ev}<section class="sc-site"><h4>Site</h4><dl class="sc-kv">${siteRows}</dl></section>${recs}${wr}</div>` +
+      varBlock + (CARDS ? `<div class="sc-grid"><section class="sc-site"><h4>Site</h4>${siteHtml}</section><div class="sc-col">${ev}${recs}${wr}</div></div>`
+        : `<div class="sc-grid${ev ? '' : ' one'}">${ev}<section class="sc-site"><h4>Site</h4>${siteHtml}</section>${recs}${wr}</div>`) +
       (!ready && Object.keys(D.tables || {}).length ? '<p class="muted small">Loading tables…</p>' : '') + '</section>';
   }
   function siteCardTsv() {
@@ -384,7 +423,7 @@
   function headline(p, rec) {
     const facts = D.protein_view?.facts; if (!facts?.length) return '';
     const n = rec.marks.length, fill = (t, extra = {}) => String(t || '').replace(/\{residues\}/g, W.residues).replace(/\{marks\}/g, W.marks).replace(/\{class\}/g, extra.cls || '');
-    const cards = facts.map(f => {
+    const cards = facts.filter(f => !(CARDS && f.hide_in === 'cards')).map(f => {
       let big = '', lab = '', tip = typeof f.tip === 'string' ? f.tip : '', word = '';
       if (f.count) {
         big = f.of === 'candidates' ? `${int(n)} of ${int(p.cand)}` : int(n); lab = fill(f.label || cap(W.marks));
@@ -722,7 +761,7 @@
       if (!PV.site && here.length === 1 && PV.rec.marks.some(m => m[0] === here[0][1])) { PV.site = here[0][1]; S.arg = `${acc}/${PV.site}`; K.writeHash(false); K.render(); return; }
     }
     if (PV.focus) { const f = PV.focus; PV.focus = ''; requestAnimationFrame(() => document.getElementById(f)?.scrollIntoView({ block: 'start' })); }
-    if (PV.site && PV.scrolled !== PV.site) { PV.scrolled = PV.site; requestAnimationFrame(() => document.getElementById('site-card')?.scrollIntoView({ block: 'center' })); }
+    if (PV.site && PV.scrolled !== PV.site) { PV.scrolled = PV.site; landOnCard(); }
     else if (PV.span && PV.scrolled !== String(PV.span)) {          // the map, just below the sticky toolbar
       PV.scrolled = String(PV.span);
       requestAnimationFrame(() => { const t = document.getElementById('p-map'); if (t) scrollTo(0, t.getBoundingClientRect().top + scrollY - (document.querySelector('.toolbar')?.offsetHeight || 0) - 8); });
@@ -756,13 +795,27 @@
       const same = m.sequence === rec.seq;
       let plddt = null;
       if (same && m.plddtDocUrl) { try { const d = await getJson(m.plddtDocUrl); plddt = d.confidenceScore || null; } catch (e) { plddt = null; } }
-      return { version: m.latestVersion, mean: m.globalMetricValue, pdbUrl: m.pdbUrl, same, plddt };
+      return { version: m.latestVersion, mean: m.globalMetricValue, pdbUrl: m.pdbUrl, same, plddt, amUrl: same ? m.amAnnotationsUrl || '' : '' };
     }, () => ({ failed: true }));
     PV.afReq[acc].then(af => {
       if (PV.acc !== acc) return;
       if (af.failed || af.none) { const first = !PV.af; PV.af = af; if (first) drawMap(); }
       if (af.failed || af.none) return;
       const first = !PV.af; PV.af = af; if (first) drawMap();
+      K.pfolds?.refresh();
+      // AlphaMissense: each mark's substitutions (the file lists every residue's), their mean, read once for the site card
+      if (af.amUrl && !af.am && !af.amAsked) {
+        af.amAsked = true;
+        fetch(af.amUrl).then(r => (r.ok ? r.text() : Promise.reject(new Error(String(r.status))))).then(text => {
+          const want = new Map(rec.marks.map(x => [x[0], rec.seq[x[0] - 1]])), out = new Map();
+          for (const line of text.split('\n')) {
+            const [v, sc] = line.split(','), mm = /^([A-Z])(\d+)[A-Z]$/.exec(v || ''); if (!mm || want.get(+mm[2]) !== mm[1] || !isFinite(+sc)) continue;
+            const o = out.get(+mm[2]) || { sum: 0, n: 0 }; o.sum += +sc; o.n++; out.set(+mm[2], o);
+          }
+          af.am = out;
+          if (PV.acc === acc && PV.site) { const card = document.getElementById('site-card'); if (card) card.outerHTML = siteCard(p, rec); }
+        }, () => {});
+      }
     });
     K.s3d.after(p, rec);                // the 3D structure (kit-3d.js)
   }
