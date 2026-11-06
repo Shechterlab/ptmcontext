@@ -99,14 +99,25 @@
   // T: the open protein (its record from kit-proteins), the live viewer (mol), the mark to focus, open sub-folds
   const T = { acc: '', p: null, rec: null, mol: null, highlight: null, want: null, open: {}, pdbAll: false, homAll: false, homOpen: new Set(), predAll: false, pick: {}, started: false, msg: '' };
   const tracks = () => D.tracks || [];
-  const marks = () => (T.rec ? T.rec.marks : []);
+  const allMarks = () => (T.rec ? T.rec.marks : []);
+  // the cards front end: the view shows the sites of the current selection and filters (the map fades the rest), and of the
+  // states left on in the view's own state toggle; its exports follow the same list
+  const stateKey = m => colourOf(m).label || '';
+  const stateName = k => k || 'No assigned state';
+  const selOnly = () => !!(CARDS && K.sel?.active?.() && T.selOff !== true);
+  const selSet = () => (selOnly() ? K.sel.selectedPositions(T.acc) : null);
+  const marks = () => {
+    const all = allMarks(); if (!CARDS) return all;
+    const sp = selSet(), hide = T.hide;
+    return all.filter(m => (!sp || sp.has(m[0])) && !(hide && hide.has(stateKey(m))));
+  };
   const markAt = pos => marks().find(m => m[0] === pos);
   const seqAt = pos => (T.rec?.seq || '')[pos - 1] || (D.residues || [''])[0];
   const rl = pos => `${seqAt(pos)}${pos}`;
   const ev = () => T.rec?.s3d || {};
   const colourOf = m => (K.map?.siteColour ? K.map.siteColour(m) : { c: tok().mark, label: '' });
   const colourMode = () => { const k = K.map?.state?.colour, s = (D.attribute_specs || {})[k]; return s ? s.label : 'Single colour'; };
-  const markColour = m => { const c = colourOf(m).c; return c === '#A3AEB3' ? tok().mark : c; };   // no value: the mark colour, not the map's grey
+  const markColour = m => { const c = colourOf(m).c; return !CARDS && c === '#A3AEB3' ? tok().mark : c; };   // classic: no value is the mark colour; the cards front end keeps the map's grey   // no value: the mark colour, not the map's grey
   // the marks' colours, in the order of the attribute's values (as the map's legend)
   function markLegend() {
     const seen = new Map(), spec = (D.attribute_specs || {})[K.map?.state?.colour] || {}, order = Object.keys(spec.values || {});
@@ -129,7 +140,7 @@
   // AlphaMissense: each mark's substitutions, their mean pathogenicity (0.564 and above: likely pathogenic)
   function loadAM(acc, url) {
     return (cache.am[acc] ||= getText(url).then(text => {
-      const want = new Map(marks().map(m => [m[0], seqAt(m[0])])), out = new Map();
+      const want = new Map(allMarks().map(m => [m[0], seqAt(m[0])])), out = new Map();
       for (const line of text.split('\n')) {
         const [v, sc] = line.split(','); const mm = /^([A-Z])(\d+)[A-Z]$/.exec(v || ''); if (!mm) continue;
         const pos = +mm[2]; if (want.get(pos) !== mm[1]) continue;
@@ -500,7 +511,7 @@
     if (!pdbMode) for (const [r] of out) { const ca = mol.viewer.selectedAtoms({ resi: r, atom: 'CA' })[0]; if (ca && !isMarkRes(ca)) out.delete(r); }
     return out;
   }
-  const exportColour = m => { const c = colourOf(m).c; return c === '#A3AEB3' ? TOK.light.mark : c; };
+  const exportColour = m => { const c = colourOf(m).c; return !CARDS && c === '#A3AEB3' ? TOK.light.mark : c; };
   // the atom a residue's sphere sits on: its side chain's end (TIP), or for a residue it does not know (a modified
   // component, say) the heavy atom farthest from its CA; remembered per model
   function tipName(a) {
@@ -517,6 +528,7 @@
   }
   function restyle(reSurface) {
     const mol = T.mol; if (!mol || mol.acc !== T.acc) return;
+    T.sig = marks().map(m => m[0]).join();
     const v = mol.viewer, pdbMode = mol.mode === 'pdb', pdb = mol.pdb;
     v.setBackgroundColor(viewBg());
     const light = { ao: 'ambientOcclusion', aoline: 'ambientOcclusion outline', outline: 'outline' }[V.light] || '';
@@ -724,6 +736,16 @@
       (own && best && !best.failed && best.e.id === own.e.id && best.det.chain === own.chain ? `<span class="muted small">${int(best.obs)} residues observed${best.nSites ? `, ${int(best.nSites)} ${best.nSites === 1 ? NOUN : NOUNS}` : ''}</span>` : own ? `<span class="muted small">${int(own.toAuth.size)} ${own.toAuth.size === 1 ? NOUN : NOUNS} resolved in chain ${esc(own.chain)}</span>` : '');
   }
   const sel = (key, label, list, cur) => `<label class="s3d-ctl">${label} <select data-s3d-sel="${key}">${list.map(o => `<option value="${esc(o[0])}"${o[0] === cur ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
+  // the state toggle (cards front end): one chip per state the protein's sites have, each turns its sites on or off in the view
+  function stateRow() {
+    if (!CARDS) return '';
+    const all = allMarks(), sp = selSet(), pool = sp ? all.filter(m => sp.has(m[0])) : all, counts = new Map();
+    pool.forEach(m => counts.set(stateKey(m), (counts.get(stateKey(m)) || 0) + 1));
+    const nSel = sp ? pool.length : 0, shown = marks().length;
+    const chips = counts.size > 1 ? [...counts.entries()].map(([k, n]) => `<button type="button" class="s3d-chip" data-s3d-state="${esc(k)}" aria-pressed="${!(T.hide && T.hide.has(k))}" title="Show or hide the ${esc(NOUNS)} in this state">${esc(stateName(k))} <span class="muted">${int(n)}</span></button>`).join('') : '';
+    const selChip = K.sel?.active?.() ? `<button type="button" class="s3d-chip" data-s3d-selonly aria-pressed="${T.selOff !== true}" title="Show only the ${esc(NOUNS)} of your selection and filters, as the map does">Your selection ${int(nSel || pool.length)} of ${int(all.length)}</button>` : '';
+    return `<div class="s3d-row s3d-states" role="group" aria-label="Which ${esc(NOUNS)} the view shows">${selChip}${chips}<span class="muted small">${int(shown)} of ${int(all.length)} ${esc(NOUNS)} shown</span></div>`;
+  }
   function paintControls() {
     const box = document.getElementById('s3d-controls'); if (!box) return;
     const pdbMode = T.mol?.mode === 'pdb';
@@ -733,7 +755,7 @@
       `<button type="button" class="linkish" data-s3d-default title="Style, colour, surface and lighting back to their defaults">Default settings</button></div>`;
     // the cards front end draws the structure first and folds the options below it; the key stays in sight
     box.innerHTML = (CARDS ? `<details class="pn-optd" data-s3d-optd${T.optOpen ? ' open' : ''}><summary>3D options <span class="muted">· style, colour, surface, lighting, toggles</span></summary>${rows}</details>` : rows) +
-      `<div class="s3d-key" id="s3d-key">${T.mol && T.mol.acc === T.acc ? keyHtml(colourKey()) : ''}</div>`;
+      `${stateRow()}<div class="s3d-key" id="s3d-key">${T.mol && T.mol.acc === T.acc ? keyHtml(colourKey()) : ''}</div>`;
   }
   const chip = pos => { const m = markAt(pos); return `<button type="button" class="s3d-site${T.mol?.focusPos === pos ? ' on' : ''}" data-s3d-pos="${pos}"><i class="dot" style="background:${m ? markColour(m) : tok().mark}"></i>${esc(rl(pos))}`; };
   // the focused mark: what the site's tables say it touches, entry by entry, and the RNA or DNA in this entry
@@ -1312,6 +1334,8 @@
     Object.assign(T, { acc: p.acc, p, rec, highlight: null, open: {}, pdbAll: false, homAll: false, homOpen: new Set(), predAll: false, pick: {}, started: false, msg: '', res: null, best: null, homList: null, entry: null, afcx: null, predList: null });
   }
   const foldOpen = () => !!document.getElementById('p-struct')?.open;
+  // the marks the view shows changed: draw them again, and the key, summary and buttons that name them
+  function refreshMarks() { T.sig = marks().map(m => m[0]).join(); if (T.mol && T.mol.acc === T.acc) { restyle(false); T.mol.viewer.render(); } paint(); }
   // after each render of the protein page: keep the live viewer, fill the panels, start when the section is open
   function after(p, rec) {
     if (T.acc !== p.acc) reset(p, rec); else { T.rec = rec; T.p = p; }
@@ -1320,6 +1344,7 @@
     if (T.mol && T.mol.acc === acc && el && el !== T.mol.el) { el.replaceWith(T.mol.el); T.mol.el.id = 's3d-viewer'; if (T.mol.el.offsetWidth) T.mol.viewer.resize(); if (T.mol.spin) $('[data-s3d-act="spin"]')?.setAttribute('aria-pressed', 'true'); }
     if (!T.res) loadPdb(acc).then(res => { if (T.acc !== acc) return; T.res = res; paintSrc(); paintPdbList(); paintSummary(); });
     if (T.want) { const d = document.getElementById('p-struct'); if (d && !d.open) d.open = true; }
+    if (CARDS && T.mol && T.mol.acc === acc && T.sig != null && T.sig !== marks().map(m => m[0]).join()) { T.sig = marks().map(m => m[0]).join(); restyle(false); T.mol.viewer.render(); }
     paint();
     if (foldOpen()) begin();
     if (T.want) { const w = T.want; setTimeout(() => { scrollToViewer(); if (T.started) apply(w); }, 80); }
@@ -1398,6 +1423,8 @@
   K.clicks.push(
     ['[data-s3d-src]', el => { const s = el.dataset.s3dSrc; V.src = s; save(); if (s === 'af') showAf(); else { const b = T.best; if (b && !b.failed) showPdb(b.e, b.det.chain); else { delete cache.best[T.acc]; bestPdb(T.acc).then(nb => { T.best = nb; if (nb && !nb.failed) showPdb(nb.e, nb.det.chain); else paintSrc(); }); } } }],
     ['[data-s3d-toggle]', el => { const k = el.dataset.s3dToggle; V[k] = !V[k]; save(); if (T.mol) { T.mol.contacts = null; restyle(false); } paintControls(); }],
+    ['[data-s3d-state]', el => { const k = el.dataset.s3dState; T.hide ||= new Set(); T.hide.has(k) ? T.hide.delete(k) : T.hide.add(k); refreshMarks(); }],
+    ['[data-s3d-selonly]', () => { T.selOff = !(T.selOff === true); refreshMarks(); }],
     ['[data-s3d-default]', () => { const src = V.src; Object.assign(V, DEFAULT, { src }); save(); if (T.mol) restyle(true); paintControls(); }],
     ['[data-s3d-pos]', el => focusPos(+el.dataset.s3dPos)],
     ['[data-s3d-entry]', el => { const id = el.dataset.s3dEntry, at = el.dataset.s3dAt != null ? +el.dataset.s3dAt : null; apply({ entry: id, pos: at ?? T.highlight, chain: null }); scrollToViewer(); }],
