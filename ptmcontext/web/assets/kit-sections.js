@@ -8,7 +8,7 @@
   const { D, A, S, esc, int } = K;
   const F = D.front;
   if (!F || F.mode !== 'cards' || !K.front) return;
-  document.body.classList.add('fr-cards');
+  document.body.classList.toggle('fr-cards', true);
   const short = i => F.short?.[i] || A[i]?.title || i;
   const CARDS = F.cards || [];
   const wide = () => matchMedia('(min-width: 1100px)').matches;
