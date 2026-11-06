@@ -246,7 +246,7 @@
   function ixFold(p, rec, fold) {
     if (!IXP) return '';
     const g = p.gene || p.acc;
-    if (CARDS && K.pix) {
+    if (K.pix) {
       // site first: who binds each mark, partners and complexes, writer and reader paths; then the interfaces and the network, folded
       // when no mark sits at an interface (the network is the protein's associations, not its sites')
       const s3 = rec?.s3d, hasIface = !!((s3?.c || []).some(r => r[1] === 'protein' || r[1] === 'self') || (s3?.p || []).length);
@@ -254,8 +254,8 @@
         `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network').replace(/<\/div>$/, '<button type="button" class="btn small" data-pn-cyto title="The network as Cytoscape tables: edges (File, Import, Network from File) and nodes (Import Table from File)">Cytoscape</button></div>')}</div>` +
         `<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div><div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` +
         `<details class="pn-optd"><summary>Network options <span class="muted">· confidence, partners, color, layout, evidence channels, second ring of PRMTs and Tudor proteins</span></summary>${optionsHtml()}</details>`;
-      return fold('p-ix', 'Protein interactions', 'who binds its ' + esc(W.marks) + ', partners, complexes and the network', K.pix.html(p, rec, K.prot.tables(p.acc)) + ifaceHtml(p, rec) +
-        `<details class="pn-fold"${hasIface ? ' open' : ''}><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING, live; drag the nodes${hasIface ? '' : `; folded, as no ${esc(W.mark)} sits at an interface`}</span></summary>${net}</details>`, true);
+      return fold('p-ix', 'Protein interactions', 'who binds its ' + esc(W.marks) + ', partners, complexes and the network', K.pix.html(p, rec, K.prot.tables(p.acc)) + (CARDS ? ifaceHtml(p, rec) : ifaceFold(p, rec)) +
+        `<details class="pn-fold"${CARDS && hasIface ? ' open' : ''}><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING, live; drag the nodes${hasIface ? (CARDS ? '' : '; open to draw it') : `; folded, as no ${esc(W.mark)} sits at an interface`}</span></summary>${net}</details>`, true);
     }
     return fold('p-ix', 'Protein interactions', 'STRING, live; drag the nodes', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, drawn as a network you can drag, colored by whether they have ${esc(W.marks)} in this dataset. Matched by accession. The Table view lists the same partners and is the keyboard route.</p>` +
       `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${CARDS ? '' : optionsHtml()}<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>` +
@@ -267,9 +267,15 @@
   const rcsb = id => `<a href="https://www.rcsb.org/structure/${encodeURIComponent(String(id).toUpperCase())}" target="_blank" rel="noopener">${esc(String(id).toUpperCase())}</a>`;
   const partnerName = (g, a) => { const sp = a ? siteProtein(a) : null; return sp ? `<a href="${esc(K.link('protein', sp.acc))}"><b>${esc(g || sp.gene)}</b></a>` : `<b>${esc(g || a || 'a partner')}</b>`; };
   const siteBtn = (acc, pos) => `<button type="button" class="linkish mono" data-cc-pos="${pos}" data-cc-acc="${esc(acc)}">${esc(K.prot ? K.prot.siteLabel(acc, pos) : pos)}</button>`;
+  // the classic page folds the interface lists (the records above already say who binds each site)
+  function ifaceFold(p, rec) {
+    const h = ifaceHtml(p, rec); if (!h) return '';
+    const s3 = rec?.s3d, n = new Set([...(s3?.c || []).filter(r => r[1] === 'protein' || r[1] === 'self').map(r => r[0]), ...(s3?.p || []).map(r => r[0])]).size;
+    return `<details class="pn-fold pn-ifold"><summary>Proteins at ${esc(W.mark)} interfaces <span class="muted">· ${n ? `${int(n)} ${esc(n === 1 ? W.mark : W.marks)}, in PDB structures or predicted complexes` : 'none in the structure tables'}</span></summary>${h}</details>`;
+  }
   function ifaceHtml(p, rec) {
     const s3 = rec?.s3d; if (!s3 || !(SD.contacts || SD.predicted)) return '';
-    const obs = (s3.c || []).filter(r => r[1] === 'protein' || r[1] === 'self'), pred = s3.p || [], M = W.marks, m1 = W.mark;
+    const sf = !!K.pix, obs = (s3.c || []).filter(r => r[1] === 'protein' || r[1] === 'self'), pred = s3.p || [], M = W.marks, m1 = W.mark;
     if (!obs.length && !pred.length) return `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4><p class="muted">No protein at an interface with a ${esc(m1)} of ${esc(p.gene || p.acc)} in the structure tables.</p></div>`;
     const by = new Map();      // partner -> { name, acc, sites: Map(pos -> { obs: ids, pred: score }) }
     const put = (g, a, pos, f) => { const k = a || g; if (!k) return; const o = by.get(k) || { g, a, sites: new Map() }; const s = o.sites.get(pos) || {}; f(s); o.sites.set(pos, s); by.set(k, o); };
@@ -283,9 +289,9 @@
     const whoSplit = [['In PDB structures (observed)', whoKind('obs')], ['Predicted only (AlphaFold-Multimer models, not observed in a structure)', whoKind('pred')]].filter(x => x[1]).map(([t, l]) => `<h5 class="pn-ih">${t}</h5><ul class="pn-ilist">${l}</ul>`).join('');
     const obsLines = [...new Map(obs.map(r => [r[0], r])).keys()].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} contacts ` + obs.filter(r => r[0] === pos).map(r => `${r[1] === 'self' ? '<b>another copy</b>' : partnerName(r[3], r[4])} <span class="muted small">(${(r[2] || []).slice(0, 4).map(rcsb).join(', ')}${(r[2] || []).length > 4 ? ` +${r[2].length - 4}` : ''})</span>`).join('; ') + '</li>').join('');
     const predLines = [...new Set(pred.map(r => r[0]))].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} ` + pred.filter(r => r[0] === pos).slice(0, 6).map(r => `${partnerName(r[1], r[2])}${r[5] != null ? ` <span class="muted small">pDockQ ${(+r[5]).toFixed(2)}</span>` : ''}`).join(', ') + (pred.filter(r => r[0] === pos).length > 6 ? ' +' + (pred.filter(r => r[0] === pos).length - 6) : '') + '</li>').join('');
-    return `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4>${CARDS ? whoSplit : `<ul class="pn-ilist">${who}</ul>`}` +
-      `<p class="note">Proteins in contact with a ${esc(m1)} in a PDB structure, or at the interface of a predicted complex. Associations of the whole protein are in the network${CARDS ? ' below' : ' above'}.</p>` + (CARDS ? '</div>' : '') +
-      (CARDS ? '' : `<div class="pn-igrid"><section><h4>${esc(cap0(M))} at protein interfaces</h4>${obsLines ? `<ul class="pn-ilist">${obsLines}</ul>` : `<p class="muted">None is at a protein interface in a PDB structure.</p>`}</section>` +
+    return `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4>${sf ? whoSplit : `<ul class="pn-ilist">${who}</ul>`}` +
+      `<p class="note">Proteins in contact with a ${esc(m1)} in a PDB structure, or at the interface of a predicted complex. Associations of the whole protein are in the network${sf ? ' below' : ' above'}.</p>` + (sf ? '</div>' : '') +
+      (sf ? '' : `<div class="pn-igrid"><section><h4>${esc(cap0(M))} at protein interfaces</h4>${obsLines ? `<ul class="pn-ilist">${obsLines}</ul>` : `<p class="muted">None is at a protein interface in a PDB structure.</p>`}</section>` +
       `<section><h4>Predicted protein interfaces <span class="muted small">(models, not PDB)</span></h4>${predLines ? `<ul class="pn-ilist">${predLines}</ul>` : `<p class="muted">None is at a predicted interface.</p>`}</section></div></div>`);
   }
   function mount() {

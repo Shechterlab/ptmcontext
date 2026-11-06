@@ -89,12 +89,27 @@
     return { sum: ls.filter(l => l.main).map(l => l.name), html: head + `<div class="tags loc-tags">${ls.map(t).join(' ')}</div>` +
       `<p class="muted small">Main locations first, in bold${h.unsure ? `; “?” marks reliability ${esc(h.unsure)}, left out of the tests` : ''}.</p>` };
   }
+  // the maps' words on the protein (a table) and the drawings the maps color
+  const mapsTable = (p, ms) => `<h4 class="sub-h">Cell maps</h4><p class="sub">A part of the drawing is colored when a map places ${esc(gene(p))} there.</p>` +
+    `<div class="tbl-wrap"><table class="pc-maps"><tbody>${ms.map(m => `<tr><th scope="row">${esc(m.name)}<br><span class="muted small">${esc([m.method, m.cells].filter(Boolean).join(', '))}</span></th>` +
+      `<td>${m.sets.length ? esc(m.sets.join(' · ')) : m.placed ? '<span class="muted">placed, in none of its compartments</span>' : '<span class="muted">not placed by this map</span>'}</td></tr>`).join('')}</tbody></table></div>`;
   function mapsHtml(p) {
     if (!K.cell || !K.sel.data()) return '';
     const ms = K.cell.maps(p); if (!ms) return '';
-    return `<h4 class="sub-h">Cell maps</h4><p class="sub">A part of the drawing is colored when a map places ${esc(gene(p))} there.</p>` +
-      `<div class="tbl-wrap"><table class="pc-maps"><tbody>${ms.map(m => `<tr><th scope="row">${esc(m.name)}<br><span class="muted small">${esc([m.method, m.cells].filter(Boolean).join(', '))}</span></th>` +
-        `<td>${m.sets.length ? esc(m.sets.join(' · ')) : m.placed ? '<span class="muted">placed, in none of its compartments</span>' : '<span class="muted">not placed by this map</span>'}</td></tr>`).join('')}</tbody></table></div>` + K.cell.drawings(p);
+    return mapsTable(p, ms) + K.cell.drawings(p);
+  }
+  // the classic page's own fold right after the protein map: the cell and its nucleus, drawn for this protein, the maps' table folded under them
+  const CELLFOLD = D.front?.mode !== 'cards' && !!PC.location?.maps;
+  function cellBuild(p) {
+    if (!K.cell || !K.sel.data()) return { html: '<p class="muted small">Loading…</p>', wait: true };
+    const ms = K.cell.maps(p), dr = ms ? K.cell.drawings(p) : '';
+    if (!ms || !dr) return { html: '', hide: true, pic: '' };
+    const sets = [...new Set(ms.flatMap(m => m.sets))], nPl = ms.filter(m => m.sets.length).length;
+    return { html: `<p class="sub">A part is colored when a map places ${esc(gene(p))} there, and named in the list under the drawings; a part with a dashed outline is placed by no map.</p><div class="cell-pair">${dr}</div>` +
+      `<p class="cell-where">${sets.length ? `<b>Placed in:</b> ${esc(sets.join(' · '))}` : `<span class="muted">No map places ${esc(gene(p))} in a compartment.</span>`}</p>` +
+      `<details class="pc-mapsfold"><summary>Cell maps table <span class="muted">· each map's words on ${esc(gene(p))}</span></summary>${mapsTable(p, ms)}</details>`,
+    sum: sets.length ? `${nPl} of ${ms.length} maps place it: ${sumList(sets, 3)}` : `${ms.length} maps, none places it in a compartment`,
+    pic: K.pfolds ? K.pfolds.bigN([[`${nPl}/${ms.length}`, 'maps place it']]) : '' };
   }
   // where the RNAs the protein binds gather: for each map of the bound RNAs (protein-set questions), the compartments of the protein's own sets, each with the dataset's test of it
   function rnaMapsHtml(cfg, p) {
@@ -131,7 +146,7 @@
     const cfg = PC.location, bits = [];
     let html = '', sum = [];
     if (cfg.hpa) { const h = hpaHtml(cfg, p, tb); html += h.html; sum.push(h.sum.length ? sumList(h.sum, 2) : ''); }
-    if (cfg.maps) html += mapsHtml(p);
+    if (cfg.maps && !CELLFOLD) html += mapsHtml(p);
     if (cfg.rna_maps?.length && K.sel.data()) html += rnaMapsHtml(cfg, p);
     if (cfg.condensates) {
       const c = condensatesHtml(cfg, p, rec, tb); html += c.html;
@@ -140,7 +155,7 @@
     }
     bits.push(...sum.filter(Boolean));
     const nLoc = cfg.hpa ? (rows(tb, cfg.hpa.table).filter(r => r.reliability !== cfg.hpa.unsure)).length : 0, nCond = cfg.condensates ? rows(tb, cfg.condensates.members).length : 0;
-    return { html, sum: bits.join(' · '), wait: !!(cfg.maps && !K.sel.data()), pic: K.pfolds && (nLoc || nCond) ? K.pfolds.bigN([[int(nCond), nCond === 1 ? 'condensate' : 'condensates'], [int(nLoc), nLoc === 1 ? 'location' : 'locations']]) : '' };
+    return { html, sum: bits.join(' · '), wait: !!((cfg.maps || cfg.rna_maps?.length) && !K.sel.data()), pic: K.pfolds && (nLoc || nCond) ? K.pfolds.bigN([[int(nCond), nCond === 1 ? 'condensate' : 'condensates'], [int(nLoc), nLoc === 1 ? 'location' : 'locations']]) : '' };
   }
 
   // ---- Cancer cell lines and tumors ----------------------------------------------------------------------------------
@@ -311,10 +326,10 @@
 
   // ---- the folds -----------------------------------------------------------------------------------------------------
   const CARDS = [
-    ['location', 'p-cond', 'Location and condensates', locationBuild], ['dependency', 'p-depmap', 'Cancer cell lines and tumors', dependencyBuild],
+    ...(CELLFOLD ? [['location_cell', 'p-cell', 'Where in the cell', cellBuild]] : []), ['location', 'p-cond', 'Location and condensates', locationBuild], ['dependency', 'p-depmap', 'Cancer cell lines and tumors', dependencyBuild],
     ['perturbations', 'p-pert', `${W.writer ? cap(W.writer) : 'Enzyme'} inhibitors, knockouts and knockdowns`, perturbationsBuild], ['experiments', 'p-exp', 'Experiments', experimentsBuild],
     ['clustering', 'p-cluster', 'Clustering', clusteringBuild], ['other_ptms', 'p-ptm', 'Other PTMs', ptmsBuild],
-  ].filter(([k]) => PC[k]);
+  ].filter(([k]) => PC[k] || k === 'location_cell');
   const BUILD = { live: liveBuild };
   K.pcards = BUILD;                                                  // the cards' builders: (protein, record, tables) -> { html, sum }
   (K.proteinFolds ||= []);
@@ -322,6 +337,7 @@
     BUILD[key] = build;
     K.proteinFolds.push((p, rec, fold) => {
       CUR.p = p; CUR.rec = rec;
+      if (key === 'location_cell') return fold(id, title, `<span data-pc-sum="${key}"></span>`, `<div class="pc" data-pc="${key}"></div>`, true);
       if (key === 'location' && !(PC.location.hpa || PC.location.maps || PC.location.condensates)) return '';
       const html = fold(id, esc(PC[key].title || title), `<span data-pc-sum="${key}">${esc(PC[key].summary || '')}</span>`, `<div class="pc" data-pc="${key}"></div>`, false);
       return key === 'experiments' ? html.replace('<details ', '<details hidden ') : html;
@@ -332,7 +348,7 @@
   const baseSections = K.sections.protein;
   if (baseSections) K.sections.protein = () => {
     const s = baseSections(), order = K.foldOrder || [], here = id => document.getElementById(id), shown = id => here(id) && !here(id).hidden;
-    const mine = CARDS.filter(([, id]) => !s.some(x => x[0] === id) && shown(id)).map(([, id, title]) => [id, PC[CARDS.find(c => c[1] === id)[0]].title || title, 1]);
+    const mine = CARDS.filter(([, id]) => !s.some(x => x[0] === id) && shown(id)).map(([, id, title]) => [id, PC[CARDS.find(c => c[1] === id)[0]]?.title || title, 1]);
     if (!order.length) { const at = s.findIndex(x => x[0] === 'p-regions'); s.splice(at < 0 ? s.length : at, 0, ...mine); return s.filter(x => !/^p-/.test(x[0]) || shown(x[0]) || !here(x[0])); }
     const head = s.filter(x => !/^(p-|g-)/.test(x[0])), folds = [...s, ...mine].filter(x => /^p-/.test(x[0]) && (!here(x[0]) || shown(x[0])));
     const at = x => { const i = order.indexOf(x[0]); return i < 0 ? 1e3 : i; };

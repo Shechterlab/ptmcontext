@@ -100,14 +100,14 @@
   const T = { acc: '', p: null, rec: null, mol: null, highlight: null, want: null, open: {}, pdbAll: false, homAll: false, homOpen: new Set(), predAll: false, pick: {}, started: false, msg: '' };
   const tracks = () => D.tracks || [];
   const allMarks = () => (T.rec ? T.rec.marks : []);
-  // the cards front end: the view shows the sites of the current selection and filters (the map fades the rest), and of the
+  // the view shows the sites of the current selection and filters (the map fades the rest), and of the
   // states left on in the view's own state toggle; its exports follow the same list
   const stateKey = m => colourOf(m).label || '';
   const stateName = k => k || 'No assigned state';
-  const selOnly = () => !!(CARDS && K.sel?.active?.() && T.selOff !== true);
+  const selOnly = () => !!(K.sel?.active?.() && T.selOff !== true);
   const selSet = () => (selOnly() ? K.sel.selectedPositions(T.acc) : null);
   const marks = () => {
-    const all = allMarks(); if (!CARDS) return all;
+    const all = allMarks();
     const sp = selSet(), hide = T.hide;
     return all.filter(m => (!sp || sp.has(m[0])) && !(hide && hide.has(stateKey(m))));
   };
@@ -738,15 +738,14 @@
       (own && best && !best.failed && best.e.id === own.e.id && best.det.chain === own.chain ? `<span class="muted small">${int(best.obs)} residues observed${best.nSites ? `, ${int(best.nSites)} ${best.nSites === 1 ? NOUN : NOUNS}` : ''}</span>` : own ? `<span class="muted small">${int(own.toAuth.size)} ${own.toAuth.size === 1 ? NOUN : NOUNS} resolved in chain ${esc(own.chain)}</span>` : '');
   }
   const sel = (key, label, list, cur) => `<label class="s3d-ctl">${label} <select data-s3d-sel="${key}">${list.map(o => `<option value="${esc(o[0])}"${o[0] === cur ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
-  // the state toggle (cards front end): one chip per state the protein's sites have, each turns its sites on or off in the view
-  // what the view shows of the protein's sites, in words, for the exports (cards front end)
+  // the state toggle (both front ends): one chip per state the protein's sites have, each turns its sites on or off in the view
+  // what the view shows of the protein's sites, in words, for the exports (both front ends)
   const shownWords = () => {
-    if (!CARDS || marks().length === allMarks().length) return '';
+    if (marks().length === allMarks().length) return '';
     const off = T.hide?.size ? `; states hidden: ${[...T.hide].map(stateName).join(', ')}` : '';
     return `Shows ${marks().length} of ${allMarks().length} ${NOUNS}${selOnly() ? ' (those of the current selection and filters: ' + K.sel.describe() + ')' : ''}${off}.`;
   };
   function stateRow() {
-    if (!CARDS) return '';
     const all = allMarks(), sp = selSet(), pool = sp ? all.filter(m => sp.has(m[0])) : all, counts = new Map();
     pool.forEach(m => counts.set(stateKey(m), (counts.get(stateKey(m)) || 0) + 1));
     const nSel = sp ? pool.length : 0, shown = marks().length;
@@ -762,7 +761,7 @@
       `<div class="s3d-row s3d-toggles">${TOGGLES.filter(t => !t[3] || pdbMode).map(t => `<button type="button" class="s3d-chip" data-s3d-toggle="${t[0]}" aria-pressed="${!!V[t[0]]}" title="${esc(t[2])}">${esc(t[1])}</button>`).join('')}` +
       `<button type="button" class="linkish" data-s3d-default title="Style, color, surface and lighting back to their defaults">Default settings</button></div>`;
     // the cards front end draws the structure first and folds the options below it; the key stays in sight
-    box.innerHTML = (CARDS ? `<details class="pn-optd" data-s3d-optd${T.optOpen ? ' open' : ''}><summary>3D options <span class="muted">· style, color, surface, lighting, toggles</span></summary>${rows}</details>` : rows) +
+    box.innerHTML = `<details class="pn-optd" data-s3d-optd${T.optOpen ? ' open' : ''}><summary>3D options <span class="muted">· style, color, surface, lighting, toggles</span></summary>${rows}</details>` +
       `${stateRow()}<div class="s3d-key" id="s3d-key">${T.mol && T.mol.acc === T.acc ? keyHtml(colourKey()) : ''}</div>`;
   }
   const chip = pos => { const m = markAt(pos); return `<button type="button" class="s3d-site${T.mol?.focusPos === pos ? ' on' : ''}" data-s3d-pos="${pos}"><i class="dot" style="background:${m ? markColour(m) : tok().mark}"></i>${esc(rl(pos))}`; };
@@ -1326,11 +1325,11 @@
     const hasTables = Object.keys(SD.inputs || {}).length > 0;
     return `<div class="s3d" id="s3d"><div class="s3d-head card-head"><p class="sub">The experimental chain that models most of ${esc(p.gene || p.acc)} (or any PDB entry and chain from the menu) or the AlphaFold model, colored like the protein map, its ${esc(NOUNS)} as side chains. Drag to turn, scroll to zoom, right-drag or the arrows to slide; click a residue to focus it.</p>` +
       `<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}<span class="s3d-sep"></span>${exp}<span class="s3d-sep"></span>${files}<a class="exp-btn" href="${esc(K.link('method', 'structure'))}" title="Where the structures, the placing of the ${esc(NOUNS)} and the colors come from">Method</a><a class="exp-btn" id="s3d-newtab" href="${esc(soloHref(p.acc))}" target="_blank" rel="noopener" title="The viewer on a page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a></div></div>` +
-      `<div class="s3d-src" id="s3d-src"></div>${CARDS ? '' : '<div class="s3d-controls" id="s3d-controls"></div>'}` +
+      `<div class="s3d-src" id="s3d-src"></div>` +
       `<div class="s3d-wrap"><div class="s3d-stage"><div class="s3d-viewer" id="s3d-viewer"><div class="s3d-ph">The structure loads when this section is open.</div></div>` +
       `<div class="s3d-pan" role="group" aria-label="Slide the structure">${[['up', 0, -1, '↑'], ['left', -1, 0, '←'], ['right', 1, 0, '→'], ['down', 0, 1, '↓']].map(([k, x, y, t]) => `<button type="button" class="pan-${k}" data-s3d-pan="${x},${y}" aria-label="Slide ${k}">${t}</button>`).join('')}</div>` +
       `<p class="s3d-msg" id="s3d-msg" aria-live="polite">${esc(T.msg)}</p></div><div class="s3d-side" id="s3d-side"></div></div>` +
-      (CARDS ? '<div class="s3d-controls" id="s3d-controls"></div>' : '') +
+      '<div class="s3d-controls" id="s3d-controls"></div>' +
       sub('s3d-pdb', 'Experimental structures (PDB)', '<div id="s3d-pdb-list"></div>') +
       sub('s3d-hom', 'Homologous experimental structures', '<div id="s3d-hom-list"></div>') +
       sub('s3d-pred', 'Predicted complexes', `<p class="sub">AlphaFold-Multimer models of protein pairs, without modifications (pDockQ ≥ 0.23 acceptable, ≥ 0.5 confident).</p><div id="s3d-pred-list"></div>`) +
@@ -1352,7 +1351,7 @@
     if (T.mol && T.mol.acc === acc && el && el !== T.mol.el) { el.replaceWith(T.mol.el); T.mol.el.id = 's3d-viewer'; if (T.mol.el.offsetWidth) T.mol.viewer.resize(); if (T.mol.spin) $('[data-s3d-act="spin"]')?.setAttribute('aria-pressed', 'true'); }
     if (!T.res) loadPdb(acc).then(res => { if (T.acc !== acc) return; T.res = res; paintSrc(); paintPdbList(); paintSummary(); });
     if (T.want) { const d = document.getElementById('p-struct'); if (d && !d.open) d.open = true; }
-    if (CARDS && T.mol && T.mol.acc === acc && T.sig != null && T.sig !== marks().map(m => m[0]).join()) { T.sig = marks().map(m => m[0]).join(); restyle(false); T.mol.viewer.render(); }
+    if (T.mol && T.mol.acc === acc && T.sig != null && T.sig !== marks().map(m => m[0]).join()) { T.sig = marks().map(m => m[0]).join(); restyle(false); T.mol.viewer.render(); }
     paint();
     if (foldOpen()) begin();
     if (T.want) { const w = T.want; setTimeout(() => { scrollToViewer(); if (T.started) apply(w); }, 80); }

@@ -1998,3 +1998,23 @@ body.cards .sc-grid, .sc-grid:has(> .sc-tile) { display: grid; grid-template-col
   .tile .fr-ax, .tile .fr-row { grid-template-columns: minmax(0, 31%) minmax(0, 1fr) 3.4rem 2rem; gap: 0.3rem; }
   .tile .fr-row { min-height: 36px; }
 }
+
+/* ---- Classic protein page ports (kit-pcards.js "Where in the cell", kit-pfolds.js, site-first interactions): kept apart from the rest ---- */
+.pc .cell-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 0.6rem 1.4rem; align-items: start; }
+.pc .cell-pair .cell-onep { margin: 0; max-width: none; min-width: 0; }
+.pc .cell-pair .cell-svg { width: 100%; height: auto; max-height: 26rem; }
+.cell-where { margin: 0.4rem 0 0.6rem; font-size: 0.9rem; }
+.pc-mapsfold { margin: 0.6rem 0 0; border: 1px solid var(--line); border-radius: 0.5rem; padding: 0 0.8rem; }
+.pc-mapsfold > summary { cursor: pointer; padding: 0.5rem 0; min-height: 2.75rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.92rem; }
+.pc-mapsfold[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 0.5rem; }
+.pgroup-switch { margin: 0.2rem 0 0.6rem; }
+.pc .cell-pair .cell-svg { max-height: 17rem; }
+@media (max-width: 700px) { .pc .cell-pair .cell-svg { max-height: 11rem; } .pc .cell-pair { gap: 0.3rem; } }
+.pc-mapsfold > summary { display: block; }
+@media (max-width: 700px) {
+  .pc .cell-onep .exp { display: none; }
+  .pc .cell-onep .fig-head { margin: 0; }
+  .pix-who td:last-child, .pix-who th:last-child { display: none; }
+}
+@media (max-width: 700px) { .pc [data-pc="location_cell"] > .sub { display: none; } }
+@media (max-width: 700px) { .pc .cell-pair .cell-svg { max-height: 9.5rem; } .pix-sec .sub:not(:first-of-type) { display: none; } .cell-where { margin: 0.2rem 0; } }
