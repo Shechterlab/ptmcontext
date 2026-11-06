@@ -1669,3 +1669,14 @@ a.pchip:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
   body.cards #scope .fr-bar .fr-count { flex: 1 1 9rem; min-width: 0; font-size: 0.8rem; }
   body.cards #scope .fr-bar .fr-tools { margin-left: auto; }
 }
+
+/* ---- round 5: the protein page's folds, the site card and the interactions view (cards mode) ---- */
+.sc-grid .sc-col { display: grid; gap: 0.8rem; min-width: 0; align-content: start; }
+.sc-col > section + section { border-top: 1px solid var(--line); padding-top: 0.6rem; }
+.sc-more { margin-top: 0.5rem; }
+.sc-more > summary { cursor: pointer; font-size: 0.84rem; font-weight: 600; color: var(--ink-2); }
+.sc-more > summary .muted { font-weight: 400; }
+.sc-more > .sc-kv { margin-top: 0.4rem; }
+.sc-note > summary { cursor: pointer; font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
+.site-card .sc-kv { grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr); gap: 0.2rem 0.8rem; }
+.site-card .sc-sp .sp-sum { margin: 0 0 0.3rem; }

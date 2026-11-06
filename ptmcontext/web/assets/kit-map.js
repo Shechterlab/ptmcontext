@@ -830,7 +830,7 @@
   // the key under the map, drawn with the map's own marks: the colour mode first, then what the rows drew
   function keyHtml(ctx, m) {
     const md = mode(), P = m.P;
-    const open = M.keyOpen ?? (D.front?.mode === 'cards');                    // collapsed until opened: the colour mode's entries and, by track, only the tracks on screen
+    const open = M.keyOpen ?? false;                    // collapsed until opened: the colour mode's entries and, by track, only the tracks on screen
     const groups = []; m.legend.forEach(e => { let g = groups.find(x => x.row === e.row); if (!g) groups.push(g = { row: e.row, items: [] }); g.items.push(e); });
     return `<details class="map-key" data-map-key${open ? ' open' : ''}><summary>Key <span class="muted">· ${esc(md.label)}${groups.length ? `, ${groups.length} track${groups.length === 1 ? '' : 's'}` : ''}</span></summary><div class="map-legend"><b>${esc(md.label)}</b>` +
       modeLegend(ctx, false).map(e => `<span>${swatchHtml(SW.head(e.c, e.hollow), P)}${esc(e.label)}</span>`).join('') + '</div>' +

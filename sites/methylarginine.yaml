@@ -2255,7 +2255,15 @@ website:                  # the look and words of the website (ptmc web); layout
       - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds}
     card:                  # the site card: its blocks, each reading an attribute or a table above (a block without its data is absent)
       labels: {states: Methylation state, calls: PRMT perturbation, changes: In cancers, reported: Reported by}
-      hide: [perturbation, nucleic_acid, nucleic_acid_type]   # attributes the blocks show in full (calls, bound sequences)
+      hide: [perturbation, nucleic_acid, nucleic_acid_type, n_studies, partner_class]   # attributes the blocks show in full (calls, bound sequences; the study count the Reported by list gives; the partner classes the Writer and reader block gives)
+      hide_questions: [cancer_change]        # questions whose row repeats a block (the changes in cancers, under Variants)
+      primary_questions: [motif, disorder, domain_class, idr_charge]    # the question rows shown at once; the rest are behind "All site features"
+      merge:                                 # the same question asked at several windows: one row, equal answers once
+        - label: Aromatic residues nearby
+          analyses: [sticker_context_3, sticker_context_5, sticker_context_3_idr, sticker_context_5_idr]
+          parts: ["±3", "±5", "±3 in IDRs", "±5 in IDRs"]
+          strip: " within ±\\d+$"
+          primary: true
       evidence:            # interaction evidence: a badge, tags, PDB entries, bound RNA and DNA, crosslinks near it, the whole protein
         title: Interaction evidence
         status: interaction                  # the category attribute the badge shows

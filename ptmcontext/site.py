@@ -605,6 +605,19 @@ def card_problems(site: dict) -> list[str]:
     card = prot.get('card') or {}
     for a in card.get('hide') or []:
         attr('card.hide', a)
+    for key in ('hide_questions', 'primary_questions'):
+        for a in card.get(key) or []:
+            if a not in ids:
+                out.append(f"website.protein.card.{key}: no analysis {a!r}")
+    for k, g in enumerate(card.get('merge') or []):
+        if not g.get('label') or not g.get('analyses'):
+            out.append(f"website.protein.card.merge[{k}]: needs a label and analyses")
+            continue
+        for a in g['analyses']:
+            if a not in ids:
+                out.append(f"website.protein.card.merge[{k}]: no analysis {a!r}")
+        if g.get('parts') and len(g['parts']) != len(g['analyses']):
+            out.append(f"website.protein.card.merge[{k}]: parts and analyses differ in length")
     ev = card.get('evidence') or {}
     attr('card.evidence.status', ev.get('status'))
     if ev.get('tags'):
