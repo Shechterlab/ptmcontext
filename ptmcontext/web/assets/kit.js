@@ -740,9 +740,14 @@
   // selection and the baseline)
   K.sections.overview = () => [
     ...(selOn() ? [['view', vsOn() ? 'Your selection, against ' + vsName() : 'Your selection', 1]] : []),
-    ...secList().flatMap((x, i, all) => [[`sec-${x.name.replace(/\W+/g, '-').toLowerCase()}`, x.name, 0],
-      // a section not drawn yet is its name alone; one drawn lists the tiles that show (not those behind its "More on ..." fold), so the list stays short
-      ...(!selOn() && !S.arg && (D.overview?.draw_first ?? 2) >= 0 && i >= (D.overview?.draw_first ?? 2) && !K.ovOpen.has(x.name) ? [] : (x.show > 0 && !selOn() && !S.arg && x.cards.length > x.show ? x.cards.slice(0, x.show) : x.cards)).map(c => (S.arg ? [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, link('overview', c.analysis)] : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1]))]),
+    ...secList().flatMap((x, i) => {
+      const sid = `sec-${x.name.replace(/\W+/g, '-').toLowerCase()}`, tileOf = c => (S.arg ? [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, link('overview', c.analysis)] : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1]);
+      // an opened question: its own section lists the questions, the others are one line that opens their first (the list stays short)
+      if (S.arg) { const mine = x.cards.some(c => c.analysis === S.arg || (c.views || []).some(v => v.analysis === S.arg)); return mine ? [[sid, x.name, 0], ...x.cards.map(tileOf)] : [[sid, x.name, 1, link('overview', x.cards[0]?.analysis || '')]]; }
+      // a section not drawn yet is its name alone; one drawn lists the tiles that show (not those behind its "More on ..." fold)
+      const later = !selOn() && (D.overview?.draw_first ?? 2) >= 0 && i >= (D.overview?.draw_first ?? 2) && !K.ovOpen.has(x.name);
+      return [[sid, x.name, 0], ...(later ? [] : (x.show > 0 && !selOn() && x.cards.length > x.show ? x.cards.slice(0, x.show) : x.cards)).map(tileOf)];
+    }),
     ...(selOn() || S.arg ? [] : (K.overviewSections || []).flatMap(f => f()))];
   // All tests: every question, each opening its own tests
   K.sections.statistics = () => [['view', 'All tests', 1, link('statistics')], ...secList().filter(x => !x.caveat && x.name !== 'About the sites').flatMap(x => [[`stat-${x.name}`, x.name, 0],
