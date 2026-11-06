@@ -1651,3 +1651,5 @@ a.pchip:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
   body.fr-cards.slim .hero .site-mark { width: 28px; height: 28px; flex: none; }
 }
 .pwbtn-home { display: block; margin: -0.15rem 0 0.35rem auto; min-height: 2.75rem; }
+.print-only { display: none; }
+@media print { .print-only { display: block; margin: 0 0 0.6rem; font-size: 9pt; color: #333; } .print-only p { margin: 0 0 0.15rem; } }

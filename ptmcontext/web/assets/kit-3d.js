@@ -737,6 +737,12 @@
   }
   const sel = (key, label, list, cur) => `<label class="s3d-ctl">${label} <select data-s3d-sel="${key}">${list.map(o => `<option value="${esc(o[0])}"${o[0] === cur ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
   // the state toggle (cards front end): one chip per state the protein's sites have, each turns its sites on or off in the view
+  // what the view shows of the protein's sites, in words, for the exports (cards front end)
+  const shownWords = () => {
+    if (!CARDS || marks().length === allMarks().length) return '';
+    const off = T.hide?.size ? `; states hidden: ${[...T.hide].map(stateName).join(', ')}` : '';
+    return `Shows ${marks().length} of ${allMarks().length} ${NOUNS}${selOnly() ? ' (those of the current selection and filters: ' + K.sel.describe() + ')' : ''}${off}.`;
+  };
   function stateRow() {
     if (!CARDS) return '';
     const all = allMarks(), sp = selSet(), pool = sp ? all.filter(m => sp.has(m[0])) : all, counts = new Map();
@@ -1096,7 +1102,7 @@
     let x = 20, y = h + 18;
     parts.push(`<text x="20" y="${y}" font-size="10.5" font-weight="bold" fill="#5f6f78">${esc(opt[1])}</text>`); y += 14;
     sw.forEach(([c, l]) => { const wd = 18 + K.tw(l, 10.5); if (x + wd > 740) { x = 20; y += 15; } parts.push(`<rect x="${x}" y="${y - 9}" width="10" height="10" rx="2" fill="${c}"/><text x="${x + 14}" y="${y}" font-size="10.5" fill="#5f6f78">${esc(l)}</text>`); x += wd + 10; });
-    const f = K.figureFrame({ title: `${T.p.gene || T.acc} (${T.acc}): ${mol.src.what}`, sub: `${cap(NOUNS)} as side chains with a sphere, coloured by ${colourMode().toLowerCase()}; the chain coloured by ${opt[1].toLowerCase()}.${mol.focusPos != null ? ' Focused: ' + rl(mol.focusPos) + '.' : ''}`,
+    const f = K.figureFrame({ title: `${T.p.gene || T.acc} (${T.acc}): ${mol.src.what}`, sub: `${shownWords() ? shownWords() + ' ' : ''}${cap(NOUNS)} as side chains with a sphere, coloured by ${colourMode().toLowerCase()}; the chain coloured by ${opt[1].toLowerCase()}.${mol.focusPos != null ? ' Focused: ' + rl(mol.focusPos) + '.' : ''}`,
       legend, body: parts.join(''), bodyH: y + 6, W: 760, note: sourceLine(), extra: { protein: T.acc, ...provenance() } });
     return f;
   }
@@ -1146,7 +1152,7 @@
     return { src: mol.src, chains, chain, sites, labels, focus: mol.focus, style: V.style, surface: V.surface, contacts: V.contacts && !!mol.focus, outline: V.light === 'outline' || V.light === 'aoline', light: V.light,
       ligands: pdbMode && V.ligands && ligands.size > 0, others: !pdbMode || V.others, bg: V.bg === 'black' ? 'black' : 'white', text: mol.text, fmt: mol.fmt,
       file: `${T.p.gene || T.acc}_${mol.src.tag}_${NOUNS.replace(/\W+/g, '_')}`,
-      header: [`${T.p.gene || T.acc} (${T.acc}), ${mol.src.what}`, `Cartoon colouring: ${opt[1]}`, `${cap(NOUN)} side chains, ${colourMode()}: ${markLegend().map(([l]) => l).join(', ')}`,
+      header: [`${T.p.gene || T.acc} (${T.acc}), ${mol.src.what}`, `Cartoon colouring: ${opt[1]}`, ...(shownWords() ? [shownWords()] : []), `${cap(NOUN)} side chains, ${colourMode()}: ${markLegend().map(([l]) => l).join(', ')}`,
         sourceLine(), `From ${D.site.name} (${location.href.split('#')[0]}). ${K.CIT?.preferred ? 'Please cite ' + K.CIT.preferred.text.replace(/\.\s*$/, '') + (K.CIT.preferred.doi ? ', doi:' + K.CIT.preferred.doi : '') + ', ' : 'Please cite '}the structure source and the original data sources.`] };
   }
   const cxRes = ranges => ranges.map(([a, b]) => (a === b ? '' + a : a >= 0 ? a + '-' + b : Array.from({ length: b - a + 1 }, (_, k) => a + k).join(','))).join(',');
