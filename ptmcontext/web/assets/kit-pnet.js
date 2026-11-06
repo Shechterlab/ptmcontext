@@ -51,9 +51,6 @@
     .then(d => { if (d?.accessions) { PD = d; pdIdx = new Map(d.accessions.map((a, k) => [a.toUpperCase(), k])); } return PD; }, () => null));
   const CLASS_IDS = () => (PD ? PD.classes.filter(c => PT?.classes?.[c]) : []);
   const classOf = acc => { const k = pdIdx?.get(base(acc)); if (k == null) return null; const bits = PD.bits[k] || 0; return PD.classes.find((c, i) => bits & (1 << i)) || null; };
-  // the words for the writers and readers of the mark, from the site's partner classes ("a PRMT (writer)" -> "PRMTs")
-  const roleWords = () => { const ci = PT?.class_info || {}, out = []; for (const [c, l] of Object.entries(PT?.classes || {})) if (['writer', 'reader'].includes(ci[c]?.role)) { const w = String(l).replace(/\s*\(.*?\)\s*/g, ' ').replace(/^(an?|an?other|the)\s+/i, '').trim() + 's'; if (w.length > 1 && !out.includes(w)) out.push(w); } return out; };
-  const ringWords = () => { const w = roleWords(); return w.length ? (w.length > 1 ? w.slice(0, -1).join(', ') + ' and ' + w[w.length - 1] : w[0]) : 'writers and readers'; };
   const className = c => (PT?.classes || {})[c] || c;
 
   // ---- STRING, then UniProt to turn its ids into accessions ---------------------------------------------------------
@@ -256,7 +253,7 @@
       const net = `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, colored by whether they have ${esc(W.marks)} in this dataset. The Table view lists the same partners and is the keyboard route.</p>` +
         `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network').replace(/<\/div>$/, '<button type="button" class="btn small" data-pn-cyto title="The network as Cytoscape tables: edges (File, Import, Network from File) and nodes (Import Table from File)">Cytoscape</button></div>')}</div>` +
         `<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div><div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` +
-        `<details class="pn-optd"><summary>Network options <span class="muted">· confidence, partners, color, layout, evidence channels, second ring of ${esc(ringWords())}</span></summary>${optionsHtml()}</details>`;
+        `<details class="pn-optd"><summary>Network options <span class="muted">· confidence, partners, color, layout, evidence channels, second ring of writers and readers</span></summary>${optionsHtml()}</details>`;
       return fold('p-ix', 'Protein interactions', 'who binds its ' + esc(W.marks) + ', partners, complexes and the network', K.pix.html(p, rec, K.prot.tables(p.acc)) + (CARDS ? ifaceHtml(p, rec) : ifaceFold(p, rec)) +
         `<details class="pn-fold"${CARDS && hasIface ? ' open' : ''}><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING, live; drag the nodes${hasIface ? (CARDS ? '' : '; open to draw it') : `; folded, as no ${esc(W.mark)} sits at an interface`}</span></summary>${net}</details>`, true);
     }
