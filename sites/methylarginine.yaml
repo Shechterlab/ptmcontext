@@ -406,7 +406,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
           "Transport and membrane traffic": [PC00227, PC00219, PC00150]
           "Cytoskeleton, adhesion and matrix": [PC00085, PC00211, PC00069, PC00070, PC00102]
           "Scaffolds, adaptors and chaperones": [PC00226, PC00072]
-          "Immunity and defense": [PC00090]
+          "Immunity and defence": [PC00090]
           "Other PANTHER classes": [PC00237, PC00210]
       unclassified: No PANTHER protein class
     universe: snapshot

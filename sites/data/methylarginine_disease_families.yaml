@@ -157,7 +157,7 @@ lists:                     # a name takes the family of the first rule it matche
           - 'creatine phosphokinase'
           - 'onion bulb'
           - "little's disease"
-      - family: 'Neurodevelopmental and behavioral'
+      - family: 'Neurodevelopmental and behavioural'
         match:
           - 'intellectual'
           - 'mental retardation'
@@ -244,7 +244,7 @@ lists:                     # a name takes the family of the first rule it matche
           - 'port-wine'
           - 'lymphedema'
           - 'endocardi'
-      - family: 'Blood and hematological'
+      - family: 'Blood and haematological'
         match:
           - 'anemi'
           - 'anaemi'
