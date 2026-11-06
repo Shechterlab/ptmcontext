@@ -245,6 +245,38 @@ def hypergeom_sf(k: int, N: int, M: int, n: int) -> float:
     return float(hypergeom.sf(k - 1, N, M, n))
 
 
+def gene_list_test(questions) -> list:
+    """The gene-list test: a list of proteins (or genes) the reader names, against the sets of each protein-set question.
+
+    ``questions`` is an iterable of ``(question, listed, background, sets)``: ``listed`` the units of the list (proteins,
+    or genes for a gene-based source), ``background`` the units the source annotates among the marked proteins (each
+    source its own background, e.g. the methylated proteins HPA annotates), and ``sets`` a mapping of set name to its
+    units. Only units in the background count: the list's n = |listed & background|, the background's N, the set's
+    M = |set & background| and k = |listed & set & background|.
+
+    For each set: p = P(X >= k), X hypergeometric (N, M, n), the one-sided upper test (``hypergeom_sf``; p = 1 for
+    k = 0); fold = (k/n)/(M/N) (None when n or M is 0); q = Benjamini-Hochberg over every set of every question tested,
+    small sets and k = 0 included. Returns one dict per set, in the order given, with question, set, k, n, M, N, fold, p
+    and q. A hand-picked list is not a random draw: p and q say how unusual the overlap would be for n marked proteins
+    taken at random, not anything about the mark. ptmstats.js ``listTest`` is the same test for the browser.
+    """
+    rows = []
+    for question, listed, background, sets in questions:
+        bg = set(background)
+        sel = set(listed) & bg
+        n, N = len(sel), len(bg)
+        for name, members in (sets.items() if hasattr(sets, 'items') else sets):
+            m = set(members) & bg
+            M, k = len(m), len(m & sel)
+            fold = (k / n) / (M / N) if n and M else None
+            rows.append({'question': question, 'set': name, 'k': k, 'n': n, 'M': M, 'N': N, 'fold': fold,
+                         'p': hypergeom_sf(k, N, M, n) if k else 1.0})
+    q = benjamini_hochberg([r['p'] for r in rows]) if rows else []
+    for r, v in zip(rows, q):
+        r['q'] = float(v)
+    return rows
+
+
 def mann_whitney_p(x: Iterable[float], y: Iterable[float]) -> float:
     """Two-sided Mann-Whitney U test of two samples (SciPy's default: exact for small samples without ties, else the
     normal approximation with tie and continuity corrections); NaN when either is empty. As the release's

@@ -5,6 +5,9 @@
      fisher(a,b,c,d)  two-sided Fisher exact p, and the Haldane–Anscombe odds ratio (0.5 added to each cell)
      hyperSF(k,N,M,n) P(X >= k) for the hypergeometric (one-sided enrichment test, as clusterProfiler's enricher)
      bh(ps)           Benjamini–Hochberg q values; null stays null
+     listTest(qs)     the gene-list test: qs = [{question, listed, background, sets: [[name, members], ...]}]; per set
+                      k, n, M, N (within the source's background), fold (k/n)/(M/N), the one-sided hypergeometric p and
+                      the BH q over every set of every question (ptmstats.gene_list_test)
    Exact to about 1e-10 relative against SciPy over the counts a site has; results computed here are labelled as
    retested on the selection, never as the site's published rows. Plain JavaScript, no build step; ptmcontext's site kit loads it as kit-stats.js. */
 (function () {
@@ -78,5 +81,18 @@
     for (let i = n - 1; i >= 0; i--) { cum = Math.min(cum, idx[i][0] * n / (i + 1)); out[idx[i][1]] = Math.min(cum, 1); }
     return out;
   }
-  Object.assign(K, { lgamma, hyperSF, fisher, mh, bh, chi2sf1 });
+  function listTest(qs) {
+    const rows = [];
+    for (const { question, listed, background, sets } of qs) {
+      const bg = new Set(background), sel = new Set([...listed].filter(u => bg.has(u))), n = sel.size, N = bg.size;
+      for (const [name, members] of sets) {
+        const m = new Set([...members].filter(u => bg.has(u))), M = m.size;
+        let k = 0; m.forEach(u => { if (sel.has(u)) k++; });
+        rows.push({ question, set: name, k, n, M, N, fold: n && M ? (k / n) / (M / N) : null, p: k ? hyperSF(k, N, M, n) : 1 });
+      }
+    }
+    const q = bh(rows.map(r => r.p)); rows.forEach((r, i) => { r.q = q[i]; });
+    return rows;
+  }
+  Object.assign(K, { lgamma, hyperSF, fisher, mh, bh, chi2sf1, listTest });
 })();

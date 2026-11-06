@@ -10,6 +10,7 @@ v1.4.3 (Shechterlab/PTM_Pipeline `scripts/common.py` at b0d9049); a change that 
 | `haldane_odds_ratio` / `fisher().or` | (a+.5)(d+.5) / ((b+.5)(c+.5)) (Haldane 1956; Anscombe 1956) |
 | `fisher_p` / `fisher().p` | two-sided Fisher exact p of [[a, b], [c, d]] (SciPy `fisher_exact`) |
 | `hypergeom_sf` / `hyperSF` | P(X >= k), N in the universe, M in the set, n drawn: the one-sided enrichment test of clusterProfiler's `enricher` |
+| `gene_list_test` / `listTest` | the gene-list test: for a named list, each set of each protein-set question, within the units its source annotates (its own background): k of the list's n in the set, M of the background's N; fold (k/n)/(M/N), the one-sided hypergeometric p (p = 1 at k = 0) and the BH q over every set tested, small sets included. The list is chosen, not drawn: p describes the overlap, not the mark |
 | `informative_strata` | strata with no empty margin and at least two observations |
 | `cmh_statistic` | continuity-corrected CMH: (max(0, abs(O - E) - 0.5))^2 / V, O = sum a, E = sum (a+b)(a+c)/n, V = sum (a+b)(c+d)(a+c)(b+d) / (n^2 (n-1)) (Mantel and Haenszel 1959); p = chi-square survival, 1 df |
 | `mantel_haenszel` / `mh().or, .p` | common odds ratio of the strata (statsmodels `StratifiedTable`, Mantel-Haenszel 1959) with the CMH p |
