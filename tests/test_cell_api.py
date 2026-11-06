@@ -54,6 +54,10 @@ const r = K.cell.draw(host, 'cell', {{ crop: true, labels: false }});
 out.draw = [r.drawing, r.W, r.H, r.parts.map(p => p.part).sort(), sv.attrs.viewBox, sv.style.maxWidth, /class="cell-svg cell-cell"/.test(host.innerHTML), /data-cell-part="cytosol"/.test(host.innerHTML)];
 out.nucleus = K.cell.draw(host, 'nucleus', {{ crop: [0, 0, 10, 10] }}).parts.map(p => p.part);
 out.none = K.cell.draw(host, 'nowhere');
+// a part chosen as a filter (w:<cell id>): the marks of proteins that any map places in the part
+K.sel.setHas = (a, st, p) => a === 'map_a' && p === 7;
+const w = K.filterKinds.w, wid = D.cell.id, t = w.test(wid, ['cytosol']);
+out.w = [w.valid(wid), w.valid('other'), w.value(wid, 'cytosol'), t([7]), t([8]), w.test(wid, ['nowhere'])([7])];
 console.log(JSON.stringify(out));"""
     run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
@@ -68,3 +72,4 @@ console.log(JSON.stringify(out));"""
     assert d[0] == 'cell' and d[1:3] == [1000, 500] and 'cytosol' in d[3] and 'nucleoplasm' not in d[3]
     assert d[4] == '205 40 590 420' and d[5] == '590px' and d[6] and d[7]
     assert 'nucleoplasm' in out['nucleus'] and 'cytosol' not in out['nucleus'] and out['none'] is None
+    assert out['w'] == [True, False, 'Cytosol', True, False, False]        # a part is a filter by name; a part the drawings do not have keeps nothing

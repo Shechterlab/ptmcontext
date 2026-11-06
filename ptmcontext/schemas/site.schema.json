@@ -5061,6 +5061,118 @@
                 ]
               },
               "description": "example chips: a search, or a label and the search it runs (default: website.examples)"
+            },
+            "pathways": {
+              "type": "array",
+              "description": "the pathway view: a Proteins button on the rows of these protein-set questions opens a pathway's sub-pathways as groups of protein chips (CONTRACTS.md, 'The pathway view'). One small file per tested set is built, read only when a reader opens it",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "analyses",
+                  "hierarchy",
+                  "members"
+                ],
+                "properties": {
+                  "analyses": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the protein-set questions whose sets are these pathways"
+                  },
+                  "hierarchy": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input",
+                      "set",
+                      "parents"
+                    ],
+                    "description": "the table of pathways: each one's id, name and parents",
+                    "properties": {
+                      "input": {
+                        "type": "string",
+                        "description": "a role of the site's inputs, or a manifest name"
+                      },
+                      "set": {
+                        "type": "string",
+                        "description": "the column of the set's id"
+                      },
+                      "parents": {
+                        "type": "string",
+                        "description": "the column of a set's parents (ids joined by separator); a set with none is a top-level pathway"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "the column of the set's name (default: its id)"
+                      },
+                      "separator": {
+                        "type": "string",
+                        "default": ";"
+                      },
+                      "sep": {
+                        "type": "string",
+                        "default": "\t",
+                        "description": "the file's column separator"
+                      }
+                    }
+                  },
+                  "members": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input",
+                      "set",
+                      "protein"
+                    ],
+                    "description": "the table of members: one row per protein of a set",
+                    "properties": {
+                      "input": {
+                        "type": "string",
+                        "description": "a role of the site's inputs, or a manifest name"
+                      },
+                      "set": {
+                        "type": "string",
+                        "description": "the column of the set's id"
+                      },
+                      "protein": {
+                        "type": "string",
+                        "description": "the column of the protein's UniProt accession"
+                      },
+                      "sep": {
+                        "type": "string",
+                        "default": "\t"
+                      }
+                    }
+                  },
+                  "source": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "the line under a pathway, 'Pathway from <name> <version> (<licence>)', and its links out",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "string"
+                      },
+                      "licence": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string",
+                        "description": "the source's address"
+                      },
+                      "link": {
+                        "type": "string",
+                        "description": "a pathway's own page, with {} for its id"
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         },

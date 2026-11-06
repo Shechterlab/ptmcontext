@@ -167,6 +167,16 @@ def problems(site: dict, words: dict | None = None) -> list[str]:
             out.append(f'website.front: more: false, but no card holds {sorted(left)}; a question must be reachable')
     for i in fr.get('short') or {}:
         known('short', i)
+    roles = site.get('inputs') or {}
+    for n, pw in enumerate(fr.get('pathways') or []):
+        where = f'pathways[{n}]'
+        for i in pw.get('analyses') or []:
+            if known(where, i) and by_id.get(i, {}).get('test') != 'protein_sets':
+                out.append(f'website.front.{where}: {i!r} is not a protein-set question, so its sets are no pathways')
+        for part in ('hierarchy', 'members'):
+            ref = (pw.get(part) or {}).get('input')
+            if ref and ref not in roles:
+                out.append(f'website.front.{where}.{part}: {ref!r} is not a role of this site\'s inputs')
     for i, cs in (fr.get('row_labels') or {}).items():
         if known('row_labels', i):
             classes('row_labels', i, list(cs))

@@ -1226,28 +1226,28 @@ website:                  # the look and words of the website (ptmc web); layout
         home: {analysis: "disease_family", classes: ["ALS / motor neuron / FTD", "Ataxia / cerebellar degeneration", "Myopathy / muscle / cardiomyopathy", "Alzheimer / tau / dementia", "Cancer / neoplasia"]}
       - key: classes
         title: "Protein classes"
-        short: "Protein class"
+        short: "Protein classes"
         chip: "Protein class"
         analyses: ["panther_group", "panther_class", "panther_subclass"]
         facets: [{analysis: panther_group, label: "Groups"}, {analysis: panther_class, label: "Classes"}]
         home: {analysis: "panther_group"}
       - key: cell
-        title: "Cell and condensates"
+        title: "Cell"
         short: "Cell"
         chip: "Location"
         cell: true
         analyses: ["where_in_the_cell", "hpa_location", "cell_region_hpa", "cell_region_hcm", "cell_region_organelle_ip", "cell_hcm_compartment", "cell_hcm_domain", "cell_organelle_ip", "cell_chromatin", "condensate_proteome", "condensate", "condensate_role", "eclip_rna_apexseq", "eclip_gene_tsaseq", "eclip_gene_hic"]
         facets: [{analysis: condensate_proteome, label: "Condensates"}, {analysis: hpa_location, label: "Locations"}]
       - key: position
-        title: "Position in the protein"
+        title: "Position"
         short: "Position"
         chip: "Position"
         analyses: ["disorder", "motif", "domain_context", "domain_class", "structure_context", "idr_charge", "sticker_context_3", "sticker_context_5", "sticker_context_3_idr", "sticker_context_5_idr", "which_factor"]
         facets: [{analysis: disorder, label: "Disorder"}, {analysis: motif, label: "Motifs"}, {analysis: domain_context, label: "Domains"}, {analysis: structure_context, label: "Structure"}]
         home: {analysis: "motif", classes: ["RGG", "RG", "RE"]}
       - key: interactions
-        title: "RNA, DNA and protein contacts"
-        short: "Contacts"
+        title: "Interactions"
+        short: "Interactions"
         chip: "Contact"
         analyses: ["crosslink", "pdb_interface", "predicted_interface", "intact", "sequence_proximity", "nucleic_acid_distance", "binding_protein", "go_binding"]
         facets: [{analysis: crosslink, label: "Crosslinks"}, {analysis: pdb_interface, label: "Structures"}, {analysis: predicted_interface, label: "Predicted"}, {analysis: binding_protein, label: "Binding proteins"}]
@@ -1260,6 +1260,11 @@ website:                  # the look and words of the website (ptmc web); layout
         facets: [{analysis: reactome_top_level, label: "Reactome"}]
         home: {analysis: "reactome_top_level"}
     more: Enzymes and sources
+    pathways:                # the Proteins button on the Reactome rows: a pathway's sub-pathways as groups of protein chips (CONTRACTS.md)
+      - analyses: [reactome_top_level, reactome_pathway]
+        hierarchy: {input: reactome_names, set: pathway_id, parents: parents, name: name}
+        members: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
+        source: {name: Reactome, version: "97", licence: "CC BY 4.0", url: "https://reactome.org", link: "https://reactome.org/PathwayBrowser/#/{}"}
     short:
       panther_group: "Protein class groups"
       panther_class: "Protein classes (PANTHER)"

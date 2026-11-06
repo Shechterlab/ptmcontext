@@ -4,7 +4,7 @@
    (filled at q ≤ 0.05) and a muted n, on one shared log scale. The rows are the site's own (D.rows, read through the
    kit), or the selection's, tested again in the browser by K.sel; a selection under the site's minimum, or made with
    a card's own question, leaves that card on the whole dataset. Nothing is computed here. A module of the site kit:
-   K.front = { home(), cards, sections() }; it registers no page of its own (the Overview draws it) and does nothing
+   K.front = { home(), cards, ... }; it registers no page of its own (the Overview draws it) and does nothing
    when the site's mode is classic. */
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
@@ -17,6 +17,8 @@
   const plural = (n, w) => `${int(n)} ${w}${n === 1 ? '' : 's'}`;
   const CARDS = F.cards || [];
   const short = i => F.short?.[i] || A[i]?.title || i;
+  // one name for a question everywhere: its short name (website.front.short) is the title the rest of the page reads
+  Object.entries(F.short || {}).forEach(([i, t]) => { if (A[i] && t) A[i].title = t; });
   const cardOfQ = q => CARDS.find(c => c.questions.includes(q));
   const VERSION = D.dataset?.version || '';
   // ---- the address: the abundance check and the data version a link was made with --------------------------------------
@@ -111,18 +113,6 @@
     (c.unresolved || []).forEach(raw => { if (/:/.test(raw)) out.push(`<span class="sel-chip bad" title="Matches nothing">${esc(raw)}${rm(`data-sel-drop-term="${esc(raw)}"`, raw)}</span>`); });
     return out.join('');
   }
-  // ---- the Sections menu: every page and every question, reachable from the cards --------------------------------------
-  function pages() {
-    const base = [['overview', 'Overview'], ...K.tabs.map(f => f()).filter(Boolean).map(([v, n]) => [v, n]), ['statistics', 'Statistics'], ['method', 'Method'], ...(K.tabsEnd || []).map(f => f()).filter(Boolean).map(([v, n]) => [v, n])];
-    return base.filter(([v]) => v === 'overview' || K.views[v] || ['statistics', 'method'].includes(v)).map(([v, n]) => [v, K.tabName(v, n)]);
-  }
-  function sections() {
-    const qlist = qs => qs.filter(q => A[q]).map(q => `<li><a href="${esc(K.link('overview', q))}">${esc(short(q))}</a></li>`).join('');
-    return `<details class="fr-sections"><summary class="btn small" aria-haspopup="true">Sections</summary><div class="fr-pop" role="group" aria-label="Pages and questions">` +
-      `<p class="fr-h">Pages</p><ul>${pages().map(([v, n]) => `<li><a href="${esc(K.link(v))}">${esc(n)}</a></li>`).join('')}</ul>` +
-      CARDS.map(c => `<p class="fr-h">${esc(c.title)}</p><ul>${qlist(c.questions)}</ul>`).join('') +
-      (F.more.questions.length ? `<p class="fr-h">${esc(F.more.title)}</p><ul>${qlist(F.more.questions)}</ul>` : '') + '</div></details>';
-  }
   // ---- the home ----------------------------------------------------------------------------------------------------------
   const sitesOn = () => `${int(K.sel.nMarks())} ${unit(K.sel.nMarks())} on ${plural(K.sel.nProteins(), 'protein')}`;
   let lastLive = '';
@@ -134,7 +124,7 @@
     const ax = axisOf(vals);
     const nf = K.sel.nFilters(), bar = `<div class="fr-bar"><button type="button" class="btn fr-filter" data-rail-open="filters" aria-haspopup="dialog">Filter${nf ? ` <span class="badge">${nf}</span>` : ''}</button>` +
       (act ? `<b class="fr-count" role="status">${loading ? 'Loading the selection…' : esc(sitesOn())}</b>${ready() ? chipsHtml() : ''}<button type="button" class="linkish fr-all" data-sel-clear-all>Whole dataset</button>`
-        : `<span class="fr-count muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins</span>`) + sections() +
+        : `<span class="fr-count muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins</span>`) +
       `<span class="fr-tools">${act ? `<button type="button" class="btn small" data-sel-save>Save</button>${K.views.compare && K.sel.savedList().length ? '<button type="button" class="btn small" data-go-compare>Compare</button>' : ''}` +
         `<button type="button" class="btn small" data-vs="${S.vs === 'marks' ? 'residues' : 'marks'}" aria-pressed="${S.vs === 'marks'}" title="Compare the selection with the site’s other ${esc(W.marks)}, not with the other ${esc(W.residues)} of its proteins">What sets it apart</button>` : ''}` +
         `<button type="button" class="btn small" data-sel-copy>Copy link</button></span></div>`;
@@ -150,7 +140,7 @@
       const cell = c.cell ? `<div class="fr-cell" id="fr-cell-draw" aria-label="The cell, coloured by odds ratio"></div>` +
         (x.cellRows || []).map(r => rowHtml({ ...r, label: r.label }, ax, { href: K.link('overview', D.cell.id) }, false)).join('') + '<p class="fr-cnote">A summary of the cell maps (median, adjusted for abundance), not a test.</p>' : '';
       const tag = c.cell ? 'OR' : fold ? 'fold' : 'OR';
-      return `<section class="fr-card" data-card="${esc(c.key)}" aria-labelledby="fc-${esc(c.key)}"><header><h2 id="fc-${esc(c.key)}"><a href="${esc(K.link('overview', x.aid || c.home?.analysis || D.cell?.id || ''))}">${esc(c.title)}</a></h2>` +
+      return `<section class="fr-card${c.cell ? ' fr-cellcard' : ''}" data-card="${esc(c.key)}" aria-labelledby="fc-${esc(c.key)}"><header><h2 id="fc-${esc(c.key)}"><a href="${esc(K.link('overview', x.aid || c.home?.analysis || D.cell?.id || ''))}">${esc(c.title)}</a></h2>` +
         `${x.own ? '<span class="tag">Whole dataset</span>' : ''}<abbr class="tag" title="${tag === 'fold' ? 'Fold enrichment: how many times more often the set is among the marked proteins than among the others' : 'Odds ratio: the odds that a mark is in the class against the odds for the other residues of the same proteins'}" tabindex="0">${tag === 'fold' ? 'fold' : 'OR'}</abbr></header>` +
         `${cell}<div class="fr-rows" role="group" aria-label="${esc(c.title)}">${rows}</div>${axisHtml(ax)}` +
         (x.own ? '<p class="fr-cnote">Whole dataset: your selection was made with this question.</p>' : '') +
@@ -170,14 +160,14 @@
     document.body.classList.toggle('fr-on-home', S.view === 'overview' && !S.arg);
     if (S.view !== 'overview' || S.arg) return;
     const el = document.getElementById('fr-cell-draw');
-    if (el && K.cell?.draw) K.cell.draw(el, 'cell', { crop: narrow(), labels: !narrow(), onPart: () => K.go('overview', { arg: D.cell.id }) });
+    // the drawing scales to the card; on a phone the kit's crop of it, without labels (the rows under it name the parts); a part chosen is a filter chip
+    if (el && K.cell?.draw) { K.cell.draw(el, 'cell', { crop: narrow(), labels: !narrow(), onPart: part => K.sel.toggle('w:' + D.cell.id, part) }); el.dataset.narrow = narrow() ? '1' : ''; }
     const live_ = document.getElementById('fr-live');
     if (live_ && K.front.say !== lastLive) { lastLive = K.front.say; live_.textContent = K.front.say; }
   }
   const lv = document.createElement('div'); lv.id = 'fr-live'; lv.className = 'vh'; lv.setAttribute('role', 'status'); lv.setAttribute('aria-live', 'polite'); document.body.appendChild(lv);
   (K.afterRender ||= []).push(after);
+  let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { const el = document.getElementById('fr-cell-draw'); if (el && (el.dataset.narrow === '1') !== narrow()) after(); }, 200); });
   document.addEventListener('change', e => { if (e.target.matches?.('[data-fr-ab]')) { S.ab = e.target.checked; K.writeHash(false); K.render(); } });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.fr-sections[open]').forEach(d => { d.open = false; d.querySelector('summary').focus(); }); });
-  document.addEventListener('click', e => { document.querySelectorAll('.fr-sections[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; }); });
-  K.front = { home, cards: CARDS, sections, say: '', homeRows, axisOf };
+  K.front = { home, cards: CARDS, say: '', homeRows, axisOf, short };
 });

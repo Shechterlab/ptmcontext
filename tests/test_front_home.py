@@ -37,7 +37,7 @@ const fs = require('fs');
 global.window = global; const noop = () => {};
 const el = () => ({ style: {}, setAttribute: noop, appendChild: noop, addEventListener: noop, querySelectorAll: () => [], classList: { toggle: noop } });
 global.document = { createElement: el, body: el(), addEventListener: noop, getElementById: () => null, querySelectorAll: () => [] };
-global.matchMedia = () => ({ matches: false });
+global.matchMedia = () => ({ matches: false }); global.addEventListener = noop;
 global.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve(JSON.parse(fs.readFileSync(SEL, 'utf8'))) });
 eval(fs.readFileSync(BUILT + '/kit-stats.js', 'utf8'));
 eval(fs.readFileSync(ASSETS + '/kit-select.js', 'utf8'));

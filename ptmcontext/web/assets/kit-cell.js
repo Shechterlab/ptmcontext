@@ -113,6 +113,12 @@
   // stratum of the covariate a table (Mantel–Haenszel, BH over the map's sets), from the counts of selection.json; a
   // map without strata, by the hypergeometric test. Not compared: a selection made with the map (or one reading the
   // same data), one that names its proteins, or a set holding every selected protein.
+  // w:<cell id> (a part of the drawings chosen as a filter, by its key): the marks of proteins that a map places in the part,
+  // any map counting. A selection made with a part is not compared against the maps that place it.
+  const partRows = part => { for (const L of [LAYERS.part, LAYERS.region]) for (const [, rows] of L.groups) { const row = rows.find(r => r.part === part); if (row) return { L, row }; } return null; };
+  const partPairs = part => { const x = partRows(part); return x ? x.L.cols.filter(aid => x.row.map[aid]).map(aid => [aid, x.row.map[aid]]) : []; };
+  const partName = part => { const x = partRows(part); return x ? (D.front?.row_labels?.[ID]?.[part] || rowName(x.row)) : part; };
+  const partUses = aid => (S.f['w:' + ID] || []).some(part => partPairs(part).some(([a]) => a === aid));
   const scopedNow = () => K.selOn() && !K.vsOn() && !!K.sel.data() && K.sel.testable();
   let memo = { c: null, maps: {} };
   function selTests(aid) {
@@ -122,7 +128,7 @@
     if (memo.c !== c) memo = { c, maps: {} };
     if (memo.maps[aid]) return memo.maps[aid];
     const inBg = new Set(ps.in_background), sel = [...(c.proteins || [])].filter(p => inBg.has(p)), n = sel.length, on = new Set(sel);
-    const blocked = K.sel.madeWith(aid) || K.sel.namesProteins();
+    const blocked = K.sel.madeWith(aid) || K.sel.namesProteins() || partUses(aid);
     const cv = ps.covariate, counts = cv?.counts, res = new Map(), tested = [];
     const at = counts ? Object.fromEntries(counts.codes.map((x, i) => [x, i])) : null;
     const nS = counts ? counts.codes.map(() => 0) : null;
@@ -613,7 +619,13 @@
     requestAnimationFrame(grow);
     return { drawing: d.drawing, W: f.W, H: f.H, parts: Object.values(info).filter(x => x.drawings.includes(d.drawing)) };
   }
-  Object.assign(K.cell, { list: () => DRAWINGS.map(d => ({ drawing: d.drawing, title: d.title || d.drawing, parts: PARTS[d.drawing], crop: crops[d.drawing] || null })), parts: partValues, draw: drawInto });
+  K.filterKinds = { ...(K.filterKinds || {}), w: {
+    valid: id => id === ID,
+    label: () => (D.front?.cards || []).find(c => c.cell)?.chip || C.title || 'Where in the cell',
+    value: (id, v) => partName(v),
+    test: (id, vals) => { const pairs = vals.flatMap(partPairs); return m => pairs.some(([a, s]) => K.sel.setHas(a, s, m[0])); },
+  } };
+  Object.assign(K.cell, { partName, list: () => DRAWINGS.map(d => ({ drawing: d.drawing, title: d.title || d.drawing, parts: PARTS[d.drawing], crop: crops[d.drawing] || null })), parts: partValues, draw: drawInto });
 
   const figName = k => `${D.site.id}_${ID}_${k === 'one' ? UI.map : k}`;
   const block = (k, head, cls) => `<div class="cell-block ${cls}" id="cell-${k}"><div class="fig-head"><span class="flabel">${esc(head)}</span>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', head, ID).replace(/data-cell-exp="(\w+)"/g, `data-cell-exp="$1" data-cell-fig="${k}"`)}</div>` +
@@ -757,6 +769,7 @@
     ['[data-cell-select]', () => {
       const [L, row] = rowOf(UI.row), mem = members(L, row, scopedNow()) || [];
       if (!mem.length) return;
+      if (K.front && row.part) { UI.row = null; return K.sel.toggle('w:' + ID, row.part); }     // the cards front end: the part is a chip beside the other filters
       const cols = L.cols.filter(aid => row.map[aid]);
       if (cols.length === 1) return selectFilter(cols[0], row.map[cols[0]]);   // one map: its own filter
       S.f = {}; S.q = mem.map(m => (D.proteins.filter(x => x[1] === m.gene).length === 1 ? m.gene : m.acc)).join(' '); UI.row = null; K.writeHash(true); K.render();

@@ -44,7 +44,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-busy.js', 'kit-cols.js', 'kit-late.js', 'kit-stats.js', 'kit-select.js', 'kit-rail.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-factors.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit-front.js', 'kit.js')
+MODULES = ('kit-busy.js', 'kit-cols.js', 'kit-late.js', 'kit-stats.js', 'kit-select.js', 'kit-rail.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-factors.js', 'kit-glance.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit-front.js', 'kit-sections.js', 'kit-pathway.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -926,6 +926,13 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         (out / 'data').mkdir(parents=True, exist_ok=True)
         (out / 'data' / 'selection.json').write_text(json.dumps(sel, separators=(',', ':')))
         log(f"  selection data: {len(sel['marks']):,} marks, {(out / 'data' / 'selection.json').stat().st_size / 1e6:.1f} MB")
+        # the pathway view's files (website.front.pathways), read one at a time when a reader opens a pathway
+        if data.get('front'):
+            from . import pathways as PW
+            kept = json.loads((folder / 'protein_sets.json').read_text()) if (folder / 'protein_sets.json').exists() else {}
+            pw = PW.build(site, run, kept, listing, fasta, out, log)
+            if pw:
+                data['front']['pathways'] = pw
     # the site's pages (website.pages) and the whole tables they read, one file each, read when a page first needs one
     data['page_tables'], inline_page_tables = page_tables(site, web.get('tables') or {}, run, listing, out, log) if listing else ({}, '')
     data['pages'] = web.get('pages') or []
@@ -947,12 +954,14 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     # the rows travel once, as the statistics table's own text (for its downloads): the page reads its rows from it
     page_data = {k: v for k, v in data.items() if k != 'rows'}
     one_file_data = page_data
+    if page_data.get('front', {}).get('pathways'):                       # the pathway files are read one at a time: not in the one-file copy
+        one_file_data = {**page_data, 'front': {k: v for k, v in page_data['front'].items() if k != 'pathways'}}
     if late:
         (out / 'data').mkdir(parents=True, exist_ok=True)
         (out / 'data' / 'site.json').write_text(json.dumps({'protein_attributes': late}, separators=(',', ':'), allow_nan=False))
         log(f"  first screen: {len(json.dumps(page_data, separators=(',', ':'), allow_nan=False)) / 1e6:.1f} MB of data in the page; "
             f"data/site.json holds {len(json.dumps(late, separators=(',', ':'), allow_nan=False)) / 1e6:.1f} MB for later")
-        one_file_data = {k: v for k, v in page_data.items() if k != 'late'}
+        one_file_data = {k: v for k, v in one_file_data.items() if k != 'late'}
         one_file_data['protein_attributes'] = {**page_data['protein_attributes'], 'values': {**page_data['protein_attributes']['values'], **late}}
     else:
         (out / 'data' / 'site.json').unlink(missing_ok=True)
