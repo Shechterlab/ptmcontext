@@ -241,14 +241,13 @@
     return `<p class="sel-line off" role="status">Not filtered by your selection.</p>`;
   }
   function tabs() {
-    if (K.front) { $('#tabs').innerHTML = ''; return; }      // the cards front end: the Sections menu is the navigation (kit-sections.js)
     const sel = K.sel?.active();
     // K.tabsEnd: a module's page after Method (kit-help.js: Help)
     const t = [['overview', 'Overview', sel ? 'selection' : null], ...K.tabs.map(f => f()).filter(Boolean), ['statistics', 'Statistics', D.rows.length], ['method', 'Method', null], ...(K.tabsEnd || []).map(f => f()).filter(Boolean)]
       .map(([v, name, n]) => [v, tabName(v, name), n]);
     const on = v => S.view === v || (K.views[S.view]?.tab === v);
-    $('#tabs').innerHTML = `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>` + t.map(([v, name, n]) => `<a class="tab" href="${esc(link(v))}"${tabHint(v) ? ` title="${esc(tabHint(v))}"` : ''}${on(v) ? ' aria-current="page"' : ''}>${name}` +
-      (n != null && n !== 'selection' ? ` <span class="count">${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + (sel && follows(v) ? ' <span class="selmark" title="Follows your selection" aria-label="follows your selection">●</span>' : '') + '</a>').join('') + variantSwitch();
+    $('#tabs').innerHTML = (K.front ? '' : `<button class="tab rail-btn" type="button" data-rail-open="filters" title="Sections and filters">☰</button>`) + t.map(([v, name, n]) => `<a class="tab" href="${esc(link(v))}"${tabHint(v) ? ` title="${esc(tabHint(v))}"` : ''}${on(v) ? ' aria-current="page"' : ''}>${name}` +
+      (n != null && n !== 'selection' && !K.front ? ` <span class="count">${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + (sel && follows(v) ? ' <span class="selmark" title="Follows your selection" aria-label="follows your selection">●</span>' : '') + '</a>').join('') + variantSwitch();
   }
   // the site's variants (the same questions on other marks, such as with lower-confidence sites): a switch to each,
   // and in a variant the switch back; the page, its selection and its place are kept

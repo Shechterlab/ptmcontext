@@ -734,6 +734,8 @@ question, an odds ratio for a residue question; a model has none), and the stron
 | `rows` | rows per home card (default 5) |
 | `cards[]` | `title`, and `key` (its address word), `short`, `chip` (the word for what a row selects), `note` (a line under the card and under its questions' titles), `sections` (the analyses' sections it holds), `analyses` (questions it names, in order), `cell` (the cell drawing; needs `website.cell`), `rows`, `facets[]` (`analysis`, `label`, `measure: fold or odds`), `home` (`analysis` of a facet, and `classes` to show or else `top` and `q_max`) |
 | `more` | heading of the card for the questions no card holds (default "More questions"); `false` when every question is in a card |
+| `topics[]` | the Sections grid: `title` and `questions` (the first is the topic's page; the others are near-duplicates behind a toggle on it). Default: one topic per card facet, the card's other questions under its first |
+| `tiles[]` | compact share tiles under the cards: `title`, `note`, and `rows[]` of `analysis`, `class`, `label`; a row is the share of the marked proteins (or sites) in the class against the share of the others |
 | `short` | question id to a short name (4 words or fewer) |
 | `row_labels` | question id to class or set code to a short row label (a code is unique only within its question) |
 | `summary_only` | question id to class codes left out of a card's summary rows, still on the question's page |

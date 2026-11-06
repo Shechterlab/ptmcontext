@@ -5004,6 +5004,46 @@
                 }
               ]
             },
+            "topics": {
+              "type": "array",
+              "description": "the Sections grid: one tile per topic, the first question its page, the others near-duplicates behind a toggle on it (default: one topic per card facet, the card's other questions under its first)",
+              "items": {
+                "type": "object",
+                "required": ["title", "questions"],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {"type": "string"},
+                  "questions": {"type": "array", "minItems": 1, "items": {"type": "string"}, "description": "question ids; the first is the topic's page"}
+                }
+              }
+            },
+            "tiles": {
+              "type": "array",
+              "description": "compact share tiles under the home cards: each row is a class of a question, drawn as the share of the marked proteins or sites in it against the share of the others",
+              "items": {
+                "type": "object",
+                "required": ["title", "rows"],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {"type": "string"},
+                  "note": {"type": "string"},
+                  "rows": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "required": ["analysis", "class"],
+                      "additionalProperties": false,
+                      "properties": {
+                        "analysis": {"type": "string"},
+                        "class": {"type": "string"},
+                        "label": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            },
             "short": {
               "type": "object",
               "additionalProperties": {
