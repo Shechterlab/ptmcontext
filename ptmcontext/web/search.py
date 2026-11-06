@@ -244,7 +244,7 @@ def nearby(sel: dict, listing: list, spec: dict, path: Path, within: int) -> dic
                 pos = m[1]
                 k = bisect.bisect_right(iv, (pos, 10**9))
                 best = None
-                for a, b in iv[max(0, k - 50):k + 1]:          # stretches are short: the neighbours suffice
+                for a, b in iv[max(0, k - 50):k + 1]:          # stretches are short: the neighbors suffice
                     x = 0 if a <= pos <= b else min(abs(a - pos), abs(b - pos))
                     best = x if best is None else min(best, x)
                 if best is not None and best <= within:

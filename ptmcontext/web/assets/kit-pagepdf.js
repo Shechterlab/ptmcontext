@@ -1,5 +1,5 @@
 /* A page as an A4 PDF, without the print dialog (the explorer's "Download PDF"): the page in its print layout (light
-   colours, no controls), drawn by html2canvas-pro and cut into pages by jsPDF at the ends of cards, table rows and
+   colors, no controls), drawn by html2canvas-pro and cut into pages by jsPDF at the ends of cards, table rows and
    paragraphs, with a running head (the site, the page) and page numbers. The pages are images; Print keeps text
    selectable. A module of the site kit: K.pagePdf(root, title, filename, btn). */
 (window.PTMC_MODULES ||= []).push(K => {

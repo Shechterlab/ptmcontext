@@ -731,7 +731,7 @@ a.exp-btn { display: inline-flex; align-items: center; text-decoration: none; }
 
 /* ---- the protein page: slim header, headline cards, the site card's blocks, the sites table (kit-proteins.js,
    kit-sitecard.js, kit-columns.js). Tones a/b/c of a tag are the site file's (RNA, DNA, protein in the methylarginine
-   site); every colour is a theme token. */
+   site); every color is a theme token. */
 :root { --tone-a: #6d28d9; --tone-b: #9a6b16; --tone-c: #0f766e; }
 :root[data-theme="dark"] { --tone-a: #c4b5fd; --tone-b: #f3c26b; --tone-c: #5eead4; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --tone-a: #c4b5fd; --tone-b: #f3c26b; --tone-c: #5eead4; } }
@@ -1064,7 +1064,7 @@ th[data-sort] { cursor: pointer; }
 .idr-fold > summary .sub { margin: 0; font-size: 0.86rem; color: var(--muted); }
 .idr-fold[open] > summary { margin-bottom: 0.6rem; }
 
-/* ---- the entry pictures (kit-glance.js, and the landing page's cards): series colours follow the class, text stays in ink ---- */
+/* ---- the entry pictures (kit-glance.js, and the landing page's cards): series colors follow the class, text stays in ink ---- */
 :root { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --gl-dom: #6b7a82; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --gl-dom: #93a8b0; } }
 :root[data-theme="dark"] { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --gl-dom: #93a8b0; }
@@ -1124,7 +1124,7 @@ th[data-sort] { cursor: pointer; }
 .ctl-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.3rem 1.2rem; margin: 0.4rem 0; }
 .ctl-row .against, .ctl-row .key { margin: 0; }
 
-/* ---- forest mini-charts: a wide label column, "less | more" under the plot, values in text colours -------------------- */
+/* ---- forest mini-charts: a wide label column, "less | more" under the plot, values in text colors -------------------- */
 .trow, .taxis { grid-template-columns: minmax(7rem, 38%) minmax(0, 1fr) 3.6rem; }
 .trow .lab { overflow-wrap: normal; word-break: normal; line-height: 1.25; }
 .trow .val, .trow .val.more, .trow .val.less, .trow .val.same, .trow .val.ns { color: var(--ink); }
@@ -1205,7 +1205,7 @@ table.tbl td.zero, table.tbl td .zero { color: inherit; opacity: 1; }
 .map-key > summary .muted { font-weight: 400; }
 .map-legend.lg-group { margin-bottom: 0.15rem; }
 .map-legend.lg-group > b { flex: 0 0 9rem; color: var(--muted); font-size: var(--fs-cap); text-transform: none; }
-/* The scroll cue of a table wider than its card: a soft shade at the edge it can still scroll towards. --edge is a light
+/* The scroll cue of a table wider than its card: a soft shade at the edge it can still scroll toward. --edge is a light
    shade on the light theme and a deeper one on the dark. Drawn over the table (sticky, so over its opaque headers too),
    its opacity driven by the scroll position; a browser without scroll-driven animation keeps the older shade behind
    the cells. The shade is the same size on every table, so nothing moves. */
@@ -1666,7 +1666,7 @@ a.pchip:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
 }
 
 /* ======== home, phone chrome and navigation redesign (kit-front.js, kit-sections.js): one block, apart from the protein and site page kits ======== */
-/* the less-often bars of a question page: the "less" colour, filled (they were drawn pale, like "no difference") */
+/* the less-often bars of a question page: the "less" color, filled (they were drawn pale, like "no difference") */
 .qrow .bar.less { fill: var(--less); stroke: var(--less); stroke-width: 1; }
 .kd.less { background: var(--less); border: 0; }
 /* the Filter button inside the search box */

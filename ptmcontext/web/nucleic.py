@@ -1,7 +1,7 @@
 """What the protein page's RNA and DNA interactions card (assets/kit-prna.js) reads from the site file.
 
 The card gathers what a site knows of a protein's RNA and DNA: the marks in contact with them in PDB structures (the 3D
-viewer's `contacts` and `bound` tables, website.protein.structure, and a `near` table for contact through a neighbouring
+viewer's `contacts` and `bound` tables, website.protein.structure, and a `near` table for contact through a neighboring
 residue), the runs of residues bound in structures (`regions`), residues crosslinked in living cells (`crosslinks`), the
 sequences bound (the viewer's bound windows; DNA-binding profiles in `motifs`), RNA Bind-n-Seq (`rbns`) and eCLIP
 (`eclip`). It reads `website.protein.nucleic` as it stands (CONTRACTS.md, "RNA and DNA interactions"); this module checks it

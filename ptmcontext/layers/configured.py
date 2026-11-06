@@ -4,9 +4,9 @@
                    filled by any interval table: a unit table, or any layout its manifest entry maps with `columns`)
   residue_values   residues by a per-residue value (pLDDT, a conservation or variant-effect score), cut into classes at
                    the site's thresholds (a role filled by a per-residue table mapped with `columns`)
-  residue_lists    flags: whether a residue is listed in each of several tables (a change seen in tumours, a crosslink),
+  residue_lists    flags: whether a residue is listed in each of several tables (a change seen in tumors, a crosslink),
                    each table a role filled by a list of residues mapped with `columns` {accession, position}
-  neighbours       residues by how many residues of a set (the profile's stickers, or with: residues) lie within a
+  neighbors       residues by how many residues of a set (the profile's stickers, or with: residues) lie within a
                    window along the chain, the residue itself left out: none, one, two_plus (with: window, and
                    two_plus, the count that makes the last class, default 2)
 
@@ -23,12 +23,12 @@ The classes they make (for filters, website.protein.facts and labels):
   residue_values   the classes given, from the lowest bin up (a value equal to a threshold goes to the class above
                    it), and missing (default no_value) for a residue without a value
   residue_lists    the flags given, in their order (a residue may carry several, or none)
-  neighbours       none, one, two_plus (a residue is in exactly one)
+  neighbors       none, one, two_plus (a residue is in exactly one)
 
 Their classes have an order (inside to far, the lowest bin up), which the website keeps (ordered; the site file's
 analysis may say `ordered: false`, or give headed `groups` of them). Each draws its regions (or its runs of residues in
 one class) as a row of the protein map. Words a page shows (title,
-question, sub, labels, help, section, track, track_help) and the row's colours (colours: {class: colour}) may be given
+question, sub, labels, help, section, track, track_help) and the row's colors (colours: {class: color}) may be given
 with the parameters; otherwise they are made from the noun.
 """
 from __future__ import annotations
@@ -66,7 +66,7 @@ def _need(params: dict, aid: str, *keys: str, layer: str = '') -> None:
 
 
 def _cap(text: str) -> str:
-    """The first letter capitalised, unless the word is written with capitals inside (pLDDT, mRNA)."""
+    """The first letter capitalized, unless the word is written with capitals inside (pLDDT, mRNA)."""
     first = text.split(' ')[0]
     return text if any(c.isupper() for c in first[1:]) else text[:1].upper() + text[1:]
 
@@ -182,7 +182,7 @@ def residue_lists(params: dict, aid: str) -> Layer:
 
 def sticker_counts(residues: pd.DataFrame, sequences: dict, letters: set, window: int) -> np.ndarray:
     """For each (accession, position) row, how many residues of the set lie within window residues of it along the
-    chain, the residue itself left out (positions are 1-based; the ends of a chain have fewer neighbours)."""
+    chain, the residue itself left out (positions are 1-based; the ends of a chain have fewer neighbors)."""
     out = np.zeros(len(residues), dtype=np.int64)
     pos = residues['position'].to_numpy(dtype=np.int64)
     for acc, idx in residues.groupby('accession', sort=False).indices.items():

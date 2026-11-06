@@ -137,19 +137,19 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   (its `mantel_haenszel` rows); one without, by its fold enrichment.
 - `regions`: rows `{label, set? (default label), part?, name?, in_text?}`, the sets of each map's regions question.
 - `compartments`: groups `{group, rows}`, each row `{label, sets: {analysis: set}, part?, also?, name?, in_text?}`: the
-  set it is in each map; the part of the drawings it colours, and `also` the parts it colours when they have no row of
+  set it is in each map; the part of the drawings it colors, and `also` the parts it colors when they have no row of
   their own; its name on the drawings (default label) and inside a sentence (default lower case).
 - `drawings`: `[{drawing, title?}]`, the kit's drawings shown. Their parts are `ptmcontext/config/cell_drawings.json`
   (geometry only: `cell` has cytosol, microtubules, actin, pm, er, ribosomes, nucleus, golgi, mito, endolyso, perox,
   granules, pbodies, centrosome; `nucleus` has nucleoplasm, chromatin, periphery, perinucleolar, nucleolus, speckles,
-  paraspeckles, pml, cajal, bodies, envelope, pores). A part no row colours is drawn outlined and not labelled; what a
+  paraspeckles, pml, cajal, bodies, envelope, pores). A part no row colors is drawn outlined and not labeled; what a
   part is called on a page is the row's name, never the kit's.
-- A part (and a region, on the tile) takes the median log2 odds ratio of the maps that have it; it is coloured when at
-  least half of them differ that way (q ≤ 0.05 and 1.1× or more), grey otherwise.
+- A part (and a region, on the tile) takes the median log2 odds ratio of the maps that have it; it is colored when at
+  least half of them differ that way (q ≤ 0.05 and 1.1× or more), gray otherwise.
 - `title, question, intro, note`: words.
 
 The kit draws the cell for other pages too: `K.cell.list()` (the drawings, their parts and phone crop, the crop from
-`config/cell_drawings.json`), `K.cell.parts(scoped?)` (every part a `website.cell` row colours: its row, tone, direction
+`config/cell_drawings.json`), `K.cell.parts(scoped?)` (every part a `website.cell` row colors: its row, tone, direction
 `more`/`less`/`ns`/`na`, the median log2 odds ratio and each map's own) and `K.cell.draw(el, drawing, {scoped, crop, labels, onPart})`
 (the drawing as the cell page draws it; `onPart` takes a click on a part).
 
@@ -231,9 +231,9 @@ description, href) and a variant's page names its way back (`variant.base`): a s
 (letters, digits and `_`), its `column`, a `label`, a `kind` (`category`, `list` or `number`), and optionally the
 `separator` of a list (default `; `), display names for its `values`, a `link` (another column, aligned item by item,
 and a URL with `{}`, as each study to its DOI), `records` (a value that is a database, linked to its own record of the
-protein: a URL with `{acc}`), `colours`, `colour` (the map and Sites tab may colour by it), `filter`, `control`
+protein: a URL with `{acc}`), `colours`, `colour` (the map and Sites tab may color by it), `filter`, `control`
 (`chips`, or `select` for many values) and `help`. `present: true` makes the value whether the column holds anything
-(`yes` or `no`: "changed in tumours" over a column of changes); `pair_with` names a second list column in step with the
+(`yes` or `no`: "changed in tumors" over a column of changes); `pair_with` names a second list column in step with the
 first, and each value becomes `<value>:<its partner>` (a perturbation and its call; lists of different lengths are an
 error). A mark on several rows takes the first kept row's values.
 
@@ -293,7 +293,7 @@ names that the site file does not keep. A site without counts has none of this.
 ## Map rows
 
 The protein map's own rows: evidence along a protein that no question tests (crosslinks, interfaces, changes in
-tumours, dense windows, ...). One format serves three shapes; a table in any layout is mapped to it in the site file
+tumors, dense windows, ...). One format serves three shapes; a table in any layout is mapped to it in the site file
 (`website.protein.map.rows[].from[].columns`), so a release's table, a backend's export or a user's own file in the same
 shape gives the same row:
 
@@ -302,15 +302,15 @@ shape gives the same row:
 | `accession` | string | yes | the protein (an entry of the snapshot; other accessions are left out) |
 | `start`, `end` | integer | a region | 1-based, inclusive, on the snapshot's sequence; items outside it are left out |
 | `position` | integer | a residue | instead of start and end |
-| `class` | code | no | what the item is; the row's `classes` give each code its words, mark (`tick`, `box`, `pred`, `dot`, `diamond`, `named`) and colour, in drawing order, and items of other codes are left out. Several columns may be named: their values are joined with `:` (`dna_crosslink:candidate_residue`) |
+| `class` | code | no | what the item is; the row's `classes` give each code its words, mark (`tick`, `box`, `pred`, `dot`, `diamond`, `named`) and color, in drawing order, and items of other codes are left out. Several columns may be named: their values are joined with `:` (`dna_crosslink:candidate_residue`) |
 | `label` | string | no | its words: a column, or a template naming columns, `{column}` or `{column:.2g}` for a number |
-| `value` | number | no | a count or score: a per-site count (tumours carrying a change), partners at an interface; the row's `value` gives its words (`one`, `many`, with `{n}`), and may size ticks (`size`) or shade boxes (`opacity: [from, to]`) by it |
+| `value` | number | no | a count or score: a per-site count (tumors carrying a change), partners at an interface; the row's `value` gives its words (`one`, `many`, with `{n}`), and may size ticks (`size`) or shade boxes (`opacity: [from, to]`) by it |
 | `ref` | string | no | an accession of its own (an InterPro entry), linked by `config/ref_links.json` |
 | `sources` | list (`; `) | no | the sources behind it; `website.protein.map.sources` gives each its words and paper (`cite`, `doi`) |
 
 - a **per-residue list**: `accession`, `position`, and `class` or `label` (RNA-crosslinked residues);
 - a **region list**: `accession`, `start`, `end`, and `class`, `label`, `ref` (fragments, binding regions, windows);
-- a **per-site count**: `accession`, `position`, `label` and `value` (each change of a site and the tumours carrying it).
+- a **per-site count**: `accession`, `position`, `label` and `value` (each change of a site and the tumors carrying it).
 
 Options of a table: `role` (a role of `inputs:`, so the file is in a manifest) or `marks: true` (the marks table, its
 accession and position by default); `include`/`exclude` conditions as for marks; `split`, a separator: cells of
@@ -383,8 +383,8 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 | `protein_counts.tsv` | (protein, analysis, class) | `accession, analysis, category, marks_in, others_in, marks_total, others_total` |
 | `proteins.tsv` | one per protein with a mark | `accession, gene, name, entry, length, sequence_md5, marks, candidates` |
 | `units.tsv` | one per drawn unit | `accession, kind, start, end, label, source, class, ref` |
-| `tracks.json` | per kind of drawn unit | `{kind, title, style, help, roles, analysis, colours?, values?}`: `style` is `domains` (boxes on the backbone), `disorder` (the backbone's wave) or `segments` (a row of boxes); `analysis` names the question whose classes colour it; `values`, for a kind whose units carry numbers (a layer's `Track.values`), is `{table, columns: [{name, label, help}]}` |
-| `units_<kind>.tsv` | one per unit of a kind with `values`, on a protein with a mark | `accession, start, end, length, class`, the value columns (up to 6 significant digits, empty for missing), `marks` (the counted marks inside) and `other_candidates` (the other candidate residues inside; left-out marks on neither side, as the tests count them). The IDR charge layer writes `units_idr.tsv`: each IDR with `f_plus, f_minus, fcr, ncpr, kappa, region` (its Das–Pappu region, 1 to 5; `class` r1 to r5) and, when the mark profile names `stickers` (aromatic residues, say), `stickers, sticker_spacing, sticker_free` (how many, the median distance between neighbours, the longest stretch without one; a description for the IDRs page, never tested) |
+| `tracks.json` | per kind of drawn unit | `{kind, title, style, help, roles, analysis, colours?, values?}`: `style` is `domains` (boxes on the backbone), `disorder` (the backbone's wave) or `segments` (a row of boxes); `analysis` names the question whose classes color it; `values`, for a kind whose units carry numbers (a layer's `Track.values`), is `{table, columns: [{name, label, help}]}` |
+| `units_<kind>.tsv` | one per unit of a kind with `values`, on a protein with a mark | `accession, start, end, length, class`, the value columns (up to 6 significant digits, empty for missing), `marks` (the counted marks inside) and `other_candidates` (the other candidate residues inside; left-out marks on neither side, as the tests count them). The IDR charge layer writes `units_idr.tsv`: each IDR with `f_plus, f_minus, fcr, ncpr, kappa, region` (its Das–Pappu region, 1 to 5; `class` r1 to r5) and, when the mark profile names `stickers` (aromatic residues, say), `stickers, sticker_spacing, sticker_free` (how many, the median distance between neighbors, the longest stretch without one; a description for the IDRs page, never tested) |
 | `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used, and `counts: {codes, N, sets}`, the background's proteins in each stratum overall and in each set (from the lowest decile, then `none`); with `values`, `values: {columns, marked: {accession: [number or null per column]}, others: {column: sorted numbers}}` (columns with `background: true`); for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; absent when the site has no protein-set question |
 | `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used; for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; with a `hierarchy`, `parents: {set: [parent sets]}` (each tested set's parents among the tested sets) and `root`; for sets gathered into families, `gathers: {family: [set ids]}` (each tested family's own sets, which a website's table of member sets groups by); absent when the site has no protein-set question |
 | `set_names.tsv` | per set | `analysis, set, name` |
@@ -443,7 +443,7 @@ shows). Every value is text unless said otherwise; empty means not known. Lists 
 | Format | Key | Columns (required in bold) | Read by |
 |---|---|---|---|
 | `site_values` | site | any columns, listed under `values:` and kept under their own names | blocks naming a column: the methylation state by source, the counts beside a list of changes, the nearest domain, source positions |
-| `site_table` | site | any columns, under `values:` | a table in a site's Evidence row (`card.tables`), each column labelled and formatted by the site file |
+| `site_table` | site | any columns, under `values:` | a table in a site's Evidence row (`card.tables`), each column labeled and formatted by the site file |
 | `protein_values` | `accession` | `aliases` (other names a search or an old link may use), and any columns under `values:` | the whole-protein line of the card, a headline card's hover; `aliases` make `#TDP-43` and a search for an alias find the protein |
 | `protein_records` | `accession` | any columns, under `values:`; several rows a protein | the RNA and DNA interactions card: bound regions, DNA-binding profiles, RNA Bind-n-Seq and eCLIP experiments |
 | `lookup` | `key` | any columns under `values:` | the sources of the citation box and of the card's links (`label`, `citation`, `doi`, `licence`) |
@@ -477,7 +477,7 @@ in the module. Live parts are asked by accession and fall back to a line saying 
 
 | Card (fold) | Table(s) and their columns | What it shows |
 |---|---|---|
-| `location` (`p-cond`) | `hpa.table`: `location`, `main` (`1` or `true`), `reliability`; `condensates.members`: `condensate` (id), `score` (0 to `max_score`), `roles`, `evidence`, `pmids` (`; `-separated); `condensates.names` (a `lookup` with `name`, `condensate_type`) | its locations, main first, each linking to the proteins at it (`hpa.analysis`); `maps: true` draws it in `website.cell`'s drawings, a part coloured when a map places it, and lists each map's compartments; every condensate membership, most confident first, with stars, role, evidence, papers (named live when `pubmed` gives the summary service's address) |
+| `location` (`p-cond`) | `hpa.table`: `location`, `main` (`1` or `true`), `reliability`; `condensates.members`: `condensate` (id), `score` (0 to `max_score`), `roles`, `evidence`, `pmids` (`; `-separated); `condensates.names` (a `lookup` with `name`, `condensate_type`) | its locations, main first, each linking to the proteins at it (`hpa.analysis`); `maps: true` draws it in `website.cell`'s drawings, a part colored when a map places it, and lists each map's compartments; every condensate membership, most confident first, with stars, role, evidence, papers (named live when `pubmed` gives the summary service's address) |
 | `dependency` (`p-depmap`) | `table`: `lines`, `dependent`, `median`, `common_essential`, `histogram` (bin counts, `; `-separated, over `histogram.from` to `.to`), `lineages` (`name|lines|mean`, `; `-separated) | how many lines depend on the gene, the histogram, the lineages; the marks' changes are `website.protein.card.changes` (the attributes and counts of the site card), listed per mark |
 | `perturbations` (`p-pert`) | none of its own: `website.protein.card.calls` (its `tables`, `attributes`, `conditions`, `marks`, `words`) | a mark per call, a row per mark, a column per experiment the protein has |
 | `experiments` (`p-exp`) | `table`: `position`, `region`, `perturbation`, `system`, `species`, `readout`, `direction` (`decreased`, `increased`, `no_change`), `finding`, `figure`, `reference`, `doi`, `read_from`, `in_release` | the curated experiments on the protein |
@@ -498,13 +498,13 @@ lacks is skipped. Without it the folds keep the page's own order. `sites/methyla
 fold of its own that holds its folds in `order`, and "Open all" and "Close all" sit above them. A group starts open when one of its
 folds does; a fold no group lists follows the one before it; a fold in two groups is a `ptmc check` problem.
 `website.protein.open` lists the folds that start open (without it, each fold's own default: the map and the sites). A
-fold that shows live or optional data opens only when the protein has it: the orthologues (`p-cons`) when they arrive, the
+fold that shows live or optional data opens only when the protein has it: the orthologs (`p-cons`) when they arrive, the
 network (`p-ix`) when the site's partner table has partners. A reader's own opening or closing is kept.
 
 ## Conservation across species
 
-A protein page can show each mark in the orthologues of other species, and a selection can show its marks' sequence windows
-aligned and as a logo. Neither reads a table: the orthologues come live from Ensembl Compara, and the windows are the
+A protein page can show each mark in the orthologs of other species, and a selection can show its marks' sequence windows
+aligned and as a logo. Neither reads a table: the orthologs come live from Ensembl Compara, and the windows are the
 motif finder's (`website.search.patterns`, which builds them from the snapshot sequences). A site without
 `website.protein.conservation` lacks the card and the logo; `ptmc check` reports what the block misses.
 
@@ -524,12 +524,12 @@ website:
   names its Ensembl gene (the first one is used); `ensembl.source`: the query species' name in the homology endpoint;
   `ensembl.compara` (optional): the Compara set when the species are not vertebrates (`fungi` for yeast). Where Ensembl
   has no Compara set with suitable species for an organism, the site leaves the block out and has neither card.
-- `species`: Ensembl species names with the label shown, in the order shown. For each, the orthologue with the highest
+- `species`: Ensembl species names with the label shown, in the order shown. For each, the ortholog with the highest
   identity is used, with Ensembl's pairwise protein alignment.
 - `presets` (optional): the sets of species the reader chooses between, as `{id, label, species: [ids of `species`], note?}`; the card
   shows a select, remembers the choice in the browser and asks Ensembl again for the new set. `default` is the id used until the
   reader chooses (the first preset without it). Without presets every species listed is aligned. Choose sets that still
-  align: close relatives, then a spread across the clade. An orthologue Ensembl lacks for a gene is listed as having none.
+  align: close relatives, then a spread across the clade. An ortholog Ensembl lacks for a gene is listed as having none.
 - `similar`: residue letters shown as a conservative change (they do not count as kept). Optional.
 - `logo`: offer the selection's alignment and logo (needs `website.search.patterns`). Optional.
 
@@ -542,7 +542,7 @@ letters, each counted once, by the means of their shares and a two-sided Wilcoxo
 What a site knows about its marks in 3D structures, for the protein page's viewer (`kit-3d.js`). The structures
 themselves come live, by UniProt accession: the AlphaFold DB model, the PDB entries PDBe maps to the protein (SIFTS),
 their coordinates from RCSB, and predicted complexes from AlphaFold DB and ProtVar. A site with no structure evidence
-still gets all of that; the evidence adds the contacts, the bound RNA and DNA, the predicted partners and colourings.
+still gets all of that; the evidence adds the contacts, the bound RNA and DNA, the predicted partners and colorings.
 
 Each part names a table of `website.tables` (above, "Tables the protein pages show") in the format it reads, and may
 keep some of its rows (`include`/`exclude`, on the format's columns), map the table's kind codes to the viewer's
@@ -553,16 +553,16 @@ keep some of its rows (`include`/`exclude`, on the format's columns), map the ta
 | `contacts` | `site_evidence` | per mark, `kind` (mapped by `kinds:` to `rna`, `dna`, `protein`, `self`; anything else is drawn as other), `ids` (the PDB entries), `partner`, `partner_accession` |
 | `bound` | `bound_windows` | per mark and entry, `entry`, `kind` (`rna`, `dna`, `hybrid`), `type`, `name`, `window`, and to draw the contacted nucleotides `chain` (the nucleic acid's author chain id), `nucleotides`, `numbers` (their author numbers) and `distances` (Å), lists in the same order |
 | `predicted` | `site_evidence` | per mark, `partner`, `partner_accession`, `ids` (the model: an AlphaFold DB model id `AF-…`, or a ProtVar pair `ACC1_ACC2` in the order it was made), `score` |
-| `residues` | `residue_evidence` | runs of residues (`accession`, `start`, `end`), for the colourings |
+| `residues` | `residue_evidence` | runs of residues (`accession`, `start`, `end`), for the colorings |
 
-`residues` holds the viewer's colourings: `colourings: [{id, label, none, help, classes}]`, each class `{id, label,
-colour}` with either `where` (conditions on the table's format columns, all holding) or `all` (the residues in every one
-of the other classes named). A residue takes the first class it is in, in the order listed; `colour` is a hex colour
+`residues` holds the viewer's colorings: `colourings: [{id, label, none, help, classes}]`, each class `{id, label,
+color}` with either `where` (conditions on the table's format columns, all holding) or `all` (the residues in every one
+of the other classes named). A residue takes the first class it is in, in the order listed; `colour` is a hex color
 or one of the viewer's names (`rna`, `dna`, `protein`, `self`, `ev`, `rna_pale`, `dna_pale`), which follow the themes.
 
 The mark's chemical components in PDB entries come from the profile's states (`pdb_component`); the viewer lists the
-entries that model one and draws them. The other colourings are the site's own: its domains and disordered regions as on
-the map, each segments track by its classes, and the marks by the map's colour attribute.
+entries that model one and draws them. The other colorings are the site's own: its domains and disordered regions as on
+the map, each segments track by its classes, and the marks by the map's color attribute.
 
 `ptmc web` puts each protein's part into its record in `data/p/NN.json`, as `s3d`:
 
@@ -574,7 +574,7 @@ the map, each segments track by its classes, and the marks by the map's colour a
 | `r` | `{colouring id: [[class index, start, end], ...]}` (classes made with `all` are drawn by the page) |
 
 and the page's data a `structure` block: the components (`code, state, label`), each part's `label` and `help`, the
-manifest input each part's table reads (`inputs`) and the colourings without their conditions.
+manifest input each part's table reads (`inputs`) and the colorings without their conditions.
 
 ## RNA and DNA interactions
 
@@ -589,7 +589,7 @@ website:
     nucleic:
       title: RNA and DNA interactions
       kinds: {rna: RNA, dna: DNA}            # the card's kinds (the viewer's kinds) and their words
-      near: {table: contacts_near, label: "in contact through a neighbouring residue"}
+      near: {table: contacts_near, label: "in contact through a neighboring residue"}
       regions: {table: nucleic_regions, kinds: {rna: rna, dna: dna}, fields: {start: start, end: end, kind: nucleic_acid, entries: n_entries, sites: methylarginines}}
       crosslinks: {table: residues, span: 5, kinds: {rna_crosslink: rna, dna_crosslink: dna}}
       flags: {attribute: evidence, kind: rna, values: {rbdmap_fragment: RBDmap, pclap_peptide: pCLAP}}
@@ -601,13 +601,13 @@ website:
 | Part | Table format | What the card shows |
 |---|---|---|
 | (viewer) `structure.bound` | `bound_windows` | per kind, the marks in contact (4 Å), their bound sequences and entries (the viewer's `s3d.b`); `structure.contacts` adds the PDB interfaces (`s3d.c`) |
-| `near` | `bound_windows` | rows with `offset`: the marks that touch RNA or DNA through a neighbouring residue (not shown again when in contact) |
+| `near` | `bound_windows` | rows with `offset`: the marks that touch RNA or DNA through a neighboring residue (not shown again when in contact) |
 | `regions` | `protein_records` | runs of residues bound in structures: `start`, `end`, `kind`, `entries` (a count), `sites` (marks inside, `; `-separated, `<accession>:<residue><position>`) |
 | `crosslinks` | `residue_evidence` | residues crosslinked in cells: only rows with `start` = `end` are listed, `kinds` maps the table's codes to the card's kinds; `span` is how near a mark counts |
 | `flags` | none | the marks whose attribute `values` hold a listed code, as a per-mark flag with its label: no peptide, fragment or extent is ever listed |
 | `motifs`, `rbns`, `eclip` | `protein_records` | one row per profile or experiment, each field named by `fields`; `kmers` and `scores`, `genes` and `gene_peaks` are `; `-lists in the same order; `eclip.fields.regions` maps a region label to the column of its peak count; `url` (a string, or one per value of the `source` field) takes `{id}` |
 
-The card's summary and tab titles count what it finds: the marks in contact, those in contact through a neighbouring
+The card's summary and tab titles count what it finds: the marks in contact, those in contact through a neighboring
 residue, the residues crosslinked (and the marks within `span` of one), the bound regions, and which in-vitro or in-cell
 data exist. A part with `kind` belongs to that tab only. Measured peptides and their extents (pCLAP, RBDmap) are never
 published here: a site leaves them out of the tables it names and gives only a per-mark flag.
@@ -626,7 +626,7 @@ choice is kept in the browser). Each `{id, label, menu?, default?, help? (the he
 
 | Key | Value | Shows |
 |---|---|---|
-| `show` | `map`, `length`, `share`, `candidates` | the marks as ticks along the protein (the selection's tall, coloured by the colour attribute), its length, its marks over its candidate residues, its candidate residues |
+| `show` | `map`, `length`, `share`, `candidates` | the marks as ticks along the protein (the selection's tall, colored by the color attribute), its length, its marks over its candidate residues, its candidate residues |
 | `counts` | `{attribute, values: {code: label}, dashed?: [codes]}` | the protein's marks (of the selection) with each value of a mark attribute, as chips |
 | `classes` | `{analysis, classes: [codes]}` | the share of the protein's marks in these classes of a residue question |
 | `attribute` | a protein attribute (`proteins.attributes`), with `format?`: `count` (a list's length), `l2` (signed, true minus), `p`, `int` | the value |
@@ -637,7 +637,7 @@ Default: a site map, the length and the share. `download`: the TSV's columns, ea
 a list joined with `;`), `classes` (the count of the protein's marks in them), `counts: {attribute, value}`.
 
 **`website.sites`** (the Sites page). Fixed columns: the protein, the site (numbered as `website.protein.numbering` says,
-"UniProt R3" below; tags for the values of a list attribute, `site_tags: {attribute, values: {code: tag}}`), the colour
+"UniProt R3" below; tags for the values of a list attribute, `site_tags: {attribute, values: {code: tag}}`), the color
 attribute (a dot and `short` labels: `{attribute: {code: label}}`, heading `state_label`) and the window ±7 (the site
 boxed, the profile's residues bold, `window.colours: {letter: colour}`, `·` past the ends) with the tags of each flags
 question (`tags: {analysis: {order?, hide?}}`; when given, only those questions). `table`: the optional columns, in the
@@ -794,7 +794,7 @@ q = Benjamini-Hochberg over every set of every question tested, small sets and k
 `ptmstats.gene_list_test` and its browser twin `PTMC_STATS.listTest` (kit-stats.js); `packages/ptmstats/tests/test_list_test.py`
 checks that both equal SciPy's `hypergeom.sf` and `benjamini_hochberg`. The page shows the sets with k >= 1 by p (20, then
 **Show all**; `all=1` in the address): Set, Kind (the question, "(genes)" for a gene source), In list (k of n), In set /
-background (M / N), Fold, p (one-sided hypergeometric), q (Benjamini-Hochberg, <sets> sets), under the labelled note "A new
+background (M / N), Fold, p (one-sided hypergeometric), q (Benjamini-Hochberg, <sets> sets), under the labeled note "A new
 test, not in the release statistics" with the caveat that a chosen list is not a random draw. Its TSV (`<site>_gene_list_test.tsv`)
 has the usual `#` preamble (version, selection) and `# Input`, `# Genes tested`, `# Matched by another name`, `# Not found`,
 then `set, set_id, question, kind, in_list, list_in_background, in_set, background, fold, p, q` for every set tested. The
@@ -806,7 +806,7 @@ A protein's page is the map (its key open, the export buttons below it), then on
 (one open at a time; the network draws before its folded options, the 3D view before its own), then "More about <gene>" with
 the kit's other cards, each folded. With a selection, the 3D view and its exports (PNG, ChimeraX, PyMOL, mmCIF, SVG) show only
 the sites the selection and filters leave (the map fades the rest), with a chip for the selection and one per state to switch a
-state off; colours and the "no assigned state" grey are the map's, the legend names what is shown, and an export's header says
+state off; colors and the "no assigned state" gray are the map's, the legend names what is shown, and an export's header says
 "Shows k of n sites". The site card opens with the variants at the residue: UniProt's natural variants (disease named) and the
 site's `changes`; the map labels every variant that falls on a mark, on a second or third line when labels would overlap. The
 search reads `R216C` (that position in every protein) and `FUS R216C` (the site; the change is not matched), and says what it

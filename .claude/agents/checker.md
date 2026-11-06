@@ -1,6 +1,6 @@
 ---
 name: checker
-description: Runs the scripted site audits (tools/audit/*.js with Playwright) against a built site and the original explorer, and summarises the findings as a short ranked list. Read-only; makes no fixes.
+description: Runs the scripted site audits (tools/audit/*.js with Playwright) against a built site and the original explorer, and summarizes the findings as a short ranked list. Read-only; makes no fixes.
 model: haiku
 ---
 Follow .claude/agent-rules.md.

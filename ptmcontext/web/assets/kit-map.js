@@ -6,19 +6,19 @@
                            rows (website.protein.map.rows): evidence along the protein read from its tables in the
                            map-row format (CONTRACTS.md, Map rows: a residue list, a region list, a per-site count), and
                            runs of a motif found in the sequence. The kit knows none of them by name: their words,
-                           classes, marks and colours are the site file's, and a row a protein has no data for is absent
+                           classes, marks and colors are the site file's, and a row a protein has no data for is absent
      UniProt, live         its domains and repeats, regions and motifs, compositional bias, natural variants,
                            mutagenesis, modified residues and cross-links
      PDBe-KB, live         residues at RNA, DNA, protein and self interfaces in PDB structures, with the entries
      AlphaFold DB, live    the model's confidence (pLDDT)
    Every item has a hover that says what it is and where it comes from, and a click that pins it under the map with
    its links (UniProt entry, PubMed, dbSNP, the papers of a row's sources, PDB entries and "3D" when a viewer is on
-   the page: K.show3d). A crosshair reads out the residue under the pointer. Marks are coloured by any attribute the
+   the page: K.show3d). A crosshair reads out the residue under the pointer. Marks are colored by any attribute the
    site file offers, or by a mode the site file makes from the attributes (website.protein.map.colour_by; a class may
    be hollow, and marks the site file names are hatched); the marks the site shows and counts nowhere (rec.shown,
    kit-shown.js) are hatched ticks on the backbone, each with its tag's hover; the marks' labels are placed Auto (merged where they collide), All
    or None. Rows are chosen and ordered in the Rows menu (remembered in this browser); a drag across the map zooms in, a
-   double click zooms out. A narrow box gets the map laid out again at its width. The same drawing, in light colours,
+   double click zooms out. A narrow box gets the map laid out again at its width. The same drawing, in light colors,
    is the map's PDF, SVG and PNG, at screen size or a journal column (85, 114, 174 mm; PNG at 300, 600 or 1000 dpi).
    A module of the site kit. */
 (window.PTMC_MODULES ||= []).push(K => {
@@ -35,11 +35,11 @@
   // Kyte & Doolittle (1982), and the EMBOSS charge scale
   const KD = { A: 1.8, R: -4.5, N: -3.5, D: -3.5, C: 2.5, Q: -3.5, E: -3.5, G: -0.4, H: -3.2, I: 4.5, L: 3.8, K: -3.9, M: 1.9, F: 2.8, P: -1.6, S: -0.8, T: -0.7, W: -0.9, Y: -1.3, V: 4.2 };
   const CHARGE = { K: 1, R: 1, H: 0.5, D: -1, E: -1 };
-  // a centred sliding mean (shorter at the ends)
+  // a centered sliding mean (shorter at the ends)
   const slide = (v, w) => { const h = Math.floor(w / 2), c = [0]; v.forEach(x => c.push(c[c.length - 1] + x)); return v.map((_, i) => { const a = Math.max(0, i - h), b = Math.min(v.length, i + h + 1); return (c[b] - c[a]) / (b - a); }); };
   const AF_BINS = [[90, '#0053d6', 'very high (> 90)'], [70, '#65cbf3', 'confident (70–90)'], [50, '#ffdb13', 'low (50–70)'], [0, '#ff7d45', 'very low (< 50)']];
   const afColour = v => AF_BINS.find(([t]) => v > t || t === 0)[1];
-  // the theme's colours for what the kit draws itself; exports are always light
+  // the theme's colors for what the kit draws itself; exports are always light
   const TOK = {
     light: { dom: '#D6ECF0', domEdge: '#0E7490', domInk: '#0F3B47', uniDom: '#B9DDE6', uniRep: '#DCEEF3', uniEdge: '#5B97A6', region: '#E3ECF6', regionEdge: '#8FA5BF',
       motif: '#FFFFFF', motifEdge: '#334155', bias: '#FDE3D4', biasEdge: '#D9A486', boxInk: '#1F2937', variant: '#8A99A3', ptm: '#7C8A93', own: '#E07B39', rtick: '#B8C2C8',
@@ -57,12 +57,12 @@
     return { ...TOK[dark ? 'dark' : 'light'], dark, ink: css('--ink') || '#111827', muted: css('--muted') || '#5f6f78', line: css('--line-strong') || '#c7d4d9',
       faint: css('--line') || '#e0e8eb', surf: css('--surface') || '#ffffff', accent: css('--accent') || '#c2410c' };
   }
-  // a colour the site file gives (with its dark-theme twin); 'ink' is the text colour
+  // a color the site file gives (with its dark-theme twin); 'ink' is the text color
   const cfgColour = (o, key, P, dflt) => { const v = (P.dark && o?.[key + '_dark']) || o?.[key] || dflt; return v === 'ink' ? P.ink : v; };
   // the regions the run's layers draw (tracks.json): each kind is a row, or the backbone's boxes or wave; the map knows
-  // no layer by name. A row of segments is coloured by the classes of the analysis that drew it, if it has any.
+  // no layer by name. A row of segments is colored by the classes of the analysis that drew it, if it has any.
   const TRACKS = D.tracks || [];
-  // not the charge row's red and blue, nor AlphaFold's bands: a track that means them says so with its own colours
+  // not the charge row's red and blue, nor AlphaFold's bands: a track that means them says so with its own colors
   const SEG_PAL = ['#9DB8C7', '#E2B44C', '#8E7CC3', '#1BAF7A', '#B45309', '#BE185D', '#7C8A93', '#0E7490'], SEG_PLAIN = '#9DB8C7';
   const trackRow = t => (t.style === 'segments' ? 'tr:' : 'bb:') + t.kind;
   const kindsOf = style => new Set(TRACKS.filter(t => t.style === style).map(t => t.kind));
@@ -96,10 +96,10 @@
     ['charge', 'Charge', 'sequence', 'Net charge along the chain: a 5-residue sliding mean on the EMBOSS charge scale (K, R +1; H +0.5; D, E −1), positive up (blue), negative down (red)'],
     ['hydropathy', 'Hydropathy', 'sequence', 'Hydropathy along the chain: a 9-residue sliding mean of the Kyte–Doolittle scale (J Mol Biol 157:105, 1982), hydrophobic up (amber), hydrophilic down (teal); the axis runs from −3 to +3'],
     ['aromatic', 'Aromatic', 'sequence', 'Aromatic residues (F, Y, W): the “stickers” of many disordered regions'],
-    ['residues', `All ${W.residues}`, 'sequence', `Every ${W.residue.replace(/^an? /, '')} of the sequence: the ${W.marks} in their colour, the others grey`],
+    ['residues', `All ${W.residues}`, 'sequence', `Every ${W.residue.replace(/^an? /, '')} of the sequence: the ${W.marks} in their color, the others gray`],
     ['uni_mark', `${cap(W.marks)} in UniProt`, 'live', `The ${W.marks} as UniProt reports them (Modified residue features named in the mark’s profile), inked where this site has the ${W.mark} too`],
-    ['variants', 'Variants', 'live', `Natural variants of the UniProt entry, read live; inked and labelled where they change a ${W.mark}`],
-    ['mutagen', 'Mutagenesis', 'live', `Mutagenesis features of the UniProt entry (diamonds), read live; inked and labelled where they change a ${W.mark}`],
+    ['variants', 'Variants', 'live', `Natural variants of the UniProt entry, read live; inked and labeled where they change a ${W.mark}`],
+    ['mutagen', 'Mutagenesis', 'live', `Mutagenesis features of the UniProt entry (diamonds), read live; inked and labeled where they change a ${W.mark}`],
     ['ptm', 'Other PTMs', 'live', 'Modified residues, cross-links, glycosylation and lipidation of the UniProt entry, read live, one row per kind'],
     ...(PDB_ON ? [['pdb', 'Contacts in PDB structures', 'live', 'Residues at an interface with RNA, DNA, another protein or another copy in experimental structures (PDBe-KB, read live). Click for the PDB entries']] : []),
     ['plddt', 'AlphaFold', 'live', 'The AlphaFold DB model’s confidence (pLDDT) per residue, read live; drawn only where the model’s sequence is this one'],
@@ -143,16 +143,16 @@
     return out;
   };
 
-  // ---- colours for the marks --------------------------------------------------------------------------------------
-  // the ways to colour them: the site file's order (an attribute by name, or a mode made from the attributes), then
-  // every other colour attribute, then one colour
+  // ---- colors for the marks --------------------------------------------------------------------------------------
+  // the ways to color them: the site file's order (an attribute by name, or a mode made from the attributes), then
+  // every other color attribute, then one color
   const MODES = (() => {
     const out = [], seen = new Set();
     (CFG.colour_by || []).forEach(m => {
       if (typeof m === 'string') { if (SPECS[m] && !seen.has(m)) { out.push({ id: m, label: SPECS[m].label, attr: m }); seen.add(m); } } else if (m?.id && !seen.has(m.id)) { out.push({ ...m, own: true }); seen.add(m.id); }
     });
     Object.entries(SPECS).filter(([k, s]) => s.colour && !seen.has(k)).forEach(([k, s]) => out.push({ id: k, label: s.label, attr: k }));
-    out.push({ id: 'single', label: 'Single colour' });
+    out.push({ id: 'single', label: 'Single color' });
     return out;
   })();
   const mode = () => MODES.find(x => x.id === M.colour) || MODES[0];
@@ -171,13 +171,13 @@
   const hatched = m => !!(CFG.hatch || []).length && CFG.hatch.every(c => holds(m, c));
   // the key's words for a hatched head: the site file's, else the value its first condition names
   const HATCH_LABEL = CFG.hatch_label || (c => (c && SPECS[c.attribute] ? ((SPECS[c.attribute].values || {})[(c.has || [])[0]] || SPECS[c.attribute].label) : 'Hatched'))((CFG.hatch || [])[0]);
-  // the colour of an attribute's value: the site file's colours, or the palette in the order of its values
+  // the color of an attribute's value: the site file's colors, or the palette in the order of its values
   function attrColour(name, v) {
     const s = SPECS[name] || {}, order = Object.keys(s.values || {}), first = String(v ?? '').split(s.separator || '; ')[0], k = order.indexOf(first);
     return (s.colours || {})[first] || (first === '' || /^(none|no)$/i.test(first) ? TOK.light.none : PALETTE[(k >= 0 ? k : order.length) % PALETTE.length]);
   }
   const RAMP = [[5, '#1f2937', '5 or more'], [3, '#4b5563', '3–4'], [2, '#9ca3af', '2'], [-Infinity, '#d1d5db', '1']];
-  // a mark's colour, its words and whether it is drawn hollow or hatched, in the mode chosen
+  // a mark's color, its words and whether it is drawn hollow or hatched, in the mode chosen
   function siteColour(mark, ex) {
     const P = pal(ex), md = mode(), hat = hatched(mark);
     if (md.own) {
@@ -190,7 +190,7 @@
     const first = String(v).split(s.separator || '; ')[0];
     return { c: attrColour(md.attr, first), label: K.sel?.valueLabel ? K.sel.valueLabel(md.attr, first) : first, key: first, hatched: hat };
   }
-  // the classes of the mode: a made mode lists every class (a colour always means the same); an attribute, the values
+  // the classes of the mode: a made mode lists every class (a color always means the same); an attribute, the values
   // its marks here have
   function modeLegend(ctx, ex) {
     const md = mode(), P = pal(ex);
@@ -205,13 +205,13 @@
   const r1 = v => Math.round(v * 10) / 10;
   const MK = {
     head: (P, x, y, r, c, hollow, attr = '', stroke) => `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r}" fill="${hollow ? P.surf : c}" stroke="${hollow ? c : stroke || P.surf}" stroke-width="${hollow ? 1.6 : stroke ? 2 : 1}"${hollow ? ' stroke-dasharray="2.2 1.4"' : ''}${attr}/>`,
-    // a hatched head: a rim in its colour crossed by diagonal chords, so it reads apart from a solid head in grey too
+    // a hatched head: a rim in its color crossed by diagonal chords, so it reads apart from a solid head in gray too
     hatch: (P, x, y, r0, c, attr = '', stroke) => {
       const r = Math.max(2, r0 * 0.8); let d = '';
       for (const off of [-r * 0.5, 0, r * 0.5]) { const h = (Math.sqrt(r * r - off * off) - 0.4) / Math.SQRT2, cx = x + off / Math.SQRT2, cy = y + off / Math.SQRT2; d += `M${r1(cx - h)} ${r1(cy + h)}L${r1(cx + h)} ${r1(cy - h)}`; }
       return `<g${attr}><circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" fill="${P.surf}" stroke="${stroke || c}" stroke-width="${stroke ? 2 : 1.2}"/><path d="${d}" stroke="${c}" stroke-width="0.9" stroke-linecap="round"/></g>`;
     },
-    // a hatched tick: an outlined bar in its colour crossed by diagonal strokes (a mark shown and counted nowhere)
+    // a hatched tick: an outlined bar in its color crossed by diagonal strokes (a mark shown and counted nowhere)
     htick: (P, x, y, h, c, attr = '', stroke) => {
       const w = 5, x0 = x - w / 2, y0 = y - h / 2; let d = '';
       for (let t = -w; t < h; t += 3) { const a = Math.max(0, -t), b = Math.min(w, h - t); if (b > a) d += `M${r1(x0 + a)} ${r1(y0 + t + a)}L${r1(x0 + b)} ${r1(y0 + t + b)}`; }
@@ -354,7 +354,7 @@
   }
 
   // ---- drawing --------------------------------------------------------------------------------------------------
-  // o.Wd lays the map out at another width (a narrow screen, a journal column); o.ex draws it for export, in light colours
+  // o.Wd lays the map out at another width (a narrow screen, a journal column); o.ex draws it for export, in light colors
   function draw(ctx, o = {}) {
     const ex = !!o.ex, Wd = o.Wd || 1000, narrow = Wd < 700;
     const ML = narrow ? Math.min(128, Math.round(Wd * 0.35)) : 168, MR = narrow ? 14 : 18, X0 = ML, X1 = Wd - MR;
@@ -493,10 +493,10 @@
       parts.push(`<line x1="${r1(x)}" x2="${r1(x)}" y1="${yB - 3}" y2="${r1(y + 5)}" stroke="${P.line}" stroke-width="1"${faded ? ' opacity="0.28"' : ''}/>`);
       parts.push(c.hatched ? MK.hatch(P, x, y, on ? 6.5 : 5, c.c, attr, on ? P.ink : null) : MK.head(P, x, y, on ? 6.5 : 5, c.c, c.hollow, attr, on ? P.ink : null));
     });
-    if (marks.length) rowLabel(cap(W.marks), top + 8 + (nLev - 1) * 5.5, `the ${W.marks} of this site, coloured as chosen above; click one for its card`, true);
+    if (marks.length) rowLabel(cap(W.marks), top + 8 + (nLev - 1) * 5.5, `the ${W.marks} of this site, colored as chosen above; click one for its card`, true);
     if (marks.some(m => hatched(m))) key(SW.hatch(P.muted), HATCH_LABEL);
     // the marks the site shows and counts nowhere (K.shown, website.shown_marks): hatched ticks on the backbone, in
-    // their colour, each with its tag's hover; a click pins it with a link to its card
+    // their color, each with its tag's hover; a click pins it with a link to its card
     const shownHere = (rec.shown || []).filter(m => inView(m[0], m[0]));
     shownHere.forEach(m => {
       const x = X(m[0]), c = siteColour(m, ex), on = ctx.site === m[0] && !ex;
@@ -679,7 +679,7 @@
       else if (id === 'regions') uniRow(row, ['Region', 'Motif'], f => (f.type === 'Motif' ? P.motif : P.region), f => (f.type === 'Motif' ? P.motifEdge : P.regionEdge), f => f.description, [[P.region, 'Region (UniProt)', P.regionEdge]], f => !/^disordered$/i.test(f.description || ''));
       else if (id === 'composition') uniRow(row, ['Compositional bias'], () => P.bias, () => P.biasEdge, f => String(f.description || '').replace(/ residues$/, '-rich'), [[P.bias, 'Compositional bias (UniProt)', P.biasEdge]]);
       else if (id.startsWith('tr:')) {
-        // a track's regions, coloured by class when they have one; a row is drawn only for a protein that has some
+        // a track's regions, colored by class when they have one; a row is drawn only for a protein that has some
         const t = trackOf(id.slice(3)), mine = segs.filter(u => u[0] === t.kind);
         if (!mine.length) continue;
         const shown = mine.filter(u => inView(u[1], u[2]));
@@ -811,8 +811,8 @@
   // a journal column: the canvas narrowed until its smallest labels (8.5 units) print at 6 pt, as the explorer's panels
   const panelUnits = mm => Math.round(mm / (6 * 25.4 / 72 / 8.5));
   function controls() {
-    return `<div class="map-ctl"><label>Colour ${esc(W.marks)} by <select data-map-colour>${MODES.map(md => `<option value="${esc(md.id)}"${mode().id === md.id ? ' selected' : ''}${md.help ? ` title="${esc(md.help)}"` : ''}>${esc(md.label)}</option>`).join('')}</select></label>` +
-      `<span class="lbl">Labels <span class="seg">${[['auto', 'Auto', 'Up to three lines of labels; neighbours too close share one (R213 +3), and none above 120 marks. Zoom in to separate them'], ['all', 'All', 'Every mark its own label, on as many lines as it needs'], ['none', 'None', 'No labels']].map(([k, l, t]) => `<button type="button" data-map-labels="${k}" aria-pressed="${M.labels === k}" title="${esc(t)}">${l}</button>`).join('')}</span></span>` +
+    return `<div class="map-ctl"><label>Color ${esc(W.marks)} by <select data-map-colour>${MODES.map(md => `<option value="${esc(md.id)}"${mode().id === md.id ? ' selected' : ''}${md.help ? ` title="${esc(md.help)}"` : ''}>${esc(md.label)}</option>`).join('')}</select></label>` +
+      `<span class="lbl">Labels <span class="seg">${[['auto', 'Auto', 'Up to three lines of labels; neighbors too close share one (R213 +3), and none above 120 marks. Zoom in to separate them'], ['all', 'All', 'Every mark its own label, on as many lines as it needs'], ['none', 'None', 'No labels']].map(([k, l, t]) => `<button type="button" data-map-labels="${k}" aria-pressed="${M.labels === k}" title="${esc(t)}">${l}</button>`).join('')}</span></span>` +
       `<span class="rows-wrap"><button type="button" class="btn small" data-map-rows aria-expanded="${M.rowsMenu}">Rows ▾</button>${M.rowsMenu ? rowsMenu() : ''}</span>` +
       (M.zoom ? `<span class="map-range small" id="map-range">residues ${int(M.zoom[0])}–${int(M.zoom[1])} of ${int(M.ctx?.p?.len || 0)}</span><button type="button" class="btn small" data-map-unzoom title="Show the whole protein again (double-click the map, or press Esc)">Reset zoom</button>` : `<span class="muted small">Drag across the map to zoom</span>`) + '</div>';
   }
@@ -827,10 +827,10 @@
       `<p class="flabel">Rows, top to bottom</p>` + rowOrder().filter(id => !isBackbone(id)).map(id => { const r = ROW_OF[id]; return `<div class="rm-row"><label title="${esc(r[3])}"><input type="checkbox" data-map-row="${id}"${isOn(id) ? ' checked' : ''}> ${esc(r[1])} <span class="muted">${esc(r[2])}</span></label><span><button type="button" data-map-move="${id}" data-d="-1" aria-label="Up">↑</button><button type="button" data-map-move="${id}" data-d="1" aria-label="Down">↓</button></span></div>`; }).join('') +
       `<p><button type="button" class="linkish" data-map-defaults>Default rows</button></p></div>`;
   }
-  // the key under the map, drawn with the map's own marks: the colour mode first, then what the rows drew
+  // the key under the map, drawn with the map's own marks: the color mode first, then what the rows drew
   function keyHtml(ctx, m) {
     const md = mode(), P = m.P;
-    const open = M.keyOpen ?? false;                    // collapsed until opened: the colour mode's entries and, by track, only the tracks on screen
+    const open = M.keyOpen ?? false;                    // collapsed until opened: the color mode's entries and, by track, only the tracks on screen
     const groups = []; m.legend.forEach(e => { let g = groups.find(x => x.row === e.row); if (!g) groups.push(g = { row: e.row, items: [] }); g.items.push(e); });
     return `<details class="map-key" data-map-key${open ? ' open' : ''}><summary>Key <span class="muted">· ${esc(md.label)}${groups.length ? `, ${groups.length} track${groups.length === 1 ? '' : 's'}` : ''}</span></summary><div class="map-legend"><b>${esc(md.label)}</b>` +
       modeLegend(ctx, false).map(e => `<span>${swatchHtml(SW.head(e.c, e.hollow), P)}${esc(e.label)}</span>`).join('') + '</div>' +
@@ -968,7 +968,7 @@
     return out.join(' · ');
   }
 
-  // ---- the map as a figure (PDF, SVG, PNG), in light colours, at the screen layout or a journal column ------------------
+  // ---- the map as a figure (PDF, SVG, PNG), in light colors, at the screen layout or a journal column ------------------
   function wrapLegend(entries, x0, y0, width, P, title) {
     const fs = 10, lh = 16; let x = x0, y = y0, svg = '';
     if (title) { svg += `<text x="${x}" y="${r1(y + 3.5)}" font-size="${fs}" font-weight="700" fill="${P.muted}">${esc(title)}</text>`; x += K.tw(title, fs, 700) + 10; }
@@ -992,7 +992,7 @@
     K.wrap(sub, FW - 2 * Pd, 11).forEach(t => { parts.push(`<text x="${Pd}" y="${y}" font-size="11" fill="${P.muted}">${esc(t)}</text>`); y += 14; });
     y += 4;
     parts.push(`<g transform="translate(${Pd},${y})">${m.svg}</g>`); y += m.H + 6;
-    // the key wraps inside the width: the colour mode, then what the rows drew
+    // the key wraps inside the width: the color mode, then what the rows drew
     const l1 = wrapLegend(modeLegend(ctx, true).map(e => ({ draw: SW.head(e.c, e.hollow), label: e.label })), Pd, y + 6, FW - 2 * Pd, P, mode().label);
     parts.push(l1.svg); y += l1.h + 4;
     if (m.legend.length) { const l2 = wrapLegend(m.legend, Pd, y + 6, FW - 2 * Pd, P); parts.push(l2.svg); y += l2.h + 4; }
@@ -1002,7 +1002,7 @@
     y += 6;
     K.wrap('Sources: ' + src.join('; ') + '.', FW - 2 * Pd, 9.5).forEach(t => { parts.push(`<text x="${Pd}" y="${y}" font-size="9.5" fill="${P.ink}">${esc(t)}</text>`); y += 12.5; });
     y += 4;
-    K.creditLines().forEach(line => K.wrap(line, FW - 2 * Pd, 9).forEach(t => { parts.push(`<text x="${Pd}" y="${y}" font-size="9" fill="${P.muted}">${esc(t)}</text>`); y += 12; }));
+    { const cs = K.creditStrip(Pd, y, FW, 9, 12); parts.push(cs.svg); y = cs.y + 6; }
     const H = Math.ceil(y + Pd - 8);
     const desc = `${title}. ${sub}. Rows: ${m.drawn.join(', ')}. Sources: ${src.join('; ')}. ${K.creditLines().join(' ')}`;
     const meta = JSON.stringify(K.provenance({ figure: title, protein: p.acc, zoom: M.zoom || null, colour_by: mode().id, rows: m.drawn, ...(mm ? { width_mm: mm, png_dpi: +M.size.dpi } : {}) }));
@@ -1044,7 +1044,7 @@
     if (d.mapDpi != null) { M.size.dpi = +e.target.value; store.set('ptmc-map-size', M.size); }
   });
   document.addEventListener('toggle', e => { if (e.target.matches?.('[data-map-key]')) { M.keyOpen = e.target.open; } }, true);
-  // a theme switch redraws the map in the theme's colours
+  // a theme switch redraws the map in the theme's colors
   new MutationObserver(() => redraw()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   document.addEventListener('keydown', e => {
     const st = e.target.closest?.('#pmap svg [data-msite][role=button]');
@@ -1073,14 +1073,14 @@
   // every hover ends with the same muted line (a mark's own click opens its card instead)
   const CLICK = '<br><span class="muted">Click for details and links</span>';
   K.tips.push(['[data-mi]', el => { const x = M.items[+el.dataset.mi]; return x && x.tip ? x.tip + (el.hasAttribute('data-msite') ? '' : CLICK) : ''; }], ['[data-rowhelp]', el => esc(el.dataset.rowhelp)]);
-  // black or white text, whichever reads better on a colour (WCAG relative luminance)
+  // black or white text, whichever reads better on a color (WCAG relative luminance)
   function textOn(hex) {
     const v = String(hex).replace('#', ''), c = [0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16) / 255).map(x => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4));
     const L = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
     return (L + 0.05) / 0.05 > 1.05 / (L + 0.05) ? '#111827' : '#ffffff';
   }
-  // a fill that carries small text at 4.5:1 or better (WCAG AA): the colour itself when black or white text passes on it,
-  // else the colour darkened step by step until white text does; {bg, fg}
+  // a fill that carries small text at 4.5:1 or better (WCAG AA): the color itself when black or white text passes on it,
+  // else the color darkened step by step until white text does; {bg, fg}
   function readable(hex) {
     const lum = h => { const v = String(h).replace('#', ''); const c = [0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16) / 255).map(x => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4));
       return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
@@ -1093,7 +1093,7 @@
     }
     return { bg, fg: '#ffffff' };
   }
-  // what other modules may read: the mark's colour in the mode chosen (a 3D view follows it), the modes, the figure
+  // what other modules may read: the mark's color in the mode chosen (a 3D view follows it), the modes, the figure
   K.map = { render, exportOpts, cross: pos => M.cross?.(pos), figure, fileName, siteColour, attrColour, textOn, readable, modes: () => MODES.map(md => ({ id: md.id, label: md.label })), mode: () => mode().id,
     reset: () => { M.zoom = null; M.rowsMenu = false; M.pin = null; }, state: M };
 });

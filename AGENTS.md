@@ -7,7 +7,7 @@
    manifest, never executed.
 3. **No mark-specific or organism-specific literal in `ptmcontext/`.** Residues, states, enzymes, motifs and nouns come
    from a profile; organisms, sources and analyses from a site file.
-4. **Every input is in a manifest** with its source, release or date, licence and MD5. Staging is the only step that
+4. **Every input is in a manifest** with its source, release or date, license and MD5. Staging is the only step that
    uses the network.
 5. **Unpublished lab data and analyses stay out**, and so do plans for them. Ask when unsure.
 6. **Branches only.** Never push to `main`; the owner reviews and merges, and creates tags and releases.

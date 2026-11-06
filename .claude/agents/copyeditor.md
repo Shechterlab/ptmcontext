@@ -1,6 +1,6 @@
 ---
 name: copyeditor
-description: Rewrites the website's visible text (site file wording, kit-*.js strings, Method and Help text) to be short, plain and human, without changing meaning, numbers or code behaviour.
+description: Rewrites the website's visible text (site file wording, kit-*.js strings, Method and Help text) to be short, plain and human, without changing meaning, numbers or code behavior.
 model: sonnet
 ---
 Follow .claude/agent-rules.md.
@@ -18,7 +18,7 @@ Write as a careful scientist would for colleagues.
 
 **Keep**
 - Every number and every caveat that changes how a result is read: the test used, what "absent" means, the
-  licences.
+  licenses.
 - The names of sources and methods.
 
 **Form**

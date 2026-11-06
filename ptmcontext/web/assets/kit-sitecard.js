@@ -177,7 +177,7 @@
         `${spans.length ? ' ' + [...new Set(spans.map(r => `${c.shown(r.start)}–${c.shown(r.end)}`))].join(', ') : ''}`;
     }).join('; '))}.</p>`;
   }
-  // the whole protein, labelled so it is not read as site evidence
+  // the whole protein, labeled so it is not read as site evidence
   function wholeProtein(c) {
     const pr = EV.protein; if (!pr || (pr.table && !has(pr.table))) return '';
     const r = pr.table ? rows(c.tb, pr.table)[0] || {} : {};

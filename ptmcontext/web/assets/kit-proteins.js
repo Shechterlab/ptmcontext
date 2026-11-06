@@ -177,7 +177,7 @@
     }
     return esc(K.sel?.valueLabel ? K.sel.valueLabel(name, v) : v);
   }
-  // what a site card or tip lists: the attributes a site has a value for (a coloured one always), and not a yes/no
+  // what a site card or tip lists: the attributes a site has a value for (a colored one always), and not a yes/no
   // attribute whose column another attribute shows in full (the changes rather than "changed")
   const detailOf = n => Object.keys(SPECS).some(o => o !== n && SPECS[o].column === SPECS[n].column && !SPECS[o].present);
   const shownAttrs = m => Object.keys(SPECS).filter(n => !(SPECS[n].present && detailOf(n)) && (attrVal(m, n) !== '' || SPECS[n].colour));
@@ -411,7 +411,7 @@
     bars: '<svg viewBox="0 0 64 22" aria-hidden="true"><path d="M6 19 v-6 M14 19 v-12 M22 19 v-9 M30 19 v-15"/></svg>',
   };
   const glyphOf = (g, word) => (g === 'letters' ? `<span class="hl-letters">${[...String(word || '').replace(/[^A-Z]/g, '').slice(0, 3)].map((ch, k) => `<b class="${k === 0 && ch === (D.residues || [])[0] ? 'on' : ''}">${esc(ch)}</b>`).join('')}</span>` : GLYPH[g] || '');
-  // the class at its marks that the site's own tests favour most (the within-protein rows, else the pooled ones)
+  // the class at its marks that the site's own tests favor most (the within-protein rows, else the pooled ones)
   const bestRow = (aid, classes) => {
     const want = new Set(classes), rows = D.rows.filter(r => r.analysis === aid && want.has(r.category) && r.dir === 'more');
     const pick = m => rows.filter(r => r.method === m).sort((a, b) => b.eff - a.eff)[0];
@@ -468,7 +468,7 @@
   const FLAGS = COLS.filter(aid => A[aid]?.shape === 'flags');
   function tableCols() {
     if (TC?.columns) return TC.columns;
-    // a site without its own columns: the attributes it colours or links, and every question, the site file's shown first
+    // a site without its own columns: the attributes it colors or links, and every question, the site file's shown first
     return [...Object.keys(SPECS).filter(n => n !== colourAttr && (SPECS[n].colour || (SPECS[n].kind === 'list' && SPECS[n].link))).map(n => ({ id: 'a:' + n, label: SPECS[n].label, attribute: n, default: true })),
       ...COLS.filter(aid => !FLAGS.includes(aid)).map(aid => ({ id: 'q:' + aid, label: A[aid]?.title || aid, analyses: [aid], default: (D.sites_view?.columns || []).includes(aid) }))];
   }
@@ -740,7 +740,7 @@
       const blocks = []; for (let b = s; b < Math.min(s + 60, seq.length + 1); b += 10) { let t = ''; for (let i = b; i < Math.min(b + 10, seq.length + 1); i++) t += res(i); blocks.push(t); }
       lines.push(`<span class="sq-n">${s}</span>${blocks.join(' ')}`);
     }
-    return `<div class="card-head"><p class="sub">${int(seq.length)} residues (${esc((D.run.snapshot || {}).release || '')}), the ${esc(W.marks)} in colour as on the map; hover one for its name, click it for its card.</p>` +
+    return `<div class="card-head"><p class="sub">${int(seq.length)} residues (${esc((D.run.snapshot || {}).release || '')}), the ${esc(W.marks)} in color as on the map; hover one for its name, click it for its card.</p>` +
       `<span class="exp"><button class="btn small" type="button" data-fasta="copy">Copy FASTA</button><button class="btn small" type="button" data-fasta="dl">Download FASTA</button></span></div><pre class="seq">${lines.join('\n')}</pre>`;
   }
 
@@ -900,7 +900,7 @@
     ['[data-more-links]', el => { PV.more = !PV.more; document.getElementById('more-menu').hidden = !PV.more; el.setAttribute('aria-expanded', String(PV.more)); }],
     ['[data-fn-more]', () => { PV.fn = !PV.fn; document.querySelector('.fn-text')?.classList.toggle('open', PV.fn); const b = document.querySelector('[data-fn-more]'); if (b) b.textContent = PV.fn ? 'Less' : 'More'; }],
     ['[data-print]', () => {
-      // printed in light colours, every section open, with the page's address and how to cite it at the foot
+      // printed in light colors, every section open, with the page's address and how to cite it at the foot
       document.querySelectorAll('details.pgroup, details.pfold').forEach(d => { d.open = true; });
       const theme = document.documentElement.dataset.theme; document.documentElement.dataset.theme = 'light';
       document.body.dataset.printFoot = `${D.site.name} · ${location.href} · printed ${K.hdate(new Date().toISOString())}. ${K.creditLines()[0] || ''}`;

@@ -1,5 +1,5 @@
 """Staging: download a proteome's sources from upstream, write them in the formats the layers read, and record each
-file (source URL, release or date, licence, MD5) in a site's input manifest.
+file (source URL, release or date, license, MD5) in a site's input manifest.
 
   ptmc stage uniprot UP000002311 --out DIR --manifest sites/yeast_phospho.inputs.json
   ptmc stage mobidb  --out DIR --manifest ...      (after uniprot: it reads the accessions from the FASTA)

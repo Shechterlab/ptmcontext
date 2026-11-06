@@ -21,7 +21,7 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
 - **Parity:** `sites/methylarginine.yaml` rebuilds 4,342 of the 4,659 rows (93%) of release v1.4.3's statistics table
   byte for byte, from the release's inputs, without running any of its code (`tests/test_parity_v1_4_3.py`):
   - the 86 residue-level rows (motif, disorder, domain context, domain class, structure context, and changes at
-    methylarginines in TCGA tumours and DepMap cell lines, counted on the proteins whose gene DepMap screened; pooled
+    methylarginines in TCGA tumors and DepMap cell lines, counted on the proteins whose gene DepMap screened; pooled
     and within protein);
   - the 4,256 protein-set rows for PANTHER protein classes (grouped, top level, subclasses), Reactome top-level groups,
     Reactome pathways, HPA locations, the DisGeNET disease families, audited and additional (Entrez genes, each
@@ -47,7 +47,7 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
   about 50 s and run in 21 s. UniProt's domain features cover 1,937 of 6,067 yeast proteins; SHEPHARD's ECOD domains
   fill 2,506 more, so 79% of the phosphosites (4,702 of 5,930) are on a protein with domain data, up from 47%.
 - **A website per site, from its file:** `ptmc web` gives the Methylarginine Site Explorer's look with the site's own
-  colours, pictures and words; every figure and table downloads as PDF, SVG, PNG and TSV carrying its description,
+  colors, pictures and words; every figure and table downloads as PDF, SVG, PNG and TSV carrying its description,
   citation (from the site's `CITATION.cff`), versions and provenance. As in the explorer:
   - **Overview:** tiles that open with each question's most telling classes (which tiles, in which sections:
     `website.overview`), each opening to its full figure.
@@ -56,8 +56,8 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
     with their DOIs, ...). A selection is kept in the link, and the Overview's tests run again on it in the browser
     (within-protein Mantel–Haenszel, pooled Fisher, hypergeometric), computed as the site's own rows.
   - **Proteins and Sites:** tables of the selection; each site's studies linked to their papers.
-  - **Protein pages:** UniProt's other names and function (live), the map (marks stacked and coloured by any
-    attribute, labelled Auto/All/None; rows from the site's data, the sequence (charge, hydropathy, aromatic
+  - **Protein pages:** UniProt's other names and function (live), the map (marks stacked and colored by any
+    attribute, labeled Auto/All/None; rows from the site's data, the sequence (charge, hydropathy, aromatic
     residues) and live sources (UniProt regions, variants, PTMs; AlphaFold pLDDT), each item with a hover saying what
     it is and where it comes from and a click that pins it with its links), a card per site with its evidence, and
     live cards from AlphaFold DB, PDBe and STRING.
@@ -82,7 +82,7 @@ ptmc pages sites/methylarginine.yaml sites/yeast_phospho.yaml --out _site   # af
 | [ADDING_DATA.md](ADDING_DATA.md) | adding a source, a mark or a site: a step-by-step guide written for AI agents |
 | [AGENTS.md](AGENTS.md) | the rules for anyone, human or AI, changing this repository |
 
-## Licence
+## License
 
 Code: MIT ([LICENSE](LICENSE)). Inputs keep their sources' terms, recorded in each manifest; this repository
 redistributes no input data.

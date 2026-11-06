@@ -99,13 +99,13 @@
     const ps = drawnOf(); if (!ps.length) return '';
     const np = K.sel.nProteins();
     return `<h3 class="sec-label" id="sec-drawn">Protein maps of your selection${np > ps.length ? ` <span class="muted">(the ${ps.length} with the most selected ${esc(W.marks)})</span>` : ''}</h3>` +
-      `<section class="drawn-card"><div class="drawn-top"><p class="muted small">Each protein from end to end: ${(D.tracks || []).filter(t => t.style !== 'segments').map(t => esc(t.title.toLowerCase())).join(', ')}; your ${esc(W.marks)} inked, its other ${esc(W.marks)} grey.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'drexp', 'your proteins', 'drawn')}</div>` +
+      `<section class="drawn-card"><div class="drawn-top"><p class="muted small">Each protein from end to end: ${(D.tracks || []).filter(t => t.style !== 'segments').map(t => esc(t.title.toLowerCase())).join(', ')}; your ${esc(W.marks)} inked, its other ${esc(W.marks)} gray.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'drexp', 'your proteins', 'drawn')}</div>` +
       ps.map(({ pi, n, p }) => `<div class="drawn-row"><a href="${esc(K.link('protein', p[0]))}"><b>${esc(p[1] || p[0])}</b> <span class="muted">${esc(p[2] || '')}</span></a><span class="muted small">${int(n)} of ${int(p[4])} ${esc(W.marks)} selected · ${int(p[3])} aa</span><svg class="drawn-map" data-drawn="${pi}" viewBox="0 0 700 44" preserveAspectRatio="none" aria-label="${esc(p[1] || p[0])}, drawn"></svg></div>`).join('') + '</section>';
   });
   const recs = {};
   function mapSvg(pi, rec, w, light, all) {
     const p = D.proteins[pi], len = p[3] || 1, X = x => 6 + (x - 0.5) / len * (w - 12), y0 = 30;
-    const sel = all ? new Set((rec?.marks || []).map(m => m[0])) : K.sel.selectedPositions(p[0]) || new Set(), ink = light ? '#1f2937' : 'currentColor', grey = '#A3AEB3', mark = '#B42318', parts = [];
+    const sel = all ? new Set((rec?.marks || []).map(m => m[0])) : K.sel.selectedPositions(p[0]) || new Set(), ink = light ? '#1f2937' : 'currentColor', gray = '#A3AEB3', mark = '#B42318', parts = [];
     parts.push(`<line x1="${X(0.5)}" x2="${X(len + 0.5)}" y1="${y0}" y2="${y0}" stroke="#CBD5E1" stroke-width="2"/>`);
     (rec?.units || []).forEach(([k, s, e, lab]) => {
       const t = TR[k]; if (!t || t.style === 'segments') return;
@@ -114,7 +114,7 @@
     });
     const marks = (rec?.marks || []).map(m => m[0]);
     const shown = K.prot?.shownPos ? (pos => K.prot.shownPos(p[0], pos)) : (pos => pos);
-    marks.filter(pos => !sel.has(pos)).forEach(pos => parts.push(`<line x1="${X(pos).toFixed(1)}" x2="${X(pos).toFixed(1)}" y1="${y0 - 10}" y2="${y0 - 20}" stroke="${grey}" stroke-width="1.2"/><circle cx="${X(pos).toFixed(1)}" cy="${y0 - 21}" r="2.4" fill="${grey}"><title>${shown(pos)}</title></circle>`));
+    marks.filter(pos => !sel.has(pos)).forEach(pos => parts.push(`<line x1="${X(pos).toFixed(1)}" x2="${X(pos).toFixed(1)}" y1="${y0 - 10}" y2="${y0 - 20}" stroke="${gray}" stroke-width="1.2"/><circle cx="${X(pos).toFixed(1)}" cy="${y0 - 21}" r="2.4" fill="${gray}"><title>${shown(pos)}</title></circle>`));
     [...sel].forEach(pos => parts.push(`<line x1="${X(pos).toFixed(1)}" x2="${X(pos).toFixed(1)}" y1="${y0 - 10}" y2="${y0 - 24}" stroke="${mark}" stroke-width="1.6"/><circle cx="${X(pos).toFixed(1)}" cy="${y0 - 25}" r="3.4" fill="${mark}"><title>${shown(pos)} (selected)</title></circle>`));
     return parts.join('').replace(/currentColor/g, ink);
   }
@@ -130,7 +130,7 @@
   const drawnFigure = () => {
     const ps = drawnOf(), rowH = 58, body = ps.map(({ pi, n, p }, i) => `<g transform="translate(20,${i * rowH})"><text x="0" y="12" font-size="12" font-weight="bold" fill="#1f2937">${esc(p[1] || p[0])}</text><text x="${(p[1] || p[0]).length * 7.5 + 10}" y="12" font-size="10.5" fill="#6b7280">${esc(p[0])} · ${int(n)} of ${int(p[4])} ${esc(W.marks)} selected · ${int(p[3])} aa</text><g transform="translate(0,12)">${mapSvg(pi, recs[p[0]], 720, true)}</g></g>`).join('');
     return K.figureFrame({ title: 'Protein maps of your selection', sub: `${K.sel.describe()}: ${int(K.sel.nMarks())} ${W.marks} on ${int(K.sel.nProteins())} proteins`, body, bodyH: ps.length * rowH, W: 760,
-      note: `Each protein from end to end: ${(D.tracks || []).filter(t => t.style !== 'segments').map(t => t.title.toLowerCase()).join(', ')}; the selected ${W.marks} red, the protein's other ${W.marks} grey.` });
+      note: `Each protein from end to end: ${(D.tracks || []).filter(t => t.style !== 'segments').map(t => t.title.toLowerCase()).join(', ')}; the selected ${W.marks} red, the protein's other ${W.marks} gray.` });
   };
   const drawnTsv = () => K.preamble('Protein maps of your selection', `the selection's proteins, each ${W.mark} with whether it is selected`) + 'accession\tgene\tposition\tselected\n' +
     drawnOf().flatMap(({ p }) => { const sel = K.sel.selectedPositions(p[0]) || new Set(); return (recs[p[0]]?.marks || []).map(m => [p[0], p[1], K.prot?.shownPos ? K.prot.shownPos(p[0], m[0]) : m[0], sel.has(m[0]) ? 'yes' : 'no'].join('\t')); }).join('\n') + '\n';
@@ -140,6 +140,6 @@
 
   // ---- their Method sections ---------------------------------------------------------------------------------------
   (K.methodParts ||= []).push(() => `<section id="m-apart"><h3>What sets a selection apart</h3><p>A selection’s ${esc(W.marks)} are compared with the other ${esc(W.marks)}, class by class, for every question about where ${esc(W.marks)} sit and every attribute of the ${esc(W.marks)} except how they were found. Test: Fisher’s exact test on the pooled 2×2 table, Haldane odds ratio with Woolf’s 95% CI, Benjamini–Hochberg q within each question. A class differs at q ≤ ${PADJ()} and 1.1× or more, with at least 10 ${esc(W.marks)} in it across both sides. The summary names the three that differ most (by the CI bound nearest 1). The full comparison (Compared with: other ${esc(W.marks)}) adds tests within proteins and within studies. It is exploratory, since the selection was chosen by looking.</p></section>` +
-    `<section id="m-drawn"><h3>Protein maps of a small selection</h3><p>A selection too small to test (under ${int(K.sel.MIN.proteins)} proteins or ${int(K.sel.MIN.marks)} ${esc(W.marks)}) shows up to ${MAX_DRAWN} proteins instead, those with the most selected ${esc(W.marks)} first. Each is drawn end to end with the regions of the questions (${(D.tracks || []).filter(t => t.style !== 'segments').map(t => esc(t.title.toLowerCase())).join(', ')}), selected ${esc(W.marks)} red and the others grey. The counts that hold for any selection follow.</p></section>`);
+    `<section id="m-drawn"><h3>Protein maps of a small selection</h3><p>A selection too small to test (under ${int(K.sel.MIN.proteins)} proteins or ${int(K.sel.MIN.marks)} ${esc(W.marks)}) shows up to ${MAX_DRAWN} proteins instead, those with the most selected ${esc(W.marks)} first. Each is drawn end to end with the regions of the questions (${(D.tracks || []).filter(t => t.style !== 'segments').map(t => esc(t.title.toLowerCase())).join(', ')}), selected ${esc(W.marks)} red and the others gray. The counts that hold for any selection follow.</p></section>`);
   void cap;
 });

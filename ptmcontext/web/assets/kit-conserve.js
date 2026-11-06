@@ -1,11 +1,11 @@
 /* Conservation across species, and the selection's sequence logo.
-     Conservation   on a protein's page: each mark aligned in the orthologues of the site file's species (Ensembl
+     Conservation   on a protein's page: each mark aligned in the orthologs of the site file's species (Ensembl
                     Compara, live, for the Ensembl gene that UniProt's cross-references name), whether the residue is
                     still the marked one, against the protein's other residues of the profile's letters; a chip with
                     the share that are kept; SVG, PNG and TSV.
      Logo           on a selection's Overview ("Logo and comparison"): the selected marks' sequence windows aligned at
                     the mark, a WebLogo-style logo (information content with the small-sample correction of
-                    Schneider et al. 1986, WebLogo's chemistry colours), the same for the other marks, and the residue
+                    Schneider et al. 1986, WebLogo's chemistry colors), the same for the other marks, and the residue
                     each position gains and loses; SVG, PNG and TSV. The windows are the motif finder's
                     (website.search.patterns), built from the snapshot sequences.
    Both are read from website.protein.conservation (CONTRACTS.md); a site without it has neither. They describe; no
@@ -18,7 +18,7 @@
   const RES = D.residues || [];
   const KEPT = RES.length === 1 ? RES[0] : 'the same residue';        // "still R"
   const CATALOGUE = CV.species, SIMILAR = new Set(CV.similar || []), ENS = CV.ensembl;
-  // The reader's set of species: one of the site file's presets (each names species of the catalogue), remembered in this
+  // The reader's set of species: one of the site file's presets (each names species of the catalog), remembered in this
   // browser. A site without presets aligns every species it lists.
   const PRESETS = (CV.presets || []).map(p => ({ ...p, list: (p.species || []).map(id => CATALOGUE.find(s => s.id === id)).filter(Boolean) })).filter(p => p.list.length);
   const SET_KEY = `ptmc-cons-set-${D.site?.id}`;
@@ -33,7 +33,7 @@
   const live = (key, make) => (memo[key] ||= make().catch(e => { delete memo[key]; throw e; }));
   const tipAttr = html => ` data-cv-tip="${esc(html)}"`;
 
-  // ---- residue chemistry: WebLogo's "chemistry" colours (Crooks et al. 2004) ------------------------------------------
+  // ---- residue chemistry: WebLogo's "chemistry" colors (Crooks et al. 2004) ------------------------------------------
   const CHEM = { G: 'polar', S: 'polar', T: 'polar', Y: 'polar', C: 'polar', Q: 'polar', N: 'polar', K: 'basic', R: 'basic', H: 'basic', D: 'acidic', E: 'acidic',
     A: 'hydrophobic', V: 'hydrophobic', L: 'hydrophobic', I: 'hydrophobic', P: 'hydrophobic', W: 'hydrophobic', F: 'hydrophobic', M: 'hydrophobic' };
   const COL = { polar: '#1A9850', basic: '#2166AC', acidic: '#C0392B', hydrophobic: '#1F2933' };
@@ -62,11 +62,11 @@
   // Conservation across species (protein page)
   // =================================================================================================================
   const UNI = acc => `https://rest.uniprot.org/uniprotkb/${acc}.json`;       // the address the protein page's own card reads
-  const orthoUrl = ensg => `${String(ENS.rest).replace(/\/$/, '')}/homology/id/${encodeURIComponent(ENS.source)}/${encodeURIComponent(ensg)}?type=orthologues;aligned=1;sequence=protein;cigar_line=0;${ENS.compara ? 'compara=' + encodeURIComponent(ENS.compara) + ';' : ''}` +
+  const orthoUrl = ensg => `${String(ENS.rest).replace(/\/$/, '')}/homology/id/${encodeURIComponent(ENS.source)}/${encodeURIComponent(ensg)}?type=orthologs;aligned=1;sequence=protein;cigar_line=0;${ENS.compara ? 'compara=' + encodeURIComponent(ENS.compara) + ';' : ''}` +
     SPECIES().map(s => 'target_species=' + s.id).join(';') + ';content-type=application/json';
   const ensgOf = j => [...new Set((j.uniProtKBCrossReferences || []).filter(x => x.database === ENS.xref)
     .map(x => ((x.properties || []).find(pp => pp.key === 'GeneId') || {}).value || '').filter(Boolean).map(g => g.split('.')[0]))][0] || '';
-  // the orthologue of highest identity for each species, in the site file's order
+  // the ortholog of highest identity for each species, in the site file's order
   const orthologs = ensg => live('ortho:' + ensg + ':' + SPECIES().map(s => s.id).join(','), () => timed(getJson(orthoUrl(ensg)), 60000).then(d => {
     const best = new Map();
     for (const h of ((d.data || [])[0] || {}).homologies || []) {
@@ -77,7 +77,7 @@
   }));
 
   // Carry each position of the snapshot sequence to the Ensembl human protein (identical, contained, or by a unique
-  // 15-residue anchor), then read the orthologue's aligned residue there; null where it cannot be mapped.
+  // 15-residue anchor), then read the ortholog's aligned residue there; null where it cannot be mapped.
   function modelOf(seq, sites, orthos) {
     const rows = orthos.map(o => {
       const src = o.h.source.align_seq, tgt = o.h.target.align_seq, ens = src.replace(/-/g, ''), colOf = [];
@@ -93,7 +93,7 @@
     });
     return { rows, sites };
   }
-  // Is each residue still the same in the orthologues? For each candidate residue (the profile's letters) with an
+  // Is each residue still the same in the orthologs? For each candidate residue (the profile's letters) with an
   // aligned residue in at least one species, the share of those species that keep it; the marks against the protein's
   // other candidates by their means and a two-sided Wilcoxon rank-sum test (normal approximation, ties corrected), each
   // residue counted once however many species align it.
@@ -148,16 +148,16 @@
         st.model = modelOf(st.seq, st.sites, orthos); st.ck = keepOf(st.seq, st.model); st.phase = 'ok';
         if (!st.sites.includes(UI.pos) || UI.acc !== acc) { UI.pos = st.sites[0]; UI.acc = acc; }
         paint(acc);
-        // website.protein.open: a fold the site starts open opens when its orthologues arrive, unless the reader has touched it
+        // website.protein.open: a fold the site starts open opens when its orthologs arrive, unless the reader has touched it
         const f = document.getElementById('p-cons');
         if (f && curAcc() === acc && D.front?.mode !== 'cards' && K.foldStarts?.('p-cons') && !K.foldTouched?.('p-cons')) f.open = true;
       });
     }).catch(e => { st.phase = 'fail'; st.err = fail(e); st.who = st.ensg ? 'Ensembl Compara' : 'UniProt'; paint(acc); });
   }
   const sumOf = st => {
-    if (!st || st.phase === 'idle' || st.phase === 'ens' || st.phase === 'ortho') return 'looking up the orthologues, live';
+    if (!st || st.phase === 'idle' || st.phase === 'ens' || st.phase === 'ortho') return 'looking up the orthologs, live';
     if (st.phase === 'no_gene') return `UniProt lists no ${esc(ENS.xref)} gene`;
-    if (st.phase === 'none') return 'no orthologue in the species listed';
+    if (st.phase === 'none') return 'no ortholog in the species listed';
     if (st.phase === 'fail') return `${esc(st.who)} did not answer`;
     return st.ck.me == null ? `no ${esc(W.mark)} could be mapped` : esc(say(st.ck));
   };
@@ -170,25 +170,25 @@
     (preset().note ? ` <span class="muted small">${esc(preset().note)}</span>` : '') + '</p>' : '');
   function bodyHtml(acc) {
     const st = ST[acc], g = esc(gene(acc));
-    const head = `<div class="card-head"><div><p class="sub">Each ${esc(W.mark)} of ${g} in the orthologues of ${esc(SPECIES().map(s => s.label).join(', '))} (Ensembl Compara${ENS.compara ? ', ' + esc(ENS.compara) : ''}), and whether it is still ${esc(KEPT)}.</p>${setPicker()}</div>` +
+    const head = `<div class="card-head"><div><p class="sub">Each ${esc(W.mark)} of ${g} in the orthologs of ${esc(SPECIES().map(s => s.label).join(', '))} (Ensembl Compara${ENS.compara ? ', ' + esc(ENS.compara) : ''}), and whether it is still ${esc(KEPT)}.</p>${setPicker()}</div>` +
       K.expBar(['svg', 'png', 'tsv'], 'cvexp', 'the conservation of ' + gene(acc), 'conserve') + '</div>';
-    if (!st || ['idle', 'ens', 'ortho'].includes(st.phase)) return head + `<p class="note">Looking up ${g}’s orthologues${st?.phase === 'ortho' ? ` in Ensembl Compara (${esc(st.ensg)}); usually 5–30 s` : ' (UniProt, then Ensembl Compara)'}…</p>`;
-    if (st.phase === 'no_gene') return head + `<p class="note">UniProt lists no ${esc(ENS.xref)} gene for ${esc(acc)}, so there are no orthologues to look up.</p>`;
-    if (st.phase === 'none') return head + `<p class="note">Ensembl lists no orthologue of ${g} in these species.</p>`;
+    if (!st || ['idle', 'ens', 'ortho'].includes(st.phase)) return head + `<p class="note">Looking up ${g}’s orthologs${st?.phase === 'ortho' ? ` in Ensembl Compara (${esc(st.ensg)}); usually 5–30 s` : ' (UniProt, then Ensembl Compara)'}…</p>`;
+    if (st.phase === 'no_gene') return head + `<p class="note">UniProt lists no ${esc(ENS.xref)} gene for ${esc(acc)}, so there are no orthologs to look up.</p>`;
+    if (st.phase === 'none') return head + `<p class="note">Ensembl lists no ortholog of ${g} in these species.</p>`;
     if (st.phase === 'fail') return head + `<p class="note">${esc(st.who)} ${esc(st.err)}. Nothing else on this page depends on it. <button class="linkish" type="button" data-cv-retry="${esc(acc)}">Try again</button></p>`;
     const { model, ck, seq, sites } = st, per = model.rows.map(r => { const v = sites.map(q => r.at(q)); return { r, v, nK: v.filter((a, i) => a === seq[sites[i] - 1]).length, nMap: v.filter(a => a != null).length }; });
     const absent = SPECIES().filter(s => !model.rows.some(r => r.sp === s.id)).map(s => s.label);
     const test = ck.me != null && ck.other != null ? `<p class="cv-test"><b>${esc(W.marks)} against the other ${esc(W.residues)} of ${g}:</b> on average a ${esc(W.mark)} is still ${esc(KEPT)} in <b>${PCT(ck.me)}%</b> of the species that align it, ` +
       `the other ${esc(W.residues)} in <b>${PCT(ck.other)}%</b> (${int(ck.n1)} and ${int(ck.n2)} ${esc(W.residues)}; ${ck.p == null ? 'too few to test' : 'Wilcoxon rank-sum p = ' + K.fq(ck.p)}).</p>` : '';
     const row = (name, sub, vals) => `<tr><th>${esc(name)}${sub ? ` <span class="muted">${esc(sub)}</span>` : ''}</th>${vals}</tr>`;
-    const tcell = (a, i, name, human) => `<td class="${cls(a, human)}"${tipAttr(`<b>${esc(name)}</b> · ${esc(lab(acc, sites[i]))}<br>${a == null ? 'not mapped: the Ensembl protein differs around here' : a === '-' ? 'gap: no aligned residue in this orthologue' : esc(a) + (a === human ? ' (kept)' : SIMILAR.has(a) ? ' (a conservative change)' : ' (changed)')}`)}>${esc(a == null ? '·' : a === '-' ? '–' : a)}</td>`;
+    const tcell = (a, i, name, human) => `<td class="${cls(a, human)}"${tipAttr(`<b>${esc(name)}</b> · ${esc(lab(acc, sites[i]))}<br>${a == null ? 'not mapped: the Ensembl protein differs around here' : a === '-' ? 'gap: no aligned residue in this ortholog' : esc(a) + (a === human ? ' (kept)' : SIMILAR.has(a) ? ' (a conservative change)' : ' (changed)')}`)}>${esc(a == null ? '·' : a === '-' ? '–' : a)}</td>`;
     const table = `<div class="cv-wrap"><table class="cv-tbl"><thead><tr><th>Species</th>${sites.map(q => `<th><button type="button" class="linkish${q === UI.pos ? ' cur' : ''}" data-cv-pos="${q}">${esc(lab(acc, q))}</button></th>`).join('')}</tr></thead><tbody>` +
       row('Human', '', sites.map(q => `<td class="${cls(seq[q - 1], seq[q - 1])}">${esc(seq[q - 1] || '·')}</td>`).join('')) +
       per.map(x => row(x.r.name, Math.round(x.r.pid) + '%', x.v.map((a, i) => tcell(a, i, x.r.name, seq[sites[i] - 1])).join(''))).join('') + '</tbody></table></div>';
     return head + test + `<div class="cv-sum">${per.map(x => `<span class="tag"><b>${esc(x.r.name)}</b> ${esc(KEPT)} at ${x.nK}/${x.nMap}</span>`).join(' ')}` +
-      (absent.length ? ` <span class="muted small">No orthologue in Ensembl: ${esc(absent.join(', '))}.</span>` : '') + '</div>' + table +
-      `<p class="small muted">Dark: still ${esc(KEPT)}; pale: a conservative change; grey: another residue; – a gap; · not mapped (the Ensembl protein differs here). The percentage is the orthologue’s identity to ${g}. Click a position for its alignment. ` +
-      `<a href="https://www.ensembl.org/${esc(String(ENS.source).replace(/^./, c => c.toUpperCase()))}/Gene/Compara_Ortholog?g=${encodeURIComponent(st.ensg)}" target="_blank" rel="noopener">Ensembl ${esc(st.ensg)} orthologues ↗</a></p>` +
+      (absent.length ? ` <span class="muted small">No ortholog in Ensembl: ${esc(absent.join(', '))}.</span>` : '') + '</div>' + table +
+      `<p class="small muted">Dark: still ${esc(KEPT)}; pale: a conservative change; gray: another residue; – a gap; · not mapped (the Ensembl protein differs here). The percentage is the ortholog’s identity to ${g}. Click a position for its alignment. ` +
+      `<a href="https://www.ensembl.org/${esc(String(ENS.source).replace(/^./, c => c.toUpperCase()))}/Gene/Compara_Ortholog?g=${encodeURIComponent(st.ensg)}" target="_blank" rel="noopener">Ensembl ${esc(st.ensg)} orthologs ↗</a></p>` +
       `<div class="cv-ctl"><label>Site <select id="cv-pos">${sites.map(q => `<option value="${q}"${q === UI.pos ? ' selected' : ''}>${esc(lab(acc, q))}</option>`).join('')}</select></label> ` +
       `<label>Flank <select id="cv-flank">${[5, 10, 15, 20].map(v => `<option value="${v}"${v === UI.flank ? ' selected' : ''}>±${v}</option>`).join('')}</select></label></div>` +
       `<div class="cv-fig" id="cv-fig">${figure(acc).svg}</div>`;
@@ -214,15 +214,15 @@
     g += `<rect x="${x0 + flank * cw}" y="${top - 1}" width="${cw}" height="${y - top + 2}" fill="none" stroke="${K.PAL.ink}" stroke-width="1.2"/>`;
     y += 18;
     const lg = legend(20, y, Wd); g += lg.svg; y += lg.h;
-    return K.figureFrame({ title: `${gene(acc)} ${lab(acc, pos)} across species`, sub: `${acc} · Ensembl Compara orthologues, columns anchored on the human sequence · residues ${Math.max(1, pos - flank)}–${pos + flank}`,
-      body: g, bodyH: y, W: Wd, note: `Outlined: the same residue as the human one. Dots: other ${W.marks} of the protein. % id.: identity of the orthologue to the human protein (Ensembl).`,
-      extra: { ensembl_gene: st.ensg, orthologues: model.rows.map(r => `${r.name} ${r.prot}`) } });
+    return K.figureFrame({ title: `${gene(acc)} ${lab(acc, pos)} across species`, sub: `${acc} · Ensembl Compara orthologs, columns anchored on the human sequence · residues ${Math.max(1, pos - flank)}–${pos + flank}`,
+      body: g, bodyH: y, W: Wd, note: `Outlined: the same residue as the human one. Dots: other ${W.marks} of the protein. % id.: identity of the ortholog to the human protein (Ensembl).`,
+      extra: { ensembl_gene: st.ensg, orthologs: model.rows.map(r => `${r.name} ${r.prot}`) } });
   }
   const tsv = acc => {
     const st = ST[acc], { model, seq, sites } = st, rows = model.rows;
-    return K.preamble(`Conservation across species: ${gene(acc)}`, `each ${W.mark} of ${gene(acc)} (${acc}) and the residue aligned to it in the orthologues of Ensembl Compara (${st.ensg}); empty: not mapped, -: gap`) +
+    return K.preamble(`Conservation across species: ${gene(acc)}`, `each ${W.mark} of ${gene(acc)} (${acc}) and the residue aligned to it in the orthologs of Ensembl Compara (${st.ensg}); empty: not mapped, -: gap`) +
       ['site\tposition\thuman_residue\t' + rows.map(r => slug(r.name.toLowerCase()) + '_residue').join('\t')].concat(sites.map(q => [lab(acc, q), q, seq[q - 1], ...rows.map(r => r.at(q) ?? '')].join('\t'))).join('\n') +
-      '\n# orthologues: ' + rows.map(r => `${r.name} ${r.prot} (${Math.round(r.pid)}% identity)`).join('; ') + `\n# ${W.marks} still ${KEPT}: ${say(st.ck)}\n`;
+      '\n# orthologs: ' + rows.map(r => `${r.name} ${r.prot} (${Math.round(r.pid)}% identity)`).join('; ') + `\n# ${W.marks} still ${KEPT}: ${say(st.ck)}\n`;
   };
 
   function paint(acc) {
@@ -234,21 +234,21 @@
     el.querySelector('.pfold-body').innerHTML = bodyHtml(acc);
     chip(acc);
   }
-  // the chip among the protein's chips: loading, then "82% still R in orthologues" (it opens the card)
+  // the chip among the protein's chips: loading, then "82% still R in orthologs" (it opens the card)
   function chip(acc) {
     const host = document.querySelector('.prot-chips'); if (!host) return;
     const st = ST[acc], ck = st?.ck, old = document.getElementById('cv-chip');
-    const text = !st || ['idle', 'ens', 'ortho'].includes(st.phase) ? 'orthologues…' : st.phase === 'ok' && ck.me != null ? (RES.length === 1 ? `${PCT(ck.me)}% still ${KEPT} in orthologues` : `${PCT(ck.me)}% conserved in orthologues`) : '';
+    const text = !st || ['idle', 'ens', 'ortho'].includes(st.phase) ? 'orthologs…' : st.phase === 'ok' && ck.me != null ? (RES.length === 1 ? `${PCT(ck.me)}% still ${KEPT} in orthologs` : `${PCT(ck.me)}% conserved in orthologs`) : '';
     if (!text) { old?.remove(); return; }
-    const tip = ck && ck.me != null ? `<b>Conservation across species</b><br>On average, the share of ${st.model.rows.length} species whose orthologue still has ${esc(KEPT)} at a ${esc(W.mark)} (${int(ck.n1)}) is ${PCT(ck.me)}%` +
-      (ck.other != null ? `, and ${PCT(ck.other)}% at the other ${esc(W.residues)} of the protein (${int(ck.n2)})` : '') + (ck.p != null ? `; Wilcoxon rank-sum p ${esc(K.fq(ck.p))}` : '') + '.<br>Click to open the alignments.' : 'Asking UniProt and Ensembl Compara for the orthologues.';
+    const tip = ck && ck.me != null ? `<b>Conservation across species</b><br>On average, the share of ${st.model.rows.length} species whose ortholog still has ${esc(KEPT)} at a ${esc(W.mark)} (${int(ck.n1)}) is ${PCT(ck.me)}%` +
+      (ck.other != null ? `, and ${PCT(ck.other)}% at the other ${esc(W.residues)} of the protein (${int(ck.n2)})` : '') + (ck.p != null ? `; Wilcoxon rank-sum p ${esc(K.fq(ck.p))}` : '') + '.<br>Click to open the alignments.' : 'Asking UniProt and Ensembl Compara for the orthologs.';
     const tiles = document.querySelector('.hl-cards');
     if (D.front?.mode === 'cards' && tiles) {           // the cards front end: a tile among the headline tiles, not a chip
       document.getElementById('cv-chip')?.remove(); let t = document.getElementById('cv-tile');
       if (!(st?.phase === 'ok' && ck?.me != null)) { t?.remove(); return; }
       if (!t) { t = document.createElement('button'); t.type = 'button'; t.id = 'cv-tile'; t.className = 'hl-card'; t.setAttribute('data-cv-open', ''); tiles.append(t); dispatchEvent(new Event('resize')); }
       t.setAttribute('data-hl-tip', tip);
-      t.innerHTML = `<span class="hl-glyph"><svg viewBox="0 0 64 22" aria-hidden="true"><path d="M4 11 h14 M18 11 l10 -6 h28 M18 11 l10 6 h28 M40 5 v12"/><circle class="g-f" cx="58" cy="5" r="3"/></svg></span><b class="hl-big">${PCT(ck.me)}%</b><span class="hl-lab">${esc(RES.length === 1 ? `still ${KEPT} in orthologues` : 'conserved in orthologues')}${ck.other != null ? ` (others ${PCT(ck.other)}%)` : ''}</span><span class="hl-kind">Conservation</span>`;
+      t.innerHTML = `<span class="hl-glyph"><svg viewBox="0 0 64 22" aria-hidden="true"><path d="M4 11 h14 M18 11 l10 -6 h28 M18 11 l10 6 h28 M40 5 v12"/><circle class="g-f" cx="58" cy="5" r="3"/></svg></span><b class="hl-big">${PCT(ck.me)}%</b><span class="hl-lab">${esc(RES.length === 1 ? `still ${KEPT} in orthologs` : 'conserved in orthologs')}${ck.other != null ? ` (others ${PCT(ck.other)}%)` : ''}</span><span class="hl-kind">Conservation</span>`;
       return;
     }
     const html = `<button type="button" class="chip cv-chip" id="cv-chip" data-cv-open${tipAttr(tip)}>${esc(text)}</button>`;
@@ -449,15 +449,15 @@
   // ---- Method ---------------------------------------------------------------------------------------------------------
   const doi = (id, t) => `<a href="https://doi.org/${esc(id)}">${esc(t)}</a>`;
   (K.methodParts ||= []).push(() => `<section id="m-conserve"><h3>Conservation across species</h3>` +
-    `<p>On a protein’s page, the ${esc(ENS.xref)} gene from UniProt’s cross-references is sent from your browser to Ensembl Compara (REST at ${esc(ENS.rest)}) for orthologues in the species of the set you choose (${esc(PRESETS.length ? PRESETS.map(p => `${p.label}: ${p.list.map(s => s.label).join(', ')}`).join('; ') : CATALOGUE.map(s => s.label).join(', '))}). ` +
-    `Each species uses its orthologue of highest identity, with Ensembl’s pairwise protein alignment. Positions of the ${esc(D.run.snapshot?.release || 'snapshot')} sequence map to the Ensembl ${esc(ENS.source)} protein directly when the sequences are identical or nested, otherwise through a unique 15-residue anchor around each ${esc(W.mark)}. Without one, the position shows as not mapped. ` +
-    `Columns follow the ${esc(ENS.source)} sequence, so insertions in other species are not shown. A residue is kept when the orthologue has the same residue there${SIMILAR.size ? `. ${esc([...SIMILAR].join(', '))} is shown as a conservative change and not counted as kept` : ''}.</p>` +
-    `<p>The chip (“${RES.length === 1 ? 'still ' + esc(KEPT) : 'conserved'} in orthologues”) is the mean, over the protein’s ${esc(W.marks)}, of the share of species that align the ${esc(W.mark)} and keep it. It is compared with the protein’s other ${esc(W.residues)} (${esc(RES.join(', ') || 'the profile’s residues')}) by a two-sided Wilcoxon rank-sum test (normal approximation, with tie and continuity corrections). Each residue counts once however many species align it, and fewer than three on either side are not tested. ` +
+    `<p>On a protein’s page, the ${esc(ENS.xref)} gene from UniProt’s cross-references is sent from your browser to Ensembl Compara (REST at ${esc(ENS.rest)}) for orthologs in the species of the set you choose (${esc(PRESETS.length ? PRESETS.map(p => `${p.label}: ${p.list.map(s => s.label).join(', ')}`).join('; ') : CATALOGUE.map(s => s.label).join(', '))}). ` +
+    `Each species uses its ortholog of highest identity, with Ensembl’s pairwise protein alignment. Positions of the ${esc(D.run.snapshot?.release || 'snapshot')} sequence map to the Ensembl ${esc(ENS.source)} protein directly when the sequences are identical or nested, otherwise through a unique 15-residue anchor around each ${esc(W.mark)}. Without one, the position shows as not mapped. ` +
+    `Columns follow the ${esc(ENS.source)} sequence, so insertions in other species are not shown. A residue is kept when the ortholog has the same residue there${SIMILAR.size ? `. ${esc([...SIMILAR].join(', '))} is shown as a conservative change and not counted as kept` : ''}.</p>` +
+    `<p>The chip (“${RES.length === 1 ? 'still ' + esc(KEPT) : 'conserved'} in orthologs”) is the mean, over the protein’s ${esc(W.marks)}, of the share of species that align the ${esc(W.mark)} and keep it. It is compared with the protein’s other ${esc(W.residues)} (${esc(RES.join(', ') || 'the profile’s residues')}) by a two-sided Wilcoxon rank-sum test (normal approximation, with tie and continuity corrections). Each residue counts once however many species align it, and fewer than three on either side are not tested. ` +
     `It describes one protein and changes no number on this page. If UniProt or Ensembl does not answer, the card says so and nothing else depends on it. ` +
     `Exports: SVG and PNG of the alignment around the chosen ${esc(W.mark)}, and a TSV of every ${esc(W.mark)} in every species. ${doi('10.1093/database/bav096', 'Herrero et al. 2016')}; ${doi('10.1093/bioinformatics/btu613', 'Yates et al. 2015')}.</p></section>` +
     (CV.logo ? `<section id="m-logo"><h3>Site alignment and sequence logo</h3><p>On a selection’s Overview, the selected ${esc(W.marks)} are aligned at the ${esc(W.mark)} using the ${int(2 * (SD()?.wide?.span ?? 15) + 1)}-residue windows of the canonical sequences (the motif finder’s). Positions past a protein’s end are blank. ` +
       `The logo uses every selected ${esc(W.mark)} with a window. “Frequency” stacks the residue frequencies at each position. “Information” scales each stack by its information content, log2(20) minus the Shannon entropy and the small-sample correction 19 / (2 ln 2 n) (Schneider et al. 1986, ${doi('10.1016/0022-2836(86)90165-8', 'J Mol Biol 188:415')}), so a position held by one residue reaches about ${AA_BITS.toFixed(1)} bits at most. ` +
-      `Colours follow WebLogo’s chemistry scheme (Crooks et al. 2004, ${doi('10.1101/gr.849004', 'Genome Res 14:1188')}). The same logo is drawn for the other ${esc(W.marks)}, and each position shows the residue the selection gains and loses most against them, in percentage points. ` +
+      `Colors follow WebLogo’s chemistry scheme (Crooks et al. 2004, ${doi('10.1101/gr.849004', 'Genome Res 14:1188')}). The same logo is drawn for the other ${esc(W.marks)}, and each position shows the residue the selection gains and loses most against them, in percentage points. ` +
       `This describes the windows; the Overview’s motif questions are the tests. Exports: SVG, PNG and a TSV of the counts per position and the aligned windows.</p></section>` : ''));
   const baseMethod = K.sections.method;
   K.sections.method = () => {

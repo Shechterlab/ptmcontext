@@ -141,7 +141,7 @@
         },
         "attributes": {
           "type": "object",
-          "description": "columns of the marks table the website keeps for each mark: to colour sites, filter them and show where they come from. Never used by a test.",
+          "description": "columns of the marks table the website keeps for each mark: to color sites, filter them and show where they come from. Never used by a test.",
           "additionalProperties": {
             "type": "object",
             "required": [
@@ -202,7 +202,7 @@
               },
               "colour": {
                 "type": "boolean",
-                "description": "offered in \"Colour sites by\""
+                "description": "offered in \"Color sites by\""
               },
               "filter": {
                 "type": "boolean",
@@ -217,7 +217,7 @@
                   "type": "string",
                   "pattern": "^#[0-9a-fA-F]{6}$"
                 },
-                "description": "value -> its colour when sites are coloured by this attribute (default: a fixed palette in the order of values)"
+                "description": "value -> its color when sites are colored by this attribute (default: a fixed palette in the order of values)"
               },
               "records": {
                 "type": "object",
@@ -228,11 +228,11 @@
               },
               "provenance": {
                 "type": "boolean",
-                "description": "the attribute says how a mark was found (its studies, how it was localised, notes), not what it is: comparisons of marks show it as a caveat, and the first linked list of these gives the study strata"
+                "description": "the attribute says how a mark was found (its studies, how it was localized, notes), not what it is: comparisons of marks show it as a caveat, and the first linked list of these gives the study strata"
               },
               "present": {
                 "type": "boolean",
-                "description": "the value is whether the column holds anything: 'yes' or 'no' (name them in values); for a filter such as \"changed in tumours\" over a column of changes"
+                "description": "the value is whether the column holds anything: 'yes' or 'no' (name them in values); for a filter such as \"changed in tumors\" over a column of changes"
               },
               "pair_with": {
                 "type": "string",
@@ -1705,7 +1705,7 @@
     "website": {
       "type": "object",
       "additionalProperties": false,
-      "description": "the website's look and words: everything that differs between sites. Layout and behaviour are the kit's.",
+      "description": "the website's look and words: everything that differs between sites. Layout and behavior are the kit's.",
       "required": [
         "name"
       ],
@@ -1843,7 +1843,7 @@
             "share": {
               "type": "object",
               "additionalProperties": false,
-              "description": "where the marks fall, as one bar: a question whose classes partition the marks (else the first that does), the classes to show in order (at most three are coloured; the rest is 'other'), and shorter labels",
+              "description": "where the marks fall, as one bar: a question whose classes partition the marks (else the first that does), the classes to show in order (at most three are colored; the rest is 'other'), and shorter labels",
               "properties": {
                 "analysis": {
                   "type": "string"
@@ -2560,11 +2560,11 @@
               "items": {
                 "type": "string"
               },
-              "description": "the attributes of the marks shown as the Sites table's columns, in order (default: every attribute coloured by or linked)"
+              "description": "the attributes of the marks shown as the Sites table's columns, in order (default: every attribute colored by or linked)"
             },
             "state_label": {
               "type": "string",
-              "description": "the coloured attribute's column heading"
+              "description": "the colored attribute's column heading"
             },
             "short": {
               "type": "object",
@@ -2607,7 +2607,7 @@
                   }
                 }
               },
-              "description": "residues coloured in the window"
+              "description": "residues colored in the window"
             },
             "tags": {
               "type": "object",
@@ -2920,7 +2920,7 @@
                     ]
                   }
                 },
-                "description": "a headline card: a count of the protein's marks (count: marks, of: candidates), those in some classes of a residue question (classes), the class at its marks that the site's tests favour most (best: true), those with some values of an attribute (attribute, values), or the sets of a protein-set question it is in; kind, glyph, opens (a section id) and tip make it a card that opens its section"
+                "description": "a headline card: a count of the protein's marks (count: marks, of: candidates), those in some classes of a residue question (classes), the class at its marks that the site's tests favor most (best: true), those with some values of an attribute (attribute, values), or the sets of a protein-set question it is in; kind, glyph, opens (a section id) and tip make it a card that opens its section"
               }
             },
             "links": {
@@ -3179,7 +3179,7 @@
                     "table",
                     "colourings"
                   ],
-                  "description": "evidence along the chain (a residue_evidence table) for the viewer's colourings",
+                  "description": "evidence along the chain (a residue_evidence table) for the viewer's colorings",
                   "properties": {
                     "table": {
                       "type": "string"
@@ -3228,7 +3228,7 @@
                                 },
                                 "colour": {
                                   "type": "string",
-                                  "description": "a hex colour or one of the viewer's names: rna, dna, protein, self, ev, rna_pale, dna_pale (they follow the theme)"
+                                  "description": "a hex color or one of the viewer's names: rna, dna, protein, self, ev, rna_pale, dna_pale (they follow the theme)"
                                 },
                                 "where": {
                                   "type": "array",
@@ -3367,7 +3367,7 @@
                 },
                 "near": {
                   "type": "object",
-                  "description": "a bound_windows table of RNA and DNA touching a residue next to a mark (offset): contact through a neighbouring residue",
+                  "description": "a bound_windows table of RNA and DNA touching a residue next to a mark (offset): contact through a neighboring residue",
                   "required": [
                     "table"
                   ],
@@ -3744,7 +3744,7 @@
             "conservation": {
               "type": "object",
               "additionalProperties": false,
-              "description": "the protein page's conservation card (orthologues live from Ensembl Compara) and the selection's sequence logo; a site without this block lacks both (CONTRACTS.md, Conservation across species)",
+              "description": "the protein page's conservation card (orthologs live from Ensembl Compara) and the selection's sequence logo; a site without this block lacks both (CONTRACTS.md, Conservation across species)",
               "required": [
                 "ensembl",
                 "species"
@@ -3778,7 +3778,7 @@
                 "species": {
                   "type": "array",
                   "minItems": 1,
-                  "description": "the orthologues' species, nearest first: Ensembl's species name and the label shown",
+                  "description": "the orthologs' species, nearest first: Ensembl's species name and the label shown",
                   "items": {
                     "type": "object",
                     "additionalProperties": false,
@@ -3882,7 +3882,7 @@
             },
             "headings": {
               "type": "array",
-              "description": "the cards front end's folds under labelled headings, each fold in the group that lists it (a fold no group lists follows the last); switch adds the This protein / Dataset context switch to a heading",
+              "description": "the cards front end's folds under labeled headings, each fold in the group that lists it (a fold no group lists follows the last); switch adds the This protein / Dataset context switch to a heading",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
@@ -4030,7 +4030,7 @@
                   "required": [
                     "table"
                   ],
-                  "description": "Cancer cell lines and tumours: a protein_records table with lines (screened), dependent (lines depending), median, common_essential, histogram (counts, ;-separated) and lineages (name|lines|mean, ;-separated); the changes at the marks are the site card's (card.changes)",
+                  "description": "Cancer cell lines and tumors: a protein_records table with lines (screened), dependent (lines depending), median, common_essential, histogram (counts, ;-separated) and lineages (name|lines|mean, ;-separated); the changes at the marks are the site card's (card.changes)",
                   "properties": {
                     "title": {
                       "type": "string"
@@ -4308,7 +4308,7 @@
         },
         "download_terms": {
           "type": "string",
-          "description": "the terms the downloads come under (licences, attribution), shown above the list"
+          "description": "the terms the downloads come under (licenses, attribution), shown above the list"
         },
         "counts": {
           "type": "object",
@@ -4497,7 +4497,7 @@
             "compartments"
           ],
           "additionalProperties": false,
-          "description": "the maps of the cell as one question (kit-cell.js): a tile with each region's median odds ratio over the maps and the compartments where most of all, and a page with a grid of regions against maps, the kit's drawings coloured by the median of the maps, a grid of compartments against maps and one map at a time. It reads the protein-set questions it names (their rows within the abundance deciles, and their members)",
+          "description": "the maps of the cell as one question (kit-cell.js): a tile with each region's median odds ratio over the maps and the compartments where most of all, and a page with a grid of regions against maps, the kit's drawings colored by the median of the maps, a grid of compartments against maps and one map at a time. It reads the protein-set questions it names (their rows within the abundance deciles, and their members)",
           "properties": {
             "id": {
               "type": "string",
@@ -5223,7 +5223,7 @@
                   "source": {
                     "type": "object",
                     "additionalProperties": false,
-                    "description": "the line under a pathway, 'Pathway from <name> <version> (<licence>)', and its links out",
+                    "description": "the line under a pathway, 'Pathway from <name> <version> (<license>)', and its links out",
                     "properties": {
                       "name": {
                         "type": "string"
@@ -5323,7 +5323,7 @@
                         }
                       }
                     },
-                    "description": "the protein's marks (of the selection) with each value of an attribute of the marks, labelled"
+                    "description": "the protein's marks (of the selection) with each value of an attribute of the marks, labeled"
                   },
                   "classes": {
                     "type": "object",
@@ -5909,7 +5909,7 @@
             "share": {
               "type": "object",
               "additionalProperties": false,
-              "description": "where the marks fall, as one bar: a question whose classes partition the marks (else the first that does), the classes to show in order (at most three are coloured; the rest is 'other'), and shorter labels",
+              "description": "where the marks fall, as one bar: a question whose classes partition the marks (else the first that does), the classes to show in order (at most three are colored; the rest is 'other'), and shorter labels",
               "properties": {
                 "analysis": {
                   "type": "string"
@@ -6854,7 +6854,7 @@
                 },
                 "colour": {
                   "type": "boolean",
-                  "description": "offered in \"Colour sites by\""
+                  "description": "offered in \"Color sites by\""
                 },
                 "filter": {
                   "type": "boolean",
@@ -6869,7 +6869,7 @@
                     "type": "string",
                     "pattern": "^#[0-9a-fA-F]{6}$"
                   },
-                  "description": "value -> its colour when sites are coloured by this attribute (default: a fixed palette in the order of values)"
+                  "description": "value -> its color when sites are colored by this attribute (default: a fixed palette in the order of values)"
                 },
                 "records": {
                   "type": "object",
@@ -6880,11 +6880,11 @@
                 },
                 "provenance": {
                   "type": "boolean",
-                  "description": "the attribute says how a mark was found (its studies, how it was localised, notes), not what it is: comparisons of marks show it as a caveat, and the first linked list of these gives the study strata"
+                  "description": "the attribute says how a mark was found (its studies, how it was localized, notes), not what it is: comparisons of marks show it as a caveat, and the first linked list of these gives the study strata"
                 },
                 "present": {
                   "type": "boolean",
-                  "description": "the value is whether the column holds anything: 'yes' or 'no' (name them in values); for a filter such as \"changed in tumours\" over a column of changes"
+                  "description": "the value is whether the column holds anything: 'yes' or 'no' (name them in values); for a filter such as \"changed in tumors\" over a column of changes"
                 },
                 "pair_with": {
                   "type": "string",
@@ -6984,7 +6984,7 @@
               },
               "colour": {
                 "type": "boolean",
-                "description": "offered in \"Colour sites by\""
+                "description": "offered in \"Color sites by\""
               },
               "filter": {
                 "type": "boolean",
@@ -6999,7 +6999,7 @@
                   "type": "string",
                   "pattern": "^#[0-9a-fA-F]{6}$"
                 },
-                "description": "value -> its colour when sites are coloured by this attribute (default: a fixed palette in the order of values)"
+                "description": "value -> its color when sites are colored by this attribute (default: a fixed palette in the order of values)"
               },
               "records": {
                 "type": "object",
@@ -7010,11 +7010,11 @@
               },
               "provenance": {
                 "type": "boolean",
-                "description": "the attribute says how a mark was found (its studies, how it was localised, notes), not what it is: comparisons of marks show it as a caveat, and the first linked list of these gives the study strata"
+                "description": "the attribute says how a mark was found (its studies, how it was localized, notes), not what it is: comparisons of marks show it as a caveat, and the first linked list of these gives the study strata"
               },
               "present": {
                 "type": "boolean",
-                "description": "the value is whether the column holds anything: 'yes' or 'no' (name them in values); for a filter such as \"changed in tumours\" over a column of changes"
+                "description": "the value is whether the column holds anything: 'yes' or 'no' (name them in values); for a filter such as \"changed in tumors\" over a column of changes"
               },
               "pair_with": {
                 "type": "string",
@@ -7192,14 +7192,14 @@
         },
         "part": {
           "type": "string",
-          "description": "the part of the kit's drawings it colours"
+          "description": "the part of the kit's drawings it colors"
         },
         "also": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "parts it colours when they have no row of their own"
+          "description": "parts it colors when they have no row of their own"
         },
         "sets": {
           "type": "object",
@@ -7213,11 +7213,11 @@
     "protein_map": {
       "type": "object",
       "additionalProperties": false,
-      "description": "the protein map: more ways to colour the marks, the papers behind its sources, and rows of the site's own evidence (CONTRACTS.md, Map rows)",
+      "description": "the protein map: more ways to color the marks, the papers behind its sources, and rows of the site's own evidence (CONTRACTS.md, Map rows)",
       "properties": {
         "colour_by": {
           "type": "array",
-          "description": "the ways to colour the marks, in this order: an attribute with colour: true by its name, or a mode made from the marks' attributes (each mark takes the first class whose conditions hold, else otherwise). Colour attributes not named follow",
+          "description": "the ways to color the marks, in this order: an attribute with colour: true by its name, or a mode made from the marks' attributes (each mark takes the first class whose conditions hold, else otherwise). Color attributes not named follow",
           "items": {
             "oneOf": [
               {
@@ -7259,11 +7259,11 @@
                         },
                         "colour": {
                           "type": "string",
-                          "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                          "description": "a color (#rrggbb), or 'ink' for the page's text color"
                         },
                         "colour_dark": {
                           "type": "string",
-                          "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                          "description": "a color (#rrggbb), or 'ink' for the page's text color"
                         },
                         "hollow": {
                           "type": "boolean",
@@ -7324,11 +7324,11 @@
                       },
                       "colour": {
                         "type": "string",
-                        "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                        "description": "a color (#rrggbb), or 'ink' for the page's text color"
                       },
                       "colour_dark": {
                         "type": "string",
-                        "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                        "description": "a color (#rrggbb), or 'ink' for the page's text color"
                       },
                       "hollow": {
                         "type": "boolean"
@@ -7682,19 +7682,19 @@
               },
               "colour": {
                 "type": "string",
-                "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                "description": "a color (#rrggbb), or 'ink' for the page's text color"
               },
               "colour_dark": {
                 "type": "string",
-                "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                "description": "a color (#rrggbb), or 'ink' for the page's text color"
               },
               "ink": {
                 "type": "string",
-                "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                "description": "a color (#rrggbb), or 'ink' for the page's text color"
               },
               "ink_dark": {
                 "type": "string",
-                "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                "description": "a color (#rrggbb), or 'ink' for the page's text color"
               },
               "opacity": {
                 "type": "number",
@@ -7728,11 +7728,11 @@
                     },
                     "colour": {
                       "type": "string",
-                      "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                      "description": "a color (#rrggbb), or 'ink' for the page's text color"
                     },
                     "colour_dark": {
                       "type": "string",
-                      "description": "a colour (#rrggbb), or 'ink' for the page's text colour"
+                      "description": "a color (#rrggbb), or 'ink' for the page's text color"
                     },
                     "opacity": {
                       "type": "number",
@@ -7774,14 +7774,14 @@
                     "description": "darker from the first value to the second"
                   }
                 },
-                "description": "the words for an item's value, {n} for the number (one: 'in {n} tumour', many: 'in {n} tumours')"
+                "description": "the words for an item's value, {n} for the number (one: 'in {n} tumor', many: 'in {n} tumors')"
               },
               "labels": {
                 "enum": [
                   "marks",
                   "none"
                 ],
-                "description": "marks: an item at a mark is labelled there"
+                "description": "marks: an item at a mark is labeled there"
               },
               "merge": {
                 "type": "boolean",
@@ -7830,7 +7830,7 @@
               }
             }
           },
-          "description": "marks drawn hatched, whatever their colour, when every condition holds (a variant's lower-confidence sites); a condition on an attribute the marks lack never holds"
+          "description": "marks drawn hatched, whatever their color, when every condition holds (a variant's lower-confidence sites); a condition on an attribute the marks lack never holds"
         },
         "hatch_label": {
           "type": "string",

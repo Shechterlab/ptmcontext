@@ -35,12 +35,12 @@ VALUES = (('f_plus', 'f+', 'Fraction of the IDR’s residues that are positive (
           ('region', 'Das–Pappu region', 'Its region of the diagram of states, 1 to 5 (the class r1 to r5)'),
           # the mark profile's sticker residues (aromatic residues for arginine) along the IDR: described, not tested (Martin et al. 2020)
           ('stickers', 'Stickers', 'Number of sticker residues (the mark profile’s: aromatic residues for arginine) in the IDR; empty when the profile names none'),
-          ('sticker_spacing', 'Sticker spacing', 'Median distance, in residues, between neighbouring sticker residues of the IDR (evenly spaced stickers have a small spread, clustered ones a few short gaps and long stretches); none with fewer than two stickers'),
+          ('sticker_spacing', 'Sticker spacing', 'Median distance, in residues, between neighboring sticker residues of the IDR (evenly spaced stickers have a small spread, clustered ones a few short gaps and long stretches); none with fewer than two stickers'),
           ('sticker_free', 'Longest stretch without a sticker', 'Longest run of residues of the IDR with no sticker residue, counted to its ends'))
 
 
 def sticker_patterning(segment: str, letters: set) -> tuple[int, float | None, int]:
-    """(number of sticker residues, median spacing between neighbours, longest stretch without one) of an IDR's sequence."""
+    """(number of sticker residues, median spacing between neighbors, longest stretch without one) of an IDR's sequence."""
     at = [i for i, c in enumerate(segment) if c in letters]
     if not at:
         return 0, None, len(segment)

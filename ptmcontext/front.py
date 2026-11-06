@@ -2,7 +2,7 @@
 glossary, the example searches. A separate block from the classic Overview's sections (website.overview), so the two
 fronts can hold different groupings. Without a block, the cards derive from the analyses' section fields.
 
-resolve() gives the page its normalised form (D.front); problems() is what ptmc check reports."""
+resolve() gives the page its normalized form (D.front); problems() is what ptmc check reports."""
 from __future__ import annotations
 
 import re

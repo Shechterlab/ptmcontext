@@ -62,7 +62,7 @@ website:
   name: Yeast Phosphosite Explorer
   tagline: "Budding yeast phosphosites from UniProt."
   landing: {tagline: "Budding yeast sites from UniProt."}
-  band: ["#334155", "#0f172a"]      # graphite: neutral beside the data colours; the orange rule ties it to its siblings
+  band: ["#334155", "#0f172a"]      # graphite: neutral beside the data colors; the orange rule ties it to its siblings
   accent: "#c2410c"
   accent_dark: "#fb923c"
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
@@ -87,7 +87,7 @@ website:
     patterns: {at: pattern, near: window, span: 15}   # the sequence windows the selection's logo is drawn from
   protein:
     facts: [{analysis: idr, classes: [idr]}]
-    conservation:          # orthologues from Ensembl Compara's fungal set (UniProt names the gene under EnsemblFungi)
+    conservation:          # orthologs from Ensembl Compara's fungal set (UniProt names the gene under EnsemblFungi)
       ensembl: {rest: "https://rest.ensembl.org", xref: EnsemblFungi, source: saccharomyces_cerevisiae, compara: fungi}
       species:             # every species a set below can name (all in the fungal Compara set)
         - {id: candida_glabrata, label: C. glabrata}
@@ -102,6 +102,6 @@ website:
         - {id: saccharomycetes, label: Saccharomycetes, species: [candida_glabrata, candida_albicans, candida_parapsilosis, yarrowia_lipolytica],
            note: "budding-yeast relatives: almost every site aligns"}
         - {id: fungi, label: Fungi, species: [candida_glabrata, candida_albicans, yarrowia_lipolytica, schizosaccharomyces_pombe, neurospora_crassa, ustilago_maydis, cryptococcus_neoformans],
-           note: "from budding yeasts to moulds and basidiomycetes"}
+           note: "from budding yeasts to molds and basidiomycetes"}
       default: fungi
       logo: true

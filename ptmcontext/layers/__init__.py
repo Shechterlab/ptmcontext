@@ -7,7 +7,7 @@ A layer is a function from residues (a frame with accession and position) to col
 
 A layer may also say what it draws on the protein pages (Layer.tracks): the regions it placed residues against, each
 kind of region one row of the map, styled 'domains' (boxes on the backbone), 'disorder' (the backbone's wave) or
-'segments' (a row of boxes, coloured by their class when they have one), and the numbers each region carries
+'segments' (a row of boxes, colored by their class when they have one), and the numbers each region carries
 (Track.values), which the run writes with the marks inside each region. The website draws whatever tracks the run's
 layers declare; it knows no layer by name.
 
@@ -145,7 +145,7 @@ class Layer:
 @dataclass(frozen=True)
 class Track:
     """One kind of region a layer draws on the protein pages. units(ctx, accessions) gives them as a unit table (with
-    label, and class when the boxes are coloured by the layer's classes); roles are the inputs they come from (for the
+    label, and class when the boxes are colored by the layer's classes); roles are the inputs they come from (for the
     hovers' provenance and the source's own record links); a track with classes takes the labels of the analysis that
     drew it. Two layers drawing the same kind share one row: the one whose units carry a class is kept.
 
@@ -158,7 +158,7 @@ class Track:
     units: Callable[['Context', set], pd.DataFrame]
     roles: tuple[str, ...] = ()
     help: str = ''
-    colours: tuple = ()                      # ((class, colour), ...): the site's own colours for its classes
+    colours: tuple = ()                      # ((class, color), ...): the site's own colors for its classes
     values: tuple = ()                       # ((column, label, help), ...): numbers each unit carries
 
 

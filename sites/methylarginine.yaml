@@ -71,7 +71,7 @@ inputs:                # role the layers read: manifest input that fills it
   dna_interactome: trendel_dna_interactome
   uniprot_dna_binding: uniprot_dna_binding_regions
   go_binding: quickgo_rna_dna_binding
-  # arginines of methylated proteins modelled in a PDB entry with RNA or DNA, each with its side-chain distance to it
+  # arginines of methylated proteins modeled in a PDB entry with RNA or DNA, each with its side-chain distance to it
   na_rna: release_arginine_rna_distances
   na_dna: release_arginine_dna_distances
   na_any: {all_of: [release_arginine_rna_distances, release_arginine_dna_distances]}
@@ -84,7 +84,7 @@ marks:
   left_out:            # sites kept pending: counted on neither side (none of v1.4.3's sites carries this flag; the
     - {column: flags, contains: one_sided_window}   # release keeps them in a separate table)
   residue_mismatch: error
-  attributes:          # what the website keeps for each site: to colour, filter and explain it (no test reads these)
+  attributes:          # what the website keeps for each site: to color, filter and explain it (no test reads these)
     state:
       column: methyl_state
       label: Methylation state
@@ -144,11 +144,11 @@ marks:
     localised_by:
       column: localised_by
       provenance: true                       # how the site was found, not what it is
-      label: Localised by
+      label: Localized by
       kind: list
       separator: "; "
       values:
-        localisation_score: a localisation score
+        localisation_score: a localization score
         one_methylatable_residue: one methylatable residue on the peptide
         every_arginine_dimethylated: every arginine on the peptide dimethylated
         curated_experimental: UniProt, experimental evidence (curated)
@@ -169,20 +169,20 @@ marks:
     # the release's own evidence at each site (human_methylarginine_sites_v1.4.3.tsv; definitions in its README)
     tcga:
       column: tcga_changes
-      label: Changes in TCGA tumours
+      label: Changes in TCGA tumors
       kind: list
       separator: "; "
-      help: "Somatic missense and stop changes of the arginine in TCGA tumours (MC3 public calls from the GDC: 33 projects, 10,294 tumour samples), most tumours first; * is a stop"
+      help: "Somatic missense and stop changes of the arginine in TCGA tumors (MC3 public calls from the GDC: 33 projects, 10,294 tumor samples), most tumors first; * is a stop"
     tcga_any:
       column: tcga_changes
       present: true
-      label: Mutated in tumours (TCGA)
+      label: Mutated in tumors (TCGA)
       kind: category
-      values: {"yes": Mutated in tumours, "no": Not mutated}
+      values: {"yes": Mutated in tumors, "no": Not mutated}
       colours: {"yes": "#B42318", "no": "#D9DEE2"}
       colour: true
       filter: true
-      help: "Whether a TCGA tumour (MC3 public calls) carries a missense or stop change of this arginine. This counts every methylarginine; the tumour question compares only the proteins whose gene DepMap screened, so its count is smaller"
+      help: "Whether a TCGA tumor (MC3 public calls) carries a missense or stop change of this arginine. This counts every methylarginine; the tumor question compares only the proteins whose gene DepMap screened, so its count is smaller"
     depmap:
       column: depmap_changes
       label: Changes in DepMap cell lines
@@ -342,7 +342,7 @@ marks:
         intact_mutation: IntAct mutation that changes an interaction
         intact_binding_region: IntAct binding region
         intact_methylated: IntAct records it methylated
-        pdb_methylated_contact: Modelled as a methylarginine in a PDB entry
+        pdb_methylated_contact: Modeled as a methylarginine in a PDB entry
     partner_class:
       column: interaction_classes
       label: Interaction records at the site
@@ -406,7 +406,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
           "Transport and membrane traffic": [PC00227, PC00219, PC00150]
           "Cytoskeleton, adhesion and matrix": [PC00085, PC00211, PC00069, PC00070, PC00102]
           "Scaffolds, adaptors and chaperones": [PC00226, PC00072]
-          "Immunity and defence": [PC00090]
+          "Immunity and defense": [PC00090]
           "Other PANTHER classes": [PC00237, PC00210]
       unclassified: No PANTHER protein class
     universe: snapshot
@@ -714,7 +714,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_region_hpa
     test: protein_sets
     title: Regions of the cell (Human Protein Atlas)
-    question: "Where do methylated proteins localise in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins with a Human Protein Atlas location (Approved or better), with locations grouped into three regions of the cell (cilia and sperm structures are in none) (one-sided hypergeometric test)"
     section: Where in the cell
     sets:
@@ -730,8 +730,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_region_hcm
     test: protein_sets
     title: Regions of the cell (Human Cell Map)
-    question: "Where do methylated proteins localise in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
-    sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
+    question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Methylated proteins against the other proteins the Human Cell Map localizes (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Where in the cell
     sets:
       input: hcm
@@ -745,7 +745,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_region_organelle_ip
     test: protein_sets
     title: Regions of the cell (organelle IP)
-    question: "Where do methylated proteins localise in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins classified by organelle IP (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Where in the cell
     sets:
@@ -761,8 +761,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_hcm_compartment
     test: protein_sets
     title: Human Cell Map compartments
-    question: "Where do methylated proteins localise in the cell, by the Human Cell Map's compartments?"
-    sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID from 192 baits; Go et al. 2021), by NMF compartment (one-sided hypergeometric test)"
+    question: "Where do methylated proteins localize in the cell, by the Human Cell Map's compartments?"
+    sub: "Methylated proteins against the other proteins the Human Cell Map localizes (HEK293 BioID from 192 baits; Go et al. 2021), by NMF compartment (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: hcm, set: nmf_compartment, protein: canonical_UniProtAC}
     whole_universe: true
@@ -772,7 +772,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_hcm_domain
     test: protein_sets
     title: Human Cell Map domains
-    question: "Where do methylated proteins localise in the cell, by the Human Cell Map's finer domains?"
+    question: "Where do methylated proteins localize in the cell, by the Human Cell Map's finer domains?"
     sub: "Methylated proteins against the other proteins the Human Cell Map places in a SAFE domain (HEK293 BioID; Go et al. 2021), domain by domain (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: hcm, set: safe_domain, protein: canonical_UniProtAC, exclude: [{column: safe_domain, equals: ""}]}
@@ -817,12 +817,12 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
              "ICP < 0.2 (not chromatin)": "Not chromatin (probability < 0.2)"}
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   # Where the RNAs bound by proteins with eCLIP data gather (scripts/cell_maps.py, GENE_MAPS): the release's calls per
-  # protein and map (supporting/eclip_rna_compartments). The nuclear-body map (Barutcu et al. 2022) stays out: licence pending
+  # protein and map (supporting/eclip_rna_compartments). The nuclear-body map (Barutcu et al. 2022) stays out: license pending
   - id: eclip_rna_apexseq
     test: protein_sets
     title: Bound RNAs by APEX-seq
     question: "Where do the RNAs that methylated proteins bind gather in the cell, by APEX-seq?"
-    sub: "Proteins with eCLIP data whose bound RNAs localise to an APEX-seq compartment (HEK293T; Fazal et al. 2019), methylated against the others (one-sided hypergeometric test)"
+    sub: "Proteins with eCLIP data whose bound RNAs localize to an APEX-seq compartment (HEK293T; Fazal et al. 2019), methylated against the others (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: apexseq}],
            member_when: [{column: gathers, equals: "true"}]}
@@ -888,7 +888,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
         - {name: median, label: median gene effect, background: true}
         - {name: dependent_lines, label: lines that depend on it}
         - {name: lines_with_probability, label: lines screened}
-  # Changes at methylarginines in tumours and cell lines: a missense or stop change in at least one TCGA tumour (MC3) or
+  # Changes at methylarginines in tumors and cell lines: a missense or stop change in at least one TCGA tumor (MC3) or
   # DepMap cell line, against the other arginines of the methylated proteins whose gene DepMap screened; every mark of
   # those proteins counts, one on a protein with no other arginine too (it adds nothing within proteins)
   - id: cancer_change
@@ -896,13 +896,13 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     with:
       flags: {tcga_tumours: tcga_changes, depmap_cell_lines: depmap_changes}
       noun: changed arginine
-      title: Changes in tumours and cell lines
-      question: "Is a methylated arginine changed in tumours or cancer cell lines more or less often than the other arginines of its protein?"
-      sub: "Methylarginines against the other arginines of the methylated proteins whose gene DepMap screened (so its tumour count is smaller than the sites with a change in the Filter, which covers every methylated protein): a missense or stop change in at least one TCGA tumour (MC3) or DepMap 24Q4 cell line. Not adjusted for codon: arginine codons with a CpG (CGN) mutate most in cancers, and the codons of methylated and other arginines may differ"
+      title: Changes in tumors and cell lines
+      question: "Is a methylated arginine changed in tumors or cancer cell lines more or less often than the other arginines of its protein?"
+      sub: "Methylarginines against the other arginines of the methylated proteins whose gene DepMap screened (so its tumor count is smaller than the sites with a change in the Filter, which covers every methylated protein): a missense or stop change in at least one TCGA tumor (MC3) or DepMap 24Q4 cell line. Not adjusted for codon: arginine codons with a CpG (CGN) mutate most in cancers, and the codons of methylated and other arginines may differ"
       section: Disease and cancer
-      labels: {tcga_tumours: Mutated in a TCGA tumour, depmap_cell_lines: Mutated in a DepMap cell line}
+      labels: {tcga_tumours: Mutated in a TCGA tumor, depmap_cell_lines: Mutated in a DepMap cell line}
       help:
-        tcga_tumours: "A missense or stop change of the arginine in at least one TCGA tumour (MC3 public calls from the GDC, 33 projects; FILTER PASS, and in OV and LAML also wga alone)"
+        tcga_tumours: "A missense or stop change of the arginine in at least one TCGA tumor (MC3 public calls from the GDC, 33 projects; FILTER PASS, and in OV and LAML also wga alone)"
         depmap_cell_lines: "A missense or stop change of the arginine in at least one DepMap 24Q4 cell line (OmicsSomaticMutations, on the canonical UniProt isoform)"
     proteins: {input: depmap_genes, column: canonical_UniProtAC, label: " whose gene DepMap screened"}
     marks_alone: count
@@ -1064,7 +1064,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: nucleic_acid_distance
     title: Distance to RNA and DNA in structures
     question: "Are methylarginines closer to RNA or DNA in solved structures?"
-    sub: "Methylarginines against the other arginines of the same proteins modelled in a PDB entry with RNA, DNA or either, whose side chain comes within 4 or 8 Å of it"
+    sub: "Methylarginines against the other arginines of the same proteins modeled in a PDB entry with RNA, DNA or either, whose side chain comes within 4 or 8 Å of it"
     section: Interactions and binding
     counting: every_candidate
     candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
@@ -1187,7 +1187,7 @@ variants:                # the same questions on other marks; ptmc run --variant
       test_named: {column: test_named_entry, label: In a named protein, values: {pass: passes, fail: fails, untested: untested}}
       test_unique: {column: test_unique_in_proteome, label: Unique in the proteome, values: {pass: passes, paralogs: passes under the paralog rule, fail: fails, untested: untested}}
       test_methyl: {column: test_methyl_on_arginine, label: Methyl group on an arginine, values: {pass: passes, fail: fails, untested: untested}}
-      test_localised: {column: test_localised, label: Localised, values: {pass: passes, fail: fails, untested: untested}}
+      test_localised: {column: test_localised, label: Localized, values: {pass: passes, fail: fails, untested: untested}}
       earlier: {column: in_earlier_versions, label: A site of}
 
 
@@ -1196,7 +1196,7 @@ citation: sites/methylarginine.citation.cff   # the citation, data sources, vers
 
 
 
-website:                  # the look and words of the website (ptmc web); layout and behaviour are the kit's
+website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
   name: Methylarginine Site Explorer
   tagline: "Human arginine methylation sites from published studies."
   landing: {tagline: "Human sites from published studies."}
@@ -1331,7 +1331,7 @@ website:                  # the look and words of the website (ptmc web); layout
       eclip_gene_tsaseq: "Bound RNAs (TSA-seq)"
       eclip_gene_hic: "Bound RNAs (Hi-C)"
       depmap_dependency: "Cancer cell dependency"
-      cancer_change: "Tumour and cell-line changes"
+      cancer_change: "Tumor and cell-line changes"
       motif: "Sequence motifs"
       disorder: "Disorder context"
       domain_context: "Domain context"
@@ -1452,7 +1452,7 @@ website:                  # the look and words of the website (ptmc web); layout
                     "DOID:0050117": ["viral, bacterial, parasitic, fungal"]
           - {analysis: disease_family_additional, title: "More disease families (grouped automatically from disease terms)"}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
-          - {analysis: cancer_change, title: Changes in tumours and cell lines}
+          - {analysis: cancer_change, title: Changes in tumors and cell lines}
       - name: Protein classes and pathways
         about: "Protein classes and pathways of the methylated proteins."
         cards:
@@ -1462,7 +1462,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: panther_subclass, title: Protein subclasses}
           - {analysis: condensate_role, title: Roles in condensates}
       - name: Where in the cell
-        about: "Where in the cell the methylated proteins localise."
+        about: "Where in the cell the methylated proteins localize."
         #  its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
         cards:
           - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
@@ -1498,18 +1498,18 @@ website:                  # the look and words of the website (ptmc web); layout
   cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
     id: where_in_the_cell
     title: Where in the cell
-    question: "Where do methylated proteins localise in the cell?"
-    intro: "Five maps from four studies place proteins in the cell, by imaging, proximity labelling, organelle pull-down and chromatin fractionation."
-    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose licence (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map, pending their licence. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
+    question: "Where do methylated proteins localize in the cell?"
+    intro: "Five maps from four studies place proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
+    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map, pending their license. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
     maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
       - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
          how: "antibody staining in many cell lines; locations of Approved or better reliability with 20 or more proteins",
          ref: HPA 25.1, doi: 10.1126/science.aal3321, url: "https://www.proteinatlas.org/humanproteome/subcellular", licence: CC BY 4.0, min_members: 20}
-      - {analysis: cell_hcm_compartment, regions: cell_region_hcm, name: Human Cell Map, short: Cell Map, method: Proximity labelling, cells: HEK293,
-         how: "proximity labelling from 192 baits; each protein is assigned to the compartment whose baits label it most",
+      - {analysis: cell_hcm_compartment, regions: cell_region_hcm, name: Human Cell Map, short: Cell Map, method: Proximity labeling, cells: HEK293,
+         how: "proximity labeling from 192 baits; each protein is assigned to the compartment whose baits label it most",
          ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
-      - {analysis: cell_hcm_domain, name: "Human Cell Map, finer domains", short: Cell Map domains, method: Proximity labelling, cells: HEK293,
-         how: "the same map at a finer scale: neighbourhoods of proteins that label one another (SAFE domains)",
+      - {analysis: cell_hcm_domain, name: "Human Cell Map, finer domains", short: Cell Map domains, method: Proximity labeling, cells: HEK293,
+         how: "the same map at a finer scale: neighborhoods of proteins that label one another (SAFE domains)",
          ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
       - {analysis: cell_organelle_ip, regions: cell_region_organelle_ip, name: Organelle IP, short: Organelle IP, method: Organelle pull-down, cells: HEK293T,
          how: "Organelles immunoprecipitated one by one. Each protein is assigned to the organelle it co-purifies with.",
@@ -1517,12 +1517,12 @@ website:                  # the look and words of the website (ptmc web); layout
       - {analysis: cell_chromatin, name: Chromatin probability, short: ChEP, method: Fractionation, cells: human cell lines,
          how: "probability that a protein is chromatin-bound, from chromatin enrichment across many conditions",
          ref: Kustatscher et al. 2014, doi: 10.1002/embj.201387614, url: "https://doi.org/10.1002/embj.201387614", licence: CC BY}
-    regions:               # the sets of each map's regions question, and the part of the drawings each colours
+    regions:               # the sets of each map's regions question, and the part of the drawings each colors
       - {label: Nucleus, part: nucleus, in_text: the nucleus}
       - {label: Cytoplasm, in_text: the cytoplasm}
       - {label: Organelles and membranes, in_text: the organelles and membranes}
-    compartments:          # the grid's rows: each a set in some maps, and the part of the drawings it colours (also: parts
-      - group: Nucleus     # it colours when they have no row of their own); the release's groups (data/subcellular.json)
+    compartments:          # the grid's rows: each a set in some maps, and the part of the drawings it colors (also: parts
+      - group: Nucleus     # it colors when they have no row of their own); the release's groups (data/subcellular.json)
         rows:
           - {label: Chromatin, part: chromatin, also: [periphery, perinucleolar], sets: {cell_hcm_compartment: chromatin, cell_chromatin: "ICP >= 0.8 (chromatin)"}}
           - {label: Nucleoplasm, part: nucleoplasm, also: [nucleus], sets: {cell_hcm_compartment: nucleoplasm, cell_organelle_ip: nucleus, hpa_location: Nucleoplasm}}
@@ -1568,7 +1568,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - {title: Selective dependencies, note: "not commonly essential; 5% to under half of the lines depend on them, share shown", sets: [some_lines],
            share: [dependent_lines, lines_with_probability], order: descending}
       residue: cancer_change                    # a residue question shown with it (changes at the marks)
-      credit: "DepMap Public 24Q4 (doi:10.25452/figshare.plus.27993248; CC BY 4.0; Tsherniak et al. 2017; Chronos, Dempster et al. 2021). Commonly essential: DepMap's list of genes that at least 90% of lines rank among their strongest dependencies. A line depends on a gene when DepMap's dependency probability is at least 0.5. The results on tumours are in whole or part based upon data generated by the TCGA Research Network (https://www.cancer.gov/tcga): MC3 somatic calls (Ellrott et al. 2018)."
+      credit: "DepMap Public 24Q4 (doi:10.25452/figshare.plus.27993248; CC BY 4.0; Tsherniak et al. 2017; Chronos, Dempster et al. 2021). Commonly essential: DepMap's list of genes that at least 90% of lines rank among their strongest dependencies. A line depends on a gene when DepMap's dependency probability is at least 0.5. The results on tumors are in whole or part based upon data generated by the TCGA Research Network (https://www.cancer.gov/tcga): MC3 somatic calls (Ellrott et al. 2018)."
   counts:                  # questions answered by counting the sites, not by a test (CONTRACTS.md, count questions)
     reader_classes:
       kind: values
@@ -1876,7 +1876,7 @@ website:                  # the look and words of the website (ptmc web); layout
     state_label: State
     short: {state: {Rme1: Rme1, Rme2: Rme2, Rme1_Rme2: Rme1 + Rme2, "": No assigned state}}   # short labels in the table
     site_tags: {attribute: flags, values: {paralog_assigned: paralog}}                       # tags beside the site
-    window: {colours: {G: "#15803d"}}                                                         # residues coloured in the window
+    window: {colours: {G: "#15803d"}}                                                         # residues colored in the window
     tags:                  # the motif tags under the window: which, in what order (the CARM1-like proline motifs are not shown)
       motif: {order: [RG, RGG, GRG, GAR, RXR, DR, RD, ER, RE], hide: [CARM1_proline_rich, CARM1_hydrophobic_proline]}
     table:                 # the optional columns (the Columns menu): the explorer's defaults first; site card blocks read website.tables
@@ -1892,7 +1892,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: ip, label: Maron IP, menu: Maron methyl-IP, attribute: methyl_ip, hide: sm}
       - {id: dom, label: Nearest domain, show: [nearest_domain], hide: sm}
       - {id: struct, label: Structural context, analyses: [structure_context], hide: sm}
-      - {id: tcga, label: Mutated in tumours (TCGA), attribute: tcga_any, hide: sm}
+      - {id: tcga, label: Mutated in tumors (TCGA), attribute: tcga_any, hide: sm}
     download:              # the explorer's 54 columns where the release has them, and its own additions
       - {name: gene, value: gene}
       - {name: uniprot_accession, value: accession}
@@ -1986,7 +1986,7 @@ website:                  # the look and words of the website (ptmc web); layout
       format: residue_evidence
       columns: {accession: uniprot_accession, start: start, end: end, kind: evidence_type, source: sources}
       include: [{column: evidence_type, in: [rna_crosslink, dna_crosslink, capri_xl_peptide, capri_adj_peptide, rbrid_residue, rbrid_region, dna_binding_region]}]
-    chain_evidence:        # the 3D viewer's colourings along the chain: each run's kind with where it falls (RBDmap and pCLAP left out:
+    chain_evidence:        # the 3D viewer's colorings along the chain: each run's kind with where it falls (RBDmap and pCLAP left out:
       input: methylarginine_residue_evidence_v1_4_3      # their extents may not be republished: marks.attributes.evidence.presence_only)
       format: residue_evidence
       columns: {accession: uniprot_accession, start: start, end: end, kind: [evidence_type, localisation], source: sources}
@@ -2059,7 +2059,7 @@ website:                  # the look and words of the website (ptmc web); layout
       sep: ","
       columns: {key: uid}
       values: [name, condensate_type]
-    dependency:                          # the Cancer cell lines and tumours card
+    dependency:                          # the Cancer cell lines and tumors card
       input: depmap_gene_effect
       format: protein_records
       columns: {accession: canonical_UniProtAC, lines: lines, dependent: dependent_lines, median: median, common_essential: common_essential, histogram: histogram, lineages: most_dependent_lineages}
@@ -2076,7 +2076,7 @@ website:                  # the look and words of the website (ptmc web); layout
                 window_end: best_window_end, window_sites: best_window_sites, window_log2: best_window_log2_obs_null, window_q: best_window_q,
                 architecture: architecture_class, clusters: architecture_clusters}
     # tables only the Interactions page reads (website.pages)
-    distances:             # every arginine of a methylated protein modelled with RNA or DNA, and its distance to each
+    distances:             # every arginine of a methylated protein modeled with RNA or DNA, and its distance to each
       input: release_arginine_rna_distances
       format: site_table
       columns: {accession: uniprot_accession, position: position}
@@ -2108,14 +2108,14 @@ website:                  # the look and words of the website (ptmc web); layout
       values: [experiment, source, cell_line, n_peaks, top_target_genes, top_5mers]
   protein:                 # the protein page
     open_partners: true    # the Interaction partners fold is open when the protein has partners in the site's table
-    order: [p-map, p-cc, p-ix, p-na, p-sites, p-cons, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cluster, p-ptm, p-seq]   # the explorer's order, with the orthologues after the sites
+    order: [p-map, p-cc, p-ix, p-na, p-sites, p-cons, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cluster, p-ptm, p-seq]   # the explorer's order, with the orthologs after the sites
     groups:                # about five headings, each holding its folds (website.protein.groups)
       - {id: g-overview, title: Overview and map, folds: [p-map, p-kinds]}
       - {id: g-sites, title: Sites, folds: [p-sites, p-cons, p-score, p-pert, p-exp, p-cluster, p-ptm]}
       - {id: g-binding, title: Binding and contacts, folds: [p-cc, p-ix, p-na]}
       - {id: g-context, title: "Context: location, condensates, disease, cancer", folds: [p-cond, p-dis, p-depmap]}
       - {id: g-structure, title: Structure and sequence, folds: [p-struct, p-regions, p-seq]}
-    headings:              # the cards front end's folds under labelled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
+    headings:              # the cards front end's folds under labeled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
       - {id: h-ix, title: Interactions, folds: [p-cc, p-na]}
       - {id: h-sites, title: Sites and structure, folds: [p-score, p-pert, p-exp]}
       - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cons]}
@@ -2123,7 +2123,7 @@ website:                  # the look and words of the website (ptmc web); layout
     context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
       p-cond: [condensate_proteome, hpa_location]
       p-dis: [disease_family]
-    open: [p-map, p-sites, p-cons, p-ix]   # the explorer's folds are all shut; here the map and the sites, and the orthologues and the network once they have data
+    open: [p-map, p-sites, p-cons, p-ix]   # the explorer's folds are all shut; here the map and the sites, and the orthologs and the network once they have data
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
       location:
         title: Location and condensates
@@ -2142,16 +2142,16 @@ website:                  # the look and words of the website (ptmc web); layout
           default_type: biomolecular
           pubmed: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
           roles: {member: member, driver: driver, client: client, regulator: regulator, unknown: role not given}
-          evidence: {in_vivo: in vivo, in_cellulo: in cellulo, in_vitro: in vitro, frap: FRAP, colocalization: colocalisation, mass_spectrometry: mass spectrometry,
+          evidence: {in_vivo: in vivo, in_cellulo: in cellulo, in_vitro: in vitro, frap: FRAP, colocalization: colocalization, mass_spectrometry: mass spectrometry,
                      emergent properties: emergent properties, others: other}
       dependency:
-        title: Cancer cell lines and tumours
+        title: Cancer cell lines and tumors
         table: dependency
         unit: cancer cell lines
-        sub: "Cancer genetics, not evidence about methylation: how much cancer cell lines depend on the gene in DepMap's CRISPR screens, and the protein changes at its arginines in TCGA tumours and DepMap cell lines."
+        sub: "Cancer genetics, not evidence about methylation: how much cancer cell lines depend on the gene in DepMap's CRISPR screens, and the protein changes at its arginines in TCGA tumors and DepMap cell lines."
         histogram: {from: -3, to: 1, axis: gene effect per cell line (Chronos); lower is a stronger dependency, marks: [{at: 0, label: no effect}, {at: -1, label: median of common essentials}]}
         url: "https://depmap.org/portal/gene/{gene}?tab=overview"
-        note: "Data: DepMap Public 24Q4 (CRISPR, Chronos; CC BY 4.0) and TCGA tumours (MC3 somatic calls from the GDC, open access; based on data generated by the TCGA Research Network). A change counts only at an arginine of the canonical UniProt sequence."
+        note: "Data: DepMap Public 24Q4 (CRISPR, Chronos; CC BY 4.0) and TCGA tumors (MC3 somatic calls from the GDC, open access; based on data generated by the TCGA Research Network). A change counts only at an arginine of the canonical UniProt sequence."
       perturbations:
         title: PRMT inhibitors, knockouts and knockdowns
         sub: "Did a peptide carrying the site change in PRMT knockouts, knockdowns or inhibitors?"
@@ -2176,7 +2176,7 @@ website:                  # the look and words of the website (ptmc web); layout
     nucleic:               # the RNA and DNA interactions card (CONTRACTS.md, RNA and DNA interactions)
       title: RNA and DNA interactions
       kinds: {rna: RNA, dna: DNA}
-      near: {table: contacts_near, label: "in contact through a neighbouring residue"}
+      near: {table: contacts_near, label: "in contact through a neighboring residue"}
       regions:
         table: nucleic_regions
         kinds: {rna: rna, dna: dna}
@@ -2205,7 +2205,7 @@ website:                  # the look and words of the website (ptmc web); layout
         url: {ENCODE: "https://www.encodeproject.org/experiments/{id}/", ENCORE: "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE315407"}
         fields: {id: experiment, source: source, cell: cell_line, peaks: n_peaks, genes: top_target_genes, gene_peaks: top_target_peaks, kmers: top_5mers, ratios: top_5mer_ratios, same: same_data_as,
                  regions: {CDS: peaks_CDS, "3′ UTR": peaks_UTR3, "5′ UTR": peaks_UTR5, "non-coding exon": peaks_noncoding_exon, intron: peaks_intron, intergenic: peaks_intergenic}}
-    conservation:          # orthologues live from Ensembl Compara, and the selection's logo (CONTRACTS.md, Conservation across species)
+    conservation:          # orthologs live from Ensembl Compara, and the selection's logo (CONTRACTS.md, Conservation across species)
       ensembl: {rest: "https://rest.ensembl.org", xref: Ensembl, source: human}
       species:             # every species a set below can name, with the label shown (all in Ensembl Compara's vertebrate set)
         - {id: mus_musculus, label: Mouse}
@@ -2246,7 +2246,7 @@ website:                  # the look and words of the website (ptmc web); layout
       bound:               # the RNA or DNA each site touches (side chain within 4 Å), entry by entry
         table: contacts
         label: RNA and DNA bound at the methylarginine
-        help: "Nucleotides within 4 Å of the side chain (CD, NE, CZ, NH1, NH2) in each PDB entry analysed"
+        help: "Nucleotides within 4 Å of the side chain (CD, NE, CZ, NH1, NH2) in each PDB entry analyzed"
       predicted:           # partners of predicted complexes with the site at the interface
         table: interactions
         include: [{column: kind, in: [predicted_interface, predicted_contact]}]
@@ -2317,7 +2317,7 @@ website:                  # the look and words of the website (ptmc web); layout
           experimental: This arginine has experimental interaction evidence.
           experimental_pred: This arginine has experimental interaction evidence and is also at a predicted interface.
           predicted_only: Predicted to lie at a protein interface. No experimental interaction evidence recorded yet.
-          none: No interaction evidence is recorded at this residue. Most proteins were never crystallised, crosslinked or mutated, so this does not show there is none.
+          none: No interaction evidence is recorded at this residue. Most proteins were never crystallized, crosslinked or mutated, so this does not show there is none.
         tags:
           attribute: evidence
           short: {rna_crosslink: RNA xl, rbdmap_fragment: RBDmap, capri_xl_peptide: CAPRI, capri_adj_peptide: CAPRI, pclap_peptide: pCLAP, pclap_lysc_region: pCLAP,
@@ -2351,7 +2351,7 @@ website:                  # the look and words of the website (ptmc web); layout
                    capri_xl_peptide: inside CAPRI RNA-crosslinked peptide,
                    capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RBR-ID+ peptide, rbrid_region: inside an RBR-ID region,
                    dna_binding_region: inside a UniProt DNA-binding region}
-        protein:                             # the whole protein (proteins.attributes), labelled so it is not read as site evidence
+        protein:                             # the whole protein (proteins.attributes), labeled so it is not read as site evidence
           title: "Whole protein (not specific to {site})"
           values:
             - {attribute: string_partners, label: "STRING physical associations (≥ 0.7)"}
@@ -2367,8 +2367,8 @@ website:                  # the look and words of the website (ptmc web); layout
         - {table: site, column: uniprot_states, label: UniProt, url: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"}
         - {attribute: neutral_loss, label: "Hartel 2019, neutral loss", source: Hartel2019}
         - {table: site, column: states_by_study_design, label: a study that looked for one state only}
-      changes:             # changes of the residue, with how many tumours or lines carry each (counts: a site_values column in step)
-        - {attribute: tcga, table: site, counts: tcga_change_tumours, unit: [tumour, tumours], label: TCGA}
+      changes:             # changes of the residue, with how many tumors or lines carry each (counts: a site_values column in step)
+        - {attribute: tcga, table: site, counts: tcga_change_tumours, unit: [tumor, tumors], label: TCGA}
         - {attribute: depmap, table: site, counts: depmap_change_lines, unit: [cell line, cell lines], label: DepMap}
       calls:               # a mark per decrease or increase: site_measurements tables and category attributes
         tables: [perturbations]
@@ -2387,8 +2387,8 @@ website:                  # the look and words of the website (ptmc web); layout
         help:
           writes: IntAct methylation reactions that curate this residue, or where mutating it changes the reaction
           removes: IntAct demethylation reactions with the methylarginine curated at this residue
-          binds_methylated: "the residue is a methylarginine in the experiment, modelled as one in a structure (2MR, DA2, NMM) or curated as methylated in IntAct"
-          mutation_changes_binding: "IntAct: mutating this residue (alone or with up to two neighbours) decreased, disrupted or increased binding"
+          binds_methylated: "the residue is a methylarginine in the experiment, modeled as one in a structure (2MR, DA2, NMM) or curated as methylated in IntAct"
+          mutation_changes_binding: "IntAct: mutating this residue (alone or with up to two neighbors) decreased, disrupted or increased binding"
           mutation_no_effect: "IntAct: a mutation of this residue had no effect on the binding"
           binds_unmodified: structures that model an unmodified arginine here (PDBe-KB interface)
           binds_other_residue: "structures with another residue here: a mutated construct or a natural variant"
@@ -2457,7 +2457,7 @@ website:                  # the look and words of the website (ptmc web); layout
       cite:                # how to cite a protein's sites: the provenance attribute's values, with a lookup table of the sources
         attribute: studies
         lookup: studies
-        notices: {PSP: "PhosphoSitePlus® data (www.phosphosite.org) are licensed under CC BY-NC-SA 3.0: non-commercial use, with attribution, and adaptations shared under the same licence."}
+        notices: {PSP: "PhosphoSitePlus® data (www.phosphosite.org) are licensed under CC BY-NC-SA 3.0: non-commercial use, with attribution, and adaptations shared under the same license."}
     table:                 # the sites table: its columns (the Columns menu), the explorer's defaults first
       filter: interaction                # buttons that show only the sites of one value of this attribute
       columns:
@@ -2470,10 +2470,10 @@ website:                  # the look and words of the website (ptmc web); layout
         - {id: dom, label: Nearest domain, show: [nearest_domain]}
         - {id: nn, label: Nearest methyl-R, show: [nearest]}
         - {id: stev, label: State evidence, menu: "State evidence (Maron IP, Table S2, UniProt)", show: [states]}
-        - {id: tcga, label: In cancers, menu: "Changes in tumours (TCGA) and cell lines (DepMap)", show: [changes]}
+        - {id: tcga, label: In cancers, menu: "Changes in tumors (TCGA) and cell lines (DepMap)", show: [changes]}
       nearest_domain: {table: site, name: nearest_domain_name, ref: nearest_domain_interpro, side: domain_side, distance: domain_edge_distance,
                        url: "https://www.ebi.ac.uk/interpro/entry/InterPro/{ref}/", sides: {N_terminal_to_domain: N-term, C_terminal_to_domain: C-term, inside: inside}}
-    map:                   # the protein map: more ways to colour the sites, and rows of the release's own evidence
+    map:                   # the protein map: more ways to color the sites, and rows of the release's own evidence
       colour_by:           # in this order; the original explorer's modes, from the sites' attributes
         - state
         - id: methyl_ip
@@ -2486,7 +2486,7 @@ website:                  # the look and words of the website (ptmc web); layout
           otherwise: {label: Not in Maron IP, colour: "#A3AEB3", colour_dark: "#6D7D84"}
         - id: prmt_inhibitor
           label: PRMT inhibitor response
-          help: "Maron et al. 2021: decreased with the PRMT5 inhibitor GSK591 or the type I inhibitor MS023 (a peptide down, none up), coloured by the methylation the enzyme makes (PRMT5 symmetric, type I asymmetric). Hollow: measured, not decreased"
+          help: "Maron et al. 2021: decreased with the PRMT5 inhibitor GSK591 or the type I inhibitor MS023 (a peptide down, none up), colored by the methylation the enzyme makes (PRMT5 symmetric, type I asymmetric). Hollow: measured, not decreased"
           classes:
             - {label: "↓ GSK591 (PRMT5i)", colour: "#A23B12", colour_dark: "#F4A26B", when: [{attribute: gsk591, has: [decreased]}, {attribute: ms023, lacks: [decreased]}]}
             - {label: "↓ MS023 (type I PRMTi)", colour: "#EB6834", colour_dark: "#D95926", when: [{attribute: ms023, has: [decreased]}, {attribute: gsk591, lacks: [decreased]}]}
@@ -2508,10 +2508,10 @@ website:                  # the look and words of the website (ptmc web); layout
       sources:             # each source the rows' items name: its paper (citations and DOIs as the release's site_interaction_records give them)
         pepR-MS: {cite: "Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1101/2025.09.05.674461}
         pepR-MS_focused: {label: pepR-MS (focused sites), cite: "Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1101/2025.09.05.674461}
-        Kramer2014: {label: Kramer 2014, cite: "Kramer et al., Nat Methods 11:1064 (2014), re-analysed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1038/nmeth.3092}
-        XRNAX: {cite: "Trendel et al., Cell 176:391 (2019), re-analysed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1016/j.cell.2018.11.004}
-        RBS-ID: {cite: "Bae et al., Nat Struct Mol Biol 27:678 (2020), re-analysed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1038/s41594-020-0436-2}
-        pRBS-ID: {cite: "Bae et al., Nat Commun 12:6026 (2021), re-analysed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1038/s41467-021-26317-5}
+        Kramer2014: {label: Kramer 2014, cite: "Kramer et al., Nat Methods 11:1064 (2014), re-analyzed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1038/nmeth.3092}
+        XRNAX: {cite: "Trendel et al., Cell 176:391 (2019), re-analyzed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1016/j.cell.2018.11.004}
+        RBS-ID: {cite: "Bae et al., Nat Struct Mol Biol 27:678 (2020), re-analyzed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1038/s41594-020-0436-2}
+        pRBS-ID: {cite: "Bae et al., Nat Commun 12:6026 (2021), re-analyzed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1038/s41467-021-26317-5}
         RBDmap: {cite: "Castello et al., Mol Cell 63:696 (2016)", doi: 10.1016/j.molcel.2016.06.029}
         CAPRI: {cite: "Panhale et al., Nat Commun 10:2682 (2019)", doi: 10.1038/s41467-019-10585-3}
         pCLAP: {cite: "Mullari et al., J Proteome Res 16:2762 (2017)", doi: 10.1021/acs.jproteome.7b00042}
@@ -2561,14 +2561,14 @@ website:                  # the look and words of the website (ptmc web); layout
           ink: "#7A2E45"
           ink_dark: "#F6C9D6"
         - id: tcga
-          title: Tumours (TCGA)
-          help: "Somatic missense and stop changes of the site's arginine in TCGA tumours (MC3 public calls from the GDC, 33 projects); a taller tick means more tumours (tcga_changes, tcga_change_tumours)"
+          title: Tumors (TCGA)
+          help: "Somatic missense and stop changes of the site's arginine in TCGA tumors (MC3 public calls from the GDC, 33 projects); a taller tick means more tumors (tcga_changes, tcga_change_tumours)"
           after: mutagen
           from: {marks: true, columns: {label: tcga_changes, value: tcga_change_tumours}, split: "; "}
           mark: tick
           labels: marks
-          value: {one: "in {n} tumour", many: "in {n} tumours", size: true}
-          key: Change in tumours (TCGA)
+          value: {one: "in {n} tumor", many: "in {n} tumors", size: true}
+          key: Change in tumors (TCGA)
           link: "https://www.cbioportal.org/results/mutations?cancer_study_list=acc_tcga_pan_can_atlas_2018,blca_tcga_pan_can_atlas_2018,brca_tcga_pan_can_atlas_2018,cesc_tcga_pan_can_atlas_2018,chol_tcga_pan_can_atlas_2018,coadread_tcga_pan_can_atlas_2018,dlbc_tcga_pan_can_atlas_2018,esca_tcga_pan_can_atlas_2018,gbm_tcga_pan_can_atlas_2018,hnsc_tcga_pan_can_atlas_2018,kich_tcga_pan_can_atlas_2018,kirc_tcga_pan_can_atlas_2018,kirp_tcga_pan_can_atlas_2018,laml_tcga_pan_can_atlas_2018,lgg_tcga_pan_can_atlas_2018,lihc_tcga_pan_can_atlas_2018,luad_tcga_pan_can_atlas_2018,lusc_tcga_pan_can_atlas_2018,meso_tcga_pan_can_atlas_2018,ov_tcga_pan_can_atlas_2018,paad_tcga_pan_can_atlas_2018,pcpg_tcga_pan_can_atlas_2018,prad_tcga_pan_can_atlas_2018,sarc_tcga_pan_can_atlas_2018,skcm_tcga_pan_can_atlas_2018,stad_tcga_pan_can_atlas_2018,tgct_tcga_pan_can_atlas_2018,thca_tcga_pan_can_atlas_2018,thym_tcga_pan_can_atlas_2018,ucec_tcga_pan_can_atlas_2018,ucs_tcga_pan_can_atlas_2018,uvm_tcga_pan_can_atlas_2018&case_set_id=all&gene_list={gene}&geneset_list=%20&tab_index=tab_visualize&Action=Submit"   # cBioPortal, the gene in the 32 TCGA PanCancer Atlas studies (MC3 calls); checked 2026-11-03: the study ids are cBioPortal's, the page answers
         - id: depmap
           title: Cell lines (DepMap)
@@ -2600,7 +2600,7 @@ website:                  # the look and words of the website (ptmc web); layout
           colour_dark: "#A98BE0"
         - id: rbrid
           title: RBR-ID
-          help: "RBR-ID (Oksuz et al. 2023, K562 nuclei): residues under a peptide depleted when RNA is 4SU-labelled and crosslinked, and regions whose smoothed score reaches the release's threshold"
+          help: "RBR-ID (Oksuz et al. 2023, K562 nuclei): residues under a peptide depleted when RNA is 4SU-labeled and crosslinked, and regions whose smoothed score reaches the release's threshold"
           after: rna_cells
           from:
             role: residue_evidence
@@ -2665,8 +2665,8 @@ website:                  # the look and words of the website (ptmc web); layout
             role: lower_confidence_sites
             columns: {accession: uniprot_accession, position: position, label: "{studies}: {reasons}"}
             values:
-              reasons: {below_threshold: "localisation score below the study's threshold", several_residues: "the methyl group is on one of several residues",
-                        search_disagrees: "the study's confident spectra disagree on the residue", no_localising_evidence: "no spectrum or score localises it",
+              reasons: {below_threshold: "localization score below the study's threshold", several_residues: "the methyl group is on one of several residues",
+                        search_disagrees: "the study's confident spectra disagree on the residue", no_localising_evidence: "no spectrum or score localizes it",
                         window_fits_several: "the study's window fits several arginines", several_sites: "the same sequence occurs at several sites",
                         other_protein: "the sequence names a site in another protein", not_in_reference: "the sequence is not in the reviewed protein"}
           mark: tick
@@ -2702,8 +2702,8 @@ website:                  # the look and words of the website (ptmc web); layout
         contacts.entry: {label: PDB, type: pdb}
         rna_distance_a: {label: Distance to RNA (Å), type: number}
         dna_distance_a: {label: Distance to DNA (Å), type: number}
-        entries_with_rna: {label: Modelled with RNA, type: number}
-        entries_with_dna: {label: Modelled with DNA, type: number}
+        entries_with_rna: {label: Modeled with RNA, type: number}
+        entries_with_dna: {label: Modeled with DNA, type: number}
         string.classes: {label: Partner class, values: {prmt: PRMT, tudor: Tudor domain, wd40: WD40 repeat, phd: PHD finger}}
         complex_id: {label: Complex}
         complex_name: {label: Name}
@@ -2775,7 +2775,7 @@ website:                  # the look and words of the website (ptmc web); layout
                 - kind: forest
                   rows:
                     - {analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rna_crosslink_single_residue, label: … crosslink localised to it alone, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rna_crosslink_single_residue, label: … crosslink localized to it alone, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rna_crosslink_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rna_crosslink_within_3, label: Within 3 residues of an RNA crosslink, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rbdmap_fragment, label: Inside an RNA-bound fragment (RBDmap), group: "In cells: crosslinking mass spectrometry"}
@@ -2795,7 +2795,7 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {analysis: crosslink, category: rbrid_residue_among_measured, label: … among arginines RBR-ID measured, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rbrid_residue_published_rule, label: … by the published rule (sensitivity), group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rbrid_region, label: In an RBR-ID region (high score), group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: dna_crosslink, label: DNA crosslink localised to the residue, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: dna_crosslink, label: DNA crosslink localized to the residue, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: dna_crosslink_or_candidate, label: … or one of its candidate residues, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: dna_crosslinked_peptide, label: Inside a DNA-crosslinked peptide, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: pdb_interface, category: rna, label: At an RNA interface (PDBe-KB), group: "In structures: PDB"}
@@ -2860,7 +2860,7 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {analysis: crosslink, category: rbdmap_peptide_among_measured, label: RBDmap}
                     - {analysis: crosslink, category: rbrid_residue_among_measured, label: RBR-ID+}
                     - {analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue}
-                    - {analysis: crosslink, category: rna_crosslink_single_residue, label: … localised to it alone}
+                    - {analysis: crosslink, category: rna_crosslink_single_residue, label: … localized to it alone}
                     - {analysis: crosslink, category: rbdmap_fragment, label: RBDmap fragment}
                     - {analysis: crosslink, category: pclap_peptide, label: pCLAP peptide}
                     - {analysis: crosslink, category: pclap_lysc_region, label: pCLAP region}

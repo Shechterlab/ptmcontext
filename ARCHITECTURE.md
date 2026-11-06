@@ -8,7 +8,7 @@ written once, here; everything that differs is a file.
 | Piece | Is | Lives in | Contract |
 |---|---|---|---|
 | **snapshot** | the reference sequences (UniProt release, FASTA MD5) every position refers to | `ptmcontext/snapshot.py` | the FASTA's MD5 |
-| **manifest** | every input file: source, release or date, licence, MD5 | `inputs.json`, or a site's own `sites/<site>.inputs.json` | `schemas/inputs.schema.json` |
+| **manifest** | every input file: source, release or date, license, MD5 | `inputs.json`, or a site's own `sites/<site>.inputs.json` | `schemas/inputs.schema.json` |
 | **staging** | the only step that uses the network: download, convert to a contract, record in a manifest | `ptmcontext/stage.py`, `ptmc stage` | the unit and marks tables |
 | **units** | regions as rows: disordered regions, IDRs, domains, flanks, segments, sites | `ptmcontext/units.py` | `schemas/units.schema.json` |
 | **layers** | an annotation of every candidate residue: a class (disorder, domain context, the charge of its IDR, ...) or flags (motifs) | `ptmcontext/layers/` | a `Layer` reading **roles** (`disorder`, `domains`) |
@@ -55,9 +55,9 @@ upstream ───────────► staged files ──► snapshot �
 ## The website
 
 `ptmc web sites/<site>.yaml` writes `out/<site>/web/index.html` with `assets/` (for GitHub Pages) and `<site>.html`
-(one file, for sharing). Layout and behaviour are the kit's, in the Methylarginine Site Explorer's look: the header
+(one file, for sharing). Layout and behavior are the kit's, in the Methylarginine Site Explorer's look: the header
 band with its orange rule, the search with example chips, tabs with counts, cards of dot rows, light and dark themes.
-A site's `website:` block sets its name, tagline, band colours, accent, type, icon, header picture, lab, links,
+A site's `website:` block sets its name, tagline, band colors, accent, type, icon, header picture, lab, links,
 example searches, the tiles under the header (`stats`), what the Overview opens with (`overview`: sections of tiles,
 each a question with its most telling classes) and the groups of the Filters panel (`filters`); a site without a
 picture gets a drawn protein with its marks. `ptmc check` confirms that every analysis and attribute these name exists.
@@ -76,7 +76,7 @@ web` splits it into 64 files, so a protein page loads one.
 computed on: a banner says so when it is not), AlphaFold DB (its confidence drawn on the map only when its sequence is
 the same) and the 3D structure (`kit-3d.js`, with 3Dmol.js loaded when it opens): the PDB chain that models most of the
 protein or any entry and chain, the AlphaFold model, homologous structures and predicted complexes, read live by
-accession from AlphaFold DB, PDBe, RCSB and ProtVar, coloured like the map, with ChimeraX, PyMOL and coordinate
+accession from AlphaFold DB, PDBe, RCSB and ProtVar, colored like the map, with ChimeraX, PyMOL and coordinate
 downloads. What the marks touch in those structures comes from the site's own tables when it has them
 (`website.protein.structure`, CONTRACTS.md "Structure evidence"); every export says which parts were live and which
 were the site's. `K.show3d(acc, {pos, entry, chain})` opens it at a mark from anywhere. Each says where it came from
@@ -133,8 +133,8 @@ sets its filter and opens the Sites page.
 reads tables in one format (CONTRACTS.md, Map rows: a residue list, a region list or a per-site count), named by a role
 and mapped column by column in the site file, so a release's table, a backend's export or a user's file gives the same
 row; or it finds runs of a motif in the sequence. `ptmc run` writes the items (`map_items.tsv`, `ptmcontext/map_rows.py`),
-`ptmc web` one file per protein shard (`data/map/`), and `kit-map.js` draws them by the classes, marks and colours the
-site file gives, with the papers of their sources. The same block adds colour modes made from the marks' attributes
+`ptmc web` one file per protein shard (`data/map/`), and `kit-map.js` draws them by the classes, marks and colors the
+site file gives, with the papers of their sources. The same block adds color modes made from the marks' attributes
 (hollow classes; hatched marks) and the papers behind the rows' sources. A row a protein has no data for is absent, and
 a site without the block has none of this. PDB interfaces (PDBe-KB) are a live row of the kit's own, for any site.
 

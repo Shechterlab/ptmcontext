@@ -21,7 +21,7 @@ Every new dataset is exactly one of these. If it is none of them, stop and ask.
 
 ## 1. Check the terms before downloading
 
-- Find the licence on the source's own site. Record it word for word; if none is stated, write `none stated`.
+- Find the license on the source's own site. Record it word for word; if none is stated, write `none stated`.
 - Unpublished lab data and analyses (unpublished MS included) never enter this repository. They go in a
   private repository as a plugin (step 6). **If unsure whether something is published, stop and ask.**
 - A source that forbids redistribution is staged outside the repository and recorded with its MD5 only.
@@ -39,14 +39,14 @@ For a new source, add a function to `ptmcontext/stage.py` that downloads, writes
 format and calls `stage.record(...)`. Requirements:
 
 - the upstream URL, the source's release (from the response or the file, never from memory) or else the download
-  date, and the licence go into the manifest entry;
+  date, and the license go into the manifest entry;
 - retries with backoff, and batching where the service limits a request (MobiDB: 1,000 proteins);
 - coverage is reported (how many entries got data), and written into the entry's `note`.
 
 For a file you were given rather than downloaded:
 
 ```bash
-ptmc inputs record <name> <path under root> --root DATA --source "<where it came from>" --version "<release or date>" --licence "<licence>"
+ptmc inputs record <name> <path under root> --root DATA --source "<where it came from>" --version "<release or date>" --licence "<license>"
 ```
 
 A file with no traceable origin is recorded with a note that starts `NOT TRUSTED`: the build refuses it unless a run
@@ -67,7 +67,7 @@ A table in its own layout needs no conversion: say in its manifest entry which c
 keep, and every build reads it the same way (`ptmc inputs record ... --columns '<json>'` writes it):
 
 ```json
-"lab_condensates": {"file": "...", "md5": "...", "source": "...", "version": "...", "licence": "...",
+"lab_condensates": {"file": "...", "md5": "...", "source": "...", "version": "...", "license": "...",
   "columns": {"accession": "uniprot", "start": "from", "end": "to", "label": "name",
               "include": [{"column": "evidence", "equals": "curated"}]},
   "record": "https://example.org/protein/{acc}"}
@@ -98,11 +98,11 @@ analyses:
   - {id: <analysis>, layer: <layer>}                     # a residue test, by a built-in or trusted plugin layer
   - id: <analysis>                                       # a residue test of any table of regions: no code
     layer: regions
-    with: {role: <role>, kind: <kind>, window: 20, noun: condensate-forming region}   # words, colours optional
+    with: {role: <role>, kind: <kind>, window: 20, noun: condensate-forming region}   # words, colors optional
   - id: <analysis>                                       # a residue test of any per-residue value: no code
     layer: residue_values
     with: {role: <role>, bins: [50, 70, 90], classes: [very_low, low, confident, very_high], noun: pLDDT,
-           colours: {very_high: "#0053d6"}}
+           colors: {very_high: "#0053d6"}}
   - id: <analysis>                                       # flags: is a residue listed in each of these tables? no code
     layer: residue_lists
     with: {flags: {<flag>: <role>, <flag>: <role>}, noun: changed residue, labels: {<flag>: ...}}
@@ -111,7 +111,7 @@ analyses:
     order: [{categories: [<flag>, <flag>]}]              # the rows in this order
 ```
 
-A list of residues (a change seen in tumours, a crosslinked residue) is any table with an accession and a position
+A list of residues (a change seen in tumors, a crosslinked residue) is any table with an accession and a position
 column, mapped in its manifest entry (`"columns": {"accession": ..., "position": ...}`); a residue is listed once
 however many rows name it.
 
@@ -261,19 +261,19 @@ A page of its own (`website.pages`: the Interactions page of `sites/methylargini
 that read the statistics, the marks' attributes and the tables of `website.tables` (add `page_rows` for rows of no site
 or protein); CONTRACTS.md, "Website pages", lists the blocks. A block whose data a site lacks is left out.
 
-Columns of the marks table the website should keep (to colour sites, filter them, and show where each comes from)
+Columns of the marks table the website should keep (to color sites, filter them, and show where each comes from)
 go under `marks.attributes`; no test reads them:
 
 ```yaml
 marks:
   attributes:
-    state: {column: <column>, label: <name on the page>, kind: category, values: {<value>: <label>}, colour: true, filter: true}
+    state: {column: <column>, label: <name on the page>, kind: category, values: {<value>: <label>}, color: true, filter: true}
     studies: {column: <column>, label: Studies, kind: list, separator: "; ", link: {column: <ids column>, url: "https://doi.org/{}"}, filter: true,
               provenance: true}   # how a mark was found, not what it is: a caveat when marks are compared, and the
                                   # within-study strata (website.compare.stratify names another)
                                   # website.compare: {min_proteins: 10, min_marks: 30} is the smallest selection that is tested (these are the defaults);
                                   # a smaller one gets counts and shares only, with no p, q or "enriched"
-    changed: {column: <changes column>, present: true, label: Changed in tumours, kind: category,
+    changed: {column: <changes column>, present: true, label: Changed in tumors, kind: category,
               values: {"yes": Changed, "no": Not changed}, filter: true}           # a yes/no filter over a column of changes
     response: {column: <perturbations>, pair_with: <their calls>, label: Responses, kind: list, control: select,
                filter: true}                                                       # each value "<perturbation>:<call>"
@@ -310,9 +310,9 @@ every question and offers every filterable attribute. A new question appears on 
 tile, its filter, its rows in All tests and the downloads, its column if named, and, if its layer draws regions, a row
 of the protein map (`tests/test_new_sources.py` builds such a site from scratch).
 
-Evidence along the proteins that no question tests (crosslinks, interfaces, changes in tumours, dense windows) is a row
+Evidence along the proteins that no question tests (crosslinks, interfaces, changes in tumors, dense windows) is a row
 of the protein map: `website.protein.map.rows`, each reading a role (or the marks table, `marks: true`) with a column
-mapping into the map-row format (CONTRACTS.md, Map rows), its classes with their words, marks and colours, and the
+mapping into the map-row format (CONTRACTS.md, Map rows), its classes with their words, marks and colors, and the
 papers of its sources in `website.protein.map.sources`. A residue list, a region list and a per-site count are the
 same format with different columns filled (`tests/test_map_rows.py` builds such a site from scratch). Rows the source
 may not republish are left out by the mapping's `include`/`exclude`: the website then never holds them.
@@ -321,7 +321,7 @@ may not republish are left out by the mapping's `include`/`exclude`: the website
 
 Maps of the cell need no code either: make each map a protein-set question (its sets the compartments; optionally a
 second one, its regions, by `sets.families`), then name them in `website.cell` with the rows of the grids and the part
-of the kit's drawings each colours (CONTRACTS.md lists the parts; a yeast vacuole may colour `endolyso`, named
+of the kit's drawings each colors (CONTRACTS.md lists the parts; a yeast vacuole may color `endolyso`, named
 "Vacuole"). A table of numbers per protein (a screen's scores) becomes classes by `sets.rules`, and `values` plus
 `website.set_views` draw its numbers beside them.
 
@@ -354,5 +354,5 @@ repository's code into this one without the owner's review; do not run another r
 
 ## 8. Write down what you did
 
-In the pull request: what was added, its licence, its coverage, the checks run and their output, and anything that
+In the pull request: what was added, its license, its coverage, the checks run and their output, and anything that
 could not be verified. Never claim a check passed that was not run.

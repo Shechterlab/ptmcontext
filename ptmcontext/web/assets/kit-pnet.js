@@ -1,6 +1,6 @@
 /* Protein interactions, and Interaction evidence at a glance, on a protein's page.
      Protein interactions   the protein's STRING partners, asked live, as a network the reader can drag (mouse, touch, or the
-                            arrow keys on a focused node) with Network options (confidence, number of partners, colour by
+                            arrow keys on a focused node) with Network options (confidence, number of partners, color by
                             methylated or class, layout, physical or functional, all or marked only); the list of the same
                             partners is its table view. SVG, PNG and TSV.
      Interaction evidence    each mark against the interaction evidence at the same residue (the site's structure tables:
@@ -220,10 +220,10 @@
   const msg = t => { const b = box(); if (b) b.innerHTML = `<p class="muted pn-msg">${t}</p>`; const lg = document.getElementById('pn-legend'); if (lg) lg.innerHTML = ''; };
   const optionsHtml = () => {
     const sel = (id, label, opts, v) => `<label class="pn-opt" for="pn-${id}"><span>${esc(label)}</span><select id="pn-${id}">${opts.map(([val, t]) => `<option value="${val}"${String(val) === String(v) ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
-    const colors = [['methyl', `Has ${W.marks} here or not`], ...(PT ? [['class', 'Partner class']] : []), ['none', 'No colour']];
+    const colors = [['methyl', `Has ${W.marks} here or not`], ...(PT ? [['class', 'Partner class']] : []), ['none', 'No color']];
     return `<div class="pn-opts" role="group" aria-label="Network options"><span class="pn-opts-h">Network options</span>` +
       sel('conf', 'STRING confidence', CONFS, OPT.conf) + sel('n', 'Partners', [[10, '10'], [20, '20'], [30, '30'], [50, '50']], OPT.n) +
-      sel('only', 'Show', [['all', 'All partners'], ['marked', `Only with ${W.marks} here`]], OPT.only) + sel('color', 'Colour by', colors, OPT.color) +
+      sel('only', 'Show', [['all', 'All partners'], ['marked', `Only with ${W.marks} here`]], OPT.only) + sel('color', 'Color by', colors, OPT.color) +
       sel('layout', 'Layout', [['force', 'Force-directed'], ['circle', 'Circle'], ['rings', 'Rings by score']], OPT.layout) + sel('net', 'Network', [['physical', 'Physical'], ['functional', 'Functional']], OPT.net) +
       `<span class="seg" role="group" aria-label="View"><button type="button" data-pn-view="network" aria-pressed="${OPT.view === 'network'}">Network</button><button type="button" data-pn-view="table" aria-pressed="${OPT.view === 'table'}">Table</button></span>` +
       `<button type="button" class="linkish" data-pn-reset title="Put the nodes back where the layout puts them">Reset layout</button></div>` + moreOptionsHtml();
@@ -250,18 +250,18 @@
       // site first: who binds each mark, partners and complexes, writer and reader paths; then the interfaces and the network, folded
       // when no mark sits at an interface (the network is the protein's associations, not its sites')
       const s3 = rec?.s3d, hasIface = !!((s3?.c || []).some(r => r[1] === 'protein' || r[1] === 'self') || (s3?.p || []).length);
-      const net = `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, coloured by whether they have ${esc(W.marks)} in this dataset. The Table view lists the same partners and is the keyboard route.</p>` +
+      const net = `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, colored by whether they have ${esc(W.marks)} in this dataset. The Table view lists the same partners and is the keyboard route.</p>` +
         `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network').replace(/<\/div>$/, '<button type="button" class="btn small" data-pn-cyto title="The network as Cytoscape tables: edges (File, Import, Network from File) and nodes (Import Table from File)">Cytoscape</button></div>')}</div>` +
         `<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div><div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` +
-        `<details class="pn-optd"><summary>Network options <span class="muted">· confidence, partners, colour, layout, evidence channels, second ring of PRMTs and Tudor proteins</span></summary>${optionsHtml()}</details>`;
+        `<details class="pn-optd"><summary>Network options <span class="muted">· confidence, partners, color, layout, evidence channels, second ring of PRMTs and Tudor proteins</span></summary>${optionsHtml()}</details>`;
       return fold('p-ix', 'Protein interactions', 'who binds its ' + esc(W.marks) + ', partners, complexes and the network', K.pix.html(p, rec, K.prot.tables(p.acc)) + ifaceHtml(p, rec) +
         `<details class="pn-fold"${hasIface ? ' open' : ''}><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING, live; drag the nodes${hasIface ? '' : `; folded, as no ${esc(W.mark)} sits at an interface`}</span></summary>${net}</details>`, true);
     }
-    return fold('p-ix', 'Protein interactions', 'STRING, live; drag the nodes', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, drawn as a network you can drag, coloured by whether they have ${esc(W.marks)} in this dataset. Matched by accession. The Table view lists the same partners and is the keyboard route.</p>` +
+    return fold('p-ix', 'Protein interactions', 'STRING, live; drag the nodes', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, drawn as a network you can drag, colored by whether they have ${esc(W.marks)} in this dataset. Matched by accession. The Table view lists the same partners and is the keyboard route.</p>` +
       `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${CARDS ? '' : optionsHtml()}<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>` +
       `<div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` +
       // the cards front end draws the network first and folds its options below it (the graph is what the reader came for)
-      (CARDS ? `<details class="pn-optd"><summary>Network options <span class="muted">· confidence, partners, colour, layout, evidence channels</span></summary>${optionsHtml()}</details>` : '') + ifaceHtml(p, rec), true);
+      (CARDS ? `<details class="pn-optd"><summary>Network options <span class="muted">· confidence, partners, color, layout, evidence channels</span></summary>${optionsHtml()}</details>` : '') + ifaceHtml(p, rec), true);
   }
   // ---- who binds the marks: the site's structure tables (contacts and predicted, per mark) ---------------------------------
   const rcsb = id => `<a href="https://www.rcsb.org/structure/${encodeURIComponent(String(id).toUpperCase())}" target="_blank" rel="noopener">${esc(String(id).toUpperCase())}</a>`;
@@ -361,7 +361,7 @@
   }
   function tsv() {
     const c = CUR, gene = c.self.gene || c.acc;
-    return K.preamble(`STRING partners of ${gene} (${c.acc})`, `the proteins STRING associates with ${gene}: ${OPT.net} network, score ${(OPT.conf / 1000).toFixed(1)} or more${c.st.ver ? ', v' + c.st.ver : ''}, retrieved live on ${today()} (${CITE}; licence CC BY 4.0). ` +
+    return K.preamble(`STRING partners of ${gene} (${c.acc})`, `the proteins STRING associates with ${gene}: ${OPT.net} network, score ${(OPT.conf / 1000).toFixed(1)} or more${c.st.ver ? ', v' + c.st.ver : ''}, retrieved live on ${today()} (${CITE}; license CC BY 4.0). ` +
       `Partners are matched to this dataset’s proteins by UniProt accession (isoforms by canonical accession); ${W.marks}_here counts their ${W.marks} in this site. A STRING association is to the whole protein.`) +
       ['partner', 'partner_string_id', 'partner_accession', 'accession_here', 'score', ...CHANNELS.map(([, n]) => n.replace(/\W+/g, '_')), 'class', `${W.marks.replace(/\W+/g, '_')}_here`].join('\t') + '\n' +
       tableRows(c.st).map(x => [x.e.preferredName_B, x.e.stringId_B, x.acc, x.p?.acc || '', x.sc.toFixed(3), ...CHANNELS.map(([f]) => x.e[f] ?? ''), x.cls ? className(x.cls) : '', x.marks].join('\t')).join('\n') + '\n';

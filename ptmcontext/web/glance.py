@@ -46,7 +46,7 @@ def share(analyses: list, rows: list, counted: int, spec: dict | None = None) ->
             continue
         order = [c for c in (spec.get('classes') or list(a.get('labels') or {})) if c in got]
         order += [c for c in got if c not in order]
-        shown = [c for c in order if c in spec['classes']] if spec.get('classes') else order[:3]    # three series colours at most; the rest is 'other'
+        shown = [c for c in order if c in spec['classes']] if spec.get('classes') else order[:3]    # three series colors at most; the rest is 'other'
         parts = [{'class': c, 'label': (spec.get('labels') or {}).get(c) or _label(a, c), 'n': got[c], 'slot': i + 1} for i, c in enumerate(shown) if got[c]]
         rest = total - sum(p['n'] for p in parts)
         if rest > 0.01 * total:      # a sliver is left out of the picture

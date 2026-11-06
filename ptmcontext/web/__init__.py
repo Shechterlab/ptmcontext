@@ -1,8 +1,8 @@
 """ptmc web: a static website for a site, from its run's outputs, the `website:` block of its site file and its
 CITATION.cff.
 
-Layout and behaviour are the kit's (assets/kit.css, assets/kit.js: the Methylarginine Site Explorer's look). A site
-supplies only words, colours, type, an icon, a header picture, links and example searches; its citation, data sources,
+Layout and behavior are the kit's (assets/kit.css, assets/kit.js: the Methylarginine Site Explorer's look). A site
+supplies only words, colors, type, an icon, a header picture, links and example searches; its citation, data sources,
 version and date come from its CITATION.cff, so they are edited as text. The data are written into the page, so it
 opens from a folder, GitHub Pages or a Zenodo archive alike. Two files are written: index.html with its assets/ (for
 hosting), and <site>.html with everything inlined (one file, for sharing).
@@ -60,7 +60,7 @@ def _rgb(hex_: str) -> tuple[float, float, float]:
 
 
 def contrast(a: str, b: str) -> float:
-    """WCAG 2.1 contrast ratio of two colours."""
+    """WCAG 2.1 contrast ratio of two colors."""
     def lum(c):
         ch = [x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4 for x in _rgb(c)]
         return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2]
@@ -811,7 +811,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     accent, accent_dark = web.get('accent', DEFAULT_ACCENT), web.get('accent_dark', DEFAULT_ACCENT_DARK)
     for c in band:
         if contrast('#ffffff', c) < 4.5:
-            log(f'  warning: white text on the band colour {c} has contrast {contrast("#ffffff", c):.1f}:1, under 4.5:1 (WCAG 1.4.3)')
+            log(f'  warning: white text on the band color {c} has contrast {contrast("#ffffff", c):.1f}:1, under 4.5:1 (WCAG 1.4.3)')
     brand_ink = web.get('brand_ink', band[0])
     brand_ink_dark = web.get('brand_ink_dark', _mix(band[0], '#ffffff', 0.55))
     fonts = {**FONTS, **web.get('fonts', {})}
@@ -1239,7 +1239,7 @@ def pages(site_paths: list, out: str | Path, out_root: str | Path | None = None,
 <main class="wrap" id="sites">
 <h2 class="vh">The sites</h2>
 <div class="sites">{''.join(cards)}</div></main>
-<footer class="wrap land-foot"><p>Updated {html.escape(human_date(_now()))}. Built with {kit_link} {html.escape(kit['version'])}, {html.escape(_licence_words(kit.get('licence', 'MIT')))} licence. Each site's data carry the licence its page states.</p>
+<footer class="wrap land-foot"><p>Updated {html.escape(human_date(_now()))}. Built with {kit_link} {html.escape(kit['version'])}, {html.escape(_licence_words(kit.get('licence', 'MIT')))} license. Each site's data carry the license its page states.</p>
 <p>No cookies, no tracking: every test runs in your browser, and nothing you search or select leaves it.</p></footer></body></html>
 """
     (out / 'index.html').write_text(page)

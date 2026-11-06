@@ -1,4 +1,4 @@
-/* The site kit's behaviour: the same for every site. A site differs only in its data (written by ptmc web from the
+/* The site kit's behavior: the same for every site. A site differs only in its data (written by ptmc web from the
    site's run) and its look (variables set from the site file). Views: Overview (a scorecard: each row a question, its
    figure at a glance and its answer; a row opens its full figure, every class and the downloads), Statistics (every
    test, sortable, downloadable), Method (how the tests work, the data and their checksums, the parity check, how to
@@ -568,7 +568,7 @@
     return head + (K.sel.testable() ? row : against + `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. Compare it with the other ${esc(W.marks)} instead, or see its ${esc(W.marks)} on the Proteins${K.views.sites ? ' and Sites pages' : ' page'}.</p>`);
   }
   // log2 of the odds ratio or fold: the displayed value stays "2.0×" with an arrow for its direction; the table beside it
-  // sorts by log2 (signed) or by strength (|log2|, either direction). Charts of ORs and folds use a log2 axis centred on 1×.
+  // sorts by log2 (signed) or by strength (|log2|, either direction). Charts of ORs and folds use a log2 axis centered on 1×.
   K.l2 = r => { const v = r.eff ?? r.or; return v > 0 && Number.isFinite(v) ? Math.log2(v) : null; };
   K.l2fmt = r => { const v = K.l2(r); return v == null ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2); };
   K.dirArrow = r => (r.dir === 'more' ? '<span class="dirarrow more" aria-hidden="true">▲</span> ' : r.dir === 'less' ? '<span class="dirarrow less" aria-hidden="true">▼</span> ' : '');
@@ -683,7 +683,7 @@
       `<p class="page-sub">${vsOn() ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}, tested in your browser (exploratory).` : esc(a.question || a.describe || '')}${selOn() && !vsOn() ? ` <b>Your selection</b>${rows.some(r => r.descriptive) ? ': ' + whyShown(a).replace(/^Your selection /, '') : vsOn() ? '' : ', tested again in your browser (exploratory: not adjusted for the other selections tried).'}` : ''} <span class="muted">Click a ${a.kind === 'protein_sets' ? 'set' : 'class'} to select its ${esc(W.marks)}.</span></p>` +
       `<section class="pcard">${(Q?.page && Q.page(card, () => cardBody(a, rows))) ?? (K.questionBody && K.questionBody(a, rows, card)) ?? cardBody(a, rows)}${selOn() && !vsOn() && !mod ? `<p class="twhole"><span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>` : ''}</section>`;
   }
-  // what the site keeps, what it asks other services for, and under which licences everything is
+  // what the site keeps, what it asks other services for, and under which licenses everything is
   // the data a reader can download (website.downloads), under its terms, and the site's own tables
   function downloadSection() {
     const dl = D.downloads || [], ds = D.dataset;
@@ -726,13 +726,13 @@
     const live = ['UniProt (rest.uniprot.org)', 'AlphaFold DB (alphafold.ebi.ac.uk)', 'PDBe (www.ebi.ac.uk/pdbe)', ...(D.partners ? ['STRING (string-db.org)'] : []), ...(D.protein_view?.conservation?.ensembl?.rest ? [`Ensembl (${String(D.protein_view.conservation.ensembl.rest).replace(/^https?:\/\//, '').replace(/\/$/, '')})`] : []),
       ...(D.protein_view?.sets || []).flatMap(c => (c.live?.open_targets?.graphql ? [`Open Targets (${new URL(c.live.open_targets.graphql).host})`] : [])),
       ...(D.protein_view?.cards?.location?.condensates?.pubmed ? [`PubMed (${new URL(D.protein_view.cards.location.condensates.pubmed).host})`] : [])];
-    return `<section id="m-privacy"><h3>Licences and privacy</h3>` +
-      `<p>Licences: the code (ptmcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} licence${D.kit.url ? ` (<a href="${esc(D.kit.url)}">source</a>)` : ''}. This site’s data and figures are under ${esc(hlicence(CIT.licence || 'their sources’ terms'))}, and each source keeps its own terms (see the Data table).</p>` +
+    return `<section id="m-privacy"><h3>Licenses and privacy</h3>` +
+      `<p>Licences: the code (ptmcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} license${D.kit.url ? ` (<a href="${esc(D.kit.url)}">source</a>)` : ''}. This site’s data and figures are under ${esc(hlicence(CIT.licence || 'their sources’ terms'))}, and each source keeps its own terms (see the Data table).</p>` +
       `<p>Privacy: the site sets no cookies and uses no tracking. Searches, filters, selections and every test on them stay in your browser and its address. The browser’s local storage keeps only your preferences (theme, sidebar, protein map rows) and saved selections; clear them with the site data. A protein page asks these services for that protein’s public data, by accession only: ${esc(live.join(', '))}. Downloads are made in the browser.</p></section>`;
   }
   K.sections.method = () => [['m-g1', 'The tests', 0], ['m-tests', 'How the tests work', 1], ['m-questions', 'Questions, and what made each', 1], ['m-parity', 'Checked against the release', 1],
     ['m-gq', 'Each question', 0], ...D.analyses.map(a => [`m-q-${a.id}`, a.title, 1]), ...K.methods.map(x => [`m-q-${x.id}`, x.title, 1]),
-    ['m-g2', 'The data', 0], ['m-data', 'Data', 1], ['m-sources', 'Sources', 1], ['m-g3', 'The site', 0], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1], ['m-download', 'Download the data', 1], ['m-columns', 'Columns of the tables', 1], ['m-search', 'Search terms', 1], ['m-privacy', 'Licences and privacy', 1]]
+    ['m-g2', 'The data', 0], ['m-data', 'Data', 1], ['m-sources', 'Sources', 1], ['m-g3', 'The site', 0], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1], ['m-download', 'Download the data', 1], ['m-columns', 'Columns of the tables', 1], ['m-search', 'Search terms', 1], ['m-privacy', 'Licenses and privacy', 1]]
     .filter(([id]) => (id !== 'm-parity' || D.run.parity) && (id !== 'm-download' || (D.downloads || []).length) && (id !== 'm-columns' || D.front?.mode === 'cards') && (id !== 'm-sources' || Object.values(D.attribute_specs || {}).some(x => x.kind === 'list' && x.link)));
   // the Overview's sections and their questions: jumps on the tiles, links from an opened question (keeping the
   // selection and the baseline)
@@ -823,14 +823,14 @@
       (D.analyses.some(a => a.kind === 'protein_sets') ? `<p>Questions about protein classes count proteins, not residues. The ${esc(W.marked)} proteins in each set are compared with the other proteins of the question’s universe, in a one-sided hypergeometric test as clusterProfiler’s enricher runs it, with fold enrichment and Benjamini–Hochberg q across the sets.${D.analyses.some(a => a.stratified) ? ` ${D.analyses.every(a => a.kind !== 'protein_sets' || a.stratified) ? 'Each is' : 'Those with an abundance input are'} repeated within protein-abundance deciles (Mantel–Haenszel odds ratio across them), because mass spectrometry finds abundant proteins most often. An enrichment that holds there is not explained by abundance.` : ''}</p>` : '') + `</section>` +
       `<section id="m-data"><h3>Data</h3><p>Sequences: ${esc(sn.release)}, ${int(sn.entries)} entries (FASTA MD5 <span class="mono">${esc(sn.fasta_md5)}</span>). ` +
       `${cap(W.marks)}: ${int(m.counted)} on ${int(m.proteins)} proteins, from ${int(m.selected)} records${dropped.length ? ' (' + dropped.join('; ') + ', left out)' : ''}. Each file was checked against its MD5 before it was read.</p>` +
-      `<div class="tbl-card"><table class="tbl"><thead><tr><th>Source</th><th>Used for</th><th>Licence</th><th>File</th><th>MD5</th></tr></thead><tbody>${inputs}</tbody></table></div></section>` +
+      `<div class="tbl-card"><table class="tbl"><thead><tr><th>Source</th><th>Used for</th><th>License</th><th>File</th><th>MD5</th></tr></thead><tbody>${inputs}</tbody></table></div></section>` +
       `<section id="m-questions"><h3>Questions, and what made each</h3>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th></tr></thead><tbody>` +
       D.analyses.map(a => `<tr><td>${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag">new</span>' : ''}</td><td class="wrapok">${esc(madeByText(a.id))}</td></tr>`).join('') +
       `</tbody></table></div></section>` + D.analyses.map(questionMethod).join('') + (K.methodParts || []).map(f => f()).join('') + K.methods.map(x => x.html()).join('') + par +
       citeSection() + downloadSection() + columnsSection() + searchSection() + privacySection() +
       sourcesSection() +
-      `<section id="m-made"><h3>How this site is made</h3><p>One file, <span class="mono">${esc(D.site.config)}</span>, sets the mark, the sequences and regions, the questions, the colours and the pictures. ptmcontext ${esc(D.kit.version)} (commit <span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(R.written))}. The citation, version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>` +
+      `<section id="m-made"><h3>How this site is made</h3><p>One file, <span class="mono">${esc(D.site.config)}</span>, sets the mark, the sequences and regions, the questions, the colors and the pictures. ptmcontext ${esc(D.kit.version)} (commit <span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(R.written))}. The citation, version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>` +
       `<p>Every download carries its citation, data sources, versions, inputs and export date, printed under each figure and kept in the file (SVG metadata, PNG text fields, PDF properties, TSV # lines).</p></section></div>`;
   }
 
@@ -892,7 +892,7 @@
     if ((CIT.references || []).length) lines.push('Data: ' + CIT.references.map(r => r.short + doiTxt(r.doi)).join('; '));
     lines.push(`${D.site.name}, version ${CIT.version || '–'}${CIT.date ? ' (' + hdate(CIT.date) + ')' : ''} · ptmcontext ${D.kit.version} (${shortCommit(D.kit.commit)}) · ${sn.release || ''}, FASTA MD5 ${String(sn.fasta_md5 || '').slice(0, 12)}… · run on ${hdate(R.written)}`);
     if (selOn() && K.sel.data()) lines.push(`Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks})`);
-    lines.push(`Exported ${htime(stamp())} from ${pageUrl()}${CIT.licence ? ' · licence ' + hlicence(CIT.licence) : ''}`);
+    lines.push(`Exported ${htime(stamp())} from ${pageUrl()}${CIT.licence ? ' · license ' + hlicence(CIT.licence) : ''}`);
     return lines;
   }
   function preamble(title, what) {
@@ -902,7 +902,7 @@
       D.variant ? `# Variant: ${D.variant.label}${D.variant.description ? ': ' + D.variant.description : ''}. Not the main release's set of sites; do not mix the two.` : null,
       CIT.preferred ? `# Cite: ${CIT.preferred.text}${doiTxt(CIT.preferred.doi)}` : null,
       (CIT.references || []).length ? '# Data sources: ' + CIT.references.map(r => r.text + doiTxt(r.doi)).join(' | ') : null,
-      `# Version: ${CIT.version || '–'}${CIT.date ? ' (' + CIT.date + ')' : ''}${CIT.doi ? ', doi:' + CIT.doi : ''}${CIT.licence ? '; licence ' + CIT.licence : ''}`,
+      `# Version: ${CIT.version || '–'}${CIT.date ? ' (' + CIT.date + ')' : ''}${CIT.doi ? ', doi:' + CIT.doi : ''}${CIT.licence ? '; license ' + CIT.licence : ''}`,
       `# Made with: ptmcontext ${D.kit.version} (commit ${D.kit.commit || 'not recorded'}) from ${D.site.config}; run ${R.written}`,
       `# Sequences: ${sn.release} (${int(sn.entries)} entries, FASTA MD5 ${sn.fasta_md5}); inputs: ${inputs}`,
       `# Questions made by: ${Object.keys(D.run.analyses || {}).map(aid => `${aid}: ${madeByText(aid)}`).join('; ')}${(R.trusted_plugins || []).length ? `; trusted plugins: ${R.trusted_plugins.join(', ')}` : ''}`,
@@ -947,6 +947,14 @@
     const out = []; let cur = '';
     for (const word of String(text).split(/\s+/)) { const t = cur ? cur + ' ' + word : word; if (!cur || tw(t, size, weight, fam) <= width) cur = t; else { out.push(cur); cur = word; } }
     if (cur) out.push(cur); return out;
+  }
+  // the credit as a strip of its own at the foot of an exported figure: a gap, a thin rule, then the lines in <g id="credit">,
+  // so it can be cropped off (the PNG also keeps the citation in its metadata). Returns the SVG and the y below the strip.
+  function creditStrip(P, y, Wd, size = 9.5, lh = 12.5) {
+    const ry = y + 14, out = [`<line x1="${P}" x2="${Wd - P}" y1="${ry}" y2="${ry}" stroke="${PAL.line}" stroke-width="0.75"/>`];
+    let ty = ry + 7 + size;
+    creditLines().forEach(line => wrap(line, Wd - 2 * P, size).forEach(t => { out.push(`<text x="${P}" y="${ty.toFixed(1)}" font-size="${size}" fill="${PAL.muted}">${esc(t)}</text>`); ty += lh; }));
+    return { svg: `<g id="credit">${out.join('')}</g>`, y: ty - lh + 4 };
   }
   // a question's figure for its exports: the chart the page shows (chartModel), drawn as one SVG, with the test and the
   // credit under it
@@ -1025,7 +1033,7 @@
       : sets ? setWords(a) + (rows.length < all.length ? ` Shown: the first ${rows.length} of the ${int(all.length)} sets tested, in the page’s order; the TSV has every set.` : '') : testWords(m);
     wrap(note, Wd - 2 * P, 10.5).forEach(t => { T(P, y, t, { size: 10.5 }); y += 14; });
     y += 6;
-    creditLines().forEach(line => wrap(line, Wd - 2 * P, 9.5).forEach(t => { T(P, y, t, { size: 9.5, fill: PAL.muted }); y += 12.5; }));
+    { const cs = creditStrip(P, y, Wd); parts.push(cs.svg); y = cs.y + 6; }
     const H = Math.ceil(y + P - 6);
     const desc = `${title}: ${a.question} ${sub}. ${note} ${creditLines().join(' ')}`;
     const meta = JSON.stringify(provenance({ figure: title, analysis: aid, test: m }));
@@ -1208,7 +1216,7 @@
     return `<section id="m-cite"><h3>How to cite</h3>` +
       (CIT.preferred ? `<p>Please cite ${esc(CIT.preferred.text)}${CIT.preferred.doi ? ` <a href="https://doi.org/${esc(CIT.preferred.doi)}">doi:${esc(CIT.preferred.doi)}</a>` : ''}</p>` : '') +
       ((CIT.references || []).length ? `<p>${CIT.preferred ? 'and the' : 'Please cite the'} original data sources${Object.values(D.attribute_specs || {}).some(x => x.kind === 'list' && x.link) ? ` and the ${esc(Object.values(D.attribute_specs).find(x => x.kind === 'list' && x.link).label.toLowerCase())} <a href="#method/sources">under Sources</a> you use` : ''}:</p><ul>${CIT.references.map(r => `<li>${esc(r.text)}${r.doi ? ` <a href="https://doi.org/${esc(r.doi)}">doi:${esc(r.doi)}</a>` : ''}</li>`).join('')}</ul>` : '') +
-      `<p class="muted">This site: ${esc(CIT.title)}, version ${esc(CIT.version)}${CIT.date ? ' (' + esc(hdate(CIT.date)) + ')' : ''}${CIT.doi ? `, <a href="https://doi.org/${esc(CIT.doi)}">doi:${esc(CIT.doi)}</a>` : ''}${CIT.licence ? '; licence ' + esc(hlicence(CIT.licence)) : ''}.</p>` +
+      `<p class="muted">This site: ${esc(CIT.title)}, version ${esc(CIT.version)}${CIT.date ? ' (' + esc(hdate(CIT.date)) + ')' : ''}${CIT.doi ? `, <a href="https://doi.org/${esc(CIT.doi)}">doi:${esc(CIT.doi)}</a>` : ''}${CIT.licence ? '; license ' + esc(hlicence(CIT.licence)) : ''}.</p>` +
       `<p><button class="btn" type="button" id="copy-cite">Copy citations</button> <button class="btn" type="button" id="dl-cff">Download CITATION.cff</button></p></section>`;
   }
 
@@ -1226,7 +1234,7 @@
     }
     parts.push(`<g transform="translate(0,${y})">${body}</g>`); y += bodyH + 14;
     if (note) { wrap(note, Wd - 2 * P, 10.5).forEach(t => { T(P, y, t, { size: 10.5 }); y += 14; }); y += 6; }
-    creditLines().forEach(line => wrap(line, Wd - 2 * P, 9.5).forEach(t => { T(P, y, t, { size: 9.5, fill: PAL.muted }); y += 12.5; }));
+    { const cs = creditStrip(P, y, Wd); parts.push(cs.svg); y = cs.y + 6; }
     const H = Math.ceil(y + P - 6), desc = `${title}. ${sub}. ${note} ${creditLines().join(' ')}`;
     const meta = JSON.stringify(provenance({ figure: title, ...extra }));
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${Wd}" height="${H}" viewBox="0 0 ${Wd} ${H}" font-family="${FF}">` +
@@ -1238,13 +1246,13 @@
     const old = btn ? btn.textContent : ''; if (btn) { btn.disabled = true; btn.textContent = '…'; }
     try {
       if (kind === 'tsv') download(name + '.tsv', tsv(), 'text/tab-separated-values');
-      else { const f = make(); if (kind === 'opensvg') window.open(URL.createObjectURL(new Blob([f.svg], { type: 'image/svg+xml' })), '_blank'); else if (kind === 'svg') download(name + '.svg', f.svg, 'image/svg+xml'); else if (kind === 'png') await pngExport(f, name); else await pdfExport(f, name); }
+      else { const f = make(); if (kind === 'svg') download(name + '.svg', f.svg, 'image/svg+xml'); else if (kind === 'png') await pngExport(f, name); else await pdfExport(f, name); }
     } catch (err) { alert((err && err.message) || 'The download failed.'); } finally { if (btn) { btn.disabled = false; btn.textContent = old; } }
   }
   // the export buttons of a card, and its Method link (the question's own section, or a section of the Method page)
   const methodLink = (aid, sec) => `<a class="exp-btn" href="${esc(link('method', aid ? 'q-' + aid : sec || ''))}" title="How ${aid ? 'this question was' : 'these were'} made and tested, and from what data">Method</a>`;
   const expBar = (kinds, attrs, label, method) => `<div class="exp" role="group" aria-label="Download ${esc(label)}">${kinds.map(k => `<button type="button" class="exp-btn" data-${attrs}="${k}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}${method ? methodLink(A[method] ? method : '', A[method] ? '' : method) : ''}</div>`;
-  Object.assign(K, { SET_TEST, selText, TAIL_HEAD, tsvTail: tail, variantSwitch, CIT, PAL, FF, FFH, tw, wrap, figureFrame, exportFigure, expBar, preamble, creditLines, provenance, download, hdate, htime, hlicence, shortCommit, testWords, PADJ, MIN_EFFECT, dir, selOn, vsOn });
+  Object.assign(K, { SET_TEST, selText, TAIL_HEAD, tsvTail: tail, variantSwitch, CIT, PAL, FF, FFH, tw, wrap, figureFrame, exportFigure, expBar, preamble, creditLines, creditStrip, provenance, download, hdate, htime, hlicence, shortCommit, testWords, PADJ, MIN_EFFECT, dir, selOn, vsOn });
   // for modules that draw a question's card their own way (kit-questions.js)
   Object.assign(K, { cardBody, chartRows, chartModel, chartHtml, rowsOf, rowsFor, fkeyOf, allCards, cardOf, byOrder, methodLink, setWords, selWords, EXP_HELP, g6 });
 
@@ -1293,8 +1301,7 @@
   });
   // ---- links and new tabs: one pass after each render, and after content that arrives later --------------------------
   // Tiles and table rows carry their page (data-href) so Ctrl/Cmd-click and middle-click open it in a new tab; a tile's
-  // title is a real link. Every external link opens in a new tab with an icon (CSS) and hidden text; every figure's
-  // export menu gets "Open as SVG". Idempotent, so it may run on any change.
+  // title is a real link. Every external link opens in a new tab with an icon (CSS) and hidden text. Idempotent, so it may run on any change.
   const newTab = href => { window.open(href, '_blank', 'noopener'); };
   function linkPass() {
     const root = document.body;
@@ -1310,10 +1317,6 @@
       const txt = a.textContent.trim();
       if (/↗$/.test(txt)) a.dataset.ext = 'arrow';
       const n = document.createElement('span'); n.className = 'vh'; n.textContent = ' (opens in a new tab)'; a.append(n);
-    });
-    root.querySelectorAll('button.exp-btn').forEach(b => {
-      const at = [...b.attributes].find(x => x.name.startsWith('data-') && x.value === 'svg'); if (!at || b.nextElementSibling?.dataset?.[at.name.slice(5).replace(/-(\w)/g, (m, c) => c.toUpperCase())] === 'opensvg') return;
-      const c = b.cloneNode(false); c.setAttribute(at.name, 'opensvg'); c.title = 'Open the figure as an SVG in a new tab'; c.textContent = 'Open as SVG'; b.after(c);
     });
   }
   K.linkPass = linkPass;
@@ -1459,9 +1462,9 @@
     }, { passive: true }); }
   try { new ResizeObserver(toolbarH).observe(document.querySelector('.toolbar')); } catch (e) { addEventListener('resize', toolbarH); }
   let themed = false;
-  // the figures take their colours when drawn: draw again when the system theme changes under "auto"
+  // the figures take their colors when drawn: draw again when the system theme changes under "auto"
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.dataset.theme) render(); }); } catch (err) { /* old browsers */ }
-  // the footer: licences and privacy, on every page (the Method page has the full text)
+  // the footer: licenses and privacy, on every page (the Method page has the full text)
   const upd = D.built || D.run?.written;      // when `ptmc web` built this site (else when the run was written)
   $('#credit').innerHTML = `${esc(D.site.name)}${upd ? ` · updated <time datetime="${esc(upd)}">${esc(hdate(upd))}</time>` : ''} · built with <a href="${esc(D.kit.url || '#method/made')}">ptmcontext</a> ${esc(D.kit.version)}${D.kit.commit ? ` (${esc(shortCommit(D.kit.commit))})` : ''}` +
     (D.dataset ? ` · ${esc(D.dataset.label || 'dataset')} ${esc(D.dataset.version)}${D.dataset.doi ? `, <a href="https://doi.org/${esc(D.dataset.doi)}">doi:${esc(D.dataset.doi)}</a>` : ''}` : '') +

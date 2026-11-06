@@ -84,7 +84,7 @@ def interpro_domains(path: str | Path, types: Iterable[str] = ('domain', 'repeat
 
 # ---- readers: how a file becomes units -------------------------------------------------------------------------------
 # A file is read by, in order: the column mapping its manifest entry gives (`columns`, any layout, no code), else the
-# first registered reader that recognises its columns. The package registers the unit table (the contract) and the
+# first registered reader that recognizes its columns. The package registers the unit table (the contract) and the
 # staged MobiDB and InterPro tables; a trusted plugin may register more with register_reader when it loads.
 
 @dataclass(frozen=True)
@@ -333,7 +333,7 @@ def residue_values(path: str | Path, columns: dict, snapshot: Snapshot | None = 
 
 def listed_residues(path: str | Path, columns: dict) -> pd.DataFrame:
     """The residues a table lists (accession, position), by a column mapping {accession, position}: a residue is listed
-    once however many rows name it (a change seen in several tumours, say); rows without a position are dropped."""
+    once however many rows name it (a change seen in several tumors, say); rows without a position are dropped."""
     df = pd.read_csv(path, sep=columns.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False)
     for cond in columns.get('include', []):
         df = df[_holds(df, cond)]

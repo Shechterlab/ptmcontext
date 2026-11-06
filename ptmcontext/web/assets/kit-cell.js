@@ -1,9 +1,9 @@
 /* Where in the cell: several maps of the cell as one question (website.cell). Each map is a protein-set question of
    the site whose sets are compartments (and, optionally, another whose sets are the same map's regions); the site file
-   says which compartment of which map is which row of the grids and which part of the kit's drawings it colours.
+   says which compartment of which map is which row of the grids and which part of the kit's drawings it colors.
    The tile: each region's odds ratio, the median of the maps, within abundance deciles where the maps were tested so,
    and the parts where "most of all". The page: the regions against the maps, the cell and the nucleus drawn and
-   coloured by the median of the maps that have each part, the compartments against the maps, and one map at a time;
+   colored by the median of the maps that have each part, the compartments against the maps, and one map at a time;
    a part, a label or a grid row opens its numbers, the marked proteins placed there, "Select these proteins" and a
    TSV. A selection is tested again in the browser, map by map, as the site's rows were (Mantel–Haenszel over the
    strata of each map's background, from selection.json). Words, maps, rows and parts come from the site file; the
@@ -100,7 +100,7 @@
   const inText = row => row.in_text || (/^[A-Z][A-Z-]/.test(rowName(row)) ? rowName(row) : rowName(row).charAt(0).toLowerCase() + rowName(row).slice(1));
   const pc = (k, n) => (n ? (100 * k / n).toFixed(k / n < 0.1 ? 1 : 0) : '–');
 
-  // ---- colour of a comparison: u0-u3 / d0-d3 by size where q <= 0.05 and at least 1.1x, else ns; na where none ---------
+  // ---- color of a comparison: u0-u3 / d0-d3 by size where q <= 0.05 and at least 1.1x, else ns; na where none ---------
   function tone(a) {
     if (!a || a.l2 == null) return 'na';
     if (a.q == null || a.q > PADJ || (Number.isFinite(a.l2) && Math.abs(a.l2) < MINL2)) return 'ns';
@@ -196,7 +196,7 @@
       value: tn === 'na' ? (all.length ? 'not compared' : 'not in these maps') : tn === 'ns' ? (up && down ? 'maps disagree' : 'no difference') : orText({ l2: med }),
       maps: cells.length ? cells.length + (cells.length === 1 ? ' map' : ' maps') : '' };
   }
-  // every part a row colours, with its summary; a part a row colours only when it has no row of its own (also:)
+  // every part a row colors, with its summary; a part a row colors only when it has no row of its own (also:)
   function parts(scoped) {
     if (ONE) return oneParts();
     const P = {}, within = {};
@@ -209,7 +209,7 @@
     return { P, within };
   }
 
-  // ---- one protein (the protein page's card): the same drawings, each part coloured when a map places the protein there ----
+  // ---- one protein (the protein page's card): the same drawings, each part colored when a map places the protein there ----
   // ONE is the protein's row of the site's proteins while its drawings are made; a part no map places it in stays outlined
   let ONE = null;
   const withOne = (p, f) => { ONE = p; try { return f(); } finally { ONE = null; } };
@@ -241,14 +241,14 @@
     TIPS = [];
     return DRAWINGS.map(d => {
       const k = 'p-' + d.drawing;
-      FIGS[k] = { title: () => `${p.gene || p.acc}: the ${d.drawing}`, sub: () => `A part is coloured when a map places ${p.gene || p.acc} there.`,
+      FIGS[k] = { title: () => `${p.gene || p.acc}: the ${d.drawing}`, sub: () => `A part is colored when a map places ${p.gene || p.acc} there.`,
         make: () => withOne(p, () => DRAW[d.drawing](false)), tsv: oneTsv(p), note: () => 'Coloured: a map places the protein in that part. Dashed outline: no map does.' };
       return block(k, `The ${d.drawing}`, 'cell-fig cell-onep');
     }).join('');
   }
   K.cell = { maps: oneMaps, drawings: oneDrawings, name: m => DS(m).name };
 
-  // ---- the page's drawing helpers: a registry of hover texts, the colour classes, labels with leader lines -------------
+  // ---- the page's drawing helpers: a registry of hover texts, the color classes, labels with leader lines -------------
   let TIPS = [];
   const tipAttr = html => ` data-cell-tip="${TIPS.push(html) - 1}"`;
   function draw(scoped) {
@@ -292,7 +292,7 @@
     return { P, own, fill, line, tip, labels, has: k => !!own(k) };
   }
 
-  // ---- geometry: smooth closed outlines, arcs, a mitochondrion, chromosome territories and their fibres --------------
+  // ---- geometry: smooth closed outlines, arcs, a mitochondrion, chromosome territories and their fibers --------------
   function smooth(pts) {
     const n = pts.length, P = i => pts[(i + n) % n], f = v => v.toFixed(1);
     let d = 'M' + f(P(0)[0]) + ',' + f(P(0)[1]);
@@ -341,7 +341,7 @@
     });
   }
   const territories = (seeds, cx, cy, rx, ry, gap) => territoryPolys(seeds, cx, cy, rx, ry, gap).map(pg => poly(pg) + 'Z');
-  // chromatin fibre in a territory: a seeded looping walk that turns back at the edge, as a smooth curve
+  // chromatin fiber in a territory: a seeded looping walk that turns back at the edge, as a smooth curve
   function fibre(pg, start, seed, steps, inset) {
     let st = seed * 2654435761 >>> 0;
     const rnd = () => { st = (st + 0x6D2B79F5) >>> 0; let t = Math.imul(st ^ (st >>> 15), 1 | st); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -370,8 +370,8 @@
   }
   const CT = [[330, 150], [300, 265], [360, 360], [450, 95], [465, 225], [480, 350], [600, 95], [615, 335], [705, 170], [715, 285]];
 
-  // ---- the drawings: a cell, its nucleus drawn whole; the nucleus in its parts. Each part takes the colour of the
-  // median of the maps' comparisons, grey where they disagree or show no clear difference, outlined where no map
+  // ---- the drawings: a cell, its nucleus drawn whole; the nucleus in its parts. Each part takes the color of the
+  // median of the maps' comparisons, gray where they disagree or show no clear difference, outlined where no map
   // measures it; a measured part is named beside the drawing and opens its numbers --------------------------------------
   const DRAW = {
     cell(scoped) {
@@ -427,7 +427,7 @@
         { k: 'ribosomes', side: 'r', x: 635, y: 112 }, { k: 'pbodies', side: 'r', x: 730, y: 170 }, { k: 'golgi', side: 'r', x: 666, y: 206 }, { k: 'er', side: 'r', x: 609, y: 274 },
         { k: 'endolyso', side: 'r', x: 724, y: 296 }, { k: 'centrosome', side: 'r', x: ox + 6, y: oy + 8 }, { k: 'microtubules', side: 'r', x: +mtAt[0].toFixed(1), y: +mtAt[1].toFixed(1) },
       ], Wd, H, 200);
-      return { g, W: Wd, H, aria: `The cell, each compartment coloured by the odds ratio of ${who(scoped)}` };
+      return { g, W: Wd, H, aria: `The cell, each compartment colored by the odds ratio of ${who(scoped)}` };
     },
     nucleus(scoped) {
       const Dr = draw(scoped), Wd = 1000, H = 470, cx = 500, cy = 235, rx = 262, ry = 190;
@@ -435,7 +435,7 @@
       let g = `<g${Dr.tip('nucleoplasm')}><path class="${Dr.fill('nucleoplasm')}" fill-opacity=".55" d="${body}"/></g>`;
       const ct = territoryPolys(CT, cx, cy, rx - 12, ry - 12, 13);
       g += `<g${Dr.tip('chromatin')}>` + ct.map(pg => `<path class="${Dr.fill('chromatin')} cd-o" d="${poly(pg)}Z"/>`).join('') +
-        '<g class="cd-fibre" fill="none" stroke="#1c1917" stroke-opacity=".14" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">' +
+        '<g class="cd-fiber" fill="none" stroke="#1c1917" stroke-opacity=".14" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">' +
         ct.map((pg, i) => `<path d="${fibre(pg, CT[i], i + 1, 150, 5)}"/>`).join('') + '</g></g>';
       g += `<g${Dr.tip('periphery')}><path class="${Dr.line('periphery')}" fill="none" stroke-width="9" d="${smooth(blob(cx, cy, rx * 0.965, ry * 0.955, shape))}"/></g>`;
       const nucleolus = smooth(blob(592, 214, 56, 50, [1, 1.06, 0.95, 1.04, 0.97, 1.05, 0.98, 1.03, 0.96, 1.02]));
@@ -461,7 +461,7 @@
         { k: 'pml', side: 'l', x: 390, y: 122 }, { k: 'bodies', side: 'l', x: 410, y: 166 }, { k: 'cajal', side: 'l', x: 525, y: 95 }, { k: 'chromatin', side: 'l', x: 322, y: 160 }, { k: 'speckles', side: 'l', x: 379, y: 234 }, { k: 'nucleoplasm', side: 'l', x: 330, y: 312 },
         { k: 'nucleolus', side: 'r', x: 620, y: 190 }, { k: 'envelope', side: 'r', x: 762, y: 240 }, { k: 'perinucleolar', side: 'r', x: 606, y: 262 }, { k: 'paraspeckles', side: 'r', x: 653, y: 287 }, { k: 'periphery', side: 'r', x: 729, y: 312 }, { k: 'pores', side: 'r', x: 675, y: 376 },
       ], Wd, H, 200);
-      return { g, W: Wd, H, aria: `The nucleus, each part coloured by the odds ratio of ${who(scoped)}` };
+      return { g, W: Wd, H, aria: `The nucleus, each part colored by the odds ratio of ${who(scoped)}` };
     },
   };
 
@@ -573,7 +573,7 @@
       note: note || `${keyWords()} ${testWords()}`, extra: { question: ID } });
   }
   const keyWords = () => `Red: ${who(scopedNow())} are more likely to be found there than ${alike}. Slate: less likely, deeper for larger odds ratios. Grey: no clear difference, or the maps disagree. Dashed outline: no map measures it.`;
-  const testWords = () => (allStrat ? `In each map, ${who(scopedNow())} against ${alike}: Mantel–Haenszel odds ratio across the abundance strata, continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg within the map, coloured at q ≤ ${PADJ} and 1.1× or more. A part of a drawing takes the median odds ratio of the maps that place proteins there, coloured when at least half of them find a difference that way.`
+  const testWords = () => (allStrat ? `In each map, ${who(scopedNow())} against ${alike}: Mantel–Haenszel odds ratio across the abundance strata, continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg within the map, colored at q ≤ ${PADJ} and 1.1× or more. A part of a drawing takes the median odds ratio of the maps that place proteins there, colored when at least half of them find a difference that way.`
     : `In each map, ${who(scopedNow())} against the other proteins the map places (fold enrichment, one-sided hypergeometric test, Benjamini–Hochberg within the map). A part takes the median of the maps that have it.`);
   const FIGS = {
     regions: { title: () => `${C.title || 'Where in the cell'}: regions against maps`, sub: () => `The odds ratio of ${who(scopedNow())} against ${alike}, for each region in each map.`, make: () => gridSvg(LAYERS.region, scopedNow()), tsv: () => gridTsv(LAYERS.region, scopedNow()) },
@@ -583,7 +583,7 @@
   };
   DRAWINGS.forEach(d => { FIGS[d.drawing] = { title: () => d.title || C.title || 'Where in the cell', sub: () => `Odds ratio of ${who(scopedNow())} against ${alike}, as the median of the maps that have each part.`, make: () => DRAW[d.drawing](scopedNow()), tsv: () => gridTsv(LAYERS.part, scopedNow()) }; });
   // ---- for another page's card: the drawings and the parts' values, without the cell page ----------------------------------
-  // K.cell.list() the drawings [{ drawing, title, parts, crop }]; K.cell.parts(scoped?) every part a row colours, with its value
+  // K.cell.list() the drawings [{ drawing, title, parts, crop }]; K.cell.parts(scoped?) every part a row colors, with its value
   // [{ part, drawings, row, id, tone, direction, value, l2, or, maps, cells }] ('more', 'less', 'ns' or 'na'; the median of the maps
   // that have it, and each map's own); K.cell.draw(el, drawing, { scoped, crop, labels, onPart }) draws a drawing into el as the page does
   // (crop: true for the kit's phone crop of it, or [x, y, w, h]; labels: false leaves out the leader-line labels; onPart(part, info)
@@ -750,7 +750,7 @@
   K.methods.push({ id: ID, title: C.title || 'Where in the cell', html: () => `<section id="m-q-${esc(ID)}" class="qm"><h3>${esc(C.title || 'Where in the cell')}</h3>` +
     (C.question ? `<p class="qm-q">${esc(C.question)}</p>` : '') +
     `<p>One question drawn from ${MAPS.length} maps of the cell, each a protein-set question: ${MAPS.map(m => `<a href="${esc(K.link('method', 'q-' + m.analysis))}">${esc(DS(m.analysis).name)}</a>`).join(', ')}${REGMAPS.length ? `, and the regions of the cell in ${REGMAPS.map(m => `<a href="${esc(K.link('method', 'q-' + m.regions))}">${esc(DS(m.regions).name)}</a>`).join(', ')}` : ''}. ${esc(testWords())}</p>` +
-    `<p>The site file (website.cell) maps each grid row to a compartment of each map and to the part of the drawings it colours. A selection is tested again in the browser, map by map, the same way${allStrat ? ', over the abundance strata of each map’s proteins' : ''}. It is not tested against a map it was made with, nor when it names its proteins.</p>` +
+    `<p>The site file (website.cell) maps each grid row to a compartment of each map and to the part of the drawings it colors. A selection is tested again in the browser, map by map, the same way${allStrat ? ', over the abundance strata of each map’s proteins' : ''}. It is not tested against a map it was made with, nor when it names its proteins.</p>` +
     `<p class="qm-links"><a href="${esc(K.link('overview', ID))}">Its figure</a></p></section>` });
   const open = (id, at) => { if (UI.row !== id) UI.all = false; UI.row = id; UI.at = at; K.render(); requestAnimationFrame(() => document.getElementById('cell-detail')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); };
   const atOf = el => (el.closest('.cell-block')?.id || '').replace(/^cell-/, '');

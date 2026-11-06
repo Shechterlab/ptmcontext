@@ -1,7 +1,7 @@
 """Which factors tell a marked residue from the other candidate residues of its protein, taken together?
 
 The residue questions test one class at a time. This is the several-factors version of the within-protein test: a
-conditional logistic regression (ptmstats.conditional_logit; the multi-covariate generalisation of Mantel-Haenszel,
+conditional logistic regression (ptmstats.conditional_logit; the multi-covariate generalization of Mantel-Haenszel,
 Breslow & Day 1980), one stratum per protein, the marked residues the cases and the other candidate residues the
 controls. Each factor's adjusted odds ratio is its association with a mark holding the other factors fixed; the same
 factor alone, in a model of its own, is its crude odds ratio. A site file lists the factors (covariates):

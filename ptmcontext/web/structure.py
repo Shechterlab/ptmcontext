@@ -7,7 +7,7 @@ show"), named in `website.protein.structure` (CONTRACTS.md, "Structure evidence"
   contacts   a site_evidence table: the PDB entries (ids) in which a mark touches a partner of a kind
   bound      a bound_windows table: the RNA or DNA a mark touches in an entry, its chain, nucleotides and distances
   predicted  a site_evidence table: predicted complexes with a mark at the interface (partner, model in ids, score)
-  residues   a residue_evidence table: runs of residues, for the viewer's colourings, each a list of classes, each class
+  residues   a residue_evidence table: runs of residues, for the viewer's colorings, each a list of classes, each class
              the rows its conditions (on the format's columns) keep
 
 The kind codes and words are the site file's; this module knows none of them. Each protein's part goes into its
@@ -39,7 +39,7 @@ def _table(site: dict, part: str) -> dict | None:
 def roles(site: dict) -> dict[str, str]:
     """The manifest inputs the viewer reads, with what for (the Method page's Data table)."""
     words = {'contacts': 'the 3D viewer: PDB entries with a contact at a mark', 'bound': 'the 3D viewer: the RNA and DNA bound at a mark',
-             'predicted': 'the 3D viewer: predicted complexes at a mark', 'residues': 'the 3D viewer: colours along the chain'}
+             'predicted': 'the 3D viewer: predicted complexes at a mark', 'residues': 'the 3D viewer: colors along the chain'}
     out: dict[str, list] = {}
     for part in PARTS:
         tb = _table(site, part)
@@ -64,15 +64,15 @@ def problems(site: dict) -> list[str]:
         for k in c['classes']:
             bad = [x for x in k.get('all', []) if x not in ids or x == k['id']]
             if bad:
-                out.append(f"website.protein.structure.residues, colouring {c['id']!r}, class {k['id']!r}: all names {bad}, not other classes of it")
+                out.append(f"website.protein.structure.residues, coloring {c['id']!r}, class {k['id']!r}: all names {bad}, not other classes of it")
             if not k.get('where') and not k.get('all'):
-                out.append(f"website.protein.structure.residues, colouring {c['id']!r}, class {k['id']!r}: give where (the rows it keeps) or all")
+                out.append(f"website.protein.structure.residues, coloring {c['id']!r}, class {k['id']!r}: give where (the rows it keeps) or all")
     return out
 
 
 def site_data(site: dict, profile) -> dict | None:
     """The viewer's words and choices for the page: the mark's chemical components in PDB entries (from the profile's
-    states), the colourings and their classes, and which manifest inputs each part comes from."""
+    states), the colorings and their classes, and which manifest inputs each part comes from."""
     cfg = config(site)
     states = [s for s in profile.data.get('states', []) if s.get('pdb_component')]
     out = {'components': [{'code': s['pdb_component'], 'state': s['code'], 'label': s.get('label', '')} for s in states]}

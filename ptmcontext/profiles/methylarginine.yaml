@@ -34,7 +34,7 @@ enzymes:
   references:
     - "Bedford & Clarke, Mol Cell 33:1 (2009), for what each PRMT type makes"
 
-motifs:            # read in the 15-residue window centred on the arginine (window_flank 7)
+motifs:            # read in the 15-residue window centered on the arginine (window_flank 7)
   window_flank: 7
   families:        # labels and definitions as the Methylarginine Site Explorer shows them
     - {name: CARM1_hydrophobic_proline, label: "Pro ±5 + Φ ±3", help: "Pro within ±5 and a hydrophobic residue (AILMFWVY) within ±3 (CARM1-like)", all: [{within: [-5, 5], in: P}, {within: [-3, 3], in: AILMFWVY}]}

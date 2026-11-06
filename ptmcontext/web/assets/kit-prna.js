@@ -1,6 +1,6 @@
 /* RNA and DNA interactions: a card on the protein page (a fold, p-na) with what the site knows of the RNA and DNA a protein
    meets, one tab per kind. In structures: the marks in contact (4 Å, from the 3D viewer's `bound` rows), those in contact
-   through a neighbouring residue (`near`), the PDB interfaces (the viewer's `contacts`), the bound sequences around the
+   through a neighboring residue (`near`), the PDB interfaces (the viewer's `contacts`), the bound sequences around the
    contacted units and the runs of residues bound (`regions`). In living cells: residues crosslinked (single residues, never a
    peptide or its extent) and, as per-mark flags only, the marks inside an RNA-bound peptide or fragment. In vitro and in
    cells: JASPAR profiles, RNA Bind-n-Seq and eCLIP experiments. Everything is read from website.protein.nucleic and the
@@ -57,7 +57,7 @@
   // ---- words ----------------------------------------------------------------------------------------------------------
   function evidenceText(m) {
     const parts = [], contact = m.direct.size, via = m.near.size;
-    if (contact || via) parts.push((contact ? `${plural(contact, 'site')} in structural contact (side chain within 4 Å)` : '') + (via ? `${contact ? ', ' + int(via) + ' more' : plural(via, 'site')} ${NC.near?.label || 'in contact through a neighbouring residue'}` : '') + ' in structures');
+    if (contact || via) parts.push((contact ? `${plural(contact, 'site')} in structural contact (side chain within 4 Å)` : '') + (via ? `${contact ? ', ' + int(via) + ' more' : plural(via, 'site')} ${NC.near?.label || 'in contact through a neighboring residue'}` : '') + ' in structures');
     if (m.xl.length) parts.push(`${plural(m.xl.length, 'residue')} crosslinked in cells${m.xlSites.length ? ` (${plural(m.xlSites.length, 'site')} within ${NC.crosslinks?.span ?? 5} residues of one)` : ''}`);
     if (m.reg.length) parts.push(`${plural(m.reg.length, 'bound region')} in structures`);
     if (m.motifs.length) parts.push(plural(m.motifs.length, 'DNA-binding profile'));
@@ -96,7 +96,7 @@
     };
     return `<section class="na-sec"><h4>${esc(cap(W.marks))} in contact with ${esc(word(k))} in structures</h4>` +
       `<ul class="sc-na">${more(k + 'd', sites, 8, dirLi)}${more(k + 'v', via, 6, viaLi)}</ul>` +
-      (onlyIf.length ? `<p class="small">At an interface with ${esc(word(k))} in a PDB entry, but not within 4 Å in the entries analysed: ${onlyIf.map(q => `${siteLink(p, rec, q)}`).join(', ')}.</p>` : '') +
+      (onlyIf.length ? `<p class="small">At an interface with ${esc(word(k))} in a PDB entry, but not within 4 Å in the entries analyzed: ${onlyIf.map(q => `${siteLink(p, rec, q)}`).join(', ')}.</p>` : '') +
       '<p class="note small">Bound sequences are the chain around the contacted unit, contacted units in brackets; side chains within 4 Å of the nucleic acid in PDB entries. Open an entry to see it in the 3D viewer.</p></section>';
   }
   function regionsHtml(p, rec, k, m) {

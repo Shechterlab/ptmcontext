@@ -43,7 +43,7 @@
   function builtin() {
     const st = K.protState?.(); if (!st || !st.rec || !st.p) return;
     const { p, rec, tb, af, pdb } = st, len = p.len || (rec.seq || '').length || 1;
-    // interaction evidence, site by site: each site coloured by its status
+    // interaction evidence, site by site: each site colored by its status
     const EV = PRO.card?.evidence;
     if (EV?.status && SPECS[EV.status] && K.map?.attrColour) {
       set('p-cc', track(len, [{ label: 'Sites', items: rec.marks.map(m => ({ a: m[0], dot: true, col: K.map.attrColour(EV.status, K.cols.markAttr(m, EV.status)), tip: `${st.siteName?.(m[0]) || m[0]}: ${K.sel?.valueLabel ? K.sel.valueLabel(EV.status, K.cols.markAttr(m, EV.status)) : ''}` })) }]));
@@ -81,7 +81,7 @@
     set1('p-ix', n ? int(n) : '');
   }
 
-  // ---- the headings: the folds of "More about" in labelled groups --------------------------------------------------------
+  // ---- the headings: the folds of "More about" in labeled groups --------------------------------------------------------
   // html is the folds' markup in the page's order; each fold goes under the heading that lists it, the rest follow the last heading
   K.pfoldsLayout = html => {
     const HS = PRO.headings || [];

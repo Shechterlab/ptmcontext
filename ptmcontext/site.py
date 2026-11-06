@@ -309,7 +309,7 @@ def presence_only_problems(site: dict) -> list[str]:
 
 def website_problems(site: dict) -> list[str]:
     """What the website block names that the site file does not have: a tile, filter or example naming an analysis
-    or a mark attribute that is not defined, or an attribute's colours for values it does not list. The schema checks
+    or a mark attribute that is not defined, or an attribute's colors for values it does not list. The schema checks
     each block's shape; this checks that the blocks agree with each other (ptmc check)."""
     ids = {x['id'] for x in site.get('analyses', [])}
     attrs = (site.get('marks') or {}).get('attributes') or {}
@@ -430,7 +430,7 @@ def website_problems(site: dict) -> list[str]:
             out.append(f"website.examples: {ex!r} names no search key of this site (a question, an attribute or a website.search key)")
     for name, a in attrs.items():
         if a.get('values') and a.get('colours'):
-            out += [f"marks.attributes.{name}: a colour for {v!r}, which is not among its values" for v in a['colours'] if v not in a['values']]
+            out += [f"marks.attributes.{name}: a color for {v!r}, which is not among its values" for v in a['colours'] if v not in a['values']]
         if a.get('records') and a.get('kind') != 'list':
             out.append(f"marks.attributes.{name}: records are for a list attribute")
     # headed groups of a question's classes: each class in one group, and (where the classes are known) one of its own
@@ -518,7 +518,7 @@ def table_view_problems(site: dict) -> list[str]:
 
 
 def cell_drawings() -> dict:
-    """The kit's drawings of a cell and the parts each has (config/cell_drawings.json), which website.cell rows colour."""
+    """The kit's drawings of a cell and the parts each has (config/cell_drawings.json), which website.cell rows color."""
     return json.loads((Path(__file__).parent / 'config' / 'cell_drawings.json').read_text())['drawings']
 
 
@@ -1184,7 +1184,7 @@ def layer_words(layer: L.Layer) -> dict:
 
 def drawn_tracks(layers: dict, ctx: L.Context, accs: set, values: dict | None = None) -> tuple[pd.DataFrame, list[dict]]:
     """The regions the run's layers draw on the protein pages (Layer.tracks), as one unit table (units.tsv), and what
-    each is (tracks.json: its title, style, help, the roles it comes from, and the analysis whose classes colour it, or
+    each is (tracks.json: its title, style, help, the roles it comes from, and the analysis whose classes color it, or
     the classes its own units carry). Layers drawing one kind from the same roles share a track (the one whose units
     carry a class is kept); the same kind from other roles is a track of its own, named kind.role. A track that carries
     numbers (Track.values) says so (`values`: the table they go to and its columns), and values, if given, receives its

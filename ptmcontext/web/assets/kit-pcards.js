@@ -1,5 +1,5 @@
 /* The protein page's context cards (website.protein.cards, CONTRACTS.md "Protein page cards"): Location and condensates,
-   Cancer cell lines and tumours, enzyme inhibitors and the like, Experiments, Clustering, Other PTMs; and the live parts of
+   Cancer cell lines and tumors, enzyme inhibitors and the like, Experiments, Clustering, Other PTMs; and the live parts of
    a protein-set card (website.protein.sets[].live: UniProt's diseases and Open Targets' scores, asked by accession).
    Each card is on when the site file names it and reads tables of website.tables in the formats of CONTRACTS.md; it knows
    no mark, source or organism by name, and a protein without rows in a card's tables says so. The folds are made through
@@ -92,7 +92,7 @@
   function mapsHtml(p) {
     if (!K.cell || !K.sel.data()) return '';
     const ms = K.cell.maps(p); if (!ms) return '';
-    return `<h4 class="sub-h">Cell maps</h4><p class="sub">A part of the drawing is coloured when a map places ${esc(gene(p))} there.</p>` +
+    return `<h4 class="sub-h">Cell maps</h4><p class="sub">A part of the drawing is colored when a map places ${esc(gene(p))} there.</p>` +
       `<div class="tbl-wrap"><table class="pc-maps"><tbody>${ms.map(m => `<tr><th scope="row">${esc(m.name)}<br><span class="muted small">${esc([m.method, m.cells].filter(Boolean).join(', '))}</span></th>` +
         `<td>${m.sets.length ? esc(m.sets.join(' · ')) : m.placed ? '<span class="muted">placed, in none of its compartments</span>' : '<span class="muted">not placed by this map</span>'}</td></tr>`).join('')}</tbody></table></div>` + K.cell.drawings(p);
   }
@@ -143,7 +143,7 @@
     return { html, sum: bits.join(' · '), wait: !!(cfg.maps && !K.sel.data()), pic: K.pfolds && (nLoc || nCond) ? K.pfolds.bigN([[int(nCond), nCond === 1 ? 'condensate' : 'condensates'], [int(nLoc), nLoc === 1 ? 'location' : 'locations']]) : '' };
   }
 
-  // ---- Cancer cell lines and tumours ----------------------------------------------------------------------------------
+  // ---- Cancer cell lines and tumors ----------------------------------------------------------------------------------
   function histSvg(h, g, cfg) {
     const bins = g.map(Number), n = bins.length, W0 = 460, H0 = 150, ml = 8, mr = 8, mt = 8, mb = 38, mx = Math.max(1, ...bins), lo = h.from, hi = h.to, bw = (W0 - ml - mr) / n;
     const x = v => ml + (v - lo) / (hi - lo) * (W0 - ml - mr), step = (hi - lo) / n;
@@ -311,7 +311,7 @@
 
   // ---- the folds -----------------------------------------------------------------------------------------------------
   const CARDS = [
-    ['location', 'p-cond', 'Location and condensates', locationBuild], ['dependency', 'p-depmap', 'Cancer cell lines and tumours', dependencyBuild],
+    ['location', 'p-cond', 'Location and condensates', locationBuild], ['dependency', 'p-depmap', 'Cancer cell lines and tumors', dependencyBuild],
     ['perturbations', 'p-pert', `${W.writer ? cap(W.writer) : 'Enzyme'} inhibitors, knockouts and knockdowns`, perturbationsBuild], ['experiments', 'p-exp', 'Experiments', experimentsBuild],
     ['clustering', 'p-cluster', 'Clustering', clusteringBuild], ['other_ptms', 'p-ptm', 'Other PTMs', ptmsBuild],
   ].filter(([k]) => PC[k]);

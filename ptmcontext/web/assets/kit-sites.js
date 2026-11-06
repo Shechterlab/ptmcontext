@@ -1,5 +1,5 @@
 /* Sites: every mark of the selection in one table, as the Methylarginine Site Explorer's Sites page. Fixed columns (the
-   protein, the site as papers number it with its tags, the coloured attribute, the 15 residues around it with its
+   protein, the site as papers number it with its tags, the colored attribute, the 15 residues around it with its
    motifs) and the site file's optional ones in a Columns menu (website.sites.table, else the protein page's
    website.protein.table.columns): attributes, questions' classes, and the site card's blocks read from the tables of
    website.tables (interaction evidence with its chips, whose click opens what the tables say; RNA and DNA contacts with
@@ -44,7 +44,7 @@
   // the nearest other mark of the protein
   const nearest = m => { let b = null; K.tables.byProt()[m[0]].forEach(i => { const q = SD().marks[i][1]; if (q !== m[1] && (b == null || Math.abs(q - m[1]) < b)) b = Math.abs(q - m[1]); }); return b; };
 
-  // ---- the window: the site boxed, the mark's residues bold, residues the site file colours, '·' past the ends ------
+  // ---- the window: the site boxed, the mark's residues bold, residues the site file colors, '·' past the ends ------
   const RES = new Set(D.residues || []), WCOL = SV.window?.colours || {};
   function winHtml(m) {
     const w = m[4] || '', c = Math.floor(w.length / 2);
@@ -78,7 +78,7 @@
       cell: m => `<span class="mono">${winHtml(m)}</span>${tagAids().map(a => { const t = flagTags(a, m); return t ? `<div class="tags win-mot">${t}</div>` : ''; }).join('')}` },
   ];
   // optional columns: the site file's (website.sites.table), else the protein page's sites table's, else the attributes
-  // it colours or links and its first question with classes
+  // it colors or links and its first question with classes
   const PROT_ONLY = new Set(['plddt']);
   const BLOCKS = new Set(['status', 'tags', 'sequences', 'around', 'calls', 'states', 'changes', 'nearest_domain', 'nearest']);
   function optCols() {
@@ -208,7 +208,7 @@
     return out;
   }
 
-  // ---- quick filters: the attributes the site colours by, with their counts in the selection ----------------------
+  // ---- quick filters: the attributes the site colors by, with their counts in the selection ----------------------
   function quick() {
     const c = K.sel.compute(), idx = c.active ? c.marks : SD().marks.map((_, i) => i), AT = SD().attribute_names || Object.keys(SD().attributes);
     return Object.keys(SPECS).filter(n => SPECS[n].colour && SPECS[n].kind === 'category').map(n => {

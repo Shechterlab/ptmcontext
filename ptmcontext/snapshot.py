@@ -65,7 +65,7 @@ def clean(seq: str) -> str:
 
 
 def window(seq: str, position: int, flank: int, pad: str = '_') -> str:
-    """The 2*flank+1 residues centred on a 1-based position, padded at the ends (common.sequence_window)."""
+    """The 2*flank+1 residues centered on a 1-based position, padded at the ends (common.sequence_window)."""
     seq = clean(seq)
     if not seq or position < 1:
         return ''

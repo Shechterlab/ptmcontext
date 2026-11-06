@@ -41,7 +41,7 @@
   const byProt = () => { if (!BYP && SD()) { BYP = P.map(() => []); SD().marks.forEach((m, i) => BYP[m[0]].push(i)); } return BYP || P.map(() => []); };
   const selSet = () => { const c = K.sel?.compute(); return c?.active && c.marks ? new Set(c.marks) : null; };
 
-  // ---- a protein's marks as ticks on a line, those of the selection tall and coloured, the others short and grey -----
+  // ---- a protein's marks as ticks on a line, those of the selection tall and colored, the others short and gray -----
   function siteMap(pi, sel, w = 150) {
     const p = P[pi], len = Math.max(p.len || 1, 1), H = 20, x = pos => (1 + (pos / len) * (w - 2)).toFixed(1);
     const idx = byProt()[pi], off = [], on = [];

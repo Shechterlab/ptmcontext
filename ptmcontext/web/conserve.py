@@ -1,6 +1,6 @@
 """What the protein page's conservation card and the selection's logo (assets/kit-conserve.js) read from the site file.
 
-The orthologues come live from Ensembl Compara (REST), for the Ensembl gene that UniProt's cross-references name for
+The orthologs come live from Ensembl Compara (REST), for the Ensembl gene that UniProt's cross-references name for
 the protein; the logo is drawn from the sequence windows the motif finder already holds (website.search.patterns). The
 page reads `website.protein.conservation` as it stands (CONTRACTS.md, "Conservation across species"); this module
 checks it (ptmc check). It knows no organism, species or residue: the species list, the Ensembl address and the

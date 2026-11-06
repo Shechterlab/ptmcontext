@@ -122,7 +122,7 @@
     }
   }
 
-  // ---- numbers and colours -----------------------------------------------------------------------------------------
+  // ---- numbers and colors -----------------------------------------------------------------------------------------
   const pcS = (k, n) => (n ? (100 * k / n < 10 && k ? (100 * k / n).toFixed(1) : (100 * k / n).toFixed(0)) + '%' : '–');
   const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const pal = ex => (ex ? { ink: K.PAL.ink, muted: K.PAL.muted, line: K.PAL.line, more: K.PAL.more, less: K.PAL.less, same: K.PAL.same, bg: K.PAL.bg, soft: '#eef3f5', accent: '#c2410c' }
@@ -207,7 +207,7 @@
   function forestNote(rows, m) {
     if (!selOn()) return `<p class="muted small">${m === 'mantel_haenszel' ? 'Within each protein: a Mantel–Haenszel odds ratio with its 95% CI (Robins–Breslow–Greenland), each protein a stratum' : 'Pooled: Fisher’s exact test, the Haldane–Anscombe odds ratio'}; each ${esc(W.mark)} against the other ${esc(W.residues)} the evidence could reach (the release’s background for each test). q: Benjamini–Hochberg within the question. Click a row to select its ${esc(W.marks)}.</p>`;
     if (!testable()) return `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. The rows are the whole dataset’s.</p>`;
-    return `<p class="muted small">Your selection, tested again in the browser (exploratory; not adjusted for the other selections tried); the grey tick is the whole dataset’s odds ratio. ${rows.some(x => x.mine?.descriptive) ? 'A question the selection was made with is shown, not tested.' : ''}</p>`;
+    return `<p class="muted small">Your selection, tested again in the browser (exploratory; not adjusted for the other selections tried); the gray tick is the whole dataset’s odds ratio. ${rows.some(x => x.mine?.descriptive) ? 'A question the selection was made with is shown, not tested.' : ''}</p>`;
   }
   function forestTsv(b, m) {
     const rows = rowsFor(b.rows, m);
@@ -317,7 +317,7 @@
     const totals = `<tr class="ix-tot"><td class="muted small">with each</td>${c.vals.map(v => `<td><button type="button" class="ix-cnt" data-f="t:${esc(b.attribute)}" data-v="${esc(v)}" title="Select the ${int(c.tot[v])} ${esc(marksWord(c.tot[v]))} with: ${esc(vlabel(b.attribute, v))}">${int(c.tot[v])}</button></td>`).join('')}</tr>`;
     const rows = shownL.map(x => `<tr><td class="ix-barc"><button type="button" class="ix-cnt" data-ix-q="${esc(x.vs.map(v => `${b.attribute}:${v}`).join(' '))}" title="Select the ${esc(W.marks)} with all of these"><span class="ix-hbar" style="width:${(100 * x.n / max).toFixed(1)}%"></span>${int(x.n)}</button></td>${c.vals.map(v => `<td class="ix-dotc">${x.vs.includes(v) ? '<i class="ix-on"></i>' : '<i class="ix-off"></i>'}</td>`).join('')}</tr>`).join('');
     return `<div class="tbl-card ix-upset"><table class="tbl"><thead>${head}</thead><tbody>${totals}${rows}</tbody></table></div>` +
-      `<p class="small">${int(c.none)} ${esc(marksWord(c.none))} (${pcS(c.none, c.total)}) have none of these. Most are in proteins never crystallised, modelled with a partner or crosslinked, and absence of evidence is not evidence of no contact.` +
+      `<p class="small">${int(c.none)} ${esc(marksWord(c.none))} (${pcS(c.none, c.total)}) have none of these. Most are in proteins never crystallized, modeled with a partner or crosslinked, and absence of evidence is not evidence of no contact.` +
       (c.list.length > (b.top || 15) ? ` <button type="button" class="linkish" data-ix-all="${esc(bkey(pg, sec, bi))}">${s.all ? 'Show the commonest' : `Show all ${int(c.list.length)} combinations`}</button>` : '') + '</p>';
   }
   const combinationsTsv = b => { const c = combos(b); return [...c.vals, W.marks.replace(/\W+/g, '_')].join('\t') + '\n' + c.list.map(x => [...c.vals.map(v => (x.vs.includes(v) ? 1 : 0)), x.n].join('\t')).join('\n') + '\n' + [...c.vals.map(() => 0), c.none].join('\t') + '\n'; };

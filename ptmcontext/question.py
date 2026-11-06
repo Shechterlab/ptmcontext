@@ -21,7 +21,7 @@ Which candidates a test counts, the measured background (each may be one role or
   proteins_with: <role>     only the proteins with a unit of the role ({role, on_candidates: true}: a unit that
                             holds a candidate residue)
   covered_by: <role>        only the residues inside a unit of the role: the residues an experiment measured or a
-                            structure modelled
+                            structure modeled
   outside_of: <role>        only the residues outside every unit of the role
   with_value: <role>        only the residues the per-residue table has a value for
   unless: <motif rule>      not the residues whose window matches the rule (the profile's motif syntax: all, any)

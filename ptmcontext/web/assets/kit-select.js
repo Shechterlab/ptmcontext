@@ -232,7 +232,7 @@
     if (!error && (toks.length < 2 || toks.length > 10)) error = 'Use 2 to 10 residues (each [ ] group counts as one).';
     return (patCache[s0] = error ? { error } : { toks, text: s0 });
   }
-  // does a window (the mark at its centre) hold the pattern: covering the mark (at) or anywhere in it (near)
+  // does a window (the mark at its center) hold the pattern: covering the mark (at) or anywhere in it (near)
   function patternHit(win, pat, where) {
     if (!win) return false;
     const c = (win.length - 1) / 2, ok = st => st >= 0 && pat.toks.every((tk, i) => { const ch = win[st + i]; return ch && ch !== '-' && ch !== '_' && (tk === null || tk.includes(ch)); });

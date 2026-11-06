@@ -202,7 +202,7 @@
     const fold = x.rows[0]?.measure === 'fold', sel = selOn() ? `Selection: ${K.selText ? K.selText() : 'your selection'}.` : 'Whole dataset.';
     return K.figureFrame({ title: c.title, sub: `${x.answer ? x.answer + ' ' : ''}${sel}`.trim(), W: 720, legend: [[P.more, P.more, 'more often (q ≤ 0.05)'], [P.less, P.less, 'less often (q ≤ 0.05)'], [P.bg, P.same, 'no clear difference or not tested']],
       body: parts.join(''), bodyH: top + rows.length * RH + 8, extra: { card: c.key, selection: selOn() },
-      note: `${fold ? 'Fold enrichment, a one-sided test of over-representation (a value below 1× is not tested). ' : 'Odds ratio against the other ' + W.residues + ' of the same proteins. '}Thin bar: 95% interval. Grey number: n.${x.cellRows?.length ? ' The cell rows summarise the cell maps (median, adjusted for abundance); they are not a test.' : ''} Each card has its own axis.` });
+      note: `${fold ? 'Fold enrichment, a one-sided test of over-representation (a value below 1× is not tested). ' : 'Odds ratio against the other ' + W.residues + ' of the same proteins. '}Thin bar: 95% interval. Gray number: n.${x.cellRows?.length ? ' The cell rows summarize the cell maps (median, adjusted for abundance); they are not a test.' : ''} Each card has its own axis.` });
   }
   K.clicks.push(['[data-frexp]', el => { const key = el.closest('[data-card]')?.dataset.card, x = LAST.cards.find(y => y.c.key === key); if (!x) return;
     K.exportFigure(el.dataset.frexp, () => figureOf(x), `${D.site.id}_${key}_card${selOn() ? '_selection' : ''}_${(VERSION || 'v').replace(/[^\w.]+/g, '')}`, el, () => cardTsv(key)); }]);
@@ -243,7 +243,7 @@
     const html = cards.filter(x => x.c.cell || x.rows.length).map(x => {
       const c = x.c, all = c.questions.filter(q => A[q]), fold = x.rows[0]?.measure === 'fold', qid = x.aid || c.home?.analysis || D.cell?.id || '', href = K.link('overview', qid);
       const rows = x.rows.map(r => rowHtml(r, x.ax, {}, K.sel.state.f[r.key]?.includes(r.cat))).join('');
-      const cell = c.cell ? `<div class="fr-cell" id="fr-cell-draw" aria-label="The cell, coloured by odds ratio"></div>` + cellLegend() +
+      const cell = c.cell ? `<div class="fr-cell" id="fr-cell-draw" aria-label="The cell, colored by odds ratio"></div>` + cellLegend() +
         (x.cellRows || []).map(r => rowHtml(r, x.ax, { href: K.link('overview', D.cell.id) }, false)).join('') : '';
       const tag = c.cell || !fold ? 'OR' : 'fold';
       return `<section class="fr-card${c.cell ? ' fr-cellcard' : ''}" data-card="${esc(c.key)}" aria-labelledby="fc-${esc(c.key)}"><header><h2 id="fc-${esc(c.key)}"><a href="${esc(href)}">${esc(c.title)}</a></h2>` +
@@ -253,13 +253,13 @@
         (x.answer ? `<p class="fr-answer">${esc(x.answer)}</p>` : '') +
         `${cell}<div class="fr-rows" role="group" aria-label="${esc(c.title)}">${rows}</div>${axisHtml(x.ax)}` +
         (x.own ? '<p class="fr-cnote">Whole dataset: your selection was made with this question.</p>' : '') +
-        ((c.cell ? 'The cell rows summarise the cell maps (median, adjusted for abundance); they are not a test. ' : '') + (c.note || '') ? `<details class="fr-cnote-d"><summary>Note</summary>${esc((c.cell ? 'The cell rows summarise the cell maps (median, adjusted for abundance); they are not a test. ' : '') + (c.note || ''))}</details>` : '') +
+        ((c.cell ? 'The cell rows summarize the cell maps (median, adjusted for abundance); they are not a test. ' : '') + (c.note || '') ? `<details class="fr-cnote-d"><summary>Note</summary>${esc((c.cell ? 'The cell rows summarize the cell maps (median, adjusted for abundance); they are not a test. ' : '') + (c.note || ''))}</details>` : '') +
         (all.length > 1 ? `<details class="fr-qs"><summary>All ${all.length} questions</summary><ul>${all.map(q => `<li><a href="${esc(K.link('overview', q))}">${esc(short(q))}</a></li>`).join('')}</ul></details>` : '') + '</section>';
     }).join('');
     const more = F.more.questions.filter(q => A[q]);
     const moreCard = more.length ? `<section class="fr-card fr-more" aria-labelledby="fc-more"><header><h2 id="fc-more">${esc(F.more.title)}</h2></header><ul>${more.map(q => `<li><a href="${esc(K.link('overview', q))}">${esc(short(q))}</a></li>`).join('')}</ul></section>` : '';
     const resid = CARDS.some(c => c.home?.analysis && measureOf(c, c.home.analysis) === 'odds' && !c.cell);
-    const key = `<p class="fr-key"><span><i class="kd more"></i><i class="kd less"></i> q ≤ 0.05 (filled)</span><span><i class="kd ns"></i> q &gt; 0.05</span><span><i class="kd ns dash"></i> not tested</span><span>× fold or odds ratio, bar: 95% interval, each card on its own axis</span><span class="muted">grey number: n</span>${live() ? '<span>ring: whole dataset</span>' : ''}` +
+    const key = `<p class="fr-key"><span><i class="kd more"></i><i class="kd less"></i> q ≤ 0.05 (filled)</span><span><i class="kd ns"></i> q &gt; 0.05</span><span><i class="kd ns dash"></i> not tested</span><span>× fold or odds ratio, bar: 95% interval, each card on its own axis</span><span class="muted">gray number: n</span>${live() ? '<span>ring: whole dataset</span>' : ''}` +
       `<label class="fr-ab" title="Mark protein-set rows with the result within abundance deciles"><input type="checkbox" data-fr-ab${S.ab ? ' checked' : ''}> Abundance check</label>` +
       (resid ? `<span class="seg" role="group" aria-label="Test"><button type="button" data-m="mantel_haenszel" aria-pressed="${method() === 'mantel_haenszel'}">Within each protein</button><button type="button" data-m="fisher" aria-pressed="${method() === 'fisher'}">Pooled</button></span>` : '') + '</p>';
     K.front.say = act ? (loading ? 'Loading the selection' : under ? `Whole dataset: the selection of ${sitesOn()} is under the test minimum` : `Cards tested again on ${sitesOn()}`) : 'Whole dataset';

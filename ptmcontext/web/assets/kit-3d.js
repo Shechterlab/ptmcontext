@@ -1,6 +1,6 @@
 /* The protein page's 3D structure, as the Methylarginine Site Explorer showed it: the experimental chain that resolves
-   most of the protein (or any PDB entry and chain from the menu) or the AlphaFold model, coloured like the protein map,
-   with the marks as side chains in the map's colours. Styles, colourings, surface, lighting and background; contacts
+   most of the protein (or any PDB entry and chain from the menu) or the AlphaFold model, colored like the protein map,
+   with the marks as side chains in the map's colors. Styles, colorings, surface, lighting and background; contacts
    around a focused residue, site labels, the entry's other chains, bound RNA and DNA and ligands; a side panel with
    the entry, its chains and partners, the marks it resolves and what they touch; lists of the experimental entries,
    homologous structures and predicted complexes; and the view as a figure (PDF, SVG, PNG, TSV), as ChimeraX and PyMOL
@@ -9,7 +9,7 @@
    Live, by UniProt accession, as the explorer read them: AlphaFold DB (models, AlphaMissense), PDBe (SIFTS mappings,
    observed residues, modified residues), RCSB (search, entry descriptions, coordinates) and ProtVar (predicted pairs).
    From the site's own tables (website.protein.structure, CONTRACTS.md "Structure evidence"): the entries in which a
-   mark touches a partner, the RNA or DNA bound at it, predicted partners at it and colourings along the chain. A site
+   mark touches a partner, the RNA or DNA bound at it, predicted partners at it and colorings along the chain. A site
    without them still gets every live part. 3Dmol.js (the explorer's pin) loads only when the viewer opens.
 
    K.show3d(acc, {pos, entry, chain}) opens the viewer at a mark, in an entry and chain if given, from anywhere.
@@ -51,7 +51,7 @@
   const RAINBOW = ['#3B4CC0', '#2C9FD9', '#3DBE7A', '#F2C230', '#E8543B'];
   const HYDRO = ['#2F6FA7', '#F1F3F5', '#C8742B'];
   const CHAINS = ['#0E7490', '#E07A2E', '#6C5CE7', '#2E9E5B', '#C2417A', '#8C6D1F', '#3D7DD8', '#B33939', '#5B8C85', '#9B59B6'];
-  const SEG_PAL = ['#9DB8C7', '#E2B44C', '#8E7CC3', '#1BAF7A', '#B45309', '#BE185D', '#7C8A93', '#0E7490'];   // the map's segment colours
+  const SEG_PAL = ['#9DB8C7', '#E2B44C', '#8E7CC3', '#1BAF7A', '#B45309', '#BE185D', '#7C8A93', '#0E7490'];   // the map's segment colors
   const ELEM_GREY = { prop: 'elem', map: { C: '#A3AEB8', N: '#3B5BDB', O: '#E03131', S: '#E6B800', P: '#F08C00', SE: '#F08C00' } };
   const ELEM_FOCUS = { prop: 'elem', map: { C: '#F59E0B', N: '#3B5BDB', O: '#E03131', S: '#E6B800' } };
   const mixHex = (a, b, t) => { const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16), ch = s => Math.round(((pa >> s) & 255) * (1 - t) + ((pb >> s) & 255) * t); return '#' + ((1 << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).slice(1); };
@@ -116,11 +116,11 @@
   const rl = pos => `${seqAt(pos)}${pos}`;
   const ev = () => T.rec?.s3d || {};
   const colourOf = m => (K.map?.siteColour ? K.map.siteColour(m) : { c: tok().mark, label: '' });
-  // the map's colour mode: the reader's, or the one it opens with (the cards front end names that one in the legend; classic reads the reader's only)
+  // the map's color mode: the reader's, or the one it opens with (the cards front end names that one in the legend; classic reads the reader's only)
   const mapColour = () => K.map?.state?.colour ?? (CARDS ? K.map?.mode?.() : null);
-  const colourMode = () => { const k = mapColour(), s = (D.attribute_specs || {})[k]; return s ? s.label : 'Single colour'; };
-  const markColour = m => { const c = colourOf(m).c; return !CARDS && c === '#A3AEB3' ? tok().mark : c; };   // classic: no value is the mark colour; the cards front end keeps the map's grey   // no value: the mark colour, not the map's grey
-  // the marks' colours, in the order of the attribute's values (as the map's legend)
+  const colourMode = () => { const k = mapColour(), s = (D.attribute_specs || {})[k]; return s ? s.label : 'Single color'; };
+  const markColour = m => { const c = colourOf(m).c; return !CARDS && c === '#A3AEB3' ? tok().mark : c; };   // classic: no value is the mark color; the cards front end keeps the map's gray   // no value: the mark color, not the map's gray
+  // the marks' colors, in the order of the attribute's values (as the map's legend)
   function markLegend() {
     const seen = new Map(), spec = (D.attribute_specs || {})[mapColour()] || {}, order = Object.keys(spec.values || {});
     marks().forEach(m => { const c = colourOf(m); const key = c.label || cap(NOUNS); if (!seen.has(key)) seen.set(key, [markColour(m), order.indexOf(c.key)]); });
@@ -184,7 +184,7 @@
     pr.then(r => { if (r.failed) delete cache.pdb[acc]; });
     return pr;
   }
-  // the residues a chain models (PDBe polymer coverage), with author numbers, and the mark's components modelled
+  // the residues a chain models (PDBe polymer coverage), with author numbers, and the mark's components modeled
   function loadDetail(id, chain, withMods) {
     const key = id + ':' + chain;
     if (cache.det[key]) return cache.det[key];
@@ -407,7 +407,7 @@
   }
   const unpOfAtom = () => { const pdbMode = T.mol.mode === 'pdb', memo = new Map(); return a => { if (!pdbMode) return a.resi; if (a.chain !== T.mol.pdb.chain) return null; if (!memo.has(a.resi)) memo.set(a.resi, authToUnp(a.resi)); return memo.get(a.resi); }; };
 
-  // ---- colourings -------------------------------------------------------------------------------------------------------
+  // ---- colorings -------------------------------------------------------------------------------------------------------
   // the site's own: its domains and disordered regions as the map draws them, each segments track by its classes, its
   // residue evidence (website.protein.structure.residues); then the usual ones
   const units = kinds => (T.rec?.units || []).filter(u => kinds.has(u[0]));
@@ -420,7 +420,7 @@
     const pdbMode = T.mol?.mode === 'pdb', pred = pdbMode && T.mol.pdb.pred;
     return [['features', 'Protein features (as on the map)'], ...(!pdbMode || pred ? [['plddt', 'Confidence (pLDDT)']] : []), ...(pdbMode ? [['chain', 'By chain']] : []),
       ...segTracks().map(t => ['seg:' + t.kind, t.title]), ...colourings().map(c => ['ev:' + c.id, c.label]),
-      ['rainbow', 'Rainbow (N→C)'], ['ss', 'Secondary structure'], ['charge', 'Charge'], ['hydro', 'Hydrophobicity'], ['uniform', 'Uniform grey']];
+      ['rainbow', 'Rainbow (N→C)'], ['ss', 'Secondary structure'], ['charge', 'Charge'], ['hydro', 'Hydrophobicity'], ['uniform', 'Uniform gray']];
   }
   const colourKey = () => (colourOptions().some(o => o[0] === V.color) ? V.color : 'features');
   function chainsOf() {
@@ -429,7 +429,7 @@
     for (const a of T.mol.viewer.selectedAtoms({})) { if (!isPolymer(a)) continue; const r = ranges.get(a.chain); if (!r) ranges.set(a.chain, [a.resi, a.resi]); else { r[0] = Math.min(r[0], a.resi); r[1] = Math.max(r[1], a.resi); } }
     return (T.mol.chains = { ranges, order: new Map([...ranges.keys()].map((c, k) => [c, k])) });
   }
-  // residue classes of a colouring: position -> class index (the first it is in; a class of all: others where all hold)
+  // residue classes of a coloring: position -> class index (the first it is in; a class of all: others where all hold)
   function evClasses(id) {
     const c = (SD.colourings || []).find(x => x.id === id), runs = (ev().r || {})[id] || [], sets = c.classes.map(() => new Set());
     runs.forEach(([k, a, b]) => { for (let x = a; x <= b; x++) sets[k].add(x); });
@@ -441,7 +441,7 @@
     return { c, at: best };
   }
   function colourFn(key, t = tok()) {
-    const grey = '#9AA6B2', mol = T.mol, pdbMode = mol.mode === 'pdb', pdb = mol.pdb, unp = unpOfAtom();
+    const gray = '#9AA6B2', mol = T.mol, pdbMode = mol.mode === 'pdb', pdb = mol.pdb, unp = unpOfAtom();
     const copies = pdbMode && !pdb.pred && !pdb.homolog ? new Set(pdb.e.maps.map(m => m.chain)) : new Set();
     const other = a => (pdb.pred ? t.protein : copies.has(a.chain) ? t.ctxSelf : t.ctx);
     const inR = (pos, list) => list.some(([, a, b]) => pos >= a && pos <= b);
@@ -459,11 +459,11 @@
       return a => { if (pdbMode && a.chain !== pdb.chain) return t.rest; const pos = unp(a); if (pos == null) return t.rest; const k = at.get(pos); return k == null ? t.none : named(c.classes[k].colour, t); };
     }
     if (key === 'chain') { const { order } = chainsOf(); return a => CHAINS[(order.get(a.chain) || 0) % CHAINS.length]; }
-    if (key === 'rainbow') { const { ranges } = chainsOf(); return a => { const r = ranges.get(a.chain); return r ? ramp(RAINBOW, (a.resi - r[0]) / Math.max(1, r[1] - r[0])) : grey; }; }
+    if (key === 'rainbow') { const { ranges } = chainsOf(); return a => { const r = ranges.get(a.chain); return r ? ramp(RAINBOW, (a.resi - r[0]) / Math.max(1, r[1] - r[0])) : gray; }; }
     if (key === 'ss') return a => SS[a.ss] || SS.c;
     if (key === 'charge') return a => { const r = baseResn(a.resn); return r === 'ARG' || r === 'LYS' ? CHARGE.basic : r === 'HIS' ? CHARGE.his : r === 'ASP' || r === 'GLU' ? CHARGE.acidic : CHARGE.other; };
     if (key === 'hydro') return a => { const v = KD[baseResn(a.resn)]; return v == null ? CHARGE.other : ramp(HYDRO, (v + 4.5) / 9); };
-    return () => grey;
+    return () => gray;
   }
   function keyHtml(key) {
     const t = tok(), sw = (c, l) => `<span><i class="sq" style="background:${c}"></i>${esc(l)}</span>`;
@@ -491,7 +491,7 @@
     const mk = markLegend().map(([l, c]) => `<span><i class="dot" style="background:${c}"></i>${esc(l)}</span>`).join('');
     const na = T.mol?.naKinds ? [...T.mol.naKinds].map(k => sw(t[k] || t.rna, KIND_WORD[k])).join('') : '';
     return `<span class="lt">${esc(opt[1])}</span>${body}<span class="lt">${esc(cap(NOUNS))}, ${esc(colourMode().toLowerCase())}</span>${mk}${na}` +
-      (pdb && pdb.det.modres?.length ? sw(t.mark, `${cap(NOUN)} modelled in the entry`) : '') + (V.contacts && T.mol?.focus ? sw(ELEM_GREY.map.C, 'Contacts within 5 Å') : '');
+      (pdb && pdb.det.modres?.length ? sw(t.mark, `${cap(NOUN)} modeled in the entry`) : '') + (V.contacts && T.mol?.focus ? sw(ELEM_GREY.map.C, 'Contacts within 5 Å') : '');
   }
   function chainNames() {
     const pdb = T.mol?.pdb; if (!pdb) return {};
@@ -502,7 +502,7 @@
   }
 
   // ---- drawing --------------------------------------------------------------------------------------------------------------
-  // the marks in model numbering with their colours; the mark's components modelled in the entry, in the mark colour
+  // the marks in model numbering with their colors; the mark's components modeled in the entry, in the mark color
   function siteColours(light) {
     const mol = T.mol, pdbMode = mol.mode === 'pdb', out = new Map();
     for (const m of marks()) {
@@ -552,7 +552,7 @@
       for (const kind of mol.naKinds) v.setStyle({ predicate: a => isNuc(a) && nucKind(a) === kind && (V.others || a.chain === pdb.chain) }, { cartoon: { color: tok()[kind] }, stick: { radius: 0.13, color: tok()[kind] } });
     }
     v.setStyle({ resn: WATER }, {});
-    // the marks' side chains, in their colours, a sphere at the side chain's end
+    // the marks' side chains, in their colors, a sphere at the side chain's end
     const byColour = new Map();
     sc.forEach((c, r) => { if (!byColour.has(c)) byColour.set(c, []); byColour.get(c).push(r); });
     byColour.forEach((list, c) => {
@@ -760,9 +760,9 @@
     const rows = `<div class="s3d-row">${sel('style', 'Style', STYLES, V.style)}${sel('color', 'Colour', colourOptions(), colourKey())}${sel('surface', 'Surface', SURFACES, V.surface)}${sel('light', 'Lighting', LIGHTS, V.light)}` +
       `${sel('bright', 'Brightness', BRIGHT, V.bright)}${sel('ldir', 'Light from', LDIR, V.ldir)}${sel('bg', 'Background', BGS, V.bg)}</div>` +
       `<div class="s3d-row s3d-toggles">${TOGGLES.filter(t => !t[3] || pdbMode).map(t => `<button type="button" class="s3d-chip" data-s3d-toggle="${t[0]}" aria-pressed="${!!V[t[0]]}" title="${esc(t[2])}">${esc(t[1])}</button>`).join('')}` +
-      `<button type="button" class="linkish" data-s3d-default title="Style, colour, surface and lighting back to their defaults">Default settings</button></div>`;
+      `<button type="button" class="linkish" data-s3d-default title="Style, color, surface and lighting back to their defaults">Default settings</button></div>`;
     // the cards front end draws the structure first and folds the options below it; the key stays in sight
-    box.innerHTML = (CARDS ? `<details class="pn-optd" data-s3d-optd${T.optOpen ? ' open' : ''}><summary>3D options <span class="muted">· style, colour, surface, lighting, toggles</span></summary>${rows}</details>` : rows) +
+    box.innerHTML = (CARDS ? `<details class="pn-optd" data-s3d-optd${T.optOpen ? ' open' : ''}><summary>3D options <span class="muted">· style, color, surface, lighting, toggles</span></summary>${rows}</details>` : rows) +
       `${stateRow()}<div class="s3d-key" id="s3d-key">${T.mol && T.mol.acc === T.acc ? keyHtml(colourKey()) : ''}</div>`;
   }
   const chip = pos => { const m = markAt(pos); return `<button type="button" class="s3d-site${T.mol?.focusPos === pos ? ' on' : ''}" data-s3d-pos="${pos}"><i class="dot" style="background:${m ? markColour(m) : tok().mark}"></i>${esc(rl(pos))}`; };
@@ -808,16 +808,16 @@
     }
     const pdb = mol.pdb, e = pdb.e, det = pdb.det, base = T.acc.split('-')[0];
     const resolved = marks().map(m => m[0]).filter(pos => pdb.toAuth.has(pos));
-    const modres = (det.modres || []).length ? `<p class="flabel">${esc(cap(NOUNS))} modelled in the entry</p><div class="s3d-tags">${det.modres.map(r => `<span class="s3d-tag k-mark" title="${esc(r.chem_comp_name || '')}">${esc(r.chem_comp_id)} ${esc(r.chain_id)}${esc(r.author_residue_number)}</span>`).join(' ')}</div>` : '';
+    const modres = (det.modres || []).length ? `<p class="flabel">${esc(cap(NOUNS))} modeled in the entry</p><div class="s3d-tags">${det.modres.map(r => `<span class="s3d-tag k-mark" title="${esc(r.chem_comp_name || '')}">${esc(r.chem_comp_id)} ${esc(r.chain_id)}${esc(r.author_residue_number)}</span>`).join(' ')}</div>` : '';
     if (pdb.pred) {
       const p = pdb.pred, dist = predDistances(), table = new Set(p.tableSites || []);
       side.innerHTML = F + `<p class="flabel">Showing a predicted complex</p><dl class="kv"><dt>Model</dt><dd><a href="${esc(p.link)}">${esc(p.label)}</a></dd><dt>Source</dt><dd>${esc(p.method)}</dd>${p.scores ? `<dt>Scores</dt><dd>${esc(p.scores)}</dd>` : ''}` +
         `<dt>Chains</dt><dd>${Object.keys(p.names).sort().map(c => `${esc(c)}: ${esc(p.names[c])}${c === pdb.chain ? ' (this protein)' : ''}`).join(' · ')}</dd></dl>` +
-        (resolved.length ? `<div class="s3d-focusbar"><p class="flabel">Focus a site</p>${chips(resolved)}</div>` : `<p class="muted small">None of these ${esc(NOUNS)} is in the modelled range.</p>`) +
+        (resolved.length ? `<div class="s3d-focusbar"><p class="flabel">Focus a site</p>${chips(resolved)}</div>` : `<p class="muted small">None of these ${esc(NOUNS)} is in the modeled range.</p>`) +
         (dist.length ? `<p class="flabel">Distance to the partner in this model</p><ul class="s3d-list">${dist.map(x => `<li><button type="button" class="linkish" data-s3d-pos="${x.pos}">${esc(rl(x.pos))}</button> ` +
           (x.d == null ? `<span class="muted">more than 8 Å from ${esc(p.partnerLabel)}</span>` : `<b>${x.d.toFixed(1)} Å</b> to ${esc((p.names[x.partner.chain] || 'chain ' + x.partner.chain) + ' ' + x.partner.resn + x.partner.resi)}${x.d < 2.2 ? ' <span class="s3d-tag k-clash" title="Heavy atoms closer than 2.2 Å: a clash in the model, not a contact">clash</span>' : x.d <= 4 ? ' ' + kindTag('protein', 'contact') : ''}`) +
           ` <span class="muted">· pLDDT ${Math.round(x.b)}</span>${table.has(x.pos) && (x.d == null || x.d > 5) ? `<br><span class="muted small">The site’s table puts ${esc(rl(x.pos))} at the interface; this model does not.</span>` : ''}</li>`).join('')}</ul>` : '') +
-        `<p class="note small">A predicted model, not an experimental structure: weigh each contact by the pLDDT of both residues and by the predicted aligned error${p.pae ? ` (<a href="${esc(p.pae)}">PAE plot</a>)` : ''}. Colour by pLDDT under Colour.</p>` + backHtml();
+        `<p class="note small">A predicted model, not an experimental structure: weigh each contact by the pLDDT of both residues and by the predicted aligned error${p.pae ? ` (<a href="${esc(p.pae)}">PAE plot</a>)` : ''}. Color by pLDDT under Color.</p>` + backHtml();
       return;
     }
     const en = META[UP(e.id)], polys = polymers(en, base);
@@ -832,7 +832,7 @@
     if (pdb.homolog) {
       const h = pdb.homolog;
       side.innerHTML = F + `<p class="flabel">Showing a homologous structure</p><dl class="kv"><dt>Entry</dt><dd><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}">${esc(UP(e.id))}</a></dd><dt>Method</dt><dd>${esc(methodShort(e.method))}${e.resolution ? ', ' + Number(e.resolution).toFixed(1) + ' Å' : ''}</dd>` +
-        `<dt>Homologue</dt><dd>${esc(h.desc)}${h.org ? ` <i>(${esc(h.org)})</i>` : ''}${h.uniprot.length ? ' · ' + h.uniprot.map(a => `<a href="https://www.uniprot.org/uniprotkb/${esc(a)}/entry">${esc(a)}</a>`).join(', ') : ''}</dd>` +
+        `<dt>Homolog</dt><dd>${esc(h.desc)}${h.org ? ` <i>(${esc(h.org)})</i>` : ''}${h.uniprot.length ? ' · ' + h.uniprot.map(a => `<a href="https://www.uniprot.org/uniprotkb/${esc(a)}/entry">${esc(a)}</a>`).join(', ') : ''}</dd>` +
         `<dt>Alignment</dt><dd>${Math.round(100 * h.identity)}% identity over ${esc(T.p.gene || T.acc)} ${h.qBeg}–${h.qEnd}</dd><dt>Chain</dt><dd>${esc(det.chain)}</dd>${h.partners.length ? `<dt>With</dt><dd>${h.partners.map(esc).join('; ')}</dd>` : ''}</dl>` +
         (resolved.length ? `<div class="s3d-focusbar"><p class="flabel">Focus a site <span class="muted">(aligned to this chain)</span></p>${chips(resolved, pos => ` <span class="muted">≙ ${esc(det.chain)}${pdb.toAuth.get(pos)}</span>`)}</div>` : `<p class="muted small">No ${esc(NOUN)} of ${esc(T.p.gene || T.acc)} aligns to a resolved residue of its kind in this chain.</p>`) +
         modres + contactsHtml + `<p class="note small">A related protein, not ${esc(T.p.gene || T.acc)} itself: positions follow the RCSB sequence alignment (MMseqs2), and the contacts are those of the aligned residue.</p>` + backHtml();
@@ -841,7 +841,7 @@
     side.innerHTML = F + `<p class="flabel">Showing PDB entry</p><dl class="kv"><dt>Entry</dt><dd><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}">${esc(UP(e.id))}</a> · <a href="https://www.ebi.ac.uk/pdbe/entry/pdb/${esc(e.id)}">PDBe</a></dd>` +
       (en ? `<dt>Structure</dt><dd>${esc(en.struct?.title || '')}</dd>` : en === undefined ? '<dt>Structure</dt><dd class="muted">asking RCSB…</dd>' : '') +
       `<dt>Method</dt><dd>${esc(methodShort(e.method || en?.rcsb_entry_info?.experimental_method))}${e.resolution ? ', ' + Number(e.resolution).toFixed(1) + ' Å' : ''}${/NMR/i.test(e.method || '') ? ' (first model of the ensemble)' : ''}</dd>` +
-      `<dt>Chain</dt><dd>${esc(pdb.chain || '–')}${pdb.guessed ? ' (by its residues: PDBe maps no chain of this entry to the protein)' : ' (coloured by its features; other chains by what they are)'}</dd>${chainsHtml}</dl>` +
+      `<dt>Chain</dt><dd>${esc(pdb.chain || '–')}${pdb.guessed ? ' (by its residues: PDBe maps no chain of this entry to the protein)' : ' (colored by its features; other chains by what they are)'}</dd>${chainsHtml}</dl>` +
       modres +
       `<div class="s3d-focusbar"><p class="flabel">Focus a site <span class="muted">(resolved in this chain)</span></p>${resolved.length ? chips(resolved, pos => ` <span class="muted">· ${esc(pdb.chain)}${pdb.toAuth.get(pos)}</span>`) : `<p class="muted small">${det.chain && !det.coverage ? `PDBe did not return the residues observed in this chain, so its ${esc(NOUNS)} cannot be placed; try again later.` : `None of this protein’s ${esc(NOUNS)} is resolved in this chain.`}</p>`}</div>` +
       contactsHtml + tableHtml + backHtml();
@@ -874,7 +874,7 @@
       shown.map(({ e, n, mod, at }) => {
         const en = META[UP(e.id)], parts = en ? partnersText(en, base) : [], na = res.na.get(e.id);
         const r = RESOLVED[e.id];
-        return `<tr class="${e.id === own ? 'on' : ''}"><td class="wrapok"><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}"><b>${esc(UP(e.id))}</b></a>${mod ? ` <span class="s3d-tag k-mark" title="A ${esc(NOUN)} is modelled in this protein’s chain">${esc(NOUN)} in model</span>` : ''}${na?.rna ? ' ' + kindTag('rna') : ''}${na?.dna ? ' ' + kindTag('dna') : ''}` +
+        return `<tr class="${e.id === own ? 'on' : ''}"><td class="wrapok"><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}"><b>${esc(UP(e.id))}</b></a>${mod ? ` <span class="s3d-tag k-mark" title="A ${esc(NOUN)} is modeled in this protein’s chain">${esc(NOUN)} in model</span>` : ''}${na?.rna ? ' ' + kindTag('rna') : ''}${na?.dna ? ' ' + kindTag('dna') : ''}` +
           (en ? `<div class="s3d-what"><span>${esc(shorten(en.struct?.title || '', 110))}</span><span class="muted">${parts.length ? 'With ' + esc(parts.slice(0, 4).join('; ')) + (parts.length > 4 ? ` and ${parts.length - 4} more` : '') : 'No other protein or nucleic acid'}</span></div>` : '') + '</td>' +
           `<td>${esc(methodShort(e.method || en?.rcsb_entry_info?.experimental_method))}</td><td class="num">${e.resolution ? Number(e.resolution).toFixed(1) + ' Å' : '–'}</td>` +
           `<td>${e.maps.length ? esc(e.maps[0].chain) + (e.chains.length > 1 ? ` (+${e.chains.length - 1})` : '') + ' · ' + esc(e.maps.filter(m => m.chain === e.maps[0].chain).map(m => m.unpStart + '–' + m.unpEnd).join(', ')) : '<span class="muted">not mapped by PDBe</span>'}</td>` +
@@ -955,11 +955,11 @@
     const line = (h, pos) => `<li><button type="button" class="btn small" data-s3d-hom="${esc(h.id)}" data-s3d-at="${pos}">View</button> <a href="https://www.rcsb.org/structure/${esc(h.entry)}"><b>${esc(h.entry)}</b></a> <span class="muted">${esc(methodShort(h.method))}${h.resolution ? ' ' + Number(h.resolution).toFixed(1) + ' Å' : ''}</span> · ${esc(h.desc)}${h.org ? ` <i class="muted">${esc(h.org)}</i>` : ''} · ${Math.round(100 * h.identity)}% identity` +
       (h.partners.length ? ' · with ' + h.partners.slice(0, 2).map(y => kindTag(/^RNA:/.test(y) ? 'rna' : /^DNA:/.test(y) ? 'dna' : 'protein', shorten(y.replace(/^(RNA|DNA): /, ''), 34))).join(' ') + (h.partners.length > 2 ? ` +${h.partners.length - 2}` : '') : '') + '</li>';
     const shown = T.homAll ? sites : sites.slice(0, 12);
-    box.innerHTML = `<p class="sub">${int(sites.length)} of ${int(marks().length)} ${esc(NOUNS)} align to the same residue, modelled, in ${int(nEntries)} PDB entr${nEntries === 1 ? 'y' : 'ies'} of related proteins (≥ 30% identity).</p>` +
-      `<div class="tbl-card"><table class="tbl s3d-tbl"><thead><tr><th>Site</th><th>Homologous entries with a modelled residue here</th></tr></thead><tbody>` +
+    box.innerHTML = `<p class="sub">${int(sites.length)} of ${int(marks().length)} ${esc(NOUNS)} align to the same residue, modeled, in ${int(nEntries)} PDB entr${nEntries === 1 ? 'y' : 'ies'} of related proteins (≥ 30% identity).</p>` +
+      `<div class="tbl-card"><table class="tbl s3d-tbl"><thead><tr><th>Site</th><th>Homologous entries with a modeled residue here</th></tr></thead><tbody>` +
       shown.map(pos => { const hs = bySite.get(pos).slice().sort(rank), open = T.homOpen.has(pos); return `<tr><td><b>${esc(rl(pos))}</b><br><span class="muted">${int(hs.length)} entr${hs.length === 1 ? 'y' : 'ies'}</span></td><td class="wrapok"><ul class="s3d-hl">${hs.slice(0, open ? hs.length : 3).map(h => line(h, pos)).join('')}</ul>${hs.length > 3 ? `<button type="button" class="linkish" data-s3d-homopen="${pos}">${open ? 'Show the top 3' : `Show all ${int(hs.length)}`}</button>` : ''}</td></tr>`; }).join('') +
       '</tbody></table></div>' + (sites.length > 12 ? `<p><button type="button" class="linkish" data-s3d-more="hom">${T.homAll ? 'Show the first 12 sites' : `Show all ${int(sites.length)} sites`}</button></p>` : '') +
-      '<p class="src">RCSB sequence search (MMseqs2) and entry descriptions, read live. Entries with another protein, RNA or DNA come first, then higher identity; only residues modelled in the deposited chain are listed.</p>';
+      '<p class="src">RCSB sequence search (MMseqs2) and entry descriptions, read live. Entries with another protein, RNA or DNA come first, then higher identity; only residues modeled in the deposited chain are listed.</p>';
   }
   function showHomolog(h, focus) {
     const acc = T.acc, id = h.entry.toLowerCase(), nmr = /NMR/i.test(h.method || '');
@@ -1065,7 +1065,7 @@
   // ---- the fold's summary --------------------------------------------------------------------------------------------------
   function summaryText() {
     const mol = T.mol && T.mol.acc === T.acc ? T.mol : null, res = T.res, parts = [];
-    if (mol) parts.push(mol.mode === 'af' ? `AlphaFold model, mean pLDDT ${Number(mol.af.entry.globalMetricValue).toFixed(1)}` : mol.pdb.pred ? mol.pdb.pred.label : `PDB ${UP(mol.pdb.e.id)} chain ${mol.pdb.chain}${mol.pdb.homolog ? ' (homologue)' : ''}`);
+    if (mol) parts.push(mol.mode === 'af' ? `AlphaFold model, mean pLDDT ${Number(mol.af.entry.globalMetricValue).toFixed(1)}` : mol.pdb.pred ? mol.pdb.pred.label : `PDB ${UP(mol.pdb.e.id)} chain ${mol.pdb.chain}${mol.pdb.homolog ? ' (homolog)' : ''}`);
     if (res) { const n = pdbMenu(res).length; parts.push(n ? `${int(n)} PDB entr${n === 1 ? 'y' : 'ies'}` : res.failed ? 'PDBe did not answer' : 'no PDB entry'); }
     const c = ev().c || []; if (c.length) { const s = new Set(c.map(x => x[0])); parts.push(`${int(s.size)} ${s.size === 1 ? NOUN : NOUNS} at a PDB interface`); }
     return parts.join(' · ') || 'AlphaFold DB, PDBe and RCSB, live';
@@ -1104,7 +1104,7 @@
     let x = 20, y = h + 18;
     parts.push(`<text x="20" y="${y}" font-size="10.5" font-weight="bold" fill="#5f6f78">${esc(opt[1])}</text>`); y += 14;
     sw.forEach(([c, l]) => { const wd = 18 + K.tw(l, 10.5); if (x + wd > 740) { x = 20; y += 15; } parts.push(`<rect x="${x}" y="${y - 9}" width="10" height="10" rx="2" fill="${c}"/><text x="${x + 14}" y="${y}" font-size="10.5" fill="#5f6f78">${esc(l)}</text>`); x += wd + 10; });
-    const f = K.figureFrame({ title: `${T.p.gene || T.acc} (${T.acc}): ${mol.src.what}`, sub: `${shownWords() ? shownWords() + ' ' : ''}${cap(NOUNS)} as side chains with a sphere, coloured by ${colourMode().toLowerCase()}; the chain coloured by ${opt[1].toLowerCase()}.${mol.focusPos != null ? ' Focused: ' + rl(mol.focusPos) + '.' : ''}`,
+    const f = K.figureFrame({ title: `${T.p.gene || T.acc} (${T.acc}): ${mol.src.what}`, sub: `${shownWords() ? shownWords() + ' ' : ''}${cap(NOUNS)} as side chains with a sphere, colored by ${colourMode().toLowerCase()}; the chain colored by ${opt[1].toLowerCase()}.${mol.focusPos != null ? ' Focused: ' + rl(mol.focusPos) + '.' : ''}`,
       legend, body: parts.join(''), bodyH: y + 6, W: 760, note: sourceLine(), extra: { protein: T.acc, ...provenance() } });
     return f;
   }
@@ -1123,7 +1123,7 @@
   }
   function tsv() {
     const mol = T.mol, pdbMode = mol.mode === 'pdb', pdb = mol.pdb, contacts = pdbMode && !pdb.pred ? new Map(liveContacts().map(c => [c.pos, c])) : new Map();
-    const head = K.preamble(`${T.p.gene || T.acc} (${T.acc}) in 3D: ${mol.src.what}`, `each ${NOUN} of ${T.p.gene || T.acc} and where it is in this model: its chain and residue number, whether the model has it, its colour category, its confidence where the model has one, what it touches in the model (side chain within 4 Å) and what the site’s tables list for it. ${sourceLine()}`);
+    const head = K.preamble(`${T.p.gene || T.acc} (${T.acc}) in 3D: ${mol.src.what}`, `each ${NOUN} of ${T.p.gene || T.acc} and where it is in this model: its chain and residue number, whether the model has it, its color category, its confidence where the model has one, what it touches in the model (side chain within 4 Å) and what the site’s tables list for it. ${sourceLine()}`);
     const cols = ['site', 'position', 'model', 'chain', 'model_residue', 'in_model', colourMode().toLowerCase().replace(/\W+/g, '_'), 'plddt', 'touches_in_model', 'pdb_interfaces_in_tables', 'bound_in_this_entry'];
     const rows = marks().map(m => {
       const pos = m[0], auth = pdbMode ? pdb.toAuth.get(pos) : pos, atoms = auth == null ? [] : mol.viewer.selectedAtoms(Object.assign({ resi: auth, atom: 'CA' }, pdbMode ? { chain: pdb.chain } : {}));
@@ -1154,7 +1154,7 @@
     return { src: mol.src, chains, chain, sites, labels, focus: mol.focus, style: V.style, surface: V.surface, contacts: V.contacts && !!mol.focus, outline: V.light === 'outline' || V.light === 'aoline', light: V.light,
       ligands: pdbMode && V.ligands && ligands.size > 0, others: !pdbMode || V.others, bg: V.bg === 'black' ? 'black' : 'white', text: mol.text, fmt: mol.fmt,
       file: `${T.p.gene || T.acc}_${mol.src.tag}_${NOUNS.replace(/\W+/g, '_')}`,
-      header: [`${T.p.gene || T.acc} (${T.acc}), ${mol.src.what}`, `Cartoon colouring: ${opt[1]}`, ...(shownWords() ? [shownWords()] : []), `${cap(NOUN)} side chains, ${colourMode()}: ${markLegend().map(([l]) => l).join(', ')}`,
+      header: [`${T.p.gene || T.acc} (${T.acc}), ${mol.src.what}`, `Cartoon coloring: ${opt[1]}`, ...(shownWords() ? [shownWords()] : []), `${cap(NOUN)} side chains, ${colourMode()}: ${markLegend().map(([l]) => l).join(', ')}`,
         sourceLine(), `From ${D.site.name} (${location.href.split('#')[0]}). ${K.CIT?.preferred ? 'Please cite ' + K.CIT.preferred.text.replace(/\.\s*$/, '') + (K.CIT.preferred.doi ? ', doi:' + K.CIT.preferred.doi : '') + ', ' : 'Please cite '}the structure source and the original data sources.`] };
   }
   const cxRes = ranges => ranges.map(([a, b]) => (a === b ? '' + a : a >= 0 ? a + '-' + b : Array.from({ length: b - a + 1 }, (_, k) => a + k).join(','))).join(',');
@@ -1211,7 +1211,7 @@
   // the coordinates, unchanged, with the marks listed: PDB REMARK 999 lines, or for mmCIF a comment block and a
   // _ptmcontext_mark table (programs skip categories they do not know)
   function annotated(d) {
-    const rows = d.sites.map(x => { const m = x.unp != null ? markAt(x.unp) : null; return { chain: d.chain, resi: x.resi, site: x.unp != null ? rl(x.unp) : `modelled ${NOUN}`, cat: m ? colourOf(m).label || '' : '' }; });
+    const rows = d.sites.map(x => { const m = x.unp != null ? markAt(x.unp) : null; return { chain: d.chain, resi: x.resi, site: x.unp != null ? rl(x.unp) : `modeled ${NOUN}`, cat: m ? colourOf(m).label || '' : '' }; });
     const head = d.header.concat([`${cap(NOUNS)} in chain ${d.chain} of this model (model numbering, UniProt site, ${colourMode().toLowerCase()}):`]).concat(rows.map(r => `  ${r.chain} ${r.resi}  ${r.site}  ${r.cat}`));
     if (d.fmt === 'cif') {
       const cv = x => { x = String(x); return x !== '' && !/[\s'"]/.test(x) ? x : x.includes("'") ? '"' + x + '"' : "'" + x + "'"; };
@@ -1324,8 +1324,8 @@
     const files = [['cxc', 'ChimeraX', 'A ChimeraX script that rebuilds this view'], ['pml', 'PyMOL', 'A PyMOL script that rebuilds this view'], ['cif', 'mmCIF', `The coordinates shown, as mmCIF, with the ${NOUNS} listed`], ['pdb', 'PDB', `The coordinates shown, as PDB, with the ${NOUNS} in REMARK 999`]]
       .map(([k, l, t]) => `<button type="button" class="exp-btn" data-s3d-file="${k}" data-s3d-need disabled title="${esc(t)}">${l}</button>`).join('');
     const hasTables = Object.keys(SD.inputs || {}).length > 0;
-    return `<div class="s3d" id="s3d"><div class="s3d-head card-head"><p class="sub">The experimental chain that models most of ${esc(p.gene || p.acc)} (or any PDB entry and chain from the menu) or the AlphaFold model, coloured like the protein map, its ${esc(NOUNS)} as side chains. Drag to turn, scroll to zoom, right-drag or the arrows to slide; click a residue to focus it.</p>` +
-      `<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}<span class="s3d-sep"></span>${exp}<span class="s3d-sep"></span>${files}<a class="exp-btn" href="${esc(K.link('method', 'structure'))}" title="Where the structures, the placing of the ${esc(NOUNS)} and the colours come from">Method</a><a class="exp-btn" id="s3d-newtab" href="${esc(soloHref(p.acc))}" target="_blank" rel="noopener" title="The viewer on a page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a></div></div>` +
+    return `<div class="s3d" id="s3d"><div class="s3d-head card-head"><p class="sub">The experimental chain that models most of ${esc(p.gene || p.acc)} (or any PDB entry and chain from the menu) or the AlphaFold model, colored like the protein map, its ${esc(NOUNS)} as side chains. Drag to turn, scroll to zoom, right-drag or the arrows to slide; click a residue to focus it.</p>` +
+      `<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}<span class="s3d-sep"></span>${exp}<span class="s3d-sep"></span>${files}<a class="exp-btn" href="${esc(K.link('method', 'structure'))}" title="Where the structures, the placing of the ${esc(NOUNS)} and the colors come from">Method</a><a class="exp-btn" id="s3d-newtab" href="${esc(soloHref(p.acc))}" target="_blank" rel="noopener" title="The viewer on a page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a></div></div>` +
       `<div class="s3d-src" id="s3d-src"></div>${CARDS ? '' : '<div class="s3d-controls" id="s3d-controls"></div>'}` +
       `<div class="s3d-wrap"><div class="s3d-stage"><div class="s3d-viewer" id="s3d-viewer"><div class="s3d-ph">The structure loads when this section is open.</div></div>` +
       `<div class="s3d-pan" role="group" aria-label="Slide the structure">${[['up', 0, -1, '↑'], ['left', -1, 0, '←'], ['right', 1, 0, '→'], ['down', 0, 1, '↓']].map(([k, x, y, t]) => `<button type="button" class="pan-${k}" data-s3d-pan="${x},${y}" aria-label="Slide ${k}">${t}</button>`).join('')}</div>` +
@@ -1455,7 +1455,7 @@
       if (k === 'cxc' || k === 'pml') { const d = sceneData(); K.download(`${d.file}.${k}`, k === 'cxc' ? chimerax(d) : pymol(d), 'text/plain'); } else coords(k, el);
     }],
   );
-  // the theme changed: the view's colours follow
+  // the theme changed: the view's colors follow
   new MutationObserver(() => { if (T.mol && T.mol.acc === T.acc && document.body.contains(T.mol.el)) { restyle(false); paintControls(); paintSide(); } }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (T.mol) { restyle(false); paintControls(); } });
 
@@ -1463,7 +1463,7 @@
   const methodSection = () => `<section id="m-structure"><h3>3D structures</h3><p>A protein page shows the experimental chain that models most of the protein, any PDB entry and chain from its menu, or the AlphaFold DB model. It is read live by UniProt accession when the section opens and drawn with ${esc(LIB_CITE)}. ` +
     `The experimental chain comes from PDBe’s SIFTS best structures: among chains whose mapping spans most of the protein, the one PDBe says observes most residues. Each ${esc(NOUN)} is placed through its SIFTS segment and PDBe’s observed residues, so only ${esc(NOUNS)} in the deposited model are drawn. A homologous structure (RCSB sequence search, MMseqs2, at least 30% identity) places them through the alignment, and AlphaFold or predicted complex models use UniProt numbering. ` +
     `Entries that model one of the ${esc(NOUN)}’s chemical components (${esc((SD.components || []).map(c => c.code + ' ' + c.label).join(', ') || 'none named in the profile')}) are found with RCSB’s search.</p>` +
-    `<p>The chain is coloured by the site’s regions as on the protein map, by the residue evidence the site file names, or by model confidence, chain, position, secondary structure, charge or Kyte–Doolittle hydropathy. The ${esc(NOUNS)} take the map’s colour. Contacts are side-chain heavy atoms within 4 Å of another chain, RNA or DNA, computed in the browser on the coordinates shown.</p>` +
+    `<p>The chain is colored by the site’s regions as on the protein map, by the residue evidence the site file names, or by model confidence, chain, position, secondary structure, charge or Kyte–Doolittle hydropathy. The ${esc(NOUNS)} take the map’s color. Contacts are side-chain heavy atoms within 4 Å of another chain, RNA or DNA, computed in the browser on the coordinates shown.</p>` +
     (Object.keys(SD.inputs || {}).length ? `<p>What the ${esc(NOUNS)} touch, entry by entry, comes from the site’s tables: ${Object.entries(SD.inputs).map(([k, ns]) => `${esc(k)}: ${esc(ns.map(n => (D.inputs?.[n]?.version || n) + (D.run?.inputs?.[n]?.md5 ? ` (MD5 ${D.run.inputs[n].md5})` : '')).join('; '))}`).join('; ')}. Each export says which parts came live and which from these tables.</p>` : '') +
     '<p>Downloads: the view as a figure (PDF, SVG, or PNG at three times screen resolution) with its key, citation and sources; a TSV of the marks in the model; ChimeraX and PyMOL scripts that rebuild the view; and the coordinates (mmCIF, PDB) with the marks listed.</p></section>';
   (K.methodParts ||= []).push(methodSection);

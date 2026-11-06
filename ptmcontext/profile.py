@@ -77,7 +77,7 @@ class Profile:
         raise ValueError(f'unknown background scope {scope!r}')
 
     def motif_flags(self, windows: pd.Series) -> pd.DataFrame:
-        """One boolean column per motif family (named by the family), from sequence windows centred on the residue."""
+        """One boolean column per motif family (named by the family), from sequence windows centered on the residue."""
         families = self.motif_families
         return pd.DataFrame([{f['name']: _matches(f, w) for f in families} for w in windows], index=windows.index,
                             columns=[f['name'] for f in families]).astype(bool)
@@ -87,8 +87,8 @@ class Profile:
 
 
 def _at(window: str, offset: int) -> str:
-    centre = len(window) // 2
-    i = centre + offset
+    center = len(window) // 2
+    i = center + offset
     return window[i] if 0 <= i < len(window) else '_'
 
 
@@ -103,7 +103,7 @@ def _condition(cond: dict, window: str) -> bool:
 def _matches(family: dict, window: str) -> bool:
     """A family matches when every condition of 'all' holds and, if 'any' is given, at least one of its conditions.
     A condition is {'at': offset, 'in': letters} (the residue at that offset is one of the letters) or
-    {'within': [lo, hi], 'in': letters} (some residue at an offset from lo to hi, the centre excluded, is one of them).
+    {'within': [lo, hi], 'in': letters} (some residue at an offset from lo to hi, the center excluded, is one of them).
     Offsets past the window or the protein read as '_'."""
     if not all(_condition(c, window) for c in family.get('all', [])):
         return False

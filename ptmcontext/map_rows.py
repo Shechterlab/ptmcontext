@@ -229,7 +229,7 @@ def items(site: dict, paths: dict, marks_table: pd.DataFrame, accessions: set, l
 
 
 def problems(site: dict) -> list[str]:
-    """What the map block names that the site file does not have (ptmc check): a row's role, a colour mode's attribute."""
+    """What the map block names that the site file does not have (ptmc check): a row's role, a color mode's attribute."""
     spec, out = map_spec(site), []
     roles = set(site.get('inputs') or {})
     attrs = {**((site.get('marks') or {}).get('attributes') or {}),     # a variant's marks may carry more
