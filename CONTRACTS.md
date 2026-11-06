@@ -739,6 +739,7 @@ question, an odds ratio for a residue question; a model has none), and the stron
 | `summary_only` | question id to class codes left out of a card's summary rows, still on the question's page |
 | `glossary` | the site's own terms and their hover text (fold, odds ratio and q are the kit's) |
 | `examples` | the example chips: a search, or `{label, query}` (default: `website.examples`) |
+| `pathways[]` | the pathway view, below: `analyses` (protein-set questions whose sets are pathways), `hierarchy` (`input` role, `set`, `parents`, `name`, `separator`), `members` (`input` role, `set`, `protein`), `source` (`name`, `version`, `licence`, `url`, `link` with `{}` for a set's id) |
 
 What `mode: cards` shows (`kit-front.js`, the Overview's home; every other page, and a question's own page, is the classic
 one, reached from the Tabs and from the **Sections** menu, which lists every page and question under the cards' titles).
@@ -758,6 +759,24 @@ links keep working.
 site does not have, a measure that does not fit the question, a question in two cards, a second card with the same key,
 `cell: true` without `website.cell`, a `home` that is not one of the card's facets, and, with `more: false`, a question no
 card holds (every question must be reachable).
+
+### Navigation and the pathway view (cards mode)
+
+There is no tab row and no header switch: the header's **Sections** button opens a dialog (focus in, Tab held, Escape back
+to the button) and `#sections` is the same list as a page. It lists every question under the cards' titles, then the
+questions no card holds and the pages, each with its short name (`short`) and, for the current selection, how many proteins
+it covers. On a question's page the row is "Home / <name>" with previous and next in that order; at 1100 px and wider the
+list is also a left column that can be hidden (remembered in the browser, never required). A question's title is its short
+name everywhere. A cell part chosen on the cell card or page is a filter `w:<cell id>~<part>`, shown as a chip by the card's
+`chip` word and the part's name, combining with the other filters.
+
+`pathways` gives the rows of a pathway question a **Proteins** button that opens the pathway's sub-pathways as groups of
+protein chips (methylated first, filled, with their sites; the others outlined; "k of n methylated in your selection"; the
+address keeps `pw=<set>`). `ptmc web` writes `data/pathways/<set>.json` for every tested set from the two tables, read only
+when a pathway is opened: `{id, name, top, n, acc, gene, groups: [{id, name, m}]}`, `gene` empty for a protein the site
+lists. Genes of other proteins come from the snapshot's FASTA. The hierarchy table has a set id column and a parents column;
+the members table a set id and a UniProt accession per row. Nothing is asked of the source's service; the page links to it.
+The one-file copy has no pathway files and so no button. A site without `pathways` has none.
 
 ## What the page reads at once and what it reads later
 
