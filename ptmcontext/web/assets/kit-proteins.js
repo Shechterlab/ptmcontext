@@ -291,8 +291,8 @@
       return `${esc(f.type)}${alt ? ' <b>' + esc(alt) + '</b>' : ''}${desc ? ': ' + esc(desc) : ''}${snp.length ? ' · ' + snp.map(id => `<a href="https://www.ncbi.nlm.nih.gov/snp/${esc(id)}" target="_blank" rel="noopener">${esc(id)}</a>`).join(', ') : ''}${f.featureId ? ` · <a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry#disease_variants" target="_blank" rel="noopener">${esc(f.featureId)}</a>` : ''}${pm(f).length ? ' (PubMed ' + pm(f).slice(0, 8).map(id => `<a href="https://pubmed.ncbi.nlm.nih.gov/${esc(id)}/" target="_blank" rel="noopener">${esc(id)}</a>`).join(', ') + ')' : ''}`;
     };
     const kv = (dt, dd, tip) => (dd ? `<div><dt${tip ? ` title="${esc(tip)}"` : ''}>${dt}</dt><dd>${dd}</dd></div>` : '');
-    // the cards front end puts the variants first: UniProt's natural variants at this residue (disease named), then the site's changes in cancers
-    const uniShow = CARDS ? uniAt.filter(f => f.type !== 'Natural variant') : uniAt, uniVar = uniAt.filter(f => f.type === 'Natural variant');
+    // both front ends put the variants first: UniProt's natural variants at this residue (disease named), then the site's changes in cancers
+    const uniShow = uniAt.filter(f => f.type !== 'Natural variant'), uniVar = uniAt.filter(f => f.type === 'Natural variant');
     const ready = !!PV.tb, wait = '<span class="muted">loading…</span>';
     const tagged = new Set(K.shown?.on ? [...(K.shown.cfg.tests?.attributes || []), ...(K.shown.cfg.also || [])] : []);
     const rest = shownAttrs(m).filter(n => !USED.has(n) && !tagged.has(n));
@@ -322,8 +322,7 @@
     const siteRows = kv('Window ±7', `<span class="mono">${winHtml(m[1])}</span>`) + qrows.join('') + afRow +
       ((CC.states || []).length ? kv(esc(CL_WORDS.states), ready ? K.card.states(c) : wait) : '') +
       (near != null ? kv(`Nearest other ${esc(W.mark)}`, `${esc(siteOf(p, near))}, ${int(Math.abs(near - m[0]))} aa away`) : '') +
-      (CC.calls ? kv(esc(CL_WORDS.calls), ready ? K.card.calls(c) : wait) : '') +
-      ((CC.changes || []).length && !CARDS ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait) : '');
+      (CC.calls ? kv(esc(CL_WORDS.calls), ready ? K.card.calls(c) : wait) : '');
     const uniRow = kv(`UniProt at ${esc(siteOf(p, m[0]))}`, PV.uniJson ? (uniShow.length ? uniShow.map(featLine).join('<br>') : '<span class="muted">no feature at this residue</span>') + ` <span class="muted">· <a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry#ptm_processing">UniProt ${esc(p.acc)}</a>, read live</span>` : '<span class="muted">asking UniProt…</span>');
     const citeRow = CC.cite?.attribute && SPECS[CC.cite.attribute] ? kv(esc(CL_WORDS.reported), K.card.reportedBy(c)) : '';
     const restRows = rest.map(n => kv(esc(SPECS[n].label), attrHtml(m, n, true), SPECS[n].help)).join('') + (K.shown?.on && K.shown.counted(m) ? kv(esc(cap(K.shown.label())), esc(K.shown.tip(m, false))) : '');
@@ -332,7 +331,7 @@
       : `<dl class="sc-kv">${siteRows}${qmore.join('')}${restRows}${uniRow}${citeRow}</dl>`;
     const ev = ready ? K.card.evidenceBlock(c) : '', recs = ready ? K.card.recordsBlock(c) : '', wr = ready ? K.card.writerBlock(c) : '';
     const hasEvRow = ready && (K.card.has(CC.sources?.table) || (CC.tables || []).some(x => K.card.has(x.table)) || (CC.calls?.tables || []).some(K.card.has));
-    const varBlock = !CARDS ? '' : `<section class="sc-vars" aria-label="Variants at ${esc(siteOf(p, m[0]))}"><h4>Variants at ${esc(siteOf(p, m[0]))}</h4><dl class="sc-kv">` +
+    const varBlock = `<section class="sc-vars" aria-label="Variants at ${esc(siteOf(p, m[0]))}"><h4>Variants at ${esc(siteOf(p, m[0]))}</h4><dl class="sc-kv">` +
       kv('UniProt variants', PV.uniJson ? (uniVar.length ? uniVar.map(featLine).join('<br>') : '<span class="muted">none reported at this residue</span>') : '<span class="muted">asking UniProt…</span>') +
       ((CC.changes || []).length ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait) : '') + '</dl></section>';
     return `<section class="site-card" id="site-card"><div class="card-head"><div><p class="eyebrow">Selected ${esc(W.mark)}</p><h3>${esc(p.gene || p.acc)} ${esc(siteOf(p, m[0]))} ${statePill(m)}${K.shown?.on ? ' ' + K.shown.tag(m, false) : ''}</h3>` +
