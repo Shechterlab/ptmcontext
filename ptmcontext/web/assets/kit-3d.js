@@ -116,11 +116,13 @@
   const rl = pos => `${seqAt(pos)}${pos}`;
   const ev = () => T.rec?.s3d || {};
   const colourOf = m => (K.map?.siteColour ? K.map.siteColour(m) : { c: tok().mark, label: '' });
-  const colourMode = () => { const k = K.map?.state?.colour, s = (D.attribute_specs || {})[k]; return s ? s.label : 'Single colour'; };
+  // the map's colour mode: the reader's, or the one it opens with (the cards front end names that one in the legend; classic reads the reader's only)
+  const mapColour = () => K.map?.state?.colour ?? (CARDS ? K.map?.mode?.() : null);
+  const colourMode = () => { const k = mapColour(), s = (D.attribute_specs || {})[k]; return s ? s.label : 'Single colour'; };
   const markColour = m => { const c = colourOf(m).c; return !CARDS && c === '#A3AEB3' ? tok().mark : c; };   // classic: no value is the mark colour; the cards front end keeps the map's grey   // no value: the mark colour, not the map's grey
   // the marks' colours, in the order of the attribute's values (as the map's legend)
   function markLegend() {
-    const seen = new Map(), spec = (D.attribute_specs || {})[K.map?.state?.colour] || {}, order = Object.keys(spec.values || {});
+    const seen = new Map(), spec = (D.attribute_specs || {})[mapColour()] || {}, order = Object.keys(spec.values || {});
     marks().forEach(m => { const c = colourOf(m); const key = c.label || cap(NOUNS); if (!seen.has(key)) seen.set(key, [markColour(m), order.indexOf(c.key)]); });
     return [...seen.entries()].sort((x, y) => (x[1][1] < 0 ? 99 : x[1][1]) - (y[1][1] < 0 ? 99 : y[1][1])).map(([l, [c]]) => [l, c]);
   }

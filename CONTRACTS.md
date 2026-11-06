@@ -778,6 +778,24 @@ lists. Genes of other proteins come from the snapshot's FASTA. The hierarchy tab
 the members table a set id and a UniProt accession per row. Nothing is asked of the source's service; the page links to it.
 The one-file copy has no pathway files and so no button. A site without `pathways` has none.
 
+### The protein page, variants, downloads (cards mode)
+
+A protein's page is the map (its key open, the export buttons below it), then one block with **Network**, **3D** and **Sites**
+(one open at a time; the network draws before its folded options, the 3D view before its own), then "More about <gene>" with
+the kit's other cards, each folded. With a selection, the 3D view and its exports (PNG, ChimeraX, PyMOL, mmCIF, SVG) show only
+the sites the selection and filters leave (the map fades the rest), with a chip for the selection and one per state to switch a
+state off; colours and the "no assigned state" grey are the map's, the legend names what is shown, and an export's header says
+"Shows k of n sites". The site card opens with the variants at the residue: UniProt's natural variants (disease named) and the
+site's `changes`; the map labels every variant that falls on a mark, on a second or third line when labels would overlap. The
+search reads `R216C` (that position in every protein) and `FUS R216C` (the site; the change is not matched), and says what it
+matched. A card's `note` (`website.front.cards[].note`) stays under the card and under its questions' titles.
+
+Every TSV a card or a set question writes has `test`, `n`, `p`, `q`, the interval where there is one, `data_version` and
+`selection` as columns, besides the header lines (`#`) with the citation and the selection in words; Methods & data lists the
+columns. Print shows the selection, the version and the citation (a block only Print shows); the PDF's foot carries them; a link
+that names a page, a protein or a selection carries `dv`; a variant's downloads (the lower-confidence version) carry its name in
+the file name and in the header.
+
 ## What the page reads at once and what it reads later
 
 `index.html` holds the data of the first screen (`site-data`). Two files are read only when something asks for them:
