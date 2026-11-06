@@ -74,6 +74,7 @@
     const lo = 2 ** a, hi = 2 ** b, L = x => (Math.log2(Math.min(hi, Math.max(lo, x))) - a) / (b - a);
     const gap = narrow() ? 0.32 : 0.2, ticks = [1];                  // about 36 px between labels
     NICE.filter(t => t >= lo && t <= hi && t !== 1).sort((p, q) => Math.abs(Math.log2(p)) - Math.abs(Math.log2(q))).forEach(t => { if (ticks.every(u => Math.abs(L(t) - L(u)) >= gap)) ticks.push(t); });
+    if (ticks.length < 2) { const far = NICE.filter(t => t >= lo && t <= hi && t !== 1).sort((p, q) => Math.abs(L(q) - L(1)) - Math.abs(L(p) - L(1)))[0]; if (far) ticks.push(far); }     // always 1× and one more
     return { L, ticks: ticks.sort((p, q) => p - q), lo, hi };
   }
   const PX = f => (3 + 94 * f).toFixed(1);                   // the track keeps 3% at each end, so a dot at the end is whole
