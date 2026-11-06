@@ -1,13 +1,12 @@
-/* The cards front end's protein page below the map: the folds under four headings, each fold readable while closed (a small
-   chart along the protein, a big number or bars at the right of its title), the tab counts, and the switch between what is
-   recorded for the protein and the dataset's context. It knows no mark, source or organism by name: the headings are
-   website.protein.headings (a title and the fold ids it holds), the pictures read the page's own data (the marks and their
-   attributes, the regions, the RNA and DNA model, the tables of website.tables) through the builders that register them with
-   K.pfolds.set(foldId, html). A module of the site kit; only on the cards front end. */
+/* The protein page's folds, on the classic and the cards front end: each fold readable while closed (a small chart along the
+   protein, a big number or bars at the right of its title; on a phone under the title), and the switch between what is
+   recorded for the protein and the dataset's context (the cards layout puts it in a heading, the classic page at the top of
+   the group with website.protein.groups[].switch). The cards layout adds the headings and tab counts. It knows no mark, source
+   or organism by name: the pictures read the page's own data (the marks and their attributes, the regions, the RNA and DNA
+   model, the tables of website.tables) through the builders that register them with K.pfolds.set(foldId, html). A module of the site kit. */
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
   const { D, W, esc, int } = K;
-  if (D.front?.mode !== 'cards') return;
   const PRO = D.protein_view || {}, SPECS = D.attribute_specs || {};
   const PICS = {};                                   // acc|fold id -> html
   const acc = () => K.protState?.().acc || '';
@@ -129,6 +128,7 @@
     }
   }
 
+  K.pfoldsSwitch = ctxSwitch;                         // the classic page puts it at the top of a group that asks for it (website.protein.groups[].switch)
   K.pfolds = { set, track, lane, bigN, meters, pills, refresh: () => { builtin(); ctxPanels(); } };
   (K.afterRender ||= []).push(() => { if (!document.querySelector('.pfold')) return; builtin(); ctxPanels(); Object.keys(PICS).filter(k => k.startsWith(acc() + '|')).forEach(k => place(k.split('|')[1])); });
 });

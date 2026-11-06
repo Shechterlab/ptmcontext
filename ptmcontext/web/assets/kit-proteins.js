@@ -84,7 +84,7 @@
     const out = GROUPS.map((g, n) => {
       const hs = keyed.filter(x => x[0] === n).map(x => x[3]); if (!hs.length) return '';
       const kids = hs.map(h => /^<details class="pfold" id="[^"]+" open/.test(h)), open = PV.open[g.id] ?? kids.some(Boolean), n0 = kids.filter(Boolean).length;
-      return `<details class="pgroup" id="${esc(g.id)}"${open ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h2>${esc(g.title)}</h2><span class="fsum">${hs.length} section${hs.length === 1 ? '' : 's'}${n0 ? `, ${n0} open` : ''}</span></summary><div class="pgroup-body">${hs.join('')}</div></details>`;
+      return `<details class="pgroup" id="${esc(g.id)}"${open ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h2>${esc(g.title)}</h2><span class="fsum">${hs.length} section${hs.length === 1 ? '' : 's'}${n0 ? `, ${n0} open` : ''}</span></summary><div class="pgroup-body">${g.switch && K.pfoldsSwitch ? `<div class="pheading pgroup-switch">${K.pfoldsSwitch()}</div>` : ''}${hs.join('')}</div></details>`;
     }).join('');
     return lead + `<div class="pgroup-tools"><button type="button" class="btn small" data-folds="open">Open all</button> <button type="button" class="btn small" data-folds="close">Close all</button></div>` + out;
   }

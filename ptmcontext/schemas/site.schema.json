@@ -3876,6 +3876,7 @@
                 "properties": {
                   "id": {"type": "string", "pattern": "^g-[a-z0-9-]+$"},
                   "title": {"type": "string"},
+                  "switch": {"type": "boolean", "description": "put the This protein / Dataset context switch at the top of the group"},
                   "folds": {"type": "array", "items": {"type": "string", "pattern": "^p-[a-z0-9-]+$"}}
                 }
               }
