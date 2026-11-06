@@ -2905,6 +2905,10 @@
                   "opens": {
                     "type": "string"
                   },
+                  "hide_in": {
+                    "enum": ["cards"],
+                    "description": "cards: the tile is left out on the cards front end (its number is in a fold's header there)"
+                  },
                   "tip": {
                     "anyOf": [
                       {
@@ -3875,6 +3879,26 @@
                   "folds": {"type": "array", "items": {"type": "string", "pattern": "^p-[a-z0-9-]+$"}}
                 }
               }
+            },
+            "headings": {
+              "type": "array",
+              "description": "the cards front end's folds under labelled headings, each fold in the group that lists it (a fold no group lists follows the last); switch adds the This protein / Dataset context switch to a heading",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "title", "folds"],
+                "properties": {
+                  "id": {"type": "string", "pattern": "^h-[a-z0-9-]+$"},
+                  "title": {"type": "string"},
+                  "switch": {"type": "boolean"},
+                  "folds": {"type": "array", "items": {"type": "string", "pattern": "^p-[a-z0-9-]+$"}}
+                }
+              }
+            },
+            "context": {
+              "type": "object",
+              "description": "the Dataset context view: for a fold (by id), the protein-set questions whose sets it lists for the protein, each shown with the dataset's own test of the set",
+              "additionalProperties": {"type": "array", "items": {"type": "string"}}
             },
             "open": {
               "type": "array",

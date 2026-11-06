@@ -1680,3 +1680,72 @@ a.pchip:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
 .sc-note > summary { cursor: pointer; font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
 .site-card .sc-kv { grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr); gap: 0.2rem 0.8rem; }
 .site-card .sc-sp .sp-sum { margin: 0 0 0.3rem; }
+
+/* round 5: a fold readable while closed: its picture at the right of the title (on a phone, below it), the headings, the context switch */
+.pheading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.9rem; margin: 1.3rem 0 0.5rem; }
+.pheading h3 { font-family: var(--font-body); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); margin: 0; }
+.pheading .ctx-seg button { padding: 0.15rem 0.7rem; min-height: 1.9rem; }
+.pheading .ctx-note { flex: 1 1 14rem; }
+.p-more { display: none; }
+.pview ~ .pheading:first-of-type { margin-top: 1rem; }
+.pfold > summary:has(.fpic) { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(12rem, 38%); grid-template-areas: "m t p" "m s p"; align-items: center; gap: 0.1rem 0.7rem; }
+.pfold > summary:has(.fpic) .pfm { grid-area: m; }
+.pfold > summary:has(.fpic) h3 { grid-area: t; align-self: end; }
+.pfold > summary:has(.fpic) .fsum { grid-area: s; align-self: start; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pfold > summary:has(.fpic) .fpic { grid-area: p; min-width: 0; }
+.pfold[open] > summary:has(.fpic) .fsum { display: block; }
+.fpic { display: block; font-size: 0.78rem; color: var(--muted); }
+.fp-track { display: grid; gap: 2px; }
+.fp-row { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); align-items: center; gap: 0.4rem; line-height: 1; }
+.fp-row b { font-weight: 500; font-size: 0.68rem; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fp-row svg { display: block; width: 100%; height: 0.62rem; overflow: visible; }
+.fp-base { stroke: var(--line-strong); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.fp-row rect { fill: var(--accent); }
+.fp-row rect.fp-site { fill: var(--accent); }
+.fp-row rect.fp-ptm { fill: var(--ink-2); }
+.fp-row rect.fp-u { fill: var(--line-strong); }
+.fp-row rect.fp-u0 { fill: color-mix(in srgb, var(--accent) 55%, var(--surface)); }
+.fp-row rect.fp-u1 { fill: color-mix(in srgb, var(--accent) 80%, var(--surface)); }
+.fp-row rect.fp-u2 { fill: color-mix(in srgb, var(--ink-2) 45%, var(--surface)); }
+.fp-row rect.fp-u3 { fill: color-mix(in srgb, var(--ink-2) 25%, var(--surface)); }
+.fp-row rect.fp-k-rna { fill: #8e63c4; } .fp-row rect.fp-k-dna { fill: #2f8f9d; } .fp-row rect.fp-k-protein, .fp-row rect.fp-k-self { fill: #3b7a8c; }
+.fp-row rect.fp-soft { opacity: 0.45; }
+.fp-axis { display: grid; grid-template-columns: 3.4rem 1fr auto; gap: 0.4rem; font-size: 0.64rem; color: var(--muted); line-height: 1; }
+.fp-axis span:first-of-type { grid-column: 2; }
+.fp-big { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.1rem 1.1rem; align-items: baseline; }
+.fp-big b { font-size: 1.7rem; font-weight: 600; color: var(--accent-dark); line-height: 1; margin-right: 0.15rem; }
+.fp-meters { display: grid; gap: 3px; }
+.fp-m { display: grid; grid-template-columns: 4.4rem minmax(0, 1fr) 3.2rem; align-items: center; gap: 0.4rem; line-height: 1.1; }
+.fp-m i { font-style: normal; font-size: 0.72rem; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fp-m b { font-size: 0.72rem; font-weight: 600; color: var(--ink-2); }
+.fp-bar { position: relative; height: 0.55rem; background: var(--surface-2); border-radius: 3px; }
+.fp-bar u { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 3px; }
+.fp-bar s { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); }
+.fp-pills { display: flex; flex-wrap: wrap; gap: 0.25rem; justify-content: flex-end; }
+.fp-pills span { border: 1px solid var(--line-strong); border-radius: 999px; padding: 0.1rem 0.55rem; font-size: 0.75rem; color: var(--ink-2); }
+.pt-n { margin-left: 0.35rem; font-weight: 400; font-size: 0.78rem; color: var(--muted); }
+.ctx-panel { margin: 0 0 0.8rem; } .ctx-panel h4 { margin: 0 0 0.3rem; }
+.ctx-list { margin: 0; padding-left: 1.1rem; font-size: 0.9rem; }
+.ctx-dataset-on .pc-own { display: none; }
+.cv-tile { cursor: pointer; }
+@media (max-width: 700px) {
+  .pfold > summary:has(.fpic) { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "m t" "m s" "p p"; }
+  .pfold > summary:has(.fpic) .fpic { margin-top: 0.35rem; }
+  .fp-big { justify-content: flex-start; }
+}
+
+/* round 5: the Interactions view, site first; the network smaller and folded when no mark is at an interface */
+.pix-sec { margin: 0 0 1.1rem; }
+.pix-sec h4 { font-size: 0.8rem; font-family: var(--font-body); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 0.35rem; }
+.pix-sec .sub { margin: 0 0 0.45rem; }
+.pix-head { margin: 0.5rem 0; font-size: 0.92rem; }
+.pix-who td { vertical-align: top; }
+.pw-g { display: block; margin: 0 0 0.15rem; }
+.pix-paths { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; font-size: 0.9rem; }
+.pix-parts .yes { color: var(--accent-dark); font-weight: 600; }
+.pn-fold { margin-top: 0.8rem; border-top: 1px solid var(--line); padding-top: 0.5rem; }
+.pn-fold > summary { cursor: pointer; font-weight: 600; color: var(--ink-2); font-size: 0.92rem; }
+.pn-fold > summary .muted { font-weight: 400; }
+.pn-fold .pn-box { aspect-ratio: 800 / 520; max-height: 24rem; margin: 0 auto; }
+.pn-fold .pn-svg { max-height: 24rem; }
+@media (max-width: 700px) { .pn-fold .pn-box { max-height: 20rem; } }

@@ -106,7 +106,7 @@
     const take = id => { const k = parts.findIndex(h => idOf(h) === id); return k < 0 ? '' : parts.splice(k, 1)[0]; };
     const map = take('p-map'), panes = TABS.map(([id, t]) => [id, t, take(id)]).filter(x => x[2]);
     const bar = `<div class="ptabs" role="group" aria-label="${esc(p.gene || p.acc)}: network, 3D structure and sites">${panes.map(([id, t]) => `<button type="button" class="ptab" data-ptab="${id}" aria-pressed="${id === tabs.cur}">${esc(t)}</button>`).join('')}</div>`;
-    const more = arrangeFolds(parts.join(''), true);
+    const more = K.pfoldsLayout && PRO.headings?.length ? K.pfoldsLayout(arrangeFolds(parts.join(''), true)) : arrangeFolds(parts.join(''), true);
     return lead + map + (panes.length ? `<div class="pview">${bar}${panes.map(x => x[2]).join('')}</div>` : '') +
       (more ? `<h2 class="p-more">More about ${esc(p.gene || p.acc)}</h2>${more}` : '');
   }
@@ -151,6 +151,7 @@
   });
   addEventListener('resize', balanceTiles);
   // the map's downloads, with the export size and resolution folded into the same bar
+  K.protState = () => ({ acc: PV.acc, p: byAcc[PV.acc] || PV.lightP, rec: PV.rec, tb: PV.tb, af: PV.af, siteName: pos => siteOf(byAcc[PV.acc] || PV.lightP || { acc: PV.acc }, pos) });
   const mapExp = kinds => K.expBar(kinds, 'mexp', 'the map', 'sources').replace(/<\/div>$/, (K.map?.exportOpts?.() || '') + '</div>');
   function drawMap() { const el = document.getElementById('pmap'); if (el && PV.rec) K.map.render(el, mapCtx()); }
   const site = pos => siteOf(byAcc[PV.acc] || PV.lightP || { acc: PV.acc }, pos);
@@ -422,7 +423,7 @@
   function headline(p, rec) {
     const facts = D.protein_view?.facts; if (!facts?.length) return '';
     const n = rec.marks.length, fill = (t, extra = {}) => String(t || '').replace(/\{residues\}/g, W.residues).replace(/\{marks\}/g, W.marks).replace(/\{class\}/g, extra.cls || '');
-    const cards = facts.map(f => {
+    const cards = facts.filter(f => !(CARDS && f.hide_in === 'cards')).map(f => {
       let big = '', lab = '', tip = typeof f.tip === 'string' ? f.tip : '', word = '';
       if (f.count) {
         big = f.of === 'candidates' ? `${int(n)} of ${int(p.cand)}` : int(n); lab = fill(f.label || cap(W.marks));
@@ -801,6 +802,7 @@
       if (af.failed || af.none) { const first = !PV.af; PV.af = af; if (first) drawMap(); }
       if (af.failed || af.none) return;
       const first = !PV.af; PV.af = af; if (first) drawMap();
+      K.pfolds?.refresh();
       // AlphaMissense: each mark's substitutions (the file lists every residue's), their mean, read once for the site card
       if (af.amUrl && !af.am && !af.amAsked) {
         af.amAsked = true;

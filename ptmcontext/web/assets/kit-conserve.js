@@ -150,7 +150,7 @@
         paint(acc);
         // website.protein.open: a fold the site starts open opens when its orthologues arrive, unless the reader has touched it
         const f = document.getElementById('p-cons');
-        if (f && curAcc() === acc && K.foldStarts?.('p-cons') && !K.foldTouched?.('p-cons')) f.open = true;
+        if (f && curAcc() === acc && D.front?.mode !== 'cards' && K.foldStarts?.('p-cons') && !K.foldTouched?.('p-cons')) f.open = true;
       });
     }).catch(e => { st.phase = 'fail'; st.err = fail(e); st.who = st.ensg ? 'Ensembl Compara' : 'UniProt'; paint(acc); });
   }
@@ -230,6 +230,7 @@
     const el = document.getElementById('p-cons'); if (!el) return;
     const st = ST[acc];
     el.querySelector('.fsum').innerHTML = sumOf(st);
+    if (K.pfolds) K.pfolds.set('p-cons', st?.phase === 'ok' && st.ck?.me != null ? K.pfolds.meters(st.ck.species.filter(x => x.m).slice(0, 6).map(x => ({ label: x.r.name, v: x.n / x.m, ref: x.om ? x.on / x.om : null, text: `${x.n}/${x.m}` }))) : '');
     el.querySelector('.pfold-body').innerHTML = bodyHtml(acc);
     chip(acc);
   }
@@ -241,6 +242,15 @@
     if (!text) { old?.remove(); return; }
     const tip = ck && ck.me != null ? `<b>Conservation across species</b><br>On average, the share of ${st.model.rows.length} species whose orthologue still has ${esc(KEPT)} at a ${esc(W.mark)} (${int(ck.n1)}) is ${PCT(ck.me)}%` +
       (ck.other != null ? `, and ${PCT(ck.other)}% at the other ${esc(W.residues)} of the protein (${int(ck.n2)})` : '') + (ck.p != null ? `; Wilcoxon rank-sum p ${esc(K.fq(ck.p))}` : '') + '.<br>Click to open the alignments.' : 'Asking UniProt and Ensembl Compara for the orthologues.';
+    const tiles = document.querySelector('.hl-cards');
+    if (D.front?.mode === 'cards' && tiles) {           // the cards front end: a tile among the headline tiles, not a chip
+      document.getElementById('cv-chip')?.remove(); let t = document.getElementById('cv-tile');
+      if (!(st?.phase === 'ok' && ck?.me != null)) { t?.remove(); return; }
+      if (!t) { t = document.createElement('button'); t.type = 'button'; t.id = 'cv-tile'; t.className = 'hl-card'; t.setAttribute('data-cv-open', ''); tiles.append(t); dispatchEvent(new Event('resize')); }
+      t.setAttribute('data-hl-tip', tip);
+      t.innerHTML = `<span class="hl-glyph"><svg viewBox="0 0 64 22" aria-hidden="true"><path d="M4 11 h14 M18 11 l10 -6 h28 M18 11 l10 6 h28 M40 5 v12"/><circle class="g-f" cx="58" cy="5" r="3"/></svg></span><b class="hl-big">${PCT(ck.me)}%</b><span class="hl-lab">${esc(RES.length === 1 ? `still ${KEPT} in orthologues` : 'conserved in orthologues')}${ck.other != null ? ` (others ${PCT(ck.other)}%)` : ''}</span><span class="hl-kind">Conservation</span>`;
+      return;
+    }
     const html = `<button type="button" class="chip cv-chip" id="cv-chip" data-cv-open${tipAttr(tip)}>${esc(text)}</button>`;
     if (old) old.outerHTML = html; else host.insertAdjacentHTML('beforeend', html);
   }

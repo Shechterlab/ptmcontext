@@ -2078,6 +2078,14 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: g-binding, title: Binding and contacts, folds: [p-cc, p-ix, p-na]}
       - {id: g-context, title: "Context: location, condensates, disease, cancer", folds: [p-cond, p-dis, p-depmap]}
       - {id: g-structure, title: Structure and sequence, folds: [p-struct, p-regions, p-seq]}
+    headings:              # the cards front end's folds under labelled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
+      - {id: h-ix, title: Interactions, folds: [p-cc, p-na]}
+      - {id: h-sites, title: Sites and structure, folds: [p-score, p-pert, p-exp]}
+      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cons]}
+      - {id: h-seq, title: Sequence features, folds: [p-cluster, p-ptm, p-seq]}
+    context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
+      p-cond: [condensate_proteome, hpa_location]
+      p-dis: [disease_family]
     open: [p-map, p-sites, p-cons, p-ix]   # the explorer's folds are all shut; here the map and the sites, and the orthologues and the network once they have data
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
       location:
@@ -2252,7 +2260,7 @@ website:                  # the look and words of the website (ptmc web); layout
          label: in RNA-bound fragments or peptides, kind: Measured in cells · not a structural contact, glyph: squiggle, opens: p-sites,
          tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RBR-ID+ peptide. This is where RNA binds in cells, not a structural contact: the RNA and DNA interactions section counts the sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
       - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
-      - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds}
+      - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds, hide_in: cards}
     card:                  # the site card: its blocks, each reading an attribute or a table above (a block without its data is absent)
       labels: {states: Methylation state, calls: PRMT perturbation, changes: In cancers, reported: Reported by}
       hide: [perturbation, nucleic_acid, nucleic_acid_type, n_studies, partner_class]   # attributes the blocks show in full (calls, bound sequences; the study count the Reported by list gives; the partner classes the Writer and reader block gives)

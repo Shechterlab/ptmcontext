@@ -320,6 +320,27 @@
       ['site', ...cols].join('\t') + '\n' + rs.map(r => [`${c.gene} ${c.label}`, ...cols.map(k => String(r[k] ?? '').replace(/[\t\n]/g, ' '))].join('\t')).join('\n') + '\n';
   }
 
+  // a protein's records at all its marks, site first: what the records at each site say and with whom (the protein page's Interactions view)
+  function proteinRecords(p, tb, siteLabel, isListed) {
+    if (!has(RC.table)) return null;
+    const rs = rows(tb, RC.table).filter(r => r.partner_kind === 'protein' || r.partner_kind === 'self' || (!r.partner_kind && r.partner_accession));
+    const by = new Map();
+    for (const r of rs) {
+      if (!by.has(r.position)) by.set(r.position, new Map());
+      const g = by.get(r.position); if (!g.has(r.group)) g.set(r.group, { names: new Map(), papers: new Set() });
+      const x = g.get(r.group), nm = r.partner_kind === 'self' ? 'another copy' : (r.partner || r.partner_name || r.partner_accession);
+      if (nm) x.names.set(nm, r.partner_kind === 'self' || !r.partner_accession || !isListed?.(r.partner_accession) ? null : r.partner_accession);
+      if (paperKey(r)) x.papers.add(paperKey(r));
+    }
+    const sites = [...by.keys()].sort((a, b) => a - b);
+    const nameHtml = ([nm, acc]) => (acc ? `<a href="${esc(K.link('protein', acc))}"><b>${esc(nm)}</b></a>` : `<b>${esc(nm)}</b>`);
+    const row = pos => { const g = by.get(pos), papers = new Set([...g.values()].flatMap(x => [...x.papers]));
+      return `<tr><td data-label="Site"><button type="button" class="linkish mono" data-site-open="${pos}">${esc(siteLabel(pos))}</button></td><td data-label="What the records show">` +
+        [...g.entries()].sort((a, b) => grpOrder(a[0]) - grpOrder(b[0])).map(([k, x]) => `<span class="pw-g"><span class="muted">${esc(cap(grpLabel(k)))}</span> ${[...x.names].slice(0, 5).map(nameHtml).join(', ')}${x.names.size > 5 ? ` <span class="muted">+${x.names.size - 5}</span>` : ''}</span>`).join('') +
+        `</td><td data-label="Papers" class="num">${papers.size ? int(papers.size) : '<span class="muted">–</span>'}</td></tr>`; };
+    return { n: sites.length, rows: sites.map(row) };
+  }
+
   // ---- writer and reader --------------------------------------------------------------------------------------------
   const WR = C.writer || {};
   function writerBlock(c) {
@@ -492,6 +513,6 @@
     ['[data-entry3d]', (el, e) => { if (typeof K.show3d === 'function') { e.preventDefault(); K.show3d(el.dataset.acc, +el.dataset.pos, { entry: el.dataset.entry3d }); } else window.open(el.href, '_blank', 'noopener'); }],
     ['[data-open-fold]', el => { const d = document.getElementById(el.dataset.openFold); if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); } }],
   );
-  K.card = { load, loadDefault, defaultTb, compact: SDF, light, lightIndex, rows, at, has, badge, tags, entries, sequences, around, states, changes, calls, evidenceBlock, recordsBlock, recordsTsv,
+  K.card = { proteinRecords, load, loadDefault, defaultTb, compact: SDF, light, lightIndex, rows, at, has, badge, tags, entries, sequences, around, states, changes, calls, evidenceBlock, recordsBlock, recordsTsv,
     writerBlock, evidenceRow, reportedBy, citeBox, asPartner, partnersOf, wholeProtein, aroundRows, windowsOf, callRows, num };
 });
