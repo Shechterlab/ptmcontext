@@ -701,6 +701,22 @@
       [...q, ...t].map(([k, lab, vals, aka]) => `<tr><td class="mono">${esc(k)}${aka.length ? `<br><span class="muted">or ${aka.map(esc).join(', ')}</span>` : ''}</td><td>${esc(lab)}</td><td class="wrapok">${vals.map(esc).join('; ')}</td></tr>`).join('') +
       `</tbody></table></div></section>`;
   }
+  // the columns of the tables the site's TSV buttons write (cards front end): one dictionary, so a column read alone is still understood
+  function columnsSection() {
+    if (D.front?.mode !== 'cards') return '';
+    const R = [['card, question, row, code', 'The card or question a row belongs to, the class or set as the page names it, and its code in the data.'],
+      ['test', 'Which test made the row: one-sided hypergeometric test (fold enrichment; protein-set questions), Mantel-Haenszel odds ratio within each protein (continuity-corrected CMH test) or two-sided Fisher exact test on pooled counts (Haldane-Anscombe odds ratio). q is Benjamini-Hochberg across the question’s rows.'],
+      ['measure, value', 'Fold enrichment or odds ratio, as a multiple (1 is no difference). A fold below 1 is not tested for depletion.'],
+      ['ci_low, ci_high', '95% confidence interval of an odds ratio. A one-sided set test has no interval.'],
+      ['n', `The ${W.marks} in the class (a residue question) or the proteins in the set (a protein-set question), in your selection when it is tested again.`],
+      ['p, q', 'p of the test and q, p adjusted across the question’s rows. A selection tested again in the browser is exploratory and not adjusted for other selections tried.'],
+      ['reading', 'More often, less often or no significant difference (q ≤ 0.05 and at least 1.1× for a difference); shown, not tested, where your selection was made with the question.'],
+      ['tested_on', 'Whole dataset, or your selection tested again in the browser. A selection under the site’s minimum is not tested; the whole dataset is shown.'],
+      ['data_version', 'The data release the rows come from; the same version is in the address (dv) of a link.'],
+      ['selection', 'Your search and filters in words, or “whole dataset”. The header of each file repeats it with the citation, the sequence release and the input MD5s.']];
+    return `<section id="m-columns"><h3>Columns of the downloaded tables</h3><p>The lines that start with # are the file’s header (what it holds, how to cite it, the version, the selection); the table follows. A file from the lower-confidence version has its name in the file name and in the header.</p>` +
+      `<div class="tbl-card"><table class="tbl"><thead><tr><th>Column</th><th>What it holds</th></tr></thead><tbody>${R.map(([c, t]) => `<tr><td class="mono">${esc(c)}</td><td>${esc(t)}</td></tr>`).join('')}</tbody></table></div></section>`;
+  }
   function privacySection() {
     const live = ['UniProt (rest.uniprot.org)', 'AlphaFold DB (alphafold.ebi.ac.uk)', 'PDBe (www.ebi.ac.uk/pdbe)', ...(D.partners ? ['STRING (string-db.org)'] : []), ...(D.protein_view?.conservation?.ensembl?.rest ? [`Ensembl (${String(D.protein_view.conservation.ensembl.rest).replace(/^https?:\/\//, '').replace(/\/$/, '')})`] : []),
       ...(D.protein_view?.sets || []).flatMap(c => (c.live?.open_targets?.graphql ? [`Open Targets (${new URL(c.live.open_targets.graphql).host})`] : [])),
@@ -711,8 +727,8 @@
   }
   K.sections.method = () => [['m-g1', 'The tests', 0], ['m-tests', 'How the tests work', 1], ['m-questions', 'Questions, and what made each', 1], ['m-parity', 'Checked against the release', 1],
     ['m-gq', 'Each question', 0], ...D.analyses.map(a => [`m-q-${a.id}`, a.title, 1]), ...K.methods.map(x => [`m-q-${x.id}`, x.title, 1]),
-    ['m-g2', 'The data', 0], ['m-data', 'Data', 1], ['m-sources', 'Sources', 1], ['m-g3', 'The site', 0], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1], ['m-download', 'Download the data', 1], ['m-search', 'Search terms', 1], ['m-privacy', 'Licences and privacy', 1]]
-    .filter(([id]) => (id !== 'm-parity' || D.run.parity) && (id !== 'm-download' || (D.downloads || []).length) && (id !== 'm-sources' || Object.values(D.attribute_specs || {}).some(x => x.kind === 'list' && x.link)));
+    ['m-g2', 'The data', 0], ['m-data', 'Data', 1], ['m-sources', 'Sources', 1], ['m-g3', 'The site', 0], ['m-made', 'How this site is made', 1], ['m-cite', 'How to cite', 1], ['m-download', 'Download the data', 1], ['m-columns', 'Columns of the tables', 1], ['m-search', 'Search terms', 1], ['m-privacy', 'Licences and privacy', 1]]
+    .filter(([id]) => (id !== 'm-parity' || D.run.parity) && (id !== 'm-download' || (D.downloads || []).length) && (id !== 'm-columns' || D.front?.mode === 'cards') && (id !== 'm-sources' || Object.values(D.attribute_specs || {}).some(x => x.kind === 'list' && x.link)));
   // the Overview's sections and their questions: jumps on the tiles, links from an opened question (keeping the
   // selection and the baseline)
   K.sections.overview = () => [
@@ -807,7 +823,7 @@
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th></tr></thead><tbody>` +
       D.analyses.map(a => `<tr><td>${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag">new</span>' : ''}</td><td class="wrapok">${esc(madeByText(a.id))}</td></tr>`).join('') +
       `</tbody></table></div></section>` + D.analyses.map(questionMethod).join('') + (K.methodParts || []).map(f => f()).join('') + K.methods.map(x => x.html()).join('') + par +
-      citeSection() + downloadSection() + searchSection() + privacySection() +
+      citeSection() + downloadSection() + columnsSection() + searchSection() + privacySection() +
       sourcesSection() +
       `<section id="m-made"><h3>How this site is made</h3><p>One file, <span class="mono">${esc(D.site.config)}</span>, sets the mark, the sequences and regions, the questions, the colours and the pictures. ptmcontext ${esc(D.kit.version)} (commit <span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(R.written))}. The citation, version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>` +
       `<p>Every download carries its citation, data sources, versions, inputs and export date, printed under each figure and kept in the file (SVG metadata, PNG text fields, PDF properties, TSV # lines).</p></section></div>`;
@@ -877,7 +893,8 @@
   function preamble(title, what) {
     const R = D.run, sn = R.snapshot || {};
     const inputs = Object.entries(R.inputs || {}).map(([k, v]) => `${k} (MD5 ${v.md5})`).join(', ');
-    return [`# ${D.site.name}: ${title}`, `# What: ${what}`,
+    return [`# ${D.site.name}${D.variant ? ' (' + D.variant.label + ')' : ''}: ${title}`, `# What: ${what}`,
+      D.variant ? `# Variant: ${D.variant.label}${D.variant.description ? ': ' + D.variant.description : ''}. Not the main release's set of sites; do not mix the two.` : null,
       CIT.preferred ? `# Cite: ${CIT.preferred.text}${doiTxt(CIT.preferred.doi)}` : null,
       (CIT.references || []).length ? '# Data sources: ' + CIT.references.map(r => r.text + doiTxt(r.doi)).join(' | ') : null,
       `# Version: ${CIT.version || '–'}${CIT.date ? ' (' + CIT.date + ')' : ''}${CIT.doi ? ', doi:' + CIT.doi : ''}${CIT.licence ? '; licence ' + CIT.licence : ''}`,
@@ -890,18 +907,23 @@
   const g6 = v => v == null ? '' : String(+Number(v).toPrecision(6));
   // a selection, in words, for the figures and tables made from it
   const selWords = () => (selOn() && K.sel.data() ? `. Your selection: ${K.sel.describe()} (${K.sel.nMarks()} ${K.sel.nMarks() === 1 ? W.mark : W.marks} on ${K.sel.nProteins()} protein${K.sel.nProteins() === 1 ? '' : 's'}), ${vsOn() ? `against ${vsName()} (${METHOD[S.m] || 'pooled'})` : 'tested again'} in the browser; exploratory, not adjusted for the other selections tried` : '');
+  // every TSV row says which test made it, the data version and the selection, so a row read alone is still cited
+  const SET_TEST = 'one-sided hypergeometric test (fold enrichment), q Benjamini-Hochberg';
+  const selText = () => (selOn() && K.sel.data() ? K.sel.describe() || 'selection' : 'whole dataset');
+  const TAIL_HEAD = ['data_version', 'selection'];
+  const tail = () => [CIT.version || '', selText()];
   function cardTsv(aid, m) {
     const a = A[aid];
     if (a.kind === 'protein_sets') {
       const rows = rowsOf(a, 'enricher').slice().sort((x, y) => x.p - y.p);
-      const head = ['set', 'set_id', 'fold_enrichment', 'p', 'q', `${W.marked}_proteins_in_set`, `${W.marked}_proteins`, 'other_proteins_in_set', 'other_proteins', 'odds_ratio_within_abundance_deciles', 'ci_low', 'ci_high', 'q_within_abundance_deciles', 'reading'];
+      const head = ['set', 'set_id', 'fold_enrichment', 'p', 'q', `${W.marked}_proteins_in_set`, `${W.marked}_proteins`, 'other_proteins_in_set', 'other_proteins', 'odds_ratio_within_abundance_deciles', 'ci_low', 'ci_high', 'q_within_abundance_deciles', 'reading', 'test', ...TAIL_HEAD];
       return preamble(a.title, `${a.question} One row per set tested: ${a.sub}${selWords()}. ${setWords(a)}`) + head.join('\t') + '\n' +
-        rows.map(r => { const st = (!r.selection && STRAT[aid + '\u0000' + r.category]) || {}; return [r.label, r.category, g6(r.eff), g6(r.p), g6(r.q), r.a, r.a + r.b, r.c, r.c + r.d, g6(st.eff), g6(st.lo), g6(st.hi), g6(st.q), DIR_WORDS[r.dir]].join('\t'); }).join('\n') + '\n';
+        rows.map(r => { const st = (!r.selection && STRAT[aid + '\u0000' + r.category]) || {}; return [r.label, r.category, g6(r.eff), g6(r.p), g6(r.q), r.a, r.a + r.b, r.c, r.c + r.d, g6(st.eff), g6(st.lo), g6(st.hi), g6(st.q), DIR_WORDS[r.dir], SET_TEST, ...tail()].join('\t'); }).join('\n') + '\n';
     }
     const rows = rowsOf(a, m).slice().sort((x, y) => (y.or ?? -1) - (x.or ?? -1));
-    const head = ['class', 'class_code', 'definition', 'test', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q', `${W.marks.replace(/\W+/g, '_')}_in_class`, `${W.marks.replace(/\W+/g, '_')}_total`, `other_${W.residues.replace(/\W+/g, '_')}_in_class`, `other_${W.residues.replace(/\W+/g, '_')}_total`, 'proteins', 'reading'];
+    const head = ['class', 'class_code', 'definition', 'test', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q', `${W.marks.replace(/\W+/g, '_')}_in_class`, `${W.marks.replace(/\W+/g, '_')}_total`, `other_${W.residues.replace(/\W+/g, '_')}_in_class`, `other_${W.residues.replace(/\W+/g, '_')}_total`, 'proteins', 'reading', ...TAIL_HEAD];
     return preamble(`${a.title}, ${METHOD[m]}`, `${a.question} One row per class: ${a.sub}, ${METHOD_PHRASE[m]}${selWords()}. ${testWords(m)}`) +
-      head.join('\t') + '\n' + rows.map(r => [r.label, r.category, r.help, METHOD[r.method] || r.method, g6(r.or), g6(r.lo), g6(r.hi), g6(r.p), g6(r.q), r.a, r.a + r.b, r.c, r.c + r.d, r.strata ?? '', DIR_WORDS[r.dir]].join('\t')).join('\n') + '\n';
+      head.join('\t') + '\n' + rows.map(r => [r.label, r.category, r.help, METHOD[r.method] || r.method, g6(r.or), g6(r.lo), g6(r.hi), g6(r.p), g6(r.q), r.a, r.a + r.b, r.c, r.c + r.d, r.strata ?? '', DIR_WORDS[r.dir], ...tail()].join('\t')).join('\n') + '\n';
   }
   function statisticsTsv(rows) {
     const lines = D.statistics_tsv.replace(/\n$/, '').split('\n');
@@ -1143,7 +1165,10 @@
     } finally { holder.remove(); }
     download(name + '.pdf', pdf.output('blob'));
   }
+  // a variant's downloads (lower-confidence sites, say) carry its name, so they are never mistaken for the main release's
+  const vSlug = () => (D.variant ? String(D.variant.name || D.variant.label || 'variant').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : '');
   function download(name, data, type) {
+    if (vSlug() && !name.includes(vSlug())) name = name.replace(/(\.[A-Za-z0-9]+)?$/, m => '_' + vSlug() + m);
     const blob = data instanceof Blob ? data : new Blob([data], { type: type || 'application/octet-stream' });
     const url = URL.createObjectURL(blob), a = Object.assign(document.createElement('a'), { href: url, download: name });
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
@@ -1214,7 +1239,7 @@
   // the export buttons of a card, and its Method link (the question's own section, or a section of the Method page)
   const methodLink = (aid, sec) => `<a class="exp-btn" href="${esc(link('method', aid ? 'q-' + aid : sec || ''))}" title="How ${aid ? 'this question was' : 'these were'} made and tested, and from what data">Method</a>`;
   const expBar = (kinds, attrs, label, method) => `<div class="exp" role="group" aria-label="Download ${esc(label)}">${kinds.map(k => `<button type="button" class="exp-btn" data-${attrs}="${k}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}${method ? methodLink(A[method] ? method : '', A[method] ? '' : method) : ''}</div>`;
-  Object.assign(K, { variantSwitch, CIT, PAL, FF, FFH, tw, wrap, figureFrame, exportFigure, expBar, preamble, creditLines, provenance, download, hdate, htime, hlicence, shortCommit, testWords, PADJ, MIN_EFFECT, dir, selOn, vsOn });
+  Object.assign(K, { SET_TEST, selText, TAIL_HEAD, tsvTail: tail, variantSwitch, CIT, PAL, FF, FFH, tw, wrap, figureFrame, exportFigure, expBar, preamble, creditLines, provenance, download, hdate, htime, hlicence, shortCommit, testWords, PADJ, MIN_EFFECT, dir, selOn, vsOn });
   // for modules that draw a question's card their own way (kit-questions.js)
   Object.assign(K, { cardBody, chartRows, chartModel, chartHtml, rowsOf, rowsFor, fkeyOf, allCards, cardOf, byOrder, methodLink, setWords, selWords, EXP_HELP, g6 });
 
@@ -1233,7 +1258,8 @@
     scope();
     const mod = K.views[S.view];
     $('#view').innerHTML = selLine() + (mod ? mod.render(S.arg) : S.view === 'statistics' ? statistics() : S.view === 'method' ? method() : overview());
-    document.title = S.view === 'overview' ? D.site.name : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`;   // the page first: "FUS R216 · <site>"
+    const qTitle = D.front?.mode === 'cards' && S.view === 'overview' && S.arg ? (A[S.arg]?.title || (S.arg === D.cell?.id ? (D.cell.title || 'Cell maps') : '')) : '';
+    document.title = qTitle ? `${qTitle} · ${D.site.name}` : S.view === 'overview' ? D.site.name : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`;   // the page first: "FUS R216 · <site>"
     document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg || !!K.front) && D.header?.compact !== false);      // the header band in full on the Overview only (website.header.compact)
     document.body.classList.remove('bar-hidden');
     pageHint();

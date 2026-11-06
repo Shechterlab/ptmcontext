@@ -176,13 +176,13 @@ marks:
     tcga_any:
       column: tcga_changes
       present: true
-      label: Changed in TCGA tumours
+      label: Mutated in tumours (TCGA)
       kind: category
-      values: {"yes": Changed in a tumour, "no": Not changed}
+      values: {"yes": Mutated in tumours, "no": Not mutated}
       colours: {"yes": "#B42318", "no": "#D9DEE2"}
       colour: true
       filter: true
-      help: "Whether a TCGA tumour (MC3 public calls) carries a missense or stop change of this arginine"
+      help: "Whether a TCGA tumour (MC3 public calls) carries a missense or stop change of this arginine. This counts every methylarginine; the tumour question compares only the proteins whose gene DepMap screened, so its count is smaller"
     depmap:
       column: depmap_changes
       label: Changes in DepMap cell lines
@@ -790,7 +790,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: the other proteins organelle IP classifies (HEK293T)
-    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granule,
+    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granules (cell map),
              p-body: P-body, actin_cytoskeleton: Actin cytoskeleton, centrosome: Centrosome, proteasome: Proteasome,
              14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
              early_endosome: Early endosome, recycling_endosome: Recycling endosome, lysosome: Lysosome,
@@ -898,9 +898,9 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       noun: changed arginine
       title: Changes in tumours and cell lines
       question: "Is a methylated arginine changed in tumours or cancer cell lines more or less often than the other arginines of its protein?"
-      sub: "Methylarginines against the other arginines of the methylated proteins whose gene DepMap screened: a missense or stop change in at least one TCGA tumour (MC3) or DepMap 24Q4 cell line. Not adjusted for codon: arginine codons with a CpG (CGN) mutate most in cancers, and the codons of methylated and other arginines may differ"
+      sub: "Methylarginines against the other arginines of the methylated proteins whose gene DepMap screened (so its tumour count is smaller than the sites with a change in the Filter, which covers every methylated protein): a missense or stop change in at least one TCGA tumour (MC3) or DepMap 24Q4 cell line. Not adjusted for codon: arginine codons with a CpG (CGN) mutate most in cancers, and the codons of methylated and other arginines may differ"
       section: Disease and cancer
-      labels: {tcga_tumours: Changed in a TCGA tumour, depmap_cell_lines: Changed in a DepMap cell line}
+      labels: {tcga_tumours: Mutated in a TCGA tumour, depmap_cell_lines: Mutated in a DepMap cell line}
       help:
         tcga_tumours: "A missense or stop change of the arginine in at least one TCGA tumour (MC3 public calls from the GDC, 33 projects; FILTER PASS, and in OV and LAML also wga alone)"
         depmap_cell_lines: "A missense or stop change of the arginine in at least one DepMap 24Q4 cell line (OmicsSomaticMutations, on the canonical UniProt isoform)"
@@ -1220,6 +1220,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - key: disease
         title: "Disease"
         short: "Disease"
+        note: "Association, not causation: a disease term lists genes linked to it; it does not show that methylation causes or changes the disease."
         chip: "Disease"
         analyses: ["disease_family", "disease_family_additional", "disease_ontology", "disease_term", "cancer_change", "depmap_dependency"]
         facets: [{analysis: disease_family, label: "Families"}, {analysis: disease_family_additional, label: "More groups"}]
@@ -1242,6 +1243,7 @@ website:                  # the look and words of the website (ptmc web); layout
         title: "Position"
         short: "Position"
         chip: "Position"
+        note: "IDR counts differ between questions on purpose: \"In an IDR\" uses MobiDB disorder calls, the structure and interface questions use UniProt disordered regions, and the IDR charge and aromatic questions use IDRs of 20 or more residues. Each question says which."
         analyses: ["disorder", "motif", "domain_context", "domain_class", "structure_context", "idr_charge", "sticker_context_3", "sticker_context_5", "sticker_context_3_idr", "sticker_context_5_idr", "which_factor"]
         facets: [{analysis: disorder, label: "Disorder"}, {analysis: motif, label: "Motifs"}, {analysis: domain_context, label: "Domains"}, {analysis: structure_context, label: "Structure"}]
         home: {analysis: "motif", classes: ["RGG", "RG", "RE"]}
@@ -1314,7 +1316,9 @@ website:                  # the look and words of the website (ptmc web); layout
       reader_classes: "Enzymes and readers"
       perturbations: "PRMT perturbations"
       provenance: "Studies and databases"
-    row_labels:
+    row_labels:                 # a code is unique only within its question; the two stress-granule sets are told apart by source
+      condensate: {DEE660B4: "Stress granule (CD-CODE)"}
+      condensate_proteome: {DEE660B4: "Stress granule (CD-CODE)"}
       disease_family: {"ALS / motor neuron / FTD": "ALS / FTD", "Ataxia / cerebellar degeneration": "Ataxia", "Myopathy / muscle / cardiomyopathy": "Muscle disease", "Alzheimer / tau / dementia": "Alzheimer", "Cancer / neoplasia": "Cancer", "Developmental / congenital syndromes": "Developmental", "Immune / inflammatory": "Immune"}
       panther_group: {"RNA processing and translation": "RNA processing", "Scaffolds, adaptors and chaperones": "Scaffolds", "Transcription, chromatin and DNA": "Transcription", "Protein-modifying enzymes": "Modifying enzymes", "Cytoskeleton, adhesion and matrix": "Cytoskeleton"}
       disorder: {"disordered": "In an IDR", "ordered": "Ordered"}
@@ -1494,7 +1498,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {label: Mitotic chromosome, sets: {hpa_location: Mitotic chromosome}}
       - group: Cytoplasm
         rows:
-          - {label: "RNA granules (stress granules, P-bodies)", name: Stress granules, part: granules, sets: {cell_hcm_compartment: cytoplasmic ribonucleoprotein granule, cell_hcm_domain: cytoplasmic ribonucleoprotein granule, cell_organelle_ip: stress_granule}}
+          - {label: "RNA granules (stress granules, P-bodies)", name: "Stress granules (cell map)", part: granules, sets: {cell_hcm_compartment: cytoplasmic ribonucleoprotein granule, cell_hcm_domain: cytoplasmic ribonucleoprotein granule, cell_organelle_ip: stress_granule}}
           - {label: P-bodies, part: pbodies, in_text: P-bodies, sets: {cell_organelle_ip: p-body, cell_hcm_domain: "centrosome enriched, P-body enriched"}}
           - {label: Translation, name: Ribosomes and translation, part: ribosomes, sets: {cell_organelle_ip: translation}}
           - {label: Cytosol, part: cytosol, sets: {cell_hcm_compartment: "actin cytoskeleton, cytosol", cell_organelle_ip: cytosol, hpa_location: Cytosol}}
@@ -1851,7 +1855,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: ip, label: Maron IP, menu: Maron methyl-IP, attribute: methyl_ip, hide: sm}
       - {id: dom, label: Nearest domain, show: [nearest_domain], hide: sm}
       - {id: struct, label: Structural context, analyses: [structure_context], hide: sm}
-      - {id: tcga, label: Changed in TCGA tumours, attribute: tcga_any, hide: sm}
+      - {id: tcga, label: Mutated in tumours (TCGA), attribute: tcga_any, hide: sm}
     download:              # the explorer's 54 columns where the release has them, and its own additions
       - {name: gene, value: gene}
       - {name: uniprot_accession, value: accession}

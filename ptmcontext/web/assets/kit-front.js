@@ -23,7 +23,7 @@
   const VERSION = D.dataset?.version || '';
   // ---- the address: the abundance check and the data version a link was made with --------------------------------------
   K.paramsIn.push(p => { S.ab = p.get('ab') === '1'; S.dvLink = p.get('dv') || ''; });
-  K.paramsOut.push(p => { if (S.ab) p.set('ab', '1'); const v = S.dvLink || VERSION; if (v && (S.q || K.sel.encode() || S.ab || S.vs !== 'residues' || S.dvLink)) p.set('dv', v); });
+  K.paramsOut.push(p => { if (S.ab) p.set('ab', '1'); const v = S.dvLink || VERSION; if (v && (S.q || K.sel.encode() || S.ab || S.vs !== 'residues' || S.dvLink || S.view !== 'overview' || S.arg)) p.set('dv', v); });      // every link that names a page, a protein or a selection carries the version
   // ---- the selection's state -----------------------------------------------------------------------------------------
   const selOn = () => K.selOn();
   const ready = () => !!K.sel.data();
@@ -99,9 +99,29 @@
     return K.cell.parts().filter(p => p.or != null && p.direction !== 'na' && p.maps >= 2).sort((x, y) => Math.abs(y.l2) - Math.abs(x.l2)).slice(0, 5)
       .map(p => ({ label: F.row_labels?.[D.cell?.id]?.[p.part] || p.row, v: p.or, q: null, dir: p.direction, n: p.maps, nl: `${p.maps} maps`, measure: 'odds', part: p.part, cellRow: true }));
   }
+  // ---- a card's rows as a table: each row says which test made it, n, p, q, the interval, the data version and the selection --------
+  const LAST = { cards: [] };
+  const TEST_OF = { fold: 'one-sided hypergeometric test (fold enrichment); q Benjamini-Hochberg', mantel_haenszel: 'Mantel-Haenszel odds ratio within each protein, continuity-corrected CMH test; q Benjamini-Hochberg', fisher: 'two-sided Fisher exact test on pooled counts (Haldane-Anscombe odds ratio); q Benjamini-Hochberg' };
+  function cardTsv(key) {
+    const x = LAST.cards.find(y => y.c.key === key); if (!x) return '';
+    const c = x.c, g6 = K.g6, wholeNote = x.own ? 'whole dataset (your selection was made with this question)' : '';
+    const sel = K.selText ? K.selText() : '';
+    const rows = [...x.rows.map(r => {
+      const test = r.measure === 'fold' ? TEST_OF.fold : TEST_OF[method()];
+      const what = r.live ? 'selection tested again in the browser' : (selOn() ? 'whole dataset' + (wholeNote ? ' (' + wholeNote + ')' : '') : 'whole dataset');
+      return [c.title, short(r.aid), r.label, r.cat, test, r.measure === 'fold' ? 'fold enrichment' : 'odds ratio', r.v == null ? '' : g6(r.v), r.lo ? g6(r.lo[0]) : '', r.lo ? g6(r.lo[1]) : '', r.n ?? '', r.r ? g6(r.r.p) : '', g6(r.q), r.absent ? 'none in this selection' : r.desc ? 'shown, not tested' : r.dir === 'more' ? 'more often' : r.dir === 'less' ? 'less often' : 'no significant difference', what, VERSION, sel];
+    }), ...(x.cellRows || []).map(r => [c.title, 'cell maps', r.label, r.part || '', 'summary of the cell maps: abundance-adjusted median odds ratio over maps, not a test', 'odds ratio', g6(r.v), '', '', r.n ?? '', '', '', r.dir || '', 'whole dataset', VERSION, sel])];
+    return K.preamble(`${c.title}: the card's rows`, `the rows the home card shows (${rows.length}); fold or odds ratio with a 95% interval where the row has one, n the marks in the class (the proteins in the set for a protein-set question). Not adjusted for other selections tried.`) +
+      ['card', 'question', 'row', 'code', 'test', 'measure', 'value', 'ci_low', 'ci_high', 'n', 'p', 'q', 'reading', 'tested_on', 'data_version', 'selection'].join('\t') + '\n' + rows.map(r => r.map(v => String(v ?? '').replace(/[\t\n]/g, ' ')).join('\t')).join('\n') + '\n';
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest?.('[data-fr-tsv]'); if (!b) return;
+    K.download(`${D.site.id}_${b.dataset.frTsv}_card${selOn() ? '_selection' : ''}_${(VERSION || 'v').replace(/[^\w.]+/g, '')}.tsv`, cardTsv(b.dataset.frTsv), 'text/tab-separated-values');
+  });
   // ---- chips ---------------------------------------------------------------------------------------------------------------
   function chipLabel(k, vals) {
     const id = k.split(':')[1], card = cardOfQ(id), name = (card && card.chip) || K.sel.keyName(k);
+    if (vals.length === 1 && vals[0] === '*') return `Any ${/^[A-Z][^A-Z]*$/.test(name) ? name.toLowerCase() : name}`;      // "Any condensate", not "Condensate: *"
     return `${name}: ${vals.map(v => (v === '*' ? 'any' : K.sel.valueName(k, v))).join(' or ')}`;
   }
   function chipsHtml() {
@@ -118,7 +138,7 @@
   let lastLive = '';
   function home() {
     const act = selOn(), loading = act && !ready(), under = act && ready() && !live() && !K.vsOn();
-    const cards = CARDS.map(c => ({ c, ...(c.cell ? { rows: [], aid: D.cell?.id } : homeRows(c)) }));
+    const cards = LAST.cards = CARDS.map(c => ({ c, ...(c.cell ? { rows: [], aid: D.cell?.id } : homeRows(c)) }));
     cards.forEach(x => { if (x.c.cell) { x.cellRows = cellRows(); } });
     const vals = cards.flatMap(x => [...x.rows, ...(x.cellRows || [])].map(r => r.v)).filter(v => v != null);
     const ax = axisOf(vals);
@@ -144,7 +164,9 @@
         `${x.own ? '<span class="tag">Whole dataset</span>' : ''}<abbr class="tag" title="${tag === 'fold' ? 'Fold enrichment: how many times more often the set is among the marked proteins than among the others' : 'Odds ratio: the odds that a mark is in the class against the odds for the other residues of the same proteins'}" tabindex="0">${tag === 'fold' ? 'fold' : 'OR'}</abbr></header>` +
         `${cell}<div class="fr-rows" role="group" aria-label="${esc(c.title)}">${rows}</div>${axisHtml(ax)}` +
         (x.own ? '<p class="fr-cnote">Whole dataset: your selection was made with this question.</p>' : '') +
+        (c.note ? `<p class="fr-cnote fr-cnote-card">${esc(c.note)}</p>` : '') +
         (fold ? `<p class="fr-cnote">Fold is a one-sided test: a value below 1× is not tested for depletion.</p>` : '') +
+        `<div class="exp fr-exp" role="group" aria-label="Download ${esc(c.title)}"><button type="button" class="exp-btn" data-fr-tsv="${esc(c.key)}" title="These rows as a table: the test, n, p and q, the interval, the data version and your selection in words">TSV</button></div>` +
         (all.length > 1 ? `<details class="fr-qs"><summary>All ${all.length} questions</summary><ul>${all.map(q => `<li><a href="${esc(K.link('overview', q))}">${esc(short(q))}</a></li>`).join('')}</ul></details>` : '') + '</section>';
     }).join('');
     const more = F.more.questions.filter(q => A[q]);
@@ -156,6 +178,13 @@
     K.front.say = act ? (loading ? 'Loading the selection' : under ? `Whole dataset: the selection of ${sitesOn()} is under the test minimum` : `Cards tested again on ${sitesOn()}`) : 'Whole dataset';
     return `<div class="fr-home${loading ? ' fr-busy' : ''}"${loading ? ' aria-busy="true"' : ''}><h1 class="vh">${esc(D.site.name)}</h1>${ex}${bar}${banner}${dv}<div class="fr-grid">${html}${moreCard}</div>${key}</div>`;
   }
+  // Print and the PDF hide the toolbar, where the selection is named: a block that only Print shows keeps it, with the citation and the version
+  function printCite() {
+    let el = document.getElementById('print-cite');
+    if (!el) { el = document.createElement('div'); el.id = 'print-cite'; el.className = 'print-only'; const v = document.getElementById('view'); if (v) v.before(el); else return; }
+    el.innerHTML = `<p><b>${esc(D.site.name)}</b> · data version ${esc(VERSION || '–')}</p><p>Selection: ${esc(K.selText ? K.selText() : 'whole dataset')}</p>` + (K.creditLines ? K.creditLines().filter(l => !/^Selection:/.test(l)).map(l => `<p>${esc(l)}</p>`).join('') : '');
+  }
+  K.afterRender.push(printCite);
   function after() {
     document.body.classList.toggle('fr-on-home', S.view === 'overview' && !S.arg);
     if (S.view !== 'overview' || S.arg) return;
@@ -169,5 +198,5 @@
   (K.afterRender ||= []).push(after);
   let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { const el = document.getElementById('fr-cell-draw'); if (el && (el.dataset.narrow === '1') !== narrow()) after(); }, 200); });
   document.addEventListener('change', e => { if (e.target.matches?.('[data-fr-ab]')) { S.ab = e.target.checked; K.writeHash(false); K.render(); } });
-  K.front = { home, cards: CARDS, say: '', homeRows, axisOf, short };
+  K.front = { home, cardTsv, chipLabel, cards: CARDS, say: '', homeRows, axisOf, short };
 });

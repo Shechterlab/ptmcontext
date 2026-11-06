@@ -202,6 +202,9 @@
     if (!S.q || !K.sel.data()) return '';
     const c = K.sel.compute(), q = c.q, out = [];
     const prots = new Set([...q.genes, ...q.sites.map(x => x[0])]);
+    // a variant is searched as its site: say so, and what it matched
+    (q.variants || []).forEach(([g, aa, pos, to]) => out.push(`<b>${esc(g)} ${aa}${pos}${to}</b> is searched as the site <b>${esc(g)} ${aa}${pos}</b>; the change to ${esc(to === '*' ? 'a stop' : to)} is not matched, and the site’s card lists its variants first.`));
+    (q.positions || []).forEach(([aa, pos, to]) => out.push(`<b>${aa}${pos}${to}</b> with no protein is searched as ${aa}${pos} in every protein: <b>${int(c.marks?.length || 0)}</b> ${esc(c.marks?.length === 1 ? W.mark : W.marks)} on <b>${int(c.proteins?.size || 0)}</b> protein${c.proteins?.size === 1 ? '' : 's'}. The change to ${esc(to === '*' ? 'a stop' : to)} is not matched; name the protein (FUS ${aa}${pos}${to}) to open its site.`));
     if (prots.size || q.sites.length) {
       const missing = [...(q.absent || [])];
       if (q.nWords > 1 && (prots.size > 1 || missing.length)) out.push(`<b>${int(prots.size)}</b> protein${prots.size === 1 ? '' : 's'} from ${int(q.nWords - missing.length)} of ${int(q.nWords)} search words.`);

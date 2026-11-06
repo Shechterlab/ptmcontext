@@ -8,6 +8,7 @@
   const { D, A, S, esc, int } = K;
   const F = D.front;
   if (!F || F.mode !== 'cards' || !K.front) return;
+  document.body.classList.toggle('fr-cards', true);
   const short = i => F.short?.[i] || A[i]?.title || i;
   const CARDS = F.cards || [];
   const wide = () => matchMedia('(min-width: 1100px)').matches;
@@ -107,11 +108,12 @@
   };
 
   // ---- a question's row: Home / its name, with the previous and next question in this order ----------------------------------------
+  const cardNote = aid => (D.front?.cards || []).find(c => (c.questions || []).includes(aid))?.note || '';
   function navRow(aid) {
     const o = order(), i = o.indexOf(aid), prev = o[i - 1], next = o[i + 1];
     const pn = i < 0 ? '' : `<span class="fr-pn">${prev ? `<a href="${esc(K.link('overview', prev))}" rel="prev" title="${esc(short(prev))}">← previous</a>` : '<span class="off">← previous</span>'}` +
       `<span aria-hidden="true">·</span>${next ? `<a href="${esc(K.link('overview', next))}" rel="next" title="${esc(short(next))}">next →</a>` : '<span class="off">next →</span>'}</span>`;
-    return `<nav class="fr-nav" aria-label="Trail"><a href="${esc(K.link('overview'))}">Home</a><span aria-hidden="true">/</span><span class="fr-here" aria-current="page">${esc(short(aid))}</span>${pn}</nav>`;
+    return `<nav class="fr-nav" aria-label="Trail"><a href="${esc(K.link('overview'))}">Home</a><span aria-hidden="true">/</span><span class="fr-here" aria-current="page">${esc(short(aid))}</span>${pn}</nav>` + (cardNote(aid) ? `<p class="fr-qnote">${esc(cardNote(aid))}</p>` : '');
   }
 
   // ---- the left column on a question's page, at a desktop width ---------------------------------------------------------------------

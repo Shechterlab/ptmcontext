@@ -732,7 +732,7 @@ question, an odds ratio for a residue question; a model has none), and the stron
 | --- | --- |
 | `mode` | `classic` or `cards` |
 | `rows` | rows per home card (default 5) |
-| `cards[]` | `title`, and `key` (its address word), `short`, `chip` (the word for what a row selects), `sections` (the analyses' sections it holds), `analyses` (questions it names, in order), `cell` (the cell drawing; needs `website.cell`), `rows`, `facets[]` (`analysis`, `label`, `measure: fold or odds`), `home` (`analysis` of a facet, and `classes` to show or else `top` and `q_max`) |
+| `cards[]` | `title`, and `key` (its address word), `short`, `chip` (the word for what a row selects), `note` (a line under the card and under its questions' titles), `sections` (the analyses' sections it holds), `analyses` (questions it names, in order), `cell` (the cell drawing; needs `website.cell`), `rows`, `facets[]` (`analysis`, `label`, `measure: fold or odds`), `home` (`analysis` of a facet, and `classes` to show or else `top` and `q_max`) |
 | `more` | heading of the card for the questions no card holds (default "More questions"); `false` when every question is in a card |
 | `short` | question id to a short name (4 words or fewer) |
 | `row_labels` | question id to class or set code to a short row label (a code is unique only within its question) |
@@ -797,6 +797,24 @@ test, not in the release statistics" with the caveat that a chosen list is not a
 has the usual `#` preamble (version, selection) and `# Input`, `# Genes tested`, `# Matched by another name`, `# Not found`,
 then `set, set_id, question, kind, in_list, list_in_background, in_set, background, fold, p, q` for every set tested. The
 test is computed in the browser only: `statistics.tsv` and the parity with the release do not change.
+
+### The protein page, variants, downloads (cards mode)
+
+A protein's page is the map (its key open, the export buttons below it), then one block with **Network**, **3D** and **Sites**
+(one open at a time; the network draws before its folded options, the 3D view before its own), then "More about <gene>" with
+the kit's other cards, each folded. With a selection, the 3D view and its exports (PNG, ChimeraX, PyMOL, mmCIF, SVG) show only
+the sites the selection and filters leave (the map fades the rest), with a chip for the selection and one per state to switch a
+state off; colours and the "no assigned state" grey are the map's, the legend names what is shown, and an export's header says
+"Shows k of n sites". The site card opens with the variants at the residue: UniProt's natural variants (disease named) and the
+site's `changes`; the map labels every variant that falls on a mark, on a second or third line when labels would overlap. The
+search reads `R216C` (that position in every protein) and `FUS R216C` (the site; the change is not matched), and says what it
+matched. A card's `note` (`website.front.cards[].note`) stays under the card and under its questions' titles.
+
+Every TSV a card or a set question writes has `test`, `n`, `p`, `q`, the interval where there is one, `data_version` and
+`selection` as columns, besides the header lines (`#`) with the citation and the selection in words; Methods & data lists the
+columns. Print shows the selection, the version and the citation (a block only Print shows); the PDF's foot carries them; a link
+that names a page, a protein or a selection carries `dv`; a variant's downloads (the lower-confidence version) carry its name in
+the file name and in the header.
 
 ## What the page reads at once and what it reads later
 

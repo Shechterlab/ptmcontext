@@ -4901,6 +4901,10 @@
                     "type": "string",
                     "description": "the word for what a row of this card selects in a filter chip, such as 'Disease'"
                   },
+                  "note": {
+                    "type": "string",
+                    "description": "a line under the card and under the titles of its questions' pages, such as a caveat that must stay in sight"
+                  },
                   "sections": {
                     "type": "array",
                     "items": {

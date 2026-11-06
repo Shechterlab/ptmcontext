@@ -150,10 +150,10 @@
   // the search read is kept for the line under it: names matched by another name (via), sites with no mark
   // (missing), positions read in a protein's own numbering (numbered), and symbols one edit from a word (typos).
   const RESIDUES = new Set((D.residues || []).map(r => String(r).toUpperCase()));
-  const POS_RE = /^[A-Z]?\d+[,;]?$/i;
+  const POS_RE = /^[A-Z]?\d+[,;]?$/i, VAR_RE = /^([A-Z])(\d+)([A-Z*])[,;]?$/i;   // a position (R216) or a variant (R216C, R216*)
   const isTermKey = k => { const key = String(k).toLowerCase(); return !!(A[key] || SPECS[key] || PSPEC[key] || ALIAS[key] || (SRCH.terms || {})[key] || (SRCH.patterns && (SRCH.patterns.at === key || SRCH.patterns.near === key)) || K.searchTerms?.[key]); };
   function parse(q) {
-    const out = { genes: [], words: [], sites: [], terms: [], unmatched: [], absent: [], ignored: [], ambiguous: [], via: [], missing: [], numbered: [], typos: {}, nWords: 0, nNamed: 0 };
+    const out = { genes: [], words: [], sites: [], terms: [], unmatched: [], absent: [], ignored: [], ambiguous: [], via: [], missing: [], numbered: [], typos: {}, variants: [], positions: [], nWords: 0, nNamed: 0 };
     const raw = String(q || '').trim();
     const toks = raw.match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || [];
     // a site of the protein(s) a name gave: each reads the position in its own numbering
@@ -180,9 +180,10 @@
       if (l) {
         named(t, l);
         let j = i + 1, any = false;
-        while (j < toks.length && POS_RE.test(toks[j])) {
+        while (j < toks.length && (POS_RE.test(toks[j]) || (VAR_RE.test(toks[j]) && RESIDUES.has(toks[j][0].toUpperCase())))) {
           // a token that is also a protein's name (F12) is that protein, unless it is a mark of the one before it
-          const tok = toks[j].replace(/[,;]+$/, ''), pos = +tok.replace(/\D/g, ''), other = protOf(tok);
+          const tok = toks[j].replace(/[,;]+$/, ''), pos = +tok.replace(/\D/g, ''), other = protOf(tok), vm = VAR_RE.exec(tok);
+          if (vm) out.variants.push([nameOf(l.ps[0]), vm[1].toUpperCase(), pos, vm[3].toUpperCase()]);
           if (other) { if (!l.ps.some(p => isMark(p.i, uniPos(p, pos)))) break; out.ambiguous.push([tok, nameOf(l.ps[0])]); }
           addSite(l.ps, pos, /^[A-Z]/i.test(tok) ? tok[0].toUpperCase() : ''); any = true; j++; out.nWords++;
         }
@@ -193,6 +194,8 @@
       if (ls) { named(sep[1], ls); addSite(ls.ps, +sep[3], sep[2].toUpperCase()); continue; }
       const one = /^(.+?)([A-Z])(\d+)$/i.exec(t), lo = one && RESIDUES.has(one[2].toUpperCase()) && lookup(one[1]);   // H4R3
       if (lo) { named(one[1], lo); addSite(lo.ps, +one[3], one[2].toUpperCase()); continue; }
+      const vb = VAR_RE.exec(t);       // R216C with no protein: that position in any protein; the change is not searched
+      if (vb && RESIDUES.has(vb[1].toUpperCase())) { out.positions.push([vb[1].toUpperCase(), +vb[2], vb[3].toUpperCase()]); continue; }
       const w = t.toLowerCase();
       if (P.some(p => wordHits(p, w))) out.words.push(w);
       else out.unmatched.push(t);
@@ -307,15 +310,15 @@
   function matcher(qText, f) {
     const q = parse(qText), { cons, unresolved, errors } = constraintsOf(qText, f);
     // proteins named by the search (a gene or accession names all its marks; "GENE R216" names one mark)
-    const genes = new Set(q.genes), sites = new Set(q.sites.map(([p, pos]) => p + ':' + pos)), named = genes.size || sites.size;
+    const genes = new Set(q.genes), sites = new Set(q.sites.map(([p, pos]) => p + ':' + pos)), named = genes.size || sites.size || q.positions.length, posSet = new Set(q.positions.map(x => x[1]));
     const protOk = P.map(p => !q.words.length || q.words.every(w => wordHits(p, w)));
-    const base = m => protOk[m[0]] && (!named || genes.has(m[0]) || sites.has(m[0] + ':' + m[1]));
+    const base = m => protOk[m[0]] && (!named || genes.has(m[0]) || sites.has(m[0] + ':' + m[1]) || posSet.has(m[1]));
     const tests = cons.map(([key, vals]) => testOf(key, vals, cons));
     return { q, cons, unresolved, errors, base, tests };
   }
   function select(qText, f) {
     const M = SD ? matcher(qText, f) : null, q = M ? M.q : parse(qText), { cons, unresolved, errors } = M || constraintsOf(qText, f);
-    const active = !!(q.genes.length || q.words.length || q.sites.length || cons.length || q.unmatched.length || unresolved.length);
+    const active = !!(q.genes.length || q.words.length || q.sites.length || q.positions.length || cons.length || q.unmatched.length || unresolved.length);
     let marks = null, proteins = null;
     if (SD && active) {
       marks = [];
@@ -324,7 +327,7 @@
     }
     // every part of a search must hold: a word or a term that matches nothing leaves no marks, as nothing can match all
     // of it (the bar says which); in a list of proteins, a name with no marked protein is reported and the rest kept
-    if (SD && active && (q.unmatched.length || unresolved.length || (!q.genes.length && !q.words.length && !q.sites.length && !cons.length))) { marks = []; proteins = new Set(); }
+    if (SD && active && (q.unmatched.length || unresolved.length || (!q.genes.length && !q.words.length && !q.sites.length && !q.positions.length && !cons.length))) { marks = []; proteins = new Set(); }
     return { active, marks, proteins, cons, q, unresolved, errors };
   }
   let cache = { key: null };

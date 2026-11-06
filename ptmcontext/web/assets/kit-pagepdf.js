@@ -46,7 +46,7 @@
       }
       const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true });
       pdf.setProperties({ title, subject: `${D.site.name}: ${title}`, creator: `ptmcontext ${D.kit.version}` });
-      const head = latin(`${D.site.name} · ${title}`), foot = latin(K.creditLines?.()[0] || ''), url = latin(location.href.split('?')[0]);
+      const head = latin(`${D.site.name} · ${title}`), foot = latin((K.creditLines?.()[0] || '') + (D.dataset?.version ? ` · data ${D.dataset.version}` : '') + (K.selText ? ` · Selection: ${K.selText()}` : '')), url = latin(location.href.split('?')[0]);
       pages.forEach(([a, b], n) => {
         if (n) pdf.addPage();
         const c = document.createElement('canvas'); c.width = canvas.width; c.height = Math.max(1, Math.round((b - a) * scale));
@@ -56,7 +56,7 @@
         pdf.setFontSize(7.5); pdf.setTextColor(110);
         pdf.text(head, PAGE.side, 9);
         pdf.text(`${n + 1} / ${pages.length}`, PAGE.w - PAGE.side, 9, { align: 'right' });
-        pdf.text(pdf.splitTextToSize(`${url} · ${new Date().toISOString().slice(0, 10)} · ${foot}`, PAGE.w - 2 * PAGE.side).slice(0, 2), PAGE.side, PAGE.h - 8);
+        pdf.text(pdf.splitTextToSize(`${url} · ${new Date().toISOString().slice(0, 10)} · ${foot}`, PAGE.w - 2 * PAGE.side).slice(0, 3), PAGE.side, PAGE.h - 10.5);
       });
       K.download(filename, pdf.output('blob'));
     } catch (e) { alert(`The PDF could not be written (${e.message}). Print can save one instead.`); } finally { if (btn) { btn.disabled = false; btn.textContent = label; } }

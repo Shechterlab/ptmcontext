@@ -182,15 +182,15 @@
   }
 
   // ---- downloads: the ontology's figure and TSV, the tables' TSV -------------------------------------------------------
-  const tsvRows = (aid, rows, extra = () => []) => rows.map(r => [r.label, r.category, ...extra(r), r.a, r.a + r.c, K.g6(r.eff), K.g6(r.p), K.g6(r.q)].join('\t')).join('\n');
+  const tsvRows = (aid, rows, extra = () => []) => rows.map(r => [r.label, r.category, ...extra(r), r.a, r.a + r.c, K.g6(r.eff), K.g6(r.p), K.g6(r.q), K.SET_TEST, ...K.tsvTail()].join('\t')).join('\n');
   const fileName = (aid, what) => `${D.site.id}_${aid}${what ? '_' + what : ''}${K.selOn() ? '_selection' : ''}`;
   function ontologyTsv(a) {
     const L = LAST[a.id]; if (!L) return '';
     const P = A[a.id].parents || {};
     const rows = L.items.filter(x => x[0] === 'row');
     return K.preamble(`${a.title}${UI.tree.has(a.id) ? ', the tree' : ', the short list'}`, `${a.question} ${a.sub}${K.selWords()}. ${K.setWords(a)}`) +
-      ['set', 'set_id', 'depth', 'under', `${W.marked}_in_set`, 'set_size', 'fold_enrichment', 'p', 'q'].join('\t') + '\n' +
-      rows.map(([, r, d]) => [r.label, r.category, d, (P[r.category] || []).map(x => labelOf(a.id, x)).join('; '), r.a, r.a + r.c, K.g6(r.eff), K.g6(r.p), K.g6(r.q)].join('\t')).join('\n') + '\n';
+      ['set', 'set_id', 'depth', 'under', `${W.marked}_in_set`, 'set_size', 'fold_enrichment', 'p', 'q', 'test', ...K.TAIL_HEAD].join('\t') + '\n' +
+      rows.map(([, r, d]) => [r.label, r.category, d, (P[r.category] || []).map(x => labelOf(a.id, x)).join('; '), r.a, r.a + r.c, K.g6(r.eff), K.g6(r.p), K.g6(r.q), K.SET_TEST, ...K.tsvTail()].join('\t')).join('\n') + '\n';
   }
   function ontologyFigure(a) {
     const L = LAST[a.id], { PAL, tw, wrap, FF } = K, items = L ? L.items : [];
@@ -223,7 +223,7 @@
   function tableTsv(aid, rows, where, title) {
     const a = A[aid];
     return K.preamble(title, `${a.question} ${a.sub}${K.selWords()}. ${K.setWords(a)}`) +
-      ['set', 'set_id', 'group', `${W.marked}_in_set`, 'set_size', 'fold_enrichment', 'p', 'q'].join('\t') + '\n' + tsvRows(aid, rows, r => [where ? where(r.category) : (A[aid].parents?.[r.category] || []).map(x => labelOf(aid, x)).join('; ')]) + '\n';
+      ['set', 'set_id', 'group', `${W.marked}_in_set`, 'set_size', 'fold_enrichment', 'p', 'q', 'test', ...K.TAIL_HEAD].join('\t') + '\n' + tsvRows(aid, rows, r => [where ? where(r.category) : (A[aid].parents?.[r.category] || []).map(x => labelOf(aid, x)).join('; ')]) + '\n';
   }
 
   // ---- a protein's own sets (website.protein.sets): a card per entry ----------------------------------------------
