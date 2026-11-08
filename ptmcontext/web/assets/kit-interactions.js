@@ -631,7 +631,7 @@
   // ---- the page, a section alone, and the Overview's question --------------------------------------------------------
   function hub(pg) {
     const top = pg.sections.filter(s => s.place === 'top'), links = pg.sections.filter(s => s.place === 'link');
-    return `<div class="page-head"><h2>${esc(pg.title)}</h2><span class="tools"><button type="button" class="btn small" data-ix-print title="Print this page, or save it as a PDF">Download PDF</button></span></div>` +
+    return `<div class="page-head"><h2>${esc(pg.title)}</h2><span class="tools"><button type="button" class="btn small" data-ix-print title="Download this page as a PDF">Download PDF</button></span></div>` +
       selLine() + answerHtml(pg) + highlightsHtml(pg) + top.map(s => K.fold(`ix-${esc(s.id)}`, esc(s.title), '', s.blocks.map((b, bi) => blockCard(pg, s, b, bi)).join(''), s.open === true)).join('') +
       (links.length ? `<p class="ix-links">${links.map(s => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)} ›</a>`).join(' · ')}</p>` : '') + keyLine() +
       pg.groups.map(g => { const ts = g.sections.filter(s => !s.place || s.place === 'tile'); return ts.length ? K.fold(`ixg-${esc(g.name.replace(/\W+/g, '-').toLowerCase())}`, esc(g.name), '', `<div class="tiles">${ts.map(s => sectionTile(pg, s)).join('')}</div>`, g.open === true) : ''; }).join('');
@@ -748,7 +748,7 @@
     ['[data-ix-more]', el => { const s = st(el.dataset.ixMore, {}); s.n = (s.n || 25) + 100; K.render(); }],
     ['[data-ix-sort]', el => { const s = st(el.dataset.ixSort, {}); s.desc = s.sort === el.dataset.v ? !s.desc : true; s.sort = el.dataset.v; K.render(); }],
     ['[data-ix-q]', el => { S.q = el.dataset.ixQ; K.writeHash(true); K.render(); scrollTo(0, 0); }],
-    ['[data-ix-print]', () => print()],
+    ['[data-ix-print]', el => K.pagePdf(document.getElementById('view'), document.querySelector('#view .page-head h2')?.textContent || 'Interactions', `${D.site.id}_${S.arg ? 'interactions_' + String(S.arg).split('/').join('_') : 'interactions'}.pdf`, el)],
     ['[data-ixexp]', el => { const x = findBlock(keyOfEl(el)); if (!x) return; const k = el.dataset.k; K.exportFigure(k, () => figureOf(x), fileName(x), el, () => tsvOf(x)); }],
   );
   document.addEventListener('submit', e => {

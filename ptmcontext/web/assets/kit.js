@@ -1232,6 +1232,7 @@
   // a variant's downloads (lower-confidence sites, say) carry its name, so they are never mistaken for the main release's
   const vSlug = () => (D.variant ? String(D.variant.name || D.variant.label || 'variant').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : '');
   function download(name, data, type) {
+    if (K.stem) name = K.stem(name);       // one scheme for every file's name (kit-tabfig.js)
     if (vSlug() && !name.includes(vSlug())) name = name.replace(/(\.[A-Za-z0-9]+)?$/, m => '_' + vSlug() + m);
     const blob = data instanceof Blob ? data : new Blob([data], { type: type || 'application/octet-stream' });
     const url = URL.createObjectURL(blob), a = Object.assign(document.createElement('a'), { href: url, download: name });

@@ -8,15 +8,23 @@
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
   const { esc, int } = K;
-  const SZ = 10.5, RH = 17, PAD = 20, MAXW = 1100, MINW = 560;
+  const SZ = 10.5, RH = 17, PAD = 20, MAXW = 1800, MINW = 560, COLMAX = 560;   // wide enough that a name is not cut
   const clean = s => String(s || '').replace(/\s+/g, ' ').trim();
+  // a small drawing in a cell (the Proteins table's site map): its markup with the page's colors written out, drawn into the figure
+  const miniSvg = c => {
+    const v = c.querySelector('svg.minimap'); if (!v) return null;
+    const w = +v.getAttribute('width') || 150, h = +v.getAttribute('height') || 20, cs = getComputedStyle(document.documentElement);
+    const inner = v.innerHTML.replace(/var\((--[\w-]+)\)/g, (m, n) => cs.getPropertyValue(n).trim() || '#c7d4d9');
+    return { w, h, inner };
+  };
+  const SVGK = 0.85;
   // a table of the page as {head, rows, rot}: only what is shown (rows and cells the page hides are left out)
   function readTable(t) {
     const shown = r => r.getClientRects().length > 0;
     const all = [...t.rows].filter(r => shown(r) && !r.classList.contains('ev-row'));
     const isHead = r => r.parentElement.tagName === 'THEAD' || [...r.cells].every(c => c.tagName === 'TH');
     const head = all.find(isHead), body = all.filter(r => !isHead(r));
-    const cells = r => [...r.cells].filter(c => c.getClientRects().length).flatMap(c => { const n = Math.max(1, Math.min(8, c.colSpan || 1)); const t = c.querySelector('i.ix-on') ? '●' : c.querySelector('i.ix-off') ? '·' : clean(c.innerText); return [{ t, num: c.classList.contains('num') || /^[+−–-]?[\d.,]+(?:\s?[%×x])?$/.test(t), rot: c.classList.contains('ix-vh'), act: !!c.querySelector('.row-acts, button.btn') && !c.classList.contains('ix-vh') }, ...Array(n - 1).fill({ t: '', num: false })]; });
+    const cells = r => [...r.cells].filter(c => c.getClientRects().length).flatMap(c => { const n = Math.max(1, Math.min(8, c.colSpan || 1)); const t = c.querySelector('i.ix-on') ? '●' : c.querySelector('i.ix-off') ? '·' : clean(c.innerText); return [{ t, svg: miniSvg(c), num: c.classList.contains('num') || /^[+−–-]?[\d.,]+(?:\s?[%×x])?$/.test(t), rot: c.classList.contains('ix-vh'), act: !!c.querySelector('.row-acts, button.btn') && !c.classList.contains('ix-vh') }, ...Array(n - 1).fill({ t: '', num: false })]; });
     const hd = head ? cells(head) : null, bd = body.map(cells);
     // a column of buttons only (3D, Evidence) is not data: left out
     const act = i => !!hd && bd.some(r => r[i]?.act) && bd.every(r => !r[i] || !r[i].t || r[i].act);
@@ -33,7 +41,7 @@
   }
   function drawTable(tb, cap, avail, parts, y0, P) {
     const rows = tb.rows.slice(0, cap), n = Math.max(tb.head ? tb.head.length : 0, ...rows.map(r => r.length), 1), rot = i => !!tb.head?.[i]?.rot;
-    const nat = Array.from({ length: n }, (_, i) => (rot(i) ? 34 : Math.min(260, Math.max(30, 14 + Math.max(tb.head?.[i] ? K.tw(tb.head[i].t, SZ, 700) : 0, ...rows.map(r => (r[i] ? K.tw(r[i].t, SZ) : 0)))))));
+    const nat = Array.from({ length: n }, (_, i) => (rot(i) ? 34 : rows.some(r => r[i]?.svg) ? Math.round(rows.find(r => r[i]?.svg)[i].svg.w * SVGK) + 10 : Math.min(COLMAX, Math.max(30, 14 + Math.max(tb.head?.[i] ? K.tw(tb.head[i].t, SZ, 700) : 0, ...rows.map(r => (r[i] ? K.tw(r[i].t, SZ) : 0)))))));
     const free = nat.reduce((a, w, i) => a + (rot(i) ? 0 : w), 0), fixed = nat.reduce((a, w, i) => a + (rot(i) ? w : 0), 0), k = free > avail - fixed ? Math.max(0.2, (avail - fixed) / free) : 1;
     const w = nat.map((x, i) => (rot(i) ? x : x * k)), x0 = w.map((_, i) => P + w.slice(0, i).reduce((a, b) => a + b, 0)), total = w.reduce((a, b) => a + b, 0);
     let y = y0;
@@ -50,7 +58,7 @@
     rows.forEach((r, ri) => {
       if (r.hl) parts.push(`<rect x="${P}" y="${y}" width="${total.toFixed(1)}" height="${RH}" fill="#fbe3d3"/><rect x="${P}" y="${y}" width="3" height="${RH}" fill="#c2410c"/>`);
       else if (ri % 2) parts.push(`<rect x="${P}" y="${y}" width="${total.toFixed(1)}" height="${RH}" fill="#f3f6f7"/>`);
-      r.forEach((c, i) => { if (!c.t || i >= n) return; if (rot(i) || (c.num && w[i] < 60)) T(x0[i] + w[i] / 2, y + RH - 5, fit(c.t, w[i] - 4), { anchor: 'middle' }); else T(c.num ? x0[i] + w[i] - 6 : x0[i] + 4, y + RH - 5, fit(c.t, w[i] - 10), { anchor: c.num ? 'end' : null }); });
+      r.forEach((c, i) => { if (c.svg && i < n) { parts.push(`<g transform="translate(${(x0[i] + 4).toFixed(1)},${(y + (RH - c.svg.h * SVGK) / 2).toFixed(1)}) scale(${SVGK})">${c.svg.inner}</g>`); return; } if (!c.t || i >= n) return; if (rot(i) || (c.num && w[i] < 60)) T(x0[i] + w[i] / 2, y + RH - 5, fit(c.t, w[i] - 4), { anchor: 'middle' }); else T(c.num ? x0[i] + w[i] - 6 : x0[i] + 4, y + RH - 5, fit(c.t, w[i] - 10), { anchor: c.num ? 'end' : null }); });
       y += RH;
     });
     parts.push(`<line x1="${P}" x2="${P + total}" y1="${y}" y2="${y}" stroke="${K.PAL.line}" stroke-width="1"/>`);
@@ -60,7 +68,7 @@
     const cap = o.cap || 40, tables = [...root.querySelectorAll('table')].filter(t => t.getClientRects().length && !t.closest('.exp')).map(t => ({ t, ...readTable(t) })).filter(x => x.rows.length);
     const P = PAD, parts = [];
     // width: the widest table's natural width, between a small figure and a wide one
-    const nat = Math.max(0, ...tables.map(x => { const n = Math.max(x.head?.length || 0, ...x.rows.slice(0, cap).map(r => r.length)); return Array.from({ length: n }, (_, i) => (x.head?.[i]?.rot ? 34 : Math.min(260, Math.max(30, 14 + Math.max(x.head?.[i] ? K.tw(x.head[i].t, SZ, 700) : 0, ...x.rows.slice(0, cap).map(r => (r[i] ? K.tw(r[i].t, SZ) : 0))))))).reduce((a, b) => a + b, 0); }));
+    const nat = Math.max(0, ...tables.map(x => { const n = Math.max(x.head?.length || 0, ...x.rows.slice(0, cap).map(r => r.length)); return Array.from({ length: n }, (_, i) => (x.head?.[i]?.rot ? 34 : x.rows.slice(0, cap).some(r => r[i]?.svg) ? Math.round(x.rows.find(r => r[i]?.svg)[i].svg.w * SVGK) + 10 : Math.min(COLMAX, Math.max(30, 14 + Math.max(x.head?.[i] ? K.tw(x.head[i].t, SZ, 700) : 0, ...x.rows.slice(0, cap).map(r => (r[i] ? K.tw(r[i].t, SZ) : 0))))))).reduce((a, b) => a + b, 0); }));
     const Wd = Math.round(Math.min(MAXW, Math.max(MINW, nat + 2 * P + (tables.some(x => x.head?.some(c => c.rot)) ? 150 : 0))));
     let y = 0, shownRows = 0, allRows = 0;
     tables.forEach((x, i) => {
@@ -84,5 +92,52 @@
     return { body: parts.join(''), H: d.y - y0 };
   }
   const tableExport = (kind, btn, root, o, name, tsv) => K.exportFigure(kind, () => tableFigure(root, o), name, btn, tsv);
-  Object.assign(K, { tableFigure, tableExport, pageCx, textTable });
+  // ---- a table with no export of its own (the Method page's, a protein page's fold tables): an export bar before it, TSV of every
+  // row and the same drawn figure; found after each render and when a fold draws late ------------------------------------------
+  const slug = t => clean(t).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 50) || 'table';
+  const CONTAINER = 'section, article, .card, .pcard, details, .idr-card';
+  const titleOf = t => { const c = t.closest(CONTAINER) || document.body; return clean(c.querySelector('h2, h3, h4, summary')?.textContent || c.id || document.title).slice(0, 80); };
+  const domTsv = (t, title) => {
+    const row = r => [...r.cells].map(c => clean(c.textContent).replace(/\t/g, ' ')).join('\t');
+    const head = [...t.tHead?.rows || []].map(row), body = [...t.tBodies].flatMap(b => [...b.rows]).filter(r => !r.classList.contains('ev-row')).map(row);
+    return K.preamble(title, `the table "${title}" as shown on the page (${int(body.length)} rows).`) + [...head, ...body].join('\n') + '\n';
+  };
+  let tblId = 0;
+  function bars() {
+    const root = document.getElementById('view'); if (!root) return;
+    const todo = [...root.querySelectorAll('table')].filter(t => t.rows.length > 2 && !t.closest('.exp, .fr-dl, .hl-tbl') && !t.dataset.tx && !t.closest(CONTAINER)?.querySelector('.exp:not([data-for-tx])'));
+    todo.forEach(t => {
+      const box = t.closest('.tbl-card, .tbl-wrap, .cv-wrap') || t;
+      t.dataset.tx = String(++tblId);
+      box.insertAdjacentHTML('beforebegin', K.expBar(['pdf', 'svg', 'png', 'tsv'], 'tblx', titleOf(t)).replace('class="exp"', `class="exp" data-for-tx="${t.dataset.tx}"`));
+    });
+  }
+  const mo = typeof MutationObserver === 'undefined' ? null : new MutationObserver(() => { clearTimeout(mo.t); mo.t = setTimeout(bars, 150); });
+  (K.afterRender ||= []).push(() => { bars(); const v = document.getElementById('view'); if (mo && v && !mo.on) { mo.on = true; mo.observe(v, { childList: true, subtree: true }); } });
+  K.clicks.push(['[data-tblx]', el => {
+    const t = document.querySelector(`table[data-tx="${el.closest('.exp').dataset.forTx}"]`); if (!t) return;
+    const title = titleOf(t), box = t.closest('.tbl-card, .tbl-wrap, .cv-wrap') || t;
+    K.tableExport(el.dataset.tblx, el, box, { title, sub: '', total: [...t.tBodies].reduce((n, b) => n + b.rows.length, 0) }, `${K.D.site.id}_${slug(title)}`, () => domTsv(t, title));
+  }]);
+  // ---- one scheme for the names of downloaded files: <site>_<page or protein>_<figure>[_selection]_<date>.<ext> ----------------
+  // applied to every name that starts with the site's id (or its marks' plural, the older tables' form) by K.download
+  const today = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; };
+  function stem(file) {
+    const m = /^(.*?)(\.[A-Za-z0-9]{2,4})?$/.exec(file), ext = m[2] || '', site = K.D.site.id, mk = slug(K.W.marks);
+    let b = m[1];
+    if (mk !== site && b.startsWith(mk + '_')) b = site + b.slice(mk.length);
+    else if (!b.startsWith(site + '_')) return file;
+    let rest = b.slice(site.length + 1).replace(/(^|_)(p|s|m)-(?=[a-z])/g, '$1');      // a figure's internal id (p-cell) is not a name
+    const date = (/_(\d{4}-\d{2}-\d{2})$/.exec(rest) || [])[1];
+    if (date) rest = rest.slice(0, -date.length - 1);
+    const toks = rest.split('_').filter((t, i, a) => t && t.toLowerCase() !== (a[i - 1] || '').toLowerCase());
+    // a protein's page: its gene in the name, in place of its accession
+    if (K.S.view === 'protein' && K.S.arg) {
+      const acc = String(K.S.arg).split('/')[0], p = K.sel?.byAcc?.[acc], g = p && (p.gene || p.acc);
+      if (g) { const k = toks.findIndex(t => t.toLowerCase() === acc.toLowerCase()); if (k >= 0) toks.splice(k, 1); if (!toks.some(t => t.toLowerCase() === slug(g))) toks.unshift(g); }
+    }
+    if (K.sel?.active() && K.followsSelection?.(K.S.view) && !toks.includes('selection')) toks.push('selection');
+    return `${site}_${toks.join('_')}_${date || today()}${ext}`;
+  }
+  Object.assign(K, { tableFigure, tableExport, pageCx, textTable, stem });
 });

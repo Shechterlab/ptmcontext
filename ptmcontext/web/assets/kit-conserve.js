@@ -171,7 +171,7 @@
   function bodyHtml(acc) {
     const st = ST[acc], g = esc(gene(acc));
     const head = `<div class="card-head"><div>${setPicker()}</div>` +
-      K.expBar(['svg', 'png', 'tsv'], 'cvexp', 'the conservation of ' + gene(acc), 'conserve') + '</div>';
+      (st?.phase === 'ok' ? K.expBar(['svg', 'png', 'tsv'], 'cvexp', 'the conservation of ' + gene(acc), 'conserve') : '') + '</div>';    // the downloads wait for the orthologs: a button with nothing behind it gave no file
     if (!st || ['idle', 'ens', 'ortho'].includes(st.phase)) return head + `<p class="note">Looking up ${g}’s orthologs${st?.phase === 'ortho' ? ` in Ensembl Compara (${esc(st.ensg)}); usually 5–30 s` : ' (UniProt, then Ensembl Compara)'}…</p>`;
     if (st.phase === 'no_gene') return head + `<p class="note">UniProt lists no ${esc(ENS.xref)} gene for ${esc(acc)}, so there are no orthologs to look up.</p>`;
     if (st.phase === 'none') return head + `<p class="note">Ensembl lists no ortholog of ${g} in these species.</p>`;
@@ -270,7 +270,7 @@
     ['[data-cv-pos]', el => { UI.pos = +el.dataset.cvPos; redraw(); K.site?.focus(curAcc(), UI.pos, { from: 'conserve' }); }],
     ['[data-cv-retry]', el => K.loadProtein(el.dataset.cvRetry).then(rec => start(el.dataset.cvRetry, rec, true))],
     ['[data-cv-open]', () => { const f = document.getElementById('p-cons'); if (f) { f.open = true; f.scrollIntoView({ block: 'start' }); } }],
-    ['[data-cvexp]', btn => { const acc = curAcc(), st = ST[acc]; if (st?.phase !== 'ok') return;
+    ['[data-cvexp]', btn => { const acc = curAcc(), st = ST[acc]; if (st?.phase !== 'ok') { alert('The orthologs have not arrived, so there is nothing to download yet.'); return; }
       const name = `${D.site.id}_${slug(gene(acc))}_conservation_${slug(lab(acc, UI.pos))}`;
       K.exportFigure(btn.dataset.cvexp, () => figure(acc), name, btn, () => tsv(acc)); }]);
   function redraw() {
