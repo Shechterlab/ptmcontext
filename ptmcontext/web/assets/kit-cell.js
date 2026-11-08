@@ -66,6 +66,9 @@
     '.cz-stage .cell-svg{cursor:grab}.cz-list{flex:0 0 17rem;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:.5rem .7rem}.cz-list[hidden]{display:none}.cz-list h4{margin:.1rem 0}',
     '.cz-ul{list-style:none;margin:.3rem 0;padding:0}.cz-ul li{padding:.15rem 0;border-top:1px solid var(--line)}.cz-ul li.hl a{font-weight:700}.cz-hint{margin:0}',
     '@media (max-width:700px){.cz-body{flex-direction:column;overflow:auto}.cz-stage{flex:0 0 auto;width:100%;height:auto;aspect-ratio:var(--cz-ar,2/1)}.cz-list{flex:1 1 auto;min-height:6rem}',
+    '.cz-legend{flex:0 0 auto;list-style:none;margin:.4rem 0 0;padding:0}.cz-legend li{margin:0}.cz-row{display:grid;grid-template-columns:2rem minmax(0,1fr);gap:.2rem .6rem;align-items:center;width:100%;min-height:44px;padding:.2rem .4rem;border:0;border-top:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-size:.92rem;text-align:left;cursor:pointer}.cz-row.on{background:color-mix(in srgb,var(--accent) 12%,var(--surface))}',
+    '.cz-n{display:inline-flex;align-items:center;justify-content:center;width:1.7rem;height:1.7rem;border-radius:50%;background:var(--ink);color:var(--surface);font-size:.8rem;font-weight:700}.cz-rv{grid-column:2;margin-top:-.2rem;color:var(--muted);font-size:.84rem}',
+    '.cz-mk{cursor:pointer}.cz-mk circle{r:var(--cz-mr,10px);fill:var(--ink);stroke:var(--surface);stroke-width:var(--cz-ms,1.5px)}.cz-mk text{font:700 var(--cz-mf,12px) sans-serif;fill:var(--surface);text-anchor:middle;dominant-baseline:central;pointer-events:none}',
     'dialog.cz .cz-btns .btn{min-width:44px;min-height:44px}dialog.cz svg .cd-name{font-size:var(--cz-fn,14px)}dialog.cz svg .cd-val{font-size:var(--cz-fv,13px)}}',
     '.cell-page .small,.vm-page .small{font-size:.86rem}.cell-page .btn.small{padding:.15rem .55rem;font-size:.78rem}.cell-page .btn.quiet{border-color:var(--line-strong);color:var(--ink-2)}',
     '.cell-thead{font-size:.75rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:.3rem}',
@@ -644,7 +647,7 @@
     sv._tabOrder = true;
     const seen = new Set(), stops = [];
     sv.querySelectorAll('[data-cell-part][tabindex="0"]').forEach(g => { const k = g.dataset.cellPart; if (seen.has(k)) { g.setAttribute('tabindex', '-1'); g.setAttribute('aria-hidden', 'true'); } else { seen.add(k); stops.push(g); } });
-    const labs = [...sv.querySelectorAll('.cd-label[data-cell-part]')], place = g => { const l = labs.find(x => x.dataset.cellPart === g.dataset.cellPart) || g, r = (l.querySelector('.cd-name') || l).getBoundingClientRect(); return [Math.round(r.top), r.left]; };
+    const labs = [...sv.querySelectorAll('.cd-label[data-cell-part]')], place = g => { const l = labs.find(x => x.dataset.cellPart === g.dataset.cellPart) || g, r0 = (l.querySelector('.cd-name') || l).getBoundingClientRect(), r = r0.width || r0.height ? r0 : g.getBoundingClientRect(); return [Math.round(r.top), r.left]; };
     const sorted = () => stops.map(g => [g, place(g)]).sort((a, b) => a[1][0] - b[1][0] || a[1][1] - b[1][1]).map(x => x[0]);
     if (stops.length < 2) return;
     stops.forEach(g => g.setAttribute('tabindex', '-1'));
@@ -758,6 +761,24 @@
       (shown.length ? `<ul class="cz-ul">${shown.map(m => `<li${hot.includes(m) ? ' class="hl"' : ''}><a href="${esc(K.link('protein', m.acc))}" title="${esc(m.gene + ' (' + m.acc + '): ' + m.maps.map(a => DS(a).name).join(', '))}">${esc(m.gene)}</a> <span class="muted small">${int(m.maps.length)} ${m.maps.length === 1 ? 'map' : 'maps'}</span>${hot.includes(m) ? ' <span class="small" aria-label="highlighted">★</span>' : ''}</li>`).join('')}</ul>` : '<p class="muted">None.</p>') +
       (pages > 1 ? `<p class="cz-pager"><button type="button" class="btn small" data-cz-page="-1"${page ? '' : ' disabled'}>‹ Previous</button> <span class="muted small">page ${int(page + 1)} of ${int(pages)}</span> <button type="button" class="btn small" data-cz-page="1"${page < pages - 1 ? '' : ' disabled'}>Next ›</button></p>` : '');
   }
+  // a phone: the drawing without its side callouts, so it fills the width; each part a numbered dot, and the labels a list below it
+  function phoneLabels(stage, drawing) {
+    const sv = stage.firstElementChild, ZB = ZD.querySelector('.cz-body'); if (!sv || !ZB) return;
+    const crop = crops[drawing];
+    const items = [...sv.querySelectorAll('.cd-label')].map(l => { const dot = l.querySelector('.cd-dot'), k = l.dataset.cellPart || l.dataset.cellZpart;
+      return k && dot ? { k, x: +dot.getAttribute('cx'), y: +dot.getAttribute('cy'), name: l.querySelector('.cd-name')?.textContent || '', val: l.querySelector('.cd-val')?.textContent || '' } : null; }).filter(Boolean)
+      .sort((a, b) => a.y - b.y || a.x - b.x);
+    sv.querySelectorAll('.cd-label').forEach(l => l.remove());
+    if (crop) sv.setAttribute('viewBox', crop.join(' '));
+    const NS = 'http://www.w3.org/2000/svg';
+    items.forEach((it, i) => { const g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'cz-mk'); g.dataset.czMk = String(i); g.setAttribute('aria-hidden', 'true');
+      g.innerHTML = `<circle cx="${it.x}" cy="${it.y}"/><text x="${it.x}" y="${it.y}">${i + 1}</text>`; sv.appendChild(g); });
+    const ul = document.createElement('ul'); ul.className = 'cz-legend'; ul.setAttribute('aria-label', 'Parts of the drawing');
+    ul.innerHTML = items.map((it, i) => `<li><button type="button" class="cz-row" data-cz-row="${i}" data-cz-part="${esc(it.k)}"><span class="cz-n" aria-hidden="true">${i + 1}</span><b>${esc(it.name)}</b><span class="cz-rv">${esc(it.val)}</span></button></li>`).join('');
+    stage.after(ul);
+    sv.addEventListener('click', e => { const mk = e.target.closest('[data-cz-mk]'); if (!mk) return; e.stopPropagation(); e.preventDefault(); const row = ul.querySelector(`[data-cz-row="${mk.dataset.czMk}"]`); ul.querySelectorAll('.cz-row.on').forEach(x => x.classList.remove('on')); row.classList.add('on'); row.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, true);
+    ul.addEventListener('click', e => { const r = e.target.closest('[data-cz-row]'); if (!r) return; ul.querySelectorAll('.cz-row.on').forEach(x => x.classList.remove('on')); r.classList.add('on'); zoomList(r.dataset.czPart); ZD.querySelector('.cz-list')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+  }
   function zoomView(drawing, one) {
     const d = DRAWINGS.find(x => x.drawing === drawing); if (!d || typeof HTMLDialogElement === 'undefined') return;
     if (!ZD) {
@@ -778,6 +799,8 @@
     let moved = false;
     stage.addEventListener('click', e => { if (moved) { e.stopImmediatePropagation(); e.preventDefault(); moved = false; } }, true);
     drawInto(stage, drawing, { one: one || null, keep: true, crop: false, labels: true });
+    const phone = matchMedia('(max-width: 700px)').matches;
+    if (phone) phoneLabels(stage, drawing);
     stage.addEventListener('click', e => { const g = e.target.closest('[data-cell-part], [data-cell-zpart]'); if (!g) return; e.stopPropagation(); zoomList(g.dataset.cellPart || g.dataset.cellZpart); });
     const sv = stage.firstElementChild; if (!sv) return;
     sv.style.cssText = 'width:100%;height:100%;max-width:none;min-width:0;touch-action:none;display:block';
@@ -790,7 +813,7 @@
       const w = B.w / z, h = B.h / z; cx = clamp(cx, B.x + w / 2, B.x + B.w - w / 2); cy = clamp(cy, B.y + h / 2, B.y + B.h - h / 2); sv.setAttribute('viewBox', `${cx - w / 2} ${cy - h / 2} ${w} ${h}`);
       // a phone: the labels keep a readable size on the screen (9.5 to 14 px for the names) whatever the zoom and the width
       const m = narrow.matches && sv.getScreenCTM();
-      if (m && m.a > 0) { sv.style.setProperty('--cz-fn', clamp(fs0[0] * m.a, 9.5, 14) / m.a + 'px'); sv.style.setProperty('--cz-fv', clamp(fs0[1] * m.a, 8.5, 12.5) / m.a + 'px'); }
+      if (m && m.a > 0) { sv.style.setProperty('--cz-mr', 11 / m.a + 'px'); sv.style.setProperty('--cz-mf', 12 / m.a + 'px'); sv.style.setProperty('--cz-ms', 1.5 / m.a + 'px'); sv.style.setProperty('--cz-fn', clamp(fs0[0] * m.a, 9.5, 14) / m.a + 'px'); sv.style.setProperty('--cz-fv', clamp(fs0[1] * m.a, 8.5, 12.5) / m.a + 'px'); }
     };
     const at = (x, y) => { const m = sv.getScreenCTM(); if (!m) return { x: cx, y: cy }; const p = sv.createSVGPoint(); p.x = x; p.y = y; return p.matrixTransform(m.inverse()); };
     const zoomTo = (nz, px, py) => { nz = clamp(nz, 1, 10); const q = px == null ? { x: cx, y: cy } : at(px, py); cx = q.x - (q.x - cx) * z / nz; cy = q.y - (q.y - cy) * z / nz; z = nz; apply(); };
