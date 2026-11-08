@@ -149,6 +149,7 @@
     if (S.vs === 'cmp' && !S.cmp) S.vs = 'marks';
     if (S.m === 'study' && S.vs === 'residues') S.m = 'mantel_haenszel';
     K.sel?.decode(K.sel.fRaw(qs) ?? p.get('f'));
+    if (/(^|&)f=[^&]*%7E/i.test(qs || '')) S.legacy = true;      // a link an earlier version wrote (its value escaped twice): written back once-escaped
     (K.paramsIn || []).forEach(f => f(p));      // a module's own parameters (kit-front.js: the abundance check, the data version)
     S.sort = p.get('sort') || 'q'; S.desc = p.get('dir') ? p.get('dir') === 'desc' : S.sort !== 'q';
     S.open = new Set((p.get('open') || '').split(',').filter(k => A[k]));

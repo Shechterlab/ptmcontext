@@ -76,6 +76,11 @@
   }
   // the count line under a results page's heading ("1,204 of 3,000 proteins · 4,000 sites"), for a figure's subtitle
   const pageCx = () => clean(document.querySelector('.results-head .cx')?.innerText);
+  // a small table of cells ([{t, num}]) as the body of a figure: its markup and height, for a figure that carries its own list
+  function textTable(head, rows, Wd, y0 = 0) {
+    const parts = [], d = drawTable({ head, rows }, rows.length, Wd - 2 * PAD, parts, y0, PAD);
+    return { body: parts.join(''), H: d.y - y0 };
+  }
   const tableExport = (kind, btn, root, o, name, tsv) => K.exportFigure(kind, () => tableFigure(root, o), name, btn, tsv);
-  Object.assign(K, { tableFigure, tableExport, pageCx });
+  Object.assign(K, { tableFigure, tableExport, pageCx, textTable });
 });

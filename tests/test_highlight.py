@@ -1,0 +1,39 @@
+"""Highlighting candidates in figures (kit-hilite.js): the placement of direct labels leaves no two overlapping, stays in the
+chart's box, and the IDR charts draw the highlighted items on top of gray context."""
+from __future__ import annotations
+
+import json
+import shutil
+import subprocess
+from pathlib import Path
+
+import pytest
+
+ASSETS = Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets'
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_labels_do_not_overlap_and_stay_in_the_box():
+    script = f"""
+const fs = require('fs');
+global.window = global; global.document = {{ createElement: () => ({{}}), head: {{ appendChild() {{}} }} }};
+const K = {{ esc: s => String(s), int: n => String(n), S: {{}}, clicks: [], tw: (t, s) => t.length * s * 0.55, writeHash() {{}}, render() {{}} }};
+eval(fs.readFileSync({json.dumps(str(ASSETS / 'kit-hilite.js'))}, 'utf8'));
+window.PTMC_MODULES.forEach(m => m(K));
+const items = Array.from({{ length: 12 }}, (_, i) => ({{ x: 300 + (i % 4) * 14, y: 200 + (i % 3) * 9, r: 4, t: 'GENE' + i + ' ' + (i * 10) + '–' + (i * 10 + 50) }}));
+const box = [0, 760, 0, 400], out = K.hl.place(items, box);
+const hit = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+let overlaps = 0, outside = 0;
+out.forEach((o, i) => {{ if (o.box[0] < box[0] || o.box[2] > box[1] || o.box[1] < box[2] || o.box[3] > box[3]) outside++; out.slice(i + 1).forEach(p => {{ if (hit(o.box, p.box)) overlaps++; }}); }});
+console.log(JSON.stringify({{ n: out.length, overlaps, outside, limit: K.hl.limit, svg: K.hl.labels({{ bg: '#fff', ink: '#000' }}, out.slice(0, 1)).includes('GENE0') }}));
+"""
+    run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr[-800:]
+    out = json.loads(run.stdout)
+    assert out == {'n': 12, 'overlaps': 0, 'outside': 0, 'limit': 12, 'svg': True}
+
+
+def test_the_idr_charts_draw_gray_context_and_ringed_highlights():
+    src = (ASSETS / 'kit-idrs.js').read_text()
+    assert 'K.hl.labels(' in src and 'GRAY' in src and 'hlTsv' in src and 'withHl(' in src
+    assert 'kit-hilite.js' in (ASSETS.parent / '__init__.py').read_text()

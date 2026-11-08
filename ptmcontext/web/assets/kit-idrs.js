@@ -92,6 +92,12 @@
     }
     return SC;
   }
+  // highlighted IDRs (kit-hilite.js): those of the highlighted proteins; the rest are drawn gray as context
+  let HLS = { on: false, prots: new Set() };
+  const hlRead = () => { HLS = K.hl ? K.hl.state() : { on: false, prots: new Set() }; return HLS; };
+  const isHl = x => HLS.on && HLS.prots.has(x.p);
+  const hlName = x => `${gene(x)} ${x.s}–${x.e}`;
+  const GRAY = '#c3ccd1';
   const marksOf = x => (SC.on ? SC.n[x.i] : x.marks);       // the marks counted: the selection's, or all of them
   const candOf = x => marksOf(x) + x.others;                // candidate residues: those marks and the other residues
   const inScope = x => !SC.on || SC.prots.has(x.p);
@@ -145,13 +151,24 @@
     const dash = `stroke="${P.ink}" stroke-width="1" stroke-dasharray="4 3" opacity="0.65"`;
     parts.push(line([-0.25, 0.25], [0.25, 0.25], dash), line([-0.35, 0.35], [0.35, 0.35], dash), line([-0.35, 0.35], [-0.35, 1], dash), line([0.35, 0.35], [0.35, 1], dash));
     parts.push(`<polyline points="${[[-1, 1], [0, 0], [1, 1], [-1, 1]].map(pt).join(' ')}" fill="none" stroke="${P.strong}" stroke-width="1"/>`);
-    // the dots: IDRs without (selected) marks faint and first, then the others, larger first
-    const order = V.idrs.filter(x => x.fcr != null && x.ncpr != null && shownDot(x)).map(x => [x, inScope(x) ? marksOf(x) : 0]).sort((a, b) => (a[1] > 0) - (b[1] > 0) || b[1] - a[1]);
+    // the dots: IDRs without (selected) marks faint and first, then the others, larger first; with a highlight, every IDR is a
+    // gray dot for context and the highlighted ones are drawn last in color, each with a ring (and a label when there are few)
+    hlRead();
+    const plotted = V.idrs.filter(x => x.fcr != null && x.ncpr != null && shownDot(x)), hot = plotted.filter(isHl);
+    const order = plotted.filter(x => !HLS.on || !isHl(x)).map(x => [x, inScope(x) ? marksOf(x) : 0]).sort((a, b) => (a[1] > 0) - (b[1] > 0) || b[1] - a[1]);
     order.forEach(([x, m]) => {
       const cx = DX(x.ncpr).toFixed(1), cy = DY(x.fcr).toFixed(1), id = ex ? '' : ` data-di="${x.i}" class="idr-dot"`;
-      parts.push(m ? `<circle cx="${cx}" cy="${cy}" r="${rad(m).toFixed(1)}" fill="${colour(x.cls)}" fill-opacity="0.85" stroke="${SC.on ? P.ink : P.bg}" stroke-width="${SC.on ? 0.9 : 0.6}"${id}/>`
+      if (HLS.on) parts.push(`<circle cx="${cx}" cy="${cy}" r="${m ? Math.min(rad(m), 4).toFixed(1) : 1.7}" fill="${GRAY}" fill-opacity="${m ? 0.6 : 0.45}"${id}/>`);
+      else parts.push(m ? `<circle cx="${cx}" cy="${cy}" r="${rad(m).toFixed(1)}" fill="${colour(x.cls)}" fill-opacity="0.85" stroke="${SC.on ? P.ink : P.bg}" stroke-width="${SC.on ? 0.9 : 0.6}"${id}/>`
         : `<circle cx="${cx}" cy="${cy}" r="1.7" fill="${colour(x.cls)}" fill-opacity="${SC.on ? 0.16 : 0.3}"${id}/>`);
     });
+    const ring = [];
+    hot.sort((a, b) => marksOf(a) - marksOf(b)).forEach(x => {
+      const cx = DX(x.ncpr), cy = DY(x.fcr), r = Math.max(3.6, rad(marksOf(x))), id = ex ? '' : ` data-di="${x.i}" class="idr-dot"`;
+      parts.push(`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(1)}" fill="${colour(x.cls)}" fill-opacity="0.9" stroke="${P.ink}" stroke-width="1.6"${id}/>`);
+      ring.push({ x: cx, y: cy, r: r + 1, t: hlName(x) });
+    });
+    if (ring.length && ring.length <= K.hl.limit) parts.push(K.hl.labels(P, K.hl.place(ring, [ML, DW - MR, MT, MT + PH])));
     // the regions' names, over the dots
     [[1, 0, 0.14], [2, -0.22, 0.288], [3, 0, 0.9], [4, -0.66, 0.9], [5, 0.66, 0.9]].forEach(([r, a, b]) => {
       const c = V.classes.find(k => regionNo(k) === r);
@@ -166,9 +183,9 @@
     return { body: parts.join(''), H: MT + PH + 44 };
   }
   function diagramFigure() {
-    const d = diagram(true), xs = scoped();
+    const d0 = diagram(true), xs = scoped(), d = withHl('diagram', d0, DW);
     return K.figureFrame({ title: `IDRs in the diagram of states${SC.on ? ', your selection' : ''}`,
-      sub: `${int(xs.length)} IDRs on ${int(new Set(xs.map(x => x.p)).size)} proteins, share of residues charged against net charge; each dot an IDR, colored by its region and sized by the ${SC.on ? 'selected ' : ''}${W.marks} inside it; IDRs without ${W.marks} faint`,
+      sub: `${int(xs.length)} IDRs on ${int(new Set(xs.map(x => x.p)).size)} proteins, share of residues charged against net charge; each dot an IDR, colored by its region and sized by the ${SC.on ? 'selected ' : ''}${W.marks} inside it; IDRs without ${W.marks} faint.${HLS.on ? ' Gray: not highlighted.' : ''}${d.sub}`,
       body: d.body, bodyH: d.H, W: DW, extra: { figure_kind: 'idr_diagram', track: TR.kind, analysis: TR.analysis || '' },
       note: `Regions (Das & Pappu 2013): ${[1, 2, 3, 4, 5].map(r => `R${r} ${DP[r][0]} (${DP[r][2]}): ${DP[r][1]}`).join('; ')}. The axes are Das & Pappu's f+ and f− turned 45°. ${TR.help || ''}. A description, not a test: the residue tests of the site are its statistics. ${REF_SHORT}.` });
   }
@@ -200,12 +217,22 @@
     [0, 0.25, 0.5, 0.75, 1].forEach(v => parts.push(txt(P, X(v), Y(0) + 15, String(v), { size: 10, anchor: 'middle', fill: P.muted })));
     parts.push(txt(P, X(0.5), Y(0) + 32, 'κ: 0 = + and − evenly mixed, 1 = fully separated (dashed: medians)', { size: 11, anchor: 'middle' }));
     parts.push(txt(P, 16, Y(top / 2), 'share of the IDRs', { size: 11, anchor: 'middle', rot: true }));
-    return { body: parts.join(''), H: KT + KH + 42, g };
+    let H = KT + KH + 42;
+    hlRead();
+    if (HLS.on) {          // a strip of every IDR (gray) with the highlighted ones on top: where they sit along κ
+      const y0 = Y(0) + 52, all = V.idrs.filter(x => x.cls === POLY3() && x.kappa != null), hot = all.filter(isHl), ring = [];
+      parts.push(txt(P, KL, y0, 'Each dot an IDR: gray, all of them; colored, the highlighted ones', { size: 10.5, fill: P.muted }));
+      all.forEach((x, k) => { if (!isHl(x)) parts.push(`<circle cx="${X(x.kappa).toFixed(1)}" cy="${(y0 + 14 + (k * 7 % 5) * 3.2).toFixed(1)}" r="1.7" fill="${GRAY}" fill-opacity="0.55"/>`); });
+      hot.forEach(x => { const cx = X(x.kappa), cy = y0 + 22; parts.push(`<circle cx="${cx.toFixed(1)}" cy="${cy}" r="4" fill="${colour(x.cls)}" stroke="${P.ink}" stroke-width="1.6"/>`); ring.push({ x: cx, y: cy, r: 5, t: hlName(x) }); });
+      if (ring.length && ring.length <= K.hl.limit) parts.push(K.hl.labels(P, K.hl.place(ring, [KL, KW - KR, y0 + 2, y0 + 62])));
+      H += 66;
+    }
+    return { body: parts.join(''), H, g };
   }
   function kappaFigure() {
-    const k = kappaPlot(true);
+    const k0 = kappaPlot(true), k = withHl('kappa', { body: k0.body, H: k0.H }, KW);
     return K.figureFrame({ title: `κ of IDRs with and without ${W.marks}${POLY3() ? `, ${clsLabel(POLY3())}` : ''}${SC.on ? ', your selection' : ''}`,
-      sub: `The share of IDRs in each band of κ (${BINS} bands), for IDRs with ${SC.on ? 'selected ' : ''}${W.marks} and without; ${int(k.g.none)} IDRs without charged residues have no κ`,
+      sub: `The share of IDRs in each band of κ (${BINS} bands), for IDRs with ${SC.on ? 'selected ' : ''}${W.marks} and without; ${int(k0.g.none)} IDRs without charged residues have no κ.${k.sub}`,
       body: k.body, bodyH: k.H, W: KW, extra: { figure_kind: 'idr_kappa', track: TR.kind, region: POLY3() || 'all' },
       note: `κ (Das & Pappu 2013): how far an IDR's positive and negative residues are segregated from each other, 0 well mixed to 1 fully segregated; it shapes strong polyampholytes (R3) most. A description, not a test. ${REF_SHORT}.` });
   }
@@ -285,6 +312,31 @@
       note: `Regions (Das & Pappu 2013); the bars describe and count, pooled over IDRs; the odds ratio is the Overview's test (each ${W.mark} against the other ${W.residues} of the same protein), not a test of this table. ${REF_SHORT}.` });
   }
 
+  // ---- the highlighted IDRs as a small table: on the page, in the figures and as TSV --------------------------------------
+  const HLT = {
+    diagram: { title: 'the diagram', head: ['Gene', 'IDR', 'Region', 'FCR', 'NCPR', () => cap(W.marks)], num: [0, 0, 0, 1, 1, 1], items: () => V.idrs.filter(x => x.fcr != null && x.ncpr != null && isHl(x)),
+      row: x => [gene(x), `${x.s}–${x.e}`, `R${regionNo(x.cls)} ${DP[regionNo(x.cls)]?.[3] || clsLabel(x.cls)}`, f2(x.fcr), s2(x.ncpr), String(marksOf(x))] },
+    kappa: { title: 'κ', head: ['Gene', 'IDR', 'κ'], num: [0, 0, 1], items: () => V.idrs.filter(x => x.cls === POLY3() && x.kappa != null && isHl(x)),
+      row: x => [gene(x), `${x.s}–${x.e}`, f2(x.kappa)] },
+  };
+  const hlItems = k => { hlRead(); return HLT[k].items().sort((a, b) => gene(a).localeCompare(gene(b)) || a.s - b.s); };
+  const hlHead = k => HLT[k].head.map(h => (typeof h === 'function' ? h() : h));
+  function hlHtml(k, cap1 = 25) {
+    const xs = hlItems(k); if (!HLS.on) return '';
+    return K.hl.line(xs.length, 'IDRs plotted') + (xs.length ? `<div class="tbl-card hl-tbl"><table class="tbl"><thead><tr>${hlHead(k).map((h, i) => `<th${HLT[k].num[i] ? ' class="num"' : ''}>${esc(h)}</th>`).join('')}</tr></thead><tbody>` +
+      xs.slice(0, cap1).map(x => `<tr>${HLT[k].row(x).map((c, i) => `<td${HLT[k].num[i] ? ' class="num"' : ''}>${esc(c)}</td>`).join('')}</tr>`).join('') + `</tbody></table></div><p class="note">${xs.length > cap1 ? `The first ${cap1} of ${int(xs.length)}. ` : ''}<button type="button" class="linkish" data-idr-hltsv="${k}">Download these as TSV</button></p>` : '<p class="muted small">None of the highlighted proteins has an IDR in this figure.</p>');
+  }
+  function hlTsv(k) {
+    const xs = hlItems(k);
+    return K.preamble(`Highlighted IDRs in ${HLT[k].title}`, `the IDRs of the highlighted proteins (${HLS.text}) as plotted. Descriptive.`) + hlHead(k).join('\t') + '\n' + xs.map(x => HLT[k].row(x).join('\t')).join('\n') + '\n';
+  }
+  // the figure's own list of them, under its drawing (the export carries it)
+  function withHl(k, d, Wd) {
+    const xs = hlItems(k); if (!HLS.on || !xs.length) return { body: d.body, H: d.H, sub: HLS.on ? ` Highlighted: ${HLS.text}; none has an IDR here.` : '' };
+    const t = K.textTable(hlHead(k).map((h, i) => ({ t: h, num: !!HLT[k].num[i] })), xs.slice(0, 25).map(x => HLT[k].row(x).map((c, i) => ({ t: c, num: !!HLT[k].num[i] }))), Wd, 0);
+    return { body: d.body + `<g transform="translate(0,${d.H + 10})"><text x="20" y="0" font-size="11" font-weight="700" fill="${K.PAL.ink}">Highlighted: ${esc(HLS.text)} (${int(xs.length)} IDRs${xs.length > 25 ? ', the first 25 listed' : ''})</text><g transform="translate(0,6)">${t.body}</g></g>`, H: d.H + 24 + t.H, sub: ` Highlighted: ${HLS.text}.` };
+  }
+
   // ---- every IDR: sortable, searchable, paged ---------------------------------------------------------------------
   const COLS = [
     ['protein', 'Protein', x => gene(x).toLowerCase(), x => `<b>${esc(gene(x))}</b> <span class="muted mono">${esc(pr(x)[0])}</span>`, false],
@@ -350,9 +402,9 @@
       `<section class="idr-card" id="idr-regions"><div class="card-head"><div><h3>${esc(cap(W.marked))} ${esc(W.residues)}, by region</h3></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-rexp', 'the regions')}</div>${regionsHtml()}</section>` +
       `<section class="idr-card" id="idr-diagram"><div class="card-head"><div><h3>Charge diagram</h3><p class="sub">Each dot is an IDR, by how much of it is charged and its net charge; color is the class, size the number of ${sw}${esc(W.marks)}.</p></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-dexp', 'the diagram')}</div>` +
       `<div class="idr-ctl"><label><input type="checkbox" id="idr-cand"${T.cand ? ' checked' : ''}> Only IDRs with a candidate residue (${esc(W.residues)})</label></div>` +
-      `<div class="idr-plot idr-small" id="idr-diagram-body">${diagramBody()}</div></section>` +
+      `<div class="idr-plot idr-small" id="idr-diagram-body">${diagramBody()}</div><div id="idr-diagram-hl">${hlHtml('diagram')}</div></section>` +
       (POLY3() ? `<section class="idr-card" id="idr-kappa"><div class="card-head"><div><h3>Charge mixing (κ)</h3><p class="sub">κ is 0 when positive and negative charges alternate along the chain and 1 when they are split into two stretches.</p></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-kexp', 'the κ distribution')}</div>` +
-      `<div id="idr-kappa-body">${kappaBody()}</div></section>` : '') +
+      `<div id="idr-kappa-body">${kappaBody()}</div><div id="idr-kappa-hl">${hlHtml('kappa')}</div></section>` : '') +
       `<details class="idr-card idr-fold" id="idr-list"><summary><h3>Every IDR</h3><span class="sub">${int(xs.length)} rows</span></summary>` +
       `<div class="card-head"><div></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-lexp', 'the IDRs')}</div>` +
       `<div class="idr-ctl"><input id="idr-q" type="search" placeholder="Gene, accession, name or region" aria-label="Search the IDRs" value="${esc(T.q)}" autocomplete="off" spellcheck="false">` +
@@ -394,6 +446,7 @@
     ['tr[data-idr-reg]', el => { T.reg = el.dataset.idrReg; T.page = 0; pressChips('reg'); refresh('idr-list-body'); openFold('idr-list'); }],
     ['[data-idr-dexp]', el => K.exportFigure(el.dataset.idrDexp, diagramFigure, name('diagram'), el, () => idrTsv(scoped(), 'IDRs in the diagram of states'))],
     ['[data-idr-kexp]', el => K.exportFigure(el.dataset.idrKexp, kappaFigure, name('kappa_strong_polyampholytes'), el, kappaTsv)],
+    ['[data-idr-hltsv]', el => { const k = el.dataset.idrHltsv; K.download(`${name('highlighted_' + k)}.tsv`, hlTsv(k), 'text/tab-separated-values'); }],
     ['[data-idr-rexp]', el => K.exportFigure(el.dataset.idrRexp, regionsFigure, name('regions'), el, regionsTsv)],
     ['[data-idr-lexp]', el => K.tableExport(el.dataset.idrLexp, el, document.getElementById('idr-list-body') || document.body, { title: `Every IDR${SC.on ? ' of your selection' : ''}`, sub: `${int(listRows().length)} IDRs, charge, κ and the ${W.marks} inside each`, total: listRows().length }, name('list'), () => idrTsv(listRows(), 'IDRs'))],
   );
