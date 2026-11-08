@@ -355,7 +355,7 @@
     const unit = sets ? setUnit(a.id) : W.residues, cls = sets ? 'set' : 'class';
     const cols = vs ? ['your selection', S.vs === 'cmp' ? 'the other selection' : `other ${sets ? markedUnits(a.id) : W.marks}`]
       : [sel ? `your selection’s ${sets ? setUnit(a.id) : W.marks}` : sets ? markedUnits(a.id) : W.marks, `other ${unit}`];
-    const descr = rows.some(r => r.descriptive), has = d => rows.some(r => r.eff != null && r.dir === d);
+    const descr = rows.some(r => r.descriptive), has = d => rows.some(r => (r.eff != null && r.dir === d) || (r.ref && r.ref.eff != null && r.ref.dir === d));
     const legend = vs ? [['sel', 'your selection'], ['other', vsName()]]
       : [...(descr ? [] : [['more', 'more often'], ...(!sets || has('less') ? [['less', 'less often']] : []), ...(has('same') ? [['same', 'about the same (within 1.1×)']] : [])]),
         ['ns', descr ? 'shown, not tested' : `no difference (q > ${PADJ})`],
@@ -959,7 +959,9 @@
   }
   const g6 = v => v == null ? '' : String(+Number(v).toPrecision(6));
   // a selection, in words, for the figures and tables made from it
-  const selWords = () => (selOn() && K.sel.data() ? `. Your selection: ${K.sel.describe()} (${K.sel.nMarks()} ${K.sel.nMarks() === 1 ? W.mark : W.marks} on ${K.sel.nProteins()} protein${K.sel.nProteins() === 1 ? '' : 's'}), ${vsOn() ? `against ${vsName()} (${METHOD[S.m] || 'pooled'})` : 'tested again'} in the browser; exploratory, not adjusted for the other selections tried` : '');
+  // rows: the question's rows, when the figure counts with them; the tests count only the marks on a protein with another candidate
+  // residue, so a smaller count than the selection's is said, not left to the column heads
+  const selWords = rows => (selOn() && K.sel.data() ? `. Your selection: ${K.sel.describe()} (${int(K.sel.nMarks())} ${K.sel.nMarks() === 1 ? W.mark : W.marks} on ${int(K.sel.nProteins())} protein${K.sel.nProteins() === 1 ? '' : 's'}${(n => (n && n < K.sel.nMarks() && !vsOn() ? `; ${int(n)} of them, on proteins with another ${W.residue}, are the ones counted` : ''))(Math.max(0, ...(rows || []).filter(r => r.a != null && r.b != null).map(r => r.a + r.b)))}), ${vsOn() ? `against ${vsName()} (${METHOD[S.m] || 'pooled'})` : 'tested again'} in the browser; exploratory, not adjusted for the other selections tried` : '');
   // every TSV row says which test made it, the data version and the selection, so a row read alone is still cited
   const SET_TEST = 'one-sided hypergeometric test (fold enrichment), q Benjamini-Hochberg';
   const selText = () => (selOn() && K.sel.data() ? K.sel.describe() || 'selection' : 'whole dataset');
@@ -1010,7 +1012,7 @@
     const a = A[aid], sets = a.kind === 'protein_sets', all = chartRows(a, m), rows = shownOf(a, all), M = chartModel(a, rows, m);
     const Wd = 860, P = 20, LW = 236, C1 = 350, C2 = 442, X0 = 462, X1 = 728, VX = 814, DX = 832, ink2 = '#374151';
     const X = v => X0 + M.axis.X(v) * (X1 - X0), r1 = v => v.toFixed(1);
-    const title = a.title, sub = (M.vs ? `${a.title}: your selection against ${vsName()}` : sets ? a.sub : `${a.sub}, ${METHOD_PHRASE[m]}`) + selWords();
+    const title = a.title, sub = (M.vs ? `${a.title}: your selection against ${vsName()}` : sets ? a.sub : `${a.sub}, ${METHOD_PHRASE[m]}`) + selWords(rows);
     const parts = [], gp = [], rp = [];
     const T = (x, y, t, o = {}, to = parts) => to.push(`<text x="${r1(x)}" y="${r1(y)}" font-size="${o.size || 11.5}"${o.weight ? ` font-weight="${o.weight}"` : ''}${o.fam ? ` font-family="${o.fam}"` : ''}${o.anchor ? ` text-anchor="${o.anchor}"` : ''}${o.ls ? ` letter-spacing="${o.ls}"` : ''} fill="${o.fill || PAL.ink}">${o.raw || esc(t)}</text>`);
     // text cut to a width, with an ellipsis
