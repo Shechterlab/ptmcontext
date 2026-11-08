@@ -848,7 +848,7 @@
   const backHtml = () => (T.mol?.mode === 'pdb' ? '<p><button type="button" class="btn small" data-s3d-src="af">Back to the AlphaFold model</button></p>' : '');
 
   // ---- the lists: experimental entries, homologous structures, predicted complexes ------------------------------------------
-  function paintLists() { paintPdbList(); paintHomologs(); paintPredicted(); }
+  function paintLists() { paintPdbList(); paintHomologs(); paintPredicted(); K.tableBars?.(); }
   function subSum(id, text) { const el = document.querySelector(`#${id} > summary .s3d-ssum`); if (el) el.textContent = text ? '· ' + text : ''; }
   function paintPdbList() {
     const box = document.getElementById('s3d-pdb-list'); if (!box) return;

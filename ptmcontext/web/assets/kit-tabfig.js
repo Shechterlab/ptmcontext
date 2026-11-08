@@ -65,7 +65,7 @@
     return { y, total };
   }
   function tableFigure(root, o = {}) {
-    const cap = o.cap || 40, tables = [...root.querySelectorAll('table')].filter(t => t.getClientRects().length && !t.closest('.exp')).map(t => ({ t, ...readTable(t) })).filter(x => x.rows.length);
+    const cap = o.cap || 40, tables = [...root.querySelectorAll('table')].filter(t => t.getClientRects().length && !t.parentElement.closest('.exp')).map(t => ({ t, ...readTable(t) })).filter(x => x.rows.length);
     const P = PAD, parts = [];
     // width: the widest table's natural width, between a small figure and a wide one
     const nat = Math.max(0, ...tables.map(x => { const n = Math.max(x.head?.length || 0, ...x.rows.slice(0, cap).map(r => r.length)); return Array.from({ length: n }, (_, i) => (x.head?.[i]?.rot ? 34 : x.rows.slice(0, cap).some(r => r[i]?.svg) ? Math.round(x.rows.find(r => r[i]?.svg)[i].svg.w * SVGK) + 10 : Math.min(COLMAX, Math.max(30, 14 + Math.max(x.head?.[i] ? K.tw(x.head[i].t, SZ, 700) : 0, ...x.rows.slice(0, cap).map(r => (r[i] ? K.tw(r[i].t, SZ) : 0))))))).reduce((a, b) => a + b, 0); }));
@@ -96,28 +96,35 @@
   // row and the same drawn figure; found after each render and when a fold draws late ------------------------------------------
   const slug = t => clean(t).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 50) || 'table';
   const CONTAINER = 'section, article, .card, .pcard, details, .idr-card';
-  const titleOf = t => { const c = t.closest(CONTAINER) || document.body; return clean(c.querySelector('h2, h3, h4, summary')?.textContent || c.id || document.title).slice(0, 80); };
+  // a table's title: the heading of its section; a fold's summary gives its name (its bold or heading part), and the counts beside
+  // it ("6 rows, 3 methylarginines") go to the subtitle, so a figure's title and file name carry no counts
+  const headOf = t => { const c = t.closest(CONTAINER) || document.getElementById('view') || document.body, h = c.querySelector('h2, h3, h4, summary'); return h?.tagName === 'SUMMARY' ? (h.querySelector('h2, h3, h4, b, strong') || h) : h; };
+  const titleOf = t => { const c = t.closest(CONTAINER) || document.getElementById('view') || document.body; return clean(headOf(t)?.textContent || c.id || document.title).slice(0, 80); };
+  const subOf = t => { const h = headOf(t), s = h?.tagName === 'SUMMARY' ? h : h?.closest('summary'); return clean([...(s ? s.querySelectorAll('.muted, .fsum') : [])].map(x => x.textContent).join(' · ')); };
   const domTsv = (t, title) => {
     const row = r => [...r.cells].map(c => clean(c.textContent).replace(/\t/g, ' ')).join('\t');
     const head = [...t.tHead?.rows || []].map(row), body = [...t.tBodies].flatMap(b => [...b.rows]).filter(r => !r.classList.contains('ev-row')).map(row);
     return K.preamble(title, `the table "${title}" as shown on the page (${int(body.length)} rows).`) + [...head, ...body].join('\n') + '\n';
   };
+  // <site>_<page>_<table>: the page's tab name leads, unless the table's name already starts with it (a protein's page is named by its gene)
+  const fileOf = title => { const pg = K.S.view && K.S.view !== 'protein' ? slug(K.tabName ? K.tabName(K.S.view, K.S.view) : K.S.view) : '', t = slug(title); return `${K.D.site.id}_${!pg || t.startsWith(pg) ? '' : pg + '_'}${t}`; };
   let tblId = 0;
   function bars() {
     const root = document.getElementById('view'); if (!root) return;
-    const todo = [...root.querySelectorAll('table')].filter(t => t.rows.length > 2 && !t.closest('.exp, .fr-dl, .hl-tbl') && !t.dataset.tx && !(t.closest(CONTAINER) || root).querySelector('.exp:not([data-for-tx])'));   // a table whose section (or page) has a bar is left alone
+    const todo = [...root.querySelectorAll('table')].filter(t => (t.rows.length > 2 || (t.rows.length > 1 && t.closest('.ix-fold'))) && !t.parentElement.closest('.exp, .fr-dl, .hl-tbl') && !t.dataset.tx && !(t.closest(CONTAINER) || root).querySelector('div.exp:not([data-for-tx])'));   // a table whose section (or page) has a bar is left alone
     todo.forEach(t => {
       const box = t.closest('.tbl-card, .tbl-wrap, .cv-wrap') || t;
       t.dataset.tx = String(++tblId);
       box.insertAdjacentHTML('beforebegin', K.expBar(['pdf', 'svg', 'png', 'tsv'], 'tblx', titleOf(t)).replace('class="exp"', `class="exp" data-for-tx="${t.dataset.tx}"`));
     });
   }
-  const mo = typeof MutationObserver === 'undefined' ? null : new MutationObserver(() => { clearTimeout(mo.t); mo.t = setTimeout(bars, 150); });
+  K.tableBars = bars;      // a module that paints a table late (the structure lists) calls it, so the bar is there at once
+  const mo = typeof MutationObserver === 'undefined' ? null : new MutationObserver(() => { clearTimeout(mo.t); mo.t = setTimeout(bars, 60); });
   (K.afterRender ||= []).push(() => { bars(); const v = document.getElementById('view'); if (mo && v && !mo.on) { mo.on = true; mo.observe(v, { childList: true, subtree: true }); } });
   K.clicks.push(['[data-tblx]', el => {
     const t = document.querySelector(`table[data-tx="${el.closest('.exp').dataset.forTx}"]`); if (!t) return;
     const title = titleOf(t), box = t.closest('.tbl-card, .tbl-wrap, .cv-wrap') || t;
-    K.tableExport(el.dataset.tblx, el, box, { title, sub: '', total: [...t.tBodies].reduce((n, b) => n + b.rows.length, 0) }, `${K.D.site.id}_${slug(title)}`, () => domTsv(t, title));
+    K.tableExport(el.dataset.tblx, el, box, { title, sub: subOf(t), total: [...t.tBodies].reduce((n, b) => n + b.rows.length, 0) }, fileOf(title), () => domTsv(t, title));
   }]);
   // ---- one scheme for the names of downloaded files: <site>_<page or protein>_<figure>[_selection]_<date>.<ext> ----------------
   // applied to every name that starts with the site's id (or its marks' plural, the older tables' form) by K.download
