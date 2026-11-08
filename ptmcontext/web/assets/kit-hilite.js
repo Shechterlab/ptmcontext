@@ -38,6 +38,10 @@
     return out;
   }
   const clear = () => { state().parts.forEach(r => r.clear && r.clear()); K.writeHash(true); K.render(); };
+  // "Highlighted only": exports draw just the highlighted items, without the gray context (kept for the session, per viewer)
+  const KEY = 'ptmc-hl-only';
+  const store = { get: () => { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }, set: v => { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) { /* private window: kept for the page only */ } } };
+  let only = store.get();
   let drops = [];
   const chip = (label, i) => `<span class="hl-chip">${esc(label)} <button type="button" class="hl-x" data-hl-drop="${i}" aria-label="Remove ${esc(label)} from the highlight" title="Remove it">×</button></span>`;
   // the legend line: what is highlighted, how many items, and the control that clears it
@@ -45,7 +49,7 @@
     const st = state(); if (!st.on) return '';
     drops = [];
     const what = st.parts.map(r => (r.chips ? r.chips.map(c => { drops.push(c.drop); return chip(c.label, drops.length - 1); }).join(' ') : `<b>${esc(r.text)}</b> <button type="button" class="hl-x" data-hl-clear aria-label="Clear the highlight" title="Clear the highlight">×</button>`)).join(' ');
-    return `<p class="hl-line"><span class="flabel">Highlighted:</span> ${what} <span class="muted">· ${int(n)} ${esc(noun)}</span></p>`;
+    return `<p class="hl-line"><span class="flabel">Highlighted:</span> ${what} <span class="muted">· ${int(n)} ${esc(noun)}</span> <label class="hl-only small" title="The PNG, SVG and PDF show only the highlighted items, without the gray context"><input type="checkbox" data-hl-only${only ? ' checked' : ''}> Exports: highlighted only</label></p>`;
   };
   // the box to paste genes or sites into: added to the highlight, nothing is filtered
   const control = () => `<form class="hl-form" data-hl-form><label class="flabel" for="hl-in">Highlight</label> <input id="hl-in" name="hl" type="search" autocomplete="off" spellcheck="false" placeholder="genes or sites to mark in the figures, e.g. FUS, TDP-43, HNRNPA1 R218" aria-label="Genes or sites to highlight in the figures"> <button class="btn small" type="submit">Highlight</button></form>`;
@@ -69,7 +73,8 @@
     const a = `x="${o.x.toFixed(1)}" y="${o.y.toFixed(1)}" font-size="${size}" font-weight="700" text-anchor="${o.anchor}"`;
     return `<text ${a} stroke="${P.bg}" stroke-width="3.5" stroke-linejoin="round" fill="${P.bg}">${esc(o.t)}</text><text ${a} fill="${P.ink}">${esc(o.t)}</text>`;
   }).join('');
-  K.hl = { state, sources, line, place, labels, clear, control, limit: LIMIT };
+  K.hl = { state, sources, line, place, labels, clear, control, limit: LIMIT, get only() { return only; } };
+  document.addEventListener('change', e => { if (e.target.matches?.('[data-hl-only]')) { only = e.target.checked; store.set(only); document.querySelectorAll('[data-hl-only]').forEach(x => { x.checked = only; }); } });
   K.clicks.push(['[data-hl-drop]', el => { drops[+el.dataset.hlDrop]?.(); K.writeHash(true); K.render(); }]);
   document.addEventListener('submit', e => {
     const f = e.target.closest?.('[data-hl-form]'); if (!f) return;

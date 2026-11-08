@@ -59,3 +59,9 @@ console.log(JSON.stringify({{ hl: p.get('hl'), keys: [...p.keys()], on: st.on, n
     assert run.returncode == 0, run.stderr[-800:]
     out = json.loads(run.stdout)
     assert out == {'hl': 'FUS, TARDBP R5', 'keys': ['hl'], 'on': True, 'n': 2, 'chips': 2, 'q': '', 'f': {}, 'none': False}
+
+
+def test_exports_can_draw_the_highlighted_items_alone():
+    hl, idrs = (ASSETS / 'kit-hilite.js').read_text(), (ASSETS / 'kit-idrs.js').read_text()
+    assert 'data-hl-only' in hl and 'localStorage' in hl and 'catch' in hl
+    assert idrs.count('K.hl.only') >= 3                                    # the diagram's dots, the kappa strip, the subtitle

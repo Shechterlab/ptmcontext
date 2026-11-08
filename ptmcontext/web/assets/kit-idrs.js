@@ -156,7 +156,7 @@
     hlRead();
     const plotted = V.idrs.filter(x => x.fcr != null && x.ncpr != null && shownDot(x)), hot = plotted.filter(isHl);
     const order = plotted.filter(x => !HLS.on || !isHl(x)).map(x => [x, inScope(x) ? marksOf(x) : 0]).sort((a, b) => (a[1] > 0) - (b[1] > 0) || b[1] - a[1]);
-    order.forEach(([x, m]) => {
+    (ex && HLS.on && K.hl.only ? [] : order).forEach(([x, m]) => {
       const cx = DX(x.ncpr).toFixed(1), cy = DY(x.fcr).toFixed(1), id = ex ? '' : ` data-di="${x.i}" class="idr-dot"`;
       if (HLS.on) parts.push(`<circle cx="${cx}" cy="${cy}" r="${m ? Math.min(rad(m), 4).toFixed(1) : 1.7}" fill="${GRAY}" fill-opacity="${m ? 0.6 : 0.45}"${id}/>`);
       else parts.push(m ? `<circle cx="${cx}" cy="${cy}" r="${rad(m).toFixed(1)}" fill="${colour(x.cls)}" fill-opacity="0.85" stroke="${SC.on ? P.ink : P.bg}" stroke-width="${SC.on ? 0.9 : 0.6}"${id}/>`
@@ -185,7 +185,7 @@
   function diagramFigure() {
     const d0 = diagram(true), xs = scoped(), d = withHl('diagram', d0, DW);
     return K.figureFrame({ title: `IDRs in the diagram of states${SC.on ? ', your selection' : ''}`,
-      sub: `${int(xs.length)} IDRs on ${int(new Set(xs.map(x => x.p)).size)} proteins, share of residues charged against net charge; each dot an IDR, colored by its region and sized by the ${SC.on ? 'selected ' : ''}${W.marks} inside it; IDRs without ${W.marks} faint.${HLS.on ? ' Gray: not highlighted.' : ''}${d.sub}`,
+      sub: `${int(xs.length)} IDRs on ${int(new Set(xs.map(x => x.p)).size)} proteins, share of residues charged against net charge; each dot an IDR, colored by its region and sized by the ${SC.on ? 'selected ' : ''}${W.marks} inside it; IDRs without ${W.marks} faint.${HLS.on ? (K.hl.only ? ' Only the highlighted IDRs are drawn.' : ' Gray: not highlighted.') : ''}${d.sub}`,
       body: d.body, bodyH: d.H, W: DW, extra: { figure_kind: 'idr_diagram', track: TR.kind, analysis: TR.analysis || '' },
       note: `Regions (Das & Pappu 2013): ${[1, 2, 3, 4, 5].map(r => `R${r} ${DP[r][0]} (${DP[r][2]}): ${DP[r][1]}`).join('; ')}. The axes are Das & Pappu's f+ and f− turned 45°. ${TR.help || ''}. A description, not a test: the residue tests of the site are its statistics. ${REF_SHORT}.` });
   }
@@ -221,8 +221,8 @@
     hlRead();
     if (HLS.on) {          // a strip of every IDR (gray) with the highlighted ones on top: where they sit along κ
       const y0 = Y(0) + 52, all = V.idrs.filter(x => x.cls === POLY3() && x.kappa != null), hot = all.filter(isHl), ring = [];
-      parts.push(txt(P, KL, y0, 'Each dot an IDR: gray, all of them; colored, the highlighted ones', { size: 10.5, fill: P.muted }));
-      all.forEach((x, k) => { if (!isHl(x)) parts.push(`<circle cx="${X(x.kappa).toFixed(1)}" cy="${(y0 + 14 + (k * 7 % 5) * 3.2).toFixed(1)}" r="1.7" fill="${GRAY}" fill-opacity="0.55"/>`); });
+      parts.push(txt(P, KL, y0, ex && K.hl.only ? 'Each dot a highlighted IDR' : 'Each dot an IDR: gray, all of them; colored, the highlighted ones', { size: 10.5, fill: P.muted }));
+      all.forEach((x, k) => { if (!isHl(x) && !(ex && K.hl.only)) parts.push(`<circle cx="${X(x.kappa).toFixed(1)}" cy="${(y0 + 14 + (k * 7 % 5) * 3.2).toFixed(1)}" r="1.7" fill="${GRAY}" fill-opacity="0.55"/>`); });
       hot.forEach(x => { const cx = X(x.kappa), cy = y0 + 22; parts.push(`<circle cx="${cx.toFixed(1)}" cy="${cy}" r="4" fill="${colour(x.cls)}" stroke="${P.ink}" stroke-width="1.6"/>`); ring.push({ x: cx, y: cy, r: 5, t: hlName(x) }); });
       if (ring.length && ring.length <= K.hl.limit) parts.push(K.hl.labels(P, K.hl.place(ring, [KL, KW - KR, y0 + 2, y0 + 62])));
       H += 66;
