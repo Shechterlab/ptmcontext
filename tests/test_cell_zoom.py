@@ -16,3 +16,9 @@ def test_the_large_view_is_a_dialog_with_zoom_pan_and_a_protein_list():
 
 def test_the_inline_labels_are_larger():
     assert '.cd-name{font-size:14px' in SRC and '.cd-val{font-size:13px' in SRC
+
+
+def test_a_click_on_the_drawing_opens_it_large():
+    from pathlib import Path
+    js = (Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets' / 'kit-cell.js').read_text()
+    assert "K.clicks.push(['.cell-draw svg, .cell-block svg, [data-cell-one] svg'" in js

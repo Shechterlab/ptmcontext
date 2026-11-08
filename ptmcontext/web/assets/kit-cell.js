@@ -780,6 +780,16 @@
     stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
     ZD.showModal();
   }
+  // a click on a drawing (not on one of its parts) opens it large, as its Enlarge button does: the n-th drawing of the
+  // nearest box that has Enlarge buttons goes with the n-th button
+  K.clicks.push(['.cell-draw svg, .cell-block svg, [data-cell-one] svg', (el, e) => {
+    if (e?.target?.closest?.('[data-cell-part], [data-cell-zpart], a, button') || el.closest('dialog')) return;
+    for (let box = el.parentElement; box && box.id !== 'view'; box = box.parentElement) {
+      const btns = [...box.querySelectorAll('[data-cell-zoom]')]; if (!btns.length) continue;
+      const svgs = [...box.querySelectorAll('.cell-draw svg, .cell-block svg, [data-cell-one] svg')];
+      (btns[svgs.indexOf(el)] || btns[0]).click(); return;
+    }
+  }]);
   K.clicks.unshift(['[data-cell-zoom]', el => zoomView(el.dataset.cellZoom, el.dataset.i != null ? { i: +el.dataset.i } : null)]);
   K.cell.zoom = zoomView;
   function drawBig() {
