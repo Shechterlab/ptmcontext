@@ -245,6 +245,46 @@
       [...rows, { ...all, cls: 'all' }].map(r => [r.cls, r.cls === 'all' ? 'all IDRs' : clsLabel(r.cls), r.idrs, r.withM, r.res, r.marks, r.cand, r.cand ? +(r.marks / r.cand).toPrecision(6) : '', TT[r.cls]?.eff ?? '', TT[r.cls]?.q ?? ''].join('\t')).join('\n') + '\n';
   }
 
+  // the regions table drawn: the share of the candidate residues marked as bars, the counts, and the within-protein odds ratio
+  // with its interval on a log axis, as a small forest panel (the same numbers as the table and its TSV)
+  function regionsFigure() {
+    const { rows, all } = regionRows(), TT = testRows(), rate = r => (r.cand ? r.marks / r.cand : 0), P = pal(true), base = rate(all), max = Math.max(...rows.map(rate), base, 1e-9);
+    const RH = 36, X = { lab: 20, bar: 262, barW: 90, cnt: 478, fa: 506, fb: 636, val: 740 }, parts = [];
+    const vals = rows.flatMap(r => { const t = TT[r.cls]; return t ? [t.eff, t.lo, t.hi].filter(v => v > 0) : []; });
+    const lo2 = Math.min(-1, Math.floor(Math.log2(Math.min(...vals, 1)))), hi2 = Math.max(1, Math.ceil(Math.log2(Math.max(...vals, 1)))), k0 = Math.max(lo2, -6), k1 = Math.min(hi2, 6);
+    const FX = v => X.fa + (Math.min(k1, Math.max(k0, Math.log2(v))) - k0) / (k1 - k0) * (X.fb - X.fa), step = Math.ceil((k1 - k0) / 4);
+    const T = (x, y, t, o = {}) => parts.push(txt(P, x, y, t, o));
+    T(X.lab, 14, 'Region', { weight: 'bold' }); T(X.bar, 14, `% ${W.marked}`, { weight: 'bold' }); T(X.cnt, 14, `Count`, { weight: 'bold', anchor: 'end' });
+    T((X.fa + X.fb) / 2, 14, 'Odds ratio (95% CI)', { weight: 'bold', anchor: 'middle' }); T(X.val, 14, 'q', { weight: 'bold', anchor: 'end' });
+    let y = 22;
+    parts.push(`<line x1="20" x2="${X.val}" y1="${y}" y2="${y}" stroke="${P.strong}"/>`);
+    const top = y;
+    [...rows, { ...all, cls: '' }].forEach((r, i) => {
+      const yc = y + RH / 2, t = TT[r.cls], d = DP[regionNo(r.cls)];
+      if (!r.cls) parts.push(`<line x1="20" x2="${X.val}" y1="${y}" y2="${y}" stroke="${P.line}"/>`);
+      if (r.cls) { parts.push(`<circle cx="${X.lab + 5}" cy="${yc - 1}" r="5" fill="${colour(r.cls)}"/>`); T(X.lab + 15, yc + (d ? -2 : 3), `R${regionNo(r.cls)} ${clsLabel(r.cls)}`, { weight: 'bold' }); if (d) T(X.lab + 15, yc + 11, d[2], { size: 9.5, fill: P.muted }); }
+      else T(X.lab, yc + 3, 'All IDRs', { weight: 'bold' });
+      if (r.cls) parts.push(`<rect x="${X.bar}" y="${yc - 5}" width="${(X.barW * rate(r) / max).toFixed(1)}" height="10" rx="1.5" fill="${colour(r.cls)}"/>`);
+      T(X.bar + (r.cls ? X.barW * rate(r) / max : 0) + 5, yc + 3.5, pc(r.marks, r.cand), { weight: 'bold' });
+      T(X.cnt, yc - 2, `${int(r.marks)} of ${int(r.cand)}`, { anchor: 'end' }); T(X.cnt, yc + 10, `in ${int(r.idrs)} IDRs`, { size: 9.5, anchor: 'end', fill: P.muted });
+      if (r.cls && t && t.eff > 0) {
+        const col = t.dir === 'more' ? K.PAL.more : t.dir === 'less' ? K.PAL.less : K.PAL.muted;
+        if (t.lo > 0 && t.hi > 0) parts.push(`<line x1="${FX(t.lo).toFixed(1)}" x2="${FX(t.hi).toFixed(1)}" y1="${yc}" y2="${yc}" stroke="${col}" stroke-width="1.6" stroke-linecap="round"/>`);
+        parts.push(`<circle cx="${FX(t.eff).toFixed(1)}" cy="${yc}" r="4.6" fill="${t.dir === 'ns' ? P.bg : col}" stroke="${t.dir === 'ns' ? P.muted : P.bg}" stroke-width="1.5"/>`);
+        T(X.val, yc - 2, K.fx(t.eff), { anchor: 'end', weight: t.dir === 'ns' ? null : 'bold', fill: t.dir === 'ns' ? P.muted : col }); T(X.val, yc + 10, `q ${K.fq(t.q)}`, { size: 9.5, anchor: 'end', fill: P.muted });
+      } else if (r.cls) T(X.val, yc + 3, '–', { anchor: 'end', fill: P.muted });
+      else T((X.fa + X.fb) / 2, yc + 3, 'the baseline of the bars', { size: 9.5, anchor: 'middle', fill: P.muted });
+      y += RH;
+    });
+    for (let k = k0; k <= k1; k++) { if (k % step) continue; parts.push(`<line x1="${FX(2 ** k).toFixed(1)}" x2="${FX(2 ** k).toFixed(1)}" y1="${top}" y2="${y}" stroke="${k === 0 ? P.ink : P.line}" stroke-width="${k === 0 ? 1.2 : 0.8}"${k === 0 ? '' : ' stroke-dasharray="2 3"'}/>`); T(FX(2 ** k), y + 14, (k < 0 ? '1/' + 2 ** -k : String(2 ** k)) + '×', { size: 10, anchor: 'middle', fill: P.muted }); }
+    // the bars' baseline: the share over all IDRs
+    parts.push(`<line x1="${(X.bar + X.barW * base / max).toFixed(1)}" x2="${(X.bar + X.barW * base / max).toFixed(1)}" y1="${top}" y2="${y - RH}" stroke="${P.ink}" stroke-width="1" stroke-dasharray="3 2" opacity="0.6"/>`);
+    return K.figureFrame({ title: `${cap(W.marked)} ${W.residues}, by region of the diagram of states${SC.on ? ', your selection' : ''}`,
+      sub: `${int(scoped().length)} IDRs on ${int(new Set(scoped().map(x => x.p)).size)} proteins; bars: the share of the ${W.residues} in each region's IDRs that are ${W.marked} (dashed: all IDRs); right: the Overview's within-protein odds ratio with its 95% interval`,
+      body: parts.join(''), bodyH: y + 24, W: DW, extra: { figure_kind: 'idr_regions', track: TR.kind },
+      note: `Regions (Das & Pappu 2013); the bars describe and count, pooled over IDRs; the odds ratio is the Overview's test (each ${W.mark} against the other ${W.residues} of the same protein), not a test of this table. ${REF_SHORT}.` });
+  }
+
   // ---- every IDR: sortable, searchable, paged ---------------------------------------------------------------------
   const COLS = [
     ['protein', 'Protein', x => gene(x).toLowerCase(), x => `<b>${esc(gene(x))}</b> <span class="muted mono">${esc(pr(x)[0])}</span>`, false],
@@ -307,14 +347,14 @@
     const sw = SC.on ? 'selected ' : '';
     return `<div class="page-head results-head"><div><h2>${esc(K.tabName('idrs', 'IDRs'))}</h2><p class="cx">${int(xs.length)} on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</p></div></div>` +
       `<p class="page-sub">By charge class, R1 to R5 of the Das–Pappu diagram; test: ${testLink}. <button type="button" class="idr-goto" data-idr-goto="idr-refs">Method</button></p>` +
-      `<section class="idr-card" id="idr-regions"><div class="card-head"><div><h3>${esc(cap(W.marked))} ${esc(W.residues)}, by region</h3></div>${K.expBar(['tsv'], 'idr-rexp', 'the regions')}</div>${regionsHtml()}</section>` +
+      `<section class="idr-card" id="idr-regions"><div class="card-head"><div><h3>${esc(cap(W.marked))} ${esc(W.residues)}, by region</h3></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-rexp', 'the regions')}</div>${regionsHtml()}</section>` +
       `<section class="idr-card" id="idr-diagram"><div class="card-head"><div><h3>Charge diagram</h3><p class="sub">Each dot is an IDR, by how much of it is charged and its net charge; color is the class, size the number of ${sw}${esc(W.marks)}.</p></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-dexp', 'the diagram')}</div>` +
       `<div class="idr-ctl"><label><input type="checkbox" id="idr-cand"${T.cand ? ' checked' : ''}> Only IDRs with a candidate residue (${esc(W.residues)})</label></div>` +
       `<div class="idr-plot idr-small" id="idr-diagram-body">${diagramBody()}</div></section>` +
       (POLY3() ? `<section class="idr-card" id="idr-kappa"><div class="card-head"><div><h3>Charge mixing (κ)</h3><p class="sub">κ is 0 when positive and negative charges alternate along the chain and 1 when they are split into two stretches.</p></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-kexp', 'the κ distribution')}</div>` +
       `<div id="idr-kappa-body">${kappaBody()}</div></section>` : '') +
       `<details class="idr-card idr-fold" id="idr-list"><summary><h3>Every IDR</h3><span class="sub">${int(xs.length)} rows</span></summary>` +
-      `<div class="card-head"><div></div>${K.expBar(['tsv'], 'idr-lexp', 'the IDRs')}</div>` +
+      `<div class="card-head"><div></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-lexp', 'the IDRs')}</div>` +
       `<div class="idr-ctl"><input id="idr-q" type="search" placeholder="Gene, accession, name or region" aria-label="Search the IDRs" value="${esc(T.q)}" autocomplete="off" spellcheck="false">` +
       `<label><input type="checkbox" id="idr-only"${T.only ? ' checked' : ''}> Only IDRs with ${sw}${esc(W.marks)}</label></div>` +
       `<div class="quick" id="idr-rchips"><span class="flabel">Region</span>${chips('reg')}</div><div id="idr-list-body">${listHtml()}</div></details>` +
@@ -354,8 +394,8 @@
     ['tr[data-idr-reg]', el => { T.reg = el.dataset.idrReg; T.page = 0; pressChips('reg'); refresh('idr-list-body'); openFold('idr-list'); }],
     ['[data-idr-dexp]', el => K.exportFigure(el.dataset.idrDexp, diagramFigure, name('diagram'), el, () => idrTsv(scoped(), 'IDRs in the diagram of states'))],
     ['[data-idr-kexp]', el => K.exportFigure(el.dataset.idrKexp, kappaFigure, name('kappa_strong_polyampholytes'), el, kappaTsv)],
-    ['[data-idr-rexp]', el => K.exportFigure('tsv', null, name('regions'), el, regionsTsv)],
-    ['[data-idr-lexp]', el => K.exportFigure('tsv', null, name('list'), el, () => idrTsv(listRows(), 'IDRs'))],
+    ['[data-idr-rexp]', el => K.exportFigure(el.dataset.idrRexp, regionsFigure, name('regions'), el, regionsTsv)],
+    ['[data-idr-lexp]', el => K.tableExport(el.dataset.idrLexp, el, document.getElementById('idr-list-body') || document.body, { title: `Every IDR${SC.on ? ' of your selection' : ''}`, sub: `${int(listRows().length)} IDRs, charge, κ and the ${W.marks} inside each`, total: listRows().length }, name('list'), () => idrTsv(listRows(), 'IDRs'))],
   );
   let timer;
   document.addEventListener('input', e => { if (e.target.id === 'idr-q') { clearTimeout(timer); timer = setTimeout(() => { T.q = e.target.value.trim(); T.page = 0; refresh('idr-list-body'); }, 150); } });

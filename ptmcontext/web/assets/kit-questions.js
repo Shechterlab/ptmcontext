@@ -114,7 +114,7 @@
     const tested = rows.filter(r => r.category !== root), enr = tested.filter(enriched);
     const shown = (all ? tested : enr).slice().sort((x, y) => (x.q ?? 2) - (y.q ?? 2) || (y.eff ?? 0) - (x.eff ?? 0));
     LAST[a.id + ':table'] = shown;
-    return `<div class="qv-members"><div class="card-head"><p class="note">${int(K.rowsFor(a, 'enricher').length - 1)} ${esc(nouns)} were tested; <b>${int(enr.length)}</b> are enriched (q ≤ ${PADJ})${K.selOn() ? ' for your selection, tested again in your browser' : ''}.</p>${K.expBar(['tsv'], 'qotexp', 'the table', a.id).replace('data-qotexp="tsv"', `data-qotexp="tsv" data-qaid="${esc(a.id)}"`)}</div>` +
+    return `<div class="qv-members"><div class="card-head"><p class="note">${int(K.rowsFor(a, 'enricher').length - 1)} ${esc(nouns)} were tested; <b>${int(enr.length)}</b> are enriched (q ≤ ${PADJ})${K.selOn() ? ' for your selection, tested again in your browser' : ''}.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'qotexp', 'the table', a.id).replace(/data-qotexp="(\w+)"/g, `data-qotexp="$1" data-qaid="${esc(a.id)}"`)}</div>` +
       `<label class="small qv-pick">Show <select data-qevery="${esc(a.id)}"><option value="0">the enriched ${esc(nouns)} (${int(enr.length)})</option><option value="1"${all ? ' selected' : ''}>every tested ${esc(o.noun || 'set')} (${int(tested.length)})</option></select></label>` +
       (shown.length ? '' : `<p class="muted small">No enriched ${esc(o.noun || 'set')}: choose every tested ${esc(o.noun || 'set')} above.</p>`) +
       `<div class="qv-tbl"${shown.length ? '' : ' hidden'}><table class="tbl"><thead><tr><th>${esc(cap(o.noun || 'set'))} (under)</th>${countHead(a.id)}<th class="num">Fold</th><th class="num">q</th></tr></thead><tbody>` +
@@ -177,7 +177,7 @@
     const note = (shownOnly ? `Your selection was made with these data (or names its proteins), so its ${esc(nouns)} are shown, not tested. These ${int(pool.length)} hold its ${esc(unitOf(m.id))}, most first. `
       : `${int(pool.length)} of the ${int(nTested)} ${esc(nouns)} tested are enriched (q ≤ ${PADJ})${sel ? ' for your selection, tested again in your browser' : ''}. `) +
       groups.map(g => `${int(count('g' + g.k))} belong to the ${esc(g.label)}`).join('; ') + (mem.none ? `; ${int(count('none'))} to none` : '') + `. ${esc(m.sub)}.`;
-    return `<div class="qv-links">${btn}</div><section class="qv-members"><div class="card-head"><p class="note">${note}</p>${K.expBar(['tsv'], 'qmexp', 'the table', m.id).replace('data-qmexp="tsv"', `data-qmexp="tsv" data-qaid="${esc(key)}"`)}</div>${picker}` +
+    return `<div class="qv-links">${btn}</div><section class="qv-members"><div class="card-head"><p class="note">${note}</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'qmexp', 'the table', m.id).replace(/data-qmexp="(\w+)"/g, `data-qmexp="$1" data-qaid="${esc(key)}"`)}</div>${picker}` +
       (shown.length ? `<div class="qv-tbl"><table class="tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` : `<p class="muted small">No ${shownOnly ? '' : 'enriched '}${esc(mem.noun || 'set')} here.</p>`) + '</section>';
   }
 
@@ -296,8 +296,8 @@
     // a set picked in a table selects it and returns to the Overview, where every question is tested again
     ['[data-qf]', el => { S.f = { ...S.f, [el.dataset.qf]: [el.dataset.qv] }; S.arg = ''; K.writeHash(true); K.render(); scrollTo(0, 0); }],
     ['[data-qoexp]', (el) => { const a = A[el.dataset.qaid]; K.exportFigure(el.dataset.qoexp, () => ontologyFigure(a), fileName(a.id, UI.tree.has(a.id) ? 'tree' : 'short_list'), el, () => ontologyTsv(a)); }],
-    ['[data-qotexp]', el => { const aid = el.dataset.qaid; K.download(fileName(aid, 'table') + '.tsv', tableTsv(aid, LAST[aid + ':table'] || [], null, `${A[aid].title}, the table`), 'text/tab-separated-values'); }],
-    ['[data-qmexp]', el => { const L = LAST[el.dataset.qaid + ':members']; if (L) K.download(fileName(L.m.id, 'table') + '.tsv', tableTsv(L.m.id, L.rows, L.where, `${L.m.title}, by family`), 'text/tab-separated-values'); }],
+    ['[data-qotexp]', el => { const aid = el.dataset.qaid, title = `${A[aid].title}, the table`; K.tableExport(el.dataset.qotexp, el, el.closest('.qv-members') || document.body, { title, sub: A[aid].question || '' }, fileName(aid, 'table'), () => tableTsv(aid, LAST[aid + ':table'] || [], null, title)); }],
+    ['[data-qmexp]', el => { const L = LAST[el.dataset.qaid + ':members']; if (L) K.tableExport(el.dataset.qmexp, el, el.closest('.qv-members') || document.body, { title: `${L.m.title}, by family`, sub: A[L.m.id]?.question || '' }, fileName(L.m.id, 'table'), () => tableTsv(L.m.id, L.rows, L.where, `${L.m.title}, by family`)); }],
   );
   document.addEventListener('change', e => {
     const t = e.target;

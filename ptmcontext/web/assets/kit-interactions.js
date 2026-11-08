@@ -558,7 +558,7 @@
   const methodOf = b => (b.kind === 'forest' && new Set(b.rows.map(r => r.analysis)).size === 1 ? b.rows[0].analysis : ['lines', 'sets'].includes(b.kind) ? b.analysis : null);
   function exportsOf(pg, sec, b, bi) {
     if (b.kind === 'text' || b.kind === 'checker') return '';
-    const kinds = FIG[b.kind] ? ['pdf', 'svg', 'png', 'tsv'] : ['tsv'];
+    const kinds = ['pdf', 'svg', 'png', 'tsv'];     // a block without a drawing of its own is drawn as the table on the page (K.tableFigure)
     const m = methodOf(b);
     return K.expBar(b.kind === 'example' ? ['pdf', 'svg', 'png'] : kinds, `ixexp="${esc(bkey(pg, sec, bi))}" data-k`, b.title || sec.title, m || `q-page-${pg.id}`);
   }
@@ -708,6 +708,7 @@
     const { pg, sec, b, bi } = x, m = st(bkey(pg, sec, bi), { m: b.method || 'mantel_haenszel' }).m;
     const body = b.kind === 'forest' ? forestBody(b, m, true) : b.kind === 'lines' ? linesBody(b, m, true) : b.kind === 'shares' ? sharesBody(b, true) : b.kind === 'matrix' ? matrixBody(b, m, true) : b.kind === 'bars' ? barsBody(b, true) : b.kind === 'histogram' ? histBody(b, true) : null;
     if (b.kind === 'example') return K.map.figure({ p: (P => ({ i: byAcc[EX.acc], acc: P[0], gene: P[1], name: P[2], len: P[3], marks: P[4], cand: P[5] }))(D.proteins[byAcc[EX.acc]]), rec: EX.rec, selected: selOn() ? K.sel.selectedPositions(EX.acc) : null });
+    if (!FIG[b.kind]) return K.tableFigure(document.getElementById(`ix-${sec.id}-${bi}`) || document.body, { title: b.title || sec.title, sub: `${pg.tab}: ${sec.question || sec.title}`, extra: { page: pg.id, section: sec.id } });
     const what = `${sec.question || ''} ${selOn() ? `Your selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks}), tested again in the browser.` : ''}`.trim();
     return K.figureFrame({ title: b.title || sec.title, sub: what, body: `<g transform="translate(20,0)">${body.body}</g>`, bodyH: body.H, W: 800, extra: { page: pg.id, section: sec.id } });
   }

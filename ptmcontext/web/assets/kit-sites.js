@@ -227,7 +227,7 @@
     if (T.key !== K.tables.selKey()) { T.key = K.tables.selKey(); T.n = 100; }
     const { opt, defaults, shown: cols } = allCols(), rs = rows(cols), shown = rs.slice(0, T.n), counted = rs.filter(m => !m.lc), np = new Set(counted.map(m => m[0])).size;
     const head = `<div class="page-head results-head"><div><h2>Sites</h2><p class="cx">${int(counted.length)} of ${int(SD().marks.length)} ${esc(W.marks)} on ${int(np)} protein${np === 1 ? '' : 's'}</p>${lcLine()}</div>` +
-      `<div class="actions">${K.tables.figuresBtn()}${K.expBar(['tsv'], 'sites-exp', 'the sites', 'data')}</div></div>`;
+      `<div class="actions">${K.tables.figuresBtn()}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'sites-exp', 'the sites', 'data')}</div></div>`;
     const sorted = id => (T.sort === id ? ` aria-sort="${T.desc ? 'descending' : 'ascending'}"` : '');
     const q = quick();
     if (!rs.length) return head + K.tables.selectionCard() + (q ? `<div id="sites-quick">${q}</div>` : '') + K.tables.emptyState();
@@ -312,6 +312,7 @@
   }
   async function download(el) {
     const rs = rows(allCols().shown), name = K.tables.fileName('sites');
+    if (el.dataset.sitesExp !== 'tsv') return K.tableExport(el.dataset.sitesExp, el, document.getElementById('sites-table') || document.body, { title: 'Sites', sub: K.pageCx(), total: rs.length }, name);
     if (dlTables() && K.card) {
       const accs = [...new Set(rs.filter(m => !m.lc).map(m => pr(m[0]).acc))].filter(a => TB[a] === undefined), old = el.textContent;
       el.disabled = true; let done = 0;

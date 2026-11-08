@@ -156,7 +156,7 @@
     const nMarks = sel ? K.sel.nMarks() : D.counts.marks;
     const sorted = id => (PS.sort === id ? (PS.desc ? 'descending' : 'ascending') : '');
     const head = `<div class="page-head results-head"><div><h2>Proteins</h2><p class="cx">${int(rows.length)} of ${int(P.length)} proteins · ${int(nMarks)} ${esc(nMarks === 1 ? W.mark : W.marks)}</p></div>` +
-      `<div class="actions">${rows.length ? `<button class="btn small" type="button" data-copy-genes title="Every protein of the table, one per line: its gene, else its accession">Copy gene list</button>` : ''}${figuresBtn()}${K.expBar(['tsv'], 'ptsv', 'the protein table', 'data')}</div></div>`;
+      `<div class="actions">${rows.length ? `<button class="btn small" type="button" data-copy-genes title="Every protein of the table, one per line: its gene, else its accession">Copy gene list</button>` : ''}${figuresBtn()}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'ptsv', 'the protein table', 'data')}</div></div>`;
     if (!rows.length) return head + selectionCard() + emptyState();
     const tableHtml = `<div class="tbl-card t-card" id="proteins-table"><div class="tbl-tools">${K.columns.menu(table, cols, defaults)}</div>` +
       `<div class="tbl-wrap"><table class="tbl stackable ptbl2"><thead><tr>${th('protein', 'Protein', '', '', sorted('protein'), true)}${th('marks', 'Sites', 'num', sel ? `${cap(W.marks)} in the selection, of the protein’s ${W.marks}` : '', sorted('marks'), true)}` +
@@ -345,7 +345,7 @@
     ['[data-copy-genes]', el => copy(proteinRows().map(r => r.p.gene || r.p.acc).join('\n'), el)],
     ['[data-tsort]', el => { const id = el.dataset.tsort, c = pcols().find(x => x.id === id); sortBy(PS, id, id === 'protein' || (c && textCol(c))); K.render(); }],
     ['[data-tmore="p"]', () => { PS.n += 50; K.render(); }],
-    ['[data-ptsv]', el => K.exportFigure('tsv', null, fileName('proteins'), el, proteinsTsv)],
+    ['[data-ptsv]', el => K.tableExport(el.dataset.ptsv, el, document.getElementById('proteins-table') || document.body, { title: 'Proteins', sub: K.pageCx(), total: proteinRows().length }, fileName('proteins'), proteinsTsv)],
     ['[data-enexp]', el => K.exportFigure(el.dataset.enexp, enrichedFigure, `${D.site.id}_enriched_features${K.sel?.active() ? '_selection' : ''}`, el, enrichedTsv)],
   );
   document.addEventListener('keydown', e => {

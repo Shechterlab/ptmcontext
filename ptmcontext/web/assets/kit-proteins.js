@@ -43,7 +43,7 @@
   const PCOLS = [['gene', 'Gene', false], ['name', 'Protein', false], ['acc', 'Accession', false], ['marks', cap(W.marks), true], ['len', 'Length', true], ['share', `Share of its ${W.residues}`, true]];
   function proteinsView() {
     const rows = shownProteins(), shown = rows.slice(0, PS.n);
-    return `<div class="page-head"><h2>Proteins</h2>${K.expBar(['tsv'], 'pexp', 'the protein list', 'data')}</div>` +
+    return `<div class="page-head"><h2>Proteins</h2>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'pexp', 'the protein list', 'data')}</div>` +
       `` +
       `<div class="filters"><span class="muted">${int(rows.length)} of ${int(P.length)} proteins${K.sel?.active() ? ' in your selection' : ''}</span></div>` +
       `<div class="tbl-card" id="proteins-table"><table class="tbl ptbl"><thead><tr>${PCOLS.map(([k, t, n]) => `<th class="${n ? 'num' : ''}" data-psort="${k}" tabindex="0"${PS.sort === k ? ` aria-sort="${PS.desc ? 'descending' : 'ascending'}"` : ''}>${esc(t)}${PS.sort === k ? (PS.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
@@ -521,7 +521,7 @@
     const order = flt ? Object.keys(SPECS[flt].values || {}) : [];
     const seg = flt ? `<div class="ix-seg"><span class="flabel">${esc(SPECS[flt].label)} at these ${esc(W.marks)}</span> <span class="seg" role="group">${(order.length ? order : counts.map(([v]) => v)).map(v => { const k = (counts.find(([x]) => x === v) || [, 0])[1];
       return `<button type="button" data-pfilter="${esc(v)}" aria-pressed="${fv === v}"${k ? '' : ' disabled'}><i class="ixd" style="--c:${K.map.attrColour(flt, v)}"></i>${esc(vLabel(flt, v))} <b>${int(k)}</b></button>`; }).join('')}</span></div>` : '';
-    return `<div class="card-head"><span class="tools">${K.columns.menu(table, cols, defaults)}${K.expBar(['tsv'], 'sexp', 'the sites')}</span></div>` + seg +
+    return `<div class="card-head"><span class="tools">${K.columns.menu(table, cols, defaults)}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'sexp', 'the sites')}</span></div>` + seg +
       `<div class="tbl-card lk-box"><table class="tbl stbl stackable"><thead>${head}</thead><tbody>${body}</tbody></table></div>` +
       (fv ? `<p class="note">Showing the ${esc(W.marks)} with ${esc(vLabel(flt, fv).toLowerCase())} ${esc(SPECS[flt].label.toLowerCase())}. <button class="linkish" type="button" data-pfilter="">Show all</button></p>` : '') +
       (CC.cite ? K.card.citeBox(`the ${int(rec.marks.length)} ${rec.marks.length === 1 ? W.mark : W.marks} on ${p.gene || p.acc}`, rec.marks, (m, n) => attrVal(m, n), false) : '');
@@ -708,7 +708,7 @@
     const refUrl = ref => { const r = (D.ref_links || []).find(x => ref && new RegExp(x.pattern).test(ref)); return r ? r.url.replace('{ref}', encodeURIComponent(ref)) : null; };
     const rows = rec.units.slice().sort((x, y) => tracks.findIndex(t => t.kind === x[0]) - tracks.findIndex(t => t.kind === y[0]) || x[1] - y[1]);
     if (!rows.length) return `<p class="muted">No region is placed on this protein.</p>`;
-    return `<div class="card-head">${K.expBar(['tsv'], 'regexp', 'the regions', 'data')}</div>` +
+    return `<div class="card-head">${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'regexp', 'the regions', 'data')}</div>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Kind</th><th class="num">From–to</th><th>Name or class</th><th>Accession</th><th>${esc(cap(W.marks))} inside</th><th>Source</th></tr></thead><tbody>` +
       rows.map(([k, s, e, lab, src, cls, ref]) => { const inside = rec.marks.filter(m => m[0] >= s && m[0] <= e).map(m => m[0]); const u = refUrl(ref);
         return `<tr><td>${esc(title(k))}</td><td class="num mono">${s}–${e}</td><td class="wrapok">${esc(lab || labs(k)[cls] || cls || '')}</td><td class="mono">${ref ? (u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(ref)}</a>` : esc(ref)) : ''}</td>` +
@@ -867,15 +867,15 @@
   K.clicks.push(
     ['[data-psort]', el => { const k = el.dataset.psort; PS.desc = PS.sort === k ? !PS.desc : k === 'marks' || k === 'len' || k === 'share'; PS.sort = k; K.render(); }],
     ['[data-pmore]', () => { PS.n += 200; K.render(); }],
-    ['[data-pexp]', el => K.exportFigure('tsv', null, `${D.site.id}_proteins`, el, proteinsTsv)],
-    ['[data-sexp]', el => K.exportFigure('tsv', null, `${D.site.id}_${PV.acc}_sites`, el, sitesTsv)],
+    ['[data-pexp]', el => K.tableExport(el.dataset.pexp, el, document.querySelector('#proteins-table, .tbl-card') || document.body, { title: 'Proteins', sub: K.pageCx(), total: P.length }, `${D.site.id}_proteins`, proteinsTsv)],
+    ['[data-sexp]', el => { const p = byAcc[PV.acc]; K.tableExport(el.dataset.sexp, el, el.closest('#p-sites') || document.body, { title: `${cap(W.marks)} of ${p.gene || p.acc}`, sub: `${p.name || ''} (${p.acc}); ${int(PV.rec.marks.length)} ${W.marks}, each with the evidence the table shows`, total: PV.rec.marks.length }, `${D.site.id}_${PV.acc}_sites`, sitesTsv); }],
     ['[data-mexp]', el => K.exportFigure(el.dataset.mexp, mapFigure, K.map.fileName ? K.map.fileName(el.dataset.mexp) : `${D.site.id}_${PV.acc}_map`, el, sitesTsv)],
     ['[data-msite]', el => openSite(+el.dataset.msite, el.closest('.seq') ? 'sequence' : 'map')],
     ['[data-site-open]', el => openSite(+el.dataset.siteOpen)],
     ['[data-folds]', el => { const on = el.dataset.folds === 'open'; document.querySelectorAll('details.pgroup, details.pfold').forEach(d => { d.open = on; PV.open[d.id] = on; }); }],
     ['[data-all-cols]', () => { PV.allCols = !PV.allCols; PV.open['p-sites'] = true; K.render(); }],
     ['[data-kinds-all]', el => { const k = 'kinds:' + el.dataset.kindsAll; PV.open[k] = !PV.open[k]; PV.open['p-kinds'] = true; K.render(); }],
-    ['[data-regexp]', el => K.exportFigure('tsv', null, `${D.site.id}_${PV.acc}_regions`, el, regionsTsv)],
+    ['[data-regexp]', el => { const p = byAcc[PV.acc]; K.tableExport(el.dataset.regexp, el, el.closest('#p-regions') || document.body, { title: `Domains and regions of ${p.gene || p.acc}`, sub: `${p.name || ''} (${p.acc}); every region the site's questions read, with the ${W.marks} inside each`, total: PV.rec.units.length }, `${D.site.id}_${PV.acc}_regions`, regionsTsv); }],
     ['[data-fasta]', el => { const p = byAcc[PV.acc], text = fasta(p, PV.rec);
       if (el.dataset.fasta === 'dl') { K.download(`${p.acc}${p.gene ? '_' + p.gene : ''}.fasta`, text, 'text/plain'); return; }
       const done = t => { const o = el.textContent; el.textContent = t; setTimeout(() => { el.textContent = o; }, 1500); };
