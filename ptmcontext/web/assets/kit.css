@@ -2031,3 +2031,13 @@ body.cards .sc-grid, .sc-grid:has(> .sc-tile) { display: grid; grid-template-col
 .toc.flat .toc-secs .toc-group { margin: 0.5rem 0 0.1rem 0.5rem; }
 .toc.flat .toc-secs a.sub { font-size: 0.88rem; padding: 0.22rem 0.5rem; }
 .sh { display: block; font-size: 0.68rem; font-weight: 400; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* All tests: the long text columns wrap so the result columns (effect, log2 OR, q, reading) stay on the screen */
+.stat-tbl th, .stat-tbl td { padding-left: 0.5rem; padding-right: 0.5rem; vertical-align: top; }
+.stat-tbl th { white-space: normal; vertical-align: bottom; }
+.stat-tbl td { white-space: normal; }
+.stat-tbl { font-size: 0.84rem; }
+.stat-tbl td:nth-child(1) { min-width: 8rem; }
+.stat-tbl td.wrapok { min-width: 7rem; }
+.stat-tbl td.num { white-space: nowrap; }
+.stat-tbl td:nth-child(6) { white-space: normal; min-width: 7.5rem; }
