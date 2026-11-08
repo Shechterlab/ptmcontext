@@ -507,6 +507,8 @@ def table_view_problems(site: dict) -> list[str]:
     for n in sv.get('short') or {}:
         need('website.sites.short', n, attrs, 'attribute of the marks')
     need('website.sites.site_tags', (sv.get('site_tags') or {}).get('attribute'), attrs, 'attribute of the marks')
+    for n in sv.get('quick') or []:
+        need('website.sites.quick', n, attrs, 'attribute of the marks')
     for a in sv.get('tags') or {}:
         need('website.sites.tags', a, kinds, 'analysis')
     for k in web.get('selection_cards') or {}:

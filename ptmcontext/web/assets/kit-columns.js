@@ -11,17 +11,21 @@
   const read = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
   const write = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage may be blocked */ } };
   const state = {}, defs = {}, open = new Set();
-  // Density of the tables: compact (one line a row; the default) or comfortable (wrapped chips); remembered in the browser.
-  const DK = 'ptmc-density';
-  let dens = 'compact';
-  try { if (localStorage.getItem(DK) === 'comfortable') dens = 'comfortable'; } catch (e) { /* storage may be blocked */ }
-  try { document.documentElement.dataset.density = dens; } catch (e) { /* no page (a test) */ }
-  const compact = () => dens === 'compact';
+  // Density of the tables: compact (one line a row; the default) or comfortable (wrapped chips); remembered in the
+  // browser once a reader chooses. A page can default to comfortable: K.density.defaults[view].
+  const DK = 'ptmc-density', DEF = {};
+  let pref = null;
+  try { const v = localStorage.getItem(DK); if (v === 'comfortable' || v === 'compact') pref = v; } catch (e) { /* storage may be blocked */ }
+  const eff = () => pref || DEF[K.S?.view] || 'compact';
+  const apply = () => { try { document.documentElement.dataset.density = eff(); } catch (e) { /* no page (a test) */ } };
+  apply();
+  (K.afterRender ||= []).push(apply);
+  const compact = () => eff() === 'compact';
   const densityBtn = () => `<button type="button" class="btn small density-btn" data-density aria-pressed="${compact()}" title="Table rows: compact (one line each) or comfortable (everything wrapped)">${compact() ? 'Compact' : 'Comfortable'} rows</button>`;
   document.addEventListener('click', e => {
     if (!e.target.closest?.('button[data-density]')) return;
-    dens = compact() ? 'comfortable' : 'compact'; try { document.documentElement.dataset.density = dens; } catch (err) { /* no page */ }
-    try { localStorage.setItem(DK, dens); } catch (err) { /* storage may be blocked */ }
+    pref = compact() ? 'comfortable' : 'compact'; apply();
+    try { localStorage.setItem(DK, pref); } catch (err) { /* storage may be blocked */ }
     K.render();
   });
   function on(table, cols, defaults) {
@@ -59,5 +63,5 @@
     if (open.size && !e.target.closest?.('.col-menu')) document.querySelectorAll('details.col-menu[open]').forEach(d => { d.open = false; });
   });
   K.columns = { menu, on, reset, redraw };
-  K.density = { compact, btn: densityBtn };
+  K.density = { compact, btn: densityBtn, defaults: DEF };
 });

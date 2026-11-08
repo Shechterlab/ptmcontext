@@ -636,7 +636,7 @@ Default: a site map, the length and the share. `download`: the TSV's columns, ea
 (`accession, gene, entry, protein, aliases, length, candidates, marks, marks_shown`), `attribute` (a protein attribute;
 a list joined with `;`), `classes` (the count of the protein's marks in them), `counts: {attribute, value}`.
 
-**`website.sites`** (the Sites page). Fixed columns: the protein, the site (numbered as `website.protein.numbering` says,
+**`website.sites`** (the Sites page; `quick: [attribute, ...]` names the colored attributes that get a quick filter above the table, default all; rows are wrapped by default, with a Compact rows button). Fixed columns: the protein, the site (numbered as `website.protein.numbering` says,
 "UniProt R3" below; tags for the values of a list attribute, `site_tags: {attribute, values: {code: tag}}`), the color
 attribute (a dot and `short` labels: `{attribute: {code: label}}`, heading `state_label`) and the window ±7 (the site
 boxed, the profile's residues bold, `window.colours: {letter: colour}`, `·` past the ends) with the tags of each flags

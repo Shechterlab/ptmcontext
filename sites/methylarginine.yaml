@@ -1872,7 +1872,7 @@ website:                  # the look and words of the website (ptmc web); layout
     also: [earlier]
     note: "{all} lower-confidence sites are shown hatched beside the {others} sites. Counts, charts and tests include the {counted} whose own evidence covers the arginine and leaves the methyl group on it. The other {shown} are shown only."
   sites:                   # the Sites page: the explorer's columns (kit-sites.js)
-    sort: {by: src, desc: true}            # the sites reported by most studies first, then by gene
+    quick: [interaction]                   # the quick filters above the table (default: every colored attribute)
     state_label: State
     short: {state: {Rme1: Rme1, Rme2: Rme2, Rme1_Rme2: Rme1 + Rme2, "": No assigned state}}   # short labels in the table
     site_tags: {attribute: flags, values: {paralog_assigned: paralog}}                       # tags beside the site

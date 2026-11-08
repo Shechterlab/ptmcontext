@@ -18,6 +18,8 @@
   const AN = () => SD().analyses;
   const pr = i => K.tables.P[i];
   const vals = (m, n) => K.tables.vals(m, n);
+  K.density.defaults.sites = 'comfortable';      // wrapped rows, as the explorer's table; a reader's choice wins
+  const quickAttrs = () => Object.keys(SPECS).filter(n => SPECS[n].colour && SPECS[n].kind === 'category' && (!SV.quick || SV.quick.includes(n)));   // website.sites.quick, else every colored attribute
   const colourAttr = Object.keys(SPECS).find(n => SPECS[n].colour && SPECS[n].kind === 'category') || null;
   const short = (n, v) => (SV.short?.[n] || {})[v] ?? K.sel.valueLabel(n, v);
   const tagAids = () => AN().filter(a => A[a]?.shape === 'flags' && (!SV.tags || SV.tags[a]));     // the site file's, else every flags question
@@ -203,7 +205,7 @@
       const a = key.get(x), b = key.get(y);
       if (a == null || b == null) { if (a != null) return -1; if (b != null) return 1; }
       else { const r = typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b)); if (r) return T.desc ? -r : r; }
-      return (SV.sort && String(pr(x[0])?.gene || '').localeCompare(String(pr(y[0])?.gene || ''))) || x[0] - y[0] || x[1] - y[1];   // then by gene
+      return String(pr(x[0])?.gene || '').localeCompare(String(pr(y[0])?.gene || '')) || x[0] - y[0] || x[1] - y[1];   // then by gene
     });
     return out;
   }
@@ -211,7 +213,7 @@
   // ---- quick filters: the attributes the site colors by, with their counts in the selection ----------------------
   function quick() {
     const c = K.sel.compute(), idx = c.active ? c.marks : SD().marks.map((_, i) => i), AT = SD().attribute_names || Object.keys(SD().attributes);
-    return Object.keys(SPECS).filter(n => SPECS[n].colour && SPECS[n].kind === 'category').map(n => {
+    return quickAttrs().map(n => {
       const ti = AT.indexOf(n), counts = {}; idx.forEach(i => SD().marks[i][3][ti].forEach(k => { counts[k] = (counts[k] || 0) + 1; }));
       const on = new Set(S.f['t:' + n] || []), order = Object.keys(SPECS[n].values || {});
       const vs = SD().attributes[n].map((v, k) => [v, counts[k] || 0]).sort((x, y) => (order.indexOf(x[0]) + 1 || 99) - (order.indexOf(y[0]) + 1 || 99));
@@ -325,7 +327,7 @@
   K.tabs.push(() => ['sites', 'Sites', K.sel?.active() ? K.sel.nMarks() : D.counts.marks]);
   K.sections.sites = () => [['view', 'Sites', 1], ...(K.sel?.active() && document.getElementById('sel-card') ? [['sel-card', 'Your selection', 1]] : []),
     ...(document.getElementById('sel-enriched') ? [['sel-enriched', 'Enriched features', 1]] : []),
-    ...(Object.keys(SPECS).some(n => SPECS[n].colour && SPECS[n].kind === 'category') ? [['sites-quick', 'Quick filters', 1]] : []), ['sites-table', 'Site table', 1], ['t-cite', 'How to cite', 1]];
+    ...(quickAttrs().length ? [['sites-quick', 'Quick filters', 1]] : []), ['sites-table', 'Site table', 1], ['t-cite', 'How to cite', 1]];
   K.columns.redraw.sites = () => { const y = scrollY; K.render(); scrollTo(0, y); };
   K.clicks.unshift(
     ['#sites-table [data-ev-kind]', el => openPop(el)],

@@ -1357,7 +1357,7 @@
       if (a instanceof SVGElement) return;
       const txt = a.textContent.trim();
       if (/↗$/.test(txt)) a.dataset.ext = 'arrow';
-      const n = document.createElement('span'); n.className = 'vh'; n.textContent = ' (opens in a new tab)'; a.append(n);
+      if (txt && !a.hasAttribute('aria-label')) a.setAttribute('aria-label', `${txt} (opens in a new tab)`);   // an attribute, not hidden text, so the page's words are its own
     });
   }
   K.linkPass = linkPass;
