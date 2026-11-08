@@ -475,7 +475,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
   - id: disease_family_additional
     test: protein_sets
-    title: Disease families, additional (grouped automatically from disease terms)
+    title: Disease families, additional
     question: "Which of the additional disease families, mostly clinical signs, are over-represented?"
     sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by additional disease family: grouped automatically by matching words in the disease terms, not checked by hand, mostly clinical signs; tested apart from the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
     set_note: "A family of DisGeNET disease terms grouped automatically by matching words; not checked by hand."
@@ -1421,7 +1421,7 @@ website:                  # the look and words of the website (ptmc web); layout
             views:               # one question, two vocabularies: a switch on its page
               - label: DisGeNET families
                 analysis: disease_family
-                more: {analysis: disease_family_additional, label: "Show {n} more families (grouped automatically from disease terms)", head: "Additional families (grouped automatically from disease terms; tested separately)"}
+                more: {analysis: disease_family_additional, label: "Show {n} more families", head: "Additional families"}
                 members:
                   analysis: disease_term
                   label: Show the DisGeNET terms
@@ -1450,7 +1450,7 @@ website:                  # the look and words of the website (ptmc web); layout
                     "DOID:7": [by organ system, "A disease that manifests in a defined anatomical structure."]
                     "DOID:0014667": [inherited and acquired metabolic, "A disease that involves errors in metabolic processes of building or degradation of molecules."]
                     "DOID:0050117": ["viral, bacterial, parasitic, fungal"]
-          - {analysis: disease_family_additional, title: "More disease families (grouped automatically from disease terms)"}
+          - {analysis: disease_family_additional, title: "More disease families"}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
           - {analysis: cancer_change, title: Changes in tumors and cell lines}
       - name: Protein classes and pathways
@@ -2157,7 +2157,7 @@ website:                  # the look and words of the website (ptmc web); layout
         sub: "Did a peptide carrying the site change in PRMT knockouts, knockdowns or inhibitors?"
         note: "A call is a peptide-level change: a site is decreased when a peptide carrying it decreased and none increased (twofold at q < 0.05, or the study's own call for the knockdowns and the PRMT7 inhibitor). Not quantified is left blank."
       experiments:
-        title: Methylation experiments
+        title: Experiments on its methylation
         table: experiments
         sub: "Curated from the papers: what was done, what was measured and what changed. Kept apart from the site table and every statistic."
         note: "The table is in the release (supporting/functional_experiments). The curation is small and growing. A protein without rows is not yet curated, which does not mean it lacks experiments."

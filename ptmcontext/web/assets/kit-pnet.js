@@ -548,7 +548,7 @@
   }
   function ccFold(p, rec, fold) {
     if (!LN.length || !rec) return '';
-    return fold('p-cc', 'Interaction evidence', `${LN.length} types of evidence, site by site`, `<div class="card-head">` +
+    return fold('p-cc', 'Interaction evidence at a glance', `${LN.length} types of evidence, site by site`, `<div class="card-head">` +
       `${K.expBar(['svg', 'png'], 'ccexp', 'the evidence summary')}</div><div class="pn-cc" id="pn-cc" data-acc="${esc(p.acc)}" style="aspect-ratio:900/${ccH()}"><p class="muted pn-msg">Loading…</p></div>`, true);
   }
   function ccMount() {
@@ -564,6 +564,6 @@
   // ---- hooks into the protein page ------------------------------------------------------------------------------------
   (K.proteinFolds ||= []).push((p, rec, fold) => ccFold(p, rec, fold) + ixFold(p, rec, fold));
   (K.lightFolds ||= []).push((p, rec, fold) => ixFold(p, rec, fold));
-  K.proteinFoldSections = [...(K.proteinFoldSections || []), ...(LN.length ? [['p-cc', 'Interaction evidence', 1]] : []), ...(IXP ? [['p-ix', 'Protein interactions', 1]] : [])];
+  K.proteinFoldSections = [...(K.proteinFoldSections || []), ...(LN.length ? [['p-cc', 'Interaction evidence at a glance', 1]] : []), ...(IXP ? [['p-ix', 'Protein interactions', 1]] : [])];
   (K.afterRender ||= []).push(() => { mount(); ccMount(); });
 });
