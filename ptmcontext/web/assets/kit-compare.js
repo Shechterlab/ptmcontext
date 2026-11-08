@@ -8,7 +8,7 @@
   const { W, S, esc, int, cap } = K;
   function chooser() {
     const saved = K.sel.savedList();
-    return `<div class="page-head"><h2>Compare two selections</h2></div><p class="page-sub">What is more or less common in one selection’s ${esc(W.marks)} than in another’s: every question of the Overview, tested pooled, within proteins and within studies.</p>` +
+    return `<div class="page-head"><h2>Compare two selections</h2></div>` +
       `<ol class="steps"><li>Make the first selection (the search, or Filters) and <b>Save</b> it.</li><li>Make the second selection.</li><li>Choose the first below: the Overview then compares the current selection with it.</li></ol>` +
       (saved.length ? `<div class="tbl-card"><table class="tbl"><thead><tr><th>Saved selection</th><th class="num">${esc(cap(W.marks))}</th><th></th></tr></thead><tbody>${saved.map((x, i) => `<tr><td>${esc(x.name)}</td><td class="num">${int(x.n)}</td><td><button class="btn small" type="button" data-saved-cmp="${i}">Compare the current selection with it</button></td></tr>`).join('')}</tbody></table></div>` : `<p class="note">No selection is saved in this browser yet.</p>`) +
       (K.sel.active() ? `<p>Or <button class="linkish" type="button" data-go-apart>compare the current selection with the other ${esc(W.marks)}</button>.</p>` : '');

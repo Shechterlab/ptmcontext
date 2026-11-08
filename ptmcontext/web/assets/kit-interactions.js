@@ -205,7 +205,7 @@
   const gridLines = (sc, X) => Array.from({ length: sc.hi - sc.lo + 1 }, (_, k) => sc.lo + k).map(k => `<line class="${k === 0 ? 'one' : 'grid'}" x1="${X(2 ** k)}" x2="${X(2 ** k)}" y1="0" y2="100%"/>`).join('');
   const seg = (key, m) => `<div class="ix-tools"><span class="seg" role="group" aria-label="Test">${['mantel_haenszel', 'fisher'].map(x => `<button type="button" data-ix-m="${esc(key)}" data-v="${x}" aria-pressed="${m === x}" title="${esc(K.GLOSS[x === 'fisher' ? 'pooled' : 'within each protein'])}">${METHOD[x]}</button>`).join('')}</span></div>`;
   function forestNote(rows, m) {
-    if (!selOn()) return `<p class="muted small">${m === 'mantel_haenszel' ? 'Within each protein: a Mantel–Haenszel odds ratio with its 95% CI (Robins–Breslow–Greenland), each protein a stratum' : 'Pooled: Fisher’s exact test, the Haldane–Anscombe odds ratio'}; each ${esc(W.mark)} against the other ${esc(W.residues)} the evidence could reach (the release’s background for each test). q: Benjamini–Hochberg within the question. Click a row to select its ${esc(W.marks)}.</p>`;
+    if (!selOn()) return `<p class="muted small">${m === 'mantel_haenszel' ? 'Within each protein: a Mantel–Haenszel odds ratio with its 95% CI (Robins–Breslow–Greenland), each protein a stratum' : 'Pooled: Fisher’s exact test, the Haldane–Anscombe odds ratio'}; q: Benjamini–Hochberg within the question.</p>`;
     if (!testable()) return `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. The rows are the whole dataset’s.</p>`;
     return `<p class="muted small">Your selection, tested again in the browser (exploratory; not adjusted for the other selections tried); the gray tick is the whole dataset’s odds ratio. ${rows.some(x => x.mine?.descriptive) ? 'A question the selection was made with is shown, not tested.' : ''}</p>`;
   }
@@ -287,7 +287,7 @@
     const sc = shareCounts(b.attribute); if (!sc) return loading();
     const bar = `<div class="ix-stack" role="img" aria-label="${esc(SPECS[b.attribute].label)}">${sc.list.map((x, k) => x.n ? `<span data-f="t:${esc(b.attribute)}" data-v="${esc(x.v)}" style="width:${(100 * x.n / (sc.total || 1)).toFixed(2)}%;background:${attrColour(b.attribute, x.v, k)}" title="${esc(vlabel(b.attribute, x.v))}: ${int(x.n)} (${pcS(x.n, sc.total)}); click to select them"></span>` : '').join('')}</div>`;
     const key = `<div class="ix-key">${sc.list.map((x, k) => `<button type="button" class="ix-keyi" data-f="t:${esc(b.attribute)}" data-v="${esc(x.v)}"><i style="background:${attrColour(b.attribute, x.v, k)}"></i>${esc(vlabel(b.attribute, x.v))} <b>${int(x.n)}</b> <span class="muted">${pcS(x.n, sc.total)}</span></button>`).join('')}</div>`;
-    return bar + key + (compact ? '' : `<p class="muted small">${esc(SPECS[b.attribute].help || '').replace(/([^.])$/, '$1.')} Of ${int(sc.total)} ${esc(selOn() ? 'selected ' + W.marks : W.marks)}. Click a part to select its ${esc(W.marks)}.</p>`);
+    return bar + key + (compact ? '' : `<p class="muted small">${esc(SPECS[b.attribute].help || '').replace(/([^.])$/, '$1.')} Of ${int(sc.total)} ${esc(selOn() ? 'selected ' + W.marks : W.marks)}.</p>`);
   }
   const sharesTsv = b => { const sc = shareCounts(b.attribute); return ['value', 'label', W.marks.replace(/\W+/g, '_'), 'share'].join('\t') + '\n' + sc.list.map(x => [x.v, vlabel(b.attribute, x.v), x.n, g6(x.n / (sc.total || 1))].join('\t')).join('\n') + '\n'; };
   function sharesBody(b, ex, Wd = 760) {
@@ -479,7 +479,7 @@
     return `<div class="ix-bars">${gs.map(g => { const max = Math.max(1, ...g.list.map(x => x.n));
       return `<div class="ix-barg"><h4>${esc(g.title)} <span class="muted small">${g.list.length > top ? `top ${top} of ${int(g.list.length)}` : int(g.list.length)}</span></h4>${g.list.slice(0, top).map(x => `<button type="button" class="ix-barrow" data-ix-q="${esc(x.ps.map(gene).filter(Boolean).join(' '))}" title="Select the ${int(x.n)} ${esc(W.marked)} protein${x.n === 1 ? '' : 's'} that ${esc(x.l)} pairs with">` +
         `<span class="lab">${esc(x.l)}${x.acc && byAcc[String(x.acc).split('-')[0]] != null ? ' <span class="ix-tag" title="It carries ' + esc(W.marks) + ' itself">itself ' + esc(W.marked) + '</span>' : ''}</span><span class="ix-bar"><i style="width:${(100 * x.n / max).toFixed(1)}%"></i></span><b>${int(x.n)}</b></button>`).join('')}</div>`; }).join('')}</div>` +
-      `<p class="muted small">Each bar: the ${esc(W.marked)} proteins${selOn() ? ' of your selection' : ''} paired with that protein. Click a bar to select them.</p>`;
+      '';
   }
   const barsTsv = b => ['group', 'label', `${W.marked}_proteins`.replace(/\W+/g, '_'), 'genes'].join('\t') + '\n' + barsData(b).flatMap(g => g.list.map(x => [g.title, x.l, x.n, x.ps.map(gene).join(';')].join('\t'))).join('\n') + '\n';
   function barsBody(b, ex, Wd = 760) {
@@ -505,7 +505,7 @@
     const max = Math.max(1, ...d.cells.flat().map(x => x.n));
     return `<div class="tbl-card"><table class="tbl ix-matrix ix-pairs"><thead><tr><th></th>${d.cs.map(([cl, s]) => `<th class="ix-vh"><span>${esc(cl)} <small class="muted">${int(s.size)}</small></span></th>`).join('')}</tr></thead><tbody>` +
       d.cells.map((row, i) => `<tr><th>${esc(d.rs[i][0])} <small class="muted">${int(d.rs[i][1].size)}</small></th>${row.map(x => `<td class="ix-mc${x.n > 1.5 * x.e && x.n >= 3 ? ' ix-hi' : ''}" style="--ixc:var(--less);--a:${(0.75 * x.n / max).toFixed(2)}" title="${int(x.n)} ${esc(W.marked)} proteins pair with both ${esc(x.rl)} and ${esc(x.cl)} (${fxn(x.e)} expected if independent)"${x.n ? ` data-ix-q="${esc(x.ps.map(gene).join(' '))}"` : ''}>${x.n ? `<b>${int(x.n)}</b>` : '<span class="muted">·</span>'}</td>`).join('')}</tr>`).join('') +
-      `</tbody></table></div><p class="muted small">Each cell: the ${esc(W.marked)} proteins${selOn() ? ' of your selection' : ''} that pair with both; outlined where that is at least 1.5 times as many as expected if the two partners were independent (at least 3). Click a cell to select them.</p>`;
+      `</tbody></table></div>`;
   }
   const pairsTsv = b => { const d = pairsData(b); return ['row', 'column', 'proteins', 'expected', 'genes'].join('\t') + '\n' + d.cells.flat().map(x => [x.rl, x.cl, x.n, g6(x.e), x.ps.map(gene).join(';')].join('\t')).join('\n') + '\n'; };
 
@@ -563,9 +563,9 @@
     return K.expBar(b.kind === 'example' ? ['pdf', 'svg', 'png'] : kinds, `ixexp="${esc(bkey(pg, sec, bi))}" data-k`, b.title || sec.title, m || `q-page-${pg.id}`);
   }
   function blockCard(pg, sec, b, bi) {
-    return `<div class="ix-block" id="ix-${esc(sec.id)}-${bi}">${b.title || b.sub ? `<div class="card-head"><div>${b.title ? `<h4>${esc(b.title)}</h4>` : ''}${b.sub ? `<p class="sub">${esc(b.sub)}</p>` : ''}</div></div>` : ''}${blockHtml(pg, sec, b, bi)}${b.note ? `<p class="muted small">${esc(b.note)}</p>` : ''}${exportsOf(pg, sec, b, bi)}</div>`;
+    return `<div class="ix-block" id="ix-${esc(sec.id)}-${bi}">${b.title ? `<div class="card-head"><div><h4>${esc(b.title)}</h4></div></div>` : ''}${blockHtml(pg, sec, b, bi)}${exportsOf(pg, sec, b, bi)}</div>`;
   }
-  const sectionCard = (pg, sec) => `<section class="pcard ix-sec" id="ix-${esc(sec.id)}"><div class="card-head"><div><h3>${esc(sec.title)}</h3>${sec.question || sec.sub ? `<p class="sub">${esc(sec.question || '')}${sec.sub ? ' ' + esc(sec.sub) : ''}</p>` : ''}</div></div>${sec.blocks.map((b, bi) => blockCard(pg, sec, b, bi)).join('')}</section>`;
+  const sectionCard = (pg, sec) => `<section class="pcard ix-sec" id="ix-${esc(sec.id)}"><div class="card-head"><div><h3>${esc(sec.title)}</h3></div></div>${sec.blocks.map((b, bi) => blockCard(pg, sec, b, bi)).join('')}</section>`;
 
   // ---- tiles: a section at a glance --------------------------------------------------------------------------------
   function miniForest(refs, m, all = refs) {           // all: the rows whose effects set the scale (several groups share one)
@@ -583,7 +583,7 @@
       case 'sets': { const rs = setRows(b).slice(0, 2); return rs.map(x => { const r = selOn() && x.mine ? x.mine : x.site; return `<div class="ix-mrow2"><span>${esc(x.site.label)}</span><span class="ix-meter"><i style="width:${(100 * r.a / (r.a + r.b || 1)).toFixed(1)}%"></i><b style="left:${(100 * (r.a + r.c) / (r.a + r.b + r.c + r.d || 1)).toFixed(1)}%"></b></span><span class="muted small">${pcS(r.a, r.a + r.b)} vs ${pcS(r.a + r.c, r.a + r.b + r.c + r.d)}</span></div>`; }).join('') + `<p class="tfoot">${esc(cap(W.marked))} proteins against all proteins</p>`; }
       case 'shares': { const sc = shareCounts(b.attribute); const lead = sc.list[0]; return sharesHtml(b, true) + (lead ? `<p class="tfoot"><b>${int(lead.n)}</b> ${esc(marksWord(lead.n))} (${pcS(lead.n, sc.total)}) ${esc(vlabel(b.attribute, lead.v).toLowerCase())}</p>` : ''); }
       case 'combinations': { const c = combos(b); const any = c.total - c.none; return `<p class="ix-big"><b>${int(any)}</b> <span>${esc(marksWord(any))} with some evidence (${pcS(any, c.total)})</span></p><p class="tfoot">${int(c.list.length)} combinations of ${int(c.vals.length)} kinds</p>`; }
-      case 'matrix': { const md = matrixData(b, b.method || 'mantel_haenszel'); const top = md.cells.filter(x => x.dir === 'more').sort((x, y) => y.or - x.or)[0]; return `<p class="small">${esc(sec.question || sec.sub || '')}</p>${top ? `<p class="tfoot">Strongest: <b>${esc(md.feats[top.ri].r.label)}</b> with ${esc(vlabel(b.attribute, md.cols[top.cj]))} (${fx2(top.or)})</p>` : ''}`; }
+      case 'matrix': { const md = matrixData(b, b.method || 'mantel_haenszel'); const top = md.cells.filter(x => x.dir === 'more').sort((x, y) => y.or - x.or)[0]; return `${top ? `<p class="tfoot">Strongest: <b>${esc(md.feats[top.ri].r.label)}</b> with ${esc(vlabel(b.attribute, md.cols[top.cj]))} (${fx2(top.or)})</p>` : ''}`; }
       case 'table': { const t = table(b.table); if (!t) return loading(); let rs = blockRows(t, b);
         if (b.sort) { const j = colIdx(t, b.sort), desc = b.descending ?? true; rs = rs.slice().sort((x, y) => (x[j] == null) - (y[j] == null) || ((x[j] ?? 0) - (y[j] ?? 0)) * (desc ? -1 : 1)); }
         const n = t.key === 'residue' ? new Set(rs.map(r => r[0] + ':' + r[1])).size : t.key === 'protein' ? new Set(rs.map(r => r[0])).size : rs.length;
@@ -591,11 +591,10 @@
         const groups = b.group_by ? (() => { const j = colIdx(t, b.group_by), g = {}; rs.forEach(r => { const k = r[j]; g[k] = g[k] || new Set(); g[k].add(r[0] + ':' + r[1]); }); return Object.entries(g).map(([k, v]) => `${esc((colMeta(t, b.group_by).values || {})[k] ?? k)} <b>${int(v.size)}</b>`).join(' · '); })() : '';
         return `<p class="ix-big"><b>${int(n)}</b> <span>${esc(sec.sub || (t.key === 'residue' ? W.marks : t.key === 'protein' ? 'proteins' : 'rows'))}</span></p>${groups ? `<p class="small">${groups}</p>` : rs.length && lab ? `<p class="tfoot">Top: ${esc(cellText(t, rs[0], lab))}</p>` : ''}`; }
       case 'bars': { const gs = barsData(b); if (!gs) return loading(); return gs.slice(0, 2).map(g => `<p class="small"><b>${esc(g.title)}</b>: ${g.list.slice(0, 4).map(x => `${esc(x.l)} ${int(x.n)}`).join(' · ')}</p>`).join('') || '<p class="muted">None</p>'; }
-      case 'pairs': { const d = pairsData(b); if (!d) return loading(); const best = d.cells.flat().sort((x, y) => y.n - x.n)[0]; return `<p class="small">${esc(sec.question || '')}</p>${best ? `<p class="tfoot">Most shared: <b>${esc(best.rl)}</b> and <b>${esc(best.cl)}</b> (${int(best.n)})</p>` : ''}`; }
+      case 'pairs': { const d = pairsData(b); if (!d) return loading(); const best = d.cells.flat().sort((x, y) => y.n - x.n)[0]; return `${best ? `<p class="tfoot">Most shared: <b>${esc(best.rl)}</b> and <b>${esc(best.cl)}</b> (${int(best.n)})</p>` : ''}`; }
       case 'histogram': { const h = histData(b); if (!h) return loading(); const L = histBody(b, false, 760, 200); return `<div class="ix-plot ix-mini"><svg viewBox="0 0 760 ${L.H}" aria-hidden="true">${L.body}</svg></div>`; }
-      case 'example': return `<p class="small">${esc(sec.question || '')}</p>`;
-      case 'checker': return `<p class="small">${esc(sec.question || 'Check one')}</p>`;
-      default: return `<p class="small">${esc(b.text || sec.question || '')}</p>`;
+      case 'example': case 'checker': return '';
+      default: return b.text ? `<p class="small">${esc(b.text)}</p>` : '';
     }
   }
   const sectionTile = (pg, sec) => `<article class="tile ix-tile" data-ix-tile="${esc(K.link(pg.id, sec.id))}" tabindex="0"><header><h3>${esc(sec.title)}</h3><span class="chev" aria-hidden="true">›</span></header>${tileBody(pg, sec)}</article>`;
@@ -633,9 +632,9 @@
   function hub(pg) {
     const top = pg.sections.filter(s => s.place === 'top'), links = pg.sections.filter(s => s.place === 'link');
     return `<div class="page-head"><h2>${esc(pg.title)}</h2><span class="tools"><button type="button" class="btn small" data-ix-print title="Print this page, or save it as a PDF">Download PDF</button></span></div>` +
-      (pg.sub ? `<p class="page-sub">${esc(pg.sub)}</p>` : '') + selLine() + answerHtml(pg) + highlightsHtml(pg) + top.map(s => K.fold(`ix-${esc(s.id)}`, esc(s.title), esc(s.question || s.sub || ''), s.blocks.map((b, bi) => blockCard(pg, s, b, bi)).join(''), s.open === true)).join('') +
+      selLine() + answerHtml(pg) + highlightsHtml(pg) + top.map(s => K.fold(`ix-${esc(s.id)}`, esc(s.title), '', s.blocks.map((b, bi) => blockCard(pg, s, b, bi)).join(''), s.open === true)).join('') +
       (links.length ? `<p class="ix-links">${links.map(s => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)} ›</a>`).join(' · ')}</p>` : '') + keyLine() +
-      pg.groups.map(g => { const ts = g.sections.filter(s => !s.place || s.place === 'tile'); return ts.length ? K.fold(`ixg-${esc(g.name.replace(/\W+/g, '-').toLowerCase())}`, esc(g.name), esc(ts.map(s => s.title).join(', ')), `<div class="tiles">${ts.map(s => sectionTile(pg, s)).join('')}</div>`, g.open === true) : ''; }).join('');
+      pg.groups.map(g => { const ts = g.sections.filter(s => !s.place || s.place === 'tile'); return ts.length ? K.fold(`ixg-${esc(g.name.replace(/\W+/g, '-').toLowerCase())}`, esc(g.name), '', `<div class="tiles">${ts.map(s => sectionTile(pg, s)).join('')}</div>`, g.open === true) : ''; }).join('');
   }
   function focus(pg, sid) {
     const i = pg.sections.findIndex(s => s.id === sid), sec = pg.sections[i], prev = pg.sections[i - 1], next = pg.sections[i + 1];

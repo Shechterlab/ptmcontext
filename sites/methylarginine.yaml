@@ -2839,8 +2839,8 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {filter: "a:domain_context", value: in_domain, label: In a domain, group: Context}
                 - {kind: checker, title: Check one site, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], tables: [interactions]}
             - id: ix-ex
-              title: The evidence on one protein
-              question: Evidence along one protein. Type any protein to redraw it.
+              title: Evidence map
+              question: Evidence along one protein
               place: top
               blocks:
                 - {kind: example, protein: HNRNPA1, tracks: [rna_cells, rbrid, dna_cells, intact, predicted]}

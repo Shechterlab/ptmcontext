@@ -74,7 +74,7 @@
   const terms = EX.filter(isTerm);
   const SECTIONS = [
     ['h-what', 'What this site is'], ['h-start', 'Where to start'], ['h-search', 'Searching'], ['h-filters', 'Filters'],
-    ['h-selection', 'Your selection'], ['h-compare', 'Comparing'], ['h-read', 'Reading a figure'], ['h-export', 'Downloads'],
+    ['h-pages', 'Tables, maps and charts'], ['h-selection', 'Your selection'], ['h-compare', 'Comparing'], ['h-read', 'Reading a figure'], ['h-export', 'Downloads'],
     ['h-cite', 'Citing'], ['h-share', 'Sharing a link, and going back'], ['h-keys', 'Keyboard shortcuts'], ['h-access', 'Accessibility'],
   ];
   function helpPage() {
@@ -91,7 +91,8 @@
         `<li>one ${esc(W.mark)}, as a gene and a position${EX.find(isSite) ? ` (<span class="mono">${esc(EX.find(isSite))}</span>)` : ''}.</li>` +
         `<li>a term, <span class="mono">key:value</span>, where the key is a question or a fact about the ${esc(W.marks)}${terms.length ? ` (${terms.map(t => `<button type="button" class="linkish mono" data-try="${esc(t)}">${esc(t)}</button>`).join(', ')})` : ''}. Separate values with <span class="mono">|</span> or commas to match any. Several terms must all hold.</li></ul>` +
         `<p>The line under the box counts the ${esc(W.marks)} and proteins that match and names any word that matched nothing. ${mlink('search', 'Method › Search terms')} lists every key.</p>`) +
-      sec('h-filters', `<p>The sidebar (☰ or Filters) lists the page's Sections and the Filters, one button per class or value with its count of ${esc(W.marks)}. A ${esc(W.mark)} is kept when it matches the search and every filter group.</p>`) +
+      sec('h-filters', `<p>The sidebar (☰ or Filters) lists the page's Sections and the Filters, one button per class or value with its count of ${esc(W.marks)}. A ${esc(W.mark)} is kept when it matches the search and every filter group, and any one of the values chosen within a control. Every page then shows the ${esc(W.marks)} that match, and the tests run again on them. Each chip shows how many ${esc(W.marks)} it holds; clicking a row in a tile does the same as ticking its chip.</p>`) +
+      sec('h-pages', `<p>Click a row of a table to open its protein or ${esc(W.mark)}. Click a class row of a chart to select its ${esc(W.marks)}, and a tile's title to open the question. On a map, hover an item for its description and click to pin it; drag across the map to zoom, and use the evidence map's box to redraw it for any protein.</p>`) +
       sec('h-selection', `<p>A search or filter makes a selection, shown in the bar under the search box with × on each term, Save (kept in this browser), Copy link and Clear all. Every page then shows the selection, and the Overview tests every question again on it in your browser${min ? `, from ${int(min.proteins)} proteins and ${int(min.marks)} ${esc(W.marks)}` : ''}. These tests are exploratory and not adjusted for the other selections you try.</p>`) +
       sec('h-compare', `<p>Under Compared with, the Overview compares your selection with the other ${esc(W.residues)} of the same proteins, with the other ${esc(W.marks)}, or with a saved selection. Each class shows your selection's share (filled) and the comparison's (hollow).</p>`) +
       sec('h-read', `<p>Each tile is a question and each row a class. The dot is the effect on a log scale with its 95% confidence interval, and 1× is no difference.</p>` +

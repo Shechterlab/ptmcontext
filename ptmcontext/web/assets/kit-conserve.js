@@ -187,7 +187,7 @@
       per.map(x => row(x.r.name, Math.round(x.r.pid) + '%', x.v.map((a, i) => tcell(a, i, x.r.name, seq[sites[i] - 1])).join(''))).join('') + '</tbody></table></div>';
     return head + test + `<div class="cv-sum">${per.map(x => `<span class="tag"><b>${esc(x.r.name)}</b> ${esc(KEPT)} at ${x.nK}/${x.nMap}</span>`).join(' ')}` +
       (absent.length ? ` <span class="muted small">No ortholog in Ensembl: ${esc(absent.join(', '))}.</span>` : '') + '</div>' + table +
-      `<p class="small muted">Dark: still ${esc(KEPT)}; pale: a conservative change; gray: another residue; – a gap; · not mapped (the Ensembl protein differs here). The percentage is the ortholog’s identity to ${g}. Click a position for its alignment. ` +
+      `<p class="small muted">Dark: still ${esc(KEPT)}; pale: a conservative change; gray: another residue; – a gap; · not mapped (the Ensembl protein differs here). The percentage is the ortholog’s identity to ${g}. ` +
       `<a href="https://www.ensembl.org/${esc(String(ENS.source).replace(/^./, c => c.toUpperCase()))}/Gene/Compara_Ortholog?g=${encodeURIComponent(st.ensg)}" target="_blank" rel="noopener">Ensembl ${esc(st.ensg)} orthologs ↗</a></p>` +
       `<div class="cv-ctl"><label>Site <select id="cv-pos">${sites.map(q => `<option value="${q}"${q === UI.pos ? ' selected' : ''}>${esc(lab(acc, q))}</option>`).join('')}</select></label> ` +
       `<label>Flank <select id="cv-flank">${[5, 10, 15, 20].map(v => `<option value="${v}"${v === UI.flank ? ' selected' : ''}>±${v}</option>`).join('')}</select></label></div>` +

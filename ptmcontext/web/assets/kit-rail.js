@@ -173,9 +173,6 @@
     M.need();
     const gs = groups();
     return `<div class="rail-sel">${bar() || `<span>All <b>${int(D.counts.marks)}</b> ${esc(W.marks)} on <b>${int(D.counts.proteins)}</b> proteins</span>`}</div>${savedHtml()}` +
-      `<p class="rail-note rail-what"><b>What filters do.</b> They narrow every page to the ${esc(W.marks)} that match, and test that selection again. A ${esc(W.mark)} must match every group you use, and any one of the values chosen within a control.` +
-      `${gs.length > 1 ? ` <span class="muted">Example: pick a value under <i>${esc(gs[0].name)}</i> and another under <i>${esc(gs[1].name)}</i> to see only the ${esc(W.marks)} that match both.</span>` : ''} Each chip shows how many ${esc(W.marks)} it holds.` +
-      ` Clicking a row in a tile does the same as ticking its chip here.</p>` +
       gs.map((g, gi) => {
         const keys = keysOf(g), n = keys.filter(k => S.f[k]?.length || termValues(k).length).length;
         return `<details class="fgroup${n ? ' active' : ''}" data-g="${gi}"${R.openGroups?.has(gi) ? ' open' : ''}><summary><span>${esc(g.name)}</span><span class="gcount muted" title="${keys.length} filter${keys.length === 1 ? '' : 's'} in this group${n ? `, ${n} in use` : ''}">${n ? `${n} of ` : ''}${keys.length}</span>${n ? `<span class="badge">${n}</span><button type="button" class="linkish small" data-fgroup-clear="${gi}">Clear</button>` : ''}</summary>` +

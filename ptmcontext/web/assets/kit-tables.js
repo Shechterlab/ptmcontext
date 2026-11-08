@@ -158,7 +158,7 @@
     const head = `<div class="page-head results-head"><div><h2>Proteins</h2><p class="cx">${int(rows.length)} of ${int(P.length)} proteins · ${int(nMarks)} ${esc(nMarks === 1 ? W.mark : W.marks)}</p></div>` +
       `<div class="actions">${rows.length ? `<button class="btn small" type="button" data-copy-genes title="Every protein of the table, one per line: its gene, else its accession">Copy gene list</button>` : ''}${figuresBtn()}${K.expBar(['tsv'], 'ptsv', 'the protein table', 'data')}</div></div>`;
     if (!rows.length) return head + selectionCard() + emptyState();
-    const tableHtml = `<div class="tbl-card t-card" id="proteins-table"><div class="tbl-tools"><span class="muted small">Click a protein to open it.</span>${K.columns.menu(table, cols, defaults)}</div>` +
+    const tableHtml = `<div class="tbl-card t-card" id="proteins-table"><div class="tbl-tools">${K.columns.menu(table, cols, defaults)}</div>` +
       `<div class="tbl-wrap"><table class="tbl stackable ptbl2"><thead><tr>${th('protein', 'Protein', '', '', sorted('protein'), true)}${th('marks', 'Sites', 'num', sel ? `${cap(W.marks)} in the selection, of the protein’s ${W.marks}` : '', sorted('marks'), true)}` +
       showC.map(c => th(c.id, c.label, (pkeyNum(c) ? 'num' : '') + hideCls(c), c.help || '', sorted(c.id), sortable(c))).join('') + '</tr></thead><tbody>' +
       shown.map(({ p, n }) => `<tr class="row" tabindex="0" data-acc="${esc(p.acc)}"><td data-label="Protein"><div class="cv"><a class="gene" href="${esc(K.link('protein', p.acc))}">${esc(pLabel(p))}</a> <span class="acc-in mono">${esc(p.acc)}</span><div class="pname" title="${esc(p.name)}">${esc(p.name || '—')}</div></div></td>` +

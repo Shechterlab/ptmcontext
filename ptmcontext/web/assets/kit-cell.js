@@ -707,7 +707,7 @@
     return `<article class="tile wide cell-tile" id="tile-${esc(ID)}" data-tile="${esc(ID)}" tabindex="0"><header><h3>${esc(title)}</h3>${K.detailsLink(ID)}</header>` +
       `<p class="tans cell-ans">${cellAnswer(regs, up, scoped)}</p><div class="cell-pair">${figs}</div>` +
       `<div class="cp-cols">${DRAWINGS.map(d => partList(d, ps)).join('')}</div>` +
-      `<p class="tkey">Odds ratio against ${esc(alike)}, the median of ${MAPS.length} maps · tap a part or a row to select its proteins.</p>${note}<div class="tact">${bar}</div></article>`;
+      `<p class="tkey">Odds ratio against ${esc(alike)}, median of ${MAPS.length} maps.</p>${note}<div class="tact">${bar}</div></article>`;
   }
   const toggle = part => K.sel.toggle('w:' + ID, part);
   function drawBig() {
@@ -786,7 +786,7 @@
         ds.universe ? `${int(ds.universe)} proteins placed, ${pc(ds.marked, ds.universe)}% ${esc(W.marked)}` : '', `<a href="${esc(K.link('overview', m.analysis))}">its question</a>`].filter(Boolean);
       return `${esc(ds.name)} (${bits.join('; ')})`; }).join('; ');
     return `<div class="card-body cell-page"><p class="cell-lead">${lead(regs, up, scoped, false)}</p>` +
-      `<p class="small">${esc(C.intro || '')} Red: ${esc(who(scoped))} are more likely to be found there than ${esc(alike)}. Slate: less likely. Grey: no clear difference. Each map compares only the proteins it places.${selNote} Click a region, part, label or grid row for its numbers and proteins.</p>` +
+      `<p class="small">${esc(C.intro || '')} Red: ${esc(who(scoped))} are more likely to be found there than ${esc(alike)}. Slate: less likely. Grey: no clear difference.${selNote}</p>` +
       colourKey() + regionsBlock + drawings + block('grid', 'Compartments against maps', 'cell-grid') + (at === 'grid' ? dt() : '') +
       `<div class="cell-block cell-one" id="cell-one"><div class="fig-head"><span class="flabel">One map at a time</span><span class="seg cell-maps" role="group" aria-label="Map">` +
       MAPS.map(m => `<button type="button" data-cellmap="${esc(m.analysis)}" aria-pressed="${m.analysis === UI.map}">${esc(m.short || m.name)}</button>`).join('') + '</span>' +

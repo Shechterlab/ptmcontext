@@ -231,7 +231,7 @@
     const q = quick();
     if (!rs.length) return head + K.tables.selectionCard() + (q ? `<div id="sites-quick">${q}</div>` : '') + K.tables.emptyState();
     return head + (LC && K.shown.note ? K.shown.note() : '') + K.tables.selectionCard() + K.tables.enrichedCard() + (q ? `<div id="sites-quick">${q}</div>` : '') +
-      `<div class="tbl-card t-card" id="sites-table"><div class="tbl-tools"><span class="muted small">Click a site to open it on its protein.</span>${K.columns.menu('sites', opt, defaults)}</div><div class="tbl-wrap">` +
+      `<div class="tbl-card t-card" id="sites-table"><div class="tbl-tools">${K.columns.menu('sites', opt, defaults)}</div><div class="tbl-wrap">` +
       `<table class="tbl stackable sites-tbl"><thead><tr>${cols.map(c => `<th class="${esc(c.cls || '')}${c.hide ? ' hide-' + esc(c.hide) : ''}" data-ssort="${esc(c.id)}" tabindex="0"${sorted(c.id)}${c.help || (c.attribute && SPECS[c.attribute]?.help) ? ` title="${esc(c.help || SPECS[c.attribute].help)}"` : ''}>${esc(c.label)}</th>`).join('')}</tr></thead><tbody>` +
       shown.map(m => `<tr data-goto="${esc(m.lc ? m.lc.p.acc : pr(m[0]).acc)}/${m[1]}" tabindex="0"${m.lc ? ' class="lc-row"' : ''}>${cols.map(c => `<td class="${esc(c.cls || '')}${c.hide ? ' hide-' + esc(c.hide) : ''}" data-label="${esc(c.label.split(' · ')[0])}">${cellOf(c, m)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>' +
       `<div class="tbl-foot"><span>Showing ${int(shown.length)} of ${int(rs.length)}</span>${rs.length > T.n ? `<button class="btn small" type="button" data-smore>Show 100 more</button>` : ''}</div></div>` +

@@ -111,7 +111,7 @@
 
   // ---- pages ------------------------------------------------------------------------------------------------------
   const head = (id, card) => { const c = C[id];
-    return `<div class="page-head"><h2>${esc(card.title || c.title)}</h2></div><p class="page-sub">${esc(c.question || '')} <span class="muted">Counted, not tested. Click a ${c.kind === 'values' ? 'row' : 'row of the table'} for its ${esc(W.marks)}${K.views.sites ? ' on the Sites page' : ''}.</span>` +
+    return `<div class="page-head"><h2>${esc(card.title || c.title)}</h2></div><p class="page-sub">${esc(c.question || '')} <span class="muted">Counted, not tested.</span>` +
       (selOn() ? ` <b>Your selection</b> is counted beside the whole dataset${SD() ? '' : ' (loading…)'}.` : '') + '</p>'; };
   const selCell = (k, n) => `<span class="cnt-sel" title="${int(k)} of your ${int(n)} selected ${esc(W.marks)}"><i></i>${int(k)}</span>`;
   // an axis from 0 to the first round number at or above max, in about four steps
@@ -132,7 +132,7 @@
     const dist = c.list ? `<div class="cnt-dist"><p class="flabel">${esc(fill(c.distribution || `${cap(c.unit[1])} per {mark}`))}</p><div class="cbars d${on ? ' s' : ''}">` +
       c.dist.map((n, k) => bar(c.number && k ? `n:${c.number}` : '', String(k + 1), unit(k + 1), n, null, on ? sv.dist[k] : null,
         `<b>${esc(unit(k + 1))}</b><br>${int(n)} ${esc(W.marks)} (${pc(n, c.total)}%)${on ? `<br>${int(sv.dist[k])} of your ${int(sv.total)}` : ''}${c.number && k ? `<br>Click: the ${esc(W.marks)} with at least ${k + 1}` : ''}`, dmax)).join('') + '</div>' +
-      `<p class="cnt-note">${int(c.multi)} ${esc(W.marks)} (${pc(c.multi, c.total)}%) ${esc(c.two_or_more)}${on ? `; ${int(sv.multi)} of the ${int(sv.total)} selected` : ''}. ${esc(c.note || '')}${c.number ? ` Click a row to keep the ${esc(W.marks)} with at least that many.` : ''}</p></div>` : '';
+      `<p class="cnt-note">${int(c.multi)} ${esc(W.marks)} (${pc(c.multi, c.total)}%) ${esc(c.two_or_more)}${on ? `; ${int(sv.multi)} of the ${int(sv.total)} selected` : ''}.</p></div>` : '';
     return `<section class="pcard cnt-card" data-count="${esc(id)}"><div class="card-head"><div><h3>${esc(c.title)}</h3><p class="sub">${esc(K.shortSub(c.sub))}. Counts, not tests${on ? '; bars: the whole dataset, <span class="cnt-sel"><i></i></span> your selection' : ''}.</p></div>` +
       K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cexp', c.title, id) + '</div>' +
       `<div class="cnt-two${c.list ? '' : ' one'}"><div><div class="cbars${c.list ? ' x' : ''}${on ? ' s' : ''}">${vals}</div>${ticks}<p class="cnt-axis">${esc(W.marks)} reported</p></div>${dist}</div>` +
@@ -154,7 +154,7 @@
       K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cexp', c.title, id) + '</div>' +
       `<div class="tbl-card cnt-wrap"><table class="tbl cnt-tbl"><thead><tr><th>${esc(c.first)}</th><th class="hide-xs">${esc(c.group)}</th><th class="num" title="${esc(cap(W.marks))} measured"><span class="hide-xs">${esc(cap(W.marks))}</span><span class="show-xs">n</span></th><th>${esc(cap(c.calls.down))}</th><th class="hide-xs">${esc(cap(c.calls.up))}</th><th class="num hide-sm">Median change</th>` +
       (on ? `<th class="num" title="Your selected ${esc(W.marks)} ${esc(c.calls.down)} in each row, of those it measured">Your selection, ${esc(c.calls.down)}</th>` : '') + `</tr></thead><tbody>${c.rows.map(tr).join('')}</tbody></table></div>` +
-      `<p class="cnt-note">${esc(c.note || '')} Click a row for its ${esc(c.calls.down)} ${esc(W.marks)}${on ? ' (within your selection)' : ''}.</p></section>`;
+      '</section>';
   }
   function page(id, card) {
     if (selOn() && !SD()) return head(id, card) + '<p class="muted">Loading the selection…</p>';
