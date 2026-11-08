@@ -792,12 +792,10 @@
     const mark = moreMarks(a, rows), all = S.all.has(a.id), shown = shownOf(a, rows);
     const noun = a.kind === 'protein_sets' ? 'sets' : 'classes';
     const toggle = a.kind === 'protein_sets' && rows.length > 12 ? `<button class="linkish" type="button" data-all="${esc(a.id)}">${all ? 'Show the top ' + SHOWN : 'Show all ' + int(rows.length) + ' ' + noun}</button>` : '';
-    const nW = rows.filter(r => holdStatus(r) === 'weaker').length, nL = rows.filter(r => holdStatus(r) === 'lost').length, nDir = rows.filter(r => holdStatus(r) != null).length;
-    const strat = a.kind === 'protein_sets' && rows.some(r => !r.selection && STRAT[a.id + '\u0000' + r.category]) ? ` ${nDir ? `Within protein abundance deciles, ${int(nDir - nW - nL)} of the ${int(nDir)} sets that differ hold.` : ''}` : '';
     return `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3>` +
-      `<p class="sub">${vsOn() ? `Each ${a.kind === 'protein_sets' ? 'set: the share of your selection’s proteins in it (filled) and of the other proteins (hollow)' : `class: the share of your selection’s ${esc(W.marks)} in it (filled) and of ${esc(vsName())} (hollow)`}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}` : `${esc(K.shortSub(a.sub))}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}`}.${strat} <a href="#method">How it was tested</a> · <a href="#statistics?a=${encodeURIComponent(a.id)}">all tests</a></p></div>` +
+      `<p class="sub">${vsOn() ? `Your selection (filled) against ${esc(vsName())} (hollow)${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}` : `${esc(K.shortSub(a.sub))}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}`}. <a href="#method">How it was tested</a> · <a href="#statistics?a=${encodeURIComponent(a.id)}">all tests</a></p></div>` +
       `<div class="exp" role="group" aria-label="Download ${esc(a.title)}">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-exp="${k}" data-aid="${esc(a.id)}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}${methodLink(a.id)}</div></div>` +
-      chartHtml(chartModel(a, shown, S.m), fkeyOf(a), mark) + `${toggle}${rows.some(r => r.descriptive) ? '' : `<p class="summary">${summaryLine(rows)}</p>`}</div>`;
+      chartHtml(chartModel(a, shown, S.m), fkeyOf(a), mark) + `${toggle}</div>`;
   }
 
   // ---- Statistics: every test ----------------------------------------------------------------------------------------
