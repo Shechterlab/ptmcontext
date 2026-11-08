@@ -1051,7 +1051,6 @@ th[data-sort] { cursor: pointer; }
 /* a long option (a question's title) no longer widens the page on a phone */
 .filters label { max-width: 100%; min-width: 0; } .filters select, .filters input { max-width: 100%; min-width: 0; }
 /* IDRs page: the question first, a smaller diagram, folded table and method */
-.idr-question { font-size: 1.15rem; font-weight: 600; margin: 0.2rem 0 0.4rem; max-width: 52rem; }
 .idr-goto { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); text-decoration: underline; cursor: pointer; }
 .idr-small .idr-svg { max-width: 560px; }
 .idr-dir.idr-more { color: var(--accent); }
@@ -1347,10 +1346,6 @@ a[href^="http"]:hover::after { opacity: 1; }
 abbr.gloss { text-decoration: underline dotted var(--muted); text-underline-offset: 2px; cursor: help; }
 .gloss-line { color: var(--ink-2); font-size: 0.9rem; }
 .gl-base { margin: 0.3rem 0 0; font-size: 0.8rem; }
-.idr-gloss { display: grid; gap: 0.15rem; margin: 0.4rem 0 1rem; font-size: 0.88rem; color: var(--ink-2); }
-.idr-gloss > div { display: flex; flex-wrap: wrap; gap: 0 0.5rem; }
-.idr-gloss dt { font-weight: 700; color: var(--ink); min-width: 3.4rem; }
-.idr-gloss dd { margin: 0; flex: 1 1 14rem; }
 
 
 /* ---- density: compact rows (the default, one line each) or comfortable (wrapped), the toggle beside Columns ------- */

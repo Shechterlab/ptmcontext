@@ -304,24 +304,21 @@
     sel();
     const xs = scoped(), np = new Set(xs.map(x => x.p)).size;
     const testLink = QA ? `<a href="${esc(href('overview', encodeURIComponent(QA.id)))}">${esc(QA.title)}</a>` : `<a href="${esc(href('overview'))}">the Overview</a>`;
-    const question = QA?.question || `Within disordered regions, are ${W.marks} found in IDRs of a particular charge class?`;
     const sw = SC.on ? 'selected ' : '';
-    return `<div class="page-head"><h2>${esc(K.tabName('idrs', 'IDRs'))}: ${int(xs.length)} on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</h2></div>` +
-      `<p class="idr-question">${esc(question)}</p>` +
-      `<p class="page-sub">IDRs by charge class, R1 to R5 of the Das–Pappu diagram; test: ${testLink}. <button type="button" class="idr-goto" data-idr-goto="idr-refs">Method</button></p>` +
-      `<dl class="idr-gloss"><div><dt>IDR</dt><dd>intrinsically disordered region, a stretch of protein with no fixed fold.</dd></div><div><dt>FCR</dt><dd>fraction of charged residues, the share of the region’s residues that carry a charge.</dd></div><div><dt>NCPR</dt><dd>net charge per residue, the positive minus the negative charge divided by the length.</dd></div><div><dt>κ</dt><dd>how evenly positive and negative charges are mixed along the chain, 0 evenly and 1 fully separated.</dd></div><div><dt>R1 to R5</dt><dd>the charge classes: weakly charged; Janus (in between, collapsed or stretched depending on context); strongly charged and balanced (strong polyampholytes); mostly negative and mostly positive (strong polyelectrolytes, stretched coils).</dd></div></dl>` +
-      `<section class="idr-card" id="idr-regions"><div class="card-head"><div><h3>${esc(cap(W.residues))} that are ${sw}${esc(W.marked)}, by region</h3></div>${K.expBar(['tsv'], 'idr-rexp', 'the regions')}</div>${regionsHtml()}</section>` +
-      `<section class="idr-card" id="idr-diagram"><div class="card-head"><div><h3>Charge diagram</h3><p class="sub">Each dot is an IDR, placed by how much of it is charged and by its net charge, which together predict how compact it is: a weakly charged IDR tends to collapse into a globule, a strongly charged one with mostly one sign stays stretched out (the Das–Pappu diagram of states). To read it: low is few charged residues, far left or right is mostly one sign, high in the middle is many of both; color is the class, and a bigger dot holds more ${sw}${esc(W.marks)}. Hover a dot for the IDR; click it to open its protein’s map.</p></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-dexp', 'the diagram')}</div>` +
+    return `<div class="page-head results-head"><div><h2>${esc(K.tabName('idrs', 'IDRs'))}</h2><p class="cx">${int(xs.length)} on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</p></div></div>` +
+      `<p class="page-sub">By charge class, R1 to R5 of the Das–Pappu diagram; test: ${testLink}. <button type="button" class="idr-goto" data-idr-goto="idr-refs">Method</button></p>` +
+      `<section class="idr-card" id="idr-regions"><div class="card-head"><div><h3>${esc(cap(W.marked))} ${esc(W.residues)}, by region</h3></div>${K.expBar(['tsv'], 'idr-rexp', 'the regions')}</div>${regionsHtml()}</section>` +
+      `<section class="idr-card" id="idr-diagram"><div class="card-head"><div><h3>Charge diagram</h3><p class="sub">Each dot is an IDR, by how much of it is charged and its net charge; color is the class, size the number of ${sw}${esc(W.marks)}.</p></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-dexp', 'the diagram')}</div>` +
       `<div class="idr-ctl"><label><input type="checkbox" id="idr-cand"${T.cand ? ' checked' : ''}> Only IDRs with a candidate residue (${esc(W.residues)})</label></div>` +
       `<div class="idr-plot idr-small" id="idr-diagram-body">${diagramBody()}</div></section>` +
-      (POLY3() ? `<section class="idr-card" id="idr-kappa"><div class="card-head"><div><h3>How evenly + and − charges are mixed (κ), with and without ${esc(W.marks)}</h3><p class="sub">κ is 0 when positive and negative charges alternate along the chain and 1 when they are split into a positive stretch and a negative stretch. It matters where many residues carry both signs (class R3, the strong polyampholytes): evenly mixed chains stay open, split ones fold back on themselves and become compact (Das & Pappu 2013).</p></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-kexp', 'the κ distribution')}</div>` +
+      (POLY3() ? `<section class="idr-card" id="idr-kappa"><div class="card-head"><div><h3>Charge mixing (κ)</h3><p class="sub">κ is 0 when positive and negative charges alternate along the chain and 1 when they are split into two stretches.</p></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-kexp', 'the κ distribution')}</div>` +
       `<div id="idr-kappa-body">${kappaBody()}</div></section>` : '') +
-      `<details class="idr-card idr-fold" id="idr-list"><summary><h3>Every IDR</h3><span class="sub">${int(xs.length)} rows, searchable and sortable</span></summary>` +
-      `<div class="card-head"><p class="sub">Search by gene, accession, protein name or region; a header sorts; a row opens the protein’s map at the IDR. The download has every row that matches, with each parameter.</p>${K.expBar(['tsv'], 'idr-lexp', 'the IDRs')}</div>` +
+      `<details class="idr-card idr-fold" id="idr-list"><summary><h3>Every IDR</h3><span class="sub">${int(xs.length)} rows</span></summary>` +
+      `<div class="card-head"><div></div>${K.expBar(['tsv'], 'idr-lexp', 'the IDRs')}</div>` +
       `<div class="idr-ctl"><input id="idr-q" type="search" placeholder="Gene, accession, name or region" aria-label="Search the IDRs" value="${esc(T.q)}" autocomplete="off" spellcheck="false">` +
       `<label><input type="checkbox" id="idr-only"${T.only ? ' checked' : ''}> Only IDRs with ${sw}${esc(W.marks)}</label></div>` +
       `<div class="quick" id="idr-rchips"><span class="flabel">Region</span>${chips('reg')}</div><div id="idr-list-body">${listHtml()}</div></details>` +
-      `<details class="idr-card idr-fold idr-refs" id="idr-refs"><summary><h3>Method</h3><span class="sub">definitions and parameter sources</span></summary>` +
+      `<details class="idr-card idr-fold idr-refs" id="idr-refs"><summary><h3>Method</h3></summary>` +
       `<p class="sub">Every IDR of the ${esc(W.marked)} proteins${SC.on ? ' in your selection' : ''}, with charge (FCR, fraction of residues charged; NCPR, net charge per residue), how evenly the charges are mixed (κ) and the ${esc(W.marks)} inside it. These are the row “${esc(TR.title)}” of the protein maps: ${esc(TR.help || '')}. The diagram’s axes are Das & Pappu’s f+ and f− turned 45°, so that the boundaries are level (FCR 0.25 and 0.35) and upright (NCPR ±0.35).</p>` +
       `<p class="sub">The percentages and bars describe and count; the statistics are the Overview’s residue tests (${testLink}). IDRs are pooled in the counts, so a protein with many IDRs or many ${esc(W.marks)} counts for more; the test compares within each protein and does not have this weakness.${SC.on ? ` With a selection, its ${esc(W.marks)} are counted against the other candidate ${esc(W.residues)} of its proteins’ IDRs; ${esc(W.marks)} not selected are left out of both.` : ''}</p>` +
       `<p class="sub">Each IDR’s parameters are as the run wrote them (<span class="mono">${esc(TR.values.table || '')}</span>), defined as Das & Pappu define them and CIDER computes them. The kit computes them itself from the published definitions; it runs no code of CIDER’s.</p>` +
@@ -344,9 +341,8 @@
     if (K.sel?.active() && K.sel.data()) { if (!V) { load(); return ['idrs', 'IDRs', null]; } sel(); return ['idrs', 'IDRs', V.idrs.filter(x => SC.n[x.i] > 0).length]; }
     return ['idrs', 'IDRs', TR.values.n];
   });
-  K.sections.idrs = () => [['view', K.tabName('idrs', 'IDRs'), 1], ['idr-regions', cap(W.residues) + ' ' + W.marked + ', by region', 1], ['idr-diagram', 'Charge diagram', 1], ...(POLY3() ? [['idr-kappa', 'How evenly charges are mixed (κ)', 1]] : []),
-    ['idr-list', 'Every IDR', 1], ['idr-refs', 'Method', 1],
-    ...(QA ? [['g-test', 'The test', 0], ['idr-test', QA.title, 1, href('overview', encodeURIComponent(QA.id))]] : [])];
+  K.sections.idrs = () => [['view', K.tabName('idrs', 'IDRs'), 1], ['idr-regions', cap(W.marked) + ' ' + W.residues + ', by region', 1], ['idr-diagram', 'Charge diagram', 1], ...(POLY3() ? [['idr-kappa', 'Charge mixing (κ)', 1]] : []),
+    ['idr-list', 'Every IDR', 1], ['idr-refs', 'Method', 1]];
   K.tips.push(['[data-di]', el => (V ? tipHtml(V.idrs[+el.dataset.di]) : '')]);
   K.clicks.push(
     ['[data-di]', el => openIdr(el.dataset.di)],
