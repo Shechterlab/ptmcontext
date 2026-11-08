@@ -105,7 +105,7 @@
   let tblId = 0;
   function bars() {
     const root = document.getElementById('view'); if (!root) return;
-    const todo = [...root.querySelectorAll('table')].filter(t => t.rows.length > 2 && !t.closest('.exp, .fr-dl, .hl-tbl') && !t.dataset.tx && !t.closest(CONTAINER)?.querySelector('.exp:not([data-for-tx])'));
+    const todo = [...root.querySelectorAll('table')].filter(t => t.rows.length > 2 && !t.closest('.exp, .fr-dl, .hl-tbl') && !t.dataset.tx && !(t.closest(CONTAINER) || root).querySelector('.exp:not([data-for-tx])'));   // a table whose section (or page) has a bar is left alone
     todo.forEach(t => {
       const box = t.closest('.tbl-card, .tbl-wrap, .cv-wrap') || t;
       t.dataset.tx = String(++tblId);
