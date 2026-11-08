@@ -197,14 +197,18 @@
   const CARDS = D.front?.mode === 'cards';        // the cards front end: Filters only, a panel beside the page or a full-height drawer, never pinned
   const pinned = () => !CARDS && (R.pin === 'on' && innerWidth >= PIN_MIN) || (R.pin === 'auto' && innerWidth >= PIN_AUTO);
   // scroll-spy: the section in view is marked in the list
-  let spyTick = false;
+  let spyTick = false, jumpId = null;
   function watchSections() {
     const links = [...document.querySelectorAll('#rail [data-spy]')]; if (!links.length) return;
-    const bar = (document.querySelector('.toolbar')?.getBoundingClientRect().bottom || 0) + 24;
-    let cur = null;
-    links.forEach(a => { const t = document.getElementById(a.dataset.spy); if (t && t.getBoundingClientRect().top <= bar) cur = a; });
-    links.forEach(a => a.classList.toggle('on', a === (cur || links[0])));
+    const bar = Math.max(document.querySelector('.toolbar')?.getBoundingClientRect().bottom || 0, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--toolbar-h')) || 0) + 24;   // the same offset the jump targets keep (scroll-margin-top)
+    let cur = null, best = -Infinity;
+    // the sections whose top is above the line; of those the lowest one, and the first of several side by side
+    links.forEach(a => { const t = document.getElementById(a.dataset.spy), y = t ? t.getBoundingClientRect().top : Infinity; if (y <= bar && y > best) { cur = a; best = y; } });
+    // a section jumped to stays marked while it is the one at the top of the screen (the end of the page cannot scroll it higher)
+    if (jumpId) { const t = document.getElementById(jumpId), y = t ? t.getBoundingClientRect().top : -1; if (y >= bar - 24 - 8 && y < innerHeight) cur = links.find(a => a.dataset.spy === jumpId) || cur; }
+    links.forEach(a => { const on = a === (cur || links[0]); a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current'); });
   }
+  for (const ev of ['wheel', 'touchmove', 'keydown']) addEventListener(ev, () => { jumpId = null; }, { passive: true });
   addEventListener('scroll', () => { if (spyTick) return; spyTick = true; requestAnimationFrame(() => { spyTick = false; watchSections(); }); }, { passive: true });
   function rail() {
     const el = document.getElementById('rail'); if (!el) return;
@@ -277,7 +281,7 @@
     ['[data-rail-pin]', () => { R.pin = pinned() ? 'off' : innerWidth >= PIN_AUTO ? 'auto' : 'on'; R.open = false; try { localStorage.setItem('ptmc-rail', R.pin); } catch (e) { /* */ } rail(); if (!pinned()) { R.open = true; rail(); } }],
     ['[data-rail-close]', () => { R.open = false; rail(); }],
     ['[data-rail-open]', el => { R.opener = el; if (pinned()) { R.tab = el.dataset.railOpen || R.tab; rail(); document.querySelector('#rail [data-rail-tab]')?.focus(); return; } R.open = true; R.tab = el.dataset.railOpen || R.tab; rail(); }],
-    ['[data-jump]', (el, e) => { e.preventDefault(); const t = document.getElementById(el.dataset.jump); if (t) { if (R.open && !pinned()) { R.open = false; rail(); } for (let d = t; d; d = d.parentElement?.closest('details')) if (d.tagName === 'DETAILS') d.open = true; t.scrollIntoView({ behavior: K.smooth?.() || 'smooth', block: 'start' }); } }],
+    ['[data-jump]', (el, e) => { e.preventDefault(); const t = document.getElementById(el.dataset.jump); if (t) { if (R.open && !pinned()) { R.open = false; rail(); } for (let d = t; d; d = d.parentElement?.closest('details')) if (d.tagName === 'DETAILS') d.open = true; jumpId = el.dataset.jump; t.scrollIntoView({ behavior: K.smooth?.() || 'smooth', block: 'start' }); setTimeout(watchSections, 700); } }],
   );
   document.addEventListener('change', e => { const k = e.target.dataset?.fsel; if (k != null) setFilter(k, e.target.value ? [e.target.value] : []); });
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('fgroup')) { (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g); } }, true);

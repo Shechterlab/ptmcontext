@@ -344,8 +344,7 @@ body.rail-open .rail-scrim { display: block; position: fixed; inset: 0; z-index:
 .sel-tools { flex-wrap: wrap; justify-content: flex-end; }
 /* a jump lands below the sticky toolbar */
 #view [id], #view details { scroll-margin-top: calc(var(--toolbar-h, 0px) + 0.75rem); }
-/* whatever the browser or a script scrolls into view stops below the bar, not under it */
-html { scroll-padding-top: calc(var(--toolbar-h, 0px) + 0.75rem); }
+/* the margin above is the one offset: a scroll-padding on the page as well would add to it and land the target twice as low */
 #view :is(button, a, summary, input, select, [tabindex], [data-href], .trow, tr) { scroll-margin-top: calc(var(--toolbar-h, 0px) + 0.75rem); }
 /* narrow screens: the toolbar scrolls away with the page, and a button keeps the sidebar in reach */
 .rail-fab { display: none; position: fixed; right: 1rem; bottom: 1rem; z-index: 40; align-items: center; gap: 0.35rem; border: 0; border-radius: 999px; padding: 0.55rem 0.95rem; background: var(--accent); color: var(--on-accent); font-weight: 600; font-size: 0.86rem; box-shadow: var(--shadow); cursor: pointer; }
