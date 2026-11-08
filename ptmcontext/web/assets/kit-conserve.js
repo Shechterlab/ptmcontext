@@ -419,11 +419,10 @@
     const show = () => { const d = document.getElementById('sel-logo'); if (!d) return; d.open = true; fillLogo(); d.scrollIntoView({ block: 'start' }); };
     show(); setTimeout(show, 60);
   }]);
-  function fillLogo() {
-    const el = document.getElementById('sel-logo'), body = document.getElementById('cv-logo-body');
-    if (!el || !body || !el.open) return;
+  // the logo's controls, exports and figure: in the selection's Overview fold, and on the figure panels page (kit-figures.js)
+  function logoCard() {
     const s = sets(), opt = (v, cur, t) => `<option value="${v}"${v === cur ? ' selected' : ''}>${esc(t)}</option>`;
-    body.innerHTML = `<div class="cv-card"><div class="cv-top">` +
+    return `<div class="cv-card"><div class="cv-top">` +
       K.expBar(['svg', 'png', 'tsv'], 'lgexp', 'the site alignment and logo', 'logo') + '</div>' +
       `<div class="cv-ctl"><label>Flank <select id="lg-flank">${FLANKS.filter(f => f <= s.span).map(f => opt(f, LUI.flank, '±' + f)).join('')}</select></label> ` +
       `<label>Logo <select id="lg-mode">${opt('bits', LUI.mode, 'Information (bits)')}${opt('freq', LUI.mode, 'Frequency')}</select></label> ` +
@@ -431,6 +430,12 @@
       `<label>Rows <select id="lg-rows">${[10, 30, 50, 100].map(v => opt(v, LUI.rows, String(v))).join('')}</select></label></div>` +
       `<div class="cv-fig" id="lg-fig">${logoFigure(true).svg}</div></div>`;
   }
+  function fillLogo() {
+    const el = document.getElementById('sel-logo'), body = document.getElementById('cv-logo-body');
+    if (!el || !body || !el.open) return;
+    body.innerHTML = logoCard();
+  }
+  K.logoPanel = () => { const d = SD(); return CV.logo && d && d.wide ? { n: sets().sel.length, html: logoCard } : null; };
   (K.afterRender ||= []).push(() => {
     if (S.view === 'protein') { const acc = curAcc(), f = document.getElementById('p-cons'); if (acc && f) { const st = ST[acc]; if (st && st.phase === 'idle') K.loadProtein(acc).then(rec => { if (curAcc() === acc) start(acc, rec); }); else chip(acc); } }
     else if (S.view === 'overview') fillLogo();

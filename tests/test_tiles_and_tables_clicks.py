@@ -36,3 +36,12 @@ def test_reported_by_is_gray_chips_one_per_line():
     js, css = _js('kit-sites.js'), _js('kit.css')
     assert 'xs.slice(0, 2)' in js and "startsWith('<a ')" in js and 'xs.length > 2' in js
     assert '.sites-tbl .src-tags > a' in css and 'flex-direction: column' in css and 'var(--surface-2)' in css
+
+
+def test_the_figure_panels_page_is_registered_and_gives_the_sites_page_its_button():
+    from ptmcontext import web
+    assert 'kit-figures.js' in web.MODULES and web.MODULES.index('kit-figures.js') < web.MODULES.index('kit.js')
+    fig, tables, sites = _js('kit-figures.js'), _js('kit-tables.js'), _js('kit-sites.js')
+    assert 'K.views.figures = ' in fig and 'if (!K.logoPanel) return;' in fig
+    assert 'K.views.figures ?' in tables and 'Make figures' in tables and 'K.tables.figuresBtn()' in sites
+    assert 'K.logoPanel = ' in _js('kit-conserve.js')
