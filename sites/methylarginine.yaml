@@ -1876,7 +1876,7 @@ website:                  # the look and words of the website (ptmc web); layout
     state_label: State
     short: {state: {Rme1: Rme1, Rme2: Rme2, Rme1_Rme2: Rme1 + Rme2, "": No assigned state}, interaction: {none: None}}   # short labels in the table
     site_tags: {attribute: flags, values: {paralog_assigned: paralog}}                       # tags beside the site
-    window: {colours: {G: "#15803d"}}                                                         # residues colored in the window
+    window: {label: motifs, colours: {G: "#15803d"}}                                                         # residues colored in the window
     tags:                  # the motif tags under the window: which, in what order (the CARM1-like proline motifs are not shown)
       motif: {order: [RG, RGG, GRG, GAR, RXR, DR, RD, ER, RE], hide: [CARM1_proline_rich, CARM1_hydrophobic_proline]}
     table:                 # the optional columns (the Columns menu): the explorer's defaults first; site card blocks read website.tables

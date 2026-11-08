@@ -2607,6 +2607,10 @@
               "type": "object",
               "additionalProperties": false,
               "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "the column's name after \"Window ±7 · \" (default: the titles of the tag analyses)"
+                },
                 "colours": {
                   "type": "object",
                   "additionalProperties": {

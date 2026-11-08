@@ -76,7 +76,7 @@
           (tg.length ? `<div class="tags">${tg.map(v => `<span class="tag t-flag" title="${esc(K.sel.valueLabel(SITE_TAGS.attribute, v))}">${esc(SITE_TAGS.values[v])}</span>`).join('')}</div>` : ''); } },
     ...(colourAttr ? [{ id: 'state', label: SV.state_label || 'State', key: m => { const o = Object.keys(SPECS[colourAttr].values || {}), v = vals(m, colourAttr)[0] ?? ''; const k = o.indexOf(v); return v === '' ? null : k < 0 ? 0 : o.length - k; },
       cell: m => { const v = vals(m, colourAttr)[0] ?? ''; return `<span class="sdot" title="${esc(K.sel.valueLabel(colourAttr, v))}"><i style="--c:${K.map.attrColour(colourAttr, v)}"></i>${esc(short(colourAttr, v))}</span>`; } }] : []),
-    { id: 'window', label: `Window ±7${tagAids().length ? ' · ' + tagAids().map(a => (A[a]?.title || a).toLowerCase()).join(', ') : ''}`, text: true, key: m => m[4] || null, cls: 'cwin',
+    { id: 'window', label: `Window ±7${tagAids().length ? ' · ' + (SV.window?.label || tagAids().map(a => (A[a]?.title || a).toLowerCase()).join(', ')) : ''}`, text: true, key: m => m[4] || null, cls: 'cwin',
       cell: m => `<span class="mono">${winHtml(m)}</span>${tagAids().map(a => { const t = flagTags(a, m); return t ? `<div class="tags win-mot">${t}</div>` : ''; }).join('')}` },
   ];
   // optional columns: the site file's (website.sites.table), else the protein page's sites table's, else the attributes
