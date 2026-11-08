@@ -46,7 +46,7 @@ const fs = require('fs');
 global.window = global; global.document = {{ createElement: () => ({{}}), head: {{ appendChild() {{}} }}, addEventListener() {{}} }};
 const S = {{ q: '', f: {{}} }};
 const K = {{ esc: s => String(s), int: n => String(n), S, clicks: [], paramsIn: [], paramsOut: [], tw: (t, s) => t.length * s * 0.55, writeHash() {{}}, render() {{}},
-  sel: {{ active: () => false, data: () => ({{}}), select: (q) => ({{ active: true, proteins: new Set(q.split(', ').map((_, i) => i)), marks: [1, 2] }}) }} }};
+  sel: {{ active: () => false, data: () => ({{}}), select: (q) => ({{ active: true, proteins: new Set([q.length]), marks: [1, 2], q: {{ sites: [], genes: [0] }} }}) }} }};
 eval(fs.readFileSync({json.dumps(str(ASSETS / 'kit-hilite.js'))}, 'utf8'));
 window.PTMC_MODULES.forEach(m => m(K));
 K.paramsIn.forEach(f => f(new URLSearchParams('hl=FUS%2C+TARDBP+R5&q=x')));
@@ -85,7 +85,7 @@ global.prompt = () => 'ALS candidates'; click('[data-hl-save]')();
 out.saved = JSON.parse(store['ptmc-hl-sets-toy']);
 global.prompt = () => 'ALS list'; click('[data-hl-rename]')();
 out.renamed = JSON.parse(store['ptmc-hl-sets-toy']).map(x => x.name);
-S.hl = ''; changes[changes.length - 1]({{ target: {{ matches: () => true, value: '0' }} }});
+S.hl = ''; changes.forEach(f => f({{ target: {{ matches: x => x === '[data-hl-switch]', value: '0' }} }}));
 out.switched = S.hl; out.html = K.hl.control().includes('ALS list');
 click('[data-hl-delete]')();
 out.deleted = JSON.parse(store['ptmc-hl-sets-toy']).length;
@@ -98,3 +98,34 @@ console.log(JSON.stringify(out));
     out = json.loads(run.stdout)
     assert out['saved'] == [{'name': 'ALS candidates', 'list': 'FUS, TARDBP'}] and out['renamed'] == ['ALS list']
     assert out['switched'] == 'FUS, TARDBP' and out['html'] and out['deleted'] == 0 and out['blocked'] == 0
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_each_entry_is_resolved_alone_a_site_names_one_residue_and_a_miss_is_reported():
+    script = f"""
+const fs = require('fs');
+global.window = global; global.document = {{ createElement: () => ({{}}), head: {{ appendChild() {{}} }}, addEventListener() {{}} }};
+const S = {{ q: '', f: {{}}, hl: 'ALPHA, ALPHA R10, ALPHAA, TDP-43' }};
+const toy = {{ ALPHA: [[0], []], 'ALPHA R10': [[], [[0, 10]]], 'TDP-43': [[1], []] }};
+const K = {{ esc: s => String(s), int: n => String(n), S, clicks: [], paramsIn: [], paramsOut: [], tw: (t, s) => t.length * s * 0.55, writeHash() {{}}, render() {{}}, afterRender: [],
+  sel: {{ active: () => false, data: () => ({{}}), peek: () => ({{}}), byAcc: {{}}, select: tok => {{ const [g, s] = toy[tok] || [[], []]; return {{ active: true, proteins: new Set(g), marks: [], q: {{ genes: g, sites: s }} }}; }} }} }};
+eval(fs.readFileSync({json.dumps(str(ASSETS / 'kit-hilite.js'))}, 'utf8'));
+window.PTMC_MODULES.forEach(m => m(K));
+const p = K.hl.pasted(), line = K.hl.line(1, 'IDRs');
+console.log(JSON.stringify({{ prots: [...p.prots], sites: p.sites.map(x => [x.p, x.pos]), notFound: p.notFound, line: line.includes('not found: ALPHAA'),
+  siteOnly: K.hl.isSite(0, 10, true) && !K.hl.isSite(0, 11, true), gene: K.hl.isProt(1) && K.hl.isSite(0, 99) }}));
+"""
+    run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr[-800:]
+    out = json.loads(run.stdout)
+    assert out == {'prots': [0, 1], 'sites': [[0, 10]], 'notFound': ['ALPHAA'], 'line': True, 'siteOnly': True, 'gene': True}
+
+
+def test_the_box_is_in_the_selection_bar_and_the_tables_and_figures_carry_the_highlight():
+    web = ASSETS.parent
+    assert 'id="hl-bar"' in (web / 'template.html').read_text()
+    idrs, hl = (ASSETS / 'kit-idrs.js').read_text(), (ASSETS / 'kit-hilite.js').read_text()
+    assert 'K.hl?.control()' not in idrs and 'outside your selection' in idrs and 'is in no IDR' in idrs and 'kappaFew' in idrs
+    assert 'firstSort' in (ASSETS / 'kit-tables.js').read_text() and 'firstSort' in (ASSETS / 'kit-sites.js').read_text()
+    assert "hl-row" in (ASSETS / 'kit-tabfig.js').read_text() and 'isSite(p.i' in (ASSETS / 'kit-map.js').read_text()
+    assert 'decorate' in hl and 'Highlighted first' in hl

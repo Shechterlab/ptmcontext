@@ -26,15 +26,24 @@
   sources.push(() => {
     const t = toks(); if (!t.length) return null;
     const chips = t.map((label, i) => ({ label, drop: () => { const a = toks(); a.splice(i, 1); S.hl = a.join(', '); } })), clear = () => { S.hl = ''; };
-    if (!K.sel?.data()) return { prots: new Set(), marks: new Set(), text: t.join(', '), chips, clear };
-    const r = K.sel.select(t.join(', '), {});
-    return { prots: r.proteins || new Set(), marks: new Set(r.marks || []), text: t.join(', '), chips, clear, unresolved: r.unresolved || [] };
+    if (!K.sel?.data()) return { prots: new Set(), marks: new Set(), sites: [], notFound: [], text: t.join(', '), chips, clear, pasted: true };
+    // each entry on its own: a gene marks its proteins, a site ("GENE R218") only that residue, and one that matches nothing
+    // is reported (the others are kept)
+    const prots = new Set(), marks = new Set(), sites = [], notFound = [];
+    t.forEach(tok => {
+      const r = K.sel.select(tok, {}), q = r.q || {};
+      (r.marks || []).forEach(m => marks.add(m));
+      if (q.sites?.length && !q.genes?.length) q.sites.forEach(([p, pos]) => sites.push({ p, pos, label: tok }));
+      else if (r.proteins?.size) r.proteins.forEach(p => prots.add(p));
+      else notFound.push(tok);
+    });
+    return { prots, marks, sites, notFound, text: t.join(', '), chips, clear, pasted: true };
   });
   K.paramsOut.push(p => { if (S.hl) p.set('hl', S.hl); });
   K.paramsIn.push(p => { S.hl = p.get('hl') || ''; });
   function state() {
-    const out = { on: false, prots: new Set(), marks: new Set(), text: '', parts: [] };
-    sources.forEach(f => { const r = f(); if (!r) return; out.on = true; r.prots.forEach(p => out.prots.add(p)); (r.marks || []).forEach(m => out.marks.add(m)); if (r.text) out.text += (out.text ? '; ' : '') + r.text; out.parts.push(r); });
+    const out = { on: false, prots: new Set(), marks: new Set(), sites: [], notFound: [], text: '', parts: [] };
+    sources.forEach(f => { const r = f(); if (!r) return; out.on = true; (r.sites || []).forEach(x => out.sites.push(x)); (r.notFound || []).forEach(x => out.notFound.push(x)); r.prots.forEach(p => out.prots.add(p)); (r.marks || []).forEach(m => out.marks.add(m)); if (r.text) out.text += (out.text ? '; ' : '') + r.text; out.parts.push(r); });
     return out;
   }
   const clear = () => { state().parts.forEach(r => r.clear && r.clear()); K.writeHash(true); K.render(); };
@@ -42,14 +51,12 @@
   const KEY = 'ptmc-hl-only';
   const store = { get: () => { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }, set: v => { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) { /* private window: kept for the page only */ } } };
   let only = store.get();
-  let drops = [];
   const chip = (label, i) => `<span class="hl-chip">${esc(label)} <button type="button" class="hl-x" data-hl-drop="${i}" aria-label="Remove ${esc(label)} from the highlight" title="Remove it">×</button></span>`;
   // the legend line: what is highlighted, how many items, and the control that clears it
-  const line = (n, noun) => {
+  const line = (n, noun, extra = '') => {
     const st = state(); if (!st.on) return '';
-    drops = [];
-    const what = st.parts.map(r => (r.chips ? r.chips.map(c => { drops.push(c.drop); return chip(c.label, drops.length - 1); }).join(' ') : `<b>${esc(r.text)}</b> <button type="button" class="hl-x" data-hl-clear aria-label="Clear the highlight" title="Clear the highlight">×</button>`)).join(' ');
-    return `<p class="hl-line"><span class="flabel">Highlighted:</span> ${what} <span class="muted">· ${int(n)} ${esc(noun)}</span> <label class="hl-only small" title="The PNG, SVG and PDF show only the highlighted items, without the gray context"><input type="checkbox" data-hl-only${only ? ' checked' : ''}> Exports: highlighted only</label></p>`;
+    const what = st.parts.map(r => (r.chips ? r.chips.map((c, i) => chip(c.label, i)).join(' ') : `<b>${esc(r.text)}</b> <button type="button" class="hl-x" data-hl-clear aria-label="Clear the highlight" title="Clear the highlight">×</button>`)).join(' ');
+    return `<p class="hl-line"><span class="flabel">Highlighted:</span> ${what} <span class="muted">· ${int(n)} ${esc(noun)}</span>${st.notFound.length ? ` <span class="hl-nf">· not found: ${esc(st.notFound.join(', '))}</span>` : ''}${extra ? ` <span class="muted">· ${extra}</span>` : ''} <label class="hl-only small" title="The PNG, SVG and PDF show only the highlighted items, without the gray context"><input type="checkbox" data-hl-only${only ? ' checked' : ''}> Exports: highlighted only</label></p>`;
   };
   // named lists of genes or sites, kept in this browser (like the saved selections); the link carries only the active list (hl=)
   const SK = `ptmc-hl-sets-${K.D?.site?.id || "site"}`;
@@ -91,11 +98,67 @@
     const a = `x="${o.x.toFixed(1)}" y="${o.y.toFixed(1)}" font-size="${size}" font-weight="700" text-anchor="${o.anchor}"`;
     return `<text ${a} stroke="${P.bg}" stroke-width="3.5" stroke-linejoin="round" fill="${P.bg}">${esc(o.t)}</text><text ${a} fill="${P.ink}">${esc(o.t)}</text>`;
   }).join('');
-  K.hl = { state, sources, line, place, labels, clear, control, sets, activeSet, limit: LIMIT, get only() { return only; } };
+  // the pasted list alone (not the selection): what the tables, protein pages and tiles mark. prots: protein indexes, marks:
+  // mark indexes, sites: [{p, pos}]
+  let pc = { key: null, v: null };
+  const pasted = () => {
+    const key = `${S.hl || ''}|${K.sel?.peek() ? 1 : 0}`;
+    if (pc.key !== key) pc = { key, v: sources[1]() || { prots: new Set(), marks: new Set(), sites: [], notFound: [], text: '' } };
+    return pc.v;
+  };
+  // a row's mark: highlighted by the pasted list (a protein by its index; a site by its protein and position or mark index)
+  const isProt = pi => { const p = pasted(); return p.prots.has(pi); };
+  // onlySite: just a site named in the list ("FUS R216"), not every site of a highlighted protein
+  const isSite = (pi, pos, onlySite) => { const p = pasted(); return (!onlySite && p.prots.has(pi)) || p.sites.some(x => x.p === pi && x.pos === pos); };
+  // "Highlighted first": the rows the list marks go first, the rest keep their order (only when the reader chose it)
+  const firstSort = (rows, test) => (first && any() ? [...rows.filter(test), ...rows.filter(r => !test(r))] : rows);
+  // the page's own rows and links, marked after it is drawn: a table row whose protein (or site) is highlighted is tinted and
+  // gets a marker; a protein's link elsewhere (a tile's gene chip, a list) gets the highlight style. Nothing is filtered.
+  const protLink = a => {      // #protein/GENE/ACC or #protein/ACC, then /POS for a site: [protein index, position or null]
+    const m = /#protein\/([^?#]+)/.exec(a.getAttribute('href') || ''); if (!m) return null;
+    const seg = m[1].split('/').map(decodeURIComponent), k = seg.findIndex(x => K.sel?.byAcc?.[x]);
+    return k < 0 ? null : [K.sel.byAcc[seg[k]].i, /^[A-Z]?\d+$/i.test(seg[k + 1] || '') ? +seg[k + 1].replace(/\D/g, '') : null];
+  };
+  function decorate() {
+    if (!any() || !K.sel?.peek()) return;
+    const root = document.getElementById('view'); if (!root) return;
+    const tint = (tr, td) => { if (tr.classList.contains('hl-row')) return; tr.classList.add('hl-row'); const c = td || tr.cells[0]; if (c && !c.querySelector('.hl-dot')) c.insertAdjacentHTML('afterbegin', '<span class="hl-dot" title="Highlighted" aria-label="highlighted">●</span> '); };
+    root.querySelectorAll('tbody tr[data-acc]').forEach(tr => { const p = K.sel.byAcc[tr.dataset.acc]; if (p && isProt(p.i)) tint(tr); });
+    root.querySelectorAll('tbody tr[data-goto]').forEach(tr => { const [a, pos] = tr.dataset.goto.split('/'), p = K.sel.byAcc[a]; if (p && isSite(p.i, +pos)) tint(tr); });
+    const loose = new Set();      // other tables (the interaction pages'): their highlighted rows go first when the reader chose that
+    root.querySelectorAll('a[href*="#protein/"]').forEach(a => {
+      if (a.closest('.crumb, nav, .tabs, h1, h2, h3, #hl-bar, .fr-nav, .hl-row')) return;
+      const r = protLink(a); if (!r) return;
+      const on = r[1] == null ? isProt(r[0]) : isSite(r[0], r[1]), tr = a.closest('tbody tr');
+      if (!on) return;
+      if (tr && !tr.dataset.acc && !tr.dataset.goto) { tint(tr, a.closest('td')); loose.add(tr.parentElement); }
+      else if (!tr) a.classList.add('hl-gene');
+    });
+    if (first) loose.forEach(tb => { if (!tb.dataset.hlFirst) { tb.dataset.hlFirst = '1'; [...tb.rows].filter(r => r.classList.contains('hl-row')).reverse().forEach(r => tb.prepend(r)); } });
+  }
+  (K.afterRender ||= []).push(decorate);
+  const any = () => toks().length > 0;
+  K.hl = { isProt, isSite, any, firstSort, decorate, mark: (v, on) => (on ? `<span class="hl-dot" title="Highlighted" aria-label="highlighted">●</span> ${v}` : v), get first() { return first; }, pasted, state, sources, line, place, labels, clear, control, sets, activeSet, limit: LIMIT, get only() { return only; } };
   document.addEventListener('change', e => { if (e.target.matches?.('[data-hl-only]')) { only = e.target.checked; store.set(only); document.querySelectorAll('[data-hl-only]').forEach(x => { x.checked = only; }); } });
   K.clicks.push(['[data-hl-save]', setsAct.save], ['[data-hl-rename]', setsAct.rename], ['[data-hl-delete]', setsAct.delete]);
   document.addEventListener('change', e => { const s = e.target.matches?.('[data-hl-switch]') && e.target; if (!s) return; const x = s.value === '' ? null : sets()[+s.value]; S.hl = x ? x.list : ''; K.writeHash(true); K.render(); });
-  K.clicks.push(['[data-hl-drop]', el => { drops[+el.dataset.hlDrop]?.(); K.writeHash(true); K.render(); }]);
+  K.clicks.push(['[data-hl-drop]', el => { const a = toks(); a.splice(+el.dataset.hlDrop, 1); S.hl = a.join(', '); K.writeHash(true); K.render(); }]);
+  // the one Highlight box, in the toolbar under the selection bar, on every page: the list's chips, what was not found, and
+  // "Highlighted first" for the tables (a choice kept in this browser)
+  const FK = 'ptmc-hl-first';
+  let first = (() => { try { return localStorage.getItem(FK) === '1'; } catch (e) { return false; } })();
+  document.addEventListener('change', e => { if (e.target.matches?.('[data-hl-first]')) { first = e.target.checked; try { localStorage.setItem(FK, first ? '1' : '0'); } catch (x) { /* kept for the page only */ } K.render(); } });
+  let barKey = null;
+  function bar() {
+    const host = document.getElementById('hl-bar'); if (!host) return;
+    const t = toks(), pa = t.length ? pasted() : null;
+    const chips = t.map((l, i) => chip(l, i)).join(' ');
+    const html = `<div class="hl-bar-in">${control()}${t.length ? `<div class="hl-chips"><span class="flabel">Highlighted:</span> ${chips}${pa.notFound.length ? ` <span class="hl-nf">not found: ${esc(pa.notFound.join(', '))}</span>` : ''} <label class="small"><input type="checkbox" data-hl-first${first ? ' checked' : ''}> Highlighted first in tables</label></div>` : ''}</div>`;
+    const key = html + '|' + (K.sel?.peek() ? 1 : 0);
+    if (key === barKey) return; barKey = key;
+    host.innerHTML = html;
+  }
+  (K.afterRender ||= []).push(bar);
   document.addEventListener('submit', e => {
     const f = e.target.closest?.('[data-hl-form]'); if (!f) return;
     e.preventDefault(); const v = String(new FormData(f).get('hl') || '').trim(); if (!v) return;
@@ -110,6 +173,15 @@
 .hl-form input { flex: 1 1 18rem; min-width: 10rem; }
 .hl-chip { border: 1px solid var(--line-strong); border-radius: 1rem; padding: 0 0.15rem 0 0.55rem; display: inline-flex; align-items: center; gap: 0.25rem; }
 .hl-sets { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin: 0.3rem 0; }
+.hl-bar-in { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.8rem; font-size: 0.82rem; }
+.hl-bar-in .hl-form { margin: 0.15rem 0; flex: 1 1 22rem; } .hl-bar-in .hl-sets { margin: 0.15rem 0; }
+.hl-bar:empty { display: none; }
+.hl-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; flex: 1 1 100%; }
+tr.hl-row > td { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--accent) 11%, transparent); }
+tr.hl-row > td:first-child { box-shadow: inset 3px 0 0 var(--accent), inset 0 0 0 999px color-mix(in srgb, var(--accent) 11%, transparent); }
+.hl-gene { box-shadow: 0 0 0 1.5px var(--accent), inset 0 0 0 999px color-mix(in srgb, var(--accent) 16%, transparent); border-radius: 0.3rem; }
+.hl-dot { color: var(--accent); font-weight: 700; }
+.hl-nf { color: var(--accent); font-weight: 600; }
 .hl-tbl { margin-top: 0.4rem; }
 .hl-tbl td, .hl-tbl th { padding: 0.15rem 0.5rem; }`;
   document.head.appendChild(css);
