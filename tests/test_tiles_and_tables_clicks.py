@@ -30,3 +30,9 @@ def test_the_bound_histogram_tile_draws_at_the_tile_width():
     tile = next(x for x in src.splitlines() if "case 'histogram': { const h = histData(b); if (!h) return loading(); const L" in x)
     m = re.search(r'histBody\(b, false, (\d+), (\d+), ([\d.]+)\)', tile)
     assert m and int(m.group(1)) <= 400 and float(m.group(3)) >= 1.2 and f'viewBox="0 0 {m.group(1)} ' in tile
+
+
+def test_reported_by_is_gray_chips_one_per_line():
+    js, css = _js('kit-sites.js'), _js('kit.css')
+    assert 'xs.slice(0, 2)' in js and "startsWith('<a ')" in js and 'xs.length > 2' in js
+    assert '.sites-tbl .src-tags > a' in css and 'flex-direction: column' in css and 'var(--surface-2)' in css

@@ -112,11 +112,10 @@
     if (c.attribute) {
       const s = SPECS[c.attribute], v = vals(m, c.attribute);
       if (s.kind === 'category' && s.colour) return `<span class="sdot"><i style="--c:${K.map.attrColour(c.attribute, v[0] ?? '')}"></i>${esc(short(c.attribute, v[0] ?? ''))}</span>`;
-      if (s.kind === 'list' && K.density.compact()) {   // the first one and "+n" (all on hover)
-        const xs = v.filter(Boolean), links = SD().attribute_links?.[c.attribute] || {};
-        return xs.length ? `<div class="tags src-tags">${K.sel.listHtml(c.attribute, xs.slice(0, 1), [links[xs[0]]], pr(m[0]).acc, false)}${xs.length > 1 ? `<span class="tag more" title="${esc(xs.map(x => short(c.attribute, x)).join('\n'))}">+${xs.length - 1}</span>` : ''}</div>` : dash;
+      if (s.kind === 'list') {                 // the original's chips: two at most, one per line, then "+n" (all on hover)
+        const xs = v.filter(Boolean), links = SD().attribute_links?.[c.attribute] || {}, shown = xs.slice(0, 2);
+        return xs.length ? `<div class="tags src-tags">${shown.map(x => { const h = K.sel.listHtml(c.attribute, [x], [links[x]], pr(m[0]).acc, false); return h.startsWith('<a ') ? h : `<span>${h}</span>`; }).join('')}${xs.length > 2 ? `<span class="tag more" title="${esc(xs.slice(2).map(x => short(c.attribute, x)).join('\n'))}">+${xs.length - 2}</span>` : ''}</div>` : dash;
       }
-      if (s.kind === 'list') { const links = SD().attribute_links?.[c.attribute] || {}; return v.filter(Boolean).length ? `<div class="tags src-tags">${K.sel.listHtml(c.attribute, v, v.map(x => links[x]), pr(m[0]).acc, false)}</div>` : dash; }
       return v.filter(x => x !== '').length ? esc(v.map(x => short(c.attribute, x)).join(', ')) : dash;
     }
     if (c.analyses) return c.analyses.map((a, k) => `<span class="${k ? 'muted' : ''}" title="${esc(K.tables.classes(m, a).map(x => (A[a]?.help || {})[x] || '').filter(Boolean).join('; '))}">${esc(K.tables.classes(m, a).map(x => K.sel.classLabel(a, x)).join(', '))}</span>`).join('<br>');

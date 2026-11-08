@@ -2016,3 +2016,9 @@ body.cards .sc-grid, .sc-grid:has(> .sc-tile) { display: grid; grid-template-col
 
 .toc.flat a.sub { padding-left: 0.5rem; font-size: 0.9rem; }
 .sites-tbl td > a.mono, .sites-tbl td > a.mono:hover { color: var(--ink); text-decoration: none; }   /* the site reads as the explorer's bold label; the row opens its card */
+
+/* the sites table's list columns (Reported by): the original's gray chips, one study per line */
+.sites-tbl .src-tags, html[data-density="compact"] .sites-tbl .src-tags { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; margin: 0; max-width: 9rem; white-space: nowrap; }
+.sites-tbl .src-tags > a, .sites-tbl .src-tags > span { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 0.3rem; background: var(--surface-2); color: var(--ink-2); font-size: 0.74rem; font-weight: 500; text-decoration: none; }
+.sites-tbl .src-tags > a:hover { color: var(--accent); }
+.sites-tbl .src-tags > .tag.more { font-weight: 600; background: var(--surface-2); color: var(--ink-2); border: 0; }
