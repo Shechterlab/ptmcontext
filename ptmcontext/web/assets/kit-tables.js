@@ -144,7 +144,7 @@
       const c = typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b));
       return (PS.desc ? -c : c) || y.p.marks - x.p.marks;           // ties: most marks in all first
     });
-    return rows;
+    return K.hl ? K.hl.firstSort(rows, r => K.hl.isProt(r.p.i)) : rows;
   }
   const th = (id, label, cls, help, on, sortOn) => `<th class="${cls || ''}"${sortOn ? ` data-tsort="${esc(id)}" tabindex="0"` : ''}${help ? ` title="${esc(help)}"` : ''}${on ? ` aria-sort="${on}"` : ''}>${esc(label)}</th>`;
   function proteinsView() {
@@ -177,7 +177,7 @@
   function proteinsTsv() {
     const rows = proteinRows(), cols = PCFG.download || [{ name: 'accession', value: 'accession' }, { name: 'gene', value: 'gene' }, { name: 'protein_name', value: 'protein' },
       { name: 'length', value: 'length' }, { name: `${slug(W.marks)}_shown`, value: 'marks_shown' }, { name: `${slug(W.marks)}_total`, value: 'marks' }, { name: 'candidates', value: 'candidates' }];
-    const ss = selSet();
+    const ss = selSet(), hl = !!K.hl?.any();
     const one = (c, r) => {
       const p = r.p;
       if (c.value) return { accession: p.acc, gene: p.gene, entry: p.entry, protein: p.name, aliases: (D.protein_aliases?.[p.acc] || '').replace(/;\s*/g, ';'), length: p.len, candidates: p.cand, marks: p.marks, marks_shown: r.n }[c.value] ?? '';
@@ -187,7 +187,7 @@
       return '';
     };
     return K.preamble(`proteins${K.sel?.active() ? ' (selection)' : ''}`, `every protein with at least one ${W.mark}${K.sel?.active() ? ' of the selection' : ''} (${int(rows.length)}), in the table’s order, with the columns the site names; lists are separated by ";".`) +
-      cols.map(c => c.name).join('\t') + '\n' + rows.map(r => cols.map(c => String(one(c, r)).replace(/[\t\n]/g, ' ')).join('\t')).join('\n') + '\n';
+      [...cols.map(c => c.name), ...(hl ? ['highlighted'] : [])].join('\t') + '\n' + rows.map(r => [...cols.map(c => String(one(c, r)).replace(/[\t\n]/g, ' ')), ...(hl ? [K.hl.isProt(r.p.i) ? 'yes' : ''] : [])].join('\t')).join('\n') + '\n';
   }
 
   // ---- "Your selection": one protein set, or one source, as a card with its numbers and its link ---------------------

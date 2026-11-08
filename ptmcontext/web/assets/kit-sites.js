@@ -206,7 +206,7 @@
       else { const r = typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b)); if (r) return T.desc ? -r : r; }
       return String(pr(x[0])?.gene || '').localeCompare(String(pr(y[0])?.gene || '')) || x[0] - y[0] || x[1] - y[1];   // then by gene
     });
-    return out;
+    return K.hl ? K.hl.firstSort(out, m => !m.lc && K.hl.isSite(m[0], m[1])) : out;
   }
 
   // ---- quick filters: the attributes the site colors by, with their counts in the selection ----------------------
@@ -306,9 +306,9 @@
     return '';
   }
   function tsv(rs) {
-    const lcAny = rs.some(m => m.lc);
+    const lcAny = rs.some(m => m.lc), hl = !!K.hl?.any();
     return K.preamble(`${W.marks}${K.sel.active() ? ' (selection)' : ''}`, `every ${W.mark}${K.sel.active() ? ' of the selection' : ''} (${int(rs.length)}), in the table’s order, with the columns the site names; lists are separated by ";".`) +
-      [...DL.map(c => c.name), ...(lcAny ? ['counted'] : [])].join('\t') + '\n' + rs.map(m => [...DL.map(c => String(dlValue(c, m)).replace(/[\t\n]/g, ' ')), ...(lcAny ? [m.lc ? 'no' : 'yes'] : [])].join('\t')).join('\n') + '\n';
+      [...DL.map(c => c.name), ...(lcAny ? ['counted'] : []), ...(hl ? ['highlighted'] : [])].join('\t') + '\n' + rs.map(m => [...DL.map(c => String(dlValue(c, m)).replace(/[\t\n]/g, ' ')), ...(lcAny ? [m.lc ? 'no' : 'yes'] : []), ...(hl ? [!m.lc && K.hl.isSite(m[0], m[1]) ? 'yes' : ''] : [])].join('\t')).join('\n') + '\n';
   }
   async function download(el) {
     const rs = rows(allCols().shown), name = K.tables.fileName('sites');

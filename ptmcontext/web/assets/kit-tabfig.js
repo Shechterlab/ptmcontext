@@ -21,7 +21,8 @@
     // a column of buttons only (3D, Evidence) is not data: left out
     const act = i => !!hd && bd.some(r => r[i]?.act) && bd.every(r => !r[i] || !r[i].t || r[i].act);
     const keep = (r) => r.filter((_, i) => !act(i));
-    return { head: hd && keep(hd), rows: bd.map(keep) };
+    const rows = bd.map(keep); body.forEach((r, i) => { if (r.classList.contains('hl-row')) rows[i].hl = true; });   // a highlighted row (kit-hilite.js): tinted in the figure
+    return { head: hd && keep(hd), rows };
   }
   // the text cut to a width, with an ellipsis
   function fit(t, w, size = SZ) {
@@ -47,7 +48,8 @@
       y += RH; parts.push(`<line x1="${P}" x2="${P + total}" y1="${y}" y2="${y}" stroke="${K.PAL.one}" stroke-width="1"/>`);
     }
     rows.forEach((r, ri) => {
-      if (ri % 2) parts.push(`<rect x="${P}" y="${y}" width="${total.toFixed(1)}" height="${RH}" fill="#f3f6f7"/>`);
+      if (r.hl) parts.push(`<rect x="${P}" y="${y}" width="${total.toFixed(1)}" height="${RH}" fill="#fbe3d3"/><rect x="${P}" y="${y}" width="3" height="${RH}" fill="#c2410c"/>`);
+      else if (ri % 2) parts.push(`<rect x="${P}" y="${y}" width="${total.toFixed(1)}" height="${RH}" fill="#f3f6f7"/>`);
       r.forEach((c, i) => { if (!c.t || i >= n) return; if (rot(i) || (c.num && w[i] < 60)) T(x0[i] + w[i] / 2, y + RH - 5, fit(c.t, w[i] - 4), { anchor: 'middle' }); else T(c.num ? x0[i] + w[i] - 6 : x0[i] + 4, y + RH - 5, fit(c.t, w[i] - 10), { anchor: c.num ? 'end' : null }); });
       y += RH;
     });
