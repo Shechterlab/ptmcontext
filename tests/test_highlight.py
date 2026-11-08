@@ -129,3 +129,10 @@ def test_the_box_is_in_the_selection_bar_and_the_tables_and_figures_carry_the_hi
     assert 'firstSort' in (ASSETS / 'kit-tables.js').read_text() and 'firstSort' in (ASSETS / 'kit-sites.js').read_text()
     assert "hl-row" in (ASSETS / 'kit-tabfig.js').read_text() and 'isSite(p.i' in (ASSETS / 'kit-map.js').read_text()
     assert 'decorate' in hl and 'Highlighted first' in hl
+
+
+def test_a_pasted_list_is_the_only_highlight_and_the_box_is_one_compact_row():
+    idrs, hl, tf = (ASSETS / 'kit-idrs.js').read_text(), (ASSETS / 'kit-hilite.js').read_text(), (ASSETS / 'kit-tabfig.js').read_text()
+    assert 'K.hl?.any()' in idrs and 'parts.filter(r => r.pasted)' in idrs and 'K.hl.limit) HLS = st' in idrs
+    assert 'data-hl-menu' in hl and 'aria-haspopup' in hl and "e.key === 'Escape'" in hl and 'aria-expanded' in hl
+    assert '(t.closest(CONTAINER) || root).querySelector' in tf

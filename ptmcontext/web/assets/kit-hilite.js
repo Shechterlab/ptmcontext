@@ -64,12 +64,15 @@
   const keep = list => { try { localStorage.setItem(SK, JSON.stringify(list.slice(0, 60))); } catch (e) { /* storage blocked: the list lives for this page only */ } };
   const norm = s => String(s || '').split(/[,;\n]+/).map(x => x.trim()).filter(Boolean).join(', ');
   const activeSet = () => sets().find(x => norm(x.list) === norm(S.hl) && norm(S.hl));
-  const setsHtml = () => {
+  // the "Lists" menu: the saved lists, Save as, Rename, Delete and "Highlighted first in tables"; shown when there is a list or a saved one
+  const menuHtml = () => {
     const all = sets(), cur = activeSet(), have = !!norm(S.hl);
     if (!all.length && !have) return '';
-    return `<div class="hl-sets"><label class="flabel" for="hl-set">Saved lists</label> <select id="hl-set" data-hl-switch aria-label="Switch to a saved highlight list"><option value=""${cur ? '' : ' selected'}>${have && !cur ? '(unsaved list)' : '(none)'}</option>${all.map((x, i) => `<option value="${i}"${cur === x ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select> ` +
-      `<button type="button" class="btn small" data-hl-save${have ? '' : ' disabled'} title="Save the highlighted list under a name, in this browser">Save as…</button>` +
-      `<button type="button" class="btn small" data-hl-rename${cur ? '' : ' disabled'}>Rename</button><button type="button" class="btn small" data-hl-delete${cur ? '' : ' disabled'}>Delete</button></div>`;
+    return `<span class="hl-menu"><button type="button" class="btn small" data-hl-menu aria-haspopup="true" aria-expanded="false" aria-controls="hl-pop">Lists ▾</button>` +
+      `<div id="hl-pop" class="hl-pop" role="group" aria-label="Highlight lists" hidden><div class="hl-sets"><label class="flabel" for="hl-set">Saved lists</label> <select id="hl-set" data-hl-switch aria-label="Switch to a saved highlight list"><option value=""${cur ? '' : ' selected'}>${have && !cur ? '(unsaved list)' : '(none)'}</option>${all.map((x, i) => `<option value="${i}"${cur === x ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>` +
+      `<div class="hl-sets"><button type="button" class="btn small" data-hl-save${have ? '' : ' disabled'} title="Save the highlighted list under a name, in this browser">Save as…</button>` +
+      `<button type="button" class="btn small" data-hl-rename${cur ? '' : ' disabled'}>Rename</button><button type="button" class="btn small" data-hl-delete${cur ? '' : ' disabled'}>Delete</button></div>` +
+      `<label class="small"><input type="checkbox" data-hl-first${first ? ' checked' : ''}> Highlighted first in tables</label></div></span>`;
   };
   const setsAct = {
     save: () => { const cur = activeSet(), name = (window.prompt('Name this list of highlighted genes or sites', cur ? cur.name : '') || '').trim(); if (!name || !norm(S.hl)) return; keep([{ name, list: norm(S.hl) }, ...sets().filter(x => x.name !== name)]); K.render(); },
@@ -77,7 +80,7 @@
     delete: () => { const cur = activeSet(); if (!cur) return; if (window.confirm && !window.confirm(`Delete the list "${cur.name}"? The highlight on the page stays.`)) return; keep(sets().filter(x => !(x.name === cur.name && x.list === cur.list))); K.render(); },
   };
   // the box to paste genes or sites into: added to the highlight, nothing is filtered
-  const control = (after = '') => `<form class="hl-form" data-hl-form><label class="flabel" for="hl-in">Highlight</label> <input id="hl-in" name="hl" type="search" autocomplete="off" spellcheck="false" placeholder="genes or sites to mark in the figures, e.g. FUS, TDP-43, HNRNPA1 R218" aria-label="Genes or sites to highlight in the figures"> <button class="btn small" type="submit">Highlight</button></form>${after}${setsHtml()}`;
+  const control = (after = '') => `<form class="hl-form" data-hl-form><label class="flabel hl-lab" for="hl-in">Highlight genes or sites</label><input id="hl-in" name="hl" type="search" autocomplete="off" spellcheck="false" placeholder="Highlight genes or sites…" title="Genes or sites to mark in the figures and tables, e.g. FUS, TDP-43, HNRNPA1 R218" aria-label="Genes or sites to highlight"> <button class="btn small" type="submit">Highlight</button></form>${after}${menuHtml()}`;
   // labels placed greedily: the candidates around a dot in order, the first that fits the box and clears the others
   // avoid: boxes [x0, y0, x1, y1] that labels must also clear (a chart's own text, such as region names)
   function place(items, box = [0, 760, 0, 400], size = 10, avoid = []) {
@@ -155,13 +158,17 @@
     const host = document.getElementById('hl-bar'); if (!host) return;
     const t = toks(), pa = t.length ? pasted() : null;
     const chips = t.map((l, i) => chip(l, i)).join(' ');
-    const more = t.length ? `<span class="hl-chips">${chips}${pa.notFound.length ? ` <span class="hl-nf">not found: ${esc(pa.notFound.join(', '))}</span>` : ''}</span> <label class="small"><input type="checkbox" data-hl-first${first ? ' checked' : ''}> Highlighted first in tables</label>` : '';
-    const html = `<div class="hl-bar-in">${control(more)}</div>`;
+    const more = t.length ? `<span class="hl-chips">${chips}${pa.notFound.length ? ` <span class="hl-nf">not found: ${esc(pa.notFound.join(', '))}</span>` : ''}</span>` : '';
+    const html = `<div class="hl-bar-in${t.length ? ' on' : ''}">${control(more)}</div>`;
     const key = html + '|' + (K.sel?.peek() ? 1 : 0);
     if (key === barKey) return; barKey = key;
     host.innerHTML = html;
   }
   (K.afterRender ||= []).push(bar);
+  const shut = (focus) => { const b = document.querySelector('[data-hl-menu][aria-expanded="true"]'); if (!b) return; b.setAttribute('aria-expanded', 'false'); document.getElementById('hl-pop').hidden = true; if (focus) b.focus(); };
+  K.clicks.push(['[data-hl-menu]', el => { const open = el.getAttribute('aria-expanded') !== 'true'; shut(false); if (open) { el.setAttribute('aria-expanded', 'true'); document.getElementById('hl-pop').hidden = false; } }]);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(true); });
+  document.addEventListener('click', e => { if (!e.target.closest?.('.hl-menu')) shut(false); });
   document.addEventListener('submit', e => {
     const f = e.target.closest?.('[data-hl-form]'); if (!f) return;
     e.preventDefault(); const v = String(new FormData(f).get('hl') || '').trim(); if (!v) return;
@@ -176,8 +183,15 @@
 .hl-form input { flex: 1 1 18rem; min-width: 10rem; }
 .hl-chip { border: 1px solid var(--line-strong); border-radius: 1rem; padding: 0 0.15rem 0 0.55rem; display: inline-flex; align-items: center; gap: 0.25rem; }
 .hl-sets { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin: 0.3rem 0; }
-.hl-bar-in { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.8rem; font-size: 0.82rem; }
-.hl-bar-in .hl-form { margin: 0.15rem 0; flex: 0 1 30rem; } .hl-bar-in .hl-sets { margin: 0.15rem 0; }
+.hl-bar-in { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.6rem; font-size: 0.82rem; }
+.hl-bar-in .hl-form { margin: 0.1rem 0; flex: 0 1 auto; flex-wrap: nowrap; }
+.hl-bar-in .hl-form input { flex: 0 1 auto; width: min(30rem, 62vw); min-height: 1.7rem; }
+.hl-bar-in:not(.on) .hl-form:not(:focus-within) input { width: 11rem; }
+.hl-bar-in:not(.on) .hl-form:not(:focus-within) button { display: none; }
+.hl-lab { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.hl-menu { position: relative; }
+.hl-pop:not([hidden]) { display: flex; flex-direction: column; gap: 0.4rem; position: absolute; z-index: 40; left: 0; max-width: calc(100vw - 2rem); top: 100%; margin-top: 0.2rem; min-width: 15rem; padding: 0.6rem; border: 1px solid var(--line-strong); border-radius: 0.5rem; background: var(--surface); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
+.hl-pop .hl-sets { margin: 0; }
 .hl-bar:empty { display: none; }
 .hl-chips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
 tr.hl-row > td { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--accent) 11%, transparent); }
