@@ -717,7 +717,7 @@
       `<div class="cp-cols">${DRAWINGS.map(d => partList(d, ps)).join('')}</div>` +
       `<p class="tkey">Odds ratio against ${esc(alike)}, median of ${MAPS.length} maps.</p>${note}<div class="tact">${bar}</div></article>`;
   }
-  const toggle = part => K.sel.toggle('w:' + ID, part);
+  const toggle = part => { const t = document.getElementById('tip'); if (t) t.hidden = true; K.sel.toggle('w:' + ID, part); };
 
   // ---- the large view: the drawing in a dialog at full size, zoom and pan, and the proteins of a part when it is clicked -----
   const rowOfPart = part => { for (const L of [LAYERS.part, LAYERS.region]) for (const [, rows] of L.groups) { const row = rows.find(r => r.part === part); if (row) return [L, row]; } return null; };
@@ -935,7 +935,8 @@
   };
   (K.afterRender ||= []).push(grow);
   let growT; addEventListener('resize', () => { clearTimeout(growT); growT = setTimeout(grow, 200); });
-  K.tips.push(['[data-cell-tip]', el => TIPS[+el.dataset.cellTip] || '']);
+  // the drawings on the tiles select the proteins of a part when clicked (the large view and the page list or open them)
+  K.tips.push(['[data-cell-tip]', el => { const h = TIPS[+el.dataset.cellTip] || ''; return el.closest('[data-cell-draw]') && !el.closest('dialog') ? h.replace('Click for its numbers and proteins', `Click to select these ${esc(W.marked)} proteins`) : h; }]);
   document.addEventListener('keydown', e => {
     const el = e.target.closest?.('[data-cell-row], [data-cell-part], [data-cell-bar]');
     if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); el.dispatchEvent(new MouseEvent('click', { bubbles: true })); }
