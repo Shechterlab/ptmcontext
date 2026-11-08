@@ -15,4 +15,4 @@ def test_the_large_view_is_a_dialog_with_zoom_pan_and_a_protein_list():
 
 
 def test_the_inline_labels_are_larger():
-    assert '.cd-name{font-size:15.5px' in SRC and '.cd-val{font-size:14px' in SRC
+    assert '.cd-name{font-size:14px' in SRC and '.cd-val{font-size:13px' in SRC
