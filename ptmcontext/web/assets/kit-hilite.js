@@ -53,8 +53,8 @@
   let only = store.get();
   const chip = (label, i) => `<span class="hl-chip">${esc(label)} <button type="button" class="hl-x" data-hl-drop="${i}" aria-label="Remove ${esc(label)} from the highlight" title="Remove it">×</button></span>`;
   // the legend line: what is highlighted, how many items, and the control that clears it
-  const line = (n, noun, extra = '') => {
-    const st = state(); if (!st.on) return '';
+  const line = (n, noun, extra = '', over = null) => {
+    const st = over || state(); if (!st.on) return '';
     const what = st.parts.map(r => (r.chips ? (document.getElementById?.('hl-bar') ? '' : r.chips.map((c, i) => chip(c.label, i)).join(' ')) : `<b>${esc(r.text)}</b> <button type="button" class="hl-x" data-hl-clear aria-label="Clear the highlight" title="Clear the highlight">×</button>`)).join(' ');
     return `<p class="hl-line"><span class="flabel">Highlighted:</span> ${what.trim() || '<span class="muted">your list, in the box above</span>'} <span class="muted">· ${int(n)} ${esc(noun)}</span>${st.notFound.length ? ` <span class="hl-nf">· not found: ${esc(st.notFound.join(', '))}</span>` : ''}${extra ? ` <span class="muted">· ${extra}</span>` : ''} <label class="hl-only small" title="The PNG, SVG and PDF show only the highlighted items, without the gray context"><input type="checkbox" data-hl-only${only ? ' checked' : ''}> Exports: highlighted only</label></p>`;
   };

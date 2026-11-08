@@ -94,7 +94,15 @@
   }
   // highlighted IDRs (kit-hilite.js): those of the highlighted proteins; the rest are drawn gray as context
   let HLS = { on: false, prots: new Set() };
-  const hlRead = () => { HLS = K.hl ? K.hl.state() : { on: false, prots: new Set() }; HLP = K.hl ? K.hl.pasted() : null; return HLS; };
+  // a pasted list, when there is one, is the only highlight; the selection counts as one only with no list and 12 IDRs or fewer
+  const hlRead = () => {
+    const st = K.hl ? K.hl.state() : { on: false, prots: new Set() };
+    HLP = K.hl ? K.hl.pasted() : null;
+    if (K.hl?.any()) HLS = { ...st, prots: HLP.prots, marks: HLP.marks, sites: HLP.sites, notFound: HLP.notFound, text: HLP.text, parts: st.parts.filter(r => r.pasted) };
+    else if (st.on && V && V.idrs.filter(x => st.prots.has(x.p)).length <= K.hl.limit) HLS = st;
+    else HLS = { on: false, prots: new Set(), sites: [], notFound: [], parts: [] };
+    return HLS;
+  };
   // with a pasted list beside a selection, the list's items are the ones labeled (the whole selection is drawn in color)
   let HLP = null;
   const labelled = xs => (HLP && (HLP.prots.size || HLP.sites.length) ? xs.filter(x => HLP.prots.has(x.p) || HLP.sites.some(t => t.p === x.p && t.pos >= x.s && t.pos <= x.e)) : xs);
@@ -175,7 +183,7 @@
     const order = plotted.filter(x => !HLS.on || !isHl(x)).map(x => [x, inScope(x) ? marksOf(x) : 0]).sort((a, b) => (a[1] > 0) - (b[1] > 0) || b[1] - a[1]);
     (ex && HLS.on && K.hl.only ? [] : order).forEach(([x, m]) => {
       const cx = DX(x.ncpr).toFixed(1), cy = DY(x.fcr).toFixed(1), id = ex ? '' : ` data-di="${x.i}" class="idr-dot"`;
-      if (HLS.on) parts.push(`<circle cx="${cx}" cy="${cy}" r="${m ? Math.min(rad(m), 4).toFixed(1) : 1.7}" fill="${GRAY}" fill-opacity="${m ? 0.6 : 0.45}"${id}/>`);
+      if (HLS.on && !(SC.on && inScope(x))) parts.push(`<circle cx="${cx}" cy="${cy}" r="${m ? Math.min(rad(m), 4).toFixed(1) : 1.7}" fill="${GRAY}" fill-opacity="${m ? 0.6 : 0.45}"${id}/>`);
       else parts.push(m ? `<circle cx="${cx}" cy="${cy}" r="${rad(m).toFixed(1)}" fill="${colour(x.cls)}" fill-opacity="0.85" stroke="${SC.on ? P.ink : P.bg}" stroke-width="${SC.on ? 0.9 : 0.6}"${id}/>`
         : `<circle cx="${cx}" cy="${cy}" r="1.7" fill="${colour(x.cls)}" fill-opacity="${SC.on ? 0.16 : 0.3}"${id}/>`);
     });
@@ -354,7 +362,7 @@
   const hlHead = k => HLT[k].head.map(h => (typeof h === 'function' ? h() : h));
   function hlHtml(k, cap1 = 25) {
     const xs = hlItems(k); if (!HLS.on) return '';
-    return K.hl.line(xs.length, 'IDRs plotted', hlNote(xs)) + (xs.length ? `<div class="tbl-card hl-tbl"><table class="tbl"><thead><tr>${hlHead(k).map((h, i) => `<th${HLT[k].num[i] ? ' class="num"' : ''}>${esc(h)}</th>`).join('')}</tr></thead><tbody>` +
+    return K.hl.line(xs.length, 'IDRs plotted', hlNote(xs), HLS) + (xs.length ? `<div class="tbl-card hl-tbl"><table class="tbl"><thead><tr>${hlHead(k).map((h, i) => `<th${HLT[k].num[i] ? ' class="num"' : ''}>${esc(h)}</th>`).join('')}</tr></thead><tbody>` +
       xs.slice(0, cap1).map(x => `<tr>${HLT[k].row(x).map((c, i) => `<td${HLT[k].num[i] ? ' class="num"' : ''}>${esc(c)}</td>`).join('')}</tr>`).join('') + `</tbody></table></div><p class="note">${xs.length > cap1 ? `The first ${cap1} of ${int(xs.length)}. ` : ''}<button type="button" class="linkish" data-idr-hltsv="${k}">Download these as TSV</button></p>` : '<p class="muted small">None of the highlighted items has an IDR in this figure.</p>');
   }
   function hlTsv(k) {
