@@ -728,7 +728,7 @@
     if (!hit) { box.hidden = true; return; }
     const [L, row] = hit, scoped = scopedNow(), mem = members(L, row, scoped);
     box.hidden = false; ZS.part = part; ZS.page = page;
-    if (!mem) { box.innerHTML = '<p class="muted">Loading the proteins…</p>'; return; }
+    if (!mem) { box.innerHTML = '<p class="muted">Loading the proteins…</p>'; Promise.resolve(K.sel.ready).then(() => { if (ZS && ZS.part === part && K.sel.peek()) zoomList(part, page); }); return; }
     const hl = K.hl?.state(), hot = hl && hl.on ? mem.filter(m => hl.prots.has(m.p)) : [], list = [...hot, ...mem.filter(m => !hot.includes(m))], pages = Math.max(1, Math.ceil(list.length / PER));
     page = Math.min(page, pages - 1); ZS.page = page;
     const shown = list.slice(page * PER, (page + 1) * PER);
