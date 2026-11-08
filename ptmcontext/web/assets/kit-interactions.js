@@ -517,11 +517,11 @@
     tableRows(t, true).forEach(r => { const v = r[j]; if (aj >= 0 ? !r[aj] : v == null) return; const i = markAt(r[0], r[1]); const isM = i != null && isSelMark(i); if (isM) nm++; else no++; if (v == null || v > max) return; const k = Math.min(nb - 1, Math.floor(v / step)); (isM ? mk : ot)[k]++; });
     return { step, max, nb, mk, ot, nm, no };
   }
-  function histBody(b, ex, Wd = 760, H0 = 220) {
+  function histBody(b, ex, Wd = 760, H0 = 220, fz = 1) {
     const P = pal(ex), h = histData(b), ML = 40, MB = 32, MT = 10, PW = Wd - ML - 10, PH = H0 - MT - MB, parts = [];
     const sm = h.mk.map(x => x / (h.nm || 1)), so = h.ot.map(x => x / (h.no || 1)), top = Math.max(0.01, ...sm, ...so), bw = PW / h.nb;
-    for (let k = 0; k < h.nb; k++) { const x = ML + k * bw; parts.push(`<rect x="${(x + 1).toFixed(1)}" y="${(MT + PH - PH * so[k] / top).toFixed(1)}" width="${(bw / 2 - 1.5).toFixed(1)}" height="${(PH * so[k] / top).toFixed(1)}" fill="${P.same}"/>`, `<rect x="${(x + bw / 2).toFixed(1)}" y="${(MT + PH - PH * sm[k] / top).toFixed(1)}" width="${(bw / 2 - 1.5).toFixed(1)}" height="${(PH * sm[k] / top).toFixed(1)}" fill="${P.more}"/>`); if (k % Math.max(1, Math.round(1 / h.step)) === 0) parts.push(txt(P, x, MT + PH + 13, String(+(k * h.step).toFixed(2)), { size: 9.5, anchor: 'middle', fill: P.muted })); }
-    parts.push(`<line x1="${ML}" x2="${ML + PW}" y1="${MT + PH}" y2="${MT + PH}" stroke="${P.ink}"/>`, txt(P, ML + PW / 2, MT + PH + 28, b.x_label || colMeta(table(b.table), b.value).label, { size: 10, anchor: 'middle', fill: P.muted }), txt(P, ML - 6, MT + 8, pcS(top, 1), { size: 9.5, anchor: 'end', fill: P.muted }));
+    for (let k = 0; k < h.nb; k++) { const x = ML + k * bw; parts.push(`<rect x="${(x + 1).toFixed(1)}" y="${(MT + PH - PH * so[k] / top).toFixed(1)}" width="${(bw / 2 - 1.5).toFixed(1)}" height="${(PH * so[k] / top).toFixed(1)}" fill="${P.same}"/>`, `<rect x="${(x + bw / 2).toFixed(1)}" y="${(MT + PH - PH * sm[k] / top).toFixed(1)}" width="${(bw / 2 - 1.5).toFixed(1)}" height="${(PH * sm[k] / top).toFixed(1)}" fill="${P.more}"/>`); if (k % Math.max(1, Math.round(1 / h.step)) === 0) parts.push(txt(P, x, MT + PH + 13, String(+(k * h.step).toFixed(2)), { size: 9.5 * fz, anchor: 'middle', fill: P.muted })); }
+    parts.push(`<line x1="${ML}" x2="${ML + PW}" y1="${MT + PH}" y2="${MT + PH}" stroke="${P.ink}"/>`, txt(P, ML + PW / 2, MT + PH + 28, b.x_label || colMeta(table(b.table), b.value).label, { size: 10 * fz, anchor: 'middle', fill: P.muted }), txt(P, ML - 6, MT + 8, pcS(top, 1), { size: 9.5 * fz, anchor: 'end', fill: P.muted }));
     return { body: parts.join(''), H: H0 };
   }
   function histHtml(pg, sec, b) {
@@ -570,7 +570,7 @@
   // ---- tiles: a section at a glance --------------------------------------------------------------------------------
   function miniForest(refs, m, all = refs) {           // all: the rows whose effects set the scale (several groups share one)
     const rows = rowsFor(refs, m), sc = scale(rowsFor(all, m).map(x => shown(x)).filter(Boolean).flatMap(r => [effOf(r), r.lo, r.hi])), X = v => sc.X(v, 100).toFixed(2) + '%';
-    return `<div class="trows">${rows.map(x => { const r = shown(x), d = dirOf(r); return `<div class="trow" data-ixr="${esc(JSON.stringify([x.ref.analysis, x.ref.category, m]))}"><span class="lab">${esc(x.label)}</span><svg aria-hidden="true">${gridLines(sc, X)}${selOn() && x.site && effOf(x.site) ? `<line class="ixf-whole" x1="${X(effOf(x.site))}" x2="${X(effOf(x.site))}" y1="20%" y2="80%"/>` : ''}${r && r.lo != null ? `<line class="whisker ${d}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" y2="50%"/>` : ''}${r && effOf(r) ? `<circle class="dot ${d}" cx="${X(effOf(r))}" cy="50%" r="4.6"/>` : ''}</svg><span class="val ${d}">${r && effOf(r) ? fx2(effOf(r)) : '–'}</span></div>`; }).join('')}<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div></div>`;
+    return `<div class="trows">${rows.map(x => { const r = shown(x), d = dirOf(r); return `<div class="trow pick" data-f="a:${esc(x.ref.analysis)}" data-v="${esc(x.ref.category)}" role="button" tabindex="0" title="Select the ${esc(W.marks)} ${esc(x.label)}" data-ixr="${esc(JSON.stringify([x.ref.analysis, x.ref.category, m]))}"><span class="lab">${esc(x.label)}</span><svg aria-hidden="true">${gridLines(sc, X)}${selOn() && x.site && effOf(x.site) ? `<line class="ixf-whole" x1="${X(effOf(x.site))}" x2="${X(effOf(x.site))}" y1="20%" y2="80%"/>` : ''}${r && r.lo != null ? `<line class="whisker ${d}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" y2="50%"/>` : ''}${r && effOf(r) ? `<circle class="dot ${d}" cx="${X(effOf(r))}" cy="50%" r="4.6"/>` : ''}</svg><span class="val ${d}">${r && effOf(r) ? fx2(effOf(r)) : '–'}</span></div>`; }).join('')}<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div></div>`;
   }
   const range = rs => { const v = rs.map(effOf).filter(x => x != null).sort((a, b) => a - b); if (!v.length) return '–'; const a = fxn(v[0]), z = fxn(v[v.length - 1]); return a === z ? a + '×' : `${a}–${z}×`; };
   function tileBody(pg, sec) {
@@ -592,7 +592,7 @@
         return `<p class="ix-big"><b>${int(n)}</b> <span>${esc(sec.sub || (t.key === 'residue' ? W.marks : t.key === 'protein' ? 'proteins' : 'rows'))}</span></p>${groups ? `<p class="small">${groups}</p>` : rs.length && lab ? `<p class="tfoot">Top: ${esc(cellText(t, rs[0], lab))}</p>` : ''}`; }
       case 'bars': { const gs = barsData(b); if (!gs) return loading(); return gs.slice(0, 2).map(g => `<p class="small"><b>${esc(g.title)}</b>: ${g.list.slice(0, 4).map(x => `${esc(x.l)} ${int(x.n)}`).join(' · ')}</p>`).join('') || '<p class="muted">None</p>'; }
       case 'pairs': { const d = pairsData(b); if (!d) return loading(); const best = d.cells.flat().sort((x, y) => y.n - x.n)[0]; return `${best ? `<p class="tfoot">Most shared: <b>${esc(best.rl)}</b> and <b>${esc(best.cl)}</b> (${int(best.n)})</p>` : ''}`; }
-      case 'histogram': { const h = histData(b); if (!h) return loading(); const L = histBody(b, false, 760, 200); return `<div class="ix-plot ix-mini"><svg viewBox="0 0 760 ${L.H}" aria-hidden="true">${L.body}</svg></div>`; }
+      case 'histogram': { const h = histData(b); if (!h) return loading(); const L = histBody(b, false, 330, 150, 1.3); return `<div class="ix-plot ix-mini"><svg viewBox="0 0 330 ${L.H}" aria-hidden="true">${L.body}</svg></div>`; }
       case 'example': case 'checker': return '';
       default: return b.text ? `<p class="small">${esc(b.text)}</p>` : '';
     }
@@ -740,7 +740,7 @@
   }]);
   const keyOfEl = el => el.closest('[data-ixexp]')?.dataset.ixexp;
   K.clicks.push(
-    ['[data-ix-tile]', (el, e) => { if (e.target.closest('a,button,summary,details,[data-f]')) return; location.hash = el.dataset.ixTile; }],
+    ['[data-ix-tile]', (el, e) => { const inner = e.target.closest('a,button,summary,details,[data-f]'); if (inner && inner !== el && el.contains(inner)) return; location.hash = el.dataset.ixTile; }],
     ['[data-ix-m]', el => { st(el.dataset.ixM, {}).m = el.dataset.v; K.render(); }],
     ['[data-ix-all]', el => { const s = st(el.dataset.ixAll, {}); s.all = !s.all; K.render(); }],
     ['[data-ix-chip]', el => { const s = st(el.dataset.ixChip, {}); s.chip = el.dataset.v || ''; s.n = 25; K.render(); }],
