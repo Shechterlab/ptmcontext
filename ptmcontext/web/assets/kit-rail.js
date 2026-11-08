@@ -183,21 +183,17 @@
       }).join('') +
       `<div class="rail-foot"><span><b>${int(nMarks())}</b> ${esc(nMarks() === 1 ? W.mark : W.marks)} on <b>${int(nProteins())}</b> protein${nProteins() === 1 ? '' : 's'}${active() ? '' : ' (all)'}</span>${active() ? '<button class="linkish" type="button" data-sel-clear-all>Clear all</button>' : ''}</div>`;
   }
-  // every page, and the current page's own sections under it: [id, label, level, href?]; a section with an href is a
-  // link (another view), one without is a jump to the element with that id; group headings have level 0
+  // the current page's own sections, at one level: [id, label, level, href?]; a section with an href is a link (another
+  // view), one without is a jump to the element with that id. A group heading shows only when it has nothing under it,
+  // or when the leaves are too many to list (then the headings alone); the other pages are the tabs' business
   function sectionsTab() {
-    const pages = [['overview', 'Overview'], ...K.tabs.map(f => f()).filter(Boolean).map(([v, n]) => [v, n]), ['statistics', 'Statistics'], ['method', 'Method']].map(([v, n]) => [v, K.tabName(v, n)]);
-    const cur = v => S.view === v || K.views[S.view]?.tab === v;
-    const here = K.sections?.[S.view]?.() || [];
-    const item = ([id, lab, lvl, href]) => (lvl === 0 ? (/^sec-/.test(id) ? `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="toc-group">${esc(lab)}</a>` : `<p class="toc-group">${esc(lab)}</p>`)
-      : href ? `<a href="${esc(href)}" class="sub l${lvl || 1}${K.link(S.view, S.arg).split('?')[0] === href.split('?')[0] ? ' on' : ''}">${esc(lab)}</a>`
-      : `<a href="${esc(location.hash)}" data-jump="${esc(id)}"${id === 'view' ? '' : ` data-spy="${esc(id)}"`} class="sub l${lvl || 1}">${esc(lab)}</a>`);
-    // the open protein is a page of its own, under Proteins; a page with no tab (Compare) is listed while open
-    const extra = K.views[S.view] && !pages.some(([v]) => v === S.view) && S.view !== 'protein' ? [[S.view, K.views[S.view].title?.() || S.view]] : [];
-    const list = [...pages, ...extra];
-    const prot = S.view === 'protein' && S.arg ? (() => { const acc = S.arg.split('/')[0], pr = byAcc[acc]; return `<a href="${esc(K.link('protein', acc))}" class="page sub-page on">${esc(pr?.gene || K.views.protein?.title?.(acc) || acc)}</a>` + here.map(item).join(''); })() : '';
-    return '<nav class="toc">' + list.map(([v, n]) => `<a href="${esc(K.link(v))}" class="page${cur(v) && S.view !== 'protein' ? ' on' : ''}">${esc(n)}</a>` +
-      (v === 'proteins' && prot ? prot : cur(v) && S.view !== 'protein' ? here.map(item).join('') : '')).join('') + '</nav>';
+    const raw = K.sections?.[S.view]?.() || [], leaf = x => x[2] !== 0;
+    let here = raw.filter((x, i) => leaf(x) || !raw[i + 1] || !leaf(raw[i + 1])).map(x => (leaf(x) ? x : [x[0], x[1], 1, x[3]]));
+    if (here.length > 24 && raw.some(x => !leaf(x))) here = raw.filter(x => !leaf(x)).map(x => [x[0], x[1], 1, x[3]]);
+    if (!here.some(x => x[0] === 'view') && S.view !== 'overview') here = [['view', K.views[S.view]?.title?.(S.arg) || K.tabName(S.view, S.view), 1], ...here];
+    const item = ([id, lab, , href]) => (href ? `<a href="${esc(href)}" class="sub l1${K.link(S.view, S.arg).split('?')[0] === href.split('?')[0] ? ' on' : ''}">${esc(lab)}</a>`
+      : `<a href="${esc(location.hash)}" data-jump="${esc(id)}"${id === 'view' ? '' : ` data-spy="${esc(id)}"`} class="sub l1">${esc(lab)}</a>`);
+    return '<nav class="toc flat">' + here.map(item).join('') + '</nav>';
   }
   const CARDS = D.front?.mode === 'cards';        // the cards front end: Filters only, a panel beside the page or a full-height drawer, never pinned
   const pinned = () => !CARDS && (R.pin === 'on' && innerWidth >= PIN_MIN) || (R.pin === 'auto' && innerWidth >= PIN_AUTO);

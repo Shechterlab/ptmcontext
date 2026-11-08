@@ -325,8 +325,7 @@
   K.tabs.push(() => ['sites', 'Sites', K.sel?.active() ? K.sel.nMarks() : D.counts.marks]);
   K.sections.sites = () => [['view', 'Sites', 1], ...(K.sel?.active() && document.getElementById('sel-card') ? [['sel-card', 'Your selection', 1]] : []),
     ...(document.getElementById('sel-enriched') ? [['sel-enriched', 'Enriched features', 1]] : []),
-    ...(Object.keys(SPECS).some(n => SPECS[n].colour && SPECS[n].kind === 'category') ? [['sites-quick', 'Quick filters', 1]] : []), ['sites-table', 'Site table', 1], ['t-cite', 'How to cite', 1],
-    ['g-by', 'By question', 0], ...D.analyses.filter(a => a.kind !== 'protein_sets').map(a => [`s-${a.id}`, a.title, 1, K.link('overview', a.id)])];
+    ...(Object.keys(SPECS).some(n => SPECS[n].colour && SPECS[n].kind === 'category') ? [['sites-quick', 'Quick filters', 1]] : []), ['sites-table', 'Site table', 1], ['t-cite', 'How to cite', 1]];
   K.columns.redraw.sites = () => { const y = scrollY; K.render(); scrollTo(0, y); };
   K.clicks.unshift(
     ['#sites-table [data-ev-kind]', el => openPop(el)],

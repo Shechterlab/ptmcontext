@@ -322,11 +322,8 @@
 
   // ---- the sections rail --------------------------------------------------------------------------------------------
   K.sections.proteins = () => {
-    const cnt = K.sel?.active() ? K.sel.selectedCountByProtein() : null;
-    const top = P.map(p => [p, cnt ? (cnt[p.i] || 0) : p.marks]).filter(([, k]) => k > 0).sort((x, y) => y[1] - x[1]).slice(0, 12);
     return [['view', 'Proteins', 1], ...(oneTerm() ? [['sel-card', 'Your selection', 1]] : []), ...(K.sel?.active() ? [['sel-enriched', 'Enriched features', 1]] : []),
-      ['proteins-table', 'Protein table', 1], ['t-cite', 'How to cite', 1], ['g-top', cnt ? `Most ${W.marks} in the selection` : `Most ${W.marks}`, 0],
-      ...top.map(([p, k]) => [`p-${p.acc}`, `${pLabel(p)} (${int(k)})`, 1, K.link('protein', p.acc)])];
+      ['proteins-table', 'Protein table', 1], ['t-cite', 'How to cite', 1]];
   };
   K.views.proteins = { render: proteinsView, title: () => 'Proteins' };
   // the Method page's section on these pages

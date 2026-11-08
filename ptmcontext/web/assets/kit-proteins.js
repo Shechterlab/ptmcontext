@@ -674,10 +674,7 @@
     ['g-live', 'Live sources', 0], ['p-struct', '3D structure', 1],]; };
   // the Proteins page: its table, and the proteins with most marks (of the selection, if any)
   K.sections.proteins = () => {
-    const cnt = K.sel?.active() ? K.sel.selectedCountByProtein() : null;
-    const top = P.slice().map(p => [p, cnt ? (cnt[p.i] || 0) : p.marks]).filter(([, k]) => k > 0).sort((x, y) => y[1] - x[1]).slice(0, 12);
-    return [['view', 'Proteins', 1], ['proteins-table', 'The table: search, sort, download', 1], ['g-top', cnt ? `Most ${W.marks} in the selection` : `Most ${W.marks}`, 0],
-      ...top.map(([p, k]) => [`p-${p.acc}`, `${p.gene || p.acc} (${int(k)})`, 1, K.link('protein', p.acc)])];
+    return [['view', 'Proteins', 1], ['proteins-table', 'Protein table', 1]];
   };
 
   // ---- kinds of protein: the sets of each protein-set question this protein is in, with the site's result for each,
