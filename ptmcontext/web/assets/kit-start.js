@@ -35,7 +35,7 @@
         return `<a class="start-pill" href="#${esc(q.view || 'overview')}?${esc(q.query)}">${esc(q.label)}${n != null ? `<b>${int(n)}</b>` : ''}</a>`; }).join('')) : '') +
       lists.map(([l, ps]) => col(l.title, l.help, ps.map(p => `<a class="start-pill" href="${esc(K.link('protein', p.acc))}" title="Open ${esc(p.gene || p.acc)}: ${esc(p.name || '')}">${esc(p.gene || p.acc)}<b>${esc(shown(p, l))}</b></a>`).join(''))).join('') +
       '</div>';
-    return K.fold('sec-starting-points', 'Starting points', `${quick.length ? 'ready-made selections' : ''}${quick.length && lists.length ? ' and ' : ''}${lists.length ? 'proteins to start from' : ''}`, body, SP.open === true);
+    return K.fold('sec-starting-points', 'Starting points', '', body, SP.open === true);
   });
   (K.overviewSections ||= []).push(() => [['sec-starting-points', 'Starting points', 1]]);
 });
