@@ -55,8 +55,8 @@
   // the legend line: what is highlighted, how many items, and the control that clears it
   const line = (n, noun, extra = '') => {
     const st = state(); if (!st.on) return '';
-    const what = st.parts.map(r => (r.chips ? r.chips.map((c, i) => chip(c.label, i)).join(' ') : `<b>${esc(r.text)}</b> <button type="button" class="hl-x" data-hl-clear aria-label="Clear the highlight" title="Clear the highlight">×</button>`)).join(' ');
-    return `<p class="hl-line"><span class="flabel">Highlighted:</span> ${what} <span class="muted">· ${int(n)} ${esc(noun)}</span>${st.notFound.length ? ` <span class="hl-nf">· not found: ${esc(st.notFound.join(', '))}</span>` : ''}${extra ? ` <span class="muted">· ${extra}</span>` : ''} <label class="hl-only small" title="The PNG, SVG and PDF show only the highlighted items, without the gray context"><input type="checkbox" data-hl-only${only ? ' checked' : ''}> Exports: highlighted only</label></p>`;
+    const what = st.parts.map(r => (r.chips ? (document.getElementById?.('hl-bar') ? '' : r.chips.map((c, i) => chip(c.label, i)).join(' ')) : `<b>${esc(r.text)}</b> <button type="button" class="hl-x" data-hl-clear aria-label="Clear the highlight" title="Clear the highlight">×</button>`)).join(' ');
+    return `<p class="hl-line"><span class="flabel">Highlighted:</span> ${what.trim() || '<span class="muted">your list, in the box above</span>'} <span class="muted">· ${int(n)} ${esc(noun)}</span>${st.notFound.length ? ` <span class="hl-nf">· not found: ${esc(st.notFound.join(', '))}</span>` : ''}${extra ? ` <span class="muted">· ${extra}</span>` : ''} <label class="hl-only small" title="The PNG, SVG and PDF show only the highlighted items, without the gray context"><input type="checkbox" data-hl-only${only ? ' checked' : ''}> Exports: highlighted only</label></p>`;
   };
   // named lists of genes or sites, kept in this browser (like the saved selections); the link carries only the active list (hl=)
   const SK = `ptmc-hl-sets-${K.D?.site?.id || "site"}`;
@@ -77,10 +77,12 @@
     delete: () => { const cur = activeSet(); if (!cur) return; if (window.confirm && !window.confirm(`Delete the list "${cur.name}"? The highlight on the page stays.`)) return; keep(sets().filter(x => !(x.name === cur.name && x.list === cur.list))); K.render(); },
   };
   // the box to paste genes or sites into: added to the highlight, nothing is filtered
-  const control = () => `<form class="hl-form" data-hl-form><label class="flabel" for="hl-in">Highlight</label> <input id="hl-in" name="hl" type="search" autocomplete="off" spellcheck="false" placeholder="genes or sites to mark in the figures, e.g. FUS, TDP-43, HNRNPA1 R218" aria-label="Genes or sites to highlight in the figures"> <button class="btn small" type="submit">Highlight</button></form>${setsHtml()}`;
+  const control = (after = '') => `<form class="hl-form" data-hl-form><label class="flabel" for="hl-in">Highlight</label> <input id="hl-in" name="hl" type="search" autocomplete="off" spellcheck="false" placeholder="genes or sites to mark in the figures, e.g. FUS, TDP-43, HNRNPA1 R218" aria-label="Genes or sites to highlight in the figures"> <button class="btn small" type="submit">Highlight</button></form>${after}${setsHtml()}`;
   // labels placed greedily: the candidates around a dot in order, the first that fits the box and clears the others
-  function place(items, box = [0, 760, 0, 400], size = 10) {
-    const taken = items.map(i => [i.x - i.r - 1, i.y - i.r - 1, i.x + i.r + 1, i.y + i.r + 1]), out = [];
+  // avoid: boxes [x0, y0, x1, y1] that labels must also clear (a chart's own text, such as region names)
+  function place(items, box = [0, 760, 0, 400], size = 10, avoid = []) {
+    const taken = [...items.map(i => [i.x - i.r - 1, i.y - i.r - 1, i.x + i.r + 1, i.y + i.r + 1])], out = [], fixed = avoid.length;
+    taken.push(...avoid);
     const hit = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
     items.forEach(it => {
       const w = K.tw(it.t, size) + 2, h = size + 2, g = it.r + 3;
@@ -153,7 +155,8 @@
     const host = document.getElementById('hl-bar'); if (!host) return;
     const t = toks(), pa = t.length ? pasted() : null;
     const chips = t.map((l, i) => chip(l, i)).join(' ');
-    const html = `<div class="hl-bar-in">${control()}${t.length ? `<div class="hl-chips"><span class="flabel">Highlighted:</span> ${chips}${pa.notFound.length ? ` <span class="hl-nf">not found: ${esc(pa.notFound.join(', '))}</span>` : ''} <label class="small"><input type="checkbox" data-hl-first${first ? ' checked' : ''}> Highlighted first in tables</label></div>` : ''}</div>`;
+    const more = t.length ? `<span class="hl-chips">${chips}${pa.notFound.length ? ` <span class="hl-nf">not found: ${esc(pa.notFound.join(', '))}</span>` : ''}</span> <label class="small"><input type="checkbox" data-hl-first${first ? ' checked' : ''}> Highlighted first in tables</label>` : '';
+    const html = `<div class="hl-bar-in">${control(more)}</div>`;
     const key = html + '|' + (K.sel?.peek() ? 1 : 0);
     if (key === barKey) return; barKey = key;
     host.innerHTML = html;
@@ -174,9 +177,9 @@
 .hl-chip { border: 1px solid var(--line-strong); border-radius: 1rem; padding: 0 0.15rem 0 0.55rem; display: inline-flex; align-items: center; gap: 0.25rem; }
 .hl-sets { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin: 0.3rem 0; }
 .hl-bar-in { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.8rem; font-size: 0.82rem; }
-.hl-bar-in .hl-form { margin: 0.15rem 0; flex: 1 1 22rem; } .hl-bar-in .hl-sets { margin: 0.15rem 0; }
+.hl-bar-in .hl-form { margin: 0.15rem 0; flex: 0 1 30rem; } .hl-bar-in .hl-sets { margin: 0.15rem 0; }
 .hl-bar:empty { display: none; }
-.hl-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; flex: 1 1 100%; }
+.hl-chips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
 tr.hl-row > td { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--accent) 11%, transparent); }
 tr.hl-row > td:first-child { box-shadow: inset 3px 0 0 var(--accent), inset 0 0 0 999px color-mix(in srgb, var(--accent) 11%, transparent); }
 .hl-gene { box-shadow: 0 0 0 1.5px var(--accent), inset 0 0 0 999px color-mix(in srgb, var(--accent) 16%, transparent); border-radius: 0.3rem; }

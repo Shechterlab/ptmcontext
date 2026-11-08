@@ -140,6 +140,7 @@
   const DX = v => ML + (v + 1) * SCALE, DY = v => MT + (1 - v) * SCALE;
   const rad = m => (m ? Math.min(9, 2.3 + 1.5 * Math.sqrt(m)) : 1.7);
   const shownDot = x => !T.cand || candOf(x) > 0;     // the switch: only IDRs that hold a candidate residue
+  const REGION_TAGS = [[1, 0, 0.14], [2, -0.22, 0.288], [3, 0, 0.9], [4, -0.66, 0.9], [5, 0.66, 0.9]];     // the region names drawn on the plane: label placement keeps clear of them
   function diagram(ex) {
     const P = pal(ex), parts = [], pt = ([a, b]) => `${DX(a).toFixed(1)},${DY(b).toFixed(1)}`;
     sel();
@@ -184,9 +185,9 @@
       parts.push(`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(1)}" fill="${colour(x.cls)}" fill-opacity="${outside(x) ? 0.55 : 0.9}" stroke="${P.ink}" stroke-width="1.6"${outside(x) ? ' stroke-dasharray="3 2"' : ''}${id}/>`);
       if (labelled([x]).length) ring.push({ x: cx, y: cy, r: r + 1, t: hlName(x) });
     });
-    if (ring.length && ring.length <= K.hl.limit) parts.push(K.hl.labels(P, K.hl.place(ring, [ML, DW - MR, MT, MT + PH])));
+    if (ring.length && ring.length <= K.hl.limit) parts.push(K.hl.labels(P, K.hl.place(ring, [ML, DW - MR, MT, MT + PH], 10, REGION_TAGS.flatMap(([r, a, b]) => { const x = DX(a), y = DY(b), w = K.tw(`R${r}`, 12, 700) + 4, v = [[x - w / 2, y - 13, x + w / 2, y + 3]]; if (r >= 3) { const w2 = K.tw(DP[r][3], 10) + 4; v.push([x - w2 / 2, y, x + w2 / 2, y + 16]); } return v; }))));
     // the regions' names, over the dots
-    [[1, 0, 0.14], [2, -0.22, 0.288], [3, 0, 0.9], [4, -0.66, 0.9], [5, 0.66, 0.9]].forEach(([r, a, b]) => {
+    REGION_TAGS.forEach(([r, a, b]) => {
       const c = V.classes.find(k => regionNo(k) === r);
       parts.push(halo(P, DX(a), DY(b), `R${r}`, { size: 12, weight: 'bold', anchor: 'middle', fill: c ? colour(c) : P.muted }));
       if (r >= 3) parts.push(halo(P, DX(a), DY(b) + 13, DP[r][3], { size: 10, anchor: 'middle', fill: P.muted }));
