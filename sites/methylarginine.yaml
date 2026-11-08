@@ -1457,7 +1457,7 @@ website:                  # the look and words of the website (ptmc web); layout
         about: "Protein classes and pathways of the methylated proteins."
         cards:
           - {analysis: panther_group, title: Protein classes}
-          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
+          - {analysis: condensate_proteome, title: Biomolecular condensates}   # the proteome background, the largest fold first like the other tiles
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
           - {analysis: condensate_role, title: Roles in condensates}

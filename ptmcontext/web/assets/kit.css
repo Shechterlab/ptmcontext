@@ -2044,3 +2044,12 @@ body.cards .sc-grid, .sc-grid:has(> .sc-tile) { display: grid; grid-template-col
 /* phone: the search, selection line and tabs scroll away with the page (they filled a third of the screen); the floating Sections button stays in reach */
 @media (max-width: 700px) { .toolbar { position: static; } body.bar-hidden .toolbar { transform: none; box-shadow: var(--shadow); } }
 @media (max-width: 40rem) { .idr-reg.stackable td.idr-rname { min-width: 0; max-width: none; } }
+/* the two Enlarge buttons (cell, nucleus) sit on one line below drawings of different heights */
+.cell-tile .cell-pair > .cell-fig { display: flex; flex-direction: column; }
+.cell-tile .cell-pair > .cell-fig > .cell-draw { flex: 1 1 auto; }
+a.btn, a.btn:hover { text-decoration: none; }                  /* a link styled as a button reads like the buttons beside it */
+.filters input { padding: 0.25rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--line-strong); background: var(--surface); }
+/* tile labels: a wider label column so a long class name wraps to two lines instead of being cut */
+.tile .fr-ax, .tile .fr-row { grid-template-columns: minmax(0, 46%) minmax(0, 1fr) 3.6rem 2.1rem; }
+.tile .fr-lab { font-size: 0.8rem; } .tile .fr-lab > span { -webkit-line-clamp: 3; }
+@media (max-width: 40rem) { .tile .fr-ax, .tile .fr-row { grid-template-columns: minmax(0, 44%) minmax(0, 1fr) 3.4rem 2rem; } }
