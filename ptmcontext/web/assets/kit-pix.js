@@ -73,7 +73,7 @@
         : `<p class="muted small">No complex of the sets used here holds ${esc(gene)} with another protein that carries ${esc(W.marks)}.</p>`;
       out += '</section>';
       // 3. writers and readers
-      if (Object.keys(PT.classes || {}).length) { askPaths(p.acc, parts); out += `<section class="pix-sec"><h4>Writer and reader paths</h4><p class="sub">Partners of the protein that write or read the mark, and the other partners with ${esc(W.marks)} that each also binds.</p><div data-pix-paths="${esc(p.acc)}"><p class="muted small">Looking up their partners…</p></div></section>`; }
+      if (Object.keys(PT.classes || {}).length) { askPaths(p.acc, parts); out += `<section class="pix-sec"><h4>Writer and reader paths</h4><div data-pix-paths="${esc(p.acc)}"><p class="muted small">Looking up their partners…</p></div></section>`; }
     }
     return out;
   }

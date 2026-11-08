@@ -87,10 +87,10 @@
         : `<span class="${cls}" title="${esc(title)}">${esc(l.name)}${l.unsure ? ' ?' : ''}</span>`;
     };
     return { sum: ls.filter(l => l.main).map(l => l.name), html: head + `<div class="tags loc-tags">${ls.map(t).join(' ')}</div>` +
-      `<p class="muted small">Main locations first, in bold${h.unsure ? `; “?” marks reliability ${esc(h.unsure)}, left out of the tests` : ''}.</p>` };
+      `` };
   }
   // the maps' words on the protein (a table) and the drawings the maps color
-  const mapsTable = (p, ms) => `<h4 class="sub-h">Cell maps</h4><p class="sub">A part of the drawing is colored when a map places ${esc(gene(p))} there.</p>` +
+  const mapsTable = (p, ms) => `<h4 class="sub-h">Cell maps</h4>` +
     `<div class="tbl-wrap"><table class="pc-maps"><tbody>${ms.map(m => `<tr><th scope="row">${esc(m.name)}<br><span class="muted small">${esc([m.method, m.cells].filter(Boolean).join(', '))}</span></th>` +
       `<td>${m.sets.length ? esc(m.sets.join(' · ')) : m.placed ? '<span class="muted">placed, in none of its compartments</span>' : '<span class="muted">not placed by this map</span>'}</td></tr>`).join('')}</tbody></table></div>`;
   function mapsHtml(p) {
@@ -108,7 +108,7 @@
     // a phone: the drawings without their labels, then each place with the maps that put the protein there
     const byPlace = new Map(); ms.forEach(m => m.sets.forEach(x => byPlace.set(x, [...(byPlace.get(x) || []), m.name])));
     const where = nar && sets.length ? `<ul class="cell-places">${[...byPlace].map(([x, mn]) => `<li><b>${esc(x)}</b> <span class="muted small">${esc(mn.join(' · '))}</span></li>`).join('')}</ul>` : '';
-    return { html: `<p class="sub">${nar ? `A part is colored when a map places ${esc(gene(p))} there; the places and their maps are listed under the drawings.` : `A part is colored when a map places ${esc(gene(p))} there, and named in the list under the drawings; a part with a dashed outline is placed by no map.`}</p><div class="cell-pair">${dr}</div>` + where +
+    return { html: `<div class="cell-pair">${dr}</div>` + where +
       (nar && sets.length ? '' : `<p class="cell-where">${sets.length ? `<b>Placed in:</b> ${esc(sets.join(' · '))}` : `<span class="muted">No map places ${esc(gene(p))} in a compartment.</span>`}</p>`) +
       `<details class="pc-mapsfold"><summary>Cell maps table <span class="muted">· each map's words on ${esc(gene(p))}</span></summary>${mapsTable(p, ms)}</details>`,
     sum: sets.length ? `${nPl} of ${ms.length} maps place it: ${sumList(sets, 3)}` : `${ms.length} maps, none places it in a compartment`,
@@ -124,7 +124,7 @@
       const fold = s => { const rs = D.rows.filter(r => r.analysis === aid && r.category === s && r.dir === 'more'), r = rs.find(x => x.method === 'enricher') || rs[0]; return r ? ` <span class="muted small">(${K.fxn(r.eff)}× across the dataset)</span>` : ''; };
       out.push(`<tr><th scope="row">${esc(a.title)}</th><td>${names.length ? names.map(s => esc(lab(s)) + fold(s)).join(' · ') : '<span class="muted">none of its map’s compartments</span>'}</td></tr>`);
     }
-    return out.length ? `<h4 class="sub-h">Where the RNAs ${esc(gene(p))} binds gather</h4><p class="sub">Its eCLIP targets, placed by each map of RNA location; a compartment is listed when the targets gather in it.</p><div class="tbl-wrap"><table class="pc-maps"><tbody>${out.join('')}</tbody></table></div>` : '';
+    return out.length ? `<h4 class="sub-h">Where the RNAs ${esc(gene(p))} binds gather</h4><div class="tbl-wrap"><table class="pc-maps"><tbody>${out.join('')}</tbody></table></div>` : '';
   }
   function condensatesHtml(cfg, p, rec, tb) {
     const c = cfg.condensates, top = c.max_score || 5, names = LK[c.names] || {}, have = c.analysis ? sets(c.analysis) : null;
@@ -143,7 +143,7 @@
     papers(ids, c.pubmed);
     const best = rs[0];
     return { n: rs.length, best, html: `<h4 class="sub-h">${esc(c.title || 'Condensates')} <span class="muted small">${esc(c.source || '')}</span></h4>` +
-      (rs.length ? `<p class="sub">Condensates with ${esc(gene(p))} as a member${c.source ? ` (${esc(c.source)})` : ''}. Stars: confidence, 0–${top}. Every membership is listed.</p><ul class="cond-list mine">${rs.map(li).join('')}</ul>` : '<p class="muted">No condensate membership recorded.</p>') };
+      (rs.length ? `<ul class="cond-list mine">${rs.map(li).join('')}</ul>` : '<p class="muted">No condensate membership recorded.</p>') };
   }
   function locationBuild(p, rec, tb) {
     const cfg = PC.location, bits = [];
@@ -199,10 +199,10 @@
             `<tr><td>${siteLink(p, rec, r.pos)}</td>${r.cells.map((c, k) => `<td>${c.vals.length ? esc(c.vals.join(', ')) + (c.n.length ? ` <span class="muted small">(${c.n.map(v => '×' + v).join(', ')})</span>` : '') : '<span class="muted">—</span>'}</td>`).join('')}</tr>`).join('') +
           `</tbody></table></div>` + (per.length > 12 ? `<p class="muted small">${int(per.length - 12)} more sites changed; the protein map draws them all.</p>` : '') : '');
     }
-    const html = `<p class="sub">${esc(cfg.sub || '')}</p>${cfg.url ? `<p class="actions">${ext(cfg.url.replace('{gene}', encodeURIComponent(g)), 'Source ↗')}</p>` : ''}` +
+    const html = `${cfg.url ? `<p class="actions">${ext(cfg.url.replace('{gene}', encodeURIComponent(g)), 'Source ↗')}</p>` : ''}` +
       `<div class="pc-grid"><section class="pc-sec"><h4>Dependency in CRISPR knockout screens</h4>${dep}</section>` +
-      (ch.length ? `<section class="pc-sec"><h4>Changes at ${esc(W.residues)}</h4>${chg}${cfg.changes_note ? `<p class="note small">${esc(cfg.changes_note)}</p>` : ''}</section>` : '') + '</div>' +
-      (cfg.note ? `<p class="note small">${esc(cfg.note)}</p>` : '');
+      (ch.length ? `<section class="pc-sec"><h4>Changes at ${esc(W.residues)}</h4>${chg}${cfg.changes_note ? `` : ''}</section>` : '') + '</div>' +
+      (cfg.note ? `` : '');
     const first = ch[0], sum = [r ? (/^true$/i.test(r.common_essential || '') ? 'commonly essential' : `${int(num(r.dependent))} of ${int(num(r.lines))} lines depend on it`) : 'not screened',
       ch.length ? `${nSites[0] ? plural(nSites[0], 'site') : 'no site'} changed in ${(first.unit || ['', 'records'])[1]}` : ''].filter(Boolean).join(' · ');
     const depPic = r && !/^true$/i.test(r.common_essential || '') && num(r.lines) ? meters1('Dependent', num(r.dependent) / num(r.lines), `${int(num(r.dependent))} of ${int(num(r.lines))} lines`) : '';
@@ -225,14 +225,14 @@
       }
     }
     const used = cols.filter(c => [...cell.keys()].some(k => k.endsWith('|' + c.key))), sites = rec.marks.map(m => m[0]).filter(pos => used.some(c => cell.has(`${pos}|${c.key}`))).sort((a, b) => a - b);
-    const head = `<p class="sub">${esc(cfg.sub || '')}</p>`;
+    const head = ``;
     if (!sites.length) return { html: head + `<p class="muted">None of its ${esc(W.marks)} was quantified in these experiments (${esc(cols.map(c => c.label).join('; '))}).</p>`, sum: 'not measured' };
     const mk = c => (marks[c] || (c === 'no_significant_change' ? '○' : '?'));
     const down = sites.filter(pos => used.some(c => cell.get(`${pos}|${c.key}`)?.call === 'decreased')).length;
     const html = head + `<div class="tbl-wrap"><table class="pc-tbl pert"><thead><tr><th scope="col">Site</th>${used.map(c => `<th scope="col">${esc(c.label)}</th>`).join('')}</tr></thead><tbody>` +
       sites.map(pos => `<tr><th scope="row">${siteLink(p, rec, pos)}</th>${used.map(c => { const x = cell.get(`${pos}|${c.key}`); return x ? `<td title="${esc(x.tip)}"><span class="trend c-${esc(x.call)}"><b>${esc(mk(x.call))}</b></span></td>` : '<td class="muted" title="Not quantified">&nbsp;</td>'; }).join('')}</tr>`).join('') +
       `</tbody></table></div><p class="pc-key">${Object.entries(marks).map(([c, m]) => `<span><span class="trend c-${esc(c)}"><b>${esc(m)}</b></span> ${esc(word(words, c))}</span>`).join('')}<span>○ no significant change</span><span>blank: not quantified · hover a mark for its numbers</span></p>` +
-      (cfg.note ? `<p class="note small">${esc(cfg.note)}</p>` : '');
+      (cfg.note ? `` : '');
     return { html, sum: `${int(down)} of ${int(sites.length)} quantified sites decreased in at least one`, pic: meters1('Decreased', down / sites.length, `${int(down)} of ${int(sites.length)} sites`) };
   }
 
@@ -241,17 +241,17 @@
     const cfg = PC.experiments, rs = rows(tb, cfg.table);
     if (!rs.length) return { hide: true, html: '', sum: '' };
     const dir = d => (d === 'decreased' ? '<b class="trend c-decreased">▼</b> fell' : d === 'increased' ? '<b class="trend c-increased">▲</b> rose' : d === 'no_change' ? 'no change' : '—');
-    const html = `<p class="sub">${esc(cfg.sub || '')}</p><div class="tbl-wrap"><table class="pc-tbl exp"><thead><tr><th>Site</th><th>Experiment</th><th>Readout</th><th>Change</th><th>Finding</th><th>Paper</th></tr></thead><tbody>` +
+    const html = `<div class="tbl-wrap"><table class="pc-tbl exp"><thead><tr><th>Site</th><th>Experiment</th><th>Readout</th><th>Change</th><th>Finding</th><th>Paper</th></tr></thead><tbody>` +
       rs.map(r => `<tr><td>${r.position ? siteLink(p, rec, +r.position) + (r.in_release === 'false' ? ` <span class="muted small">not a ${esc(W.mark)} of this release</span>` : '') : esc(r.region)}</td>` +
         `<td>${esc(r.perturbation)}<br><span class="muted small">${esc([r.system, r.species].filter(Boolean).join(', '))}</span></td><td>${esc(r.readout)}</td><td>${dir(r.direction)}</td>` +
         `<td>${esc(r.finding)}${r.figure ? ` <span class="muted small">(${esc(r.figure)})</span>` : ''}${r.read_from === 'abstract' ? ' <span class="muted small">from the abstract</span>' : ''}</td>` +
-        `<td>${r.doi ? ext('https://doi.org/' + r.doi, esc(r.reference)) : esc(r.reference)}</td></tr>`).join('') + '</tbody></table></div>' + (cfg.note ? `<p class="note small">${esc(cfg.note)}</p>` : '');
+        `<td>${r.doi ? ext('https://doi.org/' + r.doi, esc(r.reference)) : esc(r.reference)}</td></tr>`).join('') + '</tbody></table></div>' + (cfg.note ? `` : '');
     return { hide: false, html, sum: plural(rs.length, 'experiment') };
   }
 
   // ---- Clustering ------------------------------------------------------------------------------------------------------
   function clusteringBuild(p, rec, tb) {
-    const cfg = PC.clustering, r = rows(tb, cfg.table)[0], sub = `<p class="sub">${esc(cfg.sub || '')}</p>`;
+    const cfg = PC.clustering, r = rows(tb, cfg.table)[0], sub = ``;
     if (!r) return { html: sub + `<p class="muted">No clustering is recorded for ${esc(gene(p))}.</p>`, sum: '' };
     const sp = num(r.spacing_median), n = rec.marks.length, win = num(r.window_size), sites = num(r.window_sites), q = num(r.window_q), l2 = num(r.window_log2);
     const wins = (cfg.windows || []).map(w => [w, num(r['max_' + w])]).filter(([, v]) => v != null);
@@ -262,7 +262,7 @@
       (wins.length ? `<dt>Most ${esc(W.marks)} within</dt><dd>${wins.map(([w, v]) => `${w} aa: ${int(v)}`).join(' · ')}</dd>` : '') +
       (win != null && sites != null ? `<dt>Top cluster window <span class="muted small">(lowest q against a null drawn from its other ${esc(W.residues)}, not necessarily the densest)</span></dt><dd>${int(sites)} sites in ${int(win)} aa (${esc(range)}), log2 obs/null ${l2 > 0 ? '+' : ''}${l2 == null ? '–' : l2.toFixed(2)}, q ${q == null ? '–' : qf(q)}</dd>` : '') +
       (r.architecture ? `<dt>Architecture</dt><dd>${esc(r.architecture)}${clusters.length ? `<br><span class="muted small">clusters ${clusters.map(c => `${c[0]}–${c[c.length - 1]} (${c.length})`).join(', ')}</span>` : ''}</dd>` : '') + '</dl>' +
-      (cfg.note ? `<p class="note small">${esc(cfg.note)}</p>` : '');
+      (cfg.note ? `` : '');
     const len0 = p.len || (rec.seq || '').length || 1, bw = win != null && r.window_start ? [{ a: +r.window_start, b: +r.window_end, cls: 'fp-u fp-u1', tip: 'top window' }] : [];
     const pic = K.pfolds ? K.pfolds.track(len0, [{ label: 'Clusters', items: [...clusters.map(c => ({ a: c[0], b: c[c.length - 1], cls: 'fp-u fp-u0' })), ...bw] }, { label: 'Sites', items: rec.marks.map(m => ({ a: m[0], dot: true, cls: 'fp-site' })) }]) : '';
     return { pic, html, sum: [sp != null ? `median spacing ${int(sp)} aa` : '', win != null && sites != null ? `top window ${int(sites)} sites in ${int(win)} aa${q != null ? `, q ${qf(q)}${q > PADJ ? ' (not significant)' : ''}` : ''}` : ''].filter(Boolean).join(' · ') };
@@ -271,7 +271,7 @@
   // ---- Other PTMs ------------------------------------------------------------------------------------------------------
   function ptmsBuild(p, rec, tb) {
     const cfg = PC.other_ptms, rs = rows(tb, cfg.table), kinds = cfg.kinds || {}, near = cfg.near || 0, marks = rec.marks.map(m => m[0]);
-    if (!rs.length) return { html: `<p class="sub">${esc(cfg.sub || '')}</p><p class="muted">No other modification is recorded on ${esc(gene(p))}.</p>`, sum: 'none recorded' };
+    if (!rs.length) return { html: `<p class="muted">No other modification is recorded on ${esc(gene(p))}.</p>`, sum: 'none recorded' };
     const kinds0 = [...Object.keys(kinds), ...[...new Set(rs.map(r => r.kind))].filter(k => !(k in kinds))];
     const by = k => rs.filter(r => r.kind === k), closest = r => Math.min(...marks.map(m => Math.abs(m - r.start)));
     const body = kinds0.filter(k => by(k).length).map(k => {
@@ -281,7 +281,7 @@
     });
     const nNear = body.reduce((s, b) => s + b.near.length, 0);
     const len1 = p.len || (rec.seq || '').length || 1;
-    return { pic: K.pfolds ? K.pfolds.track(len1, [...body.slice(0, 2).map(b => ({ label: b.label.slice(0, 9), items: rs.filter(r => r.kind === b.k).map(r => ({ a: r.start, dot: true, cls: 'fp-ptm' })) })), { label: 'Sites', items: rec.marks.map(m => ({ a: m[0], dot: true, cls: 'fp-site' })) }]) : '', html: `<p class="sub">${esc(cfg.sub || '')}</p>` + body.map(b => b.html).join('') + (cfg.note ? `<p class="note small">${esc(cfg.note)}</p>` : ''),
+    return { pic: K.pfolds ? K.pfolds.track(len1, [...body.slice(0, 2).map(b => ({ label: b.label.slice(0, 9), items: rs.filter(r => r.kind === b.k).map(r => ({ a: r.start, dot: true, cls: 'fp-ptm' })) })), { label: 'Sites', items: rec.marks.map(m => ({ a: m[0], dot: true, cls: 'fp-site' })) }]) : '', html: `` + body.map(b => b.html).join('') + (cfg.note ? `` : ''),
       sum: body.map(b => `${b.label} ${int(b.n)}`).join(' · ') + (near && nNear ? ` · ${int(nNear)} within ${near} aa of a ${W.mark}` : '') };
   }
 

@@ -97,14 +97,14 @@
     return `<section class="na-sec"><h4>${esc(cap(W.marks))} in contact with ${esc(word(k))} in structures</h4>` +
       `<ul class="sc-na">${more(k + 'd', sites, 8, dirLi)}${more(k + 'v', via, 6, viaLi)}</ul>` +
       (onlyIf.length ? `<p class="small">At an interface with ${esc(word(k))} in a PDB entry, but not within 4 Å in the entries analyzed: ${onlyIf.map(q => `${siteLink(p, rec, q)}`).join(', ')}.</p>` : '') +
-      '<p class="note small">Bound sequences are the chain around the contacted unit, contacted units in brackets; side chains within 4 Å of the nucleic acid in PDB entries. Open an entry to see it in the 3D viewer.</p></section>';
+      '</section>';
   }
   function regionsHtml(p, rec, k, m) {
     if (!m.reg.length) return '';
     return `<section class="na-sec"><h4>${esc(word(k))}-binding regions in structures</h4><ul class="sc-na">${more(k + 'r', m.reg, 8, r =>
       `<li><span class="mono">${esc(shown(p.acc, r.a))}${r.b !== r.a ? '–' + esc(shown(p.acc, r.b)) : ''}</span> <span class="muted small">${plural(r.n, 'entry', 'entries')}</span>` +
       `${r.sites.length ? ` <span class="small">${esc(cap(W.marks))}: ${r.sites.map(s => esc(s)).join(', ')}</span>` : ''}</li>`)}</ul>` +
-      '<p class="note small">Runs of residues within 4 Å of the nucleic acid in at least one PDB entry.</p></section>';
+      '</section>';
   }
   function cellsHtml(p, rec, k, m) {
     if (!m.xl.length && !m.flags.length) return '';
@@ -126,7 +126,7 @@
   function rbnsHtml(m, k) {
     if (!m.rbns.length) return '';
     return `<section class="na-sec"><h4>Preferred ${esc(word(k))} in vitro (RNA Bind-n-Seq)</h4><ul class="sc-na">${m.rbns.map(r => `<li>${link(String(NC.rbns.url || '').replace('{id}', encodeURIComponent(get(r, 'rbns', 'id'))), esc(get(r, 'rbns', 'id')))} <span class="muted small">${esc(get(r, 'rbns', 'conc'))}</span> ${kmers(get(r, 'rbns', 'kmers'), get(r, 'rbns', 'scores'))}</li>`).join('')}</ul>` +
-      '<p class="note small">The five-mers most enriched in the bound RNA; a sequence preference in vitro, not a binding site.</p></section>';
+      '</section>';
   }
   function eclipHtml(m, k) {
     if (!m.eclip.length) return '';
@@ -143,7 +143,7 @@
         (get(r, 'eclip', 'same') ? `<div class="muted small">Same data as ${esc(get(r, 'eclip', 'same'))}.</div>` : '') + '</li>';
     };
     return `<section class="na-sec"><h4>${esc(word(k))} crosslinked in cells (eCLIP)</h4><ul class="sc-na ec-list">${m.eclip.map(one).join('')}</ul>` +
-      '<p class="note small">Reproducible peaks by transcript region and the genes with most peaks; counts reflect how much of a transcript the cells make as well as binding. The five-mers are the most enriched in the top peaks against those of other proteins.</p></section>';
+      '</section>';
   }
 
   function bodyHtml(p, rec, M) {
@@ -151,7 +151,7 @@
     UI.kind = k;
     const tabs = `<div class="seg ix-tabs" role="tablist">${KINDS.map(x => `<button type="button" role="tab" data-prna-tab="${esc(x)}" aria-pressed="${x === k}" aria-selected="${x === k}" title="${esc(word(x) + ': ' + evidenceText(M[x]))}">${esc(word(x))}</button>`).join('')}</div>`;
     const m = M[k];
-    return `<div class="card-head"><p class="sub">${esc(NC.sub || `${cap(KINDS.map(x => word(x)).join(' and '))} contacts of ${p.gene || p.acc}: ${W.marks} in structures and crosslinked in cells, bound sequences, and in vitro preference.`)}</p></div>` +
+    return `<div class="card-head"></div>` +
       tabs + `<div class="na-body">${[structuresHtml(p, rec, k, m), regionsHtml(p, rec, k, m), cellsHtml(p, rec, k, m), motifsHtml(m, k), rbnsHtml(m, k), eclipHtml(m, k)].join('') || `<p class="muted">No ${esc(word(k))} evidence.</p>`}</div>`;
   }
 

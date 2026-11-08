@@ -896,7 +896,7 @@
     const hold = M.hold && M.hold.acc === ctx.p.acc && M.hold.el === el && Date.now() < M.hold.until ? M.hold : (M.hold = { acc: ctx.p.acc, until: Date.now() + 6000, h: 0, el });
     el.style.minHeight = hold.h ? hold.h + 'px' : '';
     el.innerHTML = controls() + `<div class="map-svg"><svg viewBox="0 0 ${m.Wd} ${m.H}" role="group" aria-label="Map of ${esc(ctx.p.gene || ctx.p.acc)}"${m.Wd < 1000 ? ` style="max-width:${m.Wd}px"` : ''}>${m.svg}</svg></div>` +
-      `<p class="map-read muted" id="map-read">Hover for the residue under the pointer. Click an item to pin it here.</p><div id="map-pin" class="map-pin" role="region" aria-label="Pinned detail" hidden></div>` + keyHtml(ctx, m);
+      `<p class="map-read muted" id="map-read"></p><div id="map-pin" class="map-pin" role="region" aria-label="Pinned detail" hidden></div>` + keyHtml(ctx, m);
     // items are reachable by keyboard: one tab stop, the arrow keys move along the rows, Enter or Space pins the detail
     // (an item drawn as a visible shape under a transparent hit target has both carry its number: the topmost one is the button)
     const top = new Map(); el.querySelectorAll('[data-mi]:not([data-msite])').forEach(n => top.set(n.dataset.mi, n));

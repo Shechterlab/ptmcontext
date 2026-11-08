@@ -241,7 +241,7 @@
       `<button type="button" class="linkish" data-pn-optreset>Reset network options</button>` +
       `<button type="button" class="btn quiet small" id="pn-string" data-pn-string title="Open this network on string-db.org with the same settings">Open in STRING ↗</button>` +
       `<span class="pn-zoom" role="group" aria-label="Zoom the network"><button type="button" class="btn quiet small" data-pn-zoom="in" aria-label="Zoom in">+</button><button type="button" class="btn quiet small" data-pn-zoom="out" aria-label="Zoom out">−</button><button type="button" class="btn quiet small" data-pn-zoom="fit" title="Show the whole network (double-click the background)">Reset zoom</button></span></div>` +
-      `<p class="muted small pn-zhelp">Zoom with the buttons or Ctrl and the wheel; drag the background to pan.</p>`;
+      ``;
   };
   function ixFold(p, rec, fold) {
     if (!IXP) return '';
@@ -250,14 +250,14 @@
       // site first: who binds each mark, partners and complexes, writer and reader paths; then the interfaces and the network, folded
       // when no mark sits at an interface (the network is the protein's associations, not its sites')
       const s3 = rec?.s3d, hasIface = !!((s3?.c || []).some(r => r[1] === 'protein' || r[1] === 'self') || (s3?.p || []).length);
-      const net = `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, colored by whether they have ${esc(W.marks)} in this dataset. The Table view lists the same partners and is the keyboard route.</p>` +
+      const net = `<div class="card-head">` +
         `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network').replace(/<\/div>$/, '<button type="button" class="btn small" data-pn-cyto title="The network as Cytoscape tables: edges (File, Import, Network from File) and nodes (Import Table from File)">Cytoscape</button></div>')}</div>` +
         `<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div><div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` +
         `<details class="pn-optd"><summary>Network options <span class="muted">· confidence, partners, color, layout, evidence channels, second ring of writers and readers</span></summary>${optionsHtml()}</details>`;
       return fold('p-ix', 'Protein interactions', 'who binds its ' + esc(W.marks) + ', partners, complexes and the network', K.pix.html(p, rec, K.prot.tables(p.acc)) + (CARDS ? ifaceHtml(p, rec) : ifaceFold(p, rec)) +
         `<details class="pn-fold"${CARDS && hasIface ? ' open' : ''}><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING, live; drag the nodes${hasIface ? (CARDS ? '' : '; open to draw it') : `; folded, as no ${esc(W.mark)} sits at an interface`}</span></summary>${net}</details>`, true);
     }
-    return fold('p-ix', 'Protein interactions', 'STRING, live; drag the nodes', `<div class="card-head"><p class="sub">The proteins STRING associates with ${esc(g)}, drawn as a network you can drag, colored by whether they have ${esc(W.marks)} in this dataset. Matched by accession. The Table view lists the same partners and is the keyboard route.</p>` +
+    return fold('p-ix', 'Protein interactions', 'STRING, live; drag the nodes', `<div class="card-head">` +
       `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${CARDS ? '' : optionsHtml()}<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>` +
       `<div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` +
       // the cards front end draws the network first and folds its options below it (the graph is what the reader came for)
@@ -290,7 +290,7 @@
     const obsLines = [...new Map(obs.map(r => [r[0], r])).keys()].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} contacts ` + obs.filter(r => r[0] === pos).map(r => `${r[1] === 'self' ? '<b>another copy</b>' : partnerName(r[3], r[4])} <span class="muted small">(${(r[2] || []).slice(0, 4).map(rcsb).join(', ')}${(r[2] || []).length > 4 ? ` +${r[2].length - 4}` : ''})</span>`).join('; ') + '</li>').join('');
     const predLines = [...new Set(pred.map(r => r[0]))].sort((a, b) => a - b).map(pos => `<li>${siteBtn(p.acc, pos)} ` + pred.filter(r => r[0] === pos).slice(0, 6).map(r => `${partnerName(r[1], r[2])}${r[5] != null ? ` <span class="muted small">pDockQ ${(+r[5]).toFixed(2)}</span>` : ''}`).join(', ') + (pred.filter(r => r[0] === pos).length > 6 ? ' +' + (pred.filter(r => r[0] === pos).length - 6) : '') + '</li>').join('');
     return `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4>${sf ? whoSplit : `<ul class="pn-ilist">${who}</ul>`}` +
-      `<p class="note">Proteins in contact with a ${esc(m1)} in a PDB structure, or at the interface of a predicted complex. Associations of the whole protein are in the network${sf ? ' below' : ' above'}.</p>` + (sf ? '</div>' : '') +
+      `` + (sf ? '</div>' : '') +
       (sf ? '' : `<div class="pn-igrid"><section><h4>${esc(cap0(M))} at protein interfaces</h4>${obsLines ? `<ul class="pn-ilist">${obsLines}</ul>` : `<p class="muted">None is at a protein interface in a PDB structure.</p>`}</section>` +
       `<section><h4>Predicted protein interfaces <span class="muted small">(models, not PDB)</span></h4>${predLines ? `<ul class="pn-ilist">${predLines}</ul>` : `<p class="muted">None is at a predicted interface.</p>`}</section></div></div>`);
   }
@@ -548,7 +548,7 @@
   }
   function ccFold(p, rec, fold) {
     if (!LN.length || !rec) return '';
-    return fold('p-cc', 'Interaction evidence', `${LN.length} types of evidence, site by site`, `<div class="card-head"><p class="sub">Each ${esc(W.mark)} above the interaction evidence at the same residue. Solid: observed; hollow: predicted only. A dot opens its site.</p>` +
+    return fold('p-cc', 'Interaction evidence', `${LN.length} types of evidence, site by site`, `<div class="card-head">` +
       `${K.expBar(['svg', 'png'], 'ccexp', 'the evidence summary')}</div><div class="pn-cc" id="pn-cc" data-acc="${esc(p.acc)}" style="aspect-ratio:900/${ccH()}"><p class="muted pn-msg">Loading…</p></div>`, true);
   }
   function ccMount() {

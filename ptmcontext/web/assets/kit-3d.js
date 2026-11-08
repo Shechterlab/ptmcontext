@@ -786,7 +786,7 @@
     const side = document.getElementById('s3d-side'); if (!side) return;
     const mol = T.mol && T.mol.acc === T.acc ? T.mol : null, F = focusHtml();     // the focused mark first
     const chips = (list, extra) => `<div class="s3d-chips">${list.map(pos => chip(pos) + (extra ? extra(pos) : '') + '</button>').join('')}</div>`;
-    if (!mol) { side.innerHTML = F || '<p class="muted small">The structure appears here once it loads.</p>'; return; }
+    if (!mol) { side.innerHTML = F || ''; return; }
     if (mol.mode === 'af') {
       const af = mol.af, e = af.entry, inModel = [...siteColours(false).keys()];
       const counts = [0, 0, 0, 0]; let n = 0;
@@ -834,7 +834,7 @@
         `<dt>Homolog</dt><dd>${esc(h.desc)}${h.org ? ` <i>(${esc(h.org)})</i>` : ''}${h.uniprot.length ? ' · ' + h.uniprot.map(a => `<a href="https://www.uniprot.org/uniprotkb/${esc(a)}/entry">${esc(a)}</a>`).join(', ') : ''}</dd>` +
         `<dt>Alignment</dt><dd>${Math.round(100 * h.identity)}% identity over ${esc(T.p.gene || T.acc)} ${h.qBeg}–${h.qEnd}</dd><dt>Chain</dt><dd>${esc(det.chain)}</dd>${h.partners.length ? `<dt>With</dt><dd>${h.partners.map(esc).join('; ')}</dd>` : ''}</dl>` +
         (resolved.length ? `<div class="s3d-focusbar"><p class="flabel">Focus a site <span class="muted">(aligned to this chain)</span></p>${chips(resolved, pos => ` <span class="muted">≙ ${esc(det.chain)}${pdb.toAuth.get(pos)}</span>`)}</div>` : `<p class="muted small">No ${esc(NOUN)} of ${esc(T.p.gene || T.acc)} aligns to a resolved residue of its kind in this chain.</p>`) +
-        modres + contactsHtml + `<p class="note small">A related protein, not ${esc(T.p.gene || T.acc)} itself: positions follow the RCSB sequence alignment (MMseqs2), and the contacts are those of the aligned residue.</p>` + backHtml();
+        modres + contactsHtml + `` + backHtml();
       return;
     }
     side.innerHTML = F + `<p class="flabel">Showing PDB entry</p><dl class="kv"><dt>Entry</dt><dd><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}">${esc(UP(e.id))}</a> · <a href="https://www.ebi.ac.uk/pdbe/entry/pdb/${esc(e.id)}">PDBe</a></dd>` +
@@ -1323,16 +1323,16 @@
     const files = [['cxc', 'ChimeraX', 'A ChimeraX script that rebuilds this view'], ['pml', 'PyMOL', 'A PyMOL script that rebuilds this view'], ['cif', 'mmCIF', `The coordinates shown, as mmCIF, with the ${NOUNS} listed`], ['pdb', 'PDB', `The coordinates shown, as PDB, with the ${NOUNS} in REMARK 999`]]
       .map(([k, l, t]) => `<button type="button" class="exp-btn" data-s3d-file="${k}" data-s3d-need disabled title="${esc(t)}">${l}</button>`).join('');
     const hasTables = Object.keys(SD.inputs || {}).length > 0;
-    return `<div class="s3d" id="s3d"><div class="s3d-head card-head"><p class="sub">The experimental chain that models most of ${esc(p.gene || p.acc)} (or any PDB entry and chain from the menu) or the AlphaFold model, colored like the protein map, its ${esc(NOUNS)} as side chains. Drag to turn, scroll to zoom, right-drag or the arrows to slide; click a residue to focus it.</p>` +
+    return `<div class="s3d" id="s3d"><div class="s3d-head card-head">` +
       `<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}<span class="s3d-sep"></span>${exp}<span class="s3d-sep"></span>${files}<a class="exp-btn" href="${esc(K.link('method', 'structure'))}" title="Where the structures, the placing of the ${esc(NOUNS)} and the colors come from">Method</a><a class="exp-btn" id="s3d-newtab" href="${esc(soloHref(p.acc))}" target="_blank" rel="noopener" title="The viewer on a page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a></div></div>` +
       `<div class="s3d-src" id="s3d-src"></div>` +
-      `<div class="s3d-wrap"><div class="s3d-stage"><div class="s3d-viewer" id="s3d-viewer"><div class="s3d-ph">The structure loads when this section is open.</div></div>` +
+      `<div class="s3d-wrap"><div class="s3d-stage"><div class="s3d-viewer" id="s3d-viewer"></div>` +
       `<div class="s3d-pan" role="group" aria-label="Slide the structure">${[['up', 0, -1, '↑'], ['left', -1, 0, '←'], ['right', 1, 0, '→'], ['down', 0, 1, '↓']].map(([k, x, y, t]) => `<button type="button" class="pan-${k}" data-s3d-pan="${x},${y}" aria-label="Slide ${k}">${t}</button>`).join('')}</div>` +
       `<p class="s3d-msg" id="s3d-msg" aria-live="polite">${esc(T.msg)}</p></div><div class="s3d-side" id="s3d-side"></div></div>` +
       '<div class="s3d-controls" id="s3d-controls"></div>' +
       sub('s3d-pdb', 'Experimental structures (PDB)', '<div id="s3d-pdb-list"></div>') +
       sub('s3d-hom', 'Homologous experimental structures', '<div id="s3d-hom-list"></div>') +
-      sub('s3d-pred', 'Predicted complexes', `<p class="sub">AlphaFold-Multimer models of protein pairs, without modifications (pDockQ ≥ 0.23 acceptable, ≥ 0.5 confident).</p><div id="s3d-pred-list"></div>`) +
+      sub('s3d-pred', 'Predicted complexes', `<div id="s3d-pred-list"></div>`) +
       `<p class="src">Live, by accession: AlphaFold DB, PDBe, RCSB${SD.predicted ? ', ProtVar' : ''}; drawn with ${esc(LIB_CITE)}.${hasTables ? ` What the ${esc(NOUNS)} touch: the site’s tables (${esc([...new Set(Object.keys(SD.inputs).map(tableWords))].join('; '))}).` : ''}</p></div>`;
   }
   function reset(p, rec) {

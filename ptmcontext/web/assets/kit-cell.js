@@ -772,7 +772,7 @@
       `<div class="cell-members"><div class="fig-head"><span class="flabel">${scoped ? 'Proteins of your selection placed here' : `${esc(cap(W.marked))} proteins placed here`}${mem ? ` (${int(mem.length)})` : ''}</span>` +
       (mem && mem.length ? `<span><button class="btn small" type="button" data-cell-select>Select these ${int(mem.length)} proteins</button> <button class="btn quiet small" type="button" data-cell-tsv>Download TSV</button></span>` : '') + '</div>' +
       (!mem ? '<p class="muted">Loading the proteins…</p>' : mem.length ? `<p class="cell-chips">${shown.map(m => `<a class="cell-chip" href="${esc(K.link('protein', m.acc))}" title="${esc(`${m.gene} (${m.acc}): placed here by ${m.maps.map(k => DS(k).name).join(', ')}`)}">${esc(m.gene)}${multi && m.maps.length > 1 ? `<sup>${m.maps.length}</sup>` : ''}</a>`).join('')}</p>` +
-        (mem.length > shown.length ? `<button class="btn quiet small" type="button" data-cell-all>Show all ${int(mem.length)}</button>` : '') + (multi ? '<p class="note small muted">A number after a name: how many maps place it here.</p>' : '') : '<p class="muted">None.</p>') + '</div></div>';
+        (mem.length > shown.length ? `<button class="btn quiet small" type="button" data-cell-all>Show all ${int(mem.length)}</button>` : '') + (multi ? '' : '') : '<p class="muted">None.</p>') + '</div></div>';
   }
   function page() {
     TIPS = [];
@@ -791,7 +791,7 @@
       `<div class="cell-block cell-one" id="cell-one"><div class="fig-head"><span class="flabel">One map at a time</span><span class="seg cell-maps" role="group" aria-label="Map">` +
       MAPS.map(m => `<button type="button" data-cellmap="${esc(m.analysis)}" aria-pressed="${m.analysis === UI.map}">${esc(m.short || m.name)}</button>`).join('') + '</span>' +
       K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', 'one map', ID).replace(/data-cell-exp="(\w+)"/g, 'data-cell-exp="$1" data-cell-fig="one"') + '</div>' +
-      `<div class="cell-scroll">${svgOf(FIGS.one.make(), 'cell-svg cell-bars')}</div><p class="note small muted">${esc(FIGS.one.sub().replace(/\.?$/, '.'))} ${esc(FIGS.one.note())} A bar selects the ${esc(W.marks)} on its proteins.</p></div>` +
+      `<div class="cell-scroll">${svgOf(FIGS.one.make(), 'cell-svg cell-bars')}</div></div>` +
       `<p class="note small muted">${esc(testWords())} Maps: ${maps}.${C.note ? ' ' + esc(C.note) : ''}</p></div>`;
   }
 

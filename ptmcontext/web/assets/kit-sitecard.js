@@ -408,7 +408,7 @@
         `<td data-label="Reported as"><span class="mono">${esc(acc0)}${pos0 != null ? ' ' + esc((c.seq || '')[c.pos - 1] || '') + pos0 : ''}</span>${moved ? ` → <b>${esc(c.label)}</b>` : ''}${chk ? `<span class="src-map ${ok ? 'ok' : 'warn'}">${ok ? '✓' : '⚠'} ${esc(chk)}</span>` : ''}</td></tr>`;
     }).join('');
     const notices = [...new Set(rs.map(r => (C.cite?.notices || {})[r.source]).filter(Boolean))];
-    return `<p><b>Source records</b> (${int(rs.length)}) <span class="muted small">Each row is one report of this site; the source links to its paper, and a highlighted residue marks this site in the peptide.</span></p>` +
+    return `<p><b>Source records</b> (${int(rs.length)}) </p>` +
       `<div class="tbl-card"><table class="src-tbl tbl compact stackable"><thead><tr><th>Source</th><th>Peptide</th>${showState ? '<th>State</th>' : ''}<th>Reported as</th></tr></thead><tbody>${body}</tbody></table></div>` +
       notices.map(n => `<p class="note">${esc(n)}</p>`).join('');
   }
@@ -489,7 +489,7 @@
         const by = new Map();
         rs.forEach(r => { const k = r.acc + ':' + r.position + '|' + r.group; if (!by.has(k)) by.set(k, { ...r, ids: new Set(), papers: new Map() }); const g = by.get(k); if (r.id) g.ids.add(r.id); if (paperKey(r)) g.papers.set(paperKey(r), r); });
         const xs = [...by.values()].sort((a, b) => grpOrder(a.group) - grpOrder(b.group));
-        out.push(`<section class="pfold-like"><h3>At other proteins’ ${esc(W.marks)}</h3><p class="sub">The records at ${esc(W.marks)} of other proteins that name ${esc(gene)} as the partner.</p><div class="tbl-card"><table class="tbl compact stackable"><thead><tr><th>${esc(cap(W.mark))}</th><th>What the record shows</th><th>Evidence</th><th>Paper</th></tr></thead><tbody>` +
+        out.push(`<section class="pfold-like"><h3>At other proteins’ ${esc(W.marks)}</h3><div class="tbl-card"><table class="tbl compact stackable"><thead><tr><th>${esc(cap(W.mark))}</th><th>What the record shows</th><th>Evidence</th><th>Paper</th></tr></thead><tbody>` +
           xs.slice(0, 60).map(r => `<tr><td data-label="${esc(cap(W.mark))}"><a href="${esc(K.link('protein', r.acc + '/' + r.position))}"><b>${esc(siteName(r.acc, r.position))}</b></a></td><td data-label="Shows">${esc(cap(grpLabel(r.group)))}${r.state ? ` <span class="sp-state">${esc((RC.states || {})[r.state] ?? r.state)}</span>` : ''}</td>` +
             `<td data-label="Evidence">${esc(r.source || '')} ${[...r.ids].slice(0, 3).map(id => { const u = (RC.urls || {})[r.source]; return u ? `<a href="${esc(u.replace('{id}', encodeURIComponent(id)))}" target="_blank" rel="noopener">${esc(id)}</a>` : esc(id); }).join(', ')}${r.ids.size > 3 ? ` +${r.ids.size - 3}` : ''}</td>` +
             `<td data-label="Paper">${[...r.papers.values()].slice(0, 2).map(paperA).join('<br>') || '<span class="muted">–</span>'}</td></tr>`).join('') + '</tbody></table></div>' +

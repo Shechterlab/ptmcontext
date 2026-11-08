@@ -256,7 +256,7 @@
       EN.rows.map((r, i) => row(r, i, false)).join('') + F.dn.slice(0, 4).map(r => row(r, -1, true)).join('') + '</tbody></table></div>'
       : `<p class="muted">No feature differs (q ≤ ${K.PADJ}) between this selection and the other ${esc(W.marks)}.</p>`;
     return `<details class="pfold en-fold" id="sel-enriched"${EN.open ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>Enriched features</h3><span class="fsum">${top ? top + ' · ' : ''}${int(F.n)} of ${int(F.tested)} features differ (q ≤ ${K.PADJ})${F.nFeat < F.n ? `, ${int(F.nFeat)} distinct` : ''}</span></summary><div class="pfold-body">` +
-      `<div class="card-head"><p class="sub">Features more or less common in these ${int(F.G.g1.length)} ${esc(W.marks)} than in the other ${int(F.G.g2.length)}. Click one to narrow the selection.</p><span class="tools"><a class="btn small" href="${esc(K.link('overview', '', { vs: 'marks' }))}" title="Every question, with its tiles, compared with the other ${esc(W.marks)}">Compare question by question ›</a>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'enexp', 'the enriched features', 'q-tables')}</span></div>` + body +
+      `<div class="card-head"><span class="tools"><a class="btn small" href="${esc(K.link('overview', '', { vs: 'marks' }))}" title="Every question, with its tiles, compared with the other ${esc(W.marks)}">Compare question by question ›</a>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'enexp', 'the enriched features', 'q-tables')}</span></div>` + body +
       `<p class="note small">Fisher’s exact test per feature, Benjamini–Hochberg within each question, over ${int(F.tested)} features. ${cap(W.marks)} of one protein are not independent, so treat this as a pointer.</p></div></details>`;
   }
   function enrichedTsv() {

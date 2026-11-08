@@ -170,7 +170,7 @@
     (preset().note ? ` <span class="muted small">${esc(preset().note)}</span>` : '') + '</p>' : '');
   function bodyHtml(acc) {
     const st = ST[acc], g = esc(gene(acc));
-    const head = `<div class="card-head"><div><p class="sub">Each ${esc(W.mark)} of ${g} in the orthologs of ${esc(SPECIES().map(s => s.label).join(', '))} (Ensembl Compara${ENS.compara ? ', ' + esc(ENS.compara) : ''}), and whether it is still ${esc(KEPT)}.</p>${setPicker()}</div>` +
+    const head = `<div class="card-head"><div>${setPicker()}</div>` +
       K.expBar(['svg', 'png', 'tsv'], 'cvexp', 'the conservation of ' + gene(acc), 'conserve') + '</div>';
     if (!st || ['idle', 'ens', 'ortho'].includes(st.phase)) return head + `<p class="note">Looking up ${g}’s orthologs${st?.phase === 'ortho' ? ` in Ensembl Compara (${esc(st.ensg)}); usually 5–30 s` : ' (UniProt, then Ensembl Compara)'}…</p>`;
     if (st.phase === 'no_gene') return head + `<p class="note">UniProt lists no ${esc(ENS.xref)} gene for ${esc(acc)}, so there are no orthologs to look up.</p>`;
@@ -423,7 +423,7 @@
     const el = document.getElementById('sel-logo'), body = document.getElementById('cv-logo-body');
     if (!el || !body || !el.open) return;
     const s = sets(), opt = (v, cur, t) => `<option value="${v}"${v === cur ? ' selected' : ''}>${esc(t)}</option>`;
-    body.innerHTML = `<div class="cv-card"><div class="cv-top"><p class="muted small">The ${esc(W.marks)} you selected, each with the ${int(2 * s.span + 1)} residues around it, aligned at the ${esc(W.mark)}, and the logo of their positions beside the logo of the other ${esc(W.marks)}.</p>` +
+    body.innerHTML = `<div class="cv-card"><div class="cv-top">` +
       K.expBar(['svg', 'png', 'tsv'], 'lgexp', 'the site alignment and logo', 'logo') + '</div>' +
       `<div class="cv-ctl"><label>Flank <select id="lg-flank">${FLANKS.filter(f => f <= s.span).map(f => opt(f, LUI.flank, '±' + f)).join('')}</select></label> ` +
       `<label>Logo <select id="lg-mode">${opt('bits', LUI.mode, 'Information (bits)')}${opt('freq', LUI.mode, 'Frequency')}</select></label> ` +
