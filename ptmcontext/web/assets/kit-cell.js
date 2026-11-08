@@ -65,7 +65,8 @@
     '.cz-body{display:flex;gap:.8rem;flex:1 1 auto;min-height:0;margin:.4rem 0}.cz-stage{flex:1 1 auto;min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:8px;cursor:grab}',
     '.cz-stage .cell-svg{cursor:grab}.cz-list{flex:0 0 17rem;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:.5rem .7rem}.cz-list[hidden]{display:none}.cz-list h4{margin:.1rem 0}',
     '.cz-ul{list-style:none;margin:.3rem 0;padding:0}.cz-ul li{padding:.15rem 0;border-top:1px solid var(--line)}.cz-ul li.hl a{font-weight:700}.cz-hint{margin:0}',
-    '@media (max-width:700px){.cz-body{flex-direction:column}.cz-list{flex:0 0 35%}}',
+    '@media (max-width:700px){.cz-body{flex-direction:column;overflow:auto}.cz-stage{flex:0 0 auto;width:100%;height:auto;aspect-ratio:var(--cz-ar,2/1)}.cz-list{flex:1 1 auto;min-height:6rem}',
+    'dialog.cz .cz-btns .btn{min-width:44px;min-height:44px}dialog.cz svg .cd-name{font-size:var(--cz-fn,14px)}dialog.cz svg .cd-val{font-size:var(--cz-fv,13px)}}',
     '.cell-page .small,.vm-page .small{font-size:.86rem}.cell-page .btn.small{padding:.15rem .55rem;font-size:.78rem}.cell-page .btn.quiet{border-color:var(--line-strong);color:var(--ink-2)}',
     '.cell-thead{font-size:.75rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:.3rem}',
   ].join('');
@@ -749,7 +750,7 @@
     }
     const title = one ? `${(D.proteins[one.i][1] || D.proteins[one.i][0])}: the ${drawing}` : (d.title || cap(drawing));
     ZD.innerHTML = `<div class="cz-bar"><strong>${esc(title)}</strong><span class="cz-btns"><button type="button" class="btn small" data-cz="more" aria-label="Zoom in" title="Zoom in">+</button><button type="button" class="btn small" data-cz="less" aria-label="Zoom out" title="Zoom out">−</button><button type="button" class="btn small" data-cz="reset" title="Back to the whole drawing">Reset</button><button type="button" class="btn small" data-cz="close" aria-label="Close" title="Close (Esc)">×</button></span></div>` +
-      `<div class="cz-body"><div class="cz-stage" tabindex="0" role="group" aria-label="${esc(title)}: scroll or pinch to zoom, drag to move"></div><aside class="cz-list" hidden aria-live="polite"></aside></div>` +
+      `<div class="cz-body"><div class="cz-stage" tabindex="0" role="group" aria-label="${esc(title)}: scroll or pinch to zoom, drag to move; with the keyboard, plus and minus zoom, 0 resets and the arrow keys move"></div><aside class="cz-list" hidden aria-live="polite"></aside></div>` +
       `<p class="cz-hint muted small">Scroll or pinch to zoom, drag to move. Click a part of the drawing to list the proteins the maps place there.</p>`;
     const stage = ZD.querySelector('.cz-stage');
     ZS = { part: null, page: 0 };
@@ -762,10 +763,26 @@
     const vb = sv.viewBox.baseVal, B = { x: vb.x, y: vb.y, w: vb.width, h: vb.height };
     let z = 1, cx = B.x + B.w / 2, cy = B.y + B.h / 2;
     const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-    const apply = () => { const w = B.w / z, h = B.h / z; cx = clamp(cx, B.x + w / 2, B.x + B.w - w / 2); cy = clamp(cy, B.y + h / 2, B.y + B.h - h / 2); sv.setAttribute('viewBox', `${cx - w / 2} ${cy - h / 2} ${w} ${h}`); };
+    const narrow = matchMedia('(max-width: 700px)'), fs0 = [sv.querySelector('.cd-name'), sv.querySelector('.cd-val')].map(n => (n && parseFloat(getComputedStyle(n).fontSize)) || 13);
+    stage.style.setProperty('--cz-ar', `${B.w} / ${B.h}`);
+    const apply = () => {
+      const w = B.w / z, h = B.h / z; cx = clamp(cx, B.x + w / 2, B.x + B.w - w / 2); cy = clamp(cy, B.y + h / 2, B.y + B.h - h / 2); sv.setAttribute('viewBox', `${cx - w / 2} ${cy - h / 2} ${w} ${h}`);
+      // a phone: the labels keep a readable size on the screen (9.5 to 14 px for the names) whatever the zoom and the width
+      const m = narrow.matches && sv.getScreenCTM();
+      if (m && m.a > 0) { sv.style.setProperty('--cz-fn', clamp(fs0[0] * m.a, 9.5, 14) / m.a + 'px'); sv.style.setProperty('--cz-fv', clamp(fs0[1] * m.a, 8.5, 12.5) / m.a + 'px'); }
+    };
     const at = (x, y) => { const m = sv.getScreenCTM(); if (!m) return { x: cx, y: cy }; const p = sv.createSVGPoint(); p.x = x; p.y = y; return p.matrixTransform(m.inverse()); };
     const zoomTo = (nz, px, py) => { nz = clamp(nz, 1, 10); const q = px == null ? { x: cx, y: cy } : at(px, py); cx = q.x - (q.x - cx) * z / nz; cy = q.y - (q.y - cy) * z / nz; z = nz; apply(); };
     ZS.more = () => zoomTo(z * 1.4); ZS.less = () => zoomTo(z / 1.4); ZS.reset = () => { z = 1; cx = B.x + B.w / 2; cy = B.y + B.h / 2; apply(); };
+    // the keyboard: + and − zoom, 0 resets, the arrows move (with the stage itself focused, not one of its parts)
+    stage.addEventListener('keydown', e => {
+      if (e.target !== stage || e.altKey || e.ctrlKey || e.metaKey) return;
+      const k = e.key, step = 0.15;
+      if (k === '+' || k === '=') ZS.more(); else if (k === '-' || k === '−' || k === '_') ZS.less(); else if (k === '0') ZS.reset();
+      else if (k.startsWith('Arrow')) { cx += (k === 'ArrowRight' ? 1 : k === 'ArrowLeft' ? -1 : 0) * B.w / z * step; cy += (k === 'ArrowDown' ? 1 : k === 'ArrowUp' ? -1 : 0) * B.h / z * step; apply(); }
+      else return;
+      e.preventDefault();
+    });
     stage.addEventListener('wheel', e => { e.preventDefault(); zoomTo(z * (e.deltaY < 0 ? 1.2 : 1 / 1.2), e.clientX, e.clientY); }, { passive: false });
     const ptr = new Map(); let d0 = 0, z0 = 1, path = 0;
     stage.addEventListener('pointerdown', e => { ptr.set(e.pointerId, [e.clientX, e.clientY]); path = 0; if (ptr.size === 2) { const [a, b] = [...ptr.values()]; d0 = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1; z0 = z; } });
@@ -779,6 +796,7 @@
     const up = e => { ptr.delete(e.pointerId); if (!ptr.size) setTimeout(() => { moved = false; }, 0); };
     stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
     ZD.showModal();
+    try { new ResizeObserver(apply).observe(stage); } catch (e) { apply(); }
   }
   // a click on a drawing (not on one of its parts) opens it large, as its Enlarge button does: the n-th drawing of the
   // nearest box that has Enlarge buttons goes with the n-th button
