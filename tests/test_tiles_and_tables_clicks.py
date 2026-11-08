@@ -72,3 +72,11 @@ def test_the_sidebar_tabs_keep_the_filter_count_on_one_line():
     css = (Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets' / 'kit.css').read_text()
     assert '.rail-head .seg button { flex: 1; font-weight: 600; white-space: nowrap; }' in css
     assert '.rail-head { display: flex; flex-wrap: wrap;' in css
+
+
+def test_the_sidebar_lists_every_page_with_the_current_ones_sections():
+    js = _js('kit-rail.js')
+    assert "document.querySelectorAll('#tabs a.tab')" in js and 'toc-secs' in js
+    # a jump from the drawer closes it, and focus goes back to the opener without scrolling the page back up
+    assert 'if (R.open && !pinned()) { R.open = false; rail(); }' in js
+    assert 'focus({ preventScroll: true })' in js

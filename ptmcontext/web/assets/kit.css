@@ -2025,3 +2025,9 @@ body.cards .sc-grid, .sc-grid:has(> .sc-tile) { display: grid; grid-template-col
 
 /* the proteins table: the name under the symbol in the muted gray of the explorer's table */
 .ptbl2 .pname { color: var(--muted); font-size: 0.8rem; margin-top: 0.1rem; }
+/* the sidebar's Sections: every page, the current one's sections under it in their groups (as the original explorer) */
+.toc.flat a.toc-p { font-weight: 600; font-size: 0.95rem; padding: 0.35rem 0.5rem; }
+.toc.flat a.toc-p.on { color: var(--brand-ink); }
+.toc.flat .toc-secs { display: grid; gap: 0.05rem; margin: 0 0 0.4rem 0.5rem; padding-left: 0.4rem; border-left: 2px solid var(--line); }
+.toc.flat .toc-secs .toc-group { margin: 0.5rem 0 0.1rem 0.5rem; }
+.toc.flat .toc-secs a.sub { font-size: 0.88rem; padding: 0.22rem 0.5rem; }

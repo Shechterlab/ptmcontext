@@ -180,17 +180,19 @@
       }).join('') +
       `<div class="rail-foot"><span><b>${int(nMarks())}</b> ${esc(nMarks() === 1 ? W.mark : W.marks)} on <b>${int(nProteins())}</b> protein${nProteins() === 1 ? '' : 's'}${active() ? '' : ' (all)'}</span>${active() ? '<button class="linkish" type="button" data-sel-clear-all>Clear all</button>' : ''}</div>`;
   }
-  // the current page's own sections, at one level: [id, label, level, href?]; a section with an href is a link (another
-  // view), one without is a jump to the element with that id. A group heading shows only when it has nothing under it,
-  // or when the leaves are too many to list (then the headings alone); the other pages are the tabs' business
+  // every page, as the tab bar lists them, with the current page's own sections under it, in their groups (as the
+  // original explorer's sidebar): [id, label, level, href?] from K.sections; level 0 is a group heading; a section with
+  // an href is a link (another view), one without is a jump to the element with that id
   function sectionsTab() {
-    const raw = K.sections?.[S.view]?.() || [], leaf = x => x[2] !== 0;
-    let here = raw.filter((x, i) => leaf(x) || !raw[i + 1] || !leaf(raw[i + 1])).map(x => (leaf(x) ? x : [x[0], x[1], 1, x[3]]));
-    if (here.length > 24 && raw.some(x => !leaf(x))) here = raw.filter(x => !leaf(x)).map(x => [x[0], x[1], 1, x[3]]);
-    if (!here.some(x => x[0] === 'view') && S.view !== 'overview') here = [['view', K.views[S.view]?.title?.(S.arg) || K.tabName(S.view, S.view), 1], ...here];
-    const item = ([id, lab, , href]) => (href ? `<a href="${esc(href)}" class="sub l1${K.link(S.view, S.arg).split('?')[0] === href.split('?')[0] ? ' on' : ''}">${esc(lab)}</a>`
-      : `<a href="${esc(location.hash)}" data-jump="${esc(id)}"${id === 'view' ? '' : ` data-spy="${esc(id)}"`} class="sub l1">${esc(lab)}</a>`);
-    return '<nav class="toc flat">' + here.map(item).join('') + '</nav>';
+    const raw = (K.sections?.[S.view]?.() || []).filter(x => x[0] !== 'view');
+    const item = ([id, lab, lev, href], i) => (lev === 0 && !href && raw[i + 1] && raw[i + 1][2] !== 0 ? `<div class="toc-group">${esc(lab)}</div>`
+      : href ? `<a href="${esc(href)}" class="sub l1${K.link(S.view, S.arg).split('?')[0] === href.split('?')[0] ? ' on' : ''}">${esc(lab)}</a>`
+        : `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="sub l1">${esc(lab)}</a>`);
+    const pages = [...document.querySelectorAll('#tabs a.tab')].map(a => ({ href: a.getAttribute('href'), name: a.cloneNode(true), cur: a.getAttribute('aria-current') === 'page' }));
+    pages.forEach(pg => pg.name.querySelectorAll('.count, .selmark, svg').forEach(x => x.remove()));
+    if (!pages.length) return '<nav class="toc flat">' + raw.map(item).join('') + '</nav>';
+    return '<nav class="toc flat">' + pages.map(pg => `<a class="toc-p${pg.cur ? ' on' : ''}" href="${esc(pg.href)}"${pg.cur ? ' aria-current="page"' : ''}>${esc(pg.name.textContent.trim())}</a>` +
+      (pg.cur && raw.length ? `<div class="toc-secs">${raw.map(item).join('')}</div>` : '')).join('') + '</nav>';
   }
   const CARDS = D.front?.mode === 'cards';        // the cards front end: Filters only, a panel beside the page or a full-height drawer, never pinned
   const pinned = () => !CARDS && (R.pin === 'on' && innerWidth >= PIN_MIN) || (R.pin === 'auto' && innerWidth >= PIN_AUTO);
@@ -242,7 +244,7 @@
       if (top0 != null) { const dy = kept.getBoundingClientRect().top - top0, sc = [el, el.querySelector('.rail-body')].find(x => x && x.scrollHeight > x.clientHeight && /auto|scroll/.test(getComputedStyle(x).overflowY)); if (sc) sc.scrollTop += dy; else scrollBy(0, dy); }
     }
     else if (open && !wasOpen) (el.querySelector('[data-rail-tab][aria-pressed="true"]') || el.querySelector('#rail-title'))?.focus();
-    else if (!open && wasOpen) (R.opener && document.contains(R.opener) ? R.opener : document.querySelector('.fr-filter') || document.querySelector('[data-rail-open="filters"]'))?.focus();
+    else if (!open && wasOpen) (R.opener && document.contains(R.opener) ? R.opener : document.querySelector('.fr-filter') || document.querySelector('[data-rail-open="filters"]'))?.focus({ preventScroll: true });
     if (CARDS && open && (!document.activeElement || document.activeElement === document.body)) el.querySelector('#rail-title')?.focus({ preventScroll: true });    // the panel was drawn again (its data arrived) under the reader's focus
   }
   addEventListener('resize', () => { setRailWidth(); if (document.body.classList.contains('rail-pinned') !== pinned()) rail(); });
@@ -275,7 +277,7 @@
     ['[data-rail-pin]', () => { R.pin = pinned() ? 'off' : innerWidth >= PIN_AUTO ? 'auto' : 'on'; R.open = false; try { localStorage.setItem('ptmc-rail', R.pin); } catch (e) { /* */ } rail(); if (!pinned()) { R.open = true; rail(); } }],
     ['[data-rail-close]', () => { R.open = false; rail(); }],
     ['[data-rail-open]', el => { R.opener = el; if (pinned()) { R.tab = el.dataset.railOpen || R.tab; rail(); document.querySelector('#rail [data-rail-tab]')?.focus(); return; } R.open = true; R.tab = el.dataset.railOpen || R.tab; rail(); }],
-    ['[data-jump]', (el, e) => { e.preventDefault(); const t = document.getElementById(el.dataset.jump); if (t) { for (let d = t; d; d = d.parentElement?.closest('details')) if (d.tagName === 'DETAILS') d.open = true; t.scrollIntoView({ behavior: K.smooth?.() || 'smooth', block: 'start' }); } }],
+    ['[data-jump]', (el, e) => { e.preventDefault(); const t = document.getElementById(el.dataset.jump); if (t) { if (R.open && !pinned()) { R.open = false; rail(); } for (let d = t; d; d = d.parentElement?.closest('details')) if (d.tagName === 'DETAILS') d.open = true; t.scrollIntoView({ behavior: K.smooth?.() || 'smooth', block: 'start' }); } }],
   );
   document.addEventListener('change', e => { const k = e.target.dataset?.fsel; if (k != null) setFilter(k, e.target.value ? [e.target.value] : []); });
   document.addEventListener('toggle', e => { const d = e.target; if (d.classList?.contains('fgroup')) { (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g); } }, true);
