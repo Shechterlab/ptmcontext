@@ -13,7 +13,8 @@
   const byAcc = Object.fromEntries(P.map(p => [p.acc, p]));
   const COLS = D.mark_columns || [];
   const RES = (D.residues || []).join('/');
-  const label = (aid, cat) => (A[aid]?.labels || {})[cat] || String(cat).replace(/_/g, ' ');
+  const label0 = (aid, cat) => (A[aid]?.labels || {})[cat] || String(cat).replace(/_/g, ' ');
+  const label = label0;
   const help = (aid, cat) => (A[aid]?.help || {})[cat] || '';
 
   // ---- the per-protein files: 64 shards, or inlined in the one-file copy ------------------------------------------
@@ -183,9 +184,22 @@
   const shownAttrs = m => Object.keys(SPECS).filter(n => !(SPECS[n].present && detailOf(n)) && (attrVal(m, n) !== '' || SPECS[n].colour));
   const pillOf = (m, k) => { const rc = K.map.readable(K.map.attrColour(k, attrVal(m, k))); return `<span class="state-pill" style="--c:${rc.bg};--t:${rc.fg}" title="${esc(SPECS[k].label)}">${esc(K.sel?.valueLabel ? K.sel.valueLabel(k, attrVal(m, k)) : attrVal(m, k))}</span>`; };
   const statePill = m => { const k = Object.keys(SPECS).find(n => SPECS[n].colour && SPECS[n].kind === 'category'); return k ? pillOf(m, k) : ''; };
+  // classes of one question that share a label (a test at several distances, in all, ordered and disordered parts) say what sets
+  // each apart: the words of its category that the others do not share ("ordered", "within 5 residues"), "all" for the shortest
+  function qualified(aid, cats) {
+    const byLab = {}; cats.forEach(c => (byLab[label(aid, c)] ||= []).push(c));
+    const out = {};
+    Object.entries(byLab).forEach(([lab, cs]) => {
+      if (cs.length < 2) { out[cs[0]] = lab; return; }
+      const ws = cs.map(c => String(c).split('_')); let k = 0;
+      while (ws.every(w => w[k] != null && w[k] === ws[0][k])) k++;
+      cs.forEach((c, i) => { const rest = ws[i].slice(k); out[c] = `${lab} (${rest.length ? (/^\d/.test(rest[0]) && k ? ws[i][k - 1] + ' ' : '') + rest.join(' ') : 'all'})`; });
+    });
+    return out;
+  }
   function scoreRows(p, rec) {
     return D.analyses.filter(a => rec.counts[a.id]).map(a => {
-      const rows = rec.counts[a.id].filter(r => r[1] > 0).sort((x, y) => y[1] - x[1]), [mt, ot] = rec.totals[a.id] || [0, 0];
+      const rows = rec.counts[a.id].filter(r => r[1] > 0).sort((x, y) => y[1] - x[1]), [mt, ot] = rec.totals[a.id] || [0, 0], ql = qualified(a.id, rec.counts[a.id].map(r => r[0])), label = (aid, c) => ql[c] || label0(aid, c);
       // a class with its own totals (a question of several tests, each counting its own background) uses them
       const ans = rows.slice(0, 2).map(([c, mi, oi, m2 = mt, o2 = ot]) => `${esc(label(a.id, c))}: <span class="an">${int(mi)} of ${int(m2)} (${pct(mi, m2)}) vs ${int(oi)} of ${int(o2)} other ${esc(W.residues)} (${pct(oi, o2)})</span>`).join('; ') || '<span class="muted">none</span>';
       const all = rec.counts[a.id].slice().sort((x, y) => y[1] - x[1] || y[2] - x[2]);
@@ -206,10 +220,11 @@
   function baseRate() {
     const ids = new Set(D.analyses.filter(a => a.kind !== 'protein_sets').map(a => a.id)), cut = K.PADJ ?? 0.05;
     let best = null;
-    D.rows.forEach(r => { if (ids.has(r.analysis) && r.method === 'fisher' && r.dir === 'more' && r.q != null && r.q <= cut && r.eff > 1 && r.eff < 1e299 && r.category !== '' && !/^(no |not |unknown|unassigned|other\b|none\b)/i.test(label(r.analysis, r.category)) && (!best || r.eff > best.eff)) best = r; });
+    // the within-protein test the Overview and the tiles read, else the pooled one
+    for (const m of ['mantel_haenszel', 'fisher']) if (!best) D.rows.forEach(r => { if (ids.has(r.analysis) && r.method === m && r.dir === 'more' && r.q != null && r.q <= cut && r.eff > 1 && r.eff < 1e299 && r.category !== '' && !/^(no |not |unknown|unassigned|other\b|none\b)/i.test(label(r.analysis, r.category)) && (!best || r.eff > best.eff)) best = r; });
     return best;
   }
-  const baseText = () => { const b = baseRate(); return b ? `${K.fxn(b.eff)}× in ${label(b.analysis, b.category)}` : ''; };
+  const baseText = () => { const b = baseRate(); return b ? `${K.fxn(b.eff)}× in ${label(b.analysis, b.category)} (${b.method === 'fisher' ? 'across all proteins' : 'within-protein'} OR)` : ''; };
   const winHtml = w => { const c = Math.floor(w.length / 2); return `<span class="win">${esc(w.slice(0, c))}<b>${esc(w[c])}</b>${esc(w.slice(c + 1))}</span>`; };
   // the links every protein has
   // the links every protein has: the kit's list (config/protein_links.json), the site's own (website.protein.links), and
@@ -446,7 +461,7 @@
           if (!best) return '';
           const kk = at.filter(cs => cs.includes(best.category)).length, others = present.map(cl => bestRow(f.analysis, [cl])).filter(r => r && r !== best).sort((a, b) => b.eff - a.eff);
           big = `${int(kk)} of ${int(n)}`; word = label(f.analysis, best.category);
-          lab = `${fill(f.label, { cls: word })} (OR ${K.fxn(best.eff)}× across the site)`;
+          lab = `${fill(f.label, { cls: word })} (dataset-wide OR ${K.fxn(best.eff)}×)`;
           tip = `<b>${esc(word)}</b>${help(f.analysis, best.category) ? ' (' + esc(help(f.analysis, best.category)) + ')' : ''}: the class most enriched at these ${esc(W.marks)}: OR ${esc(K.fxn(best.eff))}× against the other ${esc(W.residues)} of the same proteins (${best.method === 'fisher' ? 'pooled' : 'within proteins'}; q ${K.fq(best.q)})` +
             (others.length ? `<br>Others here: ${others.map(r => `${esc(label(f.analysis, r.category))} ${at.filter(cs => cs.includes(r.category)).length} (${esc(K.fxn(r.eff))}×)`).join(', ')}` : '');
         } else {
@@ -522,7 +537,7 @@
     const seg = flt ? `<div class="ix-seg"><span class="flabel">${esc(SPECS[flt].label)} at these ${esc(W.marks)}</span> <span class="seg" role="group">${(order.length ? order : counts.map(([v]) => v)).map(v => { const k = (counts.find(([x]) => x === v) || [, 0])[1];
       return `<button type="button" data-pfilter="${esc(v)}" aria-pressed="${fv === v}"${k ? '' : ' disabled'}><i class="ixd" style="--c:${K.map.attrColour(flt, v)}"></i>${esc(vLabel(flt, v))} <b>${int(k)}</b></button>`; }).join('')}</span></div>` : '';
     return `<div class="card-head"><span class="tools">${K.columns.menu(table, cols, defaults)}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'sexp', 'the sites')}</span></div>` + seg +
-      `<div class="tbl-card lk-box"><table class="tbl stbl stackable"><thead>${head}</thead><tbody>${body}</tbody></table></div>` +
+      `<div class="tbl-card lk-box"><table class="tbl stbl stackable"><thead>${head}</thead><tbody>${body}</tbody></table></div>` + (/class="trend /.test(body) && K.card.callsKey ? K.card.callsKey() : '') +
       (fv ? `<p class="note">Showing the ${esc(W.marks)} with ${esc(vLabel(flt, fv).toLowerCase())} ${esc(SPECS[flt].label.toLowerCase())}. <button class="linkish" type="button" data-pfilter="">Show all</button></p>` : '') +
       (CC.cite ? K.card.citeBox(`the ${int(rec.marks.length)} ${rec.marks.length === 1 ? W.mark : W.marks} on ${p.gene || p.acc}`, rec.marks, (m, n) => attrVal(m, n), false) : '');
   }
@@ -698,7 +713,8 @@
         (mine.length > 10 ? `<button class="linkish" type="button" data-kinds-all="${esc(a.id)}">${PV.open['kinds:' + a.id] ? 'Fewer' : `All ${int(mine.length)}`}</button>` : '') + '</div>';
     }).join('');
     const covLine = cov ? `<p class="kind-cov"><b>Abundance</b>: ${cov.me[0] == null ? 'no value' : `${esc(cov.value)} ${K.fxn(cov.me[0])}`}${cov.me[1] !== 'none' ? `, decile ${esc(cov.me[1])} of ${int(cov.strata)}` : ''} <span class="muted">(${esc((Object.values(D.inputs).find(x => (x.roles || [x.role]).includes(cov.input)) || {}).version || cov.input)}; the decile the protein-set tests stratify by)</span></p>` : '';
-    return covLine + `<div class="kinds">${blocks}</div>`;
+    const nhKey = /class="nh"/.test(blocks) ? '<p class="muted small kind-key"><span class="nh">○</span> not significant within abundance deciles · <span class="nh">◌</span> the same direction within deciles, but not significant there</p>' : '';
+    return covLine + `<div class="kinds">${blocks}</div>` + nhKey;
   }
 
   // ---- domains and regions: every region the site's questions read, as a table, with the marks inside each --------

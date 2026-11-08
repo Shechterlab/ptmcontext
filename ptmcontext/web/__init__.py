@@ -346,13 +346,13 @@ def site_data(site: dict, folder: Path, profile) -> dict:
            if web.get('front') else {}),
         # the start panel's words and examples (kit-help.js); without them it chooses from the examples
         **({'start': web['start']} if web.get('start') else {}),
-        'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []),
+        'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []), 'placeholders': web.get('placeholders') or {},
                  'lab': web.get('lab', {}).get('name', ''), 'config': f"sites/{site['id']}.yaml"},
         'words': {**profile.words, 'marked_long': profile.words.get('marked_long', profile.words['marked'])},
         'mark': profile.id, 'residues': profile.residues,
         'counts': {'marks': run['marks']['counted'], 'proteins': run['marks']['proteins']},
         'analyses': analyses, 'rows': rows, 'run': run,
-        'glance': glance(analyses, rows, run['marks']['counted'], web.get('start'), web.get('landing')),
+        'glance': glance(analyses, rows, run['marks']['counted'], web.get('start'), web.get('landing'), (web.get('front') or {}).get('row_labels')),
         'citation': site_citation(site),
         'kit': {**kit_citation(), 'version': __version__, 'commit': run.get('code_commit') or code_commit()},
         'statistics_tsv': (folder / 'statistics.tsv').read_text(),
@@ -1144,13 +1144,13 @@ def _card_pictures(gl: dict, sid: str) -> str:
     rows = ''
     for f in gl.get('findings') or []:
         e = f['eff']
-        v = e if e >= 1 else 1 / e
         w = min(1, abs(math.log2(e)) / 4) * 50
-        vtxt = format(v, '.0f' if v >= 10 else '.1f')
+        # the number as the question's page writes it (the odds ratio itself, not its inverse)
+        vtxt = '> 1,000' if e >= 1000 else format(e, '.0f') if e >= 10 else format(e, '.1f') if e >= 1.2 else format(e, '.2f') if e >= 0.01 else '< 0.01'
         side = 'left' if f['dir'] == 'more' else 'right'
         rows += (f'<li><a href="{sid}/#overview/{html.escape(quote(f["analysis"]))}" title="{html.escape(f["title"])}: {html.escape(f["label"])}. Open the question.">'
                  f'<span class="gl-name">{html.escape(f["label"])}</span><span class="gl-axis" aria-hidden="true"><i class="gl-fill {f["dir"]}" style="{side}:50%;width:{w:.0f}%"></i></span>'
-                 f'<span class="gl-val {f["dir"]}">{vtxt}× {f["dir"]}</span></a></li>')
+                 f'<span class="gl-val {f["dir"]}">{vtxt}× {"more" if f["dir"] == "more" else "less"} often</span></a></li>')
     if rows:
         rows += '<li class="gl-ax"><span></span><span class="gl-axcap"><span>‹ less</span><b>1×</b><span>more ›</span></span><span></span></li>'
         out += f'<ol class="gl-finds gl-card-finds">{rows}</ol>'

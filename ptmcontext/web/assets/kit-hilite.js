@@ -88,7 +88,7 @@
     delete: () => { const cur = activeSet(); if (!cur) return; if (window.confirm && !window.confirm(`Delete the list "${cur.name}"? The highlight on the page stays.`)) return; keep(sets().filter(x => !(x.name === cur.name && x.list === cur.list))); K.render(); },
   };
   // the box to paste genes or sites into: added to the highlight, nothing is filtered
-  const control = (after = '') => `<form class="hl-form" data-hl-form><label class="flabel hl-lab" for="hl-in">Highlight genes or sites</label><input id="hl-in" name="hl" type="search" autocomplete="off" spellcheck="false" placeholder="Highlight genes or sites…" title="Genes or sites to mark in the figures and tables, e.g. FUS, TDP-43, HNRNPA1 R218" aria-label="Genes or sites to highlight"> <button class="btn small" type="submit">Highlight</button></form>${after}${menuHtml()}`;
+  const control = (after = '') => `<form class="hl-form" data-hl-form><label class="flabel hl-lab" for="hl-in">Highlight genes or sites</label><input id="hl-in" name="hl" type="search" autocomplete="off" spellcheck="false" placeholder="Highlight genes or sites…" title="Genes or sites to mark in the figures and tables${K.D?.site?.placeholders?.highlight ? esc(', e.g. ' + K.D.site.placeholders.highlight) : ''}" aria-label="Genes or sites to highlight"> <button class="btn small" type="submit">Highlight</button></form>${after}${menuHtml()}`;
   // labels placed greedily: the candidates around a dot in order, the first that fits the box and clears the others
   // avoid: boxes [x0, y0, x1, y1] that labels must also clear (a chart's own text, such as region names)
   function place(items, box = [0, 760, 0, 400], size = 10, avoid = []) {

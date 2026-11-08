@@ -1417,7 +1417,7 @@ html[data-density="compact"] .stbl td.cwin > .tags { max-width: 16rem; overflow:
 html[data-density="compact"] .tbl td { padding-top: 0.25rem; padding-bottom: 0.25rem; }
 html[data-density="compact"] .tbl th { padding-top: 0.3rem; padding-bottom: 0.3rem; }
 @media (max-width: 36rem) {   /* phone: the selection banner in about a quarter of the screen (the page's own selection line says what is shown) */
-  #scope .sel-tools { flex-wrap: nowrap; gap: 0.25rem; margin-left: 0; }
+  #scope .sel-tools { flex-wrap: wrap; max-width: 100%; gap: 0.25rem; margin-left: 0; }
   #scope .sel-tools .btn { padding-inline: 0.45rem; font-size: 0.75rem; }
   #scope [data-sel-copy], .q-note { display: none; }
   #scope .sel-chip:has([data-sel-clear-q]) { display: none; }   /* the search box above says it */
@@ -1524,6 +1524,7 @@ body.slim .hero .brand { flex: 1 1 auto; }
 .fr-ax { display: grid; grid-template-columns: 36% minmax(0, 1fr) 3.8rem 2.6rem; gap: 0.4rem; padding: 0 0.3rem; }
 .fr-ax .tk { grid-column: 2; position: relative; height: 1.1rem; font-size: 0.7rem; color: var(--muted); }
 .fr-ax i { position: absolute; transform: translateX(-50%); font-style: normal; }
+.fr-ax .fr-nh { grid-column: 4; justify-self: end; white-space: nowrap; font-size: 0.7rem; color: var(--muted); }
 .fr-cnote { margin: 0.35rem 0 0; font-size: 0.78rem; color: var(--muted); }
 .fr-cell { max-width: 100%; overflow: hidden; margin-bottom: 0.3rem; } .fr-cell svg { min-width: 0 !important; width: 100% !important; max-width: 100% !important; height: auto !important; }
 .fr-qs { margin-top: 0.4rem; font-size: 0.84rem; } .fr-qs summary { cursor: pointer; min-height: 28px; } .fr-qs ul, .fr-more ul { list-style: none; margin: 0.2rem 0; padding: 0; display: grid; gap: 0.15rem; }

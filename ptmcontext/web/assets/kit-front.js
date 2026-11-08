@@ -114,7 +114,7 @@
     const more = ok.filter(r => sig(r) && r.dir === 'more').sort((a, b) => b.v - a.v).slice(0, 2), less = fold ? [] : ok.filter(r => sig(r) && r.dir === 'less').sort((a, b) => a.v - b.v).slice(0, 1);
     const nm = r => `${r.label} (${K.fxn(r.v)}×)`;
     if (!ok.length) return rows.length && rows.every(r => r.absent) ? 'None of these is in this selection.' : '';
-    if (!more.length && !less.length) return 'No row here differs clearly from the other proteins.'.replace('proteins', fold ? 'proteins' : W.residues);
+    if (!more.length && !less.length) return 'No row here differs from the other proteins.'.replace('proteins', fold ? 'proteins' : W.residues);
     return [more.length ? `More often: ${more.map(nm).join(', ')}.` : '', less.length ? `Less often: ${less.map(nm).join(', ')}.` : ''].filter(Boolean).join(' ');
   }
   // ---- the cell card: the kit's own drawing, and the parts that differ most as rows ---------------------------------------
@@ -125,7 +125,7 @@
   }
   // ---- a card's rows as a table: each row says which test made it, n, p, q, the interval, the data version and the selection --------
   const LAST = { cards: [] };
-  const TEST_OF = { fold: 'one-sided hypergeometric test (fold enrichment); q Benjamini-Hochberg', mantel_haenszel: 'Mantel-Haenszel odds ratio within each protein, continuity-corrected CMH test; q Benjamini-Hochberg', fisher: 'two-sided Fisher exact test on pooled counts (Haldane-Anscombe odds ratio); q Benjamini-Hochberg' };
+  const TEST_OF = { fold: 'one-sided hypergeometric test (fold enrichment); q Benjamini-Hochberg', mantel_haenszel: 'Mantel-Haenszel odds ratio within each protein, continuity-corrected CMH test; q Benjamini-Hochberg', fisher: 'two-sided Fisher exact test on counts across all proteins (Haldane-Anscombe odds ratio); q Benjamini-Hochberg' };
   function cardTsv(key) {
     const x = LAST.cards.find(y => y.c.key === key); if (!x) return '';
     const c = x.c, g6 = K.g6, wholeNote = x.own ? 'whole dataset (your selection was made with this question)' : '';
@@ -200,7 +200,7 @@
       if (r.n != null) parts.push(t(TX1 + 100, y + 4, int(r.n), { size: 11, anchor: 'end', fill: P.muted }));
     });
     const fold = x.rows[0]?.measure === 'fold', sel = selOn() ? `Selection: ${K.selText ? K.selText() : 'your selection'}.` : 'Whole dataset.';
-    return K.figureFrame({ title: c.title, sub: `${x.answer ? x.answer + ' ' : ''}${sel}`.trim(), W: 720, legend: [[P.more, P.more, 'more often (q ≤ 0.05)'], [P.less, P.less, 'less often (q ≤ 0.05)'], [P.bg, P.same, 'no clear difference or not tested']],
+    return K.figureFrame({ title: c.title, sub: `${x.answer ? x.answer + ' ' : ''}${sel}`.trim(), W: 720, legend: [[P.more, P.more, 'more often (q ≤ 0.05)'], [P.less, P.less, 'less often (q ≤ 0.05)'], [P.bg, P.same, 'no difference or not tested']],
       body: parts.join(''), bodyH: top + rows.length * RH + 8, extra: { card: c.key, selection: selOn() },
       note: `${fold ? 'Fold enrichment, a one-sided test of over-representation (a value below 1× is not tested). ' : 'Odds ratio against the other ' + W.residues + ' of the same proteins. '}Thin bar: 95% interval. Gray number: n.${x.cellRows?.length ? ' The cell rows summarize the cell maps (median, adjusted for abundance); they are not a test.' : ''} Each card has its own axis.` });
   }

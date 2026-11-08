@@ -205,7 +205,7 @@
   const gridLines = (sc, X) => Array.from({ length: sc.hi - sc.lo + 1 }, (_, k) => sc.lo + k).map(k => `<line class="${k === 0 ? 'one' : 'grid'}" x1="${X(2 ** k)}" x2="${X(2 ** k)}" y1="0" y2="100%"/>`).join('');
   const seg = (key, m) => `<div class="ix-tools"><span class="seg" role="group" aria-label="Test">${['mantel_haenszel', 'fisher'].map(x => `<button type="button" data-ix-m="${esc(key)}" data-v="${x}" aria-pressed="${m === x}" title="${esc(K.GLOSS[x === 'fisher' ? 'pooled' : 'within each protein'])}">${METHOD[x]}</button>`).join('')}</span></div>`;
   function forestNote(rows, m) {
-    if (!selOn()) return `<p class="muted small">${m === 'mantel_haenszel' ? 'Within each protein: a Mantel–Haenszel odds ratio with its 95% CI (Robins–Breslow–Greenland), each protein a stratum' : 'Pooled: Fisher’s exact test, the Haldane–Anscombe odds ratio'}; q: Benjamini–Hochberg within the question.</p>`;
+    if (!selOn()) return `<p class="muted small">${m === 'mantel_haenszel' ? 'Within each protein: a Mantel–Haenszel odds ratio with its 95% CI (Robins–Breslow–Greenland), each protein a stratum' : 'Across all proteins: Fisher’s exact test, the Haldane–Anscombe odds ratio'}; q: Benjamini–Hochberg within the question.</p>`;
     if (!testable()) return `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. The rows are the whole dataset’s.</p>`;
     return `<p class="muted small">Your selection, tested again in the browser (exploratory; not adjusted for the other selections tried); the gray tick is the whole dataset’s odds ratio. ${rows.some(x => x.mine?.descriptive) ? 'A question the selection was made with is shown, not tested.' : ''}</p>`;
   }
@@ -261,7 +261,7 @@
   }
   function setsHtml(pg, sec, b) {
     const rows = setRows(b);
-    const meter = (k, n, K2, N) => `<span class="ix-meter" title="${int(k)} of ${int(n)} (${pcS(k, n)}) against ${int(K2)} of ${int(N)} (${pcS(K2, N)})"><i style="width:${(100 * k / (n || 1)).toFixed(1)}%"></i><b style="left:${(100 * K2 / (N || 1)).toFixed(1)}%"></b></span>`;
+    const meter = (k, n, K2, N) => `<span class="ix-meter" title="${int(k)} of ${int(n)} (${pcS(k, n)}) vs ${int(K2)} of ${int(N)} (${pcS(K2, N)})"><i style="width:${(100 * k / (n || 1)).toFixed(1)}%"></i><b style="left:${(100 * K2 / (N || 1)).toFixed(1)}%"></b></span>`;
     const hold = x => { const h = K.holdStatus(x.site); const s2 = x.strat; return s2 ? `<span class="ix-hold ${h || ''}" title="Within abundance deciles: OR ${fxn(s2.or ?? s2.eff)}${s2.lo != null ? ` [${fxn(s2.lo)}–${fxn(s2.hi)}]` : ''}, q ${fq(s2.q)}">${h === 'holds' ? '✓' : h === 'weaker' ? '◌' : h === 'lost' ? '○' : dirOf(s2) === 'less' ? '▼' : '·'} ${fxn(s2.or ?? s2.eff)}</span>` : '–'; };
     return `<div class="tbl-card"><table class="tbl ix-sets"><thead><tr><th>Set</th><th>${esc(cap(W.marked))} proteins</th><th class="num">In the set</th><th class="num">All proteins</th><th class="num">Fold</th><th class="num">q</th><th class="num" title="The same test within protein abundance deciles: ✓ holds, ◌ same direction but not significant, ○ lost">Within deciles</th></tr></thead><tbody>` +
       rows.map(x => { const r = selOn() && x.mine ? x.mine : x.site, d = dirOf(r);
@@ -357,7 +357,7 @@
     return seg(bkey(pg, sec, bi), s.m) + `<div class="tbl-card"><table class="tbl ix-matrix"><thead><tr><th></th>${md.cols.map(v => `<th class="ix-vh"><span>${esc(vlabel(b.attribute, v))}</span></th>`).join('')}</tr></thead><tbody>` +
       md.feats.map((f, ri) => (f.r.group && f.r.group !== grp ? ((grp = f.r.group), `<tr class="ix-mg"><td colspan="${md.cols.length + 1}">${esc(f.r.group)}</td></tr>`) : '') +
         `<tr><th class="ix-mrow" data-f="${esc(f.r.filter)}" data-v="${esc(f.r.value)}" title="Select the ${esc(W.marks)}: ${esc(f.r.label)}">${esc(f.r.label)}</th>${md.cells.filter(x => x.ri === ri).map(cell).join('')}</tr>`).join('') +
-      `</tbody></table></div><p class="muted small">Each cell: how much more often ${esc(theMarks())} with that evidence have the feature than those without (${s.m === 'fisher' ? 'pooled, Haldane–Anscombe odds ratio, Fisher’s exact test' : 'within each protein, Mantel–Haenszel'}), and below it how many have both. Red: more often, slate: less often (q ≤ 0.05 over the matrix and at least 1.1×); pale: not significant. Descriptive: evidence and features come from the same sources for some ${esc(W.marks)}.</p>`;
+      `</tbody></table></div><p class="muted small">Each cell: how much more often ${esc(theMarks())} with that evidence have the feature than those without (${s.m === 'fisher' ? 'across all proteins, Haldane–Anscombe odds ratio, Fisher’s exact test' : 'within each protein, Mantel–Haenszel'}), and below it how many have both. Red: more often, slate: less often (q ≤ 0.05 over the matrix and at least 1.1×); pale: not significant. Descriptive: evidence and features come from the same sources for some ${esc(W.marks)}.</p>`;
   }
   const matrixTsv = (b, m) => { const md = matrixData(b, m); return ['feature', 'evidence', 'a', 'b', 'c', 'd', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q'].join('\t') + '\n' + md.cells.map(x => [md.feats[x.ri].r.label, vlabel(b.attribute, md.cols[x.cj]), x.a, x.b, x.c, x.d, g6(x.or), g6(x.lo), g6(x.hi), g6(x.p), g6(x.q)].join('\t')).join('\n') + '\n'; };
   function matrixBody(b, m, ex, Wd = 760) {
@@ -570,7 +570,7 @@
   // ---- tiles: a section at a glance --------------------------------------------------------------------------------
   function miniForest(refs, m, all = refs) {           // all: the rows whose effects set the scale (several groups share one)
     const rows = rowsFor(refs, m), sc = scale(rowsFor(all, m).map(x => shown(x)).filter(Boolean).flatMap(r => [effOf(r), r.lo, r.hi])), X = v => sc.X(v, 100).toFixed(2) + '%';
-    return `<div class="trows">${rows.map(x => { const r = shown(x), d = dirOf(r); return `<div class="trow pick" data-f="a:${esc(x.ref.analysis)}" data-v="${esc(x.ref.category)}" role="button" tabindex="0" title="Select the ${esc(W.marks)} ${esc(x.label)}" data-ixr="${esc(JSON.stringify([x.ref.analysis, x.ref.category, m]))}"><span class="lab">${esc(x.label)}</span><svg aria-hidden="true">${gridLines(sc, X)}${selOn() && x.site && effOf(x.site) ? `<line class="ixf-whole" x1="${X(effOf(x.site))}" x2="${X(effOf(x.site))}" y1="20%" y2="80%"/>` : ''}${r && r.lo != null ? `<line class="whisker ${d}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" y2="50%"/>` : ''}${r && effOf(r) ? `<circle class="dot ${d}" cx="${X(effOf(r))}" cy="50%" r="4.6"/>` : ''}</svg><span class="val ${d}">${r && effOf(r) ? fx2(effOf(r)) : '–'}</span></div>`; }).join('')}<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div></div>`;
+    return `<div class="trows">${rows.map(x => { const r = shown(x), d = dirOf(r); return `<div class="trow pick" data-f="a:${esc(x.ref.analysis)}" data-v="${esc(x.ref.category)}" role="button" tabindex="0" title="Select the ${esc(W.marks)} ${esc(x.label)}" data-ixr="${esc(JSON.stringify([x.ref.analysis, x.ref.category, m]))}"><span class="lab">${esc(x.label)}</span><svg aria-hidden="true">${gridLines(sc, X)}${selOn() && x.site && effOf(x.site) ? `<line class="ixf-whole" x1="${X(effOf(x.site))}" x2="${X(effOf(x.site))}" y1="20%" y2="80%"/>` : ''}${r && r.lo != null ? `<line class="whisker ${d}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" y2="50%"/>` : ''}${r && effOf(r) ? `<circle class="dot ${d}" cx="${X(effOf(r))}" cy="50%" r="4.6"/>` : ''}</svg><span class="val ${d}">${r && effOf(r) ? (d === 'ns' ? 'n.s.' : fx2(effOf(r))) : '–'}</span></div>`; }).join('')}<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div></div>`;
   }
   const range = rs => { const v = rs.map(effOf).filter(x => x != null).sort((a, b) => a - b); if (!v.length) return '–'; const a = fxn(v[0]), z = fxn(v[v.length - 1]); return a === z ? a + '×' : `${a}–${z}×`; };
   function tileBody(pg, sec) {
@@ -589,7 +589,7 @@
         const n = t.key === 'residue' ? new Set(rs.map(r => r[0] + ':' + r[1])).size : t.key === 'protein' ? new Set(rs.map(r => r[0])).size : rs.length;
         const lab = (b.columns || []).filter(c => c !== 'accession')[1] || (b.columns || []).find(c => c !== 'accession');
         const groups = b.group_by ? (() => { const j = colIdx(t, b.group_by), g = {}; rs.forEach(r => { const k = r[j]; g[k] = g[k] || new Set(); g[k].add(r[0] + ':' + r[1]); }); return Object.entries(g).map(([k, v]) => `${esc((colMeta(t, b.group_by).values || {})[k] ?? k)} <b>${int(v.size)}</b>`).join(' · '); })() : '';
-        return `<p class="ix-big"><b>${int(n)}</b> <span>${esc(sec.sub || (t.key === 'residue' ? W.marks : t.key === 'protein' ? 'proteins' : 'rows'))}</span></p>${groups ? `<p class="small">${groups}</p>` : rs.length && lab ? `<p class="tfoot">Top: ${esc(cellText(t, rs[0], lab))}</p>` : ''}`; }
+        return `<p class="ix-big"><b>${int(n)}</b> <span>${esc(sec.sub || (t.key === 'residue' ? W.marks : t.key === 'protein' ? 'proteins' : 'rows'))}</span></p>${groups ? `<p class="small">${groups}</p>` : rs.length && lab && String(cellText(t, rs[0], lab) ?? '').trim() ? `<p class="tfoot">Top: ${esc(cellText(t, rs[0], lab))}</p>` : ''}`; }
       case 'bars': { const gs = barsData(b); if (!gs) return loading(); return gs.slice(0, 2).map(g => `<p class="small"><b>${esc(g.title)}</b>: ${g.list.slice(0, 4).map(x => `${esc(x.l)} ${int(x.n)}`).join(' · ')}</p>`).join('') || '<p class="muted">None</p>'; }
       case 'pairs': { const d = pairsData(b); if (!d) return loading(); const best = d.cells.flat().sort((x, y) => y.n - x.n)[0]; return `${best ? `<p class="tfoot">Most shared: <b>${esc(best.rl)}</b> and <b>${esc(best.cl)}</b> (${int(best.n)})</p>` : ''}`; }
       case 'histogram': { const h = histData(b); if (!h) return loading(); const L = histBody(b, false, 330, 150, 1.3); return `<div class="ix-plot ix-mini"><svg viewBox="0 0 330 ${L.H}" aria-hidden="true">${L.body}</svg></div>`; }
@@ -626,15 +626,15 @@
     const byP = K.sel.selectedCountByProtein(), pills = Object.entries(byP).sort((x, y) => y[1] - x[1]).slice(0, 12).map(([pi, k]) => `<a class="ppill" href="${esc(K.link('protein', prot(+pi)[0]))}">${esc(gene(+pi))} <span>${int(k)}</span></a>`).join('');
     return `<p class="sel-lead">Your selection: ${esc(K.sel.describe())} · <b>${int(K.sel.nMarks())}</b> ${esc(marksWord(K.sel.nMarks()))} on <b>${int(K.sel.nProteins())}</b> protein${K.sel.nProteins() === 1 ? '' : 's'}</p><div class="ppills">${pills}</div>`;
   }
-  const keyLine = () => `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>no difference (${K.gloss('q')} > ${K.PADJ})</span></p>`;
+  const keyLine = () => `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i><span>no difference (${K.gloss('q')} &gt; ${K.PADJ})</span></span></p>`;
 
   // ---- the page, a section alone, and the Overview's question --------------------------------------------------------
   function hub(pg) {
     const top = pg.sections.filter(s => s.place === 'top'), links = pg.sections.filter(s => s.place === 'link');
     return `<div class="page-head"><h2>${esc(pg.title)}</h2><span class="tools"><button type="button" class="btn small" data-ix-print title="Download this page as a PDF">Download PDF</button></span></div>` +
       selLine() + answerHtml(pg) + highlightsHtml(pg) + top.map(s => K.fold(`ix-${esc(s.id)}`, esc(s.title), '', s.blocks.map((b, bi) => blockCard(pg, s, b, bi)).join(''), s.open === true)).join('') +
-      (links.length ? `<p class="ix-links">${links.map(s => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)} ›</a>`).join(' · ')}</p>` : '') + keyLine() +
-      pg.groups.map(g => { const ts = g.sections.filter(s => !s.place || s.place === 'tile'); return ts.length ? K.fold(`ixg-${esc(g.name.replace(/\W+/g, '-').toLowerCase())}`, esc(g.name), '', `<div class="tiles">${ts.map(s => sectionTile(pg, s)).join('')}</div>`, g.open === true) : ''; }).join('');
+      (links.length ? `<p class="ix-links">${links.map(s => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)} ›</a>`).join(' · ')}</p>` : '') +
+      pg.groups.map(g => { const ts = g.sections.filter(s => !s.place || s.place === 'tile'); return ts.length ? K.fold(`ixg-${esc(g.name.replace(/\W+/g, '-').toLowerCase())}`, esc(g.name), '', keyLine() + `<div class="tiles">${ts.map(s => sectionTile(pg, s)).join('')}</div>`, g.open === true) : ''; }).join('');
   }
   function focus(pg, sid) {
     const i = pg.sections.findIndex(s => s.id === sid), sec = pg.sections[i], prev = pg.sections[i - 1], next = pg.sections[i + 1];
@@ -645,7 +645,7 @@
   // the Overview question's findings, one sentence each: website.pages[].overview.findings (rows of tests, said with
   // their direction whether or not it is significant, or a share of a table), else each overview row that differs
   const WORD = { more: 'more often', less: 'less often', same: 'about as often', ns: 'not significantly more or less often' };
-  const numbers = r => `${pcS(r.a, r.a + r.b)} against ${pcS(r.c, r.c + r.d)} of the other ${esc(W.residues)}; OR ${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}, q ${fq(r.q)}`;
+  const numbers = r => `share in the selection vs the other ${esc(W.residues)}, crude: ${pcS(r.a, r.a + r.b)} vs ${pcS(r.c, r.c + r.d)}; within-protein OR ${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}, q ${fq(r.q)}`;
   function findings(pg) {
     const ov = pg.overview;
     if (!ov.findings) return rowsFor(ov.rows, 'mantel_haenszel').map(x => { const r = shown(x), d = dirOf(r); return d === 'more' || d === 'less' ? { head: `${esc(cap(theMarks()))} are ${WORD[d]} ${esc(x.ref.phrase || x.label.toLowerCase())} (${numbers(r)}).` } : null; }).filter(Boolean);
@@ -656,7 +656,7 @@
       const parts = xs.map(x => `<b>${WORD[dirOf(shown(x))]}</b> ${esc(x.ref.phrase || x.label.toLowerCase())}`);
       const nums = xs.map(x => (xs.length > 1 ? `${esc(x.label)}: ` : '') + numbers(shown(x)));
       return { head: `${f.lead ? esc(f.lead) + ', ' + esc(theMarks()) : esc(cap(theMarks()))} are ${parts.join(' and ')} than the other ${esc(W.residues)} of the same proteins.`,
-               more: nums.join('; '), section: f.section };
+               more: nums.join('; ').replace(/^[a-z]/, c => c.toUpperCase()), section: f.section };
     }).filter(Boolean);
   }
   const findingLi = (pg, f) => `<li>${f.more ? `<details class="finding"><summary>${f.head}</summary><p>${f.more}.${f.section ? ` <a href="${esc(K.link(pg.id, f.section))}">Open the analysis →</a>` : ''}</p></details>` : `<span>${f.head}</span>${f.section ? ` <a href="${esc(K.link(pg.id, f.section))}">Open →</a>` : ''}`}</li>`;

@@ -25,8 +25,8 @@
   const PADJ = 0.05, MIN_EFFECT = 1.1;
   const dir = r => r.eff == null || r.q == null || r.q > PADJ ? 'ns' : r.eff >= MIN_EFFECT ? 'more' : r.eff <= 1 / MIN_EFFECT ? 'less' : 'same';
   const DIR_WORDS = { more: 'more often', less: 'less often', same: 'about the same (within 1.1×)', ns: 'no difference (q > 0.05)' };
-  const METHOD = { mantel_haenszel: 'within each protein', fisher: 'pooled', study: 'within studies', mann_whitney: 'by size (Mann–Whitney)', conditional_logit: 'all factors together' };
-  const METHOD_PHRASE = { mantel_haenszel: 'compared within each protein (Mantel–Haenszel)', fisher: 'pooled (Fisher’s exact test)',
+  const METHOD = { mantel_haenszel: 'within each protein', fisher: 'across all proteins', study: 'within studies', mann_whitney: 'by size (Mann–Whitney)', conditional_logit: 'all factors together' };
+  const METHOD_PHRASE = { mantel_haenszel: 'compared within each protein (Mantel–Haenszel)', fisher: 'across all proteins (Fisher’s exact test)',
     study: 'compared within the marks reported by the same sources (Mantel–Haenszel)' };
   const A = Object.fromEntries(D.analyses.map(a => [a.id, a]));
   // the Overview's switch: its words, and what each compares
@@ -36,7 +36,7 @@
   const GLOSS = {
     fold: 'How many times more often than in the comparison group. 1× means no difference.',
     'odds ratio': 'How many times higher the odds are inside the class than outside it. 2× means twice the odds.',
-    q: 'The p value corrected for the many tests made on this site. Below 0.05 counts as a real difference.',
+    q: 'The p value corrected for the many tests made on this site. A difference counts at q ≤ 0.05 and at least 1.1×.',
     'within each protein': `Each ${W.mark} is compared only with the other ${W.residues} of the same protein, so a protein with many sites does not dominate.`,
     pooled: `All the ${W.residues} are put in one group and compared together.`,
     strata: 'The groups inside which a test compares like with like, such as single proteins, before the groups are combined.',
@@ -88,7 +88,7 @@
   const holds = r => { const h = holdStatus(r); return h == null ? null : h === 'holds'; };
   const testName = (aid, m) => SETS(aid) ? (m === 'enricher' ? 'proteins, hypergeometric' : 'within abundance deciles') : (METHOD[m] || m);
   const methodName = r => (r.method === 'conditional_logit' && r.stratum === 'alone' ? 'one factor, within each protein' : testName(r.analysis, r.method));
-  const effText = r => r.eff == null ? '–' : r.method === 'enricher' ? fxn(r.eff) + '-fold' : 'OR ' + fxn(r.eff);
+  const effText = r => r.eff == null ? '–' : r.method === 'enricher' ? fxn(r.eff) + '×' : (r.method === 'mantel_haenszel' ? 'within-protein OR ' : 'OR ') + fxn(r.eff);
   const rowsFor = (a, m) => D.rows.filter(r => r.analysis === a.id && (a.kind === 'protein_sets' ? r.method === 'enricher' : r.method === m) && r.eff != null);
 
   // ---- state in the hash ---------------------------------------------------------------------------------------------
@@ -364,7 +364,7 @@
         ...(rows.some(decile) ? [['dec', 'within abundance deciles: ✓ more · ≈ same · ○ none · ▼ fewer']] : []),
         ...(rows.some(r => r.eff == null) ? [['none', '— no test within proteins']] : [])];
     const axisTitle = vs ? `share of ${sets ? 'the proteins' : `the ${W.marks}`} in each ${cls}` : sets ? 'fold enrichment, log scale'
-      : `odds ratio, log scale (${m === 'fisher' ? 'Fisher, pooled' : 'Mantel–Haenszel, within each protein'})`;
+      : `odds ratio, log scale (${m === 'fisher' ? 'Fisher, across all proteins' : 'Mantel–Haenszel, within each protein'})`;
     return { a, m, sets, vs, items, rows, axis, cols, cls, legend, axisTitle, valHead: vs ? 'shares' : sets ? 'fold' : 'OR' };
   }
   // a class's meaning beside its name only when it is short ("RGG · Gly at +1 and +2"); a longer one is its hover
@@ -386,7 +386,7 @@
       `<span class="lab"${r.help ? ` title="${esc(r.help)}"` : ''}><span class="ln">${esc(r.label)}</span>${shortHelp(r) ? `<span class="lh"><span class="sep">&nbsp;·&nbsp;</span>${esc(r.help)}</span>` : ''}</span>` +
       `<span class="cnt">${kfmt(r.a)} / ${kfmt(r.a + r.b)}</span><span class="cnt o">${kfmt(r.c)} / ${kfmt(r.c + r.d)}</span>` +
       `<svg aria-hidden="true">${marks}</svg><span class="val ${r.dir}">${r.vs ? `${pcS(share1(r))} <span class="muted">· ${pcS(share2(r))}</span>` : valText(r) + shareSpan(r)}${d ? `<i class="dm ${d.dir}" title="Within protein abundance deciles: ${DECILE[d.dir][1]} (OR ${fxn(d.eff)}, q ${fq(d.q)})">${DECILE[d.dir][0]}</i>` : r.vs || !M.legend.some(x => x[0] === 'dec') ? '' : '<i class="dm"></i>'}</span>` +
-      `<span class="vh">${r.vs ? `${pcS(share1(r))} of your selection, against ${pcS(share2(r))} of ${esc(vsName())}` : `${esc(effText(r))}, q ${fq(r.q)}`}${d ? `; within abundance deciles: ${DECILE[d.dir][1]}` : ''}${r.ref ? `; whole dataset ${esc(effText(r.ref))}` : ''}</span></div>`;
+      `<span class="vh">${r.vs ? `${pcS(share1(r))} of your selection vs ${pcS(share2(r))} of ${esc(vsName())}` : `${esc(effText(r))}, q ${fq(r.q)}`}${d ? `; within abundance deciles: ${DECILE[d.dir][1]}` : ''}${r.ref ? `; whole dataset ${esc(effText(r.ref))}` : ''}</span></div>`;
   }
   const SWATCH = { more: '<i class="sw bar more"></i>', less: '<i class="sw bar less"></i>', same: '<i class="sw bar same"></i>', ns: '<i class="sw bar ns"></i>', ci: '<i class="sw ci"></i>',
     ref: '<i class="sw ref"></i>', sel: '<i class="kd more"></i>', other: '<i class="kd ns"></i>', dec: '', none: '' };
@@ -412,7 +412,7 @@
     rows = rows.filter(r => !EXCL.test(r.label));
     if (rows.some(r => r.vs)) {
       const ok = rows.filter(enough), up = ok.filter(r => r.dir === 'more').sort((x, y) => strength(y) - strength(x))[0], dn = ok.filter(r => r.dir === 'less').sort((x, y) => strength(y) - strength(x))[0];
-      const one = r => `<b>${esc(r.label)}</b> (${pcS(share1(r))} against ${pcS(share2(r))})`;
+      const one = r => `<b>${esc(r.label)}</b> (${pcS(share1(r))} vs ${pcS(share2(r))})`;
       return up || dn ? [up ? 'More often: ' + one(up) : '', dn ? 'Less often: ' + one(dn) : ''].filter(Boolean).join('. ') : `None differs from ${esc(vsName())} (q ≤ 0.05 and at least 1.1×)`;
     }
     const top = rows.filter(r => r.dir === 'more').sort(byOrder(card))[0], low = rows.filter(r => r.dir === 'less').sort(card.order === 'q' ? byOrder(card) : (x, y) => x.eff - y.eff)[0];
@@ -454,7 +454,7 @@
   // the share in each group beside an odds ratio ("22.8% vs 14.6%"): the two proportions the odds ratio compares
   const pcD = v => (100 * v).toFixed(v > 0 && v < 0.01 ? 2 : 1) + '%';
   const sharePair = r => (r && r.a != null && r.a + r.b > 0 && r.c + r.d > 0 ? `${pcD(share1(r))} vs ${pcD(share2(r))}` : '');
-  const shareSpan = r => (sharePair(r) && !r.vs ? `<span class="sh">${sharePair(r)}</span>` : '');
+  const shareSpan = r => (sharePair(r) && !r.vs ? `<span class="sh" title="Share in the selection vs the others, crude (not adjusted for the protein); the odds ratio is ${r.method === 'mantel_haenszel' ? 'within-protein' : 'the one tested'}">${sharePair(r)}</span>` : '');
   K.sharePair = sharePair;
   const strength = r => (r.dir === 'more' ? Math.log(r.lo ?? r.eff) : r.dir === 'less' ? -Math.log(r.hi ?? r.eff) : 0);
   const enough = r => r.a + r.c >= 10;
@@ -492,7 +492,7 @@
     return rows.map(r => `<div class="${cls} share pick" data-r="${reg(r)}"${pickAttrs(r)}><span class="lab">${esc(r.label)}</span>` +
       `<svg aria-hidden="true"><line class="track" x1="0" x2="100%" y1="50%" y2="50%"/><line class="whisker ${r.dir}" x1="${X(share2(r))}" x2="${X(share1(r))}" y1="50%" y2="50%"/>` +
       `<circle class="dot other" cx="${X(share2(r))}" cy="50%" r="4"/><circle class="dot sel ${r.dir}" cx="${X(share1(r))}" cy="50%" r="4.6"/></svg>` +
-      `<span class="val ${r.dir}">${pcS(share1(r))} <span class="muted">· ${pcS(share2(r))}</span><span class="vh"> of your selection, against ${pcS(share2(r))} of ${esc(vsName())}</span></span></div>`).join('') +
+      `<span class="val ${r.dir}">${pcS(share1(r))} <span class="muted">· ${pcS(share2(r))}</span><span class="vh"> of your selection vs ${pcS(share2(r))} of ${esc(vsName())}</span></span></div>`).join('') +
       `<div class="taxis share-axis"><span></span><span class="one-lab" style="--x:100%">${pcS(scale)}</span><span></span></div>`;
   }
   // a tile's rows on one log2 axis: dashed lines at each doubling, a solid line at 1×; with a selection, a tick at the
@@ -553,7 +553,7 @@
     return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</h3>${detailsLink(a.id)}</header>` +
       (ans ? `<p class="tans">${ans}</p>` : '') +
       (OV.statistic_label !== false && !vsOn() && rows.some(r => r.eff != null) ? `<p class="tstat">${gloss('fold', 'Fold')} ${esc(baseline(a, vsMethod(S.m)))}</p>` : '') +
-      (shown.length ? `<div class="trows${fr ? ' fr-rows' : ''}">${fr ? K.tilekit.axisHtml(ax) + ms.map((x, i) => K.tilekit.rowHtml(x, ax, x.absent ? ` title="${esc(x.label)}: none in this selection"` : ` data-r="${reg(shown[i])}"${pickAttrs(shown[i])}`)).join('') : tileRows(shown)}</div>` : made ? '' : `<p class="muted tnone">${rows.some(r => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'}</p>`) +
+      (shown.length ? `<div class="trows${fr ? ' fr-rows' : ''}">${fr ? K.tilekit.axisHtml(ax, ms.some(x => x.n != null && !x.cellRow) ? (ms.find(x => x.n != null)?.measure === 'fold' ? 'proteins' : W.marks) : '') + ms.map((x, i) => K.tilekit.rowHtml(x, ax, x.absent ? ` title="${esc(x.label)}: none in this selection"` : ` data-r="${reg(shown[i])}"${pickAttrs(shown[i])}`)).join('') : tileRows(shown)}</div>` : made ? '' : `<p class="muted tnone">${rows.some(r => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'}</p>`) +
       (fr && ms.some(x => x.wv != null) ? '<p class="tkey">Dashed ring: the whole dataset.</p>' : '') +
       (made ? `<p class="tfoot"><b>Whole dataset.</b> ${foot}</p>` : fr ? '' : foot ? `<p class="tfoot">${foot}</p>` : '') +
       `<div class="tact">${exp}${more ? `<a class="tmore" href="${esc(link('overview', a.id))}" data-more="${esc(JSON.stringify(left))}" title="Open the question at the ${more} not shown here">+${more} more ›</a>` : ''}</div></article>`;
@@ -592,7 +592,7 @@
     const q = OV.question || `Which parts of proteins are ${W.marked_long}?`;
     const keyP = `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i><span>no difference (${gloss('q')} > ${PADJ})</span></span>${vsOn() ? `<span><i class="kd more"></i> your selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>` : ''}` +
       `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">How to read</button></p>`;
-    const howP = (S.how ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a log scale (the solid line is no difference). For questions about where ${esc(W.marks)} lie, × is an odds ratio: the odds that a ${esc(W.mark)} is in the class over the odds for another ${esc(W.residue)}. It is not the ratio of the two shares, which is closer to 1. The hover gives both shares${D.analyses.some(a => a.kind === 'protein_sets') ? '. For questions about protein classes, × is the fold enrichment: the share of ' + esc(W.marked) + ' proteins in the set over the share of all proteins' : ''}. Within each protein, each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein (Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} lie from which proteins were found ${esc(W.marked)}. Pooled puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact test). ${D.analyses.some(a => a.kind === 'protein_sets') ? `Questions about kinds of protein show the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). ` : ''}Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Grey: significant but within 1.1×. Hollow: no significant difference. A tile shows the classes that differ most and opens to every class. Hover a row for its counts.</p>` : '');
+    const howP = (S.how ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a log scale (the solid line is no difference). For questions about where ${esc(W.marks)} lie, × is an odds ratio: the odds that a ${esc(W.mark)} is in the class over the odds for another ${esc(W.residue)}. It is not the ratio of the two shares, which is closer to 1. The hover gives both shares${D.analyses.some(a => a.kind === 'protein_sets') ? '. For questions about protein classes, × is the fold enrichment: the share of ' + esc(W.marked) + ' proteins in the set over the share of all proteins' : ''}. Within each protein, each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein (Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} lie from which proteins were found ${esc(W.marked)}. Across all proteins puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact test). ${D.analyses.some(a => a.kind === 'protein_sets') ? `Questions about kinds of protein show the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). ` : ''}Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Grey: significant but within 1.1×. Hollow: no significant difference. A tile shows the classes that differ most and opens to every class. Hover a row for its counts.</p>` : '');
     const key = keyP + howP;
     const methods = vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher'];
     const tools = `<span class="tools"><span class="seg" role="group" aria-label="Test">${methods.map(m => `<button type="button" data-m="${m}" aria-pressed="${vsMethod(S.m) === m}"${m === 'mantel_haenszel' && noWithin() ? ' disabled title="No protein has marks on both sides: your selection takes whole proteins"' : ` title="${esc(BTN[m][1])}"`}>${esc(BTN[m][0])}</button>`).join('')}</span></span>`;
@@ -643,16 +643,16 @@
     const qs = [...D.analyses.filter(a => a.kind !== 'protein_sets'), ...ATTRQ.filter(a => !a.provenance)];
     const all = qs.flatMap(a => (rowsOf(a, S.m) || []).filter(r => !r.descriptive && enough(r) && !EXCL.test(r.label)));
     const top = (rs, d, k) => rs.filter(r => r.dir === d).sort((x, y) => strength(y) - strength(x)).slice(0, k);
-    const one = r => { const h = holdsIn(r); return `<b>${esc(r.label)}</b> <span class="muted">(${esc(inText(A[r.analysis]?.title))}: ${pcS(share1(r))} against ${pcS(share2(r))}${h.length ? `; also ${h.join(' and ')}` : meths.length ? `; not ${meths.map(m => METHOD[m]).join(' or ')}` : ''})</span>`; };
+    const one = r => { const h = holdsIn(r); return `<b>${esc(r.label)}</b> <span class="muted">(${esc(inText(A[r.analysis]?.title))}: ${pcS(share1(r))} vs ${pcS(share2(r))}${h.length ? `; also ${h.join(' and ')}` : meths.length ? `; not ${meths.map(m => METHOD[m]).join(' or ')}` : ''})</span>`; };
     const up = top(all, 'more', 3), dn = top(all, 'less', 2);
     const sets = D.analyses.filter(a => a.kind === 'protein_sets').flatMap(a => (rowsOf(a, 'enricher') || []).filter(r => !r.descriptive && enough(r)));
     const sUp = top(sets, 'more', 2);
     const say = (up.length ? `More often than in ${esc(vsName())}: ${up.map(one).join('; ')}.` : '') + (dn.length ? ` Less often: ${dn.map(one).join('; ')}.` : '') + (up.length || dn.length ? '' : `No class differs from ${esc(vsName())} at q ≤ ${PADJ} and 1.1×, with at least 10 ${esc(W.marks)}.`) +
-      (sUp.length ? ` Their proteins are more often in ${sUp.map(r => `<b>${esc(r.label)}</b> <span class="muted">(${esc(inText(A[r.analysis].title))}: ${pcS(share1(r))} of the proteins against ${pcS(share2(r))})</span>`).join('; ')}.` : '');
+      (sUp.length ? ` Their proteins are more often in ${sUp.map(r => `<b>${esc(r.label)}</b> <span class="muted">(${esc(inText(A[r.analysis].title))}: ${pcS(share1(r))} of the proteins vs ${pcS(share2(r))})</span>`).join('; ')}.` : '');
     // how they were found: the provenance attributes whose shares differ most, as a caveat
     const prov = ATTRQ.filter(a => a.provenance).flatMap(a => (K.sel.contrast(a.id, 'fisher') || []).filter(r => enough(r) && r.q != null && r.q <= PADJ));
     const pv = prov.sort((x, y) => Math.abs(share1(y) - share2(y)) - Math.abs(share1(x) - share2(x))).slice(0, 3);
-    const caveat = pv.length ? `<p class="vs-caveat"><b>How they were found.</b> ${pv.map(r => `<b>${esc(r.label)}</b> <span class="muted">(${esc(inText(A[r.analysis].title))})</span>: ${pcS(share1(r))} of these, against ${pcS(share2(r))} of the others`).join('; ')}. Differences above may reflect which sources report these ${esc(W.marks)}${K.sel.STUDY && S.m !== 'study' ? `: <button type="button" class="linkish" data-m="study">compare within studies</button>, where each ${esc(W.mark)} is compared only with ${esc(W.marks)} reported by the same sources.` : S.m === 'study' ? '; the comparison above is within studies, so they do not explain it.' : '.'}</p>` : '';
+    const caveat = pv.length ? `<p class="vs-caveat"><b>How they were found.</b> ${pv.map(r => `<b>${esc(r.label)}</b> <span class="muted">(${esc(inText(A[r.analysis].title))})</span>: ${pcS(share1(r))} of these vs ${pcS(share2(r))} of the others`).join('; ')}. Differences above may reflect which sources report these ${esc(W.marks)}${K.sel.STUDY && S.m !== 'study' ? `: <button type="button" class="linkish" data-m="study">compare within studies</button>, where each ${esc(W.mark)} is compared only with ${esc(W.marks)} reported by the same sources.` : S.m === 'study' ? '; the comparison above is within studies, so they do not explain it.' : '.'}</p>` : '';
     const vsRows = all.filter(r => r.q != null && r.q <= PADJ && (r.dir === 'more' || r.dir === 'less'));
     return who + `<p class="vs-say">${say}</p>` + K.l2Table('vs', vsRows.map(r => ({ ...r, label: r.label }))) + caveat + `<p class="muted small">Exploratory: ${esc(W.marks)} of one protein are not independent, and nothing is adjusted for the other selections tried. Each ${esc(W.mark)} row shows the selection’s share (filled) and ${esc(vsName())}’ (hollow).</p>`;
   }
@@ -754,7 +754,7 @@
   function columnsSection() {
     if (D.front?.mode !== 'cards') return '';
     const R = [['card, question, row, code', 'The card or question a row belongs to, the class or set as the page names it, and its code in the data.'],
-      ['test', 'Which test made the row: one-sided hypergeometric test (fold enrichment; protein-set questions), Mantel-Haenszel odds ratio within each protein (continuity-corrected CMH test) or two-sided Fisher exact test on pooled counts (Haldane-Anscombe odds ratio). q is Benjamini-Hochberg across the question’s rows.'],
+      ['test', 'Which test made the row: one-sided hypergeometric test (fold enrichment; protein-set questions), Mantel-Haenszel odds ratio within each protein (continuity-corrected CMH test) or two-sided Fisher exact test on counts across all proteins (Haldane-Anscombe odds ratio). q is Benjamini-Hochberg across the question’s rows.'],
       ['measure, value', 'Fold enrichment or odds ratio, as a multiple (1 is no difference). A fold below 1 is not tested for depletion.'],
       ['ci_low, ci_high', '95% confidence interval of an odds ratio. A one-sided set test has no interval.'],
       ['n', `The ${W.marks} in the class (a residue question) or the proteins in the set (a protein-set question), in your selection when it is tested again.`],
@@ -792,8 +792,8 @@
     }),
     ...(selOn() || S.arg ? [] : (K.overviewSections || []).flatMap(f => f()))];
   // All tests: every question, each opening its own tests
-  K.sections.statistics = () => [['view', 'All tests', 1, link('statistics')], ...secList().filter(x => !x.caveat && x.name !== 'About the sites').flatMap(x => [[`stat-${x.name}`, x.name, 0],
-    ...x.cards.filter(c => D.analyses.some(a => a.id === c.analysis)).map(c => [`stat-${c.analysis}`, c.title || A[c.analysis].title, 1, link('statistics', '', { a: c.analysis })])])];
+  K.sections.statistics = () => [['view', 'All tests', 1, link('statistics')], ...secList().filter(x => !x.caveat && x.name !== 'About the sites').flatMap(x => { const cs = x.cards.filter(c => D.analyses.some(a => a.id === c.analysis)); return cs.length ? [[`stat-${x.name}`, x.name, 0],
+    ...cs.map(c => [`stat-${c.analysis}`, c.title || A[c.analysis].title, 1, link('statistics', '', { a: c.analysis })])] : []; })];
   const SLO = Math.log(1 / 16), SHI = Math.log(16);
   const sp = v => (Math.min(Math.max((Math.log(v) - SLO) / (SHI - SLO), 0), 1) * 100).toFixed(2) + '%';
   function strip(rows) {
@@ -832,10 +832,10 @@
     return `<div class="page-head"><h2>${esc(tabName('statistics', 'All tests'))}</h2><button class="btn" type="button" id="dl">Download TSV</button></div>` +
       `<p class="page-sub">${gloss('q')}: Benjamini–Hochberg within each question.</p>` +
       `<div class="filters"><label>Question <select id="f-a">${opts.map(([v, t]) => `<option value="${esc(v)}"${v === S.a ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>` +
-      `<label>Test <select id="f-m">${[['mantel_haenszel', 'Within each protein (or abundance decile)'], ['fisher', 'Pooled'], ...(D.models ? [['conditional_logit', 'All factors together']] : []), ['both', 'Both']].map(([v, t]) => `<option value="${v}"${v === S.m ? ' selected' : ''}>${t}</option>`).join('')}</select></label>` +
+      `<label>Test <select id="f-m">${[['mantel_haenszel', 'Within each protein (or abundance decile)'], ['fisher', 'Across all proteins'], ...(D.models ? [['conditional_logit', 'All factors together']] : []), ['both', 'Both']].map(([v, t]) => `<option value="${v}"${v === S.m ? ' selected' : ''}>${t}</option>`).join('')}</select></label>` +
       `<label>Class <input id="f-sq" type="search" value="${esc(S.sq)}" placeholder="a class or set"></label>` +
       `<button type="button" class="btn small" data-sort-strength aria-pressed="${S.sort === 'strength'}" title="The largest differences first, up or down (|log2 OR|); click again to reverse">Sort by strength${S.sort === 'strength' ? (S.desc ? ' ▾' : ' ▴') : ''}</button>` +
-      `<span class="muted">${int(rows.length)} ${rows.length === 1 ? 'test' : 'tests'}${selOn() ? ' (the whole dataset: the Overview tests your selection)' : ''}</span></div>` +
+      `<span class="muted">${rows.length === D.rows.length ? `${int(rows.length)} ${rows.length === 1 ? 'test' : 'tests'}` : `${int(rows.length)} of ${int(D.rows.length)} tests (${{ mantel_haenszel: 'within-protein', fisher: 'across all proteins', conditional_logit: 'all factors together', both: 'both tests' }[S.m] || S.m})`}${selOn() ? ' (the whole dataset: the Overview tests your selection)' : ''}</span></div>` +
       `<div class="tbl-card"><table class="tbl stat-tbl"><thead><tr>${COLS.map(([k, t, , n]) => `<th class="${n ? 'num' : ''}" data-sort="${k}"${S.sort === k ? ` aria-sort="${S.desc ? 'descending' : 'ascending'}"` : ''}${GLOSS[t.toLowerCase()] ? ` title="${esc(GLOSS[t.toLowerCase()])}"` : k === 'or' ? ` title="${esc(GLOSS['odds ratio'])}"` : ''}>${esc(t)}${S.sort === k ? (S.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
       rows.slice(0, S.nStat ||= 200).map(r => `<tr data-i="${r.i}"><td>${esc(r.title)}</td><td class="wrapok" title="${esc(r.help)}">${esc(r.label)}</td><td>${esc(methodName(r))}</td>` +
         `<td class="num">${int(r.a)} / ${int(r.a + r.b)}</td><td class="num">${int(r.c)} / ${int(r.c + r.d)}</td>` +
@@ -866,7 +866,7 @@
     return `<div class="page-head"><h2>${esc(tabName('method', 'Method'))}</h2></div><div class="doc">` +
       `<span id="m-g1"></span><section id="m-tests"><h3>How the tests work</h3><p>Each question asks whether a ${esc(W.mark)} is more or less likely than another ${esc(W.residue)} of the same protein to lie in a class, such as a disordered region, a domain or a motif. Each class is tested two ways.</p><ul>` +
       `<li>Within each protein, every protein is a stratum and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)}: Mantel–Haenszel odds ratio, 95% confidence interval (Robins–Breslow–Greenland), continuity-corrected Cochran–Mantel–Haenszel test. This separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}, since abundant proteins are detected more often and differ in structure.</li>` +
-      `<li>Pooled, all the ${esc(W.residues)} of the ${esc(W.marked)} proteins are taken together: Fisher’s exact test, Haldane–Anscombe odds ratio.</li></ul>` +
+      `<li>Across all proteins, all the ${esc(W.residues)} of the ${esc(W.marked)} proteins are taken together: Fisher’s exact test, Haldane–Anscombe odds ratio.</li></ul>` +
       `<p>Both count the same ${esc(W.marks)}, those on a protein with at least one other ${esc(W.residue)}. q is Benjamini–Hochberg across the classes of a question, for each test. A class counts as more or less often at q ≤ 0.05 and at least 1.1×.</p>` +
       (D.analyses.some(a => a.kind === 'protein_sets') ? `<p>Questions about protein classes count proteins, not residues. The ${esc(W.marked)} proteins in each set are compared with the other proteins of the question’s universe, in a one-sided hypergeometric test as clusterProfiler’s enricher runs it, with fold enrichment and Benjamini–Hochberg q across the sets.${D.analyses.some(a => a.stratified) ? ` ${D.analyses.every(a => a.kind !== 'protein_sets' || a.stratified) ? 'Each is' : 'Those with an abundance input are'} repeated within protein-abundance deciles (Mantel–Haenszel odds ratio across them), because mass spectrometry finds abundant proteins most often. An enrichment that holds there is not explained by abundance.` : ''}</p>` : '') + `</section>` +
       `<span id="m-g2"></span><section id="m-data"><h3>Data</h3><p>Sequences: ${esc(sn.release)}, ${int(sn.entries)} entries (FASTA MD5 <span class="mono">${esc(sn.fasta_md5)}</span>). ` +
@@ -908,7 +908,7 @@
     return parts.join('\n');
   }
   function testWords(m) {
-    return (m === 'fisher' ? `Pooled: the ${W.marks} in each class against all the other ${W.residues} of the ${W.marked} proteins (two-sided Fisher’s exact test, Haldane–Anscombe odds ratio).`
+    return (m === 'fisher' ? `Across all proteins: the ${W.marks} in each class against all the other ${W.residues} of the ${W.marked} proteins (two-sided Fisher’s exact test, Haldane–Anscombe odds ratio).`
       : `Within each protein, every protein is a stratum and its ${W.marks} are compared only with its own ${W.residues} (Mantel–Haenszel odds ratio with 95% confidence interval, continuity-corrected Cochran–Mantel–Haenszel test).`) +
       ` Only ${W.marks} on proteins with another ${W.residue} are counted. q is Benjamini–Hochberg across the classes. Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Hollow: no significant difference.`;
   }
@@ -961,7 +961,7 @@
   // a selection, in words, for the figures and tables made from it
   // rows: the question's rows, when the figure counts with them; the tests count only the marks on a protein with another candidate
   // residue, so a smaller count than the selection's is said, not left to the column heads
-  const selWords = rows => (selOn() && K.sel.data() ? `. Your selection: ${K.sel.describe()} (${int(K.sel.nMarks())} ${K.sel.nMarks() === 1 ? W.mark : W.marks} on ${int(K.sel.nProteins())} protein${K.sel.nProteins() === 1 ? '' : 's'}${(n => (n && n < K.sel.nMarks() && !vsOn() ? `; ${int(n)} of them, on proteins with another ${W.residue}, are the ones counted` : ''))(Math.max(0, ...(rows || []).filter(r => r.a != null && r.b != null).map(r => r.a + r.b)))}), ${vsOn() ? `against ${vsName()} (${METHOD[S.m] || 'pooled'})` : 'tested again'} in the browser; exploratory, not adjusted for the other selections tried` : '');
+  const selWords = rows => (selOn() && K.sel.data() ? `. Your selection: ${K.sel.describe()} (${int(K.sel.nMarks())} ${K.sel.nMarks() === 1 ? W.mark : W.marks} on ${int(K.sel.nProteins())} protein${K.sel.nProteins() === 1 ? '' : 's'}${(n => (n && n < K.sel.nMarks() && !vsOn() ? `; ${int(n)} of them, on proteins with another ${W.residue}, are the ones counted` : ''))(Math.max(0, ...(rows || []).filter(r => r.a != null && r.b != null).map(r => r.a + r.b)))}), ${vsOn() ? `against ${vsName()} (${METHOD[S.m] || 'across all proteins'})` : 'tested again'} in the browser; exploratory, not adjusted for the other selections tried` : '');
   // every TSV row says which test made it, the data version and the selection, so a row read alone is still cited
   const SET_TEST = 'one-sided hypergeometric test (fold enrichment), q Benjamini-Hochberg';
   const selText = () => (selOn() && K.sel.data() ? K.sel.describe() || 'selection' : 'whole dataset');
@@ -1080,7 +1080,7 @@
       T(lx + (sw[k] ? 22 : 0), y, text, { size: 10, fill: PAL.muted }); lx += w;
     });
     y += 24;
-    const note = M.vs ? `Your selection against ${vsName()}: ${sets ? 'the share of its proteins in each set against that of the other proteins, one-sided hypergeometric test' : `the share of its ${W.marks} in each class against that of the others, ${METHOD_PHRASE[vsMethod(m)] || 'pooled'}`}; q Benjamini–Hochberg across the ${sets ? 'sets' : 'classes'}. Exploratory.`
+    const note = M.vs ? `Your selection against ${vsName()}: ${sets ? 'the share of its proteins in each set against that of the other proteins, one-sided hypergeometric test' : `the share of its ${W.marks} in each class against that of the others, ${METHOD_PHRASE[vsMethod(m)] || 'across all proteins'}`}; q Benjamini–Hochberg across the ${sets ? 'sets' : 'classes'}. Exploratory.`
       : sets ? setWords(a) + (rows.length < all.length ? ` Shown: the first ${rows.length} of the ${int(all.length)} sets tested, in the page’s order; the TSV has every set.` : '') : testWords(m);
     wrap(note, Wd - 2 * P, 10.5).forEach(t => { T(P, y, t, { size: 10.5 }); y += 14; });
     y += 6;
@@ -1398,11 +1398,11 @@
     if (r.vs) {
       const set = SETS(r.analysis), unit = set ? setUnit(r.analysis) : W.marks;
       tip.innerHTML = `<b>${esc(r.label)}</b>${r.help ? `<br><span class="muted">${esc(r.help)}</span>` : ''}<br>${int(r.a)} of ${int(r.a + r.b)} ${esc(unit)} of your selection (${pct(r.a, r.a + r.b)}) against ${int(r.c)} of ${int(r.c + r.d)} ${set ? (S.vs === 'cmp' ? esc(setUnit(r.analysis)) + ' of ' + esc(cmpName()) : 'other ' + esc(markedUnits(r.analysis))) : esc(vsName())} (${pct(r.c, r.c + r.d)})` +
-        `<br>${set && S.vs !== 'cmp' ? `${fxn(r.fold)}-fold (one-sided hypergeometric over the ${esc(W.marked)} proteins)` : `OR ${fxn(r.or)}${r.lo != null ? ` (95% CI ${fxn(r.lo)} to ${fxn(r.hi)})` : ''} · ${set ? 'pooled' : METHOD[r.method] || esc(r.method)}${r.strata ? `, ${int(r.strata)} informative ${r.method === 'study' ? 'groups of sources' : 'proteins'}` : ''}`}, q ${fq(r.q)}` + selNote;
+        `<br>${set && S.vs !== 'cmp' ? `${fxn(r.fold)}× (one-sided hypergeometric over the ${esc(W.marked)} proteins)` : `OR ${fxn(r.or)}${r.lo != null ? ` (95% CI ${fxn(r.lo)} to ${fxn(r.hi)})` : ''} · ${set ? 'across all proteins' : METHOD[r.method] || esc(r.method)}${r.strata ? `, ${int(r.strata)} informative ${r.method === 'study' ? 'groups of sources' : 'proteins'}` : ''}`}, q ${fq(r.q)}` + selNote;
     } else if (SETS(r.analysis)) {
       const st = STRAT[r.analysis + '\u0000' + r.category];
       tip.innerHTML = `<b>${esc(r.label)}</b><br>${int(r.a)} of ${int(r.a + r.b)} ${r.selection ? esc(setUnit(r.analysis)) + ' of your selection' : esc(markedUnits(r.analysis))} (${pct(r.a, r.a + r.b)}) vs ${int(r.c)} of ${int(r.c + r.d)} other ${esc(setUnit(r.analysis))} (${pct(r.c, r.c + r.d)})` +
-        `<br>${fxn(r.eff)}-fold, q ${fq(r.q)} (one-sided hypergeometric)` +
+        `<br>${fxn(r.eff)}×, q ${fq(r.q)} (one-sided hypergeometric)` +
         (st && !r.selection ? `<br>Within abundance deciles: OR ${fxn(st.eff)}${st.lo != null ? ` (95% CI ${fxn(st.lo)}–${fxn(st.hi)})` : ''}, q ${fq(st.q)}${decile(r) ? ` (${DECILE[st.dir][0]} ${DECILE[st.dir][1]})` : ''}` : '') + selNote;
     } else tip.innerHTML = `<b>${esc(r.label)}</b>${r.help ? `<br><span class="muted">${esc(r.help)}</span>` : ''}` +
       `<br>${int(r.a)} of ${int(r.a + r.b)} ${esc(W.marks)} (${pct(r.a, r.a + r.b)}) vs ${int(r.c)} of ${int(r.c + r.d)} other ${esc(W.residues)} (${pct(r.c, r.c + r.d)})` +
@@ -1544,8 +1544,8 @@
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.dataset.theme) render(); }); } catch (err) { /* old browsers */ }
   // the footer: licenses and privacy, on every page (the Method page has the full text)
   const upd = D.built || D.run?.written;      // when `ptmc web` built this site (else when the run was written)
-  $('#credit').innerHTML = `${esc(D.site.name)}${upd ? ` · updated <time datetime="${esc(upd)}">${esc(hdate(upd))}</time>` : ''} · built with <a href="${esc(D.kit.url || '#method/made')}">ptmcontext</a> ${esc(D.kit.version)}${D.kit.commit ? ` (${esc(shortCommit(D.kit.commit))})` : ''}` +
-    (D.dataset ? ` · ${esc(D.dataset.label || 'dataset')} ${esc(D.dataset.version)}${D.dataset.doi ? `, <a href="https://doi.org/${esc(D.dataset.doi)}">doi:${esc(D.dataset.doi)}</a>` : ''}` : '') +
+  $('#credit').innerHTML = `${esc(D.site.name)}${CIT.version ? ` · <a href="#method/cite">version ${esc(CIT.version)}</a>${CIT.date ? ` (${esc(hdate(CIT.date))})` : ''}` : upd ? ` · updated <time datetime="${esc(upd)}">${esc(hdate(upd))}</time>` : ''} · built with <a href="${esc(D.kit.url || '#method/made')}">ptmcontext</a> ${esc(D.kit.version)}${D.kit.commit ? ` (${esc(shortCommit(D.kit.commit))})` : ''}` +
+    (D.dataset ? ` · ${esc(D.dataset.label || 'dataset')} ${esc(D.dataset.version)}${D.dataset.date ? ` (${esc(hdate(D.dataset.date))})` : ''}${D.dataset.doi ? `, <a href="https://doi.org/${esc(D.dataset.doi)}">doi:${esc(D.dataset.doi)}</a>` : ''}` : '') +
     ` · code: ${esc(hlicence(D.kit.licence || 'MIT'))}${CIT.licence ? ` · data: ${esc(hlicence(CIT.licence))}` : ''}` +
     ` · <a href="#method/privacy">no cookies, no tracking; nothing you search leaves your browser</a>`;
   setTheme(document.documentElement.dataset.theme || 'auto'); themed = true;

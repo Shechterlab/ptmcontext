@@ -229,6 +229,8 @@
     for (const [a, lab] of Object.entries(CL.attributes || {})) attrVals(c, a).forEach(v => { if (!skip.has(v)) out.push({ label: lab, call: v, attribute: a }); });
     return out;
   }
+  // the key to the marks of a calls column: each mark with its word, the quiet word, and the dash
+  const callsKey = () => `<p class="key calls-key">${Object.entries(CL.marks || {}).map(([k, m]) => `<span><span class="trend c-${esc(k)}"><b>${esc(m)}</b></span> ${esc((CL.words || {})[k] || k)}</span>`).join('')}<span><span class="muted">${esc(CL.quiet || 'n.s.')}</span> measured, no significant change</span><span><span class="muted">–</span> not measured</span><span class="muted">a number beside a mark: how many experiments · hover for the numbers</span></p>`;
   function calls(c, compact) {
     if (!(CL.tables || []).some(has) && !Object.keys(CL.attributes || {}).some(a => SPECS[a])) return '';
     const rs = callRows(c); if (!rs.length) return '<span class="muted">–</span>';
@@ -513,6 +515,6 @@
     ['[data-entry3d]', (el, e) => { if (typeof K.show3d === 'function') { e.preventDefault(); K.show3d(el.dataset.acc, +el.dataset.pos, { entry: el.dataset.entry3d }); } else window.open(el.href, '_blank', 'noopener'); }],
     ['[data-open-fold]', el => { const d = document.getElementById(el.dataset.openFold); if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); } }],
   );
-  K.card = { proteinRecords, load, loadDefault, defaultTb, compact: SDF, light, lightIndex, rows, at, has, badge, tags, entries, sequences, around, states, changes, calls, evidenceBlock, recordsBlock, recordsTsv,
+  K.card = { proteinRecords, load, loadDefault, defaultTb, compact: SDF, light, lightIndex, rows, at, has, badge, tags, entries, sequences, around, states, changes, calls, callsKey, evidenceBlock, recordsBlock, recordsTsv,
     writerBlock, evidenceRow, reportedBy, citeBox, asPartner, partnersOf, wholeProtein, aroundRows, windowsOf, callRows, num };
 });

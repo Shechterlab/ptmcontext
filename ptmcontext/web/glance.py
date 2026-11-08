@@ -55,7 +55,7 @@ def share(analyses: list, rows: list, counted: int, spec: dict | None = None) ->
     return None
 
 
-def findings(analyses: list, rows: list, spec: list | None = None, n: int = N_FINDINGS) -> list:
+def findings(analyses: list, rows: list, spec: list | None = None, n: int = N_FINDINGS, row_labels: dict | None = None) -> list:
     """The strongest results, one per question: named by the site (analysis and class), else the largest effects at
     q <= 0.05 that rest on at least MIN_N marks, by the question's usual test."""
     by_id = {a['id']: a for a in analyses}
@@ -73,7 +73,9 @@ def findings(analyses: list, rows: list, spec: list | None = None, n: int = N_FI
         pool.append((a, r, e))
 
     def item(a, r, e):
-        return {'analysis': a['id'], 'class': r['category'], 'title': a.get('title', a['id']), 'label': _label(a, r['category']),
+        # the label the question's own page gives the row (website.front.row_labels), else the class's label
+        lab = ((row_labels or {}).get(a['id']) or {}).get(r['category']) or _label(a, r['category'])
+        return {'analysis': a['id'], 'class': r['category'], 'title': a.get('title', a['id']), 'label': lab,
                 'eff': e, 'q': r['q'], 'n': r['a'], 'dir': 'more' if e >= 1 else 'less', 'sets': a.get('kind') == 'protein_sets'}
     out = []
     for s in spec or []:
@@ -90,8 +92,8 @@ def findings(analyses: list, rows: list, spec: list | None = None, n: int = N_FI
     return out[:n]
 
 
-def glance(analyses: list, rows: list, counted: int, start: dict | None, landing: dict | None = None) -> dict:
+def glance(analyses: list, rows: list, counted: int, start: dict | None, landing: dict | None = None, row_labels: dict | None = None) -> dict:
     """What the entry pages draw. The landing page's own choices (website.landing) win over the start panel's."""
     start, landing = start or {}, landing or {}
     return {'share': share(analyses, rows, counted, landing.get('share') or start.get('share')),
-            'findings': findings(analyses, rows, landing.get('findings') or start.get('findings'))}
+            'findings': findings(analyses, rows, landing.get('findings') or start.get('findings'), row_labels=row_labels)}

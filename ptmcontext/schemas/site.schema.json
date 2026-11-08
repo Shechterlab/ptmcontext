@@ -1802,6 +1802,21 @@
           },
           "description": "example searches shown under the search bar"
         },
+        "placeholders": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the site's own examples inside the page's input boxes, so no gene of one site shows on another",
+          "properties": {
+            "highlight": {
+              "type": "string",
+              "description": "genes and sites for the Highlight box's hint, comma separated: FUS, TDP-43, HNRNPA1 R218"
+            },
+            "partners": {
+              "type": "string",
+              "description": "gene symbols for the partner network's Always include box, comma separated"
+            }
+          }
+        },
         "start": {
           "type": "object",
           "additionalProperties": false,
@@ -4581,6 +4596,10 @@
                     "type": "integer",
                     "minimum": 1,
                     "description": "one map at a time: the compartments holding at least this many proteins"
+                  },
+                  "graded": {
+                    "type": "boolean",
+                    "description": "the map grades proteins (a probability band) instead of naming a place: a protein page says its classes apart from the places, in lower case"
                   }
                 }
               }

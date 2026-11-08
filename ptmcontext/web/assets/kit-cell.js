@@ -167,7 +167,7 @@
   function abundText(a) {
     if (!a || a.l2 == null) return 'not compared';
     const ci = a.lo != null && a.hi != null ? ` (95% CI ${fxv(2 ** a.lo)}–${fxv(2 ** a.hi)})` : '';
-    return `${orWords(a)}${ci}, q ${fq(a.q)}${tone(a) === 'ns' ? ' (no clear difference)' : ''}`;
+    return `${orWords(a)}${ci}, q ${fq(a.q)}${tone(a) === 'ns' ? ' (no difference)' : ''}`;
   }
 
   // ---- the two layers: regions (each map's regions question) and compartments (each map's own sets) ----------------
@@ -243,7 +243,7 @@
       const aid = m.analysis, ps = sd.protein_sets?.[aid], d = DS(aid);
       const sets = ps ? ps.sets.map(x => x[0]).filter(s => K.sel.setHas(aid, s, p.i)) : [];
       const placed = !!ps && (sets.length > 0 || (ps.in_background || []).includes(p.i));
-      return { aid, name: d.name, method: d.method, cells: d.cells, placed, sets: sets.map(s => label(aid, s)) };
+      return { aid, name: d.name, method: d.method, cells: d.cells, placed, graded: !!m.graded, sets: sets.map(s => label(aid, s)) };
     });
   }
   const oneTsv = p => () => K.preamble(`${C.title || 'Where in the cell'}: ${p.gene || p.acc}`, 'the compartments each map places the protein in') +
@@ -390,7 +390,7 @@
   const CT = [[330, 150], [300, 265], [360, 360], [450, 95], [465, 225], [480, 350], [600, 95], [615, 335], [705, 170], [715, 285]];
 
   // ---- the drawings: a cell, its nucleus drawn whole; the nucleus in its parts. Each part takes the color of the
-  // median of the maps' comparisons, gray where they disagree or show no clear difference, outlined where no map
+  // median of the maps' comparisons, gray where they disagree or show no difference, outlined where no map
   // measures it; a measured part is named beside the drawing and opens its numbers --------------------------------------
   const DRAW = {
     cell(scoped) {
@@ -591,14 +591,14 @@
     return K.figureFrame({ title, sub, W: Math.round(f.W * s) + 40, body: `<g transform="translate(20,0) scale(${s})">${inlined(f)}</g>`, bodyH: f.H * s,
       note: note || `${keyWords()} ${testWords()}`, extra: { question: ID } });
   }
-  const keyWords = () => `Red: ${who(scopedNow())} are more likely to be found there than ${alike}. Slate: less likely, deeper for larger odds ratios. Grey: no clear difference, or the maps disagree. Dashed outline: no map measures it.`;
+  const keyWords = () => `Red: ${who(scopedNow())} are more likely to be found there than ${alike}. Slate: less likely, deeper for larger odds ratios. Grey: no difference, or the maps disagree. Dashed outline: no map measures it.`;
   const testWords = () => (allStrat ? `In each map, ${who(scopedNow())} against ${alike}: Mantel–Haenszel odds ratio across the abundance strata, continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg within the map, colored at q ≤ ${PADJ} and 1.1× or more. A part of a drawing takes the median odds ratio of the maps that place proteins there, colored when at least half of them find a difference that way.`
     : `In each map, ${who(scopedNow())} against the other proteins the map places (fold enrichment, one-sided hypergeometric test, Benjamini–Hochberg within the map). A part takes the median of the maps that have it.`);
   const FIGS = {
     regions: { title: () => `${C.title || 'Where in the cell'}: regions against maps`, sub: () => `The odds ratio of ${who(scopedNow())} against ${alike}, for each region in each map.`, make: () => gridSvg(LAYERS.region, scopedNow()), tsv: () => gridTsv(LAYERS.region, scopedNow()) },
     grid: { title: () => `${C.title || 'Where in the cell'}: compartments against maps`, sub: () => `The odds ratio of ${who(scopedNow())} against ${alike}, for each compartment in each map.`, make: () => gridSvg(LAYERS.part, scopedNow()), tsv: () => gridTsv(LAYERS.part, scopedNow()) },
     one: { title: () => `${C.title || 'Where in the cell'}: ${DS(UI.map).name}`, sub: () => { const d = DS(UI.map), at = [d.ref, d.cells].filter(Boolean).join(', '); return `${d.name}${at ? ' (' + at + ')' : ''}${d.how ? ': ' + d.how : ''}`; }, make: () => barsSvg(UI.map, scopedNow()), tsv: () => barsTsv(UI.map, scopedNow()),
-      note: () => `Bars: share of ${who(scopedNow())} among the ${here} over their share of all the proteins the map places (log2), filled at q ≤ ${PADJ}. Marks: the same against ${alike} (✓ more likely, ≈ about the same, ○ no clear difference, ▼ less likely).` },
+      note: () => `Bars: share of ${who(scopedNow())} among the ${here} over their share of all the proteins the map places (log2), filled at q ≤ ${PADJ}. Marks: the same against ${alike} (✓ more likely, ≈ about the same, ○ no difference, ▼ less likely).` },
   };
   DRAWINGS.forEach(d => { FIGS[d.drawing] = { title: () => d.title || C.title || 'Where in the cell', sub: () => `Odds ratio of ${who(scopedNow())} against ${alike}, as the median of the maps that have each part.`, make: () => DRAW[d.drawing](scopedNow()), tsv: () => gridTsv(LAYERS.part, scopedNow()), zoom: d.drawing }; });
   // ---- for another page's card: the drawings and the parts' values, without the cell page ----------------------------------
@@ -680,16 +680,16 @@
     return { regs, up };
   }
   function lead(regs, up, scoped, short) {
-    const num = x => (short ? '' : ` (${esc(orText(x.a))})`), one = x => `<b>${esc(inText(x.row))}</b>${num(x)}`;
+    const num = x => (short ? '' : ` (${esc(orText(x.a))})`), onePart = x => `<b>${esc(inText(x.row))}</b>${num(x)}`, one = x => `<b>${esc(inText(x.row))}</b> overall${num(x)}`;
     const more = regs.filter(x => x.tone[0] === 'u').sort((a, b) => b.a.l2 - a.a.l2), less = regs.filter(x => x.tone[0] === 'd').sort((a, b) => a.a.l2 - b.a.l2);
     const none = `${cap(who(scoped))} are not enriched in any part of the cell.`;
     if (short) {
       if (more.length || less.length) return cap((more.length ? 'more often in ' + and(more.map(one)) : '') + (more.length && less.length ? '. Less in ' : less.length ? 'less often in ' : '') + and(less.map(one))) + '.';
-      return regs.length ? `About as often in each region as ${esc(alike)}.` : up.length ? `Most of all in ${and(up.slice(0, 3).map(one))}.` : none;
+      return regs.length ? `About as often in each region as ${esc(alike)}.` : up.length ? `Most of all in ${and(up.slice(0, 3).map(onePart))}.` : none;
     }
     let t = more.length || less.length ? `${cap(who(scoped))} are found ${more.length ? 'more often in ' + and(more.map(one)) : ''}${more.length && less.length ? ', and ' : ''}${less.length ? 'less often in ' + and(less.map(one)) : ''} than ${esc(alike)}${regs.some(x => x.cells.length > 1) ? ' (the median of the maps)' : ''}`
       : regs.length ? `${cap(who(scoped))} are found in each region about as often as ${esc(alike)}` : '';
-    const most = up.slice(0, 3).map(one);
+    const most = up.slice(0, 3).map(onePart);
     if (most.length) t += t ? `. Within them, most of all in ${and(most)}` : `${cap(who(scoped))} are most enriched in ${and(most)}`;
     return t ? t + '.' : none;
   }
@@ -715,19 +715,19 @@
   const narrow = () => matchMedia('(max-width: 700px)').matches;
   const pname = x => (x.part ? partName(x.part) : rowName(x.row));
   function cellAnswer(regs, up, scoped) {
-    const one = x => `<b>${esc(inText(x.row))}</b> (${esc(orText(x.a))})`;
+    const one = x => `<b>${esc(inText(x.row))}</b> overall (${esc(orText(x.a))})`, onePart = x => `<b>${esc(inText(x.row))}</b> (${esc(orText(x.a))})`;
     const more = regs.filter(x => x.tone[0] === 'u').sort((a, b) => b.a.l2 - a.a.l2), less = regs.filter(x => x.tone[0] === 'd').sort((a, b) => a.a.l2 - b.a.l2), most = up.slice(0, 3);
-    const t = [more.length || most.length ? `${more.length ? 'More often in ' + and(more.map(one)) : ''}${more.length && most.length ? '; most of all in ' : most.length ? 'Most of all in ' : ''}${and(most.map(one))}` : '',
+    const t = [more.length || most.length ? `${more.length ? 'More often in ' + and(more.map(one)) : ''}${more.length && most.length ? '; most of all in ' : most.length ? 'Most of all in ' : ''}${and(most.map(onePart))}` : '',
       less.length ? `${more.length || most.length ? 'Less in ' : 'Less often in '}${and(less.map(one))}` : ''].filter(Boolean).join('. ');
     return t ? t + '.' : regs.length ? `About as often in each region as ${esc(alike)}.` : `${cap(who(scoped))} are not enriched in any part of the cell.`;
   }
   function partList(d, ps) {
     const on = new Set(S.f['w:' + ID] || []);
     const rows = ps.filter(p => p.drawings.includes(d.drawing) && p.or != null && p.direction !== 'na');
-    const top = (rows.filter(p => p.maps >= 2).length >= 4 ? rows.filter(p => p.maps >= 2) : rows).sort((x, y) => Math.abs(y.l2) - Math.abs(x.l2)).slice(0, 6);
+    const top = (rows.filter(p => p.maps >= 2).length >= 4 ? rows.filter(p => p.maps >= 2) : rows).sort((x, y) => (y.direction === 'ns' ? 0 : 1) - (x.direction === 'ns' ? 0 : 1) || Math.abs(y.l2) - Math.abs(x.l2)).slice(0, 6);
     return `<section class="cp-col"><h4>${esc(d.title && /^Within them: /.test(d.title) ? d.title.replace(/^Within them: the /, 'The ') : cap(d.drawing))}</h4><ul class="cp-list">` +
       top.map(p => `<li><button type="button" class="cp-row${on.has(p.part) ? ' on' : ''}" data-cell-sel="${esc(p.part)}" aria-pressed="${on.has(p.part)}" title="Select the ${esc(W.marks)} of ${esc(pname(p))}: odds ratio ${esc(fxv(p.or))}, the median of ${p.maps} map${p.maps === 1 ? '' : 's'}">` +
-        `<i class="kd ${p.direction === 'more' ? 'more' : p.direction === 'less' ? 'less' : 'ns'}"></i><span class="cp-n">${esc(pname(p))}</span><b>${esc(fxv(p.or))}×</b></button></li>`).join('') + '</ul></section>';
+        `<i class="kd ${p.direction === 'more' ? 'more' : p.direction === 'less' ? 'less' : 'ns'}"></i><span class="cp-n">${esc(pname(p))}</span>${p.direction === 'ns' ? '<b class="muted" title="not significant (q above 0.05 or under 1.1×)">n.s.</b>' : `<b>${esc(fxv(p.or))}×</b>`}</button></li>`).join('') + '</ul></section>';
   }
   function bigTile(card) {
     TIPS = [];
@@ -877,7 +877,7 @@
     return `<article class="tile${dw ? ' wide' : ''}" id="tile-${esc(ID)}" data-tile="${esc(ID)}" tabindex="0"><header><h3>${esc(card.title || C.title || 'Where in the cell')}</h3>${K.detailsLink(ID)}</header>` + fig +
       `<div class="trows">${forest(items)}</div><p class="tfoot">${lead(regs, up, scoped, true)}</p>${note}</article>`;
   }
-  const colourKey = () => `<p class="key cell-keys"><span class="cell-key"><i class="cg-k u3"></i><i class="cg-k u1"></i> more likely than ${esc(alike)}</span><span class="cell-key"><i class="cg-k ns"></i> no clear difference</span>` +
+  const colourKey = () => `<p class="key cell-keys"><span class="cell-key"><i class="cg-k u3"></i><i class="cg-k u1"></i> more likely than ${esc(alike)}</span><span class="cell-key"><i class="cg-k ns"></i> no difference</span>` +
     `<span class="cell-key"><i class="cg-k d1"></i><i class="cg-k d3"></i> less likely</span><span class="cell-key"><i class="cg-k na"></i> not measured</span><span>numbers: odds ratios (in the drawings, the median of the maps)</span></p>`;
   // the members of a row: the marked proteins (or the selection's) each map places in the row's compartment
   function members(L, row, scoped) {
@@ -930,7 +930,7 @@
         ds.universe ? `${int(ds.universe)} proteins placed, ${pc(ds.marked, ds.universe)}% ${esc(W.marked)}` : '', `<a href="${esc(K.link('overview', m.analysis))}">its question</a>`].filter(Boolean);
       return `${esc(ds.name)} (${bits.join('; ')})`; }).join('; ');
     return `<div class="card-body cell-page"><p class="cell-lead">${lead(regs, up, scoped, false)}</p>` +
-      `<p class="small">${esc(C.intro || '')} Red: ${esc(who(scoped))} are more likely to be found there than ${esc(alike)}. Slate: less likely. Grey: no clear difference.${selNote}</p>` +
+      `<p class="small">${esc(C.intro || '')} Red: ${esc(who(scoped))} are more likely to be found there than ${esc(alike)}. Slate: less likely. Grey: no difference.${selNote}</p>` +
       colourKey() + regionsBlock + drawings + block('grid', 'Compartments against maps', 'cell-grid') + (at === 'grid' ? dt() : '') +
       `<div class="cell-block cell-one" id="cell-one"><div class="fig-head"><span class="flabel">One map at a time</span><span class="seg cell-maps" role="group" aria-label="Map">` +
       MAPS.map(m => `<button type="button" data-cellmap="${esc(m.analysis)}" aria-pressed="${m.analysis === UI.map}">${esc(m.short || m.name)}</button>`).join('') + '</span>' +

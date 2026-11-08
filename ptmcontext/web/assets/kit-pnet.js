@@ -237,7 +237,7 @@
       sel('labels', 'Labels', [['all', 'Every node'], ['methyl', `Nodes with ${W.marks} and the second ring`], ['none', 'This protein only']], OPT.labels) +
       sel('size', 'Node size', [['marks', `By ${W.mark} count`], ['equal', 'All the same']], OPT.size) +
       `<label class="pn-chk" title="Add the proteins that STRING links to these partners and that have ${esc(W.marks)} here${PT ? ' or are in a partner class' : ''}, to trace paths through the partners"><input type="checkbox" id="pn-ring"${OPT.ring ? ' checked' : ''}> Second ring of partners’ partners</label>` +
-      `<label class="pn-opt" for="pn-pins"><span>Always include</span><input type="text" id="pn-pins" size="22" placeholder="Gene symbols, e.g. PRMT5, SMN1" value="${esc(OPT.pins)}"></label>` +
+      `<label class="pn-opt" for="pn-pins"><span>Always include</span><input type="text" id="pn-pins" size="22" placeholder="Gene symbols${D.site.placeholders?.partners ? esc(', e.g. ' + D.site.placeholders.partners) : ''}" value="${esc(OPT.pins)}"></label>` +
       `<button type="button" class="linkish" data-pn-optreset>Reset network options</button>` +
       `<button type="button" class="btn quiet small" id="pn-string" data-pn-string title="Open this network on string-db.org with the same settings">Open in STRING ↗</button>` +
       `<span class="pn-zoom" role="group" aria-label="Zoom the network"><button type="button" class="btn quiet small" data-pn-zoom="in" aria-label="Zoom in">+</button><button type="button" class="btn quiet small" data-pn-zoom="out" aria-label="Zoom out">−</button><button type="button" class="btn quiet small" data-pn-zoom="fit" title="Show the whole network (double-click the background)">Reset zoom</button></span></div>` +

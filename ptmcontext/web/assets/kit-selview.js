@@ -39,7 +39,7 @@
     return memo;
   }
   const qTitle = r => A[r.analysis]?.title || r.analysis;
-  const summaryText = m => (m.fu.some(r => !r.circular) ? m.fu.filter(r => !r.circular).slice(0, 3).map(r => `${r.label} OR ${fx(r.or)}`).join(', ') + ' · ' : '') + `${int(m.diff.length)} of ${int(m.rows.length)} features differ (q ≤ ${PADJ()})`;
+  const summaryText = m => (m.fu.some(r => !r.circular) ? m.fu.filter(r => !r.circular).slice(0, 3).map(r => `${r.label} OR ${fx(r.or)}`).join(', ') + ' · ' : '') + `${int(m.diff.length)} of ${int(m.rows.length)} features differ (q ≤ ${PADJ()}; odds ratios, not counting how the ${W.marks} were found)`;
   // the forest, as the page draws it and the figure exports it: each row's odds ratio and 95% CI on a log2 axis
   function forestSvg(rows, w, light) {
     const L = Math.min(300, w * 0.42), R = 96, X0 = L + 8, X1 = w - R, lo = -4, hi = 4, rowH = 22;
@@ -57,12 +57,12 @@
     [[0.25, '¼×'], [1, '1×'], [4, '4×'], [16, '16×']].forEach(([v, t]) => parts.push(`<text x="${X(v).toFixed(1)}" y="${yA}" font-size="12" text-anchor="middle" fill="${light ? '#6b7280' : 'var(--muted)'}">${t}</text>`));
     return { svg: parts.join(''), H: yA + 6 };
   }
-  const apartTsv = m => K.preamble(`What sets the selection apart`, `the selection's ${W.marks} against the other ${W.marks}: each class of each question and each attribute of the ${W.marks}, Fisher's exact test (pooled), Haldane odds ratio with Woolf's 95% CI, Benjamini-Hochberg q within each question`) +
+  const apartTsv = m => K.preamble(`What sets the selection apart`, `the selection's ${W.marks} against the other ${W.marks}: each class of each question and each attribute of the ${W.marks}, Fisher's exact test (across all proteins), Haldane odds ratio with Woolf's 95% CI, Benjamini-Hochberg q within each question`) +
     'question\tclass\tlabel\tselected_in\tselected_total\tothers_in\tothers_total\todds_ratio\tci_low\tci_high\tp\tq\treading\n' +
     m.rows.map(r => [qTitle(r), r.category, r.label, r.a, r.a + r.b, r.c, r.c + r.d, r.or, r.lo, r.hi, r.p, r.q, r.dir].map(x => (x == null ? '' : typeof x === 'number' ? String(+x.toPrecision(6)) : String(x).replace(/[\t\n]/g, ' '))).join('\t')).join('\n') + '\n';
   const apartFigure = () => { const m = apart(), f = forestSvg(m.shown, 720, true);
     return K.figureFrame({ title: `What sets your selection apart from the other ${W.marks}`, sub: `${K.sel.describe()}: ${int(m.G?.g1.length || 0)} ${W.marks} against the other ${int(m.G?.g2.length || 0)}. ${summaryText(m)}`,
-      body: `<g transform="translate(20,0)">${f.svg}</g>`, bodyH: f.H, W: 760, note: `Pooled odds ratio and 95% CI (Woolf), Fisher's exact test, Benjamini-Hochberg q within each question. Shares are of your selection and of the other ${W.marks}. Exploratory: not adjusted for other selections tried.` }); };
+      body: `<g transform="translate(20,0)">${f.svg}</g>`, bodyH: f.H, W: 760, note: `Odds ratio across all proteins and 95% CI (Woolf), Fisher's exact test, Benjamini-Hochberg q within each question. Shares are of your selection and of the other ${W.marks}. Exploratory: not adjusted for other selections tried.` }); };
   (K.selLead ||= []).push(() => {
     if (!K.sel.data() || !K.sel.testable()) return '';
     // the row is merged into the selection bar: its summary line sits there, and the bar's button opens this
@@ -78,7 +78,7 @@
       if (!m.rows.length) { sum.textContent = `too few ${W.marks} on one side to compare`; body.innerHTML = ''; barSum(sum.textContent); return; }
       sum.textContent = summaryText(m); barSum(sum.textContent);
       const f = forestSvg(m.shown, 680, false);
-      body.innerHTML = `<div class="apart-card"><div class="apart-top"><p class="muted small">Your ${int(m.G.g1.length)} ${esc(W.marks)} against the other ${int(m.G.g2.length)}, pooled. The classes that differ most (q ≤ ${PADJ()}) with their odds ratio and both shares.</p>` +
+      body.innerHTML = `<div class="apart-card"><div class="apart-top"><p class="muted small">Your ${int(m.G.g1.length)} ${esc(W.marks)} against the other ${int(m.G.g2.length)}, across all proteins. The classes that differ most (q ≤ ${PADJ()}) with their odds ratio and both shares.</p>` +
         K.expBar(['pdf', 'svg', 'png', 'tsv'], 'apexp', 'what sets it apart', 'apart') + '</div>' +
         (m.shown.length ? `<svg class="apart-forest" viewBox="0 0 680 ${f.H}" role="img" aria-label="The classes that differ most">${f.svg}</svg>` : `<p class="muted">No class differs at q ≤ ${PADJ()} with at least 10 ${esc(W.marks)}.</p>`) +
         K.l2Table('apart', m.diff) +
@@ -139,7 +139,7 @@
   (K.afterRender ||= []).push(() => { if (S.view === 'overview') { fillApart(); fillDrawn(); } });
 
   // ---- their Method sections ---------------------------------------------------------------------------------------
-  (K.methodParts ||= []).push(() => `<section id="m-apart"><h3>What sets a selection apart</h3><p>A selection’s ${esc(W.marks)} are compared with the other ${esc(W.marks)}, class by class, for every question about where ${esc(W.marks)} sit and every attribute of the ${esc(W.marks)} except how they were found. Test: Fisher’s exact test on the pooled 2×2 table, Haldane odds ratio with Woolf’s 95% CI, Benjamini–Hochberg q within each question. A class differs at q ≤ ${PADJ()} and 1.1× or more, with at least 10 ${esc(W.marks)} in it across both sides. The summary names the three that differ most (by the CI bound nearest 1). The full comparison (Compared with: other ${esc(W.marks)}) adds tests within proteins and within studies. It is exploratory, since the selection was chosen by looking.</p></section>` +
+  (K.methodParts ||= []).push(() => `<section id="m-apart"><h3>What sets a selection apart</h3><p>A selection’s ${esc(W.marks)} are compared with the other ${esc(W.marks)}, class by class, for every question about where ${esc(W.marks)} sit and every attribute of the ${esc(W.marks)} except how they were found. Test: Fisher’s exact test on the 2×2 table of all proteins, Haldane odds ratio with Woolf’s 95% CI, Benjamini–Hochberg q within each question. A class differs at q ≤ ${PADJ()} and 1.1× or more, with at least 10 ${esc(W.marks)} in it across both sides. The summary names the three that differ most (by the CI bound nearest 1). The full comparison (Compared with: other ${esc(W.marks)}) adds tests within proteins and within studies. It is exploratory, since the selection was chosen by looking.</p></section>` +
     `<section id="m-drawn"><h3>Protein maps of a small selection</h3><p>A selection too small to test (under ${int(K.sel.MIN.proteins)} proteins or ${int(K.sel.MIN.marks)} ${esc(W.marks)}) shows up to ${MAX_DRAWN} proteins instead, those with the most selected ${esc(W.marks)} first. Each is drawn end to end with the regions of the questions (${(D.tracks || []).filter(t => t.style !== 'segments').map(t => esc(t.title.toLowerCase())).join(', ')}), selected ${esc(W.marks)} red and the others gray. The counts that hold for any selection follow.</p></section>`);
   void cap;
 });

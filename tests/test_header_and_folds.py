@@ -37,3 +37,14 @@ def test_fold_switches_are_in_the_schema_and_reach_the_page(tmp_path):
                                                     'starting_points': {'open': True}})
     assert data['overview']['draw_first'] == 1 and data['overview']['random_maps']['enabled'] is False
     assert data['overview']['starting_points']['open'] is True
+
+
+def test_input_box_examples_come_from_the_site_file(tmp_path):
+    """The Highlight box and the partner box show the site's own examples (website.placeholders), none of another site's."""
+    _, data = _build(tmp_path, 'toyk', placeholders={'highlight': 'AAA, BBB 12', 'partners': 'CCC'})
+    assert data['site']['placeholders'] == {'highlight': 'AAA, BBB 12', 'partners': 'CCC'}
+    _, data = _build(tmp_path, 'toyl')
+    assert data['site']['placeholders'] == {}
+    for name in ('kit-hilite.js', 'kit-pnet.js'):
+        src = (__import__('pathlib').Path(web.__file__).parent / 'assets' / name).read_text()
+        assert 'TDP-43' not in src and 'SMN1' not in src

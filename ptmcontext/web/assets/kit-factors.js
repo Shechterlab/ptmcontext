@@ -23,7 +23,7 @@
     return M.covariates.map(c => ({ ...c, adj: adj[c.name], alone: alone[c.name], z: zOf(adj[c.name]) }))
       .sort((x, y) => Math.abs(y.z ?? 0) - Math.abs(x.z ?? 0));
   }
-  const reading = r => (!r || r.or == null ? 'not estimated' : r.dir === 'more' ? 'more often' : r.dir === 'less' ? 'less often' : r.q != null && r.q <= K.PADJ ? 'about the same (within 1.1×)' : 'no clear difference');
+  const reading = r => (!r || r.or == null ? 'not estimated' : r.dir === 'more' ? 'more often' : r.dir === 'less' ? 'less often' : r.q != null && r.q <= K.PADJ ? 'about the same (within 1.1×)' : 'no difference');
   const arrow = r => (r.dir === 'more' ? '▲ ' : r.dir === 'less' ? '▼ ' : '');
   const unitOf = f => (f.numeric ? ` for each ${f.per === 1 ? '' : f.per + ' '}unit up` : '');
 
@@ -78,7 +78,7 @@
     });
     return { body: parts.join(''), H: top + fs.length * RH + 24, fs };
   }
-  const legend = [['#b42318', '#b42318', 'more often (q ≤ 0.05, ≥ 1.1×)'], ['#334155', '#334155', 'less often'], ['#ffffff', '#8a96a0', 'no clear difference']];
+  const legend = [['#b42318', '#b42318', 'more often (q ≤ 0.05, ≥ 1.1×)'], ['#334155', '#334155', 'less often'], ['#ffffff', '#8a96a0', 'no difference']];
   const noteOf = id => `Each odds ratio compares a ${W.mark} with the other ${W.residues} of the same protein (one stratum per protein, ${info(id)}). The filled marks are the factor's odds ratio taking all the factors together, so the others are held fixed; the hollow marks are the same factor in a model by itself. Bars are 95% confidence intervals (Wald). Factors that go together (a motif that sits in disordered regions, say) share an effect when taken alone and split it when taken together. Listed by the strength of the evidence taking all together (the size of the estimate over its standard error). A conditional logistic regression (Breslow & Day 1980), the several-factor form of the Mantel–Haenszel test; an association, not a cause.`;
   function figure(id) {
     const f = forest(id, true), a = A[id];
@@ -100,7 +100,7 @@
       `<td class="num">${x.adj && x.adj.b != null ? `${int(x.adj.a)} of ${int(x.adj.a + x.adj.b)}<br><span class="muted small">others ${int(x.adj.c)} of ${int(x.adj.c + x.adj.d)}</span>` : `${int(x.adj?.a || 0)} ${esc(W.marks)}<br><span class="muted small">${int(x.adj?.c || 0)} others</span>`}</td></tr>`).join('');
     const drop = (fit.dropped || []).length ? `<p class="note small muted">Left out because it does not vary: ${esc(fit.dropped.join(', '))}.</p>` : '';
     return `<div class="card-head"><div><h3>${esc(card.title || a.title)}</h3><p class="sub">${esc(a.sub || '')}</p></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'fexp', a.title, id)}</div>` +
-      `<div class="fm-legend"><span class="fm-key more"></span>more often <span class="fm-key less"></span>less often <span class="fm-key same"></span>no clear difference · filled: all factors together · hollow: the factor alone</div>` +
+      `<div class="fm-legend"><span class="fm-key more"></span>more often <span class="fm-key less"></span>less often <span class="fm-key same"></span>no difference · filled: all factors together · hollow: the factor alone</div>` +
       `<div class="fm-plot"><svg viewBox="0 0 ${FW} ${f.H}" class="fm-svg" role="img" aria-label="${esc(a.title)}: odds ratio of each factor, together and alone">${f.body}</svg></div>` +
       `<div class="tbl-card"><table class="tbl fm-tbl"><thead><tr><th>Factor</th><th>Taking all factors together</th><th>On its own</th><th class="num">${esc(W.marks)} with it</th></tr></thead><tbody>${rows}</tbody></table></div>` +
       `<p class="note small muted">${esc(noteOf(id))}</p>${drop}` +

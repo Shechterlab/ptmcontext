@@ -813,7 +813,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: the other proteins with an interphase chromatin probability
-    labels: {"ICP >= 0.8 (chromatin)": "Chromatin (probability ≥ 0.8)", "ICP 0.5-0.8": "Probability 0.5–0.8", "ICP 0.2-0.5": "Probability 0.2–0.5",
+    labels: {"ICP >= 0.8 (chromatin)": "Chromatin (probability ≥ 0.8)", "ICP 0.5-0.8": "Chromatin probability 0.5–0.8", "ICP 0.2-0.5": "Chromatin probability 0.2–0.5",
              "ICP < 0.2 (not chromatin)": "Not chromatin (probability < 0.2)"}
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   # Where the RNAs bound by proteins with eCLIP data gather (scripts/cell_maps.py, GENE_MAPS): the release's calls per
@@ -1213,6 +1213,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
   examples: [FUS, TAF15 EWSR1 FUS, "disease:als", FUS R216, "motif:RGG"]   # the first three are the chips under the search box
+  placeholders: {highlight: "FUS, TDP-43, HNRNPA1 R218", partners: "PRMT5, SMN1"}   # examples inside the Highlight and partner boxes
   front:                   # the cards front end (CONTRACTS.md, 'The cards front end'); mode: classic keeps the classic Overview
     mode: classic
     rows: 5
@@ -1355,7 +1356,6 @@ website:                  # the look and words of the website (ptmc web); layout
     row_labels:                 # a code is unique only within its question; the two stress-granule sets are told apart by source
       condensate: {DEE660B4: "Stress granule (CD-CODE)"}
       condensate_proteome: {DEE660B4: "Stress granule (CD-CODE)"}
-      disease_family: {"ALS / motor neuron / FTD": "ALS / FTD", "Ataxia / cerebellar degeneration": "Ataxia", "Myopathy / muscle / cardiomyopathy": "Muscle disease", "Alzheimer / tau / dementia": "Alzheimer", "Cancer / neoplasia": "Cancer", "Developmental / congenital syndromes": "Developmental", "Immune / inflammatory": "Immune"}
       panther_group: {"RNA processing and translation": "RNA processing", "Scaffolds, adaptors and chaperones": "Scaffolds", "Transcription, chromatin and DNA": "Transcription", "Protein-modifying enzymes": "Modifying enzymes", "Cytoskeleton, adhesion and matrix": "Cytoskeleton"}
       disorder: {"disordered": "In an IDR", "ordered": "Ordered"}
       crosslink: {"capri_adj_peptide": "Next to RNA (CAPRI)", "rbrid_residue": "RNA contact (RBR-ID)", "rna_crosslink": "RNA crosslink", "dna_binding_region": "DNA-binding region"}
@@ -1401,8 +1401,8 @@ website:                  # the look and words of the website (ptmc web); layout
       open: true
       lists:
         - {title: Most sites, by: marks, n: 6, help: Proteins with the most methylarginine sites}
-        - {title: Most of their arginines methylated, by: arg_enrichment, where: {attribute: arg_enrichment_q, max: 0.05}, show: "", n: 6,
-           help: "Highest arginine-methylation enrichment: more of the protein's arginines methylated than its length and arginine count predict"}
+        - {title: Most methylated for their arginine count, by: arg_enrichment, where: {attribute: arg_enrichment_q, max: 0.05}, show: "log2 {arg_enrichment}", n: 6,
+           help: "Highest arginine-methylation enrichment, as log2 of the methylated share of the protein's arginines over the proteome-wide rate (3 is 8 times): more of the protein's arginines methylated than its length and arginine count predict"}
         - {title: Densest clusters, by: dense_q, order: asc, where: {attribute: dense_q, max: 0.05}, show: "{dense_sites}/{dense_window} aa", n: 6,
            help: "Most significant clustering of methylarginines (permutation test): sites in the window"}
       quick:
@@ -1514,7 +1514,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {analysis: cell_organelle_ip, regions: cell_region_organelle_ip, name: Organelle IP, short: Organelle IP, method: Organelle pull-down, cells: HEK293T,
          how: "Organelles immunoprecipitated one by one. Each protein is assigned to the organelle it co-purifies with.",
          ref: Hein et al. 2025, doi: 10.1016/j.cell.2024.11.028, url: "https://github.com/czbiohub-sf/Organelle_IP_analyses_and_figures", licence: BSD-3-Clause (analysis repository)}
-      - {analysis: cell_chromatin, name: Chromatin probability, short: ChEP, method: Fractionation, cells: human cell lines,
+      - {analysis: cell_chromatin, graded: true, name: Chromatin probability, short: ChEP, method: Fractionation, cells: human cell lines,
          how: "probability that a protein is chromatin-bound, from chromatin enrichment across many conditions",
          ref: Kustatscher et al. 2014, doi: 10.1002/embj.201387614, url: "https://doi.org/10.1002/embj.201387614", licence: CC BY}
     regions:               # the sets of each map's regions question, and the part of the drawings each colors
@@ -1637,7 +1637,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
     - {name: Provenance, attributes: [studies, n_studies, localised_by]}
-  dataset: {label: dataset, version: v1.4.3, date: "2026-10-31", doi: "10.5281/zenodo.22696798", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3"}
+  dataset: {label: data release, version: v1.4.3, date: "2026-10-31", doi: "10.5281/zenodo.22696798", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3"}
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/human_methylarginine_sites_v1.4.3.xlsx", format: Excel, note: "every site with its evidence, one row per site"}
@@ -2734,6 +2734,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: crosslink, category: pclap_peptide_among_measured, phrase: in RNA-bound peptides}
           - {analysis: crosslink, category: rbdmap_peptide_among_measured, phrase: in RNA-bound peptides}
           - {analysis: crosslink, category: dna_crosslink_or_candidate, phrase: at DNA crosslinks}
+          - {analysis: crosslink, category: rbrid_residue_among_measured, phrase: in RNA-bound residues}
           - {analysis: crosslink, category: rna_crosslink, phrase: at RNA-crosslinked residues}
       highlights:
         - {rows: [{analysis: crosslink, category: capri_adj_peptide_among_measured}, {analysis: crosslink, category: pclap_peptide_among_measured}, {analysis: crosslink, category: rbdmap_peptide_among_measured}, {analysis: crosslink, category: rbrid_residue_among_measured}],

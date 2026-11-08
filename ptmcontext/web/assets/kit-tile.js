@@ -22,7 +22,8 @@
     return { L, ticks: ticks.sort((p, q) => p - q), lo, hi };
   }
   const PX = f => (3 + 94 * f).toFixed(1);                     // the track keeps 3% at each end, so a dot at the end is whole
-  const axisHtml = ax => `<div class="fr-ax" aria-hidden="true"><span class="tk">${ax.ticks.map(t => `<i${t === 1 ? ' class="one"' : ''} style="left:${PX(ax.L(t))}%">${fmtT(t)}×</i>`).join('')}</span></div>`;
+  // nlab: what the number at the end of each row counts ("proteins", or the marks), said above it
+  const axisHtml = (ax, nlab) => `<div class="fr-ax" aria-hidden="true"><span class="tk">${ax.ticks.map(t => `<i${t === 1 ? ' class="one"' : ''} style="left:${PX(ax.L(t))}%">${fmtT(t)}×</i>`).join('')}</span>${nlab ? `<span class="fr-nh">${esc(nlab)}</span>` : ''}</div>`;
   const fin = v => (v != null && Number.isFinite(v) ? Math.min(v, 1e3) : null);
   // x: { label, v, lo: [low, high] | null, q, dir, n, wv, desc, absent, measure }; attrs: the row's own attributes (its click, its hover)
   function rowHtml(x, ax, attrs = '', cls = '') {
@@ -47,7 +48,7 @@
     const more = ok.filter(r => sig(r) && r.dir === 'more').sort((a, b) => b.v - a.v).slice(0, 2), less = fold ? [] : ok.filter(r => sig(r) && r.dir === 'less').sort((a, b) => a.v - b.v).slice(0, 1);
     const nm = r => `${esc(r.label)} (${K.fxn(r.v)}×)`;
     if (!ok.length) return rows.length && rows.every(r => r.absent) ? 'None of these is in this selection.' : '';
-    if (!more.length && !less.length) return `No row here differs clearly from the other ${fold ? 'proteins' : esc(W.residues)}.`;
+    if (!more.length && !less.length) return `No row here differs from the other ${fold ? 'proteins' : esc(W.residues)}.`;
     return [more.length ? `More often: ${more.map(nm).join(', ')}.` : '', less.length ? `Less often: ${less.map(nm).join(', ')}.` : ''].filter(Boolean).join(' ');
   }
   // a Download menu that opens on a tap: the formats given, and the question's Method

@@ -75,7 +75,7 @@
   const isNuc = a => NUC_ALL.has(a.resn);
   const nucKind = a => (NUC_DNA.includes(a.resn) ? 'dna' : 'rna');
   const isPolymer = a => !a.hetflag || COMPONENTS.includes(a.resn);
-  const methodShort = m => ({ 'X-ray diffraction': 'X-ray', 'X-RAY DIFFRACTION': 'X-ray', 'Electron Microscopy': 'Cryo-EM', 'ELECTRON MICROSCOPY': 'Cryo-EM', 'Solution NMR': 'NMR', 'SOLUTION NMR': 'NMR', 'Solid-state NMR': 'ssNMR', 'Electron crystallography': 'EC' }[m] || m || '–');
+  const methodShort = m => ({ 'X-ray diffraction': 'X-ray', 'X-RAY DIFFRACTION': 'X-ray', 'Electron Microscopy': 'Cryo-EM', 'ELECTRON MICROSCOPY': 'Cryo-EM', 'Solution NMR': 'NMR', 'SOLUTION NMR': 'NMR', 'Solid-state NMR': 'ssNMR', 'Electron crystallography': 'Electron crystallography' }[m] || m || '–');
   const pdbDesc = s => { const x = String(s || '').replace(/^PROTEIN \((.*)\)$/i, '$1'); return x && x === x.toUpperCase() ? (x.charAt(0) + x.slice(1).toLowerCase()).replace(/\b(rna|dna)\b/gi, w => w.toUpperCase()) : x; };
   const shorten = (s, n) => (String(s).length > n ? String(s).slice(0, n - 1) + '…' : String(s));
   const KIND_WORD = { rna: 'RNA', dna: 'DNA', protein: 'Protein', self: 'Self', hybrid: 'RNA–DNA', other: 'Other' };
@@ -129,7 +129,8 @@
   const fill = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; return el; };
   const pageOpen = acc => K.S.view === 'protein' && String(K.S.arg).split('/')[0] === acc && !!document.getElementById('s3d');
   const inputsOf = part => (SD.inputs?.[part] || []).map(n => ({ name: n, ...(D.inputs?.[n] || {}), md5: D.run?.inputs?.[n]?.md5 || '' }));
-  const tableWords = part => inputsOf(part).map(x => x.version || x.name).join('; ');
+  const dateWords = v => String(v || '').replace(/\b\d{4}-\d{2}-\d{2}\b/g, m => K.hdate(m));      // the same date form as the header and footer
+  const tableWords = part => inputsOf(part).map(x => dateWords(x.version) || x.name).join('; ');
 
   // ---- live sources ------------------------------------------------------------------------------------------------------
   const cache = { af: {}, am: {}, pdb: {}, det: {}, meta: {}, best: {}, hom: {}, cx: {}, files: {} };
@@ -733,7 +734,7 @@
     const lab = target ? `Experimental · PDB ${UP(target.id)}` : best?.failed || res?.failed ? 'Experimental (PDBe did not answer; retry)' : !res ? 'Experimental (looking…)' : list.length ? 'Experimental' : 'Experimental (none)';
     box.innerHTML = `<div class="seg" role="group" aria-label="Structure shown"><span class="seg-l">Show</span><button type="button" data-s3d-src="pdb" aria-pressed="${mode === 'pdb'}"${!res && !best ? ' disabled' : res && !list.length && !res.failed ? ' disabled' : ''}>${esc(lab)}</button>` +
       `<button type="button" data-s3d-src="af" aria-pressed="${mode === 'af'}">AlphaFold model</button></div>` +
-      (list.length > 1 || (list.length && !own) ? `<label class="s3d-ctl s3d-entry">Entry <select data-s3d-sel="entry" aria-label="Experimental entry to show"><option value="">${own ? '' : 'Choose an entry…'}</option>${list.map(x => `<option value="${esc(x.e.id)}"${own && x.e.id === own.e.id ? ' selected' : ''}>${esc(optLabel(x))}</option>`).join('')}</select></label>` : '') +
+      (list.length > 1 || (list.length && !own) ? `<label class="s3d-ctl s3d-entry">Entry <select data-s3d-sel="entry" aria-label="Experimental entry to show"><option value="">${own ? '' : 'Choose an entry…'}</option>${list.map(x => `<option value="${esc(x.e.id)}"${own && x.e.id === own.e.id ? ' selected' : ''}>${esc(optLabel(x))}</option>`).join('')}</select></label><span class="muted small s3d-optkey"> Each entry: PDB code · method and resolution in Å (lower is sharper) · what it resolves</span>` : '') +
       (chains.length > 1 ? `<label class="s3d-ctl">Chain <select data-s3d-sel="chain" aria-label="Chain of this protein">${chains.map(c => `<option value="${esc(c)}"${c === own.chain ? ' selected' : ''}>${esc(c)} · ${esc(own.e.maps.filter(m => m.chain === c).map(m => m.unpStart + '–' + m.unpEnd).join(', '))}</option>`).join('')}</select></label>` : '') +
       (own && best && !best.failed && best.e.id === own.e.id && best.det.chain === own.chain ? `<span class="muted small">${int(best.obs)} residues observed${best.nSites ? `, ${int(best.nSites)} ${best.nSites === 1 ? NOUN : NOUNS}` : ''}</span>` : own ? `<span class="muted small">${int(own.toAuth.size)} ${own.toAuth.size === 1 ? NOUN : NOUNS} resolved in chain ${esc(own.chain)}</span>` : '');
   }
@@ -1093,7 +1094,7 @@
   function sourceLine() {
     const pr = provenance(), tables = Object.entries(pr.site_tables);
     return `Structure: ${pr.structure.shown}, read live from ${pr.structure.read_live.split(', ').slice(1).join(', ')} on ${pr.structure.read_live.split(', ')[0]}; residues placed by ${pr.structure.placed_by}. ` +
-      (tables.length ? `From the site’s tables: ${tables.map(([k, xs]) => `${k} (${xs.map(x => `${x.version || x.input}, MD5 ${x.md5.slice(0, 8)}…`).join('; ')})`).join('; ')}. ` : 'Nothing in this view comes from the site’s own tables except the marks. ') + `Drawn with ${LIB_CITE}.`;
+      (tables.length ? `From the site’s tables: ${tables.map(([k, xs]) => `${k} (${xs.map(x => `${dateWords(x.version) || x.input}, MD5 ${x.md5.slice(0, 8)}…`).join('; ')})`).join('; ')}. ` : 'Nothing in this view comes from the site’s own tables except the marks. ') + `Drawn with ${LIB_CITE}.`;
   }
   function figure() {
     const mol = T.mol, uri = snapshot(3), el = mol.el, w = 720, h = Math.round(w * (el.clientHeight || 480) / (el.clientWidth || 720));
@@ -1463,7 +1464,7 @@
     `The experimental chain comes from PDBe’s SIFTS best structures: among chains whose mapping spans most of the protein, the one PDBe says observes most residues. Each ${esc(NOUN)} is placed through its SIFTS segment and PDBe’s observed residues, so only ${esc(NOUNS)} in the deposited model are drawn. A homologous structure (RCSB sequence search, MMseqs2, at least 30% identity) places them through the alignment, and AlphaFold or predicted complex models use UniProt numbering. ` +
     `Entries that model one of the ${esc(NOUN)}’s chemical components (${esc((SD.components || []).map(c => c.code + ' ' + c.label).join(', ') || 'none named in the profile')}) are found with RCSB’s search.</p>` +
     `<p>The chain is colored by the site’s regions as on the protein map, by the residue evidence the site file names, or by model confidence, chain, position, secondary structure, charge or Kyte–Doolittle hydropathy. The ${esc(NOUNS)} take the map’s color. Contacts are side-chain heavy atoms within 4 Å of another chain, RNA or DNA, computed in the browser on the coordinates shown.</p>` +
-    (Object.keys(SD.inputs || {}).length ? `<p>What the ${esc(NOUNS)} touch, entry by entry, comes from the site’s tables: ${Object.entries(SD.inputs).map(([k, ns]) => `${esc(k)}: ${esc(ns.map(n => (D.inputs?.[n]?.version || n) + (D.run?.inputs?.[n]?.md5 ? ` (MD5 ${D.run.inputs[n].md5})` : '')).join('; '))}`).join('; ')}. Each export says which parts came live and which from these tables.</p>` : '') +
+    (Object.keys(SD.inputs || {}).length ? `<p>What the ${esc(NOUNS)} touch, entry by entry, comes from the site’s tables: ${Object.entries(SD.inputs).map(([k, ns]) => `${esc(k)}: ${esc(ns.map(n => (dateWords(D.inputs?.[n]?.version) || n) + (D.run?.inputs?.[n]?.md5 ? ` (MD5 ${D.run.inputs[n].md5})` : '')).join('; '))}`).join('; ')}. Each export says which parts came live and which from these tables.</p>` : '') +
     '<p>Downloads: the view as a figure (PDF, SVG, or PNG at three times screen resolution) with its key, citation and sources; a TSV of the marks in the model; ChimeraX and PyMOL scripts that rebuild the view; and the coordinates (mmCIF, PDB) with the marks listed.</p></section>';
   (K.methodParts ||= []).push(methodSection);
 

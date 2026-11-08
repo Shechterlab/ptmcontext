@@ -104,14 +104,16 @@
     if (!K.cell || !K.sel.data()) return { html: '<p class="muted small">Loading…</p>', wait: true };
     const ms = K.cell.maps(p), nar = matchMedia('(max-width: 700px)').matches, dr = ms ? (nar ? K.cell.drawingsNarrow(p) : K.cell.drawings(p)) : '';
     if (!ms || !dr) return { html: '', hide: true, pic: '' };
-    const sets = [...new Set(ms.flatMap(m => m.sets))], nPl = ms.filter(m => m.sets.length).length;
+    const sets = [...new Set(ms.filter(m => !m.graded).flatMap(m => m.sets))], nPl = ms.filter(m => m.sets.length).length;
+    // a map that grades (a probability band) is said apart from the places: "chromatin probability 0.2–0.5"
+    const grades = [...new Set(ms.filter(m => m.graded).flatMap(m => m.sets))].map(x => x.charAt(0).toLowerCase() + x.slice(1));
     // a phone: the drawings without their labels, then each place with the maps that put the protein there
-    const byPlace = new Map(); ms.forEach(m => m.sets.forEach(x => byPlace.set(x, [...(byPlace.get(x) || []), m.name])));
+    const byPlace = new Map(); ms.filter(m => !m.graded).forEach(m => m.sets.forEach(x => byPlace.set(x, [...(byPlace.get(x) || []), m.name])));
     const where = nar && sets.length ? `<ul class="cell-places">${[...byPlace].map(([x, mn]) => `<li><b>${esc(x)}</b> <span class="muted small">${esc(mn.join(' · '))}</span></li>`).join('')}</ul>` : '';
     return { html: `<div class="cell-pair">${dr}</div>` + where +
-      (nar && sets.length ? '' : `<p class="cell-where">${sets.length ? `<b>Placed in:</b> ${esc(sets.join(' · '))}` : `<span class="muted">No map places ${esc(gene(p))} in a compartment.</span>`}</p>`) +
+      (nar && sets.length ? '' : `<p class="cell-where">${sets.length || grades.length ? `<b>Placed in:</b> ${esc(sets.join(' · '))}${grades.length ? `; ${esc(grades.join(', '))}` : ''}` : `<span class="muted">No map places ${esc(gene(p))} in a compartment.</span>`}</p>`) +
       `<details class="pc-mapsfold"><summary>Cell maps table <span class="muted">· each map's words on ${esc(gene(p))}</span></summary>${mapsTable(p, ms)}</details>`,
-    sum: sets.length ? `${nPl} of ${ms.length} maps place it: ${sumList(sets, 3)}` : `${ms.length} maps, none places it in a compartment`,
+    sum: sets.length || grades.length ? `${nPl} of ${ms.length} maps place it: ${sumList(sets, 3)}${grades.length ? (sets.length ? '; ' : '') + grades.join(', ') : ''}` : `${ms.length} maps, none places it in a compartment`,
     pic: K.pfolds ? K.pfolds.bigN([[`${nPl}/${ms.length}`, 'maps place it']]) : '' };
   }
   // where the RNAs the protein binds gather: for each map of the bound RNAs (protein-set questions), the compartments of the protein's own sets, each with the dataset's test of it
@@ -229,9 +231,10 @@
     if (!sites.length) return { html: head + `<p class="muted">None of its ${esc(W.marks)} was quantified in these experiments (${esc(cols.map(c => c.label).join('; '))}).</p>`, sum: 'not measured' };
     const mk = c => (marks[c] || (c === 'no_significant_change' ? '○' : '?'));
     const down = sites.filter(pos => used.some(c => cell.get(`${pos}|${c.key}`)?.call === 'decreased')).length;
-    const html = head + `<div class="tbl-wrap"><table class="pc-tbl pert"><thead><tr><th scope="col">Site</th>${used.map(c => `<th scope="col">${esc(c.label)}</th>`).join('')}</tr></thead><tbody>` +
+    const keyP = `<p class="pc-key">${Object.entries(marks).map(([c, m]) => `<span><span class="trend c-${esc(c)}"><b>${esc(m)}</b></span> ${esc(word(words, c))}</span>`).join('')}<span>○ no significant change</span><span>blank: not quantified · hover a mark for its numbers</span></p>`;
+    const html = head + keyP + `<div class="tbl-wrap"><table class="pc-tbl pert"><thead><tr><th scope="col">Site</th>${used.map(c => `<th scope="col">${esc(c.label)}</th>`).join('')}</tr></thead><tbody>` +
       sites.map(pos => `<tr><th scope="row">${siteLink(p, rec, pos)}</th>${used.map(c => { const x = cell.get(`${pos}|${c.key}`); return x ? `<td title="${esc(x.tip)}"><span class="trend c-${esc(x.call)}"><b>${esc(mk(x.call))}</b></span></td>` : '<td class="muted" title="Not quantified">&nbsp;</td>'; }).join('')}</tr>`).join('') +
-      `</tbody></table></div><p class="pc-key">${Object.entries(marks).map(([c, m]) => `<span><span class="trend c-${esc(c)}"><b>${esc(m)}</b></span> ${esc(word(words, c))}</span>`).join('')}<span>○ no significant change</span><span>blank: not quantified · hover a mark for its numbers</span></p>` +
+      `</tbody></table></div>` +
       (cfg.note ? `` : '');
     return { html, sum: `${int(down)} of ${int(sites.length)} quantified sites decreased in at least one`, pic: meters1('Decreased', down / sites.length, `${int(down)} of ${int(sites.length)} sites`) };
   }
