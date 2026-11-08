@@ -228,7 +228,7 @@
     if (!fab.dataset.sc) { fab.dataset.sc = '1'; let y0 = scrollY, idle; const away = () => document.body.classList.add('fab-away'); away();
       addEventListener('scroll', () => { const y = scrollY; clearTimeout(idle); if (y < 160) away(); else if (y < y0 - 8) { document.body.classList.remove('fab-away'); idle = setTimeout(away, 1800); } else if (y > y0 + 8) away(); y0 = y; }, { passive: true }); }
     const nf = K.sel.nFilters();
-    fab.innerHTML = `☰ Filters${nf ? ` <span class="badge">${nf}</span>` : ''}`; fab.setAttribute('aria-label', `Sections and filters${nf ? `, ${nf} in use` : ''}`);
+    fab.innerHTML = `⏚ Filters${nf ? ` <span class="badge">${nf}</span>` : ''}`; fab.setAttribute('aria-label', `Filters${nf ? `, ${nf} in use` : ''}`);
     document.body.classList.toggle('rail-open', open);
     if (open) { el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); } else { el.removeAttribute('role'); el.removeAttribute('aria-modal'); }
     ['#view', '.toolbar', '.hero', 'footer.site'].forEach(sel => { const x = document.querySelector(sel); if (x) x.inert = open; });
