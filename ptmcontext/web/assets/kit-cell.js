@@ -43,8 +43,8 @@
     '.cg-m{font-size:10.5px;fill:var(--muted)}.cg-h{font-size:11px;font-weight:700;fill:var(--ink)}.cg-g{font-size:11px;font-weight:700;fill:var(--muted);letter-spacing:.04em}.cg-r{font-size:12px;fill:var(--ink)}',
     '.cd-o{stroke:var(--ink);stroke-opacity:.3;stroke-width:.9}.cd-in{fill:none;stroke:var(--ink);stroke-opacity:.38;stroke-width:1.1}.cd-gap{fill:none;stroke:var(--surface)}',
     '.cd-shade{fill:var(--ink);fill-opacity:.1}.cd-ink{fill:var(--ink);fill-opacity:.55}.cd-lead{fill:none;stroke:var(--ink);stroke-opacity:.55;stroke-width:1}',
-    '.cd-dot{fill:var(--ink);stroke:var(--surface);stroke-width:1.5}.cd-name{font-size:13.5px;font-weight:700;fill:var(--ink)}.cd-val{font-size:12.5px;fill:var(--ink)}.cd-val tspan.m{fill:var(--muted)}',
-    '.cd-hit,.cg-hit{fill:transparent}svg [data-cell-part],svg [data-cell-row],svg [data-cell-bar]{cursor:pointer}',
+    '.cd-dot{fill:var(--ink);stroke:var(--surface);stroke-width:1.5}.cd-name{font-size:15.5px;font-weight:700;fill:var(--ink)}.cd-val{font-size:14px;fill:var(--ink)}.cd-val tspan.m{fill:var(--muted)}',
+    '.cd-hit,.cg-hit{fill:transparent}svg [data-cell-part],svg [data-cell-zpart],svg [data-cell-row],svg [data-cell-bar]{cursor:pointer}',
     'svg [data-cell-part]:focus-visible,svg [data-cell-row]:focus-visible,svg [data-cell-bar]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}',
     'svg [data-cell-tip]:hover .cd-lead,svg [data-cell-part].on .cd-lead{stroke-opacity:1;stroke-width:1.8}svg [data-cell-part].on .cd-name{text-decoration:underline}',
     'svg .cg-row:hover .cg-hit,svg .cg-row.on .cg-hit,svg .cb-row:hover .cg-hit{fill:var(--accent);fill-opacity:.08}',
@@ -58,6 +58,14 @@
     '.cell-detail-tbl th{font-weight:600}.cell-detail .tbl-wrap{overflow-x:auto}.cell-members .fig-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:.5rem;margin-top:.6rem}',
     '.cell-chips{display:flex;flex-wrap:wrap;gap:.3rem;margin:.4rem 0}.cell-chip{display:inline-block;padding:.1rem .45rem;border:1px solid var(--line);border-radius:999px;font-size:.82rem;text-decoration:none;color:var(--ink)}',
     '.cell-chip:hover{border-color:var(--accent);color:var(--accent)}.cell-chip sup{color:var(--muted);margin-left:1px}',
+    '.cell-zoom-btn{margin:.2rem 0}.cell-draw svg,.cell-block .cell-scroll svg{cursor:zoom-in}.cell-draw svg [data-cell-part],.cell-block svg [data-cell-part]{cursor:pointer}',
+    'dialog.cz{width:min(97vw,1500px);height:94vh;max-width:none;max-height:none;padding:.6rem .8rem;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--ink);overflow:hidden}',
+    'dialog.cz[open]{display:flex;flex-direction:column}dialog.cz::backdrop{background:rgba(15,23,32,.55)}',
+    '.cz-bar{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex:0 0 auto}.cz-btns{display:flex;gap:.3rem}',
+    '.cz-body{display:flex;gap:.8rem;flex:1 1 auto;min-height:0;margin:.4rem 0}.cz-stage{flex:1 1 auto;min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:8px;cursor:grab}',
+    '.cz-stage .cell-svg{cursor:grab}.cz-list{flex:0 0 17rem;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:.5rem .7rem}.cz-list[hidden]{display:none}.cz-list h4{margin:.1rem 0}',
+    '.cz-ul{list-style:none;margin:.3rem 0;padding:0}.cz-ul li{padding:.15rem 0;border-top:1px solid var(--line)}.cz-ul li.hl a{font-weight:700}.cz-hint{margin:0}',
+    '@media (max-width:700px){.cz-body{flex-direction:column}.cz-list{flex:0 0 35%}}',
     '.cell-page .small,.vm-page .small{font-size:.86rem}.cell-page .btn.small{padding:.15rem .55rem;font-size:.78rem}.cell-page .btn.quiet{border-color:var(--line-strong);color:var(--ink-2)}',
     '.cell-thead{font-size:.75rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:.3rem}',
   ].join('');
@@ -242,7 +250,7 @@
     return DRAWINGS.map(d => {
       const k = 'p-' + d.drawing;
       FIGS[k] = { title: () => `${p.gene || p.acc}: the ${d.drawing}`, sub: () => `A part is colored when a map places ${p.gene || p.acc} there.`,
-        make: () => withOne(p, () => DRAW[d.drawing](false)), tsv: oneTsv(p), note: () => 'Coloured: a map places the protein in that part. Dashed outline: no map does.' };
+        make: () => withOne(p, () => DRAW[d.drawing](false)), tsv: oneTsv(p), zoom: d.drawing, one: { i: p.i }, note: () => 'Coloured: a map places the protein in that part. Dashed outline: no map does.' };
       return block(k, `The ${d.drawing}`, 'cell-fig cell-onep');
     }).join('');
   }
@@ -269,7 +277,7 @@
       const k = own(k0);
       if (!k) return '';
       const p = P[k];
-      if (ONE) return tipAttr(`<b>${esc(name || rowName(p.row))}</b>: this protein is placed here by ${and(p.cells.map(([aid]) => esc(DS(aid).name)))}`);
+      if (ONE) return tipAttr(`<b>${esc(name || rowName(p.row))}</b>: this protein is placed here by ${and(p.cells.map(([aid]) => esc(DS(aid).name)))}`) + ` data-cell-zpart="${esc(k)}"`;
       const only = p.cells.length === 1 && p.cells[0][1] && p.cells[0][1].M != null ? ', ' + p.cells[0][1].M + ' proteins' : '';
       const nm = `${name || rowName(p.row)}, ${sig(p) ? 'odds ratio ' : ''}${p.value}${sig(p) && p.maps ? ', ' + p.maps : ''}${only}`;
       return ` data-cell-part="${esc(k)}"` + (dup ? ' aria-hidden="true"' : ` role="button" tabindex="0" aria-label="${esc(nm)}"`) + tipAttr(`<b>${esc(name || rowName(p.row))}</b>: ${sig(p) ? 'odds ratio ' : ''}${esc(p.value)}${sig(p) ? (p.maps === '1 map' ? ' (1 map)' : ', median of ' + esc(p.maps)) : ''}<br>` +
@@ -588,7 +596,7 @@
     one: { title: () => `${C.title || 'Where in the cell'}: ${DS(UI.map).name}`, sub: () => { const d = DS(UI.map), at = [d.ref, d.cells].filter(Boolean).join(', '); return `${d.name}${at ? ' (' + at + ')' : ''}${d.how ? ': ' + d.how : ''}`; }, make: () => barsSvg(UI.map, scopedNow()), tsv: () => barsTsv(UI.map, scopedNow()),
       note: () => `Bars: share of ${who(scopedNow())} among the ${here} over their share of all the proteins the map places (log2), filled at q ≤ ${PADJ}. Marks: the same against ${alike} (✓ more likely, ≈ about the same, ○ no clear difference, ▼ less likely).` },
   };
-  DRAWINGS.forEach(d => { FIGS[d.drawing] = { title: () => d.title || C.title || 'Where in the cell', sub: () => `Odds ratio of ${who(scopedNow())} against ${alike}, as the median of the maps that have each part.`, make: () => DRAW[d.drawing](scopedNow()), tsv: () => gridTsv(LAYERS.part, scopedNow()) }; });
+  DRAWINGS.forEach(d => { FIGS[d.drawing] = { title: () => d.title || C.title || 'Where in the cell', sub: () => `Odds ratio of ${who(scopedNow())} against ${alike}, as the median of the maps that have each part.`, make: () => DRAW[d.drawing](scopedNow()), tsv: () => gridTsv(LAYERS.part, scopedNow()), zoom: d.drawing }; });
   // ---- for another page's card: the drawings and the parts' values, without the cell page ----------------------------------
   // K.cell.list() the drawings [{ drawing, title, parts, crop }]; K.cell.parts(scoped?) every part a row colors, with its value
   // [{ part, drawings, row, id, tone, direction, value, l2, or, maps, cells }] ('more', 'less', 'ns' or 'na'; the median of the maps
@@ -636,7 +644,7 @@
   Object.assign(K.cell, { partName, list: () => DRAWINGS.map(d => ({ drawing: d.drawing, title: d.title || d.drawing, parts: PARTS[d.drawing], crop: crops[d.drawing] || null })), parts: partValues, draw: drawInto });
 
   const figName = k => `${D.site.id}_${ID}_${k === 'one' ? UI.map : k}`;
-  const block = (k, head, cls) => `<div class="cell-block ${cls}" id="cell-${k}"><div class="fig-head"><span class="flabel">${esc(head)}</span>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', head, ID).replace(/data-cell-exp="(\w+)"/g, `data-cell-exp="$1" data-cell-fig="${k}"`)}</div>` +
+  const block = (k, head, cls) => `<div class="cell-block ${cls}" id="cell-${k}"><div class="fig-head"><span class="flabel">${esc(head)}</span>${FIGS[k].zoom ? `<button type="button" class="btn small cell-zoom-btn" data-cell-zoom="${esc(FIGS[k].zoom)}"${FIGS[k].one ? ` data-i="${FIGS[k].one.i}"` : ''} title="Open the ${esc(FIGS[k].zoom)} large, to read its labels, zoom and move">Enlarge</button>` : ''}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', head, ID).replace(/data-cell-exp="(\w+)"/g, `data-cell-exp="$1" data-cell-fig="${k}"`)}</div>` +
     `<div class="cell-scroll">${svgOf(FIGS[k].make(), 'cell-svg cell-' + k)}</div></div>`;
 
   // ---- the tile and the page --------------------------------------------------------------------------------------------
@@ -701,7 +709,7 @@
     const scoped = scopedNow(), { regs, up } = summaries(scoped), ps = partValues(scoped);
     const title = card.title || C.title || 'Where in the cell';
     const note = K.selOn() && !scoped ? `<p class="twhole"><span>Whole dataset</span> ${K.vsOn() ? 'the maps compare proteins, not marks: shown for all ' + esc(W.marked) + ' proteins' : 'the selection is too small to test'}</p>` : '';
-    const figs = DRAWINGS.map(d => `<figure class="cell-fig"><figcaption class="vh">${esc(d.title && /^Within them: /.test(d.title) ? d.title.replace(/^Within them: the /, 'The ') : cap(d.drawing))}</figcaption><div class="cell-draw" data-cell-draw="${esc(d.drawing)}" role="group" aria-label="${esc(d.title || d.drawing)}"></div></figure>`).join('');
+    const figs = DRAWINGS.map(d => `<figure class="cell-fig"><figcaption class="vh">${esc(d.title && /^Within them: /.test(d.title) ? d.title.replace(/^Within them: the /, 'The ') : cap(d.drawing))}</figcaption><div class="cell-draw" data-cell-draw="${esc(d.drawing)}" role="group" aria-label="${esc(d.title || d.drawing)}"></div><button type="button" class="btn quiet small cell-zoom-btn" data-cell-zoom="${esc(d.drawing)}" title="Open the ${esc(d.drawing)} large, to read its labels, zoom and move">Enlarge the ${esc(d.drawing)}</button></figure>`).join('');
     const kinds = ['pdf', 'svg', 'png'], bar = K.tilekit.dlMenu(title, [], 'cell-exp', ID).replace(/(<div class="exp fr-exp"[^>]*>)/, '$1' + DRAWINGS.map(d => kinds.map(k => `<button type="button" class="exp-btn" data-cell-exp="${k}" data-cell-fig="${esc(d.drawing)}" title="${esc(K.EXP_HELP[k])}">${esc(cap(d.drawing))} ${k.toUpperCase()}</button>`).join('')).join('') +
         `<button type="button" class="exp-btn" data-cell-exp="tsv" data-cell-fig="${esc(DRAWINGS[0].drawing)}" title="${esc(K.EXP_HELP.tsv)}">TSV</button>`);
     return `<article class="tile wide cell-tile" id="tile-${esc(ID)}" data-tile="${esc(ID)}" tabindex="0"><header><h3>${esc(title)}</h3>${K.detailsLink(ID)}</header>` +
@@ -710,6 +718,70 @@
       `<p class="tkey">Odds ratio against ${esc(alike)}, median of ${MAPS.length} maps.</p>${note}<div class="tact">${bar}</div></article>`;
   }
   const toggle = part => K.sel.toggle('w:' + ID, part);
+
+  // ---- the large view: the drawing in a dialog at full size, zoom and pan, and the proteins of a part when it is clicked -----
+  const rowOfPart = part => { for (const L of [LAYERS.part, LAYERS.region]) for (const [, rows] of L.groups) { const row = rows.find(r => r.part === part); if (row) return [L, row]; } return null; };
+  let ZD = null, ZS = null;
+  const PER = 50;
+  function zoomList(part, page = 0) {
+    const box = ZD.querySelector('.cz-list'), hit = part && rowOfPart(part); if (!box) return;
+    if (!hit) { box.hidden = true; return; }
+    const [L, row] = hit, scoped = scopedNow(), mem = members(L, row, scoped);
+    box.hidden = false; ZS.part = part; ZS.page = page;
+    if (!mem) { box.innerHTML = '<p class="muted">Loading the proteins…</p>'; return; }
+    const hl = K.hl?.state(), hot = hl && hl.on ? mem.filter(m => hl.prots.has(m.p)) : [], list = [...hot, ...mem.filter(m => !hot.includes(m))], pages = Math.max(1, Math.ceil(list.length / PER));
+    page = Math.min(page, pages - 1); ZS.page = page;
+    const shown = list.slice(page * PER, (page + 1) * PER);
+    box.innerHTML = `<h4>${esc(rowName(row))}</h4><p class="muted small">${scoped ? 'Proteins of your selection' : `All ${esc(W.marked)} proteins`} the maps place here: <b>${int(mem.length)}</b>${hot.length ? `; ${int(hot.length)} highlighted, listed first` : ''}. ${scoped ? '' : 'The most maps first.'}</p>` +
+      (shown.length ? `<ul class="cz-ul">${shown.map(m => `<li${hot.includes(m) ? ' class="hl"' : ''}><a href="${esc(K.link('protein', m.acc))}" title="${esc(m.gene + ' (' + m.acc + '): ' + m.maps.map(a => DS(a).name).join(', '))}">${esc(m.gene)}</a> <span class="muted small">${int(m.maps.length)} ${m.maps.length === 1 ? 'map' : 'maps'}</span>${hot.includes(m) ? ' <span class="small" aria-label="highlighted">★</span>' : ''}</li>`).join('')}</ul>` : '<p class="muted">None.</p>') +
+      (pages > 1 ? `<p class="cz-pager"><button type="button" class="btn small" data-cz-page="-1"${page ? '' : ' disabled'}>‹ Previous</button> <span class="muted small">page ${int(page + 1)} of ${int(pages)}</span> <button type="button" class="btn small" data-cz-page="1"${page < pages - 1 ? '' : ' disabled'}>Next ›</button></p>` : '');
+  }
+  function zoomView(drawing, one) {
+    const d = DRAWINGS.find(x => x.drawing === drawing); if (!d || typeof HTMLDialogElement === 'undefined') return;
+    if (!ZD) {
+      ZD = document.createElement('dialog'); ZD.id = 'cell-zoom'; ZD.className = 'cz'; ZD.setAttribute('aria-label', 'The drawing, large'); document.body.appendChild(ZD);
+      ZD.addEventListener('click', e => {
+        if (e.target === ZD || e.target.closest('[data-cz="close"]') || e.target.closest('.cz-list a')) { ZD.close(); return; }
+        const b = e.target.closest('[data-cz]'); if (b && ZS) ZS[b.dataset.cz]?.();
+        const pg = e.target.closest('[data-cz-page]'); if (pg && ZS) zoomList(ZS.part, ZS.page + +pg.dataset.czPage);
+      });
+      ZD.addEventListener('close', () => { ZD.innerHTML = ''; ZS = null; });
+    }
+    const title = one ? `${(D.proteins[one.i][1] || D.proteins[one.i][0])}: the ${drawing}` : (d.title || cap(drawing));
+    ZD.innerHTML = `<div class="cz-bar"><strong>${esc(title)}</strong><span class="cz-btns"><button type="button" class="btn small" data-cz="more" aria-label="Zoom in" title="Zoom in">+</button><button type="button" class="btn small" data-cz="less" aria-label="Zoom out" title="Zoom out">−</button><button type="button" class="btn small" data-cz="reset" title="Back to the whole drawing">Reset</button><button type="button" class="btn small" data-cz="close" aria-label="Close" title="Close (Esc)">×</button></span></div>` +
+      `<div class="cz-body"><div class="cz-stage" tabindex="0" role="group" aria-label="${esc(title)}: scroll or pinch to zoom, drag to move"></div><aside class="cz-list" hidden aria-live="polite"></aside></div>` +
+      `<p class="cz-hint muted small">Scroll or pinch to zoom, drag to move. Click a part of the drawing to list the proteins the maps place there.</p>`;
+    const stage = ZD.querySelector('.cz-stage');
+    ZS = { part: null, page: 0 };
+    let moved = false;
+    stage.addEventListener('click', e => { if (moved) { e.stopImmediatePropagation(); e.preventDefault(); moved = false; } }, true);
+    drawInto(stage, drawing, { one: one || null, keep: true, crop: false, labels: true });
+    stage.addEventListener('click', e => { const g = e.target.closest('[data-cell-part], [data-cell-zpart]'); if (!g) return; e.stopPropagation(); zoomList(g.dataset.cellPart || g.dataset.cellZpart); });
+    const sv = stage.firstElementChild; if (!sv) return;
+    sv.style.cssText = 'width:100%;height:100%;max-width:none;min-width:0;touch-action:none;display:block';
+    const vb = sv.viewBox.baseVal, B = { x: vb.x, y: vb.y, w: vb.width, h: vb.height };
+    let z = 1, cx = B.x + B.w / 2, cy = B.y + B.h / 2;
+    const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+    const apply = () => { const w = B.w / z, h = B.h / z; cx = clamp(cx, B.x + w / 2, B.x + B.w - w / 2); cy = clamp(cy, B.y + h / 2, B.y + B.h - h / 2); sv.setAttribute('viewBox', `${cx - w / 2} ${cy - h / 2} ${w} ${h}`); };
+    const at = (x, y) => { const m = sv.getScreenCTM(); if (!m) return { x: cx, y: cy }; const p = sv.createSVGPoint(); p.x = x; p.y = y; return p.matrixTransform(m.inverse()); };
+    const zoomTo = (nz, px, py) => { nz = clamp(nz, 1, 10); const q = px == null ? { x: cx, y: cy } : at(px, py); cx = q.x - (q.x - cx) * z / nz; cy = q.y - (q.y - cy) * z / nz; z = nz; apply(); };
+    ZS.more = () => zoomTo(z * 1.4); ZS.less = () => zoomTo(z / 1.4); ZS.reset = () => { z = 1; cx = B.x + B.w / 2; cy = B.y + B.h / 2; apply(); };
+    stage.addEventListener('wheel', e => { e.preventDefault(); zoomTo(z * (e.deltaY < 0 ? 1.2 : 1 / 1.2), e.clientX, e.clientY); }, { passive: false });
+    const ptr = new Map(); let d0 = 0, z0 = 1, path = 0;
+    stage.addEventListener('pointerdown', e => { ptr.set(e.pointerId, [e.clientX, e.clientY]); path = 0; if (ptr.size === 2) { const [a, b] = [...ptr.values()]; d0 = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1; z0 = z; } });
+    stage.addEventListener('pointermove', e => {
+      if (!ptr.has(e.pointerId)) return;
+      const prev = ptr.get(e.pointerId); ptr.set(e.pointerId, [e.clientX, e.clientY]);
+      if (ptr.size === 2) { const [a, b] = [...ptr.values()]; zoomTo(z0 * Math.hypot(a[0] - b[0], a[1] - b[1]) / d0, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); moved = true; return; }
+      path += Math.abs(e.clientX - prev[0]) + Math.abs(e.clientY - prev[1]);
+      if (path > 5 && z > 1) { const m = sv.getScreenCTM(); if (m) { cx -= (e.clientX - prev[0]) / m.a; cy -= (e.clientY - prev[1]) / m.d; apply(); moved = true; } }
+    });
+    const up = e => { ptr.delete(e.pointerId); if (!ptr.size) setTimeout(() => { moved = false; }, 0); };
+    stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
+    ZD.showModal();
+  }
+  K.clicks.unshift(['[data-cell-zoom]', el => zoomView(el.dataset.cellZoom, el.dataset.i != null ? { i: +el.dataset.i } : null)]);
+  K.cell.zoom = zoomView;
   function drawBig() {
     const els = [...document.querySelectorAll('#view [data-cell-draw]')]; if (!els.length) return;
     const nar = narrow();
@@ -866,4 +938,10 @@
     `@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){${TONES.dark.map(([k, v]) => `--t-${k}:${v};`).join('')}}}` +
     `:root[data-theme="dark"]{${TONES.dark.map(([k, v]) => `--t-${k}:${v};`).join('')}}` + CSS;
   document.head.appendChild(st);
+  // a click on the drawing itself (not on a part) opens it large
+  K.clicks.push(['.cell-draw > svg, .cell-onep svg.cell-cell, .cell-onep svg.cell-nucleus, .cell-block.cell-fig svg.cell-cell, .cell-block.cell-fig svg.cell-nucleus', (el, e) => {
+    if (e.target.closest('[data-cell-part], [data-cell-row], a, button')) return;
+    const box = el.closest('[data-cell-draw], .cell-block'), btn = box?.parentElement?.querySelector('[data-cell-zoom]') || box?.querySelector('[data-cell-zoom]');
+    if (btn) btn.click();
+  }]);
 });
