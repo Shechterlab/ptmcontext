@@ -257,13 +257,13 @@
   const testCell = r => (r ? `<b>${esc(K.fx(r.eff))}</b> <span class="muted small">(${esc(K.fx(r.lo))} to ${esc(K.fx(r.hi))}), q ${esc(K.fq(r.q))}</span>${K.sharePair(r) ? `<br><span class="muted small">${esc(K.sharePair(r))}</span>` : ''}<br><span class="idr-dir idr-${esc(r.dir)}">${esc(DIRW[r.dir] || r.dir)}</span>` : '<span class="muted">–</span>');
   function regionsHtml() {
     const { rows, all } = regionRows(), rate = r => (r.cand ? r.marks / r.cand : 0), base = rate(all), max = Math.max(...rows.map(rate), base, 1e-9), TT = testRows();
-    const cells = (r, bar, t) => `<td>${bar ? `<span class="idr-bar" title="${esc(`${int(r.marks)} of ${int(r.cand)} candidate residues`)}"><i style="width:${(100 * rate(r) / max).toFixed(1)}%;--c:${colour(r.cls)}"></i></span> ` : ''}<b>${pc(r.marks, r.cand)}</b></td>` +
-      `<td class="num">${int(r.marks)} of ${int(r.cand)}<br><span class="muted small">in ${int(r.idrs)} IDRs</span></td><td>${t}</td>`;
-    return `<div class="tbl-card"><table class="tbl idr-reg"><thead><tr><th>Region</th><th title="The share of the ${esc(W.residues)} inside the region’s IDRs that are ${esc(W.marked)}">% ${esc(W.marked)}</th><th class="num">${esc(cap(W.marks))} of ${esc(W.residues)}</th>` +
+    const cells = (r, bar, t) => `<td data-label="% ${esc(W.marked)}">${bar ? `<span class="idr-bar" title="${esc(`${int(r.marks)} of ${int(r.cand)} candidate residues`)}"><i style="width:${(100 * rate(r) / max).toFixed(1)}%;--c:${colour(r.cls)}"></i></span> ` : ''}<b>${pc(r.marks, r.cand)}</b></td>` +
+      `<td class="num" data-label="${esc(cap(W.marks))} of ${esc(W.residues)}">${int(r.marks)} of ${int(r.cand)}<br><span class="muted small">in ${int(r.idrs)} IDRs</span></td><td data-label="Within-protein test">${t}</td>`;
+    return `<div class="tbl-card"><table class="tbl idr-reg stackable"><thead><tr><th>Region</th><th title="The share of the ${esc(W.residues)} inside the region’s IDRs that are ${esc(W.marked)}">% ${esc(W.marked)}</th><th class="num">${esc(cap(W.marks))} of ${esc(W.residues)}</th>` +
       `<th title="The Overview’s test: each ${esc(W.mark)} against the other ${esc(W.residues)} of the same protein">Within-protein test (odds ratio, q)</th></tr></thead><tbody>` +
       rows.map(r => { const d = DP[regionNo(r.cls)];
-        return `<tr data-idr-reg="${esc(r.cls)}" tabindex="0" title="List the IDRs of this region"><td class="idr-rname"><i class="idr-sw" style="--c:${colour(r.cls)}"></i><b>R${regionNo(r.cls)}</b> ${esc(clsLabel(r.cls))}${d ? `<br><span class="muted small">${esc(d[2])}</span>` : ''}</td>${cells(r, true, testCell(TT[r.cls]))}</tr>`; }).join('') +
-      `<tr class="idr-total"><td><b>All IDRs</b></td>${cells(all, false, '<span class="muted small">the baseline of the bars</span>')}</tr></tbody></table></div>`;
+        return `<tr data-idr-reg="${esc(r.cls)}" tabindex="0" title="List the IDRs of this region"><td class="idr-rname" data-label=""><i class="idr-sw" style="--c:${colour(r.cls)}"></i><b>R${regionNo(r.cls)}</b> ${esc(clsLabel(r.cls))}${d ? `<br><span class="muted small">${esc(d[2])}</span>` : ''}</td>${cells(r, true, testCell(TT[r.cls]))}</tr>`; }).join('') +
+      `<tr class="idr-total"><td data-label=""><b>All IDRs</b></td>${cells(all, false, '<span class="muted small">the baseline of the bars</span>')}</tr></tbody></table></div>`;
   }
   function regionsTsv() {
     const { rows, all } = regionRows(), TT = testRows();
