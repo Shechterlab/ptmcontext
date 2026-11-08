@@ -54,7 +54,7 @@ def test_the_schema_takes_the_blocks_and_the_bundled_sites_pass():
         jsonschema.validate(site, schema)
         assert pcards.problems(site) == [], name
     ma = yaml.safe_load((ROOT / 'sites' / 'methylarginine.yaml').read_text())['website']['protein']
-    assert set(ma['cards']) == set(pcards.CARDS) and ma['order'][0] == 'p-map' and 'p-cons' in ma['open']
+    assert set(ma['cards']) == set(pcards.CARDS) and ma['order'][0] == 'p-map' and ma['open'] == ['p-map']
     assert not pcards.config(yaml.safe_load((ROOT / 'sites' / 'yeast_phospho.yaml').read_text())).get('cards')      # no data, no card
     with pytest.raises(jsonschema.ValidationError):
         ma_site = yaml.safe_load((ROOT / 'sites' / 'methylarginine.yaml').read_text())
