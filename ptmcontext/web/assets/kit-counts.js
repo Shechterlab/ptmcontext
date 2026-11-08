@@ -133,7 +133,7 @@
       c.dist.map((n, k) => bar(c.number && k ? `n:${c.number}` : '', String(k + 1), unit(k + 1), n, null, on ? sv.dist[k] : null,
         `<b>${esc(unit(k + 1))}</b><br>${int(n)} ${esc(W.marks)} (${pc(n, c.total)}%)${on ? `<br>${int(sv.dist[k])} of your ${int(sv.total)}` : ''}${c.number && k ? `<br>Click: the ${esc(W.marks)} with at least ${k + 1}` : ''}`, dmax)).join('') + '</div>' +
       `<p class="cnt-note">${int(c.multi)} ${esc(W.marks)} (${pc(c.multi, c.total)}%) ${esc(c.two_or_more)}${on ? `; ${int(sv.multi)} of the ${int(sv.total)} selected` : ''}. ${esc(c.note || '')}${c.number ? ` Click a row to keep the ${esc(W.marks)} with at least that many.` : ''}</p></div>` : '';
-    return `<section class="pcard cnt-card" data-count="${esc(id)}"><div class="card-head"><div><h3>${esc(c.title)}</h3><p class="sub">${esc(c.sub || '')}. Counts, not tests${on ? '; bars: the whole dataset, <span class="cnt-sel"><i></i></span> your selection' : ''}.</p></div>` +
+    return `<section class="pcard cnt-card" data-count="${esc(id)}"><div class="card-head"><div><h3>${esc(c.title)}</h3><p class="sub">${esc(K.shortSub(c.sub))}. Counts, not tests${on ? '; bars: the whole dataset, <span class="cnt-sel"><i></i></span> your selection' : ''}.</p></div>` +
       K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cexp', c.title, id) + '</div>' +
       `<div class="cnt-two${c.list ? '' : ' one'}"><div><div class="cbars${c.list ? ' x' : ''}${on ? ' s' : ''}">${vals}</div>${ticks}<p class="cnt-axis">${esc(W.marks)} reported</p></div>${dist}</div>` +
       (c.list ? '' : `<p class="cnt-note">${esc(c.note || '')}</p>`) + '</section>';
@@ -150,7 +150,7 @@
         (r.listed ? `<td><div class="cnt-mrow"><span class="cnt-meter down"></span><span class="num" title="The experiment lists only these, so there is no share">${int(r.down)} listed</span></div></td><td class="hide-xs"><span class="muted">not listed</span></td>`
           : `<td>${m(r.down, r.n, 'down')}</td><td class="hide-xs">${m(r.up, r.n, 'up')}</td>`) +
         `<td class="num hide-sm">${r.changes ? l2(r.median) : '–'}</td>${on ? `<td class="num">${s.n ? `${int(s.down)} <span class="muted">of ${int(s.n)}</span>` : '<span class="muted">–</span>'}</td>` : ''}</tr>`; };
-    return `<section class="pcard cnt-card" data-count="${esc(id)}"><div class="card-head"><div><h3>${esc(c.title)}</h3><p class="sub">${esc(c.sub || '')}. Counts and shares, not tests.</p></div>` +
+    return `<section class="pcard cnt-card" data-count="${esc(id)}"><div class="card-head"><div><h3>${esc(c.title)}</h3><p class="sub">${esc(K.shortSub(c.sub))}. Counts and shares, not tests.</p></div>` +
       K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cexp', c.title, id) + '</div>' +
       `<div class="tbl-card cnt-wrap"><table class="tbl cnt-tbl"><thead><tr><th>${esc(c.first)}</th><th class="hide-xs">${esc(c.group)}</th><th class="num" title="${esc(cap(W.marks))} measured"><span class="hide-xs">${esc(cap(W.marks))}</span><span class="show-xs">n</span></th><th>${esc(cap(c.calls.down))}</th><th class="hide-xs">${esc(cap(c.calls.up))}</th><th class="num hide-sm">Median change</th>` +
       (on ? `<th class="num" title="Your selected ${esc(W.marks)} ${esc(c.calls.down)} in each row, of those it measured">Your selection, ${esc(c.calls.down)}</th>` : '') + `</tr></thead><tbody>${c.rows.map(tr).join('')}</tbody></table></div>` +

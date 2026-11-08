@@ -102,7 +102,7 @@
     const note = tree ? `Indented rows are ${nouns} under the row above, of at least ${int(o.tree || 100)} ${u}. Their ${u} are among its ${u}, and ${nouns} overlap, so they do not add up.`
       : `A ${o.noun || 'set'} holds the ${u} of every ${o.noun || 'set'} under it, so broad ${nouns} repeat the narrower ones. The list keeps the narrowest enriched ${o.noun || 'set'} of each branch, of at least ${int(o.short || 50)} ${u}.`;
     const tbl = UI.table.has(a.id);
-    return `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3><p class="sub">${esc(a.sub)}. <a href="#method">How it was tested</a> · <a href="${esc(K.link('statistics', '', { a: a.id }))}">all tests</a></p></div>${expButtons('qoexp', a.id)}</div>` +
+    return `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3><p class="sub">${esc(K.shortSub(a.sub))}. <a href="#method">How it was tested</a> · <a href="${esc(K.link('statistics', '', { a: a.id }))}">all tests</a></p></div>${expButtons('qoexp', a.id)}</div>` +
       `${drawn}<p class="note">${note}</p>` +
       `<div class="qv-links"><button class="linkish" type="button" data-qtree="${esc(a.id)}">${tree ? 'Show the short list' : `Show the whole ${o.whole || 'ontology'}`}</button>` +
       (tree ? `<button class="linkish" type="button" data-qlevel="${esc(a.id)}">${level ? `Hide the ${nouns} under them` : `Show the ${nouns} under them`}</button>` : '') +

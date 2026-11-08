@@ -1396,7 +1396,7 @@ website:                  # the look and words of the website (ptmc web); layout
     statistic_label: true  # each tile names its statistic
     question: "Which proteins are arginine methylated?"
     rows: 7
-    random_maps: {n: 3, title: Example proteins, open: true}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end (open: true opens it; enabled: false leaves it out)
+    random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end (open: true opens it; enabled: false leaves it out)
     starting_points:       # under the sections: proteins to start from, and ready-made selections (the explorer's)
       open: true
       lists:
@@ -2123,7 +2123,7 @@ website:                  # the look and words of the website (ptmc web); layout
     context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
       p-cond: [condensate_proteome, hpa_location]
       p-dis: [disease_family]
-    open: [p-map, p-cell, p-sites, p-cons, p-ix]   # the explorer's folds are all shut; here the map and the sites, and the orthologs and the network once they have data
+    open: [p-map]   # as in the explorer: the map open, every other fold shut
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
       location:
         title: Location and condensates
