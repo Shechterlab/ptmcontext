@@ -547,13 +547,23 @@
   // ---- the URL: filters as f=key~v1|v2;key~v1 ---------------------------------------------------------------------
   const enc = v => encodeURIComponent(v).replace(/~/g, '%7E');
   const dec = v => { try { return decodeURIComponent(v); } catch (e) { return null; } };
+  // the f= of a query string (or of a whole address), read as written: its separators (~ ; |) are the link's own and its
+  // values are escaped once. Links written by earlier versions escaped the whole value a second time (every % as %25, the
+  // separators as %7E, %3B and %7C): a value with no ~ that carries an escaped one is unwrapped until it is stable.
+  function fRaw(qs) {
+    const part = String(qs || '').replace(/^[^?]*\?/, '').replace(/^[#?]/, '').split('&').find(x => x.startsWith('f='));
+    if (part == null) return null;
+    let raw = part.slice(2).replace(/\+/g, ' ');
+    for (let i = 0; i < 8 && !raw.includes('~') && /%(?:25)*7E/i.test(raw); i++) { const d = dec(raw); if (d == null || d === raw) break; raw = d; }
+    return raw;
+  }
   const encode = () => Object.entries(S.f).filter(([, v]) => v && v.length).map(([k, v]) => k + '~' + v.map(enc).join('|')).join(';');
   // a hand-edited or stale link: malformed parts and keys this site does not have are dropped
   // the filters a link's f= holds; unknown keys are dropped
   function decodeF(s) {
     const f = {};
     String(s || '').split(';').filter(Boolean).forEach(part => {
-      const [k, v] = part.split('~'); if (!k || !v || !validKey(k)) return;
+      const [k0, v] = part.split('~'), k = k0 && dec(k0); if (!k || !v || !validKey(k)) return;
       const vals = v.split('|').map(dec).filter(x => x != null); if (vals.length) f[k] = vals;
     });
     return f;
@@ -562,7 +572,7 @@
   // a saved selection's (or any link's) search and filters, from its hash
   function stateOfHash(h) {
     const qs = String(h || '').split('?')[1] || '', p = new URLSearchParams(qs);
-    return { q: p.get('q') || '', f: decodeF(p.get('f')) };
+    return { q: p.get('q') || '', f: decodeF(fRaw(qs)) };
   }
   function setFilter(key, vals) { if (vals && vals.length) S.f[key] = vals; else delete S.f[key]; K.writeHash(true); K.render(); }
   // the values a key has from the search box's terms
@@ -622,5 +632,5 @@
   const notify = () => { const k = stateKey(); if (k === told) return; told = k; subs.forEach(f => { try { f(S); } catch (e) { console.error(e); } }); };
   const subscribe = fn => { subs.add(fn); return () => subs.delete(fn); };
   (K.afterRender ||= []).push(notify);
-  Object.assign(K, { sel: { nFilters: () => Object.keys(S.f).length + (S.q ? 1 : 0), get ready() { return ready(); }, active, testable, contrastOK, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, encode, decode, compute, data: () => { need(); return SD; }, peek: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, termFilter, contrast, contrastGroups, featuresOf, featureCounts, featureFamilies, termTip, STUDY, MIN_SIDE, refresh, lookup, nearSymbols, parsePattern, dropTerm, isTermKey, aliasesOf: i => aliasesOf[i] || [], nameOf, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); }, state: S, subscribe, retest: rows, members: () => setMembers, need, AN, RSPEC, byAcc, clearAll, keyName, valueName, matcher, scoreText, setFilter, termValues, toggle, AT, anyMembers: () => anyMembers } });
+  Object.assign(K, { sel: { nFilters: () => Object.keys(S.f).length + (S.q ? 1 : 0), get ready() { return ready(); }, active, testable, contrastOK, rows, madeWith, describe, validKey, parse, nMarks, nProteins, protSelected, selectedPositions, selectedCountByProtein, encode, decode, fRaw, compute, data: () => { need(); return SD; }, peek: () => SD, setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p), MIN: SEL_MIN, valueLabel, classLabel, listHtml, select, stateOfHash, termFilter, contrast, contrastGroups, featuresOf, featureCounts, featureFamilies, termTip, STUDY, MIN_SIDE, refresh, lookup, nearSymbols, parsePattern, dropTerm, isTermKey, aliasesOf: i => aliasesOf[i] || [], nameOf, namesProteins: () => { const q = compute().q; return !!(q.genes.length || q.sites.length); }, state: S, subscribe, retest: rows, members: () => setMembers, need, AN, RSPEC, byAcc, clearAll, keyName, valueName, matcher, scoreText, setFilter, termValues, toggle, AT, anyMembers: () => anyMembers } });
 });

@@ -148,7 +148,7 @@
     if (view === 'compare' && rest.length && rest[0]) { S.view = 'overview'; S.arg = ''; S.vs = 'cmp'; S.cmp = decodeURIComponent(rest.join('/')); S.legacy = true; }
     if (S.vs === 'cmp' && !S.cmp) S.vs = 'marks';
     if (S.m === 'study' && S.vs === 'residues') S.m = 'mantel_haenszel';
-    K.sel?.decode(p.get('f'));
+    K.sel?.decode(K.sel.fRaw(qs) ?? p.get('f'));
     (K.paramsIn || []).forEach(f => f(p));      // a module's own parameters (kit-front.js: the abundance check, the data version)
     S.sort = p.get('sort') || 'q'; S.desc = p.get('dir') ? p.get('dir') === 'desc' : S.sort !== 'q';
     S.open = new Set((p.get('open') || '').split(',').filter(k => A[k]));
@@ -157,9 +157,15 @@
   const pathOf = (view, arg) => (K.routes[view] ? K.routes[view].path(arg) : arg).split('/').map(encodeURIComponent).join('/');
   // a path without the residue letter of a site (R216 and 216 are the same site)
   const siteless = x => String(x).split('/').map(t => t.replace(/^[A-Za-z](\d+)$/, '$1')).join('/');
+  // a query whose f= is written as the selection model has it (its values escaped once, its separators plain), where
+  // URLSearchParams would escape the value a second time (%20 as %2520); read from a string, f= is unwrapped first
+  class Query extends URLSearchParams {
+    constructor(init) { super(init); if (typeof init === 'string' && K.sel) { const f = K.sel.fRaw(init); if (f != null) this.set('f', f); } }
+    toString() { return [...this.entries()].map(([k, v]) => (k === 'f' ? 'f=' + v.replace(/[&#+\s]/g, c => encodeURIComponent(c)) : new URLSearchParams([[k, v]]).toString())).join('&'); }
+  }
   // the selection's part of a link: search, filters, the test shown and the baseline
   function selParams() {
-    const p = new URLSearchParams();
+    const p = new Query();
     if (S.q) p.set('q', S.q);
     const f = K.sel?.encode(); if (f) p.set('f', f);
     if (S.m !== 'mantel_haenszel') p.set('m', S.m);
@@ -1534,15 +1540,15 @@
   // the address's query, so a search cleared later stays cleared on reload
   (() => {
     const sp = new URLSearchParams(location.search); if (!['q', 'f'].some(k => sp.has(k))) return;
-    const [path, qs] = location.hash.replace(/^#/, '').split('?'), hp = new URLSearchParams(qs || '');
-    ['q', 'f'].forEach(k => { if (sp.has(k) && !hp.has(k)) hp.set(k, sp.get(k)); sp.delete(k); });
+    const [path, qs] = location.hash.replace(/^#/, '').split('?'), hp = new Query(qs || '');
+    ['q', 'f'].forEach(k => { if (sp.has(k) && !hp.has(k)) hp.set(k, k === 'f' ? K.sel.fRaw(location.search) : sp.get(k)); sp.delete(k); });
     history.replaceState(null, '', location.pathname + (sp.toString() ? '?' + sp : '') + '#' + (path || '') + (hp.toString() ? '?' + hp : ''));
   })();
   // an older site's filter parameters before the hash (?states=2&motifs=1,3, website.legacy_params): read once as this
   // site's filters, written into the hash and taken off the address; a flag naming a variant opens it
   (() => {
     const LP = D.legacy_params || {}, sp = new URLSearchParams(location.search); if (!Object.keys(LP).some(k => sp.has(k))) return;
-    const hp = new URLSearchParams(location.hash.split('?')[1] || ''), f = new URLSearchParams((hp.get('f') || '').replace(/;/g, '&').replace(/~/g, '='));
+    const hp = new Query(location.hash.split('?')[1] || ''), f = new URLSearchParams((hp.get('f') || '').replace(/;/g, '&').replace(/~/g, '='));
     let variant = null;
     for (const [name, lp] of Object.entries(LP)) {
       if (!sp.has(name)) continue; const raw = sp.get(name); sp.delete(name);
