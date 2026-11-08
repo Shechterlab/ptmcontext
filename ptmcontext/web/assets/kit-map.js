@@ -487,12 +487,13 @@
       key(SW.box(P.dom, 1, P.domEdge), t.title);
     });
     // sticks and heads
+    const ringed = [];      // highlighted heads already ringed: a neighbor's ring is drawn larger, so two rings never coincide
     marks.forEach(m => {
       const x = X(m[0]), y = headY(level.get(m[0])), c = siteColour(m, ex), faded = sel && !sel.has(m[0]), on = ctx.site === m[0] && !ex;
       const op = faded && !on ? ' opacity="0.28"' : '', attr = `${op}${ex ? '' : ` data-msite="${m[0]}" tabindex="0" role="button" aria-label="${esc(resName(m[0]))}${c.label ? ', ' + esc(c.label) : ''}"`}`;
       parts.push(`<line x1="${r1(x)}" x2="${r1(x)}" y1="${yB - 3}" y2="${r1(y + 5)}" stroke="${P.line}" stroke-width="1"${faded ? ' opacity="0.28"' : ''}/>`);
       parts.push(c.hatched ? MK.hatch(P, x, y, on ? 6.5 : 5, c.c, attr, on ? P.ink : null) : MK.head(P, x, y, on ? 6.5 : 5, c.c, c.hollow, attr, on ? P.ink : null));
-      if (K.hl?.isSite(p.i, m[0], true)) parts.push(`<circle cx="${r1(x)}" cy="${r1(y)}" r="${on ? 10.5 : 9}" fill="none" stroke="${ex ? '#c2410c' : 'var(--accent)'}" stroke-width="2.2" stroke-dasharray="3 2" pointer-events="none"><title>Highlighted</title></circle>`);
+      if (K.hl?.isSite(p.i, m[0], true)) { const near = ringed.filter(q => Math.abs(q[0] - x) < 22 && Math.abs(q[1] - y) < 22).length; ringed.push([x, y]); parts.push(`<circle cx="${r1(x)}" cy="${r1(y)}" r="${(on ? 10.5 : 9) + 3 * near}" fill="none" stroke="${ex ? '#c2410c' : 'var(--accent)'}" stroke-width="2.2" stroke-dasharray="3 2" pointer-events="none"><title>Highlighted</title></circle>`); }
     });
     if (marks.length) rowLabel(cap(W.marks), top + 8 + (nLev - 1) * 5.5, `the ${W.marks} of this site, colored as chosen above; click one for its card`, true);
     if (marks.some(m => hatched(m))) key(SW.hatch(P.muted), HATCH_LABEL);

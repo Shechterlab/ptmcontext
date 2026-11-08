@@ -2043,7 +2043,9 @@ body.cards .sc-grid, .sc-grid:has(> .sc-tile) { display: grid; grid-template-col
 .stat-tbl td:nth-child(6) { white-space: normal; min-width: 7.5rem; }
 /* phone: the search, selection line and tabs scroll away with the page (they filled a third of the screen); the floating Sections button stays in reach */
 @media (max-width: 700px) { .toolbar { position: static; } body.bar-hidden .toolbar { transform: none; box-shadow: var(--shadow); } }
-@media (max-width: 40rem) { .idr-reg.stackable td.idr-rname { min-width: 0; max-width: none; } }
+@media (max-width: 40rem) { .idr-reg.stackable td.idr-rname { min-width: 0; max-width: none; } 
+  .idr-reg.stackable td[data-label]:not([data-label=""])::before { text-transform: none; letter-spacing: 0; overflow-wrap: normal; word-break: normal; width: 6.4rem; }
+  .idr-reg.stackable td[data-label]:not([data-label=""]) { padding-left: 7.6rem; } }
 /* the two Enlarge buttons (cell, nucleus) sit on one line below drawings of different heights */
 .cell-tile .cell-pair > .cell-fig { display: flex; flex-direction: column; }
 .cell-tile .cell-pair > .cell-fig > .cell-draw { flex: 1 1 auto; }

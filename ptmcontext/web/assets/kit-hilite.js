@@ -135,7 +135,7 @@
   function decorate() {
     if (!any() || !K.sel?.peek()) return;
     const root = document.getElementById('view'); if (!root) return;
-    const tint = (tr, td) => { if (tr.classList.contains('hl-row')) return; tr.classList.add('hl-row'); const c = td || tr.cells[0]; if (c && !c.querySelector('.hl-dot')) c.insertAdjacentHTML('afterbegin', '<span class="hl-dot" title="Highlighted" aria-label="highlighted">●</span> '); };
+    const tint = (tr, td) => { if (tr.classList.contains('hl-row')) return; tr.classList.add('hl-row'); const c0 = td || tr.cells[0], c = c0 && (c0.querySelector(':scope > .cv') || c0); if (c && !c0.querySelector('.hl-dot')) c.insertAdjacentHTML('afterbegin', '<span class="hl-dot" title="Highlighted" aria-label="highlighted">●</span> '); };
     root.querySelectorAll('tbody tr[data-acc]').forEach(tr => { const p = K.sel.byAcc[tr.dataset.acc]; if (p && isProt(p.i)) tint(tr); });
     root.querySelectorAll('tbody tr[data-goto]').forEach(tr => { const [a, pos] = tr.dataset.goto.split('/'), p = K.sel.byAcc[a]; if (p && isSite(p.i, +pos)) tint(tr); });
     const loose = new Set();      // other tables (the interaction pages'): their highlighted rows go first when the reader chose that
