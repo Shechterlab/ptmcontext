@@ -185,8 +185,10 @@
   // an href is a link (another view), one without is a jump to the element with that id
   function sectionsTab() {
     const raw = (K.sections?.[S.view]?.() || []).filter(x => x[0] !== 'view');
+    // a link to another view, or to the same view with a different question (?a=), is current only when both match
+    const aOf = h => (h.match(/[?&]a=([^&]*)/) || [])[1] || '', cur = K.link(S.view, S.arg), here = h => cur.split('?')[0] === h.split('?')[0] && aOf(cur) === aOf(h);
     const item = ([id, lab, lev, href], i) => (lev === 0 && !href && raw[i + 1] && raw[i + 1][2] !== 0 ? `<div class="toc-group">${esc(lab)}</div>`
-      : href ? `<a href="${esc(href)}" class="sub l1${K.link(S.view, S.arg).split('?')[0] === href.split('?')[0] ? ' on' : ''}">${esc(lab)}</a>`
+      : href ? `<a href="${esc(href)}" class="sub l1${here(href) ? ' on' : ''}"${here(href) ? ' aria-current="page"' : ''}>${esc(lab)}</a>`
         : `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="sub l1">${esc(lab)}</a>`);
     const pages = [...document.querySelectorAll('#tabs a.tab')].map(a => ({ href: a.getAttribute('href'), name: a.cloneNode(true), cur: a.getAttribute('aria-current') === 'page' }));
     pages.forEach(pg => pg.name.querySelectorAll('.count, .selmark, svg').forEach(x => x.remove()));
