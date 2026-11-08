@@ -244,7 +244,7 @@
       `<div class="rail-body">${R.tab === 'sections' ? sectionsTab() : filtersTab()}</div>` +
       (pinned() ? `<div class="rail-grip" role="separator" aria-orientation="vertical" aria-label="Sidebar width: drag, or use the arrow keys; double-click resets it" aria-valuenow="${Math.round(R.width || el.getBoundingClientRect().width)}" aria-valuemin="0" aria-valuemax="${innerWidth}" tabindex="0" data-rail-grip></div>` : '');
     if (R.tab === 'sections') requestAnimationFrame(watchSections);
-    const kept = keep && el.querySelector(keep);
+    const kept = (open || pinned()) && keep && el.querySelector(keep);     // a sidebar being closed gives its focus back to the control that opened it, below
     if (kept) {
       kept.focus({ preventScroll: true });
       if (top0 != null) { const dy = kept.getBoundingClientRect().top - top0, sc = [el, el.querySelector('.rail-body')].find(x => x && x.scrollHeight > x.clientHeight && /auto|scroll/.test(getComputedStyle(x).overflowY)); if (sc) sc.scrollTop += dy; else scrollBy(0, dy); }
@@ -264,6 +264,14 @@
     g.addEventListener('pointermove', move); g.addEventListener('pointerup', up);
   });
   document.addEventListener('dblclick', e => { if (e.target.closest?.('[data-rail-grip]')) { R.width = 0; setRailWidth(); saveWidth(); } });
+  // Tab from the sidebar's last stop continues in the part of the page on the screen, not at the top of it (the browser would scroll up to the first control)
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Tab' || e.shiftKey || !e.target.closest?.('[data-rail-grip]')) return;
+    const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--toolbar-h')) || 0;
+    const seen = [...document.querySelectorAll('#view a[href], #view button:not([disabled]), #view input:not([type=hidden]):not([disabled]), #view select, #view summary, #view [tabindex]:not([tabindex="-1"])')]
+      .filter(x => { const r = x.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.top >= top && r.bottom <= innerHeight && !x.closest('[hidden], [inert]'); });
+    for (const x of seen) { x.focus({ preventScroll: true }); if (document.activeElement === x) { e.preventDefault(); return; } }
+  });
   document.addEventListener('keydown', e => { if (!e.target.closest?.('[data-rail-grip]') || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return; e.preventDefault(); R.width = (R.width || document.getElementById('rail').getBoundingClientRect().width) + (e.key === 'ArrowRight' ? 16 : -16); setRailWidth(); saveWidth(); });
 
   // ---- events ------------------------------------------------------------------------------------------------------
@@ -280,7 +288,7 @@
     ['[data-rail-tab]', el => { R.tab = el.dataset.railTab; try { localStorage.setItem('ptmc-rail-tab', R.tab); } catch (e) { /* */ } rail(); }],
     ['[data-saved-open]', el => { const x = savedList()[+el.dataset.savedOpen]; K.restoreFolds(x?.folds); if (x && x.hash === location.hash) K.render(); }],
     ['[data-saved-del]', el => { const list = savedList(); list.splice(+el.dataset.savedDel, 1); try { localStorage.setItem(`ptmc-saved-${D.site.id}`, JSON.stringify(list)); } catch (e) { /* */ } rail(); }],
-    ['[data-rail-pin]', () => { R.pin = pinned() ? 'off' : innerWidth >= PIN_AUTO ? 'auto' : 'on'; R.open = false; try { localStorage.setItem('ptmc-rail', R.pin); } catch (e) { /* */ } rail(); if (!pinned()) { R.open = true; rail(); } }],
+    ['[data-rail-pin]', () => { if (pinned()) R.opener = document.querySelector('.rail-btn'); R.pin = pinned() ? 'off' : innerWidth >= PIN_AUTO ? 'auto' : 'on'; R.open = false; try { localStorage.setItem('ptmc-rail', R.pin); } catch (e) { /* */ } rail(); if (!pinned()) { R.open = true; rail(); } }],
     ['[data-rail-close]', () => { R.open = false; rail(); }],
     ['[data-rail-open]', el => { R.opener = el; if (pinned()) { R.tab = el.dataset.railOpen || R.tab; rail(); document.querySelector('#rail [data-rail-tab]')?.focus(); return; } R.open = true; R.tab = el.dataset.railOpen || R.tab; rail(); }],
     ['[data-jump]', (el, e) => { e.preventDefault(); const t = document.getElementById(el.dataset.jump); if (t) { if (R.open && !pinned()) { R.open = false; rail(); } for (let d = t; d; d = d.parentElement?.closest('details')) if (d.tagName === 'DETAILS') d.open = true; jumpId = el.dataset.jump; t.scrollIntoView({ behavior: K.smooth?.() || 'smooth', block: 'start' }); setTimeout(watchSections, 700); } }],

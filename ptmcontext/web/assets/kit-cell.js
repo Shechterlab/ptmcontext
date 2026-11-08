@@ -633,8 +633,29 @@
       e.stopPropagation(); o.onPart(g.dataset.cellPart, info[g.dataset.cellPart] || null);
     }) : null;
     if (el._cellOnPart) el.addEventListener('click', el._cellOnPart, true);
+    tabOrder(sv);
     requestAnimationFrame(grow);
     return { drawing: d.drawing, W: f.W, H: f.H, parts: Object.values(info).filter(x => x.drawings.includes(d.drawing)) };
+  }
+  // the keyboard order of a drawing's parts: one stop for each part (a part drawn in several shapes keeps its first), and Tab
+  // goes down the drawing by the place of each part's label (its shape when it has none), not in the order the shapes were drawn
+  function tabOrder(sv) {
+    if (!sv || sv._tabOrder) return;
+    sv._tabOrder = true;
+    const seen = new Set(), stops = [];
+    sv.querySelectorAll('[data-cell-part][tabindex="0"]').forEach(g => { const k = g.dataset.cellPart; if (seen.has(k)) { g.setAttribute('tabindex', '-1'); g.setAttribute('aria-hidden', 'true'); } else { seen.add(k); stops.push(g); } });
+    const labs = [...sv.querySelectorAll('.cd-label[data-cell-part]')], place = g => { const l = labs.find(x => x.dataset.cellPart === g.dataset.cellPart) || g, r = (l.querySelector('.cd-name') || l).getBoundingClientRect(); return [Math.round(r.top), r.left]; };
+    const sorted = () => stops.map(g => [g, place(g)]).sort((a, b) => a[1][0] - b[1][0] || a[1][1] - b[1][1]).map(x => x[0]);
+    if (stops.length < 2) return;
+    stops.forEach(g => g.setAttribute('tabindex', '-1'));
+    const first = () => { const l = sorted(); stops.forEach(g => g.setAttribute('tabindex', g === l[0] ? '0' : '-1')); return l; };
+    requestAnimationFrame(first);
+    sv.addEventListener('keydown', e => {
+      if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
+      const l = sorted(), i = l.indexOf(e.target.closest('[data-cell-part]')), j = i + (e.shiftKey ? -1 : 1);
+      if (i < 0 || j < 0 || j >= l.length) return;
+      e.preventDefault(); l[j].focus();
+    });
   }
   K.filterKinds = { ...(K.filterKinds || {}), w: {
     valid: id => id === ID,
