@@ -98,7 +98,7 @@ button, input, select { font: inherit; color: inherit; }
 
 /* ---- Sticky search and tabs ----------------------------------------------------------------------------------------- */
 .toolbar { position: sticky; top: 0; z-index: 30; background: var(--surface); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
-.toolbar .wrap { display: grid; gap: 0.5rem; padding-block: 0.75rem 0; }
+.toolbar .wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; padding-block: 0.75rem 0; }
 .search-field { position: relative; }
 .search-field svg { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--muted); }
 .search-field input { width: 100%; padding: 0.7rem 2.4rem 0.7rem 2.5rem; border: 1.5px solid var(--line-strong); border-radius: 0.6rem; background: var(--bg); font-size: 1rem; }
