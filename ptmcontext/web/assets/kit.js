@@ -639,12 +639,6 @@
     const vsRows = all.filter(r => r.q != null && r.q <= PADJ && (r.dir === 'more' || r.dir === 'less'));
     return who + `<p class="vs-say">${say}</p>` + K.l2Table('vs', vsRows.map(r => ({ ...r, label: r.label }))) + caveat + `<p class="muted small">Exploratory: ${esc(W.marks)} of one protein are not independent, and nothing is adjusted for the other selections tried. Each ${esc(W.mark)} row shows the selection’s share (filled) and ${esc(vsName())}’ (hollow).</p>`;
   }
-  // on a first visit, one line on the rows: a class row selects, a title opens (dismissed for good with its ×)
-  const HINT_KEY = 'ptmc-pick-hint';
-  const hintSeen = () => { try { return localStorage.getItem(HINT_KEY) === '1'; } catch (e) { return false; } };
-  const pickHint = () => (hintSeen() || vsOn() ? '' : `<p class="pick-hint" role="note"><b>Click a row to select its ${esc(W.marks)};</b> a tile's title opens the question. <button type="button" class="linkish" data-pick-hint aria-label="Dismiss this hint">Got it</button></p>`);
-  (K.afterRender ||= []).push(() => { if (document.querySelector('.pick-hint')) { try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* storage blocked: shown again next visit */ } } });   // shown once
-  K.clicks.push(['[data-pick-hint]', el => { try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* storage blocked: this visit only */ } el.closest('.pick-hint').remove(); }]);
   K.ovOpen = new Set();                  // the later Overview sections the reader opened on this visit
   K.clicks.push(['[data-ov-open]', el => { K.ovOpen.add(el.dataset.ovOpen); K.render(); }]);
   (K.afterRender ||= []).push(() => {    // a later section draws when it comes within a screen of the view
@@ -683,18 +677,18 @@
     const lazyHtml = x => {
       const n = x.cards.length + (K.ovTiles || []).filter(t => t.section === x.name).length, id = esc(x.name.replace(/\W+/g, '-').toLowerCase());
       return `<section class="ov-sec ov-lazy" data-ov-lazy="${esc(x.name)}" aria-labelledby="sec-${id}"><header class="ov-sec-head"><h3 class="sec-label" id="sec-${id}">${esc(x.name)}</h3>` +
-        `<p class="sec-about">${x.about ? esc(x.about) + ' ' : ''}<button type="button" class="linkish" data-ov-open="${esc(x.name)}">Show ${n === 1 ? 'the question' : 'the ' + n + ' questions'}</button></p></header></section>`;
+        `<p class="sec-about"><button type="button" class="linkish" data-ov-open="${esc(x.name)}">Show ${n === 1 ? 'the question' : 'the ' + n + ' questions'}</button></p></header></section>`;
     };
     const sectionHtml = (x, i) => {
       if (lazyOn && i >= FIRST && !K.ovOpen.has(x.name)) return lazyHtml(x);
       const b = secBody(x); if (!b.main && !b.rest) return '';
       const id = esc(x.name.replace(/\W+/g, '-').toLowerCase());
-      return `<section class="ov-sec${x.caveat ? ' caveat' : ''}" aria-labelledby="sec-${id}"><header class="ov-sec-head${x.cell ? ' vh' : ''}"><h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${id}">${esc(head(x))}</h3>${x.about && !vsOn() ? `<p class="sec-about">${esc(x.about)}</p>` : ''}</header>` +
+      return `<section class="ov-sec${x.caveat ? ' caveat' : ''}" aria-labelledby="sec-${id}"><header class="ov-sec-head${x.cell ? ' vh' : ''}"><h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${id}">${esc(head(x))}</h3></header>` +
         `<div class="tiles">${b.main}</div>` + (b.n ? `<details class="sec-more"><summary>${esc(x.more || 'More in ' + x.name)} (${b.n})</summary><div class="tiles">${b.rest}</div></details>` : '') + '</section>';
     };
     const secs = secList().map((x, i) => [x, sectionHtml(x, i)]), cellTop = secs.filter(([x]) => x.cell).map(y => y[1]).join(''), restSecs = secs.filter(([x]) => !x.cell).map(y => y[1]).join('');
     // the cell and the nucleus come before the question's own heading (with a selection, after what the selection says)
-    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + (selOn() ? '' : cellTop) + lead() + banner + pickHint() + (selOn() && !vsOn() && !small ? selBlocks(K.selLead) : '') + (selOn() ? cellTop : '') + restSecs +
+    return (S.arg ? '' : (K.overviewTop || []).map(f => f()).join('')) + (selOn() ? '' : cellTop) + lead() + banner + (selOn() && !vsOn() && !small ? selBlocks(K.selLead) : '') + (selOn() ? cellTop : '') + restSecs +
       (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
   // the tiles of questions that hold for any selection (a module's counts), for a selection too small to test
@@ -1298,12 +1292,6 @@
 
   // ---- render, events ------------------------------------------------------------------------------------------------
   let qPending = false;                                 // the search box holds letters not yet read
-  // one line under a tab page's heading: what the page holds (website.tabs; not on a page's section or a question)
-  function pageHint() {
-    const h = tabHint(S.view), head = $('#view .page-head');
-    if (!h || S.arg || (S.view === 'overview' && K.sel?.active()) || !head || $('#view .tab-hint')) return;
-    head.insertAdjacentHTML('afterend', `<p class="tab-hint">${esc(h)}</p>`);
-  }
   function render() {
     tabs();
     if (!qPending) $('#q').value = S.q;                // not over letters typed while the page was drawn (data arriving)
@@ -1318,7 +1306,6 @@
     document.title = qTitle ? `${qTitle} · ${D.site.name}` : S.view === 'overview' ? D.site.name : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`;   // the page first: "FUS R216 · <site>"
     document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg || !!K.front) && D.header?.compact !== false);      // the header band in full on the Overview only (website.header.compact)
     document.body.classList.remove('bar-hidden');
-    pageHint();
     if (mod?.after) mod.after(S.arg);
     if (S.view === 'method' && S.arg) document.getElementById('m-' + S.arg)?.scrollIntoView({ block: 'start' });
     K.rail?.();
