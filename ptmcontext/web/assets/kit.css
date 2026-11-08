@@ -2015,3 +2015,4 @@ body.cards .sc-grid, .sc-grid:has(> .sc-tile) { display: grid; grid-template-col
 @media (max-width: 700px) { .pc .cell-pair .cell-svg { max-height: 9.5rem; } .pix-sec .sub:not(:first-of-type) { display: none; } .cell-where { margin: 0.2rem 0; } }
 
 .toc.flat a.sub { padding-left: 0.5rem; font-size: 0.9rem; }
+.sites-tbl td > a.mono, .sites-tbl td > a.mono:hover { color: var(--ink); text-decoration: none; }   /* the site reads as the explorer's bold label; the row opens its card */
