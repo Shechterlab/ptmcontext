@@ -105,20 +105,21 @@ def test_each_entry_is_resolved_alone_a_site_names_one_residue_and_a_miss_is_rep
     script = f"""
 const fs = require('fs');
 global.window = global; global.document = {{ createElement: () => ({{}}), head: {{ appendChild() {{}} }}, addEventListener() {{}} }};
-const S = {{ q: '', f: {{}}, hl: 'ALPHA, ALPHA R10, ALPHAA, TDP-43' }};
-const toy = {{ ALPHA: [[0], []], 'ALPHA R10': [[], [[0, 10]]], 'TDP-43': [[1], []] }};
+const S = {{ q: '', f: {{}}, hl: 'ALPHA, ALPHA R10, ALPHA R999, ALPHAA, TDP-43' }};
+const toy = {{ ALPHA: [[0], []], 'ALPHA R10': [[], [[0, 10]]], 'ALPHA R999': [[], [[0, 999]]], 'TDP-43': [[1], []] }};
 const K = {{ esc: s => String(s), int: n => String(n), S, clicks: [], paramsIn: [], paramsOut: [], tw: (t, s) => t.length * s * 0.55, writeHash() {{}}, render() {{}}, afterRender: [],
-  sel: {{ active: () => false, data: () => ({{}}), peek: () => ({{}}), byAcc: {{}}, select: tok => {{ const [g, s] = toy[tok] || [[], []]; return {{ active: true, proteins: new Set(g), marks: [], q: {{ genes: g, sites: s }} }}; }} }} }};
+  sel: {{ active: () => false, data: () => ({{}}), peek: () => ({{}}), byAcc: {{}}, select: tok => {{ const [g, s] = toy[tok] || [[], []]; return {{ active: true, proteins: new Set(g), marks: s.length && s[0][1] < 100 ? [7] : [], q: {{ genes: g, sites: s }} }}; }} }} }};
+K.D = {{ proteins: [['P1', 'ALPHA', '', 300]], words: {{ mark: 'methylarginine' }} }};
 eval(fs.readFileSync({json.dumps(str(ASSETS / 'kit-hilite.js'))}, 'utf8'));
 window.PTMC_MODULES.forEach(m => m(K));
 const p = K.hl.pasted(), line = K.hl.line(1, 'IDRs');
-console.log(JSON.stringify({{ prots: [...p.prots], sites: p.sites.map(x => [x.p, x.pos]), notFound: p.notFound, line: line.includes('not found: ALPHAA'),
+console.log(JSON.stringify({{ prots: [...p.prots], sites: p.sites.map(x => [x.p, x.pos]), notFound: p.notFound, bad: [...p.bad], line: line.includes('not found: ALPHAA'), protOfSite: K.hl.isProt(0),
   siteOnly: K.hl.isSite(0, 10, true) && !K.hl.isSite(0, 11, true), gene: K.hl.isProt(1) && K.hl.isSite(0, 99) }}));
 """
     run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
     out = json.loads(run.stdout)
-    assert out == {'prots': [0, 1], 'sites': [[0, 10]], 'notFound': ['ALPHAA'], 'line': True, 'siteOnly': True, 'gene': True}
+    assert out == {'prots': [0, 1], 'sites': [[0, 10]], 'notFound': ['R999 of ALPHA is not in its sequence', 'ALPHAA'], 'bad': ['ALPHA R999', 'ALPHAA'], 'protOfSite': True, 'line': True, 'siteOnly': True, 'gene': True}
 
 
 def test_the_box_is_in_the_selection_bar_and_the_tables_and_figures_carry_the_highlight():
@@ -136,3 +137,12 @@ def test_a_pasted_list_is_the_only_highlight_and_the_box_is_one_compact_row():
     assert 'K.hl?.any()' in idrs and 'parts.filter(r => r.pasted)' in idrs and 'K.hl.limit) HLS = st' in idrs
     assert 'data-hl-menu' in hl and 'aria-haspopup' in hl and "e.key === 'Escape'" in hl and 'aria-expanded' in hl
     assert '(t.closest(CONTAINER) || root).querySelector' in tf
+
+
+def test_idr_page_says_what_each_count_counts_and_exports_follow_highlighted_only():
+    idrs = (ASSETS / 'kit-idrs.js').read_text()
+    hl = (ASSETS / 'kit-hilite.js').read_text()
+    assert 'labels shown for' in idrs and 'so ${m === 1' in idrs and 'IDRs only' in idrs           # the κ chart's scope and the label cap
+    assert "hname('diagram')" in idrs and "_highlighted" in idrs and 'data-idr-hltsv' not in idrs   # one TSV, which honors the switch
+    assert "'Search:'" in hl and 'hl-chip-nf' in hl and 'ci = have ?' in hl                           # a search is not a highlight; struck chips
+    assert "return ['idrs', 'IDRs', scoped().length]" in idrs                                         # the tab's number is the heading's

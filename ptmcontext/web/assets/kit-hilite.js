@@ -29,12 +29,12 @@
     if (!K.sel?.data()) return { prots: new Set(), marks: new Set(), sites: [], notFound: [], text: t.join(', '), chips, clear, pasted: true };
     // each entry on its own: a gene marks its proteins, a site ("GENE R218") only that residue, and one that matches nothing
     // is reported (the others are kept)
-    const prots = new Set(), marks = new Set(), sites = [], notFound = [], bad = new Set(), SD = K.sel.data();
+    const prots = new Set(), marks = new Set(), sites = [], notFound = [], bad = new Set();
     t.forEach(tok => {
       const r = K.sel.select(tok, {}), q = r.q || {};
       (r.marks || []).forEach(m => marks.add(m));
       if (q.sites?.length && !q.genes?.length) q.sites.forEach(([p, pos]) => {
-        if (SD.marks.some(m => m[0] === p && m[1] === pos)) { sites.push({ p, pos, label: tok }); return; }
+        if ((r.marks || []).length) { sites.push({ p, pos, label: tok }); return; }
         // a site the data does not hold: say which, and keep the rest of the list
         const L = ((/([A-Z])\s*\d+$/i.exec(tok) || [])[1] || '').toUpperCase(), pr = K.D?.proteins?.[p] || [];
         notFound.push(`${L}${pos} of ${pr[1] || pr[0] || tok} is ${pr[3] && pos > pr[3] ? 'not in its sequence' : `not a known ${K.D?.words?.mark || 'site'}`}`); bad.add(tok);
@@ -170,14 +170,14 @@
       ? `<span class="hl-menu"><button type="button" class="btn small" data-hl-menu aria-haspopup="true" aria-expanded="false" aria-controls="hl-cpop">${t.length} highlighted${pa.notFound.length ? ` · ${pa.notFound.length} not found` : ''} ▾</button><div id="hl-cpop" class="hl-pop hl-cpop" role="group" aria-label="Highlighted items" hidden><span class="hl-chips">${chips}</span>${nf}</div></span>`
       : `<span class="hl-chips">${chips}${nf ? ' ' + nf : ''}</span>`);
     const build = collapsed => `<div class="hl-bar-in${t.length ? ' on' : ''}">${control(more(collapsed))}</div>`;
-    const key = build(false) + '|' + (K.sel?.peek() ? 1 : 0) + '|' + innerWidth;
+    const key = build(false) + '|' + (K.sel?.peek() ? 1 : 0) + '|' + (typeof innerWidth === 'number' ? innerWidth : 0);
     if (key === barKey) return; barKey = key;
     // the row stays one line: when the chips would wrap, they collapse into "N highlighted ▾"
     host.innerHTML = build(false);
     const inner = host.firstElementChild, one = host.querySelector('.hl-form')?.offsetHeight || 0;
     if (t.length && inner.offsetHeight > one * 1.6 + 4) host.innerHTML = build(true);
   }
-  addEventListener('resize', () => { barKey = null; bar(); });
+  if (typeof addEventListener === 'function') addEventListener('resize', () => { barKey = null; bar(); });
   (K.afterRender ||= []).push(bar);
   const shut = (focus) => { const b = document.querySelector('[data-hl-menu][aria-expanded="true"]'); if (!b) return; b.setAttribute('aria-expanded', 'false'); const pop = document.getElementById(b.getAttribute('aria-controls')); if (pop) pop.hidden = true; if (focus) b.focus(); };
   K.clicks.push(['[data-hl-menu]', el => { const open = el.getAttribute('aria-expanded') !== 'true'; shut(false); if (open) { el.setAttribute('aria-expanded', 'true'); document.getElementById(el.getAttribute('aria-controls')).hidden = false; } }]);
