@@ -383,7 +383,7 @@
     return `<div class="drow qrow${fkey ? ' pick' : ''}${mark ? ' more-mark' : ''}" data-r="${reg(r)}" data-cat="${esc(r.category)}"${fkey ? ` data-f="${esc(fkey)}" data-v="${esc(r.category)}" role="button" tabindex="0" title="Select the ${esc(W.marks)} ${SETS(r.analysis) ? 'on proteins in' : 'in'} ${esc(r.label)}"` : ''}>` +
       `<span class="lab"${r.help ? ` title="${esc(r.help)}"` : ''}><span class="ln">${esc(r.label)}</span>${shortHelp(r) ? `<span class="lh"><span class="sep">&nbsp;·&nbsp;</span>${esc(r.help)}</span>` : ''}</span>` +
       `<span class="cnt">${kfmt(r.a)} / ${kfmt(r.a + r.b)}</span><span class="cnt o">${kfmt(r.c)} / ${kfmt(r.c + r.d)}</span>` +
-      `<svg aria-hidden="true">${marks}</svg><span class="val ${r.dir}">${r.vs ? `${pcS(share1(r))} <span class="muted">· ${pcS(share2(r))}</span>` : valText(r)}${d ? `<i class="dm ${d.dir}" title="Within protein abundance deciles: ${DECILE[d.dir][1]} (OR ${fxn(d.eff)}, q ${fq(d.q)})">${DECILE[d.dir][0]}</i>` : r.vs || !M.legend.some(x => x[0] === 'dec') ? '' : '<i class="dm"></i>'}</span>` +
+      `<svg aria-hidden="true">${marks}</svg><span class="val ${r.dir}">${r.vs ? `${pcS(share1(r))} <span class="muted">· ${pcS(share2(r))}</span>` : valText(r) + shareSpan(r)}${d ? `<i class="dm ${d.dir}" title="Within protein abundance deciles: ${DECILE[d.dir][1]} (OR ${fxn(d.eff)}, q ${fq(d.q)})">${DECILE[d.dir][0]}</i>` : r.vs || !M.legend.some(x => x[0] === 'dec') ? '' : '<i class="dm"></i>'}</span>` +
       `<span class="vh">${r.vs ? `${pcS(share1(r))} of your selection, against ${pcS(share2(r))} of ${esc(vsName())}` : `${esc(effText(r))}, q ${fq(r.q)}`}${d ? `; within abundance deciles: ${DECILE[d.dir][1]}` : ''}${r.ref ? `; whole dataset ${esc(effText(r.ref))}` : ''}</span></div>`;
   }
   const SWATCH = { more: '<i class="sw bar more"></i>', less: '<i class="sw bar less"></i>', same: '<i class="sw bar same"></i>', ns: '<i class="sw bar ns"></i>', ci: '<i class="sw ci"></i>',
@@ -449,6 +449,11 @@
   // against other marks: each row's two shares, and how strongly it differs (the CI bound nearer 1, on a log scale)
   const share1 = r => (r.a + r.b ? r.a / (r.a + r.b) : 0), share2 = r => (r.c + r.d ? r.c / (r.c + r.d) : 0);
   const pcS = v => (v < 0.1 ? (100 * v).toFixed(1) : (100 * v).toFixed(0)) + '%';
+  // the share in each group beside an odds ratio ("22.8% vs 14.6%"): the two proportions the odds ratio compares
+  const pcD = v => (100 * v).toFixed(v > 0 && v < 0.01 ? 2 : 1) + '%';
+  const sharePair = r => (r && r.a != null && r.a + r.b > 0 && r.c + r.d > 0 ? `${pcD(share1(r))} vs ${pcD(share2(r))}` : '');
+  const shareSpan = r => (sharePair(r) && !r.vs ? `<span class="sh">${sharePair(r)}</span>` : '');
+  K.sharePair = sharePair;
   const strength = r => (r.dir === 'more' ? Math.log(r.lo ?? r.eff) : r.dir === 'less' ? -Math.log(r.hi ?? r.eff) : 0);
   const enough = r => r.a + r.c >= 10;
   const vsName = () => (S.vs === 'cmp' ? `the marks of ${cmpName()}` : `the other ${W.marks}`);
@@ -506,7 +511,7 @@
     const grid = sc.grid.map(k => `<line class="${k === 0 ? 'one' : 'grid'}" x1="${X(2 ** k)}" x2="${X(2 ** k)}" y1="0" y2="100%"/>`);
     return rows.map(r => `<div class="trow pick" data-r="${reg(r)}"${pickAttrs(r)}><span class="lab">${esc(r.label)}</span><svg aria-hidden="true">${grid.join('')}` +
       (r.lo != null && r.hi != null ? `<line class="whisker ${r.dir}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" y2="50%"/>` : '') +
-      `<circle class="dot ${r.dir}" cx="${X(r.eff)}" cy="50%" r="4.6"/>${r.ref ? `<line class="ref" x1="${X(r.ref.eff)}" x2="${X(r.ref.eff)}" y1="15%" y2="85%"/>` : ''}</svg><span class="val ${r.dir}">${fx(r.eff)}</span></div>`).join('') +
+      `<circle class="dot ${r.dir}" cx="${X(r.eff)}" cy="50%" r="4.6"/>${r.ref ? `<line class="ref" x1="${X(r.ref.eff)}" x2="${X(r.ref.eff)}" y1="15%" y2="85%"/>` : ''}</svg><span class="val ${r.dir}">${fx(r.eff)}${shareSpan(r)}</span></div>`).join('') +
       `<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div>` + LESS_MORE;
   }
   // what a tile shows, for the tile and its exports
@@ -961,14 +966,14 @@
     const a = A[aid];
     if (a.kind === 'protein_sets') {
       const rows = rowsOf(a, 'enricher').slice().sort((x, y) => x.p - y.p);
-      const head = ['set', 'set_id', 'fold_enrichment', 'p', 'q', `${W.marked}_proteins_in_set`, `${W.marked}_proteins`, 'other_proteins_in_set', 'other_proteins', 'odds_ratio_within_abundance_deciles', 'ci_low', 'ci_high', 'q_within_abundance_deciles', 'reading', 'test', ...TAIL_HEAD];
+      const head = ['set', 'set_id', 'fold_enrichment', 'p', 'q', `${W.marked}_proteins_in_set`, `${W.marked}_proteins`, 'other_proteins_in_set', 'other_proteins', 'share_in_set', 'share_in_others', 'odds_ratio_within_abundance_deciles', 'ci_low', 'ci_high', 'q_within_abundance_deciles', 'reading', 'test', ...TAIL_HEAD];
       return preamble(a.title, `${a.question} One row per set tested: ${a.sub}${selWords()}. ${setWords(a)}`) + head.join('\t') + '\n' +
-        rows.map(r => { const st = (!r.selection && STRAT[aid + '\u0000' + r.category]) || {}; return [r.label, r.category, g6(r.eff), g6(r.p), g6(r.q), r.a, r.a + r.b, r.c, r.c + r.d, g6(st.eff), g6(st.lo), g6(st.hi), g6(st.q), DIR_WORDS[r.dir], SET_TEST, ...tail()].join('\t'); }).join('\n') + '\n';
+        rows.map(r => { const st = (!r.selection && STRAT[aid + '\u0000' + r.category]) || {}; return [r.label, r.category, g6(r.eff), g6(r.p), g6(r.q), r.a, r.a + r.b, r.c, r.c + r.d, g6(share1(r)), g6(share2(r)), g6(st.eff), g6(st.lo), g6(st.hi), g6(st.q), DIR_WORDS[r.dir], SET_TEST, ...tail()].join('\t'); }).join('\n') + '\n';
     }
     const rows = rowsOf(a, m).slice().sort((x, y) => (y.or ?? -1) - (x.or ?? -1));
-    const head = ['class', 'class_code', 'definition', 'test', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q', `${W.marks.replace(/\W+/g, '_')}_in_class`, `${W.marks.replace(/\W+/g, '_')}_total`, `other_${W.residues.replace(/\W+/g, '_')}_in_class`, `other_${W.residues.replace(/\W+/g, '_')}_total`, 'proteins', 'reading', ...TAIL_HEAD];
+    const head = ['class', 'class_code', 'definition', 'test', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q', `${W.marks.replace(/\W+/g, '_')}_in_class`, `${W.marks.replace(/\W+/g, '_')}_total`, `other_${W.residues.replace(/\W+/g, '_')}_in_class`, `other_${W.residues.replace(/\W+/g, '_')}_total`, 'share_in_class', 'share_in_others', 'proteins', 'reading', ...TAIL_HEAD];
     return preamble(`${a.title}, ${METHOD[m]}`, `${a.question} One row per class: ${a.sub}, ${METHOD_PHRASE[m]}${selWords()}. ${testWords(m)}`) +
-      head.join('\t') + '\n' + rows.map(r => [r.label, r.category, r.help, METHOD[r.method] || r.method, g6(r.or), g6(r.lo), g6(r.hi), g6(r.p), g6(r.q), r.a, r.a + r.b, r.c, r.c + r.d, r.strata ?? '', DIR_WORDS[r.dir], ...tail()].join('\t')).join('\n') + '\n';
+      head.join('\t') + '\n' + rows.map(r => [r.label, r.category, r.help, METHOD[r.method] || r.method, g6(r.or), g6(r.lo), g6(r.hi), g6(r.p), g6(r.q), r.a, r.a + r.b, r.c, r.c + r.d, g6(share1(r)), g6(share2(r)), r.strata ?? '', DIR_WORDS[r.dir], ...tail()].join('\t')).join('\n') + '\n';
   }
   function statisticsTsv(rows) {
     const lines = D.statistics_tsv.replace(/\n$/, '').split('\n');
@@ -1046,7 +1051,8 @@
       }
       if (r.ref) rp.push(`<line x1="${r1(X(r.ref.eff))}" x2="${r1(X(r.ref.eff))}" y1="${yc - 9}" y2="${yc + 9}" stroke="${PAL.ink}" stroke-width="2"/>`);
       const strong = !r.vs && (r.dir === 'more' || r.dir === 'less');
-      T(VX, yc + 4, valText(r), { size: 11, anchor: 'end', weight: strong ? 'bold' : null, fill: strong ? PAL[r.dir] : PAL.muted }, rp);
+      T(VX, yc + (sharePair(r) && !r.vs ? 0 : 4), valText(r), { size: 11, anchor: 'end', weight: strong ? 'bold' : null, fill: strong ? PAL[r.dir] : PAL.muted }, rp);
+      if (sharePair(r) && !r.vs) T(VX, yc + 11, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted }, rp);
       if (d) T(DX, yc + 4, DECILE[d.dir][0], { size: 11, anchor: 'middle', fill: d.dir === 'more' ? PAL.more : d.dir === 'less' ? PAL.less : PAL.muted }, rp);
       y += h;
     });
@@ -1104,7 +1110,8 @@
         if (r.ref) parts.push(`<line x1="${X(r.ref.eff).toFixed(1)}" x2="${X(r.ref.eff).toFixed(1)}" y1="${yc - 7}" y2="${yc + 7}" stroke="${PAL.ink}" stroke-width="2"/>`);
       }
       const strong = !vs && (r.dir === 'more' || r.dir === 'less');
-      T(VX, yc + 4, vs ? `${pcS(share1(r))} · ${pcS(share2(r))}` : fx(r.eff), { anchor: 'end', weight: strong ? 'bold' : null, fill: strong ? PAL[r.dir] : PAL.muted });
+      T(VX, yc + (sharePair(r) && !vs ? 0 : 4), vs ? `${pcS(share1(r))} · ${pcS(share2(r))}` : fx(r.eff), { anchor: 'end', weight: strong ? 'bold' : null, fill: strong ? PAL[r.dir] : PAL.muted });
+      if (sharePair(r) && !vs) T(VX, yc + 11, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted });
       y += h;
     });
     if (shown.length) { parts.push(`<line x1="${X0}" x2="${X1}" y1="${y + 1}" y2="${y + 1}" stroke="${PAL.line}"/>`); T(vs ? X1 : X(1), y + 14, vs ? sc.ticks[sc.ticks.length - 1].lab : '1×', { size: 10, anchor: 'middle', fill: PAL.muted }); y += 18; }

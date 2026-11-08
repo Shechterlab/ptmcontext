@@ -254,7 +254,7 @@
   // the Overview's within-protein test of this question, by class: its rows (the selection's, when there is one)
   const testRows = () => { try { const rs = QA ? (K.rowsOf?.(QA, 'mantel_haenszel') || []) : []; return Object.fromEntries(rs.filter(r => r.eff != null).map(r => [r.category, r])); } catch (e) { return {}; } };
   const DIRW = { more: 'more often', less: 'less often', ns: 'no clear difference', same: 'no clear difference' };
-  const testCell = r => (r ? `<b>${esc(K.fx(r.eff))}</b> <span class="muted small">(${esc(K.fx(r.lo))} to ${esc(K.fx(r.hi))}), q ${esc(K.fq(r.q))}</span><br><span class="idr-dir idr-${esc(r.dir)}">${esc(DIRW[r.dir] || r.dir)}</span>` : '<span class="muted">–</span>');
+  const testCell = r => (r ? `<b>${esc(K.fx(r.eff))}</b> <span class="muted small">(${esc(K.fx(r.lo))} to ${esc(K.fx(r.hi))}), q ${esc(K.fq(r.q))}</span>${K.sharePair(r) ? `<br><span class="muted small">${esc(K.sharePair(r))}</span>` : ''}<br><span class="idr-dir idr-${esc(r.dir)}">${esc(DIRW[r.dir] || r.dir)}</span>` : '<span class="muted">–</span>');
   function regionsHtml() {
     const { rows, all } = regionRows(), rate = r => (r.cand ? r.marks / r.cand : 0), base = rate(all), max = Math.max(...rows.map(rate), base, 1e-9), TT = testRows();
     const cells = (r, bar, t) => `<td>${bar ? `<span class="idr-bar" title="${esc(`${int(r.marks)} of ${int(r.cand)} candidate residues`)}"><i style="width:${(100 * rate(r) / max).toFixed(1)}%;--c:${colour(r.cls)}"></i></span> ` : ''}<b>${pc(r.marks, r.cand)}</b></td>` +
@@ -268,15 +268,15 @@
   function regionsTsv() {
     const { rows, all } = regionRows(), TT = testRows();
     return K.preamble('IDRs by region of the diagram of states', `for each Das–Pappu region, the IDRs${SC.on ? ' of the selection’s proteins' : ''}, those with ${SC.on ? 'selected ' : ''}${W.marks}, their residues, the ${W.marks} inside them and the candidate residues (${W.residues}, ${W.marks} included${SC.on ? '; marks not selected are left out' : ''}). Descriptive, pooled over IDRs: the residue tests are the statistics. ${REF_SHORT}.`) +
-      ['region', 'region_name', 'idrs', `idrs_with_${WORD(W.marks)}`, 'residues', WORD(W.marks), 'candidate_residues', `${WORD(W.marks)}_per_candidate`, 'within_protein_odds_ratio', 'within_protein_q'].join('\t') + '\n' +
-      [...rows, { ...all, cls: 'all' }].map(r => [r.cls, r.cls === 'all' ? 'all IDRs' : clsLabel(r.cls), r.idrs, r.withM, r.res, r.marks, r.cand, r.cand ? +(r.marks / r.cand).toPrecision(6) : '', TT[r.cls]?.eff ?? '', TT[r.cls]?.q ?? ''].join('\t')).join('\n') + '\n';
+      ['region', 'region_name', 'idrs', `idrs_with_${WORD(W.marks)}`, 'residues', WORD(W.marks), 'candidate_residues', `${WORD(W.marks)}_per_candidate`, 'within_protein_share_in_region', 'within_protein_share_in_others', 'within_protein_odds_ratio', 'within_protein_q'].join('\t') + '\n' +
+      [...rows, { ...all, cls: 'all' }].map(r => [r.cls, r.cls === 'all' ? 'all IDRs' : clsLabel(r.cls), r.idrs, r.withM, r.res, r.marks, r.cand, r.cand ? +(r.marks / r.cand).toPrecision(6) : '', TT[r.cls] && TT[r.cls].a + TT[r.cls].b ? +(TT[r.cls].a / (TT[r.cls].a + TT[r.cls].b)).toPrecision(6) : '', TT[r.cls] && TT[r.cls].c + TT[r.cls].d ? +(TT[r.cls].c / (TT[r.cls].c + TT[r.cls].d)).toPrecision(6) : '', TT[r.cls]?.eff ?? '', TT[r.cls]?.q ?? ''].join('\t')).join('\n') + '\n';
   }
 
   // the regions table drawn: the share of the candidate residues marked as bars, the counts, and the within-protein odds ratio
   // with its interval on a log axis, as a small forest panel (the same numbers as the table and its TSV)
   function regionsFigure() {
     const { rows, all } = regionRows(), TT = testRows(), rate = r => (r.cand ? r.marks / r.cand : 0), P = pal(true), base = rate(all), max = Math.max(...rows.map(rate), base, 1e-9);
-    const RH = 36, X = { lab: 20, bar: 262, barW: 90, cnt: 478, fa: 506, fb: 636, val: 740 }, parts = [];
+    const RH = 42, X = { lab: 20, bar: 262, barW: 90, cnt: 478, fa: 506, fb: 636, val: 740 }, parts = [];
     const vals = rows.flatMap(r => { const t = TT[r.cls]; return t ? [t.eff, t.lo, t.hi].filter(v => v > 0) : []; });
     const lo2 = Math.min(-1, Math.floor(Math.log2(Math.min(...vals, 1)))), hi2 = Math.max(1, Math.ceil(Math.log2(Math.max(...vals, 1)))), k0 = Math.max(lo2, -6), k1 = Math.min(hi2, 6);
     const FX = v => X.fa + (Math.min(k1, Math.max(k0, Math.log2(v))) - k0) / (k1 - k0) * (X.fb - X.fa), step = Math.ceil((k1 - k0) / 4);
@@ -298,7 +298,7 @@
         const col = t.dir === 'more' ? K.PAL.more : t.dir === 'less' ? K.PAL.less : K.PAL.muted;
         if (t.lo > 0 && t.hi > 0) parts.push(`<line x1="${FX(t.lo).toFixed(1)}" x2="${FX(t.hi).toFixed(1)}" y1="${yc}" y2="${yc}" stroke="${col}" stroke-width="1.6" stroke-linecap="round"/>`);
         parts.push(`<circle cx="${FX(t.eff).toFixed(1)}" cy="${yc}" r="4.6" fill="${t.dir === 'ns' ? P.bg : col}" stroke="${t.dir === 'ns' ? P.muted : P.bg}" stroke-width="1.5"/>`);
-        T(X.val, yc - 2, K.fx(t.eff), { anchor: 'end', weight: t.dir === 'ns' ? null : 'bold', fill: t.dir === 'ns' ? P.muted : col }); T(X.val, yc + 10, `q ${K.fq(t.q)}`, { size: 9.5, anchor: 'end', fill: P.muted });
+        T(X.val, yc - 4, K.fx(t.eff), { anchor: 'end', weight: t.dir === 'ns' ? null : 'bold', fill: t.dir === 'ns' ? P.muted : col }); if (K.sharePair(t)) T(X.val, yc + 8, K.sharePair(t), { size: 9.5, anchor: 'end', fill: P.muted }); T(X.val, yc + 18, `q ${K.fq(t.q)}`, { size: 9.5, anchor: 'end', fill: P.muted });
       } else if (r.cls) T(X.val, yc + 3, '–', { anchor: 'end', fill: P.muted });
       else T((X.fa + X.fb) / 2, yc + 3, 'the baseline of the bars', { size: 9.5, anchor: 'middle', fill: P.muted });
       y += RH;

@@ -2031,3 +2031,4 @@ body.cards .sc-grid, .sc-grid:has(> .sc-tile) { display: grid; grid-template-col
 .toc.flat .toc-secs { display: grid; gap: 0.05rem; margin: 0 0 0.4rem 0.5rem; padding-left: 0.4rem; border-left: 2px solid var(--line); }
 .toc.flat .toc-secs .toc-group { margin: 0.5rem 0 0.1rem 0.5rem; }
 .toc.flat .toc-secs a.sub { font-size: 0.88rem; padding: 0.22rem 0.5rem; }
+.sh { display: block; font-size: 0.68rem; font-weight: 400; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }

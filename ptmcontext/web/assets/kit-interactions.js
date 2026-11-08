@@ -172,7 +172,7 @@
       if (selOn() && x.site && effOf(x.site)) parts.push(`<line x1="${(FX + sc.X(effOf(x.site), FW)).toFixed(1)}" x2="${(FX + sc.X(effOf(x.site), FW)).toFixed(1)}" y1="${cy - 6}" y2="${cy + 6}" stroke="${P.muted}" stroke-width="2" opacity="0.6"/>`);
       if (r && r.lo != null && r.hi != null) parts.push(`<line x1="${(FX + sc.X(r.lo, FW)).toFixed(1)}" x2="${(FX + sc.X(r.hi, FW)).toFixed(1)}" y1="${cy}" y2="${cy}" stroke="${dirColour(P, d)}" stroke-width="1.6"/>`);
       if (r && effOf(r)) parts.push(`<circle cx="${(FX + sc.X(effOf(r), FW)).toFixed(1)}" cy="${cy}" r="4.6" fill="${d === 'ns' ? P.bg : dirColour(P, d)}" stroke="${dirColour(P, d)}" stroke-width="1.5"/>`);
-      parts.push(txt(P, Wd - 4, cy + 4, r ? `${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''} · q ${fq(r.q)}` : 'not tested', { size: 10.5, anchor: 'end', fill: dirColour(P, d) === P.muted ? P.muted : P.ink }));
+      parts.push(txt(P, Wd - 4, cy + 4, r ? `${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}${K.sharePair(r) ? ` · ${K.sharePair(r)}` : ''} · q ${fq(r.q)}` : 'not tested', { size: 10.5, anchor: 'end', fill: dirColour(P, d) === P.muted ? P.muted : P.ink }));
       y += RH;
     });
     for (let k = sc.lo; k <= sc.hi; k++) {
@@ -211,8 +211,8 @@
   }
   function forestTsv(b, m) {
     const rows = rowsFor(b.rows, m);
-    const one = (r, who) => (r ? [who, r.method || m, r.a, r.b, r.c, r.d, g6(effOf(r)), g6(r.lo), g6(r.hi), g6(r.p), g6(r.q), r.strata ?? ''] : [who, m, '', '', '', '', '', '', '', '', '', '']);
-    return ['group', 'analysis', 'category', 'label', 'rows', 'method', 'a', 'b', 'c', 'd', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q', 'n_strata'].join('\t') + '\n' +
+    const one = (r, who) => (r ? [who, r.method || m, r.a, r.b, r.c, r.d, g6(r.a + r.b ? r.a / (r.a + r.b) : null), g6(r.c + r.d ? r.c / (r.c + r.d) : null), g6(effOf(r)), g6(r.lo), g6(r.hi), g6(r.p), g6(r.q), r.strata ?? ''] : [who, m, '', '', '', '', '', '', '', '', '', '', '', '']);
+    return ['group', 'analysis', 'category', 'label', 'rows', 'method', 'a', 'b', 'c', 'd', 'share_in_group', 'share_in_others', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q', 'n_strata'].join('\t') + '\n' +
       rows.flatMap(x => [[x.group, x.ref.analysis, x.ref.category, x.label, ...one(x.site, 'whole dataset')], ...(selOn() ? [[x.group, x.ref.analysis, x.ref.category, x.label, ...one(x.mine, 'selection')]] : [])].map(r => r.join('\t'))).join('\n') + '\n';
   }
   const g6 = v => (v == null || !Number.isFinite(+v) ? '' : String(+Number(v).toPrecision(6)));
@@ -249,8 +249,8 @@
     return seg(bkey(pg, sec, bi), s.m) + `<div class="ix-plot"><svg viewBox="0 0 760 ${L.H}" role="img" aria-label="${esc(sec.title)}">${L.body}</svg></div><p class="muted small">${say}. Filled: q ≤ 0.05; the band is the 95% CI (within each protein). Hover a point for its test.</p>`;
   }
   function linesTsv(b, m) {
-    return ['series', 'x', 'category', 'a', 'b', 'c', 'd', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q'].join('\t') + '\n' +
-      linesData(b, m).flatMap(s => s.pts.map(p => [s.label, p.x, p.cat, p.r.a, p.r.b, p.r.c, p.r.d, g6(effOf(p.r)), g6(p.r.lo), g6(p.r.hi), g6(p.r.p), g6(p.r.q)].join('\t'))).join('\n') + '\n';
+    return ['series', 'x', 'category', 'a', 'b', 'c', 'd', 'share_in_group', 'share_in_others', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q'].join('\t') + '\n' +
+      linesData(b, m).flatMap(s => s.pts.map(p => [s.label, p.x, p.cat, p.r.a, p.r.b, p.r.c, p.r.d, g6(p.r.a + p.r.b ? p.r.a / (p.r.a + p.r.b) : null), g6(p.r.c + p.r.d ? p.r.c / (p.r.c + p.r.d) : null), g6(effOf(p.r)), g6(p.r.lo), g6(p.r.hi), g6(p.r.p), g6(p.r.q)].join('\t'))).join('\n') + '\n';
   }
 
   // ---- sets: a protein-set question as a table of meters ----------------------------------------------------------
