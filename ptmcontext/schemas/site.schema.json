@@ -2576,6 +2576,13 @@
               },
               "description": "per attribute, short labels of its values in the table"
             },
+            "quick": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "the colored attributes that get a quick filter above the table (default: all of them)"
+            },
             "site_tags": {
               "type": "object",
               "required": [
