@@ -51,8 +51,26 @@
     const what = st.parts.map(r => (r.chips ? r.chips.map(c => { drops.push(c.drop); return chip(c.label, drops.length - 1); }).join(' ') : `<b>${esc(r.text)}</b> <button type="button" class="hl-x" data-hl-clear aria-label="Clear the highlight" title="Clear the highlight">×</button>`)).join(' ');
     return `<p class="hl-line"><span class="flabel">Highlighted:</span> ${what} <span class="muted">· ${int(n)} ${esc(noun)}</span> <label class="hl-only small" title="The PNG, SVG and PDF show only the highlighted items, without the gray context"><input type="checkbox" data-hl-only${only ? ' checked' : ''}> Exports: highlighted only</label></p>`;
   };
+  // named lists of genes or sites, kept in this browser (like the saved selections); the link carries only the active list (hl=)
+  const SK = `ptmc-hl-sets-${K.D?.site?.id || "site"}`;
+  const sets = () => { try { const v = JSON.parse(localStorage.getItem(SK) || '[]'); return Array.isArray(v) ? v.filter(x => x && x.name && typeof x.list === 'string') : []; } catch (e) { return []; } };
+  const keep = list => { try { localStorage.setItem(SK, JSON.stringify(list.slice(0, 60))); } catch (e) { /* storage blocked: the list lives for this page only */ } };
+  const norm = s => String(s || '').split(/[,;\n]+/).map(x => x.trim()).filter(Boolean).join(', ');
+  const activeSet = () => sets().find(x => norm(x.list) === norm(S.hl) && norm(S.hl));
+  const setsHtml = () => {
+    const all = sets(), cur = activeSet(), have = !!norm(S.hl);
+    if (!all.length && !have) return '';
+    return `<div class="hl-sets"><label class="flabel" for="hl-set">Saved lists</label> <select id="hl-set" data-hl-switch aria-label="Switch to a saved highlight list"><option value=""${cur ? '' : ' selected'}>${have && !cur ? '(unsaved list)' : '(none)'}</option>${all.map((x, i) => `<option value="${i}"${cur === x ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select> ` +
+      `<button type="button" class="btn small" data-hl-save${have ? '' : ' disabled'} title="Save the highlighted list under a name, in this browser">Save as…</button>` +
+      `<button type="button" class="btn small" data-hl-rename${cur ? '' : ' disabled'}>Rename</button><button type="button" class="btn small" data-hl-delete${cur ? '' : ' disabled'}>Delete</button></div>`;
+  };
+  const setsAct = {
+    save: () => { const cur = activeSet(), name = (window.prompt('Name this list of highlighted genes or sites', cur ? cur.name : '') || '').trim(); if (!name || !norm(S.hl)) return; keep([{ name, list: norm(S.hl) }, ...sets().filter(x => x.name !== name)]); K.render(); },
+    rename: () => { const cur = activeSet(); if (!cur) return; const name = (window.prompt('Rename this list', cur.name) || '').trim(); if (!name || name === cur.name) return; keep(sets().map(x => (x === cur || (x.name === cur.name && x.list === cur.list) ? { ...x, name } : x)).filter((x, i, a) => a.findIndex(y => y.name === x.name) === i)); K.render(); },
+    delete: () => { const cur = activeSet(); if (!cur) return; if (window.confirm && !window.confirm(`Delete the list "${cur.name}"? The highlight on the page stays.`)) return; keep(sets().filter(x => !(x.name === cur.name && x.list === cur.list))); K.render(); },
+  };
   // the box to paste genes or sites into: added to the highlight, nothing is filtered
-  const control = () => `<form class="hl-form" data-hl-form><label class="flabel" for="hl-in">Highlight</label> <input id="hl-in" name="hl" type="search" autocomplete="off" spellcheck="false" placeholder="genes or sites to mark in the figures, e.g. FUS, TDP-43, HNRNPA1 R218" aria-label="Genes or sites to highlight in the figures"> <button class="btn small" type="submit">Highlight</button></form>`;
+  const control = () => `<form class="hl-form" data-hl-form><label class="flabel" for="hl-in">Highlight</label> <input id="hl-in" name="hl" type="search" autocomplete="off" spellcheck="false" placeholder="genes or sites to mark in the figures, e.g. FUS, TDP-43, HNRNPA1 R218" aria-label="Genes or sites to highlight in the figures"> <button class="btn small" type="submit">Highlight</button></form>${setsHtml()}`;
   // labels placed greedily: the candidates around a dot in order, the first that fits the box and clears the others
   function place(items, box = [0, 760, 0, 400], size = 10) {
     const taken = items.map(i => [i.x - i.r - 1, i.y - i.r - 1, i.x + i.r + 1, i.y + i.r + 1]), out = [];
@@ -73,8 +91,10 @@
     const a = `x="${o.x.toFixed(1)}" y="${o.y.toFixed(1)}" font-size="${size}" font-weight="700" text-anchor="${o.anchor}"`;
     return `<text ${a} stroke="${P.bg}" stroke-width="3.5" stroke-linejoin="round" fill="${P.bg}">${esc(o.t)}</text><text ${a} fill="${P.ink}">${esc(o.t)}</text>`;
   }).join('');
-  K.hl = { state, sources, line, place, labels, clear, control, limit: LIMIT, get only() { return only; } };
+  K.hl = { state, sources, line, place, labels, clear, control, sets, activeSet, limit: LIMIT, get only() { return only; } };
   document.addEventListener('change', e => { if (e.target.matches?.('[data-hl-only]')) { only = e.target.checked; store.set(only); document.querySelectorAll('[data-hl-only]').forEach(x => { x.checked = only; }); } });
+  K.clicks.push(['[data-hl-save]', setsAct.save], ['[data-hl-rename]', setsAct.rename], ['[data-hl-delete]', setsAct.delete]);
+  document.addEventListener('change', e => { const s = e.target.matches?.('[data-hl-switch]') && e.target; if (!s) return; const x = s.value === '' ? null : sets()[+s.value]; S.hl = x ? x.list : ''; K.writeHash(true); K.render(); });
   K.clicks.push(['[data-hl-drop]', el => { drops[+el.dataset.hlDrop]?.(); K.writeHash(true); K.render(); }]);
   document.addEventListener('submit', e => {
     const f = e.target.closest?.('[data-hl-form]'); if (!f) return;
@@ -89,6 +109,7 @@
 .hl-form { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin: 0.4rem 0; }
 .hl-form input { flex: 1 1 18rem; min-width: 10rem; }
 .hl-chip { border: 1px solid var(--line-strong); border-radius: 1rem; padding: 0 0.15rem 0 0.55rem; display: inline-flex; align-items: center; gap: 0.25rem; }
+.hl-sets { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin: 0.3rem 0; }
 .hl-tbl { margin-top: 0.4rem; }
 .hl-tbl td, .hl-tbl th { padding: 0.15rem 0.5rem; }`;
   document.head.appendChild(css);
