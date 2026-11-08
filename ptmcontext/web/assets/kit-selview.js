@@ -39,7 +39,7 @@
     return memo;
   }
   const qTitle = r => A[r.analysis]?.title || r.analysis;
-  const summaryText = m => (m.fu.some(r => !r.circular) ? m.fu.filter(r => !r.circular).slice(0, 3).map(r => `${r.label} ${fx(r.or)}`).join(', ') + ' · ' : '') + `${int(m.diff.length)} of ${int(m.rows.length)} features differ (q ≤ ${PADJ()})`;
+  const summaryText = m => (m.fu.some(r => !r.circular) ? m.fu.filter(r => !r.circular).slice(0, 3).map(r => `${r.label} OR ${fx(r.or)}`).join(', ') + ' · ' : '') + `${int(m.diff.length)} of ${int(m.rows.length)} features differ (q ≤ ${PADJ()})`;
   // the forest, as the page draws it and the figure exports it: each row's odds ratio and 95% CI on a log2 axis
   function forestSvg(rows, w, light) {
     const L = Math.min(300, w * 0.42), R = 96, X0 = L + 8, X1 = w - R, lo = -4, hi = 4, rowH = 22;

@@ -258,7 +258,7 @@
       .map(([v, name, n]) => [v, v === 'protein' ? name : tabName(v, name), n]);
     const on = v => (here ? v === 'protein' : S.view === v || (K.views[S.view]?.tab === v)) || (v === 'protein' && S.view === 'protein');
     $('#tabs').innerHTML = (K.front ? '' : `<button class="tab rail-btn" type="button" data-rail-open="sections" title="Sections of this page" aria-label="Sections">☰</button>`) + t.map(([v, name, n]) => `<a class="tab" href="${esc(v === 'protein' ? location.hash : link(v))}"${tabHint(v) ? ` title="${esc(tabHint(v))}"` : ''}${on(v) ? ' aria-current="page"' : ''}>${K.tabIcons?.[v] || ''}${name}` +
-      (n != null && n !== 'selection' && !K.front ? ` <span class="count">${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + (sel && follows(v) ? ' <span class="selmark" title="Follows your selection" aria-label="follows your selection">●</span>' : '') + '</a>').join('') + (K.front ? '' : variantSwitch());
+      (n != null && n !== 'selection' && !K.front ? ` <span class="count"${K.tabCountHint?.[v]?.() ? ` title="${esc(K.tabCountHint[v]())}"` : ''}>${typeof n === 'number' ? int(n) : esc(n)}</span>` : '') + (sel && follows(v) ? ' <span class="selmark" title="Follows your selection" aria-label="follows your selection">●</span>' : '') + '</a>').join('') + (K.front ? '' : variantSwitch());
   }
   // the site's variants (the same questions on other marks, such as with lower-confidence sites): a switch to each,
   // and in a variant the switch back; the page, its selection and its place are kept

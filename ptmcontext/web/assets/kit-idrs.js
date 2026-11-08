@@ -397,7 +397,7 @@
     const xs = scoped(), np = new Set(xs.map(x => x.p)).size;
     const testLink = QA ? `<a href="${esc(href('overview', encodeURIComponent(QA.id)))}">${esc(QA.title)}</a>` : `<a href="${esc(href('overview'))}">the Overview</a>`;
     const sw = SC.on ? 'selected ' : '';
-    return `<div class="page-head results-head"><div><h2>${esc(K.tabName('idrs', 'IDRs'))}</h2><p class="cx">${int(xs.length)} on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</p></div></div>` +
+    return `<div class="page-head results-head"><div><h2>${esc(K.tabName('idrs', 'IDRs'))}</h2><p class="cx">${int(xs.length)} IDRs on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</p></div></div>` +
       `<p class="page-sub">By charge class, R1 to R5 of the Das–Pappu diagram; test: ${testLink}. <button type="button" class="idr-goto" data-idr-goto="idr-refs">Method</button></p>` +
       `<section class="idr-card" id="idr-regions"><div class="card-head"><div><h3>${esc(cap(W.marked))} ${esc(W.residues)}, by region</h3></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-rexp', 'the regions')}</div>${regionsHtml()}</section>` +
       `<section class="idr-card" id="idr-diagram"><div class="card-head"><div><h3>Charge diagram</h3><p class="sub">Each dot is an IDR, by how much of it is charged and its net charge; color is the class, size the number of ${sw}${esc(W.marks)}.</p></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-dexp', 'the diagram')}</div>` +
@@ -429,6 +429,8 @@
   const openIdr = i => { const x = V?.idrs[+i]; if (!x) return; const tip = document.getElementById('tip'); if (tip) tip.hidden = true; K.go('protein', { arg: `${pr(x)[0]}/${x.s}-${x.e}` }); };
 
   K.views.idrs = { render: view, title: () => K.tabName('idrs', 'IDRs') };
+  // the tab's number counts the IDRs that hold a selected mark; the page lists every IDR of the selected proteins
+  (K.tabCountHint ||= {}).idrs = () => (V && SC.on ? `${int(V.idrs.filter(x => SC.n[x.i] > 0).length)} IDRs hold a selected ${W.mark}; the page lists all ${int(scoped().length)} IDRs of the ${int(new Set(scoped().map(x => x.p)).size)} selected proteins` : '');
   K.tabs.push(() => {
     if (K.sel?.active() && K.sel.data()) { if (!V) { load(); return ['idrs', 'IDRs', null]; } sel(); return ['idrs', 'IDRs', V.idrs.filter(x => SC.n[x.i] > 0).length]; }
     return ['idrs', 'IDRs', TR.values.n];
