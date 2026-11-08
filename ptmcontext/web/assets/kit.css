@@ -2022,3 +2022,6 @@ body.cards .sc-grid, .sc-grid:has(> .sc-tile) { display: grid; grid-template-col
 .sites-tbl .src-tags > a, .sites-tbl .src-tags > span { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 0.3rem; background: var(--surface-2); color: var(--ink-2); font-size: 0.74rem; font-weight: 500; text-decoration: none; }
 .sites-tbl .src-tags > a:hover { color: var(--accent); }
 .sites-tbl .src-tags > .tag.more { font-weight: 600; background: var(--surface-2); color: var(--ink-2); border: 0; }
+
+/* the proteins table: the name under the symbol in the muted gray of the explorer's table */
+.ptbl2 .pname { color: var(--muted); font-size: 0.8rem; margin-top: 0.1rem; }

@@ -621,7 +621,7 @@ column whose data a site lacks is left out.
 
 **`website.proteins`** (the Proteins page). `columns`: the table's columns after the protein and its count of marks (of
 the selection, "/ total" when that differs), offered in the Columns menu (`default: true` shows at first; the reader's
-choice is kept in the browser). Each `{id, label, menu?, default?, help? (the header's hover), hide? (xs: dropped below
+choice is kept in the browser). Each `{id, label, menu?, default?, fixed? (always shown, not in the menu), help? (the header's hover), hide? (xs: dropped below
 36rem; sm: below 56rem)}` and one of:
 
 | Key | Value | Shows |

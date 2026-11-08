@@ -45,3 +45,18 @@ def test_the_figure_panels_page_is_registered_and_gives_the_sites_page_its_butto
     assert 'K.views.figures = ' in fig and 'if (!K.logoPanel) return;' in fig
     assert 'K.views.figures ?' in tables and 'Make figures' in tables and 'K.tables.figuresBtn()' in sites
     assert 'K.logoPanel = ' in _js('kit-conserve.js')
+
+
+def test_the_proteins_table_follows_the_explorers_defaults():
+    import yaml
+    cols = yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / 'methylarginine.yaml').read_text())['website']['proteins']['columns']
+    by = {c['id']: c for c in cols}
+    assert by['map'].get('fixed') and not by['map'].get('default')
+    assert [i for i in by if by[i].get('default')] == ['ix', 'idr', 'cond', 'density']
+    assert not by['loc'].get('default') and not by['len'].get('default') and not by['share'].get('default')
+    assert "K.density.defaults.proteins = 'comfortable'" in _js('kit-tables.js')
+
+
+def test_default_columns_follow_the_defaults_while_the_data_arrives():
+    js = _js('kit-columns.js')
+    assert 'untouched' in js and 'delete state[table]' in js and 'untouched.delete(t)' in js

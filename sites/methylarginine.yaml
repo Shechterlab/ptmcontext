@@ -1807,13 +1807,13 @@ website:                  # the look and words of the website (ptmc web); layout
   proteins:                # the Proteins page (kit-tables.js): its table's columns after the protein and its sites, in the Columns
                            # menu (default: true shows at first), and its download's columns; the explorer's
     columns:
-      - {id: map, label: Site map, show: map, default: true, hide: xs}
+      - {id: map, label: Site map, show: map, fixed: true, hide: xs}
       - {id: ix, label: Interaction evidence, menu: Interaction evidence (sites), default: true,
          counts: {attribute: interaction, values: {experimental: exp., predicted_only: pred.}, dashed: [predicted_only]},
          help: "Sites in this selection with experimental interaction evidence, and with predicted evidence only"}
       - {id: idr, label: In IDR, classes: {analysis: disorder, classes: [disordered]}, default: true, hide: xs, help: "The share of the protein's sites in an IDR"}
       - {id: cond, label: Condensates, attribute: condensates, format: count, default: true, hide: sm, help: "CD-CODE condensates (human, not synthetic) the protein is a member of"}
-      - {id: loc, label: Location (HPA), attribute: hpa, default: true, hide: sm,
+      - {id: loc, label: Location (HPA), attribute: hpa, hide: sm,
          help: "Subcellular locations in the Human Protein Atlas (reliability Approved or better)"}
       - {id: density, label: Top cluster window, template: "{dense_sites} in {dense_window} aa", where: {attribute: dense_q, max: 0.05}, sort: dense_sites, default: true, hide: sm,
          help: "The window most significant against the same-protein arginine null (lowest q), not necessarily the densest"}

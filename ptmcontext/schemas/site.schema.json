@@ -5293,6 +5293,10 @@
                   "default": {
                     "type": "boolean"
                   },
+                  "fixed": {
+                    "type": "boolean",
+                    "description": "always shown and not in the Columns menu"
+                  },
                   "help": {
                     "type": "string"
                   },

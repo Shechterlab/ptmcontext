@@ -169,6 +169,7 @@
     return head + selectionCard() + enrichedCard() + tableHtml +
       citeBox(marksOf, sel ? `the ${int(marksOf.length)} ${marksOf.length === 1 ? W.mark : W.marks} on these proteins` : `the ${W.marks} of this site`);
   }
+  K.density.defaults.proteins = 'comfortable';   // two lines a row (the symbol, the name), as the explorer's table; a reader's choice wins
   const pkeyNum = c => ['length', 'share', 'candidates'].includes(c.show) || c.classes || (c.attribute && (PSP[c.attribute]?.kind === 'number' || c.format === 'count'));
   // a figures page, when a module draws one
   const figuresBtn = () => (K.views.figures ? `<a class="btn small" href="${esc(K.link('figures'))}" title="Figure panels of this selection">Make figures</a>` : '');

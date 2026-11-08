@@ -28,10 +28,14 @@
     try { localStorage.setItem(DK, pref); } catch (err) { /* storage may be blocked */ }
     K.render();
   });
+  const untouched = new Set();         // tables whose columns are still the defaults
   function on(table, cols, defaults) {
+    // the defaults can grow while the data arrives (a column whose attribute is not loaded yet is not listed): a choice not yet made follows them
+    if (state[table] && untouched.has(table) && JSON.stringify(defaults || []) !== JSON.stringify(defs[table])) delete state[table];
     defs[table] = defaults || [];
     if (!state[table]) {
       const saved = read(KEY(table)), known = read(KNOWN(table));
+      if (Array.isArray(saved)) untouched.delete(table); else untouched.add(table);
       const set = new Set(Array.isArray(saved) ? saved : defs[table]);
       if (Array.isArray(saved)) defs[table].filter(k => !(Array.isArray(known) && known.includes(k))).forEach(k => set.add(k));
       state[table] = set;
@@ -39,7 +43,7 @@
     return (cols || []).filter(c => c.fixed || state[table].has(c.id)).map(c => c.id);
   }
   function save(table) { write(KEY(table), [...state[table]]); write(KNOWN(table), defs[table] || []); }
-  function reset(table) { state[table] = new Set(defs[table] || []); write(KEY(table), null); }
+  function reset(table) { state[table] = new Set(defs[table] || []); untouched.add(table); write(KEY(table), null); }
   function menu(table, cols, defaults) {
     on(table, cols, defaults);
     const opt = (cols || []).filter(c => !c.fixed);
@@ -54,6 +58,7 @@
     const cb = e.target.closest?.('[data-col-table]'); if (!cb) return;
     const t = cb.dataset.colTable; if (!state[t]) return;
     if (cb.checked) state[t].add(cb.dataset.col); else state[t].delete(cb.dataset.col);
+    untouched.delete(t);
     save(t); after(t);
   });
   document.addEventListener('toggle', e => { const d = e.target; if (d.dataset?.colMenu) { if (d.open) open.add(d.dataset.colMenu); else open.delete(d.dataset.colMenu); } }, true);
