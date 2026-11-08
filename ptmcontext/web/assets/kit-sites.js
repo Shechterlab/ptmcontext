@@ -312,7 +312,7 @@
   }
   async function download(el) {
     const rs = rows(allCols().shown), name = K.tables.fileName('sites');
-    if (el.dataset.sitesExp !== 'tsv') return K.tableExport(el.dataset.sitesExp, el, document.getElementById('sites-table') || document.body, { title: 'Sites', sub: K.pageCx(), total: rs.length }, name);
+    if (el?.dataset?.sitesExp && el.dataset.sitesExp !== 'tsv') return K.tableExport(el.dataset.sitesExp, el, document.getElementById('sites-table') || document.body, { title: 'Sites', sub: K.pageCx(), total: rs.length }, name);
     if (dlTables() && K.card) {
       const accs = [...new Set(rs.filter(m => !m.lc).map(m => pr(m[0]).acc))].filter(a => TB[a] === undefined), old = el.textContent;
       el.disabled = true; let done = 0;

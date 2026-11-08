@@ -345,7 +345,7 @@
     ['[data-copy-genes]', el => copy(proteinRows().map(r => r.p.gene || r.p.acc).join('\n'), el)],
     ['[data-tsort]', el => { const id = el.dataset.tsort, c = pcols().find(x => x.id === id); sortBy(PS, id, id === 'protein' || (c && textCol(c))); K.render(); }],
     ['[data-tmore="p"]', () => { PS.n += 50; K.render(); }],
-    ['[data-ptsv]', el => K.tableExport(el.dataset.ptsv, el, document.getElementById('proteins-table') || document.body, { title: 'Proteins', sub: K.pageCx(), total: proteinRows().length }, fileName('proteins'), proteinsTsv)],
+    ['[data-ptsv]', el => (!el?.dataset?.ptsv || el.dataset.ptsv === 'tsv' ? K.exportFigure('tsv', null, fileName('proteins'), el, proteinsTsv) : K.tableExport(el.dataset.ptsv, el, document.getElementById('proteins-table') || document.body, { title: 'Proteins', sub: K.pageCx(), total: proteinRows().length }, fileName('proteins'), proteinsTsv))],
     ['[data-enexp]', el => K.exportFigure(el.dataset.enexp, enrichedFigure, `${D.site.id}_enriched_features${K.sel?.active() ? '_selection' : ''}`, el, enrichedTsv)],
   );
   document.addEventListener('keydown', e => {
