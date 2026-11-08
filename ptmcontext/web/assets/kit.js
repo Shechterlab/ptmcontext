@@ -58,7 +58,9 @@
   const setUnit = a => A[a]?.unit || 'proteins';
   const markedUnits = a => (A[a]?.unit ? `${A[a].unit} of ${W.marked} proteins` : `${W.marked} proteins`);
   // a row of a test, ready to draw: its effect, labels and reading (the site's own rows, and a selection's)
-  const decorate = rows => { rows.forEach(r => { r.eff = r.or ?? r.fold; r.label = label(r); r.help = (A[r.analysis]?.help || {})[r.category] || ''; r.dir = dir(r); r.title = A[r.analysis]?.title || r.analysis; }); return rows; };
+  const decorate = rows => { rows.forEach(r => { r.eff = r.or ?? r.fold; r.label = label(r); r.help = (A[r.analysis]?.help || {})[r.category] || '';
+    // the site file's short label (website.front.row_labels) names the class everywhere, as on the tile; the full name goes into its subtitle
+    const short = D.front?.row_labels?.[r.analysis]?.[r.category]; if (short && short !== r.label) { r.help = r.help ? `${r.label}. ${r.help}` : r.label; r.label = short; } r.dir = dir(r); r.title = A[r.analysis]?.title || r.analysis; }); return rows; };
   // the rows, read from the statistics table the page carries once (its text serves the downloads): numbers as the
   // run wrote them, an infinite odds ratio (every set member marked) as 1e300, which prints as '> 1,000'
   if (!D.rows) {
