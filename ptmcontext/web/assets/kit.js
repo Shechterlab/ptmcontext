@@ -476,6 +476,7 @@
     const same = c.filter(r => r.dir === 'same').sort((x, y) => Math.abs(Math.log(y.eff)) - Math.abs(Math.log(x.eff)));
     const nUp = Math.min(up.length, dn.length ? max - 2 : max), nDn = Math.min(dn.length, max - nUp, up.length ? 2 : max);
     const shown = [...up.slice(0, nUp), ...dn.slice(0, nDn)];
+    if (card.order === 'q') shown.sort((x, y) => y.eff - x.eff);     // chosen by evidence, drawn like the other tiles: the largest value first
     shown.push(...same.slice(0, Math.max(0, max - shown.length)));
     // the classes that differ but are not shown: "+N more", which the question outlines when opened from it
     const left = [...up, ...dn, ...same].filter(r => !shown.includes(r)).map(r => r.category);
