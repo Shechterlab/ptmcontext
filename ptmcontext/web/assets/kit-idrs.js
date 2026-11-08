@@ -401,7 +401,7 @@
       `<p class="page-sub">By charge class, R1 to R5 of the Das–Pappu diagram; test: ${testLink}. <button type="button" class="idr-goto" data-idr-goto="idr-refs">Method</button></p>` +
       `<section class="idr-card" id="idr-regions"><div class="card-head"><div><h3>${esc(cap(W.marked))} ${esc(W.residues)}, by region</h3></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-rexp', 'the regions')}</div>${regionsHtml()}</section>` +
       `<section class="idr-card" id="idr-diagram"><div class="card-head"><div><h3>Charge diagram</h3><p class="sub">Each dot is an IDR, by how much of it is charged and its net charge; color is the class, size the number of ${sw}${esc(W.marks)}.</p></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-dexp', 'the diagram')}</div>` +
-      `<div class="idr-ctl"><label><input type="checkbox" id="idr-cand"${T.cand ? ' checked' : ''}> Only IDRs with a candidate residue (${esc(W.residues)})</label></div>` +
+      `${K.hl?.control() || ''}<div class="idr-ctl"><label><input type="checkbox" id="idr-cand"${T.cand ? ' checked' : ''}> Only IDRs with a candidate residue (${esc(W.residues)})</label></div>` +
       `<div class="idr-plot idr-small" id="idr-diagram-body">${diagramBody()}</div><div id="idr-diagram-hl">${hlHtml('diagram')}</div></section>` +
       (POLY3() ? `<section class="idr-card" id="idr-kappa"><div class="card-head"><div><h3>Charge mixing (κ)</h3><p class="sub">κ is 0 when positive and negative charges alternate along the chain and 1 when they are split into two stretches.</p></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-kexp', 'the κ distribution')}</div>` +
       `<div id="idr-kappa-body">${kappaBody()}</div><div id="idr-kappa-hl">${hlHtml('kappa')}</div></section>` : '') +

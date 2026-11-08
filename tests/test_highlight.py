@@ -16,8 +16,8 @@ ASSETS = Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets'
 def test_labels_do_not_overlap_and_stay_in_the_box():
     script = f"""
 const fs = require('fs');
-global.window = global; global.document = {{ createElement: () => ({{}}), head: {{ appendChild() {{}} }} }};
-const K = {{ esc: s => String(s), int: n => String(n), S: {{}}, clicks: [], tw: (t, s) => t.length * s * 0.55, writeHash() {{}}, render() {{}} }};
+global.window = global; global.document = {{ createElement: () => ({{}}), head: {{ appendChild() {{}} }}, addEventListener() {{}} }};
+const K = {{ esc: s => String(s), int: n => String(n), S: {{}}, clicks: [], paramsIn: [], paramsOut: [], tw: (t, s) => t.length * s * 0.55, writeHash() {{}}, render() {{}} }};
 eval(fs.readFileSync({json.dumps(str(ASSETS / 'kit-hilite.js'))}, 'utf8'));
 window.PTMC_MODULES.forEach(m => m(K));
 const items = Array.from({{ length: 12 }}, (_, i) => ({{ x: 300 + (i % 4) * 14, y: 200 + (i % 3) * 9, r: 4, t: 'GENE' + i + ' ' + (i * 10) + '–' + (i * 10 + 50) }}));
@@ -37,3 +37,25 @@ def test_the_idr_charts_draw_gray_context_and_ringed_highlights():
     src = (ASSETS / 'kit-idrs.js').read_text()
     assert 'K.hl.labels(' in src and 'GRAY' in src and 'hlTsv' in src and 'withHl(' in src
     assert 'kit-hilite.js' in (ASSETS.parent / '__init__.py').read_text()
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_a_pasted_list_is_its_own_link_parameter_and_narrows_nothing():
+    script = f"""
+const fs = require('fs');
+global.window = global; global.document = {{ createElement: () => ({{}}), head: {{ appendChild() {{}} }}, addEventListener() {{}} }};
+const S = {{ q: '', f: {{}} }};
+const K = {{ esc: s => String(s), int: n => String(n), S, clicks: [], paramsIn: [], paramsOut: [], tw: (t, s) => t.length * s * 0.55, writeHash() {{}}, render() {{}},
+  sel: {{ active: () => false, data: () => ({{}}), select: (q) => ({{ active: true, proteins: new Set(q.split(', ').map((_, i) => i)), marks: [1, 2] }}) }} }};
+eval(fs.readFileSync({json.dumps(str(ASSETS / 'kit-hilite.js'))}, 'utf8'));
+window.PTMC_MODULES.forEach(m => m(K));
+K.paramsIn.forEach(f => f(new URLSearchParams('hl=FUS%2C+TARDBP+R5&q=x')));
+const p = new URLSearchParams(); K.paramsOut.forEach(f => f(p));
+const st = K.hl.state(), line = K.hl.line(2, 'IDRs');
+S.hl = ''; const none = K.hl.state().on;
+console.log(JSON.stringify({{ hl: p.get('hl'), keys: [...p.keys()], on: st.on, n: st.prots.size, chips: (line.match(/data-hl-drop/g) || []).length, q: S.q, f: S.f, none }}));
+"""
+    run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr[-800:]
+    out = json.loads(run.stdout)
+    assert out == {'hl': 'FUS, TARDBP R5', 'keys': ['hl'], 'on': True, 'n': 2, 'chips': 2, 'q': '', 'f': {}, 'none': False}
