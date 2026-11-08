@@ -60,3 +60,15 @@ def test_the_proteins_table_follows_the_explorers_defaults():
 def test_default_columns_follow_the_defaults_while_the_data_arrives():
     js = _js('kit-columns.js')
     assert 'untouched' in js and 'delete state[table]' in js and 'untouched.delete(t)' in js
+
+
+def test_a_sidebar_jump_opens_every_fold_around_its_section():
+    # protein-page sections sit inside closed group folds; opening only the section left nothing to scroll to
+    js = _js('kit-rail.js')
+    assert "d = d.parentElement?.closest('details')" in js
+
+
+def test_the_sidebar_tabs_keep_the_filter_count_on_one_line():
+    css = (Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets' / 'kit.css').read_text()
+    assert '.rail-head .seg button { flex: 1; font-weight: 600; white-space: nowrap; }' in css
+    assert '.rail-head { display: flex; flex-wrap: wrap;' in css

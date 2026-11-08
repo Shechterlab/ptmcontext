@@ -296,9 +296,9 @@ body.rail-open .rail { display: block; position: fixed; z-index: 60; top: 0; lef
 .rail-scrim { display: none; }
 body.rail-open .rail-scrim { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(0, 0, 0, 0.35); }
 .rail { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow); }
-.rail-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.8rem 0.9rem; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); z-index: 1; }
-.rail-head .seg { flex: 1; }
-.rail-head .seg button { flex: 1; font-weight: 600; }
+.rail-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.8rem 0.9rem; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); z-index: 1; }
+.rail-head .seg { flex: 1 0 max-content; }
+.rail-head .seg button { flex: 1; font-weight: 600; white-space: nowrap; }     /* the labels and the filter count stay on one line; Unpin wraps below when the rail is narrow */
 .rail-body { padding: 0.6rem 0.9rem 1rem; }
 .rail-note { font-size: 0.82rem; color: var(--muted); margin: 0.5rem 0 0.6rem; }
 .rail-sel { font-size: 0.84rem; display: flex; flex-wrap: wrap; gap: 0.3rem 0.5rem; align-items: center; }
