@@ -2123,7 +2123,7 @@ website:                  # the look and words of the website (ptmc web); layout
     context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
       p-cond: [condensate_proteome, hpa_location]
       p-dis: [disease_family]
-    open: [p-map]   # as in the explorer: the map open, every other fold shut
+    open: [p-map, p-cell]   # the map and where in the cell open, every other fold shut
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
       location:
         title: Location and condensates

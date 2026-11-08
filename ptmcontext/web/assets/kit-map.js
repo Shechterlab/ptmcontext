@@ -814,7 +814,7 @@
     return `<div class="map-ctl"><label>Color ${esc(W.marks)} by <select data-map-colour>${MODES.map(md => `<option value="${esc(md.id)}"${mode().id === md.id ? ' selected' : ''}${md.help ? ` title="${esc(md.help)}"` : ''}>${esc(md.label)}</option>`).join('')}</select></label>` +
       `<span class="lbl">Labels <span class="seg">${[['auto', 'Auto', 'Up to three lines of labels; neighbors too close share one (R213 +3), and none above 120 marks. Zoom in to separate them'], ['all', 'All', 'Every mark its own label, on as many lines as it needs'], ['none', 'None', 'No labels']].map(([k, l, t]) => `<button type="button" data-map-labels="${k}" aria-pressed="${M.labels === k}" title="${esc(t)}">${l}</button>`).join('')}</span></span>` +
       `<span class="rows-wrap"><button type="button" class="btn small" data-map-rows aria-expanded="${M.rowsMenu}">Rows ▾</button>${M.rowsMenu ? rowsMenu() : ''}</span>` +
-      (M.zoom ? `<span class="map-range small" id="map-range">residues ${int(M.zoom[0])}–${int(M.zoom[1])} of ${int(M.ctx?.p?.len || 0)}</span><button type="button" class="btn small" data-map-unzoom title="Show the whole protein again (double-click the map, or press Esc)">Reset zoom</button>` : `<span class="muted small">Drag across the map to zoom</span>`) + '</div>';
+      (M.zoom ? `<span class="map-range small" id="map-range">residues ${int(M.zoom[0])}–${int(M.zoom[1])} of ${int(M.ctx?.p?.len || 0)}</span><button type="button" class="btn small" data-map-unzoom title="Show the whole protein again (double-click the map, or press Esc)">Reset zoom</button>` : '') + '</div>';
   }
   // the exports' size and resolution: a menu beside the PDF, SVG and PNG buttons, not a row of the map's controls
   function exportOpts() {
