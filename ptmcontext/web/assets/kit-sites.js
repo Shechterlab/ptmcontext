@@ -128,7 +128,7 @@
     const ctx = ctxOf(m, dtb), h = c.show.map(k => {
       if (k === 'nearest') { const n = nearest(m); return n == null ? '' : `${int(n)} aa`; }
       if (k === 'nearest_domain') return nearestDomain(ctx);
-      if (k === 'status') return K.card.badge(ctx);
+      if (k === 'status') { const v = vals(m, EV.status)[0] ?? '', b = K.card.badge(ctx), l = K.sel.valueLabel(EV.status, v), t = short(EV.status, v); return t === l ? b : b.replace(esc(l), esc(t)); }   // the short label of website.sites.short
       if (!K.card[k]) return '';
       if (K.density.compact()) {
         if (k === 'tags') return K.card.tags(ctx, -1);

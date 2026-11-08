@@ -1874,7 +1874,7 @@ website:                  # the look and words of the website (ptmc web); layout
   sites:                   # the Sites page: the explorer's columns (kit-sites.js)
     quick: [interaction]                   # the quick filters above the table (default: every colored attribute)
     state_label: State
-    short: {state: {Rme1: Rme1, Rme2: Rme2, Rme1_Rme2: Rme1 + Rme2, "": No assigned state}}   # short labels in the table
+    short: {state: {Rme1: Rme1, Rme2: Rme2, Rme1_Rme2: Rme1 + Rme2, "": No assigned state}, interaction: {none: None}}   # short labels in the table
     site_tags: {attribute: flags, values: {paralog_assigned: paralog}}                       # tags beside the site
     window: {colours: {G: "#15803d"}}                                                         # residues colored in the window
     tags:                  # the motif tags under the window: which, in what order (the CARM1-like proline motifs are not shown)
