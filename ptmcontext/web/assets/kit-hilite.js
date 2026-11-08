@@ -29,15 +29,20 @@
     if (!K.sel?.data()) return { prots: new Set(), marks: new Set(), sites: [], notFound: [], text: t.join(', '), chips, clear, pasted: true };
     // each entry on its own: a gene marks its proteins, a site ("GENE R218") only that residue, and one that matches nothing
     // is reported (the others are kept)
-    const prots = new Set(), marks = new Set(), sites = [], notFound = [];
+    const prots = new Set(), marks = new Set(), sites = [], notFound = [], bad = new Set(), SD = K.sel.data();
     t.forEach(tok => {
       const r = K.sel.select(tok, {}), q = r.q || {};
       (r.marks || []).forEach(m => marks.add(m));
-      if (q.sites?.length && !q.genes?.length) q.sites.forEach(([p, pos]) => sites.push({ p, pos, label: tok }));
+      if (q.sites?.length && !q.genes?.length) q.sites.forEach(([p, pos]) => {
+        if (SD.marks.some(m => m[0] === p && m[1] === pos)) { sites.push({ p, pos, label: tok }); return; }
+        // a site the data does not hold: say which, and keep the rest of the list
+        const L = ((/([A-Z])\s*\d+$/i.exec(tok) || [])[1] || '').toUpperCase(), pr = K.D?.proteins?.[p] || [];
+        notFound.push(`${L}${pos} of ${pr[1] || pr[0] || tok} is ${pr[3] && pos > pr[3] ? 'not in its sequence' : `not a known ${K.D?.words?.mark || 'site'}`}`); bad.add(tok);
+      });
       else if (r.proteins?.size) r.proteins.forEach(p => prots.add(p));
-      else notFound.push(tok);
+      else { notFound.push(tok); bad.add(tok); }
     });
-    return { prots, marks, sites, notFound, text: t.join(', '), chips, clear, pasted: true };
+    return { prots, marks, sites, notFound, bad, text: t.join(', '), chips, clear, pasted: true };
   });
   K.paramsOut.push(p => { if (S.hl) p.set('hl', S.hl); });
   K.paramsIn.push(p => { S.hl = p.get('hl') || ''; });
@@ -51,12 +56,15 @@
   const KEY = 'ptmc-hl-only';
   const store = { get: () => { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }, set: v => { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) { /* private window: kept for the page only */ } } };
   let only = store.get();
-  const chip = (label, i) => `<span class="hl-chip">${esc(label)} <button type="button" class="hl-x" data-hl-drop="${i}" aria-label="Remove ${esc(label)} from the highlight" title="Remove it">×</button></span>`;
+  // the not-found entries: names as a list ("not found: A, B"), sites as the sentence that says what is wrong with them
+  const nfText = list => { const w = list.filter(x => !/ is (not|in) /.test(x)), sn = list.filter(x => w.indexOf(x) < 0); return [w.length ? `not found: ${w.join(', ')}` : '', ...sn].filter(Boolean).join('; '); };
+  const chip = (label, i, bad) => `<span class="hl-chip${bad ? ' hl-chip-nf' : ''}"${bad ? ' title="Not found in the data"' : ''}>${esc(label)} <button type="button" class="hl-x" data-hl-drop="${i}" aria-label="Remove ${esc(label)} from the highlight" title="Remove it">×</button></span>`;
   // the legend line: what is highlighted, how many items, and the control that clears it
   const line = (n, noun, extra = '', over = null) => {
     const st = over || state(); if (!st.on) return '';
     const what = st.parts.map(r => (r.chips ? (document.getElementById?.('hl-bar') ? '' : r.chips.map((c, i) => chip(c.label, i)).join(' ')) : `<b>${esc(r.text)}</b> <button type="button" class="hl-x" data-hl-clear aria-label="Clear the highlight" title="Clear the highlight">×</button>`)).join(' ');
-    return `<p class="hl-line"><span class="flabel">Highlighted:</span> ${what.trim() || '<span class="muted">your list, in the box above</span>'} <span class="muted">· ${int(n)} ${esc(noun)}</span>${st.notFound.length ? ` <span class="hl-nf">· not found: ${esc(st.notFound.join(', '))}</span>` : ''}${extra ? ` <span class="muted">· ${extra}</span>` : ''} <label class="hl-only small" title="The PNG, SVG and PDF show only the highlighted items, without the gray context"><input type="checkbox" data-hl-only${only ? ' checked' : ''}> Exports: highlighted only</label></p>`;
+    const what0 = st.parts.some(r => r.pasted) ? 'Highlighted:' : (S.q ? 'Search:' : 'Selection:');
+    return `<p class="hl-line"><span class="flabel">${what0}</span> ${what.trim() || '<span class="muted">your list, in the box above</span>'} <span class="muted">· ${int(n)} ${esc(noun)}</span>${st.notFound.length ? ` <span class="hl-nf">· ${esc(nfText(st.notFound))}</span>` : ''}${extra ? ` <span class="muted">· ${extra}</span>` : ''} <label class="hl-only small" title="The PNG, SVG and PDF show only the highlighted items, without the gray context"><input type="checkbox" data-hl-only${only ? ' checked' : ''}> Exports: highlighted only</label></p>`;
   };
   // named lists of genes or sites, kept in this browser (like the saved selections); the link carries only the active list (hl=)
   const SK = `ptmc-hl-sets-${K.D?.site?.id || "site"}`;
@@ -66,10 +74,10 @@
   const activeSet = () => sets().find(x => norm(x.list) === norm(S.hl) && norm(S.hl));
   // the "Lists" menu: the saved lists, Save as, Rename, Delete and "Highlighted first in tables"; shown when there is a list or a saved one
   const menuHtml = () => {
-    const all = sets(), cur = activeSet(), have = !!norm(S.hl);
+    const all = sets(), have = !!norm(S.hl), ci = have ? all.findIndex(x => norm(x.list) === norm(S.hl)) : -1, cur = ci >= 0 ? all[ci] : null;
     if (!all.length && !have) return '';
     return `<span class="hl-menu"><button type="button" class="btn small" data-hl-menu aria-haspopup="true" aria-expanded="false" aria-controls="hl-pop">Lists ▾</button>` +
-      `<div id="hl-pop" class="hl-pop" role="group" aria-label="Highlight lists" hidden><div class="hl-sets"><label class="flabel" for="hl-set">Saved lists</label> <select id="hl-set" data-hl-switch aria-label="Switch to a saved highlight list"><option value=""${cur ? '' : ' selected'}>${have && !cur ? '(unsaved list)' : '(none)'}</option>${all.map((x, i) => `<option value="${i}"${cur === x ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>` +
+      `<div id="hl-pop" class="hl-pop" role="group" aria-label="Highlight lists" hidden><div class="hl-sets"><label class="flabel" for="hl-set">Saved lists</label> <select id="hl-set" data-hl-switch aria-label="Switch to a saved highlight list"><option value=""${cur ? '' : ' selected'}>${have && !cur ? '(unsaved list)' : '(none)'}</option>${all.map((x, i) => `<option value="${i}"${i === ci ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>` +
       `<div class="hl-sets"><button type="button" class="btn small" data-hl-save${have ? '' : ' disabled'} title="Save the highlighted list under a name, in this browser">Save as…</button>` +
       `<button type="button" class="btn small" data-hl-rename${cur ? '' : ' disabled'}>Rename</button><button type="button" class="btn small" data-hl-delete${cur ? '' : ' disabled'}>Delete</button></div>` +
       `<label class="small"><input type="checkbox" data-hl-first${first ? ' checked' : ''}> Highlighted first in tables</label></div></span>`;
@@ -108,11 +116,11 @@
   let pc = { key: null, v: null };
   const pasted = () => {
     const key = `${S.hl || ''}|${K.sel?.peek() ? 1 : 0}`;
-    if (pc.key !== key) pc = { key, v: sources[1]() || { prots: new Set(), marks: new Set(), sites: [], notFound: [], text: '' } };
+    if (pc.key !== key) pc = { key, v: sources[1]() || { prots: new Set(), marks: new Set(), sites: [], notFound: [], bad: new Set(), text: '' } };
     return pc.v;
   };
   // a row's mark: highlighted by the pasted list (a protein by its index; a site by its protein and position or mark index)
-  const isProt = pi => { const p = pasted(); return p.prots.has(pi); };
+  const isProt = pi => { const p = pasted(); return p.prots.has(pi) || p.sites.some(x => x.p === pi); };
   // onlySite: just a site named in the list ("FUS R216"), not every site of a highlighted protein
   const isSite = (pi, pos, onlySite) => { const p = pasted(); return (!onlySite && p.prots.has(pi)) || p.sites.some(x => x.p === pi && x.pos === pos); };
   // "Highlighted first": the rows the list marks go first, the rest keep their order (only when the reader chose it)
@@ -143,7 +151,7 @@
   }
   (K.afterRender ||= []).push(decorate);
   const any = () => toks().length > 0;
-  K.hl = { isProt, isSite, any, firstSort, decorate, mark: (v, on) => (on ? `<span class="hl-dot" title="Highlighted" aria-label="highlighted">●</span> ${v}` : v), get first() { return first; }, pasted, state, sources, line, place, labels, clear, control, sets, activeSet, limit: LIMIT, get only() { return only; } };
+  K.hl = { nfText, isProt, isSite, any, firstSort, decorate, mark: (v, on) => (on ? `<span class="hl-dot" title="Highlighted" aria-label="highlighted">●</span> ${v}` : v), get first() { return first; }, pasted, state, sources, line, place, labels, clear, control, sets, activeSet, limit: LIMIT, get only() { return only; } };
   document.addEventListener('change', e => { if (e.target.matches?.('[data-hl-only]')) { only = e.target.checked; store.set(only); document.querySelectorAll('[data-hl-only]').forEach(x => { x.checked = only; }); } });
   K.clicks.push(['[data-hl-save]', setsAct.save], ['[data-hl-rename]', setsAct.rename], ['[data-hl-delete]', setsAct.delete]);
   document.addEventListener('change', e => { const s = e.target.matches?.('[data-hl-switch]') && e.target; if (!s) return; const x = s.value === '' ? null : sets()[+s.value]; S.hl = x ? x.list : ''; K.writeHash(true); K.render(); });
@@ -157,16 +165,22 @@
   function bar() {
     const host = document.getElementById('hl-bar'); if (!host) return;
     const t = toks(), pa = t.length ? pasted() : null;
-    const chips = t.map((l, i) => chip(l, i)).join(' ');
-    const more = t.length ? `<span class="hl-chips">${chips}${pa.notFound.length ? ` <span class="hl-nf">not found: ${esc(pa.notFound.join(', '))}</span>` : ''}</span>` : '';
-    const html = `<div class="hl-bar-in${t.length ? ' on' : ''}">${control(more)}</div>`;
-    const key = html + '|' + (K.sel?.peek() ? 1 : 0);
+    const chips = t.map((l, i) => chip(l, i, pa.bad?.has(l))).join(' '), nf = t.length && pa.notFound.length ? `<span class="hl-nf">${esc(nfText(pa.notFound))}</span>` : '';
+    const more = collapsed => (!t.length ? '' : collapsed
+      ? `<span class="hl-menu"><button type="button" class="btn small" data-hl-menu aria-haspopup="true" aria-expanded="false" aria-controls="hl-cpop">${t.length} highlighted${pa.notFound.length ? ` · ${pa.notFound.length} not found` : ''} ▾</button><div id="hl-cpop" class="hl-pop hl-cpop" role="group" aria-label="Highlighted items" hidden><span class="hl-chips">${chips}</span>${nf}</div></span>`
+      : `<span class="hl-chips">${chips}${nf ? ' ' + nf : ''}</span>`);
+    const build = collapsed => `<div class="hl-bar-in${t.length ? ' on' : ''}">${control(more(collapsed))}</div>`;
+    const key = build(false) + '|' + (K.sel?.peek() ? 1 : 0) + '|' + innerWidth;
     if (key === barKey) return; barKey = key;
-    host.innerHTML = html;
+    // the row stays one line: when the chips would wrap, they collapse into "N highlighted ▾"
+    host.innerHTML = build(false);
+    const inner = host.firstElementChild, one = host.querySelector('.hl-form')?.offsetHeight || 0;
+    if (t.length && inner.offsetHeight > one * 1.6 + 4) host.innerHTML = build(true);
   }
+  addEventListener('resize', () => { barKey = null; bar(); });
   (K.afterRender ||= []).push(bar);
-  const shut = (focus) => { const b = document.querySelector('[data-hl-menu][aria-expanded="true"]'); if (!b) return; b.setAttribute('aria-expanded', 'false'); document.getElementById('hl-pop').hidden = true; if (focus) b.focus(); };
-  K.clicks.push(['[data-hl-menu]', el => { const open = el.getAttribute('aria-expanded') !== 'true'; shut(false); if (open) { el.setAttribute('aria-expanded', 'true'); document.getElementById('hl-pop').hidden = false; } }]);
+  const shut = (focus) => { const b = document.querySelector('[data-hl-menu][aria-expanded="true"]'); if (!b) return; b.setAttribute('aria-expanded', 'false'); const pop = document.getElementById(b.getAttribute('aria-controls')); if (pop) pop.hidden = true; if (focus) b.focus(); };
+  K.clicks.push(['[data-hl-menu]', el => { const open = el.getAttribute('aria-expanded') !== 'true'; shut(false); if (open) { el.setAttribute('aria-expanded', 'true'); document.getElementById(el.getAttribute('aria-controls')).hidden = false; } }]);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(true); });
   document.addEventListener('click', e => { if (!e.target.closest?.('.hl-menu')) shut(false); });
   document.addEventListener('submit', e => {
@@ -185,9 +199,13 @@
 .hl-sets { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin: 0.3rem 0; }
 .hl-bar-in { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.6rem; font-size: 0.82rem; }
 .hl-bar-in .hl-form { margin: 0.1rem 0; flex: 0 1 auto; flex-wrap: nowrap; }
-.hl-bar-in .hl-form input { flex: 0 1 auto; width: min(30rem, 62vw); min-height: 1.7rem; }
-.hl-bar-in:not(.on) .hl-form:not(:focus-within) input { width: 11rem; }
-.hl-bar-in:not(.on) .hl-form:not(:focus-within) button { display: none; }
+.hl-form input { padding: 0.35rem 0.6rem; border: 1px solid var(--line-strong); border-radius: 0.4rem; background: var(--surface); color: var(--ink); }
+.hl-form input:focus { outline: none; border-color: var(--brand-ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-ink) 22%, transparent); }
+.hl-bar-in .hl-form input { flex: 0 1 auto; width: min(24rem, 62vw); min-height: 1.7rem; }
+.hl-pop .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.hl-chip-nf { color: var(--muted); text-decoration: line-through; border-style: dashed; }
+.hl-chip-nf .hl-x { text-decoration: none; }
+.hl-cpop:not([hidden]) { max-width: min(30rem, calc(100vw - 2rem)); }
 .hl-lab { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .hl-menu { position: relative; }
 .hl-pop:not([hidden]) { display: flex; flex-direction: column; gap: 0.4rem; position: absolute; z-index: 40; left: 0; max-width: calc(100vw - 2rem); top: 100%; margin-top: 0.2rem; min-width: 15rem; padding: 0.6rem; border: 1px solid var(--line-strong); border-radius: 0.5rem; background: var(--surface); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
