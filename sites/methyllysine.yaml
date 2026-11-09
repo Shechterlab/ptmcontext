@@ -644,6 +644,24 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - {id: domain_class, layer: domain_class, new: true}
   - {id: structure_context, layer: structure_context, new: true}
   - {id: idr_charge, layer: idr_charge, new: true}   # not in the release: CIDER's charge classes of IDRs
+  # Near other marks: are methyllysines more often within 10 residues of another mark than the other lysines of their
+  # protein? Context marks (context_marks below), not part of the release's analyses
+  - id: near_phospho
+    layer: near_marks
+    with: {marks: phospho, window: 10, noun: phosphosite}
+    new: true
+    title: Near phosphosites (within 10)
+    question: "Are methyllysines more often near a phosphosite than the other lysines of their protein?"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite (UniProt and iPTMnet, by-similarity records left out) lies within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methyllysines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
+    section: Other marks
+  - id: near_methylarginine
+    layer: near_marks
+    with: {marks: methylarginine, window: 10, noun: methylarginine}
+    new: true
+    title: Near methylarginines (within 10)
+    question: "Are methyllysines more often near a methylarginine than the other lysines of their protein?"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3, by-similarity records left out) lies within 10 residues on either side"
+    section: Other marks
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
   - id: which_factor
@@ -685,25 +703,44 @@ variants:                # the same questions on other marks; ptmc run --variant
     marks_select: {exclude: []}
     attributes: {}
 
-# ---- Near other marks: a placeholder, enabled at merge with the generic context_marks feature (another builder's branch) ----
-# Context marks are other modifications of the same proteins: methylarginine (the sites table of release v1.4.3,
-# releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv) and phosphorylation (the sites table of release v1.5.0,
-# releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv). The question "Near other marks" asks whether a methyllysine
-# lies within 10 residues of one, against the other lysines of its protein; the context-mark rows of the protein map
-# draw them. Uncomment and set the keys to that feature's contract, and add both tables to sites/methyllysine.inputs.json
-# (with the PTM_Pipeline sparse checkout of the pages workflow).
-#
-# context_marks:
-#   window: 10
-#   marks:
-#     - {id: methylarginine, label: Methylarginine, input: methylarginine_sites_v1_4_3, accession: uniprot_accession, position: position}
-#     - {id: phosphorylation, label: Phosphorylation, input: phosphorylation_sites_v1_5_0, accession: canonical_UniProtAC, position: position}
-#   question: {id: near_other_marks, title: Near other marks, section: Near other marks}
+# Context marks: other modifications of the same proteins, shown beside the methyllysines (CONTRACTS.md, Context marks):
+# methylarginine (the sites table of release v1.4.3, the methylarginine site's own marks) and phosphorylation (the sites
+# table of release v1.5.0). A map row, "Other marks nearby" on the site card, a filter, table columns and downloads follow
+# from these entries; the near_marks questions below test them. Both tables are in sites/methyllysine.inputs.json.
+context_marks:
+  - id: methylarginine
+    label: Methylarginine
+    input: context_methylarginine_sites_v1_4_3
+    columns: {accession: uniprot_accession, position: position, residue: residue, state: methyl_state}
+    replaces_ptm_kinds: [Methyl]   # the live UniProt "Other PTMs" row would repeat the methylarginines: one source for them
+    drop_evidence: []          # the v1.4.3 table has no evidence column: every row is kept
+    colour: "#C2410C"          # the methylarginine site's orange accent: apart from the purples of this site and the cyan of phosphosites
+    colour_dark: "#FB923C"
+    citation:
+      short: Methylarginine Site Explorer
+      cite: "Methylarginine sites of the human reviewed proteome, release v1.4.3 of PTM_Pipeline: DeAngelo et al., Cell Chem Biol 33:1404-1421 (2026), doi:10.1016/j.chembiol.2026.09.011"
+      doi: 10.1016/j.chembiol.2026.09.011
+      licence: CC BY-NC-SA 4.0
+  - id: phospho
+    label: Phosphosite
+    input: context_phosphorylation_sites_v1_5_0
+    columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
+    replaces_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row leaves its Phospho kind out: one source for phosphosites
+    colour: "#0891B2"          # cyan: apart from the purples of this site and the orange of methylarginines
+    colour_dark: "#1FA2C4"
+    citation:
+      short: UniProt and iPTMnet
+      cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: CC BY-NC-SA 4.0
+    sources:
+      UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
+      iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
 
 outputs: {folder: out/methyllysine}
 citation: sites/methyllysine.citation.cff   # the citation, data sources, version and date: edit there
 
 website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
+  context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Methyllysine Site Explorer
   tagline: "Human lysine methylation sites from public databases."
   # published at /ptmcontext/methyllysine/, off the landing page's list for now; the sites' header menu lists it
@@ -802,12 +839,11 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: idr_charge}
           - {analysis: which_factor, wide: true}
-      # Near other marks: enabled at merge, with the generic context_marks feature (another builder's branch). Its marks are
-      # the methylarginine sites table of release v1.4.3 and the phosphorylation sites table of release v1.5.0, each
-      # within 10 residues of the lysine. The block below is a placeholder; its keys follow that feature's contract.
-      #  - name: Near other marks
-      #    about: "Whether methyllysines lie within 10 residues of another mark: methylarginine or phosphorylation."
-      #    cards: [{analysis: near_other_marks, wide: true}]
+      - name: Other marks
+        about: "Whether methyllysines sit near other modifications (context marks: methylarginines and phosphosites), within 10 residues."
+        cards:
+          - {analysis: near_phospho}
+          - {analysis: near_methylarginine}
       - name: RNA and DNA
         about: "Whether methyllysines sit at an interface with RNA or DNA in PDB structures."
         cards:
