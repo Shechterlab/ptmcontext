@@ -684,6 +684,7 @@
           : +(n / 1e6).toFixed(1) + 'M';
   // ticks of a log axis: ratios and their reciprocals (2× and 0.5× as far from 1×), from the finest ladder that gives at
   // most `max` ticks; the axis runs from the tick at or below the smallest value to the one at or above the largest
+  // (values are clamped to 2^±10, so every ladder reaches 2^12: a ratio of 1000 or more still has a tick above it)
   const LADDERS = [
     [1, [1, 1.25, 1.5]],
     [1, [1, 1.5]],
@@ -703,7 +704,7 @@
     let best = null;
     for (const [s, ms] of LADDERS) {
       const up = [];
-      for (let k = 0; k * s <= 11; k++) ms.forEach((m) => up.push(k * s + Math.log2(m)));
+      for (let k = 0; k * s <= 12; k++) ms.forEach((m) => up.push(k * s + Math.log2(m)));
       const all = [...new Set([...up, ...up.map((p) => -p)].map((p) => +p.toFixed(6)))].sort((x, y) => x - y);
       const a = Math.max(...all.filter((p) => p <= lo + 1e-9)),
         b = Math.min(...all.filter((p) => p >= hi - 1e-9));

@@ -594,10 +594,18 @@
     return K.figureFrame({
       title: a.title,
       sub: a.sub + K.selWords(),
-      legend: K.dirLegend(
-        ['more', 'same', 'ns'],
-        items.some(([k, x]) => k === 'row' && x.ref)
-      ),
+      legend: (() => {
+        // the page's own key: a selection made with this question is shown, not tested; rows with no test have their note
+        const rs = items.filter(([k]) => k === 'row').map(([, x]) => x),
+          shownOnly = rs.some((x) => x.descriptive),
+          lg = K.dirLegend(
+            shownOnly ? ['ns'] : ['more', 'same', 'ns'],
+            rs.some((x) => x.ref)
+          );
+        if (shownOnly) lg[0][2] = 'shown, not tested';
+        if (rs.some((x) => x.eff == null)) lg.push([PAL.bg, PAL.muted, '— no test within proteins']);
+        return lg;
+      })(),
       body: parts.join(''),
       bodyH: y + 34,
       note: `${

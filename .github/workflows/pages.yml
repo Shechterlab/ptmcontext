@@ -165,8 +165,11 @@ jobs:
           sleep 2
           export NODE_PATH="$RUNNER_TEMP/pw/node_modules"
           fail=0
-          node tools/audit/export_overlap.js http://localhost:8932/index.html || fail=1
-          node tools/audit/export_legend.js http://localhost:8932/index.html --pdf --cdn "$RUNNER_TEMP/cdn" || fail=1
+          # the walk's default selections and proteins are the methylarginine site's: this site's own (a histone class, its
+          # chromatin class, histone H3 and p53)
+          sel="f=p:histone~histone|f=p:panther_group~Transcription, chromatin and DNA"
+          node tools/audit/export_overlap.js http://localhost:8932/index.html --proteins P68431,P04637 --selection "$sel" || fail=1
+          node tools/audit/export_legend.js http://localhost:8932/index.html --pdf --cdn "$RUNNER_TEMP/cdn" --proteins P68431,P04637 --selection "$sel" || fail=1
           exit $fail
       - name: Last good yeast inputs
         # the staged files are cached under the manifest's hash: a UniProt, MobiDB or SHEPHARD outage reuses the last run
