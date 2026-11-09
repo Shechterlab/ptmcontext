@@ -411,7 +411,7 @@ SC.on ? '; marks not selected are left out' : ''}). Descriptive,` +
         if (t.lo > 0 && t.hi > 0) parts.push((`<line x1="${FX(t.lo).toFixed(1)}" x2="${FX(t.hi).toFixed(1)}" y1="${yc}" y2="${yc}" stroke="${col}" stroke-width="1.6" ` +
             `stroke-linecap="round"/>`));
         parts.push(`<circle cx="${FX(t.eff).toFixed(1)}" cy="${yc}" r="4.6" fill="${t.dir === 'ns' ? P.bg : col}" stroke="${t.dir === 'ns' ? P.muted : P.bg}" stroke-width="1.5"/>`);
-        T(X.val, yc - 4, K.fx(t.eff), { anchor: 'end', weight: t.dir === 'ns' ? null : 'bold', fill: t.dir === 'ns' ? P.muted : col }); if (K.sharePair(t)) T(X.val, yc + 8, K.sharePair(t), { size: 9.5, anchor: 'end', fill: P.muted }); T(X.val, yc + 18, `q ${K.fq(t.q)}`, { size: 9.5, anchor: 'end', fill: P.muted });
+        T(X.val, yc - 6, K.fx(t.eff), { anchor: 'end', weight: t.dir === 'ns' ? null : 'bold', fill: t.dir === 'ns' ? P.muted : col }); if (K.sharePair(t)) T(X.val, yc + 7, K.sharePair(t), { size: 9.5, anchor: 'end', fill: P.muted }); T(X.val, yc + 20, `q ${K.fq(t.q)}`, { size: 9.5, anchor: 'end', fill: P.muted });
       } else if (r.cls) T(X.val, yc + 3, '–', { anchor: 'end', fill: P.muted });
       else T((X.fa + X.fb) / 2, yc + 3, 'the baseline of the bars', { size: 9.5, anchor: 'middle', fill: P.muted });
       y += RH;

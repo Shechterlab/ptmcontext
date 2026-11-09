@@ -1338,8 +1338,8 @@ o.anchor ? ` text-anchor="${o.anchor}"` : ''}${o.ls ? ` letter-spacing="${o.ls}"
     subLines.forEach((t, k) => T(P, 49 + k * 15, t, { size: 11.5, fill: PAL.muted }));
     let y = 49 + subLines.length * 15 + 8;
     // the column heads, as on the page
-    const heads = M.cols.map(c => [...wrap(c, 86, 9.5, 700).slice(0, 2), `in ${M.cls} / all`]), hh = Math.max(...heads.map(l => l.length)) * 11;
-    heads.forEach((ls, k) => ls.forEach((t, j) => T(k ? C2 : C1, y + hh - (ls.length - 1 - j) * 11, t, { size: 9.5, weight: j === ls.length - 1 ? null : 'bold', anchor: 'end', fill: PAL.muted })));
+    const heads = M.cols.map(c => [...wrap(c, 86, 9.5, 700).slice(0, 2), `in ${M.cls} / all`]), hh = Math.max(...heads.map(l => l.length)) * 12.5;
+    heads.forEach((ls, k) => ls.forEach((t, j) => T(k ? C2 : C1, y + hh - (ls.length - 1 - j) * 12.5, t, { size: 9.5, weight: j === ls.length - 1 ? null : 'bold', anchor: 'end', fill: PAL.muted })));
     T(VX, y + hh, M.valHead, { size: 9.5, weight: 'bold', anchor: 'end', fill: PAL.muted });
     y += hh + 5; parts.push(`<line x1="${P}" x2="${Wd - P}" y1="${y}" y2="${y}" stroke="${PAL.line}"/>`); y += 3;
     const top = y;
@@ -1353,7 +1353,7 @@ o.anchor ? ` text-anchor="${o.anchor}"` : ''}${o.ls ? ` letter-spacing="${o.ls}"
       // its name (two lines at most), then its meaning where there is room
       let name = wrap(r.label, LW, 11.5);
       if (name.length > 2) name = [name[0], fit(name.slice(1).join(' '), LW, 11.5)];
-      const h = Math.max(22, name.length * 14 + 8), yc = y + h / 2;
+      const h = Math.max(sharePair(r) && !r.vs ? 30 : 22, name.length * 14 + 8), yc = y + h / 2;
       name.forEach((t, k) => {
         const last = k === name.length - 1, room = LW - tw(t, 11.5) - tw(' · ', 10.5);
         const help = last && shortHelp(r) && room > 30 ? `<tspan fill="${PAL.muted}" font-size="10.5"> · ${esc(fit(r.help, room, 10.5))}</tspan>` : '';
@@ -1375,7 +1375,7 @@ o.anchor ? ` text-anchor="${o.anchor}"` : ''}${o.ls ? ` letter-spacing="${o.ls}"
       }
       if (r.ref) rp.push(`<line x1="${r1(X(r.ref.eff))}" x2="${r1(X(r.ref.eff))}" y1="${yc - 9}" y2="${yc + 9}" stroke="${PAL.ink}" stroke-width="2"/>`);
       const strong = !r.vs && (r.dir === 'more' || r.dir === 'less');
-      T(VX, yc + (sharePair(r) && !r.vs ? 0 : 4), valText(r), { size: 11, anchor: 'end', weight: strong ? 'bold' : null, fill: strong ? PAL[r.dir] : PAL.muted }, rp);
+      T(VX, yc + (sharePair(r) && !r.vs ? -2 : 4), valText(r), { size: 11, anchor: 'end', weight: strong ? 'bold' : null, fill: strong ? PAL[r.dir] : PAL.muted }, rp);
       if (sharePair(r) && !r.vs) T(VX, yc + 11, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted }, rp);
       if (d) T(DX, yc + 4, DECILE[d.dir][0], { size: 11, anchor: 'middle', fill: d.dir === 'more' ? PAL.more : d.dir === 'less' ? PAL.less : PAL.muted }, rp);
       y += h;
@@ -1629,8 +1629,9 @@ CIT.licence ? '; license ' + esc(hlicence(CIT.licence)) : ''}.</p>` +
     const T = (x, y, t, o = {}) => parts.push(`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${o.size || 11.5}"${
 o.weight ? ` font-weight="${o.weight}"` : ''}${o.fam ? ` font-family="${o.fam}"` : ''}${
 o.anchor ? ` text-anchor="${o.anchor}"` : ''} fill="${o.fill || PAL.ink}">${esc(t)}</text>`);
-    T(P, 30, title, { size: 17, weight: 'bold', fam: FFH });
-    let y = 49;
+    // a title wider than the figure goes on two lines, never off its edge
+    const tl = wrap(title, Wd - 2 * P, 17, 'bold', FFH).slice(0, 2); tl.forEach((t, i) => T(P, 30 + i * 20, t, { size: 17, weight: 'bold', fam: FFH }));
+    let y = 49 + (tl.length - 1) * 20;
     wrap(sub, Wd - 2 * P, 11.5).slice(0, 2).forEach(t => { T(P, y, t, { size: 11.5, fill: PAL.muted }); y += 15; });
     // what the card says above its figure on the page (its summary sentence), then its color key: both go with the figure
     if (lead) { y += 4; wrap(lead, Wd - 2 * P, 11.5).slice(0, 3).forEach(t => { T(P, y, t, { size: 11.5 }); y += 15; }); }

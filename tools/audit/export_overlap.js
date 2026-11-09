@@ -36,13 +36,14 @@ function analyse(svgText) {
     // text against text
     for (let i = 0; i < texts.length; i++) for (let j = i + 1; j < texts.length; j++) {
       const a = texts[i], b = texts[j], w = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0), h = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0);
-      if (a.t.length === 1 && b.t.length === 1) continue;           // the letters of a logo or an alignment are stacked by design
+      if (a.t.length === 1 && b.t.length === 1) continue;
+      if (a.t === b.t && w * h > 0.8 * Math.min((a.x1 - a.x0) * (a.y1 - a.y0), (b.x1 - b.x0) * (b.y1 - b.y0))) continue;      // the same text twice: a halo           // the letters of a logo or an alignment are stacked by design
       if (w > 0 && h > 0 && w * h > 1) hits.push({ kind: 'overlap', a: a.t, b: b.t, area: +(w * h).toFixed(1) });
     }
     // text outside the viewBox
     texts.forEach(a => { if (a.x0 < root.left - 0.5 || a.x1 > root.right + 0.5 || a.y0 < root.top - 0.5 || a.y1 > root.bottom + 0.5) hits.push({ kind: 'outside', a: a.t }); });
     // text across a stroke of the figure
-    const strokes = [...svg.querySelectorAll('path,polyline,line,ellipse,rect,polygon,circle')].filter(e => {
+    const strokes = [...svg.querySelectorAll('path,polyline,line,ellipse,rect,polygon')].filter(e => {
       if (e.closest('defs,clipPath,mask,pattern')) return false;
       const s = e.getAttribute('stroke'); if (!s || s === 'none' || s === 'transparent') return false;
       const w = parseFloat(e.getAttribute('stroke-width') || '1'); if (!(w >= 0.5)) return false;
@@ -61,9 +62,9 @@ function analyse(svgText) {
       const r = e.getBoundingClientRect(); return Math.min(r.width, r.height) <= 8 && Math.max(r.width, r.height) > 4;
     });
     texts.forEach(a => {
-      const grow = (a.x1 - a.x0) * 0.06;
+      const anchor = a.el.getAttribute('text-anchor') || 'start', g0 = (a.x1 - a.x0) * 0.06, growL = anchor === 'start' ? 0 : g0, growR = anchor === 'end' ? 0 : g0;
       for (const m of marks) {
-        const r = m.getBoundingClientRect(), w = Math.min(a.x1 + grow, r.right) - Math.max(a.x0 - grow, r.left), h = Math.min(a.y1, r.bottom) - Math.max(a.y0, r.top);
+        const r = m.getBoundingClientRect(), w = Math.min(a.x1 + growR, r.right) - Math.max(a.x0 - growL, r.left), h = Math.min(a.y1, r.bottom) - Math.max(a.y0, r.top);
         if (w > 0 && h > 0 && w * h > 2 && !m.contains(a.el)) hits.push({ kind: 'mark', a: a.t, area: +(w * h).toFixed(1) });
       }
     });

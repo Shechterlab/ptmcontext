@@ -105,7 +105,7 @@ o.rot ? ` transform="rotate(-60 ${x.toFixed(1)} ${yy.toFixed(1)})"` : ''} fill="
   const CONTAINER = 'section, article, .card, .pcard, details, .idr-card';
   // a table's title: the heading of its section; a fold's summary gives its name (its bold or heading part), and the counts beside
   // it ("6 rows, 3 methylarginines") go to the subtitle, so a figure's title and file name carry no counts
-  const headOf = t => { const c = t.closest(CONTAINER) || document.getElementById('view') || document.body, h = c.querySelector('h2, h3, h4, summary'); return h?.tagName === 'SUMMARY' ? (h.querySelector('h2, h3, h4, b, strong') || h) : h; };
+  const headOf = t => { const c = t.closest(CONTAINER) || document.getElementById('view') || document.body, h = c.querySelector('h2, h3, h4, summary'); return h?.tagName === 'SUMMARY' ? (h.querySelector('h2, h3, h4, b, strong, .name, [class*=title]') || h.firstElementChild || h) : h; };
   const titleOf = t => { const c = t.closest(CONTAINER) || document.getElementById('view') || document.body; return clean(headOf(t)?.textContent || c.id || document.title).slice(0, 80); };
   const subOf = t => { const h = headOf(t), s = h?.tagName === 'SUMMARY' ? h : h?.closest('summary'); return clean([...(s ? s.querySelectorAll('.muted, .fsum') : [])].map(x => x.textContent).join(' · ')); };
   const domTsv = (t, title) => {
