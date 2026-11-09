@@ -13,7 +13,14 @@
     String(raw || '')
       .split(';')
       .map((x) => x.split('~')[0])
-      .filter(Boolean);
+      .filter(Boolean)
+      .map((k) => {
+        try {
+          return decodeURIComponent(k);
+        } catch (e) {
+          return k;
+        }
+      });
   let noted = false;
   const notice = () => {
     if (noted) return;
@@ -129,7 +136,18 @@
   };
   if (here) {
     start();
-    setTimeout(notice, 0);
-    window.addEventListener('load', () => setTimeout(notice, 300), { once: true });
+    // after the page has read the address (its filters are the ones this site has)
+    // (the filters are read once the selection's data is in: poll for them, and say so after 6 s if none were kept)
+    const later = () => {
+      let tries = 0;
+      const t = setInterval(() => {
+        if (Object.keys(S.f || {}).length || ++tries > 20) {
+          clearInterval(t);
+          notice();
+        }
+      }, 300);
+    };
+    if (document.readyState === 'complete') later();
+    else window.addEventListener('load', later, { once: true });
   }
 });

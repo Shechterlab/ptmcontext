@@ -685,9 +685,386 @@ variants:                # the same questions on other marks; ptmc run --variant
     marks_select: {exclude: []}
     attributes: {}
 
+# ---- Near other marks: a placeholder, enabled at merge with the generic context_marks feature (another builder's branch) ----
+# Context marks are other modifications of the same proteins: methylarginine (the sites table of release v1.4.3,
+# releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv) and phosphorylation (the sites table of release v1.5.0,
+# releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv). The question "Near other marks" asks whether a methyllysine
+# lies within 10 residues of one, against the other lysines of its protein; the context-mark rows of the protein map
+# draw them. Uncomment and set the keys to that feature's contract, and add both tables to sites/methyllysine.inputs.json
+# (with the PTM_Pipeline sparse checkout of the pages workflow).
+#
+# context_marks:
+#   window: 10
+#   marks:
+#     - {id: methylarginine, label: Methylarginine, input: methylarginine_sites_v1_4_3, accession: uniprot_accession, position: position}
+#     - {id: phosphorylation, label: Phosphorylation, input: phosphorylation_sites_v1_5_0, accession: canonical_UniProtAC, position: position}
+#   question: {id: near_other_marks, title: Near other marks, section: Near other marks}
+
 outputs: {folder: out/methyllysine}
 citation: sites/methyllysine.citation.cff   # the citation, data sources, version and date: edit there
 
-website:
+website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
   name: Methyllysine Site Explorer
   tagline: "Human lysine methylation sites from public databases."
+  # published at /ptmcontext/methyllysine/, off the landing page's list for now; the sites' header menu lists it
+  landing: {tagline: "Human lysine methylation sites from public databases.", unlisted: true, in_switcher: true}
+  band: ["#5b21b6", "#3b0764"]      # the header gradient: purple
+  accent: "#b45309"                 # the amber rule, active tab and links
+  accent_dark: "#fbbf24"
+  icon: sites/art/methyllysine-icon.svg
+  art: sites/art/methyllysine-hero.svg
+  lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
+  links:
+    - {label: Documentation, url: "#method"}
+    - {label: Download data, url: "#method/download"}
+    - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
+    - {label: Research, url: "https://www.shechterlab.org/research/"}
+    - {label: Publications, url: "https://www.shechterlab.org/publications/"}
+  examples: [H3C1, TP53 DNMT1 EHMT2, "histone:histone", TAF10 K189, H3 K9]   # the first three are the chips under the search box
+  placeholders: {highlight: "H3C1 K10, TP53 K372, TAF10 K189", partners: "EHMT2, SUV39H1, CBX5", motif: "RKS, GKX, KKXK", motif_either: "ARKS,KK"}
+  default_background: other reviewed human proteins   # examples inside the Highlight and partner boxes
+  start:                   # the Overview's start panel for a first visit, and the Help page's starts (kit-help.js)
+    protein: H3C1
+    text: "Human lysine methylation sites from UniProt and iPTMnet: their positions, proteins and partners. Each tile is one question, comparing the methyllysines with the other lysines of the same proteins. Search a protein or a gene list to test your own selection."
+    examples:
+      - {label: A histone, query: H3C1, help: "Histone H3's methyllysines (H3 K4, K9, K27 and K36 are K5, K10, K28 and K37 in UniProt's numbering)."}
+      - {label: A list of genes, query: TP53 DNMT1 EHMT2, help: "Every question is tested again on their methyllysines."}
+      - {label: One site in its structure, query: TAF10 K189, help: "Its protein's domain and disorder map, the evidence for the site, and its structures."}
+  stats: [marks, proteins, {attribute: sources, label: databases, opens: provenance}]
+  overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
+    statistic_label: true  # each tile names its statistic
+    cell_first: false      # the drawing of the cell stays in its section: protein interactions open the Overview
+    question: "Which proteins are lysine methylated?"
+    rows: 7
+    random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end
+    sections:
+      - name: Protein interactions
+        about: "Whether methyllysines sit where a protein touches another: PDB and predicted interfaces, IntAct features, complexes and partners."
+        cards:
+          - {analysis: pdb_interface, title: Interfaces in PDB structures}
+          - {analysis: predicted_interface, title: Predicted interfaces}
+          - {analysis: intact, title: IntAct binding regions and mutations}
+          - {analysis: complex, title: Protein complexes}
+      - name: Writers, erasers and readers
+        about: "The enzymes that add and remove methyl groups, the proteins that read them, and the methylated proteins that bind them."
+        #  counted from the partner classes (website.search.partners), not tested
+        cards: [partner_classes]
+      - name: Histones, protein classes and pathways
+        about: "Histones and other protein classes and pathways of the methylated proteins."
+        cards:
+          - {analysis: histone, title: Histones and other proteins}
+          - {analysis: panther_group, title: Protein classes}
+          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
+          - {analysis: panther_subclass, title: Protein subclasses}
+      - name: Methylation state
+        about: "How many methyl groups the sites carry, and the evidence behind them."
+        #  counted, not tested (website.counts)
+        cards: [states, evidence]
+      - name: Location, chromatin and condensates
+        about: "Where in the cell the methylated proteins localize, how much is on chromatin, and which condensates hold them."
+        #  the drawing of the cell on the Overview (website.cell: the maps of the cell as one question)
+        cards:
+          - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
+          - {analysis: cell_chromatin, title: Chromatin probability}
+          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
+          - {analysis: condensate_role, title: Roles in condensates}
+      - name: Disease and cancer
+        about: "Diseases linked to the methylated proteins, and cancer cell dependency."
+        show: 1
+        more: More on disease
+        cards:
+          - analysis: disease_family
+            title: Disease
+            views:               # one question, two vocabularies: a switch on its page
+              - label: DisGeNET families
+                analysis: disease_family
+                more: {analysis: disease_family_additional, label: "Show {n} more families", head: "Additional families"}
+                members:
+                  analysis: disease_term
+                  label: Show the DisGeNET terms
+                  noun: term
+                  nouns: DisGeNET terms
+                  id_label: UMLS CUI
+                  none: terms in no family
+                  of:
+                    - {analysis: disease_family, label: disease families checked by hand}
+                    - {analysis: disease_family_additional, label: "additional families, mostly clinical signs"}
+              - label: Disease Ontology
+                analysis: disease_ontology
+                ontology: {short: 50, compare: 4, tree: 100, id_label: DOID, noun: term, nouns: terms}
+          - {analysis: depmap_dependency, title: Cancer cell dependency}
+      - name: Motif, disorder and structure
+        about: "Where along the protein the methylated lysines fall: sequence motifs, folded or disordered parts, domains, the charge of disordered regions."
+        cards:
+          - {analysis: motif, title: Sequence motifs}
+          - {analysis: disorder}
+          - {analysis: structure_context}
+          - {analysis: domain_class, title: Nearest domain class}
+          - {analysis: idr_charge}
+          - {analysis: which_factor, wide: true}
+      # Near other marks: enabled at merge, with the generic context_marks feature (another builder's branch). Its marks are
+      # the methylarginine sites table of release v1.4.3 and the phosphorylation sites table of release v1.5.0, each
+      # within 10 residues of the lysine. The block below is a placeholder; its keys follow that feature's contract.
+      #  - name: Near other marks
+      #    about: "Whether methyllysines lie within 10 residues of another mark: methylarginine or phosphorylation."
+      #    cards: [{analysis: near_other_marks, wide: true}]
+      - name: RNA and DNA
+        about: "Whether methyllysines sit at an interface with RNA or DNA in PDB structures."
+        cards:
+          - {analysis: pdb_interface_na, title: RNA and DNA interfaces in PDB structures}
+      - name: More questions
+        about: "Further pathways, cell maps, protein classes and complexes, one question each."
+        cards: [panther_class, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, {analysis: hpa_location, title: Human Protein Atlas locations},
+                cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q},
+                domain_context]
+  cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
+    id: where_in_the_cell
+    title: Where in the cell
+    question: "Where do methylated proteins localize in the cell?"
+    intro: "Five maps from four studies place proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
+    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map, pending their license. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
+    maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
+      - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
+         how: "antibody staining in many cell lines; locations of Approved or better reliability with 20 or more proteins",
+         ref: HPA 25.1, doi: 10.1126/science.aal3321, url: "https://www.proteinatlas.org/humanproteome/subcellular", licence: CC BY 4.0, min_members: 20}
+      - {analysis: cell_hcm_compartment, regions: cell_region_hcm, name: Human Cell Map, short: Cell Map, method: Proximity labeling, cells: HEK293,
+         how: "proximity labeling from 192 baits; each protein is assigned to the compartment whose baits label it most",
+         ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
+      - {analysis: cell_hcm_domain, name: "Human Cell Map, finer domains", short: Cell Map domains, method: Proximity labeling, cells: HEK293,
+         how: "the same map at a finer scale: neighborhoods of proteins that label one another (SAFE domains)",
+         ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
+      - {analysis: cell_organelle_ip, regions: cell_region_organelle_ip, name: Organelle IP, short: Organelle IP, method: Organelle pull-down, cells: HEK293T,
+         how: "Organelles immunoprecipitated one by one. Each protein is assigned to the organelle it co-purifies with.",
+         ref: Hein et al. 2025, doi: 10.1016/j.cell.2024.11.028, url: "https://github.com/czbiohub-sf/Organelle_IP_analyses_and_figures", licence: BSD-3-Clause (analysis repository)}
+      - {analysis: cell_chromatin, graded: true, name: Chromatin probability, short: ChEP, method: Fractionation, cells: human cell lines,
+         how: "probability that a protein is chromatin-bound, from chromatin enrichment across many conditions",
+         ref: Kustatscher et al. 2014, doi: 10.1002/embj.201387614, url: "https://doi.org/10.1002/embj.201387614", licence: CC BY}
+    regions:               # the sets of each map's regions question, and the part of the drawings each colors
+      - {label: Nucleus, part: nucleus, in_text: the nucleus}
+      - {label: Cytoplasm, in_text: the cytoplasm}
+      - {label: Organelles and membranes, in_text: the organelles and membranes}
+    compartments:          # the grid's rows: each a set in some maps, and the part of the drawings it colors (also: parts
+      - group: Nucleus     # it colors when they have no row of their own); the release's groups (data/subcellular.json)
+        rows:
+          - {label: Chromatin, part: chromatin, also: [periphery, perinucleolar], sets: {cell_hcm_compartment: chromatin, cell_chromatin: "ICP >= 0.8 (chromatin)"}}
+          - {label: Nucleoplasm, part: nucleoplasm, also: [nucleus], sets: {cell_hcm_compartment: nucleoplasm, cell_organelle_ip: nucleus, hpa_location: Nucleoplasm}}
+          - {label: Nucleolus, part: nucleolus, sets: {cell_hcm_compartment: nucleolus, cell_organelle_ip: nucleolus, hpa_location: Nucleoli}}
+          - {label: Nuclear speckles, part: speckles, sets: {cell_hcm_domain: "splicing speckles, nucleolus", hpa_location: Nuclear speckles}}
+          - {label: Paraspeckles, part: paraspeckles, sets: {cell_hcm_domain: paraspeckles}}
+          - {label: "Nuclear bodies (PML, Cajal …)", name: Nuclear bodies, part: bodies, also: [cajal, pml], sets: {cell_hcm_compartment: nuclear body, hpa_location: Nuclear bodies}}
+          - {label: Nuclear envelope and lamina, name: Nuclear envelope, part: envelope, sets: {cell_hcm_compartment: nuclear outer membrane-ER membrane network, hpa_location: Nuclear membrane}}
+          - {label: Nuclear pores, part: pores, sets: {cell_hcm_domain: nuclear pore}}
+          - {label: Mitotic chromosome, sets: {hpa_location: Mitotic chromosome}}
+      - group: Cytoplasm
+        rows:
+          - {label: "RNA granules (stress granules, P-bodies)", name: "Stress granules (cell map)", part: granules, sets: {cell_hcm_compartment: cytoplasmic ribonucleoprotein granule, cell_hcm_domain: cytoplasmic ribonucleoprotein granule, cell_organelle_ip: stress_granule}}
+          - {label: P-bodies, part: pbodies, in_text: P-bodies, sets: {cell_organelle_ip: p-body, cell_hcm_domain: "centrosome enriched, P-body enriched"}}
+          - {label: Translation, name: Ribosomes and translation, part: ribosomes, sets: {cell_organelle_ip: translation}}
+          - {label: Cytosol, part: cytosol, sets: {cell_hcm_compartment: "actin cytoskeleton, cytosol", cell_organelle_ip: cytosol, hpa_location: Cytosol}}
+          - {label: Actin cytoskeleton, name: Actin cortex, part: actin, sets: {cell_organelle_ip: actin_cytoskeleton, cell_hcm_domain: actin cytoskeleton, hpa_location: Actin filaments}}
+          - {label: Microtubules, part: microtubules, sets: {cell_hcm_compartment: microtubule cytoskeleton, hpa_location: Microtubules}}
+          - {label: Centrosome, part: centrosome, sets: {cell_hcm_compartment: centrosome, cell_organelle_ip: centrosome, hpa_location: Centrosome}}
+          - {label: Proteasome, sets: {cell_organelle_ip: proteasome}}
+      - group: Organelles and membranes
+        rows:
+          - {label: Mitochondria, part: mito, sets: {cell_hcm_compartment: mitochondrial matrix, cell_organelle_ip: mitochondrion, hpa_location: Mitochondria}}
+          - {label: Endoplasmic reticulum, part: er, in_text: the ER, sets: {cell_hcm_compartment: ER membrane, cell_organelle_ip: ER, hpa_location: Endoplasmic reticulum}}
+          - {label: Golgi, name: Golgi apparatus, part: golgi, in_text: the Golgi, sets: {cell_hcm_compartment: Golgi apparatus, cell_organelle_ip: Golgi, hpa_location: Golgi apparatus}}
+          - {label: Endosomes and lysosomes, part: endolyso, sets: {cell_hcm_compartment: "endosome, lysosome", cell_organelle_ip: lysosome, hpa_location: Vesicles}}
+          - {label: Peroxisomes, part: perox, sets: {cell_hcm_compartment: "mitochondrial outer membrane, peroxisome", cell_organelle_ip: peroxisome}}
+          - {label: Plasma membrane, part: pm, sets: {cell_hcm_compartment: plasma membrane, cell_organelle_ip: plasma_membrane, hpa_location: Plasma membrane}}
+    drawings:              # the kit's drawings (CONTRACTS.md names their parts), in order
+      - {drawing: cell, title: "The cell"}
+      - {drawing: nucleus, title: "The nucleus"}
+  set_views:               # a protein-set question drawn with its proteins' numbers (kit-values.js): DepMap's dependency
+    - analysis: depmap_dependency
+      meter: common_essential                   # the class whose share the tile shows
+      meter_words: commonly essential in cancer cell lines
+      population: screened proteins
+      intro: "{n} of {the} {total} {who} were screened (DepMap 24Q4, 1,178 cell lines). A protein's score is its median Chronos gene effect across the lines: 0 is no effect, −1 the median of commonly essential genes, and lower is a stronger dependency."
+      box: {value: median, title: Median gene effect of each protein, axis: "median gene effect per protein (Chronos)",
+            sub: "DepMap Public 24Q4 CRISPR (Chronos), median gene effect per protein across 1,178 lines. Boxes span the middle half of proteins, whiskers the 5th to 95th percentile. Lower is a stronger dependency"}
+      caveat: "Essential proteins are abundant, and mass spectrometry finds abundant proteins most often, so methylated proteins look more essential than the proteome whatever their methylation does. A selection is also compared with the other methylated proteins, which share that bias, and that comparison is fairer."
+      chips:
+        - {title: Strongest dependencies, value: median, order: ascending}
+        - {title: Selective dependencies, note: "not commonly essential; 5% to under half of the lines depend on them, share shown", sets: [some_lines],
+           share: [dependent_lines, lines_with_probability], order: descending}
+      credit: "DepMap Public 24Q4 (doi:10.25452/figshare.plus.27993248; CC BY 4.0; Tsherniak et al. 2017; Chronos, Dempster et al. 2021). Commonly essential: DepMap's list of genes that at least 90% of lines rank among their strongest dependencies. A line depends on a gene when DepMap's dependency probability is at least 0.5. The results on tumors are in whole or part based upon data generated by the TCGA Research Network (https://www.cancer.gov/tcga): MC3 somatic calls (Ellrott et al. 2018)."
+  counts:                  # questions answered by counting the sites, not by a test (CONTRACTS.md, count questions)
+    partner_classes:
+      kind: values
+      attribute: bound_by
+      title: Writers, erasers and readers
+      question: "Which methyllysines are on proteins that bind a writer, an eraser or a reader?"
+      sub: "Methyllysines on proteins with a STRING physical partner (score 0.7 or more) in each writer, eraser or reader class"
+      distribution: "Classes of partner of each protein carrying a {mark}"
+      unit: [class, classes]
+      noun: partner classes
+      two_or_more: on proteins with partners in two or more classes
+      top: 8
+      bins: 4
+      note: "A class describes the protein's physical partners. STRING associations are to the whole protein, so a count does not show that a partner writes, erases or reads that lysine. The SET-domain and JmjC classes include proteins that do not act on lysine, and the sets are of human proteins in UniProt 2026_03."
+      method: "The site file lists the partner classes (website.search.partners.classes) by InterPro entry and gene, with the query that made each set. A protein is in a class when one of its STRING physical partners is. The share of all reviewed human proteins in each class is the baseline to compare with."
+    states:
+      kind: values
+      attribute: state
+      title: Methylation state
+      question: "How many methyl groups do the methyllysines carry?"
+      sub: "Methyllysines by the degree of methylation reported: mono (Kme1), di (Kme2) or trimethyl (Kme3), or methylated with the degree not stated"
+      distribution: "Degrees reported for each {mark}"
+      unit: [degree, degrees]
+      noun: degrees
+      two_or_more: reported in two or more degrees
+      top: 4
+      bins: 4
+      note: "A lysine has a row for each degree a database reports, so it counts under each. iPTMnet gives no degree: its records are methylated, degree not stated, and do not meet UniProt's Kme1, Kme2 and Kme3."
+      method: "Each methyllysine lists the degrees its records give (the release's state column, joined over the lysine's rows). A degree's count is the methyllysines with a record of it."
+    evidence:
+      kind: values
+      attribute: evidence_class
+      title: Evidence
+      question: "How well supported are the methyllysines?"
+      sub: "Methyllysines by the best class of their records: experimental, or unspecified (iPTMnet's copy of UniProt, with no evidence code)"
+      distribution: "Evidence classes of each {mark}"
+      unit: [class, classes]
+      noun: evidence classes
+      two_or_more: with records of two classes
+      top: 3
+      bins: 3
+      note: "The sites counted here have an experimental or an unspecified record. The sites UniProt reports only by similarity to another species are the lower-confidence variant (the switch at the top)."
+      method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, or an iPTMnet record curated from an experiment; unspecified is iPTMnet's copy of UniProt, which has no ECO code."
+    provenance:
+      kind: values
+      attribute: sources
+      title: Provenance
+      question: "Which databases report the methyllysines?"
+      sub: "Methyllysines reported by each database"
+      distribution: "Databases reporting each {mark}"
+      unit: [database, databases]
+      noun: databases
+      two_or_more: reported by both
+      top: 2
+      bins: 2
+      note: "iPTMnet carries a copy of UniProt: 217 methyllysine rows have unip as their only upstream database, so both databases agreeing is not always two measurements."
+      method: "Each methyllysine lists the databases that report it (the release's sources column). A database's count is the methyllysines it reports."
+  filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
+    - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex], keys: ["b:class", "b:gene", "b:score"]}
+    - {name: Histone and protein class, analyses: [histone, panther_group, panther_class, reactome_top_level], proteins: [marks]}
+    - {name: Methylation state, attributes: [state, evidence_class]}
+    - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome]}
+    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency]}
+    - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
+    - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
+    - {name: RNA and DNA, analyses: [pdb_interface_na]}
+    - {name: Provenance, attributes: [sources, iptmnet_sources]}
+  dataset: {label: data release, version: v1.5.0, date: "2026-11-09", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0"}
+  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). Cite the paper, the archive and the databases that report the sites you use (How to cite)."
+  downloads:               # the release's files, at the commit the site was built from
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv", format: TSV, note: "every methyllysine record: one row per lysine and degree, with its evidence class and sources"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+  search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
+    shorthand: {H4: P62805, H3: P68431, "H3.1": P68431, "H3.3": P84243}   # names papers use for a protein (H4K20, H3 K9)
+    patterns:                # the motif finder: a pattern of residues on the sites' sequence windows
+      at: motif              # motif:RKS covers the site (motif families keep their names: motif:ARKS)
+      near: window           # window:KKXK anywhere within the span
+      span: 15
+    spacing: {label: "Another methyllysine within", within: [2, 3, 5, 10, 20]}
+    partners:                # the proteins' physical partners (a protein_partners table)
+      table: string
+      key: binds
+      label: Has a physical partner that is
+      gene_label: Binds a specific protein
+      score_label: STRING physical confidence
+      help: "STRING 12.5 physical associations of the methylated protein (score 0.7 or more)"
+      interpro: interpro_entries           # the InterPro entry intervals the classes' interpro ids are read from
+      attribute: {id: bound_by, label: Partner classes of the protein, help: "The classes of the physical partners of the methylated protein"}
+      # Each set is a query on open data, recorded with its source and release. InterPro entries are read from the
+      # InterPro 108.0 entry intervals this site's manifest holds (https://www.ebi.ac.uk/interpro/api/entry/interpro/IPRxxxxxx/;
+      # members of the entry on the reviewed human proteome). Gene lists are UniProt queries of 2026-11-09 against UniProt
+      # release 2026_04: https://rest.uniprot.org/uniprotkb/search?query=(go:0016279)%20AND%20reviewed:true%20AND%20organism_id:9606
+      # (protein-lysine N-methyltransferase activity), less the SET-domain proteins and three annotated proteins that do not methylate lysine.
+      classes:
+        writer_set:
+          label: a SET-domain protein (writer)
+          role: writer
+          reads: makes Kme1, Kme2 or Kme3 (most SET proteins)
+          interpro: [IPR001214]
+          help: "SET domain (IPR001214, InterPro 108.0). Most are lysine methyltransferases, but the entry also holds SET-domain proteins that are not (for example SETD3, which methylates a histidine of actin), so it is a set of candidate writers"
+        writer_other:
+          label: another lysine methyltransferase (writer)
+          role: writer
+          reads: makes Kme1, Kme2 or Kme3
+          genes: [DOT1L, METTL13, METTL21A, METTL21C, METTL22, EEF1AKMT1, EEF1AKMT2, EEF1AKMT3, EEF1AKMT4, CSKMT, CAMKMT, VCPKMT, ANTKMT, ETFBKMT, EEF2KMT, ATPSCKMT, FAM86B1, FAM86B2, HEMK2]
+          help: "DOT1L and the METTL and other non-SET lysine methyltransferases: UniProt entries annotated with GO:0016279 (protein-lysine N-methyltransferase activity) that have no SET domain (UniProt query of 2026-11-09, release 2026_04)"
+        eraser_jmjc:
+          label: a JmjC-domain protein (eraser)
+          role: eraser
+          reads: removes Kme1, Kme2 or Kme3 (most JmjC KDMs)
+          interpro: [IPR003347]
+          help: "JmjC domain (IPR003347, InterPro 108.0). The entry holds the KDM2 to KDM8 demethylases and also JmjC proteins that are not lysine demethylases (for example JMJD6 and HIF1AN), so it is a set of candidate erasers"
+        eraser_lsd1:
+          label: LSD1 or LSD2 (eraser)
+          role: eraser
+          reads: removes Kme1 and Kme2
+          genes: [KDM1A, KDM1B]
+          help: "The flavin-dependent amine oxidases KDM1A (LSD1) and KDM1B (LSD2), which cannot remove Kme3"
+        reader_chromo:
+          label: a chromodomain protein (reader)
+          role: reader
+          reads: mostly Kme2 and Kme3 on histone tails
+          interpro: [IPR000953]
+          help: "Chromo domain (IPR000953, InterPro 108.0). Many chromodomains read methyllysine; not every protein in the entry does"
+        reader_tudor:
+          label: a Tudor-domain protein (reader)
+          role: reader
+          reads: Kme and Rme, by protein
+          interpro: [IPR002999]
+          help: "Tudor domain (IPR002999, InterPro 108.0). Some Tudor domains read methyllysine and some methylarginine"
+        reader_mbt:
+          label: an MBT-repeat protein (reader)
+          role: reader
+          reads: Kme1 and Kme2
+          interpro: [IPR004092]
+          help: "MBT repeat (IPR004092, InterPro 108.0; its Pfam member is PF02820)"
+        reader_pwwp:
+          label: a PWWP-domain protein (reader)
+          role: reader
+          reads: mostly H3K36me3 and H3K79me
+          interpro: [IPR000313]
+          help: "PWWP domain (IPR000313, InterPro 108.0)"
+        reader_phd:
+          label: a PHD-finger protein (reader)
+          role: reader
+          reads: mostly Kme3 on H3K4, and unmodified H3K4
+          interpro: [IPR001965, IPR019787]
+          help: "PHD zinc finger (IPR001965 and IPR019787, InterPro 108.0). Some PHD fingers bind unmodified lysine instead"
+      marked: another methylated protein
+      other: any other protein
+      scores: [0.7, 0.9]
+  tabs:                    # the top tabs' words (the addresses #statistics and #method stay; #idrs opens its question)
+    overview: {label: Overview, hint: "Click a class row to select its sites, or a tile's title to open the question."}
+    proteins: {label: Proteins, hint: "One row per protein with methyllysines. Filter, sort and download."}
+    sites: {label: Sites, hint: "One row per methyllysine, with its degrees and evidence. Filter, sort and download."}
+    idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of methylated proteins, and the methyllysines in them.", as: section, question: idr_charge}
+    statistics: {label: All tests, hint: "Every test on the site, one row per class, with odds ratio, interval and q value."}
+    method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
+    help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
+  partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
+  compare: {min_proteins: 10, min_marks: 30}
+  tables:                  # tables the protein pages show (no test reads them), each in a format of CONTRACTS.md
+    string:                # STRING v12.5 physical links, each pair listed once and read both ways, at score 0.7 or more
+      input: string_physical_v12_5
+      format: protein_partners
+      columns: {accession: protein_a, partner_accession: protein_b, partner: gene_b, score: combined_score}
+      both_ways: {partner: gene_a}
+      include: [{column: combined_score, at_least: 700}]
+  protein:                 # the protein page
+    open_partners: true
+    numbering:             # positions typed in a search read as the protein's page numbers them
+      - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
+        names: "^(putative |core )?histone (h1|h2a|h2b|h3|h4|macro-h2a)\\b|^testis-specific h1 histone|^histone h3-like centromeric"
+        offset: -1
+        label: histone numbering
+        note: "Histone numbering, without the initiator methionine"

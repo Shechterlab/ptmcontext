@@ -538,14 +538,6 @@
       "version": "current release, downloaded 2026-10-16",
       "licence": "CC0",
       "role": "input"
-    },
-    "alphafold_heterodimers_2026_10_16": {
-      "file": "inputs/interactions/alphafold_db_human_heterodimers_2026-10-16.tsv",
-      "md5": "4bff8c150dc7de319480efcaa6efa6c9",
-      "source": "https://alphafold.ebi.ac.uk/api/complex/{acc}",
-      "version": "AlphaFold DB API, answers saved 2026-10-16",
-      "licence": "CC BY 4.0",
-      "role": "input"
     }
   }
 }

@@ -1,39 +1,23 @@
-# How the methylarginine site is cited, and its version. Every page, figure and table the site exports reads this
+# How the methyllysine site is cited, and its version. Every page, figure and table the site exports reads this
 # file: edit it (and rebuild with ptmc web) to change the citation, the version or the date.
 cff-version: 1.2.0
-message: "Please cite the paper and the original data sources."
-title: "Human methylarginine sites (ptmcontext rebuild, checked against release v1.4.3)"
-version: "rebuild-0.2.0"
-date-released: "2026-11-01"
-url: "https://shechterlab.github.io/PTM_Pipeline/"
+message: "Please cite the data sources: there is no paper for this site yet."
+title: "Human methyllysine sites (ptmcontext site, release v1.5.0 of PTM_Pipeline)"
+version: "0.1.0"
+date-released: "2026-11-09"
+url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0"
 license: "CC-BY-NC-SA-4.0"
 authors:
   - name: "Shechter Lab, Albert Einstein College of Medicine"
 preferred-citation:
-  type: article
+  type: dataset
   authors:
-    - {family-names: DeAngelo, given-names: JD}
-    - {family-names: Silverstein, given-names: AM}
-    - {family-names: Shechter, given-names: D}
-  title: "Protein arginine methylation rewires molecular interactions"
-  journal: "Cell Chem Biol"
-  volume: 33
-  start: 1404
-  end: 1421
+    - name: "Shechter Lab, Albert Einstein College of Medicine"
+  title: "Human lysine methylation sites, release v1.5.0 (PTM_Pipeline)"
+  publisher: GitHub
   year: 2026
-  doi: "10.1016/j.chembiol.2026.09.011"
-references:   # the data sources: cited with every export (DOIs checked on Crossref, 1 Nov 2026)
-  - type: dataset
-    authors:   # as the Zenodo record lists them
-      - {family-names: DeAngelo, given-names: JD}
-      - {family-names: Silverstein, given-names: AM}
-      - {family-names: Shechter, given-names: D}
-    # the concept DOI, which names every version; its records on Zenodo (checked 1 Nov 2026) are v1.0.0
-    # (10.5281/zenodo.22696799) and v1.4.0, "Human methylarginine sites, v1.4.0 (PTM_Pipeline)" (10.5281/zenodo.23674710)
-    title: "Human methylarginine sites (PTM_Pipeline)"
-    publisher: Zenodo
-    year: 2026
-    doi: "10.5281/zenodo.22696798"
+  url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0"
+references:   # the data sources: cited with every export (DOIs of the new ones checked on Crossref, 9 Nov 2026)
   - type: article
     authors: [{name: "UniProt Consortium"}]
     title: "UniProt: the Universal Protein Knowledgebase in 2025"
@@ -149,23 +133,6 @@ references:   # the data sources: cited with every export (DOIs checked on Cross
   # the two PRMT perturbation studies the PRMT inhibitors, knockouts and knockdowns question reads that report no site of
   # their own; Maron et al. 2021, Hartel et al. 2019, Lu et al. 2024 and Li et al. 2021 are cited as studies reporting
   # sites (Method > Sources). Both checked on Crossref (2 Nov 2026): CC BY 4.0
-  - type: article   # Crossref: Nat Commun 8:15571, published 24 May 2017; 7 authors
-    authors: [{family-names: Shishkova, given-names: E}, {family-names: Zeng, given-names: H}, {family-names: Liu, given-names: F}, {name: "et al."}]
-    title: "Global mapping of CARM1 substrates defines enzyme specificity and substrate recognition"
-    journal: "Nat Commun"
-    volume: 8
-    start: 15571
-    year: 2017
-    doi: "10.1038/ncomms15571"
-  - type: article   # Crossref: Nat Commun 11:2396, published 14 May 2020; 31 authors
-    authors: [{family-names: Szewczyk, given-names: MM}, {family-names: Ishikawa, given-names: Y}, {family-names: Organ, given-names: S}, {name: "et al."}]
-    title: "Pharmacological inhibition of PRMT7 links arginine monomethylation to the cellular stress response"
-    journal: "Nat Commun"
-    volume: 11
-    start: 2396
-    year: 2020
-    doi: "10.1038/s41467-020-16271-z"
-  # Where in the cell: the maps beyond the Human Protein Atlas (DOIs checked on Crossref, 1 Nov 2026)
   - type: article
     authors: [{family-names: Go, given-names: CD}, {family-names: Knight, given-names: JDR}, {family-names: Rajasekharan, given-names: A}, {name: "et al."}]
     title: "A proximity-dependent biotinylation map of a human cell"
@@ -218,21 +185,39 @@ references:   # the data sources: cited with every export (DOIs checked on Cross
     start: 343
     year: 2021
     doi: "10.1186/s13059-021-02540-7"
-  - type: article
-    authors: [{family-names: Ellrott, given-names: K}, {family-names: Bailey, given-names: MH}, {family-names: Saksena, given-names: G}, {name: "et al."}]
-    title: "Scalable Open Science Approach for Mutation Calling of Tumor Exomes Using Multiple Genomic Pipelines"
-    journal: "Cell Syst"
-    volume: 6
-    start: 271
-    end: 281
+  - type: article   # the methyllysine sites: iPTMnet 6.2 (CC BY-NC-SA 4.0); the UniProt article is above
+    authors: [{family-names: Huang, given-names: H}, {family-names: Arighi, given-names: CN}, {family-names: Ross, given-names: KE}, {name: "et al."}]
+    title: "iPTMnet: an integrated resource for protein post-translational modification network discovery"
+    journal: "Nucleic Acids Res"
+    volume: 46
+    start: D542
+    end: D550
     year: 2018
-    doi: "10.1016/j.cels.2018.03.002"
-  - type: article
-    authors: [{family-names: Hoadley, given-names: KA}, {family-names: Yau, given-names: C}, {family-names: Hinoue, given-names: T}, {name: "et al."}]
-    title: "Cell-of-Origin Patterns Dominate the Molecular Classification of 10,000 Tumors from 33 Types of Cancer"
-    journal: "Cell"
-    volume: 173
-    start: 291
-    end: 304
-    year: 2018
-    doi: "10.1016/j.cell.2018.03.022"
+    doi: "10.1093/nar/gkx1104"
+  - type: article   # Crossref: online 2024-11-18; the article is in volume 53 (2025)
+    authors: [{family-names: Szklarczyk, given-names: D}, {family-names: Nastou, given-names: K}, {family-names: Koutrouli, given-names: M}, {name: "et al."}]
+    title: "The STRING database in 2025: protein networks with directionality of regulation"
+    journal: "Nucleic Acids Res"
+    volume: 53
+    start: D730
+    end: D737
+    year: 2025
+    doi: "10.1093/nar/gkae1113"
+  - type: article   # Crossref: online 2021-11; in volume 50 (2022)
+    authors: [{family-names: Meldal, given-names: BHM}, {family-names: Perfetto, given-names: L}, {family-names: Combe, given-names: C}, {name: "et al."}]
+    title: "Complex Portal 2022: new curation frontiers"
+    journal: "Nucleic Acids Res"
+    volume: 50
+    start: D578
+    end: D586
+    year: 2022
+    doi: "10.1093/nar/gkab991"
+  - type: article   # Crossref: online 2021-11; in volume 50 (2022)
+    authors: [{family-names: del Toro, given-names: N}, {family-names: Shrivastava, given-names: A}, {family-names: Ragueneau, given-names: E}, {name: "et al."}]
+    title: "The IntAct database: efficient access to fine-grained molecular interaction data"
+    journal: "Nucleic Acids Res"
+    volume: 50
+    start: D648
+    end: D653
+    year: 2022
+    doi: "10.1093/nar/gkab1006"

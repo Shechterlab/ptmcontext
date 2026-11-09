@@ -2029,6 +2029,11 @@
               "type": "string",
               "description": "the page's heading"
             },
+            "cell_first": {
+              "type": "boolean",
+              "default": true,
+              "description": "the section whose card draws the cell (drawing: true) opens the Overview; false keeps it where the site file lists it"
+            },
             "draw_first": {
               "type": "integer",
               "minimum": 0,

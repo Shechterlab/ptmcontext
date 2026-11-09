@@ -1862,7 +1862,7 @@ def pages(
         registry.append(
             {
                 'id': site['id'],
-                'label': landing.get('label') or profile.name,
+                'label': landing.get('label') or profile.data.get('name') or site['id'],
                 'listed': not landing.get('unlisted'),
                 'in_switcher': bool(landing.get('in_switcher')),
             }

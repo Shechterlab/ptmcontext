@@ -76,11 +76,7 @@ def with_variant(site: dict, name: str | None) -> dict:
     out = copy.deepcopy(site)
     v_select = v.get('marks_select') or {}
     out['marks'] = {
-        **{
-            k: x
-            for k, x in out['marks'].items()
-            if not (v_select and k in ('include', 'exclude', 'left_out'))
-        },
+        **{k: x for k, x in out['marks'].items() if not (v_select and k in ('include', 'exclude', 'left_out'))},
         **v_select,
         'add': [*out['marks'].get('add', []), *v.get('marks_add', [])],
         'attributes': {**out['marks'].get('attributes', {}), **v.get('attributes', {})},

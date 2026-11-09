@@ -228,7 +228,7 @@ Any TSV with an accession column and a position column; the site file names them
 further tables (each its manifest `input`, with its own `include`, `exclude` and `left_out`: rows counted on neither side).
 A site's `variants` run the same questions on other marks (`not_compared`: questions a variant runs but does not
 check against its reference, each with why): each has a `label`, tables to add (`marks_add`) and its own
-`reference`, and `attributes` of the marks it adds; `ptmc run --variant <name>` writes it under
+`reference`, and `attributes` of the marks it adds; `marks_select: {include, exclude, left_out}` replaces the site's own row conditions for the variant (the main view sets some rows of the table aside, the variant counts them, from the same table: `{exclude: []}`); `ptmc run --variant <name>` writes it under
 `<outputs.folder>/variants/<name>` and records `variant` in run.json, and `ptmc web --variant <name>` builds its website in
 `<outputs.folder>/web/<name>/`. The site's own page lists the variants that have been run (`variants`: name, label,
 description, href) and a variant's page names its way back (`variant.base`): a switch in the toolbar keeps the page and selection.
@@ -238,7 +238,7 @@ description, href) and a variant's page names its way back (`variant.base`): a s
 `separator` of a list (default `; `), display names for its `values`, a `link` (another column, aligned item by item,
 and a URL with `{}`, as each study to its DOI), `records` (a value that is a database, linked to its own record of the
 protein: a URL with `{acc}`), `colours`, `colour` (the map and Sites tab may color by it), `filter`, `control`
-(`chips`, or `select` for many values) and `help`. `present: true` makes the value whether the column holds anything
+(`chips`, or `select` for many values) and `help`. `join_rows: true` (a list) is for a mark on several rows of its table, one per methylation degree say: the mark keeps every row's values, each once, in the order of the rows (else the first row's); `present: true` makes the value whether the column holds anything
 (`yes` or `no`: "changed in tumors" over a column of changes); `pair_with` names a second list column in step with the
 first, and each value becomes `<value>:<its partner>` (a perturbation and its call; lists of different lengths are an
 error). A mark on several rows takes the first kept row's values.
@@ -370,7 +370,7 @@ order in the site data (`map_rows`).
 `file, md5, source, version, licence` (required), `role` (`input` or `reference_output`), `note`, and three optional
 fields: `columns`, a column mapping for a file no reader knows (intervals: `accession, start, end`, and `label, ref,
 subtype, class`; per-residue values: `accession, position, value`; lists of residues: `accession, position`;
-`include`/`exclude` conditions; `kind`; `sep`),
+`include`/`exclude` conditions (a website table's also `at_least` and `at_most`, on a number); `kind`; `sep`),
 `record`, the source's own page for a protein (a URL with `{acc}`), and `redistribution: checksum_only` for a file whose
 terms forbid copying it: only its MD5 is recorded, it is read from the root a build is given, and what needs it is left
 out (and said so) where it is absent. A table a protein-set question reads that is not tab-separated says so with
@@ -491,7 +491,7 @@ shows). Every value is text unless said otherwise; empty means not known. Lists 
 | `site_records` | site | **`group`** (a code: what the record shows), `partner`, `partner_name`, `partner_accession`, `partner_kind` (protein, self, rna, dna, gene, small_molecule, … : labels from the site file), `species`, `source` (PDB, IntAct, …), `id`, `method`, `context`, `state` (the site in the experiment: a code), `state_detail`, `other_marks`, `pubmed`, `doi`, `citation`, `title` | "Who binds it, and how it was found" (records grouped by `group`, rows by partner, state and source), the writer-and-reader lines, and on a protein without marks the records naming it as `partner_accession` |
 | `site_measurements` | site | **`condition`** (a code), **`call`** (a code: the site file gives each a mark and words), `n`, `n_down`, `n_up` (counts), `value` (a log2 change), `q`, `rule` | the perturbation marks of the card and the sites table, and every measurement in the Evidence row |
 | `source_records` | site | **`source`** (a code: a value of the site's provenance attribute), `doi`, `reference`, `pubmed` (ids), `source_table`, `peptide` (modifications in brackets after their residue: `GR(me)G`), `state`, `enzyme`, `sample`, `detail`, `reported_accession`, `reported_position`, `check` (a code: how the record was placed) | the Evidence row's source records, the site's residue marked in each peptide |
-| `protein_partners` | `accession` | **`partner_accession`**, **`score`** (number), `partner`, `partner_marked` (true/false), `classes` (a list of codes) | the card's partners of some classes (`card.writer.partners`), and on a protein without marks the proteins with marks associated with it |
+| `protein_partners` (a table that lists each pair once says `both_ways: {partner: <column naming the row's first protein>}`: every row is also read the other way round) | `accession` | **`partner_accession`**, **`score`** (number), `partner`, `partner_marked` (true/false), `classes` (a list of codes) | the card's partners of some classes (`card.writer.partners`), and on a protein without marks the proteins with marks associated with it |
 | `protein_records` | `accession` | any columns: the site file names each (`columns:` maps the input's column to the name the card reads; `values:` keeps others under their own names); several rows a protein | the protein page's cards (below): locations, condensate memberships, dependency, experiments, clustering |
 
 `ptmc web` keeps each protein's rows beside its page (`data/e/NN.json`, the shards of `data/p`), the rows that name a
@@ -738,7 +738,7 @@ website is built), which a `kind: values` count question can tile. Site-file def
 `website.protein.open_partners`, `website.protein.conservation.logo_mode: freq | bits`, `website.overview.statistic_label`.
 `website.overview.random_maps: {n: 3, title?, min_marks?, open?, enabled?}` (kit-random.js) is a closed fold, "Example proteins", at the end of the Overview: `n` proteins drawn at random, each end to end as one row in the protein map's style, with a small "Draw three others" link; absent or `enabled: false`, nothing is drawn.
 
-**Header, folds and the footer.** `website.header.compact` (default true): the full header band (title, counts, citation line) shows on the Overview at the top only; every other page, and a question opened from the Overview, has a 56 px band with the site name (a link to the Overview), and only the search, the selection line and the tabs stay in view (on a phone they slide away on the way down and back on the way up, and are not animated under reduced motion); false keeps the full band everywhere. `website.overview.draw_first` (default 2) is how many Overview sections are drawn in full; later ones are a heading and a line, drawn when opened or scrolled to (a selection draws all). Examples start closed: `website.overview.starting_points.open`, `random_maps.open`, `website.pages[].groups[].open` and `groups[].sections[].open` (a `place: top` section) are false unless true. Folds are open or closed for one visit; a saved selection ("Save") stores the open folds with it and restores them when opened, and the address does not carry them. The footer shows "updated <date>" (the `ptmc web` time, `data.built`) with the kit version and short commit.
+**Header, folds and the footer.** `website.header.compact` (default true): the full header band (title, counts, citation line) shows on the Overview at the top only; every other page, and a question opened from the Overview, has a 56 px band with the site name (a link to the Overview), and only the search, the selection line and the tabs stay in view (on a phone they slide away on the way down and back on the way up, and are not animated under reduced motion); false keeps the full band everywhere. `website.overview.draw_first` (default 2) is how many Overview sections are drawn in full; `website.overview.cell_first: false` keeps the section whose card draws the cell (`drawing: true`) where the site file lists it, under its heading, instead of opening the Overview with it; later ones are a heading and a line, drawn when opened or scrolled to (a selection draws all). Examples start closed: `website.overview.starting_points.open`, `random_maps.open`, `website.pages[].groups[].open` and `groups[].sections[].open` (a `place: top` section) are false unless true. Folds are open or closed for one visit; a saved selection ("Save") stores the open folds with it and restores them when opened, and the address does not carry them. The footer shows "updated <date>" (the `ptmc web` time, `data.built`) with the kit version and short commit.
 
 A filter group of `website.filters` places these filters by key (`keys: ["d:marks", "o:other_ptms", "m:at", "b:class", "b:gene",
 "b:score"]`); a module may add kinds of its own (`K.filterKinds[kind]`: `valid`, `test`, and optionally `control`, `label`,
@@ -957,4 +957,10 @@ The Overview's start panel and each landing-page card draw three pictures from t
 `D.glance`): one bar of where the marks fall (a question whose classes add up to the marks), the three strongest findings
 (one per question, q <= 0.05, at least 20 marks) and, on the site only, one example protein as a map. Without a choice
 in the site file they are computed; `website.start` (`share: {analysis, classes, labels}`, `findings: [{analysis, class}]`,
-`protein`) names them, and `website.landing` (`share`, `findings`, `tagline`) overrides them for the landing card.
+`protein`) names them, and `website.landing` (`share`, `findings`, `tagline`) overrides them for the landing card. `website.landing.unlisted: true` builds the
+site's folder with `ptmc pages` but leaves its card off the landing page. `ptmc pages` also writes `sites.json` beside the folders
+(`{sites: [{id, label, listed, in_switcher}]}`, the label being `landing.label` or the mark profile's name): the header's "Mark" menu
+(kit-switch.js) reads it, lists the listed sites, lists an unlisted site only in the menu of an unlisted site or where its own
+`landing.in_switcher` is true, and opens the chosen site with the reader's search (`q=`), highlight (`hl=`) and filters (`f=`); the
+filters the target does not have are dropped, and the target says how many in a short notice. A site served alone has no
+`sites.json` and no menu.

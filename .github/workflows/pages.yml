@@ -114,6 +114,9 @@ jobs:
             releases/v1.4.3/supporting/arginine_background_v1.4.3.tsv
             releases/v1.4.3/supporting/htr_selex_v1.4.3.tsv
             releases/v1.4.3/supporting/rna_bind_n_seq_v1.4.3.tsv
+            releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv
+            inputs/interactions/string_v12.5_human_physical_links_score400.tsv
+            inputs/interactions/complex_portal_human_complexes_2026-10-16.tsv
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v6
         with:
@@ -146,6 +149,24 @@ jobs:
           fail=0
           node tools/audit/export_overlap.js http://localhost:8931/index.html || fail=1
           node tools/audit/export_legend.js http://localhost:8931/index.html --pdf --cdn "$RUNNER_TEMP/cdn" || fail=1
+          exit $fail
+      # The methyllysine site (unlisted on the landing page; in the sites' header menu): release v1.5.0 of PTM_Pipeline, pinned
+      # above, with the generic inputs the methylarginine site reads. It has no reference release: every statistic is new.
+      - name: Methyllysine site
+        run: |
+          ptmc run sites/methyllysine.yaml --root reference
+          ptmc run sites/methyllysine.yaml --root reference --variant with_lower_confidence
+          ptmc web sites/methyllysine.yaml
+          ptmc web sites/methyllysine.yaml --variant with_lower_confidence
+      - name: Export audits, methyllysine (text overlap, legends)
+        timeout-minutes: 60
+        run: |
+          python3 -m http.server 8932 --directory out/methyllysine/web >/dev/null 2>&1 &
+          sleep 2
+          export NODE_PATH="$RUNNER_TEMP/pw/node_modules"
+          fail=0
+          node tools/audit/export_overlap.js http://localhost:8932/index.html || fail=1
+          node tools/audit/export_legend.js http://localhost:8932/index.html --pdf --cdn "$RUNNER_TEMP/cdn" || fail=1
           exit $fail
       - name: Last good yeast inputs
         # the staged files are cached under the manifest's hash: a UniProt, MobiDB or SHEPHARD outage reuses the last run
@@ -191,7 +212,7 @@ jobs:
         with:
           name: skipped-sites
           path: skipped_sites.txt
-      - run: ptmc pages sites/methylarginine.yaml sites/yeast_phospho.yaml --out _site --skip-missing
+      - run: ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/yeast_phospho.yaml --out _site --skip-missing
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

@@ -1062,6 +1062,7 @@
     }
     // the cell and the nucleus, drawn (a card with drawing: true), open the Overview
     const first = out.filter((x) => x.cards.some((c) => c.drawing === true && c.analysis === D.cell?.id));
+    if (D.overview?.cell_first === false) return out; // website.overview.cell_first: false: the section stays where the site file puts it, under its heading
     return first.length ? [...first.map((x) => ({ ...x, cell: true })), ...out.filter((x) => !first.includes(x))] : out;
   }
   // against other marks the attributes are questions too: about the sites, and (last, as a caveat) how they were found
