@@ -94,3 +94,21 @@ console.log(JSON.stringify({ q: S.q, vs: S.vs, cmp: S.cmp, view: S.view, ctl: K.
     assert run('ALPHA', body, 'false')['off'] is True
 
 
+@node
+def test_a_protein_page_steps_through_the_highlighted_proteins_in_the_order_typed():
+    body = """
+S.view = 'protein'; S.arg = ARG;
+const h2 = { insertAdjacentHTML(w, h) { global.nav = h; } };
+global.qs = sel => (sel === '#view .prot-head h2' ? h2 : null);
+K.afterRender.forEach(f => f());
+console.log(JSON.stringify(global.nav || ''));
+"""
+    first = run('BETA, NOPE, GAMMA, ALPHA', body.replace('ARG', "'B1'"))
+    assert (
+        '1 of 2' in first
+        and 'href="#protein/A0"' in first
+        and '‹ previous' in first.replace('<span', '').replace('</span>', '')
+    )
+    assert first.index('1 of 2') < first.index('next') and 'aria-disabled' in first.split('1 of 2')[0]
+    assert '2 of 2' in run('BETA, ALPHA', body.replace('ARG', "'A0'"))
+    assert run('BETA', body.replace('ARG', "'A0'")) == ''  # not highlighted: nothing

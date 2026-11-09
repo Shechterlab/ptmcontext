@@ -839,6 +839,27 @@
     );
   };
 
+  // protein pages: ‹ previous · N of M · next › through the highlighted proteins, in the order typed
+  function protNav() {
+    if (S.view !== 'protein' || !any() || !K.sel?.peek()) return;
+    const h = document.querySelector('#view .prot-head h2');
+    if (!h || document.querySelector('#view .hl-pnav')) return;
+    const me = K.sel.byAcc?.[String(S.arg).split('/')[0]],
+      L = ordered().list,
+      k = me ? L.indexOf(me.i) : -1;
+    if (k < 0) return;
+    const to = (j, label) =>
+      j >= 0 && j < L.length
+        ? `<a href="${esc(K.link('protein', protOfIndex(L[j])[0]))}" title="${esc(geneOf(L[j]))}">${label}</a>`
+        : `<span class="muted" aria-disabled="true">${label}</span>`;
+    h.insertAdjacentHTML(
+      'afterend',
+      `<p class="hl-pnav small" aria-label="Highlighted proteins">${to(k - 1, '‹ previous')} · ${k + 1} of ${L.length} · ` +
+        `${to(k + 1, 'next ›')}</p>`
+    );
+  }
+  (K.afterRender ||= []).push(protNav);
+
   const css = document.createElement('style');
   css.textContent =
     `.hl-line { margin: 0.35rem 0; font-size: 0.85rem; display: flex; gap: 0.4rem; align-items: ` +
@@ -877,6 +898,7 @@
     `var(--surface); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
 .hl-rowpop p { margin: 0 0 0.3rem; }
 .hl-rowpop ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 0.2rem 0.8rem; }
+.hl-pnav { margin: 0.1rem 0 0.4rem; }
 .hl-bar:empty { display: none; }
 .hl-chips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
 tr.hl-row > td { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--accent) 11%, transparent); }
