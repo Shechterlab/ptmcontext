@@ -109,8 +109,9 @@
   // <site>_<page>_<table>: the page's tab name leads, unless the table's name already starts with it (a protein's page is named by its gene)
   const fileOf = title => { const pg = K.S.view && K.S.view !== 'protein' ? slug(K.tabName ? K.tabName(K.S.view, K.S.view) : K.S.view) : '', t = slug(title); return `${K.D.site.id}_${!pg || t.startsWith(pg) ? '' : pg + '_'}${t}`; };
   let tblId = 0;
+  const FIGURES = K.D.site.features?.table_figures !== false;      // website.features.table_figures: false leaves the buttons out
   function bars() {
-    const root = document.getElementById('view'); if (!root) return;
+    const root = document.getElementById('view'); if (!FIGURES || !root) return;
     const todo = [...root.querySelectorAll('table')].filter(t => (t.rows.length > 2 || (t.rows.length > 1 && t.closest('.ix-fold'))) && !t.parentElement.closest('.exp, .fr-dl, .hl-tbl') && !t.dataset.tx && !(t.closest(CONTAINER) || root).querySelector('div.exp:not([data-for-tx])'));   // a table whose section (or page) has a bar is left alone
     todo.forEach(t => {
       const box = t.closest('.tbl-card, .tbl-wrap, .cv-wrap') || t;
@@ -119,8 +120,10 @@
     });
   }
   K.tableBars = bars;      // a module that paints a table late (the structure lists) calls it, so the bar is there at once
-  const mo = typeof MutationObserver === 'undefined' ? null : new MutationObserver(() => { clearTimeout(mo.t); mo.t = setTimeout(bars, 60); });
-  (K.afterRender ||= []).push(() => { bars(); const v = document.getElementById('view'); if (mo && v && !mo.on) { mo.on = true; mo.observe(v, { childList: true, subtree: true }); } });
+  if (FIGURES) {
+    const mo = typeof MutationObserver === 'undefined' ? null : new MutationObserver(() => { clearTimeout(mo.t); mo.t = setTimeout(bars, 60); });
+    (K.afterRender ||= []).push(() => { bars(); const v = document.getElementById('view'); if (mo && v && !mo.on) { mo.on = true; mo.observe(v, { childList: true, subtree: true }); } });
+  }
   K.clicks.push(['[data-tblx]', el => {
     const t = document.querySelector(`table[data-tx="${el.closest('.exp').dataset.forTx}"]`); if (!t) return;
     const title = titleOf(t), box = t.closest('.tbl-card, .tbl-wrap, .cv-wrap') || t;

@@ -18,7 +18,7 @@
   'use strict';
   const { D, W, esc, int, cap } = K;
   const CARDS = D.front?.mode === 'cards';
-  if (!D.proteins || !D.proteins.length) return;
+  if (!D.proteins || !D.proteins.length || D.site.features?.structure_3d === false) return;      // website.features.structure_3d: false leaves the viewer out (no K.s3d, no K.show3d)
   const SD = D.structure || {};
   const LIB = 'https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.5.3/3Dmol-min.js';
   const LIB_CITE = '3Dmol.js 2.5.3 (Rego & Koes, Bioinformatics 31:1322 (2015), doi:10.1093/bioinformatics/btu829)';

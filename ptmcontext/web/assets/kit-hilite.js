@@ -12,8 +12,15 @@
    Nothing here changes a statistic: it only changes how a chart's dots are drawn. A module of the site kit. */
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
-  const { esc, int, S } = K;
+  const { D, esc, int, S } = K;
   const LIMIT = 12;
+  if (D.site.features?.highlight === false) {         // website.features.highlight: false leaves it out; the charts and tables read this inert K.hl
+    const none = () => ({ prots: new Set(), marks: new Set(), sites: [], notFound: [], text: '', chips: [] });
+    K.hl = { nfText: () => '', isProt: () => false, isSite: () => false, any: () => false, firstSort: rows => rows, decorate() {}, mark: v => v, first: false, pasted: none,
+      state: () => ({ on: false, prots: new Set(), marks: null, text: '' }), sources: [], line: () => '', place: () => [], labels: () => '', clear() {}, control: () => '',
+      sets: () => [], activeSet: () => null, limit: LIMIT, only: false };
+    return;
+  }
   const sources = [];
   sources.push(() => {
     if (!K.sel?.active() || !K.sel.data()) return null;

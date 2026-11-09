@@ -1802,6 +1802,25 @@
           },
           "description": "example searches shown under the search bar"
         },
+        "features": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "parts of the page a site can switch off; each is on unless set to false",
+          "properties": {
+            "structure_3d": {
+              "type": "boolean",
+              "description": "the 3D structure viewer: the protein page's 3D fold, the Show in 3D buttons and the live structure lists (default true)"
+            },
+            "highlight": {
+              "type": "boolean",
+              "description": "highlighting genes and sites in the figures: the Highlight box, the pasted lists and the rings and labels in the charts (default true)"
+            },
+            "table_figures": {
+              "type": "boolean",
+              "description": "the PDF, SVG and PNG buttons that every table gets beside its TSV (default true)"
+            }
+          }
+        },
         "default_background": {
           "type": "string",
           "description": "the background most questions are tested against (their `background`); the Method page states a question's background only when it differs"

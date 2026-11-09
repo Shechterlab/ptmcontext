@@ -550,7 +550,7 @@
       (K.proteinFolds || []).map(f => f(p, rec, fold)).join('') +
       fold('p-regions', 'Domains and regions', `${int(rec.units.length)} region${rec.units.length === 1 ? '' : 's'}`, regionsHtml(p, rec), false) +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, sel), false) +
-      fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) +           // kit-3d.js
+      (K.s3d ? fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) : '') +           // kit-3d.js
       '');
   }
   // the facts as tiles, for a site without headline cards
@@ -585,7 +585,7 @@
       fold('p-map', 'Protein map', `${int(n)} ${esc(K.shown.row())} on ${int(p.len)} aa`, `<div class="card-head">${mapExp(['pdf', 'svg', 'png'])}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
       fold('p-sites', esc(cap(W.marks)), `${int(n)} ${esc(K.shown.row())}`, `${table}`, true) +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
-      fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false);
+      (K.s3d ? fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) : '');
     return CARDS ? cardsLayout(page, p, null, { cur: 'p-sites', on: {} }) : page;     // the cards layout here too: the map, then the rest under "More about"
   }
 
@@ -615,7 +615,7 @@
       (ptab ? fold('p-partners', `Proteins with ${esc(W.marks)} associated with ${esc(p.gene || p.acc)}`, `${int(partners.length)}`, partners.length ? `<p class="sub">${esc(CC.writer?.partners?.note || 'Partners')}, most confident first; the number is each protein’s ${esc(W.marks)}.</p><div class="gene-chips">${shownP.map(chip).join('')}</div>` +
         `<p>${partners.length > 40 ? `<button class="linkish" type="button" data-light-all>${PV.lightAll ? 'Fewer' : `All ${int(partners.length)}`}</button> · ` : ''}<button class="linkish" type="button" data-try="${esc(partners.map(r => byAcc[r.acc]?.gene || r.acc).join(' '))}">Select these ${int(partners.length)}</button></p>` : `<p class="muted">None in the partner table.</p>`, true) : '') +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
-      fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) +           // kit-3d.js
+      (K.s3d ? fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) : '') +           // kit-3d.js
       (K.lightFolds || []).map(f => f(p, null, fold)).join('');
     return CARDS ? cardsLayout(page, p, null, { cur: '', on: {} }) : page;
   }
@@ -661,7 +661,7 @@
     const base = [['view', name, 1], ...(PV.site ? [['site-card', `The ${W.mark} ${site(PV.site)}`, 1]] : []),
       ['g-marks', `${cap(W.marks)} on this protein`, 0], ['p-map', 'Protein map', 1], ['p-sites', cap(W.marks), 1], ['p-score', `${cap(W.marks)} vs other ${W.residues}`, 1],
       ['g-protein', 'The protein', 0], ...(D.analyses.some(a => a.kind === 'protein_sets') ? [['p-kinds', 'Protein classes and pathways', 1]] : []), ['p-regions', 'Domains and regions', 1], ['p-seq', 'Sequence', 1],
-      ['g-live', 'Live sources', 0], ['p-struct', '3D structure', 1]];
+      ...(K.s3d ? [['g-live', 'Live sources', 0], ['p-struct', '3D structure', 1]] : [])];
     const seen = new Set(base.map(x => x[0])), extra = [];
     K.proteinFoldSections.forEach(([id, title, lev]) => { if (!seen.has(id) && shown(id)) { seen.add(id); extra.push([id, typeof title === 'function' ? title() : title, lev]); } });
     if (!K.foldOrder.length && !(PRO.groups || []).length) { const at = base.findIndex(x => x[0] === 'p-regions'); base.splice(at < 0 ? base.length : at, 0, ...extra); return base.filter(x => !/^p-/.test(x[0]) || shown(x[0]) || !here(x[0])); }
@@ -810,7 +810,7 @@
         }, () => {});
       }
     });
-    K.s3d.after(p, rec);                // the 3D structure (kit-3d.js)
+    K.s3d?.after(p, rec);                // the 3D structure (kit-3d.js)
   }
   // ---- interaction partners: the site file turns the card on and names the taxon STRING files the organism under (website.partners); the card is kit-pnet.js's
   const IXP = D.partners || null;
