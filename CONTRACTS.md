@@ -13,6 +13,7 @@ Nine plain-data formats, and the tables the protein pages show (at the end). Cod
 | **Set families** | YAML | `ptmcontext/schemas/set_families.schema.json` | a person (a site's own data file, `sites/data/`) | protein-set questions that gather sets into families |
 | **Per-mark table** | TSV (any columns; the site file names its key and the columns kept) | `marks.tables` in `ptmcontext/schemas/site.schema.json` | a source, another repository, a user | the website's count questions (`website.counts`) |
 | **Map rows** | TSV in any layout, mapped to the format's columns in the site file | `ptmcontext/schemas/site.schema.json` (`website.protein.map.rows`) | a backend's release, or a person | `ptmc run` (map_items.tsv), the protein map |
+| **Context marks** | TSV (any layout; the site file names its key columns) | `context_marks` in `ptmcontext/schemas/site.schema.json` | a release (PTM_Pipeline v1.5.0: phosphorylation, methyllysine), any residue table | `ptmc run`, the website (map row, site card, filters, tables, downloads), the `near_marks` layer |
 | **Set hierarchy** | TSV | below (`hierarchy:` in the site schema) | an ontology's export, a person | the website's views of an ontology question |
 | **Published set results** | TSV (any columns) | below (`reference.tables` in the site schema) | a release, another pipeline | the parity check of one protein-set question |
 | **Citation** | YAML (CITATION.cff 1.2.0) | [citation-file-format.github.io](https://citation-file-format.github.io/) | a person | every page and download; GitHub and Zenodo read it too |
@@ -294,6 +295,37 @@ kind`) come from the site file. The Overview places it by naming its id among th
 a header tile opens it with `opens: <id>`; `legacy_links` may name it. Its id may not be an analysis's or an
 attribute's (the search reads `key:value` by those names); `ptmc check` names any attribute, table or column a count
 names that the site file does not keep. A site without counts has none of this.
+
+## Context marks
+
+Other modifications shown beside a site's own mark, declared in the site file as `context_marks:` (a list). Each entry:
+
+| Field | Required | Is |
+|---|---|---|
+| `id` | yes | lower-case letters, digits and `_`; the role `context_<id>`, the map row `ctx_<id>`, the attributes `ctx_near_<id>` and `ctx_n_<id>` |
+| `label`, `plural`, `noun` | label | the mark's name ("Phosphosite"), its plural, and the word inside a sentence (default: the label, lower-cased) |
+| `input` | yes | a manifest entry (CHECKSUM and license as any input): a table of residues, one row per residue and state |
+| `columns` | yes | `accession` and `position` (1-based, on the snapshot); optional `residue` (rows whose letter differs from the snapshot are dropped), `state`, `evidence`, `sources` (`; `-separated) |
+| `drop_evidence` | no | values of `columns.evidence` whose rows are dropped (default `[by-similarity]`; `[]` keeps all) |
+| `colour`, `colour_dark` | yes, no | the map row's tick |
+| `citation` | yes | `cite` (and `short`, `doi`, `url`, `licence`) for the table |
+| `sources` | no | each value of `columns.sources` with its paper, as `website.protein.map.sources` |
+
+`website.context_window` (default 7) is how many residues on either side count as near; `website.context_after` is the
+map row the context rows follow (default `ptm`), `website.context_group` the Filters group's name.
+
+What follows from the entries, with nothing else written: the input role; a protein-map row per entry (ticks, hover
+with state, evidence and sources); in the run, per mark `a.ctx_near` ("Other marks nearby": the marks within the
+window with signed distance, nearest first) and `a.ctx_near_<id>` (yes or no), and per protein `p.ctx_n_<id>` (the
+entry's residues on it); on the website, "Other marks nearby" on the site card, the filter "Has a <noun> within ±N", a
+"Nearby marks" column of the Sites table and one count column per entry of the Proteins table (all off by default under
+Columns), and the same columns in the downloads (where the site file lists them: `website.sites.table`,
+`website.proteins.columns`, `.download`, `website.filters`). They are context only: a context mark never changes which
+residues are marks or any statistic.
+
+The `near_marks` layer (`with: {marks: <id>, window, noun}`) is the question "Near other marks": residues by whether a
+mark of the entry lies within `window` residues on either side, the residue itself left out: `near`, `none`. Mark such an
+analysis `new: true`; both tests run as for any residue question.
 
 ## Map rows
 

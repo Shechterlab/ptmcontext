@@ -951,6 +951,24 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     question: "Inside disordered regions, are methylarginines more often next to aromatic residues than the other arginines there?"
     sub: "Only arginines inside IDRs of 20 or more residues: methylarginines against the other arginines of the same proteins in IDRs, by how many aromatic residues lie within 5 residues on either side"
     section: Position in the protein
+  # Near other marks: are methylarginines more often within 10 residues of another modification than the other
+  # arginines of their proteins? Context marks (context_marks above), not part of the release's analyses
+  - id: near_phospho
+    layer: near_marks
+    with: {marks: phospho, window: 10, noun: phosphosite}
+    new: true
+    title: Near phosphosites (within 10)
+    question: "Are methylarginines more often near a phosphosite than the other arginines of their protein?"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite (UniProt and iPTMnet, by-similarity records left out) lies within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methylarginines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
+    section: Other marks
+  - id: near_methyllysine
+    layer: near_marks
+    with: {marks: methyllysine, window: 10, noun: methyllysine}
+    new: true
+    title: Near methyllysines (within 10)
+    question: "Are methylarginines more often near a methyllysine than the other arginines of their protein?"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a methyllysine (UniProt and iPTMnet, by-similarity records left out) lies within 10 residues on either side. Few proteins carry a recorded methyllysine"
+    section: Other marks
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
   - id: which_factor
@@ -1191,12 +1209,41 @@ variants:                # the same questions on other marks; ptmc run --variant
       earlier: {column: in_earlier_versions, label: A site of}
 
 
+# Context marks: other modifications shown beside the methylarginines (CONTRACTS.md, Context marks). The release v1.5.0
+# tables; by-similarity rows are dropped (the default). A map row, "Other marks nearby" on the site card, a filter, table
+# columns and downloads follow from these entries; the near_marks questions below test them.
+context_marks:
+  - id: phospho
+    label: Phosphosite
+    input: context_phosphorylation_sites_v1_5_0
+    columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
+    colour: "#6D3FC0"          # violet: apart from the red and slate of the data and the motif green
+    colour_dark: "#8F6BEB"
+    citation:
+      short: UniProt and iPTMnet
+      cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: CC BY-NC-SA 4.0
+    sources:
+      UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
+      iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
+  - id: methyllysine
+    label: Methyllysine
+    input: context_methyllysine_sites_v1_5_0
+    columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
+    colour: "#5E6E75"          # the site's neutral, secondary style
+    colour_dark: "#A3AEB3"
+    citation:
+      short: UniProt and iPTMnet
+      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: CC BY-NC-SA 4.0
+
 outputs: {folder: out/methylarginine}
 citation: sites/methylarginine.citation.cff   # the citation, data sources, version and date: edit there
 
 
 
 website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
+  context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Methylarginine Site Explorer
   tagline: "Human arginine methylation sites from published studies."
   landing: {tagline: "Human sites from published studies."}
@@ -1315,6 +1362,8 @@ website:                  # the look and words of the website (ptmc web); layout
       sticker_context_5: "Aromatics within 5"
       sticker_context_3_idr: "Aromatics within 3, IDRs"
       sticker_context_5_idr: "Aromatics within 5, IDRs"
+      near_phospho: "Near phosphosites"
+      near_methyllysine: "Near methyllysines"
       which_factor: "Which factor matters most?"
       pdb_interface: "PDB interfaces"
       predicted_interface: "Predicted interfaces"
@@ -1450,6 +1499,11 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: sticker_context_3_idr}
           - {analysis: sticker_context_5_idr}
           - {analysis: which_factor, wide: true}
+      - name: Other marks
+        about: "Whether methylated arginines sit near other modifications (context marks: phosphosites and methyllysines), within 10 residues."
+        cards:
+          - {analysis: near_phospho}
+          - {analysis: near_methyllysine}
       - name: Interactions and binding
         about: "Whether methylated arginines touch RNA, DNA or other proteins. The Interactions page has the tests."
         #  the Interactions page's tile (website.pages[].overview)

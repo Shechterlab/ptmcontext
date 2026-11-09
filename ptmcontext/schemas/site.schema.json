@@ -1710,6 +1710,19 @@
         "name"
       ],
       "properties": {
+          "context_window": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "residues on either side that count as near a context mark (default 7)"
+          },
+          "context_after": {
+            "type": "string",
+            "description": "the protein-map row the context marks' rows follow (default ptm)"
+          },
+          "context_group": {
+            "type": "string",
+            "description": "the Filters panel group the context marks' filters go in (default 'Other marks')"
+          },
         "name": {
           "type": "string"
         },
@@ -6638,6 +6651,131 @@
       "type": "string",
       "description": "the site's CITATION.cff, relative to the repository: the citation, data sources, version and date every page and export carries"
     },
+      "context_marks": {
+        "type": "array",
+        "description": "other modifications shown beside the site's own mark (CONTRACTS.md, Context marks): a row of the protein map, 'Other marks nearby' on the site card, a filter, columns of the Sites and Proteins tables and their downloads. Never part of a statistic, except through a near_marks question",
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "label",
+            "input",
+            "columns",
+            "colour",
+            "citation"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "label": {
+              "type": "string",
+              "description": "the mark's name on the page (Phosphosite)"
+            },
+            "plural": {
+              "type": "string"
+            },
+            "noun": {
+              "type": "string",
+              "description": "the mark inside a sentence (default: the label, lower-cased)"
+            },
+            "help": {
+              "type": "string"
+            },
+            "input": {
+              "type": "string",
+              "description": "a manifest entry: a table of residues (also filled as the role context_<id>)"
+            },
+            "sep": {
+              "type": "string"
+            },
+            "columns": {
+              "type": "object",
+              "required": [
+                "accession",
+                "position"
+              ],
+              "additionalProperties": false,
+              "description": "the table's key columns",
+              "properties": {
+                "accession": {
+                  "type": "string"
+                },
+                "position": {
+                  "type": "string"
+                },
+                "residue": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "evidence": {
+                  "type": "string"
+                },
+                "sources": {
+                  "type": "string"
+                }
+              }
+            },
+            "drop_evidence": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "values of columns.evidence whose rows are dropped (default: [by-similarity])"
+            },
+            "colour": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "colour_dark": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "default": {
+              "enum": [
+                "on",
+                "off"
+              ],
+              "description": "whether the map row is shown at first (default on)"
+            },
+            "citation": {
+              "type": "object",
+              "required": [
+                "cite"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "cite": {
+                  "type": "string"
+                },
+                "short": {
+                  "type": "string"
+                },
+                "doi": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "licence": {
+                  "type": "string"
+                }
+              }
+            },
+            "sources": {
+              "type": "object",
+              "description": "each value of columns.sources: its words and paper, as website.protein.map.sources",
+              "additionalProperties": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
     "variants": {
       "type": "object",
       "description": "the same site run on other marks (for example with lower-confidence sites added): ptmc run --variant <name> writes it under <outputs.folder>/variants/<name>, and the website offers a switch to it",

@@ -1267,6 +1267,9 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     from . import search as SE
 
     SE.derive(site, folder, log)
+    from .. import context_marks as CM
+
+    CM.register(site, folder, log)
     data = site_data(site, folder, profile)
     # the switch between the site and its variants: each variant that has been run, and the way back
     if variant:

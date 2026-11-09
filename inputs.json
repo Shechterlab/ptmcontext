@@ -1375,6 +1375,24 @@
       "licence": "CC BY-NC-SA 4.0 (the maps: APEX-seq, Fazal et al. 2019, GEO GSE116008; TSA-seq, Chen et al. 2018, GEO GSE81553; Hi-C subcompartments, Rao et al. 2014, GEO GSE63525: no use restrictions; eCLIP: ENCODE, no use restrictions)",
       "role": "input",
       "note": "Release v1.4.3's call, for each protein with eCLIP data and each map of RNA or DNA, of whether its bound RNAs gather in a compartment (q <= 0.05 and Mantel-Haenszel odds ratio above 1 within expression and gene-length deciles; computed by PTM_Pipeline scripts/cell_maps.py). Read by the eclip_* protein-set questions. Its nuclear-body rows (map nuclear_body) derive from Barutcu et al. 2022, whose license is pending: each question keeps only its own map (sets.include), so nothing reads or shows them."
+    },
+    "context_methyllysine_sites_v1_5_0": {
+      "file": "releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv",
+      "md5": "2403b652d71ad1d5996468065810383a",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd/releases/v1.5.0",
+      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-09); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
+      "role": "input",
+      "note": "Methyllysine sites of the human reviewed proteome (756 rows on 412 residues), one row per residue and state, with sources (UniProt, iPTMnet), evidence class (experimental, by-similarity, text-mined, unspecified), iPTMnet upstream databases and PubMed IDs. Shown as context beside the site's own mark; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 5b1c3bd."
+    },
+    "context_phosphorylation_sites_v1_5_0": {
+      "file": "releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv",
+      "md5": "937931b37ff8a0e3fb9bc23f9c5834e5",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd/releases/v1.5.0",
+      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-09); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
+      "role": "input",
+      "note": "Phosphorylation sites of the human reviewed proteome (72,134 rows), one row per residue and state, with sources (UniProt, iPTMnet), evidence class (experimental, by-similarity, text-mined, unspecified), iPTMnet upstream databases and PubMed IDs. Shown as context beside the site's own mark; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 5b1c3bd."
     }
   }
 }

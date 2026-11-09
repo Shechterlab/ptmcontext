@@ -22,6 +22,7 @@ from . import __version__
 from . import inputs as I
 from . import layers as L
 from . import residue_tests as RT
+from . import context_marks as CM
 from . import statistics as ST
 from .parity import Result, compare, compare_table
 from .profile import check_residues, load_profile, read_config, validate
@@ -52,7 +53,7 @@ def load_site(path: str | Path) -> dict:
     site = read_config(path)
     validate(site, 'site')
     site['__root__'] = str(Path(path).resolve().parent.parent)
-    return site
+    return CM.expand(site)
 
 
 def presence_only(site: dict) -> set[str]:
@@ -401,7 +402,7 @@ def website_problems(site: dict) -> list[str]:
     or a mark attribute that is not defined, or an attribute's colors for values it does not list. The schema checks
     each block's shape; this checks that the blocks agree with each other (ptmc check)."""
     ids = {x['id'] for x in site.get('analyses', [])}
-    attrs = (site.get('marks') or {}).get('attributes') or {}
+    attrs = {**((site.get('marks') or {}).get('attributes') or {}), **CM.specs(site)[0]}
     web = site.get('website') or {}
     counts = web.get('counts') or {}
     out = count_problems(site) + presence_only_problems(site)
@@ -454,7 +455,7 @@ def website_problems(site: dict) -> list[str]:
                 f'website.sites.columns: {a!r} has flags (several per residue): it shows as tags beside the window, not as a column'
             )
     set_ids = {a['id'] for a in site.get('analyses', []) if a.get('test') == 'protein_sets'}
-    pattrs = (site.get('proteins') or {}).get('attributes') or {}
+    pattrs = {**((site.get('proteins') or {}).get('attributes') or {}), **CM.specs(site)[1]}
     for lst in ((web.get('overview') or {}).get('starting_points') or {}).get('lists', []):
         for n in [lst['by'], (lst.get('where') or {}).get('attribute')]:
             if n and n != 'marks' and (n not in pattrs or pattrs[n].get('kind') != 'number'):
@@ -630,8 +631,8 @@ def table_view_problems(site: dict) -> list[str]:
     """What the Proteins and Sites pages' columns and downloads (website.proteins, website.sites, website.selection_cards)
     name that the site file does not have: a protein attribute, a mark attribute, a question, a class or a table."""
     web = site.get('website') or {}
-    attrs = (site.get('marks') or {}).get('attributes') or {}
-    pattrs = (site.get('proteins') or {}).get('attributes') or {}
+    attrs = {**((site.get('marks') or {}).get('attributes') or {}), **CM.specs(site)[0]}
+    pattrs = {**((site.get('proteins') or {}).get('attributes') or {}), **CM.specs(site)[1]}
     words = _analysis_words(site)
     kinds = {a['id']: a.get('test') for a in site.get('analyses', [])}
     tables = web.get('tables') or {}
@@ -789,7 +790,10 @@ def card_problems(site: dict) -> list[str]:
     from .web.tables import problems as table_problems
 
     web = site.get('website') or {}
-    tables, attrs = web.get('tables') or {}, (site.get('marks') or {}).get('attributes') or {}
+    tables, attrs = (
+        web.get('tables') or {},
+        {**((site.get('marks') or {}).get('attributes') or {}), **CM.specs(site)[0]},
+    )
     ids = {x['id'] for x in site.get('analyses', [])}
     prot = web.get('protein') or {}
     out = [x for name, spec in tables.items() for x in table_problems(name, spec)]
@@ -842,7 +846,7 @@ def card_problems(site: dict) -> list[str]:
     if ev.get('protein'):
         if ev['protein'].get('table'):
             table('card.evidence.protein', ev['protein']['table'], 'protein_values')
-        pattrs = (site.get('proteins') or {}).get('attributes') or {}
+        pattrs = {**((site.get('proteins') or {}).get('attributes') or {}), **CM.specs(site)[1]}
         out.extend(
             f'website.protein.card.evidence.protein: no attribute {v["attribute"]!r} in proteins.attributes'
             for v in ev['protein'].get('values', [])
@@ -879,7 +883,7 @@ def card_problems(site: dict) -> list[str]:
         if isinstance(f.get('tip'), dict) and f['tip'].get('table'):
             table(f'facts[{k}].tip', f['tip']['table'], 'protein_values')
         if isinstance(f.get('tip'), dict):
-            pattrs = (site.get('proteins') or {}).get('attributes') or {}
+            pattrs = {**((site.get('proteins') or {}).get('attributes') or {}), **CM.specs(site)[1]}
             out.extend(
                 f'website.protein.facts[{k}].tip: no attribute {v["attribute"]!r} in proteins.attributes'
                 for v in f['tip'].get('values', [])
@@ -936,7 +940,7 @@ def page_problems(site: dict) -> list[str]:
     an analysis, a class, an attribute, a table or one of its columns, a section; and tables mapped wrongly."""
     web = site.get('website') or {}
     ids = {x['id']: x for x in site.get('analyses', [])}
-    attrs = (site.get('marks') or {}).get('attributes') or {}
+    attrs = {**((site.get('marks') or {}).get('attributes') or {}), **CM.specs(site)[0]}
     tables = web.get('tables') or {}
     words = _analysis_words(site)
     out = []
@@ -1687,6 +1691,7 @@ def run(
         formats=input_formats(names, paths, entries),
         names={role: I.role_inputs(v)[1][0] for role, v in roles.items() if I.role_inputs(v)[0] == 'one'},
     )
+    ctx.context = CM.tables(site, paths, snap)  # the context marks, by id (website.context_marks), read once
     table, added = read_marks_table(site, paths)
     spec = marks_spec(site, table)
     marked, report = select_marks(spec, table, snap, profile)
@@ -1961,11 +1966,21 @@ def run(
         outs = protein_outputs(snap, profile, marked, kept, ctx, attributes, layers=layer_objs)
         outs['shown_marks.tsv'], outs['shown_proteins.tsv'] = shown_marks(spec, table, pending, snap, marked)
         outs['set_names.tsv'] = pd.DataFrame(set_names, columns=['analysis', 'set', 'name'])
+        ctx_marks, ctx_prots = (
+            CM.derive(site, ctx.context, marked, set(marked['accession'])) if ctx.context else (None, None)
+        )
+        if ctx_marks is not None:  # the context marks near each mark and on each protein: columns of the run's tables
+            outs['marks.tsv'] = outs['marks.tsv'].merge(ctx_marks, on=['accession', 'position'], how='left').fillna('')
         if site.get('proteins'):  # per-protein facts the website shows (proteins.attributes)
             ptable = pd.read_csv(
                 paths[site['proteins']['input']], sep='\t', dtype=str, keep_default_na=False, low_memory=False
             )
             outs['protein_attributes.tsv'] = protein_attributes(site['proteins'], ptable, set(marked['accession']))
+        if ctx_prots is not None:
+            base = outs.get('protein_attributes.tsv')
+            outs['protein_attributes.tsv'] = (
+                ctx_prots if base is None else base.merge(ctx_prots, on='accession', how='left')
+            )
         for name, frame in per_mark.items():  # per-mark tables, for the website's count questions
             outs[f'marks_{name}.tsv'] = frame
         for stale in folder.glob('marks_*.tsv'):  # a table the site file no longer keeps

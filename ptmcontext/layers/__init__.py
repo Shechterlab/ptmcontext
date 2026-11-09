@@ -55,6 +55,7 @@ class Context:
     trusted_plugins: tuple[str, ...] = ()
     formats: dict[str, dict] = field(default_factory=dict)  # an input's manifest name (or path) -> its column mapping
     names: dict[str, str] = field(default_factory=dict)  # a role filled by one input -> that input's manifest name
+    context: dict = field(default_factory=dict)  # context mark id -> its residues (context_marks.read), for near_marks
     _cache: dict = field(default_factory=dict, repr=False)
 
     def mapping(self, path, name: str = ''):
