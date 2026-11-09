@@ -136,6 +136,8 @@ def source_columns(spec: dict) -> list[str]:
     out = []
     for v in (spec.get('columns') or {}).values():
         out += v if isinstance(v, list) else [v]
+    if (spec.get('both_ways') or {}).get('partner'):
+        out.append(spec['both_ways']['partner'])
     out += spec.get('values', []) + [c['column'] for c in spec.get('include', []) + spec.get('exclude', [])]
     return list(dict.fromkeys(out))
 
@@ -152,6 +154,9 @@ def _keep(frame, conds, keep: bool):
             m = col == str(c['equals'])
         elif 'in' in c:
             m = col.isin([str(x) for x in c['in']])
+        elif 'at_least' in c or 'at_most' in c:  # a number: rows with no number never hold
+            num = pd.to_numeric(col, errors='coerce')
+            m = (num >= c['at_least']) if 'at_least' in c else (num <= c['at_most'])
         else:
             m = col.str.contains(str(c.get('contains', '')), regex=False)
         hold &= m
@@ -201,6 +206,12 @@ def read(spec: dict, path: Path):
         if spec['format'] == 'residue_evidence' and c in out.columns:
             out = out[out[c].str.fullmatch(r'\d+')]
             out[c] = out[c].astype(int)
+    both = spec.get('both_ways')
+    if both is not None and spec['format'] == 'protein_partners':  # a table that lists each pair once: both ways
+        back = out.rename(columns={'accession': 'partner_accession', 'partner_accession': 'accession'})
+        if 'partner' in out.columns:
+            back['partner'] = frame[both['partner']] if both.get('partner') else ''
+        out = pd.concat([out, back[out.columns]], ignore_index=True)
     if fmt['key'] == 'site':
         if 'site' in cols:
             m = out['site'].str.extract(SITE_ID)

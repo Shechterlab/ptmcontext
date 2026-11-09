@@ -9023,3 +9023,100 @@ a.btn:hover {
     white-space: normal;
   }
 }
+
+/* ---- the site switcher (kit-switch.js): a menu in the header's side; the notice when a link left filters behind ------ */
+.site-switch {
+  position: relative;
+}
+.site-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 32px;
+  padding: 0 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.site-switch-btn:hover,
+.site-switch-btn[aria-expanded='true'] {
+  background: rgba(255, 255, 255, 0.14);
+}
+.site-switch-btn:focus-visible,
+.site-switch-list a:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+.site-switch-list {
+  position: absolute;
+  z-index: 40;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  min-width: 14rem;
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow-hover);
+}
+.site-switch-list[hidden] {
+  display: none;
+}
+.site-switch-list a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  padding: 0 0.7rem;
+  border-radius: 7px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.site-switch-list a:hover,
+.site-switch-list a:focus-visible {
+  background: var(--surface-2);
+}
+.site-switch-list a[aria-current='true'] {
+  font-weight: 600;
+}
+.site-switch-list a[aria-current='true']::before {
+  content: '✓';
+  color: var(--accent-dark);
+}
+.site-switch-list a:not([aria-current])::before {
+  content: '';
+  width: 1em;
+}
+.switch-note {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.switch-note button {
+  min-width: 32px;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .site-switch-list {
+    right: auto;
+    left: 0;
+  }
+}

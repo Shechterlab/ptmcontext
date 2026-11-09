@@ -176,6 +176,10 @@
                 },
                 "description": "value -> its label on the page, in the order shown"
               },
+              "join_rows": {
+                "type": "boolean",
+                "description": "list: a mark on several rows of the table (one per methylation state, say) keeps every row's values, each once, in the order of the rows; without it a mark takes its first row's"
+              },
               "presence_only": {
                 "type": "array",
                 "items": {
@@ -4890,6 +4894,16 @@
               "sep": {
                 "type": "string"
               },
+              "both_ways": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "a protein_partners table that lists each pair once: every row is also read the other way round; partner is the column naming the row's first protein (the partner of the swapped row)",
+                "properties": {
+                  "partner": {
+                    "type": "string"
+                  }
+                }
+              },
               "include": {
                 "type": "array",
                 "items": {
@@ -4912,6 +4926,12 @@
                     },
                     "contains": {
                       "type": "string"
+                    },
+                    "at_least": {
+                      "type": "number"
+                    },
+                    "at_most": {
+                      "type": "number"
                     }
                   },
                   "additionalProperties": false
@@ -4939,6 +4959,12 @@
                     },
                     "contains": {
                       "type": "string"
+                    },
+                    "at_least": {
+                      "type": "number"
+                    },
+                    "at_most": {
+                      "type": "number"
                     }
                   },
                   "additionalProperties": false
@@ -5957,6 +5983,18 @@
           "additionalProperties": false,
           "description": "the landing page's card for this site; share and findings default to the start panel's",
           "properties": {
+            "label": {
+              "type": "string",
+              "description": "the site's name in the header's site switcher (default: the mark profile's name)"
+            },
+            "in_switcher": {
+              "type": "boolean",
+              "description": "an unlisted site that the switcher of the listed sites shows too"
+            },
+            "unlisted": {
+              "type": "boolean",
+              "description": "ptmc pages builds the site's folder but leaves its card off the landing page's list (a site reached by its address only)"
+            },
             "share": {
               "type": "object",
               "additionalProperties": false,
@@ -6799,6 +6837,31 @@
           },
           "description": {
             "type": "string"
+          },
+          "marks_select": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "which rows of the marks table the variant counts, in place of the site's own marks.include, exclude and left_out (a variant that keeps rows the main view sets aside, from the same table)",
+            "properties": {
+              "include": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "exclude": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "left_out": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              }
+            }
           },
           "marks_add": {
             "type": "array",

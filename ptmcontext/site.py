@@ -74,8 +74,14 @@ def with_variant(site: dict, name: str | None) -> dict:
             f'{site["id"]} has no variant {name!r} (it has {sorted(site.get("variants") or {}) or "none"})'
         )
     out = copy.deepcopy(site)
+    v_select = v.get('marks_select') or {}
     out['marks'] = {
-        **out['marks'],
+        **{
+            k: x
+            for k, x in out['marks'].items()
+            if not (v_select and k in ('include', 'exclude', 'left_out'))
+        },
+        **v_select,
         'add': [*out['marks'].get('add', []), *v.get('marks_add', [])],
         'attributes': {**out['marks'].get('attributes', {}), **v.get('attributes', {})},
     }
@@ -1197,7 +1203,19 @@ def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame, rows:
                 sep.join(f'{x}:{y}' for x, y in _zip_lists(u, v, sep, out))
                 for u, v in zip(t[out], table[paired[out]].astype(str))
             ]
-    t = t.dropna(subset=['position']).astype({'position': int}).drop_duplicates(['accession', 'position'])
+    t = t.dropna(subset=['position'])
+    joined = [f'a.{n}' for n, a in attrs.items() if a.get('join_rows') and not a.get('pair_with')]
+    if joined:  # a mark on several rows: every row's values, each once, in order
+        t['position'] = t['position'].astype(int)
+        seps = {f'a.{n}': a.get('separator', '; ') for n, a in attrs.items()}
+        key = ['accession', 'position']
+        first = t.drop_duplicates(key).set_index(key)
+        for c in joined:
+            first[c] = t.groupby(key, sort=False)[c].agg(
+                lambda v, c=c: seps[c].join(dict.fromkeys(x for u in v for x in u.split(seps[c]) if x))
+            )
+        t = first.reset_index()
+    t = t.astype({'position': int}).drop_duplicates(['accession', 'position'])
     return marked[['accession', 'position']].merge(t, on=['accession', 'position'], how='left').fillna('')
 
 

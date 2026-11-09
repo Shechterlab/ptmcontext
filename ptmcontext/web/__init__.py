@@ -61,6 +61,7 @@ MODULES = (
     'kit-link.js',
     'kit-tabfig.js',
     'kit-hilite.js',
+    'kit-switch.js',
     'kit-map.js',
     'kit-3d.js',
     'kit-columns.js',
@@ -1825,7 +1826,7 @@ def pages(
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     (out / '.nojekyll').write_text('')
-    cards, lab = [], None
+    cards, lab, registry = [], None, []
     for sp in site_paths:
         site = load_site(sp)
         web = site.get('website', {})
@@ -1857,6 +1858,18 @@ def pages(
             f'<li><a href="{sid}/#overview?q={html.escape(quote(x["query"]))}">{html.escape(x.get("query"))}</a></li>'
             for x in starts[:3]
         )
+        landing = web.get('landing') or {}
+        registry.append(
+            {
+                'id': site['id'],
+                'label': landing.get('label') or profile.name,
+                'listed': not landing.get('unlisted'),
+                'in_switcher': bool(landing.get('in_switcher')),
+            }
+        )
+        if landing.get('unlisted'):  # its folder is published; its card is not on the landing page
+            log(f'  {site["id"]} -> {dest} (unlisted)')
+            continue
         gl = json.loads((src / 'glance.json').read_text()) if (src / 'glance.json').exists() else {}
         pictures = _card_pictures(gl, sid)
         tagline = (web.get('landing') or {}).get('tagline') or web.get('tagline', '')
@@ -1868,6 +1881,8 @@ def pages(
             + '</div></article>'
         )
         log(f'  {site["id"]} -> {dest}')
+    # the sites' own header menu reads this list (kit-switch.js)
+    (out / 'sites.json').write_text(json.dumps({'sites': registry}, indent=1))
     kit = kit_citation()
     lab_html = (
         (
