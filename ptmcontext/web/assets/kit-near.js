@@ -7,14 +7,14 @@
      b:class       the protein has a partner of a class, a marked partner, or another (website.search.partners)
      b:gene        the protein has a named partner (a gene or accession)
      b:score       the partners counted: those scored at least this (the other two read it)
-     m:at, m:near  the motif finder's box (kit-select.js reads its patterns: motif:GXRG, window:PRPR)
+     m:at, m:near  the motif finder's box (kit-select.js reads its patterns: motif:<pattern>, window:<pattern>)
    The partners come from data/partners.json, read the first time a partner filter is used. Search keys stand for
    them (website.search: nearby.<table>.key, partners.key). A filter whose data the site lacks is absent. A module of
    the site kit. */
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
   const { D, W, S, esc, int } = K;
-  const SRCH = D.search || {}, NEAR = SRCH.nearby || {}, PT = SRCH.partners || null, PAT = SRCH.patterns || null;
+  const PH = D.site.placeholders || {}, SRCH = D.search || {}, NEAR = SRCH.nearby || {}, PT = SRCH.partners || null, PAT = SRCH.patterns || null;
   const SP = { within: [2, 3, 5, 10, 20], ...(SRCH.spacing || {}) };
   const sd = () => K.sel?.data();
   const setF = (key, vals) => { if (vals && vals.length) S.f[key] = vals; else delete S.f[key]; K.writeHash(true); K.render(); };
@@ -128,9 +128,9 @@
       const termKey = { at: PAT.at, near: PAT.near }, cur = (S.q.match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || []).find(t => { const k = t.split(':')[0].toLowerCase(); const r = (k === PAT.at || k === PAT.near) && K.sel.termFilter([k, t.slice(k.length + 1)]); return r && r[0]?.startsWith?.('m:'); });
       const where = cur && cur.split(':')[0].toLowerCase() === PAT.near ? 'near' : 'at', val = cur ? cur.slice(cur.indexOf(':') + 1) : '';
       const span = sd()?.wide?.span ?? PAT.span ?? 15;
-      return fctl('Find a motif (2–10 residues)', PAT.help || '', `<div class="fpair"><input type="text" data-motif value="${esc(val)}" placeholder="e.g. GXRG, [RK]XR, PRPR" aria-label="A motif" spellcheck="false" autocomplete="off">` +
+      return fctl('Find a motif (2–10 residues)', PAT.help || '', `<div class="fpair"><input type="text" data-motif value="${esc(val)}" ${PH.motif ? `placeholder="e.g. ${esc(PH.motif)}" ` : ''} aria-label="A motif" spellcheck="false" autocomplete="off">` +
         `<select data-motif-where aria-label="Where">${Object.entries(termKey).filter(([, k]) => k).map(([w, k]) => `<option value="${esc(k)}"${w === where ? ' selected' : ''}>${w === 'at' ? `Covering the ${esc(W.mark)}` : `Anywhere within ±${span}`}</option>`).join('')}</select>` +
-        `<button type="button" class="btn small" data-motif-go>Search</button></div><p class="fhint" data-motif-msg>X, . or * any residue; [ST] S or T; RGG,GAR either. Adds <span class="mono">${esc(PAT.at || PAT.near)}:</span> or <span class="mono">${esc(PAT.near || PAT.at)}:</span> to the search.</p>`);
+        `<button type="button" class="btn small" data-motif-go>Search</button></div><p class="fhint" data-motif-msg>X, . or * any residue; [..] any one of the letters inside${PH.motif_either ? `; ${esc(PH.motif_either)} either` : ''}. Adds <span class="mono">${esc(PAT.at || PAT.near)}:</span> or <span class="mono">${esc(PAT.near || PAT.at)}:</span> to the search.</p>`);
     },
   };
   function motifGo(el) {

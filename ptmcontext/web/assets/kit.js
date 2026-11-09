@@ -745,7 +745,8 @@
     const q = D.analyses.map(a => [a.id, a.title, Object.entries(a.labels || {}).filter(([c]) => c).slice(0, 4).map(([c, l]) => l || c), aliasOf(a.id)]);
     const t = Object.entries(D.attribute_specs || {}).filter(([, x]) => x.filter).map(([k, x]) => [k, x.label, Object.values(x.values || {}).slice(0, 4), aliasOf(k)]);
     const ex = (D.site.examples || []).filter(e => e.includes(':'));
-    return `<section id="m-search"><h3>Search terms</h3><p>The search takes genes, accessions and entry names (a list is a union), a site as "GENE R216", and terms <span class="mono">key:value</span>, all of which must hold. A value is a class, set or value by code or name, or the start of a word in its name. Separate several values with <span class="mono">|</span> or commas to match any.${ex.length ? ` Examples: ${ex.map(e => `<button class="linkish mono" type="button" data-try="${esc(e)}">${esc(e)}</button>`).join(', ')}.` : ''}</p>` +
+    const siteEx = (D.site.examples || []).find(e => /^\S+ [A-Z]\d+$/.test(e)) || `a gene symbol and a ${W.residue} position`;
+    return `<section id="m-search"><h3>Search terms</h3><p>The search takes genes, accessions and entry names (a list is a union), a site as "${siteEx}", and terms <span class="mono">key:value</span>, all of which must hold. A value is a class, set or value by code or name, or the start of a word in its name. Separate several values with <span class="mono">|</span> or commas to match any.${ex.length ? ` Examples: ${ex.map(e => `<button class="linkish mono" type="button" data-try="${esc(e)}">${esc(e)}</button>`).join(', ')}.` : ''}</p>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Key</th><th>What it names</th><th>Values, for example</th></tr></thead><tbody>` +
       [...q, ...t].map(([k, lab, vals, aka]) => `<tr><td class="mono">${esc(k)}${aka.length ? `<br><span class="muted">or ${aka.map(esc).join(', ')}</span>` : ''}</td><td>${esc(lab)}</td><td class="wrapok">${vals.map(esc).join('; ')}</td></tr>`).join('') +
       `</tbody></table></div></section>`;
@@ -889,7 +890,7 @@
     const classes = labels.length && labels.length <= 40 ? `<details><summary>Its ${set ? 'sets' : 'classes'} (${int(labels.length)})</summary><dl class="qm-classes">${labels.map(([c, l]) => `<dt>${esc(l || c)}</dt><dd>${esc((a.help || {})[c] || '')}</dd>`).join('')}</dl></details>` : '';
     return `<section id="m-q-${esc(a.id)}" class="qm"><h3>${esc(a.title)}${a.new && R.parity ? ' <span class="newtag">new</span>' : ''}</h3>` +
       (a.question ? `<p class="qm-q">${esc(a.question)}</p>` : '') + (a.sub ? `<p>${esc(a.sub)}.</p>` : '') +
-      (a.describe && a.describe !== 'other reviewed human proteins' ? `<p>${set ? 'Background: ' : ''}${esc(a.describe)}.</p>` : '') + classes +
+      (a.describe && a.describe !== D.site.default_background ? `<p>${set ? 'Background: ' : ''}${esc(a.describe)}.</p>` : '') + classes +
       `<p class="qm-links"><a href="${esc(link('overview', a.id))}">Its figure</a> · <a href="${esc(link('statistics', '', { a: a.id }))}">Its tests</a></p></section>`;
   }
 
@@ -1468,7 +1469,7 @@
   let typing = false;
   $('#q').addEventListener('input', e => { clearTimeout(timer); qPending = true; timer = setTimeout(() => { qPending = false; S.q = e.target.value.trim(); writeHash(!typing); typing = true; render(); $('#q').focus(); }, 150); });
   $('#q').addEventListener('blur', () => { typing = false; });
-  // a search that names one protein (and nothing else) opens it; "GENE R216" opens the site's card
+  // a search that names one protein (and nothing else) opens it; "GENE <site>" opens the site's card
   function openIfOne() {
     const q = K.sel?.parse(S.q); if (!q || q.terms.length || q.words.length || q.unmatched.length || q.absent.length || q.ignored.length) return false;
     const prots = [...new Set([...q.genes, ...q.sites.map(x => x[0])])];

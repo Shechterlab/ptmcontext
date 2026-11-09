@@ -17,6 +17,7 @@
   if (!CV || !(CV.species || []).length || !CV.ensembl) return;
   const RES = D.residues || [];
   const KEPT = RES.length === 1 ? RES[0] : 'the same residue';        // "still R"
+  const REF = CV.reference || 'Reference';        // the source organism's name, from the site file (website.protein.conservation.reference)
   const CATALOGUE = CV.species, SIMILAR = new Set(CV.similar || []), ENS = CV.ensembl;
   // The reader's set of species: one of the site file's presets (each names species of the catalog), remembered in this
   // browser. A site without presets aligns every species it lists.
@@ -76,7 +77,7 @@
     return SPECIES().filter(s => best.has(s.id)).map(s => ({ sp: s.id, name: s.label, h: best.get(s.id) }));
   }));
 
-  // Carry each position of the snapshot sequence to the Ensembl human protein (identical, contained, or by a unique
+  // Carry each position of the snapshot sequence to the Ensembl protein of the source organism (identical, contained, or by a unique
   // 15-residue anchor), then read the ortholog's aligned residue there; null where it cannot be mapped.
   function modelOf(seq, sites, orthos) {
     const rows = orthos.map(o => {
@@ -183,7 +184,7 @@
     const row = (name, sub, vals) => `<tr><th>${esc(name)}${sub ? ` <span class="muted">${esc(sub)}</span>` : ''}</th>${vals}</tr>`;
     const tcell = (a, i, name, human) => `<td class="${cls(a, human)}"${tipAttr(`<b>${esc(name)}</b> · ${esc(lab(acc, sites[i]))}<br>${a == null ? 'not mapped: the Ensembl protein differs around here' : a === '-' ? 'gap: no aligned residue in this ortholog' : esc(a) + (a === human ? ' (kept)' : SIMILAR.has(a) ? ' (a conservative change)' : ' (changed)')}`)}>${esc(a == null ? '·' : a === '-' ? '–' : a)}</td>`;
     const table = `<div class="cv-wrap"><table class="cv-tbl"><thead><tr><th>Species</th>${sites.map(q => `<th><button type="button" class="linkish${q === UI.pos ? ' cur' : ''}" data-cv-pos="${q}">${esc(lab(acc, q))}</button></th>`).join('')}</tr></thead><tbody>` +
-      row('Human', '', sites.map(q => `<td class="${cls(seq[q - 1], seq[q - 1])}">${esc(seq[q - 1] || '·')}</td>`).join('')) +
+      row(REF, '', sites.map(q => `<td class="${cls(seq[q - 1], seq[q - 1])}">${esc(seq[q - 1] || '·')}</td>`).join('')) +
       per.map(x => row(x.r.name, Math.round(x.r.pid) + '%', x.v.map((a, i) => tcell(a, i, x.r.name, seq[sites[i] - 1])).join(''))).join('') + '</tbody></table></div>';
     return head + test + `<div class="cv-sum">${per.map(x => `<span class="tag"><b>${esc(x.r.name)}</b> ${esc(KEPT)} at ${x.nK}/${x.nMap}</span>`).join(' ')}` +
       (absent.length ? ` <span class="muted small">No ortholog in Ensembl: ${esc(absent.join(', '))}.</span>` : '') + '</div>' + table +
@@ -209,19 +210,19 @@
       if (sub) g += `<text x="${x0 + ncol * cw + 8}" y="${y + rh - 5}" font-size="10" fill="${K.PAL.muted}">${esc(sub)}</text>`;
       y += rh;
     };
-    line('Human', '', q => seq[q - 1]);
+    line(REF, '', q => seq[q - 1]);
     model.rows.forEach(r => line(r.name, r.pid != null ? Math.round(r.pid) + '% id.' : '', q => r.at(q), q => seq[q - 1]));
     g += `<rect x="${x0 + flank * cw}" y="${top - 1}" width="${cw}" height="${y - top + 2}" fill="none" stroke="${K.PAL.ink}" stroke-width="1.2"/>`;
     y += 18;
     const lg = legend(20, y, Wd); g += lg.svg; y += lg.h;
-    return K.figureFrame({ title: `${gene(acc)} ${lab(acc, pos)} across species`, sub: `${acc} · Ensembl Compara orthologs, columns anchored on the human sequence · residues ${Math.max(1, pos - flank)}–${pos + flank}`,
-      body: g, bodyH: y, W: Wd, note: `Outlined: the same residue as the human one. Dots: other ${W.marks} of the protein. % id.: identity of the ortholog to the human protein (Ensembl).`,
+    return K.figureFrame({ title: `${gene(acc)} ${lab(acc, pos)} across species`, sub: `${acc} · Ensembl Compara orthologs, columns anchored on the ${REF} sequence · residues ${Math.max(1, pos - flank)}–${pos + flank}`,
+      body: g, bodyH: y, W: Wd, note: `Outlined: the same residue as in ${REF}. Dots: other ${W.marks} of the protein. % id.: identity of the ortholog to the human protein (Ensembl).`,
       extra: { ensembl_gene: st.ensg, orthologs: model.rows.map(r => `${r.name} ${r.prot}`) } });
   }
   const tsv = acc => {
     const st = ST[acc], { model, seq, sites } = st, rows = model.rows;
     return K.preamble(`Conservation across species: ${gene(acc)}`, `each ${W.mark} of ${gene(acc)} (${acc}) and the residue aligned to it in the orthologs of Ensembl Compara (${st.ensg}); empty: not mapped, -: gap`) +
-      ['site\tposition\thuman_residue\t' + rows.map(r => slug(r.name.toLowerCase()) + '_residue').join('\t')].concat(sites.map(q => [lab(acc, q), q, seq[q - 1], ...rows.map(r => r.at(q) ?? '')].join('\t'))).join('\n') +
+      ['site\tposition\treference_residue\t' + rows.map(r => slug(r.name.toLowerCase()) + '_residue').join('\t')].concat(sites.map(q => [lab(acc, q), q, seq[q - 1], ...rows.map(r => r.at(q) ?? '')].join('\t'))).join('\n') +
       '\n# orthologs: ' + rows.map(r => `${r.name} ${r.prot} (${Math.round(r.pid)}% identity)`).join('; ') + `\n# ${W.marks} still ${KEPT}: ${say(st.ck)}\n`;
   };
 

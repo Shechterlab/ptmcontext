@@ -18,7 +18,7 @@
   const { D, W, A, S, esc, int } = K;
   const input = document.getElementById('q'), field = input?.closest('.search-field');
   if (!input || !field || !K.sel) return;
-  const SPECS = D.attribute_specs || {}, PSPEC = D.protein_attributes?.specs || {}, SRCH = D.search || {};
+  const SPECS = D.attribute_specs || {}, PSPEC = D.protein_attributes?.specs || {}, SRCH = D.search || {}, SITE_PH = D.site.placeholders || {}, PHM = (SITE_PH.motif || '').split(/\s*,\s*/).filter(Boolean);
   K.searchNote = true;                               // the selection bar leaves what the search could not read to the line
 
   // ---- the elements: a list under the box, and a line under the toolbar's search -----------------------------------
@@ -36,7 +36,7 @@
     const out = [];
     const add = (key, label, help) => { if (key && !out.some(x => x.key === key)) out.push({ key, label, help }); };
     Object.entries(SRCH.terms || {}).forEach(([k, t]) => add(k, t.label || k, t.help || ''));
-    if (SRCH.patterns?.at) add(SRCH.patterns.at, `motif at the ${W.mark}`, `a motif family, or a pattern covering the ${W.mark} such as GXRG or [RK]XR`);
+    if (SRCH.patterns?.at) add(SRCH.patterns.at, `motif at the ${W.mark}`, `a motif family, or a pattern covering the ${W.mark}${PHM.length ? ` such as ${PHM.slice(0, 2).join(' or ')}` : ''}`);
     if (SRCH.patterns?.near) add(SRCH.patterns.near, `motif within ±${SRCH.patterns.span || 15}`, `a pattern anywhere within ${SRCH.patterns.span || 15} residues of the ${W.mark}, such as PRPR`);
     Object.entries(K.searchTermHelp || {}).forEach(([k, h]) => add(k, h.label || k, h.help || ''));
     Object.entries(D.search_aliases || {}).forEach(([k, to]) => add(k, A[to]?.title || SPECS[to]?.label || to, `the same as ${to}:`));
@@ -53,7 +53,7 @@
     if (SRCH.patterns?.near === key0) [['PRPR', 'Pro-Arg repeats'], ['RGRG', 'RG repeat'], ['YGG', 'Tyr-Gly-Gly']].forEach(x => out.push(x));
     if (K.searchTermValues?.[key0]) out.push(...K.searchTermValues[key0]());
     if (A[key]?.kind === 'residue' && sd) (sd.classes[key] || []).forEach(c => out.push([c, `${A[key].labels?.[c] || c}${A[key].help?.[c] ? ' · ' + A[key].help[c] : ''}`]));
-    if (SRCH.patterns?.at === key0) [['GXRG', 'a pattern: G, any residue, the site, G'], ['[RK]XR', 'a pattern: R or K, any residue, the site']].forEach(x => out.push(x));
+    if (SRCH.patterns?.at === key0) PHM.slice(0, 2).map(m => [m, 'a pattern of residues']).forEach(x => out.push(x));
     if (A[key]?.kind === 'protein_sets' && sd?.protein_sets?.[key]) {
       const names = [...sd.protein_sets[key].sets.map(([s, , m]) => [s, m.length]), ...(sd.protein_sets[key].more || []).map(([s, m]) => [s, m.length])];
       names.sort((a, b) => b[1] - a[1]).forEach(([s, n]) => out.push([String(A[key].labels?.[s] || s), `${int(n)} ${W.marked} proteins`]));
@@ -250,7 +250,7 @@
     if (Object.keys(SRCH.shorthand || {}).length) parts.push(`Other names papers use: ${Object.entries(SRCH.shorthand).map(([n, acc]) => `<span class="mono">${esc(n)}</span> (${esc(acc)})`).join(', ')}; a site may follow the name directly (<span class="mono">${esc(Object.keys(SRCH.shorthand)[0])}${esc((D.residues || [''])[0])}3</span>).`);
     if (Object.keys(D.protein_aliases || {}).length) parts.push(`A protein is found by gene, accession, entry name or any other name in the site's tables (synonyms, source symbols), with or without hyphens, spaces and dots. A name in two words is read as one.`);
     if ((D.protein_view?.numbering || []).length) parts.push(`Positions are read as each protein's page numbers them: ${D.protein_view.numbering.map(n => esc(n.note || n.label || '')).join('; ')}.`);
-    if (SRCH.patterns) parts.push(`The motif finder: <span class="mono">${esc(SRCH.patterns.at || '')}:</span> takes a pattern covering the ${esc(W.mark)}, with one position on it. <span class="mono">${esc(SRCH.patterns.near || '')}:</span> takes one anywhere within ${int(SRCH.patterns.span || 15)} residues. X . * or ? is any residue, [ST] a choice, 2 to 10 positions, and RGG,GAR either.`);
+    if (SRCH.patterns) parts.push(`The motif finder: <span class="mono">${esc(SRCH.patterns.at || '')}:</span> takes a pattern covering the ${esc(W.mark)}, with one position on it. <span class="mono">${esc(SRCH.patterns.near || '')}:</span> takes one anywhere within ${int(SRCH.patterns.span || 15)} residues. X . * or ? is any residue, [ST] a choice, 2 to 10 positions${SITE_PH.motif_either ? `, and ${esc(SITE_PH.motif_either)} either` : ''}.`);
     Object.entries(SRCH.terms || {}).forEach(([k, t]) => parts.push(`<span class="mono">${esc(k)}:</span> ${esc(t.help || '')} (${Object.keys(t.values).map(v => `<span class="mono">${esc(k)}:${esc(v)}</span>`).join(', ')}).`));
     Object.entries(K.searchTermHelp || {}).forEach(([k, h]) => parts.push(`<span class="mono">${esc(k)}:</span> ${esc(h.help || h.label || '')}.`));
     return parts.length ? `<section id="m-search-words"><h3>More search words</h3><ul>${parts.map(x => `<li>${x}</li>`).join('')}</ul></section>` : '';

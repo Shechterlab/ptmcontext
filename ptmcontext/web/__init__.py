@@ -346,7 +346,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
            if web.get('front') else {}),
         # the start panel's words and examples (kit-help.js); without them it chooses from the examples
         **({'start': web['start']} if web.get('start') else {}),
-        'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []), 'placeholders': web.get('placeholders') or {},
+        'site': {'id': site['id'], 'name': web['name'], 'tagline': web.get('tagline', ''), 'examples': web.get('examples', []), 'placeholders': web.get('placeholders') or {}, 'default_background': web.get('default_background', ''),
                  'lab': web.get('lab', {}).get('name', ''), 'config': f"sites/{site['id']}.yaml"},
         'words': {**profile.words, 'marked_long': profile.words.get('marked_long', profile.words['marked'])},
         'mark': profile.id, 'residues': profile.residues,

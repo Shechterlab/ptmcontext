@@ -1213,7 +1213,8 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
   examples: [FUS, TAF15 EWSR1 FUS, "disease:als", FUS R216, "motif:RGG"]   # the first three are the chips under the search box
-  placeholders: {highlight: "FUS, TDP-43, HNRNPA1 R218", partners: "PRMT5, SMN1"}   # examples inside the Highlight and partner boxes
+  placeholders: {highlight: "FUS, TDP-43, HNRNPA1 R218", partners: "PRMT5, SMN1", motif: "GXRG, [RK]XR, PRPR", motif_either: "RGG,GAR"}
+  default_background: other reviewed human proteins   # examples inside the Highlight and partner boxes
   front:                   # the cards front end (CONTRACTS.md, 'The cards front end'); mode: classic keeps the classic Overview
     mode: classic
     rows: 5
@@ -2206,6 +2207,7 @@ website:                  # the look and words of the website (ptmc web); layout
         fields: {id: experiment, source: source, cell: cell_line, peaks: n_peaks, genes: top_target_genes, gene_peaks: top_target_peaks, kmers: top_5mers, ratios: top_5mer_ratios, same: same_data_as,
                  regions: {CDS: peaks_CDS, "3′ UTR": peaks_UTR3, "5′ UTR": peaks_UTR5, "non-coding exon": peaks_noncoding_exon, intron: peaks_intron, intergenic: peaks_intergenic}}
     conservation:          # orthologs live from Ensembl Compara, and the selection's logo (CONTRACTS.md, Conservation across species)
+      reference: Human
       ensembl: {rest: "https://rest.ensembl.org", xref: Ensembl, source: human}
       species:             # every species a set below can name, with the label shown (all in Ensembl Compara's vertebrate set)
         - {id: mus_musculus, label: Mouse}

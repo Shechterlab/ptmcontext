@@ -142,7 +142,7 @@
   const validKey = key => { const [kind, id] = String(key).split(':'); if (kind === 'r') return !!RSPEC(id); if (kind === 'm') return !!SRCH.patterns?.[id]; if (kind === 'x') return !!(SRCH.terms || {})[id]; return (kind === 'a' && A[id] && A[id].kind !== 'protein_sets' && !A[id].page) || !!K.filterKinds?.[kind]?.valid(id) || (kind === 'p' && A[id]?.kind === 'protein_sets') || (kind === 's' && !!A[id]?.scores) || ((kind === 't' || kind === 'n') && !!SPECS[id]); };
 
   // ---- the search: proteins, sites and terms ---------------------------------------------------------------------
-  // a gene, accession, entry name or other name names all its marks; "GENE R216 R218", "GENE 216", "GENE:R216",
+  // a gene, accession, entry name or other name names all its marks; "GENE <site> <site>", "GENE 216", "GENE:R216",
   // "GENE_216", "GENE-R216" or one word "H4R3" name those marks (in the protein's own numbering, as its page shows it);
   // a name written as two words ("hnRNP A1") is one; key:value terms filter (values joined by commas or |). A list of
   // proteins is their union: a name in it with no marked protein is reported (absent), not applied. Without any
@@ -209,7 +209,7 @@
     return out;
   }
   // a term key:value: an analysis (its class or set), or an attribute of the marks or of the proteins; a word of the
-  // site's own (website.search.terms: go:rna), read first; a pattern of residues (website.search.patterns: motif:GXRG
+  // site's own (website.search.terms: go:rna), read first; a pattern of residues (website.search.patterns: motif:<pattern>
   // covering the mark, window:PRPR anywhere near it); or a module's (K.searchTerms). [filter key, values], or
   // {error} saying why it cannot be read
   // an older site's search keys, read as this site's (website.search_aliases: disease -> disease_family)
@@ -255,7 +255,7 @@
       const codes = SD.classes[key] || [];
       // an exact code or label first; a prefix only when nothing matches exactly
       const each = vals.map(v => { const ex = codes.filter(c => low(c) === low(v) || low(classLabel(key, c)) === low(v)); return ex.length ? ex : codes.filter(c => low(c).startsWith(low(v)) || low(classLabel(key, c)).startsWith(low(v))); });
-      // motif:GXRG: a value that is no class is a pattern, when the site's motif finder reads this key
+      // motif:<pattern>: a value that is no class is a pattern, when the site's motif finder reads this key
       if (PAT && key0 === PAT.at && each.some(x => !x.length)) return patterns(key0, vals);
       return ['a:' + key, each.flat()];
     }
@@ -309,7 +309,7 @@
   // a search and filters as tests: base(m), what the search names (words, genes, sites), and one test per constraint
   function matcher(qText, f) {
     const q = parse(qText), { cons, unresolved, errors } = constraintsOf(qText, f);
-    // proteins named by the search (a gene or accession names all its marks; "GENE R216" names one mark)
+    // proteins named by the search (a gene or accession names all its marks; "GENE <site>" names one mark)
     const genes = new Set(q.genes), sites = new Set(q.sites.map(([p, pos]) => p + ':' + pos)), named = genes.size || sites.size || q.positions.length, posSet = new Set(q.positions.map(x => x[1]));
     const protOk = P.map(p => !q.words.length || q.words.every(w => wordHits(p, w)));
     const base = m => protOk[m[0]] && (!named || genes.has(m[0]) || sites.has(m[0] + ':' + m[1]) || posSet.has(m[1]));
