@@ -12,29 +12,33 @@ def _js(name):
     return (ASSETS / name).read_text()
 
 
+def _sq(src):
+    """The source with whitespace, parentheses and the joins of split strings taken out (the kit is formatted by prettier)."""
+    from conftest import _Source
+
+    return _Source.squash(src)
+
+
 def test_a_page_tile_opens_inside_a_folded_section():
     # the tile sits in a section fold (<details>): its click guard must only skip links and rows inside the tile itself
-    src = _js('kit-interactions.js')
-    line = next(x for x in src.splitlines() if "['[data-ix-tile]'" in x)
-    assert 'el.contains(inner)' in line and "closest('a,button,summary,details,[data-f]')" in line
+    sq = _sq(_js('kit-interactions.js'))
+    window = sq[sq.index(_sq("['[data-ix-tile]'")) :][:400]
+    assert _sq('el.contains(inner)') in window and _sq("closest('a,button,summary,details,[data-f]')") in window
 
 
 def test_a_page_tile_row_selects_like_the_overviews():
-    src = _js('kit-interactions.js')
-    mini = src[src.index('function miniForest') : src.index('const range = rs')]
-    assert 'class="trow pick" data-f="a:' in mini and 'data-v=' in mini and 'role="button"' in mini
+    sq = _sq(_js('kit-interactions.js'))
+    mini = sq[sq.index(_sq('function miniForest')) :][:1500]
+    assert _sq('class="trow pick" data-f="a:') in mini and 'data-v=' in mini and _sq('role="button"') in mini
 
 
 def test_the_bound_histogram_tile_draws_at_the_tile_width():
     src = _js('kit-interactions.js')
     assert 'function histBody(b, ex, Wd = 760, H0 = 220, fz = 1)' in src
-    tile = next(
-        x
-        for x in src.splitlines()
-        if "case 'histogram': { const h = histData(b); if (!h) return loading(); const L" in x
-    )
-    m = re.search(r'histBody\(b, false, (\d+), (\d+), ([\d.]+)\)', tile)
-    assert m and int(m.group(1)) <= 400 and float(m.group(3)) >= 1.2 and f'viewBox="0 0 {m.group(1)} ' in tile
+    sq = _sq(src)
+    tile = sq[sq.rindex("case'histogram':{") :][:400]
+    m = re.search(r'histBodyb,false,(\d+),(\d+),([\d.]+)', tile)
+    assert m and int(m.group(1)) <= 400 and float(m.group(3)) >= 1.2 and f"viewBox='00{m.group(1)}" in tile
 
 
 def test_reported_by_is_gray_chips_one_per_line():

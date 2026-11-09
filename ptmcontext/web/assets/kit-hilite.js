@@ -68,8 +68,8 @@
     const clear = () => {
       S.hl = '';
     };
-    // one chip per entry, but entries that resolve to the same protein (tdp43, TARDBP) share one, named by what it resolved to:
-    // "TDP-43 → TARDBP" when the entry differs from the gene name, else the gene name. An entry that matches nothing keeps its own chip, struck.
+    // one chip per entry, but entries that resolve to the same protein (an alias and the gene) share one, named by what it resolved to:
+    // "alias → GENE" when the entry differs from the gene name, else the gene name. An entry that matches nothing keeps its own chip, struck.
     const chipsOf = (resolved) => {
       const out = [],
         seen = new Map();
@@ -151,7 +151,7 @@
     const chips = chipsOf(resolved.map((r, i) => (r.gene || r.many || r.site ? r : { gene: null, miss: true })));
     return { prots, marks, sites, notFound, bad, text: t.join(', '), chips, clear, pasted: true };
   });
-  // the entries as resolved on the last draw, so the address keeps one entry for a protein named twice (tdp43, TARDBP)
+  // the entries as resolved on the last draw, so the address keeps one entry for a protein named twice (an alias and the gene)
   let RESOLVED = [];
   const dedupedHl = () => {
     const t = toks(),

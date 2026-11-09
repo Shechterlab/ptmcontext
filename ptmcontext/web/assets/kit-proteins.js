@@ -965,7 +965,12 @@
 
   // ---- the headline cards: each a fact of the protein, a hover with its numbers, a click opening its section ---------
   const GLYPH = {
-    pins: '<svg viewBox="0 0 64 22" aria-hidden="true"><line x1="2" y1="19" x2="62" y2="19"/><g class="g-a"><line x1="12" y1="19" x2="12" y2="9"/><circle cx="12" cy="7" r="3.4"/><line x1="25" y1="19" x2="25" y2="12"/><circle cx="25" cy="10" r="3.4"/><line x1="34" y1="19" x2="34" y2="7"/><circle cx="34" cy="5" r="3.4"/><line x1="50" y1="19" x2="50" y2="11"/><circle cx="50" cy="9" r="3.4"/></g></svg>',
+    pins:
+      '<svg viewBox="0 0 64 22" aria-hidden="true"><line x1="2" y1="19" x2="62" y2="19"/><g class="g-a">' +
+      '<line x1="12" y1="19" x2="12" y2="9"/><circle cx="12" cy="7" r="3.4"/>' +
+      '<line x1="25" y1="19" x2="25" y2="12"/><circle cx="25" cy="10" r="3.4"/>' +
+      '<line x1="34" y1="19" x2="34" y2="7"/><circle cx="34" cy="5" r="3.4"/>' +
+      '<line x1="50" y1="19" x2="50" y2="11"/><circle cx="50" cy="9" r="3.4"/></g></svg>',
     wave: '<svg viewBox="0 0 64 22" aria-hidden="true"><rect x="2" y="7" width="18" height="8" rx="3"/><path d="M20 11 q4 -6 8 0 t8 0 t8 0 t8 0"/><circle class="g-f" cx="58" cy="7" r="3.2"/></svg>',
     squiggle:
       '<svg viewBox="0 0 64 22" aria-hidden="true"><path d="M3 14 q5 -10 10 0 t10 0 t10 0 t10 0"/><circle class="g-f" cx="50" cy="5" r="3.2"/></svg>',
