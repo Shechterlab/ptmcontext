@@ -1211,9 +1211,11 @@ def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame, rows:
         key = ['accession', 'position']
         first = t.drop_duplicates(key).set_index(key)
         for c in joined:
-            first[c] = t.groupby(key, sort=False)[c].agg(
-                lambda v, c=c: seps[c].join(dict.fromkeys(x for u in v for x in u.split(seps[c]) if x))
-            )
+            for col in (c, f'{c}.link'):  # a list and the identifiers its links are made from, kept in step
+                if col in t.columns:
+                    first[col] = t.groupby(key, sort=False)[col].agg(
+                        lambda v, c=c: seps[c].join(dict.fromkeys(x for u in v for x in u.split(seps[c]) if x))
+                    )
         t = first.reset_index()
     t = t.astype({'position': int}).drop_duplicates(['accession', 'position'])
     return marked[['accession', 'position']].merge(t, on=['accession', 'position'], how='left').fillna('')

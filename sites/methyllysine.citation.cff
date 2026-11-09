@@ -1,0 +1,238 @@
+# How the methylarginine site is cited, and its version. Every page, figure and table the site exports reads this
+# file: edit it (and rebuild with ptmc web) to change the citation, the version or the date.
+cff-version: 1.2.0
+message: "Please cite the paper and the original data sources."
+title: "Human methylarginine sites (ptmcontext rebuild, checked against release v1.4.3)"
+version: "rebuild-0.2.0"
+date-released: "2026-11-01"
+url: "https://shechterlab.github.io/PTM_Pipeline/"
+license: "CC-BY-NC-SA-4.0"
+authors:
+  - name: "Shechter Lab, Albert Einstein College of Medicine"
+preferred-citation:
+  type: article
+  authors:
+    - {family-names: DeAngelo, given-names: JD}
+    - {family-names: Silverstein, given-names: AM}
+    - {family-names: Shechter, given-names: D}
+  title: "Protein arginine methylation rewires molecular interactions"
+  journal: "Cell Chem Biol"
+  volume: 33
+  start: 1404
+  end: 1421
+  year: 2026
+  doi: "10.1016/j.chembiol.2026.09.011"
+references:   # the data sources: cited with every export (DOIs checked on Crossref, 1 Nov 2026)
+  - type: dataset
+    authors:   # as the Zenodo record lists them
+      - {family-names: DeAngelo, given-names: JD}
+      - {family-names: Silverstein, given-names: AM}
+      - {family-names: Shechter, given-names: D}
+    # the concept DOI, which names every version; its records on Zenodo (checked 1 Nov 2026) are v1.0.0
+    # (10.5281/zenodo.22696799) and v1.4.0, "Human methylarginine sites, v1.4.0 (PTM_Pipeline)" (10.5281/zenodo.23674710)
+    title: "Human methylarginine sites (PTM_Pipeline)"
+    publisher: Zenodo
+    year: 2026
+    doi: "10.5281/zenodo.22696798"
+  - type: article
+    authors: [{name: "UniProt Consortium"}]
+    title: "UniProt: the Universal Protein Knowledgebase in 2025"
+    journal: "Nucleic Acids Res"
+    volume: 53
+    start: D609
+    end: D617
+    year: 2025
+    doi: "10.1093/nar/gkae1010"
+  - type: article
+    authors: [{family-names: Piovesan, given-names: D}, {name: "et al."}]
+    title: "MobiDB in 2025: integrating ensemble properties and function annotations for intrinsically disordered proteins"
+    journal: "Nucleic Acids Res"
+    volume: 53
+    start: D495
+    end: D503
+    year: 2025
+    doi: "10.1093/nar/gkae969"
+  - type: article
+    authors: [{family-names: Blum, given-names: M}, {name: "et al."}]
+    title: "InterPro: the protein sequence classification resource in 2025"
+    journal: "Nucleic Acids Res"
+    volume: 53
+    start: D444
+    end: D456
+    year: 2025
+    doi: "10.1093/nar/gkae1082"
+  - type: article
+    authors: [{family-names: Das, given-names: RK}, {family-names: Pappu, given-names: RV}]
+    title: "Conformations of intrinsically disordered proteins are influenced by linear sequence distributions of oppositely charged residues"
+    journal: "Proc Natl Acad Sci USA"
+    volume: 110
+    start: 13392
+    end: 13397
+    year: 2013
+    doi: "10.1073/pnas.1304749110"
+  - type: article
+    authors: [{family-names: Holehouse, given-names: AS}, {family-names: Das, given-names: RK}, {family-names: Ahad, given-names: JN}, {name: "et al."}]
+    title: "CIDER: Resources to analyze sequence-ensemble relationships of intrinsically disordered proteins"
+    journal: "Biophys J"
+    volume: 112
+    start: 16
+    end: 21
+    year: 2017
+    doi: "10.1016/j.bpj.2016.11.3200"
+  - type: article
+    authors: [{family-names: Ragueneau, given-names: E}, {family-names: Gong, given-names: C}, {family-names: Sinquin, given-names: P}, {name: "et al."}]
+    title: "The Reactome Knowledgebase 2026"
+    journal: "Nucleic Acids Res"
+    volume: 54
+    start: D673
+    end: D681
+    year: 2026
+    doi: "10.1093/nar/gkaf1223"
+  - type: article
+    authors: [{family-names: Thul, given-names: PJ}, {family-names: Åkesson, given-names: L}, {family-names: Wiking, given-names: M}, {name: "et al."}]
+    title: "A subcellular map of the human proteome"
+    journal: "Science"
+    volume: 356
+    start: eaal3321
+    year: 2017
+    doi: "10.1126/science.aal3321"
+  - type: article
+    authors: [{family-names: Huang, given-names: Q}, {family-names: Szklarczyk, given-names: D}, {family-names: Oehninger, given-names: J}, {name: "et al."}]
+    title: "PaxDb v6.0: reprocessed, LLM-selected, curated protein abundance data across organisms"
+    journal: "Nucleic Acids Res"
+    volume: 54
+    start: D427
+    end: D439
+    year: 2026
+    doi: "10.1093/nar/gkaf1066"
+  - type: article
+    authors: [{family-names: Thomas, given-names: PD}, {family-names: Ebert, given-names: D}, {family-names: Muruganujan, given-names: A}, {name: "et al."}]
+    title: "PANTHER: Making genome-scale phylogenetics accessible to all"
+    journal: "Protein Sci"
+    volume: 31
+    start: 8
+    end: 22
+    year: 2022
+    doi: "10.1002/pro.4218"
+  - type: article
+    authors: [{family-names: Yu, given-names: G}, {family-names: Wang, given-names: LG}, {family-names: Yan, given-names: GR}, {family-names: He, given-names: QY}]
+    title: "DOSE: an R/Bioconductor package for disease ontology semantic and enrichment analysis"
+    journal: "Bioinformatics"
+    volume: 31
+    start: 608
+    end: 609
+    year: 2015
+    doi: "10.1093/bioinformatics/btu684"
+  - type: article   # Crossref gives no volume or pages (online 2019-11-04); these are the release's (inputs/MANIFEST.tsv)
+    authors: [{family-names: Piñero, given-names: J}, {family-names: Ramírez-Anguita, given-names: JM}, {family-names: Saüch-Pitarch, given-names: J}, {name: "et al."}]
+    title: "The DisGeNET knowledge platform for disease genomics: 2019 update"
+    journal: "Nucleic Acids Res"
+    volume: 48
+    start: D845
+    year: 2020
+    doi: "10.1093/nar/gkz1021"
+  - type: software   # the Bioconductor DOI, checked on DataCite (1 Nov 2026)
+    authors: [{family-names: Carlson, given-names: M}]
+    title: "org.Hs.eg.db: Genome wide annotation for Human, R package version 3.22.0"
+    version: "3.22.0"
+    publisher: Bioconductor
+    doi: "10.18129/B9.bioc.org.Hs.eg.db"
+  - type: article   # Crossref (1 Nov 2026): Nat Methods 20(5):673-676, online 6 Apr 2023; 12 authors
+    authors: [{family-names: Rostam, given-names: N}, {family-names: Ghosh, given-names: S}, {family-names: Chow, given-names: CFW}, {name: "et al."}]
+    title: "CD-CODE: crowdsourcing condensate database and encyclopedia"
+    journal: "Nat Methods"
+    volume: 20
+    start: 673
+    end: 676
+    year: 2023
+    doi: "10.1038/s41592-023-01831-0"
+  # the two PRMT perturbation studies the PRMT inhibitors, knockouts and knockdowns question reads that report no site of
+  # their own; Maron et al. 2021, Hartel et al. 2019, Lu et al. 2024 and Li et al. 2021 are cited as studies reporting
+  # sites (Method > Sources). Both checked on Crossref (2 Nov 2026): CC BY 4.0
+  - type: article   # Crossref: Nat Commun 8:15571, published 24 May 2017; 7 authors
+    authors: [{family-names: Shishkova, given-names: E}, {family-names: Zeng, given-names: H}, {family-names: Liu, given-names: F}, {name: "et al."}]
+    title: "Global mapping of CARM1 substrates defines enzyme specificity and substrate recognition"
+    journal: "Nat Commun"
+    volume: 8
+    start: 15571
+    year: 2017
+    doi: "10.1038/ncomms15571"
+  - type: article   # Crossref: Nat Commun 11:2396, published 14 May 2020; 31 authors
+    authors: [{family-names: Szewczyk, given-names: MM}, {family-names: Ishikawa, given-names: Y}, {family-names: Organ, given-names: S}, {name: "et al."}]
+    title: "Pharmacological inhibition of PRMT7 links arginine monomethylation to the cellular stress response"
+    journal: "Nat Commun"
+    volume: 11
+    start: 2396
+    year: 2020
+    doi: "10.1038/s41467-020-16271-z"
+  # Where in the cell: the maps beyond the Human Protein Atlas (DOIs checked on Crossref, 1 Nov 2026)
+  - type: article
+    authors: [{family-names: Go, given-names: CD}, {family-names: Knight, given-names: JDR}, {family-names: Rajasekharan, given-names: A}, {name: "et al."}]
+    title: "A proximity-dependent biotinylation map of a human cell"
+    journal: "Nature"
+    volume: 595
+    start: 120
+    end: 124
+    year: 2021
+    doi: "10.1038/s41586-021-03592-2"
+  - type: article
+    authors: [{family-names: Hein, given-names: MY}, {family-names: Peng, given-names: D}, {family-names: Todorova, given-names: V}, {name: "et al."}]
+    title: "Global organelle profiling reveals subcellular localization and remodeling at proteome scale"
+    journal: "Cell"
+    volume: 188
+    start: 1137
+    end: 1155
+    year: 2025
+    doi: "10.1016/j.cell.2024.11.028"
+  - type: article
+    authors: [{family-names: Kustatscher, given-names: G}, {family-names: Hégarat, given-names: N}, {family-names: Wills, given-names: KLH}, {name: "et al."}]
+    title: "Proteomics of a fuzzy organelle: interphase chromatin"
+    journal: "EMBO J"
+    volume: 33
+    start: 648
+    end: 664
+    year: 2014
+    doi: "10.1002/embj.201387614"
+  # Cancer cell lines and tumours: DepMap (the dataset's DOI checked on DataCite, 1 Nov 2026), and TCGA: the results
+  # shown here are in whole or part based upon data generated by the TCGA Research Network (https://www.cancer.gov/tcga)
+  - type: dataset
+    authors: [{name: "DepMap, Broad"}]
+    title: "DepMap 24Q4 Public"
+    publisher: Figshare+
+    year: 2024
+    doi: "10.25452/figshare.plus.27993248"
+  - type: article
+    authors: [{family-names: Tsherniak, given-names: A}, {family-names: Vazquez, given-names: F}, {family-names: Montgomery, given-names: PG}, {name: "et al."}]
+    title: "Defining a Cancer Dependency Map"
+    journal: "Cell"
+    volume: 170
+    start: 564
+    end: 576
+    year: 2017
+    doi: "10.1016/j.cell.2017.06.010"
+  - type: article
+    authors: [{family-names: Dempster, given-names: JM}, {family-names: Boyle, given-names: I}, {family-names: Vazquez, given-names: F}, {name: "et al."}]
+    title: "Chronos: a cell population dynamics model of CRISPR experiments that improves inference of gene fitness effects"
+    journal: "Genome Biol"
+    volume: 22
+    start: 343
+    year: 2021
+    doi: "10.1186/s13059-021-02540-7"
+  - type: article
+    authors: [{family-names: Ellrott, given-names: K}, {family-names: Bailey, given-names: MH}, {family-names: Saksena, given-names: G}, {name: "et al."}]
+    title: "Scalable Open Science Approach for Mutation Calling of Tumor Exomes Using Multiple Genomic Pipelines"
+    journal: "Cell Syst"
+    volume: 6
+    start: 271
+    end: 281
+    year: 2018
+    doi: "10.1016/j.cels.2018.03.002"
+  - type: article
+    authors: [{family-names: Hoadley, given-names: KA}, {family-names: Yau, given-names: C}, {family-names: Hinoue, given-names: T}, {name: "et al."}]
+    title: "Cell-of-Origin Patterns Dominate the Molecular Classification of 10,000 Tumors from 33 Types of Cancer"
+    journal: "Cell"
+    volume: 173
+    start: 291
+    end: 304
+    year: 2018
+    doi: "10.1016/j.cell.2018.03.022"

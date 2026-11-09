@@ -1,0 +1,551 @@
+{
+  "schema_version": 1,
+  "inputs": {
+    "uniprot_fasta": {
+      "file": "inputs/reference/uniprot_human_reviewed_2026_03.fasta",
+      "md5": "c75aad9d197cbba00f51063f65a96ac4",
+      "source": "https://rest.uniprot.org/uniprotkb/stream?format=fasta&query=(proteome:UP000005640) AND (reviewed:true)",
+      "version": "UniProt 2026_03 (released 2026-09-02), 20,416 reviewed human entries",
+      "licence": "CC BY 4.0",
+      "role": "input"
+    },
+    "uniprot_release": {
+      "file": "inputs/reference/uniprot_release.json",
+      "md5": "51fa7275f4fabdfde2db981193436140",
+      "source": "the X-UniProt-Release header of the download above",
+      "version": "2026_03",
+      "licence": "CC BY 4.0",
+      "role": "input"
+    },
+    "mobidb_disorder": {
+      "file": "inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv",
+      "md5": "1ffa4ed06adc22754cd4d8765059ecce",
+      "source": "MobiDB human export of 2026-03-30 (prediction-disorder-th_50 regions), lifted to the UniProt 2026_03 sequences",
+      "version": "MobiDB 2026-03-30",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/00_stage_mobidb_disorder.py; this repository checks the bytes, not the staging. A stage step of its own (from the MobiDB API) is planned.",
+      "record": "https://mobidb.org/{acc}"
+    },
+    "interpro_domains": {
+      "file": "inputs/annotation/interpro_108.0_domain_intervals.tsv",
+      "md5": "390a8429f7c5425ae06ef1fc4ffcb268",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/interpro/releases/108.0/protein2ipr.dat.gz (md5 d722648460460c6259bfd3a05ad00fef) and entry.list",
+      "version": "InterPro 108.0",
+      "licence": "CC0 1.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/00_stage_context_sources.py --interpro-source bulk; this repository checks the bytes.",
+      "record": "https://www.ebi.ac.uk/interpro/protein/UniProt/{acc}/"
+    },
+    "interpro_all_entries": {
+      "file": "inputs/annotation/interpro_108.0_all_entry_intervals.tsv",
+      "md5": "e9210822dfcd5217ae9497095cfc4a4f",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/interpro/releases/108.0/protein2ipr.dat.gz and entry.list",
+      "version": "InterPro 108.0",
+      "licence": "CC0 1.0",
+      "role": "input",
+      "note": "Every InterPro 108.0 entry interval of the reviewed human entries (families and superfamilies too). Staged by PTM_Pipeline scripts/00_stage_context_sources.py --interpro-source bulk (inputs/MANIFEST.tsv); this repository checks the bytes. Read for the protein map only.",
+      "record": "https://www.ebi.ac.uk/interpro/protein/UniProt/{acc}/"
+    },
+    "reactome_protein_pathways": {
+      "file": "inputs/layers/reactome_human_protein_pathways.tsv",
+      "md5": "4944dc94c47129190d9ba6231211dbe3",
+      "source": "https://download.reactome.org/97/UniProt2Reactome_All_Levels.txt (reviewed human entries)",
+      "version": "Reactome 97 (2026-06-24)",
+      "licence": "CC0 1.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/48; this repository checks the bytes."
+    },
+    "reactome_pathways": {
+      "file": "inputs/layers/reactome_human_pathways.tsv",
+      "md5": "e9d0af98aae6cd9558e021160ae9aaf6",
+      "source": "https://download.reactome.org/97/ (pathways, hierarchy)",
+      "version": "Reactome 97 (2026-06-24)",
+      "licence": "CC0 1.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/48; this repository checks the bytes."
+    },
+    "hpa_locations": {
+      "file": "inputs/layers/hpa_subcellular_locations.tsv",
+      "md5": "1c0975ad0c3aa3bf9145038181242dae",
+      "source": "https://www.proteinatlas.org/download/tsv/subcellular_location.tsv.zip",
+      "version": "Human Protein Atlas 25.1 (downloaded 2026-10-19)",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/42; this repository checks the bytes."
+    },
+    "paxdb_abundance": {
+      "file": "inputs/layers/paxdb_human_integrated_abundance.tsv",
+      "md5": "2a6f3303c4fa644d59ae79fab3a046ee",
+      "source": "https://pax-db.org/downloads/6.1/datasets/9606.zip (9606-WHOLE_ORGANISM-integrated.txt)",
+      "version": "PaxDb 6.1 (whole-organism integrated)",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/47; this repository checks the bytes."
+    },
+    "panther_protein_classes": {
+      "file": "inputs/annotation/panther_19.0_protein_classes.tsv",
+      "md5": "dd0f2ba0f30df033412c7a4c6bca96e1",
+      "source": "https://data.pantherdb.org/ftp/sequence_classifications/19.0/PANTHER_Sequence_Classification_files/PTHR19.0_human",
+      "version": "PANTHER 19.0 (protein class ontology of 17.0), downloaded 2026-10-20",
+      "licence": "CC BY 4.0 (PANTHER data and data products, https://www.pantherdb.org/tou.jsp)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/00_stage_panther_classes.py from PANTHER's downloads; this repository checks the bytes."
+    },
+    "panther_class_ontology": {
+      "file": "inputs/annotation/panther_19.0_protein_class_ontology.tsv",
+      "md5": "d2b7c752a4772716e8ba41f6ccc0468b",
+      "source": "https://data.pantherdb.org/PANTHER19.0/ontology/Protein_Class_19.0 and Protein_class_relationship",
+      "version": "PANTHER 19.0 (protein class ontology of 17.0), downloaded 2026-10-20",
+      "licence": "CC BY 4.0 (PANTHER data and data products, https://www.pantherdb.org/tou.jsp)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline scripts/00_stage_panther_classes.py from PANTHER's downloads; this repository checks the bytes."
+    },
+    "uniprot_entries": {
+      "file": "inputs/reference/uniprot_human_reviewed_2026_03_entries.tsv",
+      "md5": "07057d3bda4051dd23f9f90b0a425916",
+      "source": "https://rest.uniprot.org/uniprotkb/stream?format=tsv&query=(proteome:UP000005640) AND (reviewed:true)&fields=accession,id,gene_primary,protein_name,length",
+      "version": "UniProt 2026_03, downloaded 2026-10-20: the 20,416 entries of the sequences above",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv: same query as the FASTA, same accession set); this repository checks the bytes. Read for each entry's primary gene name (the first, where UniProt gives several)."
+    },
+    "orghs_symbol_entrez": {
+      "file": "inputs/disease/orghsegdb_3.22.0_symbol_entrez.tsv",
+      "md5": "23729b6f0e4132a6d2833704265c99d1",
+      "source": "Bioconductor package org.Hs.eg.db 3.22.0 (bioconda bioconductor-org.hs.eg.db 3.22.0): AnnotationDbi select, keytype SYMBOL, all keys; data from NCBI Gene",
+      "version": "org.Hs.eg.db 3.22.0",
+      "licence": "Artistic-2.0 (package); NCBI Gene data are public domain",
+      "role": "input",
+      "note": "Gene symbol to Entrez gene map (193,613 rows; a symbol may map to several genes). Exported by PTM_Pipeline scripts/00_export_disease_tables.R; this repository checks the bytes. Citation: Carlson M, org.Hs.eg.db: Genome wide annotation for Human, R package 3.22.0."
+    },
+    "disgenet_term_genes": {
+      "file": "inputs/disease/dose_4.4.0_disgenet_term_genes.tsv",
+      "md5": "4e01948e570a275c0d906837a71a6f7b",
+      "source": "Bioconductor package DOSE 4.4.0 (bioconda bioconductor-dose 4.4.0): its DisGeNET data DGN_PATHID2EXTID with DGN_PATHID2NAME",
+      "version": "DOSE 4.4.0 (DisGeNET as DOSE distributes it)",
+      "licence": "DisGeNET data: CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "DisGeNET disease terms and their Entrez genes, one row per term and gene (30,170 terms, 1,134,942 rows). Exported by PTM_Pipeline scripts/00_export_disease_tables.R, which checks that DGN_EXTID2PATHID is the exact inverse of DGN_PATHID2EXTID; this repository checks the bytes. Citations: Yu G et al., Bioinformatics 31:608 (2015), doi:10.1093/bioinformatics/btu684 (DOSE); Pinero J et al., Nucleic Acids Res 48:D845 (2020), doi:10.1093/nar/gkz1021 (DisGeNET)."
+    },
+    "hdo_term_genes": {
+      "file": "inputs/disease/hdo_2026-09-30_term_genes.tsv",
+      "md5": "409cfbc5383cc2a0bb244722cd113cbb",
+      "source": "Derived by PTM_Pipeline scripts/00_export_disease_ontology.R from the HDO.sqlite that DOSE 4.4.0 / GOSemSim 2.36.0 download from YuLab (https://yulab-smu.top/DOSE; database MD5 866c455b010b32052f620345e2295aca), itself built from https://raw.githubusercontent.com/DiseaseOntology/HumanDiseaseOntology/main/src/ontology/HumanDO.obo",
+      "version": "Human Disease Ontology 2026-09-30, the gene sets of DOSE 4.4.0 enrichDO (exported 2026-10-21)",
+      "licence": "Disease Ontology: CC0 1.0 (https://disease-ontology.org/about); gene annotations as DOSE distributes them (DOSE, Artistic-2.0)",
+      "role": "input",
+      "note": "Each Disease Ontology term with the Entrez genes of it and of every term under it: the gene sets DOSE enrichDO tests (7,137 terms, 142,427 rows). PTM_Pipeline checked that enricher on these sets gives the same terms, ratios and p values as DOSE enrichDO (v1.1.0); this repository checks the bytes. Citations: Baron JA et al., Nucleic Acids Res 52:D1305 (2024), doi:10.1093/nar/gkad1051 (Human Disease Ontology); Yu G et al., Bioinformatics 31:608 (2015), doi:10.1093/bioinformatics/btu684 (DOSE)."
+    },
+    "hdo_terms": {
+      "file": "inputs/disease/hdo_2026-09-30_terms.tsv",
+      "md5": "043a183adf748726340fe825a8514b5e",
+      "source": "Derived by PTM_Pipeline scripts/00_export_disease_ontology.R from the HDO.sqlite that DOSE 4.4.0 / GOSemSim 2.36.0 download from YuLab (https://yulab-smu.top/DOSE; database MD5 866c455b010b32052f620345e2295aca), itself built from https://raw.githubusercontent.com/DiseaseOntology/HumanDiseaseOntology/main/src/ontology/HumanDO.obo",
+      "version": "Human Disease Ontology 2026-09-30 (exported 2026-10-21)",
+      "licence": "Disease Ontology: CC0 1.0 (https://disease-ontology.org/about); gene annotations as DOSE distributes them (DOSE, Artistic-2.0)",
+      "role": "input",
+      "note": "Every Disease Ontology term with its name and parents (is_a; 12,335 terms): the names of the tested terms and the ontology the website draws. Citations: Baron JA et al., Nucleic Acids Res 52:D1305 (2024), doi:10.1093/nar/gkad1051 (Human Disease Ontology); Yu G et al., Bioinformatics 31:608 (2015), doi:10.1093/bioinformatics/btu684 (DOSE)."
+    },
+    "uniprot_accession_history": {
+      "file": "inputs/reference/uniprot_accession_history_2026_03.tsv",
+      "md5": "c285be55ba2541822f068f8ec891dfb6",
+      "source": "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/docs/sec_ac.txt; UniProt REST field gene_synonym",
+      "version": "UniProt 2026_03, built 2026-10-20 against the FASTA above",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Secondary accessions (kind secondary: 70,627) and gene-name synonyms (kind synonym) of the entries of the FASTA above, one row per (kind, key, accession). Staged by PTM_Pipeline scripts/00_stage_context_sources.py stage_accession_history (inputs/MANIFEST.tsv); this repository checks the bytes. Read for its secondary accessions: a set member named by one is brought to its current entry when it names exactly one."
+    },
+    "cdcode_membership": {
+      "file": "inputs/annotation/cdcode_protein_membership_v2.2.tsv",
+      "md5": "7e56dc6d3595c23537bc3ed373dbb1dd",
+      "source": "CD-CODE export protein2cdcode_v2.2.tsv (https://cd-code.org/)",
+      "version": "CD-CODE export v2.2 (version from the file name only)",
+      "licence": "CC BY-NC 4.0 (\"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License\", the footer of https://cd-code.org/, checked 2026-11-01)",
+      "role": "input",
+      "note": "CD-CODE condensate membership, one row per (UniProt accession, condensate id, condensate name), every organism (14,622 rows). The original name is protein2cdcode_v2.2.tsv (inputs/MANIFEST.tsv); this repository checks the bytes. Citation: Rostam N et al., Nat Methods 20:673-676 (2023), doi:10.1038/s41592-023-01831-0."
+    },
+    "cdcode_proteins": {
+      "file": "inputs/annotation/cdcode_proteins_2026-03-18.csv",
+      "md5": "67a62603abb55cc1352af5a28c3976a5",
+      "source": "CD-CODE export proteins_202603181653.csv (https://cd-code.org/)",
+      "version": "CD-CODE export of 2026-03-18 16:53 (date from the file name only)",
+      "licence": "CC BY-NC 4.0 (\"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License\", the footer of https://cd-code.org/, checked 2026-11-01)",
+      "role": "input",
+      "columns": {
+        "sep": ","
+      },
+      "note": "CD-CODE's protein table (11,133 proteins: UniProt accession, organism, ...), comma-separated. Read for each member protein's organism. The original name is proteins_202603181653.csv (inputs/MANIFEST.tsv); this repository checks the bytes. Citation: Rostam N et al., Nat Methods 20:673-676 (2023), doi:10.1038/s41592-023-01831-0."
+    },
+    "cdcode_condensates": {
+      "file": "inputs/annotation/cdcode_condensates_2026-03-18.csv",
+      "md5": "357558769a08b0798aed86064b5aefb9",
+      "source": "CD-CODE export condensates_202603181647.csv (https://cd-code.org/)",
+      "version": "CD-CODE export of 2026-03-18 16:47 (date from the file name only)",
+      "licence": "CC BY-NC 4.0 (\"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License\", the footer of https://cd-code.org/, checked 2026-11-01)",
+      "role": "input",
+      "columns": {
+        "sep": ","
+      },
+      "note": "CD-CODE's condensate table (829 condensates: uid, name, organism, type: biomolecular, synthetic or infectious), comma-separated. Read for each condensate's organism, type and name. The original name is condensates_202603181647.csv (inputs/MANIFEST.tsv); this repository checks the bytes. Citation: Rostam N et al., Nat Methods 20:673-676 (2023), doi:10.1038/s41592-023-01831-0."
+    },
+    "cdcode_members_2_3": {
+      "file": "inputs/interactions/cdcode_2.3_condensate_members_2026-10-16.tsv",
+      "md5": "b4a8fcc59ba881d8a239520a6b037fc7",
+      "source": "https://cd-code.org/api/condensates/<uid>/proteins",
+      "version": "CD-CODE 2.3 API, answers saved 2026-10-16",
+      "licence": "CC BY-NC 4.0 (\"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License\", the footer of https://cd-code.org/, checked 2026-11-01)",
+      "role": "input",
+      "note": "CD-CODE 2.3 members of the 147 condensates PTM_Pipeline uses (6,992 rows): each membership's CD-CODE confidence score (0-5), roles, kinds of experimental evidence and PubMed IDs. Staged by PTM_Pipeline scripts/37a_stage_interactions.py stage_cdcode (inputs/MANIFEST.tsv); this repository checks the bytes. Read only for the website's membership-confidence filter; no test reads it. Citation: Rostam N et al., Nat Methods 20:673-676 (2023), doi:10.1038/s41592-023-01831-0."
+    },
+    "hcm_cell_map": {
+      "file": "inputs/layers/cell_map_hcm_go2021.tsv",
+      "md5": "91ccc0b6416772662e52f70d53c89bba",
+      "source": "https://humancellmap.org/resources/downloads/preys-v1.txt",
+      "version": "Human Cell Map v1 preys (downloaded 2026-10-27)",
+      "licence": "CC BY 4.0 (humancellmap.org)",
+      "role": "input",
+      "note": "The NMF compartment and SAFE domain of each prey the Human Cell Map localizes (HEK293 BioID), on reviewed canonical entries (4,369 rows). Staged by PTM_Pipeline scripts/52_stage_cell_maps.py (its docstring gives every rule; the raw download's MD5 in inputs/layers/raw_files.tsv); this repository checks the bytes. Citation: Go et al., Nature 595:120 (2021), doi:10.1038/s41586-021-03592-2."
+    },
+    "organelle_ip": {
+      "file": "inputs/layers/cell_map_organelle_ip_hein2025.tsv",
+      "md5": "34f4a29d8e30955b4a9f7cbd0697a682",
+      "source": "https://raw.githubusercontent.com/czbiohub-sf/Organelle_IP_analyses_and_figures/65f22ac57deeab5e0d5b8959049e88e36c3ad876/data/labels/cluster_annotation_Dec6.csv",
+      "version": "Organelle IP analysis repository, commit 65f22ac (downloaded 2026-10-27)",
+      "licence": "BSD-3-Clause (the analysis repository)",
+      "role": "input",
+      "note": "The cluster annotation of each protein group in organelle IP (HEK293T), on reviewed canonical entries (8,044 rows). Staged by PTM_Pipeline scripts/52_stage_cell_maps.py (its docstring gives every rule; the raw download's MD5 in inputs/layers/raw_files.tsv); this repository checks the bytes. Citation: Hein et al., Cell 188:1137 (2025), doi:10.1016/j.cell.2024.11.028."
+    },
+    "chromatin_probability": {
+      "file": "inputs/layers/cell_map_chromatin_kustatscher2014.tsv",
+      "md5": "5b92b8b2d51acc011bc48f09fc6d8494",
+      "source": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC3983682/supplementaryFiles (Table EV1, embj0033-0648-sd8.xlsx)",
+      "version": "Kustatscher et al. 2014, Table EV1 (downloaded 2026-10-27)",
+      "licence": "CC BY (the article's license)",
+      "role": "input",
+      "note": "The interphase chromatin probability of each protein (chromatin enrichment for proteomics), on reviewed canonical entries (7,394 rows). Staged by PTM_Pipeline scripts/52_stage_cell_maps.py (its docstring gives every rule; the raw download's MD5 in inputs/layers/raw_files.tsv); this repository checks the bytes. Citation: Kustatscher et al., EMBO J 33:648 (2014), doi:10.1002/embj.201387614."
+    },
+    "depmap_gene_effect": {
+      "file": "inputs/layers/depmap_24q4_gene_effect_summary.tsv",
+      "md5": "7bc0f60d7ed0c141b0ce7157a916051b",
+      "source": "https://doi.org/10.25452/figshare.plus.27993248 (Figshare+ files CRISPRGeneEffect.csv, CRISPRGeneDependency.csv, CRISPRInferredCommonEssentials.csv, AchillesCommonEssentialControls.csv, Model.csv, OmicsSomaticMutations.csv)",
+      "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10; downloaded 2026-10-25)",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Per reviewed entry whose gene DepMap screened (primary gene name to Entrez by org.Hs.eg.db; 17,876 entries): the CRISPR gene effect (Chronos) across the screened lines, the lines with a dependency probability of at least 0.5, and whether DepMap calls the gene commonly essential. Staged by PTM_Pipeline scripts/44_stage_depmap.py; this repository checks the bytes. Citations: DepMap, Broad (2024), DepMap Public 24Q4, doi:10.25452/figshare.plus.27993248; Tsherniak et al., Cell 170:564 (2017); Dempster et al., Genome Biol 22:343 (2021)."
+    },
+    "uniprot_disordered_regions": {
+      "file": "inputs/interactions/uniprot_human_regions_2026-10-16.tsv",
+      "md5": "97667601b93c986c7efb83c1ff6c650e",
+      "source": "https://rest.uniprot.org/uniprotkb/stream (fields ft_region, ft_domain, ft_repeat, ft_zn_fing)",
+      "version": "UniProt release 2026_03, downloaded 2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. UniProt Region features noted \"Disordered\": the disordered regions the interaction tests read. Citation: UniProt Consortium, Nucleic Acids Res 53:D609 (2025).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "label": "note",
+        "include": [
+          {
+            "column": "feature",
+            "equals": "disordered_region"
+          }
+        ]
+      }
+    },
+    "uniprot_domain_regions": {
+      "file": "inputs/interactions/uniprot_human_regions_2026-10-16.tsv",
+      "md5": "97667601b93c986c7efb83c1ff6c650e",
+      "source": "https://rest.uniprot.org/uniprotkb/stream (fields ft_region, ft_domain, ft_repeat, ft_zn_fing)",
+      "version": "UniProt release 2026_03, downloaded 2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. UniProt domains, repeats and zinc fingers (the same file, its other features). Citation: UniProt Consortium, Nucleic Acids Res 53:D609 (2025).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "label": "note",
+        "subtype": "feature",
+        "exclude": [
+          {
+            "column": "feature",
+            "equals": "disordered_region"
+          }
+        ]
+      }
+    },
+    "pdbe_kb_interfaces_2026_10_16": {
+      "file": "inputs/interactions/pdbe_kb_interface_residues_2026-10-16.tsv",
+      "md5": "f105ffa11c507c7aeada79fb2637002d",
+      "source": "https://www.ebi.ac.uk/pdbe/graph-api/uniprot/interface_residues/{acc}",
+      "version": "PDBe-KB graph API, answers saved 2026-10-16 to 2026-10-19",
+      "licence": "EMBL-EBI terms of use (free use with attribution)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per stretch of residues in contact with a partner (a UniProt accession, RNA, DNA or another kind) in a PDB entry; the class is the partner. Citation: PDBe-KB consortium, Nucleic Acids Res 50:D534 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "class": "partner",
+        "label": "partner_name",
+        "ref": "pdb_entries"
+      }
+    },
+    "pdbe_kb_interfaces_2026_10_20": {
+      "file": "inputs/interactions/pdbe_kb_interface_residues_2026-10-20.tsv",
+      "md5": "cf1fd3091f35e94eb6a94c45b432eeb0",
+      "source": "https://www.ebi.ac.uk/pdbe/graph-api/uniprot/interface_residues/{acc}",
+      "version": "PDBe-KB graph API, answers saved 2026-10-20",
+      "licence": "EMBL-EBI terms of use (free use with attribution)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per stretch of residues in contact with a partner (a UniProt accession, RNA, DNA or another kind) in a PDB entry; the class is the partner. Citation: PDBe-KB consortium, Nucleic Acids Res 50:D534 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "class": "partner",
+        "label": "partner_name",
+        "ref": "pdb_entries"
+      }
+    },
+    "pdbe_kb_interfaces_2026_10_21": {
+      "file": "inputs/interactions/pdbe_kb_interface_residues_2026-10-21.tsv",
+      "md5": "e90870502680a5654d1d76da45409c37",
+      "source": "https://www.ebi.ac.uk/pdbe/graph-api/uniprot/interface_residues/{acc}",
+      "version": "PDBe-KB graph API, answers saved 2026-10-21",
+      "licence": "EMBL-EBI terms of use (free use with attribution)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per stretch of residues in contact with a partner (a UniProt accession, RNA, DNA or another kind) in a PDB entry; the class is the partner. Citation: PDBe-KB consortium, Nucleic Acids Res 50:D534 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "class": "partner",
+        "label": "partner_name",
+        "ref": "pdb_entries"
+      }
+    },
+    "pdbe_kb_interfaces_2026_10_21_2": {
+      "file": "inputs/interactions/pdbe_kb_interface_residues_2026-10-21_2.tsv",
+      "md5": "1626404200f820782946c25f0f0f8f28",
+      "source": "https://www.ebi.ac.uk/pdbe/graph-api/uniprot/interface_residues/{acc}",
+      "version": "PDBe-KB graph API, answers saved 2026-10-21",
+      "licence": "EMBL-EBI terms of use (free use with attribution)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per stretch of residues in contact with a partner (a UniProt accession, RNA, DNA or another kind) in a PDB entry; the class is the partner. Citation: PDBe-KB consortium, Nucleic Acids Res 50:D534 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "class": "partner",
+        "label": "partner_name",
+        "ref": "pdb_entries"
+      }
+    },
+    "pdbe_kb_interfaces_2026_10_21_3": {
+      "file": "inputs/interactions/pdbe_kb_interface_residues_2026-10-21_3.tsv",
+      "md5": "ae74176fb85a34c2680e2264c1b4992a",
+      "source": "https://www.ebi.ac.uk/pdbe/graph-api/uniprot/interface_residues/{acc}",
+      "version": "PDBe-KB graph API, answers saved 2026-10-21",
+      "licence": "EMBL-EBI terms of use (free use with attribution)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per stretch of residues in contact with a partner (a UniProt accession, RNA, DNA or another kind) in a PDB entry; the class is the partner. Citation: PDBe-KB consortium, Nucleic Acids Res 50:D534 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "class": "partner",
+        "label": "partner_name",
+        "ref": "pdb_entries"
+      }
+    },
+    "pdbe_kb_interfaces_2026_10_25": {
+      "file": "inputs/interactions/pdbe_kb_interface_residues_2026-10-25.tsv",
+      "md5": "a29673bea952180b96b6218e1d94a7d5",
+      "source": "https://www.ebi.ac.uk/pdbe/graph-api/uniprot/interface_residues/{acc}",
+      "version": "PDBe-KB graph API, answers saved 2026-10-25",
+      "licence": "EMBL-EBI terms of use (free use with attribution)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per stretch of residues in contact with a partner (a UniProt accession, RNA, DNA or another kind) in a PDB entry; the class is the partner. Citation: PDBe-KB consortium, Nucleic Acids Res 50:D534 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "class": "partner",
+        "label": "partner_name",
+        "ref": "pdb_entries"
+      }
+    },
+    "sifts_observed_ranges": {
+      "file": "inputs/interactions/sifts_observed_ranges_human_2026-10-16.tsv",
+      "md5": "f3650bb31a6efc5a6bcba84c7be16a9c",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/uniprot_segments_observed.tsv.gz",
+      "version": "SIFTS, downloaded 2026-10-16",
+      "licence": "EMBL-EBI terms of use",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The residues a PDB chain models: the measured background of the PDB interface tests. Citation: Dana et al., Nucleic Acids Res 47:D482 (2019).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end"
+      }
+    },
+    "protvar_interfaces": {
+      "file": "inputs/interactions/protvar_predicted_interfaces_2024.05.28_pdockq0.23.tsv",
+      "md5": "1706c5dad8ea3a7350a925a57cd2337a",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/ProtVar/predictions/interfaces/2024.05.28_interface_summary_5A.tsv.gz",
+      "version": "2024.05.28_interface_summary_5A, downloaded 2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Each side of a heterodimer of two reviewed proteins: its interface residues (a side whose residue letters disagree with the sequence is left out); the class is the pair model's pDockQ. Citation: Stephenson et al., Nucleic Acids Res 52:W140 (2024); Burke et al., Nat Struct Mol Biol 30:216 (2023).",
+      "columns": [
+        {
+          "accession": "uniprot_id1",
+          "residues": "ifresid1",
+          "class": "pdockq",
+          "label": "interaction_id",
+          "include": [
+            {
+              "column": "uniprot_id1",
+              "on_snapshot": true
+            },
+            {
+              "column": "uniprot_id2",
+              "on_snapshot": true
+            }
+          ],
+          "exclude": [
+            {
+              "column": "uniprot_id1",
+              "same_as": "uniprot_id2"
+            }
+          ]
+        },
+        {
+          "accession": "uniprot_id2",
+          "residues": "ifresid2",
+          "class": "pdockq",
+          "label": "interaction_id",
+          "include": [
+            {
+              "column": "uniprot_id1",
+              "on_snapshot": true
+            },
+            {
+              "column": "uniprot_id2",
+              "on_snapshot": true
+            }
+          ],
+          "exclude": [
+            {
+              "column": "uniprot_id1",
+              "same_as": "uniprot_id2"
+            }
+          ]
+        }
+      ]
+    },
+    "intact_mutations": {
+      "file": "inputs/interactions/intact_mutations_human_2026-10-19.tsv",
+      "md5": "f41f6198b43b723ae0271447b0cdbb84",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/features/mutations.tsv",
+      "version": "IntAct release finished Mon 12 Jan 21:28:56 GMT 2026; downloaded 2026-10-19",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Single-residue mutations with a stated effect on the interaction (the feature types of the IntAct mutation-effect branch), on ranges whose sequence check passes; the class is the feature type (MI:2226: no effect). Citation: del Toro et al., Nucleic Acids Res 50:D648 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "ranges": "ranges",
+        "class": "feature_type_mi",
+        "label": "feature_type",
+        "max_length": 1,
+        "include": [
+          {
+            "column": "sequence_check",
+            "in": [
+              "matches",
+              "no curated sequence"
+            ]
+          },
+          {
+            "column": "feature_type_mi",
+            "in": [
+              "MI:2226",
+              "MI:0573",
+              "MI:1128",
+              "MI:1129",
+              "MI:0119",
+              "MI:1133",
+              "MI:1130",
+              "MI:0382",
+              "MI:1132",
+              "MI:1131",
+              "MI:2227"
+            ]
+          }
+        ]
+      }
+    },
+    "intact_binding_regions": {
+      "file": "inputs/interactions/intact_binding_regions_human_2026-10-19.tsv",
+      "md5": "633149a91e85d6c005deb134d066071a",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/features/bindings_regions.tsv",
+      "version": "IntAct release finished Mon 12 Jan 21:28:56 GMT 2026; downloaded 2026-10-19",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Binding regions of at most 20 residues (peptide-level mappings), on ranges whose sequence check passes. Citation: del Toro et al., Nucleic Acids Res 50:D648 (2022).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "ranges": "ranges",
+        "class": "feature_type_mi",
+        "label": "feature_type",
+        "max_length": 20,
+        "include": [
+          {
+            "column": "sequence_check",
+            "in": [
+              "matches",
+              "no curated sequence"
+            ]
+          }
+        ]
+      }
+    },
+    "methyllysine_sites_v1_5_0": {
+      "file": "releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv",
+      "md5": "2403b652d71ad1d5996468065810383a",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/5b1c3bd/releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv (commit 5b1c3bd, release v1.5.0): UniProt 2026_04 N6-methyllysine, N6,N6-dimethyllysine and N6,N6,N6-trimethyllysine records, and iPTMnet 6.2 lysine methylation records",
+      "version": "v1.5.0 (2026-11-09): 756 rows on 412 lysines of 190 proteins; evidence_class experimental 360, by-similarity 190, unspecified 206 rows",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet 6.2, CC BY-NC-SA 4.0); UniProt data CC BY 4.0",
+      "role": "input",
+      "note": "No reference release: the statistics of this site are new. UniProt 2026_04 against the 2026_03 reference sequences: 2 residue mismatches dropped by the release; iPTMnet gives no methylation degree (state me)."
+    },
+    "string_physical_v12_5": {
+      "file": "inputs/interactions/string_v12.5_human_physical_links_score400.tsv",
+      "md5": "ef4f1cb4b52c9e9a74c75757950a2ee9",
+      "source": "https://stringdb-downloads.org/download/protein.physical.links.v12.5/9606.protein.physical.links.v12.5.txt.gz",
+      "version": "v12.5, downloaded 2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Each pair once (protein_a < protein_b), physical links of combined score 400 or more between reviewed entries; the site reads it both ways, at score 700 or more."
+    },
+    "complex_portal_complexes": {
+      "file": "inputs/interactions/complex_portal_human_complexes_2026-10-16.tsv",
+      "md5": "c0e9e392f0ba6d15a746af345ebe06ca",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/9606.tsv and 9606_predicted.tsv (Complex Portal, curated; hu.MAP 3.0, predicted)",
+      "version": "current release, downloaded 2026-10-16",
+      "licence": "CC0",
+      "role": "input"
+    },
+    "alphafold_heterodimers_2026_10_16": {
+      "file": "inputs/interactions/alphafold_db_human_heterodimers_2026-10-16.tsv",
+      "md5": "4bff8c150dc7de319480efcaa6efa6c9",
+      "source": "https://alphafold.ebi.ac.uk/api/complex/{acc}",
+      "version": "AlphaFold DB API, answers saved 2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input"
+    }
+  }
+}

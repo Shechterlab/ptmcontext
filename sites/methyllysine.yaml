@@ -1,0 +1,693 @@
+# Site: the human methyllysine sites, from UniProt and iPTMnet (release v1.5.0 of PTM_Pipeline). The same code and the same
+# generic inputs as the methylarginine site; its own marks, questions, focus, words and colors. There is no earlier
+# release to match, so every statistic is new (no reference). Contract: ptmcontext/schemas/site.schema.json.
+schema_version: 1
+id: methyllysine
+title: Human methyllysine sites
+status: working
+mark: methyllysine
+manifest: sites/methyllysine.inputs.json
+
+snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}   # quoted: unquoted, YAML reads 2026_03 as 202603
+inputs:                # role the layers read: manifest input that fills it
+  disorder: mobidb_disorder
+  domains: interpro_domains
+  reactome: reactome_protein_pathways
+  reactome_names: reactome_pathways
+  hpa: hpa_locations
+  abundance: paxdb_abundance
+  panther_classes: panther_protein_classes
+  panther_ontology: panther_class_ontology
+  uniprot_entries: uniprot_entries
+  gene_symbols: orghs_symbol_entrez
+  disgenet: disgenet_term_genes
+  hdo_term_genes: hdo_term_genes
+  hdo_terms: hdo_terms
+  accession_history: uniprot_accession_history
+  cdcode_membership: cdcode_membership
+  cdcode_proteins: cdcode_proteins
+  cdcode_condensates: cdcode_condensates
+  cdcode_members: cdcode_members_2_3
+  hcm: hcm_cell_map
+  organelle_ip: organelle_ip
+  chromatin: chromatin_probability
+  depmap_genes: depmap_gene_effect
+  interpro_entries: interpro_all_entries         # the writers', erasers' and readers' protein sets, by InterPro entry
+  # interactions (the methylarginine site's roles, less the RNA and DNA evidence and its release tables)
+  uniprot_disorder: uniprot_disordered_regions
+  uniprot_domains: uniprot_domain_regions
+  pdb_interfaces: {all_of: [pdbe_kb_interfaces_2026_10_16, pdbe_kb_interfaces_2026_10_20, pdbe_kb_interfaces_2026_10_21,
+                            pdbe_kb_interfaces_2026_10_21_2, pdbe_kb_interfaces_2026_10_21_3, pdbe_kb_interfaces_2026_10_25]}
+  pdb_observed: sifts_observed_ranges
+  predicted_interfaces: protvar_interfaces
+  intact_mutations: intact_mutations
+  intact_binding_regions: intact_binding_regions
+  complexes: complex_portal_complexes
+
+marks:
+  # The release's own table: a row per lysine and methylation state. The main view counts the lysines with an
+  # experimental or unspecified record; the lysines UniProt reports only by similarity (ECO:0000250 and other records
+  # without an experimental code) are the lower-confidence variant, as the methylarginine site's switch.
+  input: methyllysine_sites_v1_5_0
+  accession: canonical_UniProtAC
+  position: position
+  exclude:
+    - {column: evidence_class, equals: by-similarity}     # in the main view their lysines count as other lysines
+  residue_mismatch: error
+  attributes:          # what the website keeps for each site: to color, filter and explain it (no test reads these)
+    state:
+      column: state
+      join_rows: true                       # a lysine has a row per state: all of them
+      label: Methylation state
+      kind: list
+      separator: "; "
+      values: {me1: Monomethyl (Kme1), me2: Dimethyl (Kme2), me3: Trimethyl (Kme3), me: "Methylated, degree not stated"}
+      filter: true
+      help: Degrees of methylation reported for the lysine. iPTMnet gives no degree (methylated), so its records do not meet UniProt's Kme1, Kme2 and Kme3
+    evidence_class:
+      column: evidence_class
+      join_rows: true
+      provenance: true                       # how the site was found, not what it is
+      label: Evidence
+      kind: list
+      separator: "; "
+      values: {experimental: Experimental, unspecified: "Unspecified (iPTMnet's copy of UniProt)", by-similarity: By similarity}
+      filter: true
+      help: "The best class of the records at the site. Experimental: UniProt ECO:0000269 or ECO:0007744, or an iPTMnet record curated from an experiment. Unspecified: only iPTMnet's copy of UniProt, which has no ECO code. By similarity: UniProt records without an experimental code, mainly ECO:0000250"
+    sources:
+      column: sources
+      join_rows: true
+      provenance: true
+      label: Databases
+      kind: list
+      separator: "; "
+      records:             # a database's own record of the protein
+        UniProt: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"
+        iPTMnet: "https://research.bioinformatics.udel.edu/iptmnet/entry/{acc}/"
+      values: {UniProt: UniProt, iPTMnet: iPTMnet}
+      filter: true
+      help: The databases that report the lysine
+    iptmnet_sources:
+      column: iptmnet_sources
+      join_rows: true
+      provenance: true
+      label: iPTMnet's upstream databases
+      kind: list
+      separator: "; "
+      filter: true
+      help: The databases iPTMnet collected the record from (unip is its copy of UniProt)
+    pmids:
+      column: pmids
+      join_rows: true
+      label: PubMed IDs
+      kind: list
+      separator: "; "
+      link: {column: pmids, url: "https://pubmed.ncbi.nlm.nih.gov/{}/"}
+      help: The papers the records cite
+analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel); all new: no release to match
+  # Interactions: each a question of yes-or-no tests, each against the lysines its evidence could have reached: the
+  # residues a structure observed or a model covers. Every candidate counts in the pooled test, and the within-protein
+  # row reports those counts (counting: every_candidate).
+  - id: pdb_interface
+    new: true
+    title: PDB interfaces
+    question: "Are methyllysines at interfaces in experimental structures?"
+    sub: "Methyllysines against the other lysines of the same proteins observed in a PDB structure, at a PDBe-KB interface with RNA, DNA, a protein or any partner; all, ordered (outside UniProt disordered regions) and in domains"
+    section: Protein interactions
+    counting: every_candidate
+    background: other lysines of the same proteins observed in a PDB structure
+    proteins_with: pdb_interfaces                       # proteins PDBe-KB lists with an interface
+    covered_by: pdb_observed                            # residues a PDB chain models (SIFTS)
+    tests:
+      - {category: protein, inside: {role: pdb_interfaces, where: [{column: class, matches: "([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2})(-[0-9]+)?"}]}, label: Protein interface}
+      - {category: any, inside: {role: pdb_interfaces, where: [{column: class, matches: "RNA|DNA|([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2})(-[0-9]+)?"}]}, label: Any interface}
+    strata:
+      - {stratum: all}
+      - {stratum: ordered, outside_of: uniprot_disorder}
+      - {stratum: domain, covered_by: uniprot_domains}
+  - id: predicted_interface
+    new: true
+    title: Predicted interfaces
+    question: "Are methyllysines at predicted protein interfaces?"
+    sub: "Methyllysines against the other lysines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt)"
+    section: Protein interactions
+    counting: every_candidate
+    background: other lysines of the same proteins
+    tests:
+      - {category: pdockq_0.23, inside: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}]},
+         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}], on_candidates: true}, label: "pDockQ ≥ 0.23"}
+      - {category: pdockq_0.5, inside: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}]},
+         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}], on_candidates: true}, label: "pDockQ ≥ 0.5"}
+    strata:
+      - {stratum: all}
+      - {stratum: ordered, outside_of: uniprot_disorder}
+      - {stratum: disordered, covered_by: uniprot_disorder}
+  - id: intact
+    new: true
+    title: IntAct mutations and binding regions
+    question: "Are methyllysines where IntAct maps interactions?"
+    sub: "Methyllysines whose mutation changes an interaction, against the other mutated lysines; and inside an IntAct binding region of at most 20 residues, against the other lysines of the proteins with one (all, and in UniProt disordered regions)"
+    section: Protein interactions
+    counting: every_candidate
+    tests:
+      - {category: mutation_changes_interaction, inside: {role: intact_mutations, where: [{column: class, matches: "(?!MI:2226$).*"}]},
+         covered_by: intact_mutations, background: other lysines of the same proteins with an IntAct mutation, label: Mutation changes an interaction}
+      - {category: binding_region, inside: intact_binding_regions, proteins_with: intact_binding_regions,
+         background: other lysines of the same proteins with an IntAct binding region, label: IntAct binding region}
+      - {category: binding_region_disordered, inside: intact_binding_regions, proteins_with: intact_binding_regions, covered_by: uniprot_disorder,
+         background: other lysines of the same proteins with an IntAct binding region, label: "Binding region, disordered residues"}
+
+  # Complexes: Complex Portal's curated human complexes, each a set of its members
+  - id: complex
+    test: protein_sets
+    new: true
+    title: Protein complexes
+    question: "Which complexes have more methylated members than expected?"
+    sub: "Methylated proteins against the proteins in Complex Portal's curated human complexes, by complex of at least 3 members (one-sided hypergeometric test); a protein in several complexes is in each"
+    section: Protein interactions
+    sets:
+      input: complexes
+      set: complex_id
+      protein: uniprot_accession
+      include: [{column: curation, equals: curated}]
+    names: {input: complexes, set: complex_id, name: complex_name}
+    universe: annotated
+    min_size: 3
+    background: other proteins in a curated Complex Portal complex
+    link: "https://www.ebi.ac.uk/complexportal/complex/{}"
+  # Histone or not: the PANTHER families of the core and linker histones against every other reviewed protein. The
+  # family names are PANTHER 19.0's (HISTONE H1, H2A, H2B, H3, H4: the histones themselves, not the enzymes that act on them)
+  - id: histone
+    test: protein_sets
+    new: true
+    title: Histones and other proteins
+    question: "Are methylated proteins more often histones than other proteins?"
+    sub: "Methylated proteins against the reviewed human proteome, by whether PANTHER places the protein in a histone family (H1, H2A, H2B, H3 or H4) or not (one-sided hypergeometric test)"
+    section: Histones, protein classes and pathways
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      rules:
+        - {set: histone, when: [{column: family_name, in: [HISTONE H1, HISTONE H2A, HISTONE H2B, HISTONE H3, HISTONE H4]}]}
+        - {set: non_histone}
+    universe: snapshot
+    whole_universe: true
+    background: other reviewed human proteins
+    order: [{categories: [histone, non_histone]}]
+    labels: {histone: Histones, non_histone: Other proteins}
+    help:
+      histone: "PANTHER families HISTONE H1, H2A, H2B, H3 and H4 (PANTHER 19.0): the histones of the nucleosome and the linker histones"
+      non_histone: "every other reviewed human protein, including the enzymes that modify histones"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # protein sets: clusterProfiler's enricher, as the release ran it (scripts/release_layers.py, release_tables.py)
+  # PANTHER protein classes (scripts/03b_panther_class_enrichment.py): every reviewed protein is the universe and the
+  # background; the groups and the top-level classes, with the unclassified proteins, each partition it
+  - id: panther_group
+    new: true
+    test: protein_sets
+    title: Protein classes (PANTHER), grouped
+    question: "Which protein classes hold more methylated proteins than expected?"
+    sub: "Methylated proteins against the reviewed human proteome, by PANTHER protein class (grouped); every protein is in one group (one-sided hypergeometric test)"
+    section: Histones, protein classes and pathways
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: top
+      groups:                   # the release's overview groups (PTM_Pipeline config/panther_class_groups.json)
+          "Transcription, chromatin and DNA": [PC00264, PC00077, PC00009]
+          "RNA processing and translation": [PC00031, PC00263]
+          "Metabolic enzymes": [PC00262]
+          "Protein-modifying enzymes": [PC00260]
+          "Signalling: receptors, ligands and modulators": [PC00197, PC00207, PC00095, PC00060]
+          "Transport and membrane traffic": [PC00227, PC00219, PC00150]
+          "Cytoskeleton, adhesion and matrix": [PC00085, PC00211, PC00069, PC00070, PC00102]
+          "Scaffolds, adaptors and chaperones": [PC00226, PC00072]
+          "Immunity and defence": [PC00090]
+          "Other PANTHER classes": [PC00237, PC00210]
+      unclassified: No PANTHER protein class
+    universe: snapshot
+    whole_universe: true
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: panther_class
+    new: true
+    test: protein_sets
+    title: Protein classes (PANTHER)
+    question: "Which PANTHER protein classes hold more methylated proteins than expected?"
+    sub: "Methylated proteins against the reviewed human proteome, by top-level PANTHER protein class; every protein is in one class (one-sided hypergeometric test)"
+    section: Histones, protein classes and pathways
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: top
+      unclassified: No PANTHER protein class
+    universe: snapshot
+    whole_universe: true
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: panther_subclass
+    new: true
+    test: protein_sets
+    title: Protein subclasses (PANTHER)
+    question: "Which PANTHER protein subclasses hold more methylated proteins than expected?"
+    sub: "Methylated proteins against the reviewed human proteome, every PANTHER class below the top level with 10 or more proteins; subclasses overlap (one-sided hypergeometric test)"
+    section: Histones, protein classes and pathways
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: below_top
+    universe: snapshot
+    whole_universe: true
+    min_size: 10
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: reactome_top_level
+    new: true
+    test: protein_sets
+    title: Reactome pathways, top level
+    question: "Which top-level Reactome pathways hold more methylated proteins than expected?"
+    sub: "Methylated proteins against the other proteins with a Reactome pathway, by top-level pathway (one-sided hypergeometric test)"
+    section: Histones, protein classes and pathways
+    sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
+    names: {input: reactome_names, set: pathway_id, name: name, include: [{column: depth, equals: "0"}]}
+    background: other reviewed human proteins with at least one Reactome 97 pathway
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: reactome_pathway
+    new: true
+    test: protein_sets
+    title: Reactome pathways
+    question: "Which Reactome pathways, at any level, hold more methylated proteins than expected?"
+    sub: "Methylated proteins against the other proteins with a Reactome pathway, every pathway of 10 to 500 proteins (one-sided hypergeometric test)"
+    section: Histones, protein classes and pathways
+    sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
+    names: {input: reactome_names, set: pathway_id, name: name}
+    min_size: 10
+    max_size: 500
+    background: other reviewed human proteins with at least one Reactome 97 pathway
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Biomolecular condensates (scripts/12_condensate_enrichment.py): CD-CODE's membership (export v2.2), kept for human
+  # proteins (its protein table) in human condensates that are not synthetic (its condensate table); a member named by
+  # a secondary accession counts as its current entry where the accession history names exactly one, and a member on
+  # no reviewed entry is dropped. Every condensate of five or more members is tested against the reviewed proteome
+  # (condensate_proteome) and against the proteins in any of these condensates (condensate); the release lists them by
+  # fold enrichment, then by methylated members. The release keeps a condensate whose taxon is 9606 or whose species is
+  # named Homo sapiens: in this export the name holds for every 9606 condensate and for two more (taxon 9607: RdRp
+  # condensates, LANA body), so the name alone keeps the same ones; the protein table's taxon and name always agree.
+  # The CD-CODE 2.3 confidence of each membership (0-5) is for the website's filter only.
+  - id: condensate_proteome
+    new: true
+    test: protein_sets
+    title: Biomolecular condensates
+    question: "Which biomolecular condensates are over-represented (CD-CODE)?"
+    sub: "CD-CODE condensates with a higher fraction of methylated members than the reviewed proteome: every human condensate (not synthetic) with at least five members, its members against all reviewed human proteins (one-sided hypergeometric test). Condensate proteins are about twice as often methylated as proteins in general, so most condensates are enriched relative to the proteome, and few relative to other condensates"
+    section: Location, chromatin and condensates
+    sets:
+      input: cdcode_membership
+      set: condensate_id
+      protein: uniprotkb_ac
+      where:
+        - {column: uniprotkb_ac, input: cdcode_proteins, key: uniprot_id, include: [{column: species_name, equals: Homo sapiens}]}
+        - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
+    names: {input: cdcode_condensates, set: uid, name: name}
+    universe: snapshot
+    whole_universe: true
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    scores: {input: cdcode_members, set: condensate_uid, protein: uniprot_accession, value: confidence_score, label: Membership confidence (CD-CODE),
+             help: "CD-CODE's 0-5 confidence that the protein belongs to the condensate (CD-CODE 2.3)", levels: [2, 3, 4, 5], max: 5}
+    filter: {label: CD-CODE condensate (methylated members), any: In any CD-CODE condensate, sets: all}   # every condensate with a methylated member, as the original
+  - id: condensate
+    new: true
+    test: protein_sets
+    title: Biomolecular condensates, against other condensate proteins
+    question: "Which biomolecular condensates stand out among condensate proteins (CD-CODE)?"
+    sub: "CD-CODE condensates with a higher fraction of methylated members than all condensate proteins: every human condensate (not synthetic) with at least five members, its members against the proteins in any of these condensates, about half of which are methylated (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: cdcode_membership
+      set: condensate_id
+      protein: uniprotkb_ac
+      where:
+        - {column: uniprotkb_ac, input: cdcode_proteins, key: uniprot_id, include: [{column: species_name, equals: Homo sapiens}]}
+        - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
+    names: {input: cdcode_condensates, set: uid, name: name}
+    universe: annotated            # the proteins in any of these condensates
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
+    background: other human proteins in CD-CODE condensates (export of 2026-03-18)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Roles in condensates: CD-CODE 2.3 gives each membership its roles (driver, client, regulator, member, or unknown; a
+  # membership may have several). A protein is in a role's set when it has that role in any human condensate; each set is
+  # tested against the other proteins of the human condensates
+  - id: condensate_role
+    test: protein_sets
+    new: true
+    title: Roles in condensates
+    question: "Are methylated proteins more often drivers of condensates than clients or other members (CD-CODE)?"
+    sub: "Proteins by their role in CD-CODE 2.3 condensates (human, not synthetic): driver, client, regulator, member or unknown, a protein in the role of every membership that lists it. Each role's proteins against the other proteins in these condensates (one-sided hypergeometric test). This export lists drivers, members and unknown roles only"
+    section: Location, chromatin and condensates
+    sets:
+      input: cdcode_members
+      protein: uniprot_accession
+      exclusive: false
+      where:
+        - {column: condensate_uid, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
+      rules:
+        - {set: driver, when: [{column: roles, contains: driver}]}
+        - {set: client, when: [{column: roles, contains: client}]}
+        - {set: regulator, when: [{column: roles, contains: regulator}]}
+        - {set: member, when: [{column: roles, contains: member}]}
+        - {set: unknown, when: [{column: roles, contains: unknown}]}
+    universe: annotated
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}]
+    labels: {driver: Drivers, client: Clients, regulator: Regulators, member: Other members, unknown: Role unknown}
+    help:
+      driver: "Proteins that CD-CODE lists as a driver of at least one human condensate: the condensate depends on them to form"
+      client: "Proteins that CD-CODE lists as a client of at least one human condensate: they are recruited but do not drive it"
+      regulator: "Proteins that CD-CODE lists as a regulator of at least one human condensate"
+      member: "Proteins that CD-CODE lists as a member of at least one human condensate, with no further role stated"
+      unknown: "Proteins whose role CD-CODE does not state"
+    background: other human proteins in CD-CODE 2.3 condensates (export of 2026-10-16)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: hpa_location
+    new: true
+    test: protein_sets
+    title: Where in the cell
+    question: "Where in the cell are methylated proteins found more often than other proteins?"
+    sub: "Methylated proteins against the other proteins with a Human Protein Atlas location scored Approved or better (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets: {input: hpa, set: location, protein: canonical_UniProtAC, exclude: [{column: reliability, equals: Uncertain}]}
+    whole_universe: true
+    background: other proteins with an HPA 25.1 location (Approved or better)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Where in the cell, beyond the Human Protein Atlas (scripts/cell_maps.py): each map tested against the proteins it
+  # places, compartment by compartment (compartments of at least 5 proteins), and again within PaxDb abundance deciles.
+  # The regions of the cell: each map's compartments gathered into the nucleus, the cytoplasm and the organelles and
+  # membranes (sites/data/methylarginine_cell_regions.yaml), in the three maps that place proteins all over the cell
+  - id: cell_region_hpa
+    new: true
+    test: protein_sets
+    title: Regions of the cell (Human Protein Atlas)
+    question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Methylated proteins against the other proteins with a Human Protein Atlas location (Approved or better), with locations grouped into three regions of the cell (cilia and sperm structures are in none) (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: hpa
+      set: location
+      protein: canonical_UniProtAC
+      exclude: [{column: reliability, equals: Uncertain}]
+      families: {rules: sites/data/methylarginine_cell_regions.yaml}
+    whole_universe: true
+    min_size: 5
+    background: "other proteins with an HPA 25.1 location (Approved or better). A region is the Human Protein Atlas locations it holds (scripts/cell_maps.py, REGION_OF)"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_region_hcm
+    new: true
+    test: protein_sets
+    title: Regions of the cell (Human Cell Map)
+    question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Methylated proteins against the other proteins the Human Cell Map localizes (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: hcm
+      set: nmf_compartment
+      protein: canonical_UniProtAC
+      families: {rules: sites/data/methylarginine_cell_regions.yaml}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments). A region is the Human Cell Map compartments it holds (scripts/cell_maps.py, REGION_OF)"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_region_organelle_ip
+    new: true
+    test: protein_sets
+    title: Regions of the cell (organelle IP)
+    question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Methylated proteins against the other proteins classified by organelle IP (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: organelle_ip
+      set: compartment
+      protein: canonical_UniProtAC
+      exclude: [{column: compartment, equals: unclassified}]
+      families: {rules: sites/data/methylarginine_cell_regions.yaml}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins organelle IP classifies (HEK293T). A region is the Organelle IP it holds (scripts/cell_maps.py, REGION_OF)"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_hcm_compartment
+    new: true
+    test: protein_sets
+    title: Human Cell Map compartments
+    question: "Where do methylated proteins localize in the cell, by the Human Cell Map's compartments?"
+    sub: "Methylated proteins against the other proteins the Human Cell Map localizes (HEK293 BioID from 192 baits; Go et al. 2021), by NMF compartment (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets: {input: hcm, set: nmf_compartment, protein: canonical_UniProtAC}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_hcm_domain
+    new: true
+    test: protein_sets
+    title: Human Cell Map domains
+    question: "Where do methylated proteins localize in the cell, by the Human Cell Map's finer domains?"
+    sub: "Methylated proteins against the other proteins the Human Cell Map places in a SAFE domain (HEK293 BioID; Go et al. 2021), domain by domain (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets: {input: hcm, set: safe_domain, protein: canonical_UniProtAC, exclude: [{column: safe_domain, equals: ""}]}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins the Human Cell Map places in a SAFE domain
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_organelle_ip
+    new: true
+    test: protein_sets
+    title: Organelle IP
+    question: "Which organelles are methylated proteins enriched in, by organelle immunoprecipitation?"
+    sub: "Methylated proteins against the other proteins classified by organelle IP (HEK293T; Hein et al. 2025), cluster by cluster (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets: {input: organelle_ip, set: compartment, protein: canonical_UniProtAC, exclude: [{column: compartment, equals: unclassified}]}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins organelle IP classifies (HEK293T)
+    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granules (cell map),
+             p-body: P-body, actin_cytoskeleton: Actin cytoskeleton, centrosome: Centrosome, proteasome: Proteasome,
+             14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
+             early_endosome: Early endosome, recycling_endosome: Recycling endosome, lysosome: Lysosome,
+             mitochondrion: Mitochondrion, peroxisome: Peroxisome, plasma_membrane: Plasma membrane}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_chromatin
+    new: true
+    test: protein_sets
+    title: Chromatin probability
+    question: "Are methylated proteins on chromatin more often than other proteins?"
+    sub: "Methylated proteins against the other proteins with an interphase chromatin probability (chromatin enrichment for proteomics; Kustatscher et al. 2014), in four bins (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: chromatin
+      protein: canonical_UniProtAC
+      rules:                       # each protein in the first bin it reaches (scripts/cell_maps.py, CHEP_BINS)
+        - {set: "ICP >= 0.8 (chromatin)", when: [{column: interphase_chromatin_probability, at_least: 0.8}]}
+        - {set: "ICP 0.5-0.8", when: [{column: interphase_chromatin_probability, at_least: 0.5}]}
+        - {set: "ICP 0.2-0.5", when: [{column: interphase_chromatin_probability, at_least: 0.2}]}
+        - {set: "ICP < 0.2 (not chromatin)"}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins with an interphase chromatin probability
+    labels: {"ICP >= 0.8 (chromatin)": "Chromatin (probability ≥ 0.8)", "ICP 0.5-0.8": "Chromatin probability 0.5–0.8", "ICP 0.2-0.5": "Chromatin probability 0.2–0.5",
+             "ICP < 0.2 (not chromatin)": "Not chromatin (probability < 0.2)"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Disease families (scripts/14_disease_enrichment.py): DisGeNET terms (as DOSE 4.4.0 ships them) gathered into
+  # families by name (the release's rules, sites/data/methylarginine_disease_families.yaml); the sets are Entrez genes,
+  # each protein's through its UniProt primary gene name (the first of several) and org.Hs.eg.db's symbols. Every
+  # reviewed protein's genes are the universe, those with a DisGeNET term the background; the eight audited families
+  # and the additional ones are tested apart (BH within each)
+  - id: disease_family
+    new: true
+    test: protein_sets
+    title: Disease families (DisGeNET)
+    question: "Which disease gene sets are over-represented?"
+    sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by disease family: the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
+    set_note: "A family of DisGeNET disease terms gathered by name; one of the eight whose rules were checked by hand."
+    section: Disease and cancer
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets:
+      input: disgenet
+      set: term_id
+      protein: entrez_id
+      families: {rules: sites/data/methylarginine_disease_families.yaml, by: term_name, lists: [audited]}
+    universe: snapshot
+    background: other reviewed human genes (Entrez) with a DisGeNET term
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
+  - id: disease_family_additional
+    new: true
+    test: protein_sets
+    title: Disease families, additional
+    question: "Which of the additional disease families, mostly clinical signs, are over-represented?"
+    sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by additional disease family: grouped automatically by matching words in the disease terms, not checked by hand, mostly clinical signs; tested apart from the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
+    set_note: "A family of DisGeNET disease terms grouped automatically by matching words; not checked by hand."
+    section: Disease and cancer
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets:
+      input: disgenet
+      set: term_id
+      protein: entrez_id
+      families: {rules: sites/data/methylarginine_disease_families.yaml, by: term_name, lists: [additional]}
+    universe: snapshot
+    background: other reviewed human genes (Entrez) with a DisGeNET term
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
+  # Disease Ontology (scripts/14_disease_enrichment.py): the gene sets DOSE enrichDO tests (each term holds the genes of
+  # the terms under it; Human Disease Ontology 2026-09-30), on the genes of the disease families: every reviewed
+  # protein's genes are the universe, those with a Disease Ontology term the background, and every term of 10 genes or
+  # more with a methylated gene is tested. The release keeps these rows in a supporting table, not in its statistics
+  # table, so the run checks them against that table (reference.tables)
+  - id: disease_ontology
+    new: true
+    test: protein_sets
+    title: Disease Ontology
+    question: "Which Disease Ontology terms hold more genes of methylated proteins than expected?"
+    sub: "Genes of methylated proteins vs all reviewed human genes with a Disease Ontology term, every term of at least 10 genes; a term includes the genes of its child terms (one-sided hypergeometric test, as DOSE's enrichDO). Association, not causation"
+    section: Disease and cancer
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets: {input: hdo_term_genes, set: term_id, protein: entrez_id}
+    names: {input: hdo_terms, set: term_id, name: name}
+    hierarchy: {input: hdo_terms, set: term_id, parents: parents, root: "DOID:4"}
+    universe: snapshot
+    min_size: 10
+    link: "https://disease-ontology.org/?id={}"
+    filter: {label: Disease Ontology term (methylated proteins)}
+    background: other reviewed human genes (Entrez) with a Disease Ontology term
+  # DisGeNET terms one by one (scripts/14_disease_enrichment.py): the terms of the disease families, each tested as
+  # DOSE's enrichDGN tests it (terms of 10 to 300 genes), against the same background. In the release's supporting
+  # tables, not its statistics table: the run checks them against supporting/disease_terms_tested (reference.tables)
+  - id: disease_term
+    new: true
+    test: protein_sets
+    title: DisGeNET terms
+    question: "Which DisGeNET disease terms hold more genes of methylated proteins than expected?"
+    sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, every term of 10 to 300 genes (one-sided hypergeometric test, as DOSE's enrichDGN). Association, not causation"
+    section: Disease and cancer
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets: {input: disgenet, set: term_id, protein: entrez_id}
+    names: {input: disgenet, set: term_id, name: term_name}
+    universe: snapshot
+    min_size: 10
+    max_size: 300
+    link: "https://www.disgenet.com/search?view=DISEASES&idents={}&source=ALL&tab=GDA"
+    background: other reviewed human genes (Entrez) with a DisGeNET term
+  # Cancer cell lines (scripts/release_layers.py, CANCER): cancer cell genetics beside the sites, not evidence about
+  # methylation. The dependency classes partition the entries whose gene DepMap 24Q4 screened (gene_effect)
+  - id: depmap_dependency
+    new: true
+    test: protein_sets
+    title: Cancer cell dependency
+    question: "Do cancer cell lines depend on these proteins more than on others? (DepMap CRISPR screens)"
+    sub: "DepMap Public 24Q4 dependency classes, methylated proteins vs all screened reviewed proteins (one per gene); the dependency of 1,178 cancer cell lines on them in CRISPR knockout screens. Cancer genetics, not evidence about methylation (one-sided hypergeometric test)"
+    section: Disease and cancer
+    sets:
+      input: depmap_genes
+      protein: canonical_UniProtAC
+      rules:                       # the share of the screened lines whose dependency probability is at least 0.5
+        - {set: common_essential, when: [{column: common_essential, equals: "True"}]}
+        - {set: most_lines, when: [{ratio: [dependent_lines, lines_with_probability], at_least: 0.5}]}
+        - {set: some_lines, when: [{ratio: [dependent_lines, lines_with_probability], at_least: 0.05}]}
+        - {set: few_or_none}
+    whole_universe: true
+    order: [{categories: [common_essential, most_lines, some_lines, few_or_none]}]
+    background: other reviewed human proteins whose gene DepMap 24Q4 screened (CRISPR, Chronos)
+    labels: {common_essential: Commonly essential, most_lines: "Most lines (≥ 50%)", some_lines: "Some lines (5–50%)", few_or_none: "Few or none (< 5%)"}
+    help:
+      common_essential: "DepMap 24Q4 calls the gene commonly essential (CRISPRInferredCommonEssentials: it ranks among the strongest dependencies of at least 90% of lines)"
+      most_lines: "not commonly essential, and at least 50% of the screened lines depend on it"
+      some_lines: "not commonly essential, and 5% to under 50% of the lines depend on it (selective dependencies)"
+      few_or_none: "fewer than 5% of the lines depend on it"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    values:                        # each screened protein's numbers, for the website (website.set_views); no test reads them
+      columns:
+        - {name: median, label: median gene effect, background: true}
+        - {name: dependent_lines, label: lines that depend on it}
+        - {name: lines_with_probability, label: lines screened}
+  - {id: motif, layer: motif, new: true}
+  - {id: disorder, layer: disorder, new: true}
+  - {id: domain_context, layer: domain_context, new: true}
+  - {id: domain_class, layer: domain_class, new: true}
+  - {id: structure_context, layer: structure_context, new: true}
+  - {id: idr_charge, layer: idr_charge, new: true}   # not in the release: CIDER's charge classes of IDRs
+  # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
+  # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
+  - id: which_factor
+    test: conditional_logit
+    new: true
+    title: Which factor matters most?
+    question: "Taking all factors together, which ones set a methyllysine apart from the other lysines of its protein?"
+    sub: "One model: each methyllysine against the other lysines of its protein, all four factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
+    section: Motif, disorder and structure
+    covariates:
+      - {name: in_idr, label: In a disordered region, help: "Inside an IDR of 20 or more residues", layer: idr, is: [idr]}
+      - {name: arks_motif, label: In an ARKS sequence, help: "Arg right before the lysine and Ser or Thr right after it", layer: motif, flags: [ARKS]}
+      - {name: net_charge, label: "Local net charge (per +1)", help: "Lys and Arg minus Asp and Glu within 7 residues on either side, the lysine itself left out; the odds ratio is for each extra +1", window_sum: {window: 7, weights: {K: 1, R: 1, D: -1, E: -1}}}
+      - {name: domain_distal, label: Far from any domain, help: "More than 20 residues from a domain, and not between two domains", layer: domain_context, is: [distal]}
+  # Interactions: each a question of yes-or-no tests, each against the lysines its evidence could have reached: the
+  # residues a structure observed or a model covers. Every candidate counts in the pooled test, and the within-protein
+  # row reports those counts (counting: every_candidate).
+  - id: pdb_interface_na
+    new: true
+    title: RNA and DNA interfaces in PDB structures
+    question: "Are methyllysines at interfaces with RNA or DNA in experimental structures?"
+    sub: "Methyllysines against the other lysines of the same proteins observed in a PDB structure, at a PDBe-KB interface with RNA or with DNA; all, ordered (outside UniProt disordered regions) and in domains"
+    section: RNA and DNA
+    counting: every_candidate
+    background: other lysines of the same proteins observed in a PDB structure
+    proteins_with: pdb_interfaces                       # proteins PDBe-KB lists with an interface
+    covered_by: pdb_observed                            # residues a PDB chain models (SIFTS)
+    tests:
+      - {category: rna, inside: {role: pdb_interfaces, where: [{column: class, equals: RNA}]}, label: RNA interface}
+      - {category: dna, inside: {role: pdb_interfaces, where: [{column: class, equals: DNA}]}, label: DNA interface}
+    strata:
+      - {stratum: all}
+      - {stratum: ordered, outside_of: uniprot_disorder}
+      - {stratum: domain, covered_by: uniprot_domains}
+variants:                # the same questions on other marks; ptmc run --variant <name>
+  with_lower_confidence:
+    label: With lower-confidence sites
+    description: "The lysines UniProt reports only by similarity to another species (ECO:0000250 and other records without an experimental code) counted too, from the same table"
+    marks_select: {exclude: []}
+    attributes: {}
+
+outputs: {folder: out/methyllysine}
+citation: sites/methyllysine.citation.cff   # the citation, data sources, version and date: edit there
+
+website:
+  name: Methyllysine Site Explorer
+  tagline: "Human lysine methylation sites from public databases."

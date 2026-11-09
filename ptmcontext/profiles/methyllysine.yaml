@@ -1,11 +1,11 @@
-# Mark profile: lysine methylation. A profile only: no site table is staged yet (iPTMnet has 245 rows; CPLM 4.0 is
-# all rights reserved and cannot be redistributed).
+# Mark profile: lysine methylation. The site table is release v1.5.0 of PTM_Pipeline (UniProt and iPTMnet); CPLM 4.0 is
+# all rights reserved and cannot be redistributed.
 schema_version: 1
 id: methyllysine
 name: Methyllysine
 residues: [K]
 
-states:   # PSI-MOD terms checked against EBI OLS, 2026-11-01
+states:   # PSI-MOD terms checked against EBI OLS, 2026-11-01 (the release's codes me1, me2 and me3 are these three; me is a degree not stated)
   - {code: Kme1, label: monomethyllysine, psi_mod: "MOD:00085", pdb_component: MLZ}
   - {code: Kme2, label: dimethyllysine, psi_mod: "MOD:00084", pdb_component: MLY}
   - {code: Kme3, label: trimethyllysine, psi_mod: "MOD:00083", pdb_component: M3L}
@@ -13,13 +13,19 @@ states:   # PSI-MOD terms checked against EBI OLS, 2026-11-01
 modified_charge: {K: null}   # methyllysines keep the lysine's charge
 
 enzymes:
-  writers: []      # SET-domain and seven-beta-strand methyltransferases: to be listed from UniProt, not by hand
+  writers: []      # the sets of writers, erasers and readers are a site's (website.search.partners.classes, by InterPro entry and gene)
   erasers: []
   reader_domains: [Chromo, Tudor, MBT, PHD, PWWP]
 
-motifs:
+motifs:            # read in the 15-residue window centered on the lysine (window_flank 7); patterns of the sequence around it, not curated rules
   window_flank: 7
-  families: []
+  families:
+    - {name: ARKS, label: "[AR]-K-[ST]", help: "Arg at −1 and Ser or Thr at +1 (the histone H3 K9 and K27 sequence, ARKS)", all: [{at: -1, in: R}, {at: 1, in: ST}]}
+    - {name: R_before, label: "Arg at −1", help: "Arg right before the lysine", all: [{at: -1, in: R}]}
+    - {name: ST_after, label: "Ser or Thr at +1", help: "Ser or Thr right after the lysine", all: [{at: 1, in: ST}]}
+    - {name: G_before, label: "Gly at −1", help: "Gly right before the lysine", all: [{at: -1, in: G}]}
+    - {name: KK, label: "Another Lys at −1 or +1", help: "A second Lys next to the lysine", any: [{at: -1, in: K}, {at: 1, in: K}]}
+    - {name: basic_neighbours, label: "Lys or Arg within ±3", help: "Another Lys or Arg within 3 residues on either side", any: [{within: [-3, -1], in: KR}, {within: [1, 3], in: KR}]}
 
 words:
   mark: methyllysine
