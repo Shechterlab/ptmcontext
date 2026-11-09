@@ -567,6 +567,10 @@
         parts.push(
           `<circle cx="${X(r.eff).toFixed(1)}" cy="${yc}" r="4.6" fill="${PAL[r.dir]}" stroke="${r.dir === 'ns' ? PAL.muted : '#ffffff'}" stroke-width="1.4"/>`
         );
+      if (r.ref?.eff > 0)
+        parts.push(
+          `<line x1="${X(r.ref.eff).toFixed(1)}" x2="${X(r.ref.eff).toFixed(1)}" y1="${yc - 7}" y2="${yc + 7}" stroke="${PAL.ink}" stroke-width="2"/>`
+        );
       T(VX, yc + 4, r.eff == null ? '–' : fxn(r.eff) + '×', {
         anchor: 'end',
         weight: r.dir === 'more' ? 'bold' : null,
@@ -590,7 +594,10 @@
     return K.figureFrame({
       title: a.title,
       sub: a.sub + K.selWords(),
-      legend: K.dirLegend(['more', 'same', 'ns']),
+      legend: K.dirLegend(
+        ['more', 'same', 'ns'],
+        items.some(([k, x]) => k === 'row' && x.ref)
+      ),
       body: parts.join(''),
       bodyH: y + 34,
       note: `${

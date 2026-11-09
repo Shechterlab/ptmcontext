@@ -487,6 +487,10 @@
   function oneDrawings(p) {
     if (!K.sel.data() || !DRAWINGS.length) return '';
     TIPS = [];
+    if (DRAWINGS.length > 1) {
+      FIGS['p-both'] = bothOf('p-');
+      FIGS['p-both'].title = () => `${p.gene || p.acc}: ${and(DRAWINGS.map((d) => 'the ' + d.drawing))}`;
+    }
     const html = DRAWINGS.map((d) => {
       const k = 'p-' + d.drawing;
       FIGS[k] = {
@@ -496,7 +500,7 @@
         tsv: oneTsv(p),
         zoom: d.drawing,
         one: { i: p.i },
-        note: () => 'Coloured: a map places the protein in that part. Dashed outline: no map does.',
+        note: () => 'Colored: a map places the protein in that part. Dashed outline: no map does.',
         legend: () => [
           [toneOf('up-2'), toneOf('up-3'), 'a map places the protein there'],
           ['#ffffff', '#8a96a0', 'no map does'],
@@ -504,10 +508,6 @@
       };
       return block(k, `The ${d.drawing}`, 'cell-fig cell-onep');
     }).join('');
-    if (DRAWINGS.length > 1) {
-      FIGS['p-both'] = bothOf('p-');
-      FIGS['p-both'].title = () => `${p.gene || p.acc}: ${and(DRAWINGS.map((d) => 'the ' + d.drawing))}`;
-    }
     return html;
   }
   // a phone's drawings of one protein: the fit-width drawings without their side labels (the page lists the parts instead)

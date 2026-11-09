@@ -93,8 +93,11 @@
   };
   // the color key of a figure in the page's own words (DIR_WORDS), as the legend entries K.figureFrame draws: one wording and one
   // set of colors for the key under a chart and for the key in every export of it
-  const dirLegend = (keys = ['more', 'less', 'same', 'ns']) =>
-    keys.map((k) => [PAL[k], k === 'ns' ? PAL.muted : PAL[k], DIR_WORDS[k]]);
+  const REF_WORDS = 'the whole dataset (bars: your selection)';
+  const dirLegend = (keys = ['more', 'less', 'same', 'ns'], ref = false) => [
+    ...keys.map((k) => [PAL[k], k === 'ns' ? PAL.muted : PAL[k], DIR_WORDS[k]]),
+    ...(ref ? [[PAL.ink, PAL.ink, REF_WORDS, 'tick']] : []),
+  ];
   const METHOD = {
     mantel_haenszel: 'within each protein',
     fisher: 'across all proteins',
@@ -854,7 +857,7 @@
               ]),
           ['ns', descr ? 'shown, not tested' : `no difference (q > ${PADJ})`],
           ...(rows.some((r) => r.lo != null && r.hi != null) ? [['ci', '95% confidence interval']] : []),
-          ...(rows.some((r) => r.ref) ? [['ref', 'the whole dataset (bars: your selection)']] : []),
+          ...(rows.some((r) => r.ref) ? [['ref', REF_WORDS]] : []),
           ...(rows.some(decile) ? [['dec', 'within abundance deciles: ✓ more · ≈ same · ○ none · ▼ fewer']] : []),
           ...(rows.some((r) => r.eff == null) ? [['none', '— no test within proteins']] : []),
         ];
@@ -3573,13 +3576,15 @@
     if (legend.length) {
       let lx = P;
       y += 4;
-      legend.forEach(([fill, stroke, text]) => {
+      legend.forEach(([fill, stroke, text, shape]) => {
         if (lx > P && lx + 14 + tw(text, 10.5) * WSL > Wd - P) {
           lx = P;
           y += 15; // the key goes on to a second row rather than off the edge
         }
         parts.push(
-          `<circle cx="${lx + 5}" cy="${y - 4}" r="4.5" fill="${fill}" stroke="${stroke || fill}" stroke-width="1.4"/>`
+          shape === 'tick' // a tick (the whole dataset's mark in a chart) or a circle
+            ? `<line x1="${lx + 5}" x2="${lx + 5}" y1="${y - 10}" y2="${y + 2}" stroke="${stroke || fill}" stroke-width="2"/>`
+            : `<circle cx="${lx + 5}" cy="${y - 4}" r="4.5" fill="${fill}" stroke="${stroke || fill}" stroke-width="1.4"/>`
         );
         T(lx + 14, y, text, { size: 10.5, fill: PAL.muted });
         lx += 22 + tw(text, 10.5) * WSL;

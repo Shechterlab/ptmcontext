@@ -27,9 +27,13 @@ function pageKey([btnSel, i, keySel, wordsSrc, cardSel]) {
   }
   els = els.filter(e => !els.some(o => o !== e && o.contains(e)));
   const items = [];
-  els.forEach(e => {
-    const leaves = [...e.querySelectorAll('*')].filter(k => !k.closest('summary') && ![...k.childNodes].some(n => n.nodeType === 1 && norm(n.textContent)) && norm(k.textContent));
-    (leaves.length ? leaves : [e]).forEach(k => norm(k.textContent).split(' · ').forEach(t => { if (t.trim().length > 2) items.push(t.trim()); }));
+  els.forEach(e => {         // one item for each run of text (a swatch is an element with none), split where the page joins with a dot
+    const w = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
+    while (w.nextNode()) {
+      const n = w.currentNode;
+      if (n.parentElement.closest('summary, script, style')) continue;
+      norm(n.nodeValue).split(' · ').forEach(t => { if (t.trim().length > 2) items.push(t.trim()); });
+    }
   });
   return items;
 }
@@ -53,7 +57,7 @@ const squash = s => s.toLowerCase().replace(/[^a-z0-9<>≤≥%×]+/g, ' ').trim(
         const [dl] = await Promise.all([pg.waitForEvent('download', { timeout: 30000 }).catch(() => null), pg.evaluate(([sel, i]) => { [...document.querySelectorAll(sel)][i].click(); }, [BTN, idx])]);
         if (dl) {
           const f = path.join(os.tmpdir(), 'legend_' + process.pid + '.pdf'); await dl.saveAs(f);
-          const t = squash(execFileSync('pdftotext', [f, '-'], { maxBuffer: 1 << 26 }).toString().replace(/\s+/g, ' '));
+          const t = squash(execFileSync('pdftotext', [f, '-'], { maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'] }).toString().replace(/\s+/g, ' '));
           pdfMissing = [...new Set(items)].filter(x => { const w = squash(x).split(' ').slice(0, 6).join(' '); return w && !t.includes(w); });
           fs.unlinkSync(f);
         }
