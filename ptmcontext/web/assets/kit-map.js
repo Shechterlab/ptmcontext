@@ -28,6 +28,7 @@
   const AT = D.mark_attributes || []; // the order of a mark's attribute values
   const attrIdx = (name) => AT.indexOf(name);
   const CFG = (D.protein_view || {}).map || {}; // the site file's website.protein.map
+  const HIDE_PTM = new Set(CFG.hide_ptm_kinds || []); // kinds a context mark of the site file covers (replaces_ptm_kinds)
   const OWN_ROWS = (CFG.rows || []).filter((r) => r && r.id);
   const ROW_INDEX = D.map_rows || []; // the rows' ids, as the items name them
   const SOURCES = CFG.sources || {};
@@ -2076,7 +2077,10 @@
           continue;
         }
         const all = (uni.features || []).filter(
-          (f) => ['Modified residue', 'Cross-link', 'Glycosylation', 'Lipidation'].includes(f.type) && !ownPtm(f)
+          (f) =>
+            ['Modified residue', 'Cross-link', 'Glycosylation', 'Lipidation'].includes(f.type) &&
+            !ownPtm(f) &&
+            !HIDE_PTM.has(ptmKind(f))
         );
         const fs = all.filter((f) => inView(...fpos(f)));
         if (!fs.length) {

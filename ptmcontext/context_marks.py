@@ -214,6 +214,8 @@ def expand(site: dict) -> dict:
     for e in es:
         inputs[role(e)] = e['input']
         rows.append(map_row(e, after))
+        if e.get('replaces_ptm_kinds'):
+            mmap['hide_ptm_kinds'] = [*mmap.get('hide_ptm_kinds', []), *e['replaces_ptm_kinds']]
         after = 'ctx_' + e['id']
         for name, c in (e.get('sources') or {}).items():
             srcs.setdefault(name, dict(c))

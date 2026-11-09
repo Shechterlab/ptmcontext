@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -17,6 +18,8 @@ from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.profile import load_profile
 from ptmcontext.snapshot import Snapshot, md5_file
+
+ASSETS = Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets'
 
 #          1         11        21
 SEQ = 'MRYAARAAAFSAAAAAKAAWWAARAAAAAAAAAAAAAAAAARY'
@@ -115,6 +118,13 @@ def test_expand_writes_what_the_site_file_would(table):
     assert w['filters'][-1]['attributes'] == ['ctx_near_phos'] and w['sites']['download'][-1]['name'] == 'phos_within_9'
     marks, prots = CM.specs(s)
     assert marks['ctx_near_phos']['label'] == 'Has a phosphosite within ±9' and prots['ctx_n_phos']['kind'] == 'number'
+
+
+def test_a_context_mark_can_replace_a_kind_of_the_live_uniprot_row():
+    s = CM.expand(_site({'context_marks': [{**ENTRY, 'replaces_ptm_kinds': ['Phospho']}]}))
+    assert s['website']['protein']['map']['hide_ptm_kinds'] == ['Phospho']
+    assert 'hide_ptm_kinds' not in CM.expand(_site())['website']['protein']['map']
+    assert 'HIDE_PTM.has(ptmKind(f))' in (ASSETS / 'kit-map.js').read_text()
 
 
 def test_problems_are_named():

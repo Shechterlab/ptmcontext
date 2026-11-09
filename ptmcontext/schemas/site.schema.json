@@ -6720,6 +6720,13 @@
                 }
               }
             },
+            "replaces_ptm_kinds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "kinds of the protein map's live UniProt 'Other PTMs' row (config/uniprot_ptm_kinds.json: Phospho, Methyl, ...) that this entry covers: that row leaves them out, so one mark has one source"
+            },
             "drop_evidence": {
               "type": "array",
               "items": {
@@ -7391,6 +7398,13 @@
       "additionalProperties": false,
       "description": "the protein map: more ways to color the marks, the papers behind its sources, and rows of the site's own evidence (CONTRACTS.md, Map rows)",
       "properties": {
+        "hide_ptm_kinds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "kinds of the live UniProt 'Other PTMs' row to leave out (a context mark's replaces_ptm_kinds adds to them)"
+        },
         "colour_by": {
           "type": "array",
           "description": "the ways to color the marks, in this order: an attribute with colour: true by its name, or a mode made from the marks' attributes (each mark takes the first class whose conditions hold, else otherwise). Color attributes not named follow",

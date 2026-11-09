@@ -306,6 +306,7 @@ Other modifications shown beside a site's own mark, declared in the site file as
 | `label`, `plural`, `noun` | label | the mark's name ("Phosphosite"), its plural, and the word inside a sentence (default: the label, lower-cased) |
 | `input` | yes | a manifest entry (CHECKSUM and license as any input): a table of residues, one row per residue and state |
 | `columns` | yes | `accession` and `position` (1-based, on the snapshot); optional `residue` (rows whose letter differs from the snapshot are dropped), `state`, `evidence`, `sources` (`; `-separated) |
+| `replaces_ptm_kinds` | no | kinds of the protein map's live UniProt "Other PTMs" row (`config/uniprot_ptm_kinds.json`, such as `Phospho`) this entry covers: that row leaves them out (`website.protein.map.hide_ptm_kinds`, which a site may also write), so one mark has one source |
 | `drop_evidence` | no | values of `columns.evidence` whose rows are dropped (default `[by-similarity]`; `[]` keeps all) |
 | `colour`, `colour_dark` | yes, no | the map row's tick |
 | `citation` | yes | `cite` (and `short`, `doi`, `url`, `licence`) for the table |

@@ -1217,6 +1217,7 @@ context_marks:
     label: Phosphosite
     input: context_phosphorylation_sites_v1_5_0
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
+    replaces_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row leaves its Phospho kind out: one source for phosphosites
     colour: "#6D3FC0"          # violet: apart from the red and slate of the data and the motif green
     colour_dark: "#8F6BEB"
     citation:
@@ -1716,8 +1717,8 @@ website:                  # the look and words of the website (ptmc web); layout
       other_ptms:
         key: ptm
         label: Other PTM nearby
-        help: "Another modification near the site, from the PTM master table (iPTMnet export, not exhaustive)"
-        kinds: {phospho: "Phospho (S, T, Y)", lys_acyl: Lys acylation, ub_sumo: "Ub or SUMO (K)", lys_methyl: Lys methylation}
+        help: "Another modification near the site, other than the context marks (phosphosites, methyllysines), from the PTM master table (iPTMnet export, not exhaustive)"
+        kinds: {lys_acyl: Lys acylation, ub_sumo: "Ub or SUMO (K)"}
         within: [2, 5, 10, 20]
       residues:
         key: incell
@@ -2049,6 +2050,7 @@ website:                  # the look and words of the website (ptmc web); layout
     other_ptms:                          # other modifications on the methylated proteins: the Filters panel's "other PTM nearby"
       input: methylarginine_other_ptm_sites_v1_4_3
       format: residue_evidence
+      exclude: [{column: ptm_type, in: [phospho, lys_methyl]}]   # phosphosites and methyllysines are the context marks (v1.5.0)
       columns: {accession: uniprot_accession, start: position, end: position, kind: ptm_type, source: evidence}
     nucleic_regions:       # runs of residues within 4 Å of RNA or DNA in PDB structures (the RNA and DNA interactions card)
       input: methylarginine_nucleic_acid_regions_v1_4_3
@@ -2195,8 +2197,8 @@ website:                  # the look and words of the website (ptmc web); layout
       other_ptms:
         title: Other PTMs
         table: other_ptms
-        sub: Other modifications recorded on this protein.
-        kinds: {phospho: Phospho, lys_acyl: Lysine acylation, ub_sumo: Ubiquitin and SUMO, lys_methyl: Lysine methylation}
+        sub: "Modifications recorded on this protein other than the context marks (phosphosites and methyllysines, shown on the protein map and the site card)."
+        kinds: {lys_acyl: Lysine acylation, ub_sumo: Ubiquitin and SUMO}
         near: 10
         note: "Not an exhaustive list: it holds only what the cross-PTM table used here contains (an iPTMnet export of HPRD, literature mining and other curated sources, plus UniProt), so modifications reported elsewhere may be missing."
     nucleic:               # the RNA and DNA interactions card (CONTRACTS.md, RNA and DNA interactions)
