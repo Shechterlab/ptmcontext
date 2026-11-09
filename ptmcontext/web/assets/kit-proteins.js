@@ -7,12 +7,11 @@
    map, those marks, its sequence and 3D. Live sources add to the page; they never change a number. A module of the site kit: it registers with the core (kit.js), which starts it. */
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
-  const { D, W, A, S, esc, int, fxn, pct, cap } = K;
+  const { D, W, A, S, esc, int, pct, cap } = K;
   if (!D.proteins || !D.proteins.length) return;
   const P = D.proteins.map(([acc, gene, name, len, marks, cand], i) => ({ i, acc, gene, name, len, marks, cand }));
   const byAcc = Object.fromEntries(P.map(p => [p.acc, p]));
   const COLS = D.mark_columns || [];
-  const RES = (D.residues || []).join('/');
   const label0 = (aid, cat) => (A[aid]?.labels || {})[cat] || String(cat).replace(/_/g, ' ');
   const label = label0;
   const help = (aid, cat) => (A[aid]?.help || {})[cat] || '';
@@ -28,36 +27,6 @@
   }
   const loadProtein = acc => loadShard(shardOf(acc)).then(sh => sh[acc] || Promise.reject(new Error('not found')));
   K.loadProtein = loadProtein;                       // for other modules' drawings of a protein (kit-selview.js)
-
-  // ---- the selection: the proteins with a selected mark (kit-select.js), or every protein ------------------------
-  const pHit = p => !K.sel || K.sel.protSelected(p.acc);
-  const selCount = p => (K.sel?.active() ? (K.sel.selectedCountByProtein()[p.i] || 0) : p.marks);
-
-  // ---- the Proteins tab -------------------------------------------------------------------------------------------
-  const PS = { sort: 'marks', desc: true, n: 100 };
-  const KEYS = { gene: p => (p.gene || p.acc).toLowerCase(), name: p => (p.name || '').toLowerCase(), acc: p => p.acc, marks: p => p.marks, len: p => p.len, share: p => p.marks / (p.cand || 1) };
-  function shownProteins() {
-    const rows = P.filter(pHit), key = PS.sort === 'marks' && K.sel?.active() ? (cnt => p => cnt[p.i] || 0)(K.sel.selectedCountByProtein()) : KEYS[PS.sort];
-    rows.sort((x, y) => { const a = key(x), b = key(y); const c = typeof a === 'number' ? a - b : String(a).localeCompare(String(b)); return PS.desc ? -c : c; });
-    return rows;
-  }
-  const PCOLS = [['gene', 'Gene', false], ['name', 'Protein', false], ['acc', 'Accession', false], ['marks', cap(W.marks), true], ['len', 'Length', true], ['share', `Share of its ${W.residues}`, true]];
-  function proteinsView() {
-    const rows = shownProteins(), shown = rows.slice(0, PS.n);
-    return `<div class="page-head"><h2>Proteins</h2>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'pexp', 'the protein list', 'data')}</div>` +
-      `` +
-      `<div class="filters"><span class="muted">${int(rows.length)} of ${int(P.length)} proteins${K.sel?.active() ? ' in your selection' : ''}</span></div>` +
-      `<div class="tbl-card" id="proteins-table"><table class="tbl ptbl"><thead><tr>${PCOLS.map(([k, t, n]) => `<th class="${n ? 'num' : ''}" data-psort="${k}" tabindex="0"${PS.sort === k ? ` aria-sort="${PS.desc ? 'descending' : 'ascending'}"` : ''}>${esc(t)}${PS.sort === k ? (PS.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
-      shown.map(p => `<tr data-acc="${esc(p.acc)}"><td><a href="${esc(K.link('protein', p.acc))}"><b>${esc(p.gene || '–')}</b></a></td><td class="wrapok">${esc(p.name)}</td><td class="mono">${esc(p.acc)}</td>` +
-        `<td class="num">${K.sel?.active() ? `<b>${int(selCount(p))}</b> <span class="muted">of ${int(p.marks)}</span>` : int(p.marks)}</td><td class="num">${int(p.len)}</td><td class="num">${pct(p.marks, p.cand)}</td></tr>`).join('') +
-      `</tbody></table></div>` + (rows.length > PS.n ? `<p><button class="linkish" type="button" data-pmore>Show ${int(Math.min(200, rows.length - PS.n))} more</button></p>` : '');
-  }
-  const proteinsTsv = () => {
-    const sel = K.sel?.active(), cnt = sel ? K.sel.selectedCountByProtein() : null, mk = W.marks.replace(/\W+/g, '_');
-    return K.preamble('proteins', `every protein with at least one ${W.mark}${sel ? ' of the selection' : ''} (${int(shownProteins().length)}): its gene, name, length, ${sel ? `its selected ${W.marks}, ` : ''}its ${W.marks} and its candidate residues (${RES}).`) +
-      ['accession', 'gene', 'protein', 'length', ...(sel ? [`selected_${mk}`] : []), mk, `candidate_residues_${RES.replace(/\W+/g, '')}`].join('\t') + '\n' +
-      shownProteins().map(p => [p.acc, p.gene, p.name, p.len, ...(sel ? [cnt[p.i] || 0] : []), p.marks, p.cand].join('\t')).join('\n') + '\n';
-  };
 
   // ---- website.protein.order / open: the folds in the site's order, and which of them start open --------------------------
   // Without a list the folds keep the page's own order. A fold the list lacks follows the one before it; one the page lacks is skipped.
@@ -92,7 +61,6 @@
 
   // ---- the cards front end's protein page: the map, then Network, 3D and Sites as one block, the other cards folded below ----
   const CARDS = D.front?.mode === 'cards';
-  const narrow = () => matchMedia('(max-width: 700px)').matches;
   const TABS = [['p-sites', 'Sites'], ['p-ix', 'Interactions'], ['p-struct', '3D']];
   // the block shows one of its sections: the one the reader opened last (or an address named), else the network when the protein has
   // partners in the site's table, else the sites
@@ -159,7 +127,6 @@
   function markClasses(m) { return COLS.map((aid, k) => [aid, m[2][k]]); }
   // the sites table's question columns: the site file's (website.sites.columns) and those with tags (motifs), unless
   // every question is asked for
-  const shownCols = () => (PV.allCols ? COLS : COLS.filter(aid => (D.sites_view?.columns || []).includes(aid) || A[aid]?.shape === 'flags'));
   function classText(aid, v) {
     if (!v) return '–';
     const a = A[aid]; if (!a) return v;
@@ -687,10 +654,6 @@
     ['g-marks', `${cap(W.marks)} on this protein`, 0], ['p-map', 'Protein map', 1], ['p-sites', cap(W.marks), 1], ['p-score', `${cap(W.marks)} vs other ${W.residues}`, 1],
     ['g-protein', 'The protein', 0], ...(D.analyses.some(a => a.kind === 'protein_sets') ? [['p-kinds', 'Protein classes and pathways', 1]] : []), ...(K.proteinFoldSections || []), ['p-regions', 'Domains and regions', 1], ['p-seq', 'Sequence', 1],
     ['g-live', 'Live sources', 0], ['p-struct', '3D structure', 1],]; };
-  // the Proteins page: its table, and the proteins with most marks (of the selection, if any)
-  K.sections.proteins = () => {
-    return [['view', 'Proteins', 1], ['proteins-table', 'Protein table', 1]];
-  };
 
   // ---- kinds of protein: the sets of each protein-set question this protein is in, with the site's result for each,
   // and its abundance as the test placed it (data/selection.json) --------------------------------------------------
@@ -758,7 +721,6 @@
 
 
   // ---- live sources: asked once per protein, shown when they answer, never needed for a number ---------------------
-  const today = () => K.hdate(new Date().toISOString());
   const getJson = url => fetch(url).then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))));
   function fill(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
   function proteinAfter(arg) {
@@ -836,7 +798,6 @@
   // website.protein.open_partners: the partners fold opens when the site's own partner table has partners for the protein
   const hasPartners = () => { const t = CC.writer?.partners?.table; return !!(t && PV.tb && K.card.rows(PV.tb, t).length); };
   K.hasData['p-ix'] = hasPartners;
-  const partnersOpen = () => !!(D.protein_view?.open_partners && hasPartners());
 
   // ---- downloads: the map as a figure, the sites and the proteins as tables ------------------------------------------
   const mapFigure = () => K.map.figure(mapCtx());
@@ -875,15 +836,11 @@
   }
 
   // ---- register with the core -------------------------------------------------------------------------------------
-  K.views.proteins = { render: proteinsView, title: () => 'Proteins' };
   // the page's title: the protein, then the site (FUS R216)
   K.views.protein = { render: proteinView, after: proteinAfter, tab: 'proteins',
     title: arg => { const [a, at] = String(arg).split('/'), p = byAcc[a] || (PV.lightP?.acc === a ? PV.lightP : null); return p ? (p.gene || p.acc) + (at && /^\d+$/.test(at) ? ' ' + siteOf(p, +at) : '') : a; } };
   K.tabs.push(() => ['proteins', 'Proteins', K.sel?.active() ? K.sel.nProteins() : P.length]);
   K.clicks.push(
-    ['[data-psort]', el => { const k = el.dataset.psort; PS.desc = PS.sort === k ? !PS.desc : k === 'marks' || k === 'len' || k === 'share'; PS.sort = k; K.render(); }],
-    ['[data-pmore]', () => { PS.n += 200; K.render(); }],
-    ['[data-pexp]', el => K.tableExport(el.dataset.pexp, el, document.querySelector('#proteins-table, .tbl-card') || document.body, { title: 'Proteins', sub: K.pageCx(), total: P.length }, `${D.site.id}_proteins`, proteinsTsv)],
     ['[data-sexp]', el => { const p = byAcc[PV.acc]; K.tableExport(el.dataset.sexp, el, el.closest('#p-sites') || document.body, { title: `${cap(W.marks)} of ${p.gene || p.acc}`, sub: `${p.name || ''} (${p.acc}); ${int(PV.rec.marks.length)} ${W.marks}, each with the evidence the table shows`, total: PV.rec.marks.length }, `${D.site.id}_${PV.acc}_sites`, sitesTsv); }],
     ['[data-mexp]', el => K.exportFigure(el.dataset.mexp, mapFigure, K.map.fileName ? K.map.fileName(el.dataset.mexp) : `${D.site.id}_${PV.acc}_map`, el, sitesTsv)],
     ['[data-msite]', el => openSite(+el.dataset.msite, el.closest('.seq') ? 'sequence' : 'map')],

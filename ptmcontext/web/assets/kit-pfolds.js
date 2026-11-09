@@ -41,7 +41,7 @@
   // ---- the pictures the page can draw from what it holds -------------------------------------------------------------
   function builtin() {
     const st = K.protState?.(); if (!st || !st.rec || !st.p) return;
-    const { p, rec, tb, af, pdb } = st, len = p.len || (rec.seq || '').length || 1;
+    const { p, rec, tb, af } = st, len = p.len || (rec.seq || '').length || 1;
     // interaction evidence, site by site: each site colored by its status
     const EV = PRO.card?.evidence;
     if (EV?.status && SPECS[EV.status] && K.map?.attrColour) {

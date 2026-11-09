@@ -99,7 +99,6 @@
   const who = scoped => (scoped ? 'proteins of your selection' : `${W.marked} proteins`);
   const inWord = scoped => (scoped ? 'are in your selection' : `are ${W.marked}`);
   const alike = allStrat ? 'other proteins of similar abundance' : 'the other proteins each map places';
-  const alikeShort = allStrat ? 'of similar abundance' : 'the map places';
   const others = `proteins without a ${W.mark}`;
   const here = 'proteins the map places here';
   const fxv = v => (v == null ? '–' : K.fxn(v));

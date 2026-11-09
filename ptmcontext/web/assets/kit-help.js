@@ -177,7 +177,7 @@
   let userAt = 0, lastFocus = null, pageKey = null;
   ['pointerdown', 'keydown'].forEach(t => document.addEventListener(t, () => { userAt = Date.now(); }, true));
   addEventListener('popstate', () => { userAt = Date.now(); });
-  const KEEP = ['data-m', 'data-vs', 'data-f', 'data-v', 'data-all', 'data-sort', 'data-psort', 'data-ssort', 'data-exp', 'data-texp', 'data-aid', 'data-tile', 'data-try', 'data-site', 'data-goto', 'data-cf', 'data-cv', 'data-sel-clear', 'data-theme-choice', 'id'];
+  const KEEP = ['data-m', 'data-vs', 'data-f', 'data-v', 'data-all', 'data-sort', 'data-ssort', 'data-exp', 'data-texp', 'data-aid', 'data-tile', 'data-try', 'data-site', 'data-goto', 'data-cf', 'data-cv', 'data-sel-clear', 'data-theme-choice', 'id'];
   const sig = el => {
     const parts = KEEP.filter(a => el.hasAttribute(a)).map(a => `[${a}="${CSS.escape(el.getAttribute(a))}"]`);
     if (!parts.length && el.tagName === 'A' && el.getAttribute('href')) parts.push(`[href="${CSS.escape(el.getAttribute('href'))}"]`);

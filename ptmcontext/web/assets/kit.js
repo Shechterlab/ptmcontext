@@ -543,7 +543,7 @@
     if (A[card.analysis].tile) return A[card.analysis].tile(card);    // a question a module draws (kit-counts.js)
     const own = K.questions[card.analysis]?.tile?.(card);            // or draws the tile of (kit-cell.js, kit-values.js)
     if (own != null) return own;
-    const { a, rows, shown, more, left, whole, made, foot } = tileState(card);
+    const { a, rows, shown, more, left, made, foot } = tileState(card);
     // its downloads, in a menu that opens on a tap: the tile as a figure (PDF, SVG, PNG), the question's rows (TSV), its Method
     const title = card.title || FR.short?.[a.id] || a.title;
     const exp = K.tilekit.dlMenu(title, ['pdf', 'svg', 'png', 'tsv'], 'texp', a.id).replace(/data-texp="(\w+)"/g, `data-texp="$1" data-aid="${esc(a.id)}"`);
@@ -709,8 +709,6 @@
       (selOn() ? '' : (K.overviewBlocks || []).map(f => f()).join(''));    // the modules' own blocks (Starting points)
   }
   // the tiles of questions that hold for any selection (a module's counts), for a selection too small to test
-  const anySize = () => secList().map(x => [x, x.cards.filter(c => A[c.analysis]?.anySize)]).filter(([, cs]) => cs.length)
-    .map(([x, cs]) => `<h3 class="sec-label" id="sec-${esc(x.name.replace(/\W+/g, '-').toLowerCase())}">${esc(x.name)}</h3><div class="tiles">${cs.map(tile).join('')}</div>`).join('');
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
   function focus(aid) {
     // a question that is one of a card's views (website.overview cards: views) opens that card
@@ -795,14 +793,6 @@
   // All tests: every question, each opening its own tests
   K.sections.statistics = () => [['view', 'All tests', 1, link('statistics')], ...secList().filter(x => !x.caveat && x.name !== 'About the sites').flatMap(x => { const cs = x.cards.filter(c => D.analyses.some(a => a.id === c.analysis)); return cs.length ? [[`stat-${x.name}`, x.name, 0],
     ...cs.map(c => [`stat-${c.analysis}`, c.title || A[c.analysis].title, 1, link('statistics', '', { a: c.analysis })])] : []; })];
-  const SLO = Math.log(1 / 16), SHI = Math.log(16);
-  const sp = v => (Math.min(Math.max((Math.log(v) - SLO) / (SHI - SLO), 0), 1) * 100).toFixed(2) + '%';
-  function strip(rows) {
-    return `<svg class="strip" aria-hidden="true"><line class="track" x1="0" x2="100%" y1="9" y2="9"/>` +
-      [0.25, 0.5, 2, 4].map(v => `<line class="faint" x1="${sp(v)}" x2="${sp(v)}" y1="4" y2="14"/>`).join('') +
-      `<line class="one" x1="${sp(1)}" x2="${sp(1)}" y1="1" y2="17"/>` +
-      [...rows].sort((x, y) => (x.dir === 'ns') - (y.dir === 'ns')).reverse().map(r => `<circle class="dot ${r.dir}" cx="${sp(r.eff)}" cy="9" r="4.2"/>`).join('') + '</svg>';
-  }
   function cardBody(a, rows) {
     // a residue question shows every class, and so does a set question with 12 sets or fewer (a partition)
     const mark = moreMarks(a, rows), all = S.all.has(a.id), shown = shownOf(a, rows);
@@ -885,7 +875,7 @@
 
   // a question's own Method section (#method/q-<id>): what it asks, what it is compared with and its classes
   function questionMethod(a) {
-    const IN = D.inputs || {}, R = D.run, set = a.kind === 'protein_sets';
+    const R = D.run, set = a.kind === 'protein_sets';
     const labels = Object.entries(a.labels || {}).filter(([c]) => c);
     const classes = labels.length && labels.length <= 40 ? `<details><summary>Its ${set ? 'sets' : 'classes'} (${int(labels.length)})</summary><dl class="qm-classes">${labels.map(([c, l]) => `<dt>${esc(l || c)}</dt><dd>${esc((a.help || {})[c] || '')}</dd>`).join('')}</dl></details>` : '';
     return `<section id="m-q-${esc(a.id)}" class="qm"><h3>${esc(a.title)}${a.new && R.parity ? ' <span class="newtag">new</span>' : ''}</h3>` +

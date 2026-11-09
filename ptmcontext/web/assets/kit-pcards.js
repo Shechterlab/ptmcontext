@@ -6,7 +6,7 @@
    the page's fold hooks (K.proteinFolds) and filled when the protein's tables arrive. A module of the site kit. */
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
-  const { D, W, A, esc, int, cap } = K;
+  const { D, W, esc, int, cap } = K;
   const PC = D.protein_view?.cards || {}, LIVE = (D.protein_view?.sets || []).filter(c => c.live);
   if (!Object.keys(PC).length && !LIVE.length) return;
   const TH = D.tables || {}, LK = D.lookups || {}, SPECS = D.attribute_specs || {}, PADJ = K.PADJ;

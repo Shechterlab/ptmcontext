@@ -92,7 +92,7 @@
   // labels placed greedily: the candidates around a dot in order, the first that fits the box and clears the others
   // avoid: boxes [x0, y0, x1, y1] that labels must also clear (a chart's own text, such as region names)
   function place(items, box = [0, 760, 0, 400], size = 10, avoid = []) {
-    const taken = [...items.map(i => [i.x - i.r - 1, i.y - i.r - 1, i.x + i.r + 1, i.y + i.r + 1])], out = [], fixed = avoid.length;
+    const taken = [...items.map(i => [i.x - i.r - 1, i.y - i.r - 1, i.x + i.r + 1, i.y + i.r + 1])], out = [];
     taken.push(...avoid);
     const hit = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
     items.forEach(it => {

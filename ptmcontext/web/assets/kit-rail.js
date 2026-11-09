@@ -4,11 +4,11 @@
    site kit: K.rail(), K.watchSections(), and K.sel.bar() / K.sel.savedList() for the selection line. */
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
-  const { D, W, A, S, esc, int, cap } = K;
+  const { D, W, A, S, esc, int } = K;
   const M = K.sel;
   const SPECS = D.attribute_specs || {};
   // the selection model's pieces this module draws and changes; its data and sets are read through functions, as they load later
-  const { describe, dropTerm, RSPEC, active, byAcc, classLabel, clearAll, compute, isTermKey, keyName, matcher, nMarks, nProteins, scoreText, select, setFilter, termValues, toggle, validKey, valueLabel, valueName, termTip } = M;
+  const { describe, dropTerm, RSPEC, active, classLabel, clearAll, compute, isTermKey, keyName, matcher, nMarks, nProteins, scoreText, setFilter, termValues, toggle, validKey, valueLabel, valueName, termTip } = M;
   const sd = () => M.peek(), members = () => M.members();
   const AN = () => M.AN();
   // ---- the selection bar -----------------------------------------------------------------------------------------

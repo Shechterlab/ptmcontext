@@ -341,7 +341,7 @@
   }
   // a logo as drawn letters; tips: hover columns (the page, not the export)
   function logoSvg(cols, x0, y, cw, LH, tips, who) {
-    const bits = LUI.mode === 'bits', maxV = AA_BITS, ticks = bits ? [0, 1, 2, 3, 4] : [0, 0.5, 1], ink = K.PAL.ink;
+    const bits = LUI.mode === 'bits', maxV = AA_BITS, ticks = bits ? [0, 1, 2, 3, 4] : [0, 0.5, 1];
     let g = `<line x1="${x0 - 6}" x2="${x0 - 6}" y1="${y}" y2="${y + LH}" stroke="#9aa5ab"/>`;
     for (const t of ticks) { const ty = y + LH - (t / (bits ? maxV : 1)) * LH; g += `<line x1="${x0 - 9}" x2="${x0 - 6}" y1="${r1(ty)}" y2="${r1(ty)}" stroke="#9aa5ab"/><text x="${x0 - 12}" y="${r1(ty + 3)}" font-size="9.5" text-anchor="end" fill="${K.PAL.muted}">${t}</text>`; }
     g += `<text x="${x0 - 40}" y="${y + LH / 2 + 3}" font-size="10" text-anchor="end" fill="${K.PAL.muted}">${bits ? 'bits' : 'frequency'}</text>`;

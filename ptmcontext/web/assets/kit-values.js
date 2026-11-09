@@ -7,7 +7,7 @@
    from the site file. A module of the site kit. */
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
-  const { D, W, A, S, esc, int, cap } = K;
+  const { D, W, A, esc, int, cap } = K;
   const VIEWS = (D.set_views || []).filter(v => A[v.analysis] && A[v.analysis].kind === 'protein_sets');
   if (!VIEWS.length) return;
   const ST = window.PTMC_STATS, PADJ = K.PADJ;

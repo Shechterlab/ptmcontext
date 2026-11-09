@@ -5,7 +5,7 @@
    A list whose attribute the site lacks is left out; with nothing to show, the block is absent. A module of the site kit. */
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
-  const { D, W, esc, int } = K;
+  const { D, esc, int } = K;
   const SP = D.overview?.starting_points;
   if (!SP || !D.proteins?.length) return;
   const P = D.proteins.map(([acc, gene, name, len, marks], i) => ({ i, acc, gene, name, marks }));

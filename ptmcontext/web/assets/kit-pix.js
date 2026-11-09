@@ -12,7 +12,6 @@
   const UI = { tab: 'partners', all: false, rows: matchMedia('(max-width: 700px)').matches ? 3 : 6 };
   const num = v => (v === '' || v == null || !isFinite(+v) ? null : +v);
   const pc = (k, n) => (n ? `${Math.round(100 * k / n)}%` : '–');
-  const listed = a => !!(a && K.protState?.() && D.proteins.some(p => p[0] === a));
   const IDX = new Map((D.proteins || []).map(p => [p[0], p]));
   const isListed = a => IDX.has(a);
   const link = (acc, name) => (isListed(acc) ? `<a href="${esc(K.link('protein', acc))}"><b>${esc(name || acc)}</b></a>` : `<b title="${esc(acc || '')}">${esc(name || acc)}</b>`);
