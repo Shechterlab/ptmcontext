@@ -213,6 +213,24 @@
       parts.push(`<text x="${P}" y="16" font-size="${SZ}" fill="${K.PAL.muted}">No rows are ` + `shown.</text>`);
       y = 24;
     }
+    // the page's key, entry by entry, wrapped between entries (an entry is never split across lines)
+    const KS = 10,
+      keyLines = [];
+    let line = '';
+    (o.key || []).forEach((e) => {
+      const next = line ? `${line}   ·   ${e}` : e;
+      if (line && K.tw(next, KS) > Wd - 2 * P) {
+        keyLines.push(line);
+        line = e;
+      } else line = next;
+    });
+    if (line) keyLines.push(line);
+    keyLines.forEach((l, k) =>
+      parts.push(
+        `<text x="${P}" y="${y + 12 + 14 * k}" font-size="${KS}" fill="${K.PAL.muted}">${esc(fit(l, Wd - 2 * P, KS))}</text>`
+      )
+    );
+    if (keyLines.length) y += 14 * keyLines.length + 6;
     const total = o.total != null ? o.total : allRows;
     const cut =
       total > shownRows
@@ -237,8 +255,27 @@
       d = drawTable({ head, rows }, rows.length, Wd - 2 * PAD, parts, y0, PAD);
     return { body: parts.join(''), H: d.y - y0 };
   }
+  // the color key or legend the page shows with a table (a key by class, in the card that holds the export bar, outside the
+  // table): entries of a line each, so the figure carries the key the page does
+  const KEYS = '.key, .pc-key, .calls-key, .legend',
+    KEYCARD =
+      '.cell-block, .vm-block, .tile, .pcard, .idr-card, .qv-members, .tbl-card, article, details, .card, section';
+  function keyEntries(btn) {
+    const bar = btn?.closest?.('.exp'),
+      card = bar && (bar.closest(KEYCARD) || bar.parentElement);
+    if (!card) return [];
+    const els = [...card.querySelectorAll(KEYS)].filter(
+      (e) => e.getClientRects().length && !e.closest('.exp, table, nav, #tabs, .tile-actions, [hidden], summary')
+    );
+    return els
+      .filter((e) => !els.some((o) => o !== e && o.contains(e)))
+      .flatMap((e) =>
+        e.children.length ? [...e.children].map((c) => clean(c.textContent)) : clean(e.textContent).split(' · ')
+      )
+      .filter(Boolean);
+  }
   const tableExport = (kind, btn, root, o, name, tsv) =>
-    K.exportFigure(kind, () => tableFigure(root, o), name, btn, tsv);
+    K.exportFigure(kind, () => tableFigure(root, { ...o, key: o?.key ?? keyEntries(btn) }), name, btn, tsv);
   // ---- a table with no export of its own (the Method page's, a protein page's fold tables): an export bar before it, TSV of every
   // row and the same drawn figure; found after each render and when a fold draws late ------------------------------------------
   const slug = (t) =>

@@ -25,3 +25,10 @@ def test_the_table_figure_module_is_loaded_before_its_users_and_exports_the_api(
     assert 'K.figureFrame(' in src and 'tableFigure, tableExport' in src
     for name in ('kit-tables.js', 'kit-sites.js', 'kit-proteins.js', 'kit-questions.js', 'kit-idrs.js'):
         assert 'K.tableExport(' in (ASSETS / name).read_text() or 'regionsFigure' in (ASSETS / name).read_text()
+
+
+def test_a_table_figure_carries_the_key_the_page_shows_with_its_table():
+    src = (ASSETS / 'kit-tabfig.js').read_text()
+    # the key by class in the card that holds the export bar, outside the table, is drawn under the table (never split mid-entry)
+    assert "const KEYS = '.key, .pc-key, .calls-key, .legend'" in src and 'keyEntries(btn)' in src
+    assert 'keyLines.push(line)' in src
