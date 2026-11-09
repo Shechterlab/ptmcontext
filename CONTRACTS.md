@@ -819,6 +819,25 @@ columns. Print shows the selection, the version and the citation (a block only P
 that names a page, a protein or a selection carries `dv`; a variant's downloads (the lower-confidence version) carry its name in
 the file name and in the header.
 
+## Page hooks (markup that modules read from each other)
+
+A few modules read the page's markup instead of a `K.*` call. These attributes and classes are therefore part of the
+contract: a module that draws them keeps them, and a module that reads them reads only these.
+
+| Hook | Drawn by | Read by | Meaning |
+|---|---|---|---|
+| `tbody tr[data-acc="ACC"]` | the tables (`kit-tables.js`, `kit-sites.js`, `kit-proteins.js`) | `kit-hilite.js` | a row about one protein |
+| `tbody tr[data-goto="ACC/POS"]` | the sites tables | `kit-hilite.js` | a row about one site (protein accession, position) |
+| `a[href*="#protein/"]` | any module | `kit-hilite.js` | a link to a protein (`#protein/ACC` or `#protein/GENE/ACC`) or, with `/POS`, a site; a row holding one is tinted when its protein or site is highlighted. Links inside `.crumb`, `nav`, `.tabs`, headings, `#hl-bar`, `.fr-nav` and `.hl-row` are left alone |
+| `tr.hl-row` | `kit-hilite.js` | `kit-tabfig.js` | a highlighted row, tinted in the table's figure too |
+| `svg.minimap` | `kit-tables.js` | `kit-tabfig.js` | the protein map in a table cell; the figure redraws it from the SVG |
+| `i.ix-on`, `i.ix-off` | `kit-interactions.js` | `kit-tabfig.js` | a yes or no dot in a table cell; the figure and the download write them as the characters for yes and no |
+| `.results-head .cx` | the pages' heads (`kit-sites.js`, `kit-idrs.js`, `kit-figures.js`) | `kit-tabfig.js` (`K.pageCx()`) | the line that says what the page shows now; it becomes the figure's subtitle |
+| `.tbl-card`, `.tbl-wrap`, `.cv-wrap` | the pages | `kit-tabfig.js` | the box a table sits in, where its figure buttons go |
+| `.exp`, `.fr-dl`, `.hl-tbl` | the download menus and the highlight list | `kit-tabfig.js` | tables inside these are not given figure buttons |
+
+`K.tilekit` (`kit-tile.js`) is optional for the Overview tiles: without it a tile has no downloads and no ruler.
+
 ## What the page reads at once and what it reads later
 
 `index.html` holds the data of the first screen (`site-data`). Two files are read only when something asks for them:

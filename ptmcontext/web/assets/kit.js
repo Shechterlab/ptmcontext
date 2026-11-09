@@ -546,8 +546,9 @@
     const { a, rows, shown, more, left, made, foot } = tileState(card);
     // its downloads, in a menu that opens on a tap: the tile as a figure (PDF, SVG, PNG), the question's rows (TSV), its Method
     const title = card.title || FR.short?.[a.id] || a.title;
-    const exp = K.tilekit.dlMenu(title, ['pdf', 'svg', 'png', 'tsv'], 'texp', a.id).replace(/data-texp="(\w+)"/g, `data-texp="$1" data-aid="${esc(a.id)}"`);
-    const fr = !shown.some(r => r.vs) && shown.length;
+    // kit-tile.js (K.tilekit) draws the tile's rows and downloads; without it the tile has its title and rows' text only
+    const exp = !K.tilekit ? '' : K.tilekit.dlMenu(title, ['pdf', 'svg', 'png', 'tsv'], 'texp', a.id).replace(/data-texp="(\w+)"/g, `data-texp="$1" data-aid="${esc(a.id)}"`);
+    const fr = K.tilekit && !shown.some(r => r.vs) && shown.length;
     const ms = fr ? shown.map(r => frModel(a, r)) : [], ax = fr ? K.tilekit.axisOf(K.tilekit.valsOf(ms)) : null;
     const ans = fr && !made ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
     return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</h3>${detailsLink(a.id)}</header>` +
