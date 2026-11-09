@@ -296,6 +296,7 @@
         `the highlighted list under a name, in this browser">Save as…</button>`) +
       (`<button type="button" class="btn small" data-hl-rename${cur ? '' : ' disabled'}>Rename</button><button ` +
         `type="button" class="btn small" data-hl-delete${cur ? '' : ' disabled'}>Delete</button></div>`) +
+      (have ? actionsHtml() : '') +
       (`<label class="small"><input type="checkbox" data-hl-first${first ? ' checked' : ''}> Highlighted first in ` +
         `tables</label></div></span>`)
     );
@@ -592,6 +593,14 @@
     const inner = host.firstElementChild,
       one = host.querySelector('.hl-form')?.offsetHeight || 0;
     if (t.length && inner.offsetHeight > one * 1.6 + 4) host.innerHTML = build(true);
+    if (reopen) {
+      reopen = false;
+      const b = host.querySelector('[data-hl-menu][aria-controls="hl-pop"]');
+      if (b) {
+        b.setAttribute('aria-expanded', 'true');
+        document.getElementById('hl-pop').hidden = false;
+      }
+    }
   }
   if (typeof addEventListener === 'function')
     addEventListener('resize', () => {
@@ -760,6 +769,76 @@
     if (e.key === 'Escape') closeRowPop(true);
   });
 
+  // "Select these" and "Compare with selection": the highlighted proteins become the selection (a list of names, as the search takes
+  // one), or are compared with the selection that was there. Both say how many of the typed names were found, and name the rest.
+  let note = null; // {hl, text}: what the last action said, kept while the list is the same
+  const foundText = (verb) => {
+    const { entries } = ordered(),
+      nf = entries.filter((x) => !x.found).map((x) => x.tok),
+      n = entries.length - nf.length;
+    return `${verb}: ${int(n)} of ${int(entries.length)} found${nf.length ? ` · not found: ${nf.join(', ')}` : ''}`;
+  };
+  // the search text that gives these proteins: their gene, or the accession where a gene name would also match another protein
+  const namesOf = (list) =>
+    list
+      .map((p) => {
+        const g = geneOf(p),
+          r = g ? K.sel.select(g, {}) : null;
+        return r && r.proteins?.size === 1 && r.proteins.has(p) && !/[\s,;]/.test(g) ? g : protOfIndex(p)[0];
+      })
+      .join(' ');
+  function takeSelection(verb) {
+    const list = ordered().list;
+    if (!list.length) return false;
+    S.q = namesOf(list);
+    S.f = {};
+    note = { hl: S.hl, text: foundText(verb) };
+    return true;
+  }
+  let reopen = false;
+  K.clicks.push(
+    [
+      '[data-hl-select]',
+      () => {
+        if (!takeSelection('Selected')) return;
+        reopen = true;
+        barKey = null;
+        K.writeHash(true);
+        K.render();
+      },
+    ],
+    [
+      '[data-hl-compare]',
+      () => {
+        if (!K.sel.active() || !ordered().list.length) return;
+        const f = K.sel.encode(),
+          cmp = [S.q && 'q=' + encodeURIComponent(S.q), f && 'f=' + f].filter(Boolean).join('&');
+        takeSelection('Compared');
+        Object.assign(S, { view: 'overview', arg: '', vs: 'cmp', cmp });
+        reopen = true;
+        barKey = null;
+        K.writeHash(true);
+        K.render();
+        scrollTo(0, 0);
+      },
+    ]
+  );
+  const actionsHtml = () => {
+    const found = ordered().list.length > 0,
+      msg = note && note.hl === S.hl ? note.text : '';
+    return (
+      `<div class="hl-sets"><button type="button" class="btn small" data-hl-select${found ? '' : ' disabled'} ` +
+      `title="Make the highlighted proteins the selection, replacing the current one (Back undoes it)">Select these</button>` +
+      `<button type="button" class="btn small" data-hl-compare${found && K.sel?.active() ? '' : ' disabled'} ` +
+      `title="${
+        K.sel?.active()
+          ? 'What sets the highlighted proteins apart from the current selection?'
+          : 'Make a selection first: the highlighted proteins are compared with it'
+      }">Compare with selection</button></div>` +
+      (found ? `<p class="small hl-note" role="status">${esc(msg || foundText('Found'))}</p>` : '')
+    );
+  };
+
   const css = document.createElement('style');
   css.textContent =
     `.hl-line { margin: 0.35rem 0; font-size: 0.85rem; display: flex; gap: 0.4rem; align-items: ` +
@@ -791,6 +870,7 @@
     `1px solid var(--line-strong); border-radius: 0.5rem; background: var(--surface); box-shadow: 0 6px 18px ` +
     `rgba(0, 0, 0, 0.15); }
 .hl-pop .hl-sets { margin: 0; }
+.hl-note { margin: 0; max-width: 24rem; }
 .hl-rowcount { margin: -0.1rem 0 0.25rem; font-size: 0.78rem; text-align: right; }
 .hl-rowpop { position: absolute; z-index: 60; min-width: 10rem; max-width: min(24rem, calc(100vw - 1rem)); max-height: 16rem; ` +
     `overflow: auto; padding: 0.5rem 0.7rem; border: 1px solid var(--line-strong); border-radius: 0.5rem; background: ` +

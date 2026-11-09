@@ -66,3 +66,31 @@ def test_a_row_shows_how_many_highlighted_proteins_it_holds_and_nothing_without_
     assert run('ALPHA R10, ALPHA', body)[0].count('1 highlighted') == 1  # a site entry counts its protein, once
 
 
+@node
+def test_select_these_replaces_the_selection_keeps_the_highlight_and_says_what_was_found():
+    body = """
+S.q = 'old'; S.f = { k: ['v'] };
+const before = K.hl.control();
+click('[data-hl-select]')();
+console.log(JSON.stringify({ q: S.q, f: S.f, hl: S.hl, hash: calls.hash, render: calls.render, ctl: K.hl.control(), before: before.includes('Select these') }));
+"""
+    got = run('ALPHA, BETA, NOPE', body, 'true')
+    assert got['q'] == 'ALPHA BETA' and got['f'] == {} and got['hl'] == 'ALPHA, BETA, NOPE'
+    assert got['hash'] == [True] and got['render'] == 1 and got['before']
+    assert 'Selected: 2 of 3 found · not found: NOPE' in got['ctl']
+
+
+@node
+def test_compare_with_selection_needs_a_selection_and_keeps_the_old_one_as_the_other_side():
+    body = """
+S.q = 'z';
+const ctl = K.hl.control();
+click('[data-hl-compare]')();
+console.log(JSON.stringify({ q: S.q, vs: S.vs, cmp: S.cmp, view: S.view, ctl: K.hl.control(), off: ctl.includes('data-hl-compare disabled') }));
+"""
+    got = run('ALPHA, GAMMA', body, 'true')
+    assert (got['q'], got['vs'], got['cmp'], got['view']) == ('ALPHA', 'cmp', 'q=z&f=k~v', 'overview')
+    assert 'Compared: 1 of 2 found · not found: GAMMA' in got['ctl'] and not got['off']
+    assert run('ALPHA', body, 'false')['off'] is True
+
+
