@@ -1218,8 +1218,8 @@ context_marks:
     input: context_phosphorylation_sites_v1_5_0
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
     replaces_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row leaves its Phospho kind out: one source for phosphosites
-    colour: "#6D3FC0"          # violet: apart from the red and slate of the data and the motif green
-    colour_dark: "#8F6BEB"
+    colour: "#0891B2"          # cyan: apart from the red and slate of the data, the motif green and the purples of other sites
+    colour_dark: "#1FA2C4"
     citation:
       short: UniProt and iPTMnet
       cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
