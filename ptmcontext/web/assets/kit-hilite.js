@@ -14,7 +14,7 @@
   'use strict';
   const { D, esc, int, S } = K;
   const LIMIT = 12;
-  if (D.site.features?.highlight === false) {         // website.features.highlight: false leaves it out; the charts and tables read this inert K.hl
+  if (D?.site?.features?.highlight === false) {         // website.features.highlight: false leaves it out; the charts and tables read this inert K.hl
     const none = () => ({ prots: new Set(), marks: new Set(), sites: [], notFound: [], text: '', chips: [] });
     K.hl = { nfText: () => '', isProt: () => false, isSite: () => false, any: () => false, firstSort: rows => rows, decorate() {}, mark: v => v, first: false, pasted: none,
       state: () => ({ on: false, prots: new Set(), marks: null, text: '' }), sources: [], line: () => '', place: () => [], labels: () => '', clear() {}, control: () => '',
