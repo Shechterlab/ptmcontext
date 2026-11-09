@@ -986,7 +986,11 @@
           w = K.tw(txt, 10.5) + 6,
           x = X(m[0]);
         let line = 0;
-        while (line < maxLines && lineEnd[line] != null && x - w / 2 < lineEnd[line]) line++;
+        // a line is free if the label fits after the one before it there, and the stick it hangs from (down to its head)
+        // clears the labels on the lines below
+        const free = (l) =>
+          (lineEnd[l] == null || x - w / 2 >= lineEnd[l]) && lineEnd.slice(0, l).every((e) => e == null || e + 2 <= x);
+        while (line < maxLines && !free(line)) line++;
         if (line < maxLines) {
           lineEnd[line] = x + w / 2;
           labels.push({ x, line, base: txt, txt, pos: [m[0]], n: 1 });
@@ -1134,6 +1138,9 @@
     });
     Object.assign(c, { rowLabel });
   }
+  // text is measured in the export's Arial-like face; a wider face a reader's system falls back to (Verdana, DejaVu Sans)
+  // is up to this much wider, so a label placed by its measured width keeps that margin
+  const SL = 1.15;
   function draw_backbone(c) {
     const { rec, inView, parts, X0, X1, yB, P, XA, XB, span2, p, it, key, uni, insideHtml } = c;
     // backbone: a bar where ordered, a wave where disordered (the site's disorder), the site's domains as boxes
@@ -1141,21 +1148,47 @@
       segK = kindsOf('segments');
     const dis = rec.units.filter((u) => disK.has(u[0]) && isOn('bb:' + u[0]) && inView(u[1], u[2]));
     const segs = rec.units.filter((u) => segK.has(u[0]));
-    parts.push(`<line x1="${X0}" x2="${X1}" y1="${yB}" y2="${yB}" stroke="${P.muted}" stroke-width="2"/>`);
+    // the backbone and the waves are drawn only where no domain box covers them (a box hides them, and a name set in the box
+    // must not have a line behind it), and the straight bar only where no wave is
+    const boxes = mergedDomains(rec)
+      .filter((u) => inView(u[1], u[2]))
+      .map(([, s, e]) => [XA(s), XA(s) + Math.max(2, XB(e) - XA(s))])
+      .sort((m, n) => m[0] - n[0]);
+    const apart = (a, b, holes) => {
+      const out = [];
+      let x = a;
+      holes.forEach(([h0, h1]) => {
+        if (h1 <= x || h0 >= b) return;
+        if (h0 > x) out.push([x, h0]);
+        x = Math.max(x, h1);
+      });
+      if (x < b) out.push([x, b]);
+      return out.filter(([m, n]) => n - m >= 0.5);
+    };
+    const waves = dis.map(([, s, e]) => [XA(s), XB(e)]).filter(([a, b]) => b - a >= 2);
+    apart(
+      X0,
+      X1,
+      [...boxes, ...waves].sort((m, n) => m[0] - n[0])
+    ).forEach(([a, b]) =>
+      parts.push(`<line x1="${r1(a)}" x2="${r1(b)}" y1="${yB}" y2="${yB}" stroke="${P.muted}" stroke-width="2"/>`)
+    );
     dis.forEach(([kind, s, e]) => {
       const a = XA(s),
         b = XB(e);
       if (b - a < 2) return;
-      parts.push(`<rect x="${r1(a)}" y="${yB - 2}" width="${r1(b - a)}" height="4" fill="${P.surf}"/>`);
-      let d = `M${r1(a)},${yB}`,
-        x = a,
-        up = true;
-      while (x < b) {
-        const nx = Math.min(b, x + 5);
-        d += ` Q${r1((x + nx) / 2)},${up ? yB - 5 : yB + 5} ${r1(nx)},${yB}`;
-        x = nx;
-        up = !up;
-      }
+      let d = '';
+      apart(a, b, boxes).forEach(([a2, b2]) => {
+        let x = a2,
+          up = true;
+        d += `M${r1(a2)},${yB}`;
+        while (x < b2) {
+          const nx = Math.min(b2, x + 5);
+          d += ` Q${r1((x + nx) / 2)},${up ? yB - 5 : yB + 5} ${r1(nx)},${yB}`;
+          x = nx;
+          up = !up;
+        }
+      });
       // the other regions here that come from the same input (an IDR made from this disorder), not every track's
       const t = trackOf(kind),
         over = segs
@@ -1171,8 +1204,11 @@
           full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''
         }`;
       const k = it({ tip: tip(false), card: tip(true), a: s, b: e, src: { track: t } });
+      if (d)
+        parts.push(
+          `<path d="${d}" fill="none" stroke="${P.muted}" stroke-width="1.6" data-mi="${k}" pointer-events="stroke"/>`
+        );
       parts.push(
-        `<path d="${d}" fill="none" stroke="${P.muted}" stroke-width="1.6" data-mi="${k}" pointer-events="stroke"/>`,
         `<rect x="${r1(a)}" y="${yB - 7}" width="${r1(b - a)}" height="14" ` + `fill="transparent" data-mi="${k}"/>`
       );
       key(SW.wave(P.muted), t.title);
@@ -1210,7 +1246,7 @@
           `<rect x="${r1(a)}" y="${yB - 8}" width="${r1(w)}" height="16" rx="4" fill="${P.dom}" stroke="${P.domEdge}" stroke-width="1" ` +
             `data-mi="${k}"/>`
         );
-        if (short && K.tw(short, 10, 600) + 8 < w)
+        if (short && K.tw(short, 10, 600) * SL + 8 < w)
           parts.push(
             `<text x="${r1((a + b) / 2)}" y="${yB + 3.5}" font-size="10" ` +
               `font-weight="600" text-anchor="middle" fill="${P.domInk}" pointer-events="none">${esc(short)}</text>`
@@ -1338,7 +1374,7 @@
       below
         .sort((a, b) => a[0] - b[0])
         .forEach(([mx, t]) => {
-          const w = K.tw(t, 9.5);
+          const w = K.tw(t, 9.5) * SL;
           if (mx - w / 2 > right + 6 && mx + w / 2 < Wd) {
             parts.push(
               `<text x="${r1(mx)}" y="${yB + 20}" font-size="9.5" ` +
@@ -1364,10 +1400,13 @@
     const baseLine = (yy) =>
       parts.push(`<line x1="${X0}" x2="${X1}" y1="${r1(yy)}" y2="${r1(yy)}" stroke="${P.faint}" stroke-width="0.8"/>`);
     // a label beside a tick, with a halo, flipped left at the right edge; skipped where it would hit the one before
-    const labelAt = (xx, yy, text, right) => {
-      const tw = K.tw(text, 9),
-        flip = xx + 4 + tw > Wd - 2;
-      if ((flip ? xx - 4 - tw : xx + 4) <= right.v + 5) return;
+    // (ticks: the x of every tick in the row; a label that would stand over another tick is left out, its hover has the name)
+    const labelAt = (xx, yy, text, right, ticks = []) => {
+      const tw = K.tw(text, 9) * SL,
+        flip = xx + 4 + tw > Wd - 2,
+        left = flip ? xx - 4 - tw : xx + 4;
+      if (left <= right.v + 5) return;
+      if (ticks.some((t) => Math.abs(t - xx) > 1 && t + 3 > left && t - 2 < left + tw)) return;
       parts.push(
         `<text x="${r1(flip ? xx - 4 : xx + 4)}" y="${r1(yy - 4)}" font-size="9" fill="${P.ink}" stroke="${P.surf}" stroke-width="2.5" ` +
           `paint-order="stroke"${flip ? ' text-anchor="end"' : ''}>${esc(text)}</text>`
@@ -1381,7 +1420,7 @@
         const a = XA(f.a),
           w = Math.max(2, XB(f.b) - a),
           t = lab(f),
-          tw = t ? K.tw(t, 9.5) : 0;
+          tw = t ? K.tw(t, 9.5) * SL : 0;
         const inside = t && w > tw + 6,
           after = t && !inside && a + w + 8 + tw < X1,
           reach = after ? a + w + 6 + tw : a + w;
@@ -1398,7 +1437,7 @@
           how = '';
         }
         if (how === 'cut') {
-          while (text.length > 3 && K.tw(text + '…', 9.5) > w - 6) text = text.slice(0, -1);
+          while (text.length > 3 && K.tw(text + '…', 9.5) * SL > w - 6) text = text.slice(0, -1);
           text += '…';
         }
         ends[l] = Math.max(ends[l], how === 'after' ? reach : a + w);
@@ -1642,7 +1681,13 @@
         [...at.entries()]
           .sort((a1, a2) => a1[0] - a2[0])
           .forEach(([q, xs]) =>
-            labelAt(X(q), mid, xs.map((x) => x[4] + (x[5] > 1 ? ` ×${x[5]}` : '')).join(', '), right)
+            labelAt(
+              X(q),
+              mid,
+              xs.map((x) => x[4] + (x[5] > 1 ? ` ×${x[5]}` : '')).join(', '),
+              right,
+              shown.filter((x) => markOf(x) === 'tick').map((x) => X(x[1]))
+            )
           );
       }
       rowLabel(row[1], mid, row[3]);
@@ -1941,7 +1986,8 @@
         }
         const mid = c.y + 7,
           right = { v: -1e9 },
-          done = new Set();
+          done = new Set(),
+          ticksX = fs.map((f) => X(fpos(f)[0]));
         baseLine(mid);
         let hits = 0;
         fs.sort((a, b) => fpos(a)[0] - fpos(b)[0]).forEach((f) => {
@@ -1986,7 +2032,7 @@
             const vt = `${
               f.alternativeSequence?.originalSequence || seq[s - 1] || ''
             }${s}${tos.join('/')}${dis.length ? ' ' + dis[0] : ''}`;
-            labelAt(xx, mid, vt, right);
+            labelAt(xx, mid, vt, right, ticksX);
           }
         });
         rowLabel(row[1], mid, row[3]);
@@ -2604,10 +2650,22 @@
       svg = '';
     if (title) {
       svg += `<text x="${x}" y="${r1(y + 3.5)}" font-size="${fs}" font-weight="700" fill="${P.muted}">${esc(title)}</text>`;
-      x += K.tw(title, fs, 700) + 10;
+      x += K.tw(title, fs, 700) * SL + 10;
     }
+    let row = null;
     entries.forEach((e) => {
-      const w = 25 + K.tw(e.label, fs);
+      // the key's groups carry the name of their track (as the key under the map does)
+      if (e.row && e.row !== row) {
+        row = e.row;
+        const tw = K.tw(row, fs, 700) * SL + 8;
+        if (x > x0 && x + tw + 25 > x0 + width) {
+          x = x0;
+          y += lh;
+        }
+        svg += `<text x="${r1(x)}" y="${r1(y + 3.5)}" font-size="${fs}" font-weight="700" fill="${P.muted}">${esc(row)}</text>`;
+        x += tw;
+      }
+      const w = 25 + K.tw(e.label, fs) * SL;
       if (x > x0 && x + w > x0 + width) {
         x = x0;
         y += lh;

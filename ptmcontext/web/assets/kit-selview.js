@@ -92,13 +92,18 @@
     rows.forEach((r, i) => {
       const y = i * rowH + rowH / 2,
         c = r.dir === 'more' ? more : less;
+      // the label, then the question it is from: each cut to the width the left column has, in the width of its text
+      const main = r.label + (r.related ? ` +${r.related}` : '') + (r.circular ? ' (restates the list)' : ''),
+        q = qTitle(r),
+        qs = ` · ${q.length > 26 ? q.slice(0, 25) + '…' : q}`,
+        room = L - 6,
+        qw = Math.min(K.tw(qs, 12) * 1.12, room * 0.4),
+        mainFit = K.fit(main, room - qw, 12),
+        qFit = K.fit(qs, room - K.tw(mainFit, 12) * 1.12, 12);
       parts.push(
-        `<text x="0" y="${y + 4}" font-size="12" fill="${ink}">${esc(
-          (r.label.length > 40 ? r.label.slice(0, 39) + '…' : r.label) +
-            (r.related ? ` +${r.related}` : '') +
-            (r.circular ? ' (restates the list)' : '')
-        )}<tspan fill="${light ? '#6b7280' : 'var(--muted)'}" font-size="12">` +
-          ` · ${esc(qTitle(r).length > 26 ? qTitle(r).slice(0, 25) + '…' : qTitle(r))}</tspan></text>`
+        `<text x="0" y="${y + 4}" font-size="12" fill="${ink}">${esc(mainFit)}<tspan fill="${light ? '#6b7280' : 'var(--muted)'}" font-size="12">${esc(
+          qFit
+        )}</tspan></text>`
       );
       if (r.lo != null && r.hi != null)
         parts.push(

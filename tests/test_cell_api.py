@@ -46,7 +46,7 @@ const sv = {{ attrs: {{}}, style: {{}}, setAttribute(k, v) {{ this.attrs[k] = v;
 const host = {{ innerHTML: '', get firstElementChild() {{ return sv; }}, addEventListener: noop, removeEventListener: noop }};
 const K = {{ D, W: D.words, A, S: {{ q: '', f: {{}} }}, esc: s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'), int: n => String(n), cap: s => s[0].toUpperCase() + s.slice(1),
   fx: x => x.toFixed(2) + '×', fxn: x => x.toFixed(2), fq: q => q.toExponential(1), PADJ: 0.05, MIN_EFFECT: 1.1, LESS: 1 / 1.1, MIN: {{}}, link: (...a) => '#' + a.join('/'), render: noop, writeHash: noop,
-  selOn: () => false, vsOn: () => false, questions: {{}}, methods: [], clicks: [], tips: [], afterRender: [], expBar: () => '', figureFrame: noop, preamble: () => '', exportFigure: noop, detailsLink: () => '',
+  selOn: () => false, vsOn: () => false, questions: {{}}, methods: [], clicks: [], tips: [], afterRender: [], expBar: () => '', figureFrame: noop, preamble: () => '', exportFigure: noop, tw: s => 6 * s.length, wrap: s => [s], fit: s => s, detailsLink: () => '',
   sel: {{ data: () => null, testable: () => true, setHas: () => false, MIN: {{ proteins: 10, marks: 30 }} }} }};
 global.PTMC_STATS = {{}};
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-cell.js'))}, 'utf8'));

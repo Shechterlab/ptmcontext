@@ -184,6 +184,7 @@
           ? 'never found here'
           : 'odds ratio ' + fxv(2 ** a.l2);
   const fq = K.fq;
+  const toneOf = (k) => (TONES.light.find((x) => x[0] === k) || [])[1];
   const and = (xs) => (xs.length > 1 ? xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1] : xs[0] || '');
   const rowName = (row) => row.name || row.label;
   // a name inside a sentence: the site's in_text, else lower case unless it starts with an abbreviation (ER, P-bodies)
@@ -486,7 +487,7 @@
   function oneDrawings(p) {
     if (!K.sel.data() || !DRAWINGS.length) return '';
     TIPS = [];
-    return DRAWINGS.map((d) => {
+    const html = DRAWINGS.map((d) => {
       const k = 'p-' + d.drawing;
       FIGS[k] = {
         title: () => `${p.gene || p.acc}: the ${d.drawing}`,
@@ -496,9 +497,18 @@
         zoom: d.drawing,
         one: { i: p.i },
         note: () => 'Coloured: a map places the protein in that part. Dashed outline: no map does.',
+        legend: () => [
+          [toneOf('up-2'), toneOf('up-3'), 'a map places the protein there'],
+          ['#ffffff', '#8a96a0', 'no map does'],
+        ],
       };
       return block(k, `The ${d.drawing}`, 'cell-fig cell-onep');
     }).join('');
+    if (DRAWINGS.length > 1) {
+      FIGS['p-both'] = bothOf('p-');
+      FIGS['p-both'].title = () => `${p.gene || p.acc}: ${and(DRAWINGS.map((d) => 'the ' + d.drawing))}`;
+    }
+    return html;
   }
   // a phone's drawings of one protein: the fit-width drawings without their side labels (the page lists the parts instead)
   const oneNarrowHtml = (p) =>
@@ -570,8 +580,17 @@
     const labels = (items, Wd, H, col) => {
       let g = '';
       for (const side of ['l', 'r']) {
-        const list = items.filter((it) => it.side === side && own(it.k) === it.k).sort((a, b) => a.y - b.y),
-          gap = 50,
+        // a name is set in the room between the drawing's edge and the label column, measured in the export's face and then
+        // allowed a fifth more (a reader's fallback face is wider); one that does not fit goes on a second line
+        const room = (side === 'l' ? col - 22 : Wd - (Wd - col + 22)) - 4,
+          list = items.filter((it) => it.side === side && own(it.k) === it.k).sort((a, b) => a.y - b.y),
+          lines = new Map(
+            list.map((it) => {
+              const ls = K.wrap(it.name || rowName(P[it.k].row), room / 1.2, 14, 700);
+              return [it, ls.length > 2 ? [ls[0], K.fit(ls.slice(1).join(' '), room, 14, 700, 1.2)] : ls];
+            })
+          ),
+          gap = list.some((it) => lines.get(it).length > 1) ? 66 : 52,
           top = 30,
           bot = H - 26,
           ys = list.map((it) => it.y);
@@ -584,15 +603,21 @@
             edge = left ? col : Wd - col,
             tx = left ? edge - 22 : edge + 22,
             anc = left ? 'end' : 'start',
-            bx = left ? edge - 7 : edge + 1;
+            bx = left ? edge - 7 : edge + 1,
+            ls = lines.get(it),
+            up = (ls.length - 1) * 15; // a second line of the name stands above the first
           const elbow = left ? edge + 12 : edge - 12;
           g +=
             `<g class="cd-label"${tip(it.k, it.name, true)}><polyline class="cd-lead" points="${edge},${y - 5} ${elbow},${y - 5} ${it.x},${it.y}"/><circle ` +
             `class="cd-dot" cx="${it.x}" cy="${it.y}" r="3"/>` +
-            `<rect class="cd-hit" x="${left ? 0 : edge}" y="${y - 18}" width="${col}" height="38"/>` +
-            `<rect class="${fill(it.k)} cd-o" x="${bx}" y="${y - 17}" width="6" height="32" rx="2"/>` +
-            `<text class="cd-name" x="${tx}" y="${y}" text-anchor="${anc}">${esc(it.name || rowName(p.row))}</text>` +
-            `<text class="cd-val" x="${tx}" y="${y + 16}" text-anchor="${anc}">${
+            `<rect class="cd-hit" x="${left ? 0 : edge}" y="${y - 18 - up}" width="${col}" height="${40 + up}"/>` +
+            `<rect class="${fill(it.k)} cd-o" x="${bx}" y="${y - 17 - up}" width="6" height="${34 + up}" rx="2"/>` +
+            `<text class="cd-name" x="${tx}" y="${y - up}" text-anchor="${anc}">${ls
+              .map(
+                (t, i) => `<tspan x="${tx}"${i ? ' dy="15"' : ''}>${esc(t + (i < ls.length - 1 ? ' ' : ''))}</tspan>`
+              )
+              .join('')}</text>` +
+            `<text class="cd-val" x="${tx}" y="${y + 18}" text-anchor="${anc}">${
               sig(p) ? `<tspan font-weight="700">${esc(p.value)}</tspan>` : `<tspan class="m">${esc(p.value)}</tspan>`
             }` +
             (p.maps ? `<tspan class="m">\u00A0·\u00A0${esc(p.maps)}</tspan>` : '') +
@@ -1445,18 +1470,33 @@
       holder.remove();
     }
   }
-  function exported(make, title, sub, note, lead, legend) {
-    const f = make(),
-      s = Math.min(1, 1000 / f.W);
+  // the figure of a FIGS entry for the exports: its drawing (or, for a `both` entry, its drawings side by side under one title,
+  // summary sentence, color key and credit), through K.figureFrame, which draws the title, key and credit the same for every figure
+  function exported(F) {
+    const note = F.note?.() || `${keyWords()} ${testWords()}`,
+      list = F.both ? F.both() : [{ make: F.make }],
+      made = list.map((x) => x.make()),
+      G = 24,
+      s = F.both ? Math.min(1, 800 / Math.max(...made.map((f) => f.W))) : Math.min(1, 1000 / made[0].W),
+      cw = Math.round(Math.max(...made.map((f) => f.W)) * s),
+      head = F.both ? 22 : 0;
+    const body = made
+      .map(
+        (f, i) =>
+          (F.both
+            ? `<text x="${20 + i * (cw + G)}" y="14" font-size="13" font-weight="700" fill="${K.PAL.ink}">${esc(list[i].caption)}</text>`
+            : '') + `<g transform="translate(${20 + i * (cw + G)},${head}) scale(${s})">${inlined(f)}</g>`
+      )
+      .join('');
     return K.figureFrame({
-      title,
-      sub,
-      lead,
-      legend,
-      W: Math.round(f.W * s) + 40,
-      body: `<g transform="translate(20,0) scale(${s})">${inlined(f)}</g>`,
-      bodyH: f.H * s,
-      note: note || `${keyWords()} ${testWords()}`,
+      title: F.title(),
+      sub: F.sub(),
+      lead: F.lead?.(),
+      legend: F.legend?.(),
+      W: 40 + made.length * cw + (made.length - 1) * G,
+      body,
+      bodyH: head + Math.max(...made.map((f) => f.H)) * s,
+      note,
       extra: { question: ID },
     });
   }
@@ -1518,6 +1558,35 @@
       legend: () => colourLegend(),
     };
   });
+  // both drawings in one figure: the cell and the nucleus side by side, the card's default download. It takes the title (made
+  // of the drawings' names), summary sentence, color key, note and table of the first drawing's entry, which are the same for all
+  const bothOf = (pre) => {
+    const first = () => FIGS[pre + DRAWINGS[0].drawing];
+    return {
+      title: () =>
+        `${C.title || 'Where in the cell'}: ${and(
+          DRAWINGS.map((d) => (d.title ? d.title.replace(/^The /, 'the ') : 'the ' + d.drawing))
+        )}`,
+      sub: () => first().sub(),
+      lead: () => first().lead?.(),
+      legend: () => first().legend?.(),
+      note: () => first().note?.(),
+      tsv: () => first().tsv(),
+      both: () =>
+        DRAWINGS.map((d) => ({ caption: d.title || cap(d.drawing), make: () => FIGS[pre + d.drawing].make() })),
+    };
+  };
+  if (DRAWINGS.length > 1) FIGS.both = bothOf('');
+  // the buttons of the Both choice (every format), first in a card's bar
+  const bothButtons = (fig, kinds = ['pdf', 'svg', 'png']) =>
+    kinds
+      .map(
+        (k) =>
+          `<button type="button" class="exp-btn" data-cell-exp="${k}" data-cell-fig="${fig}" title="${esc(
+            K.EXP_HELP[k]
+          )} Both drawings, side by side.">Both ${k.toUpperCase()}</button>`
+      )
+      .join('');
   // ---- for another page's card: the drawings and the parts' values, without the cell page ----------------------------------
   // K.cell.list() the drawings [{ drawing, title, parts, crop }]; K.cell.parts(scoped?) every part a row colors, with its value
   // [{ part, drawings, row, id, tone, direction, value, l2, or, maps, cells }] ('more', 'less', 'ns' or 'na'; the median of the maps
@@ -1653,6 +1722,17 @@
   });
 
   const figName = (k) => `${D.site.id}_${ID}_${k === 'one' ? UI.map : k}`;
+  // a drawing's export bar: with two drawings, the Both choice first and the others named by their drawing
+  const dualBar = (bar, k) => {
+    const both = k.startsWith('p-') ? 'p-both' : 'both',
+      dual = DRAWINGS.length > 1 && FIGS[k].zoom && FIGS[both];
+    bar = bar.replace(/data-cell-exp="(\w+)"/g, `data-cell-exp="$1" data-cell-fig="${k}"`);
+    return dual
+      ? bar
+          .replace(/(data-cell-exp="(?:pdf|svg|png)"[^>]*>)([A-Z]+)</g, (m0, a, t) => `${a}${cap(FIGS[k].zoom)} ${t}<`)
+          .replace(/(<div class="exp"[^>]*>)/, '$1' + bothButtons(both))
+      : bar;
+  };
   const block = (k, head, cls) =>
     `<div class="cell-block ${cls}" id="cell-${k}"><div class="fig-head"><span ` +
     `class="flabel">${esc(head)}</span>${
@@ -1663,10 +1743,7 @@
           } title="Open the ${esc(FIGS[k].zoom)} large, to ` +
           `read its labels, zoom and move">Enlarge</button>`
         : ''
-    }${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', head, ID).replace(
-      /data-cell-exp="(\w+)"/g,
-      `data-cell-exp="$1" ` + `data-cell-fig="${k}"`
-    )}</div>` +
+    }${dualBar(K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', head, ID), k)}</div>` +
     `<div class="cell-scroll">${svgOf(FIGS[k].make(), 'cell-svg cell-' + k)}</div></div>`;
 
   // ---- the tile and the page --------------------------------------------------------------------------------------------
@@ -1840,6 +1917,7 @@
         .replace(
           /(<div class="exp fr-exp"[^>]*>)/,
           '$1' +
+            (DRAWINGS.length > 1 ? bothButtons('both') : '') +
             DRAWINGS.map((d) =>
               kinds
                 .map(
@@ -2585,14 +2663,7 @@
       '[data-cell-exp]',
       (el) => {
         const f = FIGS[el.dataset.cellFig];
-        if (f)
-          K.exportFigure(
-            el.dataset.cellExp,
-            () => exported(f.make, f.title(), f.sub(), f.note?.(), f.lead?.(), f.legend?.()),
-            figName(el.dataset.cellFig),
-            el,
-            f.tsv
-          );
+        if (f) K.exportFigure(el.dataset.cellExp, () => exported(f), figName(el.dataset.cellFig), el, f.tsv);
       },
     ]
   );

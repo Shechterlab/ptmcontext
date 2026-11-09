@@ -91,6 +91,10 @@
     same: 'about the same (within 1.1×)',
     ns: 'no difference (q > 0.05)',
   };
+  // the color key of a figure in the page's own words (DIR_WORDS), as the legend entries K.figureFrame draws: one wording and one
+  // set of colors for the key under a chart and for the key in every export of it
+  const dirLegend = (keys = ['more', 'less', 'same', 'ns']) =>
+    keys.map((k) => [PAL[k], k === 'ns' ? PAL.muted : PAL[k], DIR_WORDS[k]]);
   const METHOD = {
     mantel_haenszel: 'within each protein',
     fisher: 'across all proteins',
@@ -2786,6 +2790,22 @@
     if (cur) out.push(cur);
     return out;
   }
+  // the text cut to a width with an ellipsis; slack widens its measure for a wider face than the export's (a reader's fallback)
+  function fit(t, w, size, weight = 400, slack = 1.12) {
+    t = String(t);
+    if (tw(t, size, weight) * slack <= w) return t;
+    let lo = 0,
+      hi = t.length;
+    while (lo < hi) {
+      const m = (lo + hi + 1) >> 1;
+      if (tw(t.slice(0, m) + '…', size, weight) * slack <= w) lo = m;
+      else hi = m - 1;
+    }
+    return t.slice(0, lo).trimEnd() + '…';
+  }
+  // a figure's lines are wrapped to this much less than the width: its text is measured in the export's Arial-like face, and a
+  // wider one a reader's system falls back to (Verdana, DejaVu Sans) must still end inside the figure
+  const WSL = 1.18;
   // the credit as a strip of its own at the foot of an exported figure: a gap, a thin rule, then the lines in <g id="credit">,
   // so it can be cropped off (the PNG also keeps the citation in its metadata). Returns the SVG and the y below the strip.
   function creditStrip(P, y, Wd, size = 9.5, lh = 12.5) {
@@ -2793,7 +2813,7 @@
       out = [`<line x1="${P}" x2="${Wd - P}" y1="${ry}" y2="${ry}" stroke="${PAL.line}" stroke-width="0.75"/>`];
     let ty = ry + 7 + size;
     creditLines().forEach((line) =>
-      wrap(line, Wd - 2 * P, size).forEach((t) => {
+      wrap(line, (Wd - 2 * P) / WSL, size).forEach((t) => {
         out.push(`<text x="${P}" y="${ty.toFixed(1)}" font-size="${size}" fill="${PAL.muted}">${esc(t)}</text>`);
         ty += lh;
       })
@@ -3075,7 +3095,7 @@
         );
         if (r.ref)
           parts.push(
-            `<line x1="${X(r.ref.eff).toFixed(1)}" x2="${X(r.ref.eff).toFixed(1)}" y1="${yc - 7}" y2="${yc + 7}" stroke="${PAL.ink}" stroke-width="2"/>`
+            `<circle cx="${X(r.ref.eff).toFixed(1)}" cy="${yc}" r="7" fill="none" stroke="${PAL.ink}" stroke-width="1.2" stroke-dasharray="2 2"/>`
           );
       }
       const strong = !vs && (r.dir === 'more' || r.dir === 'less');
@@ -3110,7 +3130,7 @@
       made ? '' : plain(foot),
       whole ? 'Whole dataset: ' + plain(answer(whole)) : '',
       made ? plain(foot) : '',
-      shown.some((r) => r.ref) ? 'Tick: the whole dataset’s value.' : '',
+      shown.some((r) => r.ref) ? 'Dashed ring: the whole dataset.' : '',
       vs ? '' : SETS(a.id) ? setWords(a) : testWords(S.m),
     ]
       .filter(Boolean)
@@ -3127,7 +3147,7 @@
             [PAL.more, PAL.more, 'your selection'],
             [PAL.bg, PAL.muted, vsName()],
           ]
-        : ['more', 'less', 'same', 'ns'].map((k) => [PAL[k], k === 'ns' ? PAL.muted : PAL[k], DIR_WORDS[k]]),
+        : dirLegend(),
       extra: { analysis: a.id, test: S.m, tile: true },
     });
   }
@@ -3531,11 +3551,11 @@
         } fill="${o.fill || PAL.ink}">${esc(t)}</text>`
       );
     // a title wider than the figure goes on two lines, never off its edge
-    const tl = wrap(title, Wd - 2 * P, 17, 'bold', FFH).slice(0, 2);
+    const tl = wrap(title, (Wd - 2 * P) / WSL, 17, 'bold', FFH).slice(0, 2);
     tl.forEach((t, i) => T(P, 30 + i * 20, t, { size: 17, weight: 'bold', fam: FFH }));
     let y = 49 + (tl.length - 1) * 20;
-    wrap(sub, Wd - 2 * P, 11.5)
-      .slice(0, 2)
+    wrap(sub, (Wd - 2 * P) / WSL, 11.5)
+      .slice(0, 5)
       .forEach((t) => {
         T(P, y, t, { size: 11.5, fill: PAL.muted });
         y += 15;
@@ -3543,8 +3563,8 @@
     // what the card says above its figure on the page (its summary sentence), then its color key: both go with the figure
     if (lead) {
       y += 4;
-      wrap(lead, Wd - 2 * P, 11.5)
-        .slice(0, 3)
+      wrap(lead, (Wd - 2 * P) / WSL, 11.5)
+        .slice(0, 5)
         .forEach((t) => {
           T(P, y, t, { size: 11.5 });
           y += 15;
@@ -3554,18 +3574,22 @@
       let lx = P;
       y += 4;
       legend.forEach(([fill, stroke, text]) => {
+        if (lx > P && lx + 14 + tw(text, 10.5) * WSL > Wd - P) {
+          lx = P;
+          y += 15; // the key goes on to a second row rather than off the edge
+        }
         parts.push(
           `<circle cx="${lx + 5}" cy="${y - 4}" r="4.5" fill="${fill}" stroke="${stroke || fill}" stroke-width="1.4"/>`
         );
         T(lx + 14, y, text, { size: 10.5, fill: PAL.muted });
-        lx += 22 + tw(text, 10.5);
+        lx += 22 + tw(text, 10.5) * WSL;
       });
       y += 10;
     }
     parts.push(`<g transform="translate(0,${y})">${body}</g>`);
     y += bodyH + 14;
     if (note) {
-      wrap(note, Wd - 2 * P, 10.5).forEach((t) => {
+      wrap(note, (Wd - 2 * P) / WSL, 10.5).forEach((t) => {
         T(P, y, t, { size: 10.5 });
         y += 14;
       });
@@ -3633,6 +3657,9 @@
     FFH,
     tw,
     wrap,
+    fit,
+    DIR_WORDS,
+    dirLegend,
     figureFrame,
     exportFigure,
     expBar,

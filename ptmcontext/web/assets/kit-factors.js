@@ -171,6 +171,8 @@
     ['#b42318', '#b42318', 'more often (q ≤ 0.05, ≥ 1.1×)'],
     ['#334155', '#334155', 'less often'],
     ['#ffffff', '#8a96a0', 'no difference'],
+    ['#475569', '#475569', 'filled: all factors together'],
+    ['#ffffff', '#475569', 'hollow: the factor alone'],
   ];
   const noteOf = (id) =>
     `Each odds ratio compares a ${W.mark} with the other ${W.residues} of the same protein (one ` +

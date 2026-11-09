@@ -199,8 +199,8 @@
           `<b>${esc(label)}</b> (${int(n)} proteins)<br>median ${num(q50)}; middle half ${num(q25)} to ${num(q75)}; 5th to ` +
             `95th percentile ${num(q05)} to ${num(q95)}`
         )}">` +
-        (`<rect class="cg-hit" x="0" y="${y - RH / 2}" width="${Wd}" height="${RH}"/><text class="vb-lab" x="${LW - 10}" y="${y + 4}" text-anchor="end">${esc(label)}</text><text ` +
-          `class="vb-n" x="${LW - 10}" y="${y + 15}" text-anchor="end">${int(n)}</text>`) +
+        (`<rect class="cg-hit" x="0" y="${y - RH / 2}" width="${Wd}" height="${RH}"/><text class="vb-lab" x="${LW - 10}" y="${y + 1}" text-anchor="end">${esc(label)}</text><text ` +
+          `class="vb-n" x="${LW - 10}" y="${y + 15.5}" text-anchor="end">${int(n)}</text>`) +
         (`<line class="vb-wh" x1="${X(q05).toFixed(1)}" x2="${X(q95).toFixed(1)}" y1="${y}" y2="${y}"/><line ` +
           `class="vb-wh" x1="${X(q05).toFixed(1)}" x2="${X(q05).toFixed(1)}" y1="${y - 5}" y2="${y + 5}"/><line ` +
           `class="vb-wh" x1="${X(q95).toFixed(1)}" x2="${X(q95).toFixed(1)}" y1="${y - 5}" y2="${y + 5}"/>`) +

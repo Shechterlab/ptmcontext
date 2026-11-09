@@ -590,11 +590,7 @@
     return K.figureFrame({
       title: a.title,
       sub: a.sub + K.selWords(),
-      legend: [
-        [PAL.more, PAL.more, `enriched (q ≤ ${PADJ})`],
-        [PAL.same, PAL.same, 'significant, within 1.1×'],
-        ['#ffffff', PAL.muted, 'not significant'],
-      ],
+      legend: K.dirLegend(['more', 'same', 'ns']),
       body: parts.join(''),
       bodyH: y + 34,
       note: `${

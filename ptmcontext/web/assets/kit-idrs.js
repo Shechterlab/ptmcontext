@@ -974,8 +974,8 @@
       P = pal(true),
       base = rate(all),
       max = Math.max(...rows.map(rate), base, 1e-9);
-    const RH = 42,
-      X = { lab: 20, bar: 262, barW: 90, cnt: 478, fa: 506, fb: 636, val: 740 },
+    const RH = 46,
+      X = { lab: 20, bar: 262, barW: 80, cnt: 478, fa: 506, fb: 636, val: 740 },
       parts = [];
     const vals = rows.flatMap((r) => {
       const t = TT[r.cls];
@@ -1011,7 +1011,8 @@
           `<rect x="${X.bar}" y="${yc - 5}" width="${((X.barW * rate(r)) / max).toFixed(1)}" height="10" ` +
             `rx="1.5" fill="${colour(r.cls)}"/>`
         );
-      T(X.bar + (r.cls ? (X.barW * rate(r)) / max : 0) + 5, yc + 3.5, pc(r.marks, r.cand), { weight: 'bold' });
+      // the shares stand in one column past the longest bar and the dashed baseline, so the baseline never runs through one
+      T(X.bar + (r.cls ? X.barW : 0) + 6, yc + 3.5, pc(r.marks, r.cand), { weight: 'bold' });
       T(X.cnt, yc - 2, `${int(r.marks)} of ${int(r.cand)}`, { anchor: 'end' });
       T(X.cnt, yc + 10, `in ${int(r.idrs)} IDRs`, { size: 9.5, anchor: 'end', fill: P.muted });
       if (r.cls && t && t.eff > 0) {
@@ -1024,15 +1025,15 @@
         parts.push(
           `<circle cx="${FX(t.eff).toFixed(1)}" cy="${yc}" r="4.6" fill="${t.dir === 'ns' ? P.bg : col}" stroke="${t.dir === 'ns' ? P.muted : P.bg}" stroke-width="1.5"/>`
         );
-        T(X.val, yc - 6, K.fx(t.eff), {
+        T(X.val, yc - 8, K.fx(t.eff), {
           anchor: 'end',
           weight: t.dir === 'ns' ? null : 'bold',
           fill: t.dir === 'ns' ? P.muted : col,
         });
-        if (K.sharePair(t)) T(X.val, yc + 7, K.sharePair(t), { size: 9.5, anchor: 'end', fill: P.muted });
-        T(X.val, yc + 20, `q ${K.fq(t.q)}`, { size: 9.5, anchor: 'end', fill: P.muted });
+        if (K.sharePair(t)) T(X.val, yc + 5, K.sharePair(t), { size: 9.5, anchor: 'end', fill: P.muted });
+        T(X.val, yc + 18, `q ${K.fq(t.q)}`, { size: 9.5, anchor: 'end', fill: P.muted });
       } else if (r.cls) T(X.val, yc + 3, '–', { anchor: 'end', fill: P.muted });
-      else T((X.fa + X.fb) / 2, yc + 3, 'the baseline of the bars', { size: 9.5, anchor: 'middle', fill: P.muted });
+      else T(X.bar + 6, yc + 16, 'dashed: all IDRs', { size: 9.5, fill: P.muted });
       y += RH;
     });
     for (let k = k0; k <= k1; k++) {

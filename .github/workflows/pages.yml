@@ -123,6 +123,28 @@ jobs:
           ptmc run sites/methylarginine.yaml --root reference --variant with_lower_confidence
           ptmc web sites/methylarginine.yaml
           ptmc web sites/methylarginine.yaml --variant with_lower_confidence
+      # What every download of the built methylarginine site draws: no text over another or across a line of its figure, and every
+      # card's color key (and legend) in the export, SVG and PDF (PNG is drawn from the same SVG as the PDF). The site is served
+      # as it is built and walked in a headless browser, without and with a selection; any hit fails the job and holds the deploy.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Export audits (text overlap, legends)
+        timeout-minutes: 60
+        run: |
+          sudo apt-get install -y --no-install-recommends poppler-utils
+          mkdir -p "$RUNNER_TEMP/pw" && (cd "$RUNNER_TEMP/pw" && npm init -y >/dev/null && npm install playwright@1.63.0 && npx playwright install --with-deps chromium)
+          python3 -m http.server 8931 --directory out/methylarginine/web >/dev/null 2>&1 &
+          sleep 2
+          export NODE_PATH="$RUNNER_TEMP/pw/node_modules"
+          # the PDF's libraries and fonts, which the kit loads from these addresses; the page may reach nothing else
+          mkdir -p "$RUNNER_TEMP/cdn" && cd "$RUNNER_TEMP/cdn"
+          for u in $(grep -ohE "https://(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net)/[^'\"]+\.(js|ttf)" "$GITHUB_WORKSPACE"/ptmcontext/web/assets/kit.js | sort -u); do curl -fsSL -O "$u"; done
+          cd "$GITHUB_WORKSPACE"
+          fail=0
+          node tools/audit/export_overlap.js http://localhost:8931/index.html || fail=1
+          node tools/audit/export_legend.js http://localhost:8931/index.html --pdf --cdn "$RUNNER_TEMP/cdn" || fail=1
+          exit $fail
       - name: Last good yeast inputs
         # the staged files are cached under the manifest's hash: a UniProt, MobiDB or SHEPHARD outage reuses the last run
         # that staged them, instead of leaving the site out

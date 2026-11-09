@@ -27,3 +27,25 @@ def test_the_cell_drawings_carry_their_summary_and_key_into_the_export():
     cell = (SCRIPT.parents[2] / 'ptmcontext' / 'web' / 'assets' / 'kit-cell.js').read_text()
     assert 'lead: () =>' in cell and 'legend: () => colourLegend()' in cell
     assert 'Within them' not in cell
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_the_legend_audit_and_the_walk_they_share_parse():
+    for name in ('export_legend.js', 'export_common.js'):
+        assert subprocess.run(['node', '--check', str(SCRIPT.parent / name)], capture_output=True).returncode == 0
+    text = (SCRIPT.parent / 'export_legend.js').read_text()
+    for word in ('missing a key in the export', 'pdftotext', 'KEY_SEL'):
+        assert word in text
+
+
+def test_the_pages_build_runs_both_export_audits_and_fails_on_a_hit():
+    flow = (SCRIPT.parents[2] / '.github' / 'workflows' / 'pages.yml').read_text()
+    assert 'tools/audit/export_overlap.js' in flow and 'tools/audit/export_legend.js' in flow
+    assert 'npx playwright install --with-deps chromium' in flow and '|| fail=1' in flow and 'exit $fail' in flow
+
+
+def test_every_export_takes_its_key_through_the_figure_frame():
+    kit = (SCRIPT.parents[2] / 'ptmcontext' / 'web' / 'assets' / 'kit.js').read_text()
+    assert (
+        'const dirLegend' in kit and 'DIR_WORDS' in kit and 'dirLegend,' in kit
+    )  # one wording for a page's key and its exports

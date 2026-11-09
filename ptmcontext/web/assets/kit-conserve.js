@@ -848,6 +848,7 @@
       y += 22;
     };
     head(`Your ${int(s.sel.length)} ${s.sel.length === 1 ? W.mark : W.marks}, aligned at the ${W.mark}`);
+    y += 18; // a letter's box rises above its glyph (a tall stack's top letter would stand in the heading)
     g += logoSvg(cs, x0, y, cw, LH, tips, 'Your selection');
     y += LH + 14;
     g += offsets(cs, x0, y - 2, cw, flank);
@@ -868,6 +869,7 @@
     }
     y += 30;
     head(`Compared with the other ${int(s.oth.length)} ${W.marks}`);
+    y += 18;
     g += logoSvg(co, x0, y, cw, LH, tips, `The other ${W.marks}`);
     y += LH + 14;
     g += offsets(co, x0, y - 2, cw, flank);
@@ -1064,7 +1066,8 @@
   }
   K.logoPanel = () => {
     const d = SD();
-    return CV.logo && d && d.wide ? { n: sets().sel.length, html: logoCard } : null;
+    // the selection's own result is not ready on a page drawn before its data is: no panel yet
+    return CV.logo && d && d.wide && K.sel.compute()?.marks ? { n: sets().sel.length, html: logoCard } : null;
   };
   (K.afterRender ||= []).push(() => {
     if (S.view === 'protein') {
