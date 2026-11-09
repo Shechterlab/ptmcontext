@@ -16,6 +16,39 @@ ptmc run sites/yeast_phospho.yaml --root DATA          # -> out/yeast_phospho/st
 ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/web/: the site, in the Methylarginine Site Explorer's look
 ```
 
+## How the site is built
+
+Two languages, one split: **Python builds, JavaScript shows.** No Python runs in the browser, and the published site is
+static files (GitHub Pages only serves them; there is no server).
+
+```mermaid
+flowchart LR
+  Y["Site file<br/>sites/*.yaml"] --> R
+  I["Inputs<br/>(UniProt, MobiDB, release v1.4.3 …)"] --> R
+  subgraph build["Build: Python, on a computer or in GitHub Actions"]
+    R["ptmc run<br/>the statistics<br/>(ptmstats, Python)"] --> O["out/&lt;site&gt;/<br/>statistics.tsv, run.json"]
+    O --> W["ptmc web<br/>assembles the site"]
+  end
+  W --> S["Static site<br/>index.html + assets/kit-*.js<br/>+ data/site.json, selection.json"]
+  subgraph browser["In the browser: JavaScript"]
+    S --> V["Pages, charts, tables, exports<br/>(drawn from the data)"]
+    S --> T["Retests on a selection<br/>(ptmstats.js: Fisher, Mantel–Haenszel,<br/>hypergeometric, Benjamini–Hochberg)"]
+  end
+```
+
+- **The release's statistics** are computed once, in Python, at build time (`ptmc run`), and checked row for row
+  against release v1.4.3 (`tests/test_parity_v1_4_3.py`). The browser only displays them.
+- **The site** is assembled by `ptmc web` from the site file: the HTML shell, the browser kit
+  (`ptmcontext/web/assets/kit-*.js`, one module per feature, loaded in the order of `MODULES` in
+  `ptmcontext/web/__init__.py`) and the data, split so the first screen loads fast (`data/site.json` and
+  `selection.json` follow when needed).
+- **Retests in the browser.** When a reader makes a selection, the Overview's tests, "What sets it apart?" and the
+  gene-list test run again in JavaScript with `packages/ptmstats/ptmstats/ptmstats.js`, the same tests as the Python
+  package. `packages/ptmstats/tests/test_parity_js.py` runs both on random tables (Fisher, Mantel–Haenszel with its
+  confidence interval, hypergeometric, Benjamini–Hochberg) and checks they equal each other and SciPy / statsmodels.
+- **One site file per site.** The methylarginine and yeast sites share every line of code; what differs (words,
+  colors, questions, filters, features) is in `sites/*.yaml`, validated by `ptmcontext/schemas/site.schema.json`.
+
 ## Status (pilot)
 
 - **Parity:** `sites/methylarginine.yaml` rebuilds 4,342 of the 4,659 rows (93%) of release v1.4.3's statistics table
