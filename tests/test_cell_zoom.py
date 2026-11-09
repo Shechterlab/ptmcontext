@@ -30,3 +30,13 @@ def test_a_click_on_the_drawing_opens_it_large():
 
     js = (Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets' / 'kit-cell.js').read_text()
     assert "K.clicks.push(['.cell-draw svg, .cell-block svg, [data-cell-one] svg'" in js
+
+
+def test_a_click_on_a_part_reaches_the_parts_handler_before_the_whole_drawing_one():
+    # K.clicks takes the first selector that matches; the drawing's own handler (any svg) must come after the parts'
+    from pathlib import Path
+
+    js = (Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets' / 'kit-cell.js').read_text()
+    parts = js.index("['[data-cell-row], [data-cell-part]', (el) => pick(el)]")
+    drawing = js.index("'.cell-draw svg, .cell-block svg, [data-cell-one] svg'")
+    assert parts < drawing
