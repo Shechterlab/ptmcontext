@@ -9,14 +9,7 @@ url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd3571feeb60ada1cafe
 license: "CC-BY-NC-SA-4.0"
 authors:
   - name: "Shechter Lab, Albert Einstein College of Medicine"
-preferred-citation:
-  type: dataset
-  authors:
-    - name: "Shechter Lab, Albert Einstein College of Medicine"
-  title: "Human lysine methylation sites, release v1.5.0 (PTM_Pipeline)"
-  publisher: GitHub
-  year: 2026
-  url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0"
+# No paper describes this site yet, so there is no preferred-citation; the data sources below are cited with every export.
 references:   # the data sources: cited with every export (DOIs of the new ones checked on Crossref, 9 Nov 2026)
   - type: article
     authors: [{name: "UniProt Consortium"}]
