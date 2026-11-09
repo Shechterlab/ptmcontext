@@ -12,8 +12,11 @@ Read AGENTS.md first; its rules hold. Also:
 - **Commit as you go**, in the worktree you are given. It may be detached (no branch); that's intended. Never create,
   push or delete branches, and never merge. The owner keeps a single branch, `develop`; your commits are merged by hash.
 - **Data that stays out:** unpublished lab data (functional-class labels), the Barutcu nuclear-body calls (license
-  pending), pCLAP/RBDmap peptide sequences or extents, and CPLM tables. Never write "dtIDR", "domain-tethered" or
-  "domain flanks". Don't call code from the other lab repositories.
+  pending), and pCLAP/RBDmap peptide sequences or extents. Never write "dtIDR", "domain-tethered" or "domain flanks".
+  Don't call code from the other lab repositories.
+- **CPLM 4.0:** it states no license. On 2026-11-09 the owner decided to include its human lysine methylation sites
+  publicly, cited (Zhang et al., Nucleic Acids Res 50:D451, 2022), in PTM_Pipeline's releases and the sites that read
+  them, pending the authors' permission. Say so wherever CPLM data is described, and follow any terms the authors give.
 - **Modular.** New data formats go in CONTRACTS.md and are mapped in the site file (the schema, plus
   `site.website_problems`). No site-specific literal goes in `ptmcontext/`. Add a toy-site test.
 - **Commit messages:** a subject line, a blank line, then an optional body. No trailers, no co-author lines, no session
