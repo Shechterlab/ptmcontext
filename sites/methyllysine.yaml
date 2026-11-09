@@ -897,12 +897,9 @@ website:                  # the look and words of the website (ptmc web); layout
       title: Writers, erasers and readers
       question: "Which methyllysines are on proteins that bind a writer, an eraser or a reader?"
       sub: "Methyllysines on proteins with a STRING physical partner (score 0.7 or more) in each writer, eraser or reader class"
-      distribution: "Classes of partner of each protein carrying a {mark}"
       unit: [class, classes]
       noun: partner classes
-      two_or_more: on proteins with partners in two or more classes
       top: 8
-      bins: 4
       note: "A class describes the protein's physical partners. STRING associations are to the whole protein, so a count does not show that a partner writes, erases or reads that lysine. The SET-domain and JmjC classes include proteins that do not act on lysine, and the sets are of human proteins in UniProt 2026_03."
       method: "The site file lists the partner classes (website.search.partners.classes) by InterPro entry and gene, with the query that made each set. A protein is in a class when one of its STRING physical partners is. The share of all reviewed human proteins in each class is the baseline to compare with."
     states:
@@ -911,12 +908,9 @@ website:                  # the look and words of the website (ptmc web); layout
       title: Methylation state
       question: "How many methyl groups do the methyllysines carry?"
       sub: "Methyllysines by the degree of methylation reported: mono (Kme1), di (Kme2) or trimethyl (Kme3), or methylated with the degree not stated"
-      distribution: "Degrees reported for each {mark}"
       unit: [degree, degrees]
       noun: degrees
-      two_or_more: reported in two or more degrees
       top: 4
-      bins: 4
       note: "A lysine has a row for each degree a database reports, so it counts under each. iPTMnet gives no degree: its records are methylated, degree not stated, and do not meet UniProt's Kme1, Kme2 and Kme3."
       method: "Each methyllysine lists the degrees its records give (the release's state column, joined over the lysine's rows). A degree's count is the methyllysines with a record of it."
     evidence:
@@ -925,12 +919,9 @@ website:                  # the look and words of the website (ptmc web); layout
       title: Evidence
       question: "How well supported are the methyllysines?"
       sub: "Methyllysines by the best class of their records: experimental, or unspecified (iPTMnet's copy of UniProt, with no evidence code)"
-      distribution: "Evidence classes of each {mark}"
       unit: [class, classes]
       noun: evidence classes
-      two_or_more: with records of two classes
       top: 3
-      bins: 3
       note: "The sites counted here have an experimental or an unspecified record. The sites UniProt reports only by similarity to another species are the lower-confidence variant (the switch at the top)."
       method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, or an iPTMnet record curated from an experiment; unspecified is iPTMnet's copy of UniProt, which has no ECO code."
     provenance:
@@ -939,12 +930,9 @@ website:                  # the look and words of the website (ptmc web); layout
       title: Provenance
       question: "Which databases report the methyllysines?"
       sub: "Methyllysines reported by each database"
-      distribution: "Databases reporting each {mark}"
       unit: [database, databases]
       noun: databases
-      two_or_more: reported by both
       top: 2
-      bins: 2
       note: "iPTMnet carries a copy of UniProt: 217 methyllysine rows have unip as their only upstream database, so both databases agreeing is not always two measurements."
       method: "Each methyllysine lists the databases that report it (the release's sources column). A database's count is the methyllysines it reports."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes

@@ -269,15 +269,16 @@
       x = axis(c.values[0]?.[2] || 1),
       dmax = Math.max(1, ...c.dist),
       attr = SPECS[c.attribute] || {};
+    // a bar that selects nothing (no number attribute behind a distribution) is not a button
     const bar = (key, v, label, n, extra, k, tip, top) =>
-      `<button type="button" class="cb${on && !k ? ' off' : ''}${key ? '' : ' noclick'}"${
-        key ? ` data-cf="${esc(key)}" data-cv="${esc(v)}"` : ' tabindex="-1"'
+      `<${key ? 'button type="button"' : 'div'} class="cb${on && !k ? ' off' : ''}${key ? '' : ' noclick'}"${
+        key ? ` data-cf="${esc(key)}" data-cv="${esc(v)}"` : ''
       } data-ctip="${esc(tip)}">` +
       (`<span class="cb-l">${esc(label)}</span>${
         extra != null ? `<span class="cb-x">${esc(extra)}</span>` : ''
       }<span class="cb-t">` +
         `<i style="width:${((100 * n) / top).toFixed(1)}%"></i></span>`) +
-      `<span class="cb-v">${int(n)}</span>${on ? selCell(k, sv.total) : ''}</button>`;
+      `<span class="cb-v">${int(n)}</span>${on ? selCell(k, sv.total) : ''}</${key ? 'button' : 'div'}>`;
     const vals = c.values
       .map((v) =>
         bar(
