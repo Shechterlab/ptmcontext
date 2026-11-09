@@ -51,3 +51,13 @@ def test_the_yeast_build_has_none_of_it():
     assert data['protein_view']['conservation']['reference'] == 'S. cerevisiae'
     for lit in ('GXRG', 'GENE R216', 'other reviewed human proteins'):
         assert lit not in html, lit
+
+
+def test_the_test_switch_reads_test_within_each_protein_or_across_all_proteins_with_a_tooltip_each():
+    kit = (ASSETS / 'kit.js').read_text()
+    ix = (ASSETS / 'kit-interactions.js').read_text()
+    assert "'within each protein'," in kit and "'across all proteins'," in kit
+    assert 'Compares sites with the other candidate' in kit and '(Mantel–Haenszel), or with proteins of ' in kit
+    assert 'Pools all candidate' in kit and 'Fisher’s exact test, crude' in kit
+    assert kit.count('<span class="flabel">Test:</span>') == 2 and ix.count('<span class="flabel">Test:</span>') == 1
+    assert "'Within each protein'," not in kit and 'K.BTN[x][1]' in ix

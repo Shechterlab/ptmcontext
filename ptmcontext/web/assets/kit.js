@@ -114,12 +114,12 @@
   // the Overview's switch: its words, and what each compares
   const BTN = {
     mantel_haenszel: [
-      'Within each protein',
-      `Compare each ${W.mark} with the other ${W.residues} of the same ` +
-        `protein. A protein with many sites does not dominate.`,
+      'within each protein',
+      `Compares sites with the other candidate ${W.residues} of the same proteins (Mantel–Haenszel), or with proteins of ` +
+        `similar abundance for protein-level questions.`,
     ],
-    fisher: ['Across all proteins', `Put all the ${W.residues} in one group and compare them together.`],
-    study: ['Within studies', `Compare ${W.marks} only with ` + `those reported by the same sources.`],
+    fisher: ['across all proteins', `Pools all candidate ${W.residues} of all proteins (Fisher’s exact test, crude).`],
+    study: ['within studies', `Compare ${W.marks} only with ` + `those reported by the same sources.`],
   };
   // plain words for the terms of the tests, shown on hover (an abbr) and in one line on the Help page
   const GLOSS = {
@@ -500,6 +500,7 @@
   K.smooth = () => (matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
   Object.assign(K, {
     GLOSS,
+    BTN,
     gloss,
     baseline,
     proteinAttr,
@@ -1491,7 +1492,7 @@
       : '';
     const key = keyP + howP;
     const methods = vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher'];
-    const tools = `<span class="tools"><span class="seg" role="group" aria-label="Test">${methods
+    const tools = `<span class="tools"><span class="flabel">Test:</span> <span class="seg" role="group" aria-label="Test">${methods
       .map(
         (m) =>
           `<button type="button" ` +
@@ -1921,8 +1922,8 @@
       `<div class="page-head"><h2>${esc(card.title || a.title)}</h2><span class="tools">${
         a.kind === 'protein_sets' || mod
           ? ''
-          : `<span class="seg" ` +
-            `role="group">${(vsOn() && K.sel.STUDY
+          : `<span class="flabel">Test:</span> <span class="seg" ` +
+            `role="group" aria-label="Test">${(vsOn() && K.sel.STUDY
               ? ['mantel_haenszel', 'fisher', 'study']
               : ['mantel_haenszel', 'fisher']
             )
@@ -2233,12 +2234,15 @@
         .map(([v, t]) => `<option value="${esc(v)}"${v === S.a ? ' selected' : ''}>${esc(t)}</option>`)
         .join('')}</select></label>` +
       `<label>Test <select id="f-m">${[
-        ['mantel_haenszel', 'Within each protein (or abundance decile)'],
-        ['fisher', 'Across all proteins'],
+        ['mantel_haenszel', 'within each protein (or abundance decile)'],
+        ['fisher', 'across all proteins'],
         ...(D.models ? [['conditional_logit', 'All factors together']] : []),
         ['both', 'Both'],
       ]
-        .map(([v, t]) => `<option value="${v}"${v === S.m ? ' selected' : ''}>${t}</option>`)
+        .map(
+          ([v, t]) =>
+            `<option value="${v}"${v === S.m ? ' selected' : ''}${BTN[v] ? ` title="${esc(BTN[v][1])}"` : ''}>${t}</option>`
+        )
         .join('')}</select></label>` +
       `<label>Class <input id="f-sq" type="search" value="${esc(S.sq)}" placeholder="a class or set"></label>` +
       (`<button type="button" class="btn small" data-sort-strength aria-pressed="${S.sort === 'strength'}" title="The ` +

@@ -501,13 +501,16 @@
       )
       .join('');
   const seg = (key, m) =>
-    `<div class="ix-tools"><span class="seg" role="group" aria-label="Test">${['mantel_haenszel', 'fisher']
+    `<div class="ix-tools"><span class="flabel">Test:</span> <span class="seg" role="group" aria-label="Test">${[
+      'mantel_haenszel',
+      'fisher',
+    ]
       .map(
         (x) =>
           `<button type="button" ` +
           `data-ix-m="${esc(key)}" data-v="${x}" aria-pressed="${m === x}" title="${esc(
-            K.GLOSS[x === 'fisher' ? 'pooled' : 'within each protein']
-          )}">${METHOD[x]}</button>`
+            K.BTN[x][1]
+          )}">${METHOD[x].toLowerCase()}</button>`
       )
       .join('')}</span></div>`;
   function forestNote(rows, m) {
