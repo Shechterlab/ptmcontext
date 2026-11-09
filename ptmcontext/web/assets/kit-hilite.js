@@ -641,6 +641,125 @@
     K.render();
   });
   K.clicks.push(['[data-hl-clear]', () => clear()]);
+  // ---- the typed list in order, per-row counts, "Select these", "Compare with selection", and the protein pages' ‹ › -------------
+  // entries: one per distinct name typed, {tok, found}; list: the proteins they name (indexes), in the order typed, each once. A name
+  // that matches no marked protein is not in the list, so a protein with no sites in the data is skipped.
+  let oc = { key: null, v: { entries: [], list: [] } };
+  const ordered = () => {
+    const SD = K.sel?.peek?.(),
+      key = `${S.hl || ''}|${SD ? 1 : 0}`;
+    if (oc.key === key) return oc.v;
+    const entries = [],
+      list = [],
+      seen = new Set();
+    if (SD)
+      toks().forEach((tok) => {
+        if (entries.some((e) => e.tok.toLowerCase() === tok.toLowerCase())) return;
+        const r = K.sel.select(tok, {}),
+          q = r.q || {};
+        const ps =
+          q.sites?.length && !q.genes?.length
+            ? [...new Set((r.marks || []).map((m) => SD.marks[m][0]))]
+            : q.genes?.length
+              ? [...(r.proteins || [])]
+              : []; // a word that is no gene or accession matches names only: not counted as found
+        entries.push({ tok, found: ps.length > 0 });
+        ps.forEach((p) => {
+          if (!seen.has(p)) {
+            seen.add(p);
+            list.push(p);
+          }
+        });
+      });
+    oc = { key, v: { entries, list } };
+    return oc.v;
+  };
+  const protOfIndex = (i) => K.D?.proteins?.[i] || [];
+  const geneOf = (i) => String(protOfIndex(i)[1] || protOfIndex(i)[0] || '').split(/[\s;]+/)[0];
+  // the proteins of a tile or chart row's class (what a click on the row would select), within the selection when there is one
+  const rowMembers = (f, v) => {
+    const r = K.sel.select('', { [f]: [v] });
+    if (!r.proteins) return [];
+    const sel = K.sel.active() ? K.sel.compute().proteins : null;
+    return [...r.proteins].filter((p) => !sel || sel.has(p));
+  };
+  const ROWS = '#view .fr-row[data-f][data-v]:not(.mine), #view .drow[data-f][data-v]:not(.mine)';
+  function rowCounts() {
+    closeRowPop();
+    if (!any()) return;
+    if (!K.sel?.peek()) {
+      K.sel?.data(); // the marks load, and the page is drawn again
+      return;
+    }
+    const H = new Set(ordered().list);
+    if (!H.size) return;
+    document.querySelectorAll(ROWS).forEach((row) => {
+      if (row.nextElementSibling?.classList.contains('hl-rowcount')) return;
+      const n = rowMembers(row.dataset.f, row.dataset.v).filter((p) => H.has(p)).length;
+      if (!n) return;
+      row.insertAdjacentHTML(
+        'afterend',
+        `<div class="hl-rowcount"><button type="button" class="linkish" data-hl-rowpop data-hl-f="${esc(row.dataset.f)}" ` +
+          `data-hl-v="${esc(row.dataset.v)}" aria-haspopup="dialog" aria-expanded="false">${int(n)} highlighted</button></div>`
+      );
+    });
+  }
+  (K.afterRender ||= []).push(rowCounts);
+  function closeRowPop(focus) {
+    const pop = document.getElementById('hl-rowpop');
+    if (!pop) return;
+    const b = document.querySelector('[data-hl-rowpop][aria-expanded="true"]');
+    pop.remove();
+    if (b) {
+      b.setAttribute('aria-expanded', 'false');
+      if (focus) b.focus();
+    }
+  }
+  const rowOf = (b) => {
+    let r = b.closest('.hl-rowcount')?.previousElementSibling;
+    while (r && !r.matches('[data-f]')) r = r.previousElementSibling; // a button of another module may sit between
+    return r;
+  };
+  function openRowPop(b) {
+    closeRowPop();
+    const H = new Set(ordered().list),
+      mem = new Set(rowMembers(b.dataset.hlF, b.dataset.hlV)),
+      list = ordered().list.filter((p) => H.has(p) && mem.has(p)),
+      row = rowOf(b),
+      name = (row?.querySelector('.fr-lab, .ln')?.textContent || b.dataset.hlV).trim();
+    const pop = document.createElement('div');
+    pop.id = 'hl-rowpop';
+    pop.className = 'hl-rowpop';
+    pop.setAttribute('role', 'dialog');
+    pop.setAttribute('aria-label', `Highlighted proteins in ${name}`);
+    pop.tabIndex = -1;
+    pop.innerHTML = `<p class="small"><b>${int(list.length)} highlighted</b> in ${esc(name)}</p><ul>${list
+      .map((p) => `<li><a href="${esc(K.link('protein', protOfIndex(p)[0]))}">${esc(geneOf(p))}</a></li>`)
+      .join('')}</ul>`;
+    document.body.appendChild(pop);
+    const r = b.getBoundingClientRect();
+    pop.style.top = `${r.bottom + scrollY + 4}px`;
+    pop.style.left = `${Math.max(8, Math.min(r.left + scrollX, scrollX + document.documentElement.clientWidth - pop.offsetWidth - 8))}px`;
+    b.setAttribute('aria-expanded', 'true');
+    pop.focus({ preventScroll: true });
+  }
+  document.addEventListener(
+    'click',
+    (e) => {
+      const b = e.target.closest?.('[data-hl-rowpop]');
+      if (b) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (b.getAttribute('aria-expanded') === 'true') closeRowPop(true);
+        else openRowPop(b);
+      } else if (!e.target.closest?.('#hl-rowpop')) closeRowPop();
+    },
+    true
+  );
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeRowPop(true);
+  });
+
   const css = document.createElement('style');
   css.textContent =
     `.hl-line { margin: 0.35rem 0; font-size: 0.85rem; display: flex; gap: 0.4rem; align-items: ` +
@@ -672,6 +791,12 @@
     `1px solid var(--line-strong); border-radius: 0.5rem; background: var(--surface); box-shadow: 0 6px 18px ` +
     `rgba(0, 0, 0, 0.15); }
 .hl-pop .hl-sets { margin: 0; }
+.hl-rowcount { margin: -0.1rem 0 0.25rem; font-size: 0.78rem; text-align: right; }
+.hl-rowpop { position: absolute; z-index: 60; min-width: 10rem; max-width: min(24rem, calc(100vw - 1rem)); max-height: 16rem; ` +
+    `overflow: auto; padding: 0.5rem 0.7rem; border: 1px solid var(--line-strong); border-radius: 0.5rem; background: ` +
+    `var(--surface); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
+.hl-rowpop p { margin: 0 0 0.3rem; }
+.hl-rowpop ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 0.2rem 0.8rem; }
 .hl-bar:empty { display: none; }
 .hl-chips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
 tr.hl-row > td { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--accent) 11%, transparent); }
