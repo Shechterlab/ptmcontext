@@ -728,9 +728,10 @@
   function sets() {
     const d = SD(),
       c = K.sel.compute(),
-      key = JSON.stringify([S.q, S.f, c.marks.length]);
+      all = c.marks || d.marks.map((_, i) => i), // no selection: the whole dataset (the figure panels page says so)
+      key = JSON.stringify([S.q, S.f, all.length]);
     if (cached.key === key) return cached;
-    const chosen = new Set(c.marks),
+    const chosen = new Set(all),
       sel = [],
       oth = [];
     d.marks.forEach((m, i) => {

@@ -1,0 +1,53 @@
+# Weekly check of every link and control on the published sites (tools/audit/links.js), internal and external. Internal breaks
+# (a link to no view, a control that does nothing, a page error) and external links that answer 4xx or 5xx fail the run, with the
+# list in the log and the summary. An external link that cannot be reached (a timeout, a refused connection, HTTP 429) is
+# "unverified": listed apart, never a failure, so one flaky host does not fail the week. Runs on the Pages deploy; set base_url
+# when the sites are published elsewhere.
+name: links
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "where the sites are published (default: this repository's GitHub Pages)"
+        required: false
+permissions:
+  contents: read
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - run: npm install --no-save playwright@1.63.0 && npx playwright install --with-deps chromium
+      - name: Audit the published sites
+        env:
+          INPUT_BASE: ${{ inputs.base_url }}
+          REPO: ${{ github.repository }}
+        run: |
+          base="${INPUT_BASE:-https://${REPO%%/*}.github.io/${REPO#*/}}"
+          base="${base%/}"
+          yeast=""
+          if curl -fsI "$base/yeast_phospho/index.html" >/dev/null; then yeast="--yeast $base/yeast_phospho/index.html"; fi
+          set +e
+          node tools/audit/links.js "$base/methylarginine/index.html" $yeast --external --out links.json 2> links.txt
+          status=$?
+          set -e
+          cat links.txt
+          {
+            echo "## Link audit"
+            echo '```'
+            cat links.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: links-report
+          path: |
+            links.json
+            links.txt

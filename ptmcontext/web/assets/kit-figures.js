@@ -9,7 +9,7 @@
   const { W, esc, int } = K;
   const open = (id) => (id in K.folds ? K.folds[id] : true);
   function view() {
-    const lp = K.logoPanel?.();
+    const lp = K.sel.data() ? K.logoPanel?.() : null; // the panel reads the marks: not before they are loaded
     const head =
       `<div class="page-head results-head"><div><h2>Figure panels</h2><p class="cx">The figures of the ` +
       `current selection that no single page draws: ${int(lp ? lp.n : 0)} ${esc(W.marks)} with a sequence ` +

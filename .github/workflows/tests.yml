@@ -115,3 +115,16 @@ jobs:
       - run: pytest -q
         env:
           PTMCONTEXT_ROOT: reference
+      # every internal link and control of the built site (tools/audit/links.js, without the external links: links.yml checks those
+      # weekly); fails on a link to no view, a control that does nothing or a page error
+      - name: Link audit (internal)
+        env:
+          PTMCONTEXT_ROOT: reference
+        run: |
+          ptmc run sites/methylarginine.yaml --root reference
+          ptmc web sites/methylarginine.yaml
+          npm install --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8841 --directory out/methylarginine/web >/dev/null 2>&1 &
+          sleep 2
+          node tools/audit/links.js http://localhost:8841/index.html --max 4 --workers 4
