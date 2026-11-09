@@ -588,11 +588,13 @@
           `title="Open the filters: narrow every page to the ${esc(W.marks)} that match"><span aria-hidden="true">` +
           `⏚</span> Filter${nf ? ` <span class="badge">${nf}</span>` : ''}</button>`
         : '';
+    const hs = K.hl?.summary?.() || ''; // "Highlighted: FUS, TAF15 +1 ×", only while something is highlighted
     $('#scope').innerHTML =
       fbtn +
+      hs +
       (bar ||
         `<span>All <b>${int(D.counts.marks)}</b> ${esc(W.marks)} on <b>${int(D.counts.proteins)}</b> proteins</span>` +
-          (ex ? `<span class="scope-hint">` + `Try</span>${ex}` : ''));
+          (ex && !hs ? `<span class="scope-hint">` + `Try</span>${ex}` : ''));
   }
   // the pages that follow the selection: the Overview, the tables, the disordered regions and the interaction pages
   const follows = (v) => ['overview', 'proteins', 'sites', 'idrs'].includes(v) || !!K.views[v]?.follows;

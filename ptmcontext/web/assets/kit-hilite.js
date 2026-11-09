@@ -25,6 +25,8 @@
       firstSort: (rows) => rows,
       decorate() {},
       mark: (v) => v,
+      section: () => '',
+      summary: () => '',
       first: false,
       pasted: none,
       state: () => ({ on: false, prots: new Set(), marks: null, text: '' }),
@@ -229,7 +231,7 @@
     const what = st.parts
       .map((r) =>
         r.chips
-          ? document.getElementById?.('hl-bar')
+          ? document.getElementById?.('hl-sec')
             ? ''
             : r.chips.map((c, i) => chip(c.label, i, c.bad)).join(' ')
           : `<b>${esc(r.text)}</b> <button ` +
@@ -458,7 +460,7 @@
     });
     const loose = new Set(); // other tables (the interaction pages'): their highlighted rows go first when the reader chose that
     root.querySelectorAll('a[href*="#protein/"]').forEach((a) => {
-      if (a.closest('.crumb, nav, .tabs, h1, h2, h3, #hl-bar, .fr-nav, .hl-row')) return;
+      if (a.closest('.crumb, nav, .tabs, h1, h2, h3, #hl-sec, .hl-sum, .fr-nav, .hl-row')) return;
       const r = protLink(a);
       if (!r) return;
       const on = r[1] == null ? isProt(r[0]) : isSite(r[0], r[1]),
@@ -544,7 +546,6 @@
       K.render();
     },
   ]);
-  // the one Highlight box, in the toolbar under the selection bar, on every page: the list's chips, what was not found, and
   // "Highlighted first" for the tables (a choice kept in this browser)
   const FK = 'ptmc-hl-first';
   let first = (() => {
@@ -565,49 +566,41 @@
       K.render();
     }
   });
-  let barKey = null;
-  function bar() {
-    const host = document.getElementById('hl-bar');
-    if (!host) return;
+  // the Highlight section of the sidebar's Filters tab: the box, the list's chips (merged by protein), what was not found, and
+  // the Lists menu. The selection bar shows only a summary (summary(), below) when something is highlighted.
+  function section() {
     const t = toks(),
       pa = t.length ? pasted() : null;
     const chips = t.map((l, i) => chip(l, i, pa.bad?.has(l))).join(' '),
       nf = t.length && pa.notFound.length ? `<span class="hl-nf">${esc(nfText(pa.notFound))}</span>` : '';
-    const more = (collapsed) =>
-      !t.length
-        ? ''
-        : collapsed
-          ? `<span class="hl-menu"><button type="button" class="btn small" data-hl-menu aria-haspopup="true" ` +
-            `aria-expanded="false" aria-controls="hl-cpop">${t.length} highlighted${
-              pa.notFound.length ? ` · ${pa.notFound.length} not found` : ''
-            } ▾</button>` +
-            `<div id="hl-cpop" class="hl-pop hl-cpop" role="group" aria-label="Highlighted items" hidden><span ` +
-            `class="hl-chips">${chips}</span>${nf}</div></span>`
-          : `<span class="hl-chips">${chips}${nf ? ' ' + nf : ''}</span>`;
-    const build = (collapsed) => `<div class="hl-bar-in${t.length ? ' on' : ''}">${control(more(collapsed))}</div>`;
-    const key = build(false) + '|' + (K.sel?.peek() ? 1 : 0) + '|' + (typeof innerWidth === 'number' ? innerWidth : 0);
-    if (key === barKey) return;
-    barKey = key;
-    // the row stays one line: when the chips would wrap, they collapse into "N highlighted ▾"
-    host.innerHTML = build(false);
-    const inner = host.firstElementChild,
-      one = host.querySelector('.hl-form')?.offsetHeight || 0;
-    if (t.length && inner.offsetHeight > one * 1.6 + 4) host.innerHTML = build(true);
-    if (reopen) {
-      reopen = false;
-      const b = host.querySelector('[data-hl-menu][aria-controls="hl-pop"]');
-      if (b) {
-        b.setAttribute('aria-expanded', 'true');
-        document.getElementById('hl-pop').hidden = false;
-      }
-    }
+    return (
+      `<section class="hl-sec" id="hl-sec" aria-labelledby="hl-sec-h"><h3 id="hl-sec-h" class="hl-sec-h">Highlight in figures</h3>` +
+      `<p class="small muted hl-sec-note">Marks genes or sites in the figures and tables; it does not narrow the selection.</p>` +
+      `<div class="hl-bar-in${t.length ? ' on' : ''}">${control(
+        t.length ? `<span class="hl-chips">${chips}${nf ? ' ' + nf : ''}</span>` : ''
+      )}</div></section>`
+    );
   }
-  if (typeof addEventListener === 'function')
-    addEventListener('resize', () => {
-      barKey = null;
-      bar();
-    });
-  (K.afterRender ||= []).push(bar);
+  // "Highlighted: FUS, TAF15 +1 ×" for the selection bar; '' when nothing is typed. The text opens the sidebar at the section.
+  function summary() {
+    const t = toks();
+    if (!t.length) return '';
+    const pa = pasted(),
+      names = (pa.chips && pa.chips.length ? pa.chips.map((c) => c.label) : t).filter(Boolean),
+      shown = names.slice(0, 2),
+      more = names.length - shown.length,
+      txt = `Highlighted: ${shown.join(', ')}${more > 0 ? ` +${more}` : ''}`;
+    return (
+      `<span class="hl-sum"><button type="button" class="hl-sum-go" data-hl-goto title="${esc(
+        names.join(', ')
+      )}: open the Highlight section in the sidebar" aria-label="${esc(
+        `${names.length} highlighted: ${names.join(', ')}. Open the Highlight section`
+      )}">${esc(txt)}</button><button type="button" class="hl-x" data-hl-clear aria-label="Clear the highlight" ` +
+      `title="Clear the highlight">×</button></span>`
+    );
+  }
+  K.hl.section = section;
+  K.hl.summary = summary;
   const shut = (focus) => {
     const b = document.querySelector('[data-hl-menu][aria-expanded="true"]');
     if (!b) return;
@@ -795,14 +788,23 @@
     note = { hl: S.hl, text: foundText(verb) };
     return true;
   }
-  let reopen = false;
+  let reopen = 0;
+  // after "Select these" / "Compare with selection" the Lists menu opens again, to show what was found
+  (K.afterRender ||= []).push(() => {
+    if (Date.now() > reopen) return; // the page can be drawn twice for one click: the menu opens again on both
+    const b = document.querySelector('#rail [data-hl-menu][aria-controls="hl-pop"]'),
+      pop = document.getElementById('hl-pop');
+    if (b && pop) {
+      b.setAttribute('aria-expanded', 'true');
+      pop.hidden = false;
+    }
+  });
   K.clicks.push(
     [
       '[data-hl-select]',
       () => {
         if (!takeSelection('Selected')) return;
-        reopen = true;
-        barKey = null;
+        reopen = Date.now() + 1500;
         K.writeHash(true);
         K.render();
       },
@@ -815,8 +817,7 @@
           cmp = [S.q && 'q=' + encodeURIComponent(S.q), f && 'f=' + f].filter(Boolean).join('&');
         takeSelection('Compared');
         Object.assign(S, { view: 'overview', arg: '', vs: 'cmp', cmp });
-        reopen = true;
-        barKey = null;
+        reopen = Date.now() + 1500;
         K.writeHash(true);
         K.render();
         scrollTo(0, 0);
@@ -882,7 +883,6 @@
 .hl-pop .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .hl-chip-nf { color: var(--muted); text-decoration: line-through; border-style: dashed; }
 .hl-chip-nf .hl-x { text-decoration: none; }
-.hl-cpop:not([hidden]) { max-width: min(30rem, calc(100vw - 2rem)); }
 .hl-lab { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; ` +
     `}
 .hl-menu { position: relative; }
@@ -899,7 +899,18 @@
 .hl-rowpop p { margin: 0 0 0.3rem; }
 .hl-rowpop ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 0.2rem 0.8rem; }
 .hl-pnav { margin: 0.1rem 0 0.4rem; }
-.hl-bar:empty { display: none; }
+.hl-sec { margin: 0.9rem 0 0.4rem; padding-top: 0.7rem; border-top: 2px solid var(--line-strong); }
+.hl-sec-h { margin: 0 0 0.2rem; font-size: 0.95rem; }
+.hl-sec-note { margin: 0 0 0.4rem; }
+.hl-sec .hl-bar-in { flex-direction: column; align-items: stretch; gap: 0.4rem; }
+.hl-sec .hl-form { flex-wrap: wrap; }
+.hl-sec .hl-bar-in .hl-form input { flex: 1 1 8rem; width: auto; min-width: 0; }
+.hl-sec .hl-pop:not([hidden]) { position: static; margin-top: 0.3rem; max-width: 100%; box-shadow: none; }
+.hl-sum { display: inline-flex; align-items: center; gap: 0.25rem; min-width: 0; max-width: 100%; color: var(--accent-dark); font-size: 0.84rem; }
+.hl-sum-go { border: 0; background: none; padding: 0.1rem 0.2rem; cursor: pointer; font: inherit; color: inherit; text-decoration: underline; text-underline-offset: 2px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hl-sum-go:focus-visible, .hl-sum .hl-x:focus-visible { outline: 2px solid var(--brand-ink); outline-offset: 1px; }
+.hl-sum .hl-x { flex: none; }
+@media (max-width: 36rem) { .hl-sum { flex: 1 1 0; } }
 .hl-chips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
 tr.hl-row > td { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--accent) 11%, transparent); }
 tr.hl-row > td:first-child { box-shadow: inset 3px 0 0 var(--accent), inset 0 0 0 999px color-mix(in srgb, ` +

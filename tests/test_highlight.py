@@ -141,9 +141,12 @@ console.log(JSON.stringify({{ prots: [...p.prots], sites: p.sites.map(x => [x.p,
     }
 
 
-def test_the_box_is_in_the_selection_bar_and_the_tables_and_figures_carry_the_highlight():
+def test_the_box_is_in_the_sidebar_filters_tab_and_the_tables_and_figures_carry_the_highlight():
     web = ASSETS.parent
-    assert 'id="hl-bar"' in (web / 'template.html').read_text()
+    assert 'hl-bar' not in (web / 'template.html').read_text()  # nothing about highlighting in the opening header
+    rail = (ASSETS / 'kit-rail.js').read_text()
+    assert 'K.hl?.section?.()' in rail and 'data-hl-goto' in rail
+    assert 'K.hl?.summary?.()' in (ASSETS / 'kit.js').read_text()
     idrs, hl = (ASSETS / 'kit-idrs.js').read_text(), (ASSETS / 'kit-hilite.js').read_text()
     assert (
         'K.hl?.control()' not in idrs

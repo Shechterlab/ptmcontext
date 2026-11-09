@@ -519,6 +519,7 @@
           );
         })
         .join('') +
+      (K.hl?.section?.() || '') +
       `<div class="rail-foot"><span><b>${int(nMarks())}</b> ${esc(nMarks() === 1 ? W.mark : W.marks)} on <b>${int(nProteins())}</b> protein${nProteins() === 1 ? '' : 's'}${active() ? '' : ' (all)'}</span>${
         active() ? '<button class="linkish" type="button" data-sel-clear-all>Clear all</button>' : ''
       }</div>`
@@ -905,6 +906,21 @@
       () => {
         R.open = false;
         rail();
+      },
+    ],
+    [
+      '[data-hl-goto]',
+      (el) => {
+        R.opener = el;
+        R.tab = 'filters';
+        if (!pinned()) R.open = true;
+        rail();
+        // the page redraws once more after this click: the box is focused when it has settled
+        setTimeout(() => {
+          const sec = document.getElementById('hl-sec');
+          sec?.scrollIntoView({ block: 'nearest' });
+          sec?.querySelector('input')?.focus();
+        }, 60);
       },
     ],
     [
