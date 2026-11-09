@@ -8962,3 +8962,19 @@ a.btn:hover {
   font-size: 0.85rem;
   color: var(--ink-2);
 }
+
+/* "your selection" is marked the same way everywhere: a bold outline in the brand ink and a small tag (the cell drawings'
+   selected part, a tile's row, a question's row) */
+.sel-pill {
+  background-color: transparent;
+  border: 2px solid var(--ink);
+  color: var(--ink);
+}
+.fr-row.mine,
+.qchart .qrow.mine,
+.drow.mine,
+.cp-row.on:has(.sel-pill) {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
