@@ -1,7 +1,7 @@
-/* The protein page's folds, on the classic and the cards front end: each fold readable while closed (a small chart along the
+/* The protein page's folds, each fold readable while closed (a small chart along the
    protein, a big number or bars at the right of its title; on a phone under the title), and the switch between what is
-   recorded for the protein and the dataset's context (the cards layout puts it in a heading, the classic page at the top of
-   the group with website.protein.groups[].switch). The cards layout adds the headings and tab counts. It knows no mark, source
+   recorded for the protein and the dataset's context (the classic page puts it at the top of
+   the group with website.protein.groups[].switch). It knows no mark, source
    or organism by name: the pictures read the page's own data (the marks and their attributes, the regions, the RNA and DNA
    model, the tables of website.tables) through the builders that register them with K.pfolds.set(foldId, html). A module of the site kit. */
 (window.PTMC_MODULES ||= []).push(K => {

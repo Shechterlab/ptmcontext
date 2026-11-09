@@ -56,6 +56,10 @@ ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/we
     with their DOIs, ...). A selection is kept in the link, and the Overview's tests run again on it in the browser
     (within-protein Mantel–Haenszel, pooled Fisher, hypergeometric), computed as the site's own rows.
   - **Proteins and Sites:** tables of the selection; each site's studies linked to their papers.
+  - **Highlight and figures:** a pasted list of genes or sites (`hl=` in the link) is ringed in every figure that plots
+    items and narrows nothing; every table has PDF, SVG and PNG beside its TSV; a map of the cell opens large, with zoom
+    and the proteins of a part. The site file words its input examples (`website.placeholders`) and can switch the 3D
+    viewer, the highlight and the table figures off (`website.features`).
   - **Protein pages:** UniProt's other names and function (live), the map (marks stacked and colored by any
     attribute, labeled Auto/All/None; rows from the site's data, the sequence (charge, hydropathy, aromatic
     residues) and live sources (UniProt regions, variants, PTMs; AlphaFold pLDDT), each item with a hover saying what

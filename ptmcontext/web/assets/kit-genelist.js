@@ -1,5 +1,5 @@
-/* The gene-list test (#list?q=<names>; a "Test this list" button in the selection bar of either layout): a list of genes or proteins the reader pastes, against every
-   set of the site's protein-set questions (those the cards show). For each set, a one-sided hypergeometric test of the
+/* The gene-list test (#list?q=<names>; a "Test this list" button in the selection bar): a list of genes or proteins the reader pastes, against every
+   set of the site's protein-set questions (those the front block's cards hold). For each set, a one-sided hypergeometric test of the
    list's marked proteins within the marked proteins the set's source annotates (each source its own background, as the
    site's own tests), fold (k/n)/(M/N), and Benjamini–Hochberg q over every set tested, small sets included: kit-stats.js
    listTest, the twin of ptmstats.gene_list_test. A new test, computed in the browser; the release statistics do not hold
@@ -15,7 +15,7 @@
   const short = aid => F.short?.[aid] || A[aid]?.title || aid;
   const trail = parts => `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <b>${esc(parts[parts.length - 1][0])}</b></p>`;
   const SHOWN = 20;
-  // the questions tested: the protein-set questions the cards show (their facets), in their order; a card's further
+  // the questions tested: the protein-set questions the front block's cards hold (their facets), in their order; a card's further
   // questions (every disease term, every pathway) are left out, as the home leaves them out
   const QS = [...new Set(F.cards.flatMap(c => (c.facets || []).map(f => f.analysis)))].filter(aid => A[aid]?.kind === 'protein_sets');
   if (!QS.length) return;

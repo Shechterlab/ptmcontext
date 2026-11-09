@@ -1,4 +1,4 @@
-/* The Interactions view (classic and cards front ends) of a protein, site first: who binds each of its marks (the records of
+/* The Interactions view of a protein, site first: who binds each of its marks (the records of
    website.tables, grouped by what they show), then its partners and the complexes that hold it (the partner table, with the
    share of partners that carry the mark against the dataset's share of all proteins), then the writers and readers among its
    partners and the marks of its other partners that they bind. The network and the interface lists follow (kit-pnet.js).

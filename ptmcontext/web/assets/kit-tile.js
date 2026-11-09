@@ -1,9 +1,8 @@
-/* The classic Overview's tile rows, in the cards layout's look: each tile has its own ticked axis (always 1× and at least
+/* The Overview's tile rows: each tile has its own ticked axis (always 1× and at least
    one more label, labels never overlapping, also on a phone), a thin 95% interval bar, the value with a q dot, the number
    of marks or proteins in gray, a hollow dot where the difference is not significant, and a ring for the whole dataset's
    value where a selection was tested again. Also the one-line answer under a tile's title. Pure drawing: the rows and
-   their classes come from the kit (kit.js tileState); nothing is computed here. The twin of the cards home's rows
-   (kit-front.js), which reads the same classes (kit.css, .fr-row). A module of the site kit: K.tilekit. */
+   their classes come from the kit (kit.js tileState); nothing is computed here. The classes are kit.css's .fr-row. A module of the site kit: K.tilekit. */
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
   const { W, esc, int } = K;

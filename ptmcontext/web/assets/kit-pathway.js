@@ -1,4 +1,4 @@
-/* The pathway view (website.front.pathways; the cards home, and the classic Overview's tiles and question pages): a "Proteins" button on the rows of a pathway question opens
+/* The pathway view (website.front.pathways; the Overview's tiles and question pages): a "Proteins" button on the rows of a pathway question opens
    the pathway's sub-pathways as groups of protein chips. A methylated protein is filled, with its sites (those of the
    selection, when there is one); a protein of the pathway with none is an outline, muted; the methylated come first, and
    each group says "k of n methylated in your selection". Chips open the protein's page. The groups follow the filters,

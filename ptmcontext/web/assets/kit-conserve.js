@@ -407,7 +407,7 @@
   (K.selSmall ||= []).unshift(logoSection);
   // "Sequence logo" in the selection line: opens it (and goes to the Overview that holds it)
   const logoBtn = () => (CV.logo && haveWindows() && sets().sel.length ? `<button class="btn small" type="button" data-go-logo title="The selected ${esc(W.marks)}' sequence windows aligned, as a logo and against the other ${esc(W.marks)}">Sequence logo</button>` : '');
-  K.logoBtn = logoBtn; K.logoSection = logoSection;      // the cards front end's chip row and home (kit-front.js)
+  K.logoBtn = logoBtn; K.logoSection = logoSection;      // the logo's button and section, for the pages that place it
   (K.selTools ||= []).push(logoBtn);
   K.clicks.push(['[data-go-logo]', () => {
     LUI.open = true;

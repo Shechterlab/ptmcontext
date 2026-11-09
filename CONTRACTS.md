@@ -131,10 +131,15 @@ Two website blocks read only what protein-set questions already write, so any si
 protein-set tables gets them with no code (`ptmc check` names what they get wrong; `tests/test_cell_and_values.py`).
 
 **`website.cell`** (kit-cell.js): several maps of the cell as one question, its address `#overview/<id>`.
-- `maps`: each `{analysis, regions?, name, short?, method?, cells?, how?, ref?, doi?, url?, licence?, min_members?}`; `analysis`
+- `maps`: each `{analysis, regions?, name, short?, method?, cells?, how?, ref?, doi?, url?, licence?, min_members?, graded?}`; `analysis`
   is a protein-set question whose sets are the map's compartments, `regions` (optional) another whose sets are the same
   map's regions. The grids' columns, in order. A map tested within abundance strata (`abundance:`) is compared within them
   (its `mantel_haenszel` rows); one without, by its fold enrichment.
+- `graded: true` on a map: it grades proteins (a probability band) instead of naming a place, so a protein page says its
+  classes apart from the places, in lower case.
+- Cell zoom: a drawing of the cell (the Overview's map, the protein page's own) opens at full size in a dialog with
+  zoom and pan (the **Enlarge** button); a click on a part lists the proteins that sit in it,
+  50 to a page, each linked to its protein page, within the selection when there is one.
 - `regions`: rows `{label, set? (default label), part?, name?, in_text?}`, the sets of each map's regions question.
 - `compartments`: groups `{group, rows}`, each row `{label, sets: {analysis: set}, part?, also?, name?, in_text?}`: the
   set it is in each map; the part of the drawings it colors, and `also` the parts it colors when they have no row of
@@ -789,6 +794,38 @@ Every TSV a question writes has the header lines (`#`) with the citation and the
 selection, the version and the citation (a block only Print shows); the PDF's foot carries them; a link that names a page,
 a protein or a selection carries `dv`; a variant's downloads (the lower-confidence version) carry its name in the file
 name and in the header.
+
+## Page features: highlight, table figures, small words and switches
+
+**Highlight (`hl=`).** The Highlight box (and `hl=` in a link) takes a pasted list of genes, accessions or sites ("FUS R216"),
+separated by commas, semicolons or lines. It marks them in every figure that plots individual items (an IDR, a site, a
+protein) with a ring and, for 12 or fewer, a label, and lists them in a small table beside the figure, in its export and as
+TSV. It narrows nothing: counts, tests and tables do not use it. A name that matches nothing is reported ("not found"),
+never dropped; lists can be saved in the browser. The selection itself is highlighted too. Code: `kit-hilite.js`
+(`K.hl`); a statistic never reads it.
+
+**Table figures.** Every table of a page with more than two rows gets PDF, SVG and PNG buttons beside its TSV, drawn from
+the rows the page shows (the same sort, filter and page; a long table is drawn to its first rows and says so; the TSV has
+them all). Code: `kit-tabfig.js` (`K.tableFigure`, `K.tableExport`); the markup it reads is under "Page hooks".
+
+**`website.placeholders`** (examples inside the page's input boxes, so no gene or motif of one site shows on another):
+`highlight` (genes and sites for the Highlight box: `FUS, TDP-43, HNRNPA1 R218`), `partners` (gene symbols for the partner
+network's Always-include box), `motif` (example motifs for the motif box and the search help: `GXRG, [RK]XR`) and
+`motif_either` (an example of alternatives for the motif hint: `RGG,GAR`). A box without one shows no example.
+
+**`website.default_background`**: the text most questions give as their `background:`; the Method page states a question's
+background only when it differs. **`website.protein.conservation.reference`**: the source organism's name as the
+conservation card labels its own sequence (and the TSV column `reference_residue`); default "Reference".
+
+**`website.features`** switches parts of the page off; each is on unless set to `false`:
+
+| key | switches off |
+|---|---|
+| `structure_3d` | the 3D viewer: the protein page's 3D fold, the Show in 3D buttons and the live structure lists |
+| `highlight` | the Highlight box, pasted lists and the rings and labels in the charts |
+| `table_figures` | the PDF, SVG and PNG buttons on tables (the TSV downloads stay) |
+
+`tests/test_features.py` runs each module with its switch off and on.
 
 ## Page hooks (markup that modules read from each other)
 

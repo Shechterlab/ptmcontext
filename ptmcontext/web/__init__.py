@@ -43,8 +43,54 @@ FONTS = {
                   '&family=Inter:wght@400;500;600;700&display=swap',
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
-# the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-busy.js', 'kit-cols.js', 'kit-late.js', 'kit-stats.js', 'kit-select.js', 'kit-rail.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-tabfig.js', 'kit-hilite.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-factors.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit-pfolds.js', 'kit-pix.js', 'kit-genelist.js', 'kit-pathway.js', 'kit-tile.js', 'kit-figures.js', 'kit.js')
+# The kit's modules, in the order the page loads them: THE ORDER MATTERS. A module reads what an earlier one put on K (kit-select.js
+# before the rail, search, selection views and pages that read K.sel; kit-tabfig.js before the pages that export tables; kit-tile.js
+# before kit.js, which draws the tiles), and kit.js, last, runs them all. Add a module after the ones it reads, one per line.
+MODULES = (
+    'kit-busy.js',
+    'kit-cols.js',
+    'kit-late.js',
+    'kit-stats.js',
+    'kit-select.js',
+    'kit-rail.js',
+    'kit-search.js',
+    'kit-near.js',
+    'kit-selview.js',
+    'kit-shown.js',
+    'kit-link.js',
+    'kit-tabfig.js',
+    'kit-hilite.js',
+    'kit-map.js',
+    'kit-3d.js',
+    'kit-columns.js',
+    'kit-sitecard.js',
+    'kit-pagepdf.js',
+    'kit-proteins.js',
+    'kit-tables.js',
+    'kit-sites.js',
+    'kit-idrs.js',
+    'kit-compare.js',
+    'kit-questions.js',
+    'kit-start.js',
+    'kit-random.js',
+    'kit-counts.js',
+    'kit-cell.js',
+    'kit-values.js',
+    'kit-factors.js',
+    'kit-help.js',
+    'kit-conserve.js',
+    'kit-interactions.js',
+    'kit-pcards.js',
+    'kit-pnet.js',
+    'kit-prna.js',
+    'kit-pfolds.js',
+    'kit-pix.js',
+    'kit-genelist.js',
+    'kit-pathway.js',
+    'kit-tile.js',
+    'kit-figures.js',
+    'kit.js',
+)
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 

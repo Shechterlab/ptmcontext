@@ -2,7 +2,25 @@
    site's run) and its look (variables set from the site file). Views: Overview (a scorecard: each row a question, its
    figure at a glance and its answer; a row opens its full figure, every class and the downloads), Statistics (every
    test, sortable, downloadable), Method (how the tests work, the data and their checksums, the parity check, how to
-   cite). The view, the search, the open rows and the choices live in the URL hash, so Back and links work. */
+   cite). The view, the search, the open rows and the choices live in the URL hash, so Back and links work.
+
+   Names used throughout the kit (the modules use the same ones):
+     D    the page's data (site-data JSON): analyses, statistics rows, proteins, tables, the site's words
+     W    D.words: the profile's words (mark, marks, residue, residues, marked, writer ...)
+     A    the analyses (questions) by id, plus the attribute questions '@<name>'
+     S    the page state: view, arg, q (search), f (filters), m (test), vs (baseline), sort ...; written to the URL hash
+     K    window.PTMC, the kit's API: modules add to it (K.sel, K.map, K.tilekit, K.hl ...) and read each other through it
+     P    the proteins as objects (i, acc, gene, name, len, marks, cand); PI maps an accession to its index
+     RUN  D.run, the run record: the inputs with their checksums, the parity check, the marks counted
+     CIT  D.citation; OV D.overview; FR D.front; PAL the figure colors; FF the figure font
+     PV   the protein page's state (kit-proteins.js): accession, record, open folds, the focused site
+     R    the sidebar's state (kit-rail.js); M the selection model there (K.sel)
+     SD   a module's data: the selection data (kit-select.js), the structure block (kit-3d.js)
+     ST   window.PTMC_STATS, the statistics in the browser (kit-stats.js: the same tests as ptmstats)
+     T, UI, TB  a module's own state (the 3D viewer, a card's controls, a table's sort and page)
+     SPECS the site file's attribute specs; AT the order of a mark's attribute values; PRO website.protein; CC the protein card
+   Each module is a function of K, added to window.PTMC_MODULES; kit.js, the last, runs them in the order listed in
+   ptmcontext/web/__init__.py (MODULES). */
 (() => {
   'use strict';
   const D = JSON.parse(document.getElementById('site-data').textContent);
@@ -152,7 +170,7 @@
     if (S.m === 'study' && S.vs === 'residues') S.m = 'mantel_haenszel';
     K.sel?.decode(K.sel.fRaw(qs) ?? p.get('f'));
     if (/(^|&)f=[^&]*%7E/i.test(qs || '')) S.legacy = true;      // a link an earlier version wrote (its value escaped twice): written back once-escaped
-    (K.paramsIn || []).forEach(f => f(p));      // a module's own parameters (kit-front.js: the abundance check, the data version)
+    (K.paramsIn || []).forEach(f => f(p));      // a module's own parameters (the abundance check, the data version)
     S.sort = p.get('sort') || 'q'; S.desc = p.get('dir') ? p.get('dir') === 'desc' : S.sort !== 'q';
     S.open = new Set((p.get('open') || '').split(',').filter(k => A[k]));
   }
@@ -831,21 +849,21 @@
 
   // ---- Method: how the tests work, the data, the parity check, how to cite --------------------------------------------
   function method() {
-    const R = D.run, m = R.marks || {}, sn = R.snapshot || {};
+    const RUN = D.run, m = RUN.marks || {}, sn = RUN.snapshot || {};
     const IN = D.inputs || {};
     // in the site file's order (a role's sources in the order it combines them), the reference last
-    const inputs = [...Object.keys(IN).filter(k => (R.inputs || {})[k]).map(k => [k, R.inputs[k]]), ...Object.entries(R.inputs || {}).filter(([k]) => !IN[k])]
+    const inputs = [...Object.keys(IN).filter(k => (RUN.inputs || {})[k]).map(k => [k, RUN.inputs[k]]), ...Object.entries(RUN.inputs || {}).filter(([k]) => !IN[k])]
       .sort(([a], [b]) => (IN[a]?.use === 'the parity check') - (IN[b]?.use === 'the parity check'))
       .map(([k, v]) => `<tr><td class="wrapok">${esc(IN[k]?.version || k)}</td><td>${esc(IN[k]?.use || '')}</td><td class="wrapok">${esc(hlicence(IN[k]?.licence))}</td><td class="mono">${esc(String(v.file).split('/').pop())}</td><td class="mono">${esc(v.md5)}</td></tr>`).join('');
     const dropped = [m.not_on_snapshot ? `${int(m.not_on_snapshot)} on other sequences (isoforms, unreviewed entries)` : '', m.residue_mismatch ? `${int(m.residue_mismatch)} not on a candidate residue` : ''].filter(Boolean);
-    const nPar = R.parity ? R.parity.checked.reduce((n, c) => n + c.rows, 0) : 0;
-    const refName = (IN[R.parity?.reference]?.version || R.parity?.reference || '').replace(/\s*\(.*\)$/, '');
-    const par = R.parity ? `<section id="m-parity"><h3>Checked against the published release</h3><p>The rebuild recomputes the published tests and compares them character by character with the statistics table of the ${esc(refName)}: ` +
-      `<span class="${R.parity.equal ? 'ok' : ''}">${R.parity.equal ? `all ${int(nPar)} rows are identical` : 'some rows differ'}</span>.</p>` +
+    const nPar = RUN.parity ? RUN.parity.checked.reduce((n, c) => n + c.rows, 0) : 0;
+    const refName = (IN[RUN.parity?.reference]?.version || RUN.parity?.reference || '').replace(/\s*\(.*\)$/, '');
+    const par = RUN.parity ? `<section id="m-parity"><h3>Checked against the published release</h3><p>The rebuild recomputes the published tests and compares them character by character with the statistics table of the ${esc(refName)}: ` +
+      `<span class="${RUN.parity.equal ? 'ok' : ''}">${RUN.parity.equal ? `all ${int(nPar)} rows are identical` : 'some rows differ'}</span>.</p>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Test</th><th class="num">Rows</th><th>Identical</th></tr></thead><tbody>` +
-      R.parity.checked.map(c => `<tr><td>${esc(A[c.analysis]?.title || c.analysis)}${c.reference ? ` <span class="muted">(against ${esc(IN[c.reference]?.version || c.reference)})</span>` : ''}</td><td>${esc(testName(c.analysis, c.method))}</td><td class="num">${int(c.rows)}</td><td>${c.equal ? '<span class="ok">✓</span>' : '✗'}</td></tr>`).join('') +
+      RUN.parity.checked.map(c => `<tr><td>${esc(A[c.analysis]?.title || c.analysis)}${c.reference ? ` <span class="muted">(against ${esc(IN[c.reference]?.version || c.reference)})</span>` : ''}</td><td>${esc(testName(c.analysis, c.method))}</td><td class="num">${int(c.rows)}</td><td>${c.equal ? '<span class="ok">✓</span>' : '✗'}</td></tr>`).join('') +
       '</tbody></table></div>' +
-      ((R.parity.new || []).length ? `<p>New in the rebuild, so not checked: ${R.parity.new.map(id => esc(A[id]?.title || id)).join(', ')}.</p>` : '') +
+      ((RUN.parity.new || []).length ? `<p>New in the rebuild, so not checked: ${RUN.parity.new.map(id => esc(A[id]?.title || id)).join(', ')}.</p>` : '') +
       '</section>' : '';
     return `<div class="page-head"><h2>${esc(tabName('method', 'Method'))}</h2></div><div class="doc">` +
       `<span id="m-g1"></span><section id="m-tests"><h3>How the tests work</h3><p>Each question asks whether a ${esc(W.mark)} is more or less likely than another ${esc(W.residue)} of the same protein to lie in a class, such as a disordered region, a domain or a motif. Each class is tested two ways.</p><ul>` +
@@ -862,16 +880,16 @@
       `</tbody></table></div></section>` + D.analyses.map(questionMethod).join('') + (K.methodParts || []).map(f => f()).join('') + K.methods.map(x => x.html()).join('') + par +
       '<span id="m-g3"></span>' + citeSection() + downloadSection() + searchSection() + privacySection() +
       sourcesSection() +
-      `<section id="m-made"><h3>How this site is made</h3><p>One file, <span class="mono">${esc(D.site.config)}</span>, sets the mark, the sequences and regions, the questions, the colors and the pictures. ptmcontext ${esc(D.kit.version)} (commit <span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(R.written))}. The citation, version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>` +
+      `<section id="m-made"><h3>How this site is made</h3><p>One file, <span class="mono">${esc(D.site.config)}</span>, sets the mark, the sequences and regions, the questions, the colors and the pictures. ptmcontext ${esc(D.kit.version)} (commit <span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(RUN.written))}. The citation, version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>` +
       `<p>Every download carries its citation, data sources, versions, inputs and export date, printed under each figure and kept in the file (SVG metadata, PNG text fields, PDF properties, TSV # lines).</p></section></div>`;
   }
 
   // a question's own Method section (#method/q-<id>): what it asks, what it is compared with and its classes
   function questionMethod(a) {
-    const R = D.run, set = a.kind === 'protein_sets';
+    const RUN = D.run, set = a.kind === 'protein_sets';
     const labels = Object.entries(a.labels || {}).filter(([c]) => c);
     const classes = labels.length && labels.length <= 40 ? `<details><summary>Its ${set ? 'sets' : 'classes'} (${int(labels.length)})</summary><dl class="qm-classes">${labels.map(([c, l]) => `<dt>${esc(l || c)}</dt><dd>${esc((a.help || {})[c] || '')}</dd>`).join('')}</dl></details>` : '';
-    return `<section id="m-q-${esc(a.id)}" class="qm"><h3>${esc(a.title)}${a.new && R.parity ? ' <span class="newtag">new</span>' : ''}</h3>` +
+    return `<section id="m-q-${esc(a.id)}" class="qm"><h3>${esc(a.title)}${a.new && RUN.parity ? ' <span class="newtag">new</span>' : ''}</h3>` +
       (a.question ? `<p class="qm-q">${esc(a.question)}</p>` : '') + (a.sub ? `<p>${esc(a.sub)}.</p>` : '') +
       (a.describe && a.describe !== D.site.default_background ? `<p>${set ? 'Background: ' : ''}${esc(a.describe)}.</p>` : '') + classes +
       `<p class="qm-links"><a href="${esc(link('overview', a.id))}">Its figure</a> · <a href="${esc(link('statistics', '', { a: a.id }))}">Its tests</a></p></section>`;
@@ -900,13 +918,13 @@
     return `One-sided hypergeometric test, as clusterProfiler’s enricher, of the ${markedUnits(a.id)} in each set against the ${a.describe || 'other proteins of the universe'}. Fold enrichment is the share of ${markedUnits(a.id)} in the set over the share of all ${setUnit(a.id)} in it. q is Benjamini–Hochberg across the sets. Within abundance deciles (where shown): a Mantel–Haenszel odds ratio across deciles, asking whether an enrichment holds among proteins of similar abundance.`;
   }
   function provenance(extra = {}) {
-    const R = D.run;
+    const RUN = D.run;
     return { site: D.site.name, site_config: D.site.config, version: CIT.version || '', date: CIT.date || '', doi: CIT.doi || '', licence: CIT.licence || '',
       cite: CIT.preferred ? CIT.preferred.text + doiTxt(CIT.preferred.doi) : '', data_sources: (CIT.references || []).map(r => r.text + doiTxt(r.doi)),
-      software: `ptmcontext ${D.kit.version}`, commit: D.kit.commit || '', run: R.written, sequences: R.snapshot,
-      marks: R.marks, inputs: Object.fromEntries(Object.entries(R.inputs || {}).map(([k, v]) => [k, { file: String(v.file).split('/').pop(), md5: v.md5 }])), roles: R.roles,
-      parity: R.parity ? { reference: R.parity.reference, equal: R.parity.equal } : null,
-      questions: madeBy(), trusted_plugins: R.trusted_plugins || [],
+      software: `ptmcontext ${D.kit.version}`, commit: D.kit.commit || '', run: RUN.written, sequences: RUN.snapshot,
+      marks: RUN.marks, inputs: Object.fromEntries(Object.entries(RUN.inputs || {}).map(([k, v]) => [k, { file: String(v.file).split('/').pop(), md5: v.md5 }])), roles: RUN.roles,
+      parity: RUN.parity ? { reference: RUN.parity.reference, equal: RUN.parity.equal } : null,
+      questions: madeBy(), trusted_plugins: RUN.trusted_plugins || [],
       selection: selOn() && K.sel.data() ? { text: K.sel.describe(), marks: K.sel.nMarks(), proteins: K.sel.nProteins() } : null,
       exported: stamp(), from: pageUrl(), ...extra };
   }
@@ -918,26 +936,26 @@
   }
   const madeByText = aid => { const x = (D.run.analyses || {})[aid]; if (!x) return ''; return x.test === 'protein_sets' ? `protein-set test of the ${x.sets} input` : `layer ${x.layer} (${x.origin})${x.with ? ', made from the site file’s parameters' : ''}`; };
   function creditLines() {
-    const R = D.run, sn = R.snapshot || {};
+    const RUN = D.run, sn = RUN.snapshot || {};
     const lines = [];
     if (CIT.preferred) lines.push(`Cite: ${CIT.preferred.text}${doiTxt(CIT.preferred.doi)}`);
     if ((CIT.references || []).length) lines.push('Data: ' + CIT.references.map(r => r.short + doiTxt(r.doi)).join('; '));
-    lines.push(`${D.site.name}, version ${CIT.version || '–'}${CIT.date ? ' (' + hdate(CIT.date) + ')' : ''} · ptmcontext ${D.kit.version} (${shortCommit(D.kit.commit)}) · ${sn.release || ''}, FASTA MD5 ${String(sn.fasta_md5 || '').slice(0, 12)}… · run on ${hdate(R.written)}`);
+    lines.push(`${D.site.name}, version ${CIT.version || '–'}${CIT.date ? ' (' + hdate(CIT.date) + ')' : ''} · ptmcontext ${D.kit.version} (${shortCommit(D.kit.commit)}) · ${sn.release || ''}, FASTA MD5 ${String(sn.fasta_md5 || '').slice(0, 12)}… · run on ${hdate(RUN.written)}`);
     if (selOn() && K.sel.data()) lines.push(`Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks})`);
     lines.push(`Exported ${htime(stamp())} from ${pageUrl()}${CIT.licence ? ' · license ' + hlicence(CIT.licence) : ''}`);
     return lines;
   }
   function preamble(title, what) {
-    const R = D.run, sn = R.snapshot || {};
-    const inputs = Object.entries(R.inputs || {}).map(([k, v]) => `${k} (MD5 ${v.md5})`).join(', ');
+    const RUN = D.run, sn = RUN.snapshot || {};
+    const inputs = Object.entries(RUN.inputs || {}).map(([k, v]) => `${k} (MD5 ${v.md5})`).join(', ');
     return [`# ${D.site.name}${D.variant ? ' (' + D.variant.label + ')' : ''}: ${title}`, `# What: ${what}`,
       D.variant ? `# Variant: ${D.variant.label}${D.variant.description ? ': ' + D.variant.description : ''}. Not the main release's set of sites; do not mix the two.` : null,
       CIT.preferred ? `# Cite: ${CIT.preferred.text}${doiTxt(CIT.preferred.doi)}` : null,
       (CIT.references || []).length ? '# Data sources: ' + CIT.references.map(r => r.text + doiTxt(r.doi)).join(' | ') : null,
       `# Version: ${CIT.version || '–'}${CIT.date ? ' (' + CIT.date + ')' : ''}${CIT.doi ? ', doi:' + CIT.doi : ''}${CIT.licence ? '; license ' + CIT.licence : ''}`,
-      `# Made with: ptmcontext ${D.kit.version} (commit ${D.kit.commit || 'not recorded'}) from ${D.site.config}; run ${R.written}`,
+      `# Made with: ptmcontext ${D.kit.version} (commit ${D.kit.commit || 'not recorded'}) from ${D.site.config}; run ${RUN.written}`,
       `# Sequences: ${sn.release} (${int(sn.entries)} entries, FASTA MD5 ${sn.fasta_md5}); inputs: ${inputs}`,
-      `# Questions made by: ${Object.keys(D.run.analyses || {}).map(aid => `${aid}: ${madeByText(aid)}`).join('; ')}${(R.trusted_plugins || []).length ? `; trusted plugins: ${R.trusted_plugins.join(', ')}` : ''}`,
+      `# Questions made by: ${Object.keys(D.run.analyses || {}).map(aid => `${aid}: ${madeByText(aid)}`).join('; ')}${(RUN.trusted_plugins || []).length ? `; trusted plugins: ${RUN.trusted_plugins.join(', ')}` : ''}`,
       selOn() && K.sel.data() ? `# Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks} on ${K.sel.nProteins()} proteins), tested again in the browser` : null,
       `# Exported: ${stamp()} from ${pageUrl()}`].filter(Boolean).join('\n') + '\n';
   }

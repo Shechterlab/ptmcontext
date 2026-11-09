@@ -90,12 +90,55 @@ site tested. A question the selection was made with (or one reading the same dat
 fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers match SciPy to about 1e-9
 (`tests/test_web_stats.py`). The original explorer's links (`#P35637`, `#P35637/R216`, `#about`) open the same pages.
 
-**Modules.** `kit.js` is the core (state in the URL, tabs, Overview, All tests, Method, figures and downloads); the
-others register with it through `window.PTMC_MODULES`: `kit-stats.js` (the tests, for selections; it is `ptmstats.js` of packages/ptmstats, copied under that name), `kit-select.js`
-(the selection model, `K.sel`: search, filters, selections and their tests, with no page of its own and no need of a document; `state`, `rows`/`retest`, `data`/`peek`, `subscribe`; the search's other names, sites in a protein's own numbering and motif patterns, `website.search`), `kit-rail.js` (the sidebar and the selection line, which draw and change the model), `kit-cols.js` (values by name, `K.cols`), `kit-late.js` (data read on first need, `data/site.json`), `kit-search.js` (suggestions while typing and the line under the search), `kit-near.js` (filters by key that read more than a mark's classes: another mark nearby, residues of a table nearby, the proteins' partners, the motif finder's box; CONTRACTS.md, "Search and its filters"), `kit-selview.js` (on a selection's Overview: what sets it apart, in brief; for one too small to test, its proteins drawn), `kit-map.js` (the protein map: rows, hovers, pins, zoom,
-read-out, exports), `kit-3d.js` (the protein page's 3D structure), `kit-proteins.js` (the Proteins tab and the protein page), `kit-sites.js` (the Sites tab), `kit-tables.js` (the Proteins tab and the parts both tabs share: Columns, site maps, Your selection, Enriched features, empty states, citation box, downloads in the site file's columns: `website.proteins`, `website.sites`),
-`kit-idrs.js` (the IDRs tab, from a track whose values include `fcr` and `ncpr`), `kit-sitecard.js` (the site card's blocks, the sites table's Evidence rows and the citation box, from the tables of CONTRACTS.md's "Tables the protein pages show"), `kit-cell.js` (several maps of the cell as one question: `website.cell`; the drawings' parts in `config/cell_drawings.json`), `kit-values.js` (a protein-set question with its proteins' numbers: `website.set_views`) and `kit-compare.js` (what sets a
-selection apart from the other marks, and two selections side by side). `kit-counts.js` (questions answered by counting the marks rather than testing them, `website.counts`: their tiles, pages, filters, downloads and Method sections; a module's question draws its own tile and page through `A[id].tile` and `A[id].page`, and may add a kind of filter, `K.filterKinds`). `kit-help.js` (help for every reader: the Overview's start panel for a first visit, from `website.start` or else the site's examples; the Help page; keyboard shortcuts with a `?` overlay; result counts read out to screen readers; focus kept on the control in use, or moved to a new page's heading; every hover shown on keyboard focus and on a long press). `kit-interactions.js` (pages of sections, `website.pages`: a tab whose sections hold blocks, each reading the statistics, the marks' attributes or a table of `website.tables`; tiles that open each section alone at `#<page>/<section>`, an answer sentence and highlight cards, a tile on the Overview; the Interactions page is one). A new view is a new module; a module may draw a question of its own or its own tile and page for one (`K.questions`) and add a Method section (`K.methods`).
+**Modules.** `kit.js` is the core; the others register with it through `window.PTMC_MODULES` and are loaded in the order of `MODULES` in `ptmcontext/web/__init__.py`, which matters (a module reads what an earlier one put on `K`). A module knows no mark, source or organism by name: its words come from the page's data. The names of the kit's state (`D`, `W`, `S`, `K`, `A`, `PV`, `R`, `RUN`, `ST` and the others) are listed at the head of `kit.js`; the markup modules read from each other is in CONTRACTS.md, "Page hooks".
+
+| Module | What it does |
+|---|---|
+| `kit-busy.js` | a quiet progress bar and screen-reader status while a data file of the site is still coming (wraps `fetch`) |
+| `kit-cols.js` | values by name (`K.cols`): a mark record's classes and attributes by column name, whatever a site has |
+| `kit-late.js` | data read when first asked for (`D.late`: the protein attributes' values in `data/site.json`) |
+| `kit-stats.js` | the tests in the browser; this is `ptmstats.js` of packages/ptmstats, copied under that name |
+| `kit-select.js` | the selection model, `K.sel`: search, filters, selections and their tests; no page of its own, no document needed |
+| `kit-rail.js` | the sidebar (Sections, Filters), the selection line and saved selections; a row that selects goes to the page top |
+| `kit-search.js` | the search box's suggestions and the line under it that says what it read |
+| `kit-near.js` | filters that read more than a mark's own classes: nearby marks, motif patterns, partners |
+| `kit-selview.js` | a selection's Overview beyond its tiles: what sets it apart, in brief |
+| `kit-shown.js` | marks shown and counted nowhere (the variants' lower-confidence rows) |
+| `kit-link.js` | `K.site`: the one channel that links a protein's sites between the views that show them |
+| `kit-tabfig.js` | a table of the page drawn as a figure (PDF, SVG, PNG beside TSV); `website.features.table_figures` switches it off |
+| `kit-hilite.js` | highlighting genes and sites in figures (`K.hl`, the `hl=` list); `website.features.highlight` switches it off |
+| `kit-map.js` | the protein map: marks as lollipops over the domains and regions, with rows from named sources |
+| `kit-3d.js` | the protein page's 3D structure (3Dmol.js loaded when it opens); `website.features.structure_3d` switches it off |
+| `kit-columns.js` | a table's optional columns in a Columns menu, remembered per table |
+| `kit-sitecard.js` | the site card's blocks, the sites table's cells and Evidence rows, the citation box |
+| `kit-pagepdf.js` | a page as an A4 PDF without the print dialog |
+| `kit-proteins.js` | a page per protein (map, its marks, live cards) and the protein page's sections registry (`K.proteinFoldSections`) |
+| `kit-tables.js` | the Proteins tab and the parts the Proteins and Sites pages share (`website.proteins`) |
+| `kit-sites.js` | the Sites tab (`website.sites`) |
+| `kit-idrs.js` | the IDRs tab: charge diagram, regions compared, every IDR in a table |
+| `kit-compare.js` | the way in to comparing marks with marks (`vs=cmp`) |
+| `kit-questions.js` | one question seen several ways on an Overview card (views, more sets, protein cards of sets) |
+| `kit-start.js` | starting points on the Overview: ranked proteins and ready-made selections |
+| `kit-random.js` | example proteins drawn at random at the end of the Overview |
+| `kit-counts.js` | count questions (`website.counts`): tiles, pages, filters and Method sections of questions answered by counting |
+| `kit-cell.js` | where in the cell: maps of the cell as one question (`website.cell`) |
+| `kit-values.js` | a protein-set question drawn with its proteins' numbers (`website.set_views`) |
+| `kit-factors.js` | several factors at once (a conditional-logit analysis) |
+| `kit-help.js` | the start panel, the Help page, keyboard shortcuts, focus and screen-reader help |
+| `kit-conserve.js` | conservation across species and the selection's sequence logo (`website.protein.conservation`) |
+| `kit-interactions.js` | pages of sections laid out by the site file (`website.pages`; the Interactions page) |
+| `kit-pcards.js` | the protein page's context cards (`website.protein.cards`) |
+| `kit-pnet.js` | protein interactions (STRING, live) and interaction evidence at a glance |
+| `kit-prna.js` | RNA and DNA interactions: the `p-na` fold |
+| `kit-pfolds.js` | the protein page's folds: a picture in each header, and the This protein / Dataset context switch |
+| `kit-pix.js` | the protein page's Interactions view, site first |
+| `kit-genelist.js` | the gene-list test (`#list`) |
+| `kit-pathway.js` | the pathway view (`website.front.pathways`) |
+| `kit-tile.js` | the Overview tiles' rows, axis, answer line and download menu (`K.tilekit`) |
+| `kit-figures.js` | the figure panels page ("Make figures") |
+| `kit.js` | the core: state in the URL, tabs, Overview, All tests, Method, figures and downloads; runs the modules last |
+
+The protein page's sections are registered, not wrapped: a module that adds a fold pushes `[id, title, level]` onto `K.proteinFoldSections`, and the core lists them once, as the page arranges its folds by the site's `website.protein.order` and `groups`. The cards front end (`website.front.mode: cards`) was removed; the front block (`website.front`) still gives the tiles their short names, row labels and pathways.
 
 **Comparisons.** What a selection is compared with is the Overview's baseline: the other residues of its proteins (the
 site's own tests), the site's other marks ("what sets it apart"), or another selection's marks (`vs=cmp`, `cmp=` its
