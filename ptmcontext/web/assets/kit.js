@@ -1112,6 +1112,8 @@
     if (!a || !selOn()) return null;
     const key = fkeyOf(a),
       vals = (K.sel.compute().cons || []).filter(([k]) => k === key).flatMap(([, v]) => v);
+    // a set chosen on a module's own control (a part of the cell drawing) is the selection's too
+    if (a.kind === 'protein_sets') K.sel.ownSets(a.id).sets.forEach((v) => vals.push(v));
     return vals.length ? new Set(vals) : null;
   };
   const lcFirst = (t) => (/^[A-Z][a-z]/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t);

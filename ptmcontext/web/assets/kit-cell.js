@@ -62,6 +62,8 @@
     '.cg-c.u0{fill:var(--t-up-0)}.cg-c.u1{fill:var(--t-up-1)}.cg-c.u2{fill:var(--t-up-2)}.cg-c.u3{fill:var(--t-up-3)}',
     '.cg-c.d0{fill:var(--t-down-0)}.cg-c.d1{fill:var(--t-down-1)}.cg-c.d2{fill:var(--t-down-2)}.cg-c.d3{fill:var(--t-down-3)}',
     '.cg-c.ns{fill:var(--t-mid)}.cg-c.na{fill:none;stroke:var(--line-strong);stroke-dasharray:2 3}',
+    '.cg-c.sel{fill:var(--surface);stroke:var(--ink);stroke-opacity:1;stroke-width:4;stroke-linejoin:round}.cg-line.sel{stroke:var(--ink)}',
+    '.cg-k.sel{background:var(--surface);border:3px solid var(--ink)}.cp-row .sel-pill{margin-left:auto}.kd.sel{background:var(--surface);border:2.4px solid var(--ink);box-sizing:border-box}',
     '.cg-line.u0{stroke:var(--t-up-0)}.cg-line.u1{stroke:var(--t-up-1)}.cg-line.u2{stroke:var(--t-up-2)}.cg-line.u3{stroke:var(--t-up-3)}',
     '.cg-line.d0{stroke:var(--t-down-0)}.cg-line.d1{stroke:var(--t-down-1)}.cg-line.d2{stroke:var(--t-down-2)}.cg-line.d3{stroke:var(--t-down-3)}.cg-line.ns,.cg-line.na{stroke:var(--line-strong)}',
     '.cg-t{font-size:11px;fill:var(--ink)}.cg-t.t2,.cg-t.t3{fill:#fff}:root[data-theme="dark"] .cg-t.t3{fill:#111827}',
@@ -225,7 +227,6 @@
     const x = partRows(part);
     return x ? D.front?.row_labels?.[ID]?.[part] || rowName(x.row) : part;
   };
-  const partUses = (aid) => (S.f['w:' + ID] || []).some((part) => partPairs(part).some(([a]) => a === aid));
   const scopedNow = () => K.selOn() && !K.vsOn() && !!K.sel.data() && K.sel.testable();
   let memo = { c: null, maps: {} };
   function selTests(aid) {
@@ -239,7 +240,8 @@
       sel = [...(c.proteins || [])].filter((p) => inBg.has(p)),
       n = sel.length,
       on = new Set(sel);
-    const blocked = K.sel.madeWith(aid) || K.sel.namesProteins() || partUses(aid);
+    const held = K.sel.ownSets(aid),
+      blocked = held.all || K.sel.namesProteins();
     const cv = ps.covariate,
       counts = cv?.counts,
       res = new Map(),
@@ -260,8 +262,9 @@
           if (counts) kS[at[cv.proteins[p][1]]]++;
         }
       });
-      const circular = !!n && (blocked || k === n);
-      const x = { k, M, n, N: ps.N, circular, a: { l2: null, lo: null, hi: null, q: null } };
+      const selected = held.sets.has(s),
+        circular = !!n && (blocked || k === n || selected);
+      const x = { k, M, n, N: ps.N, circular, selected, a: { l2: null, lo: null, hi: null, q: null } };
       if (n && !circular) {
         if (counts && counts.sets[s]) {
           const Ms = counts.sets[s],
@@ -286,14 +289,16 @@
     return (memo.maps[aid] = { n, N: ps.N, res, blocked });
   }
   const selText = (x) =>
-    x.circular
-      ? `${int(x.k)} of the ${int(x.M)} ${here} ${inWord(true)}; ${
-          x.k === x.n
-            ? 'every one of them is here, so there is nothing to compare'
-            : 'the selection names its proteins or was made with this map, so it is not compared with it'
-        }`
-      : `${int(x.k)} of the ${int(x.M)} ${here} ${inWord(true)} (${int(x.n)} of the ${int(x.N)} proteins the map ` +
-        `places); ${abundText(x.a)}`;
+    x.selected
+      ? 'this is the set your selection was made with, so it is not compared with itself'
+      : x.circular
+        ? `${int(x.k)} of the ${int(x.M)} ${here} ${inWord(true)}; ${
+            x.k === x.n
+              ? 'every one of them is here, so there is nothing to compare'
+              : 'the selection names its proteins or was made with this map, so it is not compared with it'
+          }`
+        : `${int(x.k)} of the ${int(x.M)} ${here} ${inWord(true)} (${int(x.n)} of the ${int(x.N)} proteins the map ` +
+          `places); ${abundText(x.a)}`;
   function abundText(a) {
     if (!a || a.l2 == null) return 'not compared';
     const ci = a.lo != null && a.hi != null ? ` (95% CI ${fxv(2 ** a.lo)}–${fxv(2 ** a.hi)})` : '';
@@ -340,7 +345,16 @@
       const x = selTests(aid)?.res.get(cat);
       if (!x) return null;
       const a = x.circular ? { l2: null, q: null } : x.a;
-      return { a, k: x.k, M: x.M, circular: x.circular, tone: x.circular ? 'na' : tone(a), x, t };
+      return {
+        a,
+        k: x.k,
+        M: x.M,
+        circular: x.circular,
+        selected: x.selected,
+        tone: x.selected ? 'sel' : x.circular ? 'na' : tone(a),
+        x,
+        t,
+      };
     }
     const a = adj(aid, t);
     return { a, k: t.k, M: t.M, tone: tone(a), t };
@@ -375,23 +389,27 @@
       cells.length && cells.filter(([, c]) => c.tone[0] === (med > 0 ? 'u' : 'd')).length * 2 >= cells.length;
     const up = cells.some(([, c]) => c.tone[0] === 'u'),
       down = cells.some(([, c]) => c.tone[0] === 'd');
-    const tn = med == null ? 'na' : tone({ l2: med, q: agree ? 0 : 1 });
+    const mine = !!all.length && all.every(([, c]) => c.selected),
+      tn = mine ? 'sel' : med == null ? 'na' : tone({ l2: med, q: agree ? 0 : 1 });
     return {
       row,
       L,
       cells: all,
       a: { l2: med },
       tone: tn,
+      selected: mine,
       value:
-        tn === 'na'
-          ? all.length
-            ? 'not compared'
-            : 'not in these maps'
-          : tn === 'ns'
-            ? up && down
-              ? 'maps disagree'
-              : 'no difference'
-            : orText({ l2: med }),
+        tn === 'sel'
+          ? 'your selection'
+          : tn === 'na'
+            ? all.length
+              ? 'not compared'
+              : 'not in these maps'
+            : tn === 'ns'
+              ? up && down
+                ? 'maps disagree'
+                : 'no difference'
+              : orText({ l2: med }),
       maps: cells.length ? cells.length + (cells.length === 1 ? ' map' : ' maps') : '',
     };
   }
@@ -566,7 +584,9 @@
                   esc(DS(aid).name) +
                   ': ' +
                   (c.circular
-                    ? 'not compared'
+                    ? c.selected
+                      ? 'your selection'
+                      : 'not compared'
                     : esc(orText(c.a)) +
                       (c.a.q != null ? ', q ' + fq(c.a.q) : '') +
                       (c.tone === 'ns' ? ' (no difference)' : ''))
@@ -586,7 +606,12 @@
           list = items.filter((it) => it.side === side && own(it.k) === it.k).sort((a, b) => a.y - b.y),
           lines = new Map(
             list.map((it) => {
-              const ls = K.wrap(it.name || rowName(P[it.k].row), room / 1.2, 14, 700);
+              const ls = K.wrap(
+                (it.name || rowName(P[it.k].row)) + (P[it.k].selected ? ' · your selection' : ''),
+                room / 1.2,
+                14,
+                700
+              );
               return [it, ls.length > 2 ? [ls[0], K.fit(ls.slice(1).join(' '), room, 14, 700, 1.2)] : ls];
             })
           ),
@@ -618,9 +643,13 @@
               )
               .join('')}</text>` +
             `<text class="cd-val" x="${tx}" y="${y + 18}" text-anchor="${anc}">${
-              sig(p) ? `<tspan font-weight="700">${esc(p.value)}</tspan>` : `<tspan class="m">${esc(p.value)}</tspan>`
+              p.selected
+                ? ''
+                : sig(p)
+                  ? `<tspan font-weight="700">${esc(p.value)}</tspan>`
+                  : `<tspan class="m">${esc(p.value)}</tspan>`
             }` +
-            (p.maps ? `<tspan class="m">\u00A0·\u00A0${esc(p.maps)}</tspan>` : '') +
+            (p.maps && !p.selected ? `<tspan class="m">\u00A0·\u00A0${esc(p.maps)}</tspan>` : '') +
             '</text></g>';
         });
       }
@@ -1281,9 +1310,11 @@
               x.a.p ?? '',
               x.a.q ?? '',
               x.circular
-                ? x.k === x.n
-                  ? 'every selected protein is here'
-                  : 'selection named its proteins or was made with this map'
+                ? x.selected
+                  ? 'your selection'
+                  : x.k === x.n
+                    ? 'every selected protein is here'
+                    : 'selection named its proteins or was made with this map'
                 : '',
             ].join('\t');
           })
@@ -1606,6 +1637,7 @@
       tone: p.tone,
       direction: toneDir(p.tone),
       value: p.value,
+      selected: !!p.selected,
       l2: p.a?.l2 ?? null,
       or: p.a?.l2 == null ? null : 2 ** p.a.l2,
       maps: p.cells.filter(([, c]) => !c.circular).length,
@@ -1702,6 +1734,7 @@
       valid: (id) => id === ID,
       label: () => (D.front?.cards || []).find((c) => c.cell)?.chip || C.title || 'Where in the cell',
       value: (id, v) => partName(v),
+      owned: (id, vals) => vals.flatMap(partPairs),
       test: (id, vals) => {
         const pairs = vals.flatMap(partPairs);
         return (m) => pairs.some(([a, s]) => K.sel.setHas(a, s, m[0]));
@@ -1718,6 +1751,11 @@
         crop: crops[d.drawing] || null,
       })),
     parts: partValues,
+    // the one-line answer as the tile shows it (html)
+    answer: (scoped = scopedNow()) => {
+      const { regs, up } = summaries(scoped);
+      return cellAnswer(regs, up, scoped);
+    },
     draw: drawInto,
   });
 
@@ -1757,7 +1795,31 @@
       .sort((a, b) => b.a.l2 - a.a.l2);
     return { regs, up };
   }
+  // The one-line answer for a selection made with a part of the drawings: that part is left out, and the rest says where else the
+  // selection's proteins are found (significant parts only, the largest first). Null when no part is the selection's.
+  function selLead(scoped, short) {
+    if (!scoped) return null;
+    const { P } = parts(true),
+      mine = Object.values(P).filter((p) => p.selected);
+    if (!mine.length) return null;
+    const name = and(mine.map((p) => esc(inText(p.row)))),
+      it = (x) => `<b>${esc(inText(x.row))}</b>${short ? '' : ` (${esc(orText(x.a))})`}`,
+      rest = Object.values(P).filter((p) => p.L === LAYERS.part && !p.selected),
+      more = rest.filter((p) => p.tone[0] === 'u').sort((a, b) => b.a.l2 - a.a.l2),
+      less = rest.filter((p) => p.tone[0] === 'd').sort((a, b) => a.a.l2 - b.a.l2);
+    const top = (xs) => and(xs.slice(0, 3).map(it));
+    if (!more.length && !less.length) return `Apart from ${name}, about as often in each region as ${esc(alike)}.`;
+    return (
+      `Proteins at ${name} are also ` +
+      [more.length ? 'more often in ' + top(more) : '', less.length ? 'less often in ' + top(less) : '']
+        .filter(Boolean)
+        .join('; ') +
+      '.'
+    );
+  }
   function lead(regs, up, scoped, short) {
+    const sl = selLead(scoped, short);
+    if (sl) return sl;
     const num = (x) => (short ? '' : ` (${esc(orText(x.a))})`),
       onePart = (x) => `<b>${esc(inText(x.row))}</b>${num(x)}`,
       one = (x) => `<b>${esc(inText(x.row))}</b> overall${num(x)}`;
@@ -1833,7 +1895,11 @@
         ([aid, c]) =>
           esc(DS(aid).name) +
           ' ' +
-          (c.circular ? 'not compared' : esc(orText(c.a)) + (c.a.q != null ? ', q ' + fq(c.a.q) : ''))
+          (c.circular
+            ? c.selected
+              ? 'your selection'
+              : 'not compared'
+            : esc(orText(c.a)) + (c.a.q != null ? ', q ' + fq(c.a.q) : ''))
       )
       .join('<br>');
   // ---- the Overview's first tile (a card with drawing: true): the cell and the nucleus side by side, drawn when the page is,
@@ -1842,6 +1908,8 @@
   const narrow = () => matchMedia('(max-width: 700px)').matches;
   const pname = (x) => (x.part ? partName(x.part) : rowName(x.row));
   function cellAnswer(regs, up, scoped) {
+    const sl = selLead(scoped, false);
+    if (sl) return sl;
     const one = (x) => `<b>${esc(inText(x.row))}</b> overall (${esc(orText(x.a))})`,
       onePart = (x) => `<b>${esc(inText(x.row))}</b> (${esc(orText(x.a))})`;
     const more = regs.filter((x) => x.tone[0] === 'u').sort((a, b) => b.a.l2 - a.a.l2),
@@ -1865,6 +1933,7 @@
   }
   function partList(d, ps) {
     const on = new Set(S.f['w:' + ID] || []);
+    const mine = ps.filter((p) => p.drawings.includes(d.drawing) && p.selected);
     const rows = ps.filter((p) => p.drawings.includes(d.drawing) && p.or != null && p.direction !== 'na');
     const top = (rows.filter((p) => p.maps >= 2).length >= 4 ? rows.filter((p) => p.maps >= 2) : rows)
       .sort(
@@ -1874,6 +1943,14 @@
     return (
       `<section class="cp-col"><h4>${esc(d.title || cap(d.drawing))}</h4><ul ` +
       `class="cp-list">` +
+      mine
+        .map(
+          (p) =>
+            `<li><button type="button" class="cp-row on" data-cell-sel="${esc(p.part)}" aria-pressed="true" title="Your selection: ` +
+            `the ${esc(W.marks)} of ${esc(pname(p))}. Click to remove it; it is not compared with itself">` +
+            `<i class="kd sel"></i><span class="cp-n">${esc(pname(p))}</span><span class="sel-pill">Your selection</span></button></li>`
+        )
+        .join('') +
       top
         .map(
           (p) =>
@@ -2332,6 +2409,7 @@
     );
   }
   // the color key as the export draws it (the circles of K.figureFrame's legend), in the page's words
+  const hasSel = () => scopedNow() && Object.values(parts(true).P || {}).some((p) => p.selected);
   const colourLegend = () => {
     const t = Object.fromEntries(TONES.light),
       plain = (s) => {
@@ -2344,6 +2422,7 @@
       [t['mid'], '#8a96a0', 'no difference, or the maps disagree'],
       [t['down-2'], t['down-3'], 'less likely'],
       ['#ffffff', '#8a96a0', 'not measured'],
+      ...(hasSel() ? [['#ffffff', '#111827', 'outlined: your selection']] : []),
     ];
   };
   const colourKey = () =>
@@ -2351,7 +2430,9 @@
     `u1"></i> more likely than ${esc(alike)}</span><span class="cell-key"><i class="cg-k ns"></i> no ` +
     `difference</span>` +
     (`<span class="cell-key"><i class="cg-k d1"></i><i class="cg-k d3"></i> less likely</span><span ` +
-      `class="cell-key"><i class="cg-k na"></i> not measured</span><span>numbers: odds ratios (in the drawings, ` +
+      `class="cell-key"><i class="cg-k na"></i> not measured</span>${
+        hasSel() ? '<span class="cell-key"><i class="cg-k sel"></i> outlined: your selection</span>' : ''
+      }<span>numbers: odds ratios (in the drawings, ` +
       `the median of the maps)</span></p>`);
   // the members of a row: the marked proteins (or the selection's) each map places in the row's compartment
   function members(L, row, scoped) {
@@ -2377,15 +2458,17 @@
     const s = rowSummary(L, row, scoped),
       wh = who(scoped),
       sig = s.tone[0] === 'u' || s.tone[0] === 'd';
-    const verdict = sig
-      ? `${cap(wh)} are <b>${s.tone[0] === 'u' ? 'more' : 'less'} likely</b> to be found here ` +
-        `than ${esc(alike)} (${esc(orWords(s.a))}${s.cells.length > 1 ? ', the median of ' + s.maps : ''}).`
-      : s.tone === 'ns'
-        ? s.value === 'maps disagree'
-          ? `The maps disagree. In some, ${esc(wh)} are more likely ` +
-            `to be found here than ${esc(alike)}, in others less likely.`
-          : `${cap(wh)} are found here about as ` + `often as ${esc(alike)}.`
-        : `No map compares ${esc(wh)} here.`;
+    const verdict = s.selected
+      ? `This is the part your selection was made with, so it is not compared with itself. The drawings compare the other parts.`
+      : sig
+        ? `${cap(wh)} are <b>${s.tone[0] === 'u' ? 'more' : 'less'} likely</b> to be found here ` +
+          `than ${esc(alike)} (${esc(orWords(s.a))}${s.cells.length > 1 ? ', the median of ' + s.maps : ''}).`
+        : s.tone === 'ns'
+          ? s.value === 'maps disagree'
+            ? `The maps disagree. In some, ${esc(wh)} are more likely ` +
+              `to be found here than ${esc(alike)}, in others less likely.`
+            : `${cap(wh)} are found here about as ` + `often as ${esc(alike)}.`
+          : `No map compares ${esc(wh)} here.`;
     const cols = L.cols.filter((aid) => row.map[aid]);
     const two = (k1, n1, w1, k2, n2, w2) =>
       `${int(k1)} of ${int(n1)} ${esc(w1)} (${pc(k1, n1)}%)<br>${int(k2)} of ${int(n2)} ${esc(w2)} (${pc(k2, n2)}%)`;
@@ -2413,7 +2496,7 @@
           }<br><span ` +
           `class="muted small">${esc([ds.method, ds.cells].filter(Boolean).join(', '))}</span></th>` +
           `<td>${esc(label(aid, row.map[aid]))}</td><td>${counts}</td><td>${
-            !c ? '–' : c.circular ? 'not compared' : cmp(c.a)
+            !c ? '–' : c.selected ? 'your selection' : c.circular ? 'not compared' : cmp(c.a)
           }</td></tr>`
         );
       })

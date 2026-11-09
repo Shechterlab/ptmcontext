@@ -749,6 +749,25 @@
       return [...rolesOf(id)].some((x) => mine.has(x));
     });
   };
+  // How a question (aid) is held by the selection's own filters: all (a filter on another question reading the same data, or
+  // any set of it): the whole question is shown, not tested; sets: the classes or sets the selection itself filters on
+  // (its own filter on this question, or a module's filter kind that names them with owned(id, values) -> [[question, set]]).
+  // Only those are left out of the retest; every other class is tested on the selection as for any other selection.
+  const ownSets = (aid) => {
+    const mine = rolesOf(aid),
+      sets = new Set();
+    let all = false;
+    for (const [k, vals] of compute().cons) {
+      const [kind, id] = k.split(':'),
+        owned = K.filterKinds?.[kind]?.owned;
+      if (owned) {
+        owned(id, vals).forEach(([a, s]) => a === aid && sets.add(s));
+      } else if ((kind === 'p' || kind === 'a') && id === aid) {
+        vals.forEach((v) => (v === '*' ? (all = true) : sets.add(v)));
+      } else if ([...rolesOf(id)].some((x) => mine.has(x))) all = true;
+    }
+    return { all, sets };
+  };
   const nMarks = () => (active() ? (compute().marks || []).length : D.counts.marks);
   const nProteins = () => (active() ? (compute().proteins || new Set()).size : D.counts.proteins);
   const protSelected = (acc) => !active() || (compute().proteins && compute().proteins.has(byAcc[acc]?.i));
@@ -848,11 +867,15 @@
       .filter(Boolean);
     // shown, not tested: a selection made with a question reading the same inputs, or one class holding every selected mark
     const n = Object.values(byProt).reduce((x, ms) => x + ms.length, 0);
-    const circ = madeWith(aid) || rows.some((r) => !r.absent && r.a === n);
-    const q = ST.bh(rows.map((r) => r.p));
-    rows.forEach((r, k) => {
-      r.q = circ ? null : q[k];
-      r.descriptive = circ;
+    const held = ownSets(aid),
+      isOwn = (r) => held.sets.has(r.category),
+      circ = held.all || rows.some((r) => !r.absent && r.a === n && !isOwn(r));
+    const tested = rows.filter((r) => !isOwn(r)),
+      q = ST.bh(tested.map((r) => r.p));
+    rows.forEach((r) => {
+      const k = tested.indexOf(r);
+      r.q = circ || k < 0 ? null : q[k];
+      r.descriptive = circ || k < 0;
     });
     return rows.filter((r) => !r.absent);
   }
@@ -885,9 +908,13 @@
     // a selection that names its proteins (a gene list) is shown against the sets, not tested: its enrichment would
     // test the choice of genes, not the mark
     const named = compute().q.genes.length || compute().q.sites.length;
-    const q = ST.bh(rows.map((r) => r.p));
-    rows.forEach((r, k) => {
-      const circ = madeWith(aid) || r.a === n || !!named;
+    const held = ownSets(aid),
+      isOwn = (r) => held.sets.has(r.category),
+      tested = rows.filter((r) => !isOwn(r)),
+      q = ST.bh(tested.map((r) => r.p));
+    rows.forEach((r) => {
+      const k = tested.indexOf(r),
+        circ = held.all || r.a === n || !!named || k < 0;
       r.q = circ ? null : q[k];
       r.descriptive = circ;
     });
@@ -1457,6 +1484,7 @@
       contrastOK,
       rows,
       madeWith,
+      ownSets,
       describe,
       validKey,
       parse,
