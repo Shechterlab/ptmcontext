@@ -33,11 +33,6 @@
   K.views.compare = { render: chooser, title: () => 'Compare two selections' };
   K.sections.compare = () => [['view', 'Compare two selections', 1]];
   // in the selection bar: the selection against the other marks, and the way to compare it with a saved one
-  K.selMid = () =>
-    K.sel.active() && S.vs === 'residues' && K.sel.nMarks()
-      ? `<span class="sel-apart-sum muted" ` +
-        `title="${esc(K.apartLine?.() || '')}">${esc(K.apartLine?.() || '')}</span>`
-      : '';
   (K.selTools ||= []).push(
     () =>
       (K.sel.active() && S.vs === 'residues' && K.sel.nMarks()

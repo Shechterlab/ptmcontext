@@ -167,17 +167,74 @@
             .map(([t, g]) => `<b>${esc(t)}</b> read as ${esc(g)}’s site, ` + `not the protein ${esc(t)}`)
             .join('; ')}</span>`
         : '') +
-      (`${K.selMid ? K.selMid() : ''}${K.selEffect ? `<span class="sel-effect">${esc(K.selEffect())}</span>` : ''}<span class="sel-tools">${(
-        K.selTools || []
-      )
-        .map((f) => f())
-        .join('')}<button class="btn ` +
-        `small" type="button" data-sel-save title="Keep this selection in this browser; saved ones are listed ` +
-        `under Saved here and under Filters">Save</button>${savedMenu()}`) +
-      (`<button class="btn small" type="button" data-sel-copy>Copy link</button><button class="btn small accent" ` +
-        `type="button" data-sel-clear-all>Clear all</button></span>`)
+      toolsHtml()
     );
   }
+  // the bar's actions sit in a "⋯" menu at its right end; Clear all stays beside it as its own small button
+  function toolsHtml() {
+    const item = (html) => html.replace(/<(button|a)\b/g, '<$1 role="menuitem" tabindex="-1"');
+    const items =
+      (K.selTools || []).map((f) => item(f())).join('') +
+      item(
+        `<button class="btn small" type="button" data-sel-save title="Keep this selection in this browser; saved ones ` +
+          `are listed under Saved here and under Filters">Save</button>` +
+          `<button class="btn small" type="button" data-sel-copy>Copy link</button>`
+      );
+    return (
+      (K.selEffect ? `<span class="sel-effect" title="${esc(K.selEffect())}">${esc(K.selEffect())}</span>` : '') +
+      `<span class="sel-tools">${savedMenu()}<button class="btn small accent" type="button" data-sel-clear-all>Clear all` +
+      `</button><span class="sel-menu"><button class="btn small" type="button" id="sel-menu-btn" data-sel-menu ` +
+      `aria-haspopup="menu" aria-expanded="false" aria-controls="sel-menu-pop" aria-label="More actions for this ` +
+      `selection" title="More actions">⋯</button><div class="sel-menu-pop" id="sel-menu-pop" role="menu" ` +
+      `aria-labelledby="sel-menu-btn" hidden>${items}</div></span></span>`
+    );
+  }
+  function menuEls() {
+    const btn = document.querySelector('#scope [data-sel-menu]');
+    return { btn, pop: btn && btn.parentElement.querySelector('.sel-menu-pop') };
+  }
+  function menuSet(open, focus) {
+    const { btn, pop } = menuEls();
+    if (!btn) return;
+    pop.hidden = !open;
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open && focus) pop.querySelector('[role="menuitem"]')?.focus();
+    if (!open && focus) btn.focus();
+  }
+  document.addEventListener('click', (e) => {
+    const { btn, pop } = menuEls();
+    if (!btn || pop.hidden) return;
+    if (e.target.closest('[data-sel-menu]')) return;
+    // Copy link stays open so that its confirmation can be read; it closes with the text's reset
+    if (pop.contains(e.target) && e.target.closest('[data-sel-copy]')) return;
+    menuSet(false, false);
+  });
+  document.addEventListener('keydown', (e) => {
+    const { btn, pop } = menuEls();
+    if (!btn) return;
+    const open = !pop.hidden,
+      items = [...pop.querySelectorAll('[role="menuitem"]')];
+    if (e.target === btn && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      e.preventDefault();
+      menuSet(true, true);
+      if (e.key === 'ArrowUp') items[items.length - 1]?.focus();
+    } else if (open && e.key === 'Escape') {
+      e.preventDefault();
+      menuSet(false, true);
+    } else if (open && pop.contains(e.target)) {
+      const i = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
+        e.preventDefault();
+        const j =
+          e.key === 'Home'
+            ? 0
+            : e.key === 'End'
+              ? items.length - 1
+              : (i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+        items[j]?.focus();
+      } else if (e.key === 'Tab') menuSet(false, false);
+    }
+  });
   // saved selections, in this browser
   const savedList = () => {
     try {
@@ -883,10 +940,12 @@
           el.textContent = 'Link and description copied';
           setTimeout(() => {
             el.textContent = 'Copy link';
+            menuSet(false, false);
           }, 1600);
         });
       },
     ],
+    ['[data-sel-menu]', () => menuSet(menuEls().pop.hidden, false)],
     ['[data-sel-save]', () => save()],
     [
       '[data-fgroup-clear]',

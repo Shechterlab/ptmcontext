@@ -170,11 +170,6 @@
       `Comparing…</span></summary><div id="apart-body"></div></details>`
     );
   });
-  const barSum = (t) =>
-    document.querySelectorAll('.sel-apart-sum').forEach((x) => {
-      x.textContent = t;
-      x.title = t;
-    });
   K.apartLine = () => (memo.key === selKey() && memo.rows ? (memo.rows.length ? summaryText(memo) : '') : '');
   function fillApart() {
     const el = document.getElementById('sel-apart');
@@ -186,11 +181,9 @@
       if (!m.rows.length) {
         sum.textContent = `too few ${W.marks} on one side to compare`;
         body.innerHTML = '';
-        barSum(sum.textContent);
         return;
       }
       sum.textContent = summaryText(m);
-      barSum(sum.textContent);
       const f = forestSvg(m.shown, 680, false);
       body.innerHTML =
         `<div class="apart-card"><div class="apart-top"><p class="muted small">Your ${int(m.G.g1.length)} ${esc(W.marks)} against the other ${int(m.G.g2.length)}, across ` +

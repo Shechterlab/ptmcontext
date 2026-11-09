@@ -1643,7 +1643,8 @@ body.rail-open .rail-scrim {
   font-weight: 600;
 }
 .sel-tools {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   justify-content: flex-end;
 }
 /* a jump lands below the sticky toolbar */
@@ -6111,18 +6112,38 @@ table.tbl td .zero {
   box-shadow: inset 0 -2px 0 var(--accent);
 }
 
-/* the merged "what sets it apart" line: it takes what room is left on the bar's row and never makes the row wrap */
-.sel-apart-sum {
-  flex: 1 1 0;
-  min-width: 0;
-  align-self: center;
-  font-size: var(--fs-cap);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* the bar's actions menu: "⋯" at the right end, its panel drops below */
+.sel-menu {
+  position: relative;
+  display: inline-flex;
 }
-.rail-sel .sel-apart-sum {
+.sel-menu-pop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.25rem);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+  min-width: 11rem;
+  padding: 0.3rem;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow);
+}
+.sel-menu-pop[hidden] {
   display: none;
+}
+.sel-menu-pop .btn {
+  text-align: left;
+  border-color: transparent;
+  background: none;
+}
+.sel-menu-pop .btn:hover,
+.sel-menu-pop .btn:focus-visible {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
 
 /* links and new tabs: a stat and a try chip are links now; a tile's title is the link to its page; an external link
@@ -7056,7 +7077,6 @@ html[data-density='compact'] .tbl th {
     padding-inline: 0.45rem;
     font-size: 0.75rem;
   }
-  #scope [data-sel-copy],
   .q-note {
     display: none;
   }
@@ -8991,9 +9011,15 @@ a.btn:hover {
 .sel-effect {
   font-size: 0.78rem;
   color: var(--muted);
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-@media (max-width: 700px) {
+@media (max-width: 1100px) {
   .sel-effect {
     flex-basis: 100%;
+    white-space: normal;
   }
 }
