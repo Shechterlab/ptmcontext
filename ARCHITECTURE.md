@@ -115,7 +115,7 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 | `kit-proteins.js` | a page per protein (map, its marks, live cards) and the protein page's sections registry (`K.proteinFoldSections`) |
 | `kit-tables.js` | the Proteins tab and the parts the Proteins and Sites pages share (`website.proteins`) |
 | `kit-sites.js` | the Sites tab (`website.sites`) |
-| `kit-idrs.js` | the IDRs tab: charge diagram, regions compared, every IDR in a table |
+| `kit-idrs.js` | the IDRs page (a tab, or with `website.tabs.idrs.as: section` a question's page): charge diagram, regions compared, every IDR in a table |
 | `kit-compare.js` | the way in to comparing marks with marks (`vs=cmp`) |
 | `kit-questions.js` | one question seen several ways on an Overview card (views, more sets, protein cards of sets) |
 | `kit-start.js` | starting points on the Overview: ranked proteins and ready-made selections |

@@ -96,8 +96,14 @@ const CONTROLS = () => {
     seen.add(el);
     out.push(el);
   });
+  // the selection bar's "⋯" menu: opened, so that its items are controls of the page too (each is clicked like the rest)
+  const mb = document.querySelector('#scope [data-sel-menu]');
+  if (mb && mb.getAttribute('aria-expanded') === 'false') mb.click();
+  const menu = new Set(document.querySelectorAll('#scope .sel-menu-pop [role="menuitem"]'));
+  menu.forEach((el) => out.push(el));
   out.forEach((el, i) => el.setAttribute('data-lk', String(i)));
   return out.map((el, i) => ({
+    menu: menu.has(el),
     i,
     text: (el.getAttribute('aria-label') || el.textContent || el.title || '').trim().replace(/\s+/g, ' ').slice(0, 50),
     tag: el.tagName.toLowerCase(),
@@ -200,15 +206,18 @@ async function visit(ctx, site, label, url, sel, state, out) {
   // controls
   const controls = await pg.evaluate(CONTROLS);
   const max = sel ? Math.ceil(MAX / 2) : MAX;
-  const pick =
-    controls.length <= max
-      ? controls
-      : controls.filter((_, k) => k % Math.ceil(controls.length / max) === 0).slice(0, max);
+  const body = controls.filter((c) => !c.menu),
+    items = state.menuDone ? [] : controls.filter((c) => c.menu); // the menu's items: all of them, once per site
+  if (items.length) state.menuDone = true;
+  const pick = [
+    ...(body.length <= max ? body : body.filter((_, k) => k % Math.ceil(body.length / max) === 0).slice(0, max)),
+    ...items,
+  ];
   for (const c of pick) {
     out.checked.controls++;
     await open(pg, full);
     await pg.evaluate(CONTROLS);
-    const loc = pg.locator(`#view [data-lk="${c.i}"]`).first();
+    const loc = pg.locator(`[data-lk="${c.i}"]`).first();
     const e0 = errs.length;
     const d0 = downloads + popups + state.dialogs;
     try {

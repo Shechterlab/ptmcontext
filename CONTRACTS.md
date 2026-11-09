@@ -410,7 +410,7 @@ proteins' identifiers; a covariate's `counts` for the questions `website.cell` n
 `*` (in any set), and `s:<analysis>` a score threshold, which then counts the memberships scored at least that); and,
 when a track has `values`, `data/units.json`: by kind, `{columns, classes, rows}`, a row
 `[protein index, start, end, class code, the values (null for missing), marks, other_candidates]`. A track whose values
-include `fcr` and `ncpr` gives the site an IDRs page (`kit-idrs.js`). The one-file copy inlines them when they fit.
+include `fcr` and `ncpr` gives the site an IDRs page (`kit-idrs.js`), a top tab by default. `website.tabs.idrs: {as: section, question: <analysis id>}` drops the tab and makes the page the page of that question (after the question's own classes), reached from its Overview tile; `#idrs` and `#idrs?...` open it with `f=`, `q=` and `hl=` kept. The one-file copy inlines them when they fit.
 
 With rows in `shown_marks.tsv`, each protein record gets `shown: [[position, window, [], [attribute values]]]` (laid out as
 its `marks`, the values in the order of `mark_attributes`), each protein of `shown_proteins.tsv` a record of its own

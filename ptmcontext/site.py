@@ -554,6 +554,12 @@ def website_problems(site: dict) -> list[str]:
         for k in (web.get('tabs') or {})
         if k not in known_tabs
     ]
+    for k, t in (web.get('tabs') or {}).items():
+        if t.get('as') == 'section':
+            if k != 'idrs':
+                out.append(f'website.tabs.{k}: only the idrs page can be a section')
+            elif t.get('question') not in ids:
+                out.append(f'website.tabs.{k}: question {t.get("question")!r} is not a question of this site')
     for key, to in (web.get('legacy_links') or {}).items():
         if to.startswith('#'):
             if to[1:].split('/')[0] not in page_ids | {'overview', 'statistics', 'method', 'proteins', 'sites', 'idrs'}:

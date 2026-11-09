@@ -1358,9 +1358,12 @@
       `<br><span class="muted">Click to open it on ${esc(gene(x))}’s map</span>`
     );
   };
+  // website.tabs.idrs.as: section: the page is the page of a question (website.tabs.idrs.question), under the Overview,
+  // and not a tab; its old address (#idrs) opens that question
+  const SECTION = D.tabs?.idrs?.as === 'section' && A[D.tabs.idrs.question] ? D.tabs.idrs.question : '';
   function view() {
     load();
-    const head = `<div class="page-head"><h2>${esc(K.tabName('idrs', 'IDRs'))}</h2></div>`;
+    const head = SECTION ? '' : `<div class="page-head"><h2>${esc(K.tabName('idrs', 'IDRs'))}</h2></div>`;
     if (VERR) return head + `<p class="empty">${esc(VERR)}</p>`;
     if (!V) return head + `<p class="muted">Loading the IDRs…</p>`;
     if (K.sel?.active() && !K.sel.data()) return head + `<p class="muted">Loading the selection…</p>`;
@@ -1372,7 +1375,9 @@
       : `<a href="${esc(href('overview'))}">the Overview</a>`;
     const sw = SC.on ? 'selected ' : '';
     return (
-      `<div class="page-head results-head"><div><h2>${esc(K.tabName('idrs', 'IDRs'))}</h2><p class="cx">${int(xs.length)} IDRs on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</p></div></div>` +
+      `<div class="${SECTION ? '' : 'page-head '}results-head"><div>${
+        SECTION ? `<h3>${esc(K.tabName('idrs', 'IDRs'))}</h3>` : `<h2>${esc(K.tabName('idrs', 'IDRs'))}</h2>`
+      }<p class="cx">${int(xs.length)} IDRs on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</p></div></div>` +
       (`<p class="page-sub">By charge class, R1 to R5 of the Das–Pappu diagram; test: ${testLink}. <button ` +
         `type="button" class="idr-goto" data-idr-goto="idr-refs">Method</button></p>`) +
       (`<section class="idr-card" id="idr-regions"><div class="card-head"><div><h3>${esc(cap(W.marked))} ${esc(W.residues)}, by region</h3>` +
@@ -1488,32 +1493,45 @@
     K.go('protein', { arg: `${pr(x)[0]}/${x.s}-${x.e}` });
   };
 
-  K.views.idrs = { render: view, title: () => K.tabName('idrs', 'IDRs') };
-  // the tab's number is the page heading's: every IDR of the selected proteins
-  (K.tabCountHint ||= {}).idrs = () =>
-    V && SC.on
-      ? `${int(scoped().length)} IDRs of the ${int(new Set(scoped().map((x) => x.p)).size)} selected ` +
-        `proteins, as on the page; ${int(V.idrs.filter((x) => SC.n[x.i] > 0).length)} of them hold a selected ${W.mark}`
-      : '';
-  K.tabs.push(() => {
-    if (K.sel?.active() && K.sel.data()) {
-      if (!V) {
-        load();
-        return ['idrs', 'IDRs', null];
+  if (SECTION) {
+    K.moved.idrs = SECTION;
+    const own = K.questions[SECTION]?.page;
+    // the question's own page (its classes, tested), then the charge diagram, κ, the regions and every IDR
+    K.questions[SECTION] = {
+      ...K.questions[SECTION],
+      page: (card, body) => {
+        const first = (own && own(card, body)) ?? body();
+        return `${first}<div class="idr-page">${view()}</div>`;
+      },
+    };
+  } else {
+    K.views.idrs = { render: view, title: () => K.tabName('idrs', 'IDRs') };
+    // the tab's number is the page heading's: every IDR of the selected proteins
+    (K.tabCountHint ||= {}).idrs = () =>
+      V && SC.on
+        ? `${int(scoped().length)} IDRs of the ${int(new Set(scoped().map((x) => x.p)).size)} selected ` +
+          `proteins, as on the page; ${int(V.idrs.filter((x) => SC.n[x.i] > 0).length)} of them hold a selected ${W.mark}`
+        : '';
+    K.tabs.push(() => {
+      if (K.sel?.active() && K.sel.data()) {
+        if (!V) {
+          load();
+          return ['idrs', 'IDRs', null];
+        }
+        sel();
+        return ['idrs', 'IDRs', scoped().length];
       }
-      sel();
-      return ['idrs', 'IDRs', scoped().length];
-    }
-    return ['idrs', 'IDRs', TR.values.n];
-  });
-  K.sections.idrs = () => [
-    ['view', K.tabName('idrs', 'IDRs'), 1],
-    ['idr-regions', cap(W.marked) + ' ' + W.residues + ', by region', 1],
-    ['idr-diagram', 'Charge diagram', 1],
-    ...(POLY3() ? [['idr-kappa', 'Charge mixing (κ)', 1]] : []),
-    ['idr-list', 'Every IDR', 1],
-    ['idr-refs', 'Method', 1],
-  ];
+      return ['idrs', 'IDRs', TR.values.n];
+    });
+    K.sections.idrs = () => [
+      ['view', K.tabName('idrs', 'IDRs'), 1],
+      ['idr-regions', cap(W.marked) + ' ' + W.residues + ', by region', 1],
+      ['idr-diagram', 'Charge diagram', 1],
+      ...(POLY3() ? [['idr-kappa', 'Charge mixing (κ)', 1]] : []),
+      ['idr-list', 'Every IDR', 1],
+      ['idr-refs', 'Method', 1],
+    ];
+  }
   K.tips.push(['[data-di]', (el) => (V ? tipHtml(V.idrs[+el.dataset.di]) : '')]);
   K.clicks.push(
     ['[data-di]', (el) => openIdr(el.dataset.di)],

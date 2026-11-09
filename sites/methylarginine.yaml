@@ -1752,11 +1752,11 @@ website:                  # the look and words of the website (ptmc web); layout
     panther: panther_class
     domain: domain_class
     bound: nucleic_acid_type
-  tabs:                    # the top tabs' words (the addresses #idrs, #statistics and #method stay)
+  tabs:                    # the top tabs' words (the addresses #statistics and #method stay; #idrs opens its question)
     overview: {label: Overview, hint: "Click a class row to select its sites, or a tile's title to open the question."}
     proteins: {label: Proteins, hint: "One row per protein with methylarginines. Filter, sort and download."}
     sites: {label: Sites, hint: "One row per methylarginine, with its evidence. Filter, sort and download."}
-    idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of methylated proteins, and the methylarginines in them."}
+    idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of methylated proteins, and the methylarginines in them.", as: section, question: idr_charge}   # not a tab: the page of the Charge of the IDR question (#idrs opens it)
     interactions: {label: Interactions, hint: "Methylarginines at contacts with RNA, DNA or other proteins."}
     statistics: {label: All tests, hint: "Every test on the site, one row per class, with odds ratio, interval and q value."}
     method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}

@@ -4298,6 +4298,15 @@
               "hint": {
                 "type": "string",
                 "description": "one line on what the page holds (default: the kit's, for the pages it draws)"
+              },
+              "as": {
+                "type": "string",
+                "enum": ["tab", "section"],
+                "description": "tab (default): the page is a top tab. section: the page is a question's page under the Overview (set question), its tab is dropped, and the page's old address (#idrs) opens the question with the search, filters and highlight kept. Only the idrs page can be a section."
+              },
+              "question": {
+                "type": "string",
+                "description": "with as: section, the question (an analysis id) whose page this page becomes; its tile on the Overview links to it"
               }
             }
           }

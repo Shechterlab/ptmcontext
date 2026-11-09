@@ -299,6 +299,7 @@
     scopeHints: [],
     sections: {},
     routes: {},
+    moved: {}, // a page that is a section: page id -> the question that holds it (kit-idrs.js)
     // a module's own question (kit-cell.js) or its own drawing of one (kit-values.js): id -> { tile(card), page(card,
     // body) }, either returning null for the kit's own; and Method sections of its own ({ id, title, html })
     questions: {},
@@ -382,6 +383,11 @@
       }
     } // a page of this site
     else if (old) S.arg = old;
+    // a page the site file made a section (website.tabs.<page>.as: section): its old address opens the question
+    if (Object.prototype.hasOwnProperty.call(K.moved, view)) {
+      S.view = 'overview';
+      S.arg = K.moved[view];
+    }
     const ov = !!old || (S.view === 'overview' && /^ov-/.test(S.arg));
     if (ov && !old) S.arg = S.arg.slice(3);
     S.legacy = ov || routed || (S.view !== view && !!view); // written back as this site's own link (replaceState)
