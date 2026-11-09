@@ -21,7 +21,8 @@
   apply();
   (K.afterRender ||= []).push(apply);
   const compact = () => eff() === 'compact';
-  const densityBtn = () => `<button type="button" class="btn small density-btn" data-density aria-pressed="${compact()}" title="Table rows: compact (one line each) or comfortable (everything wrapped)">${compact() ? 'Compact' : 'Comfortable'} rows</button>`;
+  const densityBtn = () => (`<button type="button" class="btn small density-btn" data-density aria-pressed="${compact()}" title="Table ` +
+      `rows: compact (one line each) or comfortable (everything wrapped)">${compact() ? 'Compact' : 'Comfortable'} rows</button>`);
   document.addEventListener('click', e => {
     if (!e.target.closest?.('button[data-density]')) return;
     pref = compact() ? 'comfortable' : 'compact'; apply();
@@ -48,9 +49,11 @@
     on(table, cols, defaults);
     const opt = (cols || []).filter(c => !c.fixed);
     if (!opt.length) return `<span class="tbl-opts">${densityBtn()}</span>`;
-    return `<span class="tbl-opts">${densityBtn()}` + `<details class="col-menu"${open.has(table) ? ' open' : ''} data-col-menu="${esc(table)}"><summary class="btn small">Columns</summary><div class="col-pop" role="group" aria-label="Optional columns">` +
+    return `<span class="tbl-opts">${densityBtn()}` + (`<details class="col-menu"${open.has(table) ? ' open' : ''} data-col-menu="${esc(table)}"><summary ` +
+        `class="btn small">Columns</summary><div class="col-pop" role="group" aria-label="Optional columns">`) +
       opt.map(c => `<label class="check"><input type="checkbox" data-col-table="${esc(table)}" data-col="${esc(c.id)}"${state[table].has(c.id) ? ' checked' : ''}> ${esc(c.menu || c.label)}</label>`).join('') +
-      `<button class="linkish" type="button" data-col-reset="${esc(table)}">Default columns</button></div></details></span>`;
+      (`<button class="linkish" type="button" data-col-reset="${esc(table)}">Default columns</button></div>` +
+          `</details></span>`);
   }
   const redraw = {};
   const after = table => { open.add(table); (redraw[table] || K.render)(); };

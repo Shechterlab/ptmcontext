@@ -28,11 +28,16 @@
   const nameOf = id => { const r = (K.rowsFor(A[S.arg], S.m) || []).find(x => x.category === id); return r ? r.label : id; };
   function shell(cfg, id) {
     const src = cfg.source || {};
-    const out = src.link ? `<a class="btn small" href="${esc(src.link.replace('{}', encodeURIComponent(id)))}" target="_blank" rel="noopener">Open in ${esc(src.name || 'the source')}</a>` : '';
+    const out = src.link ? (`<a class="btn small" href="${
+esc(src.link.replace('{}', encodeURIComponent(id)))}" target="_blank" ` +
+        `rel="noopener">Open in ${esc(src.name || 'the source')}</a>`) : '';
     const by = [src.name ? (src.url ? `<a href="${esc(src.url)}" target="_blank" rel="noopener">${esc(src.name)}</a>` : esc(src.name)) : '', src.version ? esc(src.version) : ''].filter(Boolean).join(' ');
-    return `<section class="pwcard" id="pwcard" aria-labelledby="pwtitle"><header><h2 id="pwtitle" tabindex="-1">${esc(nameOf(id))}</h2><span class="pwtools">${out}<button type="button" class="btn small" data-pw-close aria-label="Close the pathway">×</button></span></header>` +
+    return (`<section class="pwcard" id="pwcard" aria-labelledby="pwtitle"><header><h2 id="pwtitle" tabindex="-1">${esc(nameOf(id))}</h2><span ` +
+        `class="pwtools">${out}<button type="button" class="btn small" data-pw-close aria-label="Close the ` +
+        `pathway">×</button></span></header>`) +
       `<div id="pwbody" aria-live="polite"><p class="muted">Loading the pathway’s proteins…</p></div>` +
-      (by ? `<p class="pwattr">Pathway from ${by}${src.licence ? ` (${esc(src.licence)})` : ''}.</p>` : '') + '</section>';
+      (by ? `<p class="pwattr">Pathway from ${by}${
+src.licence ? ` (${esc(src.licence)})` : ''}.</p>` : '') + '</section>';
   }
   const sorted = ms => ms.slice().sort((x, y) => y.on - x.on || y.n - x.n || x.g.localeCompare(y.g));
   function fill(d) {
@@ -50,17 +55,28 @@
     const chip = x => {
       const sites = `${int(x.n)} ${x.n === 1 ? K.W.mark : K.W.marks}`;
       return x.here
-        ? `<a class="pchip${x.on ? ' on' : ' off'}" href="${esc(K.link('protein', x.a))}" title="${esc(`${x.g} (${x.a}): ${x.on ? sites + word : 'methylated, but not in your selection'}`)}"><b>${esc(x.g)}</b>${x.on ? `<small>${int(x.n)}</small>` : ''}</a>`
-        : `<span class="pchip none" title="${esc(`${x.g} (${x.a}): none in this dataset`)}"><b>${esc(x.g)}</b></span>`;
+        ? `<a class="pchip${x.on ? ' on' : ' off'}" href="${esc(K.link('protein', x.a))}" title="${
+esc(`${x.g} (${x.a}): ${
+x.on ? sites + word : 'methylated, but not in your selection'}`)}"><b>${esc(x.g)}</b>${x.on ? `<small>${int(x.n)}</small>` : ''}</a>`
+        : `<span class="pchip none" title="${
+esc(`${x.g} (${x.a}): none in this dataset`)}"><b>${esc(x.g)}</b></span>`;
     };
     const group = (g, open) => {
       const ms = sorted(g.ms);
-      return `<details class="pwgroup" id="pwg-${esc(String(g.id).replace(/\W/g, '_'))}"${open ? ' open' : ''}><summary><span class="pwgname">${esc(g.name)}</span><span class="pwgk"><b>${int(g.k)}</b> of ${int(ms.length)} methylated${word}</span></summary>` +
-        `<div class="pchips">${ms.slice(0, SHOWN).map(chip).join('')}${ms.length > SHOWN ? `<button type="button" class="btn small" data-pw-all="${esc(g.id)}">Show all ${int(ms.length)}</button>` : ''}</div></details>`;
+      return (`<details class="pwgroup" id="pwg-${esc(String(g.id).replace(/\W/g, '_'))}"${open ? ' open' : ''}><summary>` +
+          `<span class="pwgname">${esc(g.name)}</span><span class="pwgk"><b>${int(g.k)}</b> of ${int(ms.length)} methylated${word}</span></summary>`) +
+        `<div class="pchips">${ms.slice(0, SHOWN).map(chip).join('')}${
+ms.length > SHOWN ? (`<button type="button" ` +
+            `class="btn small" data-pw-all="${esc(g.id)}">Show all ${int(ms.length)}</button>`) : ''}</div></details>`;
     };
     const k0 = mem.filter(x => x.on).length, one = d.groups.length === 1;
-    box.innerHTML = `<p class="pwsum"><b>${int(k0)}</b> of ${int(d.acc.length)} proteins in this pathway are methylated${word}${one ? '' : `, in ${int(d.groups.length)} sub-pathways${d.top ? ' (those with most methylated proteins first)' : ''}`}.</p>` +
-      `<p class="pwlegend"><span class="pchip on"><b>GENE</b><small>3</small></span> methylated, with its ${esc(K.W.marks)}${word} <span class="pchip none"><b>GENE</b></span> in the pathway, not methylated here${act ? ' <span class="pchip off"><b>GENE</b></span> methylated, outside your selection' : ''}</p>` +
+    box.innerHTML = (`<p class="pwsum"><b>${int(k0)}</b> of ${int(d.acc.length)} proteins in this pathway are ` +
+        `methylated${word}${
+one ? '' : `, in ${int(d.groups.length)} sub-pathways${
+d.top ? ' (those with most methylated proteins first)' : ''}`}.</p>`) +
+      (`<p class="pwlegend"><span class="pchip on"><b>GENE</b><small>3</small></span> methylated, with its ${esc(K.W.marks)}${word} <span class="pchip ` +
+          `none"><b>GENE</b></span> in the pathway, not methylated here${
+act ? ' <span class="pchip off"><b>GENE</b></span> methylated, outside your selection' : ''}</p>`) +
       groups.map((g, n) => group(g, n < (d.top ? 4 : 8))).join('');
     box.querySelectorAll('[data-pw-all]').forEach(b => { b.onclick = () => { const g = groups.find(x => String(x.id) === b.dataset.pwAll); b.parentElement.innerHTML = sorted(g.ms).map(chip).join(''); }; });
   }
@@ -77,7 +93,9 @@
     document.querySelectorAll('#view .fr-row[data-f][data-v]').forEach(r => {
       const aid = String(r.dataset.f).split(':')[1]; if (!cfgOf(aid)) return;
       const nx = r.nextElementSibling; if (nx && nx.matches?.('[data-pw-home]')) return;
-      r.insertAdjacentHTML('afterend', `<button type="button" class="btn small pwbtn pwbtn-home" data-pw-home="${esc(r.dataset.v)}" data-aid="${esc(aid)}" aria-label="Proteins of ${esc(r.querySelector('.fr-lab')?.textContent || r.dataset.v)}">Proteins</button>`);
+      r.insertAdjacentHTML('afterend', (`<button type="button" class="btn small pwbtn pwbtn-home" data-pw-home="${esc(r.dataset.v)}" data-aid="${esc(aid)}" aria-label="Proteins ` +
+          `of ${
+esc(r.querySelector('.fr-lab')?.textContent || r.dataset.v)}">Proteins</button>`));
     });
   }
   function after() {
@@ -86,7 +104,8 @@
     document.querySelectorAll('#view .drow[data-cat]').forEach(r => {
       if (r.querySelector('[data-pw]')) return;
       const name = r.querySelector('.ln')?.textContent || r.dataset.cat;
-      r.querySelector('.lab')?.insertAdjacentHTML('beforeend', ` <button type="button" class="btn small pwbtn" data-pw="${esc(r.dataset.cat)}" aria-label="Proteins of ${esc(name)}">Proteins</button>`);
+      r.querySelector('.lab')?.insertAdjacentHTML('beforeend', (` <button type="button" class="btn small pwbtn" ` +
+          `data-pw="${esc(r.dataset.cat)}" aria-label="Proteins of ${esc(name)}">Proteins</button>`));
     });
     document.getElementById('pwcard')?.remove();
     if (!S.pw) { shownFor = ''; return; }

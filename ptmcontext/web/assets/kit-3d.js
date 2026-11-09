@@ -88,7 +88,8 @@
   const BRIGHT_I = { soft: 0.85, normal: 1, bright: 1.2, vivid: 1.4 };
   const LDIR = [['front', 'Front'], ['upleft', 'Upper left'], ['upright', 'Upper right'], ['top', 'Above'], ['left', 'Left'], ['right', 'Right']];
   const LDIR_V = { front: [0.2, 0.2, 1], upleft: [-0.7, 0.7, 1], upright: [0.7, 0.7, 1], top: [0, 1, 0.35], left: [-1, 0.25, 0.35], right: [1, 0.25, 0.35] };
-  const TOGGLES = [['contacts', 'Contacts (5 Å)', 'Side chains within 5 Å of the focused residue'], ['labels', 'Site labels', `Label every resolved ${NOUN}`],
+  const TOGGLES = [['contacts', 'Contacts (5 Å)', 'Side chains within 5 Å of the focused residue'], ['labels', 'Site labels', (`Label every ` +
+      `resolved ${NOUN}`)],
     ['others', 'Other chains', 'The entry’s other chains', 'pdb'], ['ligands', 'Ligands', 'Ligands and other hetero groups (waters are always hidden)', 'pdb']];
   const DEFAULT = { src: 'pdb', style: 'cartoon', color: 'features', surface: 'off', light: 'ao', bright: 'bright', ldir: 'upleft', bg: 'page', contacts: true, labels: false, others: true, ligands: true };
   const V = Object.assign({}, DEFAULT, store.get('ptmc-3d-view', {}));
@@ -206,8 +207,11 @@
     for (let k = 0; k < want.length; k += 80) {
       const chunk = want.slice(k, k + 80);
       const pr = getJson('https://data.rcsb.org/graphql', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query:
-        `{ entries(entry_ids: ${JSON.stringify(chunk)}) { rcsb_id struct { title } rcsb_entry_info { resolution_combined experimental_method } polymer_entities { rcsb_polymer_entity { pdbx_description } ` +
-        'rcsb_polymer_entity_container_identifiers { uniprot_ids auth_asym_ids } entity_poly { rcsb_entity_polymer_type } rcsb_entity_source_organism { ncbi_scientific_name } } } }' }) }, 20000)
+        (`{ entries(entry_ids: ${JSON.stringify(chunk)}) { rcsb_id struct { title } rcsb_entry_info { ` +
+            `resolution_combined experimental_method } polymer_entities { rcsb_polymer_entity { pdbx_description } `) +
+        ('rcsb_polymer_entity_container_identifiers { uniprot_ids auth_asym_ids } ' +
+'entity_poly { rcsb_entity_polymer_type } rcsb_entity_source_organism { ' +
+'ncbi_scientific_name } } } }') }) }, 20000)
         .then(d => new Map(((d.data || {}).entries || []).map(en => [en.rcsb_id, en])));
       for (const id of chunk) cache.meta[id] = pr.then(m => m.get(id) || null, () => { delete cache.meta[id]; return null; });
     }
@@ -322,18 +326,24 @@
     placeholder('Asking AlphaFold DB for the model…');
     return loadAF(acc).then(af => {
       if (T.acc !== acc) return;
-      if (af.failed) { placeholder(`AlphaFold DB did not answer. <a href="https://alphafold.ebi.ac.uk/entry/${esc(acc)}">Open the model in AlphaFold DB</a>.`); message('AlphaFold DB did not answer. Nothing else on this page depends on it.'); paint(); return; }
-      if (af.none) { placeholder(`AlphaFold DB has no model of ${esc(acc)}. It does not cover every isoform, and for proteins longer than 2,700 residues it offers fragments only.${T.mol ? '' : ' Experimental structures, if any, are listed below.'}`); message(`AlphaFold DB has no model of ${acc}.`); paint(); return; }
+      if (af.failed) { placeholder((`AlphaFold DB did not answer. <a href="https://alphafold.ebi.ac.uk/entry/${esc(acc)}">Open the ` +
+          `model in AlphaFold DB</a>.`)); message('AlphaFold DB did not answer. Nothing else on this page depends on it.'); paint(); return; }
+      if (af.none) { placeholder((`AlphaFold DB has no model of ${esc(acc)}. It does not cover every isoform, and ` +
+          `for proteins longer than 2,700 residues it offers fragments only.${
+T.mol ? '' : ' Experimental structures, if any, are listed below.'}`)); message((`AlphaFold ` +
+          `DB has no model of ${acc}.`)); paint(); return; }
       placeholder('Loading the 3D viewer…');
       return Promise.all([load3Dmol(), cache.files[af.entry.pdbUrl] ||= getText(af.entry.pdbUrl)]).then(([lib, text]) => {
         if (T.acc !== acc || !viewer(lib)) return;
         setModel(text, 'pdb', { mode: 'af', af, src: { kind: 'af', what: `AlphaFold DB model ${af.entry.entryId} v${af.entry.latestVersion}`, url: `https://alphafold.ebi.ac.uk/entry/${encodeURIComponent(acc)}`, files: { cif: af.entry.cifUrl, pdb: af.entry.pdbUrl }, tag: af.entry.entryId, read: today() } });
         restyle(true); home(T.mol.viewer); T.mol.viewer.render();
-        message(af.same ? '' : `The model’s sequence differs from the one these ${NOUNS} are on; a ${NOUN} is drawn only where the model has its residue.`);
+        message(af.same ? '' : (`The model’s sequence differs from the one these ${NOUNS} are on; a ${NOUN} is drawn ` +
+            `only where the model has its residue.`));
         paint();
         if (T.highlight != null) focusPos(T.highlight);
       });
-    }).catch(err => { placeholder(`The 3D viewer could not load (${esc(err.message)}). <a href="https://alphafold.ebi.ac.uk/entry/${esc(acc)}">Open the model in AlphaFold DB</a>.`); paint(); });
+    }).catch(err => { placeholder((`The 3D viewer could not load (${esc(err.message)}). <a href="https://alphafold.ebi.ac.uk/entry/${esc(acc)}">Open the ` +
+        `model in AlphaFold DB</a>.`)); paint(); });
   }
   // a PDB entry: its coordinates from RCSB, its chain of this protein placed on UniProt by SIFTS and PDBe's observed residues
   function showPdb(e, chain, focus) {
@@ -355,10 +365,13 @@
         const best = bestChainByMarks(); if (best) { T.mol.pdb.chain = best; T.mol.pdb.det = { ...det, chain: best }; T.mol.pdb.guessed = true; marksByNumber(best); }
       }
       restyle(true); home(T.mol.viewer); T.mol.viewer.render();
-      message(det.chain && !det.coverage ? `PDBe did not say which residues ${UP(id)} chain ${det.chain} models, so its ${NOUNS} cannot be placed; try again later.` : '');
+      message(det.chain && !det.coverage ? (`PDBe did not say which residues ${UP(id)} chain ${det.chain} models, so its ${NOUNS} cannot be ` +
+          `placed; try again later.`) : '');
       paint();
       const f = focus ?? T.highlight; if (f != null) focusPos(f);
-    }).catch(err => { message(`PDB ${UP(id)} could not be loaded (${err.message === 'timeout' ? 'RCSB or PDBe did not answer in time' : esc(err.message)}).`); if (!(T.mol && T.mol.acc === acc)) placeholder(`PDB ${esc(UP(id))} could not be loaded. <a href="https://www.rcsb.org/structure/${esc(UP(id))}">Open it at RCSB</a>.`); paint(); });
+    }).catch(err => { message(`PDB ${UP(id)} could not be loaded (${
+err.message === 'timeout' ? 'RCSB or PDBe did not answer in time' : esc(err.message)}).`); if (!(T.mol && T.mol.acc === acc)) placeholder((`PDB ${esc(UP(id))} could not ` +
+        `be loaded. <a href="https://www.rcsb.org/structure/${esc(UP(id))}">Open it at RCSB</a>.`)); paint(); });
   }
   // without a mapping, a chain is read in UniProt numbering where its residues at the marks are the mark's residue
   function bestChainByMarks() {
@@ -483,7 +496,8 @@
       body = c.classes.map((cl, k) => (used.has(k) ? sw(named(cl.colour, t), cl.label) : '')).join('') + sw(t.none, c.none || 'None') + (pdb ? sw(t.rest, 'Other chains') : '');
     } else if (key === 'chain' && T.mol) {
       const { order } = chainsOf(), names = chainNames();
-      body = [...order.keys()].slice(0, 8).map((c, k) => sw(CHAINS[k % CHAINS.length], `Chain ${c}${pdb && c === pdb.chain ? ' (this protein)' : names[c] ? ' (' + shorten(names[c], 24) + ')' : ''}`)).join('') + (order.size > 8 ? `<span class="muted">+${order.size - 8} more</span>` : '');
+      body = [...order.keys()].slice(0, 8).map((c, k) => sw(CHAINS[k % CHAINS.length], `Chain ${c}${
+pdb && c === pdb.chain ? ' (this protein)' : names[c] ? ' (' + shorten(names[c], 24) + ')' : ''}`)).join('') + (order.size > 8 ? `<span class="muted">+${order.size - 8} more</span>` : '');
     } else if (key === 'rainbow') body = grad(RAINBOW, 'N-terminus', 'C-terminus');
     else if (key === 'ss') body = sw(SS.h, 'Helix') + sw(SS.s, 'Strand') + sw(SS.c, 'Coil');
     else if (key === 'charge') body = sw(CHARGE.basic, 'Basic (R, K)') + sw(CHARGE.his, 'His') + sw(CHARGE.acidic, 'Acidic (D, E)') + sw(CHARGE.other, 'Other');
@@ -585,7 +599,9 @@
       const hp = toUnp(a); if (hp != null) K.site.hover(T.acc, hp, { from: '3d' });
       if (a.hoverLabel || V.labels) return;
       const pos = toUnp(a), pl = mol.mode === 'af' || pdb?.pred ? a.b : null;
-      a.hoverLabel = vv.addLabel(pos != null ? `${rl(pos)}${pdbMode && !pdb.pred ? ` (${a.chain}${a.resi})` : ''}${pl != null ? ' · pLDDT ' + Math.round(pl) : ''}` : `${a.resn} ${a.chain}${a.resi}`,
+      a.hoverLabel = vv.addLabel(pos != null ? `${rl(pos)}${
+pdbMode && !pdb.pred ? ` (${a.chain}${a.resi})` : ''}${
+pl != null ? ' · pLDDT ' + Math.round(pl) : ''}` : `${a.resn} ${a.chain}${a.resi}`,
         { position: { x: a.x, y: a.y, z: a.z }, backgroundColor: '#12202C', backgroundOpacity: 0.85, fontColor: '#FFFFFF', fontSize: 12, inFront: true });
     }, (a, vv) => { K.site.hover(T.acc, null, { from: '3d' }); if (a.hoverLabel) { vv.removeLabel(a.hoverLabel); delete a.hoverLabel; } });
     v.setClickable(hoverSel, true, a => { const pos = toUnp(a); if (pos == null) focusAtom(a); else { focusPos(pos); tell(pos); } });
@@ -638,7 +654,8 @@
     const ca = v.selectedAtoms({ chain: a.chain, resi: a.resi, atom: 'CA' })[0] || a, hom = pdbMode && mol.pdb.homolog;
     const names = chainNames();
     mol.label = v.addLabel(pred ? `${a.resn} ${a.resi} · ${names[a.chain] || 'chain ' + a.chain} · pLDDT ${Math.round(a.b)}`
-      : `${a.resn} ${pdbMode ? a.chain : ''}${a.resi}${pdbMode && unp != null ? (hom ? ` (≙ ${T.p.gene || T.acc} ${unp})` : ` (UniProt ${unp})`) : pdbMode && names[a.chain] ? ' · ' + shorten(names[a.chain], 30) : ''}`,
+      : `${a.resn} ${pdbMode ? a.chain : ''}${a.resi}${
+pdbMode && unp != null ? (hom ? ` (≙ ${T.p.gene || T.acc} ${unp})` : ` (UniProt ${unp})`) : pdbMode && names[a.chain] ? ' · ' + shorten(names[a.chain], 30) : ''}`,
     { position: { x: ca.x, y: ca.y, z: ca.z }, backgroundColor: '#12202C', backgroundOpacity: 0.9, fontColor: '#FFFFFF', fontSize: 12, inFront: true });
     const around = []; for (let r = a.resi - 6; r <= a.resi + 6; r++) around.push(r);
     v.zoomTo({ chain: a.chain, resi: around }, 600); v.render();
@@ -655,13 +672,15 @@
     const atoms = auth == null ? [] : v.selectedAtoms(Object.assign({ resi: auth }, chainSel));
     const at = atoms.find(a => a.atom === tipName(a)) || atoms.find(a => a.atom === 'CA');
     if (!at) {
-      message(`${rl(pos)} is not ${pdbMode && mol.pdb.pred ? 'in the ' + mol.pdb.pred.label + ' model' : 'resolved in ' + (pdbMode ? `${UP(mol.pdb.e.id)} chain ${mol.pdb.chain}` : 'the AlphaFold model')}.` +
+      message(`${rl(pos)} is not ${
+pdbMode && mol.pdb.pred ? 'in the ' + mol.pdb.pred.label + ' model' : 'resolved in ' + (pdbMode ? `${UP(mol.pdb.e.id)} chain ${mol.pdb.chain}` : 'the AlphaFold model')}.` +
         (pdbMode && entriesAt(pos).length ? ' The entries listed for it are under “At this site”.' : ''));
       mol.focus = null; mol.focusPos = pos; restyle(false); paintSide(); return;
     }
     mol.focus = { chain: at.chain, resi: at.resi }; mol.focusPos = pos;
     restyle(false);
-    mol.label = v.addLabel(`${rl(pos)}${pdbMode && !mol.pdb.pred ? ` (${mol.pdb.chain}${auth})` : ''}`, { position: { x: at.x, y: at.y, z: at.z }, backgroundColor: '#C2410C', backgroundOpacity: 0.95, fontColor: '#FFFFFF', fontSize: 13, inFront: true });
+    mol.label = v.addLabel(`${rl(pos)}${
+pdbMode && !mol.pdb.pred ? ` (${mol.pdb.chain}${auth})` : ''}`, { position: { x: at.x, y: at.y, z: at.z }, backgroundColor: '#C2410C', backgroundOpacity: 0.95, fontColor: '#FFFFFF', fontSize: 13, inFront: true });
     const around = []; for (let r = auth - 6; r <= auth + 6; r++) around.push(r);
     v.zoomTo(Object.assign({ resi: around }, chainSel), 600); v.render();
     message(''); paintSide();
@@ -720,7 +739,8 @@
   function optLabel({ e, n, r, mod }) {
     const title = META[UP(e.id)]?.struct?.title;
     const sites = mod ? `models a ${NOUN}` : r != null ? (r ? `${r} site${r === 1 ? '' : 's'} resolved` : 'no site resolved') : n ? `${n} site${n === 1 ? '' : 's'} in construct` : 'no site in construct';
-    return `${UP(e.id)} · ${methodShort(e.method)}${e.resolution ? ' ' + Number(e.resolution).toFixed(1) + ' Å' : ''} · ${sites}${title ? ' · ' + shorten(title, 52) : ''}`;
+    return `${UP(e.id)} · ${methodShort(e.method)}${
+e.resolution ? ' ' + Number(e.resolution).toFixed(1) + ' Å' : ''} · ${sites}${title ? ' · ' + shorten(title, 52) : ''}`;
   }
   function paintSrc() {
     const box = document.getElementById('s3d-src'); if (!box) return;
@@ -731,40 +751,68 @@
     const list = res ? pdbMenu(res) : [];
     const chains = own ? own.e.maps.map(m => m.chain).filter((c, k, a) => a.indexOf(c) === k) : [];
     const lab = target ? `Experimental · PDB ${UP(target.id)}` : best?.failed || res?.failed ? 'Experimental (PDBe did not answer; retry)' : !res ? 'Experimental (looking…)' : list.length ? 'Experimental' : 'Experimental (none)';
-    box.innerHTML = `<div class="seg" role="group" aria-label="Structure shown"><span class="seg-l">Show</span><button type="button" data-s3d-src="pdb" aria-pressed="${mode === 'pdb'}"${!res && !best ? ' disabled' : res && !list.length && !res.failed ? ' disabled' : ''}>${esc(lab)}</button>` +
+    box.innerHTML = (`<div class="seg" role="group" aria-label="Structure shown"><span class="seg-l">Show</span>` +
+        `<button type="button" data-s3d-src="pdb" aria-pressed="${mode === 'pdb'}"${
+!res && !best ? ' disabled' : res && !list.length && !res.failed ? ' disabled' : ''}>${esc(lab)}</button>`) +
       `<button type="button" data-s3d-src="af" aria-pressed="${mode === 'af'}">AlphaFold model</button></div>` +
-      (list.length > 1 || (list.length && !own) ? `<label class="s3d-ctl s3d-entry">Entry <select data-s3d-sel="entry" aria-label="Experimental entry to show"><option value="">${own ? '' : 'Choose an entry…'}</option>${list.map(x => `<option value="${esc(x.e.id)}"${own && x.e.id === own.e.id ? ' selected' : ''}>${esc(optLabel(x))}</option>`).join('')}</select></label><span class="muted small s3d-optkey"> Each entry: PDB code · method and resolution in Å (lower is sharper) · what it resolves</span>` : '') +
-      (chains.length > 1 ? `<label class="s3d-ctl">Chain <select data-s3d-sel="chain" aria-label="Chain of this protein">${chains.map(c => `<option value="${esc(c)}"${c === own.chain ? ' selected' : ''}>${esc(c)} · ${esc(own.e.maps.filter(m => m.chain === c).map(m => m.unpStart + '–' + m.unpEnd).join(', '))}</option>`).join('')}</select></label>` : '') +
-      (own && best && !best.failed && best.e.id === own.e.id && best.det.chain === own.chain ? `<span class="muted small">${int(best.obs)} residues observed${best.nSites ? `, ${int(best.nSites)} ${best.nSites === 1 ? NOUN : NOUNS}` : ''}</span>` : own ? `<span class="muted small">${int(own.toAuth.size)} ${own.toAuth.size === 1 ? NOUN : NOUNS} resolved in chain ${esc(own.chain)}</span>` : '');
+      (list.length > 1 || (list.length && !own) ? (`<label class="s3d-ctl s3d-entry">Entry <select ` +
+          `data-s3d-sel="entry" aria-label="Experimental entry to show"><option value="">${own ? '' : 'Choose an entry…'}</option>${
+list.map(x => `<option value="${esc(x.e.id)}"${
+own && x.e.id === own.e.id ? ' selected' : ''}>${esc(optLabel(x))}</option>`).join('')}</select>` +
+          `</label><span class="muted small s3d-optkey"> Each entry: PDB code · method and resolution in Å (lower ` +
+          `is sharper) · what it resolves</span>`) : '') +
+      (chains.length > 1 ? (`<label class="s3d-ctl">Chain <select data-s3d-sel="chain" aria-label="Chain of this ` +
+          `protein">${
+chains.map(c => `<option value="${esc(c)}"${c === own.chain ? ' selected' : ''}>${esc(c)} · ${
+esc(own.e.maps.filter(m => m.chain === c).map(m => m.unpStart + '–' + m.unpEnd).join(', '))}</option>`).join('')}</select></label>`) : '') +
+      (own && best && !best.failed && best.e.id === own.e.id && best.det.chain === own.chain ? (`<span class="muted ` +
+          `small">${int(best.obs)} residues observed${
+best.nSites ? `, ${int(best.nSites)} ${best.nSites === 1 ? NOUN : NOUNS}` : ''}</span>`) : own ? (`<span class="muted ` +
+          `small">${int(own.toAuth.size)} ${own.toAuth.size === 1 ? NOUN : NOUNS} resolved in chain ${esc(own.chain)}</span>`) : '');
   }
-  const sel = (key, label, list, cur) => `<label class="s3d-ctl">${label} <select data-s3d-sel="${key}">${list.map(o => `<option value="${esc(o[0])}"${o[0] === cur ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
+  const sel = (key, label, list, cur) => `<label class="s3d-ctl">${label} <select data-s3d-sel="${key}">${
+list.map(o => `<option value="${esc(o[0])}"${o[0] === cur ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
   // the state toggle (both front ends): one chip per state the protein's sites have, each turns its sites on or off in the view
   // what the view shows of the protein's sites, in words, for the exports (both front ends)
   const shownWords = () => {
     if (marks().length === allMarks().length) return '';
     const off = T.hide?.size ? `; states hidden: ${[...T.hide].map(stateName).join(', ')}` : '';
-    return `Shows ${marks().length} of ${allMarks().length} ${NOUNS}${selOnly() ? ' (those of the current selection and filters: ' + K.sel.describe() + ')' : ''}${off}.`;
+    return `Shows ${marks().length} of ${allMarks().length} ${NOUNS}${
+selOnly() ? ' (those of the current selection and filters: ' + K.sel.describe() + ')' : ''}${off}.`;
   };
   function stateRow() {
     const all = allMarks(), sp = selSet(), pool = sp ? all.filter(m => sp.has(m[0])) : all, counts = new Map();
     pool.forEach(m => counts.set(stateKey(m), (counts.get(stateKey(m)) || 0) + 1));
     const nSel = sp ? pool.length : 0, shown = marks().length;
-    const chips = counts.size > 1 ? [...counts.entries()].map(([k, n]) => `<button type="button" class="s3d-chip" data-s3d-state="${esc(k)}" aria-pressed="${!(T.hide && T.hide.has(k))}" title="Show or hide the ${esc(NOUNS)} in this state">${esc(stateName(k))} <span class="muted">${int(n)}</span></button>`).join('') : '';
-    const selChip = K.sel?.active?.() ? `<button type="button" class="s3d-chip" data-s3d-selonly aria-pressed="${T.selOff !== true}" title="Show only the ${esc(NOUNS)} of your selection and filters, as the map does">Your selection ${int(nSel || pool.length)} of ${int(all.length)}</button>` : '';
-    return `<div class="s3d-row s3d-states" role="group" aria-label="Which ${esc(NOUNS)} the view shows">${selChip}${chips}<span class="muted small">${int(shown)} of ${int(all.length)} ${esc(NOUNS)} shown</span></div>`;
+    const chips = counts.size > 1 ? [...counts.entries()].map(([k, n]) => (`<button type="button" class="s3d-chip" ` +
+        `data-s3d-state="${esc(k)}" aria-pressed="${!(T.hide && T.hide.has(k))}" title="Show or hide the ${esc(NOUNS)} in this state">${esc(stateName(k))} <span class="muted">${int(n)}</span></button>`)).join('') : '';
+    const selChip = K.sel?.active?.() ? (`<button type="button" class="s3d-chip" data-s3d-selonly aria-pressed="${T.selOff !== true}" title="Show ` +
+        `only the ${esc(NOUNS)} of your selection and filters, as the map does">Your selection ${int(nSel || pool.length)} of ${int(all.length)}</button>`) : '';
+    return (`<div class="s3d-row s3d-states" role="group" aria-label="Which ${esc(NOUNS)} the view shows">${selChip}${chips}<span class="muted ` +
+        `small">${int(shown)} of ${int(all.length)} ${esc(NOUNS)} shown</span></div>`);
   }
   function paintControls() {
     const box = document.getElementById('s3d-controls'); if (!box) return;
     const pdbMode = T.mol?.mode === 'pdb';
-    const rows = `<div class="s3d-row">${sel('style', 'Style', STYLES, V.style)}${sel('color', 'Colour', colourOptions(), colourKey())}${sel('surface', 'Surface', SURFACES, V.surface)}${sel('light', 'Lighting', LIGHTS, V.light)}` +
-      `${sel('bright', 'Brightness', BRIGHT, V.bright)}${sel('ldir', 'Light from', LDIR, V.ldir)}${sel('bg', 'Background', BGS, V.bg)}</div>` +
-      `<div class="s3d-row s3d-toggles">${TOGGLES.filter(t => !t[3] || pdbMode).map(t => `<button type="button" class="s3d-chip" data-s3d-toggle="${t[0]}" aria-pressed="${!!V[t[0]]}" title="${esc(t[2])}">${esc(t[1])}</button>`).join('')}` +
-      `<button type="button" class="linkish" data-s3d-default title="Style, color, surface and lighting back to their defaults">Default settings</button></div>`;
+    const rows = `<div class="s3d-row">${sel('style', 'Style', STYLES, V.style)}${
+sel('color', 'Colour', colourOptions(), colourKey())}${
+sel('surface', 'Surface', SURFACES, V.surface)}${
+sel('light', 'Lighting', LIGHTS, V.light)}` +
+      `${
+sel('bright', 'Brightness', BRIGHT, V.bright)}${sel('ldir', 'Light from', LDIR, V.ldir)}${sel('bg', 'Background', BGS, V.bg)}</div>` +
+      `<div class="s3d-row s3d-toggles">${
+TOGGLES.filter(t => !t[3] || pdbMode).map(t => (`<button type="button" ` +
+          `class="s3d-chip" data-s3d-toggle="${t[0]}" aria-pressed="${!!V[t[0]]}" title="${esc(t[2])}">${esc(t[1])}</button>`)).join('')}` +
+      (`<button type="button" class="linkish" data-s3d-default title="Style, color, surface and lighting back to ` +
+          `their defaults">Default settings</button></div>`);
     // the cards front end draws the structure first and folds the options below it; the key stays in sight
-    box.innerHTML = `<details class="pn-optd" data-s3d-optd${T.optOpen ? ' open' : ''}><summary>3D options <span class="muted">· style, color, surface, lighting, toggles</span></summary>${rows}</details>` +
-      `${stateRow()}<div class="s3d-key" id="s3d-key">${T.mol && T.mol.acc === T.acc ? keyHtml(colourKey()) : ''}</div>`;
+    box.innerHTML = (`<details class="pn-optd" data-s3d-optd${T.optOpen ? ' open' : ''}><summary>3D options <span ` +
+        `class="muted">· style, color, surface, lighting, toggles</span></summary>${rows}</details>`) +
+      `${stateRow()}<div class="s3d-key" id="s3d-key">${
+T.mol && T.mol.acc === T.acc ? keyHtml(colourKey()) : ''}</div>`;
   }
-  const chip = pos => { const m = markAt(pos); return `<button type="button" class="s3d-site${T.mol?.focusPos === pos ? ' on' : ''}" data-s3d-pos="${pos}"><i class="dot" style="background:${m ? markColour(m) : tok().mark}"></i>${esc(rl(pos))}`; };
+  const chip = pos => { const m = markAt(pos); return (`<button type="button" class="s3d-site${T.mol?.focusPos === pos ? ' on' : ''}" data-s3d-pos="${pos}"><i class="dot" ` +
+      `style="background:${m ? markColour(m) : tok().mark}"></i>${esc(rl(pos))}`); };
   // the focused mark: what the site's tables say it touches, entry by entry, and the RNA or DNA in this entry
   function focusHtml() {
     const pos = T.highlight; if (pos == null || !markAt(pos)) return '';
@@ -772,77 +820,150 @@
     const rows = entriesAt(pos), bound = boundAt(pos);
     const cLabel = SD.contacts?.label || 'Interfaces at this site', bLabel = SD.bound?.label || 'RNA and DNA bound here';
     const entryBtn = id => `<button type="button" class="s3d-entry-btn${id === entry ? ' on' : ''}" data-s3d-entry="${esc(id)}" data-s3d-at="${pos}" title="Show PDB ${esc(UP(id))} at ${esc(rl(pos))}">${esc(UP(id))}</button>`;
-    const contacts = rows.length ? `<p class="flabel" title="${esc(SD.contacts?.help || '')}">${esc(cLabel)}</p><ul class="s3d-list">` + rows.map(c => `<li>${kindTag(c[1])}${c[3] ? ` <b>${esc(c[3])}</b>` : ''}${c[4] && byAcc[c[4]] ? ` <a href="${esc(K.link('protein', c[4]))}">${esc(c[4])}</a>` : c[4] ? ` <span class="muted mono">${esc(c[4])}</span>` : ''} <span class="muted">in</span> ${c[2].slice(0, 12).map(entryBtn).join(' ')}${c[2].length > 12 ? ` <span class="muted">+${c[2].length - 12}</span>` : ''}</li>`).join('') + '</ul>' : '';
+    const contacts = rows.length ? `<p class="flabel" title="${esc(SD.contacts?.help || '')}">${esc(cLabel)}</p><ul class="s3d-list">` + rows.map(c => `<li>${kindTag(c[1])}${c[3] ? ` <b>${esc(c[3])}</b>` : ''}${
+c[4] && byAcc[c[4]] ? ` <a href="${esc(K.link('protein', c[4]))}">${esc(c[4])}</a>` : c[4] ? (` <span class="muted ` +
+        `mono">${esc(c[4])}</span>`) : ''} <span class="muted">in</span> ${
+c[2].slice(0, 12).map(entryBtn).join(' ')}${
+c[2].length > 12 ? ` <span class="muted">+${c[2].length - 12}</span>` : ''}</li>`).join('') + '</ul>' : '';
     const here = entry ? bound.filter(b => b[1] === entry) : [];
     const other = bound.filter(b => b[1] !== entry);
-    const bline = b => `${kindTag(b[3])} chain ${esc(b[2])}${b[5] ? ` · ${esc(shorten(b[5], 46))}` : ''}${b[4] ? ` <span class="muted">(${esc(b[4].replace(/_/g, ' '))})</span>` : ''}<br><span class="muted">touches</span> ${b[6].map((n, k) => `${esc(n)}${b[7][k] != null ? ` <span class="muted">(${esc(b[2])}${b[7][k]}, ${b[8][k] != null ? b[8][k].toFixed(1) + ' Å' : '?'})</span>` : ''}`).join(', ')}${b[9] ? `<br><span class="mono s3d-win">${esc(b[9])}</span>` : ''}`;
-    const boundHtml = here.length ? `<p class="flabel" title="${esc(SD.bound?.help || '')}">${esc(bLabel)}, in ${esc(UP(entry))}</p><ul class="s3d-list">${here.map(b => `<li>${bline(b)}</li>`).join('')}</ul>`
-      : other.length ? `<p class="flabel" title="${esc(SD.bound?.help || '')}">${esc(bLabel)}</p><ul class="s3d-list">${other.slice(0, 4).map(b => `<li>${entryBtn(b[1])} ${bline(b)}</li>`).join('')}${other.length > 4 ? `<li class="muted">and ${other.length - 4} more entries</li>` : ''}</ul>` : '';
-    return `<div class="s3d-focus"><p class="flabel">At this site: <b>${esc(rl(pos))}</b> <a href="${esc(K.link('protein', T.acc + '/' + pos))}">its card</a></p>${contacts}${boundHtml}` +
-      (!rows.length && !bound.length && (SD.contacts || SD.bound) ? `<p class="muted small">The site’s tables list no contact for ${esc(rl(pos))} in the PDB.</p>` : '') +
-      ((rows.length || bound.length) ? `<p class="src">${esc(tableWords('contacts') || tableWords('bound'))}</p>` : '') + '</div>';
+    const bline = b => (`${kindTag(b[3])} chain ${esc(b[2])}${
+b[5] ? ` · ${esc(shorten(b[5], 46))}` : ''}${
+b[4] ? ` <span class="muted">(${esc(b[4].replace(/_/g, ' '))})</span>` : ''}<br><span ` +
+        `class="muted">touches</span> ${
+b[6].map((n, k) => `${esc(n)}${
+b[7][k] != null ? ` <span class="muted">(${esc(b[2])}${b[7][k]}, ${
+b[8][k] != null ? b[8][k].toFixed(1) + ' Å' : '?'})</span>` : ''}`).join(', ')}${
+b[9] ? (`<br><span ` +
+        `class="mono s3d-win">${esc(b[9])}</span>`) : ''}`);
+    const boundHtml = here.length ? `<p class="flabel" title="${esc(SD.bound?.help || '')}">${esc(bLabel)}, in ${esc(UP(entry))}</p><ul class="s3d-list">${
+here.map(b => `<li>${bline(b)}</li>`).join('')}</ul>`
+      : other.length ? `<p class="flabel" title="${esc(SD.bound?.help || '')}">${esc(bLabel)}</p><ul class="s3d-list">${
+other.slice(0, 4).map(b => `<li>${entryBtn(b[1])} ${bline(b)}</li>`).join('')}${
+other.length > 4 ? (`<li class="muted">` +
+          `and ${other.length - 4} more entries</li>`) : ''}</ul>` : '';
+    return `<div class="s3d-focus"><p class="flabel">At this site: <b>${esc(rl(pos))}</b> <a href="${
+esc(K.link('protein', T.acc + '/' + pos))}">its card</a></p>${contacts}${boundHtml}` +
+      (!rows.length && !bound.length && (SD.contacts || SD.bound) ? (`<p class="muted small">The site’s tables list ` +
+          `no contact for ${esc(rl(pos))} in the PDB.</p>`) : '') +
+      ((rows.length || bound.length) ? `<p class="src">${
+esc(tableWords('contacts') || tableWords('bound'))}</p>` : '') + '</div>';
   }
   function paintSide() {
     const side = document.getElementById('s3d-side'); if (!side) return;
     const mol = T.mol && T.mol.acc === T.acc ? T.mol : null, F = focusHtml();     // the focused mark first
-    const chips = (list, extra) => `<div class="s3d-chips">${list.map(pos => chip(pos) + (extra ? extra(pos) : '') + '</button>').join('')}</div>`;
+    const chips = (list, extra) => `<div class="s3d-chips">${
+list.map(pos => chip(pos) + (extra ? extra(pos) : '') + '</button>').join('')}</div>`;
     if (!mol) { side.innerHTML = F || ''; return; }
     if (mol.mode === 'af') {
       const af = mol.af, e = af.entry, inModel = [...siteColours(false).keys()];
       const counts = [0, 0, 0, 0]; let n = 0;
       inModel.forEach(pos => { const a = mol.viewer.selectedAtoms({ resi: pos, atom: 'CA' })[0]; if (a) { counts[plBand(a.b)]++; n++; } });
-      side.innerHTML = F + `<dl class="kv"><dt>Model</dt><dd><a href="https://alphafold.ebi.ac.uk/entry/${esc(T.acc)}">${esc(e.entryId)} v${esc(e.latestVersion || '')}</a></dd><dt>Mean pLDDT</dt><dd>${e.globalMetricValue != null ? Number(e.globalMetricValue).toFixed(1) : '–'}</dd>` +
+      side.innerHTML = F + (`<dl class="kv"><dt>Model</dt><dd><a href="https://alphafold.ebi.ac.uk/entry/${esc(T.acc)}">${esc(e.entryId)} v${esc(e.latestVersion || '')}</a></dd>` +
+          `<dt>Mean pLDDT</dt><dd>${
+e.globalMetricValue != null ? Number(e.globalMetricValue).toFixed(1) : '–'}</dd>`) +
         (e.paeImageUrl ? `<dt>PAE</dt><dd><a href="${esc(e.paeImageUrl)}">Predicted aligned error</a></dd>` : '') + '</dl>' +
-        (n ? `<p class="flabel">${esc(cap(NOUNS))} by model confidence</p><div class="s3d-stack">${counts.map((c, k) => (c ? `<i style="flex:${c};background:${PLDDT[k][1]}" title="${esc(PLDDT[k][2])}: ${c}"></i>` : '')).join('')}</div>` +
-          `<ul class="s3d-legend">${PLDDT.map((b, k) => `<li><i style="background:${b[1]}"></i>${esc(b[2])}<b>${counts[k]}</b></li>`).join('')}</ul>` : '') +
-        `<p class="note small" id="s3d-am">${e.amAnnotationsUrl ? 'Asking AlphaFold DB for AlphaMissense…' : ''}</p>` +
+        (n ? `<p class="flabel">${esc(cap(NOUNS))} by model confidence</p><div class="s3d-stack">${
+counts.map((c, k) => (c ? `<i style="flex:${c};background:${PLDDT[k][1]}" title="${esc(PLDDT[k][2])}: ${c}"></i>` : '')).join('')}</div>` +
+          `<ul class="s3d-legend">${
+PLDDT.map((b, k) => `<li><i style="background:${b[1]}"></i>${esc(b[2])}<b>${counts[k]}</b></li>`).join('')}</ul>` : '') +
+        `<p class="note small" id="s3d-am">${
+e.amAnnotationsUrl ? 'Asking AlphaFold DB for AlphaMissense…' : ''}</p>` +
         (inModel.length ? `<div class="s3d-focusbar"><p class="flabel">Focus a site</p>${chips(inModel.sort((a, b) => a - b))}</div>` : '');
       if (e.amAnnotationsUrl) loadAM(T.acc, e.amAnnotationsUrl).then(am => {
         const el = document.getElementById('s3d-am'); if (!el || T.mol !== mol || mol.mode !== 'af') return;
         if (!am) { el.textContent = 'AlphaMissense did not answer. Nothing else on this page depends on it.'; return; }
         const vals = marks().map(m => am.get(m[0])).filter(a => a && a.n).map(a => a.sum / a.n);
-        el.innerHTML = vals.length ? `AlphaMissense: the mean pathogenicity of the substitutions at each ${esc(NOUN)}, averaged over ${int(vals.length)} ${esc(vals.length === 1 ? NOUN : NOUNS)}, is ${(vals.reduce((s, x) => s + x, 0) / vals.length).toFixed(2)}; ${vals.filter(x => x >= 0.564).length} of ${vals.length} are at or above 0.564, AlphaMissense’s cut-off for a likely pathogenic variant.` : '';
+        el.innerHTML = vals.length ? (`AlphaMissense: the mean pathogenicity of the substitutions at each ${esc(NOUN)}, averaged over ${int(vals.length)} ${esc(vals.length === 1 ? NOUN : NOUNS)}, is ${
+(vals.reduce((s, x) => s + x, 0) / vals.length).toFixed(2)}; ${vals.filter(x => x >= 0.564).length} of ${vals.length} are at or ` +
+            `above 0.564, AlphaMissense’s cut-off for a likely pathogenic variant.`) : '';
       });
       return;
     }
     const pdb = mol.pdb, e = pdb.e, det = pdb.det, base = T.acc.split('-')[0];
     const resolved = marks().map(m => m[0]).filter(pos => pdb.toAuth.has(pos));
-    const modres = (det.modres || []).length ? `<p class="flabel">${esc(cap(NOUNS))} modeled in the entry</p><div class="s3d-tags">${det.modres.map(r => `<span class="s3d-tag k-mark" title="${esc(r.chem_comp_name || '')}">${esc(r.chem_comp_id)} ${esc(r.chain_id)}${esc(r.author_residue_number)}</span>`).join(' ')}</div>` : '';
+    const modres = (det.modres || []).length ? (`<p class="flabel">${esc(cap(NOUNS))} modeled in the entry</p><div ` +
+        `class="s3d-tags">${
+det.modres.map(r => `<span class="s3d-tag k-mark" title="${esc(r.chem_comp_name || '')}">${esc(r.chem_comp_id)} ${esc(r.chain_id)}${esc(r.author_residue_number)}</span>`).join(' ')}</div>`) : '';
     if (pdb.pred) {
       const p = pdb.pred, dist = predDistances(), table = new Set(p.tableSites || []);
-      side.innerHTML = F + `<p class="flabel">Showing a predicted complex</p><dl class="kv"><dt>Model</dt><dd><a href="${esc(p.link)}">${esc(p.label)}</a></dd><dt>Source</dt><dd>${esc(p.method)}</dd>${p.scores ? `<dt>Scores</dt><dd>${esc(p.scores)}</dd>` : ''}` +
-        `<dt>Chains</dt><dd>${Object.keys(p.names).sort().map(c => `${esc(c)}: ${esc(p.names[c])}${c === pdb.chain ? ' (this protein)' : ''}`).join(' · ')}</dd></dl>` +
-        (resolved.length ? `<div class="s3d-focusbar"><p class="flabel">Focus a site</p>${chips(resolved)}</div>` : `<p class="muted small">None of these ${esc(NOUNS)} is in the modeled range.</p>`) +
-        (dist.length ? `<p class="flabel">Distance to the partner in this model</p><ul class="s3d-list">${dist.map(x => `<li><button type="button" class="linkish" data-s3d-pos="${x.pos}">${esc(rl(x.pos))}</button> ` +
-          (x.d == null ? `<span class="muted">more than 8 Å from ${esc(p.partnerLabel)}</span>` : `<b>${x.d.toFixed(1)} Å</b> to ${esc((p.names[x.partner.chain] || 'chain ' + x.partner.chain) + ' ' + x.partner.resn + x.partner.resi)}${x.d < 2.2 ? ' <span class="s3d-tag k-clash" title="Heavy atoms closer than 2.2 Å: a clash in the model, not a contact">clash</span>' : x.d <= 4 ? ' ' + kindTag('protein', 'contact') : ''}`) +
-          ` <span class="muted">· pLDDT ${Math.round(x.b)}</span>${table.has(x.pos) && (x.d == null || x.d > 5) ? `<br><span class="muted small">The site’s table puts ${esc(rl(x.pos))} at the interface; this model does not.</span>` : ''}</li>`).join('')}</ul>` : '') +
-        `<p class="note small">A predicted model, not an experimental structure: weigh each contact by the pLDDT of both residues and by the predicted aligned error${p.pae ? ` (<a href="${esc(p.pae)}">PAE plot</a>)` : ''}. Color by pLDDT under Color.</p>` + backHtml();
+      side.innerHTML = F + (`<p class="flabel">Showing a predicted complex</p><dl class="kv"><dt>Model</dt><dd><a ` +
+          `href="${esc(p.link)}">${esc(p.label)}</a></dd><dt>Source</dt><dd>${esc(p.method)}</dd>${
+p.scores ? `<dt>Scores</dt><dd>${esc(p.scores)}</dd>` : ''}`) +
+        `<dt>Chains</dt><dd>${
+Object.keys(p.names).sort().map(c => `${esc(c)}: ${esc(p.names[c])}${c === pdb.chain ? ' (this protein)' : ''}`).join(' · ')}</dd></dl>` +
+        (resolved.length ? `<div class="s3d-focusbar"><p class="flabel">Focus a site</p>${chips(resolved)}</div>` : (`<p class="muted ` +
+            `small">None of these ${esc(NOUNS)} is in the modeled range.</p>`)) +
+        (dist.length ? `<p class="flabel">Distance to the partner in this model</p><ul class="s3d-list">${dist.map(x => (`<li><button ` +
+            `type="button" class="linkish" data-s3d-pos="${x.pos}">${esc(rl(x.pos))}</button> `) +
+          (x.d == null ? `<span class="muted">more than 8 Å from ${esc(p.partnerLabel)}</span>` : `<b>${x.d.toFixed(1)} Å</b> to ${
+esc((p.names[x.partner.chain] || 'chain ' + x.partner.chain) + ' ' + x.partner.resn + x.partner.resi)}${
+x.d < 2.2 ? (' <span class="s3d-tag k-clash" title="Heavy atoms closer than 2.2 Å: a clash in ' +
+'the model, not a contact">clash</span>') : x.d <= 4 ? ' ' + kindTag('protein', 'contact') : ''}`) +
+          ` <span class="muted">· pLDDT ${Math.round(x.b)}</span>${
+table.has(x.pos) && (x.d == null || x.d > 5) ? (`<br><span ` +
+              `class="muted small">The site’s table puts ${esc(rl(x.pos))} at the interface; this model does ` +
+              `not.</span>`) : ''}</li>`).join('')}</ul>` : '') +
+        (`<p class="note small">A predicted model, not an experimental structure: weigh each contact by the pLDDT ` +
+            `of both residues and by the predicted aligned error${
+p.pae ? ` (<a href="${esc(p.pae)}">PAE plot</a>)` : ''}. Color by ` +
+            `pLDDT under Color.</p>`) + backHtml();
       return;
     }
     const en = META[UP(e.id)], polys = polymers(en, base);
     if (en === undefined) meta([e.id]).then(() => { if (T.mol === mol) { paintSide(); paintControls(); } });
-    const chainsHtml = polys.length ? `<dt>Chains</dt><dd><ul class="s3d-chains">${polys.map(x => `<li>${kindTag(x.mine ? 'self' : x.kind, x.mine ? (x.chains.includes(pdb.chain) ? 'this protein' : 'a copy') : KIND_WORD[x.kind])} <span class="mono">${esc(x.chains.join(', '))}</span> ${esc(shorten(x.name, 60))}${!x.mine && x.accs[0] ? (byAcc[x.accs[0]] ? ` <a href="${esc(K.link('protein', x.accs[0]))}">${esc(x.accs[0])}</a>` : ` <span class="muted mono">${esc(x.accs[0])}</span>`) : ''}${x.org && x.kind === 'protein' && !x.mine ? ` <i class="muted">${esc(x.org)}</i>` : ''}</li>`).join('')}</ul></dd>` : '';
+    const chainsHtml = polys.length ? `<dt>Chains</dt><dd><ul class="s3d-chains">${
+polys.map(x => `<li>${
+kindTag(x.mine ? 'self' : x.kind, x.mine ? (x.chains.includes(pdb.chain) ? 'this protein' : 'a copy') : KIND_WORD[x.kind])} <span class="mono">${esc(x.chains.join(', '))}</span> ${esc(shorten(x.name, 60))}${
+!x.mine && x.accs[0] ? (byAcc[x.accs[0]] ? ` <a href="${esc(K.link('protein', x.accs[0]))}">${esc(x.accs[0])}</a>` : (` <span class="muted ` +
+        `mono">${esc(x.accs[0])}</span>`)) : ''}${
+x.org && x.kind === 'protein' && !x.mine ? ` <i class="muted">${esc(x.org)}</i>` : ''}</li>`).join('')}</ul></dd>` : '';
     const contacts = liveContacts();
-    const contactsHtml = !contacts.length ? `<p class="flabel">Contacts</p><p class="muted small">No resolved ${esc(NOUN)} side chain is within 4 Å of ${mol.naKinds?.size ? 'RNA, DNA or ' : ''}another chain.</p>`
-      : `<p class="flabel">${esc(cap(NOUNS))} in contact (≤ 4 Å, in this model)</p><ul class="s3d-list">${contacts.map(c => `<li><button type="button" class="linkish" data-s3d-pos="${c.pos}">${esc(rl(c.pos))}</button> <span class="muted">(${esc(pdb.chain)}${c.auth})</span><br>` +
+    const contactsHtml = !contacts.length ? (`<p class="flabel">Contacts</p><p class="muted small">No resolved ${esc(NOUN)} side chain ` +
+        `is within 4 Å of ${mol.naKinds?.size ? 'RNA, DNA or ' : ''}another chain.</p>`)
+      : `<p class="flabel">${esc(cap(NOUNS))} in contact (≤ 4 Å, in this model)</p><ul class="s3d-list">${contacts.map(c => (`<li><button ` +
+          `type="button" class="linkish" data-s3d-pos="${c.pos}">${esc(rl(c.pos))}</button> <span class="muted">(${esc(pdb.chain)}${c.auth})</span><br>`) +
         ['rna', 'dna', 'protein'].map(k => { const h = c.hits.filter(x => x.kind === k); if (!h.length) return ''; const names = chainNames(); return kindTag(k) + ' <span class="muted">' + esc(h.slice(0, 4).map(x => `${x.resn} ${x.chain}${x.resi}`).join(', ') + (h.length > 4 ? ' +' + (h.length - 4) : '')) + (k === 'protein' && names[h[0].chain] ? ' · ' + esc(shorten(names[h[0].chain], 28)) : '') + '</span>'; }).filter(Boolean).join('<br>') + '</li>').join('')}</ul>`;
     const tableHere = (ev().c || []).filter(c => c[2].includes(e.id));
-    const tableHtml = tableHere.length ? `<p class="flabel" title="${esc(SD.contacts?.help || '')}">${esc(SD.contacts?.label || 'Interfaces at the sites')}, in this entry</p><div class="s3d-tags">${tableHere.map(c => `<button type="button" class="s3d-site" data-s3d-pos="${c[0]}">${esc(rl(c[0]))} ${kindTag(c[1], c[3] || KIND_WORD[c[1]])}</button>`).join(' ')}</div>` : '';
+    const tableHtml = tableHere.length ? (`<p class="flabel" title="${esc(SD.contacts?.help || '')}">${
+esc(SD.contacts?.label || 'Interfaces at the sites')}, in this ` +
+        `entry</p><div class="s3d-tags">${
+tableHere.map(c => `<button type="button" class="s3d-site" data-s3d-pos="${c[0]}">${esc(rl(c[0]))} ${kindTag(c[1], c[3] || KIND_WORD[c[1]])}</button>`).join(' ')}</div>`) : '';
     if (pdb.homolog) {
       const h = pdb.homolog;
-      side.innerHTML = F + `<p class="flabel">Showing a homologous structure</p><dl class="kv"><dt>Entry</dt><dd><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}">${esc(UP(e.id))}</a></dd><dt>Method</dt><dd>${esc(methodShort(e.method))}${e.resolution ? ', ' + Number(e.resolution).toFixed(1) + ' Å' : ''}</dd>` +
-        `<dt>Homolog</dt><dd>${esc(h.desc)}${h.org ? ` <i>(${esc(h.org)})</i>` : ''}${h.uniprot.length ? ' · ' + h.uniprot.map(a => `<a href="https://www.uniprot.org/uniprotkb/${esc(a)}/entry">${esc(a)}</a>`).join(', ') : ''}</dd>` +
-        `<dt>Alignment</dt><dd>${Math.round(100 * h.identity)}% identity over ${esc(T.p.gene || T.acc)} ${h.qBeg}–${h.qEnd}</dd><dt>Chain</dt><dd>${esc(det.chain)}</dd>${h.partners.length ? `<dt>With</dt><dd>${h.partners.map(esc).join('; ')}</dd>` : ''}</dl>` +
-        (resolved.length ? `<div class="s3d-focusbar"><p class="flabel">Focus a site <span class="muted">(aligned to this chain)</span></p>${chips(resolved, pos => ` <span class="muted">≙ ${esc(det.chain)}${pdb.toAuth.get(pos)}</span>`)}</div>` : `<p class="muted small">No ${esc(NOUN)} of ${esc(T.p.gene || T.acc)} aligns to a resolved residue of its kind in this chain.</p>`) +
+      side.innerHTML = F + (`<p class="flabel">Showing a homologous structure</p><dl class="kv"><dt>Entry</dt><dd>` +
+          `<a href="https://www.rcsb.org/structure/${esc(UP(e.id))}">${esc(UP(e.id))}</a></dd><dt>Method</dt><dd>${esc(methodShort(e.method))}${
+e.resolution ? ', ' + Number(e.resolution).toFixed(1) + ' Å' : ''}</dd>`) +
+        `<dt>Homolog</dt><dd>${esc(h.desc)}${h.org ? ` <i>(${esc(h.org)})</i>` : ''}${
+h.uniprot.length ? ' · ' + h.uniprot.map(a => `<a href="https://www.uniprot.org/uniprotkb/${esc(a)}/entry">${esc(a)}</a>`).join(', ') : ''}</dd>` +
+        (`<dt>Alignment</dt><dd>${Math.round(100 * h.identity)}% identity over ${esc(T.p.gene || T.acc)} ${h.qBeg}–${h.qEnd}</dd><dt>` +
+            `Chain</dt><dd>${esc(det.chain)}</dd>${
+h.partners.length ? `<dt>With</dt><dd>${h.partners.map(esc).join('; ')}</dd>` : ''}</dl>`) +
+        (resolved.length ? (`<div class="s3d-focusbar"><p class="flabel">Focus a site <span class="muted">(aligned ` +
+            `to this chain)</span></p>${
+chips(resolved, pos => ` <span class="muted">≙ ${esc(det.chain)}${pdb.toAuth.get(pos)}</span>`)}</div>`) : (`<p class="muted ` +
+            `small">No ${esc(NOUN)} of ${esc(T.p.gene || T.acc)} aligns to a resolved residue of its kind in this ` +
+            `chain.</p>`)) +
         modres + contactsHtml + `` + backHtml();
       return;
     }
-    side.innerHTML = F + `<p class="flabel">Showing PDB entry</p><dl class="kv"><dt>Entry</dt><dd><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}">${esc(UP(e.id))}</a> · <a href="https://www.ebi.ac.uk/pdbe/entry/pdb/${esc(e.id)}">PDBe</a></dd>` +
+    side.innerHTML = F + (`<p class="flabel">Showing PDB entry</p><dl class="kv"><dt>Entry</dt><dd><a ` +
+        `href="https://www.rcsb.org/structure/${esc(UP(e.id))}">${esc(UP(e.id))}</a> · <a ` +
+        `href="https://www.ebi.ac.uk/pdbe/entry/pdb/${esc(e.id)}">PDBe</a></dd>`) +
       (en ? `<dt>Structure</dt><dd>${esc(en.struct?.title || '')}</dd>` : en === undefined ? '<dt>Structure</dt><dd class="muted">asking RCSB…</dd>' : '') +
-      `<dt>Method</dt><dd>${esc(methodShort(e.method || en?.rcsb_entry_info?.experimental_method))}${e.resolution ? ', ' + Number(e.resolution).toFixed(1) + ' Å' : ''}${/NMR/i.test(e.method || '') ? ' (first model of the ensemble)' : ''}</dd>` +
-      `<dt>Chain</dt><dd>${esc(pdb.chain || '–')}${pdb.guessed ? ' (by its residues: PDBe maps no chain of this entry to the protein)' : ' (colored by its features; other chains by what they are)'}</dd>${chainsHtml}</dl>` +
+      `<dt>Method</dt><dd>${
+esc(methodShort(e.method || en?.rcsb_entry_info?.experimental_method))}${
+e.resolution ? ', ' + Number(e.resolution).toFixed(1) + ' Å' : ''}${
+/NMR/i.test(e.method || '') ? ' (first model of the ensemble)' : ''}</dd>` +
+      `<dt>Chain</dt><dd>${esc(pdb.chain || '–')}${
+pdb.guessed ? ' (by its residues: PDBe maps no chain of this entry to the protein)' : ' (colored by its features; other chains by what they are)'}</dd>${chainsHtml}</dl>` +
       modres +
-      `<div class="s3d-focusbar"><p class="flabel">Focus a site <span class="muted">(resolved in this chain)</span></p>${resolved.length ? chips(resolved, pos => ` <span class="muted">· ${esc(pdb.chain)}${pdb.toAuth.get(pos)}</span>`) : `<p class="muted small">${det.chain && !det.coverage ? `PDBe did not return the residues observed in this chain, so its ${esc(NOUNS)} cannot be placed; try again later.` : `None of this protein’s ${esc(NOUNS)} is resolved in this chain.`}</p>`}</div>` +
+      (`<div class="s3d-focusbar"><p class="flabel">Focus a site <span class="muted">(resolved in this chain)</span>` +
+          `</p>${
+resolved.length ? chips(resolved, pos => ` <span class="muted">· ${esc(pdb.chain)}${pdb.toAuth.get(pos)}</span>`) : (`<p class="muted ` +
+          `small">${
+det.chain && !det.coverage ? (`PDBe did not return the residues observed in this chain, so its ${esc(NOUNS)} cannot be ` +
+          `placed; try again later.`) : `None of this protein’s ${esc(NOUNS)} is resolved in this chain.`}</p>`)}</div>`) +
       contactsHtml + tableHtml + backHtml();
   }
   const backHtml = () => (T.mol?.mode === 'pdb' ? '<p><button type="button" class="btn small" data-s3d-src="af">Back to the AlphaFold model</button></p>' : '');
@@ -855,8 +976,11 @@
     const res = T.res;
     if (!res) { box.innerHTML = '<p class="muted">Asking PDBe…</p>'; subSum('s3d-pdb', 'looking up…'); return; }
     const list = pdbMenu(res), nNa = list.filter(x => res.na.get(x.e.id)).length, te = tableEntries();
-    subSum('s3d-pdb', list.length ? `${int(list.length)} entr${list.length === 1 ? 'y' : 'ies'}${nNa ? `, ${nNa} with RNA or DNA` : ''}${res.modified.size ? `, ${res.modified.size} model a ${NOUN}` : ''}` : res.failed ? 'PDBe did not answer' : 'none');
-    if (!list.length) { box.innerHTML = `<p class="muted">${res.failed ? 'PDBe did not answer. Nothing else on this page depends on it.' : `No experimental structure in the PDB maps to ${esc(T.acc)}.`}</p>`; return; }
+    subSum('s3d-pdb', list.length ? `${int(list.length)} entr${list.length === 1 ? 'y' : 'ies'}${nNa ? `, ${nNa} with RNA or DNA` : ''}${
+res.modified.size ? `, ${res.modified.size} model a ${NOUN}` : ''}` : res.failed ? 'PDBe did not answer' : 'none');
+    if (!list.length) { box.innerHTML = `<p class="muted">${
+res.failed ? 'PDBe did not answer. Nothing else on this page depends on it.' : (`No experimental ` +
+        `structure in the PDB maps to ${esc(T.acc)}.`)}</p>`; return; }
     // which residues each entry models, for up to 40 entries whose construct holds a mark (PDBe), to rank them
     const toRead = list.filter(x => (x.n || x.mod) && x.e.maps.length && !TRIED.has(x.e.id)).sort((a, b) => b.n - a.n).slice(0, 40);
     if (toRead.length && T.started) {
@@ -868,21 +992,42 @@
     const shown = T.pdbAll ? list : list.slice(0, 10);
     const ids = shown.map(x => x.e.id).filter(id => !(UP(id) in META)); if (ids.length) meta(ids).then(() => { if (document.getElementById('s3d-pdb-list')) { paintPdbList(); paintSrc(); } });
     const base = T.acc.split('-')[0], own = T.mol?.mode === 'pdb' && !T.mol.pdb.pred && !T.mol.pdb.homolog ? T.mol.pdb.e.id : null;
-    box.innerHTML = `<p class="sub">${int(list.length)} PDB entr${list.length === 1 ? 'y maps' : 'ies map'} to ${esc(base)}${res.modified.size ? `; <b>${res.modified.size}</b> model a ${esc(NOUN)}` : ''}${te.size ? `; ${int(te.size)} have a contact at a ${esc(NOUN)}` : ''}.${res.failed ? ' The PDBe list did not answer, so only the entries named elsewhere are shown.' : ''}</p>` +
-      `<div class="tbl-card"><table class="tbl s3d-tbl"><thead><tr><th>Entry</th><th>Method</th><th class="num">Resolution</th><th>Chain · residues</th><th>${esc(cap(NOUNS))}</th><th><span class="sr-only">View</span></th></tr></thead><tbody>` +
+    box.innerHTML = `<p class="sub">${int(list.length)} PDB entr${list.length === 1 ? 'y maps' : 'ies map'} to ${esc(base)}${
+res.modified.size ? `; <b>${res.modified.size}</b> model a ${esc(NOUN)}` : ''}${
+te.size ? (`; ${int(te.size)} have a contact ` +
+        `at a ${esc(NOUN)}`) : ''}.${
+res.failed ? ' The PDBe list did not answer, so only the entries named elsewhere are shown.' : ''}</p>` +
+      (`<div class="tbl-card"><table class="tbl s3d-tbl"><thead><tr><th>Entry</th><th>Method</th><th class="num">` +
+          `Resolution</th><th>Chain · residues</th><th>${esc(cap(NOUNS))}</th><th><span class="sr-only">View</span>` +
+          `</th></tr></thead><tbody>`) +
       shown.map(({ e, n, mod, at }) => {
         const en = META[UP(e.id)], parts = en ? partnersText(en, base) : [], na = res.na.get(e.id);
         const r = RESOLVED[e.id];
-        return `<tr class="${e.id === own ? 'on' : ''}"><td class="wrapok"><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}"><b>${esc(UP(e.id))}</b></a>${mod ? ` <span class="s3d-tag k-mark" title="A ${esc(NOUN)} is modeled in this protein’s chain">${esc(NOUN)} in model</span>` : ''}${na?.rna ? ' ' + kindTag('rna') : ''}${na?.dna ? ' ' + kindTag('dna') : ''}` +
-          (en ? `<div class="s3d-what"><span>${esc(shorten(en.struct?.title || '', 110))}</span><span class="muted">${parts.length ? 'With ' + esc(parts.slice(0, 4).join('; ')) + (parts.length > 4 ? ` and ${parts.length - 4} more` : '') : 'No other protein or nucleic acid'}</span></div>` : '') + '</td>' +
-          `<td>${esc(methodShort(e.method || en?.rcsb_entry_info?.experimental_method))}</td><td class="num">${e.resolution ? Number(e.resolution).toFixed(1) + ' Å' : '–'}</td>` +
-          `<td>${e.maps.length ? esc(e.maps[0].chain) + (e.chains.length > 1 ? ` (+${e.chains.length - 1})` : '') + ' · ' + esc(e.maps.filter(m => m.chain === e.maps[0].chain).map(m => m.unpStart + '–' + m.unpEnd).join(', ')) : '<span class="muted">not mapped by PDBe</span>'}</td>` +
-          `<td class="wrapok">${r != null ? (r ? `<b>${r}</b> resolved` : `<span class="muted">${n} in construct, none resolved</span>`) : n ? `${n} in construct` : '<span class="muted">none in construct</span>'}` +
-          (at.length ? `<div class="s3d-tags">${at.map(c => `<button type="button" class="s3d-site" data-s3d-entry="${esc(e.id)}" data-s3d-at="${c[0]}" title="Show ${esc(UP(e.id))} at ${esc(rl(c[0]))}">${esc(rl(c[0]))} ${kindTag(c[1], c[3] || KIND_WORD[c[1]])}</button>`).join(' ')}</div>` : '') + '</td>' +
+        return `<tr class="${e.id === own ? 'on' : ''}"><td class="wrapok"><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}"><b>${esc(UP(e.id))}</b></a>${
+mod ? (` <span class="s3d-tag ` +
+            `k-mark" title="A ${esc(NOUN)} is modeled in this protein’s chain">${esc(NOUN)} in model</span>`) : ''}${na?.rna ? ' ' + kindTag('rna') : ''}${na?.dna ? ' ' + kindTag('dna') : ''}` +
+          (en ? (`<div class="s3d-what"><span>${
+esc(shorten(en.struct?.title || '', 110))}</span><span ` +
+              `class="muted">${
+parts.length ? 'With ' + esc(parts.slice(0, 4).join('; ')) + (parts.length > 4 ? ` and ${parts.length - 4} more` : '') : 'No other protein or nucleic acid'}</span></div>`) : '') + '</td>' +
+          `<td>${
+esc(methodShort(e.method || en?.rcsb_entry_info?.experimental_method))}</td><td class="num">${
+e.resolution ? Number(e.resolution).toFixed(1) + ' Å' : '–'}</td>` +
+          `<td>${
+e.maps.length ? esc(e.maps[0].chain) + (e.chains.length > 1 ? ` (+${e.chains.length - 1})` : '') + ' · ' + esc(e.maps.filter(m => m.chain === e.maps[0].chain).map(m => m.unpStart + '–' + m.unpEnd).join(', ')) : '<span class="muted">not mapped by PDBe</span>'}</td>` +
+          `<td class="wrapok">${
+r != null ? (r ? `<b>${r}</b> resolved` : (`<span class="muted">${n} in construct, ` +
+              `none resolved</span>`)) : n ? `${n} in construct` : '<span class="muted">none in construct</span>'}` +
+          (at.length ? `<div class="s3d-tags">${
+at.map(c => (`<button type="button" class="s3d-site" ` +
+              `data-s3d-entry="${esc(e.id)}" data-s3d-at="${c[0]}" title="Show ${esc(UP(e.id))} at ${esc(rl(c[0]))}">${esc(rl(c[0]))} ${kindTag(c[1], c[3] || KIND_WORD[c[1]])}</button>`)).join(' ')}</div>` : '') + '</td>' +
           `<td><button type="button" class="btn small" data-s3d-entry="${esc(e.id)}">${e.id === own ? 'Shown' : 'View'}</button></td></tr>`;
       }).join('') + '</tbody></table></div>' +
-      (list.length > 10 ? `<p><button type="button" class="linkish" data-s3d-more="pdb">${T.pdbAll ? 'Show the first 10' : `Show all ${int(list.length)} entries`}</button></p>` : '') +
-      `<p class="src">PDBe SIFTS best structures and observed residues, RCSB search and entry descriptions, read live${te.size ? `; contacts from ${esc(tableWords('contacts'))}` : ''}. <a href="https://www.ebi.ac.uk/pdbe/pdbe-kb/proteins/${esc(base)}">PDBe-KB ${esc(base)}</a></p>`;
+      (list.length > 10 ? `<p><button type="button" class="linkish" data-s3d-more="pdb">${
+T.pdbAll ? 'Show the first 10' : `Show all ${int(list.length)} entries`}</button></p>` : '') +
+      (`<p class="src">PDBe SIFTS best structures and observed residues, RCSB search and entry descriptions, read ` +
+          `live${
+te.size ? `; contacts from ${esc(tableWords('contacts'))}` : ''}. <a href="https://www.ebi.ac.uk/pdbe/pdbe-kb/proteins/${esc(base)}">PDBe-KB ${esc(base)}</a></p>`);
   }
 
   // homologous experimental structures: PDB entities related by sequence (RCSB MMseqs2, ≥ 30% identity) that model
@@ -908,8 +1053,12 @@
       }
       const entries = [...new Set(hits.map(h => h.entry))], chunks = [];
       for (let k = 0; k < entries.length; k += 80) chunks.push(entries.slice(k, k + 80));
-      return Promise.all(chunks.map(ids => gql(`{ entries(entry_ids: ${JSON.stringify(ids)}) { rcsb_id struct { title } rcsb_entry_info { resolution_combined experimental_method } polymer_entities { rcsb_id rcsb_polymer_entity { pdbx_description } ` +
-        'rcsb_polymer_entity_container_identifiers { asym_ids auth_asym_ids uniprot_ids } entity_poly { rcsb_entity_polymer_type } rcsb_entity_source_organism { ncbi_scientific_name } } } }'))).then(parts => {
+      return Promise.all(chunks.map(ids => gql((`{ entries(entry_ids: ${JSON.stringify(ids)}) { rcsb_id struct { ` +
+          `title } rcsb_entry_info { resolution_combined experimental_method } polymer_entities { rcsb_id ` +
+          `rcsb_polymer_entity { pdbx_description } `) +
+        ('rcsb_polymer_entity_container_identifiers { asym_ids auth_asym_ids uniprot_ids ' +
+'} entity_poly { rcsb_entity_polymer_type } rcsb_entity_source_organism { ' +
+'ncbi_scientific_name } } } }')))).then(parts => {
         const metaH = new Map(); parts.forEach(pt => ((pt.data || {}).entries || []).forEach(en => metaH.set(en.rcsb_id, en)));
         const out = [];
         for (const h of hits) {
@@ -922,7 +1071,9 @@
         }
         const keep = out.filter(h => h.chain && h.asym), inst = keep.map(h => h.entry + '.' + h.asym), ch2 = [];
         for (let k = 0; k < inst.length; k += 100) ch2.push(inst.slice(k, k + 100));
-        return Promise.all(ch2.map(ids => gql(`{ polymer_entity_instances(instance_ids: ${JSON.stringify(ids)}) { rcsb_id rcsb_polymer_entity_instance_container_identifiers { auth_asym_id } rcsb_polymer_instance_feature { type feature_positions { beg_seq_id end_seq_id } } } }`))).then(pts => {
+        return Promise.all(ch2.map(ids => gql((`{ polymer_entity_instances(instance_ids: ${JSON.stringify(ids)}) { rcsb_id ` +
+            `rcsb_polymer_entity_instance_container_identifiers { auth_asym_id } rcsb_polymer_instance_feature { ` +
+            `type feature_positions { beg_seq_id end_seq_id } } } }`)))).then(pts => {
           const gaps = new Map();
           pts.forEach(pt => ((pt.data || {}).polymer_entity_instances || []).forEach(x => {
             const ranges = []; (x.rcsb_polymer_instance_feature || []).forEach(f => { if (f.type === 'UNOBSERVED_RESIDUE_XYZ') (f.feature_positions || []).forEach(q2 => ranges.push([q2.beg_seq_id, q2.end_seq_id ?? q2.beg_seq_id])); });
@@ -947,18 +1098,35 @@
     const bySite = new Map();
     for (const h of T.homList) for (const x of h.sites) { if (!x.same || !x.obs) continue; if (!bySite.has(x.pos)) bySite.set(x.pos, []); bySite.get(x.pos).push(h); }
     const sites = [...bySite.keys()].sort((a, b) => a - b);
-    if (!sites.length) { box.innerHTML = `<p class="muted">No experimental structure of a related protein (≥ 30% identity) models the same residue at these ${esc(NOUNS)}.</p>`; subSum('s3d-hom', 'none at these sites'); return; }
+    if (!sites.length) { box.innerHTML = (`<p class="muted">No experimental structure of a related protein (≥ 30% ` +
+        `identity) models the same residue at these ${esc(NOUNS)}.</p>`); subSum('s3d-hom', 'none at these sites'); return; }
     const nEntries = new Set(sites.flatMap(pos => bySite.get(pos).map(h => h.entry))).size;
     subSum('s3d-hom', `${int(sites.length)} of ${int(marks().length)} sites align to the same residue in ${int(nEntries)} entr${nEntries === 1 ? 'y' : 'ies'}`);
     const rank = (a, b) => (b.partners.length > 0) - (a.partners.length > 0) || b.identity - a.identity || (a.resolution || 99) - (b.resolution || 99);
-    const line = (h, pos) => `<li><button type="button" class="btn small" data-s3d-hom="${esc(h.id)}" data-s3d-at="${pos}">View</button> <a href="https://www.rcsb.org/structure/${esc(h.entry)}"><b>${esc(h.entry)}</b></a> <span class="muted">${esc(methodShort(h.method))}${h.resolution ? ' ' + Number(h.resolution).toFixed(1) + ' Å' : ''}</span> · ${esc(h.desc)}${h.org ? ` <i class="muted">${esc(h.org)}</i>` : ''} · ${Math.round(100 * h.identity)}% identity` +
+    const line = (h, pos) => (`<li><button type="button" class="btn small" data-s3d-hom="${esc(h.id)}" data-s3d-at="${pos}">View</button>` +
+        ` <a href="https://www.rcsb.org/structure/${esc(h.entry)}"><b>${esc(h.entry)}</b></a> <span class="muted">${esc(methodShort(h.method))}${
+h.resolution ? ' ' + Number(h.resolution).toFixed(1) + ' Å' : ''}</span> · ${esc(h.desc)}${
+h.org ? ` <i class="muted">${esc(h.org)}</i>` : ''} · ${Math.round(100 * h.identity)}% identity`) +
       (h.partners.length ? ' · with ' + h.partners.slice(0, 2).map(y => kindTag(/^RNA:/.test(y) ? 'rna' : /^DNA:/.test(y) ? 'dna' : 'protein', shorten(y.replace(/^(RNA|DNA): /, ''), 34))).join(' ') + (h.partners.length > 2 ? ` +${h.partners.length - 2}` : '') : '') + '</li>';
     const shown = T.homAll ? sites : sites.slice(0, 12);
-    box.innerHTML = `<p class="sub">${int(sites.length)} of ${int(marks().length)} ${esc(NOUNS)} align to the same residue, modeled, in ${int(nEntries)} PDB entr${nEntries === 1 ? 'y' : 'ies'} of related proteins (≥ 30% identity).</p>` +
-      `<div class="tbl-card"><table class="tbl s3d-tbl"><thead><tr><th>Site</th><th>Homologous entries with a modeled residue here</th></tr></thead><tbody>` +
-      shown.map(pos => { const hs = bySite.get(pos).slice().sort(rank), open = T.homOpen.has(pos); return `<tr><td><b>${esc(rl(pos))}</b><br><span class="muted">${int(hs.length)} entr${hs.length === 1 ? 'y' : 'ies'}</span></td><td class="wrapok"><ul class="s3d-hl">${hs.slice(0, open ? hs.length : 3).map(h => line(h, pos)).join('')}</ul>${hs.length > 3 ? `<button type="button" class="linkish" data-s3d-homopen="${pos}">${open ? 'Show the top 3' : `Show all ${int(hs.length)}`}</button>` : ''}</td></tr>`; }).join('') +
-      '</tbody></table></div>' + (sites.length > 12 ? `<p><button type="button" class="linkish" data-s3d-more="hom">${T.homAll ? 'Show the first 12 sites' : `Show all ${int(sites.length)} sites`}</button></p>` : '') +
-      '<p class="src">RCSB sequence search (MMseqs2) and entry descriptions, read live. Entries with another protein, RNA or DNA come first, then higher identity; only residues modeled in the deposited chain are listed.</p>';
+    box.innerHTML = (`<p class="sub">${int(sites.length)} of ${int(marks().length)} ${esc(NOUNS)} align to the same ` +
+        `residue, modeled, in ${int(nEntries)} PDB entr${nEntries === 1 ? 'y' : 'ies'} of related proteins (≥ 30% ` +
+        `identity).</p>`) +
+      (`<div class="tbl-card"><table class="tbl s3d-tbl"><thead><tr><th>Site</th><th>Homologous entries with a ` +
+          `modeled residue here</th></tr></thead><tbody>`) +
+      shown.map(pos => { const hs = bySite.get(pos).slice().sort(rank), open = T.homOpen.has(pos); return (`<tr><td><b>${esc(rl(pos))}</b><br><span ` +
+          `class="muted">${int(hs.length)} entr${hs.length === 1 ? 'y' : 'ies'}</span></td><td class="wrapok"><ul ` +
+          `class="s3d-hl">${
+hs.slice(0, open ? hs.length : 3).map(h => line(h, pos)).join('')}</ul>${
+hs.length > 3 ? (`<button type="button" ` +
+          `class="linkish" data-s3d-homopen="${pos}">${
+open ? 'Show the top 3' : `Show all ${int(hs.length)}`}</button>`) : ''}</td></tr>`); }).join('') +
+      '</tbody></table></div>' + (sites.length > 12 ? (`<p><button type="button" class="linkish" ` +
+          `data-s3d-more="hom">${
+T.homAll ? 'Show the first 12 sites' : `Show all ${int(sites.length)} sites`}</button></p>`) : '') +
+      ('<p class="src">RCSB sequence search (MMseqs2) and entry descriptions, read ' +
+'live. Entries with another protein, RNA or DNA come first, then higher ' +
+'identity; only residues modeled in the deposited chain are listed.</p>');
   }
   function showHomolog(h, focus) {
     const acc = T.acc, id = h.entry.toLowerCase(), nmr = /NMR/i.test(h.method || '');
@@ -992,18 +1160,30 @@
   function paintPredicted() {
     const box = document.getElementById('s3d-pred-list'); if (!box) return;
     const base = T.acc.split('-')[0], pv = predPartners(), acc = T.acc;
-    const tableHtml = !SD.predicted ? '' : pv.length ? `<p class="flabel" title="${esc(SD.predicted.help || '')}">${esc(SD.predicted.label || 'Predicted partners at a site')}</p><div class="tbl-card"><table class="tbl s3d-tbl"><thead><tr><th>Partner</th><th>Source</th><th class="num">Score</th><th>${esc(cap(NOUNS))} at the interface</th><th><span class="sr-only">View</span></th></tr></thead><tbody>` +
-      pv.slice(0, T.predAll ? pv.length : 12).map((x, k) => `<tr><td>${byAcc[x.acc] ? `<a href="${esc(K.link('protein', x.acc))}"><b>${esc(x.partner || x.acc)}</b></a>` : `<b>${esc(x.partner || x.acc)}</b>`} <span class="muted mono">${esc(x.acc)}</span></td><td>${esc(x.source || '')}</td><td class="num">${x.score != null ? x.score.toFixed(2) : '–'}</td>` +
-        `<td class="wrapok">${[...x.sites].sort((a, b) => a - b).slice(0, 10).map(p => esc(rl(p)) + (x.dist.has(p) ? ` <span class="muted">${x.dist.get(p).toFixed(1)} Å</span>` : '')).join(', ')}${x.sites.size > 10 ? ` +${x.sites.size - 10}` : ''}</td>` +
+    const tableHtml = !SD.predicted ? '' : pv.length ? (`<p class="flabel" title="${esc(SD.predicted.help || '')}">${
+esc(SD.predicted.label || 'Predicted partners at a site')}</p><div ` +
+        `class="tbl-card"><table class="tbl s3d-tbl"><thead><tr><th>Partner</th><th>Source</th><th class="num">` +
+        `Score</th><th>${esc(cap(NOUNS))} at the interface</th><th><span class="sr-only">View</span></th></tr>` +
+        `</thead><tbody>`) +
+      pv.slice(0, T.predAll ? pv.length : 12).map((x, k) => (`<tr><td>${
+byAcc[x.acc] ? `<a href="${esc(K.link('protein', x.acc))}"><b>${esc(x.partner || x.acc)}</b></a>` : `<b>${esc(x.partner || x.acc)}</b>`} <span class="muted ` +
+          `mono">${esc(x.acc)}</span></td><td>${esc(x.source || '')}</td><td class="num">${
+x.score != null ? x.score.toFixed(2) : '–'}</td>`) +
+        `<td class="wrapok">${
+[...x.sites].sort((a, b) => a - b).slice(0, 10).map(p => esc(rl(p)) + (x.dist.has(p) ? ` <span class="muted">${x.dist.get(p).toFixed(1)} Å</span>` : '')).join(', ')}${
+x.sites.size > 10 ? ` +${x.sites.size - 10}` : ''}</td>` +
         `<td><button type="button" class="btn small" data-s3d-pred="${k}">View</button></td></tr>`).join('') + '</tbody></table></div>' +
-      (pv.length > 12 ? `<p><button type="button" class="linkish" data-s3d-more="pred">${T.predAll ? 'Show the top 12' : `Show all ${int(pv.length)} partners`}</button></p>` : '') + `<p class="src">${esc(tableWords('predicted'))}; models read live.</p>`
+      (pv.length > 12 ? `<p><button type="button" class="linkish" data-s3d-more="pred">${
+T.predAll ? 'Show the top 12' : `Show all ${int(pv.length)} partners`}</button></p>` : '') + (`<p class="src">${esc(tableWords('predicted'))}; models ` +
+          `read live.</p>`)
       : `<p class="muted">The site’s tables name no predicted complex with a ${esc(NOUN)} at the interface.</p>`;
     box.innerHTML = tableHtml + '<div id="s3d-afcx"><p class="muted">Asking AlphaFold DB for predicted complexes…</p></div>';
     T.predList = pv;
     (cache.cx[base] ||= getJson(`https://alphafold.ebi.ac.uk/api/complex/${encodeURIComponent(base)}`).then(d => (Array.isArray(d) ? d : []).filter(x => x.isComplex !== false && (x.uniprotAccession || []).includes(base))
       .sort((a, b) => (b.complexPredictionAccuracy_ipTM || 0) - (a.complexPredictionAccuracy_ipTM || 0)), e => (String(e.message) === '404' ? [] : (delete cache.cx[base], null)))).then(list => {
       const hold = document.getElementById('s3d-afcx'); if (!hold || T.acc !== acc) return;
-      subSum('s3d-pred', [SD.predicted ? `${int(pv.length)} partner${pv.length === 1 ? '' : 's'} at a site` : '', list ? `${int(list.length)} AlphaFold DB complex${list.length === 1 ? '' : 'es'}` : 'AlphaFold DB did not answer'].filter(Boolean).join(' · '));
+      subSum('s3d-pred', [SD.predicted ? `${int(pv.length)} partner${pv.length === 1 ? '' : 's'} at a site` : '', list ? (`${int(list.length)} AlphaFold ` +
+          `DB complex${list.length === 1 ? '' : 'es'}`) : 'AlphaFold DB did not answer'].filter(Boolean).join(' · '));
       if (list === null) { hold.innerHTML = '<p class="muted">AlphaFold DB did not answer. Nothing else on this page depends on it.</p>'; return; }
       if (!list.length) { hold.innerHTML = `<p class="muted">AlphaFold DB has no predicted complex of ${esc(base)}.</p>`; return; }
       T.afcx = list;
@@ -1011,11 +1191,23 @@
       const partners = x => {
         const orgs = x.organismScientificName || [], mine = orgs[(x.uniprotAccession || []).indexOf(base)] || orgs[0];
         const o = (x.uniprotAccession || []).map((a, k) => [a, k]).filter(([a]) => a !== base);
-        return o.length ? o.map(([a, k]) => `${byAcc[a] ? `<a href="${esc(K.link('protein', a))}"><b>${esc((x.gene || [])[k] || a)}</b></a>` : `<b>${esc((x.gene || [])[k] || a)}</b>`} <span class="muted mono">${esc(a)}</span>${orgs[k] && orgs[k] !== mine ? ` <i class="muted">${esc(orgs[k])}</i>` : ''}`).join(', ') : `<b>${esc(T.p.gene || base)}</b> ${kindTag('self', 'homodimer')}`;
+        return o.length ? o.map(([a, k]) => (`${
+byAcc[a] ? `<a href="${esc(K.link('protein', a))}"><b>${esc((x.gene || [])[k] || a)}</b></a>` : `<b>${esc((x.gene || [])[k] || a)}</b>`} <span class="muted ` +
+            `mono">${esc(a)}</span>${
+orgs[k] && orgs[k] !== mine ? ` <i class="muted">${esc(orgs[k])}</i>` : ''}`)).join(', ') : `<b>${esc(T.p.gene || base)}</b> ${kindTag('self', 'homodimer')}`;
       };
-      hold.innerHTML = '<p class="flabel">AlphaFold DB complexes</p><div class="tbl-card"><table class="tbl s3d-tbl"><thead><tr><th>Partner</th><th class="num">ipTM</th><th class="num">pDockQ</th><th class="num">Mean pLDDT</th><th><span class="sr-only">View</span></th></tr></thead><tbody>' +
-        list.map((x, k) => `<tr><td>${partners(x)}</td><td class="num">${num(x.complexPredictionAccuracy_ipTM)}</td><td class="num">${num(x.complexPredictionAccuracy_pDockQ)}</td><td class="num">${x.globalMetricValue != null ? Number(x.globalMetricValue).toFixed(1) : '–'}</td><td><button type="button" class="btn small" data-s3d-afcx="${k}">View</button></td></tr>`).join('') +
-        '</tbody></table></div><p class="src">AlphaFold DB predicted complexes (CC BY 4.0), read live. EMBL-EBI’s guidance: ipTM above 0.8 is a confident prediction, below 0.6 likely a failed one; low pLDDT in disordered regions can lower ipTM even when the complex is right.</p>';
+      hold.innerHTML = ('<p class="flabel">AlphaFold DB complexes</p><div class="tbl-card"><table ' +
+'class="tbl s3d-tbl"><thead><tr><th>Partner</th><th class="num">ipTM</th><th ' +
+'class="num">pDockQ</th><th class="num">Mean pLDDT</th><th><span ' +
+'class="sr-only">View</span></th></tr></thead><tbody>') +
+        list.map((x, k) => (`<tr><td>${partners(x)}</td><td class="num">${num(x.complexPredictionAccuracy_ipTM)}</td><td ` +
+            `class="num">${num(x.complexPredictionAccuracy_pDockQ)}</td><td class="num">${
+x.globalMetricValue != null ? Number(x.globalMetricValue).toFixed(1) : '–'}</td><td>` +
+            `<button type="button" class="btn small" data-s3d-afcx="${k}">View</button></td></tr>`)).join('') +
+        ('</tbody></table></div><p class="src">AlphaFold DB predicted complexes (CC BY ' +
+'4.0), read live. EMBL-EBI’s guidance: ipTM above 0.8 is a confident prediction, ' +
+'below 0.6 likely a failed one; low pLDDT in disordered regions can lower ipTM ' +
+'even when the complex is right.</p>');
     });
   }
   // a predicted model: spec() resolves to {url, chain, names, label, method, scores, link, pae}; numbering is UniProt's
@@ -1041,7 +1233,8 @@
   }
   function viewPred(x) {
     const base = T.acc.split('-')[0], me = T.p.gene || base, other = x.partner || x.acc, first = [...x.sites].sort((a, b) => a - b)[0];
-    if (/^AF-/.test(x.model)) return viewAfdb(x.model, `${x.source || 'AlphaFold DB'}${x.score != null ? ' · score ' + x.score.toFixed(2) : ''}`, first);
+    if (/^AF-/.test(x.model)) return viewAfdb(x.model, `${x.source || 'AlphaFold DB'}${
+x.score != null ? ' · score ' + x.score.toFixed(2) : ''}`, first);
     const pair = /^([A-Z0-9-]+)_([A-Z0-9-]+)$/i.exec(x.model || '');
     const orders = pair ? [[pair[1], pair[2]]] : [[base, x.acc], [x.acc, base]];
     return showModel(() => (function tryOrder(k) {
@@ -1064,7 +1257,8 @@
   // ---- the fold's summary --------------------------------------------------------------------------------------------------
   function summaryText() {
     const mol = T.mol && T.mol.acc === T.acc ? T.mol : null, res = T.res, parts = [];
-    if (mol) parts.push(mol.mode === 'af' ? `AlphaFold model, mean pLDDT ${Number(mol.af.entry.globalMetricValue).toFixed(1)}` : mol.pdb.pred ? mol.pdb.pred.label : `PDB ${UP(mol.pdb.e.id)} chain ${mol.pdb.chain}${mol.pdb.homolog ? ' (homolog)' : ''}`);
+    if (mol) parts.push(mol.mode === 'af' ? `AlphaFold model, mean pLDDT ${
+Number(mol.af.entry.globalMetricValue).toFixed(1)}` : mol.pdb.pred ? mol.pdb.pred.label : `PDB ${UP(mol.pdb.e.id)} chain ${mol.pdb.chain}${mol.pdb.homolog ? ' (homolog)' : ''}`);
     if (res) { const n = pdbMenu(res).length; parts.push(n ? `${int(n)} PDB entr${n === 1 ? 'y' : 'ies'}` : res.failed ? 'PDBe did not answer' : 'no PDB entry'); }
     const c = ev().c || []; if (c.length) { const s = new Set(c.map(x => x[0])); parts.push(`${int(s.size)} ${s.size === 1 ? NOUN : NOUNS} at a PDB interface`); }
     return parts.join(' · ') || 'AlphaFold DB, PDBe and RCSB, live';
@@ -1083,7 +1277,8 @@
   function provenance() {
     const mol = T.mol, src = mol.src, used = ['contacts', 'bound', 'predicted', 'residues'].filter(k => SD.inputs?.[k]?.length && (k === 'residues' ? colourKey().startsWith('ev:') : k === 'predicted' ? !!mol.pdb?.pred && (ev().p || []).length : (ev()[k[0]] || []).length));
     return {
-      structure: { shown: src.what, from: src.url, read_live: `${src.read}, ${src.kind === 'af' ? 'AlphaFold DB' : src.kind === 'pred' ? 'the model’s server' : 'RCSB PDB'}`,
+      structure: { shown: src.what, from: src.url, read_live: `${src.read}, ${
+src.kind === 'af' ? 'AlphaFold DB' : src.kind === 'pred' ? 'the model’s server' : 'RCSB PDB'}`,
         placed_by: src.kind === 'pdb' ? (mol.pdb.homolog ? 'RCSB sequence alignment (MMseqs2) and PDBe observed residues, read live' : mol.pdb.guessed ? 'author numbering (no PDBe mapping for this entry)' : 'PDBe SIFTS mapping and observed residues, read live') : 'UniProt numbering of the model',
         viewer: LIB_CITE },
       site_tables: Object.fromEntries(used.map(k => [k, inputsOf(k).map(x => ({ input: x.name, version: x.version || '', licence: x.licence || '', md5: x.md5 }))])),
@@ -1092,18 +1287,26 @@
   }
   function sourceLine() {
     const pr = provenance(), tables = Object.entries(pr.site_tables);
-    return `Structure: ${pr.structure.shown}, read live from ${pr.structure.read_live.split(', ').slice(1).join(', ')} on ${pr.structure.read_live.split(', ')[0]}; residues placed by ${pr.structure.placed_by}. ` +
-      (tables.length ? `From the site’s tables: ${tables.map(([k, xs]) => `${k} (${xs.map(x => `${dateWords(x.version) || x.input}, MD5 ${x.md5.slice(0, 8)}…`).join('; ')})`).join('; ')}. ` : 'Nothing in this view comes from the site’s own tables except the marks. ') + `Drawn with ${LIB_CITE}.`;
+    return (`Structure: ${pr.structure.shown}, read live from ${
+pr.structure.read_live.split(', ').slice(1).join(', ')} on ${pr.structure.read_live.split(', ')[0]}; residues ` +
+        `placed by ${pr.structure.placed_by}. `) +
+      (tables.length ? `From the site’s tables: ${
+tables.map(([k, xs]) => `${k} (${
+xs.map(x => `${dateWords(x.version) || x.input}, MD5 ${x.md5.slice(0, 8)}…`).join('; ')})`).join('; ')}. ` : 'Nothing in this view comes from the site’s own tables except the marks. ') + `Drawn with ${LIB_CITE}.`;
   }
   function figure() {
     const mol = T.mol, uri = snapshot(3), el = mol.el, w = 720, h = Math.round(w * (el.clientHeight || 480) / (el.clientWidth || 720));
     const legend = markLegend().map(([l, c]) => [c, c, l]);
     const key = colourKey(), opt = colourOptions().find(o => o[0] === key);
-    const sw = keyItems(key), parts = [`<image x="20" y="0" width="${w}" height="${h}" href="${uri}" preserveAspectRatio="xMidYMid meet"/>`];
+    const sw = keyItems(key), parts = [(`<image x="20" y="0" width="${w}" height="${h}" href="${uri}" preserveAspectRatio="xMidYMid ` +
+        `meet"/>`)];
     let x = 20, y = h + 18;
     parts.push(`<text x="20" y="${y}" font-size="10.5" font-weight="bold" fill="#5f6f78">${esc(opt[1])}</text>`); y += 14;
-    sw.forEach(([c, l]) => { const wd = 18 + K.tw(l, 10.5); if (x + wd > 740) { x = 20; y += 15; } parts.push(`<rect x="${x}" y="${y - 9}" width="10" height="10" rx="2" fill="${c}"/><text x="${x + 14}" y="${y}" font-size="10.5" fill="#5f6f78">${esc(l)}</text>`); x += wd + 10; });
-    const f = K.figureFrame({ title: `${T.p.gene || T.acc} (${T.acc}): ${mol.src.what}`, sub: `${shownWords() ? shownWords() + ' ' : ''}${cap(NOUNS)} as side chains with a sphere, colored by ${colourMode().toLowerCase()}; the chain colored by ${opt[1].toLowerCase()}.${mol.focusPos != null ? ' Focused: ' + rl(mol.focusPos) + '.' : ''}`,
+    sw.forEach(([c, l]) => { const wd = 18 + K.tw(l, 10.5); if (x + wd > 740) { x = 20; y += 15; } parts.push((`<rect x="${x}" y="${y - 9}" width="10" ` +
+        `height="10" rx="2" fill="${c}"/><text x="${x + 14}" y="${y}" font-size="10.5" fill="#5f6f78">${esc(l)}</text>`)); x += wd + 10; });
+    const f = K.figureFrame({ title: `${T.p.gene || T.acc} (${T.acc}): ${mol.src.what}`, sub: (`${shownWords() ? shownWords() + ' ' : ''}${cap(NOUNS)} as side ` +
+        `chains with a sphere, colored by ${colourMode().toLowerCase()}; the chain colored by ${opt[1].toLowerCase()}.${
+mol.focusPos != null ? ' Focused: ' + rl(mol.focusPos) + '.' : ''}`),
       legend, body: parts.join(''), bodyH: y + 6, W: 760, note: sourceLine(), extra: { protein: T.acc, ...provenance() } });
     return f;
   }
@@ -1122,7 +1325,10 @@
   }
   function tsv() {
     const mol = T.mol, pdbMode = mol.mode === 'pdb', pdb = mol.pdb, contacts = pdbMode && !pdb.pred ? new Map(liveContacts().map(c => [c.pos, c])) : new Map();
-    const head = K.preamble(`${T.p.gene || T.acc} (${T.acc}) in 3D: ${mol.src.what}`, `each ${NOUN} of ${T.p.gene || T.acc} and where it is in this model: its chain and residue number, whether the model has it, its color category, its confidence where the model has one, what it touches in the model (side chain within 4 Å) and what the site’s tables list for it. ${sourceLine()}`);
+    const head = K.preamble(`${T.p.gene || T.acc} (${T.acc}) in 3D: ${mol.src.what}`, (`each ${NOUN} of ${T.p.gene || T.acc} and where ` +
+        `it is in this model: its chain and residue number, whether the model has it, its color category, its ` +
+        `confidence where the model has one, what it touches in the model (side chain within 4 Å) and what the ` +
+        `site’s tables list for it. ${sourceLine()}`));
     const cols = ['site', 'position', 'model', 'chain', 'model_residue', 'in_model', colourMode().toLowerCase().replace(/\W+/g, '_'), 'plddt', 'touches_in_model', 'pdb_interfaces_in_tables', 'bound_in_this_entry'];
     const rows = marks().map(m => {
       const pos = m[0], auth = pdbMode ? pdb.toAuth.get(pos) : pos, atoms = auth == null ? [] : mol.viewer.selectedAtoms(Object.assign({ resi: auth, atom: 'CA' }, pdbMode ? { chain: pdb.chain } : {}));
@@ -1154,7 +1360,9 @@
       ligands: pdbMode && V.ligands && ligands.size > 0, others: !pdbMode || V.others, bg: V.bg === 'black' ? 'black' : 'white', text: mol.text, fmt: mol.fmt,
       file: `${T.p.gene || T.acc}_${mol.src.tag}_${NOUNS.replace(/\W+/g, '_')}`,
       header: [`${T.p.gene || T.acc} (${T.acc}), ${mol.src.what}`, `Cartoon coloring: ${opt[1]}`, ...(shownWords() ? [shownWords()] : []), `${cap(NOUN)} side chains, ${colourMode()}: ${markLegend().map(([l]) => l).join(', ')}`,
-        sourceLine(), `From ${D.site.name} (${location.href.split('#')[0]}). ${K.CIT?.preferred ? 'Please cite ' + K.CIT.preferred.text.replace(/\.\s*$/, '') + (K.CIT.preferred.doi ? ', doi:' + K.CIT.preferred.doi : '') + ', ' : 'Please cite '}the structure source and the original data sources.`] };
+        sourceLine(), (`From ${D.site.name} (${location.href.split('#')[0]}). ${
+K.CIT?.preferred ? 'Please cite ' + K.CIT.preferred.text.replace(/\.\s*$/, '') + (K.CIT.preferred.doi ? ', doi:' + K.CIT.preferred.doi : '') + ', ' : 'Please cite '}the structure ` +
+            `source and the original data sources.`)] };
   }
   const cxRes = ranges => ranges.map(([a, b]) => (a === b ? '' + a : a >= 0 ? a + '-' + b : Array.from({ length: b - a + 1 }, (_, k) => a + k).join(','))).join(',');
   const pmRes = ranges => ranges.map(([a, b]) => { const e = n => (n < 0 ? '\\' + n : '' + n); return a === b ? e(a) : e(a) + '-' + e(b); }).join('+');
@@ -1185,17 +1393,21 @@
   function pymol(d) {
     const obj = d.src.tag.replace(/[^A-Za-z0-9_]/g, '_'), ch = c => (c ? 'chain ' + c : 'chain ""'), L = d.header.map(x => '# ' + x);
     const tip = siteTip(d), side = sideAtoms(d);
-    L.push(d.src.id ? `fetch ${d.src.id}, ${obj}, async=0` : `load ${d.src.files?.pdb || d.src.files?.cif || d.src.url}, ${obj}${d.src.format ? ', format=' + d.src.format : ''}`);
+    L.push(d.src.id ? `fetch ${d.src.id}, ${obj}, async=0` : `load ${
+d.src.files?.pdb || d.src.files?.cif || d.src.url}, ${obj}${
+d.src.format ? ', format=' + d.src.format : ''}`);
     L.push('hide everything, ' + obj, 'bg_color ' + d.bg, 'set ray_trace_mode, ' + (d.outline ? 1 : 0), 'set cartoon_transparency, 0', 'remove solvent');
     L.push(d.style === 'sticks' ? `show sticks, ${obj} and polymer` : d.style === 'spheres' ? `show spheres, ${obj} and polymer` : 'show cartoon, ' + obj);
     if (d.style === 'trace') L.push('cartoon tube, ' + obj);
     if (!d.others) L.push(`hide everything, ${obj} and not ${ch(d.chain)}`);
     let k = 0; const names = new Map();
-    const nm = hex => { if (!names.has(hex)) { const n = 'pc_c' + (k++); names.set(hex, n); L.push(`set_color ${n}, [${[1, 3, 5].map(i => (parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(3)).join(', ')}]`); } return names.get(hex); };
+    const nm = hex => { if (!names.has(hex)) { const n = 'pc_c' + (k++); names.set(hex, n); L.push(`set_color ${n}, [${
+[1, 3, 5].map(i => (parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(3)).join(', ')}]`); } return names.get(hex); };
     for (const c of d.chains) byCol(c.ranges).forEach((rs, col) => L.push(`color ${nm(col)}, ${obj} and ${ch(c.chain)} and resi ${pmRes(rs)}`));
     if (d.ligands) L.push(`show sticks, ${obj} and organic`, `color green, ${obj} and organic and elem C`);
     byCol(d.sites.map(x => [x.resi, x.resi, x.color])).forEach((rs, col) => {
-      const n = nm(col), spec = `${obj} and ${ch(d.chain)} and resi ${pmRes(rs)} and ${side ? 'name ' + side.join('+') : 'sidechain'}`, tipSel = `${obj} and ${ch(d.chain)} and resi ${pmRes(rs)} and name ${tip}`;
+      const n = nm(col), spec = `${obj} and ${ch(d.chain)} and resi ${pmRes(rs)} and ${
+side ? 'name ' + side.join('+') : 'sidechain'}`, tipSel = `${obj} and ${ch(d.chain)} and resi ${pmRes(rs)} and name ${tip}`;
       L.push('show sticks, ' + spec, `color ${n}, ${spec}`, 'set stick_radius, 0.3, ' + spec, 'show spheres, ' + tipSel, 'set sphere_scale, 0.68, ' + tipSel);
     });
     for (const [r, x] of d.labels) L.push(`label ${obj} and ${ch(d.chain)} and resi ${pmRes([[r, r]])} and name ${tip}, "${x}"`);
@@ -1231,14 +1443,17 @@
       const f = (a, b) => l.slice(a, b).trim(), atom = f(12, 16), chain = f(21, 22) || 'A', comp = f(17, 20), seq = f(22, 26), el = f(76, 78) || atom.replace(/[^A-Za-z]/g, '').slice(0, 1);
       rows.push([f(0, 6), rows.length + 1, el, q(atom), f(16, 17) || '.', comp, chain, l.startsWith('HETATM') ? '.' : seq, f(26, 27) || '?', f(30, 38), f(38, 46), f(46, 54), f(54, 60) || '1.00', f(60, 66) || '0.00', seq, comp, chain, q(atom), model].join(' '));
     }
-    return `data_${String(name).replace(/[^A-Za-z0-9_]/g, '_')}\n#\nloop_\n${cols.map(c => '_atom_site.' + c).join('\n')}\n${rows.join('\n')}\n#\n`;
+    return `data_${
+String(name).replace(/[^A-Za-z0-9_]/g, '_')}\n#\nloop_\n${
+cols.map(c => '_atom_site.' + c).join('\n')}\n${rows.join('\n')}\n#\n`;
   }
   function coords(fmt, btn) {
     const d = sceneData(), url = d.src.files && d.src.files[fmt];
     const text = d.fmt === fmt ? Promise.resolve(d.text) : url ? getText(url) : fmt === 'cif' ? Promise.resolve(pdbToCif(d.text, d.src.tag)) : Promise.reject(new Error('none'));
     if (btn) btn.disabled = true;
     text.then(x => K.download(`${d.file}.${fmt}`, annotated(Object.assign({}, d, { text: x, fmt })), 'chemical/x-' + (fmt === 'cif' ? 'mmcif' : 'pdb')),
-      () => message(fmt === 'pdb' ? `No PDB-format file for ${d.src.what} (RCSB serves very large entries as mmCIF only); use mmCIF.` : 'The mmCIF file could not be fetched.'))
+      () => message(fmt === 'pdb' ? (`No PDB-format file for ${d.src.what} (RCSB serves very large entries as mmCIF ` +
+          `only); use mmCIF.`) : 'The mmCIF file could not be fetched.'))
       .finally(() => { if (btn) btn.disabled = false; });
   }
 
@@ -1314,26 +1529,44 @@
   }
 
   // ---- the section, and its life on the page -----------------------------------------------------------------------------------
-  const sub = (id, title, body) => `<details class="s3d-sub" id="${id}"${T.open[id] ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h4>${esc(title)}</h4><span class="s3d-ssum"></span></summary><div class="s3d-sub-body">${body}</div></details>`;
+  const sub = (id, title, body) => (`<details class="s3d-sub" id="${id}"${T.open[id] ? ' open' : ''}><summary><span ` +
+      `class="pfm" aria-hidden="true"></span><h4>${esc(title)}</h4><span class="s3d-ssum"></span></summary><div ` +
+      `class="s3d-sub-body">${body}</div></details>`);
   function html(p, rec) {
     if (T.acc !== p.acc) reset(p, rec); else { T.rec = rec; T.p = p; }
-    const exp = ['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-s3d-exp="${k}" data-s3d-need disabled title="${k === 'tsv' ? `TSV: each ${esc(NOUN)} in this model, what it touches, and where the view comes from` : `${k.toUpperCase()}: the view as shown, with its key, citation and sources`}">${k.toUpperCase()}</button>`).join('');
+    const exp = ['pdf', 'svg', 'png', 'tsv'].map(k => (`<button type="button" class="exp-btn" data-s3d-exp="${k}" data-s3d-need ` +
+        `disabled title="${
+k === 'tsv' ? (`TSV: each ${esc(NOUN)} in this model, what it touches, and where the ` +
+        `view comes from`) : `${k.toUpperCase()}: the view as shown, with its key, citation and sources`}">${k.toUpperCase()}</button>`)).join('');
     const tools = [['reset', 'Reset view', 'Turn and zoom back to where it started'], ['spin', 'Spin', ''], ['move', 'Move', 'Drag to slide the structure instead of turning it (Ctrl-drag does the same at any time)'], ['expand', 'Expand', 'The structure at the size of the window (Esc returns)']]
-      .map(([k, l, t]) => `<button type="button" class="exp-btn" data-s3d-act="${k}" data-s3d-need disabled${k === 'spin' || k === 'move' || k === 'expand' ? ` aria-pressed="${k === 'move' ? !!T.move : 'false'}"` : ''}${t ? ` title="${esc(t)}"` : ''}>${l}</button>`).join('');
-    const files = [['cxc', 'ChimeraX', 'A ChimeraX script that rebuilds this view'], ['pml', 'PyMOL', 'A PyMOL script that rebuilds this view'], ['cif', 'mmCIF', `The coordinates shown, as mmCIF, with the ${NOUNS} listed`], ['pdb', 'PDB', `The coordinates shown, as PDB, with the ${NOUNS} in REMARK 999`]]
-      .map(([k, l, t]) => `<button type="button" class="exp-btn" data-s3d-file="${k}" data-s3d-need disabled title="${esc(t)}">${l}</button>`).join('');
+      .map(([k, l, t]) => `<button type="button" class="exp-btn" data-s3d-act="${k}" data-s3d-need disabled${
+k === 'spin' || k === 'move' || k === 'expand' ? ` aria-pressed="${k === 'move' ? !!T.move : 'false'}"` : ''}${t ? ` title="${esc(t)}"` : ''}>${l}</button>`).join('');
+    const files = [['cxc', 'ChimeraX', 'A ChimeraX script that rebuilds this view'], ['pml', 'PyMOL', 'A PyMOL script that rebuilds this view'], ['cif', 'mmCIF', (`The coordinates ` +
+        `shown, as mmCIF, with the ${NOUNS} listed`)], ['pdb', 'PDB', `The coordinates shown, as PDB, with the ${NOUNS} in REMARK 999`]]
+      .map(([k, l, t]) => (`<button type="button" class="exp-btn" data-s3d-file="${k}" data-s3d-need disabled ` +
+          `title="${esc(t)}">${l}</button>`)).join('');
     const hasTables = Object.keys(SD.inputs || {}).length > 0;
     return `<div class="s3d" id="s3d"><div class="s3d-head card-head">` +
-      `<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}<span class="s3d-sep"></span>${exp}<span class="s3d-sep"></span>${files}<a class="exp-btn" href="${esc(K.link('method', 'structure'))}" title="Where the structures, the placing of the ${esc(NOUNS)} and the colors come from">Method</a><a class="exp-btn" id="s3d-newtab" href="${esc(soloHref(p.acc))}" target="_blank" rel="noopener" title="The viewer on a page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a></div></div>` +
+      (`<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}<span class="s3d-sep">` +
+          `</span>${exp}<span class="s3d-sep"></span>${files}<a class="exp-btn" href="${esc(K.link('method', 'structure'))}" title="Where ` +
+          `the structures, the placing of the ${esc(NOUNS)} and the colors come from">Method</a><a class="exp-btn" ` +
+          `id="s3d-newtab" href="${esc(soloHref(p.acc))}" target="_blank" rel="noopener" title="The viewer on a ` +
+          `page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a></div></div>`) +
       `<div class="s3d-src" id="s3d-src"></div>` +
       `<div class="s3d-wrap"><div class="s3d-stage"><div class="s3d-viewer" id="s3d-viewer"></div>` +
-      `<div class="s3d-pan" role="group" aria-label="Slide the structure">${[['up', 0, -1, '↑'], ['left', -1, 0, '←'], ['right', 1, 0, '→'], ['down', 0, 1, '↓']].map(([k, x, y, t]) => `<button type="button" class="pan-${k}" data-s3d-pan="${x},${y}" aria-label="Slide ${k}">${t}</button>`).join('')}</div>` +
-      `<p class="s3d-msg" id="s3d-msg" aria-live="polite">${esc(T.msg)}</p></div><div class="s3d-side" id="s3d-side"></div></div>` +
+      `<div class="s3d-pan" role="group" aria-label="Slide the structure">${
+[['up', 0, -1, '↑'], ['left', -1, 0, '←'], ['right', 1, 0, '→'], ['down', 0, 1, '↓']].map(([k, x, y, t]) => (`<button type="button" ` +
+          `class="pan-${k}" data-s3d-pan="${x},${y}" aria-label="Slide ${k}">${t}</button>`)).join('')}</div>` +
+      (`<p class="s3d-msg" id="s3d-msg" aria-live="polite">${esc(T.msg)}</p></div><div class="s3d-side" ` +
+          `id="s3d-side"></div></div>`) +
       '<div class="s3d-controls" id="s3d-controls"></div>' +
       sub('s3d-pdb', 'Experimental structures (PDB)', '<div id="s3d-pdb-list"></div>') +
       sub('s3d-hom', 'Homologous experimental structures', '<div id="s3d-hom-list"></div>') +
       sub('s3d-pred', 'Predicted complexes', `<div id="s3d-pred-list"></div>`) +
-      `<p class="src">Live, by accession: AlphaFold DB, PDBe, RCSB${SD.predicted ? ', ProtVar' : ''}; drawn with ${esc(LIB_CITE)}.${hasTables ? ` What the ${esc(NOUNS)} touch: the site’s tables (${esc([...new Set(Object.keys(SD.inputs).map(tableWords))].join('; '))}).` : ''}</p></div>`;
+      `<p class="src">Live, by accession: AlphaFold DB, PDBe, RCSB${SD.predicted ? ', ProtVar' : ''}; drawn with ${esc(LIB_CITE)}.${
+hasTables ? (` What the ${esc(NOUNS)} touch: the ` +
+          `site’s tables (${
+esc([...new Set(Object.keys(SD.inputs).map(tableWords))].join('; '))}).`) : ''}</p></div>`;
   }
   function reset(p, rec) {
     expand(false);
@@ -1439,7 +1672,8 @@
     ['[data-s3d-homopen]', el => { const k = +el.dataset.s3dHomopen; if (T.homOpen.has(k)) T.homOpen.delete(k); else T.homOpen.add(k); paintHomologs(); }],
     ['[data-s3d-hom]', el => { const h = (T.homList || []).find(x => x.id === el.dataset.s3dHom); if (h) { showHomolog(h, +el.dataset.s3dAt); scrollToViewer(); } }],
     ['[data-s3d-pred]', el => { const x = (T.predList || [])[+el.dataset.s3dPred]; if (x) { viewPred(x); scrollToViewer(); } }],
-    ['[data-s3d-afcx]', el => { const x = (T.afcx || [])[+el.dataset.s3dAfcx]; if (x) { const n = v => (v == null ? '–' : Number(v).toFixed(2)); viewAfdb(x.modelEntityId, `ipTM ${n(x.complexPredictionAccuracy_ipTM)} · pDockQ ${n(x.complexPredictionAccuracy_pDockQ)} · mean pLDDT ${x.globalMetricValue != null ? Number(x.globalMetricValue).toFixed(1) : '–'}`, null); scrollToViewer(); } }],
+    ['[data-s3d-afcx]', el => { const x = (T.afcx || [])[+el.dataset.s3dAfcx]; if (x) { const n = v => (v == null ? '–' : Number(v).toFixed(2)); viewAfdb(x.modelEntityId, `ipTM ${n(x.complexPredictionAccuracy_ipTM)} · pDockQ ${n(x.complexPredictionAccuracy_pDockQ)} · mean pLDDT ${
+x.globalMetricValue != null ? Number(x.globalMetricValue).toFixed(1) : '–'}`, null); scrollToViewer(); } }],
     ['[data-s3d-pan]', (el, e) => { const [x, y] = el.dataset.s3dPan.split(',').map(Number); pan(x, y, e.shiftKey ? 3 : 1); }],
     ['[data-s3d-act]', el => {
       const a = el.dataset.s3dAct, mol = T.mol; if (!mol) return;
@@ -1459,45 +1693,76 @@
   window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (T.mol) { restyle(false); paintControls(); } });
 
   // ---- the Method page's section ---------------------------------------------------------------------------------------------
-  const methodSection = () => `<section id="m-structure"><h3>3D structures</h3><p>A protein page shows the experimental chain that models most of the protein, any PDB entry and chain from its menu, or the AlphaFold DB model. It is read live by UniProt accession when the section opens and drawn with ${esc(LIB_CITE)}. ` +
-    `The experimental chain comes from PDBe’s SIFTS best structures: among chains whose mapping spans most of the protein, the one PDBe says observes most residues. Each ${esc(NOUN)} is placed through its SIFTS segment and PDBe’s observed residues, so only ${esc(NOUNS)} in the deposited model are drawn. A homologous structure (RCSB sequence search, MMseqs2, at least 30% identity) places them through the alignment, and AlphaFold or predicted complex models use UniProt numbering. ` +
-    `Entries that model one of the ${esc(NOUN)}’s chemical components (${esc((SD.components || []).map(c => c.code + ' ' + c.label).join(', ') || 'none named in the profile')}) are found with RCSB’s search.</p>` +
-    `<p>The chain is colored by the site’s regions as on the protein map, by the residue evidence the site file names, or by model confidence, chain, position, secondary structure, charge or Kyte–Doolittle hydropathy. The ${esc(NOUNS)} take the map’s color. Contacts are side-chain heavy atoms within 4 Å of another chain, RNA or DNA, computed in the browser on the coordinates shown.</p>` +
-    (Object.keys(SD.inputs || {}).length ? `<p>What the ${esc(NOUNS)} touch, entry by entry, comes from the site’s tables: ${Object.entries(SD.inputs).map(([k, ns]) => `${esc(k)}: ${esc(ns.map(n => (dateWords(D.inputs?.[n]?.version) || n) + (D.run?.inputs?.[n]?.md5 ? ` (MD5 ${D.run.inputs[n].md5})` : '')).join('; '))}`).join('; ')}. Each export says which parts came live and which from these tables.</p>` : '') +
-    '<p>Downloads: the view as a figure (PDF, SVG, or PNG at three times screen resolution) with its key, citation and sources; a TSV of the marks in the model; ChimeraX and PyMOL scripts that rebuild the view; and the coordinates (mmCIF, PDB) with the marks listed.</p></section>';
+  const methodSection = () => (`<section id="m-structure"><h3>3D structures</h3><p>A protein page shows the ` +
+      `experimental chain that models most of the protein, any PDB entry and chain from its menu, or the AlphaFold ` +
+      `DB model. It is read live by UniProt accession when the section opens and drawn with ${esc(LIB_CITE)}. `) +
+    (`The experimental chain comes from PDBe’s SIFTS best structures: among chains whose mapping spans most of the ` +
+        `protein, the one PDBe says observes most residues. Each ${esc(NOUN)} is placed through its SIFTS segment ` +
+        `and PDBe’s observed residues, so only ${esc(NOUNS)} in the deposited model are drawn. A homologous ` +
+        `structure (RCSB sequence search, MMseqs2, at least 30% identity) places them through the alignment, and ` +
+        `AlphaFold or predicted complex models use UniProt numbering. `) +
+    (`Entries that model one of the ${esc(NOUN)}’s chemical components (${
+esc((SD.components || []).map(c => c.code + ' ' + c.label).join(', ') || 'none named in the profile')}) are found ` +
+        `with RCSB’s search.</p>`) +
+    (`<p>The chain is colored by the site’s regions as on the protein map, by the residue evidence the site file ` +
+        `names, or by model confidence, chain, position, secondary structure, charge or Kyte–Doolittle hydropathy. ` +
+        `The ${esc(NOUNS)} take the map’s color. Contacts are side-chain heavy atoms within 4 Å of another chain, ` +
+        `RNA or DNA, computed in the browser on the coordinates shown.</p>`) +
+    (Object.keys(SD.inputs || {}).length ? (`<p>What the ${esc(NOUNS)} touch, entry by entry, comes from the site’s ` +
+        `tables: ${
+Object.entries(SD.inputs).map(([k, ns]) => `${esc(k)}: ${
+esc(ns.map(n => (dateWords(D.inputs?.[n]?.version) || n) + (D.run?.inputs?.[n]?.md5 ? ` (MD5 ${D.run.inputs[n].md5})` : '')).join('; '))}`).join('; ')}. Each export ` +
+        `says which parts came live and which from these tables.</p>`) : '') +
+    ('<p>Downloads: the view as a figure (PDF, SVG, or PNG at three times screen ' +
+'resolution) with its key, citation and sources; a TSV of the marks in the ' +
+'model; ChimeraX and PyMOL scripts that rebuild the view; and the coordinates ' +
+'(mmCIF, PDB) with the marks listed.</p></section>');
   (K.methodParts ||= []).push(methodSection);
 
   // ---- the module's styles -------------------------------------------------------------------------------------------------------
   const css = document.createElement('style');
   css.id = 'kit-3d-css';
-  css.textContent = `
+  css.textContent = (`
 .s3d .s3d-head { display: grid; gap: .4rem; }
 .s3d .s3d-head .sub { margin: 0; color: var(--muted); font-size: .88rem; }
 .s3d-tools { border-top: 0; padding-top: 0; }
 .s3d-sep { width: .6rem; }
-.s3d-tools .exp-btn[aria-pressed="true"] { background: var(--brand-ink); color: var(--surface); border-color: var(--brand-ink); }
+.s3d-tools .exp-btn[aria-pressed="true"] { background: var(--brand-ink); color: var(--surface); border-color: ` +
+    `var(--brand-ink); }
 .s3d-src, .s3d-row { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .9rem; margin: .55rem 0; }
-.s3d-src .seg-l { padding: .25rem .6rem; font-size: .82rem; color: var(--muted); border-right: 1px solid var(--line-strong); }
+.s3d-src .seg-l { padding: .25rem .6rem; font-size: .82rem; color: var(--muted); border-right: 1px solid ` +
+    `var(--line-strong); }
 .s3d-src .seg button:disabled { opacity: .55; cursor: default; }
 .s3d-ctl { display: inline-flex; align-items: center; gap: .35rem; font-size: .82rem; color: var(--muted); }
-.s3d-ctl select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: .35rem; padding: .18rem .35rem; max-width: 100%; }
+.s3d-ctl select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid ` +
+    `var(--line-strong); border-radius: .35rem; padding: .18rem .35rem; max-width: 100%; }
 .s3d-entry { max-width: 100%; min-width: 0; }
 .s3d-entry select { max-width: min(34rem, 100%); min-width: 0; flex: 1 1 auto; }
-.s3d-chip { border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: .18rem .7rem; font-size: .8rem; cursor: pointer; }
-.s3d-chip[aria-pressed="true"] { background: var(--brand-ink); border-color: var(--brand-ink); color: var(--surface); }
-.s3d-key { display: flex; flex-wrap: wrap; gap: .3rem .9rem; font-size: .78rem; color: var(--ink-2); align-items: center; margin: .3rem 0 .6rem; }
+.s3d-chip { border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-2); border-radius: ` +
+    `999px; padding: .18rem .7rem; font-size: .8rem; cursor: pointer; }
+.s3d-chip[aria-pressed="true"] { background: var(--brand-ink); border-color: var(--brand-ink); color: ` +
+    `var(--surface); }
+.s3d-key { display: flex; flex-wrap: wrap; gap: .3rem .9rem; font-size: .78rem; color: var(--ink-2); align-items: ` +
+    `center; margin: .3rem 0 .6rem; }
 .s3d-key .lt { font-weight: 600; color: var(--muted); }
-.s3d-key i.sq, .s3d-key i.dot { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .3rem; vertical-align: -1px; }
+.s3d-key i.sq, .s3d-key i.dot { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; ` +
+    `margin-right: .3rem; vertical-align: -1px; }
 .s3d-key i.dot, .s3d-site i.dot { border-radius: 50%; }
-.s3d-key i.grad { display: inline-block; width: 4rem; height: .6rem; margin: 0 .35rem; border-radius: 2px; vertical-align: 0; }
+.s3d-key i.grad { display: inline-block; width: 4rem; height: .6rem; margin: 0 .35rem; border-radius: 2px; ` +
+    `vertical-align: 0; }
 .s3d-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 19rem; gap: 1rem; align-items: start; }
 .s3d-stage { position: relative; }
-.s3d-viewer { position: relative; width: 100%; height: 30rem; border: 1px solid var(--line); border-radius: .7rem; overflow: hidden; background: var(--surface-2); outline: none; }
+.s3d-viewer { position: relative; width: 100%; height: 30rem; border: 1px solid var(--line); border-radius: .7rem; ` +
+    `overflow: hidden; background: var(--surface-2); outline: none; }
 .s3d-viewer:focus-visible { box-shadow: 0 0 0 3px var(--focus-ring); }
-.s3d-ph { display: grid; place-items: center; height: 100%; padding: 1rem; text-align: center; color: var(--muted); font-size: .9rem; }
-.s3d-pan { position: absolute; top: .6rem; right: .6rem; display: grid; grid-template-columns: repeat(3, 1.8rem); grid-template-rows: repeat(3, 1.8rem); gap: .15rem; }
-.s3d-pan button { border: 1px solid var(--line-strong); background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--ink-2); border-radius: .35rem; cursor: pointer; font-size: .85rem; padding: 0; }
-.s3d-pan .pan-up { grid-column: 2; grid-row: 1; } .s3d-pan .pan-left { grid-column: 1; grid-row: 2; } .s3d-pan .pan-right { grid-column: 3; grid-row: 2; } .s3d-pan .pan-down { grid-column: 2; grid-row: 3; }
+.s3d-ph { display: grid; place-items: center; height: 100%; padding: 1rem; text-align: center; color: var(--muted);` +
+    ` font-size: .9rem; }
+.s3d-pan { position: absolute; top: .6rem; right: .6rem; display: grid; grid-template-columns: repeat(3, 1.8rem); ` +
+    `grid-template-rows: repeat(3, 1.8rem); gap: .15rem; }
+.s3d-pan button { border: 1px solid var(--line-strong); background: color-mix(in srgb, var(--surface) 88%, ` +
+    `transparent); color: var(--ink-2); border-radius: .35rem; cursor: pointer; font-size: .85rem; padding: 0; }
+.s3d-pan .pan-up { grid-column: 2; grid-row: 1; } .s3d-pan .pan-left { grid-column: 1; grid-row: 2; } .s3d-pan ` +
+    `.pan-right { grid-column: 3; grid-row: 2; } .s3d-pan .pan-down { grid-column: 2; grid-row: 3; }
 .s3d-msg { min-height: 1.1rem; margin: .35rem 0 0; font-size: .82rem; color: var(--muted); }
 .s3d-side { font-size: .85rem; color: var(--ink-2); max-height: 34rem; overflow: auto; }
 .s3d-side .flabel { font-size: .78rem; font-weight: 600; color: var(--muted); margin: .7rem 0 .25rem; }
@@ -1507,20 +1772,29 @@
 .s3d-chains { list-style: none; margin: 0; padding: 0; display: grid; gap: .2rem; }
 .s3d-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; }
 .s3d-chips, .s3d-tags { display: flex; flex-wrap: wrap; gap: .3rem; }
-.s3d-site, .s3d-entry-btn { border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); border-radius: 999px; padding: .1rem .55rem; font-size: .78rem; cursor: pointer; display: inline-flex; align-items: center; gap: .25rem; }
+.s3d-site, .s3d-entry-btn { border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); ` +
+    `border-radius: 999px; padding: .1rem .55rem; font-size: .78rem; cursor: pointer; display: inline-flex; ` +
+    `align-items: center; gap: .25rem; }
 .s3d-entry-btn { border-radius: .35rem; font-family: var(--font-mono); padding: .05rem .4rem; }
 .s3d-site.on, .s3d-entry-btn.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .s3d-site i.dot { width: .6rem; height: .6rem; display: inline-block; }
-.s3d-tag { display: inline-block; border-radius: .3rem; padding: 0 .35rem; font-size: .72rem; font-weight: 600; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); white-space: nowrap; }
-.s3d-tag.k-rna { background: color-mix(in srgb, #7B4FBF 16%, var(--surface)); color: color-mix(in srgb, #7B4FBF 70%, var(--ink)); border-color: color-mix(in srgb, #7B4FBF 35%, var(--surface)); }
-.s3d-tag.k-dna, .s3d-tag.k-hybrid { background: color-mix(in srgb, #B7791F 18%, var(--surface)); color: color-mix(in srgb, #B7791F 70%, var(--ink)); border-color: color-mix(in srgb, #B7791F 35%, var(--surface)); }
-.s3d-tag.k-protein { background: color-mix(in srgb, #0E7490 14%, var(--surface)); color: color-mix(in srgb, #0E7490 70%, var(--ink)); border-color: color-mix(in srgb, #0E7490 35%, var(--surface)); }
+.s3d-tag { display: inline-block; border-radius: .3rem; padding: 0 .35rem; font-size: .72rem; font-weight: 600; ` +
+    `background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); white-space: nowrap; }
+.s3d-tag.k-rna { background: color-mix(in srgb, #7B4FBF 16%, var(--surface)); color: color-mix(in srgb, #7B4FBF ` +
+    `70%, var(--ink)); border-color: color-mix(in srgb, #7B4FBF 35%, var(--surface)); }
+.s3d-tag.k-dna, .s3d-tag.k-hybrid { background: color-mix(in srgb, #B7791F 18%, var(--surface)); color: ` +
+    `color-mix(in srgb, #B7791F 70%, var(--ink)); border-color: color-mix(in srgb, #B7791F 35%, var(--surface)); }
+.s3d-tag.k-protein { background: color-mix(in srgb, #0E7490 14%, var(--surface)); color: color-mix(in srgb, ` +
+    `#0E7490 70%, var(--ink)); border-color: color-mix(in srgb, #0E7490 35%, var(--surface)); }
 .s3d-tag.k-self { background: color-mix(in srgb, #7FA9B6 22%, var(--surface)); color: var(--ink-2); }
-.s3d-tag.k-mark { background: color-mix(in srgb, #B4485F 16%, var(--surface)); color: color-mix(in srgb, #B4485F 75%, var(--ink)); border-color: color-mix(in srgb, #B4485F 35%, var(--surface)); }
-.s3d-tag.k-clash { background: color-mix(in srgb, #D64545 16%, var(--surface)); color: color-mix(in srgb, #D64545 75%, var(--ink)); }
+.s3d-tag.k-mark { background: color-mix(in srgb, #B4485F 16%, var(--surface)); color: color-mix(in srgb, #B4485F ` +
+    `75%, var(--ink)); border-color: color-mix(in srgb, #B4485F 35%, var(--surface)); }
+.s3d-tag.k-clash { background: color-mix(in srgb, #D64545 16%, var(--surface)); color: color-mix(in srgb, #D64545 ` +
+    `75%, var(--ink)); }
 .s3d-stack { display: flex; height: .7rem; border-radius: .25rem; overflow: hidden; margin: .2rem 0; }
 .s3d-legend { list-style: none; margin: .25rem 0; padding: 0; display: grid; gap: .1rem; font-size: .78rem; }
-.s3d-legend i { display: inline-block; width: .7rem; height: .7rem; margin-right: .35rem; border-radius: 2px; vertical-align: -1px; }
+.s3d-legend i { display: inline-block; width: .7rem; height: .7rem; margin-right: .35rem; border-radius: 2px; ` +
+    `vertical-align: -1px; }
 .s3d-legend b { float: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 .s3d-focus { margin: 0 0 .5rem; padding: 0 0 .5rem; border-bottom: 1px dashed var(--line); }
 .s3d-focus > .flabel:first-child { margin-top: 0; }
@@ -1529,10 +1803,12 @@
 .s3d .small { font-size: .8rem; }
 .s3d .src { font-size: .75rem; color: var(--muted); }
 .s3d-sub { border: 1px solid var(--line); border-radius: .7rem; margin: .8rem 0 0; background: var(--surface); }
-.s3d-sub > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: .6rem; padding: .6rem .9rem; }
+.s3d-sub > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: .6rem; padding: ` +
+    `.6rem .9rem; }
 .s3d-sub > summary::-webkit-details-marker { display: none; }
 .s3d-sub > summary h4 { margin: 0; font-size: .95rem; }
-.s3d-sub > summary .pfm::before { content: '+'; display: inline-grid; place-items: center; width: 1.15rem; height: 1.15rem; border: 1.5px solid var(--line-strong); border-radius: 50%; color: var(--muted); font-size: .8rem; }
+.s3d-sub > summary .pfm::before { content: '+'; display: inline-grid; place-items: center; width: 1.15rem; height: ` +
+    `1.15rem; border: 1.5px solid var(--line-strong); border-radius: 50%; color: var(--muted); font-size: .8rem; }
 .s3d-sub[open] > summary .pfm::before { content: '−'; border-color: var(--accent); color: var(--accent); }
 .s3d-ssum { color: var(--muted); font-size: .82rem; }
 .s3d-sub-body { padding: 0 .9rem .8rem; }
@@ -1540,15 +1816,18 @@
 .s3d-tbl tr.on td { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
 .s3d-what { display: grid; font-size: .78rem; color: var(--ink-2); max-width: 36rem; white-space: normal; }
 .s3d-hl { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
-.solo3d #view *:not(:has(#s3d)):not(#s3d):not(#s3d *), .solo3d .hero, .solo3d .toolbar, .solo3d .rail, .solo3d footer.site, .solo3d .skip, .solo3d #s3d-newtab { display: none !important; }
+.solo3d #view *:not(:has(#s3d)):not(#s3d):not(#s3d *), .solo3d .hero, .solo3d .toolbar, .solo3d .rail, .solo3d ` +
+    `footer.site, .solo3d .skip, .solo3d #s3d-newtab { display: none !important; }
 .solo3d #s3d { position: fixed; inset: 0; z-index: 200; overflow: auto; padding: 1rem; background: var(--bg); }
-.s3d-dialog { width: 96vw; max-width: 96vw; height: 94vh; max-height: 94vh; border: 1px solid var(--line); border-radius: .8rem; background: var(--surface); color: var(--ink); padding: 1rem; }
+.s3d-dialog { width: 96vw; max-width: 96vw; height: 94vh; max-height: 94vh; border: 1px solid var(--line); ` +
+    `border-radius: .8rem; background: var(--surface); color: var(--ink); padding: 1rem; }
 .s3d-dialog .s3d-viewer { height: calc(94vh - 13rem); }
 .s3d-dialog .s3d-side { max-height: calc(94vh - 13rem); }
 .s3d-dialog::backdrop { background: rgba(0, 0, 0, .45); }
-@media (max-width: 860px) { .s3d-wrap { grid-template-columns: minmax(0, 1fr); } .s3d-viewer { height: 22rem; } .s3d-side { max-height: none; } .s3d-entry { width: 100%; } }
+@media (max-width: 860px) { .s3d-wrap { grid-template-columns: minmax(0, 1fr); } .s3d-viewer { height: 22rem; } ` +
+    `.s3d-side { max-height: none; } .s3d-entry { width: 100%; } }
 @media print { .s3d-pan, .s3d-tools, .s3d-controls, .s3d-src { display: none; } }
-`;
+`);
   document.head.appendChild(css);
 
   K.s3d = { html, after, summary: () => 'AlphaFold DB, PDBe and RCSB, live', show: show3d };

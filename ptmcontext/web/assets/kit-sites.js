@@ -23,7 +23,8 @@
   const colourAttr = Object.keys(SPECS).find(n => SPECS[n].colour && SPECS[n].kind === 'category') || null;
   const short = (n, v) => (SV.short?.[n] || {})[v] ?? K.sel.valueLabel(n, v);
   const tagAids = () => AN().filter(a => A[a]?.shape === 'flags' && (!SV.tags || SV.tags[a]));     // the site file's, else every flags question
-  const siteName = (p, pos, m) => (K.prot?.siteLabel ? K.prot.siteLabel(p.acc, pos) : `${m ? (m[4] || '')[Math.floor((m[4] || '').length / 2)] || '' : ''}${pos}`);
+  const siteName = (p, pos, m) => (K.prot?.siteLabel ? K.prot.siteLabel(p.acc, pos) : `${
+m ? (m[4] || '')[Math.floor((m[4] || '').length / 2)] || '' : ''}${pos}`);
   const dash = '<span class="muted">—</span>';
 
   // ---- each protein's tables (website.tables), loaded as rows need them -------------------------------------------
@@ -68,16 +69,25 @@
   const SITE_TAGS = SV.site_tags || null;
   const fixed = () => [
     { id: 'protein', label: 'Protein', text: true, key: m => K.tables.pLabel(pr(m[0])).toLowerCase(),
-      cell: m => { const p = pr(m[0]); return `<a class="gene" href="${esc(K.link('protein', p.acc))}">${esc(K.tables.pLabel(p))}</a><span class="acc mono">${esc(p.acc)}</span>`; } },
+      cell: m => { const p = pr(m[0]); return (`<a class="gene" href="${esc(K.link('protein', p.acc))}">${esc(K.tables.pLabel(p))}</a><span ` +
+          `class="acc mono">${esc(p.acc)}</span>`); } },
     { id: 'site', label: 'Site', text: true, key: m => m[1],
       cell: m => { const p = pr(m[0]), num = K.prot?.numbering?.(p.acc), tg = SITE_TAGS ? vals(m, SITE_TAGS.attribute).filter(v => (SITE_TAGS.values || {})[v]) : [];
-        return `<a class="mono" href="${esc(K.link('protein', p.acc + '/' + m[1]))}"><b>${esc(siteName(p, m[1], m))}</b></a>${num ? `<span class="acc">UniProt ${esc((m[4] || '')[7] || '')}${m[1]}</span>` : ''}` +
+        return `<a class="mono" href="${
+esc(K.link('protein', p.acc + '/' + m[1]))}"><b>${esc(siteName(p, m[1], m))}</b></a>${
+num ? (`<span class="acc">` +
+            `UniProt ${esc((m[4] || '')[7] || '')}${m[1]}</span>`) : ''}` +
           (LC && K.shown.counted(raw(m)) ? `<div class="tags">${K.shown.tag(raw(m), false)}</div>` : '') +
-          (tg.length ? `<div class="tags">${tg.map(v => `<span class="tag t-flag" title="${esc(K.sel.valueLabel(SITE_TAGS.attribute, v))}">${esc(SITE_TAGS.values[v])}</span>`).join('')}</div>` : ''); } },
+          (tg.length ? `<div class="tags">${
+tg.map(v => `<span class="tag t-flag" title="${
+esc(K.sel.valueLabel(SITE_TAGS.attribute, v))}">${esc(SITE_TAGS.values[v])}</span>`).join('')}</div>` : ''); } },
     ...(colourAttr ? [{ id: 'state', label: SV.state_label || 'State', key: m => { const o = Object.keys(SPECS[colourAttr].values || {}), v = vals(m, colourAttr)[0] ?? ''; const k = o.indexOf(v); return v === '' ? null : k < 0 ? 0 : o.length - k; },
       cell: m => { const v = vals(m, colourAttr)[0] ?? ''; return `<span class="sdot" title="${esc(K.sel.valueLabel(colourAttr, v))}"><i style="--c:${K.map.attrColour(colourAttr, v)}"></i>${esc(short(colourAttr, v))}</span>`; } }] : []),
-    { id: 'window', label: `Window ±7${tagAids().length ? ' · ' + (SV.window?.label || tagAids().map(a => (A[a]?.title || a).toLowerCase()).join(', ')) : ''}`, text: true, key: m => m[4] || null, cls: 'cwin',
-      cell: m => `<span class="mono">${winHtml(m)}</span>${tagAids().map(a => { const t = flagTags(a, m); return t ? `<div class="tags win-mot">${t}</div>` : ''; }).join('')}` },
+    { id: 'window', label: `Window ±7${
+tagAids().length ? ' · ' + (SV.window?.label || tagAids().map(a => (A[a]?.title || a).toLowerCase()).join(', ')) : ''}`, text: true, key: m => m[4] || null, cls: 'cwin',
+      cell: m => `<span class="mono">${winHtml(m)}</span>${
+tagAids().map(a => { const t = flagTags(a, m); return t ? (`<div class="tags ` +
+          `win-mot">${t}</div>`) : ''; }).join('')}` },
   ];
   // optional columns: the site file's (website.sites.table), else the protein page's sites table's, else the attributes
   // it colors or links and its first question with classes
@@ -111,14 +121,21 @@
   function optCell(c, m) {
     if (c.attribute) {
       const s = SPECS[c.attribute], v = vals(m, c.attribute);
-      if (s.kind === 'category' && s.colour) return `<span class="sdot"><i style="--c:${K.map.attrColour(c.attribute, v[0] ?? '')}"></i>${esc(short(c.attribute, v[0] ?? ''))}</span>`;
+      if (s.kind === 'category' && s.colour) return `<span class="sdot"><i style="--c:${
+K.map.attrColour(c.attribute, v[0] ?? '')}"></i>${esc(short(c.attribute, v[0] ?? ''))}</span>`;
       if (s.kind === 'list') {                 // the original's chips: two at most, one per line, then "+n" (all on hover)
         const xs = v.filter(Boolean), links = SD().attribute_links?.[c.attribute] || {}, shown = xs.slice(0, 2);
-        return xs.length ? `<div class="tags src-tags">${shown.map(x => { const h = K.sel.listHtml(c.attribute, [x], [links[x]], pr(m[0]).acc, false); return h.startsWith('<a ') ? h : `<span>${h}</span>`; }).join('')}${xs.length > 2 ? `<span class="tag more" title="${esc(xs.slice(2).map(x => short(c.attribute, x)).join('\n'))}">+${xs.length - 2}</span>` : ''}</div>` : dash;
+        return xs.length ? `<div class="tags src-tags">${
+shown.map(x => { const h = K.sel.listHtml(c.attribute, [x], [links[x]], pr(m[0]).acc, false); return h.startsWith('<a ') ? h : `<span>${h}</span>`; }).join('')}${
+xs.length > 2 ? (`<span class="tag ` +
+            `more" title="${
+esc(xs.slice(2).map(x => short(c.attribute, x)).join('\n'))}">+${xs.length - 2}</span>`) : ''}</div>` : dash;
       }
       return v.filter(x => x !== '').length ? esc(v.map(x => short(c.attribute, x)).join(', ')) : dash;
     }
-    if (c.analyses) return c.analyses.map((a, k) => `<span class="${k ? 'muted' : ''}" title="${esc(K.tables.classes(m, a).map(x => (A[a]?.help || {})[x] || '').filter(Boolean).join('; '))}">${esc(K.tables.classes(m, a).map(x => K.sel.classLabel(a, x)).join(', '))}</span>`).join('<br>');
+    if (c.analyses) return c.analyses.map((a, k) => `<span class="${k ? 'muted' : ''}" title="${
+esc(K.tables.classes(m, a).map(x => (A[a]?.help || {})[x] || '').filter(Boolean).join('; '))}">${
+esc(K.tables.classes(m, a).map(x => K.sel.classLabel(a, x)).join(', '))}</span>`).join('<br>');
     if ((c.show || []).length === 1 && c.show[0] === 'nearest') { const n = nearest(m); return n == null ? dash : `${int(n)} aa`; }
     const p = pr(m[0]);
     let dtb;
@@ -132,7 +149,9 @@
       if (K.density.compact()) {
         if (k === 'tags') return K.card.tags(ctx, -1);
         if (k === 'calls') return K.card.calls(ctx, true);
-        if (k === 'sequences') { const ws = K.card.windowsOf(ctx) || []; return ws.length ? `<span class="tag t-a more" title="${esc(ws.map(w => w.names[0] || '').filter(Boolean).join('\n'))}">${ws.length} bound</span>` : ''; }
+        if (k === 'sequences') { const ws = K.card.windowsOf(ctx) || []; return ws.length ? (`<span class="tag t-a ` +
+            `more" title="${
+esc(ws.map(w => w.names[0] || '').filter(Boolean).join('\n'))}">${ws.length} bound</span>`) : ''; }
         if (k === 'around') return K.card.around(ctx, 'brief');
       }
       return k === 'tags' ? K.card.tags(ctx, 4) : k === 'sequences' || k === 'around' || k === 'states' ? K.card[k](ctx, true) : K.card[k](ctx);
@@ -143,7 +162,9 @@
   function nearestDomain(c) {
     const nd = D.protein_view?.table?.nearest_domain; if (!nd || !K.card.has(nd.table)) return '';
     const r = K.card.at(c.tb, nd.table, c.pos)[0]; if (!r || !r[nd.name]) return '';
-    return `${esc(r[nd.name])}<br><span class="muted">${r[nd.distance] === '0' ? esc((nd.sides || {}).inside || 'inside') : `${esc(r[nd.distance])} aa ${esc((nd.sides || {})[r[nd.side]] || r[nd.side] || '')}`}</span>`;
+    return `${esc(r[nd.name])}<br><span class="muted">${
+r[nd.distance] === '0' ? esc((nd.sides || {}).inside || 'inside') : `${esc(r[nd.distance])} aa ${
+esc((nd.sides || {})[r[nd.side]] || r[nd.side] || '')}`}</span>`;
   }
   function optKey(c, m) {
     if (c.attribute) { const s = SPECS[c.attribute], v = vals(m, c.attribute).filter(x => x !== '');
@@ -167,10 +188,16 @@
   const lcVals = (m, n) => { const v = String(K.cols.markAttr(m.lc.mk, n) ?? ''); return v === '' ? [] : SPECS[n]?.kind === 'list' ? v.split(SPECS[n].separator || '; ') : [v]; };
   function lcCell(c, m) {
     const p = m.lc.p;
-    if (c.id === 'protein') return `<a class="gene" href="${esc(K.link('protein', p.acc))}">${esc(K.tables.pLabel(p))}</a><span class="acc mono">${esc(p.acc)}</span>`;
-    if (c.id === 'site') return `<a class="mono" href="${esc(K.link('protein', p.acc + '/' + m[1]))}"><b>${esc(K.prot?.siteLabel ? K.prot.siteLabel(p.acc, m[1]) : `${(m[4] || '')[7] || ''}${m[1]}`)}</b></a><div class="tags">${K.shown.tag(m.lc.mk, true)}</div><span class="acc">${esc(K.shown.row())}</span>`;
+    if (c.id === 'protein') return (`<a class="gene" href="${esc(K.link('protein', p.acc))}">${esc(K.tables.pLabel(p))}</a><span ` +
+        `class="acc mono">${esc(p.acc)}</span>`);
+    if (c.id === 'site') return (`<a class="mono" href="${
+esc(K.link('protein', p.acc + '/' + m[1]))}"><b>${
+esc(K.prot?.siteLabel ? K.prot.siteLabel(p.acc, m[1]) : `${(m[4] || '')[7] || ''}${m[1]}`)}</b></a><div ` +
+        `class="tags">${K.shown.tag(m.lc.mk, true)}</div><span class="acc">${esc(K.shown.row())}</span>`);
     if (c.id === 'state') { const v = lcVals(m, colourAttr)[0] ?? ''; return `<span class="sdot" title="${esc(K.sel.valueLabel(colourAttr, v))}"><i style="--c:${K.map.attrColour(colourAttr, v)}"></i>${esc(short(colourAttr, v))}</span>`; }
-    if (c.id === 'window') { const w = m[4] || '', k = Math.floor(w.length / 2); return `<span class="mono"><span class="win swin">${esc(w.slice(0, k)).replace(/[_-]/g, '·')}<b class="wc">${esc(w[k] || '')}</b>${esc(w.slice(k + 1)).replace(/[_-]/g, '·')}</span></span>`; }
+    if (c.id === 'window') { const w = m[4] || '', k = Math.floor(w.length / 2); return (`<span class="mono"><span ` +
+        `class="win swin">${esc(w.slice(0, k)).replace(/[_-]/g, '·')}<b class="wc">${esc(w[k] || '')}</b>${
+esc(w.slice(k + 1)).replace(/[_-]/g, '·')}</span></span>`); }
     if (c.attribute) {
       const sp = SPECS[c.attribute], v = lcVals(m, c.attribute); if (!v.length) return dash;
       if (sp.kind === 'category' && sp.colour) return `<span class="sdot"><i style="--c:${K.map.attrColour(c.attribute, v[0])}"></i>${esc(short(c.attribute, v[0]))}</span>`;
@@ -190,7 +217,9 @@
   // a counted mark of the selection as a protein record lays it out (its attribute values as text), for its tag
   const raw = m => [m[1], m[4], [], (D.mark_attributes || []).map(n => K.tables.attrStr(m, n))];
   // the line under the sites' number: how many more are shown, and the toggle
-  const lcLine = () => (LC ? `<p class="cx lc-line"><label class="vswitch" title="${esc(K.shown.cfg.help || '')}"><input type="checkbox" data-sites-shown${T.shown ? ' checked' : ''}${K.sel.active() ? ' disabled' : ''}> Show ${int(K.shown.n())} more: ${esc(K.shown.row())}${K.sel.active() ? ' (not with a selection)' : ''}</label></p>` : '');
+  const lcLine = () => (LC ? (`<p class="cx lc-line"><label class="vswitch" title="${esc(K.shown.cfg.help || '')}"><input ` +
+      `type="checkbox" data-sites-shown${T.shown ? ' checked' : ''}${K.sel.active() ? ' disabled' : ''}> Show ${int(K.shown.n())} more: ${esc(K.shown.row())}${
+K.sel.active() ? ' (not with a selection)' : ''}</label></p>`) : '');
 
   // ---- the rows ---------------------------------------------------------------------------------------------------
   function allCols() {
@@ -216,8 +245,11 @@
       const ti = AT.indexOf(n), counts = {}; idx.forEach(i => SD().marks[i][3][ti].forEach(k => { counts[k] = (counts[k] || 0) + 1; }));
       const on = new Set(S.f['t:' + n] || []), order = Object.keys(SPECS[n].values || {});
       const vs = SD().attributes[n].map((v, k) => [v, counts[k] || 0]).sort((x, y) => (order.indexOf(x[0]) + 1 || 99) - (order.indexOf(y[0]) + 1 || 99));
-      return `<div class="quick"><span class="flabel">${esc(SPECS[n].label)}</span><button type="button" class="fchip" data-f-all="t:${esc(n)}" aria-pressed="${!on.size}">All <span class="muted">${int(idx.length)}</span></button>` +
-        vs.map(([v, k]) => `<button type="button" class="fchip" data-f="t:${esc(n)}" data-v="${esc(v)}" aria-pressed="${on.has(v)}"${k || on.has(v) ? '' : ' disabled'}${SPECS[n].help ? ` title="${esc(SPECS[n].help)}"` : ''}><i class="ixd" style="--c:${K.map.attrColour(n, v)}"></i>${esc(K.sel.valueLabel(n, v))} <span class="muted">${int(k)}</span></button>`).join('') + '</div>';
+      return (`<div class="quick"><span class="flabel">${esc(SPECS[n].label)}</span><button type="button" ` +
+          `class="fchip" data-f-all="t:${esc(n)}" aria-pressed="${!on.size}">All <span class="muted">${int(idx.length)}</span></button>`) +
+        vs.map(([v, k]) => (`<button type="button" class="fchip" data-f="t:${esc(n)}" data-v="${esc(v)}" aria-pressed="${on.has(v)}"${k || on.has(v) ? '' : ' disabled'}${
+SPECS[n].help ? ` title="${esc(SPECS[n].help)}"` : ''}><i class="ixd" ` +
+            `style="--c:${K.map.attrColour(n, v)}"></i>${esc(K.sel.valueLabel(n, v))} <span class="muted">${int(k)}</span></button>`)).join('') + '</div>';
     }).join('');
   }
 
@@ -227,15 +259,23 @@
     if (T.key !== K.tables.selKey()) { T.key = K.tables.selKey(); T.n = 100; }
     const { opt, defaults, shown: cols } = allCols(), rs = rows(cols), shown = rs.slice(0, T.n), counted = rs.filter(m => !m.lc), np = new Set(counted.map(m => m[0])).size;
     const head = `<div class="page-head results-head"><div><h2>Sites</h2><p class="cx">${int(counted.length)} of ${int(SD().marks.length)} ${esc(W.marks)} on ${int(np)} protein${np === 1 ? '' : 's'}</p>${lcLine()}</div>` +
-      `<div class="actions">${K.tables.figuresBtn()}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'sites-exp', 'the sites', 'data')}</div></div>`;
+      `<div class="actions">${K.tables.figuresBtn()}${
+K.expBar(['pdf', 'svg', 'png', 'tsv'], 'sites-exp', 'the sites', 'data')}</div></div>`;
     const sorted = id => (T.sort === id ? ` aria-sort="${T.desc ? 'descending' : 'ascending'}"` : '');
     const q = quick();
     if (!rs.length) return head + K.tables.selectionCard() + (q ? `<div id="sites-quick">${q}</div>` : '') + K.tables.emptyState();
     return head + (LC && K.shown.note ? K.shown.note() : '') + K.tables.selectionCard() + K.tables.enrichedCard() + (q ? `<div id="sites-quick">${q}</div>` : '') +
-      `<div class="tbl-card t-card" id="sites-table"><div class="tbl-tools">${K.columns.menu('sites', opt, defaults)}</div><div class="tbl-wrap">` +
-      `<table class="tbl stackable sites-tbl"><thead><tr>${cols.map(c => `<th class="${esc(c.cls || '')}${c.hide ? ' hide-' + esc(c.hide) : ''}" data-ssort="${esc(c.id)}" tabindex="0"${sorted(c.id)}${c.help || (c.attribute && SPECS[c.attribute]?.help) ? ` title="${esc(c.help || SPECS[c.attribute].help)}"` : ''}>${esc(c.label)}</th>`).join('')}</tr></thead><tbody>` +
-      shown.map(m => `<tr data-goto="${esc(m.lc ? m.lc.p.acc : pr(m[0]).acc)}/${m[1]}" tabindex="0"${m.lc ? ' class="lc-row"' : ''}>${cols.map(c => `<td class="${esc(c.cls || '')}${c.hide ? ' hide-' + esc(c.hide) : ''}" data-label="${esc(c.label.split(' · ')[0])}">${cellOf(c, m)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>' +
-      `<div class="tbl-foot"><span>Showing ${int(shown.length)} of ${int(rs.length)}</span>${rs.length > T.n ? `<button class="btn small" type="button" data-smore>Show 100 more</button>` : ''}</div></div>` +
+      (`<div class="tbl-card t-card" id="sites-table"><div class="tbl-tools">${K.columns.menu('sites', opt, defaults)}</div><div ` +
+          `class="tbl-wrap">`) +
+      (`<table class="tbl stackable sites-tbl"><thead><tr>${
+cols.map(c => `<th class="${esc(c.cls || '')}${c.hide ? ' hide-' + esc(c.hide) : ''}" data-ssort="${esc(c.id)}" tabindex="0"${sorted(c.id)}${
+c.help || (c.attribute && SPECS[c.attribute]?.help) ? ` title="${esc(c.help || SPECS[c.attribute].help)}"` : ''}>${esc(c.label)}</th>`).join('')}</tr></thead>` +
+          `<tbody>`) +
+      shown.map(m => `<tr data-goto="${esc(m.lc ? m.lc.p.acc : pr(m[0]).acc)}/${m[1]}" tabindex="0"${m.lc ? ' class="lc-row"' : ''}>${
+cols.map(c => `<td class="${esc(c.cls || '')}${c.hide ? ' hide-' + esc(c.hide) : ''}" data-label="${esc(c.label.split(' · ')[0])}">${cellOf(c, m)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>' +
+      `<div class="tbl-foot"><span>Showing ${int(shown.length)} of ${int(rs.length)}</span>${
+rs.length > T.n ? (`<button class="btn ` +
+          `small" type="button" data-smore>Show 100 more</button>`) : ''}</div></div>` +
       K.tables.citeBox(counted, K.sel.active() ? `these ${int(rs.length)} ${rs.length === 1 ? W.mark : W.marks}` : `the ${W.marks} of this site`);
   }
 
@@ -247,15 +287,28 @@
     const span = AR.span ?? 3;
     const res = AR.table && K.card.has(AR.table) ? K.card.rows(tb, AR.table).filter(r => ks.has(r.kind) && (r.start === r.end ? Math.abs(r.start - pos) <= span : pos >= r.start && pos <= r.end)) : [];
     const url = (EV.entries || {}).url || '';
-    const idLink = id => (url ? `<a class="mono" href="${esc(url.replace('{id}', encodeURIComponent(id)))}" target="_blank" rel="noopener">${esc(String(id).toUpperCase())}</a>` : esc(id));
+    const idLink = id => (url ? (`<a class="mono" href="${
+esc(url.replace('{id}', encodeURIComponent(id)))}" target="_blank" ` +
+        `rel="noopener">${esc(String(id).toUpperCase())}</a>`) : esc(id));
     const lab = k => K.sel.valueLabel(tg.attribute, k);
     const body = [...ks].map(k => {
       const e = ev.filter(r => r.kind === k), x = res.filter(r => r.kind === k);
       if (!e.length && !x.length) return `<li><b>${esc(lab(k))}</b></li>`;
-      return `<li><b>${esc(lab(k))}</b>${x.length ? `<br>${x.map(r => `${r.start === r.end ? `residue ${esc(shown(r.start))}${r.start === pos ? ' (the site)' : ` (i${r.start > pos ? '+' : '−'}${Math.abs(r.start - pos)})`}` : `residues ${esc(shown(r.start))}–${esc(shown(r.end))}`}${r.source ? ` <span class="muted">${esc(String(r.source).replace(/;\s*/g, ', '))}</span>` : ''}`).join('<br>')}` : ''}` +
-        (e.length ? `<br>${e.slice(0, 12).map(r => [r.partner ? `<b>${esc(r.partner)}</b>` : '', String(r.ids || '').split(/;\s*/).filter(Boolean).slice(0, 4).map(idLink).join(', '), r.score !== '' && r.score != null ? `score ${esc(Number(r.score).toFixed(2))}` : '', r.detail ? `<span class="muted">${esc(String(r.detail).replace(/[ACDEFGHIKLMNPQRSTVWY]{8,}/g, '…'))}</span>` : ''].filter(Boolean).join(' ')).join('<br>')}${e.length > 12 ? `<br><span class="muted">+${int(e.length - 12)} more on the site card</span>` : ''}` : '') + '</li>';
+      return `<li><b>${esc(lab(k))}</b>${
+x.length ? `<br>${
+x.map(r => `${
+r.start === r.end ? `residue ${esc(shown(r.start))}${
+r.start === pos ? ' (the site)' : ` (i${r.start > pos ? '+' : '−'}${Math.abs(r.start - pos)})`}` : `residues ${esc(shown(r.start))}–${esc(shown(r.end))}`}${
+r.source ? ` <span class="muted">${
+esc(String(r.source).replace(/;\s*/g, ', '))}</span>` : ''}`).join('<br>')}` : ''}` +
+        (e.length ? `<br>${
+e.slice(0, 12).map(r => [r.partner ? `<b>${esc(r.partner)}</b>` : '', String(r.ids || '').split(/;\s*/).filter(Boolean).slice(0, 4).map(idLink).join(', '), r.score !== '' && r.score != null ? `score ${esc(Number(r.score).toFixed(2))}` : '', r.detail ? `<span class="muted">${
+esc(String(r.detail).replace(/[ACDEFGHIKLMNPQRSTVWY]{8,}/g, '…'))}</span>` : ''].filter(Boolean).join(' ')).join('<br>')}${
+e.length > 12 ? (`<br><span ` +
+            `class="muted">+${int(e.length - 12)} more on the site card</span>`) : ''}` : '') + '</li>';
     }).join('');
-    return `<div class="evp-head"><b>${esc(K.tables.pLabel(p))} ${esc(site)}</b><button type="button" class="linkish" data-evp-close aria-label="Close">×</button></div><ul class="evp-list">${body}</ul>` +
+    return (`<div class="evp-head"><b>${esc(K.tables.pLabel(p))} ${esc(site)}</b><button type="button" ` +
+        `class="linkish" data-evp-close aria-label="Close">×</button></div><ul class="evp-list">${body}</ul>`) +
       `<p><a href="${esc(K.link('protein', acc + '/' + pos))}">Open the site card for ${esc(site)} ›</a></p>`;
   }
   function openPop(el) {
@@ -300,14 +353,17 @@
       if (c.kinds) rs = rs.filter(r => c.kinds.includes(r.kind));
       if (c.column) return rs.map(r => r[c.column] ?? '').filter(v => v !== '').join(';');
       const out = []; rs.forEach(r => String(r[c.field] ?? '').split(/;\s*/).filter(Boolean).forEach(v => { if (!out.includes(v)) out.push(v); }));
-      if (c.with) { const pairs = []; rs.forEach(r => { const k = `${r[c.field]}:${r[c.with] === '' || r[c.with] == null ? '' : Number(r[c.with]).toFixed(2)}`; if (r[c.field] && !pairs.includes(k)) pairs.push(k); }); return pairs.join(';'); }
+      if (c.with) { const pairs = []; rs.forEach(r => { const k = `${r[c.field]}:${
+r[c.with] === '' || r[c.with] == null ? '' : Number(r[c.with]).toFixed(2)}`; if (r[c.field] && !pairs.includes(k)) pairs.push(k); }); return pairs.join(';'); }
       return c.count ? out.length : out.join(';');
     }
     return '';
   }
   function tsv(rs) {
     const lcAny = rs.some(m => m.lc), hl = !!K.hl?.any();
-    return K.preamble(`${W.marks}${K.sel.active() ? ' (selection)' : ''}`, `every ${W.mark}${K.sel.active() ? ' of the selection' : ''} (${int(rs.length)}), in the table’s order, with the columns the site names; lists are separated by ";".`) +
+    return K.preamble(`${W.marks}${K.sel.active() ? ' (selection)' : ''}`, (`every ${W.mark}${
+K.sel.active() ? ' of the selection' : ''} (${int(rs.length)}), in the ` +
+        `table’s order, with the columns the site names; lists are separated by ";".`)) +
       [...DL.map(c => c.name), ...(lcAny ? ['counted'] : []), ...(hl ? ['highlighted'] : [])].join('\t') + '\n' + rs.map(m => [...DL.map(c => String(dlValue(c, m)).replace(/[\t\n]/g, ' ')), ...(lcAny ? [m.lc ? 'no' : 'yes'] : []), ...(hl ? [!m.lc && K.hl.isSite(m[0], m[1]) ? 'yes' : ''] : [])].join('\t')).join('\n') + '\n';
   }
   async function download(el) {
@@ -352,7 +408,11 @@
     const [pi, pos] = el.dataset.wr.split('/').map(Number), tr = el.closest('tr[data-goto]'), at = tr ? +tr.dataset.goto.split('/')[1] : null, p = pr(pi);
     const i = K.tables.byProt()[pi].find(k => SD().marks[k][1] === pos), m = i == null ? null : SD().marks[i];
     const off = at == null ? '' : ` · ${pos > at ? '+' : '−'}${Math.abs(pos - at)} from ${esc(siteName(p, at))}`;
-    return `<b>${esc(el.textContent)}${esc(K.prot?.shownPos ? K.prot.shownPos(p.acc, pos) : pos)}</b>${off}` + (m ? `<br>${esc(cap(W.mark))}${Object.keys(SPECS).filter(n => SPECS[n].colour && SPECS[n].kind === 'category').map(n => ` · ${esc(K.sel.valueLabel(n, vals(m, n)[0] ?? ''))}`).join('')}` : `<br><span class="muted">not a ${esc(W.mark)} in this site</span>`);
+    return `<b>${esc(el.textContent)}${
+esc(K.prot?.shownPos ? K.prot.shownPos(p.acc, pos) : pos)}</b>${off}` + (m ? `<br>${esc(cap(W.mark))}${
+Object.keys(SPECS).filter(n => SPECS[n].colour && SPECS[n].kind === 'category').map(n => ` · ${
+esc(K.sel.valueLabel(n, vals(m, n)[0] ?? ''))}`).join('')}` : (`<br><span ` +
+        `class="muted">not a ${esc(W.mark)} in this site</span>`));
   }]);
   K.tips.push(['[data-na-tip]', el => {
     const [pi, pos] = el.dataset.naTip.split('/').map(Number), m = SD().marks.find(x => x[0] === pi && x[1] === pos); if (!m || TB[pr(pi).acc] === undefined) return '';

@@ -29,7 +29,8 @@
     const lists = (SP.lists || []).map(l => [l, ranked(l)]).filter(([, ps]) => ps.length);
     const quick = SP.quick || [];
     if (!lists.length && !quick.length) return '';
-    const col = (h, help, body) => `<div class="start-col"><h4 title="${esc(help || '')}">${esc(h)}</h4><div class="start-pills">${body}</div></div>`;
+    const col = (h, help, body) => (`<div class="start-col"><h4 title="${esc(help || '')}">${esc(h)}</h4><div ` +
+        `class="start-pills">${body}</div></div>`);
     const body = `<div class="start-card">` +
       (quick.length ? col('Quick selections', 'Ready-made selections', quick.map(q => { const n = quickN(q);
         return `<a class="start-pill" href="#${esc(q.view || 'overview')}?${esc(q.query)}">${esc(q.label)}${n != null ? `<b>${int(n)}</b>` : ''}</a>`; }).join('')) : '') +

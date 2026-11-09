@@ -22,25 +22,33 @@
   }
   const PX = f => (3 + 94 * f).toFixed(1);                     // the track keeps 3% at each end, so a dot at the end is whole
   // nlab: what the number at the end of each row counts ("proteins", or the marks), said above it
-  const axisHtml = (ax, nlab) => `<div class="fr-ax" aria-hidden="true"><span class="tk">${ax.ticks.map(t => `<i${t === 1 ? ' class="one"' : ''} style="left:${PX(ax.L(t))}%">${fmtT(t)}×</i>`).join('')}</span>${nlab ? `<span class="fr-nh">${esc(nlab)}</span>` : ''}</div>`;
+  const axisHtml = (ax, nlab) => `<div class="fr-ax" aria-hidden="true"><span class="tk">${
+ax.ticks.map(t => `<i${t === 1 ? ' class="one"' : ''} style="left:${PX(ax.L(t))}%">${fmtT(t)}×</i>`).join('')}</span>${
+nlab ? `<span class="fr-nh">${esc(nlab)}</span>` : ''}</div>`;
   const fin = v => (v != null && Number.isFinite(v) ? Math.min(v, 1e3) : null);
   // x: { label, v, lo: [low, high] | null, q, dir, n, wv, desc, absent, measure }; attrs: the row's own attributes (its click, its hover)
   function rowHtml(x, ax, attrs = '', cls = '') {
     // the selection's own class: its name and a pill, no bar, fold or count
-    if (x.mine) return `<div class="fr-row tile-row pick mine${cls ? ' ' + cls : ''}"${attrs}><span class="fr-lab"><span>${esc(x.label)}</span></span><span class="fr-own"><span class="sel-pill">Your selection</span></span></div>`;
+    if (x.mine) return (`<div class="fr-row tile-row pick mine${cls ? ' ' + cls : ''}"${attrs}><span class="fr-lab">` +
+        `<span>${esc(x.label)}</span></span><span class="fr-own"><span class="sel-pill">Your selection</span>` +
+        `</span></div>`);
     const v = fin(x.v), x1 = PX(ax.L(1)), x2 = v != null ? PX(ax.L(v)) : null;
     const dir = x.absent ? 'ns' : x.dir || 'ns';
-    const grid = ax.ticks.filter(t => t !== 1).map(t => `<line class="gl" x1="${PX(ax.L(t))}%" x2="${PX(ax.L(t))}%" y1="0" y2="100%"/>`).join('');
+    const grid = ax.ticks.filter(t => t !== 1).map(t => (`<line class="gl" x1="${PX(ax.L(t))}%" x2="${PX(ax.L(t))}%" y1="0" ` +
+        `y2="100%"/>`)).join('');
     const cl = b => PX(ax.L(Math.min(64, Math.max(b, 1 / 64))));
     const ci = x.lo ? `<line class="ci ${dir}" x1="${cl(x.lo[0])}%" x2="${cl(x.lo[1])}%" y1="50%" y2="50%"/>` +
       x.lo.map(b => `<line class="cap ${dir}" x1="${cl(b)}%" x2="${cl(b)}%" y1="32%" y2="68%"/>`).join('') : '';
     const ghost = x.wv != null && Number.isFinite(x.wv) ? `<circle class="whole" cx="${PX(ax.L(x.wv))}%" cy="50%" r="4"/>` : '';
-    const track = `<svg class="fr-track" aria-hidden="true">${grid}<line class="one" x1="${x1}%" x2="${x1}%" y1="0" y2="100%"/>` +
+    const track = (`<svg class="fr-track" aria-hidden="true">${grid}<line class="one" x1="${x1}%" x2="${x1}%" y1="0" ` +
+        `y2="100%"/>`) +
       (x2 == null ? '' : `<line class="stem ${dir}" x1="${x1}%" x2="${x2}%" y1="50%" y2="50%"/>`) + ci + ghost +
       (x2 == null ? '' : `<circle class="dot ${dir}${x.desc ? ' desc' : ''}" cx="${x2}%" cy="50%" r="4.5"/>`) + '</svg>';
     const val = x.absent ? '–' : K.fxn(v) + '×';
-    return `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${cls ? ' ' + cls : ''}"${attrs}><span class="fr-lab"><span>${esc(x.label)}</span></span>${track}` +
-      `<span class="fr-val">${esc(val)}<i class="fr-q ${dir}${x.desc ? ' desc' : ''}" aria-hidden="true"></i></span><span class="fr-n">${x.n != null ? int(x.n) : ''}</span></div>`;
+    return (`<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${cls ? ' ' + cls : ''}"${attrs}><span class="fr-lab">` +
+        `<span>${esc(x.label)}</span></span>${track}`) +
+      (`<span class="fr-val">${esc(val)}<i class="fr-q ${dir}${x.desc ? ' desc' : ''}" aria-hidden="true"></i>` +
+          `</span><span class="fr-n">${x.n != null ? int(x.n) : ''}</span></div>`);
   }
   const valsOf = rows => rows.filter(r => !r.mine).flatMap(r => [r.v, r.wv, ...(r.lo || [])]).filter(v => v != null);
   // the one-line answer, from the tile's own rows: the strongest two that are more often and the strongest less often

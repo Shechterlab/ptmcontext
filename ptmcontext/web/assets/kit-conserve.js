@@ -43,14 +43,16 @@
   const MONO = 'Menlo, Consolas, &quot;DejaVu Sans Mono&quot;, &quot;Liberation Mono&quot;, monospace';
   const r1 = v => Math.round(v * 10) / 10;
   const cell = (a, x, y, cw, rh, edge) => (CHEM[a] ? `<rect x="${x}" y="${y}" width="${cw}" height="${rh}" fill="${TINT[CHEM[a]]}"/>` : '') +
-    (a && a !== '_' ? `<text x="${r1(x + cw / 2)}" y="${y + rh - 4}" font-size="11" font-family="${MONO}" text-anchor="middle" fill="${CHEM[a] ? COL[CHEM[a]] : '#5F6F78'}">${esc(a)}</text>` : '') +
+    (a && a !== '_' ? (`<text x="${r1(x + cw / 2)}" y="${y + rh - 4}" font-size="11" font-family="${MONO}" text-anchor="middle" ` +
+        `fill="${CHEM[a] ? COL[CHEM[a]] : '#5F6F78'}">${esc(a)}</text>`) : '') +
     (edge ? `<rect x="${x}" y="${y}" width="${cw}" height="${rh}" fill="none" stroke="${edge}" stroke-width="0.6"/>` : '');
   function legend(x, y, Wd) {
     const keys = Object.keys(CHEM_LABEL), widths = [110, 100, 160, 210], perRow = widths.reduce((a, b) => a + b, 0) <= Wd - 2 * x ? 4 : 2;
     let svg = '', cx = x, cy = y;
     keys.forEach((k, i) => {
       if (i && i % perRow === 0) { cx = x; cy += 16; }
-      svg += `<rect x="${cx}" y="${cy - 9}" width="11" height="11" fill="${TINT[k]}" stroke="${COL[k]}"/><text x="${cx + 16}" y="${cy}" font-size="10" fill="#5F6F78">${esc(CHEM_LABEL[k])}</text>`;
+      svg += (`<rect x="${cx}" y="${cy - 9}" width="11" height="11" fill="${TINT[k]}" stroke="${COL[k]}"/><text x="${cx + 16}" y="${cy}" font-size="10" ` +
+          `fill="#5F6F78">${esc(CHEM_LABEL[k])}</text>`);
       cx += perRow === 4 ? widths[i] : 230;
     });
     return { svg, h: cy - y + 16 };
@@ -63,7 +65,9 @@
   // Conservation across species (protein page)
   // =================================================================================================================
   const UNI = acc => `https://rest.uniprot.org/uniprotkb/${acc}.json`;       // the address the protein page's own card reads
-  const orthoUrl = ensg => `${String(ENS.rest).replace(/\/$/, '')}/homology/id/${encodeURIComponent(ENS.source)}/${encodeURIComponent(ensg)}?type=orthologs;aligned=1;sequence=protein;cigar_line=0;${ENS.compara ? 'compara=' + encodeURIComponent(ENS.compara) + ';' : ''}` +
+  const orthoUrl = ensg => (`${String(ENS.rest).replace(/\/$/, '')}/homology/id/${encodeURIComponent(ENS.source)}/${encodeURIComponent(ensg)}?type=orthologs;` +
+      `aligned=1;sequence=protein;cigar_line=0;${
+ENS.compara ? 'compara=' + encodeURIComponent(ENS.compara) + ';' : ''}`) +
     SPECIES().map(s => 'target_species=' + s.id).join(';') + ';content-type=application/json';
   const ensgOf = j => [...new Set((j.uniProtKBCrossReferences || []).filter(x => x.database === ENS.xref)
     .map(x => ((x.properties || []).find(pp => pp.key === 'GeneId') || {}).value || '').filter(Boolean).map(g => g.split('.')[0]))][0] || '';
@@ -128,7 +132,8 @@
     }
     return { me: mean(me), other: mean(other), n1: me.length, n2: other.length, p, species };
   }
-  const say = ck => (ck.me == null ? '' : `still ${KEPT}: ${W.marks} ${PCT(ck.me)}%, other ${W.residues} ${ck.other == null ? '–' : PCT(ck.other) + '%'} of species` +
+  const say = ck => (ck.me == null ? '' : `still ${KEPT}: ${W.marks} ${PCT(ck.me)}%, other ${W.residues} ${
+ck.other == null ? '–' : PCT(ck.other) + '%'} of species` +
     (ck.other == null ? '' : ck.p == null ? ' (too few to test)' : ` (rank-sum p ${K.fq(ck.p)})`));
 
   // ---- the state of each protein's lookup ------------------------------------------------------------------------------
@@ -167,31 +172,53 @@
   const cls = (a, human) => (a == null ? 'cv-u' : a === '-' ? 'cv-g' : a === human ? 'cv-k' : SIMILAR.has(a) ? 'cv-s' : 'cv-o');
   const lab = (acc, pos) => K.prot?.siteLabel(acc, pos) || String(pos);
   // the species to compare with: the site file's presets as a select, with what the chosen one holds
-  const setPicker = () => (PRESETS.length > 1 ? `<p class="cv-set"><label>Species <select id="cv-set">${PRESETS.map(p => `<option value="${esc(p.id)}"${p === preset() ? ' selected' : ''}>${esc(p.label)}</option>`).join('')}</select></label>` +
+  const setPicker = () => (PRESETS.length > 1 ? `<p class="cv-set"><label>Species <select id="cv-set">${
+PRESETS.map(p => `<option value="${esc(p.id)}"${p === preset() ? ' selected' : ''}>${esc(p.label)}</option>`).join('')}</select></label>` +
     (preset().note ? ` <span class="muted small">${esc(preset().note)}</span>` : '') + '</p>' : '');
   function bodyHtml(acc) {
     const st = ST[acc], g = esc(gene(acc));
     const head = `<div class="card-head"><div>${setPicker()}</div>` +
       (st?.phase === 'ok' ? K.expBar(['svg', 'png', 'tsv'], 'cvexp', 'the conservation of ' + gene(acc), 'conserve') : '') + '</div>';    // the downloads wait for the orthologs: a button with nothing behind it gave no file
-    if (!st || ['idle', 'ens', 'ortho'].includes(st.phase)) return head + `<p class="note">Looking up ${g}’s orthologs${st?.phase === 'ortho' ? ` in Ensembl Compara (${esc(st.ensg)}); usually 5–30 s` : ' (UniProt, then Ensembl Compara)'}…</p>`;
-    if (st.phase === 'no_gene') return head + `<p class="note">UniProt lists no ${esc(ENS.xref)} gene for ${esc(acc)}, so there are no orthologs to look up.</p>`;
+    if (!st || ['idle', 'ens', 'ortho'].includes(st.phase)) return head + `<p class="note">Looking up ${g}’s orthologs${
+st?.phase === 'ortho' ? (` in Ensembl ` +
+        `Compara (${esc(st.ensg)}); usually 5–30 s`) : ' (UniProt, then Ensembl Compara)'}…</p>`;
+    if (st.phase === 'no_gene') return head + (`<p class="note">UniProt lists no ${esc(ENS.xref)} gene for ${esc(acc)}, so there ` +
+        `are no orthologs to look up.</p>`);
     if (st.phase === 'none') return head + `<p class="note">Ensembl lists no ortholog of ${g} in these species.</p>`;
-    if (st.phase === 'fail') return head + `<p class="note">${esc(st.who)} ${esc(st.err)}. Nothing else on this page depends on it. <button class="linkish" type="button" data-cv-retry="${esc(acc)}">Try again</button></p>`;
+    if (st.phase === 'fail') return head + (`<p class="note">${esc(st.who)} ${esc(st.err)}. Nothing else on this ` +
+        `page depends on it. <button class="linkish" type="button" data-cv-retry="${esc(acc)}">Try again</button>` +
+        `</p>`);
     const { model, ck, seq, sites } = st, per = model.rows.map(r => { const v = sites.map(q => r.at(q)); return { r, v, nK: v.filter((a, i) => a === seq[sites[i] - 1]).length, nMap: v.filter(a => a != null).length }; });
     const absent = SPECIES().filter(s => !model.rows.some(r => r.sp === s.id)).map(s => s.label);
-    const test = ck.me != null && ck.other != null ? `<p class="cv-test"><b>${esc(W.marks)} against the other ${esc(W.residues)} of ${g}:</b> on average a ${esc(W.mark)} is still ${esc(KEPT)} in <b>${PCT(ck.me)}%</b> of the species that align it, ` +
-      `the other ${esc(W.residues)} in <b>${PCT(ck.other)}%</b> (${int(ck.n1)} and ${int(ck.n2)} ${esc(W.residues)}; ${ck.p == null ? 'too few to test' : 'Wilcoxon rank-sum p = ' + K.fq(ck.p)}).</p>` : '';
-    const row = (name, sub, vals) => `<tr><th>${esc(name)}${sub ? ` <span class="muted">${esc(sub)}</span>` : ''}</th>${vals}</tr>`;
-    const tcell = (a, i, name, human) => `<td class="${cls(a, human)}"${tipAttr(`<b>${esc(name)}</b> · ${esc(lab(acc, sites[i]))}<br>${a == null ? 'not mapped: the Ensembl protein differs around here' : a === '-' ? 'gap: no aligned residue in this ortholog' : esc(a) + (a === human ? ' (kept)' : SIMILAR.has(a) ? ' (a conservative change)' : ' (changed)')}`)}>${esc(a == null ? '·' : a === '-' ? '–' : a)}</td>`;
-    const table = `<div class="cv-wrap"><table class="cv-tbl"><thead><tr><th>Species</th>${sites.map(q => `<th><button type="button" class="linkish${q === UI.pos ? ' cur' : ''}" data-cv-pos="${q}">${esc(lab(acc, q))}</button></th>`).join('')}</tr></thead><tbody>` +
+    const test = ck.me != null && ck.other != null ? (`<p class="cv-test"><b>${esc(W.marks)} against the other ${esc(W.residues)} of ${g}:</b> on average a ${esc(W.mark)} is still ${esc(KEPT)} in <b>${PCT(ck.me)}%</b> of ` +
+        `the species that align it, `) +
+      `the other ${esc(W.residues)} in <b>${PCT(ck.other)}%</b> (${int(ck.n1)} and ${int(ck.n2)} ${esc(W.residues)}; ${
+ck.p == null ? 'too few to test' : 'Wilcoxon rank-sum p = ' + K.fq(ck.p)}).</p>` : '';
+    const row = (name, sub, vals) => `<tr><th>${esc(name)}${
+sub ? ` <span class="muted">${esc(sub)}</span>` : ''}</th>${vals}</tr>`;
+    const tcell = (a, i, name, human) => `<td class="${cls(a, human)}"${
+tipAttr(`<b>${esc(name)}</b> · ${esc(lab(acc, sites[i]))}<br>${
+a == null ? 'not mapped: the Ensembl protein differs around here' : a === '-' ? 'gap: no aligned residue in this ortholog' : esc(a) + (a === human ? ' (kept)' : SIMILAR.has(a) ? ' (a conservative change)' : ' (changed)')}`)}>${
+esc(a == null ? '·' : a === '-' ? '–' : a)}</td>`;
+    const table = (`<div class="cv-wrap"><table class="cv-tbl"><thead><tr><th>Species</th>${
+sites.map(q => (`<th><button ` +
+        `type="button" class="linkish${q === UI.pos ? ' cur' : ''}" data-cv-pos="${q}">${esc(lab(acc, q))}</button></th>`)).join('')}</tr></thead>` +
+        `<tbody>`) +
       row(REF, '', sites.map(q => `<td class="${cls(seq[q - 1], seq[q - 1])}">${esc(seq[q - 1] || '·')}</td>`).join('')) +
       per.map(x => row(x.r.name, Math.round(x.r.pid) + '%', x.v.map((a, i) => tcell(a, i, x.r.name, seq[sites[i] - 1])).join(''))).join('') + '</tbody></table></div>';
-    return head + test + `<div class="cv-sum">${per.map(x => `<span class="tag"><b>${esc(x.r.name)}</b> ${esc(KEPT)} at ${x.nK}/${x.nMap}</span>`).join(' ')}` +
+    return head + test + `<div class="cv-sum">${
+per.map(x => `<span class="tag"><b>${esc(x.r.name)}</b> ${esc(KEPT)} at ${x.nK}/${x.nMap}</span>`).join(' ')}` +
       (absent.length ? ` <span class="muted small">No ortholog in Ensembl: ${esc(absent.join(', '))}.</span>` : '') + '</div>' + table +
-      `<p class="small muted">Dark: still ${esc(KEPT)}; pale: a conservative change; gray: another residue; – a gap; · not mapped (the Ensembl protein differs here). The percentage is the ortholog’s identity to ${g}. ` +
-      `<a href="https://www.ensembl.org/${esc(String(ENS.source).replace(/^./, c => c.toUpperCase()))}/Gene/Compara_Ortholog?g=${encodeURIComponent(st.ensg)}" target="_blank" rel="noopener">Ensembl ${esc(st.ensg)} orthologs ↗</a></p>` +
-      `<div class="cv-ctl"><label>Site <select id="cv-pos">${sites.map(q => `<option value="${q}"${q === UI.pos ? ' selected' : ''}>${esc(lab(acc, q))}</option>`).join('')}</select></label> ` +
-      `<label>Flank <select id="cv-flank">${[5, 10, 15, 20].map(v => `<option value="${v}"${v === UI.flank ? ' selected' : ''}>±${v}</option>`).join('')}</select></label></div>` +
+      (`<p class="small muted">Dark: still ${esc(KEPT)}; pale: a conservative change; gray: another residue; – a ` +
+          `gap; · not mapped (the Ensembl protein differs here). The percentage is the ortholog’s identity to ${g}. `) +
+      (`<a href="https://www.ensembl.org/${
+esc(String(ENS.source).replace(/^./, c => c.toUpperCase()))}/Gene/Compara_Ortholog?g=${encodeURIComponent(st.ensg)}" target="_blank" ` +
+          `rel="noopener">Ensembl ${esc(st.ensg)} orthologs ↗</a></p>`) +
+      `<div class="cv-ctl"><label>Site <select id="cv-pos">${
+sites.map(q => `<option value="${q}"${q === UI.pos ? ' selected' : ''}>${esc(lab(acc, q))}</option>`).join('')}</select></label> ` +
+      (`<label>Flank <select id="cv-flank">${
+[5, 10, 15, 20].map(v => `<option value="${v}"${v === UI.flank ? ' selected' : ''}>±${v}</option>`).join('')}</select>` +
+          `</label></div>`) +
       `<div class="cv-fig" id="cv-fig">${figure(acc).svg}</div>`;
   }
   function figure(acc) {
@@ -200,7 +227,8 @@
     let g = '', y = 0;
     for (let k = 0; k < ncol; k++) {
       const q = pos - flank + k;
-      if (q === pos || q % 5 === 0) g += `<text x="${x0 + k * cw + cw / 2}" y="${y + 9}" font-size="9" text-anchor="middle" fill="${q === pos ? K.PAL.ink : K.PAL.muted}"${q === pos ? ' font-weight="700"' : ''}>${esc(q === pos ? lab(acc, q) : String(q))}</text>`;
+      if (q === pos || q % 5 === 0) g += (`<text x="${x0 + k * cw + cw / 2}" y="${y + 9}" font-size="9" ` +
+          `text-anchor="middle" fill="${q === pos ? K.PAL.ink : K.PAL.muted}"${q === pos ? ' font-weight="700"' : ''}>${esc(q === pos ? lab(acc, q) : String(q))}</text>`);
       if (st.sites.includes(q) && q !== pos) g += `<circle cx="${x0 + k * cw + cw / 2}" cy="${y + 14}" r="2" fill="${K.PAL.more}"/>`;
     }
     y += 18;
@@ -215,13 +243,16 @@
     g += `<rect x="${x0 + flank * cw}" y="${top - 1}" width="${cw}" height="${y - top + 2}" fill="none" stroke="${K.PAL.ink}" stroke-width="1.2"/>`;
     y += 18;
     const lg = legend(20, y, Wd); g += lg.svg; y += lg.h;
-    return K.figureFrame({ title: `${gene(acc)} ${lab(acc, pos)} across species`, sub: `${acc} · Ensembl Compara orthologs, columns anchored on the ${REF} sequence · residues ${Math.max(1, pos - flank)}–${pos + flank}`,
-      body: g, bodyH: y, W: Wd, note: `Outlined: the same residue as in ${REF}. Dots: other ${W.marks} of the protein. % id.: identity of the ortholog to the human protein (Ensembl).`,
+    return K.figureFrame({ title: `${gene(acc)} ${lab(acc, pos)} across species`, sub: (`${acc} · Ensembl Compara ` +
+        `orthologs, columns anchored on the ${REF} sequence · residues ${Math.max(1, pos - flank)}–${pos + flank}`),
+      body: g, bodyH: y, W: Wd, note: (`Outlined: the same residue as in ${REF}. Dots: other ${W.marks} of the protein. ` +
+          `% id.: identity of the ortholog to the human protein (Ensembl).`),
       extra: { ensembl_gene: st.ensg, orthologs: model.rows.map(r => `${r.name} ${r.prot}`) } });
   }
   const tsv = acc => {
     const st = ST[acc], { model, seq, sites } = st, rows = model.rows;
-    return K.preamble(`Conservation across species: ${gene(acc)}`, `each ${W.mark} of ${gene(acc)} (${acc}) and the residue aligned to it in the orthologs of Ensembl Compara (${st.ensg}); empty: not mapped, -: gap`) +
+    return K.preamble(`Conservation across species: ${gene(acc)}`, (`each ${W.mark} of ${gene(acc)} (${acc}) and the ` +
+        `residue aligned to it in the orthologs of Ensembl Compara (${st.ensg}); empty: not mapped, -: gap`)) +
       ['site\tposition\treference_residue\t' + rows.map(r => slug(r.name.toLowerCase()) + '_residue').join('\t')].concat(sites.map(q => [lab(acc, q), q, seq[q - 1], ...rows.map(r => r.at(q) ?? '')].join('\t'))).join('\n') +
       '\n# orthologs: ' + rows.map(r => `${r.name} ${r.prot} (${Math.round(r.pid)}% identity)`).join('; ') + `\n# ${W.marks} still ${KEPT}: ${say(st.ck)}\n`;
   };
@@ -239,17 +270,25 @@
   function chip(acc) {
     const host = document.querySelector('.prot-chips'); if (!host) return;
     const st = ST[acc], ck = st?.ck, old = document.getElementById('cv-chip');
-    const text = !st || ['idle', 'ens', 'ortho'].includes(st.phase) ? 'orthologs…' : st.phase === 'ok' && ck.me != null ? (RES.length === 1 ? `${PCT(ck.me)}% still ${KEPT} in orthologs` : `${PCT(ck.me)}% conserved in orthologs`) : '';
+    const text = !st || ['idle', 'ens', 'ortho'].includes(st.phase) ? 'orthologs…' : st.phase === 'ok' && ck.me != null ? (RES.length === 1 ? `${PCT(ck.me)}% still ${KEPT} in orthologs` : (`${PCT(ck.me)}% conserved ` +
+        `in orthologs`)) : '';
     if (!text) { old?.remove(); return; }
-    const tip = ck && ck.me != null ? `<b>Conservation across species</b><br>On average, the share of ${st.model.rows.length} species whose ortholog still has ${esc(KEPT)} at a ${esc(W.mark)} (${int(ck.n1)}) is ${PCT(ck.me)}%` +
-      (ck.other != null ? `, and ${PCT(ck.other)}% at the other ${esc(W.residues)} of the protein (${int(ck.n2)})` : '') + (ck.p != null ? `; Wilcoxon rank-sum p ${esc(K.fq(ck.p))}` : '') + '.<br>Click to open the alignments.' : 'Asking UniProt and Ensembl Compara for the orthologs.';
+    const tip = ck && ck.me != null ? (`<b>Conservation across species</b><br>On average, the share of ${st.model.rows.length} species ` +
+        `whose ortholog still has ${esc(KEPT)} at a ${esc(W.mark)} (${int(ck.n1)}) is ${PCT(ck.me)}%`) +
+      (ck.other != null ? `, and ${PCT(ck.other)}% at the other ${esc(W.residues)} of the protein (${int(ck.n2)})` : '') + (ck.p != null ? (`; Wilcoxon ` +
+          `rank-sum p ${esc(K.fq(ck.p))}`) : '') + '.<br>Click to open the alignments.' : 'Asking UniProt and Ensembl Compara for the orthologs.';
     const tiles = document.querySelector('.hl-cards');
     if (tiles) {           // a tile among the headline tiles when the page has them, else a chip
       document.getElementById('cv-chip')?.remove(); let t = document.getElementById('cv-tile');
       if (!(st?.phase === 'ok' && ck?.me != null)) { t?.remove(); return; }
       if (!t) { t = document.createElement('button'); t.type = 'button'; t.id = 'cv-tile'; t.className = 'hl-card'; t.setAttribute('data-cv-open', ''); tiles.append(t); dispatchEvent(new Event('resize')); }
       t.setAttribute('data-hl-tip', tip);
-      t.innerHTML = `<span class="hl-glyph"><svg viewBox="0 0 64 22" aria-hidden="true"><path d="M4 11 h14 M18 11 l10 -6 h28 M18 11 l10 6 h28 M40 5 v12"/><circle class="g-f" cx="58" cy="5" r="3"/></svg></span><b class="hl-big">${PCT(ck.me)}%</b><span class="hl-lab">${esc(RES.length === 1 ? `still ${KEPT} in orthologs` : 'conserved in orthologs')}${ck.other != null ? ` (others ${PCT(ck.other)}%)` : ''}</span><span class="hl-kind">Conservation</span>`;
+      t.innerHTML = (`<span class="hl-glyph"><svg viewBox="0 0 64 22" aria-hidden="true"><path d="M4 11 h14 M18 11 ` +
+          `l10 -6 h28 M18 11 l10 6 h28 M40 5 v12"/><circle class="g-f" cx="58" cy="5" r="3"/></svg></span><b ` +
+          `class="hl-big">${PCT(ck.me)}%</b><span class="hl-lab">${
+esc(RES.length === 1 ? `still ${KEPT} in orthologs` : 'conserved in orthologs')}${
+ck.other != null ? ` (others ${PCT(ck.other)}%)` : ''}</span><span ` +
+          `class="hl-kind">Conservation</span>`);
       return;
     }
     const html = `<button type="button" class="chip cv-chip" id="cv-chip" data-cv-open${tipAttr(tip)}>${esc(text)}</button>`;
@@ -338,20 +377,25 @@
   function logoSvg(cols, x0, y, cw, LH, tips, who) {
     const bits = LUI.mode === 'bits', maxV = AA_BITS, ticks = bits ? [0, 1, 2, 3, 4] : [0, 0.5, 1];
     let g = `<line x1="${x0 - 6}" x2="${x0 - 6}" y1="${y}" y2="${y + LH}" stroke="#9aa5ab"/>`;
-    for (const t of ticks) { const ty = y + LH - (t / (bits ? maxV : 1)) * LH; g += `<line x1="${x0 - 9}" x2="${x0 - 6}" y1="${r1(ty)}" y2="${r1(ty)}" stroke="#9aa5ab"/><text x="${x0 - 12}" y="${r1(ty + 3)}" font-size="9.5" text-anchor="end" fill="${K.PAL.muted}">${t}</text>`; }
+    for (const t of ticks) { const ty = y + LH - (t / (bits ? maxV : 1)) * LH; g += (`<line x1="${x0 - 9}" x2="${x0 - 6}" y1="${r1(ty)}" y2="${r1(ty)}" stroke="#9aa5ab"/>` +
+        `<text x="${x0 - 12}" y="${r1(ty + 3)}" font-size="9.5" text-anchor="end" fill="${K.PAL.muted}">${t}</text>`); }
     g += `<text x="${x0 - 40}" y="${y + LH / 2 + 3}" font-size="10" text-anchor="end" fill="${K.PAL.muted}">${bits ? 'bits' : 'frequency'}</text>`;
     cols.forEach((c, k) => {
       let base = y + LH; const total = bits ? c.ic : 1;
       for (const [a, f] of c.freqs) {
         const h = f * total / (bits ? maxV : 1) * LH; if (h < 0.6) continue;
-        g += `<text x="${x0 + k * cw}" y="0" font-size="100" font-weight="700" font-family="Arial, Helvetica, sans-serif" fill="${COL[CHEM[a]]}" textLength="${cw - 1}" lengthAdjust="spacingAndGlyphs" transform="translate(0 ${r1(base)}) scale(1 ${(h / 71.6).toFixed(4)})">${a}</text>`;
+        g += (`<text x="${x0 + k * cw}" y="0" font-size="100" font-weight="700" font-family="Arial, Helvetica, ` +
+            `sans-serif" fill="${COL[CHEM[a]]}" textLength="${cw - 1}" lengthAdjust="spacingAndGlyphs" ` +
+            `transform="translate(0 ${r1(base)}) scale(1 ${(h / 71.6).toFixed(4)})">${a}</text>`);
         base -= h;
       }
-      if (tips && c.n) g += `<rect class="cv-col" x="${x0 + k * cw}" y="${y}" width="${cw}" height="${LH}" fill="transparent"${tipAttr(`<b>${esc(who)} · position ${rel(c.rel)}</b><br>${int(c.n)} sites · ${c.ic.toFixed(2)} bits<br>${esc(topList(c, 5))}`)}/>`;
+      if (tips && c.n) g += `<rect class="cv-col" x="${x0 + k * cw}" y="${y}" width="${cw}" height="${LH}" fill="transparent"${
+tipAttr(`<b>${esc(who)} · position ${rel(c.rel)}</b><br>${int(c.n)} sites · ${c.ic.toFixed(2)} bits<br>${esc(topList(c, 5))}`)}/>`;
     });
     return g;
   }
-  const offsets = (cols, x0, y, cw, flank) => cols.map((c, k) => (c.rel === 0 || k % 2 === flank % 2 ? `<text x="${x0 + k * cw + cw / 2}" y="${y}" font-size="10" text-anchor="middle" fill="${c.rel === 0 ? K.PAL.ink : K.PAL.muted}"${c.rel === 0 ? ' font-weight="700"' : ''}>${rel(c.rel)}</text>` : '')).join('');
+  const offsets = (cols, x0, y, cw, flank) => cols.map((c, k) => (c.rel === 0 || k % 2 === flank % 2 ? (`<text x="${x0 + k * cw + cw / 2}" y="${y}" font-size="10" ` +
+      `text-anchor="middle" fill="${c.rel === 0 ? K.PAL.ink : K.PAL.muted}"${c.rel === 0 ? ' font-weight="700"' : ''}>${rel(c.rel)}</text>`) : '')).join('');
   function logoFigure(tips) {
     const s = sets(), flank = Math.min(LUI.flank, s.span), ncol = 2 * flank + 1, Wd = 760, x0 = 190, cw = Math.max(10, Math.min(24, Math.floor((Wd - x0 - 24) / ncol)));
     const cs = columns(s.sel.map(x => x.w), s.span, flank), co = columns(s.oth.map(x => x.w), s.span, flank), LH = 90, rh = 15, sh = shifts(cs, co);
@@ -366,29 +410,45 @@
       for (let k = 0; k < ncol; k++) g += cell(x.w[s.span - flank + k], x0 + k * cw, y + 1, cw, rh - 1, '');
       y += rh;
     });
-    g += `<rect x="${x0 + flank * cw}" y="${y - rows.length * rh}" width="${cw}" height="${rows.length * rh + 1}" fill="none" stroke="${K.PAL.ink}" stroke-width="1.2"/>`;
-    if (rowsAll.length > rows.length) { g += `<text x="20" y="${y + 12}" font-size="10" fill="${K.PAL.muted}">${int(rows.length)} of ${int(rowsAll.length)} windows drawn; the logo uses all of them</text>`; }
+    g += (`<rect x="${x0 + flank * cw}" y="${y - rows.length * rh}" width="${cw}" height="${rows.length * rh + 1}" fill="none" ` +
+        `stroke="${K.PAL.ink}" stroke-width="1.2"/>`);
+    if (rowsAll.length > rows.length) { g += (`<text x="20" y="${y + 12}" font-size="10" fill="${K.PAL.muted}">${int(rows.length)} of ${int(rowsAll.length)} windows ` +
+        `drawn; the logo uses all of them</text>`); }
     y += 30;
     head(`Compared with the other ${int(s.oth.length)} ${W.marks}`);
     g += logoSvg(co, x0, y, cw, LH, tips, `The other ${W.marks}`); y += LH + 14; g += offsets(co, x0, y - 2, cw, flank); y += 22;
-    g += `<text x="20" y="${y + 12}" font-size="12.5" font-weight="700" fill="${K.PAL.ink}">What the selection gains and loses</text>`; y += 22;
+    g += (`<text x="20" y="${y + 12}" font-size="12.5" font-weight="700" fill="${K.PAL.ink}">What the selection ` +
+        `gains and loses</text>`); y += 22;
     [['up', 'More often'], ['dn', 'Less often']].forEach(([key, label]) => {
       g += `<text x="20" y="${y + 15}" font-size="10.5" fill="${K.PAL.ink}">${label} than the others</text>`;
       sh.forEach((d, k) => {
         const [a, v] = d[key], x = x0 + k * cw, big = Math.abs(v) >= 0.02;
-        g += (big ? cell(a, x, y + 1, cw, 15, '') + `<text x="${x + cw / 2}" y="${y + 27}" font-size="8" text-anchor="middle" fill="${K.PAL.muted}">${fmtDelta(v)}</text>` : `<text x="${x + cw / 2}" y="${y + 13}" font-size="11" text-anchor="middle" fill="${K.PAL.muted}">·</text>`);
-        if (tips && cs[k].n && co[k].n) g += `<rect class="cv-col" x="${x}" y="${y}" width="${cw}" height="30" fill="transparent"${tipAttr(`<b>Position ${rel(cs[k].rel)}</b><br>${big ? `${esc(a)} ${key === 'up' ? 'gains' : 'loses'} ${Math.abs(Math.round(100 * v))} points: ${PCT((cs[k].c[a] || 0) / cs[k].n)}% of your selection, ${PCT((co[k].c[a] || 0) / co[k].n)}% of the others` : 'no residue changes by 2 points or more'}`)}/>`;
+        g += (big ? cell(a, x, y + 1, cw, 15, '') + (`<text x="${x + cw / 2}" y="${y + 27}" font-size="8" ` +
+            `text-anchor="middle" fill="${K.PAL.muted}">${fmtDelta(v)}</text>`) : (`<text x="${x + cw / 2}" y="${y + 13}" font-size="11" ` +
+            `text-anchor="middle" fill="${K.PAL.muted}">·</text>`));
+        if (tips && cs[k].n && co[k].n) g += (`<rect class="cv-col" x="${x}" y="${y}" width="${cw}" height="30" ` +
+            `fill="transparent"${
+tipAttr(`<b>Position ${rel(cs[k].rel)}</b><br>${
+big ? (`${esc(a)} ${key === 'up' ? 'gains' : 'loses'} ${Math.abs(Math.round(100 * v))} points: ${PCT((cs[k].c[a] || 0) / cs[k].n)}% of your ` +
+            `selection, ${PCT((co[k].c[a] || 0) / co[k].n)}% of the others`) : 'no residue changes by 2 points or more'}`)}/>`);
       });
       y += 34;
     });
     const lg = legend(20, y + 6, Wd); g += lg.svg; y += lg.h + 6;
-    return K.figureFrame({ title: 'Selected sites aligned at the mark, with their logo', sub: `${K.sel.describe()}: ${int(s.sel.length)} ${W.marks} with a sequence window of ${int(2 * s.span + 1)}, against ${int(s.oth.length)} other ${W.marks}`,
-      body: g, bodyH: y, W: Wd, note: `The logo stacks ${LUI.mode === 'bits' ? `residues scaled by information content: log2(20) minus the Shannon entropy and the small-sample correction (Schneider et al. 1986), so a position held by one residue approaches ${AA_BITS.toFixed(1)} bits` : 'residue frequencies at each position'}; padding past a protein’s end is left out. Gains and losses are in percentage points, selection minus the other ${W.marks}; descriptive, not tested.` });
+    return K.figureFrame({ title: 'Selected sites aligned at the mark, with their logo', sub: (`${K.sel.describe()}: ${int(s.sel.length)} ${W.marks} with a sequence ` +
+        `window of ${int(2 * s.span + 1)}, against ${int(s.oth.length)} other ${W.marks}`),
+      body: g, bodyH: y, W: Wd, note: (`The logo stacks ${
+LUI.mode === 'bits' ? (`residues scaled by information ` +
+          `content: log2(20) minus the Shannon entropy and the small-sample correction (Schneider et al. 1986), so ` +
+          `a position held by one residue approaches ${AA_BITS.toFixed(1)} bits`) : 'residue frequencies at each position'}; padding ` +
+          `past a protein’s end is left out. Gains and losses are in percentage points, selection minus the other ${W.marks}; descriptive,` +
+          ` not tested.`) });
   }
   const logoTsv = () => {
     const s = sets(), flank = Math.min(LUI.flank, s.span), cs = columns(s.sel.map(x => x.w), s.span, flank), co = columns(s.oth.map(x => x.w), s.span, flank), aas = Object.keys(CHEM).sort();
     const line = (who, cols) => cols.flatMap(c => aas.map(a => [who, c.rel, c.n, c.ic.toFixed(4), a, c.c[a] || 0, c.n ? ((c.c[a] || 0) / c.n).toFixed(4) : ''].join('\t')));
-    return K.preamble('Site alignment and sequence logo', `the residue counts at each position of the sequence windows of the selection and of the other ${W.marks}; then the selection's aligned windows`) +
+    return K.preamble('Site alignment and sequence logo', (`the residue counts at each position of the sequence ` +
+        `windows of the selection and of the other ${W.marks}; then the selection's aligned windows`)) +
       ['set\tposition\tsites\tinformation_bits\tresidue\tcount\tfrequency'].concat(line('selection', cs), line('others', co)).join('\n') +
       '\n\n# Aligned windows of the selection\nprotein\taccession\tposition\twindow\n' +
       ordered(s.sel).map(x => { const acc = D.proteins[x.pi][0]; return [gene(acc), acc, lab(acc, x.pos), x.w.slice(s.span - flank, s.span + flank + 1)].join('\t'); }).join('\n') + '\n';
@@ -400,13 +460,17 @@
   };
   const logoSection = () => {
     if (!CV.logo || !haveWindows() || !sets().sel.length) return '';
-    return `<details class="apart cv-logo" id="sel-logo"${LUI.open ? ' open' : ''}><summary><span class="apart-h">Logo and comparison</span> <span class="apart-sum muted" id="cv-logo-sum">${esc(summaryText())}</span></summary><div id="cv-logo-body"></div></details>`;
+    return (`<details class="apart cv-logo" id="sel-logo"${LUI.open ? ' open' : ''}><summary><span class="apart-h">` +
+        `Logo and comparison</span> <span class="apart-sum muted" id="cv-logo-sum">${esc(summaryText())}</span></summary>` +
+        `<div id="cv-logo-body"></div></details>`);
   };
   // high on a selection's Overview: before the other blocks, for a selection too small to test as for one that can be
   (K.selLead ||= []).unshift(logoSection);
   (K.selSmall ||= []).unshift(logoSection);
   // "Sequence logo" in the selection line: opens it (and goes to the Overview that holds it)
-  const logoBtn = () => (CV.logo && haveWindows() && sets().sel.length ? `<button class="btn small" type="button" data-go-logo title="The selected ${esc(W.marks)}' sequence windows aligned, as a logo and against the other ${esc(W.marks)}">Sequence logo</button>` : '');
+  const logoBtn = () => (CV.logo && haveWindows() && sets().sel.length ? (`<button class="btn small" type="button" ` +
+      `data-go-logo title="The selected ${esc(W.marks)}' sequence windows aligned, as a logo and against the other ${esc(W.marks)}">Sequence ` +
+      `logo</button>`) : '');
   K.logoBtn = logoBtn; K.logoSection = logoSection;      // the logo's button and section, for the pages that place it
   (K.selTools ||= []).push(logoBtn);
   K.clicks.push(['[data-go-logo]', () => {
@@ -420,10 +484,17 @@
     const s = sets(), opt = (v, cur, t) => `<option value="${v}"${v === cur ? ' selected' : ''}>${esc(t)}</option>`;
     return `<div class="cv-card"><div class="cv-top">` +
       K.expBar(['svg', 'png', 'tsv'], 'lgexp', 'the site alignment and logo', 'logo') + '</div>' +
-      `<div class="cv-ctl"><label>Flank <select id="lg-flank">${FLANKS.filter(f => f <= s.span).map(f => opt(f, LUI.flank, '±' + f)).join('')}</select></label> ` +
-      `<label>Logo <select id="lg-mode">${opt('bits', LUI.mode, 'Information (bits)')}${opt('freq', LUI.mode, 'Frequency')}</select></label> ` +
-      `<label>Order <select id="lg-order">${opt('protein', LUI.order, 'Protein and position')}${opt('right', LUI.order, 'Sequence after the ' + W.mark)}${opt('left', LUI.order, 'Sequence before the ' + W.mark)}</select></label> ` +
-      `<label>Rows <select id="lg-rows">${[10, 30, 50, 100].map(v => opt(v, LUI.rows, String(v))).join('')}</select></label></div>` +
+      `<div class="cv-ctl"><label>Flank <select id="lg-flank">${
+FLANKS.filter(f => f <= s.span).map(f => opt(f, LUI.flank, '±' + f)).join('')}</select></label> ` +
+      `<label>Logo <select id="lg-mode">${
+opt('bits', LUI.mode, 'Information (bits)')}${opt('freq', LUI.mode, 'Frequency')}</select></label> ` +
+      `<label>Order <select id="lg-order">${
+opt('protein', LUI.order, 'Protein and position')}${
+opt('right', LUI.order, 'Sequence after the ' + W.mark)}${
+opt('left', LUI.order, 'Sequence before the ' + W.mark)}</select></label> ` +
+      (`<label>Rows <select id="lg-rows">${
+[10, 30, 50, 100].map(v => opt(v, LUI.rows, String(v))).join('')}</select>` +
+          `</label></div>`) +
       `<div class="cv-fig" id="lg-fig">${logoFigure(true).svg}</div></div>`;
   }
   function fillLogo() {
@@ -450,16 +521,44 @@
   // ---- Method ---------------------------------------------------------------------------------------------------------
   const doi = (id, t) => `<a href="https://doi.org/${esc(id)}">${esc(t)}</a>`;
   (K.methodParts ||= []).push(() => `<section id="m-conserve"><h3>Conservation across species</h3>` +
-    `<p>On a protein’s page, the ${esc(ENS.xref)} gene from UniProt’s cross-references is sent from your browser to Ensembl Compara (REST at ${esc(ENS.rest)}) for orthologs in the species of the set you choose (${esc(PRESETS.length ? PRESETS.map(p => `${p.label}: ${p.list.map(s => s.label).join(', ')}`).join('; ') : CATALOGUE.map(s => s.label).join(', '))}). ` +
-    `Each species uses its ortholog of highest identity, with Ensembl’s pairwise protein alignment. Positions of the ${esc(D.run.snapshot?.release || 'snapshot')} sequence map to the Ensembl ${esc(ENS.source)} protein directly when the sequences are identical or nested, otherwise through a unique 15-residue anchor around each ${esc(W.mark)}. Without one, the position shows as not mapped. ` +
-    `Columns follow the ${esc(ENS.source)} sequence, so insertions in other species are not shown. A residue is kept when the ortholog has the same residue there${SIMILAR.size ? `. ${esc([...SIMILAR].join(', '))} is shown as a conservative change and not counted as kept` : ''}.</p>` +
-    `<p>The chip (“${RES.length === 1 ? 'still ' + esc(KEPT) : 'conserved'} in orthologs”) is the mean, over the protein’s ${esc(W.marks)}, of the share of species that align the ${esc(W.mark)} and keep it. It is compared with the protein’s other ${esc(W.residues)} (${esc(RES.join(', ') || 'the profile’s residues')}) by a two-sided Wilcoxon rank-sum test (normal approximation, with tie and continuity corrections). Each residue counts once however many species align it, and fewer than three on either side are not tested. ` +
-    `It describes one protein and changes no number on this page. If UniProt or Ensembl does not answer, the card says so and nothing else depends on it. ` +
-    `Exports: SVG and PNG of the alignment around the chosen ${esc(W.mark)}, and a TSV of every ${esc(W.mark)} in every species. ${doi('10.1093/database/bav096', 'Herrero et al. 2016')}; ${doi('10.1093/bioinformatics/btu613', 'Yates et al. 2015')}.</p></section>` +
-    (CV.logo ? `<section id="m-logo"><h3>Site alignment and sequence logo</h3><p>On a selection’s Overview, the selected ${esc(W.marks)} are aligned at the ${esc(W.mark)} using the ${int(2 * (SD()?.wide?.span ?? 15) + 1)}-residue windows of the canonical sequences (the motif finder’s). Positions past a protein’s end are blank. ` +
-      `The logo uses every selected ${esc(W.mark)} with a window. “Frequency” stacks the residue frequencies at each position. “Information” scales each stack by its information content, log2(20) minus the Shannon entropy and the small-sample correction 19 / (2 ln 2 n) (Schneider et al. 1986, ${doi('10.1016/0022-2836(86)90165-8', 'J Mol Biol 188:415')}), so a position held by one residue reaches about ${AA_BITS.toFixed(1)} bits at most. ` +
-      `Colors follow WebLogo’s chemistry scheme (Crooks et al. 2004, ${doi('10.1101/gr.849004', 'Genome Res 14:1188')}). The same logo is drawn for the other ${esc(W.marks)}, and each position shows the residue the selection gains and loses most against them, in percentage points. ` +
-      `This describes the windows; the Overview’s motif questions are the tests. Exports: SVG, PNG and a TSV of the counts per position and the aligned windows.</p></section>` : ''));
+    (`<p>On a protein’s page, the ${esc(ENS.xref)} gene from UniProt’s cross-references is sent from your browser ` +
+        `to Ensembl Compara (REST at ${esc(ENS.rest)}) for orthologs in the species of the set you choose (${
+esc(PRESETS.length ? PRESETS.map(p => `${p.label}: ${p.list.map(s => s.label).join(', ')}`).join('; ') : CATALOGUE.map(s => s.label).join(', '))}). `) +
+    (`Each species uses its ortholog of highest identity, with Ensembl’s pairwise protein alignment. Positions of ` +
+        `the ${
+esc(D.run.snapshot?.release || 'snapshot')} sequence map to the Ensembl ${esc(ENS.source)} protein ` +
+        `directly when the sequences are identical or nested, otherwise through a unique 15-residue anchor around ` +
+        `each ${esc(W.mark)}. Without one, the position shows as not mapped. `) +
+    (`Columns follow the ${esc(ENS.source)} sequence, so insertions in other species are not shown. A residue is ` +
+        `kept when the ortholog has the same residue there${
+SIMILAR.size ? (`. ${esc([...SIMILAR].join(', '))} is shown ` +
+        `as a conservative change and not counted as kept`) : ''}.</p>`) +
+    (`<p>The chip (“${
+RES.length === 1 ? 'still ' + esc(KEPT) : 'conserved'} in orthologs”) is the mean, over the ` +
+        `protein’s ${esc(W.marks)}, of the share of species that align the ${esc(W.mark)} and keep it. It is ` +
+        `compared with the protein’s other ${esc(W.residues)} (${
+esc(RES.join(', ') || 'the profile’s residues')}) by a two-sided ` +
+        `Wilcoxon rank-sum test (normal approximation, with tie and continuity corrections). Each residue counts ` +
+        `once however many species align it, and fewer than three on either side are not tested. `) +
+    (`It describes one protein and changes no number on this page. If UniProt or Ensembl does not answer, the card ` +
+        `says so and nothing else depends on it. `) +
+    `Exports: SVG and PNG of the alignment around the chosen ${esc(W.mark)}, and a TSV of every ${esc(W.mark)} in every species. ${
+doi('10.1093/database/bav096', 'Herrero et al. 2016')}; ${
+doi('10.1093/bioinformatics/btu613', 'Yates et al. 2015')}.</p></section>` +
+    (CV.logo ? (`<section id="m-logo"><h3>Site alignment and sequence logo</h3><p>On a selection’s Overview, the ` +
+        `selected ${esc(W.marks)} are aligned at the ${esc(W.mark)} using the ${int(2 * (SD()?.wide?.span ?? 15) + 1)}-residue ` +
+        `windows of the canonical sequences (the motif finder’s). Positions past a protein’s end are blank. `) +
+      (`The logo uses every selected ${esc(W.mark)} with a window. “Frequency” stacks the residue frequencies at ` +
+          `each position. “Information” scales each stack by its information content, log2(20) minus the Shannon ` +
+          `entropy and the small-sample correction 19 / (2 ln 2 n) (Schneider et al. 1986, ${
+doi('10.1016/0022-2836(86)90165-8', 'J Mol Biol 188:415')}), so a position ` +
+          `held by one residue reaches about ${AA_BITS.toFixed(1)} bits at most. `) +
+      (`Colors follow WebLogo’s chemistry scheme (Crooks et al. 2004, ${
+doi('10.1101/gr.849004', 'Genome Res 14:1188')}). The same ` +
+          `logo is drawn for the other ${esc(W.marks)}, and each position shows the residue the selection gains ` +
+          `and loses most against them, in percentage points. `) +
+      (`This describes the windows; the Overview’s motif questions are the tests. Exports: SVG, PNG and a TSV of ` +
+          `the counts per position and the aligned windows.</p></section>`) : ''));
   const baseMethod = K.sections.method;
   K.sections.method = () => {
     const s = baseMethod(), at = s.findIndex(x => x[0] === 'm-g2');
@@ -471,14 +570,16 @@
 
   // ---- style -----------------------------------------------------------------------------------------------------------------
   const css = document.createElement('style');
-  css.textContent = `.cv-chip { cursor: pointer; color: var(--ink-2); font: inherit; font-size: 0.85rem; }
+  css.textContent = (`.cv-chip { cursor: pointer; color: var(--ink-2); font: inherit; font-size: 0.85rem; }
 .cv-chip:hover { border-color: var(--accent); color: var(--accent-dark); }
 .cv-test { margin: 0.5rem 0; }
-.cv-set { margin: 0.3rem 0 0; } .cv-set select { font: inherit; padding: 0.15rem 0.35rem; border: 1px solid var(--line-strong); border-radius: 0.35rem; background: var(--surface); color: var(--ink); }
+.cv-set { margin: 0.3rem 0 0; } .cv-set select { font: inherit; padding: 0.15rem 0.35rem; border: 1px solid ` +
+    `var(--line-strong); border-radius: 0.35rem; background: var(--surface); color: var(--ink); }
 .cv-sum { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin: 0.5rem 0; }
 .cv-wrap { overflow-x: auto; margin: 0.4rem 0; }
 .cv-tbl { border-collapse: collapse; font-size: 0.82rem; }
-.cv-tbl th, .cv-tbl td { padding: 0.15rem 0.4rem; text-align: center; border: 1px solid var(--line); white-space: nowrap; }
+.cv-tbl th, .cv-tbl td { padding: 0.15rem 0.4rem; text-align: center; border: 1px solid var(--line); white-space: ` +
+    `nowrap; }
 .cv-tbl tbody th { text-align: left; font-weight: 600; }
 .cv-tbl td { font-family: ui-monospace, Menlo, Consolas, monospace; min-width: 1.8rem; }
 .cv-tbl .cv-k { background: color-mix(in srgb, var(--accent) 30%, var(--surface)); font-weight: 700; }
@@ -487,10 +588,12 @@
 .cv-tbl .cv-g, .cv-tbl .cv-u { color: var(--muted); }
 .cv-tbl .linkish.cur { font-weight: 700; text-decoration: underline; }
 .cv-ctl { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; margin: 0.6rem 0; font-size: 0.85rem; }
-.cv-fig { overflow-x: auto; background: #fff; border: 1px solid var(--line); border-radius: 0.4rem; padding: 0.3rem; }
+.cv-fig { overflow-x: auto; background: #fff; border: 1px solid var(--line); border-radius: 0.4rem; padding: ` +
+    `0.3rem; }
 .cv-fig svg { display: block; max-width: 100%; height: auto; }
-.cv-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.8rem 1.2rem; flex-wrap: wrap; }
+.cv-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.8rem 1.2rem; flex-wrap: ` +
+    `wrap; }
 .cv-card { padding: 0.4rem 0; }
-.cv-col:hover { fill: rgba(0, 0, 0, 0.08); }`;
+.cv-col:hover { fill: rgba(0, 0, 0, 0.08); }`);
   document.head.appendChild(css);
 });

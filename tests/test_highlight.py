@@ -146,3 +146,27 @@ def test_idr_page_says_what_each_count_counts_and_exports_follow_highlighted_onl
     assert "hname('diagram')" in idrs and "_highlighted" in idrs and 'data-idr-hltsv' not in idrs   # one TSV, which honors the switch
     assert "'Search:'" in hl and 'hl-chip-nf' in hl and 'ci = have ?' in hl                           # a search is not a highlight; struck chips
     assert "return ['idrs', 'IDRs', scoped().length]" in idrs                                         # the tab's number is the heading's
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_entries_that_resolve_to_one_protein_share_one_chip_named_by_the_gene():
+    script = f"""
+const fs = require('fs');
+global.window = global; global.document = {{ createElement: () => ({{}}), head: {{ appendChild() {{}} }}, addEventListener() {{}} }};
+const S = {{ q: '', f: {{}} }};
+const byName = {{ tdp43: 7, tardbp: 7, fus: 3 }};
+const K = {{ esc: s => String(s), int: n => String(n), S, clicks: [], paramsIn: [], paramsOut: [], tw: (t, s) => t.length * s * 0.55, writeHash() {{}}, render() {{}},
+  D: {{ proteins: Array.from({{ length: 8 }}, (_, i) => (i === 7 ? ['Q13148', 'TARDBP'] : i === 3 ? ['P35637', 'FUS'] : ['X' + i, 'G' + i])) }},
+  sel: {{ active: () => false, data: () => ({{}}), select: (q) => (byName[q.toLowerCase()] != null ? {{ active: true, proteins: new Set([byName[q.toLowerCase()]]), marks: [1], q: {{ sites: [], genes: [0] }} }} : {{ active: true, proteins: new Set(), marks: [], q: {{ sites: [], genes: [] }} }}) }} }};
+eval(fs.readFileSync({json.dumps(str(ASSETS / 'kit-hilite.js'))}, 'utf8'));
+window.PTMC_MODULES.forEach(m => m(K));
+K.paramsIn.forEach(f => f(new URLSearchParams('hl=tdp43%2C+FUS%2C+tardbp%2C+zzz')));
+const line = K.hl.line(3, 'IDRs'), p = new URLSearchParams(); K.paramsOut.forEach(f => f(p));
+const chips = [...line.matchAll(/<span class="hl-chip([^"]*)"[^>]*>([^<]*?) <button/g)].map(m => [m[2], m[1].trim()]);
+console.log(JSON.stringify({{ chips, hl: p.get('hl') }}));
+"""
+    run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr[-800:]
+    out = json.loads(run.stdout)
+    assert out['chips'] == [['tdp43 → TARDBP', ''], ['FUS', ''], ['zzz', 'hl-chip-nf']]
+    assert out['hl'] == 'tdp43, FUS, zzz'

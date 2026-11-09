@@ -79,7 +79,8 @@
   const tracksVersion = t => [...new Set((t.roles || []).map(roleVersion).filter(Boolean))].join('; ');
   // the source's own page for this protein (a manifest entry's record), for each input of a track's roles
   const recordLinks = (t, acc) => Object.values(D.inputs || {}).filter(x => (t.roles || []).some(r => rolesOf(x).includes(r)) && x.record)
-    .map(x => `<a href="${esc(x.record.replace('{acc}', encodeURIComponent(acc)))}">${esc(sourceName(x))} ${esc(acc)}</a>`).join(' · ');
+    .map(x => `<a href="${
+esc(x.record.replace('{acc}', encodeURIComponent(acc)))}">${esc(sourceName(x))} ${esc(acc)}</a>`).join(' · ');
   // where a site row's items come from: the versions of the inputs it reads (the marks table is the site's own)
   const ownTables = r => (Array.isArray(r.from) ? r.from : r.from ? [r.from] : []);
   const ownVersion = r => [...new Set(ownTables(r).map(f => (f.role ? roleVersion(f.role) : (Object.values(D.inputs || {}).find(x => x.use && x.use === W.marks) || {}).version || '')).filter(Boolean))].join('; ');
@@ -93,16 +94,25 @@
     ['regions', 'Regions', 'live', 'Regions and motifs (outlined) of the UniProt entry (its “Disordered” regions are left out), read live'],
     ['composition', 'Composition', 'live', 'Compositional bias of the UniProt entry, read live'],
     ...TRACKS.filter(t => t.style === 'segments').map(t => [trackRow(t), t.title, 'site', trackHelp(t)]),
-    ['charge', 'Charge', 'sequence', 'Net charge along the chain: a 5-residue sliding mean on the EMBOSS charge scale (K, R +1; H +0.5; D, E −1), positive up (blue), negative down (red)'],
-    ['hydropathy', 'Hydropathy', 'sequence', 'Hydropathy along the chain: a 9-residue sliding mean of the Kyte–Doolittle scale (J Mol Biol 157:105, 1982), hydrophobic up (amber), hydrophilic down (teal); the axis runs from −3 to +3'],
+    ['charge', 'Charge', 'sequence', ('Net charge along the chain: a 5-residue sliding mean on the EMBOSS charge scale ' +
+'(K, R +1; H +0.5; D, E −1), positive up (blue), negative down (red)')],
+    ['hydropathy', 'Hydropathy', 'sequence', ('Hydropathy along the chain: a 9-residue sliding mean of the Kyte–Doolittle ' +
+'scale (J Mol Biol 157:105, 1982), hydrophobic up (amber), hydrophilic down ' +
+'(teal); the axis runs from −3 to +3')],
     ['aromatic', 'Aromatic', 'sequence', 'Aromatic residues (F, Y, W): the “stickers” of many disordered regions'],
-    ['residues', `All ${W.residues}`, 'sequence', `Every ${W.residue.replace(/^an? /, '')} of the sequence: the ${W.marks} in their color, the others gray`],
-    ['uni_mark', `${cap(W.marks)} in UniProt`, 'live', `The ${W.marks} as UniProt reports them (Modified residue features named in the mark’s profile), inked where this site has the ${W.mark} too`],
-    ['variants', 'Variants', 'live', `Natural variants of the UniProt entry, read live; inked and labeled where they change a ${W.mark}`],
-    ['mutagen', 'Mutagenesis', 'live', `Mutagenesis features of the UniProt entry (diamonds), read live; inked and labeled where they change a ${W.mark}`],
+    ['residues', `All ${W.residues}`, 'sequence', (`Every ${W.residue.replace(/^an? /, '')} of the sequence: the ${W.marks} in their ` +
+        `color, the others gray`)],
+    ['uni_mark', `${cap(W.marks)} in UniProt`, 'live', (`The ${W.marks} as UniProt reports them (Modified residue ` +
+        `features named in the mark’s profile), inked where this site has the ${W.mark} too`)],
+    ['variants', 'Variants', 'live', (`Natural variants of the UniProt entry, read live; inked and labeled where ` +
+        `they change a ${W.mark}`)],
+    ['mutagen', 'Mutagenesis', 'live', (`Mutagenesis features of the UniProt entry (diamonds), read live; inked and ` +
+        `labeled where they change a ${W.mark}`)],
     ['ptm', 'Other PTMs', 'live', 'Modified residues, cross-links, glycosylation and lipidation of the UniProt entry, read live, one row per kind'],
-    ...(PDB_ON ? [['pdb', 'Contacts in PDB structures', 'live', 'Residues at an interface with RNA, DNA, another protein or another copy in experimental structures (PDBe-KB, read live). Click for the PDB entries']] : []),
-    ['plddt', 'AlphaFold', 'live', 'The AlphaFold DB model’s confidence (pLDDT) per residue, read live; drawn only where the model’s sequence is this one'],
+    ...(PDB_ON ? [['pdb', 'Contacts in PDB structures', 'live', ('Residues at an interface with RNA, DNA, another protein or another copy in ' +
+'experimental structures (PDBe-KB, read live). Click for the PDB entries')]] : []),
+    ['plddt', 'AlphaFold', 'live', ('The AlphaFold DB model’s confidence (pLDDT) per residue, read live; drawn only ' +
+'where the model’s sequence is this one')],
   ];
   // the site file's own rows, each placed after the row it names (after:), else at the end
   const ownId = r => 'cf:' + r.id;
@@ -204,22 +214,26 @@
   // ---- marks drawn the same way on the map, in its key and in the exports ------------------------------------------
   const r1 = v => Math.round(v * 10) / 10;
   const MK = {
-    head: (P, x, y, r, c, hollow, attr = '', stroke) => `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r}" fill="${hollow ? P.surf : c}" stroke="${hollow ? c : stroke || P.surf}" stroke-width="${hollow ? 1.6 : stroke ? 2 : 1}"${hollow ? ' stroke-dasharray="2.2 1.4"' : ''}${attr}/>`,
+    head: (P, x, y, r, c, hollow, attr = '', stroke) => `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r}" fill="${hollow ? P.surf : c}" stroke="${hollow ? c : stroke || P.surf}" stroke-width="${hollow ? 1.6 : stroke ? 2 : 1}"${
+hollow ? ' stroke-dasharray="2.2 1.4"' : ''}${attr}/>`,
     // a hatched head: a rim in its color crossed by diagonal chords, so it reads apart from a solid head in gray too
     hatch: (P, x, y, r0, c, attr = '', stroke) => {
       const r = Math.max(2, r0 * 0.8); let d = '';
       for (const off of [-r * 0.5, 0, r * 0.5]) { const h = (Math.sqrt(r * r - off * off) - 0.4) / Math.SQRT2, cx = x + off / Math.SQRT2, cy = y + off / Math.SQRT2; d += `M${r1(cx - h)} ${r1(cy + h)}L${r1(cx + h)} ${r1(cy - h)}`; }
-      return `<g${attr}><circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" fill="${P.surf}" stroke="${stroke || c}" stroke-width="${stroke ? 2 : 1.2}"/><path d="${d}" stroke="${c}" stroke-width="0.9" stroke-linecap="round"/></g>`;
+      return (`<g${attr}><circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" fill="${P.surf}" stroke="${stroke || c}" stroke-width="${stroke ? 2 : 1.2}"/><path d="${d}" stroke="${c}" stroke-width="0.9" ` +
+          `stroke-linecap="round"/></g>`);
     },
     // a hatched tick: an outlined bar in its color crossed by diagonal strokes (a mark shown and counted nowhere)
     htick: (P, x, y, h, c, attr = '', stroke) => {
       const w = 5, x0 = x - w / 2, y0 = y - h / 2; let d = '';
       for (let t = -w; t < h; t += 3) { const a = Math.max(0, -t), b = Math.min(w, h - t); if (b > a) d += `M${r1(x0 + a)} ${r1(y0 + t + a)}L${r1(x0 + b)} ${r1(y0 + t + b)}`; }
-      return `<g${attr}><rect x="${r1(x0)}" y="${r1(y0)}" width="${w}" height="${r1(h)}" rx="1" fill="${P.surf}" stroke="${stroke || c}" stroke-width="${stroke ? 1.8 : 1.1}"/><path d="${d}" stroke="${c}" stroke-width="0.9" stroke-linecap="round"/></g>`;
+      return (`<g${attr}><rect x="${r1(x0)}" y="${r1(y0)}" width="${w}" height="${r1(h)}" rx="1" fill="${P.surf}" stroke="${stroke || c}" stroke-width="${stroke ? 1.8 : 1.1}"/><path d="${d}" stroke="${c}" stroke-width="0.9" ` +
+          `stroke-linecap="round"/></g>`);
     },
     tick: (x, y, h, c, attr = '', w = 2, op = 1) => `<rect x="${r1(x - w / 2)}" y="${r1(y - h / 2)}" width="${r1(w)}" height="${r1(h)}" rx="0.6" fill="${c}"${op < 1 ? ` fill-opacity="${op}"` : ''}${attr}/>`,
     box: (x, y, w, h, c, op = 1, attr = '') => `<rect x="${r1(x)}" y="${r1(y)}" width="${r1(Math.max(1.5, w))}" height="${r1(h)}" rx="1" fill="${c}"${op < 1 ? ` fill-opacity="${op}"` : ''}${attr}/>`,
-    pred: (x, y, w, h, c, op, attr = '') => MK.box(x, y, w, h, c, op, (w >= 4 ? ` stroke="${c}" stroke-width="0.7" stroke-dasharray="2 1.2"` : '') + attr),
+    pred: (x, y, w, h, c, op, attr = '') => MK.box(x, y, w, h, c, op, (w >= 4 ? (` stroke="${c}" stroke-width="0.7" ` +
+        `stroke-dasharray="2 1.2"`) : '') + attr),
     dot: (x, y, c, op = 1, attr = '') => `<circle cx="${r1(x)}" cy="${r1(y)}" r="2.8" fill="${c}"${op < 1 ? ` fill-opacity="${op}"` : ''} stroke="${c}" stroke-width="0.8"${attr}/>`,
     diamond: (x, y, s, fill, stroke, attr = '') => `<rect x="${r1(x - s / 2)}" y="${r1(y - s / 2)}" width="${s}" height="${s}" transform="rotate(45 ${r1(x)} ${r1(y)})" fill="${fill}" stroke="${stroke}" stroke-width="1.1"${attr}/>`,
   };
@@ -229,12 +243,15 @@
     hatch: c => (P, x, y) => MK.hatch(P, x + 10, y, 5, c),
     htick: c => (P, x, y) => MK.htick(P, x + 10, y, 12, c),
     tick: (c, op) => (P, x, y) => MK.tick(x + 10, y, 12, c, '', 2.4, op),
-    box: (c, op, stroke) => (P, x, y) => `<rect x="${x}" y="${y - 5}" width="20" height="10" rx="2" fill="${c}"${op < 1 ? ` fill-opacity="${op}"` : ''}${stroke ? ` stroke="${stroke}" stroke-width="0.8"` : ''}/>`,
+    box: (c, op, stroke) => (P, x, y) => `<rect x="${x}" y="${y - 5}" width="20" height="10" rx="2" fill="${c}"${op < 1 ? ` fill-opacity="${op}"` : ''}${
+stroke ? ` stroke="${stroke}" stroke-width="0.8"` : ''}/>`,
     pred: (c, op) => (P, x, y) => MK.pred(x, y - 5, 20, 10, c, op),
     dot: (c, op) => (P, x, y) => MK.dot(x + 10, y, c, op),
     diamond: (fill, stroke) => (P, x, y) => MK.diamond(x + 10, y, 6, fill, stroke),
-    wave: c => (P, x, y) => `<path d="M${x} ${y} Q${x + 2.5} ${y - 4} ${x + 5} ${y} T${x + 10} ${y} T${x + 15} ${y} T${x + 20} ${y}" fill="none" stroke="${c}" stroke-width="1.4"/>`,
-    split: (up, dn) => (P, x, y) => `<rect x="${x}" y="${y - 6}" width="20" height="6" fill="${up}"/><rect x="${x}" y="${y}" width="20" height="6" fill="${dn}"/>`,
+    wave: c => (P, x, y) => (`<path d="M${x} ${y} Q${x + 2.5} ${y - 4} ${x + 5} ${y} T${x + 10} ${y} T${x + 15} ${y} T${x + 20} ${y}" fill="none" ` +
+        `stroke="${c}" stroke-width="1.4"/>`),
+    split: (up, dn) => (P, x, y) => (`<rect x="${x}" y="${y - 6}" width="20" height="6" fill="${up}"/><rect x="${x}" y="${y}" width="20" ` +
+        `height="6" fill="${dn}"/>`),
   };
   const swatchHtml = (draw, P) => `<svg class="sw" width="22" height="14" viewBox="0 -7 22 14" aria-hidden="true">${draw(P, 1, 0)}</svg>`;
 
@@ -248,7 +265,9 @@
   function featureProv(acc, f, full) {
     const pm = pubmed(f), ev = [...new Set(ecos(f).map(e => ECO[e] || e))].join(', ');
     const entry = full ? `<a href="https://www.uniprot.org/uniprotkb/${esc(acc)}/entry">UniProt ${esc(acc)}</a>` : `UniProt ${esc(acc)}`;
-    return `<br><span class="muted">${entry} (read live${ctxUni() ? ', entry version ' + esc(ctxUni()) : ''}) · ${esc(f.type)}${ev ? ' · ' + esc(ev) : ''}${pm.length ? ' · PubMed ' + (full ? pm.slice(0, 12).map(id => `<a href="https://pubmed.ncbi.nlm.nih.gov/${esc(id)}/">${esc(id)}</a>`).join(', ') : esc(pm.slice(0, 4).join(', ')) + (pm.length > 4 ? ` +${pm.length - 4}` : '')) : ''}</span>`;
+    return `<br><span class="muted">${entry} (read live${
+ctxUni() ? ', entry version ' + esc(ctxUni()) : ''}) · ${esc(f.type)}${ev ? ' · ' + esc(ev) : ''}${
+pm.length ? ' · PubMed ' + (full ? pm.slice(0, 12).map(id => `<a href="https://pubmed.ncbi.nlm.nih.gov/${esc(id)}/">${esc(id)}</a>`).join(', ') : esc(pm.slice(0, 4).join(', ')) + (pm.length > 4 ? ` +${pm.length - 4}` : '')) : ''}</span>`;
   }
   const ctxUni = () => M.ctx?.uni?.entryAudit?.entryVersion;
   // the kinds of UniProt PTM features (config/uniprot_ptm_kinds.json); the profile's own mark has a row of its own
@@ -310,7 +329,9 @@
     const s = SOURCES[n] || {}, lab = s.label || n;
     if (!full) return esc(lab);
     const href = s.doi ? `https://doi.org/${s.doi}` : s.url || '';
-    return `${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(lab)}</a>` : esc(lab)}${s.cite ? ` <span class="muted">(${esc(s.cite)})</span>` : ''}`;
+    return `${
+href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(lab)}</a>` : esc(lab)}${
+s.cite ? ` <span class="muted">(${esc(s.cite)})</span>` : ''}`;
   }).join(full ? '<br>' : ', ');
 
   // ---- PDB interfaces, live from PDBe-KB ----------------------------------------------------------------------------
@@ -356,6 +377,20 @@
   // ---- drawing --------------------------------------------------------------------------------------------------
   // o.Wd lays the map out at another width (a narrow screen, a journal column); o.ex draws it for export, in light colors
   function draw(ctx, o = {}) {
+    const c = { ctx, o };      // what each step makes and the later ones read
+    draw_setup(c);
+    draw_marks(c);
+    draw_labels(c);
+    draw_rowlabel(c);
+    draw_backbone(c);
+    draw_heads(c);
+    draw_rowsetup(c);
+    draw_rows(c);
+    draw_axis(c);
+    return draw_finish(c);
+  }
+  function draw_setup(c) {
+    const { o, ctx } = c;
     const ex = !!o.ex, Wd = o.Wd || 1000, narrow = Wd < 700;
     const ML = narrow ? Math.min(128, Math.round(Wd * 0.35)) : 168, MR = narrow ? 14 : 18, X0 = ML, X1 = Wd - MR;
     const P = pal(ex);
@@ -365,8 +400,8 @@
     const XA = a => X(Math.max(a, za) - 0.5), XB = b => X(Math.min(b, zb) + 0.5);    // a stretch's edges, in view
     const items = []; const it = x => items.push(x) - 1;
     const parts = [], back = [], legend = [], drawnRows = [];
-    let cur = 'Backbone';                                         // the key groups its entries by the track they belong to
-    const key = (draw, label) => { if (label && !legend.some(l => l.label === label)) legend.push({ draw, label, row: cur }); };
+    c.cur = 'Backbone';                                         // the key groups its entries by the track they belong to
+    const key = (draw, label) => { if (label && !legend.some(l => l.label === label)) legend.push({ draw, label, row: c.cur }); };
     const sel = ctx.selected;                                   // positions of the selected marks, or null
     const atMark = new Set(rec.marks.map(m => m[0]));
     const markAt = new Map(rec.marks.map(m => [m[0], m]));
@@ -375,12 +410,22 @@
     const resName = q => (K.prot?.siteLabel ? K.prot.siteLabel(p.acc, q) : `${seq[q - 1] || ''}${q}`);
     const span2 = (a, b) => (a === b ? resName(a) : `${shown(a)}–${shown(b)}`);
     const inside = (a, b) => rec.marks.filter(m => m[0] >= a && m[0] <= b).map(m => m[0]);
-    const insideHtml = (a, b, full) => { const ins = inside(a, b); if (!ins.length || a === b) return ''; return `<br>${int(ins.length)} ${esc(ins.length === 1 ? W.mark : W.marks)} inside: ${full ? ins.slice(0, 40).map(q => `<button type="button" class="linkish mono" data-site-open="${q}">${esc(resName(q))}</button>`).join(' ') : esc(ins.slice(0, 8).map(resName).join(', ')) + (ins.length > 8 ? ` +${ins.length - 8}` : '')}`; };
+    const insideHtml = (a, b, full) => { const ins = inside(a, b); if (!ins.length || a === b) return ''; return `<br>${int(ins.length)} ${esc(ins.length === 1 ? W.mark : W.marks)} inside: ${
+full ? ins.slice(0, 40).map(q => (`<button type="button" ` +
+        `class="linkish mono" data-site-open="${q}">${esc(resName(q))}</button>`)).join(' ') : esc(ins.slice(0, 8).map(resName).join(', ')) + (ins.length > 8 ? ` +${ins.length - 8}` : '')}`; };
+    Object.assign(c, { rec, X, inView, X0, X1, shown, resName, ex, narrow, ML, P, p, XA, XB, it, parts, back, drawnRows, key, insideHtml, uni, span2, sel, Wd, seq, za, zb, atMark, inside, af, L, span, markAt, items, legend });
+  }
+  function draw_marks(c) {
+    const { rec, inView, X } = c;
     // the marks: stacked heads (a head moves up a level within 11 px of the one before it at that level)
     const marks = rec.marks.filter(m => inView(m[0], m[0])).sort((a, b) => a[0] - b[0]);
     const lastX = []; const level = new Map();
     marks.forEach(m => { const x = X(m[0]); let l = 0; while (l < 9 && lastX[l] != null && x - lastX[l] < 11) l++; lastX[l] = x; level.set(m[0], l); });
     const nLev = Math.max(1, ...[...level.values()].map(v => v + 1));
+    Object.assign(c, { marks, nLev, level });
+  }
+  function draw_labels(c) {
+    const { marks, resName, X, shown, X0, X1, nLev } = c;
     // labels: Auto (3 lines, merged where they collide; none above 120 marks), All (12 lines), None
     const labels = [];
     const lmode = M.labels, maxLines = lmode === 'all' ? 12 : lmode === 'auto' ? 3 : 0;
@@ -416,10 +461,14 @@
     }
     const nLines = labels.length ? Math.max(...labels.map(l => l.line)) + 1 : 0;
     const top = 8 + nLines * 13, headY = l => top + 8 + (nLev - 1 - l) * 11, yB = top + 8 + nLev * 11 + 14;
+    Object.assign(c, { labels, lw, top, headY, yB });
+  }
+  function draw_rowlabel(c) {
+    const { drawnRows, narrow, ML, parts, P, ex, labels, lw, X1, X0, top, headY, level, p, inView, insideHtml, it, back, XA, XB, yB, key } = c;
     // a row's label: left, bold, as large as fits its column (and its hover: what it is and where it comes from)
     const rowLabel = (lab, yMid, help, aside) => {
       if (!aside) drawnRows.push(lab);
-      cur = lab;
+      c.cur = lab;
       const size = 11; let t = lab;          // track labels are never smaller than 11; one that does not fit is cut, its hover has the whole
       if (narrow && K.tw(t, size, 600) > ML - 6) {   // a phone: the label wraps onto two lines at a space (the hover has the whole), the second cut only if it still does not fit
         const cut = x => { while (x.length > 3 && K.tw(x + '…', 10, 600) > ML - 6) x = x.slice(0, -1); return x + '…'; };
@@ -427,12 +476,15 @@
         while (k < ws.length && K.tw((a ? a + ' ' : '') + ws[k], 10, 600) <= ML - 6) a += (a ? ' ' : '') + ws[k++];
         const b0 = ws.slice(k).join(' ') || '', b = b0 && K.tw(b0, 10, 600) > ML - 6 ? cut(b0) : b0;
         if (a && b) {
-          parts.push(`<text x="2" y="${r1(yMid - 1)}" font-size="10" font-weight="600" fill="${P.muted}"${ex ? '' : ` data-rowhelp="${esc(lab + ': ' + help)}"`}>${esc(a)}</text><text x="2" y="${r1(yMid + 10)}" font-size="10" font-weight="600" fill="${P.muted}">${esc(b)}</text>`);
+          parts.push((`<text x="2" y="${r1(yMid - 1)}" font-size="10" font-weight="600" fill="${P.muted}"${
+ex ? '' : ` data-rowhelp="${esc(lab + ': ' + help)}"`}>${esc(a)}</text><text ` +
+              `x="2" y="${r1(yMid + 10)}" font-size="10" font-weight="600" fill="${P.muted}">${esc(b)}</text>`));
           return;
         }
       }
       if (K.tw(t, size, 600) > ML - 6) { while (t.length > 3 && K.tw(t + '…', size, 600) > ML - 6) t = t.slice(0, -1); t += '…'; }
-      parts.push(`<text x="2" y="${r1(yMid + size * 0.36)}" font-size="${r1(size)}" font-weight="600" fill="${P.muted}"${ex ? '' : ` data-rowhelp="${esc(lab + ': ' + help)}"`}>${esc(t)}</text>`);
+      parts.push(`<text x="2" y="${r1(yMid + size * 0.36)}" font-size="${r1(size)}" font-weight="600" fill="${P.muted}"${
+ex ? '' : ` data-rowhelp="${esc(lab + ': ' + help)}"`}>${esc(t)}</text>`);
     };
     labels.forEach(l => {
       // inside the frame: a label that would run past the right edge ends at it
@@ -448,12 +500,17 @@
     OWN_ROWS.filter(r => r.place === 'backbone' && isOn(ownId(r))).forEach(r => {
       const its = ownItems(p.acc, r) || [], c = cfgColour(r, 'colour', P, P.ink), op = r.opacity ?? 0.08;
       its.filter(x => inView(x[1], x[2])).forEach(x => {
-        const tip = full => `<b>${esc(r.title)}</b> ${x[1]}–${x[2]}${x[4] ? '<br>' + esc(x[4]) : ''}${insideHtml(x[1], x[2], full)}<br><span class="muted">${esc(ownHelp(r))}</span>`;
+        const tip = full => (`<b>${esc(r.title)}</b> ${x[1]}–${x[2]}${x[4] ? '<br>' + esc(x[4]) : ''}${insideHtml(x[1], x[2], full)}<br><span ` +
+            `class="muted">${esc(ownHelp(r))}</span>`);
         const k = it({ tip: tip(false), card: tip(true), a: x[1], b: x[2], src: { own: r, x } });
         back.push(MK.box(XA(x[1]), top + 2, XB(x[2]) - XA(x[1]), yB + 8 - top - 2, c, op, ` rx="3" data-mi="${k}"`));
       });
       if (its.some(x => inView(x[1], x[2]))) key(SW.box(c, Math.min(1, op * 3)), r.title);
     });
+    Object.assign(c, { rowLabel });
+  }
+  function draw_backbone(c) {
+    const { rec, inView, parts, X0, X1, yB, P, XA, XB, span2, p, it, key, uni, insideHtml } = c;
     // backbone: a bar where ordered, a wave where disordered (the site's disorder), the site's domains as boxes
     const disK = kindsOf('disorder'), segK = kindsOf('segments');
     const dis = rec.units.filter(u => disK.has(u[0]) && isOn('bb:' + u[0]) && inView(u[1], u[2]));
@@ -466,9 +523,13 @@
       while (x < b) { const nx = Math.min(b, x + 5); d += ` Q${r1((x + nx) / 2)},${up ? yB - 5 : yB + 5} ${r1(nx)},${yB}`; x = nx; up = !up; }
       // the other regions here that come from the same input (an IDR made from this disorder), not every track's
       const t = trackOf(kind), over = segs.filter(([k2, is, ie]) => is <= e && ie >= s && (trackOf(k2).roles || []).some(r => (t.roles || []).includes(r))).slice(0, 6);
-      const tip = full => `<b>${esc(t.title)} ${span2(s, e)}</b>${over.map(([k2, is, ie, lab]) => `<br>${esc(trackOf(k2).title)} ${is}–${ie}${lab ? ': ' + esc(lab) : ''}`).join('')}<br><span class="muted">${esc(tracksVersion(t))}</span>${full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`;
+      const tip = full => (`<b>${esc(t.title)} ${span2(s, e)}</b>${
+over.map(([k2, is, ie, lab]) => `<br>${esc(trackOf(k2).title)} ${is}–${ie}${lab ? ': ' + esc(lab) : ''}`).join('')}<br><span ` +
+          `class="muted">${esc(tracksVersion(t))}</span>${
+full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`);
       const k = it({ tip: tip(false), card: tip(true), a: s, b: e, src: { track: t } });
-      parts.push(`<path d="${d}" fill="none" stroke="${P.muted}" stroke-width="1.6" data-mi="${k}" pointer-events="stroke"/>`, `<rect x="${r1(a)}" y="${yB - 7}" width="${r1(b - a)}" height="14" fill="transparent" data-mi="${k}"/>`);
+      parts.push(`<path d="${d}" fill="none" stroke="${P.muted}" stroke-width="1.6" data-mi="${k}" pointer-events="stroke"/>`, (`<rect x="${r1(a)}" y="${yB - 7}" width="${r1(b - a)}" height="14" ` +
+          `fill="transparent" data-mi="${k}"/>`));
       key(SW.wave(P.muted), t.title);
     });
     // a short name for a domain: the UniProt domain over most of it, else the site's name before any " · "
@@ -479,23 +540,39 @@
       const a = XA(s), b = XB(e), w = Math.max(2, b - a), t = trackOf(kind), ver = tracksVersion(t);
       const from = (D.unit_sources || [])[src] || ver, short = shortName(s, e, lab);
       const link = refLink(ref);
-      const tip = full => `<b>${esc(lab || t.title)}</b>${ref ? ` (${full && link ? `<a href="${esc(link)}">${esc(ref)}</a>` : esc(ref)})` : ''}<br>${span2(s, e)}${insideHtml(s, e, full)}<br><span class="muted">${esc(t.title)}: ${esc(from)}${ver && !from.includes(ver) ? ' (' + esc(ver) + ')' : ''}</span>${full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`;
+      const tip = full => (`<b>${esc(lab || t.title)}</b>${
+ref ? ` (${
+full && link ? `<a href="${esc(link)}">${esc(ref)}</a>` : esc(ref)})` : ''}<br>${span2(s, e)}${insideHtml(s, e, full)}<br><span ` +
+          `class="muted">${esc(t.title)}: ${esc(from)}${
+ver && !from.includes(ver) ? ' (' + esc(ver) + ')' : ''}</span>${
+full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`);
       const k = it({ tip: tip(false), card: tip(true), a: s, b: e, src: { track: t } });
-      parts.push(`<rect x="${r1(a)}" y="${yB - 8}" width="${r1(w)}" height="16" rx="4" fill="${P.dom}" stroke="${P.domEdge}" stroke-width="1" data-mi="${k}"/>`);
-      if (short && K.tw(short, 10, 600) + 8 < w) parts.push(`<text x="${r1((a + b) / 2)}" y="${yB + 3.5}" font-size="10" font-weight="600" text-anchor="middle" fill="${P.domInk}" pointer-events="none">${esc(short)}</text>`);
+      parts.push((`<rect x="${r1(a)}" y="${yB - 8}" width="${r1(w)}" height="16" rx="4" fill="${P.dom}" stroke="${P.domEdge}" stroke-width="1" ` +
+          `data-mi="${k}"/>`));
+      if (short && K.tw(short, 10, 600) + 8 < w) parts.push((`<text x="${r1((a + b) / 2)}" y="${yB + 3.5}" font-size="10" ` +
+          `font-weight="600" text-anchor="middle" fill="${P.domInk}" pointer-events="none">${esc(short)}</text>`));
       else if (short) below.push([(a + b) / 2, short]);
       key(SW.box(P.dom, 1, P.domEdge), t.title);
     });
+    Object.assign(c, { below, dis, segs });
+  }
+  function draw_heads(c) {
+    const { marks, X, headY, level, ex, sel, ctx, resName, parts, yB, P, p, rowLabel, top, nLev, key, rec, inView, it } = c;
     // sticks and heads
     const ringed = [];      // highlighted heads already ringed: a neighbor's ring is drawn larger, so two rings never coincide
     marks.forEach(m => {
       const x = X(m[0]), y = headY(level.get(m[0])), c = siteColour(m, ex), faded = sel && !sel.has(m[0]), on = ctx.site === m[0] && !ex;
-      const op = faded && !on ? ' opacity="0.28"' : '', attr = `${op}${ex ? '' : ` data-msite="${m[0]}" tabindex="0" role="button" aria-label="${esc(resName(m[0]))}${c.label ? ', ' + esc(c.label) : ''}"`}`;
+      const op = faded && !on ? ' opacity="0.28"' : '', attr = `${op}${
+ex ? '' : (` data-msite="${m[0]}" tabindex="0" ` +
+          `role="button" aria-label="${esc(resName(m[0]))}${c.label ? ', ' + esc(c.label) : ''}"`)}`;
       parts.push(`<line x1="${r1(x)}" x2="${r1(x)}" y1="${yB - 3}" y2="${r1(y + 5)}" stroke="${P.line}" stroke-width="1"${faded ? ' opacity="0.28"' : ''}/>`);
       parts.push(c.hatched ? MK.hatch(P, x, y, on ? 6.5 : 5, c.c, attr, on ? P.ink : null) : MK.head(P, x, y, on ? 6.5 : 5, c.c, c.hollow, attr, on ? P.ink : null));
-      if (K.hl?.isSite(p.i, m[0], true)) { const near = ringed.filter(q => Math.abs(q[0] - x) < 22 && Math.abs(q[1] - y) < 22).length; ringed.push([x, y]); parts.push(`<circle cx="${r1(x)}" cy="${r1(y)}" r="${(on ? 10.5 : 9) + 3 * near}" fill="none" stroke="${ex ? '#c2410c' : 'var(--accent)'}" stroke-width="2.2" stroke-dasharray="3 2" pointer-events="none"><title>Highlighted</title></circle>`); }
+      if (K.hl?.isSite(p.i, m[0], true)) { const near = ringed.filter(q => Math.abs(q[0] - x) < 22 && Math.abs(q[1] - y) < 22).length; ringed.push([x, y]); parts.push((`<circle cx="${r1(x)}" cy="${r1(y)}" r="${(on ? 10.5 : 9) + 3 * near}" fill="none" ` +
+          `stroke="${ex ? '#c2410c' : 'var(--accent)'}" stroke-width="2.2" stroke-dasharray="3 2" ` +
+          `pointer-events="none"><title>Highlighted</title></circle>`)); }
     });
-    if (marks.length) rowLabel(cap(W.marks), top + 8 + (nLev - 1) * 5.5, `the ${W.marks} of this site, colored as chosen above; click one for its card`, true);
+    if (marks.length) rowLabel(cap(W.marks), top + 8 + (nLev - 1) * 5.5, (`the ${W.marks} of this site, colored as ` +
+        `chosen above; click one for its card`), true);
     if (marks.some(m => hatched(m))) key(SW.hatch(P.muted), HATCH_LABEL);
     // the marks the site shows and counts nowhere (K.shown, website.shown_marks): hatched ticks on the backbone, in
     // their color, each with its tag's hover; a click pins it with a link to its card
@@ -503,7 +580,8 @@
     shownHere.forEach(m => {
       const x = X(m[0]), c = siteColour(m, ex), on = ctx.site === m[0] && !ex;
       const words = K.shown?.tip ? K.shown.tip(m, true) : '';
-      const tipOf = full => `<b>${esc(resName(m[0]))}</b> · ${esc(K.shown?.row ? K.shown.row() : '')}${c.label ? ' · ' + esc(c.label) : ''}<br><span class="win mono">${esc(m[1] || '')}</span><br><span class="muted">${esc(words)}</span>` +
+      const tipOf = full => (`<b>${esc(resName(m[0]))}</b> · ${esc(K.shown?.row ? K.shown.row() : '')}${c.label ? ' · ' + esc(c.label) : ''}<br><span ` +
+          `class="win mono">${esc(m[1] || '')}</span><br><span class="muted">${esc(words)}</span>`) +
         (full ? `<br><button type="button" class="linkish" data-site-open="${m[0]}">Open its card</button>` : '');
       const k = it({ tip: tipOf(false), card: tipOf(true), a: m[0], b: m[0] });
       parts.push(MK.htick(P, x, yB - 9, 13, c.c, ex ? '' : ` data-mi="${k}" data-shown="${m[0]}"`, on ? P.ink : null));
@@ -512,23 +590,30 @@
       if (!marks.length) rowLabel(cap(W.marks), yB - 9, `the ${W.marks} of this site; hatched: shown, not counted`, true);
       key(SW.htick(P.muted), K.shown?.row ? K.shown.row() : 'Shown, not counted');
     }
-    let y = yB + 22;
+  }
+  function draw_rowsetup(c) {
+    const { yB, below, Wd, parts, P, rowLabel, X0, za, zb, X1, XA, XB, inside, it, uni, ctx, inView, insideHtml, p, key, seq, span2, atMark, X } = c;
+    c.y = yB + 22;
     if (below.length) {
       // names of domains too narrow to hold them, under the backbone where there is room
       let right = -1e9;
-      below.sort((a, b) => a[0] - b[0]).forEach(([mx, t]) => { const w = K.tw(t, 9.5); if (mx - w / 2 > right + 6 && mx + w / 2 < Wd) { parts.push(`<text x="${r1(mx)}" y="${yB + 20}" font-size="9.5" text-anchor="middle" fill="${P.muted}">${esc(t)}</text>`); right = mx + w / 2; } });
-      y += 8;
+      below.sort((a, b) => a[0] - b[0]).forEach(([mx, t]) => { const w = K.tw(t, 9.5); if (mx - w / 2 > right + 6 && mx + w / 2 < Wd) { parts.push((`<text x="${r1(mx)}" y="${yB + 20}" font-size="9.5" ` +
+          `text-anchor="middle" fill="${P.muted}">${esc(t)}</text>`)); right = mx + w / 2; } });
+      c.y += 8;
     }
     // ---- the rows ----
     const zoomed = !!M.zoom;
-    const noneIn = (lab, help) => { rowLabel(lab, y + 6, help); parts.push(`<text x="${X0}" y="${y + 9}" font-size="10" fill="${P.muted}">none in ${za}–${zb}</text>`); y += 18; };
-    const msg = (lab, help, text) => { rowLabel(lab, y + 6, help); parts.push(`<text x="${X0}" y="${y + 9}" font-size="10" fill="${P.muted}">${esc(text)}</text>`); y += 20; };
+    const noneIn = (lab, help) => { rowLabel(lab, c.y + 6, help); parts.push((`<text x="${X0}" y="${c.y + 9}" font-size="10" ` +
+        `fill="${P.muted}">none in ${za}–${zb}</text>`)); c.y += 18; };
+    const msg = (lab, help, text) => { rowLabel(lab, c.y + 6, help); parts.push((`<text x="${X0}" y="${c.y + 9}" font-size="10" ` +
+        `fill="${P.muted}">${esc(text)}</text>`)); c.y += 20; };
     const baseLine = (yy) => parts.push(`<line x1="${X0}" x2="${X1}" y1="${r1(yy)}" y2="${r1(yy)}" stroke="${P.faint}" stroke-width="0.8"/>`);
     // a label beside a tick, with a halo, flipped left at the right edge; skipped where it would hit the one before
     const labelAt = (xx, yy, text, right) => {
       const tw = K.tw(text, 9), flip = xx + 4 + tw > Wd - 2;
       if ((flip ? xx - 4 - tw : xx + 4) <= right.v + 5) return;
-      parts.push(`<text x="${r1(flip ? xx - 4 : xx + 4)}" y="${r1(yy - 4)}" font-size="9" fill="${P.ink}" stroke="${P.surf}" stroke-width="2.5" paint-order="stroke"${flip ? ' text-anchor="end"' : ''}>${esc(text)}</text>`);
+      parts.push((`<text x="${r1(flip ? xx - 4 : xx + 4)}" y="${r1(yy - 4)}" font-size="9" fill="${P.ink}" stroke="${P.surf}" stroke-width="2.5" ` +
+          `paint-order="stroke"${flip ? ' text-anchor="end"' : ''}>${esc(text)}</text>`));
       right.v = flip ? xx : xx + 4 + tw;
     };
     // boxes in lanes, each named inside, after it, or cut (UniProt's regions, a site's families)
@@ -548,9 +633,11 @@
     const namedBoxes = (list, fill, stroke, ink, labOf, tipOf, srcOf) => {
       const placed = lanes(list.slice().sort((p1, p2) => p1.a - p2.a || (p2.b - p2.a) - (p1.b - p1.a)), 5, labOf), nl = Math.max(1, ...placed.map(x => x.l + 1));
       placed.forEach(({ f, a, w, l, text, how }) => {
-        const yy = y + l * 15, k = it({ tip: tipOf(f, false), card: tipOf(f, true), a: f.a, b: f.b, src: srcOf ? srcOf(f) : undefined });
-        parts.push(`<rect x="${r1(a)}" y="${yy}" width="${r1(w)}" height="12" rx="3" fill="${fill(f)}"${stroke(f) ? ` stroke="${stroke(f)}" stroke-width="0.8"` : ''} data-mi="${k}"/>`);
-        if (how === 'in' || how === 'cut') parts.push(`<text x="${r1(how === 'in' ? a + w / 2 : a + 3)}" y="${yy + 9}" font-size="9.5"${how === 'in' ? ' text-anchor="middle"' : ''} fill="${ink}" pointer-events="none">${esc(text)}</text>`);
+        const yy = c.y + l * 15, k = it({ tip: tipOf(f, false), card: tipOf(f, true), a: f.a, b: f.b, src: srcOf ? srcOf(f) : undefined });
+        parts.push(`<rect x="${r1(a)}" y="${yy}" width="${r1(w)}" height="12" rx="3" fill="${fill(f)}"${
+stroke(f) ? ` stroke="${stroke(f)}" stroke-width="0.8"` : ''} data-mi="${k}"/>`);
+        if (how === 'in' || how === 'cut') parts.push(`<text x="${r1(how === 'in' ? a + w / 2 : a + 3)}" y="${yy + 9}" font-size="9.5"${
+how === 'in' ? ' text-anchor="middle"' : ''} fill="${ink}" pointer-events="none">${esc(text)}</text>`);
         else if (how === 'after') parts.push(`<text x="${r1(a + w + 4)}" y="${yy + 9}" font-size="9.5" fill="${ink}">${esc(text)}</text>`);
       });
       return nl * 15;
@@ -568,7 +655,7 @@
       const fs = all.filter(f => inView(...fpos(f))).map(f => ({ a: fpos(f)[0], b: fpos(f)[1], u: f }));
       if (!fs.length) { if (zoomed) noneIn(row[1], row[3]); return; }
       const h = namedBoxes(fs, f => fill(f.u), f => stroke(f.u), P.boxInk, f => labOf(f.u), (f, full) => `<b>${esc(f.u.type)}</b> ${esc(f.u.description || '')}<br>${f.a}–${f.b}${insideHtml(f.a, f.b, full)}` + featureProv(p.acc, f.u, full));
-      rowLabel(row[1], y + 6, row[3]); y += h + 6;
+      rowLabel(row[1], c.y + 6, row[3]); c.y += h + 6;
       keyFill.forEach(([c, l, st]) => key(SW.box(c, 1, st), l));
     };
     // a row of the site file's: its items, each drawn by its class's mark, with its words and sources
@@ -599,21 +686,28 @@
       const vOp = r.value?.opacity, opOf = x => (vOp && x[5] != null ? r1(0.18 + 0.32 * Math.min(1, Math.max(0, (x[5] - vOp[0]) / Math.max(1e-9, vOp[1] - vOp[0])))) : clsOf(x).opacity ?? r.opacity ?? 1);
       const valText = v => (v == null || v === '' ? '' : (r.value ? (v === 1 ? r.value.one || r.value.many : r.value.many || r.value.one) || '{n}' : '{n}').replace('{n}', fmtNum(v)));
       const tipOf = (x, full) => {
-        const cs = clsOf(x), head = !order.length && x[4] && x[1] === x[2] ? `<b>${esc(x[4])}</b>${x[5] != null ? ' ' + esc(valText(x[5])) : ''}` : `<b>${esc(cs.label || x[4] || r.title)}</b> ${span2(x[1], x[2])}${(cs.label && x[4]) ? '<br>' + esc(x[4]) : ''}${x[5] != null ? '<br>' + esc(valText(x[5])) : ''}`;
+        const cs = clsOf(x), head = !order.length && x[4] && x[1] === x[2] ? `<b>${esc(x[4])}</b>${
+x[5] != null ? ' ' + esc(valText(x[5])) : ''}` : `<b>${esc(cs.label || x[4] || r.title)}</b> ${span2(x[1], x[2])}${
+(cs.label && x[4]) ? '<br>' + esc(x[4]) : ''}${
+x[5] != null ? '<br>' + esc(valText(x[5])) : ''}`;
         const words = r.sequence?.words && x[8] ? '<br>' + esc(r.sequence.words.replace('{n}', x[8].n).replace('{strong}', x[8].strong)) : '';
         const srcs = [...String(x[7] || '').split('; '), ...(cs.sources || [])].filter(Boolean);
-        const ref = x[6] ? `<br>${full && refLink(x[6]) ? `<a href="${esc(refLink(x[6]))}" target="_blank" rel="noopener">${esc(x[6])}</a>` : esc(x[6])}` : '';
+        const ref = x[6] ? `<br>${
+full && refLink(x[6]) ? (`<a href="${esc(refLink(x[6]))}" target="_blank" ` +
+            `rel="noopener">${esc(x[6])}</a>`) : esc(x[6])}` : '';
         return head + (x[1] === x[2] && atMark.has(x[1]) ? ` · at a ${esc(W.mark)}` : '') + words + ref + insideHtml(x[1], x[2], full) +
-          (srcs.length ? `<br>${full ? sourcesHtml([...new Set(srcs)], true) : esc([...new Set(srcs)].map(n => SOURCES[n]?.label || n).join(', '))}` : '') +
-          (cs.help ? `<br><span class="muted">${esc(cs.help)}</span>` : '') + `<br><span class="muted">${esc(r.title)}${full ? ': ' + esc(ownHelp(r)) : r.sequence ? ', found in the sequence' : ownVersion(r) ? ' · ' + esc(ownVersion(r)) : ''}</span>`;
+          (srcs.length ? `<br>${
+full ? sourcesHtml([...new Set(srcs)], true) : esc([...new Set(srcs)].map(n => SOURCES[n]?.label || n).join(', '))}` : '') +
+          (cs.help ? `<br><span class="muted">${esc(cs.help)}</span>` : '') + `<br><span class="muted">${esc(r.title)}${
+full ? ': ' + esc(ownHelp(r)) : r.sequence ? ', found in the sequence' : ownVersion(r) ? ' · ' + esc(ownVersion(r)) : ''}</span>`;
       };
       if (shown.every(x => markOf(x) === 'named')) {
         const h = namedBoxes(shown.map(x => ({ a: x[1], b: x[2], x })), f => colourOf(f.x), () => '', ink, f => f.x[4], (f, full) => tipOf(f.x, full), f => ({ own: r, x: f.x }));
-        rowLabel(row[1], y + 6, row[3]); y += h + 6;
+        rowLabel(row[1], c.y + 6, row[3]); c.y += h + 6;
         [...new Set(shown.map(x => x[3]))].forEach(c => key(SW.box(cfgColour(CL[c], 'colour', P, base)), CL[c]?.label || r.title));
         return;
       }
-      const h = r.value?.size ? 18 : 14, mid = y + h / 2;
+      const h = r.value?.size ? 18 : 14, mid = c.y + h / 2;
       baseLine(mid);
       const rank = x => (order.length ? order.indexOf(x[3]) : 0);
       shown.slice().sort((x1, x2) => rank(x1) - rank(x2) || (x2[2] - x2[1]) - (x1[2] - x1[1])).forEach(x => {
@@ -631,7 +725,7 @@
         shown.filter(x => x[1] === x[2] && atMark.has(x[1]) && x[4]).forEach(x => { if (!at.has(x[1])) at.set(x[1], []); at.get(x[1]).push(x); });
         [...at.entries()].sort((a1, a2) => a1[0] - a2[0]).forEach(([q, xs]) => labelAt(X(q), mid, xs.map(x => x[4] + (x[5] > 1 ? ` ×${x[5]}` : '')).join(', '), right));
       }
-      rowLabel(row[1], mid, row[3]); y += h + 6;
+      rowLabel(row[1], mid, row[3]); c.y += h + 6;
       const inked = x => r.labels === 'marks' && x[1] === x[2] && atMark.has(x[1]) && !CL[x[3]]?.colour;
       const drawn = [...new Set(shown.filter(x => !inked(x)).map(x => x[3]))].sort((c1, c2) => (order.indexOf(c1) + 1 || 99) - (order.indexOf(c2) + 1 || 99));
       drawn.forEach(cl => {
@@ -643,28 +737,41 @@
     // PDB interfaces (PDBe-KB, live): one row per kind of partner
     const pdbRows = row => {
       const st = PDBK[p.acc];
-      if (!st || st.state === 'loading') { msg(row[1], row[3], 'asking PDBe-KB…'); y += 20 * (PDB_KEYS.length - 1); return; }   // room for the rows it will bring, so the rows below stay put
+      if (!st || st.state === 'loading') { msg(row[1], row[3], 'asking PDBe-KB…'); c.y += 20 * (PDB_KEYS.length - 1); return; }   // room for the rows it will bring, so the rows below stay put
       if (st.state === 'failed') { msg(row[1], row[3], 'PDBe-KB did not answer'); return; }
       if (st.state !== 'ok') return;
       for (const [k, title, what] of PDB_KEYS) {
         const runs = st.runs[k]; if (!runs.length) continue;
         const shown = runs.filter(r => inView(r.a, r.b));
         if (!shown.length) { if (zoomed) noneIn(title, row[3]); continue; }
-        const c = P[k], mid = y + 7;
+        const c = P[k], mid = c.y + 7;
         baseLine(mid);
         shown.forEach(run => {
           const names = [...run.names], ids = [...run.entries.keys()];
-          const tip = full => `<b>${esc(title)}</b> ${span2(run.a, run.b)}<br>${esc(what)} in ${int(ids.length)} PDB entr${ids.length === 1 ? 'y' : 'ies'}${k === 'protein' ? '<br>' + esc(names.slice(0, 6).join(', ')) + (names.length > 6 ? ` and ${names.length - 6} more` : '') : ''}${insideHtml(run.a, run.b, full)}` +
+          const tip = full => `<b>${esc(title)}</b> ${span2(run.a, run.b)}<br>${esc(what)} in ${int(ids.length)} PDB entr${ids.length === 1 ? 'y' : 'ies'}${
+k === 'protein' ? '<br>' + esc(names.slice(0, 6).join(', ')) + (names.length > 6 ? ` and ${names.length - 6} more` : '') : ''}${insideHtml(run.a, run.b, full)}` +
             (full ? `<br>${ids.slice(0, 30).map(id => { const e = run.entries.get(id), d3 = typeof K.show3d === 'function' ? M.d3.push({ acc: p.acc, pdb: id, chains: [...e.chains], start: run.a, end: run.b, kind: k, partners: [...e.names], residues: inside(run.a, run.b), source: 'map' }) - 1 : -1;
-              return `<a href="https://www.rcsb.org/structure/${esc(id)}" target="_blank" rel="noopener" class="mono">${esc(id.toUpperCase())}</a>${e.chains.size ? ` <span class="muted">chain ${esc([...e.chains].join(', '))}</span>` : ''}${k === 'protein' ? ` <span class="muted">${esc([...e.names].slice(0, 2).join(', '))}</span>` : ''}${d3 >= 0 ? ` <button type="button" class="linkish" data-map3d="${d3}">Open in 3D</button>` : ''}`; }).join('<br>')}${ids.length > 30 ? `<br>and ${int(ids.length - 30)} more` : ''}` : '<br><i>click for the PDB entries</i>') +
-            `<br><span class="muted">${full ? `<a href="https://www.ebi.ac.uk/pdbe/pdbe-kb/proteins/${esc(p.acc)}" target="_blank" rel="noopener">PDBe-KB ${esc(p.acc)}</a>` : 'PDBe-KB'} interface residues, read live</span>`;
+              return (`<a href="https://www.rcsb.org/structure/${esc(id)}" target="_blank" rel="noopener" ` +
+                  `class="mono">${esc(id.toUpperCase())}</a>${
+e.chains.size ? ` <span class="muted">chain ${esc([...e.chains].join(', '))}</span>` : ''}${
+k === 'protein' ? ` <span class="muted">${esc([...e.names].slice(0, 2).join(', '))}</span>` : ''}${
+d3 >= 0 ? (` <button ` +
+                  `type="button" class="linkish" data-map3d="${d3}">Open in 3D</button>`) : ''}`); }).join('<br>')}${
+ids.length > 30 ? `<br>and ${int(ids.length - 30)} more` : ''}` : '<br><i>click for the PDB entries</i>') +
+            `<br><span class="muted">${
+full ? (`<a href="https://www.ebi.ac.uk/pdbe/pdbe-kb/proteins/${esc(p.acc)}" target="_blank" ` +
+                `rel="noopener">PDBe-KB ${esc(p.acc)}</a>`) : 'PDBe-KB'} interface residues, read live</span>`;
           const kk = it({ tip: tip(false), card: () => tip(true), a: run.a, b: run.b });
           parts.push(MK.box(XA(run.a), mid - 5, XB(run.b) - XA(run.a), 10, c, 0.85, ` data-mi="${kk}"`));
         });
-        rowLabel(title, mid, row[3]); y += 20;
+        rowLabel(title, mid, row[3]); c.y += 20;
         key(SW.box(c, 0.85), title);
       }
     };
+    Object.assign(c, { zoomed, noneIn, msg, baseLine, labelAt, uniRow, ownRow, pdbRows });
+  }
+  function draw_rows(c) {
+    const { ownRow, pdbRows, uniRow, P, segs, inView, noneIn, XA, XB, span2, insideHtml, p, it, parts, key, rowLabel, seq, ctx, X, za, span, zb, X0, X1, markAt, ex, uni, msg, zoomed, baseLine, atMark, labelAt, resName, af, L } = c;
     for (const id of rowOrder()) {
       if (!isOn(id) || isBackbone(id)) continue;
       const row = ROW_OF[id];
@@ -682,47 +789,58 @@
         const what = (K.A[t.analysis] || {}).describe || '';
         shown.forEach(([, s, e, lab, , code, ref]) => {
           const a = XA(s), b = XB(e), link = refLink(ref);
-          const tip = full => `<b>${esc(t.title)} ${span2(s, e)}</b>${lab ? '<br>' + esc(lab) : code ? '<br>' + esc(segLabels(t)[code] || code) : ''}${ref ? `<br>${full && link ? `<a href="${esc(link)}">${esc(ref)}</a>` : esc(ref)}` : ''}${insideHtml(s, e, full)}<br><span class="muted">${esc(t.help || '')}${tracksVersion(t) ? ' (' + esc(tracksVersion(t)) + ')' : ''}${what ? '; ' + esc(what) : ''}</span>${full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`;
+          const tip = full => (`<b>${esc(t.title)} ${span2(s, e)}</b>${
+lab ? '<br>' + esc(lab) : code ? '<br>' + esc(segLabels(t)[code] || code) : ''}${
+ref ? `<br>${
+full && link ? `<a href="${esc(link)}">${esc(ref)}</a>` : esc(ref)}` : ''}${insideHtml(s, e, full)}<br><span ` +
+              `class="muted">${esc(t.help || '')}${
+tracksVersion(t) ? ' (' + esc(tracksVersion(t)) + ')' : ''}${what ? '; ' + esc(what) : ''}</span>${
+full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''}`);
           const k = it({ tip: tip(false), card: tip(true), a: s, b: e, src: { track: t } });
-          parts.push(`<rect x="${r1(a)}" y="${y}" width="${r1(Math.max(2, b - a))}" height="12" rx="3" fill="${segColour(t, code)}" data-mi="${k}"/>`);
+          parts.push(`<rect x="${r1(a)}" y="${c.y}" width="${r1(Math.max(2, b - a))}" height="12" rx="3" fill="${segColour(t, code)}" data-mi="${k}"/>`);
         });
         const here = new Set(shown.map(u => u[5]).filter(Boolean));
         if (t.analysis || t.colours || t.classes) Object.keys(segLabels(t)).filter(c => here.has(c)).forEach(c => key(SW.box(segColour(t, c)), segLabels(t)[c]));
         else key(SW.box(SEG_PLAIN), t.title);
-        rowLabel(row[1], y + 6, row[3]); y += 20;
+        rowLabel(row[1], c.y + 6, row[3]); c.y += 20;
       } else if ((id === 'charge' || id === 'hydropathy') && seq) {
-        const h = 34, mid = y + h / 2, isC = id === 'charge', scale = isC ? 1 : 3, cu = isC ? P.chargeP : P.hydroP, cd = isC ? P.chargeN : P.hydroN;
+        const h = 34, mid = c.y + h / 2, isC = id === 'charge', scale = isC ? 1 : 3, cu = isC ? P.chargeP : P.hydroP, cd = isC ? P.chargeN : P.hydroN;
         const sm = isC ? (ctx.charge ||= slide([...seq].map(c => CHARGE[c] || 0), 5)) : (ctx.hydro ||= slide([...seq].map(c => KD[c] ?? 0), 9));
         let up = `M${r1(X(za))},${mid}`, dn = up;
         const step = Math.max(1, Math.floor(span / 1400));
         for (let i = za; i <= zb; i += step) { const c = Math.max(-scale, Math.min(scale, sm[i - 1])) / scale, xx = r1(X(i)); up += ` L${xx},${r1(mid - Math.max(0, c) * h / 2)}`; dn += ` L${xx},${r1(mid - Math.min(0, c) * h / 2)}`; }
         up += ` L${r1(X(zb))},${mid} Z`; dn += ` L${r1(X(zb))},${mid} Z`;
-        parts.push(`<line x1="${X0}" x2="${X1}" y1="${mid}" y2="${mid}" stroke="${P.line}" stroke-width="0.6"/><path d="${up}" fill="${cu}" opacity="0.75"/><path d="${dn}" fill="${cd}" opacity="0.75"/>`);
-        parts.push(`<text x="${X1 + 2}" y="${y + 5}" font-size="8.5" fill="${P.muted}">+${scale}</text><text x="${X1 + 2}" y="${y + h}" font-size="8.5" fill="${P.muted}">−${scale}</text>`);
-        rowLabel(row[1], mid, row[3]); y += h + 8;
+        parts.push((`<line x1="${X0}" x2="${X1}" y1="${mid}" y2="${mid}" stroke="${P.line}" stroke-width="0.6"/>` +
+            `<path d="${up}" fill="${cu}" opacity="0.75"/><path d="${dn}" fill="${cd}" opacity="0.75"/>`));
+        parts.push((`<text x="${X1 + 2}" y="${c.y + 5}" font-size="8.5" fill="${P.muted}">+${scale}</text><text x="${X1 + 2}" y="${c.y + h}" font-size="8.5" ` +
+            `fill="${P.muted}">−${scale}</text>`));
+        rowLabel(row[1], mid, row[3]); c.y += h + 8;
         key(SW.split(cu, cd), isC ? 'Charge, 5-aa mean (+ / −)' : 'Hydropathy, 9-aa mean (hydrophobic / hydrophilic)');
       } else if (id === 'aromatic' && seq) {
-        for (let i = za; i <= zb; i++) if ('FYW'.includes(seq[i - 1])) { const xx = r1(X(i)); parts.push(`<line x1="${xx}" x2="${xx}" y1="${y + (seq[i - 1] === 'W' ? 0 : 2)}" y2="${y + 12}" stroke="${P.aro[seq[i - 1]]}" stroke-width="1"/>`); }
-        rowLabel(row[1], y + 6, `${row[3]}. F teal, Y violet, W amber`); y += 20;
+        for (let i = za; i <= zb; i++) if ('FYW'.includes(seq[i - 1])) { const xx = r1(X(i)); parts.push(`<line x1="${xx}" x2="${xx}" y1="${c.y + (seq[i - 1] === 'W' ? 0 : 2)}" y2="${c.y + 12}" stroke="${P.aro[seq[i - 1]]}" stroke-width="1"/>`); }
+        rowLabel(row[1], c.y + 6, `${row[3]}. F teal, Y violet, W amber`); c.y += 20;
         Object.entries(P.aro).forEach(([aa, c]) => key(SW.tick(c), `Aromatic ${aa}`));
       } else if (id === 'residues' && seq) {
         const res = new Set(D.residues || []);
-        for (let i = za; i <= zb; i++) if (res.has(seq[i - 1])) { const xx = r1(X(i)), m = markAt.get(i); parts.push(`<line x1="${xx}" x2="${xx}" y1="${y + (m ? 0 : 3)}" y2="${y + (m ? 14 : 11)}" stroke="${m ? siteColour(m, ex).c : P.rtick}" stroke-width="${m ? 2 : 0.9}"/>`); }
-        rowLabel(row[1], y + 7, row[3]); y += 20;
+        for (let i = za; i <= zb; i++) if (res.has(seq[i - 1])) { const xx = r1(X(i)), m = markAt.get(i); parts.push(`<line x1="${xx}" x2="${xx}" y1="${c.y + (m ? 0 : 3)}" y2="${c.y + (m ? 14 : 11)}" stroke="${m ? siteColour(m, ex).c : P.rtick}" stroke-width="${m ? 2 : 0.9}"/>`); }
+        rowLabel(row[1], c.y + 7, row[3]); c.y += 20;
         key(SW.tick(P.rtick), `Other ${W.residue.replace(/^an? /, '')} (not a ${W.mark})`);
       } else if (id === 'variants' || id === 'mutagen') {
         if (!uni) { msg(row[1], row[3], ctx.uniFailed ? 'UniProt did not answer' : 'asking UniProt…'); continue; }
         const isMut = id === 'mutagen', allV = (uni.features || []).filter(f => f.type === (isMut ? 'Mutagenesis' : 'Natural variant')), fs = allV.filter(f => inView(...fpos(f)));
         if (!fs.length) { if (allV.length && zoomed) noneIn(row[1], row[3]); continue; }
-        const mid = y + 7, right = { v: -1e9 }, done = new Set();
+        const mid = c.y + 7, right = { v: -1e9 }, done = new Set();
         baseLine(mid);
         let hits = 0;
         fs.sort((a, b) => fpos(a)[0] - fpos(b)[0]).forEach(f => {
           const [s, e] = fpos(f), xx = X(s), at = s === e && atMark.has(s);
-          const alt = f.alternativeSequence ? `${f.alternativeSequence.originalSequence || ''}${s}${(f.alternativeSequence.alternativeSequences || []).join('/')}` : `${s}`;
+          const alt = f.alternativeSequence ? `${
+f.alternativeSequence.originalSequence || ''}${s}${
+(f.alternativeSequence.alternativeSequences || []).join('/')}` : `${s}`;
           const snp = [...new Set((f.featureCrossReferences || []).filter(x => x.database === 'dbSNP').map(x => x.id))];
           const desc = String(f.description || '').replace(/;?\s*dbSNP:rs\d+/g, '').trim();
-          const tip = full => `<b>${esc(f.type)} ${esc(alt)}</b>${at ? ` · at a ${esc(W.mark)}` : ''}${desc ? '<br>' + esc(desc) : ''}${snp.length ? '<br>dbSNP ' + (full ? snp.map(x => `<a href="https://www.ncbi.nlm.nih.gov/snp/${esc(x)}">${esc(x)}</a>`).join(', ') : esc(snp.join(', '))) : ''}` + featureProv(p.acc, f, full);
+          const tip = full => `<b>${esc(f.type)} ${esc(alt)}</b>${at ? ` · at a ${esc(W.mark)}` : ''}${desc ? '<br>' + esc(desc) : ''}${
+snp.length ? '<br>dbSNP ' + (full ? snp.map(x => `<a href="https://www.ncbi.nlm.nih.gov/snp/${esc(x)}">${esc(x)}</a>`).join(', ') : esc(snp.join(', '))) : ''}` + featureProv(p.acc, f, full);
           const k = it({ tip: tip(false), card: tip(true), a: s, b: e }), col = at ? P.ink : P.variant;
           if (isMut) parts.push(MK.diamond(s === e ? xx : (XA(s) + XB(e)) / 2, mid, 6, col, col, ` data-mi="${k}"`));
           else parts.push(MK.tick(xx, mid, at ? 14 : 9, col, ` data-mi="${k}"`, at ? 3 : 2));
@@ -731,11 +849,12 @@
             done.add(s); hits++;
             const same = fs.filter(g => fpos(g)[0] === s && fpos(g)[1] === s), tos = [...new Set(same.flatMap(g => g.alternativeSequence?.alternativeSequences || []))];
             const dis = [...new Set(same.map(g => (/\bin ([A-Z][A-Za-z0-9-]+)/.exec(g.description || '') || [])[1]).filter(Boolean))];
-            const vt = `${f.alternativeSequence?.originalSequence || seq[s - 1] || ''}${s}${tos.join('/')}${dis.length ? ' ' + dis[0] : ''}`;
+            const vt = `${
+f.alternativeSequence?.originalSequence || seq[s - 1] || ''}${s}${tos.join('/')}${dis.length ? ' ' + dis[0] : ''}`;
             labelAt(xx, mid, vt, right);
           }
         });
-        rowLabel(row[1], mid, row[3]); y += 20;
+        rowLabel(row[1], mid, row[3]); c.y += 20;
         key(isMut ? SW.diamond(P.variant, P.variant) : SW.tick(P.variant), isMut ? 'Mutagenesis (UniProt)' : 'Natural variant (UniProt)');
         if (hits) key(isMut ? SW.diamond(P.ink, P.ink) : SW.tick(P.ink), `${isMut ? 'Mutagenesis' : 'Variant'} at a ${W.mark}`);
       } else if (id === 'uni_mark') {
@@ -743,14 +862,16 @@
         const all = (uni.features || []).filter(ownPtm), fs = all.filter(f => inView(...fpos(f)));
         if (!all.length) continue;
         if (!fs.length) { noneIn(row[1], row[3]); continue; }
-        const mid = y + 7;
+        const mid = c.y + 7;
         fs.forEach(f => {
           const [s] = fpos(f), at = atMark.has(s);
-          const tip = full => `<b>${esc(f.description || f.type)}</b> ${esc(resName(s))}${at ? ` · also a ${esc(W.mark)} of this site` : ` · <b>not</b> among this site’s ${esc(W.marks)}`}` + featureProv(p.acc, f, full);
+          const tip = full => `<b>${esc(f.description || f.type)}</b> ${esc(resName(s))}${
+at ? ` · also a ${esc(W.mark)} of this site` : (` · <b>not</b>` +
+              ` among this site’s ${esc(W.marks)}`)}` + featureProv(p.acc, f, full);
           const k = it({ tip: tip(false), card: tip(true), a: s, b: s });
           parts.push(MK.tick(X(s), mid, 11, at ? P.ink : P.own, ` data-mi="${k}"`, 2.4));
         });
-        rowLabel(row[1], mid, row[3]); y += 18;
+        rowLabel(row[1], mid, row[3]); c.y += 18;
         key(SW.tick(P.ink), `In UniProt and this site`); key(SW.tick(P.own), `In UniProt only`);
       } else if (id === 'ptm') {
         if (!uni) { msg(row[1], row[3], ctx.uniFailed ? 'UniProt did not answer' : 'asking UniProt…'); continue; }
@@ -760,17 +881,17 @@
         const kinds = (D.ptm_kinds || []).map(r => r.kind).filter((k, i, a) => a.indexOf(k) === i && fs.some(f => ptmKind(f) === k));
         if (fs.some(f => ptmKind(f) === 'Other PTM') && !kinds.includes('Other PTM')) kinds.push('Other PTM');
         kinds.forEach(kind => {
-          const mid = y + 6;
+          const mid = c.y + 6;
           fs.filter(f => ptmKind(f) === kind).forEach(f => {
             const [s] = fpos(f), at = atMark.has(s);
             const tip = full => `<b>${esc(f.description || f.type)}</b> ${esc(resName(s))}${at ? ` · at a ${esc(W.mark)}` : ''}` + featureProv(p.acc, f, full);
             const k = it({ tip: tip(false), card: tip(true), a: s, b: s });
             parts.push(MK.tick(X(s), mid, 11, at ? P.ink : P.ptm, ` data-mi="${k}"`, 2.4));
           });
-          rowLabel(kind, mid, `${row[3]}. This row: ${kind}`); y += 17;
+          rowLabel(kind, mid, `${row[3]}. This row: ${kind}`); c.y += 17;
         });
         key(SW.tick(P.ptm), 'Other PTM (UniProt)');
-        y += 4;
+        c.y += 4;
       } else if (id === 'plddt') {
         if (!af) { msg(row[1], row[3], ctx.afFailed ? 'AlphaFold DB did not answer' : ctx.afNone ? 'No model' : 'asking AlphaFold DB…'); continue; }
         const pl = af.plddt;
@@ -778,48 +899,78 @@
         let run = za;
         for (let i = za + 1; i <= zb + 1; i++) {
           if (i <= zb && afColour(pl[i - 1]) === afColour(pl[run - 1])) continue;
-          parts.push(`<rect x="${X(run - 0.5).toFixed(2)}" y="${y}" width="${(X(i - 0.5) - X(run - 0.5) + 0.3).toFixed(2)}" height="10" fill="${afColour(pl[run - 1])}"/>`);
+          parts.push((`<rect x="${X(run - 0.5).toFixed(2)}" y="${c.y}" width="${
+(X(i - 0.5) - X(run - 0.5) + 0.3).toFixed(2)}" height="10" ` +
+              `fill="${afColour(pl[run - 1])}"/>`));
           run = i;
         }
-        rowLabel(`${row[1]} v${af.version}`, y + 5, `${row[3]}. Bands: ${AF_BINS.map(b => b[2]).join(', ')}`); y += 18;
+        rowLabel(`${row[1]} v${af.version}`, c.y + 5, `${row[3]}. Bands: ${AF_BINS.map(b => b[2]).join(', ')}`); c.y += 18;
         AF_BINS.forEach(([, c, l]) => key(SW.box(c), `pLDDT ${l}`));
       }
     }
+  }
+  function draw_axis(c) {
+    const { parts, X0, X1, P, span, narrow, shown, za, zb, X, rowLabel, ex, ctx, inView, back, XA, XB } = c;
     // the position axis, at the foot
-    y += 4;
-    parts.push(`<line x1="${X0}" x2="${X1}" y1="${y}" y2="${y}" stroke="${P.faint}"/>`);
+    c.y += 4;
+    parts.push(`<line x1="${X0}" x2="${X1}" y1="${c.y}" y2="${c.y}" stroke="${P.faint}"/>`);
     const raw = span / (narrow ? 4 : 8), mag = Math.pow(10, Math.floor(Math.log10(Math.max(1, raw)))), step = [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw) || mag * 10;
     const off = shown(1) - 1;
-    for (let t = Math.ceil((za + off) / step) * step; t - off <= zb; t += step) { if (t - off < za) continue; parts.push(`<line x1="${r1(X(t - off))}" x2="${r1(X(t - off))}" y1="${y}" y2="${y + 4}" stroke="${P.muted}"/><text x="${r1(X(t - off))}" y="${y + 15}" font-size="10" text-anchor="middle" fill="${P.muted}">${int(t)}</text>`); }
-    rowLabel(off ? 'aa (numbered)' : 'aa', y + 11, off ? 'Residue positions as papers number this protein (UniProt position ' + (off > 0 ? '+' : '−') + Math.abs(off) + ')' : 'Residue positions on the sequence of this site’s snapshot', true);
-    y += 22;
+    for (let t = Math.ceil((za + off) / step) * step; t - off <= zb; t += step) { if (t - off < za) continue; parts.push((`<line x1="${r1(X(t - off))}" x2="${r1(X(t - off))}" y1="${c.y}" y2="${c.y + 4}" stroke="${P.muted}"/><text x="${r1(X(t - off))}" y="${c.y + 15}" font-size="10" ` +
+        `text-anchor="middle" fill="${P.muted}">${int(t)}</text>`)); }
+    rowLabel(off ? 'aa (numbered)' : 'aa', c.y + 11, off ? 'Residue positions as papers number this protein (UniProt position ' + (off > 0 ? '+' : '−') + Math.abs(off) + ')' : 'Residue positions on the sequence of this site’s snapshot', true);
+    c.y += 22;
     // a region the page was opened at (#protein/ACC/120-180): a faint band behind every row
-    if (!ex && ctx.span && inView(ctx.span[0], ctx.span[1])) back.unshift(`<rect x="${r1(XA(ctx.span[0]))}" y="0" width="${r1(XB(ctx.span[1]) - XA(ctx.span[0]))}" height="${y}" fill="${P.accent}" opacity="0.08" pointer-events="none"/>`);
-    if (!ex) parts.push(`<line id="map-cross" x1="0" x2="0" y1="0" y2="${y}" stroke="${P.ink}" stroke-width="0.6" stroke-dasharray="2 2" visibility="hidden" pointer-events="none"/><rect id="map-drag" x="0" y="0" width="0" height="${y}" fill="${P.ink}" opacity="0.08" visibility="hidden" pointer-events="none"/>`);
+    if (!ex && ctx.span && inView(ctx.span[0], ctx.span[1])) back.unshift((`<rect x="${r1(XA(ctx.span[0]))}" y="0" width="${r1(XB(ctx.span[1]) - XA(ctx.span[0]))}" height="${c.y}" fill="${P.accent}" opacity="0.08" ` +
+        `pointer-events="none"/>`));
+    if (!ex) parts.push((`<line id="map-cross" x1="0" x2="0" y1="0" y2="${c.y}" stroke="${P.ink}" stroke-width="0.6" ` +
+        `stroke-dasharray="2 2" visibility="hidden" pointer-events="none"/><rect id="map-drag" x="0" y="0" ` +
+        `width="0" height="${c.y}" fill="${P.ink}" opacity="0.08" visibility="hidden" pointer-events="none"/>`));
+  }
+  function draw_finish(c) {
+    const { ex, items, drawnRows, back, parts, X, za, zb, Wd, X0, X1, legend, P } = c;
     if (!ex) { M.items = items; M.drawn = drawnRows; }
     const svg = back.join('') + parts.join('');
-    return { svg: ex ? svg.replace(/ data-(mi|msite|rowhelp)="[^"]*"/g, '') : svg, H: y + 4, X, za, zb, Wd, X0, X1, legend, drawn: drawnRows, P };
+    return { svg: ex ? svg.replace(/ data-(mi|msite|rowhelp)="[^"]*"/g, '') : svg, H: c.y + 4, X, za, zb, Wd, X0, X1, legend, drawn: drawnRows, P };
   }
+
 
   // ---- on the page --------------------------------------------------------------------------------------------------
   const PANEL = [['', 'Screen layout'], ['85', 'Single column, 85 mm'], ['114', '1.5 columns, 114 mm'], ['174', 'Full width, 174 mm']], DPI = [300, 600, 1000];
   // a journal column: the canvas narrowed until its smallest labels (8.5 units) print at 6 pt, as the explorer's panels
   const panelUnits = mm => Math.round(mm / (6 * 25.4 / 72 / 8.5));
   function controls() {
-    return `<div class="map-ctl"><label>Color ${esc(W.marks)} by <select data-map-colour>${MODES.map(md => `<option value="${esc(md.id)}"${mode().id === md.id ? ' selected' : ''}${md.help ? ` title="${esc(md.help)}"` : ''}>${esc(md.label)}</option>`).join('')}</select></label>` +
-      `<span class="lbl">Labels <span class="seg">${[['auto', 'Auto', 'Up to three lines of labels; neighbors too close share one (R213 +3), and none above 120 marks. Zoom in to separate them'], ['all', 'All', 'Every mark its own label, on as many lines as it needs'], ['none', 'None', 'No labels']].map(([k, l, t]) => `<button type="button" data-map-labels="${k}" aria-pressed="${M.labels === k}" title="${esc(t)}">${l}</button>`).join('')}</span></span>` +
+    return `<div class="map-ctl"><label>Color ${esc(W.marks)} by <select data-map-colour>${
+MODES.map(md => `<option value="${esc(md.id)}"${mode().id === md.id ? ' selected' : ''}${
+md.help ? ` title="${esc(md.help)}"` : ''}>${esc(md.label)}</option>`).join('')}</select></label>` +
+      `<span class="lbl">Labels <span class="seg">${
+[['auto', 'Auto', ('Up to three lines of labels; neighbors too close share one (R213 +3), and none ' +
+'above 120 marks. Zoom in to separate them')], ['all', 'All', 'Every mark its own label, on as many lines as it needs'], ['none', 'None', 'No labels']].map(([k, l, t]) => (`<button type="button" ` +
+          `data-map-labels="${k}" aria-pressed="${M.labels === k}" title="${esc(t)}">${l}</button>`)).join('')}</span></span>` +
       `<span class="rows-wrap"><button type="button" class="btn small" data-map-rows aria-expanded="${M.rowsMenu}">Rows ▾</button>${M.rowsMenu ? rowsMenu() : ''}</span>` +
-      (M.zoom ? `<span class="map-range small" id="map-range">residues ${int(M.zoom[0])}–${int(M.zoom[1])} of ${int(M.ctx?.p?.len || 0)}</span><button type="button" class="btn small" data-map-unzoom title="Show the whole protein again (double-click the map, or press Esc)">Reset zoom</button>` : '') + '</div>';
+      (M.zoom ? (`<span class="map-range small" id="map-range">residues ${int(M.zoom[0])}–${int(M.zoom[1])} of ${int(M.ctx?.p?.len || 0)}</span><button ` +
+          `type="button" class="btn small" data-map-unzoom title="Show the whole protein again (double-click the ` +
+          `map, or press Esc)">Reset zoom</button>`) : '') + '</div>';
   }
   // the exports' size and resolution: a menu beside the PDF, SVG and PNG buttons, not a row of the map's controls
   function exportOpts() {
-    return `<details class="exp-opt"><summary title="The exports' size: the screen layout, or a journal column, laid out again at that width">Size</summary><div class="exp-opt-body">` +
-      `<label>Export size <select data-map-size>${PANEL.map(([v, l]) => `<option value="${v}"${String(M.size.mm) === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>` +
-      `<label>PNG <select data-map-dpi${M.size.mm ? '' : ' disabled title="Pick a column width first"'}>${DPI.map(v => `<option value="${v}"${+M.size.dpi === v ? ' selected' : ''}>${v} dpi</option>`).join('')}</select></label></div></details>`;
+    return (`<details class="exp-opt"><summary title="The exports' size: the screen layout, or a journal column, ` +
+        `laid out again at that width">Size</summary><div class="exp-opt-body">`) +
+      `<label>Export size <select data-map-size>${
+PANEL.map(([v, l]) => `<option value="${v}"${
+String(M.size.mm) === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>` +
+      (`<label>PNG <select data-map-dpi${
+M.size.mm ? '' : ' disabled title="Pick a column width first"'}>${
+DPI.map(v => `<option value="${v}"${+M.size.dpi === v ? ' selected' : ''}>${v} dpi</option>`).join('')}</select>` +
+          `</label></div></details>`);
   }
   function rowsMenu() {
-    return `<div class="rows-menu" role="menu"><p class="flabel">On the backbone</p>` + ROWS.filter(r => isBackbone(r[0])).map(r => `<label title="${esc(r[3])}"><input type="checkbox" data-map-row="${r[0]}"${isOn(r[0]) ? ' checked' : ''}> ${esc(r[1])}</label>`).join('') +
-      `<p class="flabel">Rows, top to bottom</p>` + rowOrder().filter(id => !isBackbone(id)).map(id => { const r = ROW_OF[id]; return `<div class="rm-row"><label title="${esc(r[3])}"><input type="checkbox" data-map-row="${id}"${isOn(id) ? ' checked' : ''}> ${esc(r[1])} <span class="muted">${esc(r[2])}</span></label><span><button type="button" data-map-move="${id}" data-d="-1" aria-label="Up">↑</button><button type="button" data-map-move="${id}" data-d="1" aria-label="Down">↓</button></span></div>`; }).join('') +
+    return `<div class="rows-menu" role="menu"><p class="flabel">On the backbone</p>` + ROWS.filter(r => isBackbone(r[0])).map(r => (`<label title="${esc(r[3])}"><input ` +
+        `type="checkbox" data-map-row="${r[0]}"${isOn(r[0]) ? ' checked' : ''}> ${esc(r[1])}</label>`)).join('') +
+      `<p class="flabel">Rows, top to bottom</p>` + rowOrder().filter(id => !isBackbone(id)).map(id => { const r = ROW_OF[id]; return (`<div class="rm-row">` +
+          `<label title="${esc(r[3])}"><input type="checkbox" data-map-row="${id}"${isOn(id) ? ' checked' : ''}> ${esc(r[1])} <span class="muted">${esc(r[2])}</span></label>` +
+          `<span><button type="button" data-map-move="${id}" data-d="-1" aria-label="Up">↑</button><button ` +
+          `type="button" data-map-move="${id}" data-d="1" aria-label="Down">↓</button></span></div>`); }).join('') +
       `<p><button type="button" class="linkish" data-map-defaults>Default rows</button></p></div>`;
   }
   // the key under the map, drawn with the map's own marks: the color mode first, then what the rows drew
@@ -827,9 +978,12 @@
     const md = mode(), P = m.P;
     const open = M.keyOpen ?? false;                    // collapsed until opened: the color mode's entries and, by track, only the tracks on screen
     const groups = []; m.legend.forEach(e => { let g = groups.find(x => x.row === e.row); if (!g) groups.push(g = { row: e.row, items: [] }); g.items.push(e); });
-    return `<details class="map-key" data-map-key${open ? ' open' : ''}><summary>Key <span class="muted">· ${esc(md.label)}${groups.length ? `, ${groups.length} track${groups.length === 1 ? '' : 's'}` : ''}</span></summary><div class="map-legend"><b>${esc(md.label)}</b>` +
+    return (`<details class="map-key" data-map-key${open ? ' open' : ''}><summary>Key <span class="muted">· ${esc(md.label)}${
+groups.length ? `, ${groups.length} track${groups.length === 1 ? '' : 's'}` : ''}</span></summary>` +
+        `<div class="map-legend"><b>${esc(md.label)}</b>`) +
       modeLegend(ctx, false).map(e => `<span>${swatchHtml(SW.head(e.c, e.hollow), P)}${esc(e.label)}</span>`).join('') + '</div>' +
-      groups.map(g => `<div class="map-legend lg-group"><b>${esc(g.row)}</b>${g.items.map(e => `<span class="rl">${swatchHtml(e.draw, P)}${esc(e.label)}</span>`).join('')}</div>`).join('') + '</details>';
+      groups.map(g => `<div class="map-legend lg-group"><b>${esc(g.row)}</b>${
+g.items.map(e => `<span class="rl">${swatchHtml(e.draw, P)}${esc(e.label)}</span>`).join('')}</div>`).join('') + '</details>';
   }
   // The reserved height is let go when the rows have had their six seconds, so the box is no taller than its drawing
   // (the key, collapsed, would otherwise sit above a blank band). Letting go moves what is under the map, so it waits
@@ -855,7 +1009,8 @@
   // tables links to the page its `link` names ({gene}, {label}, {position}), when the site file gives one
   const sourceLine = x => {
     const s = x.src; if (!s) return '';
-    const line = (href, text) => `<br><span class="muted">Source: <a href="${esc(href)}"${/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : ''}>${esc(text)}</a></span>`;
+    const line = (href, text) => `<br><span class="muted">Source: <a href="${esc(href)}"${
+/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : ''}>${esc(text)}</a></span>`;
     if (s.track) return line(K.link('method', s.track.analysis && K.A[s.track.analysis] ? 'q-' + s.track.analysis : 'map-' + s.track.kind), `${s.track.title}, how it was made`);
     const r = s.own; if (!r) return '';
     if (r.sequence) return line(K.link('method', 'map-' + r.id), `${r.title}, how it was found`);
@@ -866,7 +1021,8 @@
   // the pinned detail: the item's full text and links, until it is closed, Esc is pressed, or the same item is clicked again
   function showPin(p) {
     const pin = document.getElementById('map-pin'); if (!pin) return;
-    pin.hidden = false; pin.innerHTML = `<button type="button" class="pin-x" data-pin-close aria-label="Close the pinned detail">×</button>${p.html}`;
+    pin.hidden = false; pin.innerHTML = (`<button type="button" class="pin-x" data-pin-close aria-label="Close the ` +
+        `pinned detail">×</button>${p.html}`);
   }
   function closePin(focus) {
     const was = M.pin; M.pin = null;
@@ -890,8 +1046,11 @@
     // the live rows arrive in turn and each redraw can change the height: for the first seconds on a protein the box keeps the tallest height seen
     const hold = M.hold && M.hold.acc === ctx.p.acc && M.hold.el === el && Date.now() < M.hold.until ? M.hold : (M.hold = { acc: ctx.p.acc, until: Date.now() + 6000, h: 0, el });
     el.style.minHeight = hold.h ? hold.h + 'px' : '';
-    el.innerHTML = controls() + `<div class="map-svg"><svg viewBox="0 0 ${m.Wd} ${m.H}" role="group" aria-label="Map of ${esc(ctx.p.gene || ctx.p.acc)}"${m.Wd < 1000 ? ` style="max-width:${m.Wd}px"` : ''}>${m.svg}</svg></div>` +
-      `<p class="map-read muted" id="map-read"></p><div id="map-pin" class="map-pin" role="region" aria-label="Pinned detail" hidden></div>` + keyHtml(ctx, m);
+    el.innerHTML = controls() + (`<div class="map-svg"><svg viewBox="0 0 ${m.Wd} ${m.H}" role="group" ` +
+        `aria-label="Map of ${esc(ctx.p.gene || ctx.p.acc)}"${
+m.Wd < 1000 ? ` style="max-width:${m.Wd}px"` : ''}>${m.svg}</svg></div>`) +
+      (`<p class="map-read muted" id="map-read"></p><div id="map-pin" class="map-pin" role="region" ` +
+          `aria-label="Pinned detail" hidden></div>`) + keyHtml(ctx, m);
     // items are reachable by keyboard: one tab stop, the arrow keys move along the rows, Enter or Space pins the detail
     // (an item drawn as a visible shape under a transparent hit target has both carry its number: the topmost one is the button)
     const top = new Map(); el.querySelectorAll('[data-mi]:not([data-msite])').forEach(n => top.set(n.dataset.mi, n));
@@ -945,8 +1104,10 @@
     // each track's regions at the residue: domains by name, other regions by their track and class
     const at = rec.units.filter(u => u[1] <= pos && u[2] >= pos), domK = kindsOf('domains');
     [...new Set(at.filter(u => domK.has(u[0])).map(u => String(u[3]).split(' · ')[0] || trackOf(u[0]).title))].forEach(t => out.push(esc(t)));
-    at.filter(u => !domK.has(u[0])).forEach(u => { const t = trackOf(u[0]); out.push(`${esc(t.title)} ${u[1]}–${u[2]}${u[5] && segLabels(t)[u[5]] ? ' (' + esc(segLabels(t)[u[5]]) + ')' : ''}`); });
-    (uni?.features || []).filter(f => ['Region', 'Motif', 'Compositional bias'].includes(f.type) && fpos(f)[0] <= pos && fpos(f)[1] >= pos && !/^disordered$/i.test(f.description || '')).slice(0, 3).forEach(f => out.push(`${f.type === 'Compositional bias' ? 'compositional bias: ' : ''}${esc(f.description)}`));
+    at.filter(u => !domK.has(u[0])).forEach(u => { const t = trackOf(u[0]); out.push(`${esc(t.title)} ${u[1]}–${u[2]}${
+u[5] && segLabels(t)[u[5]] ? ' (' + esc(segLabels(t)[u[5]]) + ')' : ''}`); });
+    (uni?.features || []).filter(f => ['Region', 'Motif', 'Compositional bias'].includes(f.type) && fpos(f)[0] <= pos && fpos(f)[1] >= pos && !/^disordered$/i.test(f.description || '')).slice(0, 3).forEach(f => out.push(`${
+f.type === 'Compositional bias' ? 'compositional bias: ' : ''}${esc(f.description)}`));
     (uni?.features || []).filter(f => ['Modified residue', 'Cross-link'].includes(f.type) && fpos(f)[0] === pos).forEach(f => out.push(esc(f.description)));
     const vars = (uni?.features || []).filter(f => f.type === 'Natural variant' && fpos(f)[0] === pos).flatMap(f => f.alternativeSequence?.alternativeSequences || []);
     if (vars.length) out.push(`variants: ${esc(aa)}→${esc([...new Set(vars)].join(', '))}`);
@@ -982,7 +1143,9 @@
     const title = `${name} protein map`;
     const ts = Math.max(11, Math.min(17, 17 * (FW - 2 * Pd) / Math.max(1, K.tw(title, 17, 700))));
     parts.push(`<text x="${Pd}" y="${Pd + 12}" font-size="${r1(ts)}" font-weight="bold" fill="${P.ink}">${esc(title)}</text>`);
-    const sub = `${p.acc} · ${int(p.len)} aa · ${int(ctx.rec.marks.length)} ${ctx.rec.marks.length === 1 ? W.mark : W.marks}${M.zoom ? ` · showing ${M.zoom[0]}–${M.zoom[1]}` : ''}`;
+    const sub = `${p.acc} · ${int(p.len)} aa · ${int(ctx.rec.marks.length)} ${
+ctx.rec.marks.length === 1 ? W.mark : W.marks}${
+M.zoom ? ` · showing ${M.zoom[0]}–${M.zoom[1]}` : ''}`;
     let y = Pd + 30;
     K.wrap(sub, FW - 2 * Pd, 11).forEach(t => { parts.push(`<text x="${Pd}" y="${y}" font-size="11" fill="${P.muted}">${esc(t)}</text>`); y += 14; });
     y += 4;
@@ -993,9 +1156,11 @@
     if (m.legend.length) { const l2 = wrapLegend(m.legend, Pd, y + 6, FW - 2 * Pd, P); parts.push(l2.svg); y += l2.h + 4; }
     // where each row comes from
     const src = [`${cap(W.marks)}: ${D.site.name}`, ...[...new Set([...TRACKS.map(tracksVersion), ...OWN_ROWS.filter(r => isOn(ownId(r)) && !r.sequence).map(ownVersion)].filter(Boolean))],
-      `UniProt ${p.acc}, read live`, ...(PDB_ON && isOn('pdb') && PDBK[p.acc]?.state === 'ok' ? ['PDB interfaces: PDBe-KB, read live'] : []), ...(ctx.af ? [`AlphaFold DB model v${ctx.af.version}`] : [])];
+      `UniProt ${p.acc}, read live`, ...(PDB_ON && isOn('pdb') && PDBK[p.acc]?.state === 'ok' ? ['PDB interfaces: PDBe-KB, read live'] : []), ...(ctx.af ? [(`AlphaFold ` +
+          `DB model v${ctx.af.version}`)] : [])];
     y += 6;
-    K.wrap('Sources: ' + src.join('; ') + '.', FW - 2 * Pd, 9.5).forEach(t => { parts.push(`<text x="${Pd}" y="${y}" font-size="9.5" fill="${P.ink}">${esc(t)}</text>`); y += 12.5; });
+    K.wrap('Sources: ' + src.join('; ') + '.', FW - 2 * Pd, 9.5).forEach(t => { parts.push((`<text x="${Pd}" y="${y}" font-size="9.5" ` +
+        `fill="${P.ink}">${esc(t)}</text>`)); y += 12.5; });
     y += 4;
     { const cs = K.creditStrip(Pd, y, FW, 9, 12); parts.push(cs.svg); y = cs.y + 6; }
     const H = Math.ceil(y + Pd - 8);
@@ -1010,7 +1175,9 @@
   // the export's file name: the site, the gene, the zoom, the column width and resolution, and the date
   function fileName(kind) {
     const p = M.ctx?.p || {}, gene = String(p.gene || p.acc || 'protein').split(/[\s;,]+/)[0].replace(/[^\w.-]+/g, '-'), mm = +M.size.mm || 0;
-    return `${D.site.id}_${gene}_map${M.zoom ? `_${M.zoom[0]}-${M.zoom[1]}` : ''}${mm && kind !== 'tsv' ? `_${mm}mm` : ''}${mm && kind === 'png' ? `_${M.size.dpi}dpi` : ''}_${new Date().toISOString().slice(0, 10)}`;
+    return `${D.site.id}_${gene}_map${
+M.zoom ? `_${M.zoom[0]}-${M.zoom[1]}` : ''}${mm && kind !== 'tsv' ? `_${mm}mm` : ''}${
+mm && kind === 'png' ? `_${M.size.dpi}dpi` : ''}_${new Date().toISOString().slice(0, 10)}`;
   }
 
   // ---- events ------------------------------------------------------------------------------------------------------
@@ -1060,9 +1227,14 @@
   });
   // the Method sections those links open: one for each row the pipeline computes, without a question of its own
   (K.methodParts ||= []).push(() => {
-    const sec = (id, title, body) => `<section id="m-map-${esc(id)}" class="qm"><h3>${esc(title)} <span class="muted small">protein map</span></h3>${body}</section>`;
-    const rows = OWN_ROWS.filter(r => r.sequence).map(r => sec(r.id, r.title, `<p>${esc(r.help || r.title)}.</p><p>Found in each protein’s sequence as the site file states (${esc(r.sequence.motif)}${r.sequence.min ? `, at least ${int(r.sequence.min)} within ${int(r.sequence.gap ?? 0)} residues of each other` : ''}); nothing is read from a table, and no test is run.</p>`));
-    const tracks = (D.tracks || []).filter(t => !(t.analysis && K.A[t.analysis])).map(t => sec(t.kind, t.title, `<p>${esc(t.help || t.title)}.</p>${tracksVersion(t) ? `<p>From ${esc(tracksVersion(t))}.</p>` : ''}`));
+    const sec = (id, title, body) => (`<section id="m-map-${esc(id)}" class="qm"><h3>${esc(title)} <span class="muted ` +
+        `small">protein map</span></h3>${body}</section>`);
+    const rows = OWN_ROWS.filter(r => r.sequence).map(r => sec(r.id, r.title, (`<p>${esc(r.help || r.title)}.</p><p>Found ` +
+        `in each protein’s sequence as the site file states (${esc(r.sequence.motif)}${
+r.sequence.min ? (`, at least ${int(r.sequence.min)} within ${int(r.sequence.gap ?? 0)} residues ` +
+        `of each other`) : ''}); nothing is read from a table, and no test is run.</p>`)));
+    const tracks = (D.tracks || []).filter(t => !(t.analysis && K.A[t.analysis])).map(t => sec(t.kind, t.title, `<p>${esc(t.help || t.title)}.</p>${
+tracksVersion(t) ? `<p>From ${esc(tracksVersion(t))}.</p>` : ''}`));
     return rows.concat(tracks).join('');
   });
   // every hover ends with the same muted line (a mark's own click opens its card instead)

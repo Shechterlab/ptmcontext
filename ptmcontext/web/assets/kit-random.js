@@ -17,9 +17,13 @@
     if (!pool.length) return '';
     if (!pick) draw();
     const rows = pick.map(pi => { const p = D.proteins[pi];
-        return `<div class="rand-row"><a href="${esc(K.link('protein', p[0]))}"><b>${esc(p[1] || p[0])}</b> <span class="muted">${esc(p[2] || '')}</span></a><span class="muted small">${int(p[4])} ${esc(W.marks)} · ${int(p[3])} aa</span><svg class="rand-map" data-rm="${pi}" role="img" aria-label="${esc(p[1] || p[0])} from end to end"></svg></div>`; }).join('');
+        return (`<div class="rand-row"><a href="${esc(K.link('protein', p[0]))}"><b>${esc(p[1] || p[0])}</b> <span ` +
+            `class="muted">${esc(p[2] || '')}</span></a><span class="muted small">${int(p[4])} ${esc(W.marks)} · ${int(p[3])} aa</span>` +
+            `<svg class="rand-map" data-rm="${pi}" role="img" aria-label="${esc(p[1] || p[0])} from end to end">` +
+            `</svg></div>`); }).join('');
     return K.fold('sec-random-proteins', esc(TITLE), `${N} proteins`,
-      `<p class="rand-tools"><button type="button" class="linkish small" data-rm-shuffle>Draw ${N === 3 ? 'three' : N} others</button></p><div class="rand-rows">${rows}</div>`, RM.open === true);
+      (`<p class="rand-tools"><button type="button" class="linkish small" data-rm-shuffle>Draw ${N === 3 ? 'three' : N} others</button>` +
+          `</p><div class="rand-rows">${rows}</div>`), RM.open === true);
   });
   (K.overviewSections ||= []).push(() => (pool.length ? [['sec-random-proteins', TITLE, 1]] : []));
   K.clicks.push(['[data-rm-shuffle]', () => { draw(); K.render(); }]);

@@ -36,8 +36,11 @@
       valid: id => id === 'marks',
       test: (id, vals) => { const n = Math.max(...vals.map(Number)); return m => gapOf(m) <= n; },
       label: () => spacingLabel, value: (id, v) => `${v} residues`,
-      control: () => fctl(spacingLabel, SP.help || `Keeps the ${W.marks} with another ${W.mark} of the site (any study) within so many residues`,
-        `<select data-fsel="d:marks"><option value="">Any spacing</option>${SP.within.map(v => `<option value="${v}"${S.f['d:marks']?.[0] === String(v) ? ' selected' : ''}>${v} residues</option>`).join('')}</select>`),
+      control: () => fctl(spacingLabel, SP.help || (`Keeps the ${W.marks} with another ${W.mark} of the site (any ` +
+          `study) within so many residues`),
+        `<select data-fsel="d:marks"><option value="">Any spacing</option>${
+SP.within.map(v => `<option value="${v}"${
+S.f['d:marks']?.[0] === String(v) ? ' selected' : ''}>${v} residues</option>`).join('')}</select>`),
     },
   };
 
@@ -60,8 +63,13 @@
     control: id => {
       const nb = nearOf(id), cfg = NEAR[id], cur = S.f['o:' + id]?.[0] || '', [ck, cn] = cur ? cur.split('@') : ['*', ''];
       const ks = nb ? nb.kinds : Object.keys(cfg.kinds || {}), within = cfg.within || [2, 5, 10, 20];
-      return fctl(cfg.label, cfg.help, `<div class="fpair"><select data-near="${esc(id)}" data-part="kind" aria-label="${esc(cfg.label)}: which"><option value="*">Any kind</option>${ks.map(k => `<option value="${esc(k)}"${k === ck ? ' selected' : ''}>${esc(nearKind(id, k))}</option>`).join('')}</select>` +
-        `<select data-near="${esc(id)}" data-part="n" aria-label="${esc(cfg.label)}: within"><option value="">Off</option>${within.map(n => `<option value="${n}"${String(n) === cn ? ' selected' : ''}>${+n ? `within ±${n}` : `at the ${esc(W.mark)}`}</option>`).join('')}</select></div>`);
+      return fctl(cfg.label, cfg.help, (`<div class="fpair"><select data-near="${esc(id)}" data-part="kind" ` +
+          `aria-label="${esc(cfg.label)}: which"><option value="*">Any kind</option>${
+ks.map(k => `<option value="${esc(k)}"${k === ck ? ' selected' : ''}>${esc(nearKind(id, k))}</option>`).join('')}</select>`) +
+        (`<select data-near="${esc(id)}" data-part="n" aria-label="${esc(cfg.label)}: within"><option value="">` +
+            `Off</option>${
+within.map(n => `<option value="${n}"${String(n) === cn ? ' selected' : ''}>${
++n ? `within ±${n}` : `at the ${esc(W.mark)}`}</option>`).join('')}</select></div>`));
     },
   };
   document.addEventListener('change', e => {
@@ -102,16 +110,30 @@
       const on = ctx.on;
       if (id === 'class') {
         const codes = [...Object.keys(PT.classes || {}), 'marked', 'other'];
-        return fctl(PT.label || 'Has a partner that is', PT.help, `<div class="fchips">${codes.map(c => `<button type="button" class="fchip" data-f="b:class" data-v="${esc(c)}" aria-pressed="${on.has(c)}"${classTip(c)}>${esc(classLabel(c))}</button>`).join('')}</div>`, ' <span class="muted">(proteins; match any)</span>');
+        return fctl(PT.label || 'Has a partner that is', PT.help, `<div class="fchips">${
+codes.map(c => (`<button type="button" ` +
+            `class="fchip" data-f="b:class" data-v="${esc(c)}" aria-pressed="${on.has(c)}"${classTip(c)}>${esc(classLabel(c))}</button>`)).join('')}</div>`, ' <span class="muted">(proteins; match any)</span>');
       }
       if (id === 'score') {
         const cur = S.f['b:score']?.[0] || '';
-        return fctl(PT.score_label || 'Partner score', PT.help, `<select data-fsel="b:score"><option value="">Any</option>${(PT.scores || []).map(v => `<option value="${v}"${String(v) === cur ? ' selected' : ''}>≥ ${v}</option>`).join('')}</select>`);
+        return fctl(PT.score_label || 'Partner score', PT.help, (`<select data-fsel="b:score"><option value="">` +
+            `Any</option>${
+(PT.scores || []).map(v => `<option value="${v}"${String(v) === cur ? ' selected' : ''}>≥ ${v}</option>`).join('')}</select>`));
       }
       const cur = [...on].join(', '), t = minScore(Object.entries(S.f).map(([k, v]) => [k, v])), n = boundCount(t);
-      const hint = PD && on.size ? [...on].map(g => { const ks = geneIdx[String(g).toUpperCase()] || []; return ks.length ? `${esc(PD.genes[ks[0]] || g)} binds ${int(Math.max(...ks.map(k => n[k])))} ${esc(W.marked)} proteins${t ? ` at a score of ${t / 1000} or more` : ''}.` : `${esc(g)}: no partner of that name.`; }).join(' ') : '';
-      return fctl(PT.gene_label || 'Binds a specific protein', PT.help, `<div class="fpair"><input type="text" list="b-genes" data-bgene value="${esc(cur)}" placeholder="${esc(PD && n ? `a gene, e.g. ${PD.genes.map((g, k) => [g, n[k]]).filter(x => x[0]).sort((a, b) => b[1] - a[1])[0]?.[0] || ''}` : 'a gene')}" aria-label="${esc(PT.gene_label || 'Binds a specific protein')}">` +
-        `<button type="button" class="btn small" data-bgene-go>Apply</button></div>${PD && n ? `<datalist id="b-genes">${PD.genes.map((g, k) => [g, n[k]]).filter(x => x[0] && x[1]).sort((a, b) => b[1] - a[1]).slice(0, 400).map(([g, k]) => `<option value="${esc(g)}">${int(k)} ${esc(W.marked)} partners</option>`).join('')}</datalist>` : ''}${hint ? `<p class="fhint">${hint}</p>` : ''}`);
+      const hint = PD && on.size ? [...on].map(g => { const ks = geneIdx[String(g).toUpperCase()] || []; return ks.length ? `${esc(PD.genes[ks[0]] || g)} binds ${int(Math.max(...ks.map(k => n[k])))} ${esc(W.marked)} proteins${
+t ? ` at a score of ${t / 1000} or more` : ''}.` : (`${esc(g)}: no partner ` +
+          `of that name.`); }).join(' ') : '';
+      return fctl(PT.gene_label || 'Binds a specific protein', PT.help, (`<div class="fpair"><input type="text" ` +
+          `list="b-genes" data-bgene value="${esc(cur)}" placeholder="${
+esc(PD && n ? `a gene, e.g. ${
+PD.genes.map((g, k) => [g, n[k]]).filter(x => x[0]).sort((a, b) => b[1] - a[1])[0]?.[0] || ''}` : 'a gene')}" aria-label="${
+esc(PT.gene_label || 'Binds a specific protein')}">`) +
+        `<button type="button" class="btn small" data-bgene-go>Apply</button></div>${
+PD && n ? (`<datalist ` +
+            `id="b-genes">${
+PD.genes.map((g, k) => [g, n[k]]).filter(x => x[0] && x[1]).sort((a, b) => b[1] - a[1]).slice(0, 400).map(([g, k]) => `<option value="${esc(g)}">${int(k)} ${esc(W.marked)} partners</option>`).join('')}</datalist>`) : ''}${
+hint ? `<p class="fhint">${hint}</p>` : ''}`);
     },
   };
   const geneGo = el => { const box = el.closest('.fpair') || el.parentElement, v = box.querySelector('[data-bgene]').value; setF('b:gene', v.split(/[\s,;]+/).map(x => x.trim().toUpperCase()).filter(Boolean)); };
@@ -128,9 +150,18 @@
       const termKey = { at: PAT.at, near: PAT.near }, cur = (S.q.match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || []).find(t => { const k = t.split(':')[0].toLowerCase(); const r = (k === PAT.at || k === PAT.near) && K.sel.termFilter([k, t.slice(k.length + 1)]); return r && r[0]?.startsWith?.('m:'); });
       const where = cur && cur.split(':')[0].toLowerCase() === PAT.near ? 'near' : 'at', val = cur ? cur.slice(cur.indexOf(':') + 1) : '';
       const span = sd()?.wide?.span ?? PAT.span ?? 15;
-      return fctl('Find a motif (2–10 residues)', PAT.help || '', `<div class="fpair"><input type="text" data-motif value="${esc(val)}" ${PH.motif ? `placeholder="e.g. ${esc(PH.motif)}" ` : ''} aria-label="A motif" spellcheck="false" autocomplete="off">` +
-        `<select data-motif-where aria-label="Where">${Object.entries(termKey).filter(([, k]) => k).map(([w, k]) => `<option value="${esc(k)}"${w === where ? ' selected' : ''}>${w === 'at' ? `Covering the ${esc(W.mark)}` : `Anywhere within ±${span}`}</option>`).join('')}</select>` +
-        `<button type="button" class="btn small" data-motif-go>Search</button></div><p class="fhint" data-motif-msg>X, . or * any residue; [..] any one of the letters inside${PH.motif_either ? `; ${esc(PH.motif_either)} either` : ''}. Adds <span class="mono">${esc(PAT.at || PAT.near)}:</span> or <span class="mono">${esc(PAT.near || PAT.at)}:</span> to the search.</p>`);
+      return fctl('Find a motif (2–10 residues)', PAT.help || '', (`<div class="fpair"><input type="text" ` +
+          `data-motif value="${esc(val)}" ${
+PH.motif ? `placeholder="e.g. ${esc(PH.motif)}" ` : ''} aria-label="A ` +
+          `motif" spellcheck="false" autocomplete="off">`) +
+        `<select data-motif-where aria-label="Where">${
+Object.entries(termKey).filter(([, k]) => k).map(([w, k]) => `<option value="${esc(k)}"${w === where ? ' selected' : ''}>${
+w === 'at' ? `Covering the ${esc(W.mark)}` : `Anywhere within ±${span}`}</option>`).join('')}</select>` +
+        (`<button type="button" class="btn small" data-motif-go>Search</button></div><p class="fhint" ` +
+            `data-motif-msg>X, . or * any residue; [..] any one of the letters inside${
+PH.motif_either ? `; ${esc(PH.motif_either)} either` : ''}. Adds <span ` +
+            `class="mono">${esc(PAT.at || PAT.near)}:</span> or <span class="mono">${esc(PAT.near || PAT.at)}:</span> ` +
+            `to the search.</p>`));
     },
   };
   function motifGo(el) {
@@ -156,13 +187,15 @@
       const ks = Object.keys(cfg.kinds || {}), out = [];
       for (const v of vals) {
         const [a, b] = String(v).toLowerCase().split('@'), k = /^\d+$/.test(a) ? '*' : a, n = /^\d+$/.test(a) ? a : b ?? String(top);
-        if (k !== '*' && !ks.includes(k)) return { error: `${key}:${v}: no kind ${k} (${ks.join(', ')}, or a distance such as ${key}:5)` };
+        if (k !== '*' && !ks.includes(k)) return { error: (`${key}:${v}: no kind ${k} (${ks.join(', ')}, or a distance ` +
+            `such as ${key}:5)`) };
         if (!/^\d+$/.test(n)) return { error: `${key}:${v}: a distance is a number of residues (${key}:${ks[0] || 'kind'}@5)` };
         out.push(`${k}@${n}`);
       }
       return ['o:' + id, out];
     };
-    K.searchTermHelp[key] = { label: cfg.label, help: `${cfg.help || cfg.label}: ${key}:<kind> within ${top} residues, ${key}:<kind>@N within N, ${key}:N any kind` };
+    K.searchTermHelp[key] = { label: cfg.label, help: (`${cfg.help || cfg.label}: ${key}:<kind> within ${top} residues, ${key}:<kind>@N ` +
+        `within N, ${key}:N any kind`) };
     K.searchTermValues[key] = () => Object.entries(cfg.kinds || {}).map(([k, l]) => [k, l]);
   });
   if (PT) {
@@ -170,7 +203,8 @@
     K.searchTerms[key] = vals => {
       const low = vals.map(v => String(v).toLowerCase());
       if (low.every(v => codes.includes(v))) return ['b:class', low];
-      if (low.some(v => codes.includes(v))) return { error: `${key}: name partner kinds (${codes.join(', ')}) or genes, not both in one term` };
+      if (low.some(v => codes.includes(v))) return { error: (`${key}: name partner kinds (${codes.join(', ')}) or genes,` +
+          ` not both in one term`) };
       return ['b:gene', vals.map(v => String(v).toUpperCase())];
     };
     K.searchTermHelp[key] = { label: PT.label, help: `${PT.help || ''}: ${key}:${codes.join(', ')}, or a gene` };

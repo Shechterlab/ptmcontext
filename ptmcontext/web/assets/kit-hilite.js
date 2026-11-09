@@ -32,26 +32,45 @@
   const toks = () => String(S.hl || '').split(/[,;\n]+/).map(x => x.trim()).filter(Boolean);
   sources.push(() => {
     const t = toks(); if (!t.length) return null;
-    const chips = t.map((label, i) => ({ label, drop: () => { const a = toks(); a.splice(i, 1); S.hl = a.join(', '); } })), clear = () => { S.hl = ''; };
-    if (!K.sel?.data()) return { prots: new Set(), marks: new Set(), sites: [], notFound: [], text: t.join(', '), chips, clear, pasted: true };
+    const clear = () => { S.hl = ''; };
+    // one chip per entry, but entries that resolve to the same protein (tdp43, TARDBP) share one, named by what it resolved to:
+    // "TDP-43 → TARDBP" when the entry differs from the gene name, else the gene name. An entry that matches nothing keeps its own chip, struck.
+    const chipsOf = (resolved) => {
+      const out = [], seen = new Map();
+      t.forEach((tok, i) => {
+        const gene = resolved[i]?.gene, key = gene ? 'g:' + gene.toLowerCase() : 't:' + tok.toLowerCase();
+        if (seen.has(key)) { seen.get(key).at.push(i); return; }
+        const c = { label: gene ? (tok.toLowerCase() === gene.toLowerCase() ? gene : `${tok} → ${gene}`) : tok, bad: !gene && !!resolved[i]?.miss, at: [i] };
+        seen.set(key, c); out.push(c);
+      });
+      out.forEach(c => { c.drop = () => { const a = toks().filter((_, i) => !c.at.includes(i)); S.hl = a.join(', '); }; });
+      return out;
+    };
+    if (!K.sel?.data()) return { prots: new Set(), marks: new Set(), sites: [], notFound: [], text: t.join(', '), chips: chipsOf([]), clear, pasted: true };
     // each entry on its own: a gene marks its proteins, a site ("GENE R218") only that residue, and one that matches nothing
     // is reported (the others are kept)
-    const prots = new Set(), marks = new Set(), sites = [], notFound = [], bad = new Set();
+    const prots = new Set(), marks = new Set(), sites = [], notFound = [], bad = new Set(), resolved = [];
     t.forEach(tok => {
       const r = K.sel.select(tok, {}), q = r.q || {};
       (r.marks || []).forEach(m => marks.add(m));
-      if (q.sites?.length && !q.genes?.length) q.sites.forEach(([p, pos]) => {
-        if ((r.marks || []).length) { sites.push({ p, pos, label: tok }); return; }
+      if (q.sites?.length && !q.genes?.length) { resolved.push({ gene: null }); q.sites.forEach(([p, pos]) => {
+        if ((r.marks || []).length) { sites.push({ p, pos, label: tok }); resolved[resolved.length - 1] = { gene: null, site: true }; return; }
         // a site the data does not hold: say which, and keep the rest of the list
         const L = ((/([A-Z])\s*\d+$/i.exec(tok) || [])[1] || '').toUpperCase(), pr = K.D?.proteins?.[p] || [];
-        notFound.push(`${L}${pos} of ${pr[1] || pr[0] || tok} is ${pr[3] && pos > pr[3] ? 'not in its sequence' : `not a known ${K.D?.words?.mark || 'site'}`}`); bad.add(tok);
-      });
-      else if (r.proteins?.size) r.proteins.forEach(p => prots.add(p));
-      else { notFound.push(tok); bad.add(tok); }
+        notFound.push(`${L}${pos} of ${pr[1] || pr[0] || tok} is ${
+pr[3] && pos > pr[3] ? 'not in its sequence' : `not a known ${K.D?.words?.mark || 'site'}`}`); bad.add(tok);
+      }); }
+      else if (r.proteins?.size) { r.proteins.forEach(p => prots.add(p)); const pr = r.proteins.size === 1 ? K.D?.proteins?.[[...r.proteins][0]] : null; resolved.push({ gene: pr ? pr[1] || pr[0] : null, many: r.proteins.size > 1 }); }
+      else { notFound.push(tok); bad.add(tok); resolved.push({ gene: null }); }
     });
+    RESOLVED = resolved.map((r, i) => (r.gene ? r.gene.toLowerCase() : t[i].toLowerCase()));
+    const chips = chipsOf(resolved.map((r, i) => (r.gene || r.many || r.site ? r : { gene: null, miss: true })));
     return { prots, marks, sites, notFound, bad, text: t.join(', '), chips, clear, pasted: true };
   });
-  K.paramsOut.push(p => { if (S.hl) p.set('hl', S.hl); });
+  // the entries as resolved on the last draw, so the address keeps one entry for a protein named twice (tdp43, TARDBP)
+  let RESOLVED = [];
+  const dedupedHl = () => { const t = toks(), seen = new Set(); return t.filter((tok, i) => { const k = RESOLVED.length === t.length ? RESOLVED[i] : tok.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }).join(', '); };
+  K.paramsOut.push(p => { if (S.hl) p.set('hl', dedupedHl()); });
   K.paramsIn.push(p => { S.hl = p.get('hl') || ''; });
   function state() {
     const out = { on: false, prots: new Set(), marks: new Set(), sites: [], notFound: [], text: '', parts: [] };
@@ -65,13 +84,25 @@
   let only = store.get();
   // the not-found entries: names as a list ("not found: A, B"), sites as the sentence that says what is wrong with them
   const nfText = list => { const w = list.filter(x => !/ is (not|in) /.test(x)), sn = list.filter(x => w.indexOf(x) < 0); return [w.length ? `not found: ${w.join(', ')}` : '', ...sn].filter(Boolean).join('; '); };
-  const chip = (label, i, bad) => `<span class="hl-chip${bad ? ' hl-chip-nf' : ''}"${bad ? ' title="Not found in the data"' : ''}>${esc(label)} <button type="button" class="hl-x" data-hl-drop="${i}" aria-label="Remove ${esc(label)} from the highlight" title="Remove it">×</button></span>`;
+  const chip = (label, i, bad) => (`<span class="hl-chip${bad ? ' hl-chip-nf' : ''}"${
+bad ? ' title="Not found in the data"' : ''}>${esc(label)} <button ` +
+      `type="button" class="hl-x" data-hl-drop="${i}" aria-label="Remove ${esc(label)} from the highlight" ` +
+      `title="Remove it">×</button></span>`);
   // the legend line: what is highlighted, how many items, and the control that clears it
   const line = (n, noun, extra = '', over = null) => {
     const st = over || state(); if (!st.on) return '';
-    const what = st.parts.map(r => (r.chips ? (document.getElementById?.('hl-bar') ? '' : r.chips.map((c, i) => chip(c.label, i)).join(' ')) : `<b>${esc(r.text)}</b> <button type="button" class="hl-x" data-hl-clear aria-label="Clear the highlight" title="Clear the highlight">×</button>`)).join(' ');
+    const what = st.parts.map(r => (r.chips ? (document.getElementById?.('hl-bar') ? '' : r.chips.map((c, i) => chip(c.label, i, c.bad)).join(' ')) : (`<b>${esc(r.text)}</b> <button ` +
+        `type="button" class="hl-x" data-hl-clear aria-label="Clear the highlight" title="Clear the highlight">` +
+        `×</button>`))).join(' ');
     const what0 = st.parts.some(r => r.pasted) ? 'Highlighted:' : (S.q ? 'Search:' : 'Selection:');
-    return `<p class="hl-line"><span class="flabel">${what0}</span> ${what.trim() || '<span class="muted">your list, in the box above</span>'} <span class="muted">· ${int(n)} ${esc(noun)}</span>${st.notFound.length ? ` <span class="hl-nf">· ${esc(nfText(st.notFound))}</span>` : ''}${extra ? ` <span class="muted">· ${extra}</span>` : ''} <label class="hl-only small" title="The PNG, SVG and PDF show only the highlighted items, without the gray context"><input type="checkbox" data-hl-only${only ? ' checked' : ''}> Exports: highlighted only</label></p>`;
+    return (`<p class="hl-line"><span class="flabel">${what0}</span> ${
+what.trim() || '<span class="muted">your list, in the box above</span>'} <span class="muted">` +
+        `· ${int(n)} ${esc(noun)}</span>${
+st.notFound.length ? ` <span class="hl-nf">· ${esc(nfText(st.notFound))}</span>` : ''}${
+extra ? (` <span class="muted">` +
+        `· ${extra}</span>`) : ''} <label class="hl-only small" title="The PNG, SVG and PDF show only the ` +
+        `highlighted items, without the gray context"><input type="checkbox" data-hl-only${only ? ' checked' : ''}> Exports: ` +
+        `highlighted only</label></p>`);
   };
   // named lists of genes or sites, kept in this browser (like the saved selections); the link carries only the active list (hl=)
   const SK = `ptmc-hl-sets-${K.D?.site?.id || "site"}`;
@@ -83,19 +114,33 @@
   const menuHtml = () => {
     const all = sets(), have = !!norm(S.hl), ci = have ? all.findIndex(x => norm(x.list) === norm(S.hl)) : -1, cur = ci >= 0 ? all[ci] : null;
     if (!all.length && !have) return '';
-    return `<span class="hl-menu"><button type="button" class="btn small" data-hl-menu aria-haspopup="true" aria-expanded="false" aria-controls="hl-pop">Lists ▾</button>` +
-      `<div id="hl-pop" class="hl-pop" role="group" aria-label="Highlight lists" hidden><div class="hl-sets"><label class="flabel" for="hl-set">Saved lists</label> <select id="hl-set" data-hl-switch aria-label="Switch to a saved highlight list"><option value=""${cur ? '' : ' selected'}>${have && !cur ? '(unsaved list)' : '(none)'}</option>${all.map((x, i) => `<option value="${i}"${i === ci ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>` +
-      `<div class="hl-sets"><button type="button" class="btn small" data-hl-save${have ? '' : ' disabled'} title="Save the highlighted list under a name, in this browser">Save as…</button>` +
-      `<button type="button" class="btn small" data-hl-rename${cur ? '' : ' disabled'}>Rename</button><button type="button" class="btn small" data-hl-delete${cur ? '' : ' disabled'}>Delete</button></div>` +
-      `<label class="small"><input type="checkbox" data-hl-first${first ? ' checked' : ''}> Highlighted first in tables</label></div></span>`;
+    return (`<span class="hl-menu"><button type="button" class="btn small" data-hl-menu aria-haspopup="true" ` +
+        `aria-expanded="false" aria-controls="hl-pop">Lists ▾</button>`) +
+      (`<div id="hl-pop" class="hl-pop" role="group" aria-label="Highlight lists" hidden><div class="hl-sets">` +
+          `<label class="flabel" for="hl-set">Saved lists</label> <select id="hl-set" data-hl-switch ` +
+          `aria-label="Switch to a saved highlight list"><option value=""${cur ? '' : ' selected'}>${
+have && !cur ? '(unsaved list)' : '(none)'}</option>${
+all.map((x, i) => `<option value="${i}"${i === ci ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>`) +
+      (`<div class="hl-sets"><button type="button" class="btn small" data-hl-save${have ? '' : ' disabled'} title="Save ` +
+          `the highlighted list under a name, in this browser">Save as…</button>`) +
+      (`<button type="button" class="btn small" data-hl-rename${cur ? '' : ' disabled'}>Rename</button><button ` +
+          `type="button" class="btn small" data-hl-delete${cur ? '' : ' disabled'}>Delete</button></div>`) +
+      (`<label class="small"><input type="checkbox" data-hl-first${first ? ' checked' : ''}> Highlighted first in ` +
+          `tables</label></div></span>`);
   };
   const setsAct = {
     save: () => { const cur = activeSet(), name = (window.prompt('Name this list of highlighted genes or sites', cur ? cur.name : '') || '').trim(); if (!name || !norm(S.hl)) return; keep([{ name, list: norm(S.hl) }, ...sets().filter(x => x.name !== name)]); K.render(); },
     rename: () => { const cur = activeSet(); if (!cur) return; const name = (window.prompt('Rename this list', cur.name) || '').trim(); if (!name || name === cur.name) return; keep(sets().map(x => (x === cur || (x.name === cur.name && x.list === cur.list) ? { ...x, name } : x)).filter((x, i, a) => a.findIndex(y => y.name === x.name) === i)); K.render(); },
-    delete: () => { const cur = activeSet(); if (!cur) return; if (window.confirm && !window.confirm(`Delete the list "${cur.name}"? The highlight on the page stays.`)) return; keep(sets().filter(x => !(x.name === cur.name && x.list === cur.list))); K.render(); },
+    delete: () => { const cur = activeSet(); if (!cur) return; if (window.confirm && !window.confirm((`Delete the list "${cur.name}"? The highlight ` +
+        `on the page stays.`))) return; keep(sets().filter(x => !(x.name === cur.name && x.list === cur.list))); K.render(); },
   };
   // the box to paste genes or sites into: added to the highlight, nothing is filtered
-  const control = (after = '') => `<form class="hl-form" data-hl-form><label class="flabel hl-lab" for="hl-in">Highlight genes or sites</label><input id="hl-in" name="hl" type="search" autocomplete="off" spellcheck="false" placeholder="Highlight genes or sites…" title="Genes or sites to mark in the figures and tables${K.D?.site?.placeholders?.highlight ? esc(', e.g. ' + K.D.site.placeholders.highlight) : ''}" aria-label="Genes or sites to highlight"> <button class="btn small" type="submit">Highlight</button></form>${after}${menuHtml()}`;
+  const control = (after = '') => (`<form class="hl-form" data-hl-form><label class="flabel hl-lab" for="hl-in">` +
+      `Highlight genes or sites</label><input id="hl-in" name="hl" type="search" autocomplete="off" ` +
+      `spellcheck="false" placeholder="Highlight genes or sites…" title="Genes or sites to mark in the figures and ` +
+      `tables${
+K.D?.site?.placeholders?.highlight ? esc(', e.g. ' + K.D.site.placeholders.highlight) : ''}" aria-label="Genes ` +
+      `or sites to highlight"> <button class="btn small" type="submit">Highlight</button></form>${after}${menuHtml()}`);
   // labels placed greedily: the candidates around a dot in order, the first that fits the box and clears the others
   // avoid: boxes [x0, y0, x1, y1] that labels must also clear (a chart's own text, such as region names)
   function place(items, box = [0, 760, 0, 400], size = 10, avoid = []) {
@@ -158,11 +203,12 @@
   }
   (K.afterRender ||= []).push(decorate);
   const any = () => toks().length > 0;
-  K.hl = { nfText, isProt, isSite, any, firstSort, decorate, mark: (v, on) => (on ? `<span class="hl-dot" title="Highlighted" aria-label="highlighted">●</span> ${v}` : v), get first() { return first; }, pasted, state, sources, line, place, labels, clear, control, sets, activeSet, limit: LIMIT, get only() { return only; } };
+  K.hl = { nfText, isProt, isSite, any, firstSort, decorate, mark: (v, on) => (on ? (`<span class="hl-dot" ` +
+      `title="Highlighted" aria-label="highlighted">●</span> ${v}`) : v), get first() { return first; }, pasted, state, sources, line, place, labels, clear, control, sets, activeSet, limit: LIMIT, get only() { return only; } };
   document.addEventListener('change', e => { if (e.target.matches?.('[data-hl-only]')) { only = e.target.checked; store.set(only); document.querySelectorAll('[data-hl-only]').forEach(x => { x.checked = only; }); } });
   K.clicks.push(['[data-hl-save]', setsAct.save], ['[data-hl-rename]', setsAct.rename], ['[data-hl-delete]', setsAct.delete]);
   document.addEventListener('change', e => { const s = e.target.matches?.('[data-hl-switch]') && e.target; if (!s) return; const x = s.value === '' ? null : sets()[+s.value]; S.hl = x ? x.list : ''; K.writeHash(true); K.render(); });
-  K.clicks.push(['[data-hl-drop]', el => { const a = toks(); a.splice(+el.dataset.hlDrop, 1); S.hl = a.join(', '); K.writeHash(true); K.render(); }]);
+  K.clicks.push(['[data-hl-drop]', el => { const c = state().parts.find(r => r.chips)?.chips[+el.dataset.hlDrop]; if (c) c.drop(); else { const a = toks(); a.splice(+el.dataset.hlDrop, 1); S.hl = a.join(', '); } K.writeHash(true); K.render(); }]);
   // the one Highlight box, in the toolbar under the selection bar, on every page: the list's chips, what was not found, and
   // "Highlighted first" for the tables (a choice kept in this browser)
   const FK = 'ptmc-hl-first';
@@ -174,7 +220,11 @@
     const t = toks(), pa = t.length ? pasted() : null;
     const chips = t.map((l, i) => chip(l, i, pa.bad?.has(l))).join(' '), nf = t.length && pa.notFound.length ? `<span class="hl-nf">${esc(nfText(pa.notFound))}</span>` : '';
     const more = collapsed => (!t.length ? '' : collapsed
-      ? `<span class="hl-menu"><button type="button" class="btn small" data-hl-menu aria-haspopup="true" aria-expanded="false" aria-controls="hl-cpop">${t.length} highlighted${pa.notFound.length ? ` · ${pa.notFound.length} not found` : ''} ▾</button><div id="hl-cpop" class="hl-pop hl-cpop" role="group" aria-label="Highlighted items" hidden><span class="hl-chips">${chips}</span>${nf}</div></span>`
+      ? (`<span class="hl-menu"><button type="button" class="btn small" data-hl-menu aria-haspopup="true" ` +
+          `aria-expanded="false" aria-controls="hl-cpop">${t.length} highlighted${
+pa.notFound.length ? ` · ${pa.notFound.length} not found` : ''} ▾</button>` +
+          `<div id="hl-cpop" class="hl-pop hl-cpop" role="group" aria-label="Highlighted items" hidden><span ` +
+          `class="hl-chips">${chips}</span>${nf}</div></span>`)
       : `<span class="hl-chips">${chips}${nf ? ' ' + nf : ''}</span>`);
     const build = collapsed => `<div class="hl-bar-in${t.length ? ' on' : ''}">${control(more(collapsed))}</div>`;
     const key = build(false) + '|' + (K.sel?.peek() ? 1 : 0) + '|' + (typeof innerWidth === 'number' ? innerWidth : 0);
@@ -197,34 +247,45 @@
   });
   K.clicks.push(['[data-hl-clear]', () => clear()]);
   const css = document.createElement('style');
-  css.textContent = `.hl-line { margin: 0.35rem 0; font-size: 0.85rem; display: flex; gap: 0.4rem; align-items: baseline; flex-wrap: wrap; }
-.hl-x { border: 1px solid var(--line-strong); border-radius: 50%; width: 1.35rem; height: 1.35rem; line-height: 1; padding: 0; cursor: pointer; color: var(--muted); }
+  css.textContent = (`.hl-line { margin: 0.35rem 0; font-size: 0.85rem; display: flex; gap: 0.4rem; align-items: ` +
+      `baseline; flex-wrap: wrap; }
+.hl-x { border: 1px solid var(--line-strong); border-radius: 50%; width: 1.35rem; height: 1.35rem; line-height: 1; ` +
+    `padding: 0; cursor: pointer; color: var(--muted); }
 .hl-x:hover { color: var(--ink); border-color: var(--ink); }
 .hl-form { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin: 0.4rem 0; }
 .hl-form input { flex: 1 1 18rem; min-width: 10rem; }
-.hl-chip { border: 1px solid var(--line-strong); border-radius: 1rem; padding: 0 0.15rem 0 0.55rem; display: inline-flex; align-items: center; gap: 0.25rem; }
+.hl-chip { border: 1px solid var(--line-strong); border-radius: 1rem; padding: 0 0.15rem 0 0.55rem; display: ` +
+    `inline-flex; align-items: center; gap: 0.25rem; }
 .hl-sets { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin: 0.3rem 0; }
 .hl-bar-in { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.6rem; font-size: 0.82rem; }
 .hl-bar-in .hl-form { margin: 0.1rem 0; flex: 0 1 auto; flex-wrap: nowrap; }
-.hl-form input { padding: 0.35rem 0.6rem; border: 1px solid var(--line-strong); border-radius: 0.4rem; background: var(--surface); color: var(--ink); }
-.hl-form input:focus { outline: none; border-color: var(--brand-ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-ink) 22%, transparent); }
+.hl-form input { padding: 0.35rem 0.6rem; border: 1px solid var(--line-strong); border-radius: 0.4rem; background: ` +
+    `var(--surface); color: var(--ink); }
+.hl-form input:focus { outline: none; border-color: var(--brand-ink); box-shadow: 0 0 0 3px color-mix(in srgb, ` +
+    `var(--brand-ink) 22%, transparent); }
 .hl-bar-in .hl-form input { flex: 0 1 auto; width: min(24rem, 62vw); min-height: 1.7rem; }
 .hl-pop .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .hl-chip-nf { color: var(--muted); text-decoration: line-through; border-style: dashed; }
 .hl-chip-nf .hl-x { text-decoration: none; }
 .hl-cpop:not([hidden]) { max-width: min(30rem, calc(100vw - 2rem)); }
-.hl-lab { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.hl-lab { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; ` +
+    `}
 .hl-menu { position: relative; }
-.hl-pop:not([hidden]) { display: flex; flex-direction: column; gap: 0.4rem; position: absolute; z-index: 40; left: 0; max-width: calc(100vw - 2rem); top: 100%; margin-top: 0.2rem; min-width: 15rem; padding: 0.6rem; border: 1px solid var(--line-strong); border-radius: 0.5rem; background: var(--surface); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
+.hl-pop:not([hidden]) { display: flex; flex-direction: column; gap: 0.4rem; position: absolute; z-index: 40; left: ` +
+    `0; max-width: calc(100vw - 2rem); top: 100%; margin-top: 0.2rem; min-width: 15rem; padding: 0.6rem; border: ` +
+    `1px solid var(--line-strong); border-radius: 0.5rem; background: var(--surface); box-shadow: 0 6px 18px ` +
+    `rgba(0, 0, 0, 0.15); }
 .hl-pop .hl-sets { margin: 0; }
 .hl-bar:empty { display: none; }
 .hl-chips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
 tr.hl-row > td { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--accent) 11%, transparent); }
-tr.hl-row > td:first-child { box-shadow: inset 3px 0 0 var(--accent), inset 0 0 0 999px color-mix(in srgb, var(--accent) 11%, transparent); }
-.hl-gene { box-shadow: 0 0 0 1.5px var(--accent), inset 0 0 0 999px color-mix(in srgb, var(--accent) 16%, transparent); border-radius: 0.3rem; }
+tr.hl-row > td:first-child { box-shadow: inset 3px 0 0 var(--accent), inset 0 0 0 999px color-mix(in srgb, ` +
+    `var(--accent) 11%, transparent); }
+.hl-gene { box-shadow: 0 0 0 1.5px var(--accent), inset 0 0 0 999px color-mix(in srgb, var(--accent) 16%, ` +
+    `transparent); border-radius: 0.3rem; }
 .hl-dot { color: var(--accent); font-weight: 700; }
 .hl-nf { color: var(--accent); font-weight: 600; }
 .hl-tbl { margin-top: 0.4rem; }
-.hl-tbl td, .hl-tbl th { padding: 0.15rem 0.5rem; }`;
+.hl-tbl td, .hl-tbl th { padding: 0.15rem 0.5rem; }`);
   document.head.appendChild(css);
 });

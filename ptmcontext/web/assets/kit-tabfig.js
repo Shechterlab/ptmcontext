@@ -45,7 +45,10 @@
     const free = nat.reduce((a, w, i) => a + (rot(i) ? 0 : w), 0), fixed = nat.reduce((a, w, i) => a + (rot(i) ? w : 0), 0), k = free > avail - fixed ? Math.max(0.2, (avail - fixed) / free) : 1;
     const w = nat.map((x, i) => (rot(i) ? x : x * k)), x0 = w.map((_, i) => P + w.slice(0, i).reduce((a, b) => a + b, 0)), total = w.reduce((a, b) => a + b, 0);
     let y = y0;
-    const T = (x, yy, t, o = {}) => parts.push(`<text x="${x.toFixed(1)}" y="${yy.toFixed(1)}" font-size="${o.size || SZ}"${o.weight ? ` font-weight="${o.weight}"` : ''}${o.anchor ? ` text-anchor="${o.anchor}"` : ''}${o.rot ? ` transform="rotate(-60 ${x.toFixed(1)} ${yy.toFixed(1)})"` : ''} fill="${o.fill || K.PAL.ink}">${esc(t)}</text>`);
+    const T = (x, yy, t, o = {}) => parts.push(`<text x="${x.toFixed(1)}" y="${yy.toFixed(1)}" font-size="${o.size || SZ}"${
+o.weight ? ` font-weight="${o.weight}"` : ''}${
+o.anchor ? ` text-anchor="${o.anchor}"` : ''}${
+o.rot ? ` transform="rotate(-60 ${x.toFixed(1)} ${yy.toFixed(1)})"` : ''} fill="${o.fill || K.PAL.ink}">${esc(t)}</text>`);
     if (tb.head) {
       const hh = tb.head.some((c, i) => rot(i)) ? Math.min(150, Math.max(...tb.head.map((c, i) => (rot(i) ? K.tw(c.t, SZ - 0.5) * 0.87 + 10 : 0)))) : 0;
       y += hh;
@@ -56,9 +59,11 @@
       y += RH; parts.push(`<line x1="${P}" x2="${P + total}" y1="${y}" y2="${y}" stroke="${K.PAL.one}" stroke-width="1"/>`);
     }
     rows.forEach((r, ri) => {
-      if (r.hl) parts.push(`<rect x="${P}" y="${y}" width="${total.toFixed(1)}" height="${RH}" fill="#fbe3d3"/><rect x="${P}" y="${y}" width="3" height="${RH}" fill="#c2410c"/>`);
+      if (r.hl) parts.push((`<rect x="${P}" y="${y}" width="${total.toFixed(1)}" height="${RH}" fill="#fbe3d3"/>` +
+          `<rect x="${P}" y="${y}" width="3" height="${RH}" fill="#c2410c"/>`));
       else if (ri % 2) parts.push(`<rect x="${P}" y="${y}" width="${total.toFixed(1)}" height="${RH}" fill="#f3f6f7"/>`);
-      r.forEach((c, i) => { if (c.svg && i < n) { parts.push(`<g transform="translate(${(x0[i] + 4).toFixed(1)},${(y + (RH - c.svg.h * SVGK) / 2).toFixed(1)}) scale(${SVGK})">${c.svg.inner}</g>`); return; } if (!c.t || i >= n) return; if (rot(i) || (c.num && w[i] < 60)) T(x0[i] + w[i] / 2, y + RH - 5, fit(c.t, w[i] - 4), { anchor: 'middle' }); else T(c.num ? x0[i] + w[i] - 6 : x0[i] + 4, y + RH - 5, fit(c.t, w[i] - 10), { anchor: c.num ? 'end' : null }); });
+      r.forEach((c, i) => { if (c.svg && i < n) { parts.push(`<g transform="translate(${(x0[i] + 4).toFixed(1)},${
+(y + (RH - c.svg.h * SVGK) / 2).toFixed(1)}) scale(${SVGK})">${c.svg.inner}</g>`); return; } if (!c.t || i >= n) return; if (rot(i) || (c.num && w[i] < 60)) T(x0[i] + w[i] / 2, y + RH - 5, fit(c.t, w[i] - 4), { anchor: 'middle' }); else T(c.num ? x0[i] + w[i] - 6 : x0[i] + 4, y + RH - 5, fit(c.t, w[i] - 10), { anchor: c.num ? 'end' : null }); });
       y += RH;
     });
     parts.push(`<line x1="${P}" x2="${P + total}" y1="${y}" y2="${y}" stroke="${K.PAL.line}" stroke-width="1"/>`);
@@ -79,9 +84,11 @@
       shownRows += Math.min(x.rows.length, cap1); allRows += x.rows.length;
       if (i < tables.length - 1) y += 6;
     });
-    if (!tables.length) { parts.push(`<text x="${P}" y="16" font-size="${SZ}" fill="${K.PAL.muted}">No rows are shown.</text>`); y = 24; }
+    if (!tables.length) { parts.push((`<text x="${P}" y="16" font-size="${SZ}" fill="${K.PAL.muted}">No rows are ` +
+        `shown.</text>`)); y = 24; }
     const total = o.total != null ? o.total : allRows;
-    const cut = total > shownRows ? `Drawn: the first ${int(shownRows)} of ${int(total)} rows, in the order of the page; the TSV has every row.` : '';
+    const cut = total > shownRows ? (`Drawn: the first ${int(shownRows)} of ${int(total)} rows, in the order of the ` +
+        `page; the TSV has every row.`) : '';
     return K.figureFrame({ title: o.title, sub: o.sub || '', body: parts.join(''), bodyH: y, W: Wd, note: [o.note, cut].filter(Boolean).join(' '), extra: { figure_kind: 'table', rows_drawn: shownRows } });
   }
   // the count line under a results page's heading ("1,204 of 3,000 proteins · 4,000 sites"), for a figure's subtitle
@@ -116,7 +123,8 @@
     todo.forEach(t => {
       const box = t.closest('.tbl-card, .tbl-wrap, .cv-wrap') || t;
       t.dataset.tx = String(++tblId);
-      box.insertAdjacentHTML('beforebegin', K.expBar(['pdf', 'svg', 'png', 'tsv'], 'tblx', titleOf(t)).replace('class="exp"', `class="exp" data-for-tx="${t.dataset.tx}"`));
+      box.insertAdjacentHTML('beforebegin', K.expBar(['pdf', 'svg', 'png', 'tsv'], 'tblx', titleOf(t)).replace('class="exp"', (`class="exp" ` +
+          `data-for-tx="${t.dataset.tx}"`)));
     });
   }
   K.tableBars = bars;      // a module that paints a table late (the structure lists) calls it, so the bar is there at once

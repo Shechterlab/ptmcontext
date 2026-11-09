@@ -25,7 +25,8 @@
   const isList = e => !isTerm(e) && !isSite(e) && /\s/.test(e.trim());
   const KIND = {
     list: ['A list of genes', `Paste gene names or accessions. Every question is tested again on their ${W.marks}.`],
-    term: ['A class or a term', `Select the ${W.marks} of one class (key:value) to see where they lie${SETQ ? ' and which proteins have them' : ''}.`],
+    term: ['A class or a term', `Select the ${W.marks} of one class (key:value) to see where they lie${
+SETQ ? ' and which proteins have them' : ''}.`],
     site: [`One ${W.mark}`, `Open its protein at that ${W.mark}, with its regions, evidence and structures.`],
     one: ['One protein', `Open its page: its ${W.marks} on a map, the evidence for each, and its structures.`],
   };
@@ -38,20 +39,31 @@
     EX.forEach(e => { if (out.length < 3) add(e); });
     return out.slice(0, 3);
   }
-  const startButtons = cls => `<ol class="${cls}">${starts().map(x => `<li><button type="button" class="sp-start" data-try="${esc(x.query)}">` +
-    `<span class="sp-label">${esc(x.label)}</span><span class="sp-q mono">${esc(x.query)}</span>${x.help ? `<span class="sp-help">${esc(x.help)}</span>` : ''}</button></li>`).join('')}</ol>`;
-  const whatText = (where = 'below') => D.start?.text || `${D.site.tagline ? D.site.tagline + ' ' : ''}Each tile ${where} is one question about where ${W.marks} lie${SETQ ? ' and which proteins have them' : ''}, each compared with the other ${W.residues} of the same proteins. Search a protein, a gene list or a class to test your own selection.`;
+  const startButtons = cls => `<ol class="${cls}">${starts().map(x => (`<li><button type="button" class="sp-start" ` +
+      `data-try="${esc(x.query)}">`) +
+    `<span class="sp-label">${esc(x.label)}</span><span class="sp-q mono">${esc(x.query)}</span>${
+x.help ? `<span class="sp-help">${esc(x.help)}</span>` : ''}</button></li>`).join('')}</ol>`;
+  const whatText = (where = 'below') => D.start?.text || (`${
+D.site.tagline ? D.site.tagline + ' ' : ''}Each tile ${where} is one question ` +
+      `about where ${W.marks} lie${
+SETQ ? ' and which proteins have them' : ''}, each compared with the other ${W.residues} of the same ` +
+      `proteins. Search a protein, a gene list or a class to test your own selection.`);
 
   // ---- the start panel: on the Overview, until the reader hides it (remembered in this browser) ---------------------
   // a site that opens with the cell and the nucleus drawn (a card with drawing: true) has no panel above them
   const cellFirst = () => (D.overview?.sections || []).some(x => (x.cards || []).some(c => c && c.drawing === true && c.analysis === D.cell?.id));
   (K.overviewTop ||= []).push(() => {
     if (K.sel?.active() || S.arg || S.vs !== 'residues' || !starts().length || cellFirst()) return '';
-    if (store.get(START_KEY)) return `<p class="sp-show"><button type="button" class="linkish" data-start-show>Show introduction</button></p>`;   // hidden: a small way back, in its place
-    return `<section class="start-panel" aria-labelledby="sp-title"><div class="sp-head"><h2 id="sp-title">${esc(D.start?.title || 'New here? Start from a question of your own')}</h2>` +
+    if (store.get(START_KEY)) return (`<p class="sp-show"><button type="button" class="linkish" data-start-show>` +
+        `Show introduction</button></p>`);   // hidden: a small way back, in its place
+    return `<section class="start-panel" aria-labelledby="sp-title"><div class="sp-head"><h2 id="sp-title">${
+esc(D.start?.title || 'New here? Start from a question of your own')}</h2>` +
       `<button type="button" class="sp-close" data-start-hide aria-label="Hide this introduction">×</button></div>` +
-      `<p class="sp-what">${esc(whatText())} <span class="muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins.</span></p>` + startButtons('sp-starts') +
-      `<p class="sp-foot"><a href="${esc(K.link('help'))}">How to use this site</a><span aria-hidden="true"> · </span><span class="sp-keys">Press <kbd>/</kbd> to search, <kbd>?</kbd> for every shortcut</span></p></section>`;
+      (`<p class="sp-what">${esc(whatText())} <span class="muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins.</span>` +
+          `</p>`) + startButtons('sp-starts') +
+      (`<p class="sp-foot"><a href="${esc(K.link('help'))}">How to use this site</a><span aria-hidden="true"> · ` +
+          `</span><span class="sp-keys">Press <kbd>/</kbd> to search, <kbd>?</kbd> for every shortcut</span></p>` +
+          `</section>`);
   });
   (K.afterRender ||= []).push(() => document.body.classList.toggle('intro-hidden', !!store.get(START_KEY)));
   K.clicks.push(['[data-start-hide]', () => { store.set(START_KEY, '1'); K.render(); announce('Introduction hidden. "Show introduction" brings it back.'); }],
@@ -69,8 +81,10 @@
     ['Enter or Space', 'Open a tile, select a class, sort a column'],
   ];
   const GO = { o: 'overview', p: 'proteins', s: 'sites', i: 'idrs', t: 'statistics', m: 'method', h: 'help' };
-  const keysTable = () => `<table class="tbl keys-tbl"><thead><tr><th scope="col">Key</th><th scope="col">What it does</th></tr></thead><tbody>` +
-    SHORTCUTS().map(([k, t]) => `<tr><td>${k.split(', ').map(x => x.split(/(?<=^g) /).map(y => `<kbd>${esc(y)}</kbd>`).join(' then ')).join(', ')}</td><td>${esc(t)}</td></tr>`).join('') + '</tbody></table>';
+  const keysTable = () => (`<table class="tbl keys-tbl"><thead><tr><th scope="col">Key</th><th scope="col">What it ` +
+      `does</th></tr></thead><tbody>`) +
+    SHORTCUTS().map(([k, t]) => `<tr><td>${
+k.split(', ').map(x => x.split(/(?<=^g) /).map(y => `<kbd>${esc(y)}</kbd>`).join(' then ')).join(', ')}</td><td>${esc(t)}</td></tr>`).join('') + '</tbody></table>';
   const terms = EX.filter(isTerm);
   const SECTIONS = [
     ['h-what', 'What this site is'], ['h-start', 'Where to start'], ['h-search', 'Searching'], ['h-filters', 'Filters'],
@@ -82,28 +96,66 @@
     const mlink = (arg, text) => `<a href="${esc(K.link('method', arg))}">${text}</a>`;
     const min = K.sel?.MIN;
     return `<div class="page-head"><h2>How to use this site</h2></div><div class="doc help-doc">` +
-      sec('h-what', `<p>${esc(whatText('on the Overview'))}</p><p>It holds ${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins and ${int(D.analyses.length)} questions. ${mlink('', 'Method')} gives the tests and data.</p>`) +
+      sec('h-what', (`<p>${esc(whatText('on the Overview'))}</p><p>It holds ${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins and ${int(D.analyses.length)} questions. ${mlink('', 'Method')} gives the ` +
+          `tests and data.</p>`)) +
       sec('h-start', `<p>Each of these fills the search box. Edit it from there.</p>${startButtons('sp-starts help-starts')}` +
-        `<p class="muted">${store.get(START_KEY) ? '<button type="button" class="linkish" data-start-show>Show the introduction on the Overview again</button>' : 'The Overview shows these until you hide them.'}</p>`) +
+        `<p class="muted">${
+store.get(START_KEY) ? '<button type="button" class="linkish" data-start-show>Show the introduction on the Overview again</button>' : 'The Overview shows these until you hide them.'}</p>`) +
       sec('h-search', `<p>The search box takes:</p><ul>` +
         `<li>a protein, by gene name, UniProt accession or entry name. Naming one protein opens its page.</li>` +
         `<li>a list of proteins, separated by spaces or commas: their ${esc(W.marks)} together.</li>` +
-        `<li>one ${esc(W.mark)}, as a gene and a position${EX.find(isSite) ? ` (<span class="mono">${esc(EX.find(isSite))}</span>)` : ''}.</li>` +
-        `<li>a term, <span class="mono">key:value</span>, where the key is a question or a fact about the ${esc(W.marks)}${terms.length ? ` (${terms.map(t => `<button type="button" class="linkish mono" data-try="${esc(t)}">${esc(t)}</button>`).join(', ')})` : ''}. Separate values with <span class="mono">|</span> or commas to match any. Several terms must all hold.</li></ul>` +
-        `<p>The line under the box counts the ${esc(W.marks)} and proteins that match and names any word that matched nothing. ${mlink('search', 'Method › Search terms')} lists every key.</p>`) +
-      sec('h-filters', `<p>The sidebar (☰ or Filters) lists the page's Sections and the Filters, one button per class or value with its count of ${esc(W.marks)}. A ${esc(W.mark)} is kept when it matches the search and every filter group, and any one of the values chosen within a control. Every page then shows the ${esc(W.marks)} that match, and the tests run again on them. Each chip shows how many ${esc(W.marks)} it holds; clicking a row in a tile does the same as ticking its chip.</p>`) +
-      sec('h-pages', `<p>Click a row of a table to open its protein or ${esc(W.mark)}. Click a class row of a chart to select its ${esc(W.marks)}, and a tile's title to open the question. On a map, hover an item for its description and click to pin it; drag across the map to zoom, and use the evidence map's box to redraw it for any protein.</p>`) +
-      sec('h-selection', `<p>A search or filter makes a selection, shown in the bar under the search box with × on each term, Save (kept in this browser), Copy link and Clear all. Every page then shows the selection, and the Overview tests every question again on it in your browser${min ? `, from ${int(min.proteins)} proteins and ${int(min.marks)} ${esc(W.marks)}` : ''}. These tests are exploratory and not adjusted for the other selections you try.</p>`) +
-      sec('h-compare', `<p>Under Compared with, the Overview compares your selection with the other ${esc(W.residues)} of the same proteins, with the other ${esc(W.marks)}, or with a saved selection. Each class shows your selection's share (filled) and the comparison's (hollow).</p>`) +
-      sec('h-read', `<p>Each tile is a question and each row a class. The dot is the effect on a log scale with its 95% confidence interval, and 1× is no difference.</p>` +
-        `<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and at least 1.1×</li><li><i class="kd less"></i> less often</li><li><i class="kd same"></i> about the same: significant, but within 1.1×</li><li><i class="kd ns"></i> no difference: q > 0.05</li></ul>` +
-        `<p>Within each protein compares each protein's ${esc(W.marks)} with the other ${esc(W.residues)} of the same protein. Across all proteins puts all the ${esc(W.residues)} together. The first separates where ${esc(W.marks)} lie from which proteins were found ${esc(W.marked)}. ${SETQ ? `Questions about protein classes show the fold enrichment of ${esc(W.marked)} proteins in each set. ` : ''}Hover a row, or Tab to it, for its counts. Select a tile for every class, and a class to select its ${esc(W.marks)}.</p>` +
-        `<p class="gloss-line"><b>Terms.</b> ${['fold', 'odds ratio', 'q', 'within each protein', 'pooled', 'strata'].map(t => `<i>${esc(t === 'pooled' ? 'across all proteins' : t)}</i>: ${esc(K.GLOSS[t])}`).join(' ')}</p>`) +
-      sec('h-export', `<p>Figures download as PDF, SVG, PNG (300 dpi) or TSV, and tables as TSV. Each file carries its test, citation, sources, versions and export date, in the file's metadata or a TSV's <span class="mono">#</span> lines. The Method button beside a figure opens how it was made.</p>`) +
-      sec('h-cite', `<p>${mlink('cite', 'How to cite')} has the citation, a copy button and CITATION.cff. Cite also the sources that report the ${esc(W.marks)} you use.</p>`) +
-      sec('h-share', `<p>The address holds the page, search, filters and comparison, so a copied link opens what you see. Back and Forward return to earlier pages and selections.</p>`) +
+        `<li>one ${esc(W.mark)}, as a gene and a position${
+EX.find(isSite) ? ` (<span class="mono">${esc(EX.find(isSite))}</span>)` : ''}.</li>` +
+        (`<li>a term, <span class="mono">key:value</span>, where the key is a question or a fact about the ${esc(W.marks)}${
+terms.length ? ` (${
+terms.map(t => (`<button type="button" ` +
+            `class="linkish mono" data-try="${esc(t)}">${esc(t)}</button>`)).join(', ')})` : ''}. Separate values ` +
+            `with <span class="mono">|</span> or commas to match any. Several terms must all hold.</li></ul>`) +
+        (`<p>The line under the box counts the ${esc(W.marks)} and proteins that match and names any word that ` +
+            `matched nothing. ${mlink('search', 'Method › Search terms')} lists every key.</p>`)) +
+      sec('h-filters', (`<p>The sidebar (☰ or Filters) lists the page's Sections and the Filters, one button per ` +
+          `class or value with its count of ${esc(W.marks)}. A ${esc(W.mark)} is kept when it matches the search ` +
+          `and every filter group, and any one of the values chosen within a control. Every page then shows the ${esc(W.marks)} that match,` +
+          ` and the tests run again on them. Each chip shows how many ${esc(W.marks)} it holds; clicking a row in ` +
+          `a tile does the same as ticking its chip.</p>`)) +
+      sec('h-pages', (`<p>Click a row of a table to open its protein or ${esc(W.mark)}. Click a class row of a ` +
+          `chart to select its ${esc(W.marks)}, and a tile's title to open the question. On a map, hover an item ` +
+          `for its description and click to pin it; drag across the map to zoom, and use the evidence map's box to ` +
+          `redraw it for any protein.</p>`)) +
+      sec('h-selection', (`<p>A search or filter makes a selection, shown in the bar under the search box with × on ` +
+          `each term, Save (kept in this browser), Copy link and Clear all. Every page then shows the selection, ` +
+          `and the Overview tests every question again on it in your browser${
+min ? `, from ${int(min.proteins)} proteins and ${int(min.marks)} ${esc(W.marks)}` : ''}. These tests ` +
+          `are exploratory and not adjusted for the other selections you try.</p>`)) +
+      sec('h-compare', (`<p>Under Compared with, the Overview compares your selection with the other ${esc(W.residues)} of the same ` +
+          `proteins, with the other ${esc(W.marks)}, or with a saved selection. Each class shows your selection's ` +
+          `share (filled) and the comparison's (hollow).</p>`)) +
+      sec('h-read', (`<p>Each tile is a question and each row a class. The dot is the effect on a log scale with ` +
+          `its 95% confidence interval, and 1× is no difference.</p>`) +
+        (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and at least 1.1×</li><li><i ` +
+            `class="kd less"></i> less often</li><li><i class="kd same"></i> about the same: significant, but ` +
+            `within 1.1×</li><li><i class="kd ns"></i> no difference: q > 0.05</li></ul>`) +
+        (`<p>Within each protein compares each protein's ${esc(W.marks)} with the other ${esc(W.residues)} of the same ` +
+            `protein. Across all proteins puts all the ${esc(W.residues)} together. The first separates where ${esc(W.marks)} lie from ` +
+            `which proteins were found ${esc(W.marked)}. ${
+SETQ ? (`Questions about protein classes show the fold ` +
+            `enrichment of ${esc(W.marked)} proteins in each set. `) : ''}Hover a row, or Tab to it, for its ` +
+            `counts. Select a tile for every class, and a class to select its ${esc(W.marks)}.</p>`) +
+        `<p class="gloss-line"><b>Terms.</b> ${
+['fold', 'odds ratio', 'q', 'within each protein', 'pooled', 'strata'].map(t => `<i>${
+esc(t === 'pooled' ? 'across all proteins' : t)}</i>: ${esc(K.GLOSS[t])}`).join(' ')}</p>`) +
+      sec('h-export', (`<p>Figures download as PDF, SVG, PNG (300 dpi) or TSV, and tables as TSV. Each file carries ` +
+          `its test, citation, sources, versions and export date, in the file's metadata or a TSV's <span ` +
+          `class="mono">#</span> lines. The Method button beside a figure opens how it was made.</p>`)) +
+      sec('h-cite', (`<p>${mlink('cite', 'How to cite')} has the citation, a copy button and CITATION.cff. Cite ` +
+          `also the sources that report the ${esc(W.marks)} you use.</p>`)) +
+      sec('h-share', (`<p>The address holds the page, search, filters and comparison, so a copied link opens what ` +
+          `you see. Back and Forward return to earlier pages and selections.</p>`)) +
       sec('h-keys', `<p>Single keys work when the cursor is not in a text box.</p>${keysTable()}`) +
-      sec('h-access', `<p>Every control works from the keyboard, and a skip link passes the header. Screen readers announce result counts. The light and dark themes (at the foot of every page) follow your system unless you pick one, and motion follows its reduced-motion setting. Pages work at 200% zoom and on a phone. If something does not work for you, tell the authors (links in the header).</p>` +
+      sec('h-access', (`<p>Every control works from the keyboard, and a skip link passes the header. Screen readers ` +
+          `announce result counts. The light and dark themes (at the foot of every page) follow your system unless ` +
+          `you pick one, and motion follows its reduced-motion setting. Pages work at 200% zoom and on a phone. If ` +
+          `something does not work for you, tell the authors (links in the header).</p>`) +
         `<p>${mlink('privacy', 'Privacy')}: no cookies, no tracking; what you search stays in your browser.</p>`) +
       '</div>';
   }
@@ -115,8 +167,10 @@
   let dlg = null;
   function openKeys() {
     if (!dlg) {
-      document.body.insertAdjacentHTML('beforeend', `<dialog class="keys-dlg" aria-labelledby="keys-title"><div class="keys-head"><h2 id="keys-title">Keyboard shortcuts</h2>` +
-        `<button type="button" class="sp-close" data-keys-close aria-label="Close">×</button></div><div class="keys-body"></div>` +
+      document.body.insertAdjacentHTML('beforeend', (`<dialog class="keys-dlg" aria-labelledby="keys-title"><div ` +
+          `class="keys-head"><h2 id="keys-title">Keyboard shortcuts</h2>`) +
+        (`<button type="button" class="sp-close" data-keys-close aria-label="Close">×</button></div><div ` +
+            `class="keys-body"></div>`) +
         `<p class="muted small">More in <a href="#help" data-keys-close>How to use this site</a>.</p></dialog>`);
       dlg = document.querySelector('.keys-dlg');
       dlg.addEventListener('click', e => { if (e.target === dlg || e.target.closest('[data-keys-close]')) dlg.close(); });
@@ -260,5 +314,7 @@
   document.addEventListener('contextmenu', e => { if (swallow) e.preventDefault(); }, true);
 
   // the footer: Help and the shortcuts, on every page
-  document.getElementById('credit')?.insertAdjacentHTML('beforebegin', `<span class="foot-help"><a href="#help">Help</a> · <button type="button" class="linkish" data-keys-open>Keyboard shortcuts <kbd>?</kbd></button></span>`);
+  document.getElementById('credit')?.insertAdjacentHTML('beforebegin', (`<span class="foot-help"><a href="#help">` +
+      `Help</a> · <button type="button" class="linkish" data-keys-open>Keyboard shortcuts <kbd>?</kbd></button>` +
+      `</span>`));
 });

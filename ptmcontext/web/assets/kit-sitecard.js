@@ -69,7 +69,8 @@
     if (!EV.status || !SPECS[EV.status]) return '';
     const v = c.attr(EV.status), { hasPred, hasExp } = evidenceParts(c), col = K.map?.attrColour ? K.map.attrColour(EV.status, v) : '#999';
     const plus = hasPred && hasExp && !(EV.tags?.predicted || []).includes(v) ? ' + pred.' : '';
-    return `<span class="ixs" style="--c:${col}" title="${esc(SPECS[EV.status].help || SPECS[EV.status].label)}"><i></i>${esc(vLabel(EV.status, v))}${plus}</span>`;
+    return `<span class="ixs" style="--c:${col}" title="${
+esc(SPECS[EV.status].help || SPECS[EV.status].label)}"><i></i>${esc(vLabel(EV.status, v))}${plus}</span>`;
   }
   function sentence(c) {
     const v = c.attr(EV.status), { hasPred, hasExp } = evidenceParts(c), s = EV.sentences || {};
@@ -89,18 +90,27 @@
       const label = named.has(v) && names.length ? names.slice(0, 2).join(', ') + (names.length > 2 ? ` +${names.length - 2}` : '') + (ids.length ? ' ' + ids.slice(0, 3).join(', ') + (ids.length > 3 ? ` +${ids.length - 3}` : '') : '') : short;
       const kinds = vals.filter(x => !pred.has(x) && ((tg.short || {})[x] ?? vLabel(tg.attribute, x)) + '|' + ((tg.tone || {})[x] || '') === key);   // the kinds this tag stands for (data-ev-kind: a page may open them)
       labs.push(label);
-      out.push(`<span class="tag t-${esc((tg.tone || {})[v] || 'x')}" data-ev-kind="${esc(kinds.join(','))}" title="${esc(vLabel(tg.attribute, v) + (names.length ? ': ' + names.join(', ') : ''))}">${esc(label)}</span>`);
+      out.push(`<span class="tag t-${esc((tg.tone || {})[v] || 'x')}" data-ev-kind="${esc(kinds.join(','))}" title="${
+esc(vLabel(tg.attribute, v) + (names.length ? ': ' + names.join(', ') : ''))}">${esc(label)}</span>`);
     }
     if (predVals.length) {
       const ps = partnersOf(predVals), names = [...new Set(ps.map(r => r.partner).filter(Boolean))];
-      const tip = predVals.map(v => vLabel(tg.attribute, v)).join(', ') + (ps.length ? ': ' + [...new Map(ps.map(r => [r.partner, r])).values()].slice(0, 20).map(r => `${r.partner}${r.score ? ' ' + Number(r.score).toFixed(2) : ''}`).join(', ') : '');
+      const tip = predVals.map(v => vLabel(tg.attribute, v)).join(', ') + (ps.length ? ': ' + [...new Map(ps.map(r => [r.partner, r])).values()].slice(0, 20).map(r => `${r.partner}${
+r.score ? ' ' + Number(r.score).toFixed(2) : ''}`).join(', ') : '');
       labs.push((tg.short || {})[predVals[0]] || 'pred.');
-      out.push(`<span class="tag t-pred" data-ev-kind="${esc(predVals.join(','))}" title="${esc(tip)}">${esc((tg.short || {})[predVals[0]] || 'pred.')}${names.length ? ' ' + esc(names[0]) + (names.length > 1 ? ` +${names.length - 1}` : '') : ''}</span>`);
+      out.push(`<span class="tag t-pred" data-ev-kind="${esc(predVals.join(','))}" title="${esc(tip)}">${
+esc((tg.short || {})[predVals[0]] || 'pred.')}${
+names.length ? ' ' + esc(names[0]) + (names.length > 1 ? ` +${names.length - 1}` : '') : ''}</span>`);
     }
     if (max < 0) return out.length ? `<span class="tag more" title="${esc(labs.join(', '))}">+${out.length}</span>` : '';   // compact rows: the count, the kinds on hover
-    return out.length ? `<div class="tags ev-tags">${(max ? out.slice(0, max) : out).join(' ')}${max && out.length > max ? ` <span class="tag">+${out.length - max}</span>` : ''}</div>` : '';
+    return out.length ? `<div class="tags ev-tags">${
+(max ? out.slice(0, max) : out).join(' ')}${
+max && out.length > max ? ` <span class="tag">+${out.length - max}</span>` : ''}</div>` : '';
   }
-  const entryBtn = (id, c) => `<a class="entry3d mono" href="${esc((EV.entries?.url || '').replace('{id}', encodeURIComponent(id)))}" target="_blank" rel="noopener" data-entry3d="${esc(id)}" data-acc="${esc(c.acc)}" data-pos="${c.pos}" title="${esc(id.toUpperCase())}${K.show3d ? ': show it in 3D at ' + esc(c.label) : ''}">${esc(id.toUpperCase())}</a>`;
+  const entryBtn = (id, c) => (`<a class="entry3d mono" href="${
+esc((EV.entries?.url || '').replace('{id}', encodeURIComponent(id)))}" target="_blank" ` +
+      `rel="noopener" data-entry3d="${esc(id)}" data-acc="${esc(c.acc)}" data-pos="${c.pos}" title="${esc(id.toUpperCase())}${
+K.show3d ? ': show it in 3D at ' + esc(c.label) : ''}">${esc(id.toUpperCase())}</a>`);
   function entries(c, max = 6) {
     const e = EV.entries; if (!e || !has(e.table)) return '';
     const kinds = e.kinds || {}, groups = new Map();
@@ -112,7 +122,12 @@
     }
     const gs = [...groups.values()].filter(g => g.ids.length);
     if (!gs.length) return '';
-    return `<div class="contacts">${gs.slice(0, max).map(g => `<span><b class="t-${esc(g.tone)}">${esc(g.name)}</b> ${g.ids.slice(0, 3).map(id => entryBtn(id, c)).join(', ')}${g.ids.length > 3 ? ` <span class="muted" title="${esc(g.ids.slice(3).map(x => x.toUpperCase()).join(', '))}">+${g.ids.length - 3}</span>` : ''}</span>`).join('')}` +
+    return `<div class="contacts">${
+gs.slice(0, max).map(g => `<span><b class="t-${esc(g.tone)}">${esc(g.name)}</b> ${
+g.ids.slice(0, 3).map(id => entryBtn(id, c)).join(', ')}${
+g.ids.length > 3 ? (` <span class="muted" ` +
+        `title="${
+esc(g.ids.slice(3).map(x => x.toUpperCase()).join(', '))}">+${g.ids.length - 3}</span>`) : ''}</span>`).join('')}` +
       (gs.length > max ? `<span class="muted">+${gs.length - max} more</span>` : '') + '</div>';
   }
   // bound windows: the chain around the contacted unit, contacted units in brackets; '-' past the chain's end
@@ -138,18 +153,27 @@
   const winHtml = w => {
     const [e5, e3] = SQ.ends || ['', ''];
     const body = w.win.replace(/\[([^\]])\]|(-)|([^[\]-])/g, (m0, hit, gap, ch) => (gap ? '<span class="gap">·</span>' : hit ? `<b class="nt hit">${esc(hit)}</b>` : `<span class="nt">${esc(ch)}</span>`));
-    return `<span class="na-win">${e5 ? `<span class="end">${esc(e5)}</span>` : ''}${body}${e3 ? `<span class="end">${esc(e3)}</span>` : ''}</span>`;
+    return `<span class="na-win">${
+e5 ? `<span class="end">${esc(e5)}</span>` : ''}${body}${
+e3 ? `<span class="end">${esc(e3)}</span>` : ''}</span>`;
   };
-  const winMeta = (w, c) => `${w.type ? `<span class="tag na-type" title="${esc((SQ.kinds || {})[w.kind] || w.kind)}">${esc((SQ.types || {})[w.type] || w.type)}</span>` : ''}` +
-    `${w.designed && SQ.designed ? `<span class="tag na-type">${esc(SQ.designed.label)}</span>` : ''}${w.off ? `<span class="tag" title="Contacted by residue ${esc(c.shown(c.pos + w.off))} (${rel(w.off)}), not by ${esc(c.label)} itself">via ${rel(w.off)}</span>` : ''}`;
+  const winMeta = (w, c) => `${
+w.type ? `<span class="tag na-type" title="${esc((SQ.kinds || {})[w.kind] || w.kind)}">${esc((SQ.types || {})[w.type] || w.type)}</span>` : ''}` +
+    `${
+w.designed && SQ.designed ? `<span class="tag na-type">${esc(SQ.designed.label)}</span>` : ''}${
+w.off ? (`<span class="tag" ` +
+        `title="Contacted by residue ${esc(c.shown(c.pos + w.off))} (${rel(w.off)}), not by ${esc(c.label)} itself">via ${rel(w.off)}</span>`) : ''}`;
   function sequences(c, compact) {
     if (!(SQ.tables || []).some(has)) return '';
     const ws = windowsOf(c); if (!ws.length) return '';
     const entriesWord = n => `${int(n)} entr${n === 1 ? 'y' : 'ies'}`;
-    if (compact) { const w = ws[0]; return `<div class="na-cell">${winHtml(w)}<div class="na-meta">${winMeta(w, c)}<span class="muted">${entriesWord(w.count)}${ws.length > 1 ? ` · +${ws.length - 1} more` : ''}</span></div></div>`; }
+    if (compact) { const w = ws[0]; return `<div class="na-cell">${winHtml(w)}<div class="na-meta">${winMeta(w, c)}<span class="muted">${entriesWord(w.count)}${
+ws.length > 1 ? ` · +${ws.length - 1} more` : ''}</span></div></div>`; }
     const max = SQ.max || 5;
     return `<p class="flabel">${esc(ctxWords(SQ.title || 'Bound sequences', c))}</p><ul class="sc-na">` +
-      ws.slice(0, max).map(w => `<li>${winHtml(w)} ${winMeta(w, c)} <span class="muted small" title="${esc(w.names.join('\n') + '\n' + [...w.entries].map(x => x.toUpperCase()).join(' '))}">${esc(w.names[0] || '')}${w.names[0] ? ' · ' : ''}${entriesWord(w.count)}${w.dist != null ? ` · ${w.dist.toFixed(1)} Å` : ''}</span></li>`).join('') + '</ul>' +
+      ws.slice(0, max).map(w => `<li>${winHtml(w)} ${winMeta(w, c)} <span class="muted small" title="${
+esc(w.names.join('\n') + '\n' + [...w.entries].map(x => x.toUpperCase()).join(' '))}">${esc(w.names[0] || '')}${w.names[0] ? ' · ' : ''}${entriesWord(w.count)}${
+w.dist != null ? ` · ${w.dist.toFixed(1)} Å` : ''}</span></li>`).join('') + '</ul>' +
       (ws.length > max ? `<p class="muted small">${int(ws.length - max)} more bound sequence${ws.length - max === 1 ? '' : 's'}.</p>` : '');
   }
   // residue evidence at or near the site: residues within span (each with its offset), and stretches holding the site
@@ -166,15 +190,20 @@
     const seq = c.seq || '';
     if (compact === 'brief') {   // one tag and "+n" (the kinds on hover), for a one-line row
       const ks = [...by.keys()], first = ks[0];
-      return `<div class="na-meta"><span class="tag t-${esc((EV.tags?.tone || {})[first] || 'x')}" title="${esc(lab[first] || first)}">${esc(short[first] || first)}</span>${ks.length > 1 ? `<span class="tag more" title="${esc(ks.map(k => lab[k] || k).join('\n'))}">+${ks.length - 1}</span>` : ''}</div>`;
+      return `<div class="na-meta"><span class="tag t-${esc((EV.tags?.tone || {})[first] || 'x')}" title="${esc(lab[first] || first)}">${esc(short[first] || first)}</span>${
+ks.length > 1 ? (`<span class="tag ` +
+          `more" title="${esc(ks.map(k => lab[k] || k).join('\n'))}">+${ks.length - 1}</span>`) : ''}</div>`;
     }
     if (compact) return `<div class="na-meta">${[...by.entries()].map(([k, xs]) => { const pts = xs.filter(r => r.start === r.end).map(r => r.start - c.pos).sort((a, b) => Math.abs(a) - Math.abs(b));
-      return `<span class="tag t-${esc((EV.tags?.tone || {})[k] || 'x')}" title="${esc(lab[k] || k)}">${esc(short[k] || k)}${pts.length ? ' ' + (pts[0] === 0 ? 'at i' : rel(pts[0])) : ''}</span>`; }).join('')}</div>`;
+      return `<span class="tag t-${esc((EV.tags?.tone || {})[k] || 'x')}" title="${esc(lab[k] || k)}">${esc(short[k] || k)}${
+pts.length ? ' ' + (pts[0] === 0 ? 'at i' : rel(pts[0])) : ''}</span>`; }).join('')}</div>`;
     return `<p class="small sc-around">${cap([...by.entries()].map(([k, xs]) => {
       const pts = xs.filter(r => r.start === r.end).map(r => r.start).sort((a, b) => Math.abs(a - c.pos) - Math.abs(b - c.pos));
       const spans = xs.filter(r => r.start !== r.end);
-      return `${esc(lab[k] || k)}${pts.length ? ': ' + pts.slice(0, 4).map(q => (q === c.pos ? 'the site (i)' : `${esc((seq[q - 1] || '') + c.shown(q))} (${rel(q - c.pos)})`)).join(', ') + (pts.length > 4 ? ` +${pts.length - 4}` : '') : ''}` +
-        `${spans.length ? ' ' + [...new Set(spans.map(r => `${c.shown(r.start)}–${c.shown(r.end)}`))].join(', ') : ''}`;
+      return `${esc(lab[k] || k)}${
+pts.length ? ': ' + pts.slice(0, 4).map(q => (q === c.pos ? 'the site (i)' : `${esc((seq[q - 1] || '') + c.shown(q))} (${rel(q - c.pos)})`)).join(', ') + (pts.length > 4 ? ` +${pts.length - 4}` : '') : ''}` +
+        `${
+spans.length ? ' ' + [...new Set(spans.map(r => `${c.shown(r.start)}–${c.shown(r.end)}`))].join(', ') : ''}`;
     }).join('; '))}.</p>`;
   }
   // the whole protein, labeled so it is not read as site evidence
@@ -188,8 +217,10 @@
       return v.before ? `${esc(v.label)} ${esc(String(x).replace(/;\s*/g, ', '))}` : `${esc(num(x))} ${esc(v.label)}`;
     }).filter(Boolean);
     if (!parts.length) return '';
-    return `<p class="sc-prot"><span class="flabel">${esc(ctxWords(pr.title || 'Whole protein', c))}</span> ${parts.join(' · ')}` +
-      (pr.opens && document.getElementById(pr.opens) ? ` <button class="linkish" type="button" data-open-fold="${esc(pr.opens)}">${esc(ctxWords(pr.opens_label || 'More', c))}</button>` : '') + '</p>';
+    return `<p class="sc-prot"><span class="flabel">${
+esc(ctxWords(pr.title || 'Whole protein', c))}</span> ${parts.join(' · ')}` +
+      (pr.opens && document.getElementById(pr.opens) ? ` <button class="linkish" type="button" data-open-fold="${esc(pr.opens)}">${
+esc(ctxWords(pr.opens_label || 'More', c))}</button>` : '') + '</p>';
   }
   function evidenceBlock(c) {
     if (!EV.status && !EV.tags && !EV.entries && !(SQ.tables || []).length) return '';
@@ -206,7 +237,9 @@
       else if (has(s.table)) vals = list((at(c.tb, s.table, c.pos)[0] || {})[s.column]);
       else return '';
       if (!vals.length) return '';
-      const lab = s.url ? `<a href="${esc(s.url.replace('{acc}', encodeURIComponent(c.acc)))}" target="_blank" rel="noopener">${esc(s.label)}</a>` : s.source && lookupRow(s.source)?.doi ? doiA(lookupRow(s.source).doi, esc(s.label)) : esc(s.label);
+      const lab = s.url ? (`<a href="${
+esc(s.url.replace('{acc}', encodeURIComponent(c.acc)))}" target="_blank" ` +
+          `rel="noopener">${esc(s.label)}</a>`) : s.source && lookupRow(s.source)?.doi ? doiA(lookupRow(s.source).doi, esc(s.label)) : esc(s.label);
       return compact ? `<span class="tag" title="${esc(s.label)}">${esc(vals.join('/'))} <span class="muted">${esc(s.label.split(/[ ,(]/)[0])}</span></span>` : `${esc(vals.join(', '))} <span class="muted">${lab}</span>`;
     }).filter(Boolean);
     return lines.length ? (compact ? `<div class="tags">${lines.join(' ')}</div>` : lines.join('<br>')) : (compact ? '<span class="muted">–</span>' : '<span class="muted">no source gives a state</span>');
@@ -218,7 +251,10 @@
       const vals = attrVals(c, x.attribute); if (!vals.length) return '';
       const n = has(x.table) && x.counts ? list((at(c.tb, x.table, c.pos)[0] || {})[x.counts]) : [];
       const tot = n.reduce((a, b) => a + (+b || 0), 0), unit = x.unit || ['', ''];
-      return `${vals.map((v, i) => `<b>${esc(renumber(c, v))}</b>${+n[i] > 1 ? ' ×' + int(n[i]) : ''}`).join(', ')}${tot ? ` <span class="muted">in ${int(tot)} ${esc(tot === 1 ? unit[0] : unit[1])}</span>` : ''} <span class="muted">(${esc(x.label)})</span>`;
+      return `${
+vals.map((v, i) => `<b>${esc(renumber(c, v))}</b>${+n[i] > 1 ? ' ×' + int(n[i]) : ''}`).join(', ')}${
+tot ? (` <span class="muted">` +
+          `in ${int(tot)} ${esc(tot === 1 ? unit[0] : unit[1])}</span>`) : ''} <span class="muted">(${esc(x.label)})</span>`;
     }).filter(Boolean);
     return parts.length ? parts.join('<br>') : `<span class="muted">no change in ${esc(cs.map(x => x.label).join(' or '))}</span>`;
   }
@@ -230,13 +266,20 @@
     return out;
   }
   // the key to the marks of a calls column: each mark with its word, the quiet word, and the dash
-  const callsKey = () => `<p class="key calls-key">${Object.entries(CL.marks || {}).map(([k, m]) => `<span><span class="trend c-${esc(k)}"><b>${esc(m)}</b></span> ${esc((CL.words || {})[k] || k)}</span>`).join('')}<span><span class="muted">${esc(CL.quiet || 'n.s.')}</span> measured, no significant change</span><span><span class="muted">–</span> not measured</span><span class="muted">a number beside a mark: how many experiments · hover for the numbers</span></p>`;
+  const callsKey = () => (`<p class="key calls-key">${
+Object.entries(CL.marks || {}).map(([k, m]) => (`<span><span ` +
+      `class="trend c-${esc(k)}"><b>${esc(m)}</b></span> ${esc((CL.words || {})[k] || k)}</span>`)).join('')}<span><span ` +
+      `class="muted">${esc(CL.quiet || 'n.s.')}</span> measured, no significant change</span><span><span ` +
+      `class="muted">–</span> not measured</span><span class="muted">a number beside a mark: how many experiments ` +
+      `· hover for the numbers</span></p>`);
   function calls(c, compact) {
     if (!(CL.tables || []).some(has) && !Object.keys(CL.attributes || {}).some(a => SPECS[a])) return '';
     const rs = callRows(c); if (!rs.length) return '<span class="muted">–</span>';
     const marked = rs.filter(r => (CL.marks || {})[r.call]);
-    const tip = r => [`${r.label}: ${(CL.words || {})[r.call] || r.call}`, r.n ? `${r.n} peptide${+r.n === 1 ? '' : 's'}${r.n_down || r.n_up ? ` (${r.n_down || 0} down, ${r.n_up || 0} up)` : ''}` : '', r.value !== undefined && r.value !== '' ? `log2 ${num(r.value, 'l2')}` : '', r.q ? `q ${num(r.q, 'p')}` : '', r.rule ? `rule: ${String(r.rule).replace(/_/g, ' ')}` : ''].filter(Boolean).join(' · ');
-    if (!marked.length) return `<span class="muted" title="${esc('Measured: ' + rs.map(r => r.label).join(', ') + '; no significant change')}">${esc(CL.quiet || 'n.s.')}</span>`;
+    const tip = r => [`${r.label}: ${(CL.words || {})[r.call] || r.call}`, r.n ? `${r.n} peptide${+r.n === 1 ? '' : 's'}${
+r.n_down || r.n_up ? ` (${r.n_down || 0} down, ${r.n_up || 0} up)` : ''}` : '', r.value !== undefined && r.value !== '' ? `log2 ${num(r.value, 'l2')}` : '', r.q ? `q ${num(r.q, 'p')}` : '', r.rule ? `rule: ${String(r.rule).replace(/_/g, ' ')}` : ''].filter(Boolean).join(' · ');
+    if (!marked.length) return `<span class="muted" title="${
+esc('Measured: ' + rs.map(r => r.label).join(', ') + '; no significant change')}">${esc(CL.quiet || 'n.s.')}</span>`;
     // the row's hover stays short (a sentence, not each measurement: the site card's table has those): the call, then up to
     // three conditions with their log2, and how many more
     const brief = (k, xs) => `${(CL.words || {})[k] || k}: ` + xs.slice(0, 3).map(r => r.label + (r.value !== undefined && r.value !== '' ? ` (log2 ${num(r.value, 'l2')})` : '')).join(', ') + (xs.length > 3 ? ` and ${xs.length - 3} more` : '');
@@ -248,8 +291,17 @@
   }
   function callsTable(c) {
     const rs = callRows(c).filter(r => !r.attribute); if (!rs.length) return '';
-    return `<p><b>${esc(cap(C.calls?.title || 'Perturbations'))}</b> <span class="muted small">(every measurement at the site; a call is a peptide-level change)</span></p><div class="tbl-card"><table class="tbl compact"><thead><tr><th>Condition</th><th>Call</th><th class="num">Peptides (▼/▲)</th><th class="num">log2</th><th class="num">q</th><th>Rule</th></tr></thead><tbody>` +
-      rs.map(r => `<tr><td>${esc(r.label)}</td><td>${(CL.marks || {})[r.call] ? `<b class="trend c-${esc(r.call)}">${esc(CL.marks[r.call])}</b> ` : ''}${esc((CL.words || {})[r.call] || r.call)}</td><td class="num">${esc(r.n || '–')}${r.n_down !== undefined ? ` <span class="muted">(${esc(r.n_down || 0)}/${esc(r.n_up || 0)})</span>` : ''}</td><td class="num">${num(r.value, 'l2')}</td><td class="num">${num(r.q, 'p')}</td><td class="small">${esc(String(r.rule || '').replace(/_/g, ' '))}</td></tr>`).join('') + '</tbody></table></div>';
+    return (`<p><b>${
+esc(cap(C.calls?.title || 'Perturbations'))}</b> <span class="muted small">(every measurement ` +
+        `at the site; a call is a peptide-level change)</span></p><div class="tbl-card"><table class="tbl compact">` +
+        `<thead><tr><th>Condition</th><th>Call</th><th class="num">Peptides (▼/▲)</th><th class="num">log2</th><th ` +
+        `class="num">q</th><th>Rule</th></tr></thead><tbody>`) +
+      rs.map(r => (`<tr><td>${esc(r.label)}</td><td>${
+(CL.marks || {})[r.call] ? `<b class="trend c-${esc(r.call)}">${esc(CL.marks[r.call])}</b> ` : ''}${esc((CL.words || {})[r.call] || r.call)}</td><td ` +
+          `class="num">${esc(r.n || '–')}${
+r.n_down !== undefined ? ` <span class="muted">(${esc(r.n_down || 0)}/${esc(r.n_up || 0)})</span>` : ''}</td><td ` +
+          `class="num">${num(r.value, 'l2')}</td><td class="num">${num(r.q, 'p')}</td><td class="small">${
+esc(String(r.rule || '').replace(/_/g, ' '))}</td></tr>`)).join('') + '</tbody></table></div>';
   }
 
   // ---- who binds it, and how it was found (site_records) ------------------------------------------------------------
@@ -276,41 +328,64 @@
   function partnerHtml(r, c) {
     const kinds = RC.kinds || {}, other = RC.species && r.species && !String(r.species).split(/[;,]\s*/).includes(RC.species);
     let name;
-    if (r.partner_kind === 'self' || (r.partner_accession && r.partner_accession === c.acc)) name = `<b>${esc(c.gene)}</b> <span class="muted">${esc(kinds.self || 'another copy')}</span>`;
+    if (r.partner_kind === 'self' || (r.partner_accession && r.partner_accession === c.acc)) name = (`<b>${esc(c.gene)}</b> <span ` +
+        `class="muted">${esc(kinds.self || 'another copy')}</span>`);
     else if (r.partner_kind === 'protein' || (!r.partner_kind && r.partner_accession)) {
       const here = r.partner_accession && c.isListed?.(r.partner_accession) && !other;
       const label = esc(r.partner || r.partner_name || r.partner_accession || '');
-      name = here ? `<a href="${esc(K.link('protein', r.partner_accession))}" title="${esc(r.partner_name || '')}"><b>${label}</b></a>` : `<b title="${esc((r.partner_name || '') + (r.partner_accession ? ' (' + r.partner_accession + ')' : ''))}">${label}</b>`;
-    } else name = `<b>${esc(kinds[r.partner_kind] || r.partner_kind || '')}</b>${r.partner_name ? ` <span class="muted">${esc(String(r.partner_name).slice(0, 60))}</span>` : ''}`;
-    return name + (other ? ` <span class="sp-species" title="${esc(r.species)}">${esc(String(r.species).split(/[;,]/)[0].replace(/^([A-Z])[a-z]+ /, '$1. '))}</span>` : '');
+      name = here ? `<a href="${
+esc(K.link('protein', r.partner_accession))}" title="${esc(r.partner_name || '')}"><b>${label}</b></a>` : `<b title="${
+esc((r.partner_name || '') + (r.partner_accession ? ' (' + r.partner_accession + ')' : ''))}">${label}</b>`;
+    } else name = `<b>${
+esc(kinds[r.partner_kind] || r.partner_kind || '')}</b>${
+r.partner_name ? ` <span class="muted">${esc(String(r.partner_name).slice(0, 60))}</span>` : ''}`;
+    return name + (other ? ` <span class="sp-species" title="${esc(r.species)}">${
+esc(String(r.species).split(/[;,]/)[0].replace(/^([A-Z])[a-z]+ /, '$1. '))}</span>` : '');
   }
   function sourceCell(x, c) {
     const url = (RC.urls || {})[x.source], ids = x.ids;
-    const link = id => (x.source && url && /\{id\}/.test(url) ? (EV.entries && x.source === Object.keys(RC.urls || {})[0] ? entryBtn(id, c) : `<a href="${esc(url.replace('{id}', encodeURIComponent(id)))}" target="_blank" rel="noopener">${esc(id.toUpperCase?.() === id ? id : id)}</a>`) : esc(id));
-    return `${esc(x.source || '')} ${ids.slice(0, 4).map(link).join(', ')}${ids.length > 4 ? ` <details class="sp-more"><summary>+${ids.length - 4}</summary>${ids.slice(4).map(link).join(', ')}</details>` : ''}`;
+    const link = id => (x.source && url && /\{id\}/.test(url) ? (EV.entries && x.source === Object.keys(RC.urls || {})[0] ? entryBtn(id, c) : (`<a href="${
+esc(url.replace('{id}', encodeURIComponent(id)))}" target="_blank" ` +
+        `rel="noopener">${esc(id.toUpperCase?.() === id ? id : id)}</a>`)) : esc(id));
+    return `${esc(x.source || '')} ${ids.slice(0, 4).map(link).join(', ')}${
+ids.length > 4 ? (` <details ` +
+        `class="sp-more"><summary>+${ids.length - 4}</summary>${ids.slice(4).map(link).join(', ')}</details>`) : ''}`;
   }
   function methodCell(x) {
     const fam = new Map();
     x.methods.forEach(m => { const [f, res] = String(m).split(/,\s*(?=[\d.]+\s*Å)/); if (!fam.has(f)) fam.set(f, []); if (res) fam.get(f).push(parseFloat(res)); });
-    return [...fam.entries()].map(([f, rs]) => esc(f) + (rs.length ? ` <span class="muted">${rs.length > 1 ? Math.min(...rs).toFixed(1) + '–' + Math.max(...rs).toFixed(1) : rs[0].toFixed(1)} Å</span>` : '')).join('; ');
+    return [...fam.entries()].map(([f, rs]) => esc(f) + (rs.length ? ` <span class="muted">${
+rs.length > 1 ? Math.min(...rs).toFixed(1) + '–' + Math.max(...rs).toFixed(1) : rs[0].toFixed(1)} Å</span>` : '')).join('; ');
   }
-  const stateCell = x => `<span class="sp-state" title="${esc(x.state_detail || '')}">${esc((RC.states || {})[x.state] ?? x.state ?? '')}</span>${x.other_marks ? ` <span class="sp-marks" title="Other marks of the protein in the experiment">+ ${esc(x.other_marks)}</span>` : ''}`;
-  const papersCell = x => { const ps = [...x.papers.values()]; return ps.length ? ps.slice(0, 2).map(paperA).join('<br>') + (ps.length > 2 ? `<details class="sp-more"><summary>+${ps.length - 2} more</summary>${ps.slice(2).map(paperA).join('<br>')}</details>` : '') : '<span class="muted">–</span>'; };
+  const stateCell = x => `<span class="sp-state" title="${esc(x.state_detail || '')}">${
+esc((RC.states || {})[x.state] ?? x.state ?? '')}</span>${
+x.other_marks ? (` <span class="sp-marks" ` +
+      `title="Other marks of the protein in the experiment">+ ${esc(x.other_marks)}</span>`) : ''}`;
+  const papersCell = x => { const ps = [...x.papers.values()]; return ps.length ? ps.slice(0, 2).map(paperA).join('<br>') + (ps.length > 2 ? (`<details ` +
+      `class="sp-more"><summary>+${ps.length - 2} more</summary>${ps.slice(2).map(paperA).join('<br>')}</details>`) : '') : '<span class="muted">–</span>'; };
   function recordsSummary(c, rs) {
     const n = new Map(), papers = new Set(), quiet = new Set(RC.not_papers || []);
     rs.forEach(r => { n.set(r.group, (n.get(r.group) || 0) + 1); if (!quiet.has(r.group) && paperKey(r)) papers.add(paperKey(r)); });
     return `${int(rs.length)} interaction record${rs.length === 1 ? '' : 's'} from ${int(papers.size)} paper${papers.size === 1 ? '' : 's'} and datasets: ` +
-      [...n.entries()].sort((a, b) => grpOrder(a[0]) - grpOrder(b[0])).map(([g, k]) => `${grpLabel(g).replace(/^[A-Z](?=[a-z])/, ch => ch.toLowerCase())} ${int(k)}`).join(' · ');
+      [...n.entries()].sort((a, b) => grpOrder(a[0]) - grpOrder(b[0])).map(([g, k]) => `${
+grpLabel(g).replace(/^[A-Z](?=[a-z])/, ch => ch.toLowerCase())} ${int(k)}`).join(' · ');
   }
   function recordsBlock(c) {
     if (!has(RC.table)) return '';
     const rs = at(c.tb, RC.table, c.pos);
-    const body = !rs.length ? `<p class="muted small">No interaction record at ${esc(c.label)}.</p>` : `<p class="sp-sum">${esc(recordsSummary(c, rs))} <button class="linkish small" type="button" data-rec-tsv="${c.pos}">TSV</button></p>` +
+    const body = !rs.length ? `<p class="muted small">No interaction record at ${esc(c.label)}.</p>` : (`<p class="sp-sum">${esc(recordsSummary(c, rs))} <button ` +
+        `class="linkish small" type="button" data-rec-tsv="${c.pos}">TSV</button></p>`) +
       recordGroups(c, rs).map(([g, m], _k, all) => {
         const xs = [...m.values()], n = xs.reduce((t, x) => t + x.n, 0), who = new Set(xs.map(x => x.partner || x.partner_name || x.partner_kind));
-        const row = x => `<tr><td data-label="Partner">${partnerHtml(x, c)}</td><td data-label="Evidence">${sourceCell(x, c)}</td><td data-label="Method">${methodCell(x)}</td><td data-label="Site in it">${stateCell(x)}</td><td data-label="Paper">${papersCell(x)}</td></tr>`;
-        return `<details class="sp-group"${(RC.open || []).includes(g) || all.length === 1 ? ' open' : ''}><summary><b>${esc(cap(grpLabel(g)))}</b> <span class="muted small">${int(who.size)} partner${who.size === 1 ? '' : 's'} · ${int(n)} record${n === 1 ? '' : 's'}${(RC.help || {})[g] ? ' — ' + esc(RC.help[g]) : ''}</span></summary>` +
-          `<div class="tbl-card"><table class="tbl compact sp-tbl stackable"><thead><tr><th>Partner</th><th>Evidence</th><th>Method</th><th>Site in it</th><th>Paper</th></tr></thead><tbody>${xs.slice(0, 8).map(row).join('')}</tbody>` +
+        const row = x => (`<tr><td data-label="Partner">${partnerHtml(x, c)}</td><td data-label="Evidence">${sourceCell(x, c)}</td><td ` +
+            `data-label="Method">${methodCell(x)}</td><td data-label="Site in it">${stateCell(x)}</td><td ` +
+            `data-label="Paper">${papersCell(x)}</td></tr>`);
+        return (`<details class="sp-group"${
+(RC.open || []).includes(g) || all.length === 1 ? ' open' : ''}><summary><b>${esc(cap(grpLabel(g)))}</b> <span ` +
+            `class="muted small">${int(who.size)} partner${who.size === 1 ? '' : 's'} · ${int(n)} record${n === 1 ? '' : 's'}${
+(RC.help || {})[g] ? ' — ' + esc(RC.help[g]) : ''}</span></summary>`) +
+          (`<div class="tbl-card"><table class="tbl compact sp-tbl stackable"><thead><tr><th>Partner</th><th>` +
+              `Evidence</th><th>Method</th><th>Site in it</th><th>Paper</th></tr></thead><tbody>${xs.slice(0, 8).map(row).join('')}</tbody>`) +
           (xs.length > 8 ? `<tbody class="sp-rest" hidden>${xs.slice(8).map(row).join('')}</tbody>` : '') + '</table></div>' +
           (xs.length > 8 ? `<button class="linkish small" type="button" data-sp-all>Show all ${int(xs.length)} rows</button>` : '') + '</details>';
       }).join('');
@@ -337,9 +412,14 @@
     const sites = [...by.keys()].sort((a, b) => a - b);
     const nameHtml = ([nm, acc]) => (acc ? `<a href="${esc(K.link('protein', acc))}"><b>${esc(nm)}</b></a>` : `<b>${esc(nm)}</b>`);
     const row = pos => { const g = by.get(pos), papers = new Set([...g.values()].flatMap(x => [...x.papers]));
-      return `<tr><td data-label="Site"><button type="button" class="linkish mono" data-site-open="${pos}">${esc(siteLabel(pos))}</button></td><td data-label="What the records show">` +
-        [...g.entries()].sort((a, b) => grpOrder(a[0]) - grpOrder(b[0])).map(([k, x]) => `<span class="pw-g"><span class="muted">${esc(cap(grpLabel(k)))}</span> ${[...x.names].slice(0, 5).map(nameHtml).join(', ')}${x.names.size > 5 ? ` <span class="muted">+${x.names.size - 5}</span>` : ''}</span>`).join('') +
-        `</td><td data-label="Papers" class="num">${papers.size ? int(papers.size) : '<span class="muted">–</span>'}</td></tr>`; };
+      return (`<tr><td data-label="Site"><button type="button" class="linkish mono" data-site-open="${pos}">${esc(siteLabel(pos))}</button>` +
+          `</td><td data-label="What the records show">`) +
+        [...g.entries()].sort((a, b) => grpOrder(a[0]) - grpOrder(b[0])).map(([k, x]) => (`<span class="pw-g"><span ` +
+            `class="muted">${esc(cap(grpLabel(k)))}</span> ${
+[...x.names].slice(0, 5).map(nameHtml).join(', ')}${
+x.names.size > 5 ? ` <span class="muted">+${x.names.size - 5}</span>` : ''}</span>`)).join('') +
+        `</td><td data-label="Papers" class="num">${
+papers.size ? int(papers.size) : '<span class="muted">–</span>'}</td></tr>`; };
     return { n: sites.length, rows: sites.map(row) };
   }
 
@@ -357,19 +437,24 @@
       const sg = WR.suggest, hits = (sg.rules || []).filter(r => SPECS[r.attribute] && attrVals(c, r.attribute).some(v => (r.has || []).includes(v)));
       const drop = new Set(hits.map(r => r.replaces).filter(Boolean)), who = [...new Set(hits.map(r => r.suggests))].filter(x => !drop.has(x));
       const refs = (sg.sources || []).map(sourceLink).join('; ');
-      lines.push(dl(esc(sg.label || 'Suggested'), who.length ? `<b>${esc(who.join(' and '))}</b> <span class="muted">(indirect) · ${esc(hits.map(r => r.because).join('; '))}${refs ? ` (${refs})` : ''}</span>` : `<span class="muted">${esc(sg.none || '')}</span>`));
+      lines.push(dl(esc(sg.label || 'Suggested'), who.length ? (`<b>${esc(who.join(' and '))}</b> <span ` +
+          `class="muted">(indirect) · ${esc(hits.map(r => r.because).join('; '))}${refs ? ` (${refs})` : ''}</span>`) : `<span class="muted">${esc(sg.none || '')}</span>`));
     }
     if (WR.partners && has(WR.partners.table)) {
       const ps = rows(c.tb, WR.partners.table);
       for (const [cls, lab] of Object.entries(WR.partners.classes || {})) {
         const hit = ps.filter(r => list(r.classes).includes(cls)).sort((a, b) => b.score - a.score);
         lines.push(dl(esc(ctxWords(lab, c)), (hit.length ? hit.slice(0, 8).map(r => { const a = c.isListed?.(r.partner_accession);
-          return a ? `<a href="${esc(K.link('protein', r.partner_accession))}" title="score ${esc(r.score)}">${esc(r.partner || r.partner_accession)}</a>` : `<span title="score ${esc(r.score)}">${esc(r.partner || r.partner_accession)}</span>`; }).join(', ') + (hit.length > 8 ? ` +${hit.length - 8}` : '')
-          : `<span class="muted">${esc(WR.partners.none || 'none')}</span>`) + (WR.partners.note ? ` <span class="muted small">${esc(WR.partners.note)}</span>` : '')));
+          return a ? `<a href="${
+esc(K.link('protein', r.partner_accession))}" title="score ${esc(r.score)}">${esc(r.partner || r.partner_accession)}</a>` : `<span title="score ${esc(r.score)}">${esc(r.partner || r.partner_accession)}</span>`; }).join(', ') + (hit.length > 8 ? ` +${hit.length - 8}` : '')
+          : `<span class="muted">${esc(WR.partners.none || 'none')}</span>`) + (WR.partners.note ? (` <span class="muted ` +
+              `small">${esc(WR.partners.note)}</span>`) : '')));
       }
     }
     if (!lines.length) return '';
-    return `<section class="sc-wr"><h4>${esc(WR.title || 'Writer and reader')}</h4><dl class="sc-kv">${lines.join('')}</dl>${WR.note ? `<details class="sc-note"><summary>How to read this</summary><p class="muted small">${esc(WR.note)}</p></details>` : ''}</section>`;
+    return `<section class="sc-wr"><h4>${esc(WR.title || 'Writer and reader')}</h4><dl class="sc-kv">${lines.join('')}</dl>${
+WR.note ? (`<details ` +
+        `class="sc-note"><summary>How to read this</summary><p class="muted small">${esc(WR.note)}</p></details>`) : ''}</section>`;
   }
 
   // ---- source records (the Evidence row) -----------------------------------------------------------------------------
@@ -391,7 +476,10 @@
         if (!bad && n >= Math.min(res.length, 6)) fits.push(k); });
       const marked = fits.filter(k => res[k].mod); site = fits.length === 1 ? fits[0] : marked.length === 1 ? marked[0] : -1;
     }
-    return `<span class="pep-seq">${res.map((r, k) => { const t = r.mod ? `<b class="pep-me" title="${esc(r.aa + '(' + r.mod + ') in the source')}">${esc(r.aa)}<sup>${esc(r.mod)}</sup></b>` : esc(r.aa); return k === site ? `<span class="c" title="This site">${t}</span>` : t; }).join('')}</span>`;
+    return `<span class="pep-seq">${
+res.map((r, k) => { const t = r.mod ? `<b class="pep-me" title="${
+esc(r.aa + '(' + r.mod + ') in the source')}">${esc(r.aa)}<sup>${esc(r.mod)}</sup></b>` : esc(r.aa); return k === site ? (`<span class="c" ` +
+        `title="This site">${t}</span>`) : t; }).join('')}</span>`;
   }
   function sourcesBlock(c) {
     if (!has(SR.table)) return '';
@@ -400,18 +488,30 @@
     const body = rs.map(r => {
       const st = SR.attribute ? vLabel(SR.attribute, r.source) : r.source, lk = lookupRow(r.source);
       const name = r.doi || lk?.doi ? doiA(r.doi || lk.doi, esc(st)) : esc(st);
-      const via = [(SR.tables || {})[r.source_table] || '', r.pubmed ? 'PubMed ' + list(r.pubmed.replace(/[,\s]+/g, ';')).map(id => `<a href="https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(id)}/" target="_blank" rel="noopener">${esc(id)}</a>`).join(', ') : ''].filter(Boolean);
+      const via = [(SR.tables || {})[r.source_table] || '', r.pubmed ? 'PubMed ' + list(r.pubmed.replace(/[,\s]+/g, ';')).map(id => (`<a href="https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(id)}/" target="_blank" ` +
+          `rel="noopener">${esc(id)}</a>`)).join(', ') : ''].filter(Boolean);
       const acc0 = r.reported_accession || '', pos0 = r.reported_position === '' || r.reported_position == null ? null : +r.reported_position;
       const moved = (acc0 && acc0 !== c.acc) || (pos0 != null && pos0 !== c.pos);
       const ok = !warn.has(r.check), chk = checks[r.check] || String(r.check || '').replace(/_/g, ' ');
-      return `<tr><td data-label="Source"><b>${name}</b>${via.length ? `<span class="src-via">${via.map(v => (v.startsWith('PubMed') ? v : esc(v))).join(' · ')}</span>` : ''}${r.reference && !lk ? `<span class="src-via">${esc(r.reference)}</span>` : ''}</td>` +
-        `<td data-label="Peptide" class="pep">${pepHtml(r.peptide, c)}${r.enzyme ? `<span class="src-via">Enzyme: ${esc(r.enzyme)}</span>` : ''}${r.sample || r.detail ? `<span class="src-via">${esc([r.sample, r.detail].filter(Boolean).join(' · '))}</span>` : ''}</td>` +
-        (showState ? `<td data-label="State">${r.state ? esc(r.state) : '<span class="muted">not given</span>'}</td>` : '') +
-        `<td data-label="Reported as"><span class="mono">${esc(acc0)}${pos0 != null ? ' ' + esc((c.seq || '')[c.pos - 1] || '') + pos0 : ''}</span>${moved ? ` → <b>${esc(c.label)}</b>` : ''}${chk ? `<span class="src-map ${ok ? 'ok' : 'warn'}">${ok ? '✓' : '⚠'} ${esc(chk)}</span>` : ''}</td></tr>`;
+      return `<tr><td data-label="Source"><b>${name}</b>${
+via.length ? `<span class="src-via">${
+via.map(v => (v.startsWith('PubMed') ? v : esc(v))).join(' · ')}</span>` : ''}${
+r.reference && !lk ? `<span class="src-via">${esc(r.reference)}</span>` : ''}</td>` +
+        `<td data-label="Peptide" class="pep">${pepHtml(r.peptide, c)}${
+r.enzyme ? `<span class="src-via">Enzyme: ${esc(r.enzyme)}</span>` : ''}${
+r.sample || r.detail ? `<span class="src-via">${
+esc([r.sample, r.detail].filter(Boolean).join(' · '))}</span>` : ''}</td>` +
+        (showState ? `<td data-label="State">${
+r.state ? esc(r.state) : '<span class="muted">not given</span>'}</td>` : '') +
+        `<td data-label="Reported as"><span class="mono">${esc(acc0)}${
+pos0 != null ? ' ' + esc((c.seq || '')[c.pos - 1] || '') + pos0 : ''}</span>${moved ? ` → <b>${esc(c.label)}</b>` : ''}${
+chk ? `<span class="src-map ${ok ? 'ok' : 'warn'}">${ok ? '✓' : '⚠'} ${esc(chk)}</span>` : ''}</td></tr>`;
     }).join('');
     const notices = [...new Set(rs.map(r => (C.cite?.notices || {})[r.source]).filter(Boolean))];
     return `<p><b>Source records</b> (${int(rs.length)}) </p>` +
-      `<div class="tbl-card"><table class="src-tbl tbl compact stackable"><thead><tr><th>Source</th><th>Peptide</th>${showState ? '<th>State</th>' : ''}<th>Reported as</th></tr></thead><tbody>${body}</tbody></table></div>` +
+      (`<div class="tbl-card"><table class="src-tbl tbl compact stackable"><thead><tr><th>Source</th><th>` +
+          `Peptide</th>${showState ? '<th>State</th>' : ''}<th>Reported as</th></tr></thead><tbody>${body}</tbody></table>` +
+          `</div>`) +
       notices.map(n => `<p class="note">${esc(n)}</p>`).join('');
   }
   function siteTables(c) {
@@ -419,11 +519,20 @@
       const rs = at(c.tb, x.table, c.pos); if (!rs.length) return '';
       const cell = (col, r) => {
         const v = r[col.column];
-        if (col.words === 'calls') return `${(CL.marks || {})[v] ? `<b class="trend c-${esc(v)}">${esc(CL.marks[v])}</b> ` : ''}${esc((CL.words || {})[v] || String(v || '–').replace(/_/g, ' '))}`;
-        return (col.format ? num(v, col.format) : esc(v)) + (col.with ? ` <span class="muted">(${col.with.map(w => esc(r[w] || 0)).join('/')})</span>` : '');
+        if (col.words === 'calls') return `${
+(CL.marks || {})[v] ? `<b class="trend c-${esc(v)}">${esc(CL.marks[v])}</b> ` : ''}${
+esc((CL.words || {})[v] || String(v || '–').replace(/_/g, ' '))}`;
+        return (col.format ? num(v, col.format) : esc(v)) + (col.with ? ` <span class="muted">(${
+col.with.map(w => esc(r[w] || 0)).join('/')})</span>` : '');
       };
-      return `<p><b>${esc(x.title || x.table)}</b>${x.source ? ` (${sourceLink(x.source)})` : ''}${x.note ? ` <span class="muted small">${esc(x.note)}</span>` : ''}</p><div class="tbl-card"><table class="tbl compact"><thead><tr>${(x.columns || []).map(col => `<th${col.format ? ' class="num"' : ''}>${esc(col.label || col.column)}</th>`).join('')}</tr></thead><tbody>` +
-        rs.map(r => `<tr>${(x.columns || []).map(col => `<td${col.format ? ' class="num"' : ''}>${cell(col, r)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>';
+      return (`<p><b>${esc(x.title || x.table)}</b>${
+x.source ? ` (${sourceLink(x.source)})` : ''}${
+x.note ? (` <span class="muted ` +
+          `small">${esc(x.note)}</span>`) : ''}</p><div class="tbl-card"><table class="tbl compact"><thead><tr>${
+(x.columns || []).map(col => `<th${col.format ? ' class="num"' : ''}>${esc(col.label || col.column)}</th>`).join('')}</tr></thead>` +
+          `<tbody>`) +
+        rs.map(r => `<tr>${
+(x.columns || []).map(col => `<td${col.format ? ' class="num"' : ''}>${cell(col, r)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>';
     }).join('');
   }
   // the Evidence row: the measurements, the site's tables, the window ±15 and every source record
@@ -448,10 +557,20 @@
     const notices = [...new Set(refs.map(r => (CT.notices || {})[r.key]).filter(Boolean))];
     const ris = [...(pref ? [[pref.text, pref.doi || '']] : []), ...refs.map(r => [r.text, r.doi])];
     return `<details class="cite-box"${open ? ' open' : ''}><summary>How to cite ${esc(what)}</summary>` +
-      `<p class="small">Please cite the original ${esc(SPECS[CT.attribute].label.toLowerCase())} that reported the ${esc(W.marks)} you use${pref ? `, and ${esc(pref.short || pref.text)} (${doiA(pref.doi, 'doi:' + esc(pref.doi))}) for the compilation and this site` : ''}. Full list: <a href="${esc(K.link('method', 'cite'))}">How to cite</a></p>` +
-      `<h4>Reported by</h4><ol class="cite-list">${refs.map(r => `<li>${esc(r.text)}${r.doi ? ' ' + doiA(r.doi, 'doi:' + esc(r.doi)) : ''} <span class="muted">· ${int(r.n)} ${esc(r.n === 1 ? W.mark : W.marks)}</span></li>`).join('')}</ol>` +
+      (`<p class="small">Please cite the original ${
+esc(SPECS[CT.attribute].label.toLowerCase())} that reported the ${esc(W.marks)} you use${
+pref ? (`, and ${esc(pref.short || pref.text)} (${doiA(pref.doi, 'doi:' + esc(pref.doi))}) for the ` +
+          `compilation and this site`) : ''}. Full list: <a href="${esc(K.link('method', 'cite'))}">How to cite</a>` +
+          `</p>`) +
+      `<h4>Reported by</h4><ol class="cite-list">${
+refs.map(r => (`<li>${esc(r.text)}${
+r.doi ? ' ' + doiA(r.doi, 'doi:' + esc(r.doi)) : ''} <span class="muted">` +
+          `· ${int(r.n)} ${esc(r.n === 1 ? W.mark : W.marks)}</span></li>`)).join('')}</ol>` +
       notices.map(x => `<p class="note">${esc(x)}</p>`).join('') +
-      `<p class="screen-only"><button class="btn small" type="button" data-copy-text="${esc(text)}">Copy references</button> <button class="btn small" type="button" data-ris="${esc(JSON.stringify(ris))}" data-ris-name="${esc(D.site.id + '_references_' + what.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40))}">Download citations (RIS)</button></p></details>`;
+      (`<p class="screen-only"><button class="btn small" type="button" data-copy-text="${esc(text)}">Copy references</button>` +
+          ` <button class="btn small" type="button" data-ris="${esc(JSON.stringify(ris))}" data-ris-name="${
+esc(D.site.id + '_references_' + what.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40))}">Download ` +
+          `citations (RIS)</button></p></details>`);
   }
   // a site's sources, with an RIS button and a sentence on what to cite
   function reportedBy(c) {
@@ -459,9 +578,13 @@
     const vals = attrVals(c, CT.attribute); if (!vals.length) return '';
     const refs = vals.map(v => { const r = lookupRow(v) || {}; return [r.citation || vLabel(CT.attribute, v), r.doi || '']; });
     const pref = K.CIT?.preferred;
-    return `<button type="button" class="btn small" data-ris="${esc(JSON.stringify(refs))}" data-ris-name="${esc(`${c.gene}_${c.label}_references`)}" title="These references as an RIS file, for EndNote, Zotero, Mendeley or Papers">RIS</button>` +
-      `<ul class="sc-refs">${vals.map(v => { const r = lookupRow(v); return `<li>${r?.doi ? doiA(r.doi, esc(vLabel(CT.attribute, v))) : c.attrHtml(CT.attribute, v)}</li>`; }).join('')}</ul>` +
-      (pref ? `<p class="muted small">Cite these for ${esc(c.label)}, with ${esc(pref.short || pref.text)} for the compilation.</p>` : '');
+    return (`<button type="button" class="btn small" data-ris="${esc(JSON.stringify(refs))}" data-ris-name="${esc(`${c.gene}_${c.label}_references`)}" title="These ` +
+        `references as an RIS file, for EndNote, Zotero, Mendeley or Papers">RIS</button>`) +
+      `<ul class="sc-refs">${
+vals.map(v => { const r = lookupRow(v); return `<li>${
+r?.doi ? doiA(r.doi, esc(vLabel(CT.attribute, v))) : c.attrHtml(CT.attribute, v)}</li>`; }).join('')}</ul>` +
+      (pref ? (`<p class="muted small">Cite these for ${esc(c.label)}, with ${esc(pref.short || pref.text)} for the ` +
+          `compilation.</p>`) : '');
   }
   // references as an RIS file: each DOI's record from doi.org, else one from the text shown
   async function downloadRis(refs, name, btn) {
@@ -491,10 +614,21 @@
         const by = new Map();
         rs.forEach(r => { const k = r.acc + ':' + r.position + '|' + r.group; if (!by.has(k)) by.set(k, { ...r, ids: new Set(), papers: new Map() }); const g = by.get(k); if (r.id) g.ids.add(r.id); if (paperKey(r)) g.papers.set(paperKey(r), r); });
         const xs = [...by.values()].sort((a, b) => grpOrder(a.group) - grpOrder(b.group));
-        out.push(`<section class="pfold-like"><h3>At other proteins’ ${esc(W.marks)}</h3><div class="tbl-card"><table class="tbl compact stackable"><thead><tr><th>${esc(cap(W.mark))}</th><th>What the record shows</th><th>Evidence</th><th>Paper</th></tr></thead><tbody>` +
-          xs.slice(0, 60).map(r => `<tr><td data-label="${esc(cap(W.mark))}"><a href="${esc(K.link('protein', r.acc + '/' + r.position))}"><b>${esc(siteName(r.acc, r.position))}</b></a></td><td data-label="Shows">${esc(cap(grpLabel(r.group)))}${r.state ? ` <span class="sp-state">${esc((RC.states || {})[r.state] ?? r.state)}</span>` : ''}</td>` +
-            `<td data-label="Evidence">${esc(r.source || '')} ${[...r.ids].slice(0, 3).map(id => { const u = (RC.urls || {})[r.source]; return u ? `<a href="${esc(u.replace('{id}', encodeURIComponent(id)))}" target="_blank" rel="noopener">${esc(id)}</a>` : esc(id); }).join(', ')}${r.ids.size > 3 ? ` +${r.ids.size - 3}` : ''}</td>` +
-            `<td data-label="Paper">${[...r.papers.values()].slice(0, 2).map(paperA).join('<br>') || '<span class="muted">–</span>'}</td></tr>`).join('') + '</tbody></table></div>' +
+        out.push((`<section class="pfold-like"><h3>At other proteins’ ${esc(W.marks)}</h3><div class="tbl-card">` +
+            `<table class="tbl compact stackable"><thead><tr><th>${esc(cap(W.mark))}</th><th>What the record ` +
+            `shows</th><th>Evidence</th><th>Paper</th></tr></thead><tbody>`) +
+          xs.slice(0, 60).map(r => (`<tr><td data-label="${esc(cap(W.mark))}"><a href="${
+esc(K.link('protein', r.acc + '/' + r.position))}"><b>${esc(siteName(r.acc, r.position))}</b></a></td>` +
+              `<td data-label="Shows">${esc(cap(grpLabel(r.group)))}${
+r.state ? ` <span class="sp-state">${
+esc((RC.states || {})[r.state] ?? r.state)}</span>` : ''}</td>`) +
+            `<td data-label="Evidence">${esc(r.source || '')} ${
+[...r.ids].slice(0, 3).map(id => { const u = (RC.urls || {})[r.source]; return u ? (`<a href="${
+esc(u.replace('{id}', encodeURIComponent(id)))}" target="_blank" ` +
+                `rel="noopener">${esc(id)}</a>`) : esc(id); }).join(', ')}${
+r.ids.size > 3 ? ` +${r.ids.size - 3}` : ''}</td>` +
+            `<td data-label="Paper">${
+[...r.papers.values()].slice(0, 2).map(paperA).join('<br>') || '<span class="muted">–</span>'}</td></tr>`).join('') + '</tbody></table></div>' +
           (xs.length > 60 ? `<p class="muted small">The first 60 of ${int(xs.length)}.</p>` : '') + '</section>');
       }
     }

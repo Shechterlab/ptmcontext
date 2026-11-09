@@ -101,7 +101,9 @@
   function listHtml(attr, vals, ids, acc, full) {
     const s = SPECS[attr] || {}, item = (v, i) => {
       const lab = valueLabel(attr, v), rec = s.records?.[v], id = ids?.[i];
-      if (rec && acc) return `<a href="${esc(rec.replace('{acc}', encodeURIComponent(acc)))}" title="${esc(`${lab}: its record of ${acc}${id ? `; its paper: ${id}` : ''}`)}">${esc(lab)}</a>`;
+      if (rec && acc) return `<a href="${
+esc(rec.replace('{acc}', encodeURIComponent(acc)))}" title="${
+esc(`${lab}: its record of ${acc}${id ? `; its paper: ${id}` : ''}`)}">${esc(lab)}</a>`;
       if (s.link && id) return `<a href="${esc(s.link.url.replace('{}', id))}" title="${esc(`${lab}: ${id}`)}">${esc(lab)}</a>`;
       return esc(lab);
     };
@@ -118,7 +120,8 @@
     const also = sp.also; if (!also) return true; const y = protVal(also.attribute, pi); return y != null && (also.min == null || y >= also.min) && (also.max == null || y <= also.max); };
   const keyName = key => { if (key.startsWith('r:')) return RSPEC(key.slice(2))?.label || key.slice(2); const [kind, id] = key.split(':');
     if (K.filterKinds?.[kind]?.label) return K.filterKinds[kind].label(id);
-    if (kind === 'm') return id === 'near' ? `Motif within ±${SD?.wide?.span ?? SRCH.patterns?.span ?? 15}` : `Motif at the ${W.mark}`;
+    if (kind === 'm') return id === 'near' ? `Motif within ±${
+SD?.wide?.span ?? SRCH.patterns?.span ?? 15}` : `Motif at the ${W.mark}`;
     if (kind === 'x') return (SRCH.terms || {})[id]?.label || cap(id); return kind === 't' || kind === 'n' ? (SPECS[id]?.label || id) : kind === 's' ? (A[id]?.scores?.label || id) : (A[id]?.title || id); };
   // a protein-set filter: its set (or * for any of its source's sets) and, with a score filter on it (s:<analysis>, a
   // threshold), the memberships scored at least that instead
@@ -129,7 +132,8 @@
     const [kind, id] = key.split(':');
     if (K.filterKinds?.[kind]?.value) return K.filterKinds[kind].value(id, v);
     if (kind === 'm' || kind === 'x') return v;
-    if (kind === 'r') { const sp = RSPEC(id) || {}; return sp.kind === 'number' ? `${sp.direction === 'max' ? '≤' : 'at least'} ${v}` : (sp.values || {})[v] || v; }
+    if (kind === 'r') { const sp = RSPEC(id) || {}; return sp.kind === 'number' ? `${
+sp.direction === 'max' ? '≤' : 'at least'} ${v}` : (sp.values || {})[v] || v; }
     if (kind === 's') return scoreText(id, v);
     if (kind === 'p' && v === '*') return A[id]?.filter?.any || 'in any set';
     if (kind === 'a') return classLabel(id, v);
@@ -160,7 +164,8 @@
     const addSite = (ps, typed, letter) => {
       let any = false;
       ps.forEach(p => { const u = uniPos(p, typed); out.sites.push([p.i, u]); if (isMark(p.i, u)) any = true; if (numOf(p) && !out.numbered.some(x => x[0] === nameOf(p))) out.numbered.push([nameOf(p), `${letter}${typed}`, `${letter}${u}`, numOf(p)]); });
-      if (SD && !any) out.missing.push(`${nameOf(ps[0])} ${letter || (RESIDUES.size === 1 ? [...RESIDUES][0] : '')}${typed}`);
+      if (SD && !any) out.missing.push(`${nameOf(ps[0])} ${
+letter || (RESIDUES.size === 1 ? [...RESIDUES][0] : '')}${typed}`);
     };
     const named = (tok, l) => { if (l.via) out.via.push([tok, l.ps.map(nameOf)]); out.nNamed++; };
     for (let i = 0; i < toks.length; i++) {
@@ -616,7 +621,10 @@
     const aid = r[0].slice(2), a = A[aid], ps = SD.protein_sets?.[aid]; if (!a) return '';
     return r[1].slice(0, 3).map(sn => {
       const row = ps?.sets.find(x => x[0] === sn), size = row ? row[1] : null, here = setMembers[aid]?.[sn]?.size;
-      return `${classLabel(aid, sn)}: a set of the question "${a.title}"${(a.help || {})[sn] ? '. ' + a.help[sn] : ''}.` + (size != null ? ` ${int(size)} gene${size === 1 ? '' : 's'} in the background${here != null ? `, ${int(here)} of them on proteins with ${W.marks} here` : ''}.` : '') + (a.set_note ? ' ' + a.set_note : '');
+      return `${classLabel(aid, sn)}: a set of the question "${a.title}"${
+(a.help || {})[sn] ? '. ' + a.help[sn] : ''}.` + (size != null ? ` ${int(size)} gene${size === 1 ? '' : 's'} in the background${
+here != null ? (`, ${int(here)} of them ` +
+          `on proteins with ${W.marks} here`) : ''}.` : '') + (a.set_note ? ' ' + a.set_note : '');
     }).join(' ') + (r[1].length > 3 ? ` (and ${r[1].length - 3} more)` : '');
   }
   function dropTerm(raw) {

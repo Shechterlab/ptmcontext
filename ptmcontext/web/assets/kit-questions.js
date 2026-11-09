@@ -18,7 +18,8 @@
 
   // ---- the data: a set's own page, a family question's sets, an ontology's children -------------------------------
   const setUrl = (aid, s) => (A[aid]?.link ? A[aid].link.replace('{}', encodeURIComponent(s).replace(/%3A/gi, ':')) : '');
-  const idLink = (aid, s) => { const u = setUrl(aid, s); return u ? `<a class="qv-id mono" href="${esc(u)}" target="_blank" rel="noopener" title="Its own page">${esc(s)} ↗</a>` : `<span class="qv-id mono">${esc(s)}</span>`; };
+  const idLink = (aid, s) => { const u = setUrl(aid, s); return u ? (`<a class="qv-id mono" href="${esc(u)}" target="_blank" ` +
+      `rel="noopener" title="Its own page">${esc(s)} ↗</a>`) : `<span class="qv-id mono">${esc(s)}</span>`; };
   K.setIdLink = idLink;
   const famCache = {}, kidCache = {};
   // set -> family, for a question that gathers sets into families (from its gathers: family -> its sets)
@@ -37,7 +38,9 @@
   const unitOf = aid => A[aid]?.unit || 'members';
   // the member question of a family question (members.of), for the protein cards
   const membersOf = aid => { for (const c of K.allCards()) for (const v of [c, ...(c.views || [])]) if (v.members && v.members.of.some(o => o.analysis === aid)) return v.members; return null; };
-  const expButtons = (attr, aid) => `<div class="exp" role="group" aria-label="Download">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-${attr}="${k}" data-qaid="${esc(aid)}" title="${esc(K.EXP_HELP[k])}">${k.toUpperCase()}</button>`).join('')}${K.methodLink(aid)}</div>`;
+  const expButtons = (attr, aid) => `<div class="exp" role="group" aria-label="Download">${
+['pdf', 'svg', 'png', 'tsv'].map(k => (`<button type="button" ` +
+      `class="exp-btn" data-${attr}="${k}" data-qaid="${esc(aid)}" title="${esc(K.EXP_HELP[k])}">${k.toUpperCase()}</button>`)).join('')}${K.methodLink(aid)}</div>`;
   // a chart in the kit's own drawing, of these items in this order: {head} a heading, {r, depth, gloss} a row (a row
   // under another indented; a class's plain gloss beside its name)
   const chart = (a, items) => {
@@ -65,10 +68,13 @@
   // ---- more sets, tested apart, under the question's own -------------------------------------------------------------
   function moreHtml(a, more) {
     const b = A[more.analysis], key = a.id + '>' + b.id, on = UI.more.has(key), n = K.rowsFor(b, 'enricher').length;
-    const btn = `<button class="linkish" type="button" data-qmore="${esc(key)}" aria-expanded="${on}">${on ? `Show ${esc(a.title)} only` : esc((more.label || 'Show {n} more sets').replace('{n}', int(n)))}</button>`;
+    const btn = `<button class="linkish" type="button" data-qmore="${esc(key)}" aria-expanded="${on}">${
+on ? `Show ${esc(a.title)} only` : esc((more.label || 'Show {n} more sets').replace('{n}', int(n)))}</button>`;
     if (!on) return `<div class="qv-links">${btn}</div>`;
     const rows = K.chartRows(b, 'enricher', K.cardOf(b.id));
-    return `<div class="qv-links">${btn}</div><section class="qv-more" aria-label="${esc(more.head || b.title)}"><div class="card-head"><div><h4 class="qv-head">${esc(more.head || b.title)}</h4><p class="sub">${esc(b.sub)}.</p></div>${expButtons('exp', b.id).replace(/data-exp="(\w+)" data-qaid/g, 'data-exp="$1" data-aid')}</div>` +
+    return (`<div class="qv-links">${btn}</div><section class="qv-more" aria-label="${esc(more.head || b.title)}"><div class="card-head">` +
+        `<div><h4 class="qv-head">${esc(more.head || b.title)}</h4><p class="sub">${esc(b.sub)}.</p></div>${
+expButtons('exp', b.id).replace(/data-exp="(\w+)" data-qaid/g, 'data-exp="$1" data-aid')}</div>`) +
       `${chart(b, rows.map(r => ({ r })))}</section>`;
   }
 
@@ -99,14 +105,21 @@
     const nSig = [...site.keys()].filter(enr).length;
     const drawn = chart(a, items.map(([k, s, d]) => (k === 'head' ? { head: s } : { r: rowOf(s), depth: d, gloss: (o.glosses || {})[s] })));
     const u = unitOf(a.id);
-    const note = tree ? `Indented rows are ${nouns} under the row above, of at least ${int(o.tree || 100)} ${u}. Their ${u} are among its ${u}, and ${nouns} overlap, so they do not add up.`
-      : `A ${o.noun || 'set'} holds the ${u} of every ${o.noun || 'set'} under it, so broad ${nouns} repeat the narrower ones. The list keeps the narrowest enriched ${o.noun || 'set'} of each branch, of at least ${int(o.short || 50)} ${u}.`;
+    const note = tree ? (`Indented rows are ${nouns} under the row above, of at least ${int(o.tree || 100)} ${u}. Their ${u} are among its ${u}, and ${nouns} overlap,` +
+        ` so they do not add up.`)
+      : (`A ${o.noun || 'set'} holds the ${u} of every ${o.noun || 'set'} under it, so broad ${nouns} repeat the ` +
+          `narrower ones. The list keeps the narrowest enriched ${o.noun || 'set'} of each branch, of at least ${int(o.short || 50)} ${u}.`);
     const tbl = UI.table.has(a.id);
-    return `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3><p class="sub">${esc(K.shortSub(a.sub))}. <a href="#method">How it was tested</a> · <a href="${esc(K.link('statistics', '', { a: a.id }))}">all tests</a></p></div>${expButtons('qoexp', a.id)}</div>` +
+    return (`<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3><p class="sub">${esc(K.shortSub(a.sub))}. <a href="#method">` +
+        `How it was tested</a> · <a href="${
+esc(K.link('statistics', '', { a: a.id }))}">all tests</a></p></div>${expButtons('qoexp', a.id)}</div>`) +
       `${drawn}<p class="note">${note}</p>` +
-      `<div class="qv-links"><button class="linkish" type="button" data-qtree="${esc(a.id)}">${tree ? 'Show the short list' : `Show the whole ${o.whole || 'ontology'}`}</button>` +
-      (tree ? `<button class="linkish" type="button" data-qlevel="${esc(a.id)}">${level ? `Hide the ${nouns} under them` : `Show the ${nouns} under them`}</button>` : '') +
-      `<button class="linkish" type="button" data-qtable="${esc(a.id)}" aria-expanded="${tbl}">${tbl ? 'Hide the table' : `Show the ${int(nSig)} enriched ${nouns}${K.selOn() ? ' of your selection' : ''}, and every tested ${o.noun || 'set'}`}</button></div>` +
+      `<div class="qv-links"><button class="linkish" type="button" data-qtree="${esc(a.id)}">${
+tree ? 'Show the short list' : `Show the whole ${o.whole || 'ontology'}`}</button>` +
+      (tree ? `<button class="linkish" type="button" data-qlevel="${esc(a.id)}">${
+level ? `Hide the ${nouns} under them` : `Show the ${nouns} under them`}</button>` : '') +
+      `<button class="linkish" type="button" data-qtable="${esc(a.id)}" aria-expanded="${tbl}">${
+tbl ? 'Hide the table' : `Show the ${int(nSig)} enriched ${nouns}${K.selOn() ? ' of your selection' : ''}, and every tested ${o.noun || 'set'}`}</button></div>` +
       (tbl ? ontologyTable(a, rows, o) : '') + '</div>';
   }
   function ontologyTable(a, rows, o) {
@@ -114,23 +127,35 @@
     const tested = rows.filter(r => r.category !== root), enr = tested.filter(enriched);
     const shown = (all ? tested : enr).slice().sort((x, y) => (x.q ?? 2) - (y.q ?? 2) || (y.eff ?? 0) - (x.eff ?? 0));
     LAST[a.id + ':table'] = shown;
-    return `<div class="qv-members"><div class="card-head"><p class="note">${int(K.rowsFor(a, 'enricher').length - 1)} ${esc(nouns)} were tested; <b>${int(enr.length)}</b> are enriched (q ≤ ${PADJ})${K.selOn() ? ' for your selection, tested again in your browser' : ''}.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'qotexp', 'the table', a.id).replace(/data-qotexp="(\w+)"/g, `data-qotexp="$1" data-qaid="${esc(a.id)}"`)}</div>` +
-      `<label class="small qv-pick">Show <select data-qevery="${esc(a.id)}"><option value="0">the enriched ${esc(nouns)} (${int(enr.length)})</option><option value="1"${all ? ' selected' : ''}>every tested ${esc(o.noun || 'set')} (${int(tested.length)})</option></select></label>` +
+    return (`<div class="qv-members"><div class="card-head"><p class="note">${int(K.rowsFor(a, 'enricher').length - 1)} ${esc(nouns)} were tested; <b>${int(enr.length)}</b> are ` +
+        `enriched (q ≤ ${PADJ})${
+K.selOn() ? ' for your selection, tested again in your browser' : ''}.</p>${
+K.expBar(['pdf', 'svg', 'png', 'tsv'], 'qotexp', 'the table', a.id).replace(/data-qotexp="(\w+)"/g, (`data-qotexp="$1" ` +
+        `data-qaid="${esc(a.id)}"`))}</div>`) +
+      (`<label class="small qv-pick">Show <select data-qevery="${esc(a.id)}"><option value="0">the enriched ${esc(nouns)} (${int(enr.length)})</option>` +
+          `<option value="1"${all ? ' selected' : ''}>every tested ${esc(o.noun || 'set')} (${int(tested.length)})</option>` +
+          `</select></label>`) +
       (shown.length ? '' : `<p class="muted small">No enriched ${esc(o.noun || 'set')}: choose every tested ${esc(o.noun || 'set')} above.</p>`) +
-      `<div class="qv-tbl"${shown.length ? '' : ' hidden'}><table class="tbl"><thead><tr><th>${esc(cap(o.noun || 'set'))} (under)</th>${countHead(a.id)}<th class="num">Fold</th><th class="num">q</th></tr></thead><tbody>` +
-      shown.map(r => `<tr><td><button class="linkish" type="button" data-qf="p:${esc(a.id)}" data-qv="${esc(r.category)}" title="Select the ${esc(W.marks)} on its proteins">${esc(r.label)}</button> ${idLink(a.id, r.category)}` +
-        ((P[r.category] || []).length ? `<span class="qv-sub">under ${esc(P[r.category].map(x => labelOf(a.id, x)).join(', '))}</span>` : '') + `</td>` +
-        `<td class="num">${int(r.a)}/${int(r.a + r.c)}</td><td class="num">${r.eff == null ? '–' : r.eff.toFixed(2)}</td><td class="num">${fq(r.q)}</td></tr>`).join('') + '</tbody></table></div></div>';
+      (`<div class="qv-tbl"${shown.length ? '' : ' hidden'}><table class="tbl"><thead><tr><th>${esc(cap(o.noun || 'set'))} (under)</th>${countHead(a.id)}<th class="num">` +
+          `Fold</th><th class="num">q</th></tr></thead><tbody>`) +
+      shown.map(r => (`<tr><td><button class="linkish" type="button" data-qf="p:${esc(a.id)}" data-qv="${esc(r.category)}" title="Select ` +
+          `the ${esc(W.marks)} on its proteins">${esc(r.label)}</button> ${idLink(a.id, r.category)}`) +
+        ((P[r.category] || []).length ? `<span class="qv-sub">under ${
+esc(P[r.category].map(x => labelOf(a.id, x)).join(', '))}</span>` : '') + `</td>` +
+        (`<td class="num">${int(r.a)}/${int(r.a + r.c)}</td><td class="num">${r.eff == null ? '–' : r.eff.toFixed(2)}</td><td ` +
+            `class="num">${fq(r.q)}</td></tr>`)).join('') + '</tbody></table></div></div>';
   }
   const cap = t => String(t).charAt(0).toUpperCase() + String(t).slice(1);
   K.setUnitOf = K.setUnitOf || (() => `${W.marked}/all`);
-  const countHead = aid => `<th class="num" title="${esc(cap(unitOf(aid)))} of ${esc(W.marked)} proteins in the set, of all its ${esc(unitOf(aid))} in the background">${esc(cap(W.marked))}/<wbr>all</th>`;
+  const countHead = aid => (`<th class="num" title="${esc(cap(unitOf(aid)))} of ${esc(W.marked)} proteins in the ` +
+      `set, of all its ${esc(unitOf(aid))} in the background">${esc(cap(W.marked))}/<wbr>all</th>`);
 
   // ---- the member sets of the families: each with its own test, by family -----------------------------------------
   const PER_FAMILY = 5, SHOWN = 25;
   function membersHtml(a, mem) {
     const key = a.id, on = UI.members.has(key), nouns = mem.nouns || 'member sets';
-    const btn = `<button class="linkish" type="button" data-qmembers="${esc(key)}" aria-expanded="${on}">${on ? `Hide the ${esc(nouns)}` : esc(mem.label || `Show the ${nouns}`)}</button>`;
+    const btn = `<button class="linkish" type="button" data-qmembers="${esc(key)}" aria-expanded="${on}">${
+on ? `Hide the ${esc(nouns)}` : esc(mem.label || `Show the ${nouns}`)}</button>`;
     if (!on) return `<div class="qv-links">${btn}</div>`;
     const m = A[mem.analysis], rows = K.rowsOf(m, 'enricher'), nTested = K.rowsFor(m, 'enricher').length;
     const groups = mem.of.filter(x => A[x.analysis]).map((x, k) => {
@@ -151,16 +176,23 @@
     const picker = `<label class="small qv-pick">Show <select data-qpick="${esc(key)}">` + groups.map(g => opt('g' + g.k, `${g.label} (${int(count('g' + g.k))})`) +
       g.fams.map(f => opt(`f${g.k}:${f}`, ` · ${labelOf(g.aid, f)} (${int(count(`f${g.k}:${f}`))})`)).join('')).join('') +
       (mem.none ? opt('none', `${mem.none} (${int(count('none'))})`) : '') + opt('all', `all ${int(pool.length)} ${shownOnly ? '' : 'enriched '}${nouns}`) + '</select></label>';
-    const head = `<th>${esc(cap(mem.noun || 'set'))}</th>${countHead(m.id)}<th class="num">Fold</th><th class="num">q</th>`;
+    const head = (`<th>${esc(cap(mem.noun || 'set'))}</th>${countHead(m.id)}<th class="num">Fold</th><th ` +
+        `class="num">q</th>`);
     const row = r => { const f = where(r.category);
-      return `<tr><td><button class="linkish" type="button" data-qf="p:${esc(m.id)}" data-qv="${esc(r.category)}" title="Select the ${esc(W.marks)} on its proteins">${esc(r.label)}</button>` +
-        `<span class="qv-sub">${f && pick[0] !== 'f' && pick[0] !== 'g' ? esc(labelOf(groups[f[0]].aid, f[1])) + ' · ' : ''}${mem.id_label ? esc(mem.id_label) + ' ' : ''}${idLink(m.id, r.category)}</span></td>` +
-        `<td class="num">${int(r.a)}/${int(r.a + r.c)}</td><td class="num">${r.eff == null ? '–' : r.eff.toFixed(2)}</td><td class="num">${fq(r.q)}</td></tr>`; };
+      return (`<tr><td><button class="linkish" type="button" data-qf="p:${esc(m.id)}" data-qv="${esc(r.category)}" title="Select ` +
+          `the ${esc(W.marks)} on its proteins">${esc(r.label)}</button>`) +
+        `<span class="qv-sub">${
+f && pick[0] !== 'f' && pick[0] !== 'g' ? esc(labelOf(groups[f[0]].aid, f[1])) + ' · ' : ''}${
+mem.id_label ? esc(mem.id_label) + ' ' : ''}${idLink(m.id, r.category)}</span></td>` +
+        (`<td class="num">${int(r.a)}/${int(r.a + r.c)}</td><td class="num">${r.eff == null ? '–' : r.eff.toFixed(2)}</td><td ` +
+            `class="num">${fq(r.q)}</td></tr>`); };
     let body = '', shown = [];
     if (pick[0] === 'f') {                              // one family: its sets, a page at a time
       const list = pool.filter(r => inPick(r, pick)), all = UI.all.has(key);
       shown = all ? list : list.slice(0, SHOWN);
-      body = shown.map(row).join('') + (list.length > SHOWN ? `<tr><td colspan="4"><button class="linkish" type="button" data-qallm="${esc(key)}">${all ? `Show the first ${SHOWN}` : `Show all ${int(list.length)}`}</button></td></tr>` : '');
+      body = shown.map(row).join('') + (list.length > SHOWN ? (`<tr><td colspan="4"><button class="linkish" ` +
+          `type="button" data-qallm="${esc(key)}">${
+all ? `Show the first ${SHOWN}` : `Show all ${int(list.length)}`}</button></td></tr>`) : '');
     } else {                                            // several families: each one's most significant, under its name
       const order = [...groups.filter(g => pick === 'all' || pick === 'g' + g.k).flatMap(g => g.fams.map(f => ['f' + g.k + ':' + f, labelOf(g.aid, f)])),
         ...(mem.none && (pick === 'all' || pick === 'none') ? [['none', cap(mem.none)]] : [])];
@@ -168,17 +200,23 @@
         const list = pool.filter(r => inPick(r, p)); if (!list.length) continue;
         const cut = p === 'none' ? list : list.slice(0, PER_FAMILY);
         shown.push(...cut);
-        body += `<tr class="qv-group"><th colspan="4">${esc(name)} <span class="muted">· ${int(list.length)} ${esc(list.length === 1 ? (mem.noun || 'set') : nouns)}</span>` +
+        body += `<tr class="qv-group"><th colspan="4">${esc(name)} <span class="muted">· ${int(list.length)} ${
+esc(list.length === 1 ? (mem.noun || 'set') : nouns)}</span>` +
           (list.length > cut.length ? ` <button class="linkish" type="button" data-qpickto="${esc(key)}" data-v="${esc(p)}">all ${int(list.length)}</button>` : '') + '</th></tr>' + cut.map(row).join('');
       }
     }
     LAST[key + ':members'] = { rows: shown, where: s => { const f = where(s); return f ? labelOf(groups[f[0]].aid, f[1]) : ''; }, m };
     const sel = K.selOn();
-    const note = (shownOnly ? `Your selection was made with these data (or names its proteins), so its ${esc(nouns)} are shown, not tested. These ${int(pool.length)} hold its ${esc(unitOf(m.id))}, most first. `
-      : `${int(pool.length)} of the ${int(nTested)} ${esc(nouns)} tested are enriched (q ≤ ${PADJ})${sel ? ' for your selection, tested again in your browser' : ''}. `) +
+    const note = (shownOnly ? (`Your selection was made with these data (or names its proteins), so its ${esc(nouns)} are shown,` +
+        ` not tested. These ${int(pool.length)} hold its ${esc(unitOf(m.id))}, most first. `)
+      : `${int(pool.length)} of the ${int(nTested)} ${esc(nouns)} tested are enriched (q ≤ ${PADJ})${
+sel ? ' for your selection, tested again in your browser' : ''}. `) +
       groups.map(g => `${int(count('g' + g.k))} belong to the ${esc(g.label)}`).join('; ') + (mem.none ? `; ${int(count('none'))} to none` : '') + `. ${esc(m.sub)}.`;
-    return `<div class="qv-links">${btn}</div><section class="qv-members"><div class="card-head"><p class="note">${note}</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'qmexp', 'the table', m.id).replace(/data-qmexp="(\w+)"/g, `data-qmexp="$1" data-qaid="${esc(key)}"`)}</div>${picker}` +
-      (shown.length ? `<div class="qv-tbl"><table class="tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` : `<p class="muted small">No ${shownOnly ? '' : 'enriched '}${esc(mem.noun || 'set')} here.</p>`) + '</section>';
+    return `<div class="qv-links">${btn}</div><section class="qv-members"><div class="card-head"><p class="note">${note}</p>${
+K.expBar(['pdf', 'svg', 'png', 'tsv'], 'qmexp', 'the table', m.id).replace(/data-qmexp="(\w+)"/g, (`data-qmexp="$1" ` +
+        `data-qaid="${esc(key)}"`))}</div>${picker}` +
+      (shown.length ? (`<div class="qv-tbl"><table class="tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>` +
+          `</div>`) : `<p class="muted small">No ${shownOnly ? '' : 'enriched '}${esc(mem.noun || 'set')} here.</p>`) + '</section>';
   }
 
   // ---- downloads: the ontology's figure and TSV, the tables' TSV -------------------------------------------------------
@@ -188,7 +226,8 @@
     const L = LAST[a.id]; if (!L) return '';
     const P = A[a.id].parents || {};
     const rows = L.items.filter(x => x[0] === 'row');
-    return K.preamble(`${a.title}${UI.tree.has(a.id) ? ', the tree' : ', the short list'}`, `${a.question} ${a.sub}${K.selWords()}. ${K.setWords(a)}`) +
+    return K.preamble(`${a.title}${
+UI.tree.has(a.id) ? ', the tree' : ', the short list'}`, `${a.question} ${a.sub}${K.selWords()}. ${K.setWords(a)}`) +
       ['set', 'set_id', 'depth', 'under', `${W.marked}_in_set`, 'set_size', 'fold_enrichment', 'p', 'q', 'test', ...K.TAIL_HEAD].join('\t') + '\n' +
       rows.map(([, r, d]) => [r.label, r.category, d, (P[r.category] || []).map(x => labelOf(a.id, x)).join('; '), r.a, r.a + r.c, K.g6(r.eff), K.g6(r.p), K.g6(r.q), K.SET_TEST, ...K.tsvTail()].join('\t')).join('\n') + '\n';
   }
@@ -199,7 +238,9 @@
     const l2 = v => Math.log2(Math.max(v, 1e-3));
     const lo = Math.min(-1, Math.floor(Math.min(0, ...vals.map(l2)))), hi = Math.max(1, Math.ceil(Math.max(0, ...vals.map(l2))));
     const X = v => X0 + (Math.min(Math.max(l2(v), lo), hi) - lo) / (hi - lo) * (X1 - X0);
-    const T = (x, y, t, o = {}) => parts.push(`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${o.size || 11}"${o.weight ? ` font-weight="${o.weight}"` : ''}${o.anchor ? ` text-anchor="${o.anchor}"` : ''} fill="${o.fill || PAL.ink}">${esc(t)}</text>`);
+    const T = (x, y, t, o = {}) => parts.push(`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${o.size || 11}"${
+o.weight ? ` font-weight="${o.weight}"` : ''}${
+o.anchor ? ` text-anchor="${o.anchor}"` : ''} fill="${o.fill || PAL.ink}">${esc(t)}</text>`);
     let y = 6; const top = y;
     items.forEach(([k, x, d]) => {
       if (k === 'head') { y += 8; T(P, y + 10, x.toUpperCase(), { size: 9.5, weight: 'bold', fill: PAL.muted }); y += 18; return; }
@@ -217,7 +258,8 @@
     T((X0 + X1) / 2, y + 28, 'fold enrichment (log scale)', { size: 10, anchor: 'middle', fill: PAL.muted });
     void tw; void FF;
     return K.figureFrame({ title: a.title, sub: a.sub + K.selWords(), legend: [[PAL.more, PAL.more, `enriched (q ≤ ${PADJ})`], [PAL.same, PAL.same, 'significant, within 1.1×'], ['#ffffff', PAL.muted, 'not significant']],
-      body: parts.join(''), bodyH: y + 34, note: `${UI.tree.has(a.id) ? 'The classes under the root and their ' + (L?.o.nouns || 'sets') + ' of at least ' + int(L?.o.tree || 100) : 'The most specific enriched ' + (L?.o.nouns || 'sets') + ' of at least ' + int(L?.o.short || 50) + ', then the largest classes that are not enriched'}; counts are ${K.setUnitOf(a.id)}. ${K.setWords(a)}`,
+      body: parts.join(''), bodyH: y + 34, note: `${
+UI.tree.has(a.id) ? 'The classes under the root and their ' + (L?.o.nouns || 'sets') + ' of at least ' + int(L?.o.tree || 100) : 'The most specific enriched ' + (L?.o.nouns || 'sets') + ' of at least ' + int(L?.o.short || 50) + ', then the largest classes that are not enriched'}; counts are ${K.setUnitOf(a.id)}. ${K.setWords(a)}`,
       extra: { analysis: a.id, view: UI.tree.has(a.id) ? 'tree' : 'short list' } });
   }
   function tableTsv(aid, rows, where, title) {
@@ -231,7 +273,8 @@
   K.inSetCards = aid => PCARDS.some(c => c.analyses.includes(aid));
   const siteRows = {};
   const siteRow = (aid, s) => (siteRows[aid] ||= new Map(K.rowsFor(A[aid], 'enricher').map(r => [r.category, r]))).get(s);
-  const pick = (aid, s, name) => `<button class="linkish" type="button" data-f="p:${esc(aid)}" data-v="${esc(s)}" title="Select the ${esc(W.marks)} on proteins in it">${esc(name || labelOf(aid, s))}</button>`;
+  const pick = (aid, s, name) => (`<button class="linkish" type="button" data-f="p:${esc(aid)}" data-v="${esc(s)}" title="Select ` +
+      `the ${esc(W.marks)} on proteins in it">${esc(name || labelOf(aid, s))}</button>`);
   const resText = r => (r ? `<span class="val ${r.dir}">${fxn(r.eff)}×</span> <span class="muted">q ${fq(r.q)}</span>` : '');
   // the protein's enriched terms grouped by the family that gathers them (website.protein.sets[].term_groups): the first family
   // of the list that holds a term names it, a term in none is "Other / unassigned"
@@ -243,9 +286,17 @@
     enr.forEach(s => { const g = famOf.get(s) || ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(s); });
     const order = [...groups.keys()].sort((x, y) => (x === '') - (y === '') || groups.get(y).length - groups.get(x).length || x.localeCompare(y));
     const ns = esc(asMembers(aid)?.nouns || 'sets');
-    return `<div class="kind">${title}<p class="note">${esc(gene)} is in ${int(mine.length)} of the tested ${ns}; ${int(enr.length)} of them are enriched across all ${esc(W.marked)} proteins${enr.length ? ', grouped by family:' : '.'}</p>` +
-      order.map(g => `<details class="dis-group"><summary>${g ? `<button class="linkish strong" type="button" data-f="p:${esc(famAid[g])}" data-v="${esc(g)}" title="Select the ${esc(W.marks)} on the proteins of this family">${esc(g)}</button>` : '<span class="strong">Other / unassigned</span>'} ` +
-        `<span class="muted">${int(groups.get(g).length)} ${groups.get(g).length === 1 ? 'term' : 'terms'}</span></summary><ul class="kind-list">${groups.get(g).map(s => `<li>${pick(aid, s)} ${idLink(aid, s)} ${resText(siteRow(aid, s))}</li>`).join('')}</ul></details>`).join('') + '</div>';
+    return (`<div class="kind">${title}<p class="note">${esc(gene)} is in ${int(mine.length)} of the tested ${ns}; ${int(enr.length)} of them ` +
+        `are enriched across all ${esc(W.marked)} proteins${
+enr.length ? ', grouped by family:' : '.'}</p>`) +
+      order.map(g => `<details class="dis-group"><summary>${
+g ? (`<button class="linkish strong" type="button" ` +
+          `data-f="p:${esc(famAid[g])}" data-v="${esc(g)}" title="Select the ${esc(W.marks)} on the proteins of ` +
+          `this family">${esc(g)}</button>`) : '<span class="strong">Other / unassigned</span>'} ` +
+        (`<span class="muted">${int(groups.get(g).length)} ${
+groups.get(g).length === 1 ? 'term' : 'terms'}</span></summary>` +
+            `<ul class="kind-list">${
+groups.get(g).map(s => `<li>${pick(aid, s)} ${idLink(aid, s)} ${resText(siteRow(aid, s))}</li>`).join('')}</ul></details>`)).join('') + '</div>';
   }
   function proteinSetsHtml(c, p) {
     const sd = K.sel?.data(); if (!sd) return '<p class="muted">Loading the sets…</p>';
@@ -253,30 +304,44 @@
     const blocks = c.analyses.filter(aid => sd.protein_sets?.[aid]).map(aid => {
       const a = A[aid], mine = sd.protein_sets[aid].sets.map(([s]) => s).filter(s => K.sel.setHas(aid, s, p.i));
       const title = `<h4>${esc(a.title)} <span class="muted">${int(mine.length)}</span></h4>`;
-      if (!mine.length) return `<div class="kind">${title}<p class="muted">${esc(gene)} is in none of its tested sets.</p></div>`;
+      if (!mine.length) return (`<div class="kind">${title}<p class="muted">${esc(gene)} is in none of its tested ` +
+          `sets.</p></div>`);
       if (a.parents) {                                  // an ontology: the most specific sets first, then the enriched ones above
         const has = new Set(mine), kids = kidsOf(aid);
         const specific = mine.filter(s => !(kids[s] || []).some(x => has.has(x))).sort((x, y) => labelOf(aid, x).localeCompare(labelOf(aid, y)));
         const up = mine.filter(s => !specific.includes(s) && s !== a.root && enriched(siteRow(aid, s))).sort((x, y) => (siteRow(aid, x).q - siteRow(aid, y).q));
         const ns = ontologyOf(aid)?.nouns || 'sets';
-        return `<div class="kind">${title}<p class="muted small">Most specific ${esc(ns)}:</p><ul class="kind-list">${specific.map(s => `<li>${pick(aid, s)} ${idLink(aid, s)}${enriched(siteRow(aid, s)) ? ' <span class="qv-tag">enriched</span>' : ''}</li>`).join('')}</ul>` +
-          (up.length ? `<p class="note">Enriched broader ${esc(ns)} that include ${esc(gene)}: ${up.slice(0, 10).map(s => pick(aid, s)).join(', ')}${up.length > 10 ? ` and ${int(up.length - 10)} more` : ''}.</p>` : '') + '</div>';
+        return (`<div class="kind">${title}<p class="muted small">Most specific ${esc(ns)}:</p><ul ` +
+            `class="kind-list">${
+specific.map(s => `<li>${pick(aid, s)} ${idLink(aid, s)}${
+enriched(siteRow(aid, s)) ? ' <span class="qv-tag">enriched</span>' : ''}</li>`).join('')}</ul>`) +
+          (up.length ? `<p class="note">Enriched broader ${esc(ns)} that include ${esc(gene)}: ${
+up.slice(0, 10).map(s => pick(aid, s)).join(', ')}${
+up.length > 10 ? ` and ${int(up.length - 10)} more` : ''}.</p>` : '') + '</div>';
       }
       if (a.gathers) {                                 // families: each with how many of its tested member sets name the protein
         const mem = membersOf(aid), m = mem && A[mem.analysis];
         return `<div class="kind">${title}<ul class="kind-list">${mine.map(f => { const r = siteRow(aid, f), own = (a.gathers[f] || []);
           const named = m ? own.filter(s => K.sel.setHas(m.id, s, p.i)) : [], nEnr = named.filter(s => enriched(siteRow(m.id, s))).length;
           const ns = esc(mem?.nouns || 'sets');
-          return `<li>${pick(aid, f)} ${resText(r)}${m ? ` <span class="muted">· ${named.length ? `in ${int(named.length)} of its ${int(own.length)} tested ${ns}, ${nEnr ? int(nEnr) + ' enriched' : 'none enriched'}` : `in none of its ${int(own.length)} tested ${ns} (only in ${ns} too small or too large to test)`}</span>` : ''}</li>`; }).join('')}</ul></div>`;
+          return `<li>${pick(aid, f)} ${resText(r)}${
+m ? ` <span class="muted">· ${
+named.length ? `in ${int(named.length)} of its ${int(own.length)} tested ${ns}, ${
+nEnr ? int(nEnr) + ' enriched' : 'none enriched'}` : (`in none of its ${int(own.length)} tested ${ns} (only in ${ns} too small ` +
+              `or too large to test)`)}</span>` : ''}</li>`; }).join('')}</ul></div>`;
       }
       if (c.term_groups?.terms === aid) return termGroupsHtml(c, aid, mine, title, gene);
       const enr = mine.filter(s => enriched(siteRow(aid, s))).sort((x, y) => siteRow(aid, x).q - siteRow(aid, y).q), key = 'psets:' + aid, all = UI.all.has(key);
       const ns = esc(asMembers(aid)?.nouns || 'sets');
-      return `<div class="kind">${title}<p class="note">${esc(gene)} is in ${int(mine.length)} of the tested ${ns}; ${int(enr.length)} of them are enriched across all ${esc(W.marked)} proteins${enr.length ? ':' : '.'}</p>` +
-        (enr.length ? `<ul class="kind-list">${(all ? enr : enr.slice(0, 10)).map(s => `<li>${pick(aid, s)} ${idLink(aid, s)} ${resText(siteRow(aid, s))}</li>`).join('')}</ul>` +
+      return (`<div class="kind">${title}<p class="note">${esc(gene)} is in ${int(mine.length)} of the tested ${ns}; ${int(enr.length)} of them ` +
+          `are enriched across all ${esc(W.marked)} proteins${enr.length ? ':' : '.'}</p>`) +
+        (enr.length ? `<ul class="kind-list">${
+(all ? enr : enr.slice(0, 10)).map(s => `<li>${pick(aid, s)} ${idLink(aid, s)} ${resText(siteRow(aid, s))}</li>`).join('')}</ul>` +
           (enr.length > 10 ? `<button class="linkish" type="button" data-qallm="${esc(key)}">${all ? 'Fewer' : `All ${int(enr.length)}`}</button>` : '') : '') + '</div>';
     }).join('');
-    return `<div class="kinds qv-psets">${blocks}</div><p class="note">Each result is for all ${esc(W.marked)} proteins against the background, not for this protein. A name selects the ${esc(W.marks)} on its proteins, and ↗ opens the set’s page.</p>`;
+    return (`<div class="kinds qv-psets">${blocks}</div><p class="note">Each result is for all ${esc(W.marked)} proteins ` +
+        `against the background, not for this protein. A name selects the ${esc(W.marks)} on its proteins, and ↗ ` +
+        `opens the set’s page.</p>`);
   }
   // a card may take an id of its own (the explorer's p-dis), and its module's live parts before its sets (K.setsLive: kit-pcards.js)
   const cardId = (c, k) => c.id || `p-sets-${k}`;

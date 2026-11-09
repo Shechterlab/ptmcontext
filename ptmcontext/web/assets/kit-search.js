@@ -36,8 +36,11 @@
     const out = [];
     const add = (key, label, help) => { if (key && !out.some(x => x.key === key)) out.push({ key, label, help }); };
     Object.entries(SRCH.terms || {}).forEach(([k, t]) => add(k, t.label || k, t.help || ''));
-    if (SRCH.patterns?.at) add(SRCH.patterns.at, `motif at the ${W.mark}`, `a motif family, or a pattern covering the ${W.mark}${PHM.length ? ` such as ${PHM.slice(0, 2).join(' or ')}` : ''}`);
-    if (SRCH.patterns?.near) add(SRCH.patterns.near, `motif within ±${SRCH.patterns.span || 15}`, `a pattern anywhere within ${SRCH.patterns.span || 15} residues of the ${W.mark}, such as PRPR`);
+    if (SRCH.patterns?.at) add(SRCH.patterns.at, `motif at the ${W.mark}`, (`a motif family, or a pattern covering ` +
+        `the ${W.mark}${
+PHM.length ? ` such as ${PHM.slice(0, 2).join(' or ')}` : ''}`));
+    if (SRCH.patterns?.near) add(SRCH.patterns.near, `motif within ±${SRCH.patterns.span || 15}`, (`a pattern ` +
+        `anywhere within ${SRCH.patterns.span || 15} residues of the ${W.mark}, such as PRPR`));
     Object.entries(K.searchTermHelp || {}).forEach(([k, h]) => add(k, h.label || k, h.help || ''));
     Object.entries(D.search_aliases || {}).forEach(([k, to]) => add(k, A[to]?.title || SPECS[to]?.label || to, `the same as ${to}:`));
     D.analyses.forEach(a => add(a.id, a.title, a.question || ''));
@@ -52,7 +55,8 @@
     if (T) Object.keys(T.values).forEach(v => out.push([v, T.help ? '' : v]));
     if (SRCH.patterns?.near === key0) [['PRPR', 'Pro-Arg repeats'], ['RGRG', 'RG repeat'], ['YGG', 'Tyr-Gly-Gly']].forEach(x => out.push(x));
     if (K.searchTermValues?.[key0]) out.push(...K.searchTermValues[key0]());
-    if (A[key]?.kind === 'residue' && sd) (sd.classes[key] || []).forEach(c => out.push([c, `${A[key].labels?.[c] || c}${A[key].help?.[c] ? ' · ' + A[key].help[c] : ''}`]));
+    if (A[key]?.kind === 'residue' && sd) (sd.classes[key] || []).forEach(c => out.push([c, `${A[key].labels?.[c] || c}${
+A[key].help?.[c] ? ' · ' + A[key].help[c] : ''}`]));
     if (SRCH.patterns?.at === key0) PHM.slice(0, 2).map(m => [m, 'a pattern of residues']).forEach(x => out.push(x));
     if (A[key]?.kind === 'protein_sets' && sd?.protein_sets?.[key]) {
       const names = [...sd.protein_sets[key].sets.map(([s, , m]) => [s, m.length]), ...(sd.protein_sets[key].more || []).map(([s, m]) => [s, m.length])];
@@ -144,8 +148,12 @@
   function draw() {
     if (!items.length) { list.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); return; }
     list.innerHTML = items.map((x, k) => `<div class="q-opt${k === active ? ' on' : ''}" role="option" id="q-opt-${k}" aria-selected="${k === active}" data-q-opt="${k}">` +
-      `<span class="q-l${x.kind === 'protein' || x.kind === 'light' || x.kind === 'page' ? '' : ' mono'}">${esc(x.label)}</span>${x.sub ? `<span class="q-s">${esc(x.sub)}</span>` : ''}` +
-      `${x.n ? `<span class="q-n">${esc(x.n)}</span>` : ''}${x.kind === 'key' || x.kind === 'value' || x.kind === 'term' ? '<span class="q-k">filter</span>' : x.kind === 'page' ? '<span class="q-k">page</span>' : ''}</div>`).join('');
+      `<span class="q-l${
+x.kind === 'protein' || x.kind === 'light' || x.kind === 'page' ? '' : ' mono'}">${esc(x.label)}</span>${
+x.sub ? `<span class="q-s">${esc(x.sub)}</span>` : ''}` +
+      `${
+x.n ? `<span class="q-n">${esc(x.n)}</span>` : ''}${
+x.kind === 'key' || x.kind === 'value' || x.kind === 'term' ? '<span class="q-k">filter</span>' : x.kind === 'page' ? '<span class="q-k">page</span>' : ''}</div>`).join('');
     list.hidden = false; input.setAttribute('aria-expanded', 'true');
     if (active >= 0) input.setAttribute('aria-activedescendant', 'q-opt-' + active); else input.removeAttribute('aria-activedescendant');
   }
@@ -197,47 +205,67 @@
 
   // ---- the line under the search ------------------------------------------------------------------------------------
   const list_ = (xs, max = 25) => xs.slice(0, max).map(x => `<b>${esc(x)}</b>`).join(', ') + (xs.length > max ? ` and ${int(xs.length - max)} more` : '');
-  const typo = (q, w) => { const n = q.typos?.[w]; return n?.length ? ` Did you mean ${n.map(([, g]) => `<button class="linkish" type="button" data-q-typo="${esc(w)}" data-q-to="${esc(g)}">${esc(g)}</button>`).join(', ')}?` : ''; };
+  const typo = (q, w) => { const n = q.typos?.[w]; return n?.length ? ` Did you mean ${
+n.map(([, g]) => (`<button class="linkish" ` +
+      `type="button" data-q-typo="${esc(w)}" data-q-to="${esc(g)}">${esc(g)}</button>`)).join(', ')}?` : ''; };
   function noteHtml() {
     if (!S.q || !K.sel.data()) return '';
     const c = K.sel.compute(), q = c.q, out = [];
     const prots = new Set([...q.genes, ...q.sites.map(x => x[0])]);
     // a variant is searched as its site: say so, and what it matched
-    (q.variants || []).forEach(([g, aa, pos, to]) => out.push(`<b>${esc(g)} ${aa}${pos}${to}</b> is searched as the site <b>${esc(g)} ${aa}${pos}</b>; the change to ${esc(to === '*' ? 'a stop' : to)} is not matched, and the site’s card lists its variants first.`));
-    (q.positions || []).forEach(([aa, pos, to]) => out.push(`<b>${aa}${pos}${to}</b> with no protein is searched as ${aa}${pos} in every protein: <b>${int(c.marks?.length || 0)}</b> ${esc(c.marks?.length === 1 ? W.mark : W.marks)} on <b>${int(c.proteins?.size || 0)}</b> protein${c.proteins?.size === 1 ? '' : 's'}. The change to ${esc(to === '*' ? 'a stop' : to)} is not matched; name the protein (FUS ${aa}${pos}${to}) to open its site.`));
+    (q.variants || []).forEach(([g, aa, pos, to]) => out.push((`<b>${esc(g)} ${aa}${pos}${to}</b> is searched as ` +
+        `the site <b>${esc(g)} ${aa}${pos}</b>; the change to ${esc(to === '*' ? 'a stop' : to)} is not matched, ` +
+        `and the site’s card lists its variants first.`)));
+    (q.positions || []).forEach(([aa, pos, to]) => out.push((`<b>${aa}${pos}${to}</b> with no protein is searched ` +
+        `as ${aa}${pos} in every protein: <b>${int(c.marks?.length || 0)}</b> ${
+esc(c.marks?.length === 1 ? W.mark : W.marks)} on <b>${int(c.proteins?.size || 0)}</b> protein${c.proteins?.size === 1 ? '' : 's'}. The change to ${esc(to === '*' ? 'a stop' : to)} is not matched;` +
+        ` name the protein (FUS ${aa}${pos}${to}) to open its site.`)));
     if (prots.size || q.sites.length) {
       const missing = [...(q.absent || [])];
       if (q.nWords > 1 && (prots.size > 1 || missing.length)) out.push(`<b>${int(prots.size)}</b> protein${prots.size === 1 ? '' : 's'} from ${int(q.nWords - missing.length)} of ${int(q.nWords)} search words.`);
-      if (q.via.length) out.push(`Matched by another name: ${q.via.slice(0, 10).map(([t, g]) => `${esc(t)} → ${esc(g.join('/'))}`).join(', ')}.`);
-      if (missing.length) out.push(`Not in this dataset: ${list_(missing)}.${missing.length === 1 ? typo(q, missing[0]) : ''}`);
+      if (q.via.length) out.push(`Matched by another name: ${
+q.via.slice(0, 10).map(([t, g]) => `${esc(t)} → ${esc(g.join('/'))}`).join(', ')}.`);
+      if (missing.length) out.push(`Not in this dataset: ${list_(missing)}.${
+missing.length === 1 ? typo(q, missing[0]) : ''}`);
       if (q.missing.length) out.push(`No ${esc(W.mark)} reported at ${list_(q.missing, 10)}.`);
-      q.numbered.forEach(([g, typed, u, rule]) => out.push(`${esc(rule.note || rule.label || 'Numbered as papers do')}: ${esc(g)} ${typed} is UniProt ${u}.`));
-      if (q.ignored?.length) out.push(`<span title="In a list of proteins, words are not searched in protein names: search them on their own to do that">Not a protein, left out of the list: ${list_(q.ignored)}.</span>`);
-      if (q.ambiguous?.length) out.push(q.ambiguous.map(([t, g]) => `<b>${esc(t)}</b> read as ${esc(g)}’s site, not the protein ${esc(t)} (write it first, or alone, to list it).`).join(' '));
+      q.numbered.forEach(([g, typed, u, rule]) => out.push(`${
+esc(rule.note || rule.label || 'Numbered as papers do')}: ${esc(g)} ${typed} is UniProt ${u}.`));
+      if (q.ignored?.length) out.push((`<span title="In a list of proteins, words are not searched in protein ` +
+          `names: search them on their own to do that">Not a protein, left out of the list: ${list_(q.ignored)}.</span>`));
+      if (q.ambiguous?.length) out.push(q.ambiguous.map(([t, g]) => (`<b>${esc(t)}</b> read as ${esc(g)}’s site, ` +
+          `not the protein ${esc(t)} (write it first, or alone, to list it).`)).join(' '));
     } else if (q.words.length && !q.unmatched.length && !(c.proteins || new Set()).size && !c.cons.length) {
       const phrase = q.words.join(' '), cs = conceptRows(phrase);
-      out.push(`No protein on this site matches all of “${esc(phrase)}”.` + (cs.length ? ` Did you mean ${cs.slice(0, 4).map(x => `<button class="linkish mono" type="button" data-q-set="${esc(x.text)}" title="${esc(x.sub)}">${esc(x.label)}</button>`).join(', ')}?` : ''));
+      out.push(`No protein on this site matches all of “${esc(phrase)}”.` + (cs.length ? ` Did you mean ${
+cs.slice(0, 4).map(x => (`<button class="linkish ` +
+          `mono" type="button" data-q-set="${esc(x.text)}" title="${esc(x.sub)}">${esc(x.label)}</button>`)).join(', ')}?` : ''));
     } else if (q.words.length && !q.unmatched.length) {
       const n = (c.proteins || new Set()).size, phrase = q.words.join(' ');
-      out.push(`<b>${int(n)}</b> protein${n === 1 ? '' : 's'} match “${esc(phrase)}” by the start of a gene, accession or other name, or by part of a protein name.`);
+      out.push((`<b>${int(n)}</b> protein${n === 1 ? '' : 's'} match “${esc(phrase)}” by the start of a gene, ` +
+          `accession or other name, or by part of a protein name.`));
     }
     if (q.unmatched.length) {
       const phrase = q.unmatched.join(' '), cs = conceptRows([...q.words, ...q.unmatched].join(' '));
       out.push(`No protein on this site matches “${esc(phrase)}”.` + (q.unmatched.length === 1 ? typo(q, q.unmatched[0]) : '') +
-        (cs.length ? ` Did you mean ${cs.slice(0, 4).map(x => `<button class="linkish mono" type="button" data-q-set="${esc(x.text)}" title="${esc(x.sub)}">${esc(x.label)}</button>`).join(', ')}?` : ' Try a gene, an accession or part of a protein name.'));
+        (cs.length ? ` Did you mean ${
+cs.slice(0, 4).map(x => (`<button class="linkish mono" type="button" ` +
+            `data-q-set="${esc(x.text)}" title="${esc(x.sub)}">${esc(x.label)}</button>`)).join(', ')}?` : ' Try a gene, an accession or part of a protein name.'));
     }
     const errs = c.errors || [];
     const unknown = (c.unresolved || []).filter(t => !K.sel.isTermKey(t.split(':')[0]));
     const empty = (c.unresolved || []).filter(t => K.sel.isTermKey(t.split(':')[0]) && !errs.some(e => e.startsWith(t.split(':')[0] + ':')));
     if (errs.length) out.push(`<span class="warn-text">${errs.map(esc).join(' ')}</span>`);
-    if (empty.length) out.push(`<span class="warn-text">Nothing matches ${list_(empty)}: no ${esc(W.mark)} is selected while it stays.</span>`);
-    if (unknown.length) out.push(`<span class="warn-text">${list_(unknown)}: not a search key here (<a href="${esc(K.link('method', 'search'))}">the search terms</a>).</span>`);
+    if (empty.length) out.push((`<span class="warn-text">Nothing matches ${list_(empty)}: no ${esc(W.mark)} is selected ` +
+        `while it stays.</span>`));
+    if (unknown.length) out.push((`<span class="warn-text">${list_(unknown)}: not a search key here (<a href="${esc(K.link('method', 'search'))}">the search ` +
+        `terms</a>).</span>`));
     return out.join(' ');
   }
   (K.afterRender ||= []).push(() => {
     const h = noteHtml(); note.innerHTML = h; note.hidden = !h;
     // a short placeholder on a narrow screen
-    if (matchMedia('(max-width: 560px)').matches) input.placeholder = `Gene, site, gene list${(D.site.examples || []).find(e => e.includes(':')) ? ' or ' + (D.site.examples || []).find(e => e.includes(':')) : ''}`;
+    if (matchMedia('(max-width: 560px)').matches) input.placeholder = `Gene, site, gene list${
+(D.site.examples || []).find(e => e.includes(':')) ? ' or ' + (D.site.examples || []).find(e => e.includes(':')) : ''}`;
   });
   K.clicks.push(
     ['[data-q-typo]', el => { const w = el.dataset.qTypo, re = new RegExp(`(^|\\s)${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=\\s|$)`, 'i'); apply(S.q.replace(re, `$1${el.dataset.qTo}`), true); }],
@@ -247,11 +275,22 @@
   // ---- the Method page: the search's words beyond genes and keys ----------------------------------------------------
   (K.methodParts ||= []).push(() => {
     const parts = [];
-    if (Object.keys(SRCH.shorthand || {}).length) parts.push(`Other names papers use: ${Object.entries(SRCH.shorthand).map(([n, acc]) => `<span class="mono">${esc(n)}</span> (${esc(acc)})`).join(', ')}; a site may follow the name directly (<span class="mono">${esc(Object.keys(SRCH.shorthand)[0])}${esc((D.residues || [''])[0])}3</span>).`);
-    if (Object.keys(D.protein_aliases || {}).length) parts.push(`A protein is found by gene, accession, entry name or any other name in the site's tables (synonyms, source symbols), with or without hyphens, spaces and dots. A name in two words is read as one.`);
-    if ((D.protein_view?.numbering || []).length) parts.push(`Positions are read as each protein's page numbers them: ${D.protein_view.numbering.map(n => esc(n.note || n.label || '')).join('; ')}.`);
-    if (SRCH.patterns) parts.push(`The motif finder: <span class="mono">${esc(SRCH.patterns.at || '')}:</span> takes a pattern covering the ${esc(W.mark)}, with one position on it. <span class="mono">${esc(SRCH.patterns.near || '')}:</span> takes one anywhere within ${int(SRCH.patterns.span || 15)} residues. X . * or ? is any residue, [ST] a choice, 2 to 10 positions${SITE_PH.motif_either ? `, and ${esc(SITE_PH.motif_either)} either` : ''}.`);
-    Object.entries(SRCH.terms || {}).forEach(([k, t]) => parts.push(`<span class="mono">${esc(k)}:</span> ${esc(t.help || '')} (${Object.keys(t.values).map(v => `<span class="mono">${esc(k)}:${esc(v)}</span>`).join(', ')}).`));
+    if (Object.keys(SRCH.shorthand || {}).length) parts.push((`Other names papers use: ${
+Object.entries(SRCH.shorthand).map(([n, acc]) => `<span class="mono">${esc(n)}</span> (${esc(acc)})`).join(', ')}; a site ` +
+        `may follow the name directly (<span class="mono">${esc(Object.keys(SRCH.shorthand)[0])}${esc((D.residues || [''])[0])}3</span>).`));
+    if (Object.keys(D.protein_aliases || {}).length) parts.push((`A protein is found by gene, accession, entry name ` +
+        `or any other name in the site's tables (synonyms, source symbols), with or without hyphens, spaces and ` +
+        `dots. A name in two words is read as one.`));
+    if ((D.protein_view?.numbering || []).length) parts.push((`Positions are read as each protein's page numbers ` +
+        `them: ${
+D.protein_view.numbering.map(n => esc(n.note || n.label || '')).join('; ')}.`));
+    if (SRCH.patterns) parts.push((`The motif finder: <span class="mono">${esc(SRCH.patterns.at || '')}:</span> ` +
+        `takes a pattern covering the ${esc(W.mark)}, with one position on it. <span class="mono">${esc(SRCH.patterns.near || '')}:</span> ` +
+        `takes one anywhere within ${int(SRCH.patterns.span || 15)} residues. X . * or ? is any residue, [ST] a ` +
+        `choice, 2 to 10 positions${
+SITE_PH.motif_either ? `, and ${esc(SITE_PH.motif_either)} either` : ''}.`));
+    Object.entries(SRCH.terms || {}).forEach(([k, t]) => parts.push(`<span class="mono">${esc(k)}:</span> ${esc(t.help || '')} (${
+Object.keys(t.values).map(v => `<span class="mono">${esc(k)}:${esc(v)}</span>`).join(', ')}).`));
     Object.entries(K.searchTermHelp || {}).forEach(([k, h]) => parts.push(`<span class="mono">${esc(k)}:</span> ${esc(h.help || h.label || '')}.`));
     return parts.length ? `<section id="m-search-words"><h3>More search words</h3><ul>${parts.map(x => `<li>${x}</li>`).join('')}</ul></section>` : '';
   });

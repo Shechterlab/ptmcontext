@@ -10,11 +10,15 @@
   const open = id => (id in K.folds ? K.folds[id] : true);
   function view() {
     const lp = K.logoPanel?.();
-    const head = `<div class="page-head results-head"><div><h2>Figure panels</h2><p class="cx">The figures of the current selection that no single page draws: ${int(lp ? lp.n : 0)} ${esc(W.marks)} with a sequence window. Every chart and table elsewhere has its own export buttons.</p></div></div>`;
+    const head = (`<div class="page-head results-head"><div><h2>Figure panels</h2><p class="cx">The figures of the ` +
+        `current selection that no single page draws: ${int(lp ? lp.n : 0)} ${esc(W.marks)} with a sequence ` +
+        `window. Every chart and table elsewhere has its own export buttons.</p></div></div>`);
     if (!K.sel.data()) return `${head}<p class="muted">Loading the ${esc(W.marks)}…</p>`;
-    const note = K.sel.active() ? '' : `<div class="filter-note">No search or filter is set, so these figures use the whole dataset. Search for proteins or set filters to focus them.</div>`;
+    const note = K.sel.active() ? '' : (`<div class="filter-note">No search or filter is set, so these figures use ` +
+        `the whole dataset. Search for proteins or set filters to focus them.</div>`);
     if (!lp || !lp.n) return `${head}${note}<p class="muted">No selected ${esc(W.mark)} has a sequence window.</p>`;
-    return head + note + `<details class="pfold" id="fg-align"${open('fg-align') ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>Site alignment and sequence logo</h3>` +
+    return head + note + (`<details class="pfold" id="fg-align"${open('fg-align') ? ' open' : ''}><summary><span ` +
+        `class="pfm" aria-hidden="true"></span><h3>Site alignment and sequence logo</h3>`) +
       `<span class="fsum">${int(lp.n)} ${esc(W.marks)}</span></summary><div class="pfold-body">${lp.html()}</div></details>`;
   }
   // a fold of this page remembers whether it is open

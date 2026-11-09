@@ -96,7 +96,8 @@
 
   // ---- links and cells ---------------------------------------------------------------------------------------------
   const residueLetter = () => (D.residues || [''])[0];
-  const siteLink = (p, pos) => `<a href="${esc(K.link('protein', `${prot(p)[0]}/${residueLetter()}${pos}`))}"><b>${esc(gene(p))}</b> ${esc(residueLetter())}${int(pos)}</a>`;
+  const siteLink = (p, pos) => `<a href="${
+esc(K.link('protein', `${prot(p)[0]}/${residueLetter()}${pos}`))}"><b>${esc(gene(p))}</b> ${esc(residueLetter())}${int(pos)}</a>`;
   const protLink = p => `<a href="${esc(K.link('protein', prot(p)[0]))}"><b>${esc(gene(p))}</b></a>`;
   const accLink = (acc, label) => { const a = String(acc).split('-')[0]; return byAcc[a] != null ? `<a href="${esc(K.link('protein', a))}" title="${esc(prot(byAcc[a])[2] || a)}">${esc(label || gene(byAcc[a]))}</a>` : `<a href="https://www.uniprot.org/uniprotkb/${encodeURIComponent(a)}/entry" title="UniProt ${esc(a)}">${esc(label || a)}</a>`; };
   const seqHtml = s => esc(s).replace(/\[([^\]]+)\]/g, '<b class="ix-c">$1</b>');
@@ -106,13 +107,16 @@
     if (name === 'position') return t.key === 'residue' ? siteLink(r[0], r[1]) : '';
     const v = j < 0 ? null : r[j], show = x => (c.values || {})[x] ?? x;
     if (v == null || (Array.isArray(v) && !v.length)) return '<span class="muted">–</span>';
-    const many = (xs, f, k = 4) => xs.slice(0, k).map(f).join(', ') + (xs.length > k ? ` <span class="muted" title="${esc(xs.slice(k).map(show).join(', '))}">+${xs.length - k}</span>` : '');
+    const many = (xs, f, k = 4) => xs.slice(0, k).map(f).join(', ') + (xs.length > k ? (` <span class="muted" ` +
+        `title="${esc(xs.slice(k).map(show).join(', '))}">+${xs.length - k}</span>`) : '');
     switch (c.type) {
       case 'number': return int(v) === String(v) || Number.isInteger(v) ? int(v) : fxn(v) === '–' ? String(v) : String(+Number(v).toPrecision(3));
       case 'flag': return v ? '✓' : '<span class="muted">–</span>';
       case 'accession': return accLink(v, labelOf ? labelOf(r) : '');
       case 'accessions': return many(v, x => accLink(x));
-      case 'pdb': return many(v, x => `<a class="mono" href="https://www.ebi.ac.uk/pdbe/entry/pdb/${encodeURIComponent(String(x).toLowerCase())}" title="PDBe entry ${esc(x)}">${esc(x)}</a>`, 3);
+      case 'pdb': return many(v, x => (`<a class="mono" href="https://www.ebi.ac.uk/pdbe/entry/pdb/${
+encodeURIComponent(String(x).toLowerCase())}" title="PDBe ` +
+          `entry ${esc(x)}">${esc(x)}</a>`), 3);
       case 'doi': return `<a href="https://doi.org/${esc(v)}">doi</a>`;
       case 'pubmed': return many(String(v).split(/[;,\s]+/).filter(Boolean), x => `<a href="https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(x)}/">PMID ${esc(x)}</a>`, 2);
       case 'url': return `<a href="${esc(v)}">link</a>`;
@@ -130,7 +134,9 @@
   const dirColour = (P, d) => (d === 'more' ? P.more : d === 'less' ? P.less : d === 'same' ? P.same : P.muted);
   const SER = ['#2A78D6', '#EB6834', '#1BAF7A', '#A23B12', '#7C3AED', '#0891B2', '#B45309', '#BE185D'];
   const attrColour = (name, v, k) => (SPECS[name]?.colours || {})[v] || (K.map?.attrColour ? K.map.attrColour(name, v) : SER[k % SER.length]);
-  const txt = (P, x, y, t, o = {}) => `<text x="${(+x).toFixed(1)}" y="${(+y).toFixed(1)}" font-size="${o.size || 11}"${o.weight ? ` font-weight="${o.weight}"` : ''}${o.anchor ? ` text-anchor="${o.anchor}"` : ''} fill="${o.fill || P.ink}">${esc(t)}</text>`;
+  const txt = (P, x, y, t, o = {}) => `<text x="${(+x).toFixed(1)}" y="${(+y).toFixed(1)}" font-size="${o.size || 11}"${
+o.weight ? ` font-weight="${o.weight}"` : ''}${
+o.anchor ? ` text-anchor="${o.anchor}"` : ''} fill="${o.fill || P.ink}">${esc(t)}</text>`;
   const fx2 = v => (v == null ? '–' : fxn(v) + '×');
   const dirOf = r => (r ? K.dir({ eff: r.eff ?? r.or ?? r.fold, q: r.q }) : 'ns');
 
@@ -169,10 +175,15 @@
       if (x.group && x.group !== grp) { grp = x.group; y += 8; parts.push(txt(P, 0, y + 12, x.group.toUpperCase(), { size: 9.5, fill: P.muted, weight: 700 })); y += RH - 4; }
       const r = shown(x), d = dirOf(r), cy = y + RH / 2;
       parts.push(txt(P, 0, cy + 4, x.label, { size: 11 }));
-      if (selOn() && x.site && effOf(x.site)) parts.push(`<line x1="${(FX + sc.X(effOf(x.site), FW)).toFixed(1)}" x2="${(FX + sc.X(effOf(x.site), FW)).toFixed(1)}" y1="${cy - 6}" y2="${cy + 6}" stroke="${P.muted}" stroke-width="2" opacity="0.6"/>`);
+      if (selOn() && x.site && effOf(x.site)) parts.push((`<line x1="${
+(FX + sc.X(effOf(x.site), FW)).toFixed(1)}" x2="${
+(FX + sc.X(effOf(x.site), FW)).toFixed(1)}" y1="${cy - 6}" y2="${cy + 6}" stroke="${P.muted}" stroke-width="2" ` +
+          `opacity="0.6"/>`));
       if (r && r.lo != null && r.hi != null) parts.push(`<line x1="${(FX + sc.X(r.lo, FW)).toFixed(1)}" x2="${(FX + sc.X(r.hi, FW)).toFixed(1)}" y1="${cy}" y2="${cy}" stroke="${dirColour(P, d)}" stroke-width="1.6"/>`);
       if (r && effOf(r)) parts.push(`<circle cx="${(FX + sc.X(effOf(r), FW)).toFixed(1)}" cy="${cy}" r="4.6" fill="${d === 'ns' ? P.bg : dirColour(P, d)}" stroke="${dirColour(P, d)}" stroke-width="1.5"/>`);
-      parts.push(txt(P, Wd - 4, cy + 4, r ? `${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}${K.sharePair(r) ? ` · ${K.sharePair(r)}` : ''} · q ${fq(r.q)}` : 'not tested', { size: 10.5, anchor: 'end', fill: dirColour(P, d) === P.muted ? P.muted : P.ink }));
+      parts.push(txt(P, Wd - 4, cy + 4, r ? `${fxn(effOf(r))}${
+r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}${
+K.sharePair(r) ? ` · ${K.sharePair(r)}` : ''} · q ${fq(r.q)}` : 'not tested', { size: 10.5, anchor: 'end', fill: dirColour(P, d) === P.muted ? P.muted : P.ink }));
       y += RH;
     });
     for (let k = sc.lo; k <= sc.hi; k++) {
@@ -189,25 +200,49 @@
     let grp = null;
     const body = rows.map(x => {
       const r = shown(x), d = dirOf(r), head = x.group && x.group !== grp ? ((grp = x.group), `<div class="ixf-group">${esc(x.group)}</div>`) : '';
-      const tick = selOn() && x.site && effOf(x.site) ? `<line class="ixf-whole" x1="${X(effOf(x.site))}" x2="${X(effOf(x.site))}" y1="20%" y2="80%"/>` : '';
-      const ci = r && r.lo != null && r.hi != null ? `<line class="whisker ${d}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" y2="50%"/>` : '';
+      const tick = selOn() && x.site && effOf(x.site) ? (`<line class="ixf-whole" x1="${X(effOf(x.site))}" x2="${X(effOf(x.site))}" y1="20%" ` +
+          `y2="80%"/>`) : '';
+      const ci = r && r.lo != null && r.hi != null ? (`<line class="whisker ${d}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" ` +
+          `y2="50%"/>`) : '';
       const dot = r && effOf(r) ? `<circle class="dot ${d}" cx="${X(effOf(r))}" cy="50%" r="4.6"/>` : '';
       const n = r ? `${int(r.a)} of ${int(r.a + r.b)} <span class="muted">(${pcS(r.a, r.a + r.b)})</span>` : '–', o = r ? `${int(r.c)} of ${int(r.c + r.d)} <span class="muted">(${pcS(r.c, r.c + r.d)})</span>` : '–';
-      return head + `<div class="ixf-row" data-f="a:${esc(x.ref.analysis)}" data-v="${esc(x.ref.category)}" role="button" tabindex="0" title="Select the ${esc(W.marks)} ${esc(x.label)}" data-ixr="${esc(JSON.stringify([x.ref.analysis, x.ref.category, s.m]))}">` +
+      return head + (`<div class="ixf-row" data-f="a:${esc(x.ref.analysis)}" data-v="${esc(x.ref.category)}" role="button" ` +
+          `tabindex="0" title="Select the ${esc(W.marks)} ${esc(x.label)}" data-ixr="${
+esc(JSON.stringify([x.ref.analysis, x.ref.category, s.m]))}">`) +
         `<span class="lab">${esc(x.label)}</span><svg aria-hidden="true">${gridLines(sc, X)}${tick}${ci}${dot}</svg>` +
-        `<span class="ixf-or ${d}">${r && effOf(r) ? `${fxn(effOf(r))}${r.lo != null ? ` <span class="muted">[${fxn(r.lo)}–${fxn(r.hi)}]</span>` : ''}` : '–'}</span>` +
-        `<span class="ixf-n">${n}</span><span class="ixf-n">${o}</span><span class="ixf-q">${r ? fq(r.q) : '–'}</span><span class="ixf-n">${r?.strata != null ? `${int(r.strata)}` : '–'}</span></div>`;
+        `<span class="ixf-or ${d}">${
+r && effOf(r) ? `${fxn(effOf(r))}${
+r.lo != null ? ` <span class="muted">[${fxn(r.lo)}–${fxn(r.hi)}]</span>` : ''}` : '–'}</span>` +
+        (`<span class="ixf-n">${n}</span><span class="ixf-n">${o}</span><span class="ixf-q">${r ? fq(r.q) : '–'}</span><span ` +
+            `class="ixf-n">${
+r?.strata != null ? `${int(r.strata)}` : '–'}</span></div>`);
     }).join('');
-    const axis = `<div class="ixf-row ixf-axis" aria-hidden="true"><span></span><svg>${Array.from({ length: sc.hi - sc.lo + 1 }, (_, k) => sc.lo + k).map(k => `<text x="${X(2 ** k)}" y="11" text-anchor="middle">${2 ** k >= 1 ? 2 ** k : '1/' + 2 ** -k}×</text>`).join('')}</svg><span></span><span></span><span></span><span></span><span></span></div>`;
-    const head = `<div class="ixf-row ixf-head"><span>${esc(cap(W.residue))} is…</span><span title="${esc(K.GLOSS['odds ratio'])}">Odds ratio [95% CI]</span><span></span><span>${esc(cap(W.marks))}</span><span>Other ${esc(W.residues)}</span><span title="${esc(K.GLOSS.q)}">q</span><span title="Proteins with ${esc(W.marks)} and other ${esc(W.residues)} on both sides of the class (within each protein)">Informative proteins</span></div>`;
+    const axis = (`<div class="ixf-row ixf-axis" aria-hidden="true"><span></span><svg>${
+Array.from({ length: sc.hi - sc.lo + 1 }, (_, k) => sc.lo + k).map(k => (`<text x="${X(2 ** k)}" y="11" ` +
+        `text-anchor="middle">${2 ** k >= 1 ? 2 ** k : '1/' + 2 ** -k}×</text>`)).join('')}</svg><span></span><span>` +
+        `</span><span></span><span></span><span></span></div>`);
+    const head = (`<div class="ixf-row ixf-head"><span>${esc(cap(W.residue))} is…</span><span title="${esc(K.GLOSS['odds ratio'])}">Odds ratio ` +
+        `[95% CI]</span><span></span><span>${esc(cap(W.marks))}</span><span>Other ${esc(W.residues)}</span><span ` +
+        `title="${esc(K.GLOSS.q)}">q</span><span title="Proteins with ${esc(W.marks)} and other ${esc(W.residues)} on both ` +
+        `sides of the class (within each protein)">Informative proteins</span></div>`);
     return seg(bkey(pg, sec, bi), s.m) + `<div class="ixf">${head}${body}${axis}</div>` + forestNote(rows, s.m);
   }
-  const gridLines = (sc, X) => Array.from({ length: sc.hi - sc.lo + 1 }, (_, k) => sc.lo + k).map(k => `<line class="${k === 0 ? 'one' : 'grid'}" x1="${X(2 ** k)}" x2="${X(2 ** k)}" y1="0" y2="100%"/>`).join('');
-  const seg = (key, m) => `<div class="ix-tools"><span class="seg" role="group" aria-label="Test">${['mantel_haenszel', 'fisher'].map(x => `<button type="button" data-ix-m="${esc(key)}" data-v="${x}" aria-pressed="${m === x}" title="${esc(K.GLOSS[x === 'fisher' ? 'pooled' : 'within each protein'])}">${METHOD[x]}</button>`).join('')}</span></div>`;
+  const gridLines = (sc, X) => Array.from({ length: sc.hi - sc.lo + 1 }, (_, k) => sc.lo + k).map(k => (`<line class="${k === 0 ? 'one' : 'grid'}" x1="${X(2 ** k)}" x2="${X(2 ** k)}" y1="0" ` +
+      `y2="100%"/>`)).join('');
+  const seg = (key, m) => `<div class="ix-tools"><span class="seg" role="group" aria-label="Test">${
+['mantel_haenszel', 'fisher'].map(x => (`<button type="button" ` +
+      `data-ix-m="${esc(key)}" data-v="${x}" aria-pressed="${m === x}" title="${
+esc(K.GLOSS[x === 'fisher' ? 'pooled' : 'within each protein'])}">${METHOD[x]}</button>`)).join('')}</span></div>`;
   function forestNote(rows, m) {
-    if (!selOn()) return `<p class="muted small">${m === 'mantel_haenszel' ? 'Within each protein: a Mantel–Haenszel odds ratio with its 95% CI (Robins–Breslow–Greenland), each protein a stratum' : 'Across all proteins: Fisher’s exact test, the Haldane–Anscombe odds ratio'}; q: Benjamini–Hochberg within the question.</p>`;
-    if (!testable()) return `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. The rows are the whole dataset’s.</p>`;
-    return `<p class="muted small">Your selection, tested again in the browser (exploratory; not adjusted for the other selections tried); the gray tick is the whole dataset’s odds ratio. ${rows.some(x => x.mine?.descriptive) ? 'A question the selection was made with is shown, not tested.' : ''}</p>`;
+    if (!selOn()) return (`<p class="muted small">${
+m === 'mantel_haenszel' ? ('Within each protein: a Mantel–Haenszel odds ratio with its 95% CI ' +
+'(Robins–Breslow–Greenland), each protein a stratum') : 'Across all proteins: Fisher’s exact test, the Haldane–Anscombe odds ratio'}; q: Benjamini–Hochberg ` +
+        `within the question.</p>`);
+    if (!testable()) return (`<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. The rows ` +
+        `are the whole dataset’s.</p>`);
+    return (`<p class="muted small">Your selection, tested again in the browser (exploratory; not adjusted for the ` +
+        `other selections tried); the gray tick is the whole dataset’s odds ratio. ${
+rows.some(x => x.mine?.descriptive) ? 'A question the selection was made with is shown, not tested.' : ''}</p>`);
   }
   function forestTsv(b, m) {
     const rows = rowsFor(b.rows, m);
@@ -234,9 +269,14 @@
     parts.push(txt(P, ML + PW / 2, MT + PH + 29, b.x_label || 'x', { size: 10, anchor: 'middle', fill: P.muted }));
     ser.forEach(s => {
       const c = SER[s.k % SER.length], band = s.pts.filter(p => p.r.lo != null && p.r.hi != null);
-      if (band.length > 1) parts.push(`<polygon points="${[...band.map(p => `${X(p.x).toFixed(1)},${Y(p.r.hi).toFixed(1)}`), ...band.slice().reverse().map(p => `${X(p.x).toFixed(1)},${Y(p.r.lo).toFixed(1)}`)].join(' ')}" fill="${c}" opacity="0.10"/>`);
-      parts.push(`<polyline points="${s.pts.map(p => `${X(p.x).toFixed(1)},${Y(effOf(p.r)).toFixed(1)}`).join(' ')}" fill="none" stroke="${c}" stroke-width="1.8"/>`);
-      s.pts.forEach(p => parts.push(`<circle cx="${X(p.x).toFixed(1)}" cy="${Y(effOf(p.r)).toFixed(1)}" r="3.4" fill="${dirOf(p.r) === 'ns' ? P.bg : c}" stroke="${c}" stroke-width="1.4" data-ixr="${esc(JSON.stringify([b.analysis, p.cat, m]))}"/>`));
+      if (band.length > 1) parts.push(`<polygon points="${
+[...band.map(p => `${X(p.x).toFixed(1)},${Y(p.r.hi).toFixed(1)}`), ...band.slice().reverse().map(p => `${X(p.x).toFixed(1)},${Y(p.r.lo).toFixed(1)}`)].join(' ')}" fill="${c}" opacity="0.10"/>`);
+      parts.push((`<polyline points="${
+s.pts.map(p => `${X(p.x).toFixed(1)},${Y(effOf(p.r)).toFixed(1)}`).join(' ')}" fill="none" ` +
+          `stroke="${c}" stroke-width="1.8"/>`));
+      s.pts.forEach(p => parts.push((`<circle cx="${X(p.x).toFixed(1)}" cy="${Y(effOf(p.r)).toFixed(1)}" r="3.4" fill="${dirOf(p.r) === 'ns' ? P.bg : c}" stroke="${c}" stroke-width="1.4" ` +
+          `data-ixr="${
+esc(JSON.stringify([b.analysis, p.cat, m]))}"/>`)));
     });
     let ly = MT + 8;
     ser.forEach(s => { const c = SER[s.k % SER.length]; parts.push(`<line x1="${ML + PW + 14}" x2="${ML + PW + 30}" y1="${ly - 3.5}" y2="${ly - 3.5}" stroke="${c}" stroke-width="2"/>`, txt(P, ML + PW + 36, ly, s.label, { size: 10.5 })); ly += 16; });
@@ -246,7 +286,9 @@
     const s = st(bkey(pg, sec, bi), { m: b.method || 'mantel_haenszel' }), L = linesBody(b, s.m, false);
     const ser = linesData(b, s.m), lastX = Math.max(...Object.values(b.x || {}));
     const say = ser.map(x => { const at0 = x.pts[0], far = x.pts.find(p => p.x === lastX) || x.pts[x.pts.length - 1]; return `${esc(x.label)}: ${fx2(effOf(at0.r))} at ${int(at0.x)}, ${fx2(effOf(far.r))} at ${int(far.x)}`; }).join('; ');
-    return seg(bkey(pg, sec, bi), s.m) + `<div class="ix-plot"><svg viewBox="0 0 760 ${L.H}" role="img" aria-label="${esc(sec.title)}">${L.body}</svg></div><p class="muted small">${say}. Filled: q ≤ 0.05; the band is the 95% CI (within each protein). Hover a point for its test.</p>`;
+    return seg(bkey(pg, sec, bi), s.m) + (`<div class="ix-plot"><svg viewBox="0 0 760 ${L.H}" role="img" ` +
+        `aria-label="${esc(sec.title)}">${L.body}</svg></div><p class="muted small">${say}. Filled: q ≤ 0.05; the ` +
+        `band is the 95% CI (within each protein). Hover a point for its test.</p>`);
   }
   function linesTsv(b, m) {
     return ['series', 'x', 'category', 'a', 'b', 'c', 'd', 'share_in_group', 'share_in_others', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q'].join('\t') + '\n' +
@@ -261,12 +303,29 @@
   }
   function setsHtml(pg, sec, b) {
     const rows = setRows(b);
-    const meter = (k, n, K2, N) => `<span class="ix-meter" title="${int(k)} of ${int(n)} (${pcS(k, n)}) vs ${int(K2)} of ${int(N)} (${pcS(K2, N)})"><i style="width:${(100 * k / (n || 1)).toFixed(1)}%"></i><b style="left:${(100 * K2 / (N || 1)).toFixed(1)}%"></b></span>`;
-    const hold = x => { const h = K.holdStatus(x.site); const s2 = x.strat; return s2 ? `<span class="ix-hold ${h || ''}" title="Within abundance deciles: OR ${fxn(s2.or ?? s2.eff)}${s2.lo != null ? ` [${fxn(s2.lo)}–${fxn(s2.hi)}]` : ''}, q ${fq(s2.q)}">${h === 'holds' ? '✓' : h === 'weaker' ? '◌' : h === 'lost' ? '○' : dirOf(s2) === 'less' ? '▼' : '·'} ${fxn(s2.or ?? s2.eff)}</span>` : '–'; };
-    return `<div class="tbl-card"><table class="tbl ix-sets"><thead><tr><th>Set</th><th>${esc(cap(W.marked))} proteins</th><th class="num">In the set</th><th class="num">All proteins</th><th class="num">Fold</th><th class="num">q</th><th class="num" title="The same test within protein abundance deciles: ✓ holds, ◌ same direction but not significant, ○ lost">Within deciles</th></tr></thead><tbody>` +
+    const meter = (k, n, K2, N) => (`<span class="ix-meter" title="${int(k)} of ${int(n)} (${pcS(k, n)}) vs ${int(K2)} of ${int(N)} (${pcS(K2, N)})"><i style="width:${(100 * k / (n || 1)).toFixed(1)}%"></i><b ` +
+        `style="left:${(100 * K2 / (N || 1)).toFixed(1)}%"></b></span>`);
+    const hold = x => { const h = K.holdStatus(x.site); const s2 = x.strat; return s2 ? (`<span class="ix-hold ${h || ''}" title="Within ` +
+        `abundance deciles: OR ${fxn(s2.or ?? s2.eff)}${
+s2.lo != null ? ` [${fxn(s2.lo)}–${fxn(s2.hi)}]` : ''}, q ${fq(s2.q)}">${
+h === 'holds' ? '✓' : h === 'weaker' ? '◌' : h === 'lost' ? '○' : dirOf(s2) === 'less' ? '▼' : '·'} ${fxn(s2.or ?? s2.eff)}</span>`) : '–'; };
+    return (`<div class="tbl-card"><table class="tbl ix-sets"><thead><tr><th>Set</th><th>${esc(cap(W.marked))} proteins</th>` +
+        `<th class="num">In the set</th><th class="num">All proteins</th><th class="num">Fold</th><th class="num">` +
+        `q</th><th class="num" title="The same test within protein abundance deciles: ✓ holds, ◌ same direction ` +
+        `but not significant, ○ lost">Within deciles</th></tr></thead><tbody>`) +
       rows.map(x => { const r = selOn() && x.mine ? x.mine : x.site, d = dirOf(r);
-        return `<tr data-f="p:${esc(b.analysis)}" data-v="${esc(x.site.category)}" title="Select the ${esc(W.marks)} on proteins in it"><td class="wrapok">${esc(x.site.label)}</td><td>${meter(r.a, r.a + r.b, r.a + r.c, r.a + r.b + r.c + r.d)}</td><td class="num">${int(r.a)} <span class="muted">of ${int(r.a + r.b)} (${pcS(r.a, r.a + r.b)})</span></td><td class="num">${int(r.a + r.c)} <span class="muted">of ${int(r.a + r.b + r.c + r.d)} (${pcS(r.a + r.c, r.a + r.b + r.c + r.d)})</span></td><td class="num ixf-or ${d}">${fxn(r.fold ?? r.eff)}×</td><td class="num">${fq(r.q)}</td><td class="num">${selOn() ? '<span class="muted">–</span>' : hold(x)}</td></tr>`; }).join('') +
-      `</tbody></table></div><p class="muted small">${selOn() ? 'Your selection’s proteins, tested again in the browser (one-sided hypergeometric over the same sets). ' : ''}The meter: the share of ${esc(W.marked)} proteins in the set (bar) against that of all proteins of the background (tick). ${esc(A[b.analysis]?.sub || '')}</p>`;
+        return (`<tr data-f="p:${esc(b.analysis)}" data-v="${esc(x.site.category)}" title="Select the ${esc(W.marks)} on proteins ` +
+            `in it"><td class="wrapok">${esc(x.site.label)}</td><td>${
+meter(r.a, r.a + r.b, r.a + r.c, r.a + r.b + r.c + r.d)}</td><td ` +
+            `class="num">${int(r.a)} <span class="muted">of ${int(r.a + r.b)} (${pcS(r.a, r.a + r.b)})</span></td>` +
+            `<td class="num">${int(r.a + r.c)} <span class="muted">of ${int(r.a + r.b + r.c + r.d)} (${pcS(r.a + r.c, r.a + r.b + r.c + r.d)})</span></td>` +
+            `<td class="num ixf-or ${d}">${fxn(r.fold ?? r.eff)}×</td><td class="num">${fq(r.q)}</td><td ` +
+            `class="num">${
+selOn() ? '<span class="muted">–</span>' : hold(x)}</td></tr>`); }).join('') +
+      (`</tbody></table></div><p class="muted small">${
+selOn() ? 'Your selection’s proteins, tested again in the browser (one-sided hypergeometric over the same sets). ' : ''}The meter: ` +
+          `the share of ${esc(W.marked)} proteins in the set (bar) against that of all proteins of the background ` +
+          `(tick). ${esc(A[b.analysis]?.sub || '')}</p>`);
   }
   function setsTsv(b) {
     return ['set', 'label', 'rows', 'a', 'b', 'c', 'd', 'fold_enrichment', 'p', 'q', 'within_deciles_or', 'within_deciles_q'].join('\t') + '\n' +
@@ -285,16 +344,24 @@
   }
   function sharesHtml(b, compact) {
     const sc = shareCounts(b.attribute); if (!sc) return loading();
-    const bar = `<div class="ix-stack" role="img" aria-label="${esc(SPECS[b.attribute].label)}">${sc.list.map((x, k) => x.n ? `<span data-f="t:${esc(b.attribute)}" data-v="${esc(x.v)}" style="width:${(100 * x.n / (sc.total || 1)).toFixed(2)}%;background:${attrColour(b.attribute, x.v, k)}" title="${esc(vlabel(b.attribute, x.v))}: ${int(x.n)} (${pcS(x.n, sc.total)}); click to select them"></span>` : '').join('')}</div>`;
-    const key = `<div class="ix-key">${sc.list.map((x, k) => `<button type="button" class="ix-keyi" data-f="t:${esc(b.attribute)}" data-v="${esc(x.v)}"><i style="background:${attrColour(b.attribute, x.v, k)}"></i>${esc(vlabel(b.attribute, x.v))} <b>${int(x.n)}</b> <span class="muted">${pcS(x.n, sc.total)}</span></button>`).join('')}</div>`;
-    return bar + key + (compact ? '' : `<p class="muted small">${esc(SPECS[b.attribute].help || '').replace(/([^.])$/, '$1.')} Of ${int(sc.total)} ${esc(selOn() ? 'selected ' + W.marks : W.marks)}.</p>`);
+    const bar = `<div class="ix-stack" role="img" aria-label="${esc(SPECS[b.attribute].label)}">${
+sc.list.map((x, k) => x.n ? (`<span data-f="t:${esc(b.attribute)}" data-v="${esc(x.v)}" style="width:${(100 * x.n / (sc.total || 1)).toFixed(2)}%;background:${attrColour(b.attribute, x.v, k)}" title="${esc(vlabel(b.attribute, x.v))}: ${int(x.n)} (${pcS(x.n, sc.total)}); click ` +
+        `to select them"></span>`) : '').join('')}</div>`;
+    const key = `<div class="ix-key">${
+sc.list.map((x, k) => (`<button type="button" class="ix-keyi" data-f="t:${esc(b.attribute)}" data-v="${esc(x.v)}"><i style="background:${attrColour(b.attribute, x.v, k)}"></i>${esc(vlabel(b.attribute, x.v))} <b>${int(x.n)}</b> <span ` +
+        `class="muted">${pcS(x.n, sc.total)}</span></button>`)).join('')}</div>`;
+    return bar + key + (compact ? '' : `<p class="muted small">${
+esc(SPECS[b.attribute].help || '').replace(/([^.])$/, '$1.')} Of ${int(sc.total)} ${
+esc(selOn() ? 'selected ' + W.marks : W.marks)}.</p>`);
   }
   const sharesTsv = b => { const sc = shareCounts(b.attribute); return ['value', 'label', W.marks.replace(/\W+/g, '_'), 'share'].join('\t') + '\n' + sc.list.map(x => [x.v, vlabel(b.attribute, x.v), x.n, g6(x.n / (sc.total || 1))].join('\t')).join('\n') + '\n'; };
   function sharesBody(b, ex, Wd = 760) {
     const P = pal(ex), sc = shareCounts(b.attribute), parts = []; let x = 0;
-    sc.list.forEach((v, k) => { const w = (Wd * v.n) / (sc.total || 1); if (w > 0) parts.push(`<rect x="${x.toFixed(1)}" y="0" width="${w.toFixed(1)}" height="22" fill="${attrColour(b.attribute, v.v, k)}"/>`); x += w; });
+    sc.list.forEach((v, k) => { const w = (Wd * v.n) / (sc.total || 1); if (w > 0) parts.push((`<rect x="${x.toFixed(1)}" y="0" width="${w.toFixed(1)}" height="22" ` +
+        `fill="${attrColour(b.attribute, v.v, k)}"/>`)); x += w; });
     let lx = 0, ly = 42;
-    sc.list.forEach((v, k) => { const t = `${vlabel(b.attribute, v.v)} ${int(v.n)} (${pcS(v.n, sc.total)})`, w = K.tw(t, 11) + 26; if (lx + w > Wd) { lx = 0; ly += 18; } parts.push(`<rect x="${lx}" y="${ly - 9}" width="10" height="10" fill="${attrColour(b.attribute, v.v, k)}"/>`, txt(P, lx + 15, ly, t, { size: 11 })); lx += w; });
+    sc.list.forEach((v, k) => { const t = `${vlabel(b.attribute, v.v)} ${int(v.n)} (${pcS(v.n, sc.total)})`, w = K.tw(t, 11) + 26; if (lx + w > Wd) { lx = 0; ly += 18; } parts.push((`<rect x="${lx}" y="${ly - 9}" width="10" ` +
+        `height="10" fill="${attrColour(b.attribute, v.v, k)}"/>`), txt(P, lx + 15, ly, t, { size: 11 })); lx += w; });
     return { body: parts.join(''), H: ly + 10 };
   }
 
@@ -313,12 +380,23 @@
     const c = combos(b); if (!c) return loading();
     const s = st(bkey(pg, sec, bi), { all: false }), shownL = s.all ? c.list : c.list.slice(0, b.top || 15);
     const max = Math.max(1, ...c.list.map(x => x.n));
-    const head = `<tr><th>${esc(cap(W.marks))}</th>${c.vals.map(v => `<th class="ix-vh" title="${esc(vlabel(b.attribute, v))}"><span>${esc(vlabel(b.attribute, v))}</span></th>`).join('')}</tr>`;
-    const totals = `<tr class="ix-tot"><td class="muted small">with each</td>${c.vals.map(v => `<td><button type="button" class="ix-cnt" data-f="t:${esc(b.attribute)}" data-v="${esc(v)}" title="Select the ${int(c.tot[v])} ${esc(marksWord(c.tot[v]))} with: ${esc(vlabel(b.attribute, v))}">${int(c.tot[v])}</button></td>`).join('')}</tr>`;
-    const rows = shownL.map(x => `<tr><td class="ix-barc"><button type="button" class="ix-cnt" data-ix-q="${esc(x.vs.map(v => `${b.attribute}:${v}`).join(' '))}" title="Select the ${esc(W.marks)} with all of these"><span class="ix-hbar" style="width:${(100 * x.n / max).toFixed(1)}%"></span>${int(x.n)}</button></td>${c.vals.map(v => `<td class="ix-dotc">${x.vs.includes(v) ? '<i class="ix-on"></i>' : '<i class="ix-off"></i>'}</td>`).join('')}</tr>`).join('');
-    return `<div class="tbl-card ix-upset"><table class="tbl"><thead>${head}</thead><tbody>${totals}${rows}</tbody></table></div>` +
-      `<p class="small">${int(c.none)} ${esc(marksWord(c.none))} (${pcS(c.none, c.total)}) have none of these. Most are in proteins never crystallized, modeled with a partner or crosslinked, and absence of evidence is not evidence of no contact.` +
-      (c.list.length > (b.top || 15) ? ` <button type="button" class="linkish" data-ix-all="${esc(bkey(pg, sec, bi))}">${s.all ? 'Show the commonest' : `Show all ${int(c.list.length)} combinations`}</button>` : '') + '</p>';
+    const head = `<tr><th>${esc(cap(W.marks))}</th>${
+c.vals.map(v => `<th class="ix-vh" title="${esc(vlabel(b.attribute, v))}"><span>${esc(vlabel(b.attribute, v))}</span></th>`).join('')}</tr>`;
+    const totals = `<tr class="ix-tot"><td class="muted small">with each</td>${
+c.vals.map(v => (`<td><button ` +
+        `type="button" class="ix-cnt" data-f="t:${esc(b.attribute)}" data-v="${esc(v)}" title="Select the ${int(c.tot[v])} ${esc(marksWord(c.tot[v]))} with: ${esc(vlabel(b.attribute, v))}">${int(c.tot[v])}</button></td>`)).join('')}</tr>`;
+    const rows = shownL.map(x => (`<tr><td class="ix-barc"><button type="button" class="ix-cnt" data-ix-q="${
+esc(x.vs.map(v => `${b.attribute}:${v}`).join(' '))}" title="Select ` +
+        `the ${esc(W.marks)} with all of these"><span class="ix-hbar" style="width:${(100 * x.n / max).toFixed(1)}%"></span>${int(x.n)}</button></td>${
+c.vals.map(v => `<td class="ix-dotc">${
+x.vs.includes(v) ? '<i class="ix-on"></i>' : '<i class="ix-off"></i>'}</td>`).join('')}</tr>`)).join('');
+    return (`<div class="tbl-card ix-upset"><table class="tbl"><thead>${head}</thead><tbody>${totals}${rows}</tbody></table>` +
+        `</div>`) +
+      (`<p class="small">${int(c.none)} ${esc(marksWord(c.none))} (${pcS(c.none, c.total)}) have none of these. ` +
+          `Most are in proteins never crystallized, modeled with a partner or crosslinked, and absence of evidence ` +
+          `is not evidence of no contact.`) +
+      (c.list.length > (b.top || 15) ? ` <button type="button" class="linkish" data-ix-all="${esc(bkey(pg, sec, bi))}">${
+s.all ? 'Show the commonest' : `Show all ${int(c.list.length)} combinations`}</button>` : '') + '</p>';
   }
   const combinationsTsv = b => { const c = combos(b); return [...c.vals, W.marks.replace(/\W+/g, '_')].join('\t') + '\n' + c.list.map(x => [...c.vals.map(v => (x.vs.includes(v) ? 1 : 0)), x.n].join('\t')).join('\n') + '\n' + [...c.vals.map(() => 0), c.none].join('\t') + '\n'; };
 
@@ -351,18 +429,30 @@
     const P = pal(false), cell = x => {
       const l2 = x.a && x.or && x.or > 0 && Number.isFinite(x.or) ? Math.log2(x.or) : 0, a = Math.min(1, Math.abs(l2) / 3) * (x.dir === 'more' || x.dir === 'less' ? 0.5 : 0.15);
       const bg = x.dir === 'more' || (x.dir !== 'less' && l2 > 0) ? P.more : P.less;
-      return `<td class="ix-mc" style="--ixc:${bg};--a:${a.toFixed(2)}" title="${esc(md.feats[x.ri].r.label)} among ${esc(W.marks)} with ${esc(vlabel(b.attribute, md.cols[x.cj]))}: ${int(x.a)} of ${int(x.a + x.b)} (${pcS(x.a, x.a + x.b)}) against ${int(x.c)} of ${int(x.c + x.d)} without (${pcS(x.c, x.c + x.d)}); OR ${fxn(x.or)}${x.lo != null ? ` [${fxn(x.lo)}–${fxn(x.hi)}]` : ''}, q ${fq(x.q)}">${x.a ? `<b class="${x.dir}">${fxn(x.or)}</b><small>${int(x.a)}</small>` : `<span class="muted" title="No ${esc(W.mark)} has both">–</span>`}</td>`;
+      return `<td class="ix-mc" style="--ixc:${bg};--a:${a.toFixed(2)}" title="${esc(md.feats[x.ri].r.label)} among ${esc(W.marks)} with ${esc(vlabel(b.attribute, md.cols[x.cj]))}: ${int(x.a)} of ${int(x.a + x.b)} (${pcS(x.a, x.a + x.b)}) against ${int(x.c)} of ${int(x.c + x.d)} without (${pcS(x.c, x.c + x.d)}); OR ${fxn(x.or)}${
+x.lo != null ? ` [${fxn(x.lo)}–${fxn(x.hi)}]` : ''}, q ${fq(x.q)}">${
+x.a ? `<b class="${x.dir}">${fxn(x.or)}</b><small>${int(x.a)}</small>` : (`<span class="muted" ` +
+          `title="No ${esc(W.mark)} has both">–</span>`)}</td>`;
     };
     let grp = null;
-    return seg(bkey(pg, sec, bi), s.m) + `<div class="tbl-card"><table class="tbl ix-matrix"><thead><tr><th></th>${md.cols.map(v => `<th class="ix-vh"><span>${esc(vlabel(b.attribute, v))}</span></th>`).join('')}</tr></thead><tbody>` +
-      md.feats.map((f, ri) => (f.r.group && f.r.group !== grp ? ((grp = f.r.group), `<tr class="ix-mg"><td colspan="${md.cols.length + 1}">${esc(f.r.group)}</td></tr>`) : '') +
-        `<tr><th class="ix-mrow" data-f="${esc(f.r.filter)}" data-v="${esc(f.r.value)}" title="Select the ${esc(W.marks)}: ${esc(f.r.label)}">${esc(f.r.label)}</th>${md.cells.filter(x => x.ri === ri).map(cell).join('')}</tr>`).join('') +
-      `</tbody></table></div><p class="muted small">Each cell: how much more often ${esc(theMarks())} with that evidence have the feature than those without (${s.m === 'fisher' ? 'across all proteins, Haldane–Anscombe odds ratio, Fisher’s exact test' : 'within each protein, Mantel–Haenszel'}), and below it how many have both. Red: more often, slate: less often (q ≤ 0.05 over the matrix and at least 1.1×); pale: not significant. Descriptive: evidence and features come from the same sources for some ${esc(W.marks)}.</p>`;
+    return seg(bkey(pg, sec, bi), s.m) + `<div class="tbl-card"><table class="tbl ix-matrix"><thead><tr><th></th>${
+md.cols.map(v => (`<th class="ix-vh">` +
+        `<span>${esc(vlabel(b.attribute, v))}</span></th>`)).join('')}</tr></thead><tbody>` +
+      md.feats.map((f, ri) => (f.r.group && f.r.group !== grp ? ((grp = f.r.group), (`<tr class="ix-mg"><td ` +
+          `colspan="${md.cols.length + 1}">${esc(f.r.group)}</td></tr>`)) : '') +
+        `<tr><th class="ix-mrow" data-f="${esc(f.r.filter)}" data-v="${esc(f.r.value)}" title="Select the ${esc(W.marks)}: ${esc(f.r.label)}">${esc(f.r.label)}</th>${
+md.cells.filter(x => x.ri === ri).map(cell).join('')}</tr>`).join('') +
+      (`</tbody></table></div><p class="muted small">Each cell: how much more often ${esc(theMarks())} with that ` +
+          `evidence have the feature than those without (${
+s.m === 'fisher' ? 'across all proteins, Haldane–Anscombe odds ratio, Fisher’s exact test' : 'within each protein, Mantel–Haenszel'}), and below ` +
+          `it how many have both. Red: more often, slate: less often (q ≤ 0.05 over the matrix and at least 1.1×); ` +
+          `pale: not significant. Descriptive: evidence and features come from the same sources for some ${esc(W.marks)}.</p>`);
   }
   const matrixTsv = (b, m) => { const md = matrixData(b, m); return ['feature', 'evidence', 'a', 'b', 'c', 'd', 'odds_ratio', 'ci_low', 'ci_high', 'p', 'q'].join('\t') + '\n' + md.cells.map(x => [md.feats[x.ri].r.label, vlabel(b.attribute, md.cols[x.cj]), x.a, x.b, x.c, x.d, g6(x.or), g6(x.lo), g6(x.hi), g6(x.p), g6(x.q)].join('\t')).join('\n') + '\n'; };
   function matrixBody(b, m, ex, Wd = 760) {
     const P = pal(ex), md = matrixData(b, m), LW = 170, CW = (Wd - LW) / Math.max(1, md.cols.length), RH = 22, parts = [], top = 110;
-    md.cols.forEach((v, j) => parts.push(`<text transform="translate(${(LW + j * CW + CW / 2).toFixed(1)},${top - 6}) rotate(-50)" font-size="9.5" fill="${P.ink}">${esc(vlabel(b.attribute, v).slice(0, 26))}</text>`));
+    md.cols.forEach((v, j) => parts.push((`<text transform="translate(${(LW + j * CW + CW / 2).toFixed(1)},${top - 6}) rotate(-50)" ` +
+        `font-size="9.5" fill="${P.ink}">${esc(vlabel(b.attribute, v).slice(0, 26))}</text>`)));
     md.feats.forEach((f, i) => { const y = top + i * RH; parts.push(txt(P, 0, y + 15, f.r.label, { size: 10.5 }));
       md.cells.filter(x => x.ri === i).forEach(x => { const l2 = x.or > 0 && Number.isFinite(x.or) ? Math.log2(x.or) : 0, a = Math.min(1, Math.abs(l2) / 3) * (x.dir === 'more' || x.dir === 'less' ? 0.85 : 0.18);
         parts.push(`<rect x="${(LW + x.cj * CW + 1).toFixed(1)}" y="${y + 1}" width="${(CW - 2).toFixed(1)}" height="${RH - 2}" fill="${l2 > 0 ? P.more : P.less}" opacity="${a.toFixed(2)}"/>`, x.a + x.b ? txt(P, LW + x.cj * CW + CW / 2, y + 15, fxn(x.or), { size: 9, anchor: 'middle' }) : ''); }); });
@@ -372,19 +462,38 @@
   // ---- checker: is a mark in an interaction? -----------------------------------------------------------------------
   function checkerHtml(pg, sec, b, bi) {
     const s = st(bkey(pg, sec, bi), { q: '' }), sd = SD();
-    const box = `<form class="ix-check" data-ix-check="${esc(bkey(pg, sec, bi))}"><input type="search" name="q" value="${esc(s.q)}" placeholder="e.g. ${esc((D.site.examples || []).find(e => /\s[A-Z]?\d+$/.test(e)) || 'GENE 123')}, or a gene" aria-label="A ${esc(W.mark)} or a gene" autocomplete="off" spellcheck="false"><button class="btn small" type="submit">Check</button></form>`;
+    const box = (`<form class="ix-check" data-ix-check="${esc(bkey(pg, sec, bi))}"><input type="search" name="q" ` +
+        `value="${esc(s.q)}" placeholder="e.g. ${
+esc((D.site.examples || []).find(e => /\s[A-Z]?\d+$/.test(e)) || 'GENE 123')}, or a gene" ` +
+        `aria-label="A ${esc(W.mark)} or a gene" autocomplete="off" spellcheck="false"><button class="btn small" ` +
+        `type="submit">Check</button></form>`);
     if (!s.q || !sd) return box;
     const q = K.sel.parse(s.q), sites = q.sites.map(([p, pos]) => [p, pos, markAt(p, pos)]), genes = q.genes;
-    if (!sites.length && !genes.length) return box + `<p class="muted small">No ${esc(W.mark)} or protein of this site matches “${esc(s.q)}”.</p>`;
+    if (!sites.length && !genes.length) return box + (`<p class="muted small">No ${esc(W.mark)} or protein of this ` +
+        `site matches “${esc(s.q)}”.</p>`);
     const one = ([p, pos, i]) => {
-      if (i == null) return `<div class="ix-card"><b>${esc(gene(p))} ${esc(residueLetter())}${int(pos)}</b> <span class="muted">is not a ${esc(W.mark)} of this site.</span></div>`;
-      const m = sd.marks[i], attrs = b.attributes.map(n => { const vs = attrCodes(m, n).map(c => valOf(n, c)).filter(v => v !== ''); return `<dt>${esc(SPECS[n].label)}</dt><dd>${vs.length ? vs.map(v => `<span class="ix-tag">${esc(vlabel(n, v))}</span>`).join(' ') : '<span class="muted">none recorded</span>'}</dd>`; }).join('');
+      if (i == null) return (`<div class="ix-card"><b>${esc(gene(p))} ${esc(residueLetter())}${int(pos)}</b> <span ` +
+          `class="muted">is not a ${esc(W.mark)} of this site.</span></div>`);
+      const m = sd.marks[i], attrs = b.attributes.map(n => { const vs = attrCodes(m, n).map(c => valOf(n, c)).filter(v => v !== ''); return `<dt>${esc(SPECS[n].label)}</dt><dd>${
+vs.length ? vs.map(v => `<span class="ix-tag">${esc(vlabel(n, v))}</span>`).join(' ') : '<span class="muted">none recorded</span>'}</dd>`; }).join('');
       const recs = b.tables.map(tn => { const t = table(tn); if (!t) return ''; const rs = t.key === 'residue' ? t.rows.filter(r => r[0] === p && r[1] === pos) : t.key === 'protein' ? [] : []; if (!rs.length) return '';
-        const cols = t.columns.slice(0, 6).map(c => c.name); return `<details class="ix-recs"><summary>${esc(rs.length)} record${rs.length === 1 ? '' : 's'}: ${esc(TB[tn].columns[0]?.label || tn)}</summary><div class="tbl-card"><table class="tbl"><thead><tr>${cols.map(c => `<th>${esc(colMeta(t, c).label)}</th>`).join('')}</tr></thead><tbody>${rs.slice(0, 40).map(r => `<tr>${cols.map(c => `<td class="wrapok">${cellHtml(t, r, c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>`; }).join('');
-      return `<div class="ix-card"><p><b>${siteLink(p, pos)}</b> <span class="muted">${esc(prot(p)[2] || '')}</span></p><dl class="ix-dl">${attrs}</dl>${recs}</div>`;
+        const cols = t.columns.slice(0, 6).map(c => c.name); return (`<details class="ix-recs"><summary>${esc(rs.length)} record${rs.length === 1 ? '' : 's'}: ${esc(TB[tn].columns[0]?.label || tn)}</summary>` +
+            `<div class="tbl-card"><table class="tbl"><thead><tr>${
+cols.map(c => `<th>${esc(colMeta(t, c).label)}</th>`).join('')}</tr></thead>` +
+            `<tbody>${
+rs.slice(0, 40).map(r => `<tr>${
+cols.map(c => `<td class="wrapok">${cellHtml(t, r, c)}</td>`).join('')}</tr>`).join('')}</tbody></table>` +
+            `</div></details>`); }).join('');
+      return (`<div class="ix-card"><p><b>${siteLink(p, pos)}</b> <span class="muted">${esc(prot(p)[2] || '')}</span></p>` +
+          `<dl class="ix-dl">${attrs}</dl>${recs}</div>`);
     };
     const geneList = genes.slice(0, 3).map(p => { const ms = sd.marks.map((m, i) => [m, i]).filter(([m]) => m[0] === p); const ti = AT().indexOf(b.attributes[0]);
-      return `<div class="ix-card"><p>${protLink(p)}: ${int(ms.length)} ${esc(marksWord(ms.length))}${b.attributes[0] ? `, ${int(ms.filter(([m]) => (m[3][ti] || []).some(c => !/^(none|)$/.test(valOf(b.attributes[0], c)))).length)} with ${esc(SPECS[b.attributes[0]].label.toLowerCase())}` : ''}.</p><p class="small">${ms.slice(0, 60).map(([m]) => `<a href="${esc(K.link('protein', `${prot(p)[0]}/${residueLetter()}${m[1]}`))}">${esc(residueLetter())}${m[1]}</a>`).join(' ')}</p></div>`; }).join('');
+      return `<div class="ix-card"><p>${protLink(p)}: ${int(ms.length)} ${esc(marksWord(ms.length))}${
+b.attributes[0] ? `, ${
+int(ms.filter(([m]) => (m[3][ti] || []).some(c => !/^(none|)$/.test(valOf(b.attributes[0], c)))).length)} with ${
+esc(SPECS[b.attributes[0]].label.toLowerCase())}` : ''}.</p><p class="small">${
+ms.slice(0, 60).map(([m]) => `<a href="${
+esc(K.link('protein', `${prot(p)[0]}/${residueLetter()}${m[1]}`))}">${esc(residueLetter())}${m[1]}</a>`).join(' ')}</p></div>`; }).join('');
     return box + sites.slice(0, 5).map(one).join('') + geneList;
   }
 
@@ -409,9 +518,13 @@
     if (!K.foldOpen('ix-' + sec.id, sec.open === true)) return '';        // a closed fold draws nothing and fetches nothing: it draws when opened
     const s = st(bkey(pg, sec, bi), { acc: '' }), acc = exampleAcc(b, s), p = byAcc[acc];
     loadRec(acc);
-    const box = `<form class="ix-check" data-ix-ex="${esc(bkey(pg, sec, bi))}"><input type="search" name="q" value="${esc(gene(p))}" aria-label="A protein" autocomplete="off" spellcheck="false"><button class="btn small" type="submit">Show</button><a class="btn small" href="${esc(K.link('protein', acc))}">Open ${esc(gene(p))} →</a></form>`;
+    const box = (`<form class="ix-check" data-ix-ex="${esc(bkey(pg, sec, bi))}"><input type="search" name="q" ` +
+        `value="${esc(gene(p))}" aria-label="A protein" autocomplete="off" spellcheck="false"><button class="btn ` +
+        `small" type="submit">Show</button><a class="btn small" href="${esc(K.link('protein', acc))}">Open ${esc(gene(p))} →</a></form>`);
     const rows = lanes(b).map(([, title, help]) => `<span class="ix-tag" title="${esc(help)}">${esc(title)}</span>`).join(' ');
-    return box + (EX.err ? `<p class="muted">${esc(EX.err)}</p>` : EX.rec ? `<div id="ix-map" class="pmap"></div>` : loading()) + `<p class="muted small">The rows: ${rows}. Choose and order the rows in the map’s Rows menu; drag across the map to zoom. Every protein page has this view.</p>`;
+    return box + (EX.err ? `<p class="muted">${esc(EX.err)}</p>` : EX.rec ? `<div id="ix-map" class="pmap"></div>` : loading()) + (`<p class="muted ` +
+        `small">The rows: ${rows}. Choose and order the rows in the map’s Rows menu; drag across the map to zoom. ` +
+        `Every protein page has this view.</p>`);
   }
   document.addEventListener('toggle', e => { const d = e.target; if (d.tagName === 'DETAILS' && /^ix-/.test(d.id) && d.querySelector('[data-ix-ex]') == null && PAGES.some(pg => pg.sections.some(s => 'ix-' + s.id === d.id && s.blocks.some(b => b.kind === 'example')))) { K.folds[d.id] = d.open; if (d.open) K.render(); } }, true);
   function drawExample() {
@@ -431,16 +544,36 @@
     const chipCounts = {};
     if (ci >= 0) rows.forEach(r => { const v = r[ci]; (Array.isArray(v) ? v : [v]).forEach(x => { if (x != null && x !== '') chipCounts[x] = (chipCounts[x] || 0) + 1; }); });
     if (s.chip && ci >= 0) rows = rows.filter(r => { const v = r[ci]; return Array.isArray(v) ? v.includes(s.chip) : v === s.chip; });
-    if (s.q) { const toks = s.q.toLowerCase().split(/\s+/).filter(Boolean); rows = rows.filter(r => { const h = (t.key !== 'none' ? `${gene(r[0])} ${prot(r[0])[0]} ${t.key === 'residue' ? residueLetter() + r[1] : ''} ` : '') + cols.map(c => cellText(t, r, c)).join(' '); const hl = h.toLowerCase(); return toks.every(x => hl.includes(x)); }); }
+    if (s.q) { const toks = s.q.toLowerCase().split(/\s+/).filter(Boolean); rows = rows.filter(r => { const h = (t.key !== 'none' ? `${gene(r[0])} ${prot(r[0])[0]} ${
+t.key === 'residue' ? residueLetter() + r[1] : ''} ` : '') + cols.map(c => cellText(t, r, c)).join(' '); const hl = h.toLowerCase(); return toks.every(x => hl.includes(x)); }); }
     if (s.sort) { const j = colIdx(t, s.sort), num = colMeta(t, s.sort).type === 'number'; rows = rows.slice().sort((x, y) => { const a = j < 0 ? 0 : x[j], c = j < 0 ? 0 : y[j]; if (num && (a == null) !== (c == null)) return a == null ? 1 : -1; const r = num ? (a ?? 0) - (c ?? 0) : String(cellText(t, x, s.sort)).localeCompare(String(cellText(t, y, s.sort))); return s.desc ? -r : r; }); }
     const vlab = v => (colMeta(t, chipCol).values || {})[v] ?? v;
-    const chips = ci >= 0 ? `<div class="quick"><span class="flabel">${esc(colMeta(t, chipCol).label)}</span><button type="button" class="fchip" data-ix-chip="${esc(bkey(pg, sec, bi))}" data-v="" aria-pressed="${!s.chip}">All <span class="muted">${int(blockRows(t, b).length)}</span></button>${Object.entries(chipCounts).sort((x, y) => y[1] - x[1]).map(([v, n]) => `<button type="button" class="fchip" data-ix-chip="${esc(bkey(pg, sec, bi))}" data-v="${esc(v)}" aria-pressed="${s.chip === v}">${esc(vlab(v))} <span class="muted">${int(n)}</span></button>`).join('')}</div>` : '';
-    const search = b.search !== false ? `<div class="ix-tctl"><input type="search" data-ix-tq="${esc(bkey(pg, sec, bi))}" value="${esc(s.q)}" placeholder="Search these rows" aria-label="Search the rows" autocomplete="off"><span class="muted small">${int(rows.length)} row${rows.length === 1 ? '' : 's'}${selOn() ? ' for your selection' : ''}</span></div>` : '';
+    const chips = ci >= 0 ? (`<div class="quick"><span class="flabel">${esc(colMeta(t, chipCol).label)}</span><button ` +
+        `type="button" class="fchip" data-ix-chip="${esc(bkey(pg, sec, bi))}" data-v="" aria-pressed="${!s.chip}">All <span ` +
+        `class="muted">${int(blockRows(t, b).length)}</span></button>${
+Object.entries(chipCounts).sort((x, y) => y[1] - x[1]).map(([v, n]) => (`<button type="button" ` +
+        `class="fchip" data-ix-chip="${esc(bkey(pg, sec, bi))}" data-v="${esc(v)}" aria-pressed="${s.chip === v}">${esc(vlab(v))} <span class="muted">${int(n)}</span></button>`)).join('')}</div>`) : '';
+    const search = b.search !== false ? (`<div class="ix-tctl"><input type="search" data-ix-tq="${esc(bkey(pg, sec, bi))}" value="${esc(s.q)}" placeholder="Search ` +
+        `these rows" aria-label="Search the rows" autocomplete="off"><span class="muted small">${int(rows.length)} row${rows.length === 1 ? '' : 's'}${selOn() ? ' for your selection' : ''}</span></div>`) : '';
     const groupsOf = b.group_by ? (() => { const j = colIdx(t, b.group_by), g = {}; rows.forEach(r => { const v = r[j]; (Array.isArray(v) ? v : [v]).forEach(x => { (g[x ?? ''] ||= []).push(r); }); }); const order = Object.keys(colMeta(t, b.group_by).values || {}); return Object.entries(g).sort((x, y) => (order.indexOf(x[0]) + 1 || 99) - (order.indexOf(y[0]) + 1 || 99) || y[1].length - x[1].length); })() : null;
-    const tbl = rs => `<div class="tbl-card"><table class="tbl ix-tbl"><thead><tr>${cols.map(c => `<th data-ix-sort="${esc(bkey(pg, sec, bi))}" data-v="${esc(c)}" tabindex="0"${colMeta(t, c).help ? ` title="${esc(colMeta(t, c).help)}"` : ''}${s.sort === c ? ` aria-sort="${s.desc ? 'descending' : 'ascending'}"` : ''} class="${colMeta(t, c).type === 'number' ? 'num' : ''}">${esc(colMeta(t, c).label)}${s.sort === c ? (s.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>` +
-      rs.slice(0, s.n).map(r => `<tr>${cols.map(c => `<td class="${colMeta(t, c).type === 'number' ? 'num' : ['list', 'text', 'sequence'].includes(colMeta(t, c).type) ? 'wrapok' : ''}">${cellHtml(t, r, c, b.label && c === b.partner ? (rr => cellText(t, rr, b.label)) : null)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>' +
+    const tbl = rs => (`<div class="tbl-card"><table class="tbl ix-tbl"><thead><tr>${
+cols.map(c => `<th data-ix-sort="${esc(bkey(pg, sec, bi))}" data-v="${esc(c)}" tabindex="0"${
+colMeta(t, c).help ? ` title="${esc(colMeta(t, c).help)}"` : ''}${
+s.sort === c ? ` aria-sort="${s.desc ? 'descending' : 'ascending'}"` : ''} class="${
+colMeta(t, c).type === 'number' ? 'num' : ''}">${esc(colMeta(t, c).label)}${
+s.sort === c ? (s.desc ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead>` +
+        `<tbody>`) +
+      rs.slice(0, s.n).map(r => `<tr>${
+cols.map(c => `<td class="${
+colMeta(t, c).type === 'number' ? 'num' : ['list', 'text', 'sequence'].includes(colMeta(t, c).type) ? 'wrapok' : ''}">${
+cellHtml(t, r, c, b.label && c === b.partner ? (rr => cellText(t, rr, b.label)) : null)}</td>`).join('')}</tr>`).join('') + '</tbody></table></div>' +
       (rs.length > s.n ? `<p><button type="button" class="linkish" data-ix-more="${esc(bkey(pg, sec, bi))}">Show ${int(Math.min(100, rs.length - s.n))} more of ${int(rs.length)}</button></p>` : '');
-    if (groupsOf) return chips + search + groupsOf.map(([g, rs]) => `<details class="ix-fold"${groupsOf.length <= 4 ? ' open' : ''}><summary><b>${esc((colMeta(t, b.group_by).values || {})[g] ?? (g || 'none'))}</b> <span class="muted">${int(rs.length)} row${rs.length === 1 ? '' : 's'}${t.key === 'residue' ? `, ${int(new Set(rs.map(r => r[0] + ':' + r[1])).size)} ${esc(W.marks)}` : ''}</span></summary>${tbl(rs)}</details>`).join('') || `<p class="muted">No rows${selOn() ? ' for your selection' : ''}.</p>`;
+    if (groupsOf) return chips + search + groupsOf.map(([g, rs]) => (`<details class="ix-fold"${groupsOf.length <= 4 ? ' open' : ''}><summary><b>${
+esc((colMeta(t, b.group_by).values || {})[g] ?? (g || 'none'))}</b> <span ` +
+        `class="muted">${int(rs.length)} row${rs.length === 1 ? '' : 's'}${
+t.key === 'residue' ? `, ${
+int(new Set(rs.map(r => r[0] + ':' + r[1])).size)} ${esc(W.marks)}` : ''}</span></summary>${tbl(rs)}</details>`)).join('') || (`<p class="muted">` +
+        `No rows${selOn() ? ' for your selection' : ''}.</p>`);
     return chips + search + (rows.length ? tbl(rows) : `<p class="muted">No rows${selOn() ? ' for your selection' : ''}.</p>`);
   }
   // a block's own rows of its table: those its where conditions keep (a column's value in a list), and with a
@@ -477,8 +610,13 @@
     if (!gs.length) return `<p class="muted">None${selOn() ? ' for your selection' : ''}.</p>`;
     const top = b.top || 12;
     return `<div class="ix-bars">${gs.map(g => { const max = Math.max(1, ...g.list.map(x => x.n));
-      return `<div class="ix-barg"><h4>${esc(g.title)} <span class="muted small">${g.list.length > top ? `top ${top} of ${int(g.list.length)}` : int(g.list.length)}</span></h4>${g.list.slice(0, top).map(x => `<button type="button" class="ix-barrow" data-ix-q="${esc(x.ps.map(gene).filter(Boolean).join(' '))}" title="Select the ${int(x.n)} ${esc(W.marked)} protein${x.n === 1 ? '' : 's'} that ${esc(x.l)} pairs with">` +
-        `<span class="lab">${esc(x.l)}${x.acc && byAcc[String(x.acc).split('-')[0]] != null ? ' <span class="ix-tag" title="It carries ' + esc(W.marks) + ' itself">itself ' + esc(W.marked) + '</span>' : ''}</span><span class="ix-bar"><i style="width:${(100 * x.n / max).toFixed(1)}%"></i></span><b>${int(x.n)}</b></button>`).join('')}</div>`; }).join('')}</div>` +
+      return `<div class="ix-barg"><h4>${esc(g.title)} <span class="muted small">${
+g.list.length > top ? `top ${top} of ${int(g.list.length)}` : int(g.list.length)}</span></h4>${g.list.slice(0, top).map(x => (`<button type="button" ` +
+          `class="ix-barrow" data-ix-q="${
+esc(x.ps.map(gene).filter(Boolean).join(' '))}" title="Select the ${int(x.n)} ${esc(W.marked)} protein${x.n === 1 ? '' : 's'} that ${esc(x.l)} pairs with">`) +
+        (`<span class="lab">${esc(x.l)}${
+x.acc && byAcc[String(x.acc).split('-')[0]] != null ? ' <span class="ix-tag" title="It carries ' + esc(W.marks) + ' itself">itself ' + esc(W.marked) + '</span>' : ''}</span><span ` +
+            `class="ix-bar"><i style="width:${(100 * x.n / max).toFixed(1)}%"></i></span><b>${int(x.n)}</b></button>`)).join('')}</div>`; }).join('')}</div>` +
       '';
   }
   const barsTsv = b => ['group', 'label', `${W.marked}_proteins`.replace(/\W+/g, '_'), 'genes'].join('\t') + '\n' + barsData(b).flatMap(g => g.list.map(x => [g.title, x.l, x.n, x.ps.map(gene).join(';')].join('\t'))).join('\n') + '\n';
@@ -486,7 +624,8 @@
     const P = pal(ex), gs = barsData(b), top = b.top || 12, colW = Wd / Math.min(2, gs.length || 1), parts = []; let maxY = 0;
     gs.forEach((g, k) => { const x0 = (k % 2) * colW, y0 = Math.floor(k / 2) * (top * 17 + 34), max = Math.max(1, ...g.list.map(x => x.n));
       parts.push(txt(P, x0, y0 + 12, g.title, { size: 11.5, weight: 700 }));
-      g.list.slice(0, top).forEach((x, i) => { const y = y0 + 22 + i * 17; parts.push(txt(P, x0, y + 11, String(x.l).slice(0, 18), { size: 10 }), `<rect x="${x0 + 110}" y="${y + 2}" width="${((colW - 160) * x.n / max).toFixed(1)}" height="11" fill="${P.less}" opacity="0.8"/>`, txt(P, x0 + 115 + (colW - 160) * x.n / max, y + 11, int(x.n), { size: 9.5 })); maxY = Math.max(maxY, y + 17); }); });
+      g.list.slice(0, top).forEach((x, i) => { const y = y0 + 22 + i * 17; parts.push(txt(P, x0, y + 11, String(x.l).slice(0, 18), { size: 10 }), (`<rect x="${x0 + 110}" y="${y + 2}" width="${((colW - 160) * x.n / max).toFixed(1)}" height="11" ` +
+          `fill="${P.less}" opacity="0.8"/>`), txt(P, x0 + 115 + (colW - 160) * x.n / max, y + 11, int(x.n), { size: 9.5 })); maxY = Math.max(maxY, y + 17); }); });
     return { body: parts.join(''), H: maxY + 6 };
   }
 
@@ -503,8 +642,16 @@
     const d = pairsData(b); if (!d) return TERR[b.table] ? `<p class="muted">${esc(TERR[b.table])}</p>` : loading();
     if (!d.rs.length || !d.cs.length) return `<p class="muted">None${selOn() ? ' for your selection' : ''}.</p>`;
     const max = Math.max(1, ...d.cells.flat().map(x => x.n));
-    return `<div class="tbl-card"><table class="tbl ix-matrix ix-pairs"><thead><tr><th></th>${d.cs.map(([cl, s]) => `<th class="ix-vh"><span>${esc(cl)} <small class="muted">${int(s.size)}</small></span></th>`).join('')}</tr></thead><tbody>` +
-      d.cells.map((row, i) => `<tr><th>${esc(d.rs[i][0])} <small class="muted">${int(d.rs[i][1].size)}</small></th>${row.map(x => `<td class="ix-mc${x.n > 1.5 * x.e && x.n >= 3 ? ' ix-hi' : ''}" style="--ixc:var(--less);--a:${(0.75 * x.n / max).toFixed(2)}" title="${int(x.n)} ${esc(W.marked)} proteins pair with both ${esc(x.rl)} and ${esc(x.cl)} (${fxn(x.e)} expected if independent)"${x.n ? ` data-ix-q="${esc(x.ps.map(gene).join(' '))}"` : ''}>${x.n ? `<b>${int(x.n)}</b>` : '<span class="muted">·</span>'}</td>`).join('')}</tr>`).join('') +
+    return `<div class="tbl-card"><table class="tbl ix-matrix ix-pairs"><thead><tr><th></th>${
+d.cs.map(([cl, s]) => (`<th class="ix-vh">` +
+        `<span>${esc(cl)} <small class="muted">${int(s.size)}</small></span></th>`)).join('')}</tr></thead><tbody>` +
+      d.cells.map((row, i) => `<tr><th>${esc(d.rs[i][0])} <small class="muted">${int(d.rs[i][1].size)}</small></th>${
+row.map(x => (`<td class="ix-mc${
+x.n > 1.5 * x.e && x.n >= 3 ? ' ix-hi' : ''}" style="--ixc:var(--less);` +
+          `--a:${(0.75 * x.n / max).toFixed(2)}" title="${int(x.n)} ${esc(W.marked)} proteins pair with both ${esc(x.rl)} and ${esc(x.cl)} (${fxn(x.e)} expected ` +
+          `if independent)"${
+x.n ? ` data-ix-q="${esc(x.ps.map(gene).join(' '))}"` : ''}>${
+x.n ? `<b>${int(x.n)}</b>` : '<span class="muted">·</span>'}</td>`)).join('')}</tr>`).join('') +
       `</tbody></table></div>`;
   }
   const pairsTsv = b => { const d = pairsData(b); return ['row', 'column', 'proteins', 'expected', 'genes'].join('\t') + '\n' + d.cells.flat().map(x => [x.rl, x.cl, x.n, g6(x.e), x.ps.map(gene).join(';')].join('\t')).join('\n') + '\n'; };
@@ -527,8 +674,12 @@
   function histHtml(pg, sec, b) {
     const h = histData(b); if (!h) return TERR[b.table] ? `<p class="muted">${esc(TERR[b.table])}</p>` : loading();
     const L = histBody(b, false), within = (arr, n, lim) => arr.slice(0, Math.round(lim / h.step)).reduce((s, x) => s + x, 0);
-    return `<div class="ix-key"><span class="ix-keyi"><i style="background:var(--more)"></i>${esc(cap(W.marks))}${selOn() ? ' (selected)' : ''} <b>${int(h.nm)}</b></span><span class="ix-keyi"><i style="background:var(--same)"></i>Other ${esc(W.residues)} <b>${int(h.no)}</b></span></div><div class="ix-plot"><svg viewBox="0 0 760 ${L.H}" role="img" aria-label="${esc(sec.title)}">${L.body}</svg></div>` +
-      `<p class="muted small">Each bar: the share of each group in a ${fxn(h.step)} Å bin, up to ${int(h.max)} Å, of the ${esc(W.residues)} ${b.among ? esc(colMeta(t0(b), b.among).label.toLowerCase()) : 'with a value'} (those further are counted in the totals only). Within 4 Å: ${pcS(within(h.mk, h.nm, 4), h.nm)} of ${esc(W.marks)} against ${pcS(within(h.ot, h.no, 4), h.no)} of the other ${esc(W.residues)}.</p>`;
+    return (`<div class="ix-key"><span class="ix-keyi"><i style="background:var(--more)"></i>${esc(cap(W.marks))}${selOn() ? ' (selected)' : ''} <b>${int(h.nm)}</b></span>` +
+        `<span class="ix-keyi"><i style="background:var(--same)"></i>Other ${esc(W.residues)} <b>${int(h.no)}</b></span>` +
+        `</div><div class="ix-plot"><svg viewBox="0 0 760 ${L.H}" role="img" aria-label="${esc(sec.title)}">${L.body}</svg></div>`) +
+      (`<p class="muted small">Each bar: the share of each group in a ${fxn(h.step)} Å bin, up to ${int(h.max)} Å, of the ${esc(W.residues)} ${
+b.among ? esc(colMeta(t0(b), b.among).label.toLowerCase()) : 'with a value'} (those further ` +
+          `are counted in the totals only). Within 4 Å: ${pcS(within(h.mk, h.nm, 4), h.nm)} of ${esc(W.marks)} against ${pcS(within(h.ot, h.no, 4), h.no)} of the other ${esc(W.residues)}.</p>`);
   }
   const t0 = b => table(b.table);
   const histTsv = b => { const h = histData(b); return ['bin_from', 'bin_to', W.marks.replace(/\W+/g, '_'), `other_${W.residues}`.replace(/\W+/g, '_')].join('\t') + '\n' + h.mk.map((x, k) => [g6(k * h.step), g6((k + 1) * h.step), x, h.ot[k]].join('\t')).join('\n') + `\n# totals: ${h.nm} marks, ${h.no} other residues\n`; };
@@ -563,14 +714,30 @@
     return K.expBar(b.kind === 'example' ? ['pdf', 'svg', 'png'] : kinds, `ixexp="${esc(bkey(pg, sec, bi))}" data-k`, b.title || sec.title, m || `q-page-${pg.id}`);
   }
   function blockCard(pg, sec, b, bi) {
-    return `<div class="ix-block" id="ix-${esc(sec.id)}-${bi}">${b.title ? `<div class="card-head"><div><h4>${esc(b.title)}</h4></div></div>` : ''}${blockHtml(pg, sec, b, bi)}${exportsOf(pg, sec, b, bi)}</div>`;
+    return `<div class="ix-block" id="ix-${esc(sec.id)}-${bi}">${
+b.title ? `<div class="card-head"><div><h4>${esc(b.title)}</h4></div></div>` : ''}${blockHtml(pg, sec, b, bi)}${exportsOf(pg, sec, b, bi)}</div>`;
   }
-  const sectionCard = (pg, sec) => `<section class="pcard ix-sec" id="ix-${esc(sec.id)}"><div class="card-head"><div><h3>${esc(sec.title)}</h3></div></div>${sec.blocks.map((b, bi) => blockCard(pg, sec, b, bi)).join('')}</section>`;
+  const sectionCard = (pg, sec) => (`<section class="pcard ix-sec" id="ix-${esc(sec.id)}"><div class="card-head">` +
+      `<div><h3>${esc(sec.title)}</h3></div></div>${
+sec.blocks.map((b, bi) => blockCard(pg, sec, b, bi)).join('')}</section>`);
 
   // ---- tiles: a section at a glance --------------------------------------------------------------------------------
   function miniForest(refs, m, all = refs) {           // all: the rows whose effects set the scale (several groups share one)
     const rows = rowsFor(refs, m), sc = scale(rowsFor(all, m).map(x => shown(x)).filter(Boolean).flatMap(r => [effOf(r), r.lo, r.hi])), X = v => sc.X(v, 100).toFixed(2) + '%';
-    return `<div class="trows">${rows.map(x => { const r = shown(x), d = dirOf(r); return `<div class="trow pick" data-f="a:${esc(x.ref.analysis)}" data-v="${esc(x.ref.category)}" role="button" tabindex="0" title="Select the ${esc(W.marks)} ${esc(x.label)}" data-ixr="${esc(JSON.stringify([x.ref.analysis, x.ref.category, m]))}"><span class="lab">${esc(x.label)}</span><svg aria-hidden="true">${gridLines(sc, X)}${selOn() && x.site && effOf(x.site) ? `<line class="ixf-whole" x1="${X(effOf(x.site))}" x2="${X(effOf(x.site))}" y1="20%" y2="80%"/>` : ''}${r && r.lo != null ? `<line class="whisker ${d}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" y2="50%"/>` : ''}${r && effOf(r) ? `<circle class="dot ${d}" cx="${X(effOf(r))}" cy="50%" r="4.6"/>` : ''}</svg><span class="val ${d}">${r && effOf(r) ? (d === 'ns' ? 'n.s.' : fx2(effOf(r))) : '–'}</span></div>`; }).join('')}<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div></div>`;
+    return (`<div class="trows">${
+rows.map(x => { const r = shown(x), d = dirOf(r); return (`<div class="trow pick" ` +
+        `data-f="a:${esc(x.ref.analysis)}" data-v="${esc(x.ref.category)}" role="button" tabindex="0" ` +
+        `title="Select the ${esc(W.marks)} ${esc(x.label)}" data-ixr="${
+esc(JSON.stringify([x.ref.analysis, x.ref.category, m]))}"><span class="lab">${esc(x.label)}</span><svg ` +
+        `aria-hidden="true">${gridLines(sc, X)}${
+selOn() && x.site && effOf(x.site) ? (`<line class="ixf-whole" x1="${X(effOf(x.site))}" x2="${X(effOf(x.site))}" y1="20%" ` +
+        `y2="80%"/>`) : ''}${
+r && r.lo != null ? (`<line class="whisker ${d}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" ` +
+        `y2="50%"/>`) : ''}${
+r && effOf(r) ? `<circle class="dot ${d}" cx="${X(effOf(r))}" cy="50%" r="4.6"/>` : ''}</svg><span ` +
+        `class="val ${d}">${
+r && effOf(r) ? (d === 'ns' ? 'n.s.' : fx2(effOf(r))) : '–'}</span></div>`); }).join('')}<div class="taxis">` +
+        `<span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div></div>`);
   }
   const range = rs => { const v = rs.map(effOf).filter(x => x != null).sort((a, b) => a - b); if (!v.length) return '–'; const a = fxn(v[0]), z = fxn(v[v.length - 1]); return a === z ? a + '×' : `${a}–${z}×`; };
   function tileBody(pg, sec) {
@@ -578,36 +745,68 @@
     if (!ready() && !['text', 'example'].includes(b.kind)) return loading();
     switch (b.kind) {
       case 'forest': { const pickR = b.rows.slice(0, 6), rs = rowsFor(pickR, b.method || 'mantel_haenszel').map(shown).filter(Boolean), more = rs.filter(r => dirOf(r) === 'more'), less = rs.filter(r => dirOf(r) === 'less');
-        return miniForest(pickR, b.method || 'mantel_haenszel') + `<p class="tfoot">${more.length ? `<b>${range(more)}</b> more often` : less.length ? `<b>${range(less)}</b>: less often` : 'No difference (q > 0.05)'}${b.rows.length > 6 ? ` <span class="muted">· ${int(b.rows.length)} tests</span>` : ''}</p>`; }
-      case 'lines': { const ser = linesData(b, b.method || 'mantel_haenszel'); const L = linesBody(b, b.method || 'mantel_haenszel', false, 760, 300); return `<div class="ix-plot ix-mini"><svg viewBox="0 0 760 ${L.H}" aria-hidden="true">${L.body}</svg></div><p class="tfoot">${ser.slice(0, 2).map(s => `${esc(s.label)} <b>${fx2(effOf(s.pts[0].r))}</b> at ${int(s.pts[0].x)}`).join(' · ')}</p>`; }
-      case 'sets': { const rs = setRows(b).slice(0, 2); return rs.map(x => { const r = selOn() && x.mine ? x.mine : x.site; return `<div class="ix-mrow2"><span>${esc(x.site.label)}</span><span class="ix-meter"><i style="width:${(100 * r.a / (r.a + r.b || 1)).toFixed(1)}%"></i><b style="left:${(100 * (r.a + r.c) / (r.a + r.b + r.c + r.d || 1)).toFixed(1)}%"></b></span><span class="muted small">${pcS(r.a, r.a + r.b)} vs ${pcS(r.a + r.c, r.a + r.b + r.c + r.d)}</span></div>`; }).join('') + `<p class="tfoot">${esc(cap(W.marked))} proteins against all proteins</p>`; }
-      case 'shares': { const sc = shareCounts(b.attribute); const lead = sc.list[0]; return sharesHtml(b, true) + (lead ? `<p class="tfoot"><b>${int(lead.n)}</b> ${esc(marksWord(lead.n))} (${pcS(lead.n, sc.total)}) ${esc(vlabel(b.attribute, lead.v).toLowerCase())}</p>` : ''); }
-      case 'combinations': { const c = combos(b); const any = c.total - c.none; return `<p class="ix-big"><b>${int(any)}</b> <span>${esc(marksWord(any))} with some evidence (${pcS(any, c.total)})</span></p><p class="tfoot">${int(c.list.length)} combinations of ${int(c.vals.length)} kinds</p>`; }
-      case 'matrix': { const md = matrixData(b, b.method || 'mantel_haenszel'); const top = md.cells.filter(x => x.dir === 'more').sort((x, y) => y.or - x.or)[0]; return `${top ? `<p class="tfoot">Strongest: <b>${esc(md.feats[top.ri].r.label)}</b> with ${esc(vlabel(b.attribute, md.cols[top.cj]))} (${fx2(top.or)})</p>` : ''}`; }
+        return miniForest(pickR, b.method || 'mantel_haenszel') + `<p class="tfoot">${
+more.length ? `<b>${range(more)}</b> more often` : less.length ? `<b>${range(less)}</b>: less often` : 'No difference (q > 0.05)'}${
+b.rows.length > 6 ? (` <span class="muted">` +
+            `· ${int(b.rows.length)} tests</span>`) : ''}</p>`; }
+      case 'lines': { const ser = linesData(b, b.method || 'mantel_haenszel'); const L = linesBody(b, b.method || 'mantel_haenszel', false, 760, 300); return (`<div class="ix-plot ` +
+          `ix-mini"><svg viewBox="0 0 760 ${L.H}" aria-hidden="true">${L.body}</svg></div><p class="tfoot">${
+ser.slice(0, 2).map(s => `${esc(s.label)} <b>${fx2(effOf(s.pts[0].r))}</b> at ${int(s.pts[0].x)}`).join(' · ')}</p>`); }
+      case 'sets': { const rs = setRows(b).slice(0, 2); return rs.map(x => { const r = selOn() && x.mine ? x.mine : x.site; return (`<div class="ix-mrow2">` +
+          `<span>${esc(x.site.label)}</span><span class="ix-meter"><i style="width:${
+(100 * r.a / (r.a + r.b || 1)).toFixed(1)}%"></i><b ` +
+          `style="left:${
+(100 * (r.a + r.c) / (r.a + r.b + r.c + r.d || 1)).toFixed(1)}%"></b></span><span ` +
+          `class="muted small">${pcS(r.a, r.a + r.b)} vs ${pcS(r.a + r.c, r.a + r.b + r.c + r.d)}</span></div>`); }).join('') + (`<p class="tfoot">${esc(cap(W.marked))} proteins ` +
+          `against all proteins</p>`); }
+      case 'shares': { const sc = shareCounts(b.attribute); const lead = sc.list[0]; return sharesHtml(b, true) + (lead ? (`<p class="tfoot">` +
+          `<b>${int(lead.n)}</b> ${esc(marksWord(lead.n))} (${pcS(lead.n, sc.total)}) ${
+esc(vlabel(b.attribute, lead.v).toLowerCase())}</p>`) : ''); }
+      case 'combinations': { const c = combos(b); const any = c.total - c.none; return (`<p class="ix-big"><b>${int(any)}</b> <span>${esc(marksWord(any))} with some ` +
+          `evidence (${pcS(any, c.total)})</span></p><p class="tfoot">${int(c.list.length)} combinations of ${int(c.vals.length)} kinds</p>`); }
+      case 'matrix': { const md = matrixData(b, b.method || 'mantel_haenszel'); const top = md.cells.filter(x => x.dir === 'more').sort((x, y) => y.or - x.or)[0]; return `${
+top ? (`<p class="tfoot">` +
+          `Strongest: <b>${esc(md.feats[top.ri].r.label)}</b> with ${
+esc(vlabel(b.attribute, md.cols[top.cj]))} (${fx2(top.or)})</p>`) : ''}`; }
       case 'table': { const t = table(b.table); if (!t) return loading(); let rs = blockRows(t, b);
         if (b.sort) { const j = colIdx(t, b.sort), desc = b.descending ?? true; rs = rs.slice().sort((x, y) => (x[j] == null) - (y[j] == null) || ((x[j] ?? 0) - (y[j] ?? 0)) * (desc ? -1 : 1)); }
         const n = t.key === 'residue' ? new Set(rs.map(r => r[0] + ':' + r[1])).size : t.key === 'protein' ? new Set(rs.map(r => r[0])).size : rs.length;
         const lab = (b.columns || []).filter(c => c !== 'accession')[1] || (b.columns || []).find(c => c !== 'accession');
-        const groups = b.group_by ? (() => { const j = colIdx(t, b.group_by), g = {}; rs.forEach(r => { const k = r[j]; g[k] = g[k] || new Set(); g[k].add(r[0] + ':' + r[1]); }); return Object.entries(g).map(([k, v]) => `${esc((colMeta(t, b.group_by).values || {})[k] ?? k)} <b>${int(v.size)}</b>`).join(' · '); })() : '';
-        return `<p class="ix-big"><b>${int(n)}</b> <span>${esc(sec.sub || (t.key === 'residue' ? W.marks : t.key === 'protein' ? 'proteins' : 'rows'))}</span></p>${groups ? `<p class="small">${groups}</p>` : rs.length && lab && String(cellText(t, rs[0], lab) ?? '').trim() ? `<p class="tfoot">Top: ${esc(cellText(t, rs[0], lab))}</p>` : ''}`; }
-      case 'bars': { const gs = barsData(b); if (!gs) return loading(); return gs.slice(0, 2).map(g => `<p class="small"><b>${esc(g.title)}</b>: ${g.list.slice(0, 4).map(x => `${esc(x.l)} ${int(x.n)}`).join(' · ')}</p>`).join('') || '<p class="muted">None</p>'; }
-      case 'pairs': { const d = pairsData(b); if (!d) return loading(); const best = d.cells.flat().sort((x, y) => y.n - x.n)[0]; return `${best ? `<p class="tfoot">Most shared: <b>${esc(best.rl)}</b> and <b>${esc(best.cl)}</b> (${int(best.n)})</p>` : ''}`; }
-      case 'histogram': { const h = histData(b); if (!h) return loading(); const L = histBody(b, false, 330, 150, 1.3); return `<div class="ix-plot ix-mini"><svg viewBox="0 0 330 ${L.H}" aria-hidden="true">${L.body}</svg></div>`; }
+        const groups = b.group_by ? (() => { const j = colIdx(t, b.group_by), g = {}; rs.forEach(r => { const k = r[j]; g[k] = g[k] || new Set(); g[k].add(r[0] + ':' + r[1]); }); return Object.entries(g).map(([k, v]) => `${
+esc((colMeta(t, b.group_by).values || {})[k] ?? k)} <b>${int(v.size)}</b>`).join(' · '); })() : '';
+        return `<p class="ix-big"><b>${int(n)}</b> <span>${
+esc(sec.sub || (t.key === 'residue' ? W.marks : t.key === 'protein' ? 'proteins' : 'rows'))}</span></p>${
+groups ? `<p class="small">${groups}</p>` : rs.length && lab && String(cellText(t, rs[0], lab) ?? '').trim() ? (`<p class="tfoot">` +
+            `Top: ${esc(cellText(t, rs[0], lab))}</p>`) : ''}`; }
+      case 'bars': { const gs = barsData(b); if (!gs) return loading(); return gs.slice(0, 2).map(g => (`<p class="small">` +
+          `<b>${esc(g.title)}</b>: ${
+g.list.slice(0, 4).map(x => `${esc(x.l)} ${int(x.n)}`).join(' · ')}</p>`)).join('') || '<p class="muted">None</p>'; }
+      case 'pairs': { const d = pairsData(b); if (!d) return loading(); const best = d.cells.flat().sort((x, y) => y.n - x.n)[0]; return `${
+best ? (`<p class="tfoot">` +
+          `Most shared: <b>${esc(best.rl)}</b> and <b>${esc(best.cl)}</b> (${int(best.n)})</p>`) : ''}`; }
+      case 'histogram': { const h = histData(b); if (!h) return loading(); const L = histBody(b, false, 330, 150, 1.3); return (`<div class="ix-plot ` +
+          `ix-mini"><svg viewBox="0 0 330 ${L.H}" aria-hidden="true">${L.body}</svg></div>`); }
       case 'example': case 'checker': return '';
       default: return b.text ? `<p class="small">${esc(b.text)}</p>` : '';
     }
   }
-  const sectionTile = (pg, sec) => `<article class="tile ix-tile" data-ix-tile="${esc(K.link(pg.id, sec.id))}" tabindex="0"><header><h3>${esc(sec.title)}</h3><span class="chev" aria-hidden="true">›</span></header>${tileBody(pg, sec)}</article>`;
+  const sectionTile = (pg, sec) => (`<article class="tile ix-tile" data-ix-tile="${esc(K.link(pg.id, sec.id))}" tabindex="0">` +
+      `<header><h3>${esc(sec.title)}</h3><span class="chev" aria-hidden="true">›</span></header>${tileBody(pg, sec)}</article>`);
 
   // ---- the page's head: its question, the answer, highlights ---------------------------------------------------------
   function answerHtml(pg) {
     if (!pg.answer || !pg.answer.rows.length) return '';
-    if (selOn() && !testable()) return `<p class="ix-answer">Too few to compare with the other ${esc(W.residues)}: the tests need at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}, and this selection has ${int(K.sel.nProteins())} protein${K.sel.nProteins() === 1 ? '' : 's'} and ${int(K.sel.nMarks())} ${esc(marksWord(K.sel.nMarks()))}. The counts below hold for any selection.</p>`;
+    if (selOn() && !testable()) return (`<p class="ix-answer">Too few to compare with the other ${esc(W.residues)}: the tests ` +
+        `need at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}, and this selection ` +
+        `has ${int(K.sel.nProteins())} protein${K.sel.nProteins() === 1 ? '' : 's'} and ${int(K.sel.nMarks())} ${esc(marksWord(K.sel.nMarks()))}. The counts ` +
+        `below hold for any selection.</p>`);
     const rs = rowsFor(pg.answer.rows, 'mantel_haenszel').filter(x => dirOf(shown(x)) === 'more');
     const phrases = [...new Set(rs.map(x => x.ref.phrase || x.label))];
     const list = phrases.length <= 1 ? phrases.join('') : phrases.slice(0, -1).join(', ') + ' and ' + phrases[phrases.length - 1];
     const fill = t => esc(t).replace('{list}', esc(list)).replace('{marks}', esc(theMarks())).replace('{residues}', esc(W.residues));
-    return `<p class="ix-answer">${phrases.length ? fill(pg.answer.more) : fill(pg.answer.none || `{marks} are not enriched at these contacts.`).replace(/^./, c => c.toUpperCase())}</p>`;
+    return `<p class="ix-answer">${
+phrases.length ? fill(pg.answer.more) : fill(pg.answer.none || (`{marks} are not ` +
+        `enriched at these contacts.`)).replace(/^./, c => c.toUpperCase())}</p>`;
   }
   function highlightValue(h) {
     if (h.rows && h.rows.length) { const rs = rowsFor(h.rows, 'mantel_haenszel').map(shown).filter(Boolean), d = rs.filter(r => dirOf(r) === 'more' || dirOf(r) === 'less'); return [d.length ? range(d) : 'n.s.', d.length && d.every(r => dirOf(r) === 'more') ? 'more' : d.length ? 'less' : 'ns']; }
@@ -618,53 +817,79 @@
   const GLYPH = { rna: '<path d="M2 12 q4 -8 8 0 t8 0 t8 0" fill="none" stroke="currentColor" stroke-width="2"/>', dna: '<path d="M2 4 C10 4 18 16 26 16 M2 16 C10 16 18 4 26 4" fill="none" stroke="currentColor" stroke-width="2"/>', protein: '<ellipse cx="10" cy="10" rx="8" ry="6" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="19" cy="10" rx="8" ry="6" fill="none" stroke="currentColor" stroke-width="2"/>', structure: '<path d="M2 14 l6 -8 l6 8 l6 -8 l6 8" fill="none" stroke="currentColor" stroke-width="2"/>' };
   function highlightsHtml(pg) {
     if (!pg.highlights.length) return '';
-    return `<div class="ix-hls">${pg.highlights.map(h => { const [v, d] = highlightValue(h); return `<a class="ix-hl ${d}" href="${esc(h.section ? K.link(pg.id, h.section) : K.link(pg.id))}"${h.rows?.length ? ` title="${esc(rowsFor(h.rows, 'mantel_haenszel').map(x => { const r = shown(x); return `${x.label}: ${r ? `OR ${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}, q ${fq(r.q)}` : 'not tested'}`; }).join('\n'))}"` : ''}>` +
-      (h.glyph ? `<svg class="ix-glyph" viewBox="0 0 28 20" aria-hidden="true">${GLYPH[h.glyph] || ''}</svg>` : '') + `<b>${esc(v)}</b><span>${esc(h.label)}</span>${h.tag ? `<small>${esc(h.tag)}</small>` : ''}</a>`; }).join('')}</div>`;
+    return `<div class="ix-hls">${pg.highlights.map(h => { const [v, d] = highlightValue(h); return `<a class="ix-hl ${d}" href="${
+esc(h.section ? K.link(pg.id, h.section) : K.link(pg.id))}"${
+h.rows?.length ? ` title="${
+esc(rowsFor(h.rows, 'mantel_haenszel').map(x => { const r = shown(x); return `${x.label}: ${
+r ? `OR ${fxn(effOf(r))}${
+r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}, q ${fq(r.q)}` : 'not tested'}`; }).join('\n'))}"` : ''}>` +
+      (h.glyph ? `<svg class="ix-glyph" viewBox="0 0 28 20" aria-hidden="true">${GLYPH[h.glyph] || ''}</svg>` : '') + `<b>${esc(v)}</b><span>${esc(h.label)}</span>${
+h.tag ? `<small>${esc(h.tag)}</small>` : ''}</a>`; }).join('')}</div>`;
   }
   function selLine() {
     if (!selOn() || !SD()) return '';
-    const byP = K.sel.selectedCountByProtein(), pills = Object.entries(byP).sort((x, y) => y[1] - x[1]).slice(0, 12).map(([pi, k]) => `<a class="ppill" href="${esc(K.link('protein', prot(+pi)[0]))}">${esc(gene(+pi))} <span>${int(k)}</span></a>`).join('');
-    return `<p class="sel-lead">Your selection: ${esc(K.sel.describe())} · <b>${int(K.sel.nMarks())}</b> ${esc(marksWord(K.sel.nMarks()))} on <b>${int(K.sel.nProteins())}</b> protein${K.sel.nProteins() === 1 ? '' : 's'}</p><div class="ppills">${pills}</div>`;
+    const byP = K.sel.selectedCountByProtein(), pills = Object.entries(byP).sort((x, y) => y[1] - x[1]).slice(0, 12).map(([pi, k]) => (`<a class="ppill" ` +
+        `href="${esc(K.link('protein', prot(+pi)[0]))}">${esc(gene(+pi))} <span>${int(k)}</span></a>`)).join('');
+    return (`<p class="sel-lead">Your selection: ${esc(K.sel.describe())} · <b>${int(K.sel.nMarks())}</b> ${esc(marksWord(K.sel.nMarks()))} on <b>${int(K.sel.nProteins())}</b> protein${K.sel.nProteins() === 1 ? '' : 's'}</p><div ` +
+        `class="ppills">${pills}</div>`);
   }
-  const keyLine = () => `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i><span>no difference (${K.gloss('q')} &gt; ${K.PADJ})</span></span></p>`;
+  const keyLine = () => (`<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>` +
+      `less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>` +
+      `<span>no difference (${K.gloss('q')} &gt; ${K.PADJ})</span></span></p>`);
 
   // ---- the page, a section alone, and the Overview's question --------------------------------------------------------
   function hub(pg) {
     const top = pg.sections.filter(s => s.place === 'top'), links = pg.sections.filter(s => s.place === 'link');
-    return `<div class="page-head"><h2>${esc(pg.title)}</h2><span class="tools"><button type="button" class="btn small" data-ix-print title="Download this page as a PDF">Download PDF</button></span></div>` +
+    return (`<div class="page-head"><h2>${esc(pg.title)}</h2><span class="tools"><button type="button" class="btn ` +
+        `small" data-ix-print title="Download this page as a PDF">Download PDF</button></span></div>`) +
       selLine() + answerHtml(pg) + highlightsHtml(pg) + top.map(s => K.fold(`ix-${esc(s.id)}`, esc(s.title), '', s.blocks.map((b, bi) => blockCard(pg, s, b, bi)).join(''), s.open === true)).join('') +
-      (links.length ? `<p class="ix-links">${links.map(s => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)} ›</a>`).join(' · ')}</p>` : '') +
-      pg.groups.map(g => { const ts = g.sections.filter(s => !s.place || s.place === 'tile'); return ts.length ? K.fold(`ixg-${esc(g.name.replace(/\W+/g, '-').toLowerCase())}`, esc(g.name), '', keyLine() + `<div class="tiles">${ts.map(s => sectionTile(pg, s)).join('')}</div>`, g.open === true) : ''; }).join('');
+      (links.length ? `<p class="ix-links">${
+links.map(s => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)} ›</a>`).join(' · ')}</p>` : '') +
+      pg.groups.map(g => { const ts = g.sections.filter(s => !s.place || s.place === 'tile'); return ts.length ? K.fold(`ixg-${
+esc(g.name.replace(/\W+/g, '-').toLowerCase())}`, esc(g.name), '', keyLine() + `<div class="tiles">${ts.map(s => sectionTile(pg, s)).join('')}</div>`, g.open === true) : ''; }).join('');
   }
   function focus(pg, sid) {
     const i = pg.sections.findIndex(s => s.id === sid), sec = pg.sections[i], prev = pg.sections[i - 1], next = pg.sections[i + 1];
-    return `<div class="focus-bar"><a href="${esc(K.link(pg.id))}">‹ All sections</a><span class="crumb">${esc(pg.tab)} › ${esc(sec.group)} › <b>${esc(sec.title)}</b></span><span class="muted">${i + 1} of ${pg.sections.length}</span>` +
-      `<span class="pn">${prev ? `<a href="${esc(K.link(pg.id, prev.id))}">‹ Previous · ${esc(prev.title)}</a>` : ''}${next ? `<a href="${esc(K.link(pg.id, next.id))}">${esc(next.title)} · Next ›</a>` : ''}</span></div>` + selLine() + sectionCard(pg, sec);
+    return (`<div class="focus-bar"><a href="${esc(K.link(pg.id))}">‹ All sections</a><span class="crumb">${esc(pg.tab)} › ${esc(sec.group)} › <b>${esc(sec.title)}</b></span>` +
+        `<span class="muted">${i + 1} of ${pg.sections.length}</span>`) +
+      `<span class="pn">${
+prev ? `<a href="${esc(K.link(pg.id, prev.id))}">‹ Previous · ${esc(prev.title)}</a>` : ''}${
+next ? `<a href="${esc(K.link(pg.id, next.id))}">${esc(next.title)} · Next ›</a>` : ''}</span></div>` + selLine() + sectionCard(pg, sec);
   }
   // the Overview question's findings, one sentence each: website.pages[].overview.findings (rows of tests, said with
   // their direction whether or not it is significant, or a share of a table), else each overview row that differs
   const WORD = { more: 'more often', less: 'less often', same: 'about as often', ns: 'not significantly more or less often' };
-  const numbers = r => `share in the selection vs the other ${esc(W.residues)}, crude: ${pcS(r.a, r.a + r.b)} vs ${pcS(r.c, r.c + r.d)}; within-protein OR ${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}, q ${fq(r.q)}`;
+  const numbers = r => (`share in the selection vs the other ${esc(W.residues)}, crude: ${pcS(r.a, r.a + r.b)} vs ${pcS(r.c, r.c + r.d)}; within-protein ` +
+      `OR ${fxn(effOf(r))}${
+r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}, q ${fq(r.q)}`);
   function findings(pg) {
     const ov = pg.overview;
-    if (!ov.findings) return rowsFor(ov.rows, 'mantel_haenszel').map(x => { const r = shown(x), d = dirOf(r); return d === 'more' || d === 'less' ? { head: `${esc(cap(theMarks()))} are ${WORD[d]} ${esc(x.ref.phrase || x.label.toLowerCase())} (${numbers(r)}).` } : null; }).filter(Boolean);
+    if (!ov.findings) return rowsFor(ov.rows, 'mantel_haenszel').map(x => { const r = shown(x), d = dirOf(r); return d === 'more' || d === 'less' ? { head: `${esc(cap(theMarks()))} are ${WORD[d]} ${
+esc(x.ref.phrase || x.label.toLowerCase())} (${numbers(r)}).` } : null; }).filter(Boolean);
     return ov.findings.map(f => {
       if (f.share) { const [v] = highlightValue({ share: f.share }); return v && v !== '…' ? { head: `<b>${esc(v)}</b> ${esc(f.label)}`, section: f.section } : null; }
       const xs = rowsFor(f.rows, 'mantel_haenszel').filter(x => shown(x));
       if (!xs.length) return null;
       const parts = xs.map(x => `<b>${WORD[dirOf(shown(x))]}</b> ${esc(x.ref.phrase || x.label.toLowerCase())}`);
       const nums = xs.map(x => (xs.length > 1 ? `${esc(x.label)}: ` : '') + numbers(shown(x)));
-      return { head: `${f.lead ? esc(f.lead) + ', ' + esc(theMarks()) : esc(cap(theMarks()))} are ${parts.join(' and ')} than the other ${esc(W.residues)} of the same proteins.`,
+      return { head: (`${
+f.lead ? esc(f.lead) + ', ' + esc(theMarks()) : esc(cap(theMarks()))} are ${parts.join(' and ')} than the other ${esc(W.residues)} of the same ` +
+          `proteins.`),
                more: nums.join('; ').replace(/^[a-z]/, c => c.toUpperCase()), section: f.section };
     }).filter(Boolean);
   }
-  const findingLi = (pg, f) => `<li>${f.more ? `<details class="finding"><summary>${f.head}</summary><p>${f.more}.${f.section ? ` <a href="${esc(K.link(pg.id, f.section))}">Open the analysis →</a>` : ''}</p></details>` : `<span>${f.head}</span>${f.section ? ` <a href="${esc(K.link(pg.id, f.section))}">Open →</a>` : ''}`}</li>`;
+  const findingLi = (pg, f) => `<li>${
+f.more ? `<details class="finding"><summary>${f.head}</summary><p>${f.more}.${
+f.section ? (` <a href="${esc(K.link(pg.id, f.section))}">Open the ` +
+      `analysis →</a>`) : ''}</p></details>` : `<span>${f.head}</span>${
+f.section ? ` <a href="${esc(K.link(pg.id, f.section))}">Open →</a>` : ''}`}</li>`;
   function findingsList(pg, n) {
     const fs = findings(pg);
     if (!fs.length) return '';
     const head = fs.slice(0, n), rest = fs.slice(n);
     return `<ul class="ix-findings">${head.map(f => findingLi(pg, f)).join('')}</ul>` +
-      (rest.length ? `<details class="ix-more"><summary>Show ${int(rest.length)} more finding${rest.length === 1 ? '' : 's'}</summary><ul class="ix-findings">${rest.map(f => findingLi(pg, f)).join('')}</ul></details>` : '');
+      (rest.length ? (`<details class="ix-more"><summary>Show ${int(rest.length)} more finding${rest.length === 1 ? '' : 's'}</summary>` +
+          `<ul class="ix-findings">${rest.map(f => findingLi(pg, f)).join('')}</ul></details>`) : '');
   }
   // the Overview's question: the evidence at a glance, the tests with their CIs, findings, a checker, and the way in
   function ovQuestion(pg) {
@@ -672,12 +897,18 @@
     const fs = ready() ? findingsList(pg, 1e9) : '';
     const sec = { id: 'overview', title: ov.title || pg.tab, blocks: [] };
     const chk = ov.checker ? { kind: 'checker', attributes: ov.checker.filter(n => hasAttr(n)), tables: [] } : null;
-    return (`<div class="focus-bar"><a href="${esc(K.link('overview'))}">‹ Overview</a><span class="crumb">Overview › ${esc(ov.section)} › <b>${esc(ov.title || pg.tab)}</b></span><span class="pn"><a href="${esc(K.link(pg.id))}">Explore ${esc(pg.tab.toLowerCase())} →</a></span></div>`) +
+    return ((`<div class="focus-bar"><a href="${esc(K.link('overview'))}">‹ Overview</a><span class="crumb">` +
+        `Overview › ${esc(ov.section)} › <b>${esc(ov.title || pg.tab)}</b></span><span class="pn"><a href="${esc(K.link(pg.id))}">Explore ${esc(pg.tab.toLowerCase())} →</a></span></div>`)) +
       `<div class="page-head"><h2>${esc(ov.title || pg.tab)}</h2></div><p class="page-sub">${esc(ov.question || pg.title)} <a href="${esc(K.link(pg.id))}">Explore ${esc(pg.tab.toLowerCase())} →</a></p>` + selLine() +
-      (ov.bar ? `<section class="pcard"><h3>${esc(SPECS[ov.bar].label)}</h3>${ready() ? sharesHtml({ attribute: ov.bar }) : loading()}</section>` : '') +
-      `<section class="pcard"><h3>The tests</h3>${keyLine()}${ready() ? forestHtml(pg, sec, { kind: 'forest', rows: ov.rows }, 'ov') : loading()}${K.expBar(['pdf', 'svg', 'png', 'tsv'], `ixexp="${esc(pg.id)}.overview.ov" data-k`, ov.title || pg.tab, `q-page-${pg.id}`)}</section>` +
+      (ov.bar ? `<section class="pcard"><h3>${esc(SPECS[ov.bar].label)}</h3>${
+ready() ? sharesHtml({ attribute: ov.bar }) : loading()}</section>` : '') +
+      `<section class="pcard"><h3>The tests</h3>${keyLine()}${
+ready() ? forestHtml(pg, sec, { kind: 'forest', rows: ov.rows }, 'ov') : loading()}${
+K.expBar(['pdf', 'svg', 'png', 'tsv'], (`ixexp="${esc(pg.id)}.overview.ov" ` +
+          `data-k`), ov.title || pg.tab, `q-page-${pg.id}`)}</section>` +
       (fs ? `<section class="pcard"><h3>Findings${selOn() ? ' for your selection' : ''}</h3>${fs}</section>` : '') +
-      (chk ? `<section class="pcard"><h3>Is a ${esc(W.mark)} in an interaction? Check one</h3>${ready() ? checkerHtml(pg, sec, chk, 'ovchk') : loading()}</section>` : '');
+      (chk ? `<section class="pcard"><h3>Is a ${esc(W.mark)} in an interaction? Check one</h3>${
+ready() ? checkerHtml(pg, sec, chk, 'ovchk') : loading()}</section>` : '');
   }
   function view(pg, arg) {
     if (arg === 'overview' && pg.overview) return ovQuestion(pg);
@@ -688,11 +919,16 @@
   // ---- the Overview's tile -------------------------------------------------------------------------------------------
   function ovTile(pg) {
     const ov = pg.overview; if (!ov) return '';
-    const bar = ov.bar && hasAttr(ov.bar, 'category') && ready() && SD() ? (() => { const sc = shareCounts(ov.bar), lead = sc.list.find(x => x.v === (ov.lead || sc.list[0]?.v)); return sharesHtml({ attribute: ov.bar }, true) + (lead ? `<p class="ix-head"><b>${int(lead.n)}</b> ${esc(marksWord(lead.n))} (${pcS(lead.n, sc.total)}) ${esc(vlabel(ov.bar, lead.v).toLowerCase())}</p>` : ''); })() : '';
+    const bar = ov.bar && hasAttr(ov.bar, 'category') && ready() && SD() ? (() => { const sc = shareCounts(ov.bar), lead = sc.list.find(x => x.v === (ov.lead || sc.list[0]?.v)); return sharesHtml({ attribute: ov.bar }, true) + (lead ? (`<p class="ix-head">` +
+        `<b>${int(lead.n)}</b> ${esc(marksWord(lead.n))} (${pcS(lead.n, sc.total)}) ${
+esc(vlabel(ov.bar, lead.v).toLowerCase())}</p>`) : ''); })() : '';
     let grp = null;
     const forest = ov.rows.length ? (() => { const rows = rowsFor(ov.rows, 'mantel_haenszel'), groups = []; rows.forEach(x => { if (x.group !== grp) { grp = x.group; groups.push([x.group, []]); } groups[groups.length - 1][1].push(x.ref); }); return groups.map(([g, refs]) => (g ? `<p class="ix-tg">${esc(g)}</p>` : '') + miniForest(refs, 'mantel_haenszel', ov.rows)).join(''); })() : '';
     const fs = ready() && ov.findings ? findingsList(pg, 3) : '';
-    return `<article class="tile ix-tile" data-ix-tile="${esc(K.link(pg.id, 'overview'))}" tabindex="0"><header><h3>${esc(ov.title || pg.tab)}</h3><span class="chev" aria-hidden="true">›</span></header>${bar}${forest}${fs ? `<div class="ix-tile-findings">${fs}</div>` : ''}<p class="tfoot"><a href="${esc(K.link(pg.id))}">Explore ${esc(pg.tab.toLowerCase())} →</a></p></article>`;
+    return (`<article class="tile ix-tile" data-ix-tile="${esc(K.link(pg.id, 'overview'))}" tabindex="0"><header>` +
+        `<h3>${esc(ov.title || pg.tab)}</h3><span class="chev" aria-hidden="true">›</span></header>${bar}${forest}${
+fs ? `<div class="ix-tile-findings">${fs}</div>` : ''}<p class="tfoot">` +
+        `<a href="${esc(K.link(pg.id))}">Explore ${esc(pg.tab.toLowerCase())} →</a></p></article>`);
   }
   (K.ovTiles ||= []).push(...PAGES.filter(pg => pg.overview).map(pg => ({ section: pg.overview.section, html: () => ovTile(pg) })));
 
@@ -708,35 +944,58 @@
     const body = b.kind === 'forest' ? forestBody(b, m, true) : b.kind === 'lines' ? linesBody(b, m, true) : b.kind === 'shares' ? sharesBody(b, true) : b.kind === 'matrix' ? matrixBody(b, m, true) : b.kind === 'bars' ? barsBody(b, true) : b.kind === 'histogram' ? histBody(b, true) : null;
     if (b.kind === 'example') return K.map.figure({ p: (P => ({ i: byAcc[EX.acc], acc: P[0], gene: P[1], name: P[2], len: P[3], marks: P[4], cand: P[5] }))(D.proteins[byAcc[EX.acc]]), rec: EX.rec, selected: selOn() ? K.sel.selectedPositions(EX.acc) : null });
     if (!FIG[b.kind]) return K.tableFigure(document.getElementById(`ix-${sec.id}-${bi}`) || document.body, { title: b.title || sec.title, sub: `${pg.tab}: ${sec.question || sec.title}`, extra: { page: pg.id, section: sec.id } });
-    const what = `${sec.question || ''} ${selOn() ? `Your selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks}), tested again in the browser.` : ''}`.trim();
+    const what = `${sec.question || ''} ${
+selOn() ? (`Your selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks}), tested ` +
+        `again in the browser.`) : ''}`.trim();
     return K.figureFrame({ title: b.title || sec.title, sub: what, body: `<g transform="translate(20,0)">${body.body}</g>`, bodyH: body.H, W: 800, extra: { page: pg.id, section: sec.id } });
   }
   function tsvOf(x) {
     const { pg, sec, b, bi } = x, m = st(bkey(pg, sec, bi), { m: b.method || 'mantel_haenszel' }).m;
     const body = b.kind === 'forest' ? forestTsv(b, m) : b.kind === 'lines' ? linesTsv(b, m) : b.kind === 'sets' ? setsTsv(b) : b.kind === 'shares' ? sharesTsv(b) : b.kind === 'combinations' ? combinationsTsv(b) : b.kind === 'matrix' ? matrixTsv(b, m) : b.kind === 'table' ? tableTsv(b) : b.kind === 'bars' ? barsTsv(b) : b.kind === 'pairs' ? pairsTsv(b) : b.kind === 'histogram' ? histTsv(b) : '';
-    const src = b.table ? ` From ${D.inputs?.[(D.run.inputs && Object.keys(D.run.inputs).find(k => k === b.table)) || ''] ? '' : 'table ' + b.table}.` : '';
-    return K.preamble(`${pg.tab}: ${b.title || sec.title}`, `${sec.question || sec.title}${src}${b.kind === 'forest' || b.kind === 'lines' ? ` ${METHOD[m]}.` : ''}`) + body;
+    const src = b.table ? ` From ${
+D.inputs?.[(D.run.inputs && Object.keys(D.run.inputs).find(k => k === b.table)) || ''] ? '' : 'table ' + b.table}.` : '';
+    return K.preamble(`${pg.tab}: ${b.title || sec.title}`, `${sec.question || sec.title}${src}${
+b.kind === 'forest' || b.kind === 'lines' ? ` ${METHOD[m]}.` : ''}`) + body;
   }
   const fileName = x => `${D.site.id}_${x.pg.id}_${x.sec.id}${x.bi && x.bi !== '0' ? '_' + x.bi : ''}${selOn() ? '_selection' : ''}`;
 
   // ---- the Method page: the page's own section ---------------------------------------------------------------------
-  PAGES.forEach(pg => (K.methods ||= []).push({ id: `page-${pg.id}`, title: pg.tab, html: () => `<section id="m-q-page-${esc(pg.id)}" class="qm"><h3>${esc(pg.tab)}</h3><p class="qm-q">${esc(pg.title)}</p>${pg.method ? pg.method.split(/\n\s*\n/).map(p => `<p>${esc(p)}</p>`).join('') : ''}` +
-    `<p><b>Its sections:</b> ${pg.sections.map(s => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)}</a>`).join(', ')}.</p>` +
-    (Object.keys(TB).length ? `<p><b>Its tables</b> (the site file’s website.tables, in the formats of CONTRACTS.md):</p><ul class="qm-reads">${Object.entries(TB).map(([n, t]) => `<li><span class="mono">${esc(n)}</span>: ${int(t.n)} rows, keyed by ${esc(t.key)}; ${esc(t.columns.map(c => c.label).join(', '))}</li>`).join('')}</ul>` : '') + '</section>' }));
+  PAGES.forEach(pg => (K.methods ||= []).push({ id: `page-${pg.id}`, title: pg.tab, html: () => (`<section ` +
+      `id="m-q-page-${esc(pg.id)}" class="qm"><h3>${esc(pg.tab)}</h3><p class="qm-q">${esc(pg.title)}</p>${
+pg.method ? pg.method.split(/\n\s*\n/).map(p => `<p>${esc(p)}</p>`).join('') : ''}`) +
+    `<p><b>Its sections:</b> ${
+pg.sections.map(s => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)}</a>`).join(', ')}.</p>` +
+    (Object.keys(TB).length ? (`<p><b>Its tables</b> (the site file’s website.tables, in the formats of ` +
+        `CONTRACTS.md):</p><ul class="qm-reads">${
+Object.entries(TB).map(([n, t]) => `<li><span class="mono">${esc(n)}</span>: ${int(t.n)} rows, keyed by ${esc(t.key)}; ${
+esc(t.columns.map(c => c.label).join(', '))}</li>`).join('')}</ul>`) : '') + '</section>' }));
 
   // ---- registration ------------------------------------------------------------------------------------------------
   PAGES.forEach(pg => {
     K.views[pg.id] = { follows: true, render: arg => view(pg, arg), title: arg => (arg && pg.sections.find(s => s.id === arg)?.title) || pg.tab, after: () => drawExample() };
     K.tabs.push(() => [pg.id, pg.tab, selOn() ? 'selection' : null]);
-    (K.tabIcons ||= {})[pg.id] = '<svg class="tab-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="9" cy="18" r="2.5"/><path d="M8 7.2l7.8.5M7 8.3l1.6 7.2M11.3 17l5.2-7.3"/></svg>';
+    (K.tabIcons ||= {})[pg.id] = ('<svg class="tab-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" ' +
+'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+'aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" ' +
+'r="2.5"/><circle cx="9" cy="18" r="2.5"/><path d="M8 7.2l7.8.5M7 8.3l1.6 ' +
+'7.2M11.3 17l5.2-7.3"/></svg>');
     K.sections[pg.id] = () => [['view', pg.tab, 1, K.link(pg.id)], ...(pg.overview ? [['ixov', pg.overview.title || 'At a glance', 1, K.link(pg.id, 'overview')]] : []),
       ...pg.groups.flatMap(g => [[`ixg-${g.name}`, g.name, 0], ...g.sections.map(s => [`ix-${s.id}`, s.title, 1, K.link(pg.id, s.id)])])];
   });
   K.tips.push(['[data-ixr]', el => {
     let x; try { x = JSON.parse(el.dataset.ixr); } catch (e) { return ''; }
     const [aid, cat, m] = x, site = rowOf(aid, cat, m), mine = selOn() && testable() && SD() ? (K.sel.rows(aid, m) || []).find(r => r.category === cat) : null;
-    const one = (r, who) => (r ? `<br><b>${who}</b>: ${int(r.a)} of ${int(r.a + r.b)} ${esc(W.marks)} (${pcS(r.a, r.a + r.b)}) vs ${int(r.c)} of ${int(r.c + r.d)} other ${esc(W.residues)} (${pcS(r.c, r.c + r.d)}); OR ${fxn(effOf(r))}${r.lo != null ? ` (95% CI ${fxn(r.lo)}–${fxn(r.hi)})` : ''}, q ${fq(r.q)}${r.strata != null ? `, ${int(r.strata)} informative proteins` : ''}` : '');
-    return `<b>${esc((site || mine)?.label || cat)}</b> <span class="muted">${esc(A[aid]?.title || aid)} · ${esc(METHOD[m] || m)}</span>${(A[aid]?.help || {})[cat] ? `<br><span class="muted">${esc(A[aid].help[cat])}</span>` : ''}${selOn() ? one(mine, 'Your selection') : ''}${one(site, selOn() ? 'Whole dataset' : '')}${site?.background ? `<br><span class="muted">Against: ${esc(site.background)}</span>` : ''}`;
+    const one = (r, who) => (r ? `<br><b>${who}</b>: ${int(r.a)} of ${int(r.a + r.b)} ${esc(W.marks)} (${pcS(r.a, r.a + r.b)}) vs ${int(r.c)} of ${int(r.c + r.d)} other ${esc(W.residues)} (${pcS(r.c, r.c + r.d)}); OR ${fxn(effOf(r))}${
+r.lo != null ? ` (95% CI ${fxn(r.lo)}–${fxn(r.hi)})` : ''}, q ${fq(r.q)}${
+r.strata != null ? (`, ${int(r.strata)} informative ` +
+        `proteins`) : ''}` : '');
+    return `<b>${esc((site || mine)?.label || cat)}</b> <span class="muted">${esc(A[aid]?.title || aid)} · ${esc(METHOD[m] || m)}</span>${
+(A[aid]?.help || {})[cat] ? (`<br><span ` +
+        `class="muted">${esc(A[aid].help[cat])}</span>`) : ''}${
+selOn() ? one(mine, 'Your selection') : ''}${
+one(site, selOn() ? 'Whole dataset' : '')}${
+site?.background ? (`<br><span ` +
+        `class="muted">Against: ${esc(site.background)}</span>`) : ''}`;
   }]);
   const keyOfEl = el => el.closest('[data-ixexp]')?.dataset.ixexp;
   K.clicks.push(
@@ -747,7 +1006,8 @@
     ['[data-ix-more]', el => { const s = st(el.dataset.ixMore, {}); s.n = (s.n || 25) + 100; K.render(); }],
     ['[data-ix-sort]', el => { const s = st(el.dataset.ixSort, {}); s.desc = s.sort === el.dataset.v ? !s.desc : true; s.sort = el.dataset.v; K.render(); }],
     ['[data-ix-q]', el => { S.q = el.dataset.ixQ; K.writeHash(true); K.render(); scrollTo(0, 0); }],
-    ['[data-ix-print]', el => K.pagePdf(document.getElementById('view'), document.querySelector('#view .page-head h2')?.textContent || 'Interactions', `${D.site.id}_${S.arg ? 'interactions_' + String(S.arg).split('/').join('_') : 'interactions'}.pdf`, el)],
+    ['[data-ix-print]', el => K.pagePdf(document.getElementById('view'), document.querySelector('#view .page-head h2')?.textContent || 'Interactions', `${D.site.id}_${
+S.arg ? 'interactions_' + String(S.arg).split('/').join('_') : 'interactions'}.pdf`, el)],
     ['[data-ixexp]', el => { const x = findBlock(keyOfEl(el)); if (!x) return; const k = el.dataset.k; K.exportFigure(k, () => figureOf(x), fileName(x), el, () => tsvOf(x)); }],
   );
   document.addEventListener('submit', e => {
@@ -764,73 +1024,115 @@
   // ---- its look ----------------------------------------------------------------------------------------------------
   const style = document.createElement('style');
   style.id = 'kit-interactions-css';
-  style.textContent = `
+  style.textContent = (`
 .ix-sec .ix-block { display: grid; gap: 0.5rem; min-width: 0; padding-top: 0.4rem; }
 .ix-sec .ix-block + .ix-block { border-top: 1px solid var(--line); margin-top: 0.6rem; padding-top: 0.9rem; }
 .ix-block h4 { font-size: 0.95rem; }
 .ix-tools { display: flex; justify-content: flex-end; }
 .ixf { display: grid; font-size: 0.86rem; overflow-x: auto; }
-.ixf-row { display: grid; grid-template-columns: minmax(10rem, 1.2fr) minmax(8rem, 1.4fr) 8rem 9.5rem 9.5rem 4rem 5rem; gap: 0.6rem; align-items: center; min-height: 1.7rem; padding: 0 0.2rem; }
+.ixf-row { display: grid; grid-template-columns: minmax(10rem, 1.2fr) minmax(8rem, 1.4fr) 8rem 9.5rem 9.5rem 4rem ` +
+    `5rem; gap: 0.6rem; align-items: center; min-height: 1.7rem; padding: 0 0.2rem; }
 .ixf-row .whisker { stroke-width: 1.6; stroke-linecap: round; } .ixf-row .dot { stroke-width: 1.5; }
-.ixf-row .more { fill: var(--more); stroke: var(--more); } .ixf-row .less { fill: var(--less); stroke: var(--less); }
-.ixf-row .same { fill: var(--same); stroke: var(--same); } .ixf-row .ns { fill: var(--surface); stroke: var(--muted); }
+.ixf-row .more { fill: var(--more); stroke: var(--more); } .ixf-row .less { fill: var(--less); stroke: var(--less);` +
+    ` }
+.ixf-row .same { fill: var(--same); stroke: var(--same); } .ixf-row .ns { fill: var(--surface); stroke: ` +
+    `var(--muted); }
 .ixf-head > span { white-space: normal; line-height: 1.2; }
 .ix-sets th { white-space: normal; } .ix-sets td.wrapok { min-width: 10rem; }
 .ixf-row[data-f] { cursor: pointer; } .ixf-row[data-f]:hover { background: var(--wash); border-radius: 4px; }
 .ixf-row svg { width: 100%; height: 1.5rem; overflow: visible; }
-.ixf-row line.grid { stroke: var(--line-strong); stroke-dasharray: 2 3; } .ixf-row line.one { stroke: var(--ink-2); }
+.ixf-row line.grid { stroke: var(--line-strong); stroke-dasharray: 2 3; } .ixf-row line.one { stroke: var(--ink-2);` +
+    ` }
 .ixf-row line.ixf-whole, .trow line.ixf-whole { stroke: var(--muted); stroke-width: 2.4; opacity: 0.55; }
-.ixf-head { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; border-bottom: 1px solid var(--line); }
+.ixf-head { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); ` +
+    `font-weight: 700; border-bottom: 1px solid var(--line); }
 .ixf-axis svg { height: 1rem; } .ixf-axis text { font-size: 10px; fill: var(--muted); }
-.ixf-group { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0.6rem 0 0.1rem; }
-.ixf-or { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; } .ixf-or.more { color: var(--more); } .ixf-or.less { color: var(--less); } .ixf-or.ns, .ixf-or.same { color: var(--muted); }
+.ixf-group { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: ` +
+    `var(--muted); margin: 0.6rem 0 0.1rem; }
+.ixf-or { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; } .ixf-or.more { color: ` +
+    `var(--more); } .ixf-or.less { color: var(--less); } .ixf-or.ns, .ixf-or.same { color: var(--muted); }
 .ixf-n, .ixf-q { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 .ix-plot svg { width: 100%; height: auto; display: block; } .ix-plot text { font-family: var(--font-body); }
 .ix-mini { max-height: 9rem; overflow: hidden; }
 .ix-stack { display: flex; height: 1.1rem; border-radius: 4px; overflow: hidden; background: var(--surface-2); }
 .ix-stack span { display: block; height: 100%; cursor: pointer; } .ix-stack span:hover { filter: brightness(1.1); }
 .ix-key { display: flex; flex-wrap: wrap; gap: 0.2rem 0.8rem; font-size: 0.82rem; }
-.ix-keyi { border: 0; background: none; padding: 0; cursor: pointer; color: var(--ink-2); display: inline-flex; align-items: center; gap: 0.3rem; }
+.ix-keyi { border: 0; background: none; padding: 0; cursor: pointer; color: var(--ink-2); display: inline-flex; ` +
+    `align-items: center; gap: 0.3rem; }
 .ix-keyi i { width: 0.7rem; height: 0.7rem; border-radius: 2px; display: inline-block; }
-.ix-head, .ix-big { margin: 0.3rem 0 0; } .ix-big b { font-size: 1.9rem; font-family: var(--font-heading); color: var(--brand-ink); } .ix-big span { color: var(--muted); font-size: 0.86rem; }
-.ix-tg { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0.5rem 0 0; }
-.ix-meter { position: relative; display: inline-block; width: 5.5rem; height: 0.6rem; background: var(--surface-2); border-radius: 3px; vertical-align: middle; }
-.ix-meter i { position: absolute; inset: 0 auto 0 0; background: var(--band-1); border-radius: 3px; } .ix-meter b { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
-.ix-mrow2 { display: grid; grid-template-columns: minmax(0, 1fr) 7rem auto; gap: 0.5rem; align-items: center; font-size: 0.84rem; }
+.ix-head, .ix-big { margin: 0.3rem 0 0; } .ix-big b { font-size: 1.9rem; font-family: var(--font-heading); color: ` +
+    `var(--brand-ink); } .ix-big span { color: var(--muted); font-size: 0.86rem; }
+.ix-tg { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: ` +
+    `var(--muted); margin: 0.5rem 0 0; }
+.ix-meter { position: relative; display: inline-block; width: 5.5rem; height: 0.6rem; background: var(--surface-2);` +
+    ` border-radius: 3px; vertical-align: middle; }
+.ix-meter i { position: absolute; inset: 0 auto 0 0; background: var(--band-1); border-radius: 3px; } .ix-meter b ` +
+    `{ position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
+.ix-mrow2 { display: grid; grid-template-columns: minmax(0, 1fr) 7rem auto; gap: 0.5rem; align-items: center; ` +
+    `font-size: 0.84rem; }
 .ix-hold { white-space: nowrap; } .ix-hold.holds { color: var(--more); } .ix-hold.lost { color: var(--muted); }
-.ix-upset th.ix-vh, .ix-matrix th.ix-vh { height: 9rem; vertical-align: bottom; white-space: nowrap; padding: 0.3rem 0.2rem; }
-.ix-vh span { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.74rem; max-height: 8.5rem; overflow: hidden; text-overflow: ellipsis; }
-.ix-upset td { text-align: center; padding: 0.2rem 0.3rem; } .ix-dotc i { display: inline-block; width: 0.6rem; height: 0.6rem; border-radius: 50%; }
+.ix-upset th.ix-vh, .ix-matrix th.ix-vh { height: 9rem; vertical-align: bottom; white-space: nowrap; padding: ` +
+    `0.3rem 0.2rem; }
+.ix-vh span { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.74rem; ` +
+    `max-height: 8.5rem; overflow: hidden; text-overflow: ellipsis; }
+.ix-upset td { text-align: center; padding: 0.2rem 0.3rem; } .ix-dotc i { display: inline-block; width: 0.6rem; ` +
+    `height: 0.6rem; border-radius: 50%; }
 .ix-on { background: var(--ink); } .ix-off { background: var(--line); }
-.ix-cnt { border: 0; background: none; cursor: pointer; font: inherit; font-variant-numeric: tabular-nums; color: var(--accent); padding: 0; position: relative; }
-.ix-barc { min-width: 7rem; text-align: left !important; } .ix-barc .ix-cnt { display: block; width: 100%; text-align: left; color: var(--ink); }
-.ix-hbar { position: absolute; left: 3rem; top: 0.25rem; bottom: 0.25rem; max-width: calc(100% - 3rem); background: color-mix(in srgb, var(--band-1) 55%, transparent); border-radius: 2px; }
+.ix-cnt { border: 0; background: none; cursor: pointer; font: inherit; font-variant-numeric: tabular-nums; color: ` +
+    `var(--accent); padding: 0; position: relative; }
+.ix-barc { min-width: 7rem; text-align: left !important; } .ix-barc .ix-cnt { display: block; width: 100%; ` +
+    `text-align: left; color: var(--ink); }
+.ix-hbar { position: absolute; left: 3rem; top: 0.25rem; bottom: 0.25rem; max-width: calc(100% - 3rem); ` +
+    `background: color-mix(in srgb, var(--band-1) 55%, transparent); border-radius: 2px; }
 .ix-matrix td.ix-mc { text-align: center; padding: 0.2rem 0.3rem; position: relative; }
-.ix-matrix td.ix-mc::before { content: ''; position: absolute; inset: 1px; background: var(--ixc); opacity: var(--a); border-radius: 2px; z-index: 0; }
+.ix-matrix td.ix-mc::before { content: ''; position: absolute; inset: 1px; background: var(--ixc); opacity: ` +
+    `var(--a); border-radius: 2px; z-index: 0; }
 .ix-matrix td.ix-mc > * { position: relative; z-index: 1; }
-.ix-matrix td.ix-mc b { display: block; font-size: 0.78rem; } .ix-matrix td.ix-mc small { font-size: 0.68rem; color: var(--muted); }
+.ix-matrix td.ix-mc b { display: block; font-size: 0.78rem; } .ix-matrix td.ix-mc small { font-size: 0.68rem; ` +
+    `color: var(--muted); }
 .ix-matrix td.ix-mc b.more, .ix-matrix td.ix-mc b.less { color: var(--ink); }
 .ix-matrix td.ix-hi { outline: 2px solid var(--accent); outline-offset: -2px; }
-.ix-matrix th.ix-mrow { cursor: pointer; font-weight: 500; } .ix-mg td { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+.ix-matrix th.ix-mrow { cursor: pointer; font-weight: 500; } .ix-mg td { font-size: 0.7rem; font-weight: 700; ` +
+    `letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
 .ix-pairs td[data-ix-q] { cursor: pointer; }
-.ix-check { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; } .ix-check input { flex: 1 1 14rem; max-width: 22rem; padding: 0.35rem 0.6rem; border: 1px solid var(--line-strong); border-radius: 0.5rem; background: var(--surface); }
+.ix-check { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; } .ix-check input { flex: 1 1 14rem; ` +
+    `max-width: 22rem; padding: 0.35rem 0.6rem; border: 1px solid var(--line-strong); border-radius: 0.5rem; ` +
+    `background: var(--surface); }
 .ix-card { border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.5rem 0.8rem; margin-top: 0.5rem; }
-.ix-dl { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: 0.2rem 0.8rem; margin: 0.3rem 0; font-size: 0.86rem; } .ix-dl dt { color: var(--muted); } .ix-dl dd { margin: 0; }
-.ix-tag { display: inline-block; border: 1px solid var(--line-strong); border-radius: 999px; padding: 0 0.45rem; font-size: 0.74rem; color: var(--ink-2); margin: 0.05rem 0; }
-.ix-tctl { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; } .ix-tctl input { padding: 0.3rem 0.6rem; border: 1px solid var(--line-strong); border-radius: 0.5rem; background: var(--surface); min-width: 14rem; }
-.ix-tbl td { vertical-align: top; } .ix-seq { white-space: nowrap; } .ix-seq .ix-c, b.ix-c { color: var(--accent); }
-.ix-fold { border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.4rem 0.7rem; margin: 0.3rem 0; min-width: 0; }
-.ix-sec, .ix-block > *, .ix-fold > * { min-width: 0; max-width: 100%; } .ix-tbl td.wrapok { min-width: 8rem; max-width: 26rem; white-space: normal; overflow-wrap: anywhere; } .ix-fold > summary { cursor: pointer; }
-.ix-bars { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr)); gap: 0.8rem 1.4rem; }
+.ix-dl { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: 0.2rem 0.8rem; margin: 0.3rem 0;` +
+    ` font-size: 0.86rem; } .ix-dl dt { color: var(--muted); } .ix-dl dd { margin: 0; }
+.ix-tag { display: inline-block; border: 1px solid var(--line-strong); border-radius: 999px; padding: 0 0.45rem; ` +
+    `font-size: 0.74rem; color: var(--ink-2); margin: 0.05rem 0; }
+.ix-tctl { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; } .ix-tctl input { padding: 0.3rem ` +
+    `0.6rem; border: 1px solid var(--line-strong); border-radius: 0.5rem; background: var(--surface); min-width: ` +
+    `14rem; }
+.ix-tbl td { vertical-align: top; } .ix-seq { white-space: nowrap; } .ix-seq .ix-c, b.ix-c { color: var(--accent); ` +
+    `}
+.ix-fold { border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.4rem 0.7rem; margin: 0.3rem 0; ` +
+    `min-width: 0; }
+.ix-sec, .ix-block > *, .ix-fold > * { min-width: 0; max-width: 100%; } .ix-tbl td.wrapok { min-width: 8rem; ` +
+    `max-width: 26rem; white-space: normal; overflow-wrap: anywhere; } .ix-fold > summary { cursor: pointer; }
+.ix-bars { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr)); gap: 0.8rem ` +
+    `1.4rem; }
 .ix-barg h4 { font-size: 0.86rem; margin-bottom: 0.3rem; }
-.ix-barrow { display: grid; grid-template-columns: minmax(6rem, 10rem) 1fr 2.5rem; gap: 0.4rem; align-items: center; width: 100%; border: 0; background: none; padding: 0.1rem 0; font-size: 0.82rem; cursor: pointer; text-align: left; color: var(--ink); }
-.ix-barrow:hover { background: var(--wash); } .ix-barrow b { text-align: right; font-variant-numeric: tabular-nums; }
-.ix-bar { height: 0.7rem; background: var(--surface-2); border-radius: 2px; } .ix-bar i { display: block; height: 100%; background: var(--less); border-radius: 2px; }
+.ix-barrow { display: grid; grid-template-columns: minmax(6rem, 10rem) 1fr 2.5rem; gap: 0.4rem; align-items: ` +
+    `center; width: 100%; border: 0; background: none; padding: 0.1rem 0; font-size: 0.82rem; cursor: pointer; ` +
+    `text-align: left; color: var(--ink); }
+.ix-barrow:hover { background: var(--wash); } .ix-barrow b { text-align: right; font-variant-numeric: tabular-nums;` +
+    ` }
+.ix-bar { height: 0.7rem; background: var(--surface-2); border-radius: 2px; } .ix-bar i { display: block; height: ` +
+    `100%; background: var(--less); border-radius: 2px; }
 .ix-answer { font-size: 1.05rem; max-width: 62rem; margin: 0.9rem 0 0.6rem; }
-.ix-hls { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr)); gap: 0.8rem; margin: 0.4rem 0 0.8rem; }
-.ix-hl { display: flex; flex-direction: column; gap: 0.2rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow); padding: 0.8rem 0.9rem; text-decoration: none; color: var(--ink); }
-.ix-hl:hover { box-shadow: var(--shadow-hover); color: var(--ink); } .ix-hl b { font-size: 1.8rem; font-family: var(--font-heading); line-height: 1.1; color: var(--brand-ink); }
-.ix-hl.more b { color: var(--more); } .ix-hl.less b { color: var(--less); } .ix-hl span { font-weight: 600; font-size: 0.9rem; } .ix-hl small { color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.68rem; margin-top: auto; padding-top: 0.4rem; }
+.ix-hls { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr)); gap: 0.8rem; ` +
+    `margin: 0.4rem 0 0.8rem; }
+.ix-hl { display: flex; flex-direction: column; gap: 0.2rem; background: var(--surface); border: 1px solid ` +
+    `var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow); padding: 0.8rem 0.9rem; ` +
+    `text-decoration: none; color: var(--ink); }
+.ix-hl:hover { box-shadow: var(--shadow-hover); color: var(--ink); } .ix-hl b { font-size: 1.8rem; font-family: ` +
+    `var(--font-heading); line-height: 1.1; color: var(--brand-ink); }
+.ix-hl.more b { color: var(--more); } .ix-hl.less b { color: var(--less); } .ix-hl span { font-weight: 600; ` +
+    `font-size: 0.9rem; } .ix-hl small { color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; ` +
+    `font-size: 0.68rem; margin-top: auto; padding-top: 0.4rem; }
 .ix-glyph { width: 1.8rem; height: 1.3rem; color: var(--brand-ink); }
 .ix-links { margin: 0.2rem 0; }
 .ix-findings li { margin: 0.25rem 0; }
@@ -840,8 +1142,9 @@
 .ix-tile-findings { font-size: 0.875rem; margin-top: 0.5rem; }
 .ix-tile-findings .ix-more > summary { cursor: pointer; color: var(--accent, inherit); }
 .ix-tile .tfoot a { font-weight: 600; }
-@media (max-width: 760px) { .ixf-row { grid-template-columns: minmax(8rem, 1fr) minmax(6rem, 1fr) 6.5rem; } .ixf-row > :nth-child(n+4) { display: none; } }
+@media (max-width: 760px) { .ixf-row { grid-template-columns: minmax(8rem, 1fr) minmax(6rem, 1fr) 6.5rem; } ` +
+    `.ixf-row > :nth-child(n+4) { display: none; } }
 @media print { .ix-tools, .exp, .ix-check, .ix-tctl { display: none !important; } }
-`;
+`);
   document.head.appendChild(style);
 });

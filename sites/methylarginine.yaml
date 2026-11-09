@@ -1553,8 +1553,8 @@ website:                  # the look and words of the website (ptmc web); layout
           - {label: Peroxisomes, part: perox, sets: {cell_hcm_compartment: "mitochondrial outer membrane, peroxisome", cell_organelle_ip: peroxisome}}
           - {label: Plasma membrane, part: pm, sets: {cell_hcm_compartment: plasma membrane, cell_organelle_ip: plasma_membrane, hpa_location: Plasma membrane}}
     drawings:              # the kit's drawings (CONTRACTS.md names their parts), in order
-      - {drawing: cell, title: "Within them: the cell"}
-      - {drawing: nucleus, title: "Within them: the nucleus"}
+      - {drawing: cell, title: "The cell"}
+      - {drawing: nucleus, title: "The nucleus"}
   set_views:               # a protein-set question drawn with its proteins' numbers (kit-values.js): DepMap's dependency
     - analysis: depmap_dependency
       meter: common_essential                   # the class whose share the tile shows

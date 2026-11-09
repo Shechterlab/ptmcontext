@@ -57,8 +57,12 @@
   // ---- words ----------------------------------------------------------------------------------------------------------
   function evidenceText(m) {
     const parts = [], contact = m.direct.size, via = m.near.size;
-    if (contact || via) parts.push((contact ? `${plural(contact, 'site')} in structural contact (side chain within 4 Å)` : '') + (via ? `${contact ? ', ' + int(via) + ' more' : plural(via, 'site')} ${NC.near?.label || 'in contact through a neighboring residue'}` : '') + ' in structures');
-    if (m.xl.length) parts.push(`${plural(m.xl.length, 'residue')} crosslinked in cells${m.xlSites.length ? ` (${plural(m.xlSites.length, 'site')} within ${NC.crosslinks?.span ?? 5} residues of one)` : ''}`);
+    if (contact || via) parts.push((contact ? (`${plural(contact, 'site')} in structural contact (side chain within ` +
+        `4 Å)`) : '') + (via ? `${
+contact ? ', ' + int(via) + ' more' : plural(via, 'site')} ${
+NC.near?.label || 'in contact through a neighboring residue'}` : '') + ' in structures');
+    if (m.xl.length) parts.push(`${plural(m.xl.length, 'residue')} crosslinked in cells${
+m.xlSites.length ? ` (${plural(m.xlSites.length, 'site')} within ${NC.crosslinks?.span ?? 5} residues of one)` : ''}`);
     if (m.reg.length) parts.push(`${plural(m.reg.length, 'bound region')} in structures`);
     if (m.motifs.length) parts.push(plural(m.motifs.length, 'DNA-binding profile'));
     if (m.rbns.length) parts.push('RNA Bind-n-Seq');
@@ -70,14 +74,20 @@
   // ---- pieces ---------------------------------------------------------------------------------------------------------
   const shown = (acc, q) => (K.prot.shownPos ? K.prot.shownPos(acc, q) : q);
   const resName = (p, rec, q) => `${(rec.seq || '')[q - 1] || ''}${shown(p.acc, q)}`;
-  const siteLink = (p, rec, q) => `<a class="mono" href="${esc(K.link('protein', p.acc + '/' + q))}" title="Open the site card of ${esc(resName(p, rec, q))}">${esc(resName(p, rec, q))}</a>`;
-  const entryBtn = (p, q, id) => `<a class="entry3d mono" href="${esc(ENTRY_URL.replace('{id}', encodeURIComponent(id)))}" target="_blank" rel="noopener" data-entry3d="${esc(id)}" data-acc="${esc(p.acc)}" data-pos="${q}" title="${esc(id.toUpperCase())}: show it in 3D at ${esc(String(q))}">${esc(id.toUpperCase())}</a>`;
-  const win = w => `<span class="na-win">${String(w || '').replace(/\[([^\]])\]|(-)|([^[\]-])/g, (m0, hit, gap, ch) => (gap ? '<span class="gap">·</span>' : hit ? `<b class="nt hit">${esc(hit)}</b>` : `<span class="nt">${esc(ch)}</span>`))}</span>`;
+  const siteLink = (p, rec, q) => (`<a class="mono" href="${esc(K.link('protein', p.acc + '/' + q))}" title="Open ` +
+      `the site card of ${esc(resName(p, rec, q))}">${esc(resName(p, rec, q))}</a>`);
+  const entryBtn = (p, q, id) => (`<a class="entry3d mono" href="${
+esc(ENTRY_URL.replace('{id}', encodeURIComponent(id)))}" target="_blank" ` +
+      `rel="noopener" data-entry3d="${esc(id)}" data-acc="${esc(p.acc)}" data-pos="${q}" title="${esc(id.toUpperCase())}: show it in 3D at ${esc(String(q))}">${esc(id.toUpperCase())}</a>`);
+  const win = w => `<span class="na-win">${
+String(w || '').replace(/\[([^\]])\]|(-)|([^[\]-])/g, (m0, hit, gap, ch) => (gap ? '<span class="gap">·</span>' : hit ? `<b class="nt hit">${esc(hit)}</b>` : `<span class="nt">${esc(ch)}</span>`))}</span>`;
   const rel = d => `i${d > 0 ? '+' : '−'}${Math.abs(d)}`;
   const link = (url, text, title) => (url ? `<a href="${esc(url)}" target="_blank" rel="noopener"${title ? ` title="${esc(title)}"` : ''}>${text}</a>` : text);
   const more = (key, items, n, render) => {
     const open = UI.more[key];
-    return items.slice(0, open ? items.length : n).map(render).join('') + (items.length > n ? `<li><button type="button" class="linkish" data-prna-more="${esc(key)}">${open ? 'Show fewer' : `Show ${int(items.length - n)} more`}</button></li>` : '');
+    return items.slice(0, open ? items.length : n).map(render).join('') + (items.length > n ? (`<li><button ` +
+        `type="button" class="linkish" data-prna-more="${esc(key)}">${
+open ? 'Show fewer' : `Show ${int(items.length - n)} more`}</button></li>`) : '');
   };
 
   function structuresHtml(p, rec, k, m) {
@@ -87,45 +97,73 @@
       const rs = m.direct.get(q), by = new Map();
       rs.forEach(r => { const v = by.get(r.win) || by.set(r.win, { win: r.win, type: r.type, ids: new Set(), name: r.name }).get(r.win); v.ids.add(r.entry); });
       const ws = [...by.values()].sort((a, b) => b.ids.size - a.ids.size), top = ws[0], ids = [...new Set(rs.map(r => r.entry))];
-      return `<li>${siteLink(p, rec, q)} <span class="tag t-a">in contact</span> ${win(top.win)} <span class="muted small" title="${esc(top.name || '')}">${top.type ? esc(top.type) + ' · ' : ''}${plural(ids.length, 'entry', 'entries')}${ws.length > 1 ? ` · ${plural(ws.length - 1, 'other sequence')}` : ''}</span> ` +
-        `<span class="small">${ids.slice(0, 3).map(id => entryBtn(p, q, id)).join(', ')}${ids.length > 3 ? ` <span class="muted">+${ids.length - 3}</span>` : ''}</span></li>`;
+      return (`<li>${siteLink(p, rec, q)} <span class="tag t-a">in contact</span> ${win(top.win)} <span class="muted ` +
+          `small" title="${esc(top.name || '')}">${top.type ? esc(top.type) + ' · ' : ''}${plural(ids.length, 'entry', 'entries')}${
+ws.length > 1 ? ` · ${plural(ws.length - 1, 'other sequence')}` : ''}</span> `) +
+        `<span class="small">${
+ids.slice(0, 3).map(id => entryBtn(p, q, id)).join(', ')}${
+ids.length > 3 ? ` <span class="muted">+${ids.length - 3}</span>` : ''}</span></li>`;
     };
     const viaLi = q => {
       const rs = m.near.get(q).sort((a, b) => b.n - a.n), top = rs[0];
-      return `<li>${siteLink(p, rec, q)} <span class="tag" title="${esc(`Touched by residue ${resName(p, rec, q + top.off)}, not by ${resName(p, rec, q)} itself`)}">via ${rel(top.off)}</span> ${win(top.win)} <span class="muted small" title="${esc(top.name || '')}">${top.type ? esc(top.type) + ' · ' : ''}${plural(top.n, 'entry', 'entries')}</span></li>`;
+      return (`<li>${siteLink(p, rec, q)} <span class="tag" title="${
+esc(`Touched by residue ${resName(p, rec, q + top.off)}, not by ${resName(p, rec, q)} itself`)}">via ${rel(top.off)}</span> ${win(top.win)} <span class="muted ` +
+          `small" title="${esc(top.name || '')}">${top.type ? esc(top.type) + ' · ' : ''}${plural(top.n, 'entry', 'entries')}</span></li>`);
     };
     return `<section class="na-sec"><h4>${esc(cap(W.marks))} in contact with ${esc(word(k))} in structures</h4>` +
       `<ul class="sc-na">${more(k + 'd', sites, 8, dirLi)}${more(k + 'v', via, 6, viaLi)}</ul>` +
-      (onlyIf.length ? `<p class="small">At an interface with ${esc(word(k))} in a PDB entry, but not within 4 Å in the entries analyzed: ${onlyIf.map(q => `${siteLink(p, rec, q)}`).join(', ')}.</p>` : '') +
+      (onlyIf.length ? (`<p class="small">At an interface with ${esc(word(k))} in a PDB entry, but not within 4 Å ` +
+          `in the entries analyzed: ${
+onlyIf.map(q => `${siteLink(p, rec, q)}`).join(', ')}.</p>`) : '') +
       '</section>';
   }
   function regionsHtml(p, rec, k, m) {
     if (!m.reg.length) return '';
     return `<section class="na-sec"><h4>${esc(word(k))}-binding regions in structures</h4><ul class="sc-na">${more(k + 'r', m.reg, 8, r =>
-      `<li><span class="mono">${esc(shown(p.acc, r.a))}${r.b !== r.a ? '–' + esc(shown(p.acc, r.b)) : ''}</span> <span class="muted small">${plural(r.n, 'entry', 'entries')}</span>` +
-      `${r.sites.length ? ` <span class="small">${esc(cap(W.marks))}: ${r.sites.map(s => esc(s)).join(', ')}</span>` : ''}</li>`)}</ul>` +
+      (`<li><span class="mono">${esc(shown(p.acc, r.a))}${
+r.b !== r.a ? '–' + esc(shown(p.acc, r.b)) : ''}</span> <span ` +
+          `class="muted small">${plural(r.n, 'entry', 'entries')}</span>`) +
+      `${
+r.sites.length ? ` <span class="small">${esc(cap(W.marks))}: ${r.sites.map(s => esc(s)).join(', ')}</span>` : ''}</li>`)}</ul>` +
       '</section>';
   }
   function cellsHtml(p, rec, k, m) {
     if (!m.xl.length && !m.flags.length) return '';
     const span = NC.crosslinks?.span ?? 5;
-    const xl = m.xl.length ? `<p>${plural(m.xl.length, 'residue')} crosslinked to ${esc(word(k))} in living cells${m.xlSites.length ? `, ${plural(m.xlSites.length, 'site')} within ${span} residues of one` : ''}.</p>` +
-      `<p class="small">${m.xl.slice(0, UI.more[k + 'x'] ? m.xl.length : 40).map(q => `<span class="mono${m.xlSites.some(s => Math.abs(s - q) <= span) ? ' strong' : ''}">${esc(resName(p, rec, q))}</span>`).join(' ')}` +
-      `${m.xl.length > 40 ? ` <button type="button" class="linkish" data-prna-more="${k}x">${UI.more[k + 'x'] ? 'Show fewer' : `Show ${int(m.xl.length - 40)} more`}</button>` : ''}</p>` : '';
-    const fl = m.flags.length ? `<p class="flabel" title="${esc(NC.flags.help || '')}">${esc(NC.flags.label || `${cap(W.marks)} inside RNA-bound peptides or fragments`)}</p><p class="small">${m.flags.map(([q, v]) => `${siteLink(p, rec, q)} <span class="muted">${esc(v.join(', '))}</span>`).join(' · ')}</p>` : '';
+    const xl = m.xl.length ? `<p>${plural(m.xl.length, 'residue')} crosslinked to ${esc(word(k))} in living cells${
+m.xlSites.length ? `, ${plural(m.xlSites.length, 'site')} within ${span} residues of one` : ''}.</p>` +
+      `<p class="small">${
+m.xl.slice(0, UI.more[k + 'x'] ? m.xl.length : 40).map(q => `<span class="mono${
+m.xlSites.some(s => Math.abs(s - q) <= span) ? ' strong' : ''}">${esc(resName(p, rec, q))}</span>`).join(' ')}` +
+      `${
+m.xl.length > 40 ? ` <button type="button" class="linkish" data-prna-more="${k}x">${
+UI.more[k + 'x'] ? 'Show fewer' : `Show ${int(m.xl.length - 40)} more`}</button>` : ''}</p>` : '';
+    const fl = m.flags.length ? `<p class="flabel" title="${esc(NC.flags.help || '')}">${
+esc(NC.flags.label || (`${cap(W.marks)} inside RNA-bound ` +
+        `peptides or fragments`))}</p><p class="small">${
+m.flags.map(([q, v]) => `${siteLink(p, rec, q)} <span class="muted">${esc(v.join(', '))}</span>`).join(' · ')}</p>` : '';
     return `<section class="na-sec"><h4>${esc(word(k))} crosslinked in cells</h4>${xl}${fl}</section>`;
   }
   function motifsHtml(m, k) {
     if (!m.motifs.length) return '';
-    return `<section class="na-sec"><h4>Preferred ${esc(word(k))}: binding profiles</h4><ul class="sc-na">${m.motifs.map(r => `<li>${link(String(NC.motifs.url || '').replace('{id}', encodeURIComponent(get(r, 'motifs', 'id'))), esc(get(r, 'motifs', 'name') || get(r, 'motifs', 'id')), get(r, 'motifs', 'id'))} <span class="mono">${esc(get(r, 'motifs', 'consensus'))}</span> <span class="muted small">${esc([get(r, 'motifs', 'class'), get(r, 'motifs', 'family')].filter(Boolean).join(' · '))}</span></li>`).join('')}</ul></section>`;
+    return `<section class="na-sec"><h4>Preferred ${esc(word(k))}: binding profiles</h4><ul class="sc-na">${
+m.motifs.map(r => (`<li>${
+link(String(NC.motifs.url || '').replace('{id}', encodeURIComponent(get(r, 'motifs', 'id'))), esc(get(r, 'motifs', 'name') || get(r, 'motifs', 'id')), get(r, 'motifs', 'id'))} <span class="mono">${esc(get(r, 'motifs', 'consensus'))}</span> <span ` +
+        `class="muted small">${
+esc([get(r, 'motifs', 'class'), get(r, 'motifs', 'family')].filter(Boolean).join(' · '))}</span></li>`)).join('')}</ul></section>`;
   }
   function kmers(ks, sc) {
     const s = list(sc);
-    return list(ks).slice(0, 8).map((x, i) => `<span class="tag mono"${s[i] ? ` title="${esc('enrichment ' + s[i])}"` : ''}>${esc(x)}</span>`).join(' ');
+    return list(ks).slice(0, 8).map((x, i) => `<span class="tag mono"${
+s[i] ? ` title="${esc('enrichment ' + s[i])}"` : ''}>${esc(x)}</span>`).join(' ');
   }
   function rbnsHtml(m, k) {
     if (!m.rbns.length) return '';
-    return `<section class="na-sec"><h4>Preferred ${esc(word(k))} in vitro (RNA Bind-n-Seq)</h4><ul class="sc-na">${m.rbns.map(r => `<li>${link(String(NC.rbns.url || '').replace('{id}', encodeURIComponent(get(r, 'rbns', 'id'))), esc(get(r, 'rbns', 'id')))} <span class="muted small">${esc(get(r, 'rbns', 'conc'))}</span> ${kmers(get(r, 'rbns', 'kmers'), get(r, 'rbns', 'scores'))}</li>`).join('')}</ul>` +
+    return `<section class="na-sec"><h4>Preferred ${esc(word(k))} in vitro (RNA Bind-n-Seq)</h4><ul class="sc-na">${
+m.rbns.map(r => (`<li>${
+link(String(NC.rbns.url || '').replace('{id}', encodeURIComponent(get(r, 'rbns', 'id'))), esc(get(r, 'rbns', 'id')))} <span class="muted ` +
+        `small">${esc(get(r, 'rbns', 'conc'))}</span> ${
+kmers(get(r, 'rbns', 'kmers'), get(r, 'rbns', 'scores'))}</li>`)).join('')}</ul>` +
       '</section>';
   }
   function eclipHtml(m, k) {
@@ -136,10 +174,19 @@
       const src = get(r, 'eclip', 'source'), id = get(r, 'eclip', 'id'), u = NC.eclip.url, url = typeof u === 'string' ? u : (u || {})[src] || '';
       const genes = list(get(r, 'eclip', 'genes')), gp = list(get(r, 'eclip', 'gene_peaks'));
       const top = parts.slice().sort((a, b) => b[1] - a[1])[0];
-      return `<li><b>${esc(get(r, 'eclip', 'cell'))}</b> <span class="tag">${esc(src)}</span> ${link(url.replace('{id}', encodeURIComponent(id)), esc(id))} <span class="muted small">${int(peaks)} peaks${top && top[1] ? `, most in ${esc(top[0])}` : ''}</span>` +
-        (parts.length ? `<div class="ec-bar" role="img" aria-label="${esc(parts.map(([l, n]) => `${l} ${n}`).join(', '))}">${parts.filter(x => x[1]).map(([l, n]) => `<i style="flex:${n}" title="${esc(`${l}: ${int(n)} peaks (${Math.round(100 * n / tot)}%)`)}"></i>`).join('')}</div>` : '') +
-        (genes.length ? `<div class="small">${genes.slice(0, 10).map((g, i) => `<span class="tag" title="${esc((gp[i] ? gp[i] + ' peaks' : '') + ' in transcripts of ' + g)}">${esc(g)}</span>`).join(' ')}</div>` : '') +
-        (get(r, 'eclip', 'kmers') ? `<div class="small">${kmers(get(r, 'eclip', 'kmers'), get(r, 'eclip', 'ratios'))}</div>` : '') +
+      return (`<li><b>${esc(get(r, 'eclip', 'cell'))}</b> <span class="tag">${esc(src)}</span> ${
+link(url.replace('{id}', encodeURIComponent(id)), esc(id))} <span class="muted ` +
+          `small">${int(peaks)} peaks${
+top && top[1] ? `, most in ${esc(top[0])}` : ''}</span>`) +
+        (parts.length ? `<div class="ec-bar" role="img" aria-label="${
+esc(parts.map(([l, n]) => `${l} ${n}`).join(', '))}">${
+parts.filter(x => x[1]).map(([l, n]) => `<i style="flex:${n}" title="${
+esc(`${l}: ${int(n)} peaks (${Math.round(100 * n / tot)}%)`)}"></i>`).join('')}</div>` : '') +
+        (genes.length ? `<div class="small">${
+genes.slice(0, 10).map((g, i) => `<span class="tag" title="${
+esc((gp[i] ? gp[i] + ' peaks' : '') + ' in transcripts of ' + g)}">${esc(g)}</span>`).join(' ')}</div>` : '') +
+        (get(r, 'eclip', 'kmers') ? `<div class="small">${
+kmers(get(r, 'eclip', 'kmers'), get(r, 'eclip', 'ratios'))}</div>` : '') +
         (get(r, 'eclip', 'same') ? `<div class="muted small">Same data as ${esc(get(r, 'eclip', 'same'))}.</div>` : '') + '</li>';
     };
     return `<section class="na-sec"><h4>${esc(word(k))} crosslinked in cells (eCLIP)</h4><ul class="sc-na ec-list">${m.eclip.map(one).join('')}</ul>` +
@@ -149,10 +196,14 @@
   function bodyHtml(p, rec, M) {
     const k = M[UI.kind]?.any || !KINDS.some(x => M[x].any) ? UI.kind : KINDS.find(x => M[x].any);
     UI.kind = k;
-    const tabs = `<div class="seg ix-tabs" role="tablist">${KINDS.map(x => `<button type="button" role="tab" data-prna-tab="${esc(x)}" aria-pressed="${x === k}" aria-selected="${x === k}" title="${esc(word(x) + ': ' + evidenceText(M[x]))}">${esc(word(x))}</button>`).join('')}</div>`;
+    const tabs = `<div class="seg ix-tabs" role="tablist">${
+KINDS.map(x => (`<button type="button" role="tab" ` +
+        `data-prna-tab="${esc(x)}" aria-pressed="${x === k}" aria-selected="${x === k}" title="${esc(word(x) + ': ' + evidenceText(M[x]))}">${esc(word(x))}</button>`)).join('')}</div>`;
     const m = M[k];
     return `<div class="card-head"></div>` +
-      tabs + `<div class="na-body">${[structuresHtml(p, rec, k, m), regionsHtml(p, rec, k, m), cellsHtml(p, rec, k, m), motifsHtml(m, k), rbnsHtml(m, k), eclipHtml(m, k)].join('') || `<p class="muted">No ${esc(word(k))} evidence.</p>`}</div>`;
+      tabs + `<div class="na-body">${
+[structuresHtml(p, rec, k, m), regionsHtml(p, rec, k, m), cellsHtml(p, rec, k, m), motifsHtml(m, k), rbnsHtml(m, k), eclipHtml(m, k)].join('') || (`<p class="muted">` +
+          `No ${esc(word(k))} evidence.</p>`)}</div>`;
   }
 
   // ---- the fold --------------------------------------------------------------------------------------------------------

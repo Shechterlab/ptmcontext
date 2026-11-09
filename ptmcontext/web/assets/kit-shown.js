@@ -29,8 +29,10 @@
   const counted = m => !!CFG && WHEN.length > 0 && WHEN.every(c => holds(m, c));
   // the tag's hover: what it is, the tests, the rest, and whether it is counted
   function tip(m, only) {
-    const tests = (CFG.tests?.attributes || []).filter(n => SPECS[n] && valsOf(m, n).length).map(n => `${SPECS[n].label} ${valsOf(m, n).map(v => vlab(n, v)).join('/')}`);
-    const also = (CFG.also || []).filter(n => SPECS[n] && valsOf(m, n).length).map(n => `${SPECS[n].label} ${valsOf(m, n).map(v => vlab(n, v)).join(' and ')}`);
+    const tests = (CFG.tests?.attributes || []).filter(n => SPECS[n] && valsOf(m, n).length).map(n => `${SPECS[n].label} ${
+valsOf(m, n).map(v => vlab(n, v)).join('/')}`);
+    const also = (CFG.also || []).filter(n => SPECS[n] && valsOf(m, n).length).map(n => `${SPECS[n].label} ${
+valsOf(m, n).map(v => vlab(n, v)).join(' and ')}`);
     const end = only ? CFG.shown_help : CFG.counted?.help;
     return [CFG.help || '', tests.length ? `${CFG.tests.label || 'Tests'}: ${tests.join('; ')}` : '', end || '', ...also].filter(Boolean).map(t => t.replace(/[.\s]+$/, '')).join('. ') + '.';
   }
@@ -43,7 +45,8 @@
   function note() {
     if (!DATA || !CFG?.note) return '';
     const like = DATA.counted_like || 0, n = DATA.n, nums = { all: like + n, counted: like, shown: n, others: (D.counts?.marks || 0) - like };
-    return `<p class="note lc-note" id="lc-note"><span class="lc-swatch" aria-hidden="true"></span><span>${esc(CFG.note).replace(/\{(\w+)\}/g, (x, k) => (k in nums ? `<b>${int(nums[k])}</b>` : x))}</span></p>`;
+    return `<p class="note lc-note" id="lc-note"><span class="lc-swatch" aria-hidden="true"></span><span>${
+esc(CFG.note).replace(/\{(\w+)\}/g, (x, k) => (k in nums ? `<b>${int(nums[k])}</b>` : x))}</span></p>`;
   }
   K.shown = {
     on: !!DATA, cfg: CFG || {}, label, tip, tag, counted, holds, note, asMark,
@@ -56,9 +59,11 @@
   };
   if (DATA) {
     const css = document.createElement('style');
-    css.textContent = '.lc-tag{font:500 .72rem/1.4 var(--font-body);letter-spacing:0;text-transform:none;vertical-align:middle;background:repeating-linear-gradient(135deg,transparent 0 3px,color-mix(in srgb,var(--muted) 22%,transparent) 3px 5px);border:1px dashed var(--muted);color:var(--ink)}' +
+    css.textContent = ('.lc-tag{font:500 .72rem/1.4 ' +
+'var(--font-body);letter-spacing:0;text-transform:none;vertical-align:middle;background:repeating-linear-gradient(135deg,transparent 0 3px,color-mix(in srgb,var(--muted) 22%,transparent) 3px 5px);border:1px dashed var(--muted);color:var(--ink)}') +
       '.lc-note{display:flex;gap:.6rem;align-items:flex-start}.lc-swatch{flex:none;width:18px;height:18px;margin-top:.15rem;border:1.5px solid var(--muted);border-radius:4px;background:repeating-linear-gradient(135deg,transparent 0 3px,var(--muted) 3px 4.5px)}' +
-      'tr.lc-row td{background:repeating-linear-gradient(135deg,transparent 0 6px,color-mix(in srgb,var(--muted) 7%,transparent) 6px 9px)}';
+      ('tr.lc-row td{background:repeating-linear-gradient(135deg,transparent 0 ' +
+'6px,color-mix(in srgb,var(--muted) 7%,transparent) 6px 9px)}');
     document.head.appendChild(css);
   }
 });

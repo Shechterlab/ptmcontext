@@ -17,13 +17,24 @@
   const lane = (len, items, o = {}) => {
     const h = o.h || 10, x0 = v => Math.max(0, (v - 1) / len * VB), x1 = v => Math.min(VB, v / len * VB);
     const body = items.map(it => { const a = x0(it.a), b = x1(it.b ?? it.a), w = Math.max(b - a, it.b == null ? 3 : 2);
-      return `<rect x="${(a - (it.b == null ? Math.max(0, (3 - (b - a)) / 2) : 0)).toFixed(1)}" y="${it.dot ? 2 : 0}" width="${w.toFixed(1)}" height="${it.dot ? h - 4 : h}"${it.col ? ` fill="${esc(it.col)}"` : ''} class="${esc(it.cls || '')}">${it.tip ? `<title>${esc(it.tip)}</title>` : ''}</rect>`; }).join('');
-    return `<span class="fp-row"><b>${esc(o.label || '')}</b><svg viewBox="0 0 ${VB} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(o.label || '')}"><line x1="0" x2="${VB}" y1="${h / 2}" y2="${h / 2}" class="fp-base"/>${body}</svg></span>`;
+      return `<rect x="${
+(a - (it.b == null ? Math.max(0, (3 - (b - a)) / 2) : 0)).toFixed(1)}" y="${it.dot ? 2 : 0}" width="${w.toFixed(1)}" height="${it.dot ? h - 4 : h}"${it.col ? ` fill="${esc(it.col)}"` : ''} class="${esc(it.cls || '')}">${
+it.tip ? `<title>${esc(it.tip)}</title>` : ''}</rect>`; }).join('');
+    return (`<span class="fp-row"><b>${esc(o.label || '')}</b><svg viewBox="0 0 ${VB} ${h}" preserveAspectRatio="none" ` +
+        `role="img" aria-label="${esc(o.label || '')}"><line x1="0" x2="${VB}" y1="${h / 2}" y2="${h / 2}" class="fp-base"/>${body}</svg></span>`);
   };
-  const track = (len, lanes, key) => `<span class="fpic fp-track">${lanes.map(l => lane(len, l.items, l)).join('')}<span class="fp-axis"><b></b><span>1</span><span>${int(len)} aa</span></span>${key ? `<span class="fp-key">${key}</span>` : ''}</span>`;
-  const bigN = pairs => `<span class="fpic fp-big">${pairs.filter(Boolean).map(([n, t]) => `<span><b>${esc(String(n))}</b> ${esc(t)}</span>`).join('')}</span>`;
+  const track = (len, lanes, key) => (`<span class="fpic fp-track">${
+lanes.map(l => lane(len, l.items, l)).join('')}<span class="fp-axis">` +
+      `<b></b><span>1</span><span>${int(len)} aa</span></span>${
+key ? `<span class="fp-key">${key}</span>` : ''}</span>`);
+  const bigN = pairs => `<span class="fpic fp-big">${
+pairs.filter(Boolean).map(([n, t]) => `<span><b>${esc(String(n))}</b> ${esc(t)}</span>`).join('')}</span>`;
   // bars: rows { label, v (0-1), ref (a tick, 0-1), text }
-  const meters = rows => `<span class="fpic fp-meters">${rows.map(r => `<span class="fp-m"><i>${esc(r.label)}</i><span class="fp-bar"><u style="width:${(100 * Math.max(0, Math.min(1, r.v || 0))).toFixed(1)}%"></u>${r.ref != null ? `<s style="left:${(100 * r.ref).toFixed(1)}%"></s>` : ''}</span><b>${esc(r.text || '')}</b></span>`).join('')}</span>`;
+  const meters = rows => `<span class="fpic fp-meters">${
+rows.map(r => (`<span class="fp-m"><i>${esc(r.label)}</i><span ` +
+      `class="fp-bar"><u style="width:${
+(100 * Math.max(0, Math.min(1, r.v || 0))).toFixed(1)}%"></u>${
+r.ref != null ? `<s style="left:${(100 * r.ref).toFixed(1)}%"></s>` : ''}</span><b>${esc(r.text || '')}</b></span>`)).join('')}</span>`;
   const pills = xs => `<span class="fpic fp-pills">${xs.map(x => `<span>${esc(x)}</span>`).join('')}</span>`;
 
   // ---- the registry: a builder says what a fold's picture is; the page puts it in the fold's header -----------------------
@@ -45,7 +56,8 @@
     // interaction evidence, site by site: each site colored by its status
     const EV = PRO.card?.evidence;
     if (EV?.status && SPECS[EV.status] && K.map?.attrColour) {
-      set('p-cc', track(len, [{ label: 'Sites', items: rec.marks.map(m => ({ a: m[0], dot: true, col: K.map.attrColour(EV.status, K.cols.markAttr(m, EV.status)), tip: `${st.siteName?.(m[0]) || m[0]}: ${K.sel?.valueLabel ? K.sel.valueLabel(EV.status, K.cols.markAttr(m, EV.status)) : ''}` })) }]));
+      set('p-cc', track(len, [{ label: 'Sites', items: rec.marks.map(m => ({ a: m[0], dot: true, col: K.map.attrColour(EV.status, K.cols.markAttr(m, EV.status)), tip: `${st.siteName?.(m[0]) || m[0]}: ${
+K.sel?.valueLabel ? K.sel.valueLabel(EV.status, K.cols.markAttr(m, EV.status)) : ''}` })) }]));
     }
     // RNA and DNA: the runs bound in structures, the residues crosslinked in cells and the sites flagged (never a peptide or its extent)
     if (K.prnaModel && tb) {
@@ -103,8 +115,12 @@
     const ts = [...new Set(Object.values(PRO.context || {}).flat().map(aid => (D.analyses.find(a => a.id === aid) || {}).title).filter(Boolean))].map(t => t.toLowerCase());
     return ts.length ? K.cap(ts.length > 1 ? `${ts.slice(0, -1).join(', ')} and ${ts[ts.length - 1]}` : ts[0]) : 'These sets';
   };
-  const ctxSwitch = () => `<span class="seg ctx-seg" role="group" aria-label="Context cards"><button type="button" data-pctx="protein" aria-pressed="${CTX.mode === 'protein'}">This protein</button><button type="button" data-pctx="dataset" aria-pressed="${CTX.mode === 'dataset'}">Dataset context</button></span>` +
-    `<span class="muted small ctx-note">${CTX.mode === 'protein' ? `${ctxNames()} show what is recorded for this protein.` : 'The same sets, as the dataset’s tests rate them across all proteins.'}</span>`;
+  const ctxSwitch = () => (`<span class="seg ctx-seg" role="group" aria-label="Context cards"><button type="button" ` +
+      `data-pctx="protein" aria-pressed="${CTX.mode === 'protein'}">This protein</button><button type="button" ` +
+      `data-pctx="dataset" aria-pressed="${CTX.mode === 'dataset'}">Dataset context</button></span>`) +
+    `<span class="muted small ctx-note">${
+CTX.mode === 'protein' ? (`${ctxNames()} show what is recorded for this ` +
+        `protein.`) : 'The same sets, as the dataset’s tests rate them across all proteins.'}</span>`;
   // for the protein's own sets of an analysis: each with the dataset's test of it
   function datasetPanel(p, aids) {
     const out = [], sd = K.sel?.data();
@@ -115,7 +131,12 @@
       const rows = names.map(s => { const rs = D.rows.filter(r => r.analysis === aid && r.category === s && r.dir === 'more'); const r = rs.find(x => x.method === 'enricher') || rs.find(x => x.method === 'mantel_haenszel') || rs[0]; return { s, r }; })
         .filter(x => x.r).sort((a, b) => b.r.eff - a.r.eff).slice(0, 8);
       const title = (D.analyses.find(a => a.id === aid) || {}).title || aid;
-      out.push(`<div class="ctx-panel"><h4>${esc(title)}</h4>` + (rows.length ? `<ul class="ctx-list">${rows.map(({ s, r }) => `<li><b>${esc(lab(s))}</b> <span class="muted">${esc(K.fxn(r.eff))}× over-represented among the ${esc(W.marked || 'marked')} proteins, q ${esc(K.fq(r.q))}</span></li>`).join('')}</ul>` : `<p class="muted small">None of this protein’s ${names.length ? int(names.length) + ' ' : ''}sets is over-represented in the dataset.</p>`) + '</div>');
+      out.push(`<div class="ctx-panel"><h4>${esc(title)}</h4>` + (rows.length ? `<ul class="ctx-list">${
+rows.map(({ s, r }) => (`<li><b>${esc(lab(s))}</b> <span ` +
+          `class="muted">${esc(K.fxn(r.eff))}× over-represented among the ${esc(W.marked || 'marked')} proteins, q ${esc(K.fq(r.q))}</span></li>`)).join('')}</ul>` : (`<p class="muted ` +
+          `small">None of this protein’s ${
+names.length ? int(names.length) + ' ' : ''}sets is over-represented in ` +
+          `the dataset.</p>`)) + '</div>');
     }
     return out.join('');
   }
