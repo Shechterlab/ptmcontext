@@ -1,5 +1,6 @@
 """Highlighting candidates in figures (kit-hilite.js): the placement of direct labels leaves no two overlapping, stays in the
 chart's box, and the IDR charts draw the highlighted items on top of gray context."""
+
 from __future__ import annotations
 
 import json
@@ -58,13 +59,22 @@ console.log(JSON.stringify({{ hl: p.get('hl'), keys: [...p.keys()], on: st.on, n
     run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
     out = json.loads(run.stdout)
-    assert out == {'hl': 'FUS, TARDBP R5', 'keys': ['hl'], 'on': True, 'n': 2, 'chips': 2, 'q': '', 'f': {}, 'none': False}
+    assert out == {
+        'hl': 'FUS, TARDBP R5',
+        'keys': ['hl'],
+        'on': True,
+        'n': 2,
+        'chips': 2,
+        'q': '',
+        'f': {},
+        'none': False,
+    }
 
 
 def test_exports_can_draw_the_highlighted_items_alone():
     hl, idrs = (ASSETS / 'kit-hilite.js').read_text(), (ASSETS / 'kit-idrs.js').read_text()
     assert 'data-hl-only' in hl and 'localStorage' in hl and 'catch' in hl
-    assert idrs.count('K.hl.only') >= 3                                    # the diagram's dots, the kappa strip, the subtitle
+    assert idrs.count('K.hl.only') >= 3  # the diagram's dots, the kappa strip, the subtitle
 
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
@@ -119,21 +129,41 @@ console.log(JSON.stringify({{ prots: [...p.prots], sites: p.sites.map(x => [x.p,
     run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
     out = json.loads(run.stdout)
-    assert out == {'prots': [0, 1], 'sites': [[0, 10]], 'notFound': ['R999 of ALPHA is not in its sequence', 'ALPHAA'], 'bad': ['ALPHA R999', 'ALPHAA'], 'protOfSite': True, 'line': True, 'siteOnly': True, 'gene': True}
+    assert out == {
+        'prots': [0, 1],
+        'sites': [[0, 10]],
+        'notFound': ['R999 of ALPHA is not in its sequence', 'ALPHAA'],
+        'bad': ['ALPHA R999', 'ALPHAA'],
+        'protOfSite': True,
+        'line': True,
+        'siteOnly': True,
+        'gene': True,
+    }
 
 
 def test_the_box_is_in_the_selection_bar_and_the_tables_and_figures_carry_the_highlight():
     web = ASSETS.parent
     assert 'id="hl-bar"' in (web / 'template.html').read_text()
     idrs, hl = (ASSETS / 'kit-idrs.js').read_text(), (ASSETS / 'kit-hilite.js').read_text()
-    assert 'K.hl?.control()' not in idrs and 'outside your selection' in idrs and 'is in no IDR' in idrs and 'kappaFew' in idrs
-    assert 'firstSort' in (ASSETS / 'kit-tables.js').read_text() and 'firstSort' in (ASSETS / 'kit-sites.js').read_text()
-    assert "hl-row" in (ASSETS / 'kit-tabfig.js').read_text() and 'isSite(p.i' in (ASSETS / 'kit-map.js').read_text()
+    assert (
+        'K.hl?.control()' not in idrs
+        and 'outside your selection' in idrs
+        and 'is in no IDR' in idrs
+        and 'kappaFew' in idrs
+    )
+    assert (
+        'firstSort' in (ASSETS / 'kit-tables.js').read_text() and 'firstSort' in (ASSETS / 'kit-sites.js').read_text()
+    )
+    assert 'hl-row' in (ASSETS / 'kit-tabfig.js').read_text() and 'isSite(p.i' in (ASSETS / 'kit-map.js').read_text()
     assert 'decorate' in hl and 'Highlighted first' in hl
 
 
 def test_a_pasted_list_is_the_only_highlight_and_the_box_is_one_compact_row():
-    idrs, hl, tf = (ASSETS / 'kit-idrs.js').read_text(), (ASSETS / 'kit-hilite.js').read_text(), (ASSETS / 'kit-tabfig.js').read_text()
+    idrs, hl, tf = (
+        (ASSETS / 'kit-idrs.js').read_text(),
+        (ASSETS / 'kit-hilite.js').read_text(),
+        (ASSETS / 'kit-tabfig.js').read_text(),
+    )
     assert 'K.hl?.any()' in idrs and 'parts.filter(r => r.pasted)' in idrs and 'K.hl.limit) HLS = st' in idrs
     assert 'data-hl-menu' in hl and 'aria-haspopup' in hl and "e.key === 'Escape'" in hl and 'aria-expanded' in hl
     assert '(t.closest(CONTAINER) || root).querySelector' in tf
@@ -142,10 +172,14 @@ def test_a_pasted_list_is_the_only_highlight_and_the_box_is_one_compact_row():
 def test_idr_page_says_what_each_count_counts_and_exports_follow_highlighted_only():
     idrs = (ASSETS / 'kit-idrs.js').read_text()
     hl = (ASSETS / 'kit-hilite.js').read_text()
-    assert 'labels shown for' in idrs and 'so ${m === 1' in idrs and 'IDRs only' in idrs           # the κ chart's scope and the label cap
-    assert "hname('diagram')" in idrs and "_highlighted" in idrs and 'data-idr-hltsv' not in idrs   # one TSV, which honors the switch
-    assert "'Search:'" in hl and 'hl-chip-nf' in hl and 'ci = have ?' in hl                           # a search is not a highlight; struck chips
-    assert "return ['idrs', 'IDRs', scoped().length]" in idrs                                         # the tab's number is the heading's
+    assert (
+        'labels shown for' in idrs and 'so ${m === 1' in idrs and 'IDRs only' in idrs
+    )  # the κ chart's scope and the label cap
+    assert (
+        "hname('diagram')" in idrs and '_highlighted' in idrs and 'data-idr-hltsv' not in idrs
+    )  # one TSV, which honors the switch
+    assert "'Search:'" in hl and 'hl-chip-nf' in hl and 'ci = have ?' in hl  # a search is not a highlight; struck chips
+    assert "return ['idrs', 'IDRs', scoped().length]" in idrs  # the tab's number is the heading's
 
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')

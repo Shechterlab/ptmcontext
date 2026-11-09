@@ -1,5 +1,6 @@
 """One scheme for the names of downloaded files (K.stem in kit-tabfig.js), the export bar for a table that has none, and the
 page PDF of the Interactions pages going through the same download path."""
+
 from __future__ import annotations
 
 import json
@@ -29,13 +30,20 @@ console.log(JSON.stringify(out.map(x => x.replace(/\\d{{4}}-\\d{{2}}-\\d{{2}}/, 
 """
     run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
-    assert json.loads(run.stdout) == ['toy_proteins_selection_DATE.tsv', 'toy_idrs_diagram_selection_DATE.png', 'other_file.fasta',
-                                      'toy_GENEA_where_in_the_cell_DATE.pdf', 'toy_GENEA_map_DATE.svg']
+    assert json.loads(run.stdout) == [
+        'toy_proteins_selection_DATE.tsv',
+        'toy_idrs_diagram_selection_DATE.png',
+        'other_file.fasta',
+        'toy_GENEA_where_in_the_cell_DATE.pdf',
+        'toy_GENEA_map_DATE.svg',
+    ]
 
 
 def test_tables_without_an_export_get_one_and_the_interactions_pdf_downloads():
-    tf, ix, kit, cons = [(ASSETS / n).read_text() for n in ('kit-tabfig.js', 'kit-interactions.js', 'kit.js', 'kit-conserve.js')]
+    tf, ix, kit, cons = [
+        (ASSETS / n).read_text() for n in ('kit-tabfig.js', 'kit-interactions.js', 'kit.js', 'kit-conserve.js')
+    ]
     assert 'data-tblx' in tf and 'domTsv' in tf and 'svg.minimap' in tf
-    assert 'K.pagePdf(' in ix and "() => print()" not in ix
+    assert 'K.pagePdf(' in ix and '() => print()' not in ix
     assert 'K.stem(name)' in kit
     assert "st?.phase === 'ok' ? K.expBar(" in cons

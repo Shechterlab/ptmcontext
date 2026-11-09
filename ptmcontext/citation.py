@@ -2,6 +2,7 @@
 never typed into code. The kit's own file is CITATION.cff at the repository root; each site names its own
 (site file: citation). Every export of a site carries the formatted citation, the site's version and the kit's.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -24,7 +25,7 @@ def read(path: str | Path) -> dict:
 def _author(a: dict) -> str:
     if a.get('name'):
         return a['name']
-    return f"{a.get('family-names', '')} {a.get('given-names', '')}".strip()
+    return f'{a.get("family-names", "")} {a.get("given-names", "")}'.strip()
 
 
 def format_reference(ref: dict) -> str:
@@ -33,15 +34,15 @@ def format_reference(ref: dict) -> str:
     names = ', '.join(a for a in authors if a != 'et al.') + (' et al.' if 'et al.' in authors else '')
     where = ref.get('journal', '')
     if ref.get('volume'):
-        where += f" {ref['volume']}"
+        where += f' {ref["volume"]}'
         if ref.get('start'):
-            where += f":{ref['start']}" + (f"–{ref['end']}" if ref.get('end') else '')
+            where += f':{ref["start"]}' + (f'–{ref["end"]}' if ref.get('end') else '')
     text = '. '.join(p.rstrip('.') for p in (names, ref.get('title', '')) if p)
-    year = f" ({ref['year']})" if ref.get('year') else ''
+    year = f' ({ref["year"]})' if ref.get('year') else ''
     if where.strip():
         text += f'. {where.strip()}{year}'
     else:
-        text += f"{'. ' + ref['publisher'] if ref.get('publisher') else ''}{year}"
+        text += f'{". " + ref["publisher"] if ref.get("publisher") else ""}{year}'
     return text + '.'
 
 
@@ -50,7 +51,7 @@ def short_reference(ref: dict) -> str:
     authors = [a for a in ref.get('authors', []) if _author(a) != 'et al.']
     many = len(ref.get('authors', [])) > 1
     first = (authors[0].get('family-names') or authors[0].get('name', '')) if authors else ''
-    return f"{first}{' et al.' if many else ''} {ref.get('year', '')}".strip()
+    return f'{first}{" et al." if many else ""} {ref.get("year", "")}'.strip()
 
 
 def site_citation(site: dict) -> dict:
@@ -61,12 +62,21 @@ def site_citation(site: dict) -> dict:
     data = read(path)
     pref = data.get('preferred-citation')
     return {
-        'file': site['citation'], 'title': data['title'], 'version': data['version'],
-        'date': str(data.get('date-released', '')), 'doi': data.get('doi', ''), 'url': data.get('url', ''),
-        'licence': data.get('license', ''), 'message': data.get('message', ''),
-        'preferred': {'text': format_reference(pref), 'short': short_reference(pref), 'doi': pref.get('doi', '')} if pref else None,
-        'references': [{'text': format_reference(r), 'short': short_reference(r), 'doi': r.get('doi', '')}
-                       for r in data.get('references', [])],
+        'file': site['citation'],
+        'title': data['title'],
+        'version': data['version'],
+        'date': str(data.get('date-released', '')),
+        'doi': data.get('doi', ''),
+        'url': data.get('url', ''),
+        'licence': data.get('license', ''),
+        'message': data.get('message', ''),
+        'preferred': {'text': format_reference(pref), 'short': short_reference(pref), 'doi': pref.get('doi', '')}
+        if pref
+        else None,
+        'references': [
+            {'text': format_reference(r), 'short': short_reference(r), 'doi': r.get('doi', '')}
+            for r in data.get('references', [])
+        ],
         'cff': path.read_text(),
     }
 
@@ -75,8 +85,18 @@ def kit_citation() -> dict:
     """The kit's title, version and code URL: from its CITATION.cff in a checkout, else from the installed package."""
     if (REPO / 'CITATION.cff').exists():
         data = read(REPO / 'CITATION.cff')
-        return {'title': data['title'], 'version': data['version'], 'url': data.get('repository-code', ''), 'licence': data.get('license', '')}
+        return {
+            'title': data['title'],
+            'version': data['version'],
+            'url': data.get('repository-code', ''),
+            'licence': data.get('license', ''),
+        }
     from importlib import metadata
+
     meta = metadata.metadata('ptmcontext')
-    return {'title': f"ptmcontext: {meta.get('Summary', '')}", 'version': metadata.version('ptmcontext'),
-            'url': 'https://github.com/Shechterlab/ptmcontext', 'licence': meta.get('License', 'MIT')}
+    return {
+        'title': f'ptmcontext: {meta.get("Summary", "")}',
+        'version': metadata.version('ptmcontext'),
+        'url': 'https://github.com/Shechterlab/ptmcontext',
+        'licence': meta.get('License', 'MIT'),
+    }

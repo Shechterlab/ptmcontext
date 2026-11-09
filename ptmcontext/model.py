@@ -20,6 +20,7 @@ information (a mark and another candidate residue). a, b, c, d count the marked 
 factor and the other candidate residues with and without it; a numeric factor has a (marked residues) and c (others)
 only. Whole dataset: the browser cannot refit it for a selection.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -51,9 +52,9 @@ def covariate_roles(spec: dict) -> list[str]:
 def covariate_problems(spec: dict) -> list[str]:
     out, seen = [], set()
     if not spec.get('covariates'):
-        return [f"{spec['id']}: a conditional_logit analysis needs covariates"]
+        return [f'{spec["id"]}: a conditional_logit analysis needs covariates']
     for c in spec['covariates']:
-        where = f"{spec['id']}: covariate {c.get('name')!r}"
+        where = f'{spec["id"]}: covariate {c.get("name")!r}'
         if c['name'] in seen:
             out.append(f'{where} is listed twice')
         seen.add(c['name'])
@@ -62,7 +63,7 @@ def covariate_problems(spec: dict) -> list[str]:
             out.append(f'{where} needs layer: or window_sum: (one of them)')
         elif c.get('layer'):
             if c['layer'] not in L.BUILT_IN and c['layer'] not in L.FACTORIES:
-                out.append(f"{where}: no layer {c['layer']!r}")
+                out.append(f'{where}: no layer {c["layer"]!r}')
                 continue
             try:
                 layer = L.get(c['layer'], None, c.get('with'), spec['id'])
@@ -70,13 +71,17 @@ def covariate_problems(spec: dict) -> list[str]:
                 out.append(f'{where}: {exc}')
                 continue
             if bool(c.get('is')) == bool(c.get('flags')):
-                out.append(f'{where} needs is: (classes of a class layer) or flags: (flags of a flags layer), one of them')
+                out.append(
+                    f'{where} needs is: (classes of a class layer) or flags: (flags of a flags layer), one of them'
+                )
             elif c.get('is') and layer.shape != 'class':
-                out.append(f"{where}: is: reads a class layer; {c['layer']!r} makes flags")
+                out.append(f'{where}: is: reads a class layer; {c["layer"]!r} makes flags')
             elif c.get('flags') and layer.shape != 'flags':
-                out.append(f"{where}: flags: reads a flags layer; {c['layer']!r} makes classes")
+                out.append(f'{where}: flags: reads a flags layer; {c["layer"]!r} makes classes')
             elif c.get('is') and layer.labels and set(c['is']) - set(layer.labels):
-                out.append(f"{where}: {c['layer']!r} has no class {sorted(set(c['is']) - set(layer.labels))} (it has {sorted(layer.labels)})")
+                out.append(
+                    f'{where}: {c["layer"]!r} has no class {sorted(set(c["is"]) - set(layer.labels))} (it has {sorted(layer.labels)})'
+                )
         elif not (c['window_sum'].get('weights') and c['window_sum'].get('window')):
             out.append(f'{where}: window_sum needs window and weights')
     return out
@@ -86,6 +91,7 @@ def window_sum(residues: pd.DataFrame, sequences: dict, window: int, weights: di
     """For each (accession, position) row, the sum of the weights of the residues within window of it along the chain,
     the residue itself left out."""
     from .layers.configured import sticker_counts
+
     total = np.zeros(len(residues))
     for letter, w in weights.items():
         total += float(w) * sticker_counts(residues, sequences, {letter}, window)
@@ -98,7 +104,9 @@ def design(ctx: L.Context, spec: dict, cand: pd.DataFrame) -> pd.DataFrame:
     for c in spec['covariates']:
         if c.get('window_sum'):
             ws = c['window_sum']
-            cols[c['name']] = window_sum(cand, ctx.snapshot.sequences, int(ws['window']), ws['weights']) / float(c.get('per', 1))
+            cols[c['name']] = window_sum(cand, ctx.snapshot.sequences, int(ws['window']), ws['weights']) / float(
+                c.get('per', 1)
+            )
             continue
         layer = L.get(c['layer'], ctx, c.get('with'), spec['id'])
         got = layer(cand, ctx)
@@ -109,8 +117,9 @@ def design(ctx: L.Context, spec: dict, cand: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(cols, index=cand.index)
 
 
-def conditional_model(ctx: L.Context, marked: pd.DataFrame, spec: dict, left_out: pd.DataFrame | None = None,
-                      proteins: set | None = None) -> tuple[pd.DataFrame, dict]:
+def conditional_model(
+    ctx: L.Context, marked: pd.DataFrame, spec: dict, left_out: pd.DataFrame | None = None, proteins: set | None = None
+) -> tuple[pd.DataFrame, dict]:
     """(statistics rows, a record of the fit) of the analysis's conditional logistic regression on the marked residues
     and the other candidate residues of the marked proteins."""
     if proteins is not None:
@@ -131,15 +140,22 @@ def conditional_model(ctx: L.Context, marked: pd.DataFrame, spec: dict, left_out
     Xv, yv, sv = X.to_numpy()[inc], y[inc], strata[inc]
     flat = [n for j, n in enumerate(names) if np.ptp(Xv[:, j]) == 0] if len(Xv) else list(names)
     fit_names = [n for n in names if n not in flat]
-    rows, record = [], {'covariates': names, 'dropped': flat, 'strata': len(used), 'marks': int(yv.sum()), 'residues': int(len(yv))}
+    rows, record = (
+        [],
+        {'covariates': names, 'dropped': flat, 'strata': len(used), 'marks': int(yv.sum()), 'residues': int(len(yv))},
+    )
     fits = {}
     if fit_names:
         cols = [names.index(n) for n in fit_names]
         fits['adjusted'] = (fit_names, stats.conditional_logit(yv, Xv[:, cols], sv, fit_names))
         for n in fit_names:
             fits.setdefault('alone', []).append(stats.conditional_logit(yv, Xv[:, [names.index(n)]], sv, [n]))
-        record.update(converged=bool(fits['adjusted'][1]['converged']), loglik=fits['adjusted'][1]['loglik'],
-                      null_loglik=fits['adjusted'][1]['null_loglik'], lr_p=fits['adjusted'][1]['lr_p'])
+        record.update(
+            converged=bool(fits['adjusted'][1]['converged']),
+            loglik=fits['adjusted'][1]['loglik'],
+            null_loglik=fits['adjusted'][1]['null_loglik'],
+            lr_p=fits['adjusted'][1]['lr_p'],
+        )
     label = BACKGROUND.format(residues=ctx.profile.word('residues'))
     for stratum in ('adjusted', 'alone'):
         block = []
@@ -153,15 +169,27 @@ def conditional_model(ctx: L.Context, marked: pd.DataFrame, spec: dict, left_out
                 counts = {'a': a, 'b': len(xm) - a, 'c': c, 'd': len(xo) - c}
             else:
                 counts = {'a': len(xm), 'b': None, 'c': len(xo), 'd': None}
-            row = {'analysis': spec['id'], 'category': n, 'stratum': stratum, **counts, 'method': 'conditional_logit',
-                   'background': label, 'n_strata': len(used)}
+            row = {
+                'analysis': spec['id'],
+                'category': n,
+                'stratum': stratum,
+                **counts,
+                'method': 'conditional_logit',
+                'background': label,
+                'n_strata': len(used),
+            }
             if n in fit_names:
                 r = fits['adjusted'][1] if stratum == 'adjusted' else fits['alone'][fit_names.index(n)]
                 j = r['names'].index(n)
                 if r['converged']:
                     f = r['odds_ratio'][j]
-                    row.update(odds_ratio=f, log2_odds_ratio=stats.log2_or_nan(f), odds_ratio_ci_low=r['ci_low'][j],
-                               odds_ratio_ci_high=r['ci_high'][j], p=r['p'][j])
+                    row.update(
+                        odds_ratio=f,
+                        log2_odds_ratio=stats.log2_or_nan(f),
+                        odds_ratio_ci_low=r['ci_low'][j],
+                        odds_ratio_ci_high=r['ci_high'][j],
+                        p=r['p'][j],
+                    )
             block.append(row)
         q = stats.benjamini_hochberg(pd.Series([r.get('p', np.nan) for r in block], dtype=float))
         for r, v in zip(block, q):

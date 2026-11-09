@@ -1,6 +1,7 @@
 """The 3D viewer's structure evidence (CONTRACTS.md, "Structure evidence"): any site's tables, in their own layouts, named
 in website.protein.structure and mapped there to the contract's fields, reach each protein's record (s3d) and the
 page's data; a site without them builds the same and gets only the live structures."""
+
 from __future__ import annotations
 
 import json
@@ -23,57 +24,169 @@ def _toy(tmp_path, structure: bool):
     (root / 'sites').mkdir(parents=True)
     data = root / 'data'
     data.mkdir()
-    (data / 'toy.fasta').write_text(f'>sp|P1|ONE_TOY One protein OS=Toy OX=1 GN=ONE PE=1 SV=1\n{P1}\n'
-                                    f'>sp|P2|TWO_TOY Two protein OS=Toy OX=1 GN=TWO PE=1 SV=1\n{P2}\n')
-    pd.DataFrame({'acc': ['P1', 'P1', 'P1', 'P2', 'P2'], 'pos': [2, 5, 32, 2, 25]}).to_csv(data / 'marks.tsv', sep='\t', index=False)
+    (data / 'toy.fasta').write_text(
+        f'>sp|P1|ONE_TOY One protein OS=Toy OX=1 GN=ONE PE=1 SV=1\n{P1}\n'
+        f'>sp|P2|TWO_TOY Two protein OS=Toy OX=1 GN=TWO PE=1 SV=1\n{P2}\n'
+    )
+    pd.DataFrame({'acc': ['P1', 'P1', 'P1', 'P2', 'P2'], 'pos': [2, 5, 32, 2, 25]}).to_csv(
+        data / 'marks.tsv', sep='\t', index=False
+    )
     # a lab's own tables, each in its own layout: contacts as accession + position columns, with a row of another kind
-    pd.DataFrame({'protein': ['P1', 'P1', 'P2', 'P1'], 'residue': [5, 32, 25, 2], 'partner_type': ['RNA', 'protein', 'homodimer', 'RNA'],
-                  'pdb': ['1abc; 2XYZ', '3def', '4ghi', '1abc'], 'with': ['', 'TWO', '', ''], 'with_acc': ['', 'P2', '', ''],
-                  'evidence': ['structure', 'structure', 'structure', 'model']}).to_csv(data / 'contacts.tsv', sep='\t', index=False)
+    pd.DataFrame(
+        {
+            'protein': ['P1', 'P1', 'P2', 'P1'],
+            'residue': [5, 32, 25, 2],
+            'partner_type': ['RNA', 'protein', 'homodimer', 'RNA'],
+            'pdb': ['1abc; 2XYZ', '3def', '4ghi', '1abc'],
+            'with': ['', 'TWO', '', ''],
+            'with_acc': ['', 'P2', '', ''],
+            'evidence': ['structure', 'structure', 'structure', 'model'],
+        }
+    ).to_csv(data / 'contacts.tsv', sep='\t', index=False)
     # bound nucleic acid in the release's layout (site as ACC:Rpos)
-    pd.DataFrame({'site': ['P1:R5'], 'entry': ['1ABC'], 'na_chain': ['C'], 'na': ['rna'], 'what': ['an RNA'],
-                  'nts': ['G3; U4'], 'nums': ['3; 4'], 'dists': ['2.9; 3.8'], 'win': ['--AG[G][U]C--']}).to_csv(data / 'bound.tsv', sep='\t', index=False)
+    pd.DataFrame(
+        {
+            'site': ['P1:R5'],
+            'entry': ['1ABC'],
+            'na_chain': ['C'],
+            'na': ['rna'],
+            'what': ['an RNA'],
+            'nts': ['G3; U4'],
+            'nums': ['3; 4'],
+            'dists': ['2.9; 3.8'],
+            'win': ['--AG[G][U]C--'],
+        }
+    ).to_csv(data / 'bound.tsv', sep='\t', index=False)
     # evidence along the chain, as runs
-    pd.DataFrame({'acc': ['P1', 'P1', 'P1', 'P2'], 'from': [1, 4, 30, 20], 'to': [6, 5, 35, 28], 'type': ['xl', 'xl', 'region', 'secret']}).to_csv(data / 'residues.tsv', sep='\t', index=False)
+    pd.DataFrame(
+        {
+            'acc': ['P1', 'P1', 'P1', 'P2'],
+            'from': [1, 4, 30, 20],
+            'to': [6, 5, 35, 28],
+            'type': ['xl', 'xl', 'region', 'secret'],
+        }
+    ).to_csv(data / 'residues.tsv', sep='\t', index=False)
 
     # a per-residue score, so the site has a question of its own
-    pd.DataFrame([('P1', i + 1, 90.0) for i in range(len(P1))] + [('P2', i + 1, 20.0) for i in range(len(P2))],
-                 columns=['entry', 'resnum', 'score']).to_csv(data / 'scores.tsv', sep='\t', index=False)
+    pd.DataFrame(
+        [('P1', i + 1, 90.0) for i in range(len(P1))] + [('P2', i + 1, 20.0) for i in range(len(P2))],
+        columns=['entry', 'resnum', 'score'],
+    ).to_csv(data / 'scores.tsv', sep='\t', index=False)
 
     def entry(f, **kw):
-        return {'file': f, 'md5': md5_file(data / f), 'source': 'synthetic, for a test', 'version': 'test 1', 'licence': 'CC0 1.0', **kw}
-    inputs = {'toy_fasta': entry('toy.fasta', version='Toy 2026_01'), 'toy_marks': entry('marks.tsv'),
-              'toy_scores': entry('scores.tsv', columns={'accession': 'entry', 'position': 'resnum', 'value': 'score'})}
+        return {
+            'file': f,
+            'md5': md5_file(data / f),
+            'source': 'synthetic, for a test',
+            'version': 'test 1',
+            'licence': 'CC0 1.0',
+            **kw,
+        }
+
+    inputs = {
+        'toy_fasta': entry('toy.fasta', version='Toy 2026_01'),
+        'toy_marks': entry('marks.tsv'),
+        'toy_scores': entry('scores.tsv', columns={'accession': 'entry', 'position': 'resnum', 'value': 'score'}),
+    }
     roles = {'scores': 'toy_scores'}
     if structure:
-        inputs |= {'toy_contacts': entry('contacts.tsv'), 'toy_bound': entry('bound.tsv'), 'toy_residues': entry('residues.tsv')}
+        inputs |= {
+            'toy_contacts': entry('contacts.tsv'),
+            'toy_bound': entry('bound.tsv'),
+            'toy_residues': entry('residues.tsv'),
+        }
     (root / 'sites' / 'toy.inputs.json').write_text(json.dumps({'schema_version': 1, 'inputs': inputs}, indent=1))
     site = {
-        'schema_version': 1, 'id': 'toy', 'title': 'A toy site', 'status': 'working', 'mark': 'methylarginine',
-        'manifest': 'sites/toy.inputs.json', 'snapshot': {'input': 'toy_fasta', 'release': 'Toy 2026_01'}, 'inputs': roles,
+        'schema_version': 1,
+        'id': 'toy',
+        'title': 'A toy site',
+        'status': 'working',
+        'mark': 'methylarginine',
+        'manifest': 'sites/toy.inputs.json',
+        'snapshot': {'input': 'toy_fasta', 'release': 'Toy 2026_01'},
+        'inputs': roles,
         'marks': {'input': 'toy_marks', 'accession': 'acc', 'position': 'pos', 'residue_mismatch': 'error'},
-        'analyses': [{'id': 'score', 'layer': 'residue_values', 'with': {'role': 'scores', 'bins': [50], 'classes': ['low', 'high'], 'noun': 'score'}}],
+        'analyses': [
+            {
+                'id': 'score',
+                'layer': 'residue_values',
+                'with': {'role': 'scores', 'bins': [50], 'classes': ['low', 'high'], 'noun': 'score'},
+            }
+        ],
         'outputs': {'folder': 'out/toy'},
         'website': {'name': 'Toy Explorer'},
     }
     if structure:
         site['website']['tables'] = {
-            'evidence': {'input': 'toy_contacts', 'format': 'site_evidence', 'include': [{'column': 'evidence', 'equals': 'structure'}],
-                         'columns': {'accession': 'protein', 'position': 'residue', 'kind': 'partner_type', 'ids': 'pdb', 'partner': 'with', 'partner_accession': 'with_acc'}},
-            'bound': {'input': 'toy_bound', 'format': 'bound_windows',
-                      'columns': {'site': 'site', 'entry': 'entry', 'chain': 'na_chain', 'kind': 'na', 'name': 'what', 'nucleotides': 'nts',
-                                  'numbers': 'nums', 'distances': 'dists', 'window': 'win'}},
-            'runs': {'input': 'toy_residues', 'format': 'residue_evidence', 'columns': {'accession': 'acc', 'start': 'from', 'end': 'to', 'kind': 'type'}},
+            'evidence': {
+                'input': 'toy_contacts',
+                'format': 'site_evidence',
+                'include': [{'column': 'evidence', 'equals': 'structure'}],
+                'columns': {
+                    'accession': 'protein',
+                    'position': 'residue',
+                    'kind': 'partner_type',
+                    'ids': 'pdb',
+                    'partner': 'with',
+                    'partner_accession': 'with_acc',
+                },
+            },
+            'bound': {
+                'input': 'toy_bound',
+                'format': 'bound_windows',
+                'columns': {
+                    'site': 'site',
+                    'entry': 'entry',
+                    'chain': 'na_chain',
+                    'kind': 'na',
+                    'name': 'what',
+                    'nucleotides': 'nts',
+                    'numbers': 'nums',
+                    'distances': 'dists',
+                    'window': 'win',
+                },
+            },
+            'runs': {
+                'input': 'toy_residues',
+                'format': 'residue_evidence',
+                'columns': {'accession': 'acc', 'start': 'from', 'end': 'to', 'kind': 'type'},
+            },
         }
-        site['website']['protein'] = {'structure': {
-            'contacts': {'table': 'evidence', 'kinds': {'RNA': 'rna', 'homodimer': 'self'}, 'label': 'Contacts in the PDB'},
-            'bound': {'table': 'bound'},
-            'residues': {'table': 'runs', 'colourings': [
-                {'id': 'xl', 'label': 'Crosslinks', 'none': 'None', 'classes': [
-                    {'id': 'both', 'label': 'Both', 'colour': 'ev', 'all': ['xl', 'region']},
-                    {'id': 'xl', 'label': 'Crosslinked', 'colour': 'rna', 'where': [{'column': 'kind', 'equals': 'xl'}]},
-                    {'id': 'region', 'label': 'In a region', 'colour': '#123456', 'where': [{'column': 'kind', 'equals': 'region'}]}]}]},
-        }}
+        site['website']['protein'] = {
+            'structure': {
+                'contacts': {
+                    'table': 'evidence',
+                    'kinds': {'RNA': 'rna', 'homodimer': 'self'},
+                    'label': 'Contacts in the PDB',
+                },
+                'bound': {'table': 'bound'},
+                'residues': {
+                    'table': 'runs',
+                    'colourings': [
+                        {
+                            'id': 'xl',
+                            'label': 'Crosslinks',
+                            'none': 'None',
+                            'classes': [
+                                {'id': 'both', 'label': 'Both', 'colour': 'ev', 'all': ['xl', 'region']},
+                                {
+                                    'id': 'xl',
+                                    'label': 'Crosslinked',
+                                    'colour': 'rna',
+                                    'where': [{'column': 'kind', 'equals': 'xl'}],
+                                },
+                                {
+                                    'id': 'region',
+                                    'label': 'In a region',
+                                    'colour': '#123456',
+                                    'where': [{'column': 'kind', 'equals': 'region'}],
+                                },
+                            ],
+                        }
+                    ],
+                },
+            }
+        }
     (root / 'sites' / 'toy.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
     return root
 
@@ -103,10 +216,12 @@ def test_structure_tables_in_their_own_layouts_reach_the_page(tmp_path):
     assert sorted(s1['r']['xl']) == [[1, 1, 6], [1, 4, 5], [2, 30, 35]]
     assert 'r' not in s2
     st = data['structure']
-    assert {c['code'] for c in st['components']} == {'NMM', 'DA2', '2MR'}           # the profile's states
+    assert {c['code'] for c in st['components']} == {'NMM', 'DA2', '2MR'}  # the profile's states
     assert st['inputs'] == {'contacts': ['toy_contacts'], 'bound': ['toy_bound'], 'residues': ['toy_residues']}
     assert st['contacts'] == {'label': 'Contacts in the PDB'}
-    assert [c['id'] for c in st['colourings'][0]['classes']] == ['both', 'xl', 'region'] and 'where' not in st['colourings'][0]['classes'][1]
+    assert [c['id'] for c in st['colourings'][0]['classes']] == ['both', 'xl', 'region'] and 'where' not in st[
+        'colourings'
+    ][0]['classes'][1]
     assert 'the 3D viewer' in data['inputs']['toy_contacts']['use']
 
 

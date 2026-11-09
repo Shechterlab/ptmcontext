@@ -8,6 +8,7 @@ length 1, so the same tests and drawings serve residues and regions.
 Builders here read the inputs PTM_Pipeline stages (inputs/annotation/). Units made in another repository (a lab's own
 regions, the IDR Explorer's charged segments) are written as a unit table there and read with read_units.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -21,15 +22,24 @@ from .snapshot import Snapshot
 UNIT_COLUMNS = ['unit_id', 'accession', 'start', 'end', 'kind', 'source']
 
 
-def make_units(frame: pd.DataFrame, kind: str, source: str, accession: str = 'accession', start: str = 'start',
-               end: str = 'end', keep: Iterable[str] = ()) -> pd.DataFrame:
+def make_units(
+    frame: pd.DataFrame,
+    kind: str,
+    source: str,
+    accession: str = 'accession',
+    start: str = 'start',
+    end: str = 'end',
+    keep: Iterable[str] = (),
+) -> pd.DataFrame:
     """A unit table from any table of intervals: rows without a numeric start and end are dropped."""
     keep = list(keep)
-    out = pd.DataFrame({
-        'accession': frame[accession].astype(str).str.strip(),
-        'start': pd.to_numeric(frame[start], errors='coerce'),
-        'end': pd.to_numeric(frame[end], errors='coerce'),
-    })
+    out = pd.DataFrame(
+        {
+            'accession': frame[accession].astype(str).str.strip(),
+            'start': pd.to_numeric(frame[start], errors='coerce'),
+            'end': pd.to_numeric(frame[end], errors='coerce'),
+        }
+    )
     for col in keep:
         out[col] = frame[col].to_numpy()
     out = out[out['start'].notna() & out['end'].notna()].copy()
@@ -44,7 +54,9 @@ def make_units(frame: pd.DataFrame, kind: str, source: str, accession: str = 'ac
 
 def read_units(path: str | Path) -> pd.DataFrame:
     """A unit table written by any repository (TSV), checked for the contract's columns."""
-    df = pd.read_csv(path, sep='\t', dtype={'accession': str, 'kind': str, 'source': str, 'unit_id': str}, keep_default_na=False)
+    df = pd.read_csv(
+        path, sep='\t', dtype={'accession': str, 'kind': str, 'source': str, 'unit_id': str}, keep_default_na=False
+    )
     missing = [c for c in UNIT_COLUMNS if c not in df.columns]
     if missing:
         raise ValueError(f'{path}: not a unit table, missing {missing}')
@@ -62,8 +74,15 @@ def mobidb_disorder(path: str | Path) -> pd.DataFrame:
     """MobiDB disordered regions as staged (canonical_UniProtAC, fragment_start, fragment_end), one unit per region as
     given: the units the release's disorder classes are read against."""
     df = pd.read_csv(path, sep='\t', low_memory=False)
-    return make_units(df, 'disordered', f'MobiDB ({Path(path).name})', accession='canonical_UniProtAC',
-                      start='fragment_start', end='fragment_end', keep=[c for c in ('mobidb_annotation_key',) if c in df.columns])
+    return make_units(
+        df,
+        'disordered',
+        f'MobiDB ({Path(path).name})',
+        accession='canonical_UniProtAC',
+        start='fragment_start',
+        end='fragment_end',
+        keep=[c for c in ('mobidb_annotation_key',) if c in df.columns],
+    )
 
 
 # Domain units carry, beside the six contract columns: subtype (domain or repeat), ref (the source's accession),
@@ -76,10 +95,23 @@ def interpro_domains(path: str | Path, types: Iterable[str] = ('domain', 'repeat
     """InterPro intervals as staged (canonical_UniProtAC, fragment_start, fragment_end, interpro_*), of the given
     InterPro types (the release uses domain and repeat)."""
     df = pd.read_csv(path, sep='\t', low_memory=False)
-    df = df[df['interpro_type'].astype(str).isin(set(types))].rename(columns={
-        'interpro_type': 'subtype', 'interpro_accession': 'ref', 'interpro_name': 'label', 'member_database_accessions': 'members'})
-    return make_units(df, 'domain', f'InterPro ({Path(path).name})', accession='canonical_UniProtAC', start='fragment_start',
-                      end='fragment_end', keep=DOMAIN_COLUMNS)
+    df = df[df['interpro_type'].astype(str).isin(set(types))].rename(
+        columns={
+            'interpro_type': 'subtype',
+            'interpro_accession': 'ref',
+            'interpro_name': 'label',
+            'member_database_accessions': 'members',
+        }
+    )
+    return make_units(
+        df,
+        'domain',
+        f'InterPro ({Path(path).name})',
+        accession='canonical_UniProtAC',
+        start='fragment_start',
+        end='fragment_end',
+        keep=DOMAIN_COLUMNS,
+    )
 
 
 # ---- readers: how a file becomes units -------------------------------------------------------------------------------
@@ -87,10 +119,11 @@ def interpro_domains(path: str | Path, types: Iterable[str] = ('domain', 'repeat
 # first registered reader that recognizes its columns. The package registers the unit table (the contract) and the
 # staged MobiDB and InterPro tables; a trusted plugin may register more with register_reader when it loads.
 
+
 @dataclass(frozen=True)
 class Reader:
     name: str
-    detect: Callable[[set, str], bool]        # (the file's columns, the kind asked for) -> can it read it
+    detect: Callable[[set, str], bool]  # (the file's columns, the kind asked for) -> can it read it
     read: Callable[[Path, str], pd.DataFrame]
     describe: str = ''
 
@@ -100,9 +133,11 @@ READERS: list[Reader] = []
 
 def register_reader(name: str, detect: Callable[[set, str], bool], describe: str = ''):
     """Decorator: a reader for one more file format. Later registrations are tried after earlier ones."""
+
     def wrap(fn):
         READERS[:] = [r for r in READERS if r.name != name] + [Reader(name, detect, fn, describe)]
         return fn
+
     return wrap
 
 
@@ -127,9 +162,11 @@ def _holds(frame: pd.DataFrame, cond: dict, snapshot: Snapshot | None = None) ->
         return col == frame[cond['same_as']].astype(str)
     if 'on_snapshot' in cond:
         if snapshot is None:
-            raise ValueError(f"a condition on_snapshot ({cond['column']}) needs the snapshot")
+            raise ValueError(f'a condition on_snapshot ({cond["column"]}) needs the snapshot')
         return col.str.split('-').str[0].isin(set(snapshot.sequences)) == bool(cond['on_snapshot'])
-    raise ValueError(f'a condition needs equals, in, contains, matches, at_least, at_most, same_as or on_snapshot: {cond}')
+    raise ValueError(
+        f'a condition needs equals, in, contains, matches, at_least, at_most, same_as or on_snapshot: {cond}'
+    )
 
 
 def select_rows(df: pd.DataFrame, columns: dict, snapshot: Snapshot | None = None) -> pd.DataFrame:
@@ -159,10 +196,36 @@ def select_rows(df: pd.DataFrame, columns: dict, snapshot: Snapshot | None = Non
 #   max_length    units longer than this are dropped
 #   max_per_row   rows naming more residues than this are dropped (before the checks)
 #   unique_within rows grouped by these columns: a group is kept only when it places exactly one residue
-MAPPING_KEYS = ('accession', 'start', 'end', 'position', 'ranges', 'residues', 'marked_in', 'residue', 'sequence', 'relocate',
-                'gene', 'canonical', 'start_offset', 'sequence_start', 'sequence_end', 'max_length', 'separator', 'max_per_row',
-                'unique_within', 'label', 'ref', 'subtype',
-                'class', 'kind', 'sep', 'include', 'exclude', 'value')
+MAPPING_KEYS = (
+    'accession',
+    'start',
+    'end',
+    'position',
+    'ranges',
+    'residues',
+    'marked_in',
+    'residue',
+    'sequence',
+    'relocate',
+    'gene',
+    'canonical',
+    'start_offset',
+    'sequence_start',
+    'sequence_end',
+    'max_length',
+    'separator',
+    'max_per_row',
+    'unique_within',
+    'label',
+    'ref',
+    'subtype',
+    'class',
+    'kind',
+    'sep',
+    'include',
+    'exclude',
+    'value',
+)
 
 
 def _gene_map(snapshot: Snapshot) -> dict[str, str]:
@@ -196,7 +259,7 @@ def mapped_spans(df: pd.DataFrame, columns: dict, snapshot: Snapshot | None = No
         acc = acc.where(~off, df[columns['gene']].astype(str).map(genes).fillna(acc))
     sep = columns.get('separator')
     rows: list[tuple[int, str, int, int]] = []
-    listed: dict[int, int] = {}                          # row -> how many residues it names, before the checks
+    listed: dict[int, int] = {}  # row -> how many residues it names, before the checks
     offset = int(columns.get('start_offset', 0))
 
     def num(v):
@@ -204,6 +267,7 @@ def mapped_spans(df: pd.DataFrame, columns: dict, snapshot: Snapshot | None = No
             return int(float(v))
         except (TypeError, ValueError):
             return None
+
     if columns.get('ranges'):
         for i, a, v in zip(df.index, acc, df[columns['ranges']].astype(str)):
             parts = [x for x in v.split(sep or ',') if x.strip()]
@@ -218,7 +282,9 @@ def mapped_spans(df: pd.DataFrame, columns: dict, snapshot: Snapshot | None = No
             items = [x.strip() for x in v.split(sep or ',') if x.strip()]
             listed[i] = len(items)
             s = seqs.get(a, '')
-            ok = bool(items) and all(x[1:].isdigit() and 1 <= int(x[1:]) <= len(s) and s[int(x[1:]) - 1] == x[0] for x in items)
+            ok = bool(items) and all(
+                x[1:].isdigit() and 1 <= int(x[1:]) <= len(s) and s[int(x[1:]) - 1] == x[0] for x in items
+            )
             if ok:
                 rows += [(i, a, int(x[1:]), int(x[1:])) for x in items]
     elif columns.get('marked_in'):
@@ -235,7 +301,9 @@ def mapped_spans(df: pd.DataFrame, columns: dict, snapshot: Snapshot | None = No
                     rows.append((i, a, q, q))
     elif columns.get('position') and not columns.get('start'):
         res_col = columns.get('residue')
-        for i, a, v, r in zip(df.index, acc, df[columns['position']].astype(str), df[res_col].astype(str) if res_col else [''] * len(df)):
+        for i, a, v, r in zip(
+            df.index, acc, df[columns['position']].astype(str), df[res_col].astype(str) if res_col else [''] * len(df)
+        ):
             ps = [x.strip() for x in (v.split(sep) if sep else [v])]
             rs = [x.strip() for x in (r.split(sep) if sep else [r])] if res_col else [None] * len(ps)
             listed[i] = len([x for x in ps if x])
@@ -249,10 +317,17 @@ def mapped_spans(df: pd.DataFrame, columns: dict, snapshot: Snapshot | None = No
                 rows.append((i, a, q, q))
     else:
         seq_col = columns.get('sequence')
-        apart = bool(columns.get('sequence_start'))          # the sequence is read elsewhere than at the unit
+        apart = bool(columns.get('sequence_start'))  # the sequence is read elsewhere than at the unit
         s0c, s1c = columns.get('sequence_start', columns['start']), columns.get('sequence_end', columns['end'])
-        for i, a, st, en, pep, q0, q1 in zip(df.index, acc, df[columns['start']], df[columns['end']],
-                                             df[seq_col].astype(str) if seq_col else [None] * len(df), df[s0c], df[s1c]):
+        for i, a, st, en, pep, q0, q1 in zip(
+            df.index,
+            acc,
+            df[columns['start']],
+            df[columns['end']],
+            df[seq_col].astype(str) if seq_col else [None] * len(df),
+            df[s0c],
+            df[s1c],
+        ):
             st, en = num(st), num(en)
             listed[i] = 1
             if st is None or en is None:
@@ -264,9 +339,9 @@ def mapped_spans(df: pd.DataFrame, columns: dict, snapshot: Snapshot | None = No
                     continue
                 if apart:
                     q0, q1 = num(q0), num(q1)
-                    if q0 is None or q1 is None or s[q0 + offset - 1:q1] != pep:
+                    if q0 is None or q1 is None or s[q0 + offset - 1 : q1] != pep:
                         continue
-                elif not (st > 0 and s[st - 1:en] == pep):
+                elif not (st > 0 and s[st - 1 : en] == pep):
                     if not columns.get('relocate'):
                         continue
                     hit = s.find(pep)
@@ -282,12 +357,17 @@ def mapped_spans(df: pd.DataFrame, columns: dict, snapshot: Snapshot | None = No
         out = out[out['row'].map(listed).fillna(0) <= cap]
     if columns.get('unique_within'):
         keys = df.loc[out['row'], columns['unique_within']].astype(str).agg('\x1f'.join, axis=1).to_numpy()
-        one = pd.Series(list(zip(out['accession'], out['start'])), index=out.index).groupby(keys).transform('nunique') == 1
+        one = (
+            pd.Series(list(zip(out['accession'], out['start'])), index=out.index).groupby(keys).transform('nunique')
+            == 1
+        )
         out = out[one.to_numpy()]
     return out.reset_index(drop=True)
 
 
-def from_columns(path: str | Path, kind: str, columns: dict | list, source: str = '', snapshot: Snapshot | None = None) -> pd.DataFrame:
+def from_columns(
+    path: str | Path, kind: str, columns: dict | list, source: str = '', snapshot: Snapshot | None = None
+) -> pd.DataFrame:
     """Units from any table of intervals, by a column mapping (a manifest entry's `columns`): accession and where the
     units are (start and end, or a position, ranges, lettered residues or marked letters: mapped_spans); label, ref,
     subtype, class (optional) name more columns; include/exclude keep rows as a site's marks do; kind, if given, must
@@ -295,20 +375,41 @@ def from_columns(path: str | Path, kind: str, columns: dict | list, source: str 
     pair, say), their units together."""
     if isinstance(columns, list):
         parts = [from_columns(path, kind, c, source, snapshot) for c in columns]
-        return combine(parts, 'all_of') if parts else make_units(pd.DataFrame(columns=['accession', 'start', 'end']), kind, source)
+        return (
+            combine(parts, 'all_of')
+            if parts
+            else make_units(pd.DataFrame(columns=['accession', 'start', 'end']), kind, source)
+        )
     if columns.get('kind') and columns['kind'] != kind:
         raise ValueError(f'{path}: its manifest entry gives units of kind {columns["kind"]!r}, not {kind!r}')
     df = pd.read_csv(path, sep=columns.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False)
     df = select_rows(df, columns, snapshot)
     extra = {k: columns[k] for k in ('label', 'ref', 'subtype', 'class') if columns.get(k)}
-    where = [columns[k] for k in ('accession', 'start', 'end', 'position', 'ranges', 'residues', 'marked_in', 'residue', 'sequence', 'gene',
-                                  'sequence_start', 'sequence_end')
-             if columns.get(k)] + list(columns.get('unique_within') or [])
+    where = [
+        columns[k]
+        for k in (
+            'accession',
+            'start',
+            'end',
+            'position',
+            'ranges',
+            'residues',
+            'marked_in',
+            'residue',
+            'sequence',
+            'gene',
+            'sequence_start',
+            'sequence_end',
+        )
+        if columns.get(k)
+    ] + list(columns.get('unique_within') or [])
     missing = sorted((set(where) | set(extra.values())) - set(df.columns))
     if missing:
         raise ValueError(f'{path}: the manifest entry names columns the file does not have: {missing}')
     spans = mapped_spans(df, columns, snapshot)
-    frame = pd.DataFrame({'accession': spans['accession'].to_numpy(), 'start': spans['start'].to_numpy(), 'end': spans['end'].to_numpy()})
+    frame = pd.DataFrame(
+        {'accession': spans['accession'].to_numpy(), 'start': spans['start'].to_numpy(), 'end': spans['end'].to_numpy()}
+    )
     for k, col in extra.items():
         frame[k] = df.loc[spans['row'], col].to_numpy()
     units = make_units(frame, kind, source or Path(path).name, keep=list(extra))
@@ -321,13 +422,21 @@ def from_columns(path: str | Path, kind: str, columns: dict | list, source: str 
 def residue_values(path: str | Path, columns: dict, snapshot: Snapshot | None = None) -> pd.DataFrame:
     """A per-residue table (accession, position, value) by a column mapping {accession, position, value}; rows without
     a number are dropped. One value per residue: the first row's."""
-    df = select_rows(pd.read_csv(path, sep=columns.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False), columns, snapshot)
+    df = select_rows(
+        pd.read_csv(path, sep=columns.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False),
+        columns,
+        snapshot,
+    )
     missing = sorted({columns[k] for k in ('accession', 'position', 'value')} - set(df.columns))
     if missing:
         raise ValueError(f'{path}: the manifest entry names columns the file does not have: {missing}')
-    out = pd.DataFrame({'accession': df[columns['accession']].astype(str).str.strip(),
-                        'position': pd.to_numeric(df[columns['position']], errors='coerce'),
-                        'value': pd.to_numeric(df[columns['value']], errors='coerce')}).dropna()
+    out = pd.DataFrame(
+        {
+            'accession': df[columns['accession']].astype(str).str.strip(),
+            'position': pd.to_numeric(df[columns['position']], errors='coerce'),
+            'value': pd.to_numeric(df[columns['value']], errors='coerce'),
+        }
+    ).dropna()
     return out.astype({'position': int}).drop_duplicates(['accession', 'position']).reset_index(drop=True)
 
 
@@ -342,8 +451,12 @@ def listed_residues(path: str | Path, columns: dict) -> pd.DataFrame:
     missing = sorted({columns[k] for k in ('accession', 'position')} - set(df.columns))
     if missing:
         raise ValueError(f'{path}: the manifest entry names columns the file does not have: {missing}')
-    out = pd.DataFrame({'accession': df[columns['accession']].astype(str).str.strip(),
-                        'position': pd.to_numeric(df[columns['position']], errors='coerce')}).dropna()
+    out = pd.DataFrame(
+        {
+            'accession': df[columns['accession']].astype(str).str.strip(),
+            'position': pd.to_numeric(df[columns['position']], errors='coerce'),
+        }
+    ).dropna()
     return out.astype({'position': int}).drop_duplicates().reset_index(drop=True)
 
 
@@ -353,21 +466,31 @@ def _unit_table(path: Path, kind: str) -> pd.DataFrame:
     kinds = set(units['kind'])
     if kind in kinds:
         units = units[units['kind'] == kind]
-    elif len(kinds) > 1:                                   # never mix kinds silently
-        raise ValueError(f'{path}: a unit table of kinds {sorted(kinds)}, none of them {kind!r}: name the kind (with: kind)')
+    elif len(kinds) > 1:  # never mix kinds silently
+        raise ValueError(
+            f'{path}: a unit table of kinds {sorted(kinds)}, none of them {kind!r}: name the kind (with: kind)'
+        )
     for c in DOMAIN_COLUMNS if kind == 'domain' else []:
         if c not in units.columns:
             units[c] = ''
     return units.reset_index(drop=True)
 
 
-register_reader('mobidb', lambda cols, kind: kind == 'disordered' and {'canonical_UniProtAC', 'fragment_start', 'fragment_end'} <= cols,
-                'MobiDB disordered regions as ptmc stage mobidb writes them')(lambda path, kind: mobidb_disorder(path))
-register_reader('interpro', lambda cols, kind: kind == 'domain' and 'interpro_type' in cols,
-                'InterPro domain and repeat intervals as staged')(lambda path, kind: interpro_domains(path))
+register_reader(
+    'mobidb',
+    lambda cols, kind: kind == 'disordered' and {'canonical_UniProtAC', 'fragment_start', 'fragment_end'} <= cols,
+    'MobiDB disordered regions as ptmc stage mobidb writes them',
+)(lambda path, kind: mobidb_disorder(path))
+register_reader(
+    'interpro',
+    lambda cols, kind: kind == 'domain' and 'interpro_type' in cols,
+    'InterPro domain and repeat intervals as staged',
+)(lambda path, kind: interpro_domains(path))
 
 
-def load(path: str | Path, kind: str, columns: dict | list | None = None, snapshot: Snapshot | None = None) -> pd.DataFrame:
+def load(
+    path: str | Path, kind: str, columns: dict | list | None = None, snapshot: Snapshot | None = None
+) -> pd.DataFrame:
     """Units of a kind from a file: by its column mapping if it has one, else by the first reader that knows it."""
     if columns:
         return from_columns(path, kind, columns, snapshot=snapshot)
@@ -375,8 +498,10 @@ def load(path: str | Path, kind: str, columns: dict | list | None = None, snapsh
     for r in READERS:
         if r.detect(cols, kind):
             return r.read(Path(path), kind)
-    raise ValueError(f'{path}: no reader knows this file for units of kind {kind!r} (readers: {[r.name for r in READERS]}); '
-                     f'give its manifest entry a column mapping (columns: {{accession, start, end, ...}})')
+    raise ValueError(
+        f'{path}: no reader knows this file for units of kind {kind!r} (readers: {[r.name for r in READERS]}); '
+        f'give its manifest entry a column mapping (columns: {{accession, start, end, ...}})'
+    )
 
 
 COMBINE_RULES = ('first_of', 'all_of')
@@ -385,10 +510,10 @@ COMBINE_RULES = ('first_of', 'all_of')
 def combine(frames: list[pd.DataFrame], rule: str) -> pd.DataFrame:
     """Units of one kind from several sources, in the order a site lists them.
 
-      first_of  each protein's units from the first source that has any for it: a later source fills only the proteins
-                the earlier ones leave without (curated domains first, predicted ones for the rest), so no protein mixes
-                two sources' boundaries;
-      all_of    every source's units.
+    first_of  each protein's units from the first source that has any for it: a later source fills only the proteins
+              the earlier ones leave without (curated domains first, predicted ones for the rest), so no protein mixes
+              two sources' boundaries;
+    all_of    every source's units.
     """
     if rule not in COMBINE_RULES:
         raise ValueError(f'unknown rule {rule!r}: use one of {COMBINE_RULES}')
@@ -425,7 +550,11 @@ def idrs(disordered: pd.DataFrame, snapshot: Snapshot, min_len: int = 20) -> pd.
         n = snapshot.length(acc)
         clipped = [(max(1, a), min(n, b)) for a, b in zip(group['start'], group['end']) if b >= 1 and a <= n]
         rows += [(acc, a, b) for a, b in merge_spans(clipped) if b - a + 1 >= min_len]
-    return make_units(pd.DataFrame(rows, columns=['accession', 'start', 'end']), 'idr', f'merged {disordered["source"].iloc[0] if len(disordered) else ""}, >= {min_len} aa')
+    return make_units(
+        pd.DataFrame(rows, columns=['accession', 'start', 'end']),
+        'idr',
+        f'merged {disordered["source"].iloc[0] if len(disordered) else ""}, >= {min_len} aa',
+    )
 
 
 def by_accession(units: pd.DataFrame) -> dict[str, tuple]:

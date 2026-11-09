@@ -13,6 +13,7 @@ show"), named in `website.protein.structure` (CONTRACTS.md, "Structure evidence"
 The kind codes and words are the site file's; this module knows none of them. Each protein's part goes into its
 record in the protein shards (`s3d`), so a page reads it with the protein.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -20,7 +21,7 @@ from pathlib import Path
 import pandas as pd
 
 
-PARTNER_KINDS = ('rna', 'dna', 'protein', 'self')      # what the viewer draws a contact as; anything else is "other"
+PARTNER_KINDS = ('rna', 'dna', 'protein', 'self')  # what the viewer draws a contact as; anything else is "other"
 
 
 def config(site: dict) -> dict:
@@ -28,7 +29,12 @@ def config(site: dict) -> dict:
 
 
 PARTS = ('contacts', 'bound', 'predicted', 'residues')
-FORMAT = {'contacts': 'site_evidence', 'bound': 'bound_windows', 'predicted': 'site_evidence', 'residues': 'residue_evidence'}
+FORMAT = {
+    'contacts': 'site_evidence',
+    'bound': 'bound_windows',
+    'predicted': 'site_evidence',
+    'residues': 'residue_evidence',
+}
 
 
 def _table(site: dict, part: str) -> dict | None:
@@ -38,8 +44,12 @@ def _table(site: dict, part: str) -> dict | None:
 
 def roles(site: dict) -> dict[str, str]:
     """The manifest inputs the viewer reads, with what for (the Method page's Data table)."""
-    words = {'contacts': 'the 3D viewer: PDB entries with a contact at a mark', 'bound': 'the 3D viewer: the RNA and DNA bound at a mark',
-             'predicted': 'the 3D viewer: predicted complexes at a mark', 'residues': 'the 3D viewer: colors along the chain'}
+    words = {
+        'contacts': 'the 3D viewer: PDB entries with a contact at a mark',
+        'bound': 'the 3D viewer: the RNA and DNA bound at a mark',
+        'predicted': 'the 3D viewer: predicted complexes at a mark',
+        'residues': 'the 3D viewer: colors along the chain',
+    }
     out: dict[str, list] = {}
     for part in PARTS:
         tb = _table(site, part)
@@ -56,17 +66,23 @@ def problems(site: dict) -> list[str]:
             continue
         name = cfg[part]['table']
         if name not in tables:
-            out.append(f"website.protein.structure.{part}: no table {name!r} in website.tables")
+            out.append(f'website.protein.structure.{part}: no table {name!r} in website.tables')
         elif tables[name].get('format') != FORMAT[part]:
-            out.append(f"website.protein.structure.{part}: table {name!r} is {tables[name].get('format')!r}; the viewer reads a {FORMAT[part]} table here")
+            out.append(
+                f'website.protein.structure.{part}: table {name!r} is {tables[name].get("format")!r}; the viewer reads a {FORMAT[part]} table here'
+            )
     for c in (cfg.get('residues') or {}).get('colourings', []):
         ids = [k['id'] for k in c['classes']]
         for k in c['classes']:
             bad = [x for x in k.get('all', []) if x not in ids or x == k['id']]
             if bad:
-                out.append(f"website.protein.structure.residues, coloring {c['id']!r}, class {k['id']!r}: all names {bad}, not other classes of it")
+                out.append(
+                    f'website.protein.structure.residues, coloring {c["id"]!r}, class {k["id"]!r}: all names {bad}, not other classes of it'
+                )
             if not k.get('where') and not k.get('all'):
-                out.append(f"website.protein.structure.residues, coloring {c['id']!r}, class {k['id']!r}: give where (the rows it keeps) or all")
+                out.append(
+                    f'website.protein.structure.residues, coloring {c["id"]!r}, class {k["id"]!r}: give where (the rows it keeps) or all'
+                )
     return out
 
 
@@ -75,15 +91,24 @@ def site_data(site: dict, profile) -> dict | None:
     states), the colorings and their classes, and which manifest inputs each part comes from."""
     cfg = config(site)
     states = [s for s in profile.data.get('states', []) if s.get('pdb_component')]
-    out = {'components': [{'code': s['pdb_component'], 'state': s['code'], 'label': s.get('label', '')} for s in states]}
+    out = {
+        'components': [{'code': s['pdb_component'], 'state': s['code'], 'label': s.get('label', '')} for s in states]
+    }
     out['inputs'] = {part: [_table(site, part)['input']] for part in PARTS if cfg.get(part) and _table(site, part)}
     for key in ('contacts', 'bound', 'predicted'):
         if cfg.get(key):
             out[key] = {k: cfg[key][k] for k in ('label', 'help') if k in cfg[key]}
     if cfg.get('residues'):
-        out['colourings'] = [{'id': c['id'], 'label': c['label'], 'none': c.get('none', ''), 'help': c.get('help', ''),
-                              'classes': [{k: v for k, v in x.items() if k != 'where'} for x in c['classes']]}
-                             for c in cfg['residues'].get('colourings', [])]
+        out['colourings'] = [
+            {
+                'id': c['id'],
+                'label': c['label'],
+                'none': c.get('none', ''),
+                'help': c.get('help', ''),
+                'classes': [{k: v for k, v in x.items() if k != 'where'} for x in c['classes']],
+            }
+            for c in cfg['residues'].get('colourings', [])
+        ]
     return out
 
 
@@ -125,10 +150,13 @@ def protein_parts(site: dict, paths: dict[str, Path], accessions: set[str]) -> d
       r  residues   {colouring: [[class index, start, end], ...]}
     Each table is read in its format (tables.read); paths: the run's input files by manifest name."""
     from . import tables as T
+
     cfg = config(site)
     out: dict[str, dict] = {}
-    put = lambda acc, key: out.setdefault(acc, {}).setdefault(key, [])      # noqa: E731
-    col = lambda r, c: '' if r.get(c) is None or (isinstance(r.get(c), float) and r.get(c) != r.get(c)) else str(r.get(c))   # noqa: E731
+    put = lambda acc, key: out.setdefault(acc, {}).setdefault(key, [])  # noqa: E731
+    col = lambda r, c: (  # noqa: E731
+        '' if r.get(c) is None or (isinstance(r.get(c), float) and r.get(c) != r.get(c)) else str(r.get(c))
+    )  # noqa: E731
 
     def frame(part):
         tb = _table(site, part)
@@ -136,33 +164,63 @@ def protein_parts(site: dict, paths: dict[str, Path], accessions: set[str]) -> d
         f = _keep(f, cfg[part])
         key = 'accession'
         return f[f[key].astype(str).isin(accessions)]
+
     if cfg.get('contacts'):
         kinds = cfg['contacts'].get('kinds') or {}
         for r in frame('contacts').to_dict('records'):
             kind = str(kinds.get(r['kind'], r['kind'])).lower()
-            put(r['accession'], 'c').append([int(r['position']), kind if kind in PARTNER_KINDS else 'other', [e.lower() for e in _split(col(r, 'ids'))],
-                                             col(r, 'partner'), col(r, 'partner_accession')])
+            put(r['accession'], 'c').append(
+                [
+                    int(r['position']),
+                    kind if kind in PARTNER_KINDS else 'other',
+                    [e.lower() for e in _split(col(r, 'ids'))],
+                    col(r, 'partner'),
+                    col(r, 'partner_accession'),
+                ]
+            )
     if cfg.get('bound'):
         kinds = cfg['bound'].get('kinds') or {}
         for r in frame('bound').to_dict('records'):
-            put(r['accession'], 'b').append([int(r['position']), col(r, 'entry').lower(), col(r, 'chain'), str(kinds.get(r['kind'], r['kind'])).lower(),
-                                             col(r, 'type'), col(r, 'name'), _split(col(r, 'nucleotides')), [_num(x) for x in _split(col(r, 'numbers'))],
-                                             [_num(x) for x in _split(col(r, 'distances'))], col(r, 'window')])
+            put(r['accession'], 'b').append(
+                [
+                    int(r['position']),
+                    col(r, 'entry').lower(),
+                    col(r, 'chain'),
+                    str(kinds.get(r['kind'], r['kind'])).lower(),
+                    col(r, 'type'),
+                    col(r, 'name'),
+                    _split(col(r, 'nucleotides')),
+                    [_num(x) for x in _split(col(r, 'numbers'))],
+                    [_num(x) for x in _split(col(r, 'distances'))],
+                    col(r, 'window'),
+                ]
+            )
     if cfg.get('predicted'):
         for r in frame('predicted').to_dict('records'):
             model = (_split(col(r, 'ids')) or [''])[0]
-            put(r['accession'], 'p').append([int(r['position']), col(r, 'partner'), col(r, 'partner_accession'), col(r, 'source'),
-                                             model, _num(col(r, 'score')), None])
+            put(r['accession'], 'p').append(
+                [
+                    int(r['position']),
+                    col(r, 'partner'),
+                    col(r, 'partner_accession'),
+                    col(r, 'source'),
+                    model,
+                    _num(col(r, 'score')),
+                    None,
+                ]
+            )
     if cfg.get('residues'):
         f = frame('residues')
         for c in cfg['residues'].get('colourings', []):
             for k, cls in enumerate(c['classes']):
                 if not cls.get('where'):
-                    continue                     # a class made of other classes (all:) is drawn by the page
+                    continue  # a class made of other classes (all:) is drawn by the page
                 g = f
                 for cond in cls['where']:
                     g = g[_holds(g, cond)]
-                for acc, a, b in sorted(set(zip(g['accession'].astype(str), g['start'].astype(int), g['end'].astype(int)))):
+                for acc, a, b in sorted(
+                    set(zip(g['accession'].astype(str), g['start'].astype(int), g['end'].astype(int)))
+                ):
                     out.setdefault(acc, {}).setdefault('r', {}).setdefault(c['id'], []).append([k, a, b])
     return out
 
@@ -183,4 +241,6 @@ def add(site: dict, run: dict, shards: dict[int, dict], log=print) -> None:
     for acc, part in parts.items():
         recs[acc]['s3d'] = part
     n = {k: sum(len(p.get(k, [])) for p in parts.values()) for k in ('c', 'b', 'p')}
-    log(f"  3D viewer: {len(parts):,} proteins with structure evidence ({n['c']:,} contact rows, {n['b']:,} bound RNA/DNA, {n['p']:,} predicted)")
+    log(
+        f'  3D viewer: {len(parts):,} proteins with structure evidence ({n["c"]:,} contact rows, {n["b"]:,} bound RNA/DNA, {n["p"]:,} predicted)'
+    )

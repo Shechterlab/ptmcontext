@@ -11,6 +11,7 @@ ptmc web writes the whole dataset's counts into the page (counts_data's first pa
 responses row's marks into data/selection.json (its second part: [mark index, 1 down + 2 up, change]), so the browser
 counts a selection again (kit-counts.js). Nothing here is a test, and no number changes a statistic.
 """
+
 from __future__ import annotations
 
 import statistics
@@ -30,7 +31,7 @@ def _num(v: str):
         x = float(v)
     except (TypeError, ValueError):
         return None
-    return None if x != x else x                     # NaN is no value
+    return None if x != x else x  # NaN is no value
 
 
 def values_count(c: dict, marks: pd.DataFrame, attrs: dict) -> dict:
@@ -41,8 +42,11 @@ def values_count(c: dict, marks: pd.DataFrame, attrs: dict) -> dict:
     is_list = spec.get('kind') == 'list'
     sep = spec.get('separator', '; ')
     lists = [[v for v in (x.split(sep) if is_list else [x]) if v] if x else [] for x in col]
-    n_of = ([int(v) if (v := _num(x)) is not None else 0 for x in marks[f"a.{c['number']}"]]
-            if c.get('number') and f"a.{c['number']}" in marks.columns else [len(x) for x in lists])
+    n_of = (
+        [int(v) if (v := _num(x)) is not None else 0 for x in marks[f'a.{c["number"]}']]
+        if c.get('number') and f'a.{c["number"]}' in marks.columns
+        else [len(x) for x in lists]
+    )
     count, only = {}, {}
     for vs in lists:
         for v in dict.fromkeys(vs):
@@ -62,12 +66,25 @@ def values_count(c: dict, marks: pd.DataFrame, attrs: dict) -> dict:
     for n in n_of:
         if n >= 1:
             dist[min(n, bins) - 1] += 1
-    return {'kind': 'values', 'attribute': name, 'list': is_list, 'number': c.get('number', ''), 'top': c.get('top', 5), 'bins': bins,
-            'unit': c.get('unit', ['value', 'values']), 'noun': c.get('noun', spec.get('label', name).lower()),
-            'distribution': c.get('distribution', ''), 'total': int(len(marks)),
-            'two_or_more': c.get('two_or_more', f"with two or more {c.get('unit', ['value', 'values'])[1]}"),
-            'values': [[v, labels.get(v, v), count[v], only.get(v, 0) if is_list else None, links.get(v, '')] for v in rows],
-            'dist': dist, 'none': int(sum(1 for n in n_of if n < 1)), 'multi': int(sum(1 for n in n_of if n >= 2))}
+    return {
+        'kind': 'values',
+        'attribute': name,
+        'list': is_list,
+        'number': c.get('number', ''),
+        'top': c.get('top', 5),
+        'bins': bins,
+        'unit': c.get('unit', ['value', 'values']),
+        'noun': c.get('noun', spec.get('label', name).lower()),
+        'distribution': c.get('distribution', ''),
+        'total': int(len(marks)),
+        'two_or_more': c.get('two_or_more', f'with two or more {c.get("unit", ["value", "values"])[1]}'),
+        'values': [
+            [v, labels.get(v, v), count[v], only.get(v, 0) if is_list else None, links.get(v, '')] for v in rows
+        ],
+        'dist': dist,
+        'none': int(sum(1 for n in n_of if n < 1)),
+        'multi': int(sum(1 for n in n_of if n >= 2)),
+    }
 
 
 def responses_count(c: dict, marks: pd.DataFrame, attrs: dict, folder: Path) -> tuple[dict, list]:
@@ -89,13 +106,13 @@ def responses_count(c: dict, marks: pd.DataFrame, attrs: dict, folder: Path) -> 
     for r in c['rows']:
         calls: dict[int, list[str]] = {}
         changes: dict[int, list[float]] = {}
-        if r.get('attribute'):                         # '<value>:<call>' pairs of a list attribute
+        if r.get('attribute'):  # '<value>:<call>' pairs of a list attribute
             sep = attrs[r['attribute']].get('separator', '; ')
             pre = r['value'] + ':'
-            for i, x in enumerate(marks[f"a.{r['attribute']}"]):
-                for pair in (x.split(sep) if x else []):
+            for i, x in enumerate(marks[f'a.{r["attribute"]}']):
+                for pair in x.split(sep) if x else []:
                     if pair.startswith(pre):
-                        calls.setdefault(i, []).append(pair[len(pre):])
+                        calls.setdefault(i, []).append(pair[len(pre) :])
         if r.get('table'):
             t = table(r['table'])
             keep = pd.Series(True, index=t.index)
@@ -113,14 +130,32 @@ def responses_count(c: dict, marks: pd.DataFrame, attrs: dict, folder: Path) -> 
         per = {i: _median(changes.get(i, [])) for i in calls}
         med = _median([v for v in per.values() if v is not None])
         rid = count_row_id(r)
-        filt = ([f"t:{r['attribute']}", f"{r['value']}:{down}"] if r.get('attribute') else [None, rid])
-        rows.append({'id': rid, 'name': r['name'], 'note': r.get('note', ''), 'short': r.get('short') or ' '.join(x for x in (r['name'], r.get('group', '')) if x),
-                     'group': r.get('group', ''), 'kind': r.get('kind', ''), 'listed': bool(r.get('listed')), 'filter': filt,
-                     'n': len(calls), 'down': sum(1 for f in flags.values() if f & 1), 'up': sum(1 for f in flags.values() if f & 2),
-                     'median': None if med is None else round(med, 6), 'changes': bool(r.get('change'))})
+        filt = [f't:{r["attribute"]}', f'{r["value"]}:{down}'] if r.get('attribute') else [None, rid]
+        rows.append(
+            {
+                'id': rid,
+                'name': r['name'],
+                'note': r.get('note', ''),
+                'short': r.get('short') or ' '.join(x for x in (r['name'], r.get('group', '')) if x),
+                'group': r.get('group', ''),
+                'kind': r.get('kind', ''),
+                'listed': bool(r.get('listed')),
+                'filter': filt,
+                'n': len(calls),
+                'down': sum(1 for f in flags.values() if f & 1),
+                'up': sum(1 for f in flags.values() if f & 2),
+                'median': None if med is None else round(med, 6),
+                'changes': bool(r.get('change')),
+            }
+        )
         entries.append([[i, flags[i], None if per[i] is None else round(per[i], 6)] for i in sorted(calls)])
-    return {'kind': 'responses', 'calls': {'down': down, 'up': up}, 'group': c.get('group', 'Group'), 'first': c.get('first', 'Experiment'),
-            'rows': rows}, entries
+    return {
+        'kind': 'responses',
+        'calls': {'down': down, 'up': up},
+        'group': c.get('group', 'Group'),
+        'first': c.get('first', 'Experiment'),
+        'rows': rows,
+    }, entries
 
 
 def counts_data(site: dict, folder: Path) -> tuple[dict, dict]:
@@ -131,6 +166,7 @@ def counts_data(site: dict, folder: Path) -> tuple[dict, dict]:
         return {}, {}
     marks = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
     from .search import derived_attribute
+
     attrs = {**(site['marks'].get('attributes') or {}), **derived_attribute(site)}
     page, sel = {}, {}
     for cid, c in counts.items():
@@ -140,7 +176,9 @@ def counts_data(site: dict, folder: Path) -> tuple[dict, dict]:
         else:
             body, rows = responses_count(c, marks, attrs, folder)
             tables = site['marks'].get('tables') or {}
-            body['tables'] = [[t, tables[t]['input']] for t in sorted({r['table'] for r in c['rows'] if r.get('table')})]
+            body['tables'] = [
+                [t, tables[t]['input']] for t in sorted({r['table'] for r in c['rows'] if r.get('table')})
+            ]
             body['attributes'] = sorted({r['attribute'] for r in c['rows'] if r.get('attribute')})
             page[cid] = {**words, **body}
             sel[cid] = rows

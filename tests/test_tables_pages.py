@@ -3,6 +3,7 @@ its Proteins columns (a site map, counts of its marks by an attribute's values, 
 a protein attribute), its Sites columns (attributes, the site card's blocks from its tables, the nearest mark) and both
 downloads' columns; the pages (kit-tables.js, kit-sites.js, run in Node) show them and the downloads hold them. The
 checks name a column the site file does not have, and a site without these blocks still gets both pages."""
+
 from __future__ import annotations
 
 import json
@@ -22,22 +23,41 @@ ASSETS = Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets'
 PROTEINS = {
     'columns': [
         {'id': 'map', 'label': 'Site map', 'show': 'map', 'default': True},
-        {'id': 'st', 'label': 'States', 'counts': {'attribute': 'state', 'values': {'me1': 'one', 'me2': 'two'}, 'dashed': ['me2']}, 'default': True},
+        {
+            'id': 'st',
+            'label': 'States',
+            'counts': {'attribute': 'state', 'values': {'me1': 'one', 'me2': 'two'}, 'dashed': ['me2']},
+            'default': True,
+        },
         {'id': 'mot', 'label': 'In RG', 'classes': {'analysis': 'motif', 'classes': ['RG']}, 'default': True},
         {'id': 'q', 'label': 'Arg q', 'attribute': 'arg_q', 'format': 'p'},
     ],
-    'download': [{'name': 'gene', 'value': 'gene'}, {'name': 'acc', 'value': 'accession'}, {'name': 'n', 'value': 'marks_shown'},
-                 {'name': 'q', 'attribute': 'arg_q'}, {'name': 'in_rg', 'classes': {'analysis': 'motif', 'classes': ['RG']}}],
+    'download': [
+        {'name': 'gene', 'value': 'gene'},
+        {'name': 'acc', 'value': 'accession'},
+        {'name': 'n', 'value': 'marks_shown'},
+        {'name': 'q', 'attribute': 'arg_q'},
+        {'name': 'in_rg', 'classes': {'analysis': 'motif', 'classes': ['RG']}},
+    ],
 }
 SITES = {
     'short': {'state': {'me1': 'M1', 'me2': 'M2'}},
-    'table': [{'id': 'ix', 'label': 'Evidence', 'show': ['status', 'tags'], 'default': True},
-              {'id': 'src', 'label': 'Reported by', 'attribute': 'studies', 'default': True},
-              {'id': 'nn', 'label': 'Nearest', 'show': ['nearest']}],
-    'download': [{'name': 'gene', 'value': 'gene'}, {'name': 'site', 'value': 'site'}, {'name': 'state', 'attribute': 'state', 'labels': True},
-                 {'name': 'refs', 'attribute': 'studies', 'lookup': 'citation'}, {'name': 'dois', 'attribute': 'studies', 'links': True},
-                 {'name': 'entries', 'table': 'ev', 'field': 'ids'}, {'name': 'n_entries', 'table': 'ev', 'field': 'ids', 'count': True},
-                 {'name': 'nearest', 'value': 'nearest'}, {'name': 'q', 'protein': 'arg_q'}],
+    'table': [
+        {'id': 'ix', 'label': 'Evidence', 'show': ['status', 'tags'], 'default': True},
+        {'id': 'src', 'label': 'Reported by', 'attribute': 'studies', 'default': True},
+        {'id': 'nn', 'label': 'Nearest', 'show': ['nearest']},
+    ],
+    'download': [
+        {'name': 'gene', 'value': 'gene'},
+        {'name': 'site', 'value': 'site'},
+        {'name': 'state', 'attribute': 'state', 'labels': True},
+        {'name': 'refs', 'attribute': 'studies', 'lookup': 'citation'},
+        {'name': 'dois', 'attribute': 'studies', 'links': True},
+        {'name': 'entries', 'table': 'ev', 'field': 'ids'},
+        {'name': 'n_entries', 'table': 'ev', 'field': 'ids', 'count': True},
+        {'name': 'nearest', 'value': 'nearest'},
+        {'name': 'q', 'protein': 'arg_q'},
+    ],
 }
 
 
@@ -45,9 +65,15 @@ def _site(tmp_path, blocks=True):
     root = _toy(tmp_path)
     path = root / 'sites' / 'toy.yaml'
     site = yaml.safe_load(path.read_text())
-    site['proteins'] = {'input': 'toy_proteins', 'accession': 'protein', 'attributes': {'arg_q': {'column': 'arg_q', 'label': 'Arg q', 'kind': 'number'}}}
+    site['proteins'] = {
+        'input': 'toy_proteins',
+        'accession': 'protein',
+        'attributes': {'arg_q': {'column': 'arg_q', 'label': 'Arg q', 'kind': 'number'}},
+    }
     if blocks:
-        site['website'].update({'proteins': PROTEINS, 'sites': SITES, 'selection_cards': {'@studies': {'eyebrow': 'A lab'}}})
+        site['website'].update(
+            {'proteins': PROTEINS, 'sites': SITES, 'selection_cards': {'@studies': {'eyebrow': 'A lab'}}}
+        )
     path.write_text(yaml.safe_dump(site, sort_keys=False))
     return root, path
 
@@ -69,8 +95,12 @@ def test_the_blocks_are_checked(tmp_path):
 
 def _node(index, body):
     data = _page_data(index)
-    if data.get('late'):          # the rest of the protein attributes' values are read from data/site.json when asked for (kit-late.js)
-        data['protein_attributes']['values'].update(json.loads((index.parent / data['late']['file']).read_text())['protein_attributes'])
+    if data.get(
+        'late'
+    ):  # the rest of the protein attributes' values are read from data/site.json when asked for (kit-late.js)
+        data['protein_attributes']['values'].update(
+            json.loads((index.parent / data['late']['file']).read_text())['protein_attributes']
+        )
     sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
     files = [ASSETS / n for n in ('kit-columns.js', 'kit-sitecard.js', 'kit-tables.js', 'kit-sites.js')]
     script = f"""
@@ -102,18 +132,25 @@ def test_the_pages_show_and_download_the_site_files_columns(tmp_path):
     root, path = _site(tmp_path)
     S.run(path, root=root / 'data', log=lambda *_: None)
     index = web.build(path, log=lambda *_: None)
-    out = _node(index, """
+    out = _node(
+        index,
+        """
 const prot = K.views.proteins.render();
 click('[data-ptsv]')(null); const ptsv = got.tsv, pname = got.name;
 K.views.sites.render(); await new Promise(r => setTimeout(r, 50));
 const sites = K.views.sites.render();
 await click('[data-sites-exp]')({ textContent: '', disabled: false }); await new Promise(r => setTimeout(r, 50));
-console.log(JSON.stringify({ prot, ptsv, pname, sites, stsv: got.tsv, sname: got.name, methods: K.methods.map(m => m.id) }));""")
+console.log(JSON.stringify({ prot, ptsv, pname, sites, stsv: got.tsv, sname: got.name, methods: K.methods.map(m => m.id) }));""",
+    )
     p, s = out['prot'], out['sites']
     # the Proteins page: the protein, its marks, the site map, the counts by state (two of one, dashed), the RG share
-    assert 'Site map' in p and '<svg class="minimap"' in p and 'aria-label="Mark positions along ONE"' in p.replace('Methylarginine', 'Mark')
+    assert (
+        'Site map' in p
+        and '<svg class="minimap"' in p
+        and 'aria-label="Mark positions along ONE"' in p.replace('Methylarginine', 'Mark')
+    )
     assert '1 one</span>' in p and 'ixs dashed' in p and 'In RG' in p
-    assert 'Arg q' in p                                                    # in the Columns menu, not shown at first
+    assert 'Arg q' in p  # in the Columns menu, not shown at first
     assert 'Copy gene list' in p and 'How to cite' in p
     head, *rows = [r for r in out['ptsv'].splitlines() if not r.startswith('#')]
     assert head.split('\t') == ['gene', 'acc', 'n', 'q', 'in_rg']
@@ -135,9 +172,12 @@ def test_a_site_without_the_blocks_gets_both_pages(tmp_path):
     root, path = _site(tmp_path, blocks=False)
     S.run(path, root=root / 'data', log=lambda *_: None)
     index = web.build(path, log=lambda *_: None)
-    out = _node(index, """
+    out = _node(
+        index,
+        """
 const prot = K.views.proteins.render(); const sites = K.views.sites.render();
-click('[data-ptsv]')(null); console.log(JSON.stringify({ prot, sites, ptsv: got.tsv }));""")
+click('[data-ptsv]')(null); console.log(JSON.stringify({ prot, sites, ptsv: got.tsv }));""",
+    )
     assert 'Length' in out['prot'] and 'minimap' in out['prot']
     assert 'Window ±7' in out['sites'] and 'R2' in out['sites']
     assert [r for r in out['ptsv'].splitlines() if not r.startswith('#')][0].startswith('accession\tgene')

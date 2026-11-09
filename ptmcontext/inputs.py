@@ -4,6 +4,7 @@ A file is used only if its bytes match the manifest, so it does not matter who s
 in. An entry marked role 'reference_output' is a published result read only to check parity, never as an input to a
 result of this repository.
 """
+
 from __future__ import annotations
 
 import json
@@ -27,8 +28,13 @@ def checksum_only(entry: dict) -> bool:
     return entry.get('redistribution') == 'checksum_only'
 
 
-def resolve(root: str | Path, names: list[str] | None = None, manifest: str | Path = MANIFEST,
-            allow_untrusted: bool = False, allow_absent: bool = False) -> dict[str, Path]:
+def resolve(
+    root: str | Path,
+    names: list[str] | None = None,
+    manifest: str | Path = MANIFEST,
+    allow_untrusted: bool = False,
+    allow_absent: bool = False,
+) -> dict[str, Path]:
     """name -> path under root of each named input, after checking its MD5. Entries whose note starts with 'NOT
     TRUSTED' are refused unless allow_untrusted. With allow_absent, a checksum_only input that is not under root is
     left out of the answer (the caller says what it could not compute); any other missing input is an error."""
@@ -58,7 +64,7 @@ def role_inputs(value) -> tuple[str, list[str]]:
     if isinstance(value, str):
         return 'one', [value]
     if isinstance(value, dict) and len(value) == 1:
-        (rule, names), = value.items()
+        ((rule, names),) = value.items()
         return rule, list(names)
     raise ValueError(f'a role is a manifest name, or {{first_of: [...]}} or {{all_of: [...]}}, not {value!r}')
 

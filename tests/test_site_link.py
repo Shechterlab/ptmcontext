@@ -1,4 +1,5 @@
 """The channel that links a protein's sites across the map, sequence, tables, 3D and conservation (kit-link.js)."""
+
 import json
 import shutil
 import subprocess
@@ -30,7 +31,18 @@ off(); K.site.focus('P1', null, {{ from: 'keyboard' }});
 console.error = log;
 console.log(JSON.stringify({{ a, b, st, after: K.site.state.focus }}));"""
     out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
-    assert out['a'] == [['hover', 'P1', 216, 'map'], ['hover', 'P1', None, ''], ['focus', 'P1', 216, 'sequence'], ['residue', 'P1', 40, '3d']]
-    assert out['b'] == ['hover', 'hover', 'focus', 'residue', 'focus']      # the failing view did not stop the others; a stopped one stops
+    assert out['a'] == [
+        ['hover', 'P1', 216, 'map'],
+        ['hover', 'P1', None, ''],
+        ['focus', 'P1', 216, 'sequence'],
+        ['residue', 'P1', 40, '3d'],
+    ]
+    assert out['b'] == [
+        'hover',
+        'hover',
+        'focus',
+        'residue',
+        'focus',
+    ]  # the failing view did not stop the others; a stopped one stops
     assert json.loads(out['st'])['focus'] == 216 and json.loads(out['st'])['residue'] == 40
     assert out['after'] is None

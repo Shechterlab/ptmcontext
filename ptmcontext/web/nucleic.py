@@ -8,14 +8,26 @@ sequences bound (the viewer's bound windows; DNA-binding profiles in `motifs`), 
 (ptmc check) and names the manifest inputs it reads. It knows no organism, source or kind code: the kinds, the tables and
 their columns are the site's. A part the site does not write is absent, and so is the card of a protein without data.
 """
+
 from __future__ import annotations
 
 PARTS = ('near', 'regions', 'crosslinks', 'motifs', 'rbns', 'eclip')
-FORMAT = {'near': 'bound_windows', 'regions': 'protein_records', 'crosslinks': 'residue_evidence', 'motifs': 'protein_records',
-          'rbns': 'protein_records', 'eclip': 'protein_records'}
-WORDS = {'near': 'RNA and DNA touching a residue beside a mark', 'regions': 'runs of residues bound to RNA or DNA in structures',
-         'crosslinks': 'residues crosslinked to RNA or DNA in cells', 'motifs': 'DNA-binding profiles', 'rbns': 'RNA Bind-n-Seq',
-         'eclip': 'eCLIP'}
+FORMAT = {
+    'near': 'bound_windows',
+    'regions': 'protein_records',
+    'crosslinks': 'residue_evidence',
+    'motifs': 'protein_records',
+    'rbns': 'protein_records',
+    'eclip': 'protein_records',
+}
+WORDS = {
+    'near': 'RNA and DNA touching a residue beside a mark',
+    'regions': 'runs of residues bound to RNA or DNA in structures',
+    'crosslinks': 'residues crosslinked to RNA or DNA in cells',
+    'motifs': 'DNA-binding profiles',
+    'rbns': 'RNA Bind-n-Seq',
+    'eclip': 'eCLIP',
+}
 
 
 def config(site: dict) -> dict:
@@ -61,22 +73,28 @@ def problems(site: dict) -> list[str]:
             out.append(f'{w}.{part}: no table {name!r} in website.tables')
             continue
         if tb.get('format') != FORMAT[part]:
-            out.append(f"{w}.{part}: table {name!r} is {tb.get('format')!r}; the card reads a {FORMAT[part]} table here")
+            out.append(
+                f'{w}.{part}: table {name!r} is {tb.get("format")!r}; the card reads a {FORMAT[part]} table here'
+            )
             continue
         have = _columns(tb)
         for field, col in (spec.get('fields') or {}).items():
             cols = list(col.values()) if isinstance(col, dict) else [col]
             out += [f'{w}.{part}.fields.{field}: table {name!r} has no column {c!r}' for c in cols if c not in have]
         if spec.get('kind') and spec['kind'] not in kinds:
-            out.append(f"{w}.{part}.kind: {spec['kind']!r} is not one of kinds {sorted(kinds)}")
-        out += [f'{w}.{part}.kinds: {v!r} is not one of kinds {sorted(kinds)}' for v in (spec.get('kinds') or {}).values() if v not in kinds]
+            out.append(f'{w}.{part}.kind: {spec["kind"]!r} is not one of kinds {sorted(kinds)}')
+        out += [
+            f'{w}.{part}.kinds: {v!r} is not one of kinds {sorted(kinds)}'
+            for v in (spec.get('kinds') or {}).values()
+            if v not in kinds
+        ]
         if part in ('regions', 'crosslinks') and not (spec.get('kinds') or {}):
-            out.append(f'{w}.{part}.kinds: map the table\'s kind codes to the card\'s kinds')
+            out.append(f"{w}.{part}.kinds: map the table's kind codes to the card's kinds")
     fl = cfg.get('flags')
     if fl:
         attrs = (site.get('marks') or {}).get('attributes') or {}
         if fl['attribute'] not in attrs:
-            out.append(f"{w}.flags.attribute: no mark attribute {fl['attribute']!r}")
+            out.append(f'{w}.flags.attribute: no mark attribute {fl["attribute"]!r}')
         if fl.get('kind') and fl['kind'] not in kinds:
-            out.append(f"{w}.flags.kind: {fl['kind']!r} is not one of kinds {sorted(kinds)}")
+            out.append(f'{w}.flags.kind: {fl["kind"]!r} is not one of kinds {sorted(kinds)}')
     return out

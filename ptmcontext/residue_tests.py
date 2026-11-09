@@ -14,6 +14,7 @@ site: one on a protein with no other candidate residue adds to a and b, and noth
 test). q is Benjamini-Hochberg over the categories of the analysis, within each method. An analysis may count only the
 marks and candidate residues of some proteins (proteins: those a table lists), and may give its rows' order.
 """
+
 from __future__ import annotations
 
 import math
@@ -33,8 +34,9 @@ def _keys(frame: pd.DataFrame) -> pd.Series:
     return frame['accession'].astype(str) + ':' + frame['position'].astype(int).astype(str)
 
 
-def candidates_and_marks(ctx: L.Context, marked: pd.DataFrame, left_out: pd.DataFrame | None = None,
-                         scope: str = 'marked_proteins') -> tuple[pd.DataFrame, pd.Series, pd.Series]:
+def candidates_and_marks(
+    ctx: L.Context, marked: pd.DataFrame, left_out: pd.DataFrame | None = None, scope: str = 'marked_proteins'
+) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
     """(candidate residues, is_marked, is_left_out). Candidates are the profile's residues in the marked proteins
     (scope 'marked_proteins') or in every protein of the snapshot ('proteome'). Marked residues on proteins outside the
     snapshot are not counted; a marked residue that is not one of the profile's residues is an error."""
@@ -44,19 +46,37 @@ def candidates_and_marks(ctx: L.Context, marked: pd.DataFrame, left_out: pd.Data
     marked = marked[marked['accession'].isin(snap.sequences)].drop_duplicates()
     bad = check_residues(profile, snap, marked)
     if len(bad):
-        raise ValueError(f'{len(bad)} marked residues are not {profile.residues} on the snapshot, e.g. {bad.head(3).to_dict("records")}')
+        raise ValueError(
+            f'{len(bad)} marked residues are not {profile.residues} on the snapshot, e.g. {bad.head(3).to_dict("records")}'
+        )
     proteins = None if scope == 'proteome' else sorted(set(marked['accession']))
     cand = snap.residues(profile.residues, accessions=proteins)
     keys = _keys(cand)
     is_marked = keys.isin(set(_keys(marked)))
-    is_left = keys.isin(set(_keys(left_out))) & ~is_marked if left_out is not None and len(left_out) else pd.Series(False, index=cand.index)
+    is_left = (
+        keys.isin(set(_keys(left_out))) & ~is_marked
+        if left_out is not None and len(left_out)
+        else pd.Series(False, index=cand.index)
+    )
     return cand, is_marked, is_left
 
 
-def residue_test(ctx: L.Context, marked: pd.DataFrame, layer: str | L.Layer, analysis: str, *,
-                 left_out: pd.DataFrame | None = None, methods: Iterable[str] = ('fisher', 'mantel_haenszel'),
-                 stratum: str = 'all', keep: dict | None = None, proteins: set | None = None, alone: str = 'drop',
-                 order: list | None = None, pooled_label: str = '', only_in=None) -> pd.DataFrame:
+def residue_test(
+    ctx: L.Context,
+    marked: pd.DataFrame,
+    layer: str | L.Layer,
+    analysis: str,
+    *,
+    left_out: pd.DataFrame | None = None,
+    methods: Iterable[str] = ('fisher', 'mantel_haenszel'),
+    stratum: str = 'all',
+    keep: dict | None = None,
+    proteins: set | None = None,
+    alone: str = 'drop',
+    order: list | None = None,
+    pooled_label: str = '',
+    only_in=None,
+) -> pd.DataFrame:
     """Statistics rows (statistics.COLUMNS) of the marked residues against the other candidate residues of the same
     proteins, for each class (or flag) of the layer. left_out: residues counted on neither side (sites kept pending).
     proteins: count only the marks (and so the candidate residues) of these proteins. alone: 'drop' (default) leaves
@@ -79,8 +99,10 @@ def residue_test(ctx: L.Context, marked: pd.DataFrame, layer: str | L.Layer, ana
         columns = sorted(c for c in annotated.columns if c not in cand.columns)
     targets = annotated[is_marked]
     background = annotated[~is_marked & ~is_left]
-    if keep is not None:   # for the per-protein outputs: every candidate residue, annotated, and which are marks
-        keep.update(annotated=annotated, is_marked=is_marked, is_left=is_left, columns=columns, restricted=bool(only_in))
+    if keep is not None:  # for the per-protein outputs: every candidate residue, annotated, and which are marks
+        keep.update(
+            annotated=annotated, is_marked=is_marked, is_left=is_left, columns=columns, restricted=bool(only_in)
+        )
     if alone not in ('drop', 'count'):
         raise ValueError(f"{analysis}: alone must be 'drop' or 'count', not {alone!r}")
     # sites on a protein with no other candidate residue have no background: neither test counts them, unless the
@@ -89,18 +111,36 @@ def residue_test(ctx: L.Context, marked: pd.DataFrame, layer: str | L.Layer, ana
     rows = []
     methods = tuple(methods)
     if 'fisher' in methods:
-        rows += _fisher(same, background, columns, analysis, stratum, ctx.profile.background('marked_proteins') + pooled_label, order)
+        rows += _fisher(
+            same,
+            background,
+            columns,
+            analysis,
+            stratum,
+            ctx.profile.background('marked_proteins') + pooled_label,
+            order,
+        )
     if 'mantel_haenszel' in methods:
-        rows += _within_protein(same, background, columns, analysis, stratum, ctx.profile.background('same_protein'), order,
-                                alone == 'count')
+        rows += _within_protein(
+            same,
+            background,
+            columns,
+            analysis,
+            stratum,
+            ctx.profile.background('same_protein'),
+            order,
+            alone == 'count',
+        )
     return pd.DataFrame(rows)
 
 
 def inside_regions(ctx: L.Context, cand: pd.DataFrame, only_in) -> np.ndarray:
     """Whether each candidate residue is inside a region of 'idr' (the IDRs) or of {role, kind} (an interval table)."""
     from .question import covered
+
     if only_in == 'idr':
         from .layers.context import idr_units
+
         units = idr_units(ctx)
     elif isinstance(only_in, dict) and 'role' in only_in:
         units = ctx.units(only_in['role'], only_in.get('kind', only_in['role']))
@@ -115,6 +155,7 @@ def _ordered(rows: list[dict], order: list | None) -> list[dict]:
     if not order or not rows:
         return rows
     from .set_tests import ordered
+
     return ordered(pd.DataFrame(rows), order).to_dict('records')
 
 
@@ -135,9 +176,22 @@ def _fisher(targets, background, columns, analysis, stratum, label, order=None):
     for cat, a, nt, c, nb in _counts_by_category(targets, background, columns):
         b, d = nt - a, nb - c
         odds = stats.haldane_odds_ratio(a, b, c, d)
-        rows.append({'analysis': analysis, 'category': cat, 'stratum': stratum, 'a': a, 'b': b, 'c': c, 'd': d,
-                     'odds_ratio': odds, 'log2_odds_ratio': stats.log2_or_nan(odds), 'p': stats.fisher_p(a, b, c, d),
-                     'method': 'fisher', 'background': label})
+        rows.append(
+            {
+                'analysis': analysis,
+                'category': cat,
+                'stratum': stratum,
+                'a': a,
+                'b': b,
+                'c': c,
+                'd': d,
+                'odds_ratio': odds,
+                'log2_odds_ratio': stats.log2_or_nan(odds),
+                'p': stats.fisher_p(a, b, c, d),
+                'method': 'fisher',
+                'background': label,
+            }
+        )
     if not rows:
         return rows
     out = pd.DataFrame(rows)
@@ -153,7 +207,9 @@ def _within_protein(targets, background, columns, analysis, stratum, label, orde
     if columns is None:
         cats = sorted(set(targets['category']) | set(background['category']))
         t = pd.crosstab(targets['accession'], targets['category']).reindex(index=proteins, columns=cats, fill_value=0)
-        o = pd.crosstab(background['accession'], background['category']).reindex(index=proteins, columns=cats, fill_value=0)
+        o = pd.crosstab(background['accession'], background['category']).reindex(
+            index=proteins, columns=cats, fill_value=0
+        )
         n_t = targets.groupby('accession').size().reindex(proteins, fill_value=0)
         n_o = background.groupby('accession').size().reindex(proteins, fill_value=0)
     else:
@@ -171,12 +227,25 @@ def _within_protein(targets, background, columns, analysis, stratum, label, orde
         c = o[cat].to_numpy(dtype=np.int64)
         tables = [(int(x), int(y - x), int(z), int(w - z)) for x, y, z, w in zip(a, nt_arr, c, no_arr)]
         odds, lo, hi, p, used = stats.mantel_haenszel_ci(tables)
-        rows.append({'analysis': analysis, 'category': cat, 'stratum': stratum,
-                     'a': int(a.sum()), 'b': int(nt_arr.sum() - a.sum()), 'c': int(c.sum()), 'd': int(no_arr.sum() - c.sum()),
-                     'odds_ratio': odds,
-                     'log2_odds_ratio': math.log2(odds) if odds and odds > 0 and math.isfinite(odds) else None,
-                     'odds_ratio_ci_low': lo, 'odds_ratio_ci_high': hi, 'p': p, 'method': 'mantel_haenszel',
-                     'background': label, 'n_strata': used})
+        rows.append(
+            {
+                'analysis': analysis,
+                'category': cat,
+                'stratum': stratum,
+                'a': int(a.sum()),
+                'b': int(nt_arr.sum() - a.sum()),
+                'c': int(c.sum()),
+                'd': int(no_arr.sum() - c.sum()),
+                'odds_ratio': odds,
+                'log2_odds_ratio': math.log2(odds) if odds and odds > 0 and math.isfinite(odds) else None,
+                'odds_ratio_ci_low': lo,
+                'odds_ratio_ci_high': hi,
+                'p': p,
+                'method': 'mantel_haenszel',
+                'background': label,
+                'n_strata': used,
+            }
+        )
     if rows:
         q = stats.benjamini_hochberg(pd.Series([r['p'] for r in rows], dtype=float))
         for r, v in zip(rows, q):

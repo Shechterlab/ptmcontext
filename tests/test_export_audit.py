@@ -1,5 +1,6 @@
 """The export overlap audit (tools/audit/export_overlap.js) is shipped and well-formed. It drives a browser over a built page, so it
 is not run here: that needs Playwright and a served site (see the script's header for the command)."""
+
 from __future__ import annotations
 
 import shutil

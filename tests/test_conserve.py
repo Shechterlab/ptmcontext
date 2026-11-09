@@ -1,5 +1,6 @@
 """Conservation across species and the selection's logo (CONTRACTS.md, "Conservation across species"): the site file's
 block is checked, reaches the page's data, and the module (assets/kit-conserve.js) does its sums on any site's residues."""
+
 from __future__ import annotations
 
 import json
@@ -16,8 +17,11 @@ from ptmcontext.web import conserve
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'ptmcontext' / 'web' / 'assets'
-GOOD = {'ensembl': {'rest': 'https://rest.ensembl.org', 'xref': 'Ensembl', 'source': 'human'},
-        'species': [{'id': 'mus_musculus', 'label': 'Mouse'}, {'id': 'danio_rerio', 'label': 'Zebrafish'}], 'logo': True}
+GOOD = {
+    'ensembl': {'rest': 'https://rest.ensembl.org', 'xref': 'Ensembl', 'source': 'human'},
+    'species': [{'id': 'mus_musculus', 'label': 'Mouse'}, {'id': 'danio_rerio', 'label': 'Zebrafish'}],
+    'logo': True,
+}
 
 
 def _site(block, patterns=True):
@@ -33,20 +37,52 @@ def test_a_site_without_the_block_has_nothing_to_check():
 
 def test_the_block_is_checked():
     assert conserve.problems(_site(GOOD)) == []
-    bad = dict(GOOD, ensembl={'rest': 'http://x', 'xref': ''}, species=[{'id': 'Mouse', 'label': 'M'}, {'id': 'a_b', 'label': 'x'}, {'id': 'a_b', 'label': 'y'}], similar=['KK'])
+    bad = dict(
+        GOOD,
+        ensembl={'rest': 'http://x', 'xref': ''},
+        species=[{'id': 'Mouse', 'label': 'M'}, {'id': 'a_b', 'label': 'x'}, {'id': 'a_b', 'label': 'y'}],
+        similar=['KK'],
+    )
     out = ' | '.join(conserve.problems(_site(bad)))
-    for part in ('ensembl.source: missing', 'ensembl.xref: missing', 'not an https address', "'Mouse' is not an Ensembl species name", "'a_b' listed twice", "'KK' is not one residue letter"):
+    for part in (
+        'ensembl.source: missing',
+        'ensembl.xref: missing',
+        'not an https address',
+        "'Mouse' is not an Ensembl species name",
+        "'a_b' listed twice",
+        "'KK' is not one residue letter",
+    ):
         assert part in out
     assert 'set website.search.patterns' in ' '.join(conserve.problems(_site(GOOD, patterns=False)))
-    assert conserve.problems(_site(dict(GOOD, species=[]))) == ['website.protein.conservation.species: no species to align']
+    assert conserve.problems(_site(dict(GOOD, species=[]))) == [
+        'website.protein.conservation.species: no species to align'
+    ]
 
 
 def test_the_presets_are_checked():
-    ok = dict(GOOD, presets=[{'id': 'a', 'label': 'A', 'species': ['mus_musculus']}, {'id': 'b', 'label': 'B', 'species': ['mus_musculus', 'danio_rerio']}], default='b')
+    ok = dict(
+        GOOD,
+        presets=[
+            {'id': 'a', 'label': 'A', 'species': ['mus_musculus']},
+            {'id': 'b', 'label': 'B', 'species': ['mus_musculus', 'danio_rerio']},
+        ],
+        default='b',
+    )
     assert conserve.problems(_site(ok)) == []
-    bad = dict(ok, presets=[{'id': 'a', 'label': 'A', 'species': ['mus_musculus']}, {'id': 'a', 'label': 'A', 'species': ['xx_yy']}], default='zzz')
+    bad = dict(
+        ok,
+        presets=[
+            {'id': 'a', 'label': 'A', 'species': ['mus_musculus']},
+            {'id': 'a', 'label': 'A', 'species': ['xx_yy']},
+        ],
+        default='zzz',
+    )
     out = ' | '.join(conserve.problems(_site(bad)))
-    for part in ("'a' listed twice", "'xx_yy' is not in website.protein.conservation.species", "'zzz' is not the id of a preset"):
+    for part in (
+        "'a' listed twice",
+        "'xx_yy' is not in website.protein.conservation.species",
+        "'zzz' is not the id of a preset",
+    ):
         assert part in out
 
 
@@ -88,10 +124,16 @@ const cols = C.columns(Array(40).fill('AAAAS'), 2, 2);
 console.log(JSON.stringify({{ url: C.orthoUrl('ENSG1'), at: model.rows.map(r => [r.at(2), r.at(5), r.at(1)]), me: ck.me, other: ck.other, n1: ck.n1, n2: ck.n2,
   ic: cols[2].ic, ic0: cols[0].ic, gene: C.ensgOf({{ uniProtKBCrossReferences: [{{ database: 'Ensembl', properties: [{{ key: 'GeneId', value: 'ENSG9.3' }}] }}, {{ database: 'EnsemblFungi', properties: [{{ key: 'GeneId', value: 'YBR160W' }}] }}] }}) }}));"""
     out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
-    assert out['url'].startswith('https://r/homology/id/saccharomyces_cerevisiae/ENSG1?') and 'compara=fungi;' in out['url'] and 'target_species=mus_musculus;target_species=danio_rerio' in out['url']
+    assert (
+        out['url'].startswith('https://r/homology/id/saccharomyces_cerevisiae/ENSG1?')
+        and 'compara=fungi;' in out['url']
+        and 'target_species=mus_musculus;target_species=danio_rerio' in out['url']
+    )
     assert out['at'] == [['S', 'T', 'A'], ['A', 'A', 'A']]
-    assert out['n1'] == 2 and out['n2'] == 1                       # S2 and T5 against S8: the profile's S and T only, not the A's
+    assert out['n1'] == 2 and out['n2'] == 1  # S2 and T5 against S8: the profile's S and T only, not the A's
     assert out['me'] == pytest.approx(0.5) and out['other'] == pytest.approx(0.5)
-    assert out['ic'] == pytest.approx(__import__('math').log2(20) - 19 / (2 * __import__('math').log(2) * 40))   # the small-sample correction
+    assert out['ic'] == pytest.approx(
+        __import__('math').log2(20) - 19 / (2 * __import__('math').log(2) * 40)
+    )  # the small-sample correction
     assert out['ic0'] == pytest.approx(out['ic'])
-    assert out['gene'] == 'YBR160W'                                # the database the site file names, not any other
+    assert out['gene'] == 'YBR160W'  # the database the site file names, not any other

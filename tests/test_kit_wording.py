@@ -1,5 +1,6 @@
 """The kit names no organism, motif or protein of a site: the words come from the site file (website.placeholders,
 website.default_background, website.protein.conservation.reference), so another site's page never shows them."""
+
 from __future__ import annotations
 
 import json
@@ -10,8 +11,16 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'ptmcontext' / 'web' / 'assets'
-LITERALS = ['GXRG', 'RGG,GAR', 'GENE R216', 'other reviewed human proteins', 'human_residue', 'Locations, condensates and diseases',
-            'anchored on the human sequence', 'the same residue as the human one']
+LITERALS = [
+    'GXRG',
+    'RGG,GAR',
+    'GENE R216',
+    'other reviewed human proteins',
+    'human_residue',
+    'Locations, condensates and diseases',
+    'anchored on the human sequence',
+    'the same residue as the human one',
+]
 
 
 def _kit():

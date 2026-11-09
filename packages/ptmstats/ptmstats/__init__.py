@@ -6,6 +6,7 @@ mantel_haenszel, mantel_haenszel_ci, and the Haldane-Anscombe odds ratio with th
 tests), so that the rebuild can be checked against that release: tests/test_parity_v1_4_3.py recomputes release rows
 with them. A change here that changes a number must be recorded as a deliberate change, never made silently.
 """
+
 from __future__ import annotations
 
 import math
@@ -85,6 +86,7 @@ def mantel_haenszel(tables):
     if not strata:
         return None, None, 0
     from statsmodels.stats.contingency_tables import StratifiedTable
+
     st = StratifiedTable([np.array([[a, b], [c, d]], dtype=float) for a, b, c, d in strata])
     den = sum(b * c / (a + b + c + d) for a, b, c, d in strata)
     odds = float(st.oddsratio_pooled) if den > 0 else float('inf')
@@ -100,6 +102,7 @@ def mantel_haenszel_ci(tables):
         return odds, None, None, p, used
     strata = informative_strata(tables)
     from statsmodels.stats.contingency_tables import StratifiedTable
+
     st = StratifiedTable([np.array([[a, b], [c, d]], dtype=float) for a, b, c, d in strata])
     lo, hi = st.oddsratio_pooled_confint(alpha=0.05)
     return odds, (float(lo) if math.isfinite(lo) else None), (float(hi) if math.isfinite(hi) else None), p, used
@@ -110,7 +113,7 @@ def _stratum_chunks(groups, size=256):
     """Strata (each a (k, X) pair: k cases among the rows of X) in chunks of similar size, to be summed together."""
     order = sorted(range(len(groups)), key=lambda i: groups[i][1].shape[0])
     for i in range(0, len(order), size):
-        yield [groups[j] for j in order[i:i + size]]
+        yield [groups[j] for j in order[i : i + size]]
 
 
 def _clogit_chunk(chunk, beta):
@@ -124,10 +127,10 @@ def _clogit_chunk(chunk, beta):
     eta = np.full((s, n), -np.inf)
     ks = np.array([g[0] for g in chunk])
     for i, (_, xs) in enumerate(chunk):
-        x[i, :xs.shape[0]] = xs
-        eta[i, :xs.shape[0]] = xs @ beta
-    shift = np.max(eta, axis=1)                          # w <= 1 per stratum: the sums stay in range
-    w = np.exp(eta - shift[:, None])                     # padded rows: w = 0, x = 0, and they add nothing
+        x[i, : xs.shape[0]] = xs
+        eta[i, : xs.shape[0]] = xs @ beta
+    shift = np.max(eta, axis=1)  # w <= 1 per stratum: the sums stay in range
+    w = np.exp(eta - shift[:, None])  # padded rows: w = 0, x = 0, and they add nothing
     z = np.zeros((s, kmax + 1))
     z[:, 0] = 1.0
     g = np.zeros((s, kmax + 1, p))
@@ -136,7 +139,9 @@ def _clogit_chunk(chunk, beta):
         wj, xj = w[:, j][:, None], x[:, j]
         zp, gp, hp = z[:, :-1], g[:, :-1], h[:, :-1]
         xg = np.einsum('sp,stq->stpq', xj, gp)
-        h[:, 1:] += wj[:, :, None, None] * (hp + xg + xg.transpose(0, 1, 3, 2) + zp[:, :, None, None] * (xj[:, None, :, None] * xj[:, None, None, :]))
+        h[:, 1:] += wj[:, :, None, None] * (
+            hp + xg + xg.transpose(0, 1, 3, 2) + zp[:, :, None, None] * (xj[:, None, :, None] * xj[:, None, None, :])
+        )
         g[:, 1:] += wj[:, :, None] * (gp + zp[:, :, None] * xj[:, None, :])
         z[:, 1:] += wj * zp
     r = np.arange(s)
@@ -180,9 +185,24 @@ def conditional_logit(y, X, strata, names=None, tol=1e-10, max_iter=50):
         n_cases += k
         n_rows += b - a
     nan = float('nan')
-    out = {'names': names, 'coef': [nan] * p, 'se': [nan] * p, 'odds_ratio': [nan] * p, 'ci_low': [nan] * p, 'ci_high': [nan] * p,
-           'z': [nan] * p, 'p': [nan] * p, 'loglik': nan, 'null_loglik': nan, 'lr_p': nan, 'score_chi2': nan,
-           'n_strata': len(groups), 'n_cases': n_cases, 'n_rows': n_rows, 'converged': False}
+    out = {
+        'names': names,
+        'coef': [nan] * p,
+        'se': [nan] * p,
+        'odds_ratio': [nan] * p,
+        'ci_low': [nan] * p,
+        'ci_high': [nan] * p,
+        'z': [nan] * p,
+        'p': [nan] * p,
+        'loglik': nan,
+        'null_loglik': nan,
+        'lr_p': nan,
+        'score_chi2': nan,
+        'n_strata': len(groups),
+        'n_cases': n_cases,
+        'n_rows': n_rows,
+        'converged': False,
+    }
     if not groups:
         return out
 
@@ -194,6 +214,7 @@ def conditional_logit(y, X, strata, names=None, tol=1e-10, max_iter=50):
             score += s_
             info += i_
         return ll + case_x @ beta, score + case_x, info
+
     beta = np.zeros(p)
     ll, score, info = evaluate(beta)
     out['null_loglik'] = ll
@@ -207,7 +228,7 @@ def conditional_logit(y, X, strata, names=None, tol=1e-10, max_iter=50):
         except np.linalg.LinAlgError:
             return out
         t = 1.0
-        while True:                                       # halve the step until the likelihood does not fall
+        while True:  # halve the step until the likelihood does not fall
             new = beta + t * step
             ll_new, score_new, info_new = evaluate(new)
             if ll_new >= ll - 1e-12 or t < 1e-8:
@@ -218,7 +239,7 @@ def conditional_logit(y, X, strata, names=None, tol=1e-10, max_iter=50):
         if done:
             out['converged'] = True
             break
-        if np.max(np.abs(beta)) > 25:                     # separation: the estimate runs away
+        if np.max(np.abs(beta)) > 25:  # separation: the estimate runs away
             break
     out['coef'] = [float(b) for b in beta]
     out['loglik'] = float(ll)
@@ -231,12 +252,15 @@ def conditional_logit(y, X, strata, names=None, tol=1e-10, max_iter=50):
         return out
     se = np.sqrt(np.diag(cov))
     z = beta / se
-    out.update(se=[float(v) for v in se], z=[float(v) for v in z],
-               odds_ratio=[float(v) for v in np.exp(beta)],
-               ci_low=[float(v) for v in np.exp(beta - 1.959963984540054 * se)],
-               ci_high=[float(v) for v in np.exp(beta + 1.959963984540054 * se)],
-               p=[float(v) for v in 2 * norm.sf(np.abs(z))],
-               lr_p=float(chi2.sf(max(0.0, 2 * (ll - out['null_loglik'])), p)))
+    out.update(
+        se=[float(v) for v in se],
+        z=[float(v) for v in z],
+        odds_ratio=[float(v) for v in np.exp(beta)],
+        ci_low=[float(v) for v in np.exp(beta - 1.959963984540054 * se)],
+        ci_high=[float(v) for v in np.exp(beta + 1.959963984540054 * se)],
+        p=[float(v) for v in 2 * norm.sf(np.abs(z))],
+        lr_p=float(chi2.sf(max(0.0, 2 * (ll - out['null_loglik'])), p)),
+    )
     return out
 
 
@@ -265,12 +289,22 @@ def gene_list_test(questions) -> list:
         bg = set(background)
         sel = set(listed) & bg
         n, N = len(sel), len(bg)
-        for name, members in (sets.items() if hasattr(sets, 'items') else sets):
+        for name, members in sets.items() if hasattr(sets, 'items') else sets:
             m = set(members) & bg
             M, k = len(m), len(m & sel)
             fold = (k / n) / (M / N) if n and M else None
-            rows.append({'question': question, 'set': name, 'k': k, 'n': n, 'M': M, 'N': N, 'fold': fold,
-                         'p': hypergeom_sf(k, N, M, n) if k else 1.0})
+            rows.append(
+                {
+                    'question': question,
+                    'set': name,
+                    'k': k,
+                    'n': n,
+                    'M': M,
+                    'N': N,
+                    'fold': fold,
+                    'p': hypergeom_sf(k, N, M, n) if k else 1.0,
+                }
+            )
     q = benjamini_hochberg([r['p'] for r in rows]) if rows else []
     for r, v in zip(rows, q):
         r['q'] = float(v)
@@ -282,6 +316,7 @@ def mann_whitney_p(x: Iterable[float], y: Iterable[float]) -> float:
     normal approximation with tie and continuity corrections); NaN when either is empty. As the release's
     scripts/cell_maps.py size_tests."""
     from scipy.stats import mannwhitneyu
+
     x, y = list(x), list(y)
     return float(mannwhitneyu(x, y).pvalue) if x and y else math.nan
 
@@ -289,4 +324,5 @@ def mann_whitney_p(x: Iterable[float], y: Iterable[float]) -> float:
 def js_path() -> str:
     """Where ptmstats.js, the same tests for the browser, is installed."""
     from importlib import resources
+
     return str(resources.files('ptmstats') / 'ptmstats.js')

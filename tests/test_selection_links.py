@@ -1,6 +1,7 @@
 """A selection in a link (f=) is written once-escaped and read back from every older form: the filter values are escaped
 once, their separators (~ ; |) stay plain, and a link an earlier version wrote (the whole value escaped a second time, so
 %20 became %2520) still loads, unwrapped until it is stable (kit-select.js, K.sel.fRaw / decode / encode)."""
+
 from __future__ import annotations
 
 import json
@@ -37,7 +38,7 @@ console.log(JSON.stringify({{ once, old, read: [read('f=' + once), read('q=a&f='
     run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
     out = json.loads(run.stdout)
-    assert out['once'] == 't:kind~A%20%2F%20B%7CC|x'                     # one escape; the separators are plain
+    assert out['once'] == 't:kind~A%20%2F%20B%7CC|x'  # one escape; the separators are plain
     assert '%25' in out['old'] and '%25' not in out['once']
     assert out['read'] == [['A / B|C', 'x']] * 4
     assert out['none'] is None

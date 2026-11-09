@@ -1,5 +1,6 @@
 """The cell drawing for a card of another page (K.cell.list, K.cell.parts, K.cell.draw): the drawings, each part's value and the
 drawing itself, without scraping the cell page. A toy site's maps stand in; the DOM is a stub that keeps the markup."""
+
 from __future__ import annotations
 
 import json
@@ -22,7 +23,9 @@ def test_a_card_draws_the_cell_and_reads_its_parts(tmp_path):
     root = _toy(tmp_path)
     S.run(root / 'sites' / 'toy.yaml', root=root / 'data', log=lambda *_: None)
     index = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None)
-    data = json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1))
+    data = json.loads(
+        re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1)
+    )
     assert data['cell_crops'] == {'cell': [205, 40, 590, 420], 'nucleus': [210, 10, 580, 450]}
     dfile = tmp_path / 'd.json'
     dfile.write_text(json.dumps(data))
@@ -65,11 +68,25 @@ console.log(JSON.stringify(out));"""
     assert [d[0] for d in out['list']] == ['cell', 'nucleus'] and out['list'][0][2] == [205, 40, 590, 420]
     parts = {p[0]: p for p in out['parts']}
     assert {'nucleoplasm', 'cytosol', 'pm'} <= set(parts)
-    assert parts['cytosol'][1] == ['cell'] and parts['cytosol'][2] == 'Cytosol' and parts['cytosol'][4] == 2 and parts['cytosol'][5] == ['map_a', 'map_b']
-    assert parts['nucleoplasm'][1] == ['nucleus'] and parts['nucleoplasm'][5] == ['map_a', 'map_b'] and parts['pm'][4] == 0      # membrane: no marked protein in it, no test
+    assert (
+        parts['cytosol'][1] == ['cell']
+        and parts['cytosol'][2] == 'Cytosol'
+        and parts['cytosol'][4] == 2
+        and parts['cytosol'][5] == ['map_a', 'map_b']
+    )
+    assert (
+        parts['nucleoplasm'][1] == ['nucleus'] and parts['nucleoplasm'][5] == ['map_a', 'map_b'] and parts['pm'][4] == 0
+    )  # membrane: no marked protein in it, no test
     assert all(p[3] in ('more', 'less', 'ns', 'na') for p in out['parts'])
     d = out['draw']
     assert d[0] == 'cell' and d[1:3] == [1000, 500] and 'cytosol' in d[3] and 'nucleoplasm' not in d[3]
     assert d[4] == '205 40 590 420' and d[5] == '590px' and d[6] and d[7]
     assert 'nucleoplasm' in out['nucleus'] and 'cytosol' not in out['nucleus'] and out['none'] is None
-    assert out['w'] == [True, False, 'Cytosol', True, False, False]        # a part is a filter by name; a part the drawings do not have keeps nothing
+    assert out['w'] == [
+        True,
+        False,
+        'Cytosol',
+        True,
+        False,
+        False,
+    ]  # a part is a filter by name; a part the drawings do not have keeps nothing

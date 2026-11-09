@@ -3,6 +3,7 @@
 The rest of the code reads the residue, the states, the motifs and the words for text from here, so no module carries
 a mark-specific literal. schemas/profile.schema.json is the contract.
 """
+
 from __future__ import annotations
 
 import json
@@ -27,6 +28,7 @@ def schema(name: str) -> dict:
 def validate(document: dict, name: str) -> None:
     """Raise jsonschema.ValidationError if document breaks the named contract."""
     import jsonschema
+
     jsonschema.validate(document, schema(name))
 
 
@@ -61,26 +63,37 @@ class Profile:
     def stickers(self) -> dict | None:
         """The profile's sticker residues ({residues, noun, nouns}), or None when it names none."""
         s = self.data.get('stickers')
-        return None if not s else {'residues': list(s['residues']), 'noun': s.get('noun', 'sticker residue'),
-                                   'nouns': s.get('nouns', s.get('noun', 'sticker residue') + 's'), 'heading': s.get('heading', 'Sticker patterning')}
+        return (
+            None
+            if not s
+            else {
+                'residues': list(s['residues']),
+                'noun': s.get('noun', 'sticker residue'),
+                'nouns': s.get('nouns', s.get('noun', 'sticker residue') + 's'),
+                'heading': s.get('heading', 'Sticker patterning'),
+            }
+        )
 
     def background(self, scope: str) -> str:
         """The background wording of a statistics row, from the profile's words (e.g. 'other arginines of the
         methylated proteins')."""
         w = self.words
         if scope == 'marked_proteins':
-            return f"other {w['residues']} of the {w['marked']} proteins"
+            return f'other {w["residues"]} of the {w["marked"]} proteins'
         if scope == 'same_protein':
-            return f"other {w['residues']} of the same protein, each protein a stratum"
+            return f'other {w["residues"]} of the same protein, each protein a stratum'
         if scope == 'proteome':
-            return f"other {w['residues']} of the proteome"
+            return f'other {w["residues"]} of the proteome'
         raise ValueError(f'unknown background scope {scope!r}')
 
     def motif_flags(self, windows: pd.Series) -> pd.DataFrame:
         """One boolean column per motif family (named by the family), from sequence windows centered on the residue."""
         families = self.motif_families
-        return pd.DataFrame([{f['name']: _matches(f, w) for f in families} for w in windows], index=windows.index,
-                            columns=[f['name'] for f in families]).astype(bool)
+        return pd.DataFrame(
+            [{f['name']: _matches(f, w) for f in families} for w in windows],
+            index=windows.index,
+            columns=[f['name'] for f in families],
+        ).astype(bool)
 
     def motif_columns(self) -> list[str]:
         return [f['name'] for f in self.motif_families]
@@ -117,6 +130,7 @@ def read_config(path: str | Path) -> dict:
     text = path.read_text()
     if path.suffix in ('.yaml', '.yml'):
         import yaml
+
         return yaml.safe_load(text)
     return json.loads(text)
 

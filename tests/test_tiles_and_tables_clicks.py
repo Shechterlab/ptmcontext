@@ -1,4 +1,5 @@
 """Clicks and looks of the tile rows and the Sites/Proteins tables, checked in the kit's source (no browser here)."""
+
 from __future__ import annotations
 
 import re
@@ -20,14 +21,18 @@ def test_a_page_tile_opens_inside_a_folded_section():
 
 def test_a_page_tile_row_selects_like_the_overviews():
     src = _js('kit-interactions.js')
-    mini = src[src.index('function miniForest'):src.index('const range = rs')]
+    mini = src[src.index('function miniForest') : src.index('const range = rs')]
     assert 'class="trow pick" data-f="a:' in mini and 'data-v=' in mini and 'role="button"' in mini
 
 
 def test_the_bound_histogram_tile_draws_at_the_tile_width():
     src = _js('kit-interactions.js')
     assert 'function histBody(b, ex, Wd = 760, H0 = 220, fz = 1)' in src
-    tile = next(x for x in src.splitlines() if "case 'histogram': { const h = histData(b); if (!h) return loading(); const L" in x)
+    tile = next(
+        x
+        for x in src.splitlines()
+        if "case 'histogram': { const h = histData(b); if (!h) return loading(); const L" in x
+    )
     m = re.search(r'histBody\(b, false, (\d+), (\d+), ([\d.]+)\)', tile)
     assert m and int(m.group(1)) <= 400 and float(m.group(3)) >= 1.2 and f'viewBox="0 0 {m.group(1)} ' in tile
 
@@ -40,6 +45,7 @@ def test_reported_by_is_gray_chips_one_per_line():
 
 def test_the_figure_panels_page_is_registered_and_gives_the_sites_page_its_button():
     from ptmcontext import web
+
     assert 'kit-figures.js' in web.MODULES and web.MODULES.index('kit-figures.js') < web.MODULES.index('kit.js')
     fig, tables, sites = _js('kit-figures.js'), _js('kit-tables.js'), _js('kit-sites.js')
     assert 'K.views.figures = ' in fig and 'if (!K.logoPanel) return;' in fig
@@ -49,7 +55,10 @@ def test_the_figure_panels_page_is_registered_and_gives_the_sites_page_its_butto
 
 def test_the_proteins_table_follows_the_explorers_defaults():
     import yaml
-    cols = yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / 'methylarginine.yaml').read_text())['website']['proteins']['columns']
+
+    cols = yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / 'methylarginine.yaml').read_text())[
+        'website'
+    ]['proteins']['columns']
     by = {c['id']: c for c in cols}
     assert by['map'].get('fixed') and not by['map'].get('default')
     assert [i for i in by if by[i].get('default')] == ['ix', 'idr', 'cond', 'density']

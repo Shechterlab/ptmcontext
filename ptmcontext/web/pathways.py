@@ -8,6 +8,7 @@ those proteins, from the site's own hierarchy table and set-membership table; no
 
 `n` is the proteins of the pathway; a pathway with no sub-pathway with proteins is one group, itself. A top-level pathway
 (one with no parent) is marked `top`: the page ranks its groups by the methylated proteins of the selection."""
+
 from __future__ import annotations
 
 import json
@@ -44,6 +45,7 @@ def build(site: dict, run: dict, kept: dict, listing: list, fasta: Path, out: Pa
     """Write the pathway files of every `website.front.pathways` entry; give the page what it reads to find them:
     [{analyses, dir, source: {name, version, licence, link, url}}] (an entry whose inputs are missing is left out)."""
     import pandas as pd
+
     cfgs = (((site.get('website') or {}).get('front') or {}).get('pathways')) or []
     folder = out / DIR
     shutil.rmtree(folder, ignore_errors=True)
@@ -81,11 +83,22 @@ def build(site: dict, run: dict, kept: dict, listing: list, fasta: Path, out: Pa
             groups = [c for c in kids.get(sid, []) if members.get(c)] or [sid]
             accs = sorted(set().union(*(members[g] for g in groups)) | members.get(sid, set()))
             ix = {a: i for i, a in enumerate(accs)}
-            d = {'id': sid, 'name': title[sid], 'top': not parents.get(sid), 'n': len(members.get(sid, ())), 'acc': accs,
-                 'gene': ['' if a in genes else (names or {}).get(a) or a for a in accs],
-                 'groups': [{'id': g, 'name': title.get(g, g), 'm': sorted(ix[a] for a in members.get(g, ()) if a in ix)} for g in groups]}
+            d = {
+                'id': sid,
+                'name': title[sid],
+                'top': not parents.get(sid),
+                'n': len(members.get(sid, ())),
+                'acc': accs,
+                'gene': ['' if a in genes else (names or {}).get(a) or a for a in accs],
+                'groups': [
+                    {'id': g, 'name': title.get(g, g), 'm': sorted(ix[a] for a in members.get(g, ()) if a in ix)}
+                    for g in groups
+                ],
+            }
             (folder / file_name(sid)).write_text(json.dumps(d, separators=(',', ':'), ensure_ascii=False))
         src = dict(cfg.get('source') or {})
         result.append({'analyses': list(cfg['analyses']), 'dir': DIR + '/', 'source': src})
-        log(f"  pathway view: {len(todo):,} pathways of {', '.join(cfg['analyses'])}, {sum(f.stat().st_size for f in folder.glob('*.json')) / 1e6:.1f} MB")
+        log(
+            f'  pathway view: {len(todo):,} pathways of {", ".join(cfg["analyses"])}, {sum(f.stat().st_size for f in folder.glob("*.json")) / 1e6:.1f} MB'
+        )
     return result

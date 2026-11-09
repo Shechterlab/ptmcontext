@@ -1,4 +1,5 @@
 """The Python functions against SciPy and statsmodels directly."""
+
 import numpy as np
 from scipy.stats import fisher_exact, hypergeom
 
@@ -20,6 +21,7 @@ def test_mantel_haenszel_single_stratum_is_the_table_odds_ratio():
 
 def test_mann_whitney_is_scipys_two_sided_test():
     from scipy.stats import mannwhitneyu
+
     x, y = [0.1, 1.2, 2.5, -0.3, 4.0, 1.1], [0.0, -1.0, 0.4, 0.2, -2.0, 0.3, 0.5, -0.1, 0.05]
     assert ptmstats.mann_whitney_p(x, y) == float(mannwhitneyu(x, y).pvalue)
     assert np.isnan(ptmstats.mann_whitney_p([], y))
@@ -32,7 +34,9 @@ def _clogit_data(seed=1, n_strata=120, binary_only=False):
     for g in range(n_strata):
         n = int(rng.integers(3, 20))
         k = int(rng.integers(1, min(4, n - 1) + 1))
-        x = np.c_[rng.integers(0, 2, n), rng.integers(0, 2, n), rng.integers(0, 2, n) if binary_only else rng.normal(size=n)]
+        x = np.c_[
+            rng.integers(0, 2, n), rng.integers(0, 2, n), rng.integers(0, 2, n) if binary_only else rng.normal(size=n)
+        ]
         w = np.exp(0.8 * x[:, 0] - 0.5 * x[:, 1] + 0.3 * x[:, 2])
         w /= w.sum()
         y = np.zeros(n, int)
@@ -45,6 +49,7 @@ def _clogit_data(seed=1, n_strata=120, binary_only=False):
 
 def test_conditional_logit_matches_statsmodels_to_1e6():
     from statsmodels.discrete.conditional_models import ConditionalLogit
+
     y, X, g = _clogit_data()
     ours = ptmstats.conditional_logit(y, X, g)
     sm = ConditionalLogit(y, X, groups=g)
@@ -54,11 +59,14 @@ def test_conditional_logit_matches_statsmodels_to_1e6():
     assert np.allclose(ours['se'], theirs.bse, atol=1e-6, rtol=0)
     assert abs(ours['loglik'] - sm.loglike(np.array(ours['coef']))) < 1e-8
     assert abs(ours['null_loglik'] - sm.loglike(np.zeros(3))) < 1e-8
-    assert np.allclose(sm.score(np.array(ours['coef'])), 0, atol=1e-6)         # a stationary point of statsmodels' likelihood too
+    assert np.allclose(
+        sm.score(np.array(ours['coef'])), 0, atol=1e-6
+    )  # a stationary point of statsmodels' likelihood too
 
 
 def test_conditional_logit_likelihood_is_the_sum_over_all_subsets():
     import itertools
+
     y, X, g = _clogit_data(seed=4, n_strata=12)
     beta = np.array([0.4, -0.2, 0.7])
     ll = 0.0
@@ -68,12 +76,16 @@ def test_conditional_logit_likelihood_is_the_sum_over_all_subsets():
         den = sum(np.exp(xs[list(c)].sum(0) @ beta) for c in itertools.combinations(range(len(ys)), int(ys.sum())))
         ll += xs[ys == 1].sum(0) @ beta - np.log(den)
     from statsmodels.discrete.conditional_models import ConditionalLogit
+
     assert abs(ConditionalLogit(y, X, groups=g).loglike(beta) - ll) < 1e-9
     # the null log likelihood is minus the log of the number of subsets, summed over informative strata
     from math import comb
+
     r = ptmstats.conditional_logit(y, X, g)
     informative = [s for s in np.unique(g) if 0 < y[g == s].sum() < (g == s).sum()]
-    assert abs(r['null_loglik'] + sum(np.log(comb(int((g == s).sum()), int(y[g == s].sum()))) for s in informative)) < 1e-9
+    assert (
+        abs(r['null_loglik'] + sum(np.log(comb(int((g == s).sum()), int(y[g == s].sum()))) for s in informative)) < 1e-9
+    )
 
 
 def test_conditional_logit_score_test_is_the_uncorrected_mantel_haenszel_test():
@@ -104,10 +116,11 @@ def test_conditional_logit_score_test_is_the_uncorrected_mantel_haenszel_test():
 
 def test_conditional_logit_one_case_per_stratum_is_a_softmax_and_matched_pairs_are_a_logistic_regression():
     from statsmodels.api import Logit
+
     rng = np.random.default_rng(3)
     d = rng.normal(size=(200, 2))
     true = np.array([0.7, -0.4])
-    case_first = rng.random(200) < 1 / (1 + np.exp(-(d @ true)))        # pair: x_case - x_control = d (or -d)
+    case_first = rng.random(200) < 1 / (1 + np.exp(-(d @ true)))  # pair: x_case - x_control = d (or -d)
     X, y, g = [], [], []
     for i in range(200):
         a, b = (d[i], np.zeros(2)) if case_first[i] else (np.zeros(2), d[i])
@@ -118,7 +131,7 @@ def test_conditional_logit_one_case_per_stratum_is_a_softmax_and_matched_pairs_a
     r = ptmstats.conditional_logit(y, np.array(X), g)
     diff = np.array([X[2 * i] - X[2 * i + 1] for i in range(200)])
     out = np.array([y[2 * i] for i in range(200)])
-    fit = Logit(out, diff).fit(disp=0)                                   # no intercept: logistic regression on the pair difference
+    fit = Logit(out, diff).fit(disp=0)  # no intercept: logistic regression on the pair difference
     assert np.allclose(r['coef'], fit.params, atol=1e-6) and np.allclose(r['se'], fit.bse, atol=1e-6)
 
 
@@ -127,7 +140,7 @@ def test_conditional_logit_leaves_out_uninformative_strata_and_reports_separatio
     x = [1, 0, 1, 0, 1, 0, 1, 0, 1]
     g = [0, 0, 0, 1, 1, 1, 2, 2, 2]
     r = ptmstats.conditional_logit(y, x, g)
-    assert (r['n_strata'], r['n_cases'], r['n_rows']) == (1, 1, 3)       # stratum 1 has no case, stratum 2 no control
+    assert (r['n_strata'], r['n_cases'], r['n_rows']) == (1, 1, 3)  # stratum 1 has no case, stratum 2 no control
     sep = ptmstats.conditional_logit([1, 0, 0, 1, 0, 0], [1, 0, 0, 1, 0, 0], [0, 0, 0, 1, 1, 1])
     assert not sep['converged'] and np.isnan(sep['p'][0])
     assert not ptmstats.conditional_logit([1, 1], [0, 1], [0, 0])['converged']

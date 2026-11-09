@@ -21,6 +21,7 @@ and is at most 6.3% lower for the others (short sequences, where the best arrang
 39 compositions of 20 to 40 residues, no local search from 195 random arrangements beat it. Its kappa is therefore
 exact or, for sequences under 12 residues, slightly high (it is capped at 1). IDRs here are 20 residues or more.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -30,8 +31,13 @@ import numpy as np
 
 POSITIVE, NEGATIVE = frozenset('KR'), frozenset('DE')
 BLOBS = (5, 6)
-REGIONS = {1: 'Weak polyampholytes and polyelectrolytes', 2: 'Janus sequences', 3: 'Strong polyampholytes',
-           4: 'Strong negative polyelectrolytes', 5: 'Strong positive polyelectrolytes'}
+REGIONS = {
+    1: 'Weak polyampholytes and polyelectrolytes',
+    2: 'Janus sequences',
+    3: 'Strong polyampholytes',
+    4: 'Strong negative polyelectrolytes',
+    5: 'Strong positive polyelectrolytes',
+}
 
 
 def pattern(seq: str) -> np.ndarray:
@@ -55,7 +61,7 @@ def delta(p: np.ndarray, blob: int) -> float:
     bp, bn = cp[blob:] - cp[:-blob], cn[blob:] - cn[:-blob]
     fcr, ncpr = (bp + bn) / blob, (bp - bn) / blob
     with np.errstate(divide='ignore', invalid='ignore'):
-        bsig = np.where(fcr > 0, ncpr ** 2 / np.where(fcr > 0, fcr, 1), 0.0)
+        bsig = np.where(fcr > 0, ncpr**2 / np.where(fcr > 0, fcr, 1), 0.0)
     s = _sigma(int((p > 0).sum()), int((p < 0).sum()), n)
     return float(np.mean((s - bsig) ** 2))
 
@@ -96,7 +102,7 @@ def _delta_rows(rows: np.ndarray, blob: int) -> np.ndarray:
     cn = np.concatenate([np.zeros((len(rows), 1), np.int32), np.cumsum(rows < 0, axis=1)], axis=1)
     bp, bn = cp[:, blob:] - cp[:, :-blob], cn[:, blob:] - cn[:, :-blob]
     fcr, ncpr = (bp + bn) / blob, (bp - bn) / blob
-    bsig = np.divide(ncpr ** 2, fcr, out=np.zeros_like(fcr), where=fcr > 0)
+    bsig = np.divide(ncpr**2, fcr, out=np.zeros_like(fcr), where=fcr > 0)
     s = _sigma(int((rows[0] > 0).sum()), int((rows[0] < 0).sum()), n)
     return np.mean((s - bsig) ** 2, axis=1)
 
@@ -107,8 +113,12 @@ def delta_max(n_pos: int, n_neg: int, n: int) -> float:
     residues (_candidates). tests/test_charge.py checks it against every arrangement of short sequences."""
     if n_pos + n_neg == 0:
         return 0.0
-    rows = np.array([np.concatenate([np.full(k, v, np.int8) for v, k in blocks])
-                     for blocks in _candidates(n_pos, n_neg, n - n_pos - n_neg)])
+    rows = np.array(
+        [
+            np.concatenate([np.full(k, v, np.int8) for v, k in blocks])
+            for blocks in _candidates(n_pos, n_neg, n - n_pos - n_neg)
+        ]
+    )
     return float(max(sum(_delta_rows(rows, b) for b in BLOBS) / len(BLOBS)))
 
 

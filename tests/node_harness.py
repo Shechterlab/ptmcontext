@@ -1,4 +1,5 @@
 """A stand-in page for running kit modules under Node: the kit modules' K object with the statistics rows of a built toy site."""
+
 from __future__ import annotations
 
 import json
@@ -57,7 +58,10 @@ def toy_build(tmp_path, minimum=None):
 
 def _run(tmp_path, index, body):
     (tmp_path / 'd.json').write_text(json.dumps(_page_data(index)))
-    head = f"const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / 'assets'))}, DATA = {json.dumps(str(tmp_path / 'd.json'))}, SEL = {json.dumps(str(index.parent / 'data' / 'selection.json'))};" + HARNESS
+    head = (
+        f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, DATA = {json.dumps(str(tmp_path / "d.json"))}, SEL = {json.dumps(str(index.parent / "data" / "selection.json"))};'
+        + HARNESS
+    )
     run = subprocess.run(['node', '-e', head + '(async () => {' + body + '})();'], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-1200:]
     return json.loads(run.stdout)

@@ -1,5 +1,6 @@
 """Every table and card that offers a TSV offers PDF, SVG and PNG beside it (kit-tabfig.js draws a page's table as a figure
 through the kit's figure frame; the IDR regions have a drawing of their own). No module may write an export bar of TSV alone."""
+
 from __future__ import annotations
 
 import re

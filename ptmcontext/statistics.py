@@ -4,6 +4,7 @@ The columns, their order and their formatting are those of the Methylarginine Si
 integers without decimals, numbers in up to 6 significant digits, empty for missing. q is Benjamini-Hochberg within
 (analysis, method).
 """
+
 from __future__ import annotations
 
 import math
@@ -12,11 +13,24 @@ from pathlib import Path
 import pandas as pd
 
 COLUMNS: list[tuple[str, str]] = [
-    ('analysis', 'code'), ('category', 'string'), ('stratum', 'string'),
-    ('a', 'integer'), ('b', 'integer'), ('c', 'integer'), ('d', 'integer'),
-    ('odds_ratio', 'number'), ('log2_odds_ratio', 'number'), ('fold_enrichment', 'number'), ('log2_fold_enrichment', 'number'),
-    ('p', 'number'), ('q', 'number'), ('method', 'code'), ('background', 'string'), ('n_strata', 'integer'),
-    ('odds_ratio_ci_low', 'number'), ('odds_ratio_ci_high', 'number'),
+    ('analysis', 'code'),
+    ('category', 'string'),
+    ('stratum', 'string'),
+    ('a', 'integer'),
+    ('b', 'integer'),
+    ('c', 'integer'),
+    ('d', 'integer'),
+    ('odds_ratio', 'number'),
+    ('log2_odds_ratio', 'number'),
+    ('fold_enrichment', 'number'),
+    ('log2_fold_enrichment', 'number'),
+    ('p', 'number'),
+    ('q', 'number'),
+    ('method', 'code'),
+    ('background', 'string'),
+    ('n_strata', 'integer'),
+    ('odds_ratio_ci_low', 'number'),
+    ('odds_ratio_ci_high', 'number'),
 ]
 NAMES = [c for c, _ in COLUMNS]
 

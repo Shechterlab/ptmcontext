@@ -15,7 +15,7 @@ from ptmcontext.snapshot import Snapshot
 def test_classify_inside_near_far_and_termini():
     pos = np.array([1, 5, 10, 25, 31, 60])
     codes, dist = classify(pos, np.array([1]), np.array([10]), window=20, length=100)
-    assert list(codes) == ['inside', 'inside', 'inside', 'near', 'far', 'far']   # 31 is 21 past the edge: beyond 20
+    assert list(codes) == ['inside', 'inside', 'inside', 'near', 'far', 'far']  # 31 is 21 past the edge: beyond 20
     # the unit starts at the N-terminus: inside positions measure to its C-terminal edge only
     assert list(dist[:3]) == [9, 5, 0] and list(dist[3:]) == [15, 21, 50]
 
@@ -28,13 +28,17 @@ def test_unit_spanning_the_protein_has_no_edge():
 def test_unit_context_on_a_protein_without_units():
     residues = pd.DataFrame({'accession': ['A', 'B'], 'position': [5, 5]})
     units = U.make_units(pd.DataFrame({'accession': ['A'], 'start': [1], 'end': [9]}), 'disordered', 'test')
-    out = unit_context(residues, units, {'A': 50, 'B': 50}, 20, {'inside': 'in', 'near': 'near', 'far': 'far', 'none': 'none'})
+    out = unit_context(
+        residues, units, {'A': 50, 'B': 50}, 20, {'inside': 'in', 'near': 'near', 'far': 'far', 'none': 'none'}
+    )
     assert list(out['category']) == ['in', 'none']
 
 
 def test_idrs_merge_and_keep_long_regions():
     snap = Snapshot({'A': 'A' * 100})
-    dis = U.make_units(pd.DataFrame({'accession': ['A'] * 3, 'start': [1, 10, 60], 'end': [15, 30, 70]}), 'disordered', 'test')
+    dis = U.make_units(
+        pd.DataFrame({'accession': ['A'] * 3, 'start': [1, 10, 60], 'end': [15, 30, 70]}), 'disordered', 'test'
+    )
     idr = U.idrs(dis, snap, min_len=20)
     assert idr[['start', 'end']].values.tolist() == [[1, 30]]
 
@@ -44,7 +48,9 @@ def _toy_context(tmp_path):
     seq = 'MRGGRAAAAARAAAAAAAAAARAAAAAAAAARGGAAAAAAAAR'
     snap = Snapshot({'P1': seq, 'P2': 'MRAAARAAAR'})
     mobidb = tmp_path / 'mobidb.tsv'
-    pd.DataFrame({'canonical_UniProtAC': ['P1'], 'fragment_start': [1], 'fragment_end': [12]}).to_csv(mobidb, sep='\t', index=False)
+    pd.DataFrame({'canonical_UniProtAC': ['P1'], 'fragment_start': [1], 'fragment_end': [12]}).to_csv(
+        mobidb, sep='\t', index=False
+    )
     return L.Context(snap, load_profile('methylarginine'), {'disorder': mobidb})
 
 
@@ -81,6 +87,7 @@ def test_a_plugin_is_not_loaded_unless_trusted(monkeypatch, tmp_path):
 
 def test_protein_outputs_count_each_protein(tmp_path):
     from ptmcontext.site import protein_outputs
+
     ctx = _toy_context(tmp_path)
     marked = pd.DataFrame({'accession': ['P1', 'P1', 'P2'], 'position': [2, 5, 2]})
     kept = {'disorder': {}}

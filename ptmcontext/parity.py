@@ -3,6 +3,7 @@
 The reference is read as data (a TSV whose MD5 the input manifest records); no code of the repository that wrote it is
 run. Parity is how the rebuild earns the right to replace a pipeline: one check per analysis, kept as a test.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -19,13 +20,18 @@ class Result:
     rows: int
     equal: bool
     diffs: list[tuple[str, str]] = field(default_factory=list)
-    reference: str = ''          # a table of its own (an analysis's reference), not the site's statistics reference
-    skipped: int = 0              # reference rows not compared: their tests read inputs that are not present
-    excused: list[str] = field(default_factory=list)   # reference rows the site file excuses (reference.excused): why
+    reference: str = ''  # a table of its own (an analysis's reference), not the site's statistics reference
+    skipped: int = 0  # reference rows not compared: their tests read inputs that are not present
+    excused: list[str] = field(default_factory=list)  # reference rows the site file excuses (reference.excused): why
 
 
-def compare(rows: pd.DataFrame, reference: pd.DataFrame, analysis: str, leave_out: list[tuple[str, str]] | None = None,
-            excused: list[dict] | None = None) -> list[Result]:
+def compare(
+    rows: pd.DataFrame,
+    reference: pd.DataFrame,
+    analysis: str,
+    leave_out: list[tuple[str, str]] | None = None,
+    excused: list[dict] | None = None,
+) -> list[Result]:
     """For each method of the analysis in the reference, whether the rebuilt rows equal the reference's, as written
     (same rows, same order, same text). leave_out: (category, stratum) of tests that could not be run (they read a
     checksum_only input the root does not hold); their reference rows are not compared, and neither is q in the
@@ -42,7 +48,11 @@ def compare(rows: pd.DataFrame, reference: pd.DataFrame, analysis: str, leave_ou
     skip = set(leave_out or [])
     for method in sorted(set(ref['method'])):
         r_m = ref[ref['method'] == method]
-        hold = ~pd.Series(list(zip(r_m['category'], r_m['stratum'])), index=r_m.index).isin(skip) if skip else pd.Series(True, index=r_m.index)
+        hold = (
+            ~pd.Series(list(zip(r_m['category'], r_m['stratum'])), index=r_m.index).isin(skip)
+            if skip
+            else pd.Series(True, index=r_m.index)
+        )
         exp = ['\t'.join(r) for r in r_m[hold].reindex(columns=ST.NAMES).itertuples(index=False)]
         g = [line for line in got if line.split('\t')[m] == method]
         exc = {(e['category'], e.get('stratum', 'all')): e['why'] for e in excused or [] if e['method'] == method}
@@ -56,8 +66,17 @@ def compare(rows: pd.DataFrame, reference: pd.DataFrame, analysis: str, leave_ou
         diffs = [(a, b) for a, b in zip(g, exp) if a != b]
         if len(g) != len(exp):
             diffs.append((f'{len(g)} rows', f'{len(exp)} rows'))
-        out.append(Result(analysis, method, len(exp), g == exp, diffs[:5], skipped=int((~hold).sum()),
-                          excused=[f'{c}: {w}' for (c, _), w in exc.items()]))
+        out.append(
+            Result(
+                analysis,
+                method,
+                len(exp),
+                g == exp,
+                diffs[:5],
+                skipped=int((~hold).sum()),
+                excused=[f'{c}: {w}' for (c, _), w in exc.items()],
+            )
+        )
     return out
 
 
@@ -76,10 +95,21 @@ def compare_table(rows: pd.DataFrame, table: pd.DataFrame, analysis: str, ref: d
 
     def values(r, a, m, f, p, q):
         return (int(r[a]), *([int(r[m])] if 'M' in cols else []), _g6(r[f]), _g6(r[p]), _g6(r[q]))
-    mine = {str(r['category']): (int(r['a']), *([int(r['a']) + int(r['c'])] if 'M' in cols else []),
-                                 _g6(r['fold_enrichment']), _g6(r['p']), _g6(r['q'])) for r in got.to_dict('records')}
-    theirs = {str(r[cols['set']]).strip(): values(r, cols['a'], cols.get('M'), cols['fold_enrichment'], cols['p'], cols['q'])
-              for r in table.to_dict('records')}
+
+    mine = {
+        str(r['category']): (
+            int(r['a']),
+            *([int(r['a']) + int(r['c'])] if 'M' in cols else []),
+            _g6(r['fold_enrichment']),
+            _g6(r['p']),
+            _g6(r['q']),
+        )
+        for r in got.to_dict('records')
+    }
+    theirs = {
+        str(r[cols['set']]).strip(): values(r, cols['a'], cols.get('M'), cols['fold_enrichment'], cols['p'], cols['q'])
+        for r in table.to_dict('records')
+    }
     if listed == 'enriched':
         q = dict(zip(got['category'].astype(str), pd.to_numeric(got['q'], errors='coerce')))
         mine = {s: v for s, v in mine.items() if q[s] <= 0.05}
@@ -96,7 +126,13 @@ def compare_background(counts: pd.DataFrame, table: pd.DataFrame, ref: dict) -> 
     acc, an, cat, oth, every = ref['accession'], ref['analysis'], ref['category'], ref['others'], ref.get('all', '*')
     out = []
     # a protein's other candidates in all, from any of these questions (each counts every candidate of the protein)
-    anyq = counts[counts['analysis'].isin(set(table[an]))].drop_duplicates('accession').set_index('accession')['others_total'].astype(int).to_dict()
+    anyq = (
+        counts[counts['analysis'].isin(set(table[an]))]
+        .drop_duplicates('accession')
+        .set_index('accession')['others_total']
+        .astype(int)
+        .to_dict()
+    )
     for a in sorted(set(table[an])):
         t = table[table[an] == a]
         c = counts[counts['analysis'] == a]

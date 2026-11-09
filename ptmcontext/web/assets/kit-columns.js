@@ -4,71 +4,148 @@
    added after a reader saved a choice shows once, then is remembered like the rest. A module of the site kit:
    K.columns.menu(table, cols, defaults) is the menu's HTML, K.columns.on(table, cols, defaults) the ids shown,
    K.columns.reset(table) forgets the choice; K.columns.redraw[table] (optional) redraws after a change (else the page). */
-(window.PTMC_MODULES ||= []).push(K => {
+(window.PTMC_MODULES ||= []).push((K) => {
   'use strict';
   const { esc } = K;
-  const KEY = t => 'ptmc-cols-' + t, KNOWN = t => 'ptmc-cols-known-' + t;
-  const read = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
-  const write = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage may be blocked */ } };
-  const state = {}, defs = {}, open = new Set();
+  const KEY = (t) => 'ptmc-cols-' + t,
+    KNOWN = (t) => 'ptmc-cols-known-' + t;
+  const read = (k) => {
+    try {
+      return JSON.parse(localStorage.getItem(k) || 'null');
+    } catch (e) {
+      return null;
+    }
+  };
+  const write = (k, v) => {
+    try {
+      if (v == null) localStorage.removeItem(k);
+      else localStorage.setItem(k, JSON.stringify(v));
+    } catch (e) {
+      /* storage may be blocked */
+    }
+  };
+  const state = {},
+    defs = {},
+    open = new Set();
   // Density of the tables: compact (one line a row; the default) or comfortable (wrapped chips); remembered in the
   // browser once a reader chooses. A page can default to comfortable: K.density.defaults[view].
-  const DK = 'ptmc-density', DEF = {};
+  const DK = 'ptmc-density',
+    DEF = {};
   let pref = null;
-  try { const v = localStorage.getItem(DK); if (v === 'comfortable' || v === 'compact') pref = v; } catch (e) { /* storage may be blocked */ }
+  try {
+    const v = localStorage.getItem(DK);
+    if (v === 'comfortable' || v === 'compact') pref = v;
+  } catch (e) {
+    /* storage may be blocked */
+  }
   const eff = () => pref || DEF[K.S?.view] || 'compact';
-  const apply = () => { try { document.documentElement.dataset.density = eff(); } catch (e) { /* no page (a test) */ } };
+  const apply = () => {
+    try {
+      document.documentElement.dataset.density = eff();
+    } catch (e) {
+      /* no page (a test) */
+    }
+  };
   apply();
   (K.afterRender ||= []).push(apply);
   const compact = () => eff() === 'compact';
-  const densityBtn = () => (`<button type="button" class="btn small density-btn" data-density aria-pressed="${compact()}" title="Table ` +
-      `rows: compact (one line each) or comfortable (everything wrapped)">${compact() ? 'Compact' : 'Comfortable'} rows</button>`);
-  document.addEventListener('click', e => {
+  const densityBtn = () =>
+    `<button type="button" class="btn small density-btn" data-density aria-pressed="${compact()}" title="Table ` +
+    `rows: compact (one line each) or comfortable (everything wrapped)">${compact() ? 'Compact' : 'Comfortable'} rows</button>`;
+  document.addEventListener('click', (e) => {
     if (!e.target.closest?.('button[data-density]')) return;
-    pref = compact() ? 'comfortable' : 'compact'; apply();
-    try { localStorage.setItem(DK, pref); } catch (err) { /* storage may be blocked */ }
+    pref = compact() ? 'comfortable' : 'compact';
+    apply();
+    try {
+      localStorage.setItem(DK, pref);
+    } catch (err) {
+      /* storage may be blocked */
+    }
     K.render();
   });
-  const untouched = new Set();         // tables whose columns are still the defaults
+  const untouched = new Set(); // tables whose columns are still the defaults
   function on(table, cols, defaults) {
     // the defaults can grow while the data arrives (a column whose attribute is not loaded yet is not listed): a choice not yet made follows them
-    if (state[table] && untouched.has(table) && JSON.stringify(defaults || []) !== JSON.stringify(defs[table])) delete state[table];
+    if (state[table] && untouched.has(table) && JSON.stringify(defaults || []) !== JSON.stringify(defs[table]))
+      delete state[table];
     defs[table] = defaults || [];
     if (!state[table]) {
-      const saved = read(KEY(table)), known = read(KNOWN(table));
-      if (Array.isArray(saved)) untouched.delete(table); else untouched.add(table);
+      const saved = read(KEY(table)),
+        known = read(KNOWN(table));
+      if (Array.isArray(saved)) untouched.delete(table);
+      else untouched.add(table);
       const set = new Set(Array.isArray(saved) ? saved : defs[table]);
-      if (Array.isArray(saved)) defs[table].filter(k => !(Array.isArray(known) && known.includes(k))).forEach(k => set.add(k));
+      if (Array.isArray(saved))
+        defs[table].filter((k) => !(Array.isArray(known) && known.includes(k))).forEach((k) => set.add(k));
       state[table] = set;
     }
-    return (cols || []).filter(c => c.fixed || state[table].has(c.id)).map(c => c.id);
+    return (cols || []).filter((c) => c.fixed || state[table].has(c.id)).map((c) => c.id);
   }
-  function save(table) { write(KEY(table), [...state[table]]); write(KNOWN(table), defs[table] || []); }
-  function reset(table) { state[table] = new Set(defs[table] || []); untouched.add(table); write(KEY(table), null); }
+  function save(table) {
+    write(KEY(table), [...state[table]]);
+    write(KNOWN(table), defs[table] || []);
+  }
+  function reset(table) {
+    state[table] = new Set(defs[table] || []);
+    untouched.add(table);
+    write(KEY(table), null);
+  }
   function menu(table, cols, defaults) {
     on(table, cols, defaults);
-    const opt = (cols || []).filter(c => !c.fixed);
+    const opt = (cols || []).filter((c) => !c.fixed);
     if (!opt.length) return `<span class="tbl-opts">${densityBtn()}</span>`;
-    return `<span class="tbl-opts">${densityBtn()}` + (`<details class="col-menu"${open.has(table) ? ' open' : ''} data-col-menu="${esc(table)}"><summary ` +
+    return (
+      `<span class="tbl-opts">${densityBtn()}` +
+      (`<details class="col-menu"${open.has(table) ? ' open' : ''} data-col-menu="${esc(table)}"><summary ` +
         `class="btn small">Columns</summary><div class="col-pop" role="group" aria-label="Optional columns">`) +
-      opt.map(c => `<label class="check"><input type="checkbox" data-col-table="${esc(table)}" data-col="${esc(c.id)}"${state[table].has(c.id) ? ' checked' : ''}> ${esc(c.menu || c.label)}</label>`).join('') +
+      opt
+        .map(
+          (c) =>
+            `<label class="check"><input type="checkbox" data-col-table="${esc(table)}" data-col="${esc(c.id)}"${state[table].has(c.id) ? ' checked' : ''}> ${esc(c.menu || c.label)}</label>`
+        )
+        .join('') +
       (`<button class="linkish" type="button" data-col-reset="${esc(table)}">Default columns</button></div>` +
-          `</details></span>`);
+        `</details></span>`)
+    );
   }
   const redraw = {};
-  const after = table => { open.add(table); (redraw[table] || K.render)(); };
-  document.addEventListener('change', e => {
-    const cb = e.target.closest?.('[data-col-table]'); if (!cb) return;
-    const t = cb.dataset.colTable; if (!state[t]) return;
-    if (cb.checked) state[t].add(cb.dataset.col); else state[t].delete(cb.dataset.col);
+  const after = (table) => {
+    open.add(table);
+    (redraw[table] || K.render)();
+  };
+  document.addEventListener('change', (e) => {
+    const cb = e.target.closest?.('[data-col-table]');
+    if (!cb) return;
+    const t = cb.dataset.colTable;
+    if (!state[t]) return;
+    if (cb.checked) state[t].add(cb.dataset.col);
+    else state[t].delete(cb.dataset.col);
     untouched.delete(t);
-    save(t); after(t);
+    save(t);
+    after(t);
   });
-  document.addEventListener('toggle', e => { const d = e.target; if (d.dataset?.colMenu) { if (d.open) open.add(d.dataset.colMenu); else open.delete(d.dataset.colMenu); } }, true);
-  document.addEventListener('click', e => {
+  document.addEventListener(
+    'toggle',
+    (e) => {
+      const d = e.target;
+      if (d.dataset?.colMenu) {
+        if (d.open) open.add(d.dataset.colMenu);
+        else open.delete(d.dataset.colMenu);
+      }
+    },
+    true
+  );
+  document.addEventListener('click', (e) => {
     const b = e.target.closest?.('[data-col-reset]');
-    if (b) { reset(b.dataset.colReset); after(b.dataset.colReset); return; }
-    if (open.size && !e.target.closest?.('.col-menu')) document.querySelectorAll('details.col-menu[open]').forEach(d => { d.open = false; });
+    if (b) {
+      reset(b.dataset.colReset);
+      after(b.dataset.colReset);
+      return;
+    }
+    if (open.size && !e.target.closest?.('.col-menu'))
+      document.querySelectorAll('details.col-menu[open]').forEach((d) => {
+        d.open = false;
+      });
   });
   K.columns = { menu, on, reset, redraw };
   K.density = { compact, btn: densityBtn, defaults: DEF };

@@ -3,6 +3,7 @@
 Positions are 1-based, as UniProt gives them. A snapshot is identified by its FASTA's MD5, which every output records,
 so a result can always be traced to the sequences it was computed on.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -101,8 +102,12 @@ class Snapshot:
         """A folder staged as PTM_Pipeline's inputs/reference/: uniprot_release.json names the FASTA and its MD5."""
         folder = Path(folder)
         meta = json.loads((folder / 'uniprot_release.json').read_text())
-        snap = cls.from_fasta(folder / meta['fasta'], release=f"UniProt {meta['release']}", source=meta.get('query', ''),
-                              expect_md5=meta.get('fasta_md5', ''))
+        snap = cls.from_fasta(
+            folder / meta['fasta'],
+            release=f'UniProt {meta["release"]}',
+            source=meta.get('query', ''),
+            expect_md5=meta.get('fasta_md5', ''),
+        )
         snap.meta = meta
         return snap
 
@@ -137,8 +142,11 @@ class Snapshot:
 
     def windows(self, frame: pd.DataFrame, flank: int) -> pd.Series:
         """The sequence window of each (accession, position) row of frame."""
-        return pd.Series([window(self.sequences.get(a, ''), int(p), flank) for a, p in zip(frame['accession'], frame['position'])],
-                         index=frame.index, dtype=object)
+        return pd.Series(
+            [window(self.sequences.get(a, ''), int(p), flank) for a, p in zip(frame['accession'], frame['position'])],
+            index=frame.index,
+            dtype=object,
+        )
 
     def describe(self, accession: str) -> dict:
         """Entry name, protein name and gene of an accession, from the FASTA header ('' where absent)."""
@@ -150,4 +158,9 @@ class Snapshot:
 
     def record(self) -> dict:
         """What an output records about the sequences it was computed on."""
-        return {'release': self.release, 'source': self.source, 'fasta_md5': self.fasta_md5, 'entries': len(self.sequences)}
+        return {
+            'release': self.release,
+            'source': self.source,
+            'fasta_md5': self.fasta_md5,
+            'entries': len(self.sequences),
+        }

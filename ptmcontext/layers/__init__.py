@@ -19,6 +19,7 @@ installed package that declares it under the entry-point group `ptmcontext.layer
 they are installed. A run loads only the plugins it names as trusted (Context.trusted_plugins, or `ptmc --trust NAME`),
 and records each plugin's distribution and version in its provenance.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -40,7 +41,7 @@ class Several:
 
     rule: str
     paths: tuple[Path, ...]
-    names: tuple[str, ...] = ()        # their manifest names, in the same order (a name may carry its own column mapping)
+    names: tuple[str, ...] = ()  # their manifest names, in the same order (a name may carry its own column mapping)
 
 
 @dataclass
@@ -52,8 +53,8 @@ class Context:
     profile: Profile | None = None
     inputs: dict[str, Path | Several] = field(default_factory=dict)
     trusted_plugins: tuple[str, ...] = ()
-    formats: dict[str, dict] = field(default_factory=dict)     # an input's manifest name (or path) -> its column mapping
-    names: dict[str, str] = field(default_factory=dict)        # a role filled by one input -> that input's manifest name
+    formats: dict[str, dict] = field(default_factory=dict)  # an input's manifest name (or path) -> its column mapping
+    names: dict[str, str] = field(default_factory=dict)  # a role filled by one input -> that input's manifest name
     _cache: dict = field(default_factory=dict, repr=False)
 
     def mapping(self, path, name: str = ''):
@@ -80,26 +81,35 @@ class Context:
             given = self.inputs[role]
             if isinstance(given, Several):
                 names = given.names or ('',) * len(given.paths)
-                return U.combine([U.load(p, kind, self.mapping(p, n), self.snapshot) for p, n in zip(given.paths, names)], given.rule)
+                return U.combine(
+                    [U.load(p, kind, self.mapping(p, n), self.snapshot) for p, n in zip(given.paths, names)], given.rule
+                )
             return U.load(given, kind, self.mapping(given, self.names.get(role, '')), self.snapshot)
-        return self.cached(f'units:{role}:{kind}', make)          # two roles may hold units of one kind
+
+        return self.cached(f'units:{role}:{kind}', make)  # two roles may hold units of one kind
 
     def values(self, role: str):
         """A per-residue table (accession, position, value) that fills a role, by its manifest column mapping."""
         from .. import units as U
+
         path = self.path(role)
         cols = self.mapping(path, self.names.get(role, ''))
         if not cols:
-            raise ValueError(f'role {role!r}: a per-residue table needs a column mapping (columns: {{accession, position, value}}) in its manifest entry')
+            raise ValueError(
+                f'role {role!r}: a per-residue table needs a column mapping (columns: {{accession, position, value}}) in its manifest entry'
+            )
         return self.cached(f'values:{role}', lambda: U.residue_values(path, cols, self.snapshot))
 
     def listed(self, role: str):
         """The residues a table lists (accession, position) that fills a role, by its manifest column mapping."""
         from .. import units as U
+
         path = self.path(role)
         cols = self.formats.get(str(path))
         if not cols or not cols.get('accession') or not cols.get('position'):
-            raise ValueError(f'role {role!r}: a list of residues needs a column mapping (columns: {{accession, position}}) in its manifest entry')
+            raise ValueError(
+                f'role {role!r}: a list of residues needs a column mapping (columns: {{accession, position}}) in its manifest entry'
+            )
         return self.cached(f'listed:{role}', lambda: U.listed_residues(path, cols))
 
     def cached(self, key: str, make: Callable):
@@ -110,27 +120,30 @@ class Context:
     def input_record(self) -> dict:
         def one(p):
             return {'path': str(p), 'md5': md5_file(p)}
-        return {name: ({'rule': p.rule, 'inputs': [one(x) for x in p.paths]} if isinstance(p, Several) else one(p))
-                for name, p in sorted(self.inputs.items())}
+
+        return {
+            name: ({'rule': p.rule, 'inputs': [one(x) for x in p.paths]} if isinstance(p, Several) else one(p))
+            for name, p in sorted(self.inputs.items())
+        }
 
 
 @dataclass(frozen=True)
 class Layer:
     name: str
-    shape: str                 # 'class' or 'flags'
+    shape: str  # 'class' or 'flags'
     describe: str
     compute: Callable[[pd.DataFrame, Context], pd.DataFrame]
     needs: tuple[str, ...] = ()
     origin: str = 'ptmcontext'
-    title: str = ''                          # a short heading for pages and figures
-    labels: dict = field(default_factory=dict)   # category code -> a short label
-    help: dict = field(default_factory=dict)     # category code -> its definition, shown on hover
-    question: str = ''                       # the question a page asks of it; {marks}, {residues} come from the profile
-    sub: str = ''                            # the line under its figure's title
-    section: str = ''                        # the Overview section it is listed under
-    tracks: tuple = ()                       # what it draws on the protein pages (Track), if anything
-    ordered: bool = False                    # its classes have an order (that of labels), which pages keep
-    groups: tuple = ()                       # ((heading, (class codes, ...)), ...): headed groups of its classes, in order
+    title: str = ''  # a short heading for pages and figures
+    labels: dict = field(default_factory=dict)  # category code -> a short label
+    help: dict = field(default_factory=dict)  # category code -> its definition, shown on hover
+    question: str = ''  # the question a page asks of it; {marks}, {residues} come from the profile
+    sub: str = ''  # the line under its figure's title
+    section: str = ''  # the Overview section it is listed under
+    tracks: tuple = ()  # what it draws on the protein pages (Track), if anything
+    ordered: bool = False  # its classes have an order (that of labels), which pages keep
+    groups: tuple = ()  # ((heading, (class codes, ...)), ...): headed groups of its classes, in order
 
     def __call__(self, residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
         missing = [n for n in self.needs if n not in ctx.inputs]
@@ -154,36 +167,65 @@ class Track:
 
     kind: str
     title: str
-    style: str                               # 'domains', 'disorder' or 'segments'
+    style: str  # 'domains', 'disorder' or 'segments'
     units: Callable[['Context', set], pd.DataFrame]
     roles: tuple[str, ...] = ()
     help: str = ''
-    colours: tuple = ()                      # ((class, color), ...): the site's own colors for its classes
-    values: tuple = ()                       # ((column, label, help), ...): numbers each unit carries
+    colours: tuple = ()  # ((class, color), ...): the site's own colors for its classes
+    values: tuple = ()  # ((column, label, help), ...): numbers each unit carries
 
 
 BUILT_IN: dict[str, Layer] = {}
 FACTORIES: dict[str, Callable[[dict, str], Layer]] = {}
 
 
-def register(name: str, shape: str, describe: str, needs: tuple[str, ...] = (), title: str = '',
-             labels: dict | None = None, help: dict | None = None, question: str = '', sub: str = '', section: str = 'Structural context',
-             tracks: tuple = (), ordered: bool = False, groups: tuple = ()):
+def register(
+    name: str,
+    shape: str,
+    describe: str,
+    needs: tuple[str, ...] = (),
+    title: str = '',
+    labels: dict | None = None,
+    help: dict | None = None,
+    question: str = '',
+    sub: str = '',
+    section: str = 'Structural context',
+    tracks: tuple = (),
+    ordered: bool = False,
+    groups: tuple = (),
+):
     """Decorator for the package's own layers. ordered: the classes have an order, that of labels (from inside a domain
     outwards, say), which the website keeps instead of sorting them by effect; groups: headed groups of them."""
+
     def wrap(fn):
-        BUILT_IN[name] = Layer(name, shape, describe, fn, tuple(needs), title=title or name.replace('_', ' ').capitalize(),
-                               labels=dict(labels or {}), help=dict(help or {}), question=question, sub=sub, section=section,
-                               tracks=tuple(tracks), ordered=ordered, groups=tuple((g, tuple(cs)) for g, cs in groups))
+        BUILT_IN[name] = Layer(
+            name,
+            shape,
+            describe,
+            fn,
+            tuple(needs),
+            title=title or name.replace('_', ' ').capitalize(),
+            labels=dict(labels or {}),
+            help=dict(help or {}),
+            question=question,
+            sub=sub,
+            section=section,
+            tracks=tuple(tracks),
+            ordered=ordered,
+            groups=tuple((g, tuple(cs)) for g, cs in groups),
+        )
         return fn
+
     return wrap
 
 
 def factory(name: str):
     """Decorator for a layer made from a site file's parameters: fn(params, analysis_id) -> Layer."""
+
     def wrap(fn):
         FACTORIES[name] = fn
         return fn
+
     return wrap
 
 
@@ -198,33 +240,56 @@ def get(name: str, ctx: Context | None = None, params: dict | None = None, analy
     if name in FACTORIES:
         return FACTORIES[name](dict(params or {}), analysis or name)
     if params:
-        raise ValueError(f'layer {name!r} takes no parameters (with:); layers made from parameters: {sorted(FACTORIES)}')
+        raise ValueError(
+            f'layer {name!r} takes no parameters (with:); layers made from parameters: {sorted(FACTORIES)}'
+        )
     if name in BUILT_IN:
         return BUILT_IN[name]
     eps = plugins()
     if name not in eps:
-        raise KeyError(f'no layer {name!r} (built in: {sorted(BUILT_IN)}; offered by installed packages: {sorted(eps)})')
+        raise KeyError(
+            f'no layer {name!r} (built in: {sorted(BUILT_IN)}; offered by installed packages: {sorted(eps)})'
+        )
     ep = eps[name]
     dist = ep.dist.name if ep.dist else ''
     trusted = ctx.trusted_plugins if ctx else ()
     if dist not in trusted and name not in trusted:
-        raise PermissionError(f'layer {name!r} comes from the package {dist!r}, which this run does not trust; '
-                              f'trust it explicitly (Context.trusted_plugins or ptmc --trust {dist})')
+        raise PermissionError(
+            f'layer {name!r} comes from the package {dist!r}, which this run does not trust; '
+            f'trust it explicitly (Context.trusted_plugins or ptmc --trust {dist})'
+        )
     layer = ep.load()
     if not isinstance(layer, Layer):
         raise TypeError(f'entry point {name!r} of {dist!r} is not a ptmcontext Layer')
     version = ep.dist.version if ep.dist else ''
     from dataclasses import replace
+
     return replace(layer, origin=f'{dist} {version}'.strip())
 
 
 def available() -> list[dict]:
-    rows = [{'name': n, 'shape': lay.shape, 'origin': lay.origin, 'describe': lay.describe} for n, lay in sorted(BUILT_IN.items())]
-    rows += [{'name': n, 'shape': 'class', 'origin': 'ptmcontext (made from with:)', 'describe': (fn.__doc__ or '').strip().split('\n')[0]}
-             for n, fn in sorted(FACTORIES.items())]
+    rows = [
+        {'name': n, 'shape': lay.shape, 'origin': lay.origin, 'describe': lay.describe}
+        for n, lay in sorted(BUILT_IN.items())
+    ]
+    rows += [
+        {
+            'name': n,
+            'shape': 'class',
+            'origin': 'ptmcontext (made from with:)',
+            'describe': (fn.__doc__ or '').strip().split('\n')[0],
+        }
+        for n, fn in sorted(FACTORIES.items())
+    ]
     for n, ep in sorted(plugins().items()):
-        rows.append({'name': n, 'shape': '?', 'origin': f'plugin: {ep.dist.name if ep.dist else "?"} (not loaded)',
-                     'describe': ep.value})
+        rows.append(
+            {
+                'name': n,
+                'shape': '?',
+                'origin': f'plugin: {ep.dist.name if ep.dist else "?"} (not loaded)',
+                'describe': ep.value,
+            }
+        )
     return rows
 
 

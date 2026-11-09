@@ -1,5 +1,6 @@
 """website.features: the 3D viewer, the highlight and the table figures are on unless the site file switches them off
 (CONTRACTS.md, Website pages). Each module is run on a stand-in page with the switch off and on, and the schema takes the block."""
+
 from __future__ import annotations
 
 import json
@@ -34,7 +35,9 @@ OFF = {'structure_3d': False, 'highlight': False, 'table_figures': False}
 def _run(module, features, tmp_path):
     script = tmp_path / 'run.js'
     script.write_text(HARNESS)
-    out = subprocess.run(['node', str(script), str(ASSETS / module), json.dumps(features)], capture_output=True, text=True, check=True).stdout
+    out = subprocess.run(
+        ['node', str(script), str(ASSETS / module), json.dumps(features)], capture_output=True, text=True, check=True
+    ).stdout
     return json.loads(out)
 
 
@@ -79,5 +82,5 @@ def test_the_highlight_can_be_switched_off(tmp_path):
 def test_the_table_figures_can_be_switched_off(tmp_path):
     on, off = _run('kit-tabfig.js', {}, tmp_path), _run('kit-tabfig.js', OFF, tmp_path)
     assert on['afterRender'] == 1
-    assert off['afterRender'] == 0          # no bars are added after a render
-    assert off['tableFigure'] == 'function'   # the TSV downloads still use the module
+    assert off['afterRender'] == 0  # no bars are added after a render
+    assert off['tableFigure'] == 'function'  # the TSV downloads still use the module

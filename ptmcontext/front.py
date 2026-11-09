@@ -3,6 +3,7 @@ gene-list test and the pathway view read, and the cards that group the questions
 sections (website.overview). Without a block, the cards derive from the analyses' section fields.
 
 resolve() gives the page its normalized form (D.front); problems() is what ptmc check reports."""
+
 from __future__ import annotations
 
 import re
@@ -20,6 +21,7 @@ def section_of(a: dict) -> str:
     if a.get('test') == 'protein_sets':
         return 'Protein classes and pathways'
     from . import layers as L
+
     layer = L.BUILT_IN.get(a.get('layer', ''))
     return getattr(layer, 'section', '') or 'Other questions'
 
@@ -67,9 +69,9 @@ def resolve(site: dict, titles: dict | None = None) -> dict:
     fr = web.get('front') or {}
     rows = fr.get('rows', DEFAULT_ROWS)
     by_id = {a['id']: a for a in site.get('analyses', [])}
-    title = lambda i: (titles or {}).get(i) or (by_id.get(i) or {}).get('title') or i       # noqa: E731
+    title = lambda i: (titles or {}).get(i) or (by_id.get(i) or {}).get('title') or i  # noqa: E731
     cards = fr.get('cards')
-    if cards is None:                                   # derived: one card per section, in the order sections first appear
+    if cards is None:  # derived: one card per section, in the order sections first appear
         order: dict[str, list[str]] = {}
         for a in site.get('analyses', []):
             order.setdefault(section_of(a), []).append(a['id'])
@@ -80,28 +82,57 @@ def resolve(site: dict, titles: dict | None = None) -> dict:
         seen.update(qs)
         facets = c.get('facets')
         if facets is None:
-            facets = [{'analysis': q, 'measure': measure_of(by_id[q])} for q in qs if q in by_id and measure_of(by_id[q])]
-        facets = [{'analysis': f['analysis'], 'label': f.get('label') or title(f['analysis']),
-                   'measure': f.get('measure') or measure_of(by_id.get(f['analysis'], {})) or 'odds'} for f in facets]
+            facets = [
+                {'analysis': q, 'measure': measure_of(by_id[q])} for q in qs if q in by_id and measure_of(by_id[q])
+            ]
+        facets = [
+            {
+                'analysis': f['analysis'],
+                'label': f.get('label') or title(f['analysis']),
+                'measure': f.get('measure') or measure_of(by_id.get(f['analysis'], {})) or 'odds',
+            }
+            for f in facets
+        ]
         home = dict(c.get('home') or {})
         if not home and facets:
             home = {'analysis': facets[0]['analysis']}
         if home and not home.get('classes'):
             home.setdefault('top', rows)
             home.setdefault('q_max', DEFAULT_Q_MAX)
-        out.append({'key': c.get('key') or _slug(c['title']), 'title': c['title'], 'short': c.get('short') or c['title'],
-                    'chip': c.get('chip', ''), 'note': c.get('note', ''), 'questions': qs, 'facets': facets, 'home': home, 'rows': c.get('rows', rows),
-                    'cell': bool(c.get('cell') and (web.get('cell') or {}).get('id'))})
+        out.append(
+            {
+                'key': c.get('key') or _slug(c['title']),
+                'title': c['title'],
+                'short': c.get('short') or c['title'],
+                'chip': c.get('chip', ''),
+                'note': c.get('note', ''),
+                'questions': qs,
+                'facets': facets,
+                'home': home,
+                'rows': c.get('rows', rows),
+                'cell': bool(c.get('cell') and (web.get('cell') or {}).get('id')),
+            }
+        )
     more = fr.get('more', DEFAULT_MORE)
     left = [q for q in question_ids(site) if q not in seen]
-    examples = [e if isinstance(e, dict) else {'label': e, 'query': e} for e in fr.get('examples', web.get('examples') or [])]
-    return {'rows': rows, 'cards': out,
-            'more': {'title': more, 'questions': left} if more is not False else {'title': '', 'questions': []},
-            'short': {i: (fr.get('short') or {}).get(i) or title(i) for i in question_ids(site)},
-            'row_labels': fr.get('row_labels') or {}, 'summary_only': fr.get('summary_only') or {},
-            'glossary': fr.get('glossary') or {}, 'examples': examples,
-            'topics': [{'title': t['title'], 'questions': list(t['questions'])} for t in fr.get('topics') or []],
-            'tiles': [{'title': t['title'], 'note': t.get('note', ''), 'rows': [dict(r) for r in t['rows']]} for t in fr.get('tiles') or []]}
+    examples = [
+        e if isinstance(e, dict) else {'label': e, 'query': e} for e in fr.get('examples', web.get('examples') or [])
+    ]
+    return {
+        'rows': rows,
+        'cards': out,
+        'more': {'title': more, 'questions': left} if more is not False else {'title': '', 'questions': []},
+        'short': {i: (fr.get('short') or {}).get(i) or title(i) for i in question_ids(site)},
+        'row_labels': fr.get('row_labels') or {},
+        'summary_only': fr.get('summary_only') or {},
+        'glossary': fr.get('glossary') or {},
+        'examples': examples,
+        'topics': [{'title': t['title'], 'questions': list(t['questions'])} for t in fr.get('topics') or []],
+        'tiles': [
+            {'title': t['title'], 'note': t.get('note', ''), 'rows': [dict(r) for r in t['rows']]}
+            for t in fr.get('tiles') or []
+        ],
+    }
 
 
 def problems(site: dict, words: dict | None = None) -> list[str]:
@@ -114,7 +145,9 @@ def problems(site: dict, words: dict | None = None) -> list[str]:
     words = words or {}
     by_id = {a['id']: a for a in site.get('analyses', [])}
     questions = set(question_ids(site))
-    sections = {section_of(a) for a in by_id.values()} | {s.get('name') for s in (web.get('overview') or {}).get('sections', [])}
+    sections = {section_of(a) for a in by_id.values()} | {
+        s.get('name') for s in (web.get('overview') or {}).get('sections', [])
+    }
     out = []
 
     def known(where, i):
@@ -126,7 +159,9 @@ def problems(site: dict, words: dict | None = None) -> list[str]:
     def classes(where, i, cs):
         have = (words.get(i) or {}).get('classes')
         if have is not None and i in by_id and by_id[i].get('test') != 'protein_sets':
-            out.extend(f'website.front.{where}: {i!r} has no class {c!r} (it has {sorted(have)})' for c in cs if c not in have)
+            out.extend(
+                f'website.front.{where}: {i!r} has no class {c!r} (it has {sorted(have)})' for c in cs if c not in have
+            )
 
     keys, placed = set(), {}
     for n, c in enumerate(fr.get('cards') or []):
@@ -137,7 +172,9 @@ def problems(site: dict, words: dict | None = None) -> list[str]:
         keys.add(key)
         for s in c.get('sections') or []:
             if s not in sections:
-                out.append(f'website.front.{where}: no section {s!r} (the analyses are in {sorted(x for x in sections if x)})')
+                out.append(
+                    f'website.front.{where}: no section {s!r} (the analyses are in {sorted(x for x in sections if x)})'
+                )
         for i in c.get('analyses') or []:
             known(where, i)
         if c.get('cell') and not (web.get('cell') or {}).get('id'):
@@ -155,11 +192,15 @@ def problems(site: dict, words: dict | None = None) -> list[str]:
             if i not in by_id or m is None:
                 out.append(f'website.front.{where}.facets: {i!r} is not a question with rows to chart')
             elif f.get('measure') and f['measure'] != m:
-                out.append(f'website.front.{where}.facets: {i!r} is measured as {m!r} (a protein-set question is a fold, a residue question an odds ratio), not {f["measure"]!r}')
+                out.append(
+                    f'website.front.{where}.facets: {i!r} is measured as {m!r} (a protein-set question is a fold, a residue question an odds ratio), not {f["measure"]!r}'
+                )
         home = c.get('home')
         if home:
-            if home['analysis'] not in {f['analysis'] for f in facets} | ({f for f in _placed(site, c) if f in by_id and measure_of(by_id[f])} if not facets else set()):
-                out.append(f'website.front.{where}.home: {home["analysis"]!r} is not one of the card\'s facets')
+            if home['analysis'] not in {f['analysis'] for f in facets} | (
+                {f for f in _placed(site, c) if f in by_id and measure_of(by_id[f])} if not facets else set()
+            ):
+                out.append(f"website.front.{where}.home: {home['analysis']!r} is not one of the card's facets")
             elif home.get('classes'):
                 classes(where + '.home', home['analysis'], home['classes'])
     if fr.get('more') is False and (fr.get('cards') is not None):
@@ -173,7 +214,10 @@ def problems(site: dict, words: dict | None = None) -> list[str]:
             known(f'topics[{n}] ({t["title"]!r})', i)
     for n, t in enumerate(fr.get('tiles') or []):
         for r in t.get('rows') or []:
-            if known(f'tiles[{n}] ({t["title"]!r})', r['analysis']) and by_id.get(r['analysis'], {}).get('test') != 'protein_sets':
+            if (
+                known(f'tiles[{n}] ({t["title"]!r})', r['analysis'])
+                and by_id.get(r['analysis'], {}).get('test') != 'protein_sets'
+            ):
                 classes(f'tiles[{n}]', r['analysis'], [r['class']])
     roles = site.get('inputs') or {}
     for n, pw in enumerate(fr.get('pathways') or []):
@@ -184,7 +228,7 @@ def problems(site: dict, words: dict | None = None) -> list[str]:
         for part in ('hierarchy', 'members'):
             ref = (pw.get(part) or {}).get('input')
             if ref and ref not in roles:
-                out.append(f'website.front.{where}.{part}: {ref!r} is not a role of this site\'s inputs')
+                out.append(f"website.front.{where}.{part}: {ref!r} is not a role of this site's inputs")
     for i, cs in (fr.get('row_labels') or {}).items():
         if known('row_labels', i):
             classes('row_labels', i, list(cs))

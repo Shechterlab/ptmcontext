@@ -11,6 +11,7 @@ subtype (domain before repeat), shorter span, earlier start and source accession
 definitions of the Methylarginine Site Explorer's release v1.4.3 (PTM_Pipeline scripts/05 and 07, and
 common.structure_context), checked by tests/test_parity_v1_4_3.py.
 """
+
 from __future__ import annotations
 
 import json
@@ -45,6 +46,7 @@ def classify_text(text: str, blocks: list[dict], default: str) -> str:
 def _nearest(ctx: Context, residues: pd.DataFrame) -> pd.DataFrame:
     """distance to the nearest domain edge, the nearest domain (row of the unit table), and whether the residue lies
     in a gap between domains; NaN / -1 / False on a protein without domains."""
+
     def compute():
         units = ctx.units('domains', 'domain')
         out_d = np.full(len(residues), np.nan)
@@ -61,10 +63,10 @@ def _nearest(ctx: Context, residues: pd.DataFrame) -> pd.DataFrame:
             ends = g['end'].to_numpy(dtype=np.int64)
             prio = g['subtype'].map(lambda t: TYPE_PRIORITY.get(str(t), 9)).to_numpy()
             rank = g['ref'].astype(str).map(acc_rank).to_numpy()
-            order = np.lexsort((rank, starts, ends - starts, prio))       # the tie-breaks, best first
+            order = np.lexsort((rank, starts, ends - starts, prio))  # the tie-breaks, best first
             p = pos_all[idx][:, None]
             dist = np.where(p < starts, starts - p, np.where(p > ends, p - ends, 0))
-            best = order[np.argmin(dist[:, order], axis=1)]                 # first minimum: smallest distance, best tie-break
+            best = order[np.argmin(dist[:, order], axis=1)]  # first minimum: smallest distance, best tie-break
             out_d[idx] = dist[np.arange(len(idx)), best]
             out_i[idx] = g.index.to_numpy()[best]
             # gaps between domains: after the furthest end so far and before the next start
@@ -76,39 +78,72 @@ def _nearest(ctx: Context, residues: pd.DataFrame) -> pd.DataFrame:
                 pp = pos_all[idx][:, None]
                 out_gap[idx] = ((pp > lo) & (pp < hi)).any(axis=1)
         return pd.DataFrame({'distance': out_d, 'unit_row': out_i, 'gap': out_gap}, index=residues.index), units
+
     key = int(pd.util.hash_pandas_object(residues[['accession', 'position']], index=False).sum())
     return ctx.cached(f'nearest_domain:{len(residues)}:{key}', compute)
 
 
-@register('domain_context', 'class', 'Domain or repeat (the site’s domains input): in_domain, boundary (<= 20 residues from an edge), '
-          'inter_domain_linker, distal, no_domain_annotation', needs=('domains',), title='Domain context',
-          labels={'in_domain': 'In domain', 'boundary': 'Outside, ≤20 aa from a domain', 'inter_domain_linker': 'Inter-domain linker',
-                  'distal': 'Domain-distal', 'no_domain_annotation': 'No domain data'},
-          help={'in_domain': 'Inside a domain or repeat', 'boundary': 'Outside, but within 20 aa of, a domain edge',
-                'inter_domain_linker': 'Between two domains, more than 20 aa from both',
-                'distal': 'More than 20 aa from any domain and not between two domains',
-                'no_domain_annotation': 'Protein has no domain or repeat annotation'},
-          question='Are {marks} inside domains, at their edges or between them, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, by position relative to domains', tracks=(DOMAIN_TRACK,),
-          ordered=True)
+@register(
+    'domain_context',
+    'class',
+    'Domain or repeat (the site’s domains input): in_domain, boundary (<= 20 residues from an edge), '
+    'inter_domain_linker, distal, no_domain_annotation',
+    needs=('domains',),
+    title='Domain context',
+    labels={
+        'in_domain': 'In domain',
+        'boundary': 'Outside, ≤20 aa from a domain',
+        'inter_domain_linker': 'Inter-domain linker',
+        'distal': 'Domain-distal',
+        'no_domain_annotation': 'No domain data',
+    },
+    help={
+        'in_domain': 'Inside a domain or repeat',
+        'boundary': 'Outside, but within 20 aa of, a domain edge',
+        'inter_domain_linker': 'Between two domains, more than 20 aa from both',
+        'distal': 'More than 20 aa from any domain and not between two domains',
+        'no_domain_annotation': 'Protein has no domain or repeat annotation',
+    },
+    question='Are {marks} inside domains, at their edges or between them, against the other {residues} of the same proteins?',
+    sub='{Marks} against the other {residues} of the same proteins, by position relative to domains',
+    tracks=(DOMAIN_TRACK,),
+    ordered=True,
+)
 def domain_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     near, _ = _nearest(ctx, residues)
     d = near['distance']
-    cat = np.where(d.isna(), 'no_domain_annotation',
-                   np.where(d == 0, 'in_domain',
-                            np.where(d <= WINDOW, 'boundary', np.where(near['gap'], 'inter_domain_linker', 'distal'))))
+    cat = np.where(
+        d.isna(),
+        'no_domain_annotation',
+        np.where(
+            d == 0,
+            'in_domain',
+            np.where(d <= WINDOW, 'boundary', np.where(near['gap'], 'inter_domain_linker', 'distal')),
+        ),
+    )
     return pd.DataFrame({'category': cat.astype(object), 'edge_distance': d}, index=residues.index)
 
 
-@register('domain_class', 'class', 'the class of the nearest domain or repeat (config/domain_classes.json)',
-          needs=('domains',), title='Nearest domain class',
-          question='Which kinds of domain are {marks} nearest to, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, by the type of the nearest domain', tracks=(DOMAIN_TRACK,))
+@register(
+    'domain_class',
+    'class',
+    'the class of the nearest domain or repeat (config/domain_classes.json)',
+    needs=('domains',),
+    title='Nearest domain class',
+    question='Which kinds of domain are {marks} nearest to, against the other {residues} of the same proteins?',
+    sub='{Marks} against the other {residues} of the same proteins, by the type of the nearest domain',
+    tracks=(DOMAIN_TRACK,),
+)
 def domain_class(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     near, units = _nearest(ctx, residues)
     blocks = domain_classes()
-    text = (units['label'].fillna('').astype(str) + ' ' + units['subtype'].fillna('').astype(str) + ' '
-            + units['members'].fillna('').astype(str))
+    text = (
+        units['label'].fillna('').astype(str)
+        + ' '
+        + units['subtype'].fillna('').astype(str)
+        + ' '
+        + units['members'].fillna('').astype(str)
+    )
     labels: dict[int, str] = {}
     out = []
     for row in near['unit_row']:
@@ -135,23 +170,41 @@ def structure_context_of(disorder_class, domain_class_, domain_edge_distance) ->
     return 'idr_near_domain' if d <= STRUCTURE_NEAR else 'idr_mid_domain'
 
 
-@register('structure_context', 'class', 'disorder and domains together: domain_folded, domain_disordered, '
-          'ordered_outside_domain, idr_near_domain (<= 10), idr_mid_domain (11-30), idr_far_from_domain, '
-          'no_disorder_annotation', needs=('disorder', 'domains'), title='Structural context',
-          labels={'domain_folded': 'Folded domain', 'domain_disordered': 'Disordered domain', 'ordered_outside_domain': 'Ordered, outside domains',
-                  'idr_near_domain': 'IDR ≤10 aa from a domain', 'idr_mid_domain': 'IDR 11–30 aa from a domain',
-                  'idr_far_from_domain': 'IDR >30 aa from any domain', 'no_disorder_annotation': 'No disorder data'},
-          help={'domain_folded': 'Inside a domain or repeat, outside the site’s disordered regions',
-                'domain_disordered': 'Inside a domain or repeat, in one of the site’s disordered regions',
-                'ordered_outside_domain': 'Outside domains and outside the site’s disordered regions',
-                'idr_near_domain': 'In a disordered region outside domains, within 10 aa of a domain edge',
-                'idr_mid_domain': 'In a disordered region outside domains, 11–30 aa from the nearest domain edge',
-                'idr_far_from_domain': 'In a disordered region more than 30 aa from any domain, or on a protein with none',
-                'no_disorder_annotation': 'The protein has no disordered region in the site’s disorder input'},
-          question='Are {marks} in disordered regions or domains, against the other {residues} of the same proteins?',
-          sub='{Marks} against the other {residues} of the same proteins, from folded domains to deep in disordered regions', tracks=(DOMAIN_TRACK, DISORDER_TRACK),
-          ordered=True, groups=(('In a domain', ('domain_folded', 'domain_disordered')),
-                                ('Outside domains', ('ordered_outside_domain', 'idr_near_domain', 'idr_mid_domain', 'idr_far_from_domain'))))
+@register(
+    'structure_context',
+    'class',
+    'disorder and domains together: domain_folded, domain_disordered, '
+    'ordered_outside_domain, idr_near_domain (<= 10), idr_mid_domain (11-30), idr_far_from_domain, '
+    'no_disorder_annotation',
+    needs=('disorder', 'domains'),
+    title='Structural context',
+    labels={
+        'domain_folded': 'Folded domain',
+        'domain_disordered': 'Disordered domain',
+        'ordered_outside_domain': 'Ordered, outside domains',
+        'idr_near_domain': 'IDR ≤10 aa from a domain',
+        'idr_mid_domain': 'IDR 11–30 aa from a domain',
+        'idr_far_from_domain': 'IDR >30 aa from any domain',
+        'no_disorder_annotation': 'No disorder data',
+    },
+    help={
+        'domain_folded': 'Inside a domain or repeat, outside the site’s disordered regions',
+        'domain_disordered': 'Inside a domain or repeat, in one of the site’s disordered regions',
+        'ordered_outside_domain': 'Outside domains and outside the site’s disordered regions',
+        'idr_near_domain': 'In a disordered region outside domains, within 10 aa of a domain edge',
+        'idr_mid_domain': 'In a disordered region outside domains, 11–30 aa from the nearest domain edge',
+        'idr_far_from_domain': 'In a disordered region more than 30 aa from any domain, or on a protein with none',
+        'no_disorder_annotation': 'The protein has no disordered region in the site’s disorder input',
+    },
+    question='Are {marks} in disordered regions or domains, against the other {residues} of the same proteins?',
+    sub='{Marks} against the other {residues} of the same proteins, from folded domains to deep in disordered regions',
+    tracks=(DOMAIN_TRACK, DISORDER_TRACK),
+    ordered=True,
+    groups=(
+        ('In a domain', ('domain_folded', 'domain_disordered')),
+        ('Outside domains', ('ordered_outside_domain', 'idr_near_domain', 'idr_mid_domain', 'idr_far_from_domain')),
+    ),
+)
 def structure_context(residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     dis = get('disorder')(residues, ctx)
     dom = get('domain_context')(residues, ctx)

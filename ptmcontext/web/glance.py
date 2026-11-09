@@ -3,14 +3,15 @@ partition the marks) and its strongest findings (one row per question). A site f
 website.start.findings, and website.landing); without them they are computed here, so another site gets the same
 pictures with no code. The result is embedded in the site's page (D.glance) and written to web/glance.json for the
 landing page."""
+
 from __future__ import annotations
 
 import math
 
-MIN_N = 20                 # a finding rests on at least this many marks (or proteins) in the class
+MIN_N = 20  # a finding rests on at least this many marks (or proteins) in the class
 PADJ, MIN_EFFECT = 0.05, 1.1
 N_FINDINGS = 3
-BIG = 1e299                # an infinite odds ratio travels as 1e300: not a number to draw
+BIG = 1e299  # an infinite odds ratio travels as 1e300: not a number to draw
 
 
 def _eff(r: dict):
@@ -31,7 +32,11 @@ def share(analyses: list, rows: list, counted: int, spec: dict | None = None) ->
     classes in the order to show, labels to use), else the first question whose classes add up to the marks."""
     spec = spec or {}
     by_id = {a['id']: a for a in analyses}
-    tries = [by_id[spec['analysis']]] if spec.get('analysis') in by_id else [a for a in analyses if a.get('kind') == 'residue' and a.get('shape') == 'class']
+    tries = (
+        [by_id[spec['analysis']]]
+        if spec.get('analysis') in by_id
+        else [a for a in analyses if a.get('kind') == 'residue' and a.get('shape') == 'class']
+    )
     for a in tries:
         got: dict[str, int] = {}
         method = None
@@ -46,16 +51,24 @@ def share(analyses: list, rows: list, counted: int, spec: dict | None = None) ->
             continue
         order = [c for c in (spec.get('classes') or list(a.get('labels') or {})) if c in got]
         order += [c for c in got if c not in order]
-        shown = [c for c in order if c in spec['classes']] if spec.get('classes') else order[:3]    # three series colors at most; the rest is 'other'
-        parts = [{'class': c, 'label': (spec.get('labels') or {}).get(c) or _label(a, c), 'n': got[c], 'slot': i + 1} for i, c in enumerate(shown) if got[c]]
+        shown = (
+            [c for c in order if c in spec['classes']] if spec.get('classes') else order[:3]
+        )  # three series colors at most; the rest is 'other'
+        parts = [
+            {'class': c, 'label': (spec.get('labels') or {}).get(c) or _label(a, c), 'n': got[c], 'slot': i + 1}
+            for i, c in enumerate(shown)
+            if got[c]
+        ]
         rest = total - sum(p['n'] for p in parts)
-        if rest > 0.01 * total:      # a sliver is left out of the picture
+        if rest > 0.01 * total:  # a sliver is left out of the picture
             parts.append({'class': '', 'label': 'other', 'n': rest, 'slot': 0})
         return {'analysis': a['id'], 'title': a.get('title', a['id']), 'total': total, 'parts': parts}
     return None
 
 
-def findings(analyses: list, rows: list, spec: list | None = None, n: int = N_FINDINGS, row_labels: dict | None = None) -> list:
+def findings(
+    analyses: list, rows: list, spec: list | None = None, n: int = N_FINDINGS, row_labels: dict | None = None
+) -> list:
     """The strongest results, one per question: named by the site (analysis and class), else the largest effects at
     q <= 0.05 that rest on at least MIN_N marks, by the question's usual test."""
     by_id = {a['id']: a for a in analyses}
@@ -65,7 +78,9 @@ def findings(analyses: list, rows: list, spec: list | None = None, n: int = N_FI
     pool = []
     for r in rows:
         a = by_id.get(r['analysis'])
-        if not a or r['method'] != (_preferred(a) if _preferred(a) in methods[a['id']] else sorted(methods[a['id']])[0]):
+        if not a or r['method'] != (
+            _preferred(a) if _preferred(a) in methods[a['id']] else sorted(methods[a['id']])[0]
+        ):
             continue
         e = _eff(r)
         if e is None or r['q'] is None or r['q'] > PADJ or not (e >= MIN_EFFECT or e <= 1 / MIN_EFFECT):
@@ -75,11 +90,25 @@ def findings(analyses: list, rows: list, spec: list | None = None, n: int = N_FI
     def item(a, r, e):
         # the label the question's own page gives the row (website.front.row_labels), else the class's label
         lab = ((row_labels or {}).get(a['id']) or {}).get(r['category']) or _label(a, r['category'])
-        return {'analysis': a['id'], 'class': r['category'], 'title': a.get('title', a['id']), 'label': lab,
-                'eff': e, 'q': r['q'], 'n': r['a'], 'dir': 'more' if e >= 1 else 'less', 'sets': a.get('kind') == 'protein_sets'}
+        return {
+            'analysis': a['id'],
+            'class': r['category'],
+            'title': a.get('title', a['id']),
+            'label': lab,
+            'eff': e,
+            'q': r['q'],
+            'n': r['a'],
+            'dir': 'more' if e >= 1 else 'less',
+            'sets': a.get('kind') == 'protein_sets',
+        }
+
     out = []
     for s in spec or []:
-        hit = [(a, r, e) for a, r, e in pool if a['id'] == s['analysis'] and r['category'] == s.get('class', s.get('category'))]
+        hit = [
+            (a, r, e)
+            for a, r, e in pool
+            if a['id'] == s['analysis'] and r['category'] == s.get('class', s.get('category'))
+        ]
         if hit:
             out.append(item(*hit[0]))
     if spec:
@@ -92,8 +121,17 @@ def findings(analyses: list, rows: list, spec: list | None = None, n: int = N_FI
     return out[:n]
 
 
-def glance(analyses: list, rows: list, counted: int, start: dict | None, landing: dict | None = None, row_labels: dict | None = None) -> dict:
+def glance(
+    analyses: list,
+    rows: list,
+    counted: int,
+    start: dict | None,
+    landing: dict | None = None,
+    row_labels: dict | None = None,
+) -> dict:
     """What the entry pages draw. The landing page's own choices (website.landing) win over the start panel's."""
     start, landing = start or {}, landing or {}
-    return {'share': share(analyses, rows, counted, landing.get('share') or start.get('share')),
-            'findings': findings(analyses, rows, landing.get('findings') or start.get('findings'), row_labels=row_labels)}
+    return {
+        'share': share(analyses, rows, counted, landing.get('share') or start.get('share')),
+        'findings': findings(analyses, rows, landing.get('findings') or start.get('findings'), row_labels=row_labels),
+    }

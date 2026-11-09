@@ -1,6 +1,7 @@
 """The selection model (kit-select.js, K.sel) without a page: it loads and runs with no document at all, reads the marks
 (data/selection.json) when first asked, answers the search and filters, tests a question again (rows / retest) and tells
 subscribers when the selection changes. The sidebar and the selection line are kit-rail.js."""
+
 from __future__ import annotations
 
 import json
@@ -52,8 +53,17 @@ out.peekQuiet = [K.sel.peek(), fetched];                      // looking does no
     run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
     out = json.loads(run.stdout)
-    assert out['hasUi'] == ['undefined', 'undefined', 'undefined'] and out['api'] == ['object', 'function', 'function', 'function', 'function', 'function', 'function', 'function']
+    assert out['hasUi'] == ['undefined', 'undefined', 'undefined'] and out['api'] == [
+        'object',
+        'function',
+        'function',
+        'function',
+        'function',
+        'function',
+        'function',
+        'function',
+    ]
     assert out['stateIsK'] and out['peekQuiet'] == [None, 0]
-    assert out['loaded'] == [1, True, 1]                         # one fetch, one redraw when it arrived
+    assert out['loaded'] == [1, True, 1]  # one fetch, one redraw when it arrived
     assert out['calls'] == [['ONE', []], ['', ['t:kind']]]
     assert out['marks'] == [3, 2] and out['same']

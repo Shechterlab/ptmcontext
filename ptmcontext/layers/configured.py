@@ -31,6 +31,7 @@ one class) as a row of the protein map. Words a page shows (title,
 question, sub, labels, help, section, track, track_help) and the row's colors (colours: {class: color}) may be given
 with the parameters; otherwise they are made from the noun.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -45,15 +46,21 @@ def _art(noun: str) -> str:
 
 
 def _words(params: dict, default_title: str, default_question: str, default_sub: str) -> dict:
-    return {'title': params.get('title', default_title), 'question': params.get('question', default_question),
-            'sub': params.get('sub', default_sub), 'section': params.get('section', 'Structural context')}
+    return {
+        'title': params.get('title', default_title),
+        'question': params.get('question', default_question),
+        'sub': params.get('sub', default_sub),
+        'section': params.get('section', 'Structural context'),
+    }
 
 
 WORDS = {'title', 'question', 'sub', 'section', 'labels', 'help', 'noun', 'track', 'track_help', 'colours'}
-ALLOWED = {'regions': WORDS | {'role', 'kind', 'window', 'nouns', 'code'},
-           'residue_values': WORDS | {'role', 'kind', 'bins', 'classes', 'missing'},
-           'residue_lists': WORDS - {'track', 'track_help', 'colours'} | {'flags'},
-           'neighbours': WORDS - {'track', 'track_help', 'colours'} | {'residues', 'window', 'many'}}
+ALLOWED = {
+    'regions': WORDS | {'role', 'kind', 'window', 'nouns', 'code'},
+    'residue_values': WORDS | {'role', 'kind', 'bins', 'classes', 'missing'},
+    'residue_lists': WORDS - {'track', 'track_help', 'colours'} | {'flags'},
+    'neighbours': WORDS - {'track', 'track_help', 'colours'} | {'residues', 'window', 'many'},
+}
 
 
 def _need(params: dict, aid: str, *keys: str, layer: str = '') -> None:
@@ -62,7 +69,9 @@ def _need(params: dict, aid: str, *keys: str, layer: str = '') -> None:
         raise ValueError(f'analysis {aid!r}: with: needs {missing}')
     unknown = sorted(set(params) - ALLOWED.get(layer, set(params)))
     if unknown:
-        raise ValueError(f'analysis {aid!r}: with: has keys layer {layer} does not know: {unknown} (it knows {sorted(ALLOWED[layer])})')
+        raise ValueError(
+            f'analysis {aid!r}: with: has keys layer {layer} does not know: {unknown} (it knows {sorted(ALLOWED[layer])})'
+        )
 
 
 def _cap(text: str) -> str:
@@ -80,10 +89,18 @@ def regions(params: dict, aid: str) -> Layer:
     nouns = params.get('nouns', noun + 's')
     code = params.get('code', aid)
     codes = {'inside': f'in_{code}', 'near': f'{code}_boundary', 'far': f'outside_{code}', 'none': f'no_{code}'}
-    labels = {codes['inside']: f'In {_art(noun)}', codes['near']: f'Outside, ≤{w} aa from {_art(noun)}',
-              codes['far']: f'More than {w} aa from {_art(noun)}', codes['none']: f'Protein has no {noun}'}
-    helps = {codes['inside']: f'Inside {_art(noun)} (the site’s {role} input)', codes['near']: f'Outside, but within {w} residues of, {_art(noun)}',
-             codes['far']: f'More than {w} residues from any {noun}', codes['none']: f'The protein has no {noun} in the {role} input'}
+    labels = {
+        codes['inside']: f'In {_art(noun)}',
+        codes['near']: f'Outside, ≤{w} aa from {_art(noun)}',
+        codes['far']: f'More than {w} aa from {_art(noun)}',
+        codes['none']: f'Protein has no {noun}',
+    }
+    helps = {
+        codes['inside']: f'Inside {_art(noun)} (the site’s {role} input)',
+        codes['near']: f'Outside, but within {w} residues of, {_art(noun)}',
+        codes['far']: f'More than {w} residues from any {noun}',
+        codes['none']: f'The protein has no {noun} in the {role} input',
+    }
     labels.update(params.get('labels', {}))
     helps.update(params.get('help', {}))
 
@@ -93,13 +110,33 @@ def regions(params: dict, aid: str) -> Layer:
     def drawn(ctx, accs: set) -> pd.DataFrame:
         u = ctx.units(role, kind)
         return u[u['accession'].isin(accs)]
-    track = Track(kind, params.get('track', _cap(nouns)), 'segments', drawn, roles=(role,),
-                  help=params.get('track_help', f'{_cap(nouns)}: the site’s {role} input'),
-                  colours=tuple((params.get('colours') or {}).items()))
-    return Layer('regions', 'class', f'{noun}s ({role}): inside, within {w} residues, further, or none', compute, needs=(role,),
-                 labels=labels, help=helps, tracks=(track,), ordered=True,
-                 **_words(params, _cap(nouns), f'Are {{marks}} in {nouns}, against the other {{residues}} of the same proteins?',
-                          f'{{Marks}} against the other {{residues}} of the same proteins, by {nouns}'))
+
+    track = Track(
+        kind,
+        params.get('track', _cap(nouns)),
+        'segments',
+        drawn,
+        roles=(role,),
+        help=params.get('track_help', f'{_cap(nouns)}: the site’s {role} input'),
+        colours=tuple((params.get('colours') or {}).items()),
+    )
+    return Layer(
+        'regions',
+        'class',
+        f'{noun}s ({role}): inside, within {w} residues, further, or none',
+        compute,
+        needs=(role,),
+        labels=labels,
+        help=helps,
+        tracks=(track,),
+        ordered=True,
+        **_words(
+            params,
+            _cap(nouns),
+            f'Are {{marks}} in {nouns}, against the other {{residues}} of the same proteins?',
+            f'{{Marks}} against the other {{residues}} of the same proteins, by {nouns}',
+        ),
+    )
 
 
 @factory('residue_values')
@@ -112,11 +149,21 @@ def residue_values(params: dict, aid: str) -> Layer:
     missing = params.get('missing', 'no_value')
     noun = params.get('noun', role.replace('_', ' '))
     edges = [None, *bins, None]
-    labels = {c: params.get('labels', {}).get(c) or (f'{noun} < {edges[i + 1]:g}' if edges[i] is None else
-              f'{noun} ≥ {edges[i]:g}' if edges[i + 1] is None else f'{noun} {edges[i]:g} to {edges[i + 1]:g}')
-              for i, c in enumerate(classes)}
+    labels = {
+        c: params.get('labels', {}).get(c)
+        or (
+            f'{noun} < {edges[i + 1]:g}'
+            if edges[i] is None
+            else f'{noun} ≥ {edges[i]:g}'
+            if edges[i + 1] is None
+            else f'{noun} {edges[i]:g} to {edges[i + 1]:g}'
+        )
+        for i, c in enumerate(classes)
+    }
     labels[missing] = params.get('labels', {}).get(missing, f'No {noun}')
-    helps = {c: f'{labels[c]} (the site’s {role} input)' for c in classes} | {missing: f'The {role} input has no value for the residue'}
+    helps = {c: f'{labels[c]} (the site’s {role} input)' for c in classes} | {
+        missing: f'The {role} input has no value for the residue'
+    }
     helps.update(params.get('help', {}))
 
     def classify(values: np.ndarray) -> np.ndarray:
@@ -140,20 +187,53 @@ def residue_values(params: dict, aid: str) -> Layer:
         acc, pos = v['accession'].to_numpy(), v['position'].to_numpy()
         new = np.r_[True, (acc[1:] != acc[:-1]) | (pos[1:] != pos[:-1] + 1) | (cls[1:] != cls[:-1])]
         run = np.cumsum(new)
-        g = pd.DataFrame({'accession': acc, 'position': pos, 'class': cls, 'value': v['value'].to_numpy(), 'run': run}).groupby('run')
-        out = g.agg(accession=('accession', 'first'), start=('position', 'min'), end=('position', 'max'), cls=('class', 'first'),
-                    lo=('value', 'min'), hi=('value', 'max')).reset_index(drop=True)
-        out['label'] = [f'{labels[c]}: {lo:g} to {hi:g}' if lo != hi else f'{labels[c]}: {lo:g}' for c, lo, hi in zip(out['cls'], out['lo'], out['hi'])]
+        g = pd.DataFrame(
+            {'accession': acc, 'position': pos, 'class': cls, 'value': v['value'].to_numpy(), 'run': run}
+        ).groupby('run')
+        out = g.agg(
+            accession=('accession', 'first'),
+            start=('position', 'min'),
+            end=('position', 'max'),
+            cls=('class', 'first'),
+            lo=('value', 'min'),
+            hi=('value', 'max'),
+        ).reset_index(drop=True)
+        out['label'] = [
+            f'{labels[c]}: {lo:g} to {hi:g}' if lo != hi else f'{labels[c]}: {lo:g}'
+            for c, lo, hi in zip(out['cls'], out['lo'], out['hi'])
+        ]
         out['source'] = role
         return out.rename(columns={'cls': 'class'})[['accession', 'start', 'end', 'label', 'source', 'class']]
+
     title = params.get('title', _cap(noun))
-    track = Track(params.get('kind', aid), params.get('track', title), 'segments', drawn, roles=(role,),
-                  help=params.get('track_help', f'{title} along the chain, in the classes of the question (the site’s {role} input)'),
-                  colours=tuple((params.get('colours') or {}).items()))
-    return Layer('residue_values', 'class', f'{noun} ({role}) in classes at {bins}; {missing} without a value', compute, needs=(role,),
-                 labels=labels, help=helps, tracks=(track,), ordered=True,
-                 **_words(params, title, f'Do {{marks}} sit at a particular {noun}, against the other {{residues}} of the same proteins?',
-                          f'{{Marks}} against the other {{residues}} of the same proteins, by {noun}'))
+    track = Track(
+        params.get('kind', aid),
+        params.get('track', title),
+        'segments',
+        drawn,
+        roles=(role,),
+        help=params.get(
+            'track_help', f'{title} along the chain, in the classes of the question (the site’s {role} input)'
+        ),
+        colours=tuple((params.get('colours') or {}).items()),
+    )
+    return Layer(
+        'residue_values',
+        'class',
+        f'{noun} ({role}) in classes at {bins}; {missing} without a value',
+        compute,
+        needs=(role,),
+        labels=labels,
+        help=helps,
+        tracks=(track,),
+        ordered=True,
+        **_words(
+            params,
+            title,
+            f'Do {{marks}} sit at a particular {noun}, against the other {{residues}} of the same proteins?',
+            f'{{Marks}} against the other {{residues}} of the same proteins, by {noun}',
+        ),
+    )
 
 
 @factory('residue_lists')
@@ -165,19 +245,33 @@ def residue_lists(params: dict, aid: str) -> Layer:
         raise ValueError(f'analysis {aid!r}: with: flags must map each flag to the role of a list of residues')
     noun = params.get('noun', 'listed residue')
     labels = {f: params.get('labels', {}).get(f, f'Listed in {role}') for f, role in flags.items()}
-    helps = {f: params.get('help', {}).get(f, f'The residue is in the site’s {role} input') for f, role in flags.items()}
+    helps = {
+        f: params.get('help', {}).get(f, f'The residue is in the site’s {role} input') for f, role in flags.items()
+    }
 
     def compute(residues: pd.DataFrame, ctx) -> pd.DataFrame:
         idx = pd.MultiIndex.from_arrays([residues['accession'], residues['position'].astype(int)])
         out = {}
-        for f, role in flags.items():                     # in the order given
+        for f, role in flags.items():  # in the order given
             listed = ctx.listed(role)
             out[f] = idx.isin(pd.MultiIndex.from_arrays([listed['accession'], listed['position']]))
         return pd.DataFrame(out, index=residues.index)
-    return Layer('residue_lists', 'flags', f"{noun}s: listed in {', '.join(flags.values())}", compute, needs=tuple(dict.fromkeys(flags.values())),
-                 labels=labels, help=helps,
-                 **_words(params, _cap(noun + 's'), f'Are {{marks}} {noun}s more often than the other {{residues}} of the same proteins?',
-                          f'{{Marks}} against the other {{residues}} of the same proteins: {noun}s'))
+
+    return Layer(
+        'residue_lists',
+        'flags',
+        f'{noun}s: listed in {", ".join(flags.values())}',
+        compute,
+        needs=tuple(dict.fromkeys(flags.values())),
+        labels=labels,
+        help=helps,
+        **_words(
+            params,
+            _cap(noun + 's'),
+            f'Are {{marks}} {noun}s more often than the other {{residues}} of the same proteins?',
+            f'{{Marks}} against the other {{residues}} of the same proteins: {noun}s',
+        ),
+    )
 
 
 def sticker_counts(residues: pd.DataFrame, sequences: dict, letters: set, window: int) -> np.ndarray:
@@ -215,18 +309,39 @@ def neighbours(params: dict, aid: str) -> Layer:
         if not st:
             raise ValueError(f'analysis {aid!r}: with: residues is needed, because the mark profile names no stickers')
         return set(st['residues'])
-    labels = {'none': f'No {noun} within ±{window}', 'one': f'One {noun} within ±{window}', 'two_plus': f'{many} or more {noun}s within ±{window}'}
-    helps = {'none': f'No {noun} among the {2 * window} residues on either side (±{window} along the chain)',
-             'one': f'Exactly one {noun} within {window} residues on either side',
-             'two_plus': f'{many} or more {noun}s within {window} residues on either side'}
+
+    labels = {
+        'none': f'No {noun} within ±{window}',
+        'one': f'One {noun} within ±{window}',
+        'two_plus': f'{many} or more {noun}s within ±{window}',
+    }
+    helps = {
+        'none': f'No {noun} among the {2 * window} residues on either side (±{window} along the chain)',
+        'one': f'Exactly one {noun} within {window} residues on either side',
+        'two_plus': f'{many} or more {noun}s within {window} residues on either side',
+    }
     labels.update(params.get('labels', {}))
     helps.update(params.get('help', {}))
 
     def compute(residues: pd.DataFrame, ctx) -> pd.DataFrame:
         n = sticker_counts(residues, ctx.snapshot.sequences, letters(ctx), window)
-        return pd.DataFrame({'category': np.where(n == 0, codes[0], np.where(n < many, codes[1], codes[2])).astype(object)}, index=residues.index)
-    return Layer('neighbours', 'class', f'residues by the number of sticker residues within ±{window}: none, one, {many} or more', compute,
-                 labels=labels, help=helps, ordered=True,
-                 **_words(params, params.get('title', f'Next to {noun}s (±{window})'),
-                          f'Are {{marks}} more often next to {noun}s, within {window} residues on either side, than the other {{residues}} of the same proteins?',
-                          f'{{Marks}} against the other {{residues}} of the same proteins, by how many {noun}s lie within {window} residues on either side'))
+        return pd.DataFrame(
+            {'category': np.where(n == 0, codes[0], np.where(n < many, codes[1], codes[2])).astype(object)},
+            index=residues.index,
+        )
+
+    return Layer(
+        'neighbours',
+        'class',
+        f'residues by the number of sticker residues within ±{window}: none, one, {many} or more',
+        compute,
+        labels=labels,
+        help=helps,
+        ordered=True,
+        **_words(
+            params,
+            params.get('title', f'Next to {noun}s (±{window})'),
+            f'Are {{marks}} more often next to {noun}s, within {window} residues on either side, than the other {{residues}} of the same proteins?',
+            f'{{Marks}} against the other {{residues}} of the same proteins, by how many {noun}s lie within {window} residues on either side',
+        ),
+    )
