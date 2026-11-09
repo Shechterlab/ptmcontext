@@ -1693,7 +1693,7 @@
           if (zoomed) noneIn(title, row[3]);
           continue;
         }
-        const c = P[k],
+        const col = P[k],
           mid = c.y + 7;
         baseLine(mid);
         shown.forEach((run) => {
@@ -1746,11 +1746,11 @@
                 : 'PDBe-KB'
             } interface residues, read live</span>`;
           const kk = it({ tip: tip(false), card: () => tip(true), a: run.a, b: run.b });
-          parts.push(MK.box(XA(run.a), mid - 5, XB(run.b) - XA(run.a), 10, c, 0.85, ` data-mi="${kk}"`));
+          parts.push(MK.box(XA(run.a), mid - 5, XB(run.b) - XA(run.a), 10, col, 0.85, ` data-mi="${kk}"`));
         });
         rowLabel(title, mid, row[3]);
         c.y += 20;
-        key(SW.box(c, 0.85), title);
+        key(SW.box(col, 0.85), title);
       }
     };
     Object.assign(c, { zoomed, noneIn, msg, baseLine, labelAt, uniRow, ownRow, pdbRows });
