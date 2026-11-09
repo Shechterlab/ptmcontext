@@ -9120,3 +9120,84 @@ a.btn:hover {
     left: 0;
   }
 }
+
+/* Sections sidebar: group headings and question families are disclosures (a caret, open only around the current page) */
+.toc .tgl {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.toc button.toc-group {
+  margin: 0.15rem 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-radius: 0.4rem;
+}
+.toc.flat .toc-secs button.toc-group {
+  margin: 0.1rem 0;
+}
+.toc button.sub.fam {
+  padding: 0.22rem 0.5rem;
+  font-size: 0.88rem;
+  color: var(--ink, inherit);
+  border-radius: 4px;
+}
+.toc .tgl:hover {
+  color: var(--accent-dark);
+  background: var(--wash);
+}
+.toc .tgl.has-on {
+  color: var(--brand-ink);
+}
+.toc .tgl .car::before {
+  content: '▸';
+}
+.toc .tgl[aria-expanded='true'] .car::before {
+  content: '▾';
+}
+.toc .tgl .car {
+  display: inline-block;
+  width: 0.9em;
+  flex: none;
+  text-align: center;
+}
+.toc .toc-kids {
+  display: grid;
+  gap: 0.05rem;
+  margin: 0 0 0.3rem 0.45rem;
+  padding-left: 0.3rem;
+  border-left: 1px solid var(--line);
+}
+.toc .toc-kids[hidden] {
+  display: none;
+}
+.toc a.toc-lone {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: 0.15rem 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 0.4rem;
+}
+.toc.flat .toc-secs a.toc-lone {
+  margin: 0.1rem 0;
+}
+.toc .toc-lone .car {
+  display: inline-block;
+  width: 0.9em;
+  flex: none;
+}

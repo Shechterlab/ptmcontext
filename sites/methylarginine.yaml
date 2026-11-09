@@ -918,6 +918,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   # residues lie within 3 or 5 residues of each arginine, in the whole protein and in IDRs alone. The sticker set is the
   # profile's (stickers), or with: residues
   - id: sticker_context_3
+    family: Next to aromatic residues
     layer: neighbours
     with: {window: 3, noun: aromatic residue}
     new: true
@@ -926,6 +927,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sub: "Methylarginines against the other arginines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) lie within 3 residues on either side. Aromatic residues pair with arginine in condensates (cation–π), and methylation weakens that contact"
     section: Position in the protein
   - id: sticker_context_5
+    family: Next to aromatic residues
     layer: neighbours
     with: {window: 5, noun: aromatic residue}
     new: true
@@ -934,6 +936,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sub: "Methylarginines against the other arginines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) lie within 5 residues on either side"
     section: Position in the protein
   - id: sticker_context_3_idr
+    family: Next to aromatic residues
     layer: neighbours
     with: {window: 3, noun: aromatic residue}
     only_in: idr
@@ -943,6 +946,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sub: "Only arginines inside IDRs of 20 or more residues: methylarginines against the other arginines of the same proteins in IDRs, by how many aromatic residues lie within 3 residues on either side"
     section: Position in the protein
   - id: sticker_context_5_idr
+    family: Next to aromatic residues
     layer: neighbours
     with: {window: 5, noun: aromatic residue}
     only_in: idr

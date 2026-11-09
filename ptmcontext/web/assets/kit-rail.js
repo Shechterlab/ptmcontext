@@ -632,32 +632,82 @@
   // every page, as the tab bar lists them, with the current page's own sections under it, in their groups (as the
   // original explorer's sidebar): [id, label, level, href?] from K.sections; level 0 is a group heading; a section with
   // an href is a link (another view), one without is a jump to the element with that id
+  // which group and family disclosures the reader opened or closed (session state, not the address)
+  const TOC_KEY = 'ptmc-toc-open';
+  let tocOpen = {};
+  try {
+    tocOpen = JSON.parse(sessionStorage.getItem(TOC_KEY) || '{}') || {};
+  } catch (e) {
+    tocOpen = {};
+  }
   function sectionsTab() {
     const raw = (K.sections?.[S.view]?.() || []).filter((x) => x[0] !== 'view');
     // a link to another view, or to the same view with a different question (?a=), is current only when both match
     const aOf = (h) => (h.match(/[?&]a=([^&]*)/) || [])[1] || '',
       cur = K.link(S.view, S.arg),
       here = (h) => cur.split('?')[0] === h.split('?')[0] && (S.view !== 'statistics' || (S.a || '') === aOf(h));
-    const item = ([id, lab, lev, href], i) =>
-      lev === 0 && !href && raw[i + 1] && raw[i + 1][2] !== 0
-        ? `<div class="toc-group">${esc(lab)}</div>`
+    // a section with nothing listed under it (not drawn yet, or one question of its own name) is a heading-styled jump
+    const lone = ([id, lab]) =>
+      `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="toc-group toc-lone"><span class="car" aria-hidden="true"></span>${esc(lab)}</a>`;
+    const leaf = ([id, lab, lev, href]) =>
+      lev === 0 && !href
+        ? lone([id, lab])
         : href
           ? `<a href="${esc(href)}" class="sub l1${here(href) ? ' on' : ''}"${here(href) ? ' aria-current="page"' : ''}>${esc(lab)}</a>`
           : `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="sub l1">${esc(lab)}</a>`;
+    // a group heading (a level-0 entry with entries under it) is a disclosure; entries sharing a family (an analysis'
+    // `family` in the site file) are one entry with a disclosure of its own. Open: the reader's choice this session,
+    // else only when it holds the current page
+    let nTgl = 0;
+    const disclosure = (key, label, kids, cls, has) => {
+      const id = `toc-k${nTgl++}`,
+        open = key in tocOpen ? tocOpen[key] : has;
+      return (
+        `<button type="button" class="${cls} tgl" data-toc-tgl="${esc(key)}" aria-expanded="${open}" aria-controls="${id}">` +
+        `<span class="car" aria-hidden="true"></span>${esc(label)}</button>` +
+        `<div class="toc-kids" id="${id}"${open ? '' : ' hidden'}>${kids}</div>`
+      );
+    };
+    const isCur = (x) => !!x[3] && here(x[3]);
+    const entries = [];
+    raw.forEach((x, i) => {
+      const head = x[2] === 0 && !x[3] && raw[i + 1] && raw[i + 1][2] !== 0;
+      if (head) entries.push({ head: x, kids: [] });
+      else if (x[2] !== 0 && entries.length && entries[entries.length - 1].head)
+        entries[entries.length - 1].kids.push(x);
+      else entries.push({ leaf: x });
+    });
+    const famCount = (kids, f) => kids.filter((k) => k[4] === f).length;
+    const group = (g) => {
+      if (g.kids.length === 1 && g.kids[0][1] === g.head[1] && !g.kids[0][3]) return lone(g.kids[0]);
+      const done = new Set();
+      const kids = g.kids
+        .map((k) => {
+          const f = k[4];
+          if (!f || famCount(g.kids, f) < 2) return leaf(k);
+          if (done.has(f)) return '';
+          done.add(f);
+          const vs = g.kids.filter((y) => y[4] === f);
+          return disclosure(`${S.view}|f|${g.head[1]}|${f}`, f, vs.map(leaf).join(''), 'sub l1 fam', vs.some(isCur));
+        })
+        .join('');
+      return `<div class="toc-grp">${disclosure(`${S.view}|g|${g.head[1]}`, g.head[1], kids, 'toc-group', g.kids.some(isCur))}</div>`;
+    };
+    const item = (e) => (e.head ? group(e) : leaf(e.leaf));
     const pages = [...document.querySelectorAll('#tabs a.tab')].map((a) => ({
       href: a.getAttribute('href'),
       name: a.cloneNode(true),
       cur: a.getAttribute('aria-current') === 'page',
     }));
     pages.forEach((pg) => pg.name.querySelectorAll('.count, .selmark, svg').forEach((x) => x.remove()));
-    if (!pages.length) return '<nav class="toc flat">' + raw.map(item).join('') + '</nav>';
+    if (!pages.length) return '<nav class="toc flat">' + entries.map(item).join('') + '</nav>';
     return (
       '<nav class="toc flat">' +
       pages
         .map(
           (pg) =>
             `<a class="toc-p${pg.cur ? ' on' : ''}" href="${esc(pg.href)}"${pg.cur ? ' aria-current="page"' : ''}>${esc(pg.name.textContent.trim())}</a>` +
-            (pg.cur && raw.length ? `<div class="toc-secs">${raw.map(item).join('')}</div>` : '')
+            (pg.cur && raw.length ? `<div class="toc-secs">${entries.map(item).join('')}</div>` : '')
         )
         .join('') +
       '</nav>'
@@ -692,8 +742,12 @@
         y = t ? t.getBoundingClientRect().top : -1;
       if (y >= bar - 24 - 8 && y < innerHeight) cur = links.find((a) => a.dataset.spy === jumpId) || cur;
     }
+    document.querySelectorAll('#rail .tgl.has-on').forEach((b) => b.classList.remove('has-on'));
     links.forEach((a) => {
       const on = a === (cur || links[0]);
+      if (on)
+        for (let k = a.closest('.toc-kids'); k; k = k.parentElement?.closest('.toc-kids'))
+          k.previousElementSibling?.classList.add('has-on');
       a.classList.toggle('on', on);
       if (on) a.setAttribute('aria-current', 'location');
       else a.removeAttribute('aria-current');
@@ -1042,6 +1096,21 @@
         R.open = true;
         R.tab = el.dataset.railOpen || R.tab;
         rail();
+      },
+    ],
+    [
+      '[data-toc-tgl]',
+      (el) => {
+        const open = el.getAttribute('aria-expanded') !== 'true';
+        el.setAttribute('aria-expanded', String(open));
+        const kids = document.getElementById(el.getAttribute('aria-controls'));
+        if (kids) kids.hidden = !open;
+        tocOpen[el.dataset.tocTgl] = open;
+        try {
+          sessionStorage.setItem(TOC_KEY, JSON.stringify(tocOpen));
+        } catch (err) {
+          /* no session storage: the choice lasts until the page is reloaded */
+        }
       },
     ],
     [

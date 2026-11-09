@@ -96,6 +96,13 @@ MODULES = (
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
+def _with_families(analyses: list, site: dict) -> list:
+    """analyses[].family (the site file): questions that are variants of one base share a family name, and the sidebar
+    lists them as one entry."""
+    fam = {a['id']: a['family'] for a in site.get('analyses', []) if a.get('family')}
+    return [{**a, 'family': fam[a['id']]} if a['id'] in fam else a for a in analyses]
+
+
 def _asset(name: str) -> Path:
     if name == 'assets/kit-stats.js':  # the statistics are the package ptmstats' ptmstats.js
         return Path(ptmstats.js_path())
@@ -594,7 +601,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'mark': profile.id,
         'residues': profile.residues,
         'counts': {'marks': run['marks']['counted'], 'proteins': run['marks']['proteins']},
-        'analyses': analyses,
+        'analyses': _with_families(analyses, site),
         'rows': rows,
         'run': run,
         'glance': glance(

@@ -44,6 +44,11 @@ Conventions:
   layer is needed, so that the website can tell the marks outside). The `neighbours` layer (`with: {window, residues,
   many, noun}`) places a residue in `none`, `one` or `two_plus` (`many` or more) according to how many residues of a
   set lie within `window` residues of it on either side; the set is `with.residues` or the mark profile's `stickers`.
+- Questions that are variants of one base (the same test at other window sizes, or inside IDRs) may share a
+  `family:` (any text, the entry's name). The website's Sections sidebar then lists them as one entry with a caret
+  that reveals the variants; the questions, their pages and their statistics are unchanged. Group headings in that
+  sidebar are the Overview's `website.overview.sections` names, each a disclosure that is open only when it holds the
+  current page (a reader's own choice is kept for the session).
 - `enricher`: protein-set tests (clusterProfiler's `enricher`). `a, b, c, d` are k, n − k, M − k and N − M − n + k
   (marked proteins in the set; other marked proteins; other proteins in the set; the rest of the background). One-sided
   hypergeometric p; `fold_enrichment` (k/n)/(M/N). The background is the universe's proteins in at least one set, or

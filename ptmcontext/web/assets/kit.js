@@ -2119,8 +2119,14 @@
       const sid = `sec-${x.name.replace(/\W+/g, '-').toLowerCase()}`,
         tileOf = (c) =>
           S.arg
-            ? [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, link('overview', c.analysis)]
-            : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1];
+            ? [
+                `tile-${c.analysis}`,
+                c.title || A[c.analysis].title,
+                1,
+                link('overview', c.analysis),
+                A[c.analysis].family,
+              ]
+            : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, undefined, A[c.analysis].family];
       // an opened question: its own section lists the questions, the others are one line that opens their first (the list stays short)
       if (S.arg) {
         const mine = x.cards.some((c) => c.analysis === S.arg || (c.views || []).some((v) => v.analysis === S.arg));
@@ -2155,6 +2161,7 @@
                 c.title || A[c.analysis].title,
                 1,
                 link('statistics', '', { a: c.analysis }),
+                A[c.analysis].family,
               ]),
             ]
           : [];

@@ -33,13 +33,13 @@ analyses:
   - {id: structure_context, layer: structure_context}
   - {id: idr_charge, layer: idr_charge}
   # Stickers and the factors together, as for human methylarginine (not in a release)
-  - {id: sticker_context_3, layer: neighbours, with: {window: 3, noun: aromatic residue}, new: true, section: Position in the protein,
+  - {id: sticker_context_3, family: Next to aromatic residues, layer: neighbours, with: {window: 3, noun: aromatic residue}, new: true, section: Position in the protein,
      title: "Next to aromatic residues (within 3)", question: "Are phosphosites more often next to aromatic residues than the other serines, threonines and tyrosines of their protein?"}
-  - {id: sticker_context_5, layer: neighbours, with: {window: 5, noun: aromatic residue}, new: true, section: Position in the protein,
+  - {id: sticker_context_5, family: Next to aromatic residues, layer: neighbours, with: {window: 5, noun: aromatic residue}, new: true, section: Position in the protein,
      title: "Next to aromatic residues (within 5)", question: "Are phosphosites more often next to aromatic residues than the other serines, threonines and tyrosines of their protein?"}
-  - {id: sticker_context_3_idr, layer: neighbours, with: {window: 3, noun: aromatic residue}, only_in: idr, new: true, section: Position in the protein,
+  - {id: sticker_context_3_idr, family: Next to aromatic residues, layer: neighbours, with: {window: 3, noun: aromatic residue}, only_in: idr, new: true, section: Position in the protein,
      title: "Next to aromatic residues, in IDRs (within 3)", question: "Inside disordered regions, are phosphosites more often next to aromatic residues than the other serines, threonines and tyrosines there?"}
-  - {id: sticker_context_5_idr, layer: neighbours, with: {window: 5, noun: aromatic residue}, only_in: idr, new: true, section: Position in the protein,
+  - {id: sticker_context_5_idr, family: Next to aromatic residues, layer: neighbours, with: {window: 5, noun: aromatic residue}, only_in: idr, new: true, section: Position in the protein,
      title: "Next to aromatic residues, in IDRs (within 5)", question: "Inside disordered regions, are phosphosites more often next to aromatic residues than the other serines, threonines and tyrosines there?"}
   - id: which_factor
     test: conditional_logit

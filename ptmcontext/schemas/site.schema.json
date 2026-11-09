@@ -1097,6 +1097,10 @@
               }
             }
           },
+          "family": {
+            "type": "string",
+            "description": "the sidebar lists questions with the same family as one entry of that name, with the variants under its caret (e.g. one question at several window sizes); nothing else changes"
+          },
           "only_in": {
             "description": "residue and conditional_logit: count only the marks and candidate residues inside the IDRs ('idr') or inside the regions of an interval table ({role, kind})",
             "oneOf": [
