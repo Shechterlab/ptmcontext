@@ -39,30 +39,61 @@
     (String(q || '').match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || [])
       .filter((t) => !/^[a-z_][\w]*:.+$/i.test(t) || !isTermKey(t.split(':')[0]))
       .join(' ');
+  // A filter is shown as its category (a muted word: the site's chip word for the card that holds the question) and its value, not as a
+  // sentence; the source and the rule are in the chip's hover. The search's gene list is one chip too.
+  const catOf = (k) => {
+    const id = k.split(':')[1],
+      card = (D.front?.cards || []).find((c) => (c.questions || []).includes(id));
+    return card?.chip || keyName(k);
+  };
+  const valsOf = (k, v) => v.map((x) => valueName(k, x)).join(' or ');
+  function tipOf(k, v) {
+    const [kind, id] = k.split(':'),
+      hook = K.filterKinds?.[kind]?.tip?.(id, v),
+      src = A[id]?.title && A[id].title !== keyName(k) ? A[id].title : '';
+    return [
+      `${keyName(k)}: ${valsOf(k, v)}`,
+      hook || (A[id]?.sub ? K.shortSub?.(A[id].sub) : ''),
+      src && `Source: ${src}`,
+    ]
+      .filter(Boolean)
+      .join('. ');
+  }
+  const chip = (cat, val, tip, btn, cls = '') =>
+    `<span class="sel-chip${cls}" title="${esc(tip)}"><span class="sel-cat">${esc(cat)}</span> · <span ` +
+    `class="sel-val">${esc(val)}</span>${btn}</span>`;
+  // the search's plain words: a gene list is "Genes", other words "Search"; the first three, the rest on hover
+  function plainChip() {
+    const c = compute(),
+      bad = new Set((c.unresolved || []).map((x) => x.toLowerCase())),
+      words = plainOf(S.q)
+        .split(' ')
+        .filter((t) => t && !bad.has(t.toLowerCase()));
+    if (!words.length) return null;
+    const list = c.q.genes.length > 0 && !c.q.sites.length,
+      shown = words.length > 4 ? words.slice(0, 3).join(', ') + ` +${words.length - 3}` : words.join(list ? ', ' : ' ');
+    return {
+      cat: list ? 'Genes' : 'Search',
+      val: shown,
+      tip: words.join(list ? ', ' : ' '),
+      btn: `<button type="button" data-sel-clear-q aria-label="Remove the search">×</button>`,
+    };
+  }
   function chipsHtml() {
     const c = compute(),
       out = [],
-      bad = new Set((c.unresolved || []).map((x) => x.toLowerCase())),
-      plain = plainOf(S.q)
-        .split(' ')
-        .filter((t) => !bad.has(t.toLowerCase()))
-        .join(' ');
-    const words = plain.split(' '),
-      plainShown = words.length > 4 ? words.slice(0, 3).join(' ') + ` +${words.length - 3}` : plain; // a pasted list: the first three, the rest on hover
-    if (plain)
-      out.push(
-        `<span class="sel-chip" title="${esc(plain)}">Search: <b>${esc(plainShown)}</b><button ` +
-          `type="button" data-sel-clear-q aria-label="Remove the search">×</button></span>`
-      );
+      pc = plainChip();
+    if (pc) out.push(chip(pc.cat, pc.val, pc.tip, pc.btn));
     c.cons
       .filter(([, , fromSearch]) => fromSearch)
       .forEach(([k, v, , raw]) =>
         out.push(
-          `<span class="sel-chip" ` +
-            `title="${esc(raw)}">${esc(keyName(k))}: <b>${esc(
-              v.map((x) => valueName(k, x)).join(' or ')
-            )}</b><button ` +
-            `type="button" data-sel-drop-term="${esc(raw)}" aria-label="Remove ${esc(raw)}">×</button></span>`
+          chip(
+            catOf(k),
+            valsOf(k, v),
+            tipOf(k, v),
+            `<button type="button" data-sel-drop-term="${esc(raw)}" aria-label="Remove ${esc(raw)}">×</button>`
+          )
         )
       );
     (c.unresolved || []).forEach((raw) => {
@@ -77,20 +108,34 @@
       .filter(([, , fromSearch]) => !fromSearch)
       .forEach(([k, v]) =>
         out.push(
-          `<span class="sel-chip">${esc(keyName(k))}: <b>${esc(
-            v.map((x) => valueName(k, x)).join(' or ')
-          )}</b><button ` + `type="button" data-sel-clear="${esc(k)}" aria-label="Remove">×</button></span>`
+          chip(
+            catOf(k),
+            valsOf(k, v),
+            tipOf(k, v),
+            `<button type="button" data-sel-clear="${esc(k)}" aria-label="Remove ${esc(catOf(k))}">×</button>`
+          )
         )
       );
-    return out.join('<span class="sel-and">and</span>');
+    return out.join('');
+  }
+  // the selection in words for a figure's subtitle and for Copy link: "category · value; counts; what it is tested against"
+  function summary() {
+    if (!active() || !sd()) return '';
+    const c = compute(),
+      np = c.proteins.size,
+      pc = plainChip(),
+      parts = [...(pc ? [`${pc.cat} · ${pc.tip}`] : []), ...c.cons.map(([k, v]) => `${catOf(k)} · ${valsOf(k, v)}`)];
+    return (
+      `${parts.join('; ')}; ${int(c.marks.length)} of ${int(D.counts.marks)} ${W.marks} on ${int(np)} protein${np === 1 ? '' : 's'}` +
+      (K.selEffect ? `; ${K.selEffect().replace(/^All tabs show only these · /, '')}` : '')
+    );
   }
   function bar() {
     if (!active()) return null;
     const c = compute();
     if (!sd()) return `<span class="sel-flag">Selection</span><span>Loading the ${esc(W.marks)}…</span>`;
     const n = c.marks.length,
-      np = c.proteins.size,
-      nCons = c.cons.length + (plainOf(S.q) ? 1 : 0) + c.unresolved.length;
+      np = c.proteins.size;
     // with the line under the search (kit-search.js), what the search could not read is said there
     const note = !!K.searchNote,
       miss = note ? [] : [...c.unresolved, ...c.q.unmatched],
@@ -98,7 +143,7 @@
       ignored = note ? [] : c.q.ignored || [],
       amb = note ? [] : c.q.ambiguous || [];
     return (
-      `<span class="sel-flag">Selection</span><span><b>${int(n)}</b> of ${int(D.counts.marks)} ${esc(W.marks)} on <b>${int(np)}</b> protein${np === 1 ? '' : 's'}${nCons > 1 ? ', matching all of' : ''}</span>${chipsHtml()}` +
+      `<span class="sel-flag">Selection</span><span><b>${int(n)}</b> of ${int(D.counts.marks)} ${esc(W.marks)} on <b>${int(np)}</b> protein${np === 1 ? '' : 's'}</span>${chipsHtml()}` +
       (miss.length
         ? `<span class="sel-miss" title="Terms are key:value, where the key is a question (${esc(
             D.analyses.map((a) => a.id).join(', ')
@@ -122,7 +167,9 @@
             .map(([t, g]) => `<b>${esc(t)}</b> read as ${esc(g)}’s site, ` + `not the protein ${esc(t)}`)
             .join('; ')}</span>`
         : '') +
-      (`${K.selMid ? K.selMid() : ''}<span class="sel-tools">${(K.selTools || [])
+      (`${K.selMid ? K.selMid() : ''}${K.selEffect ? `<span class="sel-effect">${esc(K.selEffect())}</span>` : ''}<span class="sel-tools">${(
+        K.selTools || []
+      )
         .map((f) => f())
         .join('')}<button class="btn ` +
         `small" type="button" data-sel-save title="Keep this selection in this browser; saved ones are listed ` +
@@ -832,8 +879,8 @@
     [
       '[data-sel-copy]',
       (el) => {
-        navigator.clipboard?.writeText(location.href).then(() => {
-          el.textContent = 'Link copied';
+        navigator.clipboard?.writeText(`${location.href}\n${summary()}`).then(() => {
+          el.textContent = 'Link and description copied';
           setTimeout(() => {
             el.textContent = 'Copy link';
           }, 1600);
@@ -989,6 +1036,6 @@
       true
     )
   );
-  Object.assign(M, { bar, savedList });
+  Object.assign(M, { bar, savedList, summary });
   Object.assign(K, { watchSections, rail });
 });

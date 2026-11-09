@@ -1244,7 +1244,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - key: cell
         title: "Cell"
         short: "Cell"
-        chip: "Location"
+        chip: "Cell location"
         cell: true
         analyses: ["where_in_the_cell", "hpa_location", "cell_region_hpa", "cell_region_hcm", "cell_region_organelle_ip", "cell_hcm_compartment", "cell_hcm_domain", "cell_organelle_ip", "cell_chromatin", "eclip_rna_apexseq", "eclip_gene_tsaseq", "eclip_gene_hic"]
         facets: [{analysis: hpa_location, label: "Locations"}]

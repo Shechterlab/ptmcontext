@@ -1735,6 +1735,7 @@
       label: () => (D.front?.cards || []).find((c) => c.cell)?.chip || C.title || 'Where in the cell',
       value: (id, v) => partName(v),
       owned: (id, vals) => vals.flatMap(partPairs),
+      tip: (id, vals) => `The proteins that at least one of ${MAPS.length} maps places in ${and(vals.map(partName))}`,
       test: (id, vals) => {
         const pairs = vals.flatMap(partPairs);
         return (m) => pairs.some(([a, s]) => K.sel.setHas(a, s, m[0]));

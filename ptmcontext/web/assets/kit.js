@@ -580,6 +580,7 @@
     }`;
     const bar = K.sel?.bar();
     $('#scope').classList.toggle('selected', !!bar);
+    $('#scope').setAttribute('aria-live', 'polite');
     document.body.classList.toggle('has-selection', !!bar);
     // the toolbar's own way into the filters, named, with how many are in use (the chips and Clear all follow it)
     const nf = K.sel ? K.sel.nFilters() : 0,
@@ -603,16 +604,7 @@
     if (!K.sel?.active()) return '';
     const v = S.view;
     if (v === 'protein' && K.sel.protSelected(String(S.arg).split('/')[0])) return ''; // a protein of the selection: its page fades the sites outside it, and says so
-    if (follows(v)) {
-      const n = K.sel.nMarks(),
-        np = K.sel.nProteins(),
-        one = np === 1 ? (D.proteins[K.sel.compute().q?.genes?.[0]] || [])[1] || '' : '';
-      return (
-        `<p class="sel-line" role="status"><span>Showing your selection: <b>${int(n)}</b> ${esc(n === 1 ? W.mark : W.marks)} on ${
-          one ? '<b>' + esc(one) + '</b>' : `<b>${int(np)}</b> protein${np === 1 ? '' : 's'}`
-        }</span> <button ` + `type="button" class="linkish" data-sel-clear-all>Clear</button></p>`
-      );
-    }
+    if (follows(v)) return ''; // the bar above says what is selected and how many; its Clear all removes it
     return `<p class="sel-line off" role="status">Not filtered by your selection.</p>`;
   }
   function tabs() {
@@ -1152,6 +1144,16 @@
         .join(' · ') || 'everything'
     }”`;
   };
+  // what the selection does, in one clause (the bar, a figure's subtitle, Copy link): follows the Test and Compared with settings
+  K.selEffect = () =>
+    'All tabs show only these · ' +
+    (vsOn()
+      ? `compared with ${S.vs === 'cmp' ? 'the marks of ' + cmpName() : 'the other ' + W.marks}`
+      : S.m === 'fisher'
+        ? `tested against all other ${W.residues}`
+        : S.m === 'study'
+          ? `tested against ${W.marks} from the same sources`
+          : `tested against other ${W.residues} of the same proteins`);
   const selTestable = () => !selOn() || (K.sel.data() && K.sel.testable() && K.sel.nMarks() > 0);
   // which rows a tile shows: up to 7, the classes that differ most first (a few of those less often, if any), then
   // significant ones within 1.1×; none, unknown and other classes are left to the full figure
@@ -3565,6 +3567,8 @@
     const tl = wrap(title, (Wd - 2 * P) / WSL, 17, 'bold', FFH).slice(0, 2);
     tl.forEach((t, i) => T(P, 30 + i * 20, t, { size: 17, weight: 'bold', fam: FFH }));
     let y = 49 + (tl.length - 1) * 20;
+    // a selection is stated the same way as in the bar: category · value, the counts, and what it is tested against
+    if (selOn() && K.sel.summary) sub = [sub, `Selection: ${K.sel.summary()}.`].filter(Boolean).join(' ');
     wrap(sub, (Wd - 2 * P) / WSL, 11.5)
       .slice(0, 5)
       .forEach((t) => {
