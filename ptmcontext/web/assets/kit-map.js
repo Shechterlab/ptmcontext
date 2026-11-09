@@ -1223,7 +1223,9 @@
       });
       return (u?.description || String(lab || '').split(' · ')[0]).replace(/\s*;.*$/, '');
     };
-    const below = [];
+    const below = [],
+      inside = [], // the names inside boxes, drawn after every box so that a box over another never hides one
+      named = []; // x-spans of the names written inside boxes: a box over the same span gets its name below, or none
     mergedDomains(rec)
       .filter((u) => inView(u[1], u[2]))
       .forEach(([kind, s, e, lab, src, , ref]) => {
@@ -1247,14 +1249,19 @@
           `<rect x="${r1(a)}" y="${yB - 8}" width="${r1(w)}" height="16" rx="4" fill="${P.dom}" stroke="${P.domEdge}" stroke-width="1" ` +
             `data-mi="${k}"/>`
         );
-        if (short && K.tw(short, 10, 600) * SL + 8 < w)
-          parts.push(
+        const tw = short ? K.tw(short, 10, 600) * SL : 0,
+          mid = (a + b) / 2,
+          free = !named.some(([n0, n1]) => mid - tw / 2 < n1 + 6 && mid + tw / 2 > n0 - 6);
+        if (short && tw + 8 < w && free) {
+          named.push([mid - tw / 2, mid + tw / 2]);
+          inside.push(
             `<text x="${r1((a + b) / 2)}" y="${yB + 3.5}" font-size="10" ` +
               `font-weight="600" text-anchor="middle" fill="${P.domInk}" pointer-events="none">${esc(short)}</text>`
           );
-        else if (short) below.push([(a + b) / 2, short]);
+        } else if (short) below.push([(a + b) / 2, short]);
         key(SW.box(P.dom, 1, P.domEdge), t.title);
       });
+    parts.push(...inside);
     Object.assign(c, { below, dis, segs });
   }
   function draw_heads(c) {
