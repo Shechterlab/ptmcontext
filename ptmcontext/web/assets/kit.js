@@ -365,7 +365,8 @@
   const shortHelp = r => !!r.help && r.help.length <= 34;
   const valText = r => (r.vs ? `${pcS(share1(r))} · ${pcS(share2(r))}` : r.eff == null ? '—' : fx(r.eff));
   // on the page: a row of the chart (it keeps .drow: its hover read-out, and a click selects its marks)
-  function chartRow(r, M, fkey, mark) {
+  function chartRow(r, M, fkey, mark, own) {
+    if (own) return ownRow(r, fkey, mark);
     const X = M.axis.X, pc = v => (100 * X(v)).toFixed(2) + '%', d = decile(r);
     let marks = M.axis.ticks.map(t => `<line class="${t.lab === '1×' ? 'one' : 'grid'}" x1="${(100 * t.x).toFixed(2)}%" x2="${(100 * t.x).toFixed(2)}%" y1="0" y2="100%"/>`).join('');
     if (r.vs) {
@@ -382,11 +383,14 @@
       `<svg aria-hidden="true">${marks}</svg><span class="val ${r.dir}">${r.vs ? `${pcS(share1(r))} <span class="muted">· ${pcS(share2(r))}</span>` : valText(r) + shareSpan(r)}${d ? `<i class="dm ${d.dir}" title="Within protein abundance deciles: ${DECILE[d.dir][1]} (OR ${fxn(d.eff)}, q ${fq(d.q)})">${DECILE[d.dir][0]}</i>` : r.vs || !M.legend.some(x => x[0] === 'dec') ? '' : '<i class="dm"></i>'}</span>` +
       `<span class="vh">${r.vs ? `${pcS(share1(r))} of your selection vs ${pcS(share2(r))} of ${esc(vsName())}` : `${esc(effText(r))}, q ${fq(r.q)}`}${d ? `; within abundance deciles: ${DECILE[d.dir][1]}` : ''}${r.ref ? `; whole dataset ${esc(effText(r.ref))}` : ''}</span></div>`;
   }
+  // the selection's own class on a question's page: its name, a pill, and no counts, bar or fold
+  const ownRow = (r, fkey, mark) => `<div class="drow qrow pick mine${mark ? ' more-mark' : ''}" data-cat="${esc(r.category)}" data-f="${esc(fkey)}" data-v="${esc(r.category)}" role="button" tabindex="0" title="Click to take ${esc(r.label)} out of the selection">` +
+    `<span class="lab"><span class="ln">${esc(r.label)}</span></span><span class="own"><span class="sel-pill">Your selection</span></span><span class="vh">Your selection: the ${esc(W.marks)} you chose, so this row is not compared</span></div>`;
   const SWATCH = { more: '<i class="sw bar more"></i>', less: '<i class="sw bar less"></i>', same: '<i class="sw bar same"></i>', ns: '<i class="sw bar ns"></i>', ci: '<i class="sw ci"></i>',
     ref: '<i class="sw ref"></i>', sel: '<i class="kd more"></i>', other: '<i class="kd ns"></i>', dec: '', none: '' };
-  function chartHtml(M, fkey, mark) {
+  function chartHtml(M, fkey, mark, own) {
     const head = `<div class="qhead" aria-hidden="true"><span></span>${M.cols.map((c, k) => `<span class="cnt${k ? ' o' : ''}">${esc(c)}<small>in ${M.cls} / all</small></span>`).join('')}<span></span><span class="val">${M.valHead}</span></div>`;
-    const body = M.items.map(it => (it.r ? chartRow(it.r, M, fkey, mark && mark.has(it.r.category)) : `<div class="qgroup"${it.head ? '' : ' aria-hidden="true"'}>${esc(it.head)}</div>`)).join('');
+    const body = M.items.map(it => (it.r ? chartRow(it.r, M, fkey, mark && mark.has(it.r.category), own && own.has(it.r.category)) : `<div class="qgroup"${it.head ? '' : ' aria-hidden="true"'}>${esc(it.head)}</div>`)).join('');
     const axis = `<div class="qaxis" aria-hidden="true"><span></span><span class="cnt"></span><span class="cnt o"></span><span class="ticks">${M.axis.ticks.map(t => `<span class="${t.minor ? 'minor' : ''}" style="left:${(100 * t.x).toFixed(2)}%">${t.lab}</span>`).join('')}</span><span></span>` +
       `<span class="qaxis-title">${esc(M.axisTitle)}</span></div>`;
     return `<div class="qchart">${head}${body}${axis}<p class="qkey">${M.legend.map(([k, t]) => `<span>${SWATCH[k]}${esc(t)}</span>`).join('')}</p></div>`;
@@ -442,6 +446,17 @@
   const rowsOf = (a, m) => (vsOn() ? K.sel.contrast(a.id, a.kind === 'protein_sets' ? 'enricher' : vsMethod(m)) || []
     : selOn() ? K.sel.rows(a.id, a.kind === 'protein_sets' ? 'enricher' : m) || [] : rowsFor(a, m));
   const fkeyOf = a => (a.kind === 'protein_sets' ? 'p:' + a.id : a.kind === 'attribute' ? ((D.attribute_specs[a.attribute] || {}).kind === 'number' ? 'n:' : 't:') + a.attribute : 'a:' + a.id);
+  // The classes of a question that the active selection itself holds (its own filter, or a search term of its key): such a
+  // row is the selection, 100% by construction, so the tile and the question's page mark it "Your selection" and give it no ratio
+  // or bar. Display only: the rows and their statistics are the same. Null when the selection does not filter this question.
+  const ownClasses = a => {
+    if (!a || !selOn()) return null;
+    const key = fkeyOf(a), vals = (K.sel.compute().cons || []).filter(([k]) => k === key).flatMap(([, v]) => v);
+    return vals.length ? new Set(vals) : null;
+  };
+  const lcFirst = t => (/^[A-Z][a-z]/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t);
+  // what the other rows are when the selection filters the question's own attribute: its other classes, of the same proteins
+  const otherRows = (a, whole) => `Other ${esc(lcFirst(a.title))} ${whole ? 'in the whole dataset' : `of the selected ${esc(a.kind === 'protein_sets' ? setUnit(a.id) : W.marks)}`}`;
   // against other marks: each row's two shares, and how strongly it differs (the CI bound nearer 1, on a log scale)
   const share1 = r => (r.a + r.b ? r.a / (r.a + r.b) : 0), share2 = r => (r.c + r.d ? r.c / (r.c + r.d) : 0);
   const pcS = v => (v < 0.1 ? (100 * v).toFixed(1) : (100 * v).toFixed(0)) + '%';
@@ -543,12 +558,12 @@
     // kit-tile.js (K.tilekit) draws the tile's rows and downloads; without it the tile has its title and rows' text only
     const exp = !K.tilekit ? '' : K.tilekit.dlMenu(title, ['pdf', 'svg', 'png', 'tsv'], 'texp', a.id).replace(/data-texp="(\w+)"/g, `data-texp="$1" data-aid="${esc(a.id)}"`);
     const fr = K.tilekit && !shown.some(r => r.vs) && shown.length;
-    const ms = fr ? shown.map(r => frModel(a, r)) : [], ax = fr ? K.tilekit.axisOf(K.tilekit.valsOf(ms)) : null;
+    const ownSel = ownClasses(a), ms = fr ? shown.map(r => ({ ...frModel(a, r), mine: !!ownSel?.has(r.category) })) : [], ax = fr ? K.tilekit.axisOf(K.tilekit.valsOf(ms)) : null;
     const ans = fr && !made ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
     return `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(title)}${a.new && D.run.parity ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>' : ''}</h3>${detailsLink(a.id)}</header>` +
       (ans ? `<p class="tans">${ans}</p>` : '') +
-      (OV.statistic_label !== false && !vsOn() && rows.some(r => r.eff != null) ? `<p class="tstat">${gloss('fold', 'Fold')} ${esc(baseline(a, vsMethod(S.m)))}</p>` : '') +
-      (shown.length ? `<div class="trows${fr ? ' fr-rows' : ''}">${fr ? K.tilekit.axisHtml(ax, ms.some(x => x.n != null && !x.cellRow) ? (ms.find(x => x.n != null)?.measure === 'fold' ? 'proteins' : W.marks) : '') + ms.map((x, i) => K.tilekit.rowHtml(x, ax, x.absent ? ` title="${esc(x.label)}: none in this selection"` : ` data-r="${reg(shown[i])}"${pickAttrs(shown[i])}`)).join('') : tileRows(shown)}</div>` : made ? '' : `<p class="muted tnone">${rows.some(r => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'}</p>`) +
+      (OV.statistic_label !== false && !vsOn() && rows.some(r => r.eff != null) ? (ownSel && fr ? `<p class="tstat">${otherRows(a, made)}</p>` : `<p class="tstat">${gloss('fold', 'Fold')} ${esc(baseline(a, vsMethod(S.m)))}</p>`) : '') +
+      (shown.length ? `<div class="trows${fr ? ' fr-rows' : ''}">${fr ? K.tilekit.axisHtml(ax, ms.some(x => x.n != null && !x.cellRow) ? (ms.find(x => x.n != null)?.measure === 'fold' ? 'proteins' : W.marks) : '') + ms.map((x, i) => K.tilekit.rowHtml(x, ax, x.absent ? ` title="${esc(x.label)}: none in this selection"` : x.mine ? ` data-r="${reg(shown[i])}"${pickAttrs(shown[i]).replace(/ title="[^"]*"/, ` title="Click to take ${esc(x.label)} out of the selection"`)}` : ` data-r="${reg(shown[i])}"${pickAttrs(shown[i])}`)).join('') : tileRows(shown)}</div>` : made ? '' : `<p class="muted tnone">${rows.some(r => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'}</p>`) +
       (fr && ms.some(x => x.wv != null) ? '<p class="tkey">Dashed ring: the whole dataset.</p>' : '') +
       (made ? `<p class="tfoot"><b>Whole dataset.</b> ${foot}</p>` : fr ? '' : foot ? `<p class="tfoot">${foot}</p>` : '') +
       `<div class="tact">${exp}${more ? `<a class="tmore" href="${esc(link('overview', a.id))}" data-more="${esc(JSON.stringify(left))}" title="Open the question at the ${more} not shown here">+${more} more ›</a>` : ''}</div></article>`;
@@ -773,13 +788,13 @@
     ...cs.map(c => [`stat-${c.analysis}`, c.title || A[c.analysis].title, 1, link('statistics', '', { a: c.analysis })])] : []; })];
   function cardBody(a, rows) {
     // a residue question shows every class, and so does a set question with 12 sets or fewer (a partition)
-    const mark = moreMarks(a, rows), all = S.all.has(a.id), shown = shownOf(a, rows);
+    const mark = moreMarks(a, rows), all = S.all.has(a.id), shown = shownOf(a, rows), own = ownClasses(a);
     const noun = a.kind === 'protein_sets' ? 'sets' : 'classes';
     const toggle = a.kind === 'protein_sets' && rows.length > 12 ? `<button class="linkish" type="button" data-all="${esc(a.id)}">${all ? 'Show the top ' + SHOWN : 'Show all ' + int(rows.length) + ' ' + noun}</button>` : '';
     return `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3>` +
-      `<p class="sub">${vsOn() ? `Your selection (filled) against ${esc(vsName())} (hollow)${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}` : `${esc(K.shortSub(a.sub))}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}`}. <a href="#method">How it was tested</a> · <a href="#statistics?a=${encodeURIComponent(a.id)}">all tests</a></p></div>` +
+      `<p class="sub">${vsOn() ? `Your selection (filled) against ${esc(vsName())} (hollow)${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}` : `${esc(K.shortSub(a.sub))}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}`}. <a href="#method">How it was tested</a> · <a href="#statistics?a=${encodeURIComponent(a.id)}">all tests</a></p>${own ? `<p class="sub own-note">${otherRows(a)}. The row marked <span class="sel-pill">Your selection</span> is the one you chose, so it is not compared.</p>` : ''}</div>` +
       `<div class="exp" role="group" aria-label="Download ${esc(a.title)}">${['pdf', 'svg', 'png', 'tsv'].map(k => `<button type="button" class="exp-btn" data-exp="${k}" data-aid="${esc(a.id)}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`).join('')}${methodLink(a.id)}</div></div>` +
-      chartHtml(chartModel(a, shown, S.m), fkeyOf(a), mark) + `${toggle}</div>`;
+      chartHtml(chartModel(a, shown, S.m), fkeyOf(a), mark, own) + `${toggle}</div>`;
   }
 
   // ---- Statistics: every test ----------------------------------------------------------------------------------------
@@ -1449,6 +1464,7 @@
   // where each page was scrolled to, for Back and Forward; a link opens its page at the top
   const scrolled = {};
   const pageOf = () => S.view + '/' + S.arg;
+  K.rememberScroll = () => { if (shown != null) scrolled[shown] = scrollY; };      // before a click changes the address in place: Back returns to this scroll
   const onNav = () => {
     if (location.hash === shown) return;
     if (shown != null) scrolled[shown] = scrollY;

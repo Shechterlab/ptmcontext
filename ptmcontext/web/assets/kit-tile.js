@@ -27,6 +27,8 @@
   const fin = v => (v != null && Number.isFinite(v) ? Math.min(v, 1e3) : null);
   // x: { label, v, lo: [low, high] | null, q, dir, n, wv, desc, absent, measure }; attrs: the row's own attributes (its click, its hover)
   function rowHtml(x, ax, attrs = '', cls = '') {
+    // the selection's own class: its name and a pill, no bar, fold or count
+    if (x.mine) return `<div class="fr-row tile-row pick mine${cls ? ' ' + cls : ''}"${attrs}><span class="fr-lab"><span>${esc(x.label)}</span></span><span class="fr-own"><span class="sel-pill">Your selection</span></span></div>`;
     const v = fin(x.v), x1 = PX(ax.L(1)), x2 = v != null ? PX(ax.L(v)) : null;
     const dir = x.absent ? 'ns' : x.dir || 'ns';
     const grid = ax.ticks.filter(t => t !== 1).map(t => `<line class="gl" x1="${PX(ax.L(t))}%" x2="${PX(ax.L(t))}%" y1="0" y2="100%"/>`).join('');
@@ -41,10 +43,10 @@
     return `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${cls ? ' ' + cls : ''}"${attrs}><span class="fr-lab"><span>${esc(x.label)}</span></span>${track}` +
       `<span class="fr-val">${esc(val)}<i class="fr-q ${dir}${x.desc ? ' desc' : ''}" aria-hidden="true"></i></span><span class="fr-n">${x.n != null ? int(x.n) : ''}</span></div>`;
   }
-  const valsOf = rows => rows.flatMap(r => [r.v, r.wv, ...(r.lo || [])]).filter(v => v != null);
+  const valsOf = rows => rows.filter(r => !r.mine).flatMap(r => [r.v, r.wv, ...(r.lo || [])]).filter(v => v != null);
   // the one-line answer, from the tile's own rows: the strongest two that are more often and the strongest less often
   function answerOf(rows, fold) {
-    const ok = rows.filter(r => !r.absent && r.v != null && !r.desc), sig = r => r.q != null && r.q <= K.PADJ && (r.dir === 'more' || r.dir === 'less');
+    const ok = rows.filter(r => !r.absent && !r.mine && r.v != null && !r.desc), sig = r => r.q != null && r.q <= K.PADJ && (r.dir === 'more' || r.dir === 'less');
     const more = ok.filter(r => sig(r) && r.dir === 'more').sort((a, b) => b.v - a.v).slice(0, 2), less = fold ? [] : ok.filter(r => sig(r) && r.dir === 'less').sort((a, b) => a.v - b.v).slice(0, 1);
     const nm = r => `${esc(r.label)} (${K.fxn(r.v)}×)`;
     if (!ok.length) return rows.length && rows.every(r => r.absent) ? 'None of these is in this selection.' : '';

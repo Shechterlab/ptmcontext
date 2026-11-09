@@ -269,7 +269,15 @@
   // ---- events ------------------------------------------------------------------------------------------------------
   K.clicks.push(
     // a class picked on a question's page selects it and returns to the Overview, where every question is tested again
-    ['[data-f]', el => { const back = el.closest('.drow') && S.view === 'overview' && S.arg; if (back) S.arg = ''; toggle(el.dataset.f, el.dataset.v); if (back) scrollTo(0, 0); }],
+    // a row of a tile or of a question's chart selects its class: the page goes to its top, where the selection is said, and Back
+    // brings the page and its scroll position as they were (the position is kept before the address changes)
+    ['[data-f]', el => {
+      const row = el.closest('.fr-row, .drow'), back = el.closest('.drow') && S.view === 'overview' && S.arg;
+      if (row) K.rememberScroll?.();
+      if (back) S.arg = '';
+      toggle(el.dataset.f, el.dataset.v);
+      if (row || back) scrollTo(0, 0);      // at once, never animated: the page is redrawn under it, which would stop a smooth scroll short (and reduced motion asks for none)
+    }],
     ['[data-sel-clear]', el => setFilter(el.dataset.selClear, [])],
     ['[data-sel-clear-q]', () => { S.q = (String(S.q).match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || []).filter(t => /^[a-z_][\w]*:.+$/i.test(t) && isTermKey(t.split(':')[0])).join(' '); K.writeHash(true); K.render(); }],
     ['[data-sel-drop-term]', el => { dropTerm(el.dataset.selDropTerm); K.writeHash(true); K.render(); }],
