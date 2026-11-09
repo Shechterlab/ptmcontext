@@ -261,12 +261,7 @@
     ST[p.acc] ||= { phase: 'idle', seq: rec.seq, sites: (rec.marks || []).map(m => m[0]) };
     return fold('p-cons', 'Conservation across species', sumOf(ST[p.acc]), bodyHtml(p.acc), false);
   });
-  const baseProt = K.sections.protein;
-  if (baseProt) K.sections.protein = () => {
-    const s = baseProt(), at = s.findIndex(x => x[0] === 'p-regions');
-    if (document.getElementById('p-cons')) s.splice(at < 0 ? s.length : at, 0, ['p-cons', 'Conservation across species', 1]);
-    return s;
-  };
+  (K.proteinFoldSections ||= []).push(['p-cons', 'Conservation across species', 1]);
   K.clicks.push(
     ['[data-cv-pos]', el => { UI.pos = +el.dataset.cvPos; redraw(); K.site?.focus(curAcc(), UI.pos, { from: 'conserve' }); }],
     ['[data-cv-retry]', el => K.loadProtein(el.dataset.cvRetry).then(rec => start(el.dataset.cvRetry, rec, true))],

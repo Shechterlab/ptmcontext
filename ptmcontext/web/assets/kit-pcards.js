@@ -350,20 +350,14 @@
     });
   }
   K.proteinFolds.push((p, rec) => { CUR.p = p; CUR.rec = rec; return ''; });      // the live parts need the protein before the page is drawn
-  // the sections of the page's nav: with the site's fold order, the folds in that order; else the cards before the regions
-  const baseSections = K.sections.protein;
-  if (baseSections) K.sections.protein = () => {
-    const s = baseSections(), order = K.foldOrder || [], here = id => document.getElementById(id), shown = id => here(id) && !here(id).hidden;
-    const mine = CARDS.filter(([, id]) => !s.some(x => x[0] === id) && shown(id)).map(([, id, title]) => [id, PC[CARDS.find(c => c[1] === id)[0]]?.title || title, 1]);
-    if (!order.length) { const at = s.findIndex(x => x[0] === 'p-regions'); s.splice(at < 0 ? s.length : at, 0, ...mine); return s.filter(x => !/^p-/.test(x[0]) || shown(x[0]) || !here(x[0])); }
-    const head = s.filter(x => !/^(p-|g-)/.test(x[0])), folds = [...s, ...mine].filter(x => /^p-/.test(x[0]) && (!here(x[0]) || shown(x[0])));
-    const at = x => { const i = order.indexOf(x[0]); return i < 0 ? 1e3 : i; };
-    return [...head, ...folds.map((x, k) => [x, k]).sort((a, b) => at(a[0]) - at(b[0]) || a[1] - b[1]).map(x => x[0])];
-  };
+  // the sections of the page's nav: each card registers its fold; the core sorts them (kit-proteins.js)
+  (K.proteinFoldSections ||= []).push(...CARDS.map(([kind, id, title]) => [id, () => PC[kind]?.title || title, 1]));
 
   // ---- painting: each card's box is filled when its tables are here, and again when a live answer arrives -------------
   function paintAll() {
     const p = CUR.p; if (!p) return;
+    let shownBefore = 0, shownNow = 0; const nShown = () => CARDS.filter(([, id]) => { const f = document.getElementById(id); return f && !f.hidden; }).length;
+    shownBefore = nShown();
     document.querySelectorAll('[data-pc]').forEach(el => {
       if (el.dataset.pcOk === '1') return;
       const kind = el.dataset.pc, tb = tables(p.acc);
@@ -378,6 +372,7 @@
       const s = document.querySelector(`[data-pc-sum="${kind}"]`); if (s && r.sum != null && kind !== 'live') s.textContent = r.sum;
       if (fold?.id && r.pic != null) K.pfolds?.set(fold.id, r.pic);
     });
+    shownNow = nShown(); if (shownNow !== shownBefore) K.rail?.();      // a card that appeared or hid is in the sidebar
   }
   (K.afterRender ||= []).push(paintAll);
   // the cell fold is built for the width it met; crossing the phone width builds it again

@@ -650,10 +650,29 @@
       });
     });
   }
-  K.sections.protein = () => { const p = byAcc[PV.acc] || PV.lightP; if (!byAcc[PV.acc]) return [['view', p ? `${p.gene || p.acc}: ${p.name || ''}` : 'This protein', 1]]; return [['view', p ? `${p.gene || p.acc}: ${p.name || ''}` : 'This protein', 1], ...(PV.site ? [['site-card', `The ${W.mark} ${site(PV.site)}`, 1]] : []),
-    ['g-marks', `${cap(W.marks)} on this protein`, 0], ['p-map', 'Protein map', 1], ['p-sites', cap(W.marks), 1], ['p-score', `${cap(W.marks)} vs other ${W.residues}`, 1],
-    ['g-protein', 'The protein', 0], ...(D.analyses.some(a => a.kind === 'protein_sets') ? [['p-kinds', 'Protein classes and pathways', 1]] : []), ...(K.proteinFoldSections || []), ['p-regions', 'Domains and regions', 1], ['p-seq', 'Sequence', 1],
-    ['g-live', 'Live sources', 0], ['p-struct', '3D structure', 1],]; };
+  // The page's sections for the sidebar. Modules register their folds in K.proteinFoldSections as [id, title (or a function that
+  // returns it), level]; the core keeps the ones the page shows, and sorts them once, by the site's website.protein.order
+  // (the folds the order lacks follow, in registration order). Without an order they go before the regions.
+  K.proteinFoldSections ||= [];
+  K.sections.protein = () => {
+    const p = byAcc[PV.acc] || PV.lightP, name = p ? `${p.gene || p.acc}: ${p.name || ''}` : 'This protein';
+    if (!byAcc[PV.acc]) return [['view', name, 1]];
+    const here = id => document.getElementById(id), shown = id => here(id) && !here(id).hidden;
+    const base = [['view', name, 1], ...(PV.site ? [['site-card', `The ${W.mark} ${site(PV.site)}`, 1]] : []),
+      ['g-marks', `${cap(W.marks)} on this protein`, 0], ['p-map', 'Protein map', 1], ['p-sites', cap(W.marks), 1], ['p-score', `${cap(W.marks)} vs other ${W.residues}`, 1],
+      ['g-protein', 'The protein', 0], ...(D.analyses.some(a => a.kind === 'protein_sets') ? [['p-kinds', 'Protein classes and pathways', 1]] : []), ['p-regions', 'Domains and regions', 1], ['p-seq', 'Sequence', 1],
+      ['g-live', 'Live sources', 0], ['p-struct', '3D structure', 1]];
+    const seen = new Set(base.map(x => x[0])), extra = [];
+    K.proteinFoldSections.forEach(([id, title, lev]) => { if (!seen.has(id) && shown(id)) { seen.add(id); extra.push([id, typeof title === 'function' ? title() : title, lev]); } });
+    if (!K.foldOrder.length && !(PRO.groups || []).length) { const at = base.findIndex(x => x[0] === 'p-regions'); base.splice(at < 0 ? base.length : at, 0, ...extra); return base.filter(x => !/^p-/.test(x[0]) || shown(x[0]) || !here(x[0])); }
+    // the page has already arranged its folds by the site's order and groups (arrangeFolds), so the sidebar lists them as the page has them
+    const head = base.filter(x => !/^(p-|g-)/.test(x[0])), by = new Map([...base, ...extra].map(x => [x[0], x]));
+    const dom = [...document.querySelectorAll('#view details.pgroup, #view details.pfold')], seenIds = new Set();
+    const folds = dom.map(d => { if (d.classList.contains('pgroup')) { const h = d.querySelector(':scope > summary h2'); return h ? [d.id, h.textContent, 0] : null; }
+      seenIds.add(d.id); return by.has(d.id) && !d.hidden ? by.get(d.id) : null; }).filter(Boolean);
+    const rest = [...base, ...extra].filter(x => /^p-/.test(x[0]) && !seenIds.has(x[0]) && !here(x[0]));
+    return [...head, ...folds, ...rest];
+  };
 
   // ---- kinds of protein: the sets of each protein-set question this protein is in, with the site's result for each,
   // and its abundance as the test placed it (data/selection.json) --------------------------------------------------

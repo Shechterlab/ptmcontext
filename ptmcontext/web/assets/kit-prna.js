@@ -165,12 +165,7 @@
     UI.kind ||= KINDS.find(k => M[k].any);
     return fold('p-na', esc(TITLE), esc(summary(M)), bodyHtml(p, rec, M), false);
   });
-  const baseProt = K.sections.protein;
-  if (baseProt) K.sections.protein = () => {
-    const s = baseProt(), at = s.findIndex(x => x[0] === 'p-regions');
-    if (document.getElementById('p-na')) s.splice(at < 0 ? s.length : at, 0, ['p-na', TITLE, 1]);
-    return s;
-  };
+  (K.proteinFoldSections ||= []).push(['p-na', TITLE, 1]);
   const repaint = () => {
     const el = document.querySelector('#p-na .pfold-body'); if (!el || !LAST) return;
     el.innerHTML = bodyHtml(LAST.p, LAST.rec, LAST.M);
