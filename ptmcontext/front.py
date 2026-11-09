@@ -127,11 +127,6 @@ def resolve(site: dict, titles: dict | None = None) -> dict:
         'summary_only': fr.get('summary_only') or {},
         'glossary': fr.get('glossary') or {},
         'examples': examples,
-        'topics': [{'title': t['title'], 'questions': list(t['questions'])} for t in fr.get('topics') or []],
-        'tiles': [
-            {'title': t['title'], 'note': t.get('note', ''), 'rows': [dict(r) for r in t['rows']]}
-            for t in fr.get('tiles') or []
-        ],
     }
 
 
@@ -209,16 +204,6 @@ def problems(site: dict, words: dict | None = None) -> list[str]:
             out.append(f'website.front: more: false, but no card holds {sorted(left)}; a question must be reachable')
     for i in fr.get('short') or {}:
         known('short', i)
-    for n, t in enumerate(fr.get('topics') or []):
-        for i in t.get('questions') or []:
-            known(f'topics[{n}] ({t["title"]!r})', i)
-    for n, t in enumerate(fr.get('tiles') or []):
-        for r in t.get('rows') or []:
-            if (
-                known(f'tiles[{n}] ({t["title"]!r})', r['analysis'])
-                and by_id.get(r['analysis'], {}).get('test') != 'protein_sets'
-            ):
-                classes(f'tiles[{n}]', r['analysis'], [r['class']])
     roles = site.get('inputs') or {}
     for n, pw in enumerate(fr.get('pathways') or []):
         where = f'pathways[{n}]'

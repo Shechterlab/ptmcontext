@@ -182,28 +182,6 @@ def test_the_data_carries_the_front(tmp_path):
     )
 
 
-def test_topics_and_share_tiles_resolve_and_are_checked(tmp_path):
-    base = _site(tmp_path)
-    qs = question_ids(base)
-    site = _site(
-        tmp_path,
-        mode='classic',
-        topics=[{'title': 'All', 'questions': qs}],
-        tiles=[{'title': 'T', 'rows': [{'analysis': qs[0], 'class': 'x'}]}],
-    )
-    fr = resolve(site)
-    assert fr['topics'] == [{'title': 'All', 'questions': qs}] and fr['tiles'][0]['rows'][0]['analysis'] == qs[0]
-    assert not [p for p in problems(site) if 'topics' in p]
-    bad = _site(
-        tmp_path,
-        mode='classic',
-        topics=[{'title': 'X', 'questions': ['nope']}],
-        tiles=[{'title': 'T', 'rows': [{'analysis': 'nope', 'class': 'x'}]}],
-    )
-    msgs = problems(bad)
-    assert any('topics[0]' in m and 'nope' in m for m in msgs) and any('tiles[0]' in m for m in msgs)
-
-
 def test_the_cards_front_end_is_gone_from_the_kit():
     assets = REPO / 'ptmcontext' / 'web' / 'assets'
     assert not (assets / 'kit-front.js').exists() and not (assets / 'kit-sections.js').exists()

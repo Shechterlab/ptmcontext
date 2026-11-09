@@ -730,8 +730,8 @@ A block of its own, not a regrouping of `website.overview.sections`. The page's 
 `ptmcontext/front.py` resolves it: the Overview's tiles read its short names, row labels and pathways, and the gene-list
 test reads it too. The Overview opens with the cell and the nucleus drawn when a section card is
 `{analysis: <website.cell.id>, drawing: true}`. The cards front end (`mode: cards`, a home of cards and a Sections menu)
-was removed; `mode` takes only `classic`, and the `cards[]`, `topics[]`, `tiles[]` and `rows` keys below are no longer
-drawn by any page (only a cell card's `chip` word is read). Without a block, the cards derive from the analyses' `section`
+was removed; `mode` takes only `classic`, and the `cards[]` and `rows` keys below are no longer
+drawn by any page (only a cell card's `chip` word and the cards' `facets` are read); `topics[]` and `tiles[]` were removed. Without a block, the cards derive from the analyses' `section`
 fields: one card per section in the order sections first appear.
 
 | key | what |
@@ -740,8 +740,6 @@ fields: one card per section in the order sections first appear.
 | `rows` | rows per home card (default 5) |
 | `cards[]` | `title`, and `key` (its address word), `short`, `chip` (the word for what a row selects), `note` (a line under the card and under its questions' titles), `sections` (the analyses' sections it holds), `analyses` (questions it names, in order), `cell` (the cell drawing; needs `website.cell`), `rows`, `facets[]` (`analysis`, `label`, `measure: fold or odds`), `home` (`analysis` of a facet, and `classes` to show or else `top` and `q_max`) |
 | `more` | heading of the card for the questions no card holds (default "More questions"); `false` when every question is in a card |
-| `topics[]` | the Sections grid: `title` and `questions` (the first is the topic's page; the others are near-duplicates behind a toggle on it). Default: one topic per card facet, the card's other questions under its first |
-| `tiles[]` | compact share tiles under the cards: `title`, `note`, and `rows[]` of `analysis`, `class`, `label`; a row is the share of the marked proteins (or sites) in the class against the share of the others |
 | `short` | question id to a short name (4 words or fewer) |
 | `row_labels` | question id to class or set code to a short row label (a code is unique only within its question) |
 | `summary_only` | question id to class codes left out of a card's summary rows, still on the question's page |

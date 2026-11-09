@@ -1271,35 +1271,6 @@ website:                  # the look and words of the website (ptmc web); layout
         facets: [{analysis: reactome_top_level, label: "Reactome"}]
         home: {analysis: "reactome_top_level"}
     more: Enzymes and sources
-    topics:                 # the Sections grid: a tile per topic (the first question is its page, the rest sit behind a toggle on it)
-      - {title: "Disease families", questions: [disease_family, disease_family_additional, disease_ontology, disease_term]}
-      - {title: "Cancer", questions: [depmap_dependency, cancer_change]}
-      - {title: "Protein classes", questions: [panther_group, panther_class, panther_subclass]}
-      - {title: "Condensates", questions: [condensate_proteome, condensate, condensate_role]}
-      - {title: "Where in the cell", questions: [where_in_the_cell, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
-      - {title: "Locations (HPA)", questions: [hpa_location, cell_region_hpa]}
-      - {title: "Bound RNAs", questions: [eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]}
-      - {title: "Sequence motifs", questions: [motif]}
-      - {title: "Disorder", questions: [disorder]}
-      - {title: "Domains", questions: [domain_context, domain_class]}
-      - {title: "Structure", questions: [structure_context]}
-      - {title: "IDR charge and aromatics", questions: [idr_charge, sticker_context_3, sticker_context_5, sticker_context_3_idr, sticker_context_5_idr]}
-      - {title: "Which factor matters", questions: [which_factor]}
-      - {title: "RNA and DNA contact", questions: [crosslink, sequence_proximity, nucleic_acid_distance]}
-      - {title: "Interfaces", questions: [pdb_interface, predicted_interface]}
-      - {title: "Binding proteins", questions: [binding_protein, go_binding]}
-      - {title: "IntAct mutations", questions: [intact]}
-      - {title: "Pathways", questions: [reactome_top_level, reactome_pathway]}
-      - {title: "Enzymes and readers", questions: [reader_classes]}
-      - {title: "Studies and databases", questions: [provenance]}
-      - {title: "PRMT perturbations", questions: [perturbations]}
-    tiles:                  # compact share tiles under the cards
-      - title: "Contacts"
-        note: "Share of the methylarginines (dark) and of the other arginines (light) at each kind of contact"
-        rows: [{analysis: crosslink, class: rna_crosslink, label: "RNA crosslink"}, {analysis: pdb_interface, class: protein, label: "Protein interface (PDB)"}, {analysis: predicted_interface, class: pdockq_0.23, label: "Predicted interface"}]
-      - title: "Cancer cell dependency"
-        note: "Share of the methylated proteins (dark) and of the other screened proteins (light) that cancer cell lines depend on"
-        rows: [{analysis: depmap_dependency, class: common_essential, label: "Essential in all lines"}, {analysis: depmap_dependency, class: some_lines, label: "Essential in some lines"}]
     pathways:                # the Proteins button on the Reactome rows: a pathway's sub-pathways as groups of protein chips (CONTRACTS.md)
       - analyses: [reactome_top_level, reactome_pathway]
         hierarchy: {input: reactome_names, set: pathway_id, parents: parents, name: name}
