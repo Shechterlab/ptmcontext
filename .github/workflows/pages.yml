@@ -228,6 +228,9 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        # the site is about 230 MB in 2,350 files; GitHub's sync took longer than the default 10 minutes on 2026-11-09
+        with:
+          timeout: 1800000
   # one open issue says the published site is stale: opened (or commented on) when a build or deploy fails, closed when a
   # deploy succeeds; watch the label "pages-failure" instead of Actions' e-mails
   report:
