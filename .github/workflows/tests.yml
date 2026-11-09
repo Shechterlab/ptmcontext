@@ -105,6 +105,13 @@ jobs:
           python-version: "3.12"
       - run: pip install -e packages/ptmstats -e ".[test]" ruff
       - run: ruff check ptmcontext tests packages --select E,F,W --ignore E501
+      - run: ruff format --check ptmcontext tests packages
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      # the site kit's scripts and stylesheet (ptmcontext/web/assets): formatting and a minimal lint (eslint.config.js)
+      - run: npx --yes prettier@3.8.1 --check "ptmcontext/web/assets/*.js" "ptmcontext/web/assets/*.css"
+      - run: npx --yes eslint@10.1.0 ptmcontext/web/assets
       - run: pytest -q
         env:
           PTMCONTEXT_ROOT: reference

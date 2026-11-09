@@ -24,3 +24,9 @@ ptmcontext = ["profiles/*.yaml", "schemas/*.json", "config/*.json", "web/*.html"
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "packages/ptmstats/tests"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "single"
