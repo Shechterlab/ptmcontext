@@ -17,7 +17,6 @@
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
   const { D, W, esc, int, cap } = K;
-  const CARDS = D.front?.mode === 'cards';
   if (!D.proteins || !D.proteins.length || D.site.features?.structure_3d === false) return;      // website.features.structure_3d: false leaves the viewer out (no K.s3d, no K.show3d)
   const SD = D.structure || {};
   const LIB = 'https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.5.3/3Dmol-min.js';
@@ -117,9 +116,9 @@
   const ev = () => T.rec?.s3d || {};
   const colourOf = m => (K.map?.siteColour ? K.map.siteColour(m) : { c: tok().mark, label: '' });
   // the map's color mode: the reader's, or the one it opens with (the cards front end names that one in the legend; classic reads the reader's only)
-  const mapColour = () => K.map?.state?.colour ?? (CARDS ? K.map?.mode?.() : null);
+  const mapColour = () => K.map?.state?.colour ?? null;
   const colourMode = () => { const k = mapColour(), s = (D.attribute_specs || {})[k]; return s ? s.label : 'Single color'; };
-  const markColour = m => { const c = colourOf(m).c; return !CARDS && c === '#A3AEB3' ? tok().mark : c; };   // classic: no value is the mark color; the cards front end keeps the map's gray   // no value: the mark color, not the map's gray
+  const markColour = m => { const c = colourOf(m).c; return c === '#A3AEB3' ? tok().mark : c; };   // no value: the mark color, not the map's gray
   // the marks' colors, in the order of the attribute's values (as the map's legend)
   function markLegend() {
     const seen = new Map(), spec = (D.attribute_specs || {})[mapColour()] || {}, order = Object.keys(spec.values || {});
@@ -514,7 +513,7 @@
     if (!pdbMode) for (const [r] of out) { const ca = mol.viewer.selectedAtoms({ resi: r, atom: 'CA' })[0]; if (ca && !isMarkRes(ca)) out.delete(r); }
     return out;
   }
-  const exportColour = m => { const c = colourOf(m).c; return !CARDS && c === '#A3AEB3' ? TOK.light.mark : c; };
+  const exportColour = m => { const c = colourOf(m).c; return c === '#A3AEB3' ? TOK.light.mark : c; };
   // the atom a residue's sphere sits on: its side chain's end (TIP), or for a residue it does not know (a modified
   // component, say) the heavy atom farthest from its CA; remembered per model
   function tipName(a) {

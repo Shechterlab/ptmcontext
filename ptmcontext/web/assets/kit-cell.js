@@ -964,7 +964,6 @@
     ['[data-cell-select]', () => {
       const [L, row] = rowOf(UI.row), mem = members(L, row, scopedNow()) || [];
       if (!mem.length) return;
-      if (K.front && row.part) { UI.row = null; return K.sel.toggle('w:' + ID, row.part); }     // the cards front end: the part is a chip beside the other filters
       const cols = L.cols.filter(aid => row.map[aid]);
       if (cols.length === 1) return selectFilter(cols[0], row.map[cols[0]]);   // one map: its own filter
       S.f = {}; S.q = mem.map(m => (D.proteins.filter(x => x[1] === m.gene).length === 1 ? m.gene : m.acc)).join(' '); UI.row = null; K.writeHash(true); K.render();

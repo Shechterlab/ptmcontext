@@ -1,4 +1,4 @@
-"""The gene-list test page (kit-genelist.js) on a toy site in cards mode: a pasted list is read by the search's parser
+"""The gene-list test page (kit-genelist.js) on a toy site: a pasted list is read by the search's parser
 (a name not found is reported, not dropped), and each set of the cards' protein-set questions is tested within its own
 source's background; the page's rows equal ptmstats.gene_list_test on selection.json, which the package checks against
 SciPy. Nothing is added to statistics.tsv."""
@@ -10,7 +10,7 @@ import subprocess
 
 import pytest
 import yaml
-from test_front_home import ASSETS, HARNESS
+from node_harness import ASSETS, HARNESS
 from test_search import _page_data
 from test_set_views import _site
 
@@ -23,7 +23,7 @@ def _build(tmp_path):
     root = _site(tmp_path, views=False)
     p = root / 'sites' / 'toy.yaml'
     site = yaml.safe_load(p.read_text())
-    site['website']['front'] = {'mode': 'cards', 'cards': [{'title': 'Disease', 'analyses': ['onto', 'term', 'fam'], 'facets': [{'analysis': 'onto'}, {'analysis': 'term'}], 'home': {'analysis': 'onto'}}]}
+    site['website']['front'] = {'cards': [{'title': 'Disease', 'analyses': ['onto', 'term', 'fam'], 'facets': [{'analysis': 'onto'}, {'analysis': 'term'}], 'home': {'analysis': 'onto'}}]}
     p.write_text(yaml.safe_dump(site, sort_keys=False))
     S.run(p, root=root / 'data', log=lambda *_: None)
     return root, web.build(p, log=lambda *_: None)
@@ -37,8 +37,7 @@ def test_list_page_rows_equal_the_python_reference(tmp_path):
     (tmp_path / 'd.json').write_text(json.dumps(_page_data(index)))
     head = (f"const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / 'assets'))}, DATA = {json.dumps(str(tmp_path / 'd.json'))}, "
             f"SEL = {json.dumps(str(index.parent / 'data' / 'selection.json'))};")
-    harness = HARNESS.replace("eval(fs.readFileSync(ASSETS + '/kit-front.js', 'utf8'));",
-                              "eval(fs.readFileSync(ASSETS + '/kit-front.js', 'utf8')); eval(fs.readFileSync(ASSETS + '/kit-genelist.js', 'utf8'));")
+    harness = HARNESS.replace("window.PTMC_MODULES.forEach", "eval(fs.readFileSync(ASSETS + '/kit-genelist.js', 'utf8')); window.PTMC_MODULES.forEach")
     body = """
       K.fx = v => String(v); K.fq = v => String(v); K.g6 = v => String(v); K.preamble = (t, w) => '# ' + t + ': ' + w + NL;
       K.sel.data(); await K.sel.ready;

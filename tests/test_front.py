@@ -34,10 +34,8 @@ def test_the_shipped_sites_agree_with_their_front_blocks():
         assert ('front' in site['website'])                                     # both sites say their mode
         assert S.website_problems(site) == []
         assert site['website']['front']['mode'] == 'classic'                    # the shipped sites open with the classic layout
-        site['website']['front']['mode'] = 'cards'                              # the cards stay available: the same block, mode set back
-        assert S.website_problems(site) == []
         r = resolve(site)
-        assert r['mode'] == 'cards'
+        assert 'mode' not in r
         placed = [q for c in r['cards'] for q in c['questions']] + r['more']['questions']
         assert sorted(placed) == sorted(question_ids(site)) and len(placed) == len(set(placed))   # every question once
 
@@ -62,12 +60,12 @@ def test_a_toy_site_gets_cards_and_a_more_card(tmp_path):
 
 
 def test_the_schema_takes_the_front_block(tmp_path):
-    site = _site(tmp_path, mode='cards', rows=4, cards=[{'title': 'A', 'analyses': ['xl'], 'facets': [{'analysis': 'xl', 'measure': 'odds'}], 'home': {'analysis': 'xl', 'top': 2}}],
+    site = _site(tmp_path, mode='classic', rows=4, cards=[{'title': 'A', 'analyses': ['xl'], 'facets': [{'analysis': 'xl', 'measure': 'odds'}], 'home': {'analysis': 'xl', 'top': 2}}],
                  short={'xl': 'X'}, row_labels={'xl': {'crosslink': 'Crosslinked'}}, summary_only={'xl': ['crosslink_measured']},
                  glossary={'XL': 'a crosslink'}, examples=[{'label': 'a', 'query': 'b'}])
     validate({k: v for k, v in copy.deepcopy(site).items() if k != '__root__'}, 'site')
     assert problems(site) == []
-    for bad in ({'mode': 'both'}, {'rows': 0}, {'cards': []}, {'cards': [{'analyses': ['xl']}]}, {'extra': 1}, {'examples': [{'label': 'a'}]},
+    for bad in ({'mode': 'cards'}, {'mode': 'both'}, {'rows': 0}, {'cards': []}, {'cards': [{'analyses': ['xl']}]}, {'extra': 1}, {'examples': [{'label': 'a'}]},
                 {'cards': [{'title': 'A', 'home': {'top': 3}}]}):
         site['website']['front'] = bad
         with pytest.raises(Exception):               # noqa: B017  (the schema's own error)
@@ -94,9 +92,9 @@ def test_every_question_is_reachable(tmp_path):
     assert problems(_site(tmp_path, cards=[{'title': 'A', 'analyses': ['xl', 'near', 'bound']}], more=False)) == []
 
 
-def test_the_data_carries_the_front_in_both_modes(tmp_path):
+def test_the_data_carries_the_front(tmp_path):
     def data_of(site_front):
-        root = _toy_site(tmp_path / site_front['mode'])
+        root = _toy_site(tmp_path / ('c' if 'cards' in site_front else 'plain'))
         import yaml
         p = root / 'sites' / 'toy.yaml'
         s = yaml.safe_load(p.read_text())
@@ -105,18 +103,28 @@ def test_the_data_carries_the_front_in_both_modes(tmp_path):
         S.run(p, root=root / 'data', log=lambda *_: None)
         page = web.build(p, log=lambda *_: None).read_text()
         return json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', page, re.S).group(1))
-    assert data_of({'mode': 'classic'})['front']['mode'] == 'classic'     # the classic tiles read its short names, row labels and pathways
-    d = data_of({'mode': 'cards', 'cards': [{'title': 'Contacts', 'analyses': ['xl']}]})['front']
-    assert d['mode'] == 'cards' and d['cards'][0]['facets'][0]['label'] == 'Crosslinks' and d['more']['questions'] == ['near', 'bound']
+    assert 'short' in data_of({'mode': 'classic'})['front']     # the tiles read its short names, row labels and pathways
+    d = data_of({'mode': 'classic', 'cards': [{'title': 'Contacts', 'analyses': ['xl']}]})['front']
+    assert 'mode' not in d and d['cards'][0]['facets'][0]['label'] == 'Crosslinks' and d['more']['questions'] == ['near', 'bound']
 
 
 def test_topics_and_share_tiles_resolve_and_are_checked(tmp_path):
     base = _site(tmp_path)
     qs = question_ids(base)
-    site = _site(tmp_path, mode='cards', topics=[{'title': 'All', 'questions': qs}], tiles=[{'title': 'T', 'rows': [{'analysis': qs[0], 'class': 'x'}]}])
+    site = _site(tmp_path, mode='classic', topics=[{'title': 'All', 'questions': qs}], tiles=[{'title': 'T', 'rows': [{'analysis': qs[0], 'class': 'x'}]}])
     fr = resolve(site)
     assert fr['topics'] == [{'title': 'All', 'questions': qs}] and fr['tiles'][0]['rows'][0]['analysis'] == qs[0]
     assert not [p for p in problems(site) if 'topics' in p]
-    bad = _site(tmp_path, mode='cards', topics=[{'title': 'X', 'questions': ['nope']}], tiles=[{'title': 'T', 'rows': [{'analysis': 'nope', 'class': 'x'}]}])
+    bad = _site(tmp_path, mode='classic', topics=[{'title': 'X', 'questions': ['nope']}], tiles=[{'title': 'T', 'rows': [{'analysis': 'nope', 'class': 'x'}]}])
     msgs = problems(bad)
     assert any('topics[0]' in m and 'nope' in m for m in msgs) and any('tiles[0]' in m for m in msgs)
+
+
+def test_the_cards_front_end_is_gone_from_the_kit():
+    assets = REPO / 'ptmcontext' / 'web' / 'assets'
+    assert not (assets / 'kit-front.js').exists() and not (assets / 'kit-sections.js').exists()
+    assert 'kit-front.js' not in web.MODULES and 'kit-sections.js' not in web.MODULES
+    text = '\n'.join(p.read_text() for p in assets.glob('kit*.js'))
+    assert not re.search(r"K\.front\b|front\??\.mode|mode === 'cards'|mode !== 'cards'", text)
+    css = (assets / 'kit.css').read_text()
+    assert 'body.cards' not in css and '.fr-home' not in css and '.fr-card' not in css

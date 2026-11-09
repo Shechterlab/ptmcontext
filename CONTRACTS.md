@@ -719,19 +719,19 @@ selection, a `residue` table keeps the rows of selected marks (and, for a block 
 their proteins), a `protein` table the rows of proteins with a selected mark. `D.page_tables` gives each its key,
 columns and rows; the one-file copy inlines the small ones.
 
-## The cards front end (website.front)
+## The front block (website.front)
 
-A block of its own, not a regrouping of `website.overview.sections`: the classic Overview and the cards can hold
-different groupings. `mode: classic` (the default) keeps the classic Overview; `mode: cards` opens the cards front end. Either way the page's
-data carries `front`, the block as `ptmcontext/front.py` resolves it: the classic tiles read its short names, row labels and
-pathways, and its gene-list test. The classic Overview opens with the cell and the nucleus drawn when a section card is
-`{analysis: <website.cell.id>, drawing: true}`. Without a block (or without `cards:`), the cards derive from the analyses' `section` fields: one card per
-section in the order sections first appear, a switch for every question with rows to chart (a fold for a protein-set
-question, an odds ratio for a residue question; a model has none), and the strongest few rows of the first as its home rows.
+A block of its own, not a regrouping of `website.overview.sections`. The page's data carries `front`, the block as
+`ptmcontext/front.py` resolves it: the Overview's tiles read its short names, row labels and pathways, and the gene-list
+test reads it too. The Overview opens with the cell and the nucleus drawn when a section card is
+`{analysis: <website.cell.id>, drawing: true}`. The cards front end (`mode: cards`, a home of cards and a Sections menu)
+was removed; `mode` takes only `classic`, and the `cards[]`, `topics[]`, `tiles[]` and `rows` keys below are no longer
+drawn by any page (only a cell card's `chip` word is read). Without a block, the cards derive from the analyses' `section`
+fields: one card per section in the order sections first appear.
 
 | key | what |
 | --- | --- |
-| `mode` | `classic` or `cards` |
+| `mode` | `classic` (the only value) |
 | `rows` | rows per home card (default 5) |
 | `cards[]` | `title`, and `key` (its address word), `short`, `chip` (the word for what a row selects), `note` (a line under the card and under its questions' titles), `sections` (the analyses' sections it holds), `analyses` (questions it names, in order), `cell` (the cell drawing; needs `website.cell`), `rows`, `facets[]` (`analysis`, `label`, `measure: fold or odds`), `home` (`analysis` of a facet, and `classes` to show or else `top` and `q_max`) |
 | `more` | heading of the card for the questions no card holds (default "More questions"); `false` when every question is in a card |
@@ -744,34 +744,12 @@ question, an odds ratio for a residue question; a model has none), and the stron
 | `examples` | the example chips: a search, or `{label, query}` (default: `website.examples`) |
 | `pathways[]` | the pathway view, below: `analyses` (protein-set questions whose sets are pathways), `hierarchy` (`input` role, `set`, `parents`, `name`, `separator`), `members` (`input` role, `set`, `protein`), `source` (`name`, `version`, `licence`, `url`, `link` with `{}` for a set's id) |
 
-What `mode: cards` shows (`kit-front.js`, the Overview's home; every other page, and a question's own page, is the classic
-one, reached from the Tabs and from the **Sections** menu, which lists every page and question under the cards' titles).
-The home is a compact header band, the search with the example chips, a bar with the **Filter** button (`kit-rail.js`: a
-panel beside the page, a full-height drawer on a phone, with "Show N sites" and the lower-confidence switch), the count
-("N sites on M proteins"), the selection as removable chips named by the card's `chip` word, Save, Compare, What sets it
-apart and Copy link, and the cards. A card's rows are the site's own values (`statistics.tsv`, read through the kit): a
-fold for a protein-set question, an odds ratio for a residue question, a thin 95% interval where the row has one, a q dot
-(filled at q ≤ 0.05) and the muted n, on one log scale shared by all the cards; a fold below 1 is "not tested for
-depletion". A selection is tested again in the browser (`K.sel`); the card whose question made the selection, and every
-card while the selection is under the site's minimum (`website.compare`, 10 proteins and 30 sites), keep the whole
-dataset and say so. The address records the filters (`f`, by name), the search (`q`), the test (`m`), the baseline (`vs`,
-`cmp`), the abundance check (`ab=1`, marks on protein-set rows) and the data version the link was made with (`dv`); older
-links keep working.
-
 `ptmc check` (`site.website_problems`) reports an analysis, section, facet, class or question the block names that the
 site does not have, a measure that does not fit the question, a question in two cards, a second card with the same key,
 `cell: true` without `website.cell`, a `home` that is not one of the card's facets, and, with `more: false`, a question no
 card holds (every question must be reachable).
 
-### Navigation and the pathway view (cards mode)
-
-There is no tab row and no header switch: the header's **Sections** button opens a dialog (focus in, Tab held, Escape back
-to the button) and `#sections` is the same list as a page. It lists every question under the cards' titles, then the
-questions no card holds and the pages, each with its short name (`short`) and, for the current selection, how many proteins
-it covers. On a question's page the row is "Home / <name>" with previous and next in that order; at 1100 px and wider the
-list is also a left column that can be hidden (remembered in the browser, never required). A question's title is its short
-name everywhere. A cell part chosen on the cell card or page is a filter `w:<cell id>~<part>`, shown as a chip by the card's
-`chip` word and the part's name, combining with the other filters.
+### The pathway view
 
 `pathways` gives the rows of a pathway question a **Proteins** button that opens the pathway's sub-pathways as groups of
 protein chips (methylated first, filled, with their sites; the others outlined; "k of n methylated in your selection"; the
@@ -781,11 +759,11 @@ lists. Genes of other proteins come from the snapshot's FASTA. The hierarchy tab
 the members table a set id and a UniProt accession per row. Nothing is asked of the source's service; the page links to it.
 The one-file copy has no pathway files and so no button. A site without `pathways` has none.
 
-### The gene-list test (cards mode)
+### The gene-list test
 
 `#list?q=<names>` (kit-genelist.js) tests a pasted list of genes or proteins against every set of the protein-set questions
-the cards show (their `facets` of kind `protein_sets`; a card's other questions are not tested). Enter in the search on two or more names and nothing
-else opens it, and the home's **Test this list** button links to it; both read the names with the search's own parser
+the front block's cards hold (their `facets` of kind `protein_sets`; a card's other questions are not tested). Enter in the search on two or more names and nothing
+else opens it, and the selection bar's **Test this list** button links to it; both read the names with the search's own parser
 (`K.sel.parse`), so names matched by another name are listed ("Matched by another name: TLS -> FUS") and names not found are
 listed with any one-edit suggestion ("Not found"), never dropped silently. For each question its source's own background is
 used: `selection.json` `protein_sets[<id>]`, `in_background` (the marked proteins, or genes through `of`, that the source
@@ -801,23 +779,16 @@ has the usual `#` preamble (version, selection) and `# Input`, `# Genes tested`,
 then `set, set_id, question, kind, in_list, list_in_background, in_set, background, fold, p, q` for every set tested. The
 test is computed in the browser only: `statistics.tsv` and the parity with the release do not change.
 
-### The protein page, variants, downloads (cards mode)
+### Variants and downloads
 
-A protein's page is the map (its key open, the export buttons below it), then one block with **Network**, **3D** and **Sites**
-(one open at a time; the network draws before its folded options, the 3D view before its own), then "More about <gene>" with
-the kit's other cards, each folded. With a selection, the 3D view and its exports (PNG, ChimeraX, PyMOL, mmCIF, SVG) show only
-the sites the selection and filters leave (the map fades the rest), with a chip for the selection and one per state to switch a
-state off; colors and the "no assigned state" gray are the map's, the legend names what is shown, and an export's header says
-"Shows k of n sites". The site card opens with the variants at the residue: UniProt's natural variants (disease named) and the
-site's `changes`; the map labels every variant that falls on a mark, on a second or third line when labels would overlap. The
-search reads `R216C` (that position in every protein) and `FUS R216C` (the site; the change is not matched), and says what it
-matched. A card's `note` (`website.front.cards[].note`) stays under the card and under its questions' titles.
+The site card opens with the variants at the residue: UniProt's natural variants (disease named) and the site's `changes`;
+the map labels every variant that falls on a mark. The search reads `R216C` (that position in every protein) and
+`FUS R216C` (the site; the change is not matched), and says what it matched.
 
-Every TSV a card or a set question writes has `test`, `n`, `p`, `q`, the interval where there is one, `data_version` and
-`selection` as columns, besides the header lines (`#`) with the citation and the selection in words; Methods & data lists the
-columns. Print shows the selection, the version and the citation (a block only Print shows); the PDF's foot carries them; a link
-that names a page, a protein or a selection carries `dv`; a variant's downloads (the lower-confidence version) carry its name in
-the file name and in the header.
+Every TSV a question writes has the header lines (`#`) with the citation and the selection in words. Print shows the
+selection, the version and the citation (a block only Print shows); the PDF's foot carries them; a link that names a page,
+a protein or a selection carries `dv`; a variant's downloads (the lower-confidence version) carry its name in the file
+name and in the header.
 
 ## Page hooks (markup that modules read from each other)
 

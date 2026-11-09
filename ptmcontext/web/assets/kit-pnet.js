@@ -13,7 +13,6 @@
 (window.PTMC_MODULES ||= []).push(K => {
   'use strict';
   const { D, W, esc, int } = K;
-  const CARDS = D.front?.mode === 'cards';
   const IXP = D.partners || null;
   const SD = D.structure || {}, PT = D.search?.partners || null;
   const STRING_API = 'https://string-db.org/api/json/', CALLER = 'ptmcontext';
@@ -254,14 +253,14 @@
         `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network').replace(/<\/div>$/, '<button type="button" class="btn small" data-pn-cyto title="The network as Cytoscape tables: edges (File, Import, Network from File) and nodes (Import Table from File)">Cytoscape</button></div>')}</div>` +
         `<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div><div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` +
         `<details class="pn-optd"><summary>Network options <span class="muted">· confidence, partners, color, layout, evidence channels, second ring of writers and readers</span></summary>${optionsHtml()}</details>`;
-      return fold('p-ix', 'Protein interactions', 'who binds its ' + esc(W.marks) + ', partners, complexes and the network', K.pix.html(p, rec, K.prot.tables(p.acc)) + (CARDS ? ifaceHtml(p, rec) : ifaceFold(p, rec)) +
-        `<details class="pn-fold"${CARDS && hasIface ? ' open' : ''}><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING, live; drag the nodes${hasIface ? (CARDS ? '' : '; open to draw it') : `; folded, as no ${esc(W.mark)} sits at an interface`}</span></summary>${net}</details>`, true);
+      return fold('p-ix', 'Protein interactions', 'who binds its ' + esc(W.marks) + ', partners, complexes and the network', K.pix.html(p, rec, K.prot.tables(p.acc)) + ifaceFold(p, rec) +
+        `<details class="pn-fold"><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING, live; drag the nodes${hasIface ? '; open to draw it' : `; folded, as no ${esc(W.mark)} sits at an interface`}</span></summary>${net}</details>`, true);
     }
     return fold('p-ix', 'Protein interactions', 'STRING, live; drag the nodes', `<div class="card-head">` +
-      `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${CARDS ? '' : optionsHtml()}<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>` +
+      `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${optionsHtml()}<div class="pn-box" id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>` +
       `<div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` +
       // the cards front end draws the network first and folds its options below it (the graph is what the reader came for)
-      (CARDS ? `<details class="pn-optd"><summary>Network options <span class="muted">· confidence, partners, color, layout, evidence channels</span></summary>${optionsHtml()}</details>` : '') + ifaceHtml(p, rec), true);
+      ifaceHtml(p, rec), true);
   }
   // ---- who binds the marks: the site's structure tables (contacts and predicted, per mark) ---------------------------------
   const rcsb = id => `<a href="https://www.rcsb.org/structure/${encodeURIComponent(String(id).toUpperCase())}" target="_blank" rel="noopener">${esc(String(id).toUpperCase())}</a>`;

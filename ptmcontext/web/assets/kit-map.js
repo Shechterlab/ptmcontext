@@ -531,13 +531,6 @@
       parts.push(`<text x="${r1(flip ? xx - 4 : xx + 4)}" y="${r1(yy - 4)}" font-size="9" fill="${P.ink}" stroke="${P.surf}" stroke-width="2.5" paint-order="stroke"${flip ? ' text-anchor="end"' : ''}>${esc(text)}</text>`);
       right.v = flip ? xx : xx + 4 + tw;
     };
-    // the cards front end labels every variant at a mark: a label that would overlap one before it goes to a line below the row
-    const labelLane = (xx, yy, text, lanesR) => {
-      const tw = K.tw(text, 9), flip = xx + 4 + tw > Wd - 2, x0 = flip ? xx - 4 - tw : xx + 4;
-      let k = lanesR.findIndex(r => x0 > r + 5); if (k < 0) k = lanesR.length;
-      lanesR[k] = x0 + tw;
-      parts.push(`<text x="${r1(flip ? xx - 4 : xx + 4)}" y="${r1(k === 0 ? yy - 4 : yy + 12 + (k - 1) * 10)}" font-size="9" fill="${P.ink}" stroke="${P.surf}" stroke-width="2.5" paint-order="stroke"${flip ? ' text-anchor="end"' : ''}>${esc(text)}</text>`);
-    };
     // boxes in lanes, each named inside, after it, or cut (UniProt's regions, a site's families)
     const lanes = (list, maxL = 5, lab = () => '') => {
       const ends = [];
@@ -721,7 +714,7 @@
         if (!uni) { msg(row[1], row[3], ctx.uniFailed ? 'UniProt did not answer' : 'asking UniProt…'); continue; }
         const isMut = id === 'mutagen', allV = (uni.features || []).filter(f => f.type === (isMut ? 'Mutagenesis' : 'Natural variant')), fs = allV.filter(f => inView(...fpos(f)));
         if (!fs.length) { if (allV.length && zoomed) noneIn(row[1], row[3]); continue; }
-        const mid = y + 7, right = { v: -1e9 }, done = new Set(), vl = [];
+        const mid = y + 7, right = { v: -1e9 }, done = new Set();
         baseLine(mid);
         let hits = 0;
         fs.sort((a, b) => fpos(a)[0] - fpos(b)[0]).forEach(f => {
@@ -739,10 +732,10 @@
             const same = fs.filter(g => fpos(g)[0] === s && fpos(g)[1] === s), tos = [...new Set(same.flatMap(g => g.alternativeSequence?.alternativeSequences || []))];
             const dis = [...new Set(same.map(g => (/\bin ([A-Z][A-Za-z0-9-]+)/.exec(g.description || '') || [])[1]).filter(Boolean))];
             const vt = `${f.alternativeSequence?.originalSequence || seq[s - 1] || ''}${s}${tos.join('/')}${dis.length ? ' ' + dis[0] : ''}`;
-            if (D.front?.mode === 'cards') labelLane(xx, mid, vt, vl); else labelAt(xx, mid, vt, right);
+            labelAt(xx, mid, vt, right);
           }
         });
-        rowLabel(row[1], mid, row[3]); y += 20 + Math.max(0, vl.length - 1) * 10;
+        rowLabel(row[1], mid, row[3]); y += 20;
         key(isMut ? SW.diamond(P.variant, P.variant) : SW.tick(P.variant), isMut ? 'Mutagenesis (UniProt)' : 'Natural variant (UniProt)');
         if (hits) key(isMut ? SW.diamond(P.ink, P.ink) : SW.tick(P.ink), `${isMut ? 'Mutagenesis' : 'Variant'} at a ${W.mark}`);
       } else if (id === 'uni_mark') {

@@ -4953,15 +4953,14 @@
         "front": {
           "type": "object",
           "additionalProperties": false,
-          "description": "the cards front end (CONTRACTS.md, 'The cards front end'): a block of its own, so the classic Overview's sections stay as they are. mode: classic keeps the classic site; without cards, they derive from the analyses' section fields",
+          "description": "the front block (CONTRACTS.md, 'The front block'): short names, row labels, pathways and the gene-list test the Overview reads; a block of its own, so the Overview's sections stay as they are. Without cards, they derive from the analyses' section fields",
           "properties": {
             "mode": {
               "enum": [
-                "classic",
-                "cards"
+                "classic"
               ],
               "default": "classic",
-              "description": "which front end the site opens with"
+              "description": "the Overview layout; classic is the only one (the cards front end was removed)"
             },
             "rows": {
               "type": "integer",

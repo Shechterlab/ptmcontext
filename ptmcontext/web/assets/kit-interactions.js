@@ -638,7 +638,6 @@
   }
   function focus(pg, sid) {
     const i = pg.sections.findIndex(s => s.id === sid), sec = pg.sections[i], prev = pg.sections[i - 1], next = pg.sections[i + 1];
-    if (K.front) return K.front.trail([[pg.tab, K.link(pg.id)], [sec.title]]) + `<span class="vh">${i + 1} of ${pg.sections.length}</span><span class="pn fr-pn">${prev ? `<a href="${esc(K.link(pg.id, prev.id))}">‹ Previous · ${esc(prev.title)}</a>` : ''}${next ? `<a href="${esc(K.link(pg.id, next.id))}">${esc(next.title)} · Next ›</a>` : ''}</span>` + selLine() + sectionCard(pg, sec);
     return `<div class="focus-bar"><a href="${esc(K.link(pg.id))}">‹ All sections</a><span class="crumb">${esc(pg.tab)} › ${esc(sec.group)} › <b>${esc(sec.title)}</b></span><span class="muted">${i + 1} of ${pg.sections.length}</span>` +
       `<span class="pn">${prev ? `<a href="${esc(K.link(pg.id, prev.id))}">‹ Previous · ${esc(prev.title)}</a>` : ''}${next ? `<a href="${esc(K.link(pg.id, next.id))}">${esc(next.title)} · Next ›</a>` : ''}</span></div>` + selLine() + sectionCard(pg, sec);
   }
@@ -673,7 +672,7 @@
     const fs = ready() ? findingsList(pg, 1e9) : '';
     const sec = { id: 'overview', title: ov.title || pg.tab, blocks: [] };
     const chk = ov.checker ? { kind: 'checker', attributes: ov.checker.filter(n => hasAttr(n)), tables: [] } : null;
-    return (K.front ? K.front.trail([[ov.title || pg.tab]]) : `<div class="focus-bar"><a href="${esc(K.link('overview'))}">‹ Overview</a><span class="crumb">Overview › ${esc(ov.section)} › <b>${esc(ov.title || pg.tab)}</b></span><span class="pn"><a href="${esc(K.link(pg.id))}">Explore ${esc(pg.tab.toLowerCase())} →</a></span></div>`) +
+    return (`<div class="focus-bar"><a href="${esc(K.link('overview'))}">‹ Overview</a><span class="crumb">Overview › ${esc(ov.section)} › <b>${esc(ov.title || pg.tab)}</b></span><span class="pn"><a href="${esc(K.link(pg.id))}">Explore ${esc(pg.tab.toLowerCase())} →</a></span></div>`) +
       `<div class="page-head"><h2>${esc(ov.title || pg.tab)}</h2></div><p class="page-sub">${esc(ov.question || pg.title)} <a href="${esc(K.link(pg.id))}">Explore ${esc(pg.tab.toLowerCase())} →</a></p>` + selLine() +
       (ov.bar ? `<section class="pcard"><h3>${esc(SPECS[ov.bar].label)}</h3>${ready() ? sharesHtml({ attribute: ov.bar }) : loading()}</section>` : '') +
       `<section class="pcard"><h3>The tests</h3>${keyLine()}${ready() ? forestHtml(pg, sec, { kind: 'forest', rows: ov.rows }, 'ov') : loading()}${K.expBar(['pdf', 'svg', 'png', 'tsv'], `ixexp="${esc(pg.id)}.overview.ov" data-k`, ov.title || pg.tab, `q-page-${pg.id}`)}</section>` +

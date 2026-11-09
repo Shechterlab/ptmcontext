@@ -44,7 +44,7 @@ FONTS = {
 }
 DEFAULT_BAND = ['#155e75', '#0f3b47']
 # the page's scripts, in load order: modules register with the core, which starts last
-MODULES = ('kit-busy.js', 'kit-cols.js', 'kit-late.js', 'kit-stats.js', 'kit-select.js', 'kit-rail.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-tabfig.js', 'kit-hilite.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-factors.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit-pfolds.js', 'kit-pix.js', 'kit-front.js', 'kit-genelist.js', 'kit-sections.js', 'kit-pathway.js', 'kit-tile.js', 'kit-figures.js', 'kit.js')
+MODULES = ('kit-busy.js', 'kit-cols.js', 'kit-late.js', 'kit-stats.js', 'kit-select.js', 'kit-rail.js', 'kit-search.js', 'kit-near.js', 'kit-selview.js', 'kit-shown.js', 'kit-link.js', 'kit-tabfig.js', 'kit-hilite.js', 'kit-map.js', 'kit-3d.js', 'kit-columns.js', 'kit-sitecard.js', 'kit-pagepdf.js', 'kit-proteins.js', 'kit-tables.js', 'kit-sites.js', 'kit-idrs.js', 'kit-compare.js', 'kit-questions.js', 'kit-start.js', 'kit-random.js', 'kit-counts.js', 'kit-cell.js', 'kit-values.js', 'kit-factors.js', 'kit-help.js', 'kit-conserve.js', 'kit-interactions.js', 'kit-pcards.js', 'kit-pnet.js', 'kit-prna.js', 'kit-pfolds.js', 'kit-pix.js', 'kit-genelist.js', 'kit-pathway.js', 'kit-tile.js', 'kit-figures.js', 'kit.js')
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 
@@ -338,8 +338,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         **({'models': models} if models else {}),
         # the profile's sticker residues, for the IDRs' patterning line (kit-idrs.js)
         **({'stickers': profile.stickers} if profile.stickers else {}),
-        # the front end's words and data (website.front: short names, row labels, answers, pathways): the cards home reads them
-        # only in mode cards, the classic Overview's tiles, gene list and pathway buttons read them too
+        # the front block's words and data (website.front: short names, row labels, answers, pathways): the Overview's tiles,
+        # gene list and pathway buttons read them
         **({'front': front_resolve(site, {**{k: v.get('title') for k, v in (web.get('counts') or {}).items()},
                                           **({web['cell']['id']: web['cell'].get('title')} if (web.get('cell') or {}).get('id') else {}),
                                           **{x['id']: x['title'] for x in analyses}})}
@@ -1001,7 +1001,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         text = _asset('template.html').read_text()
         for key, value in {'{{NAME}}': html.escape(web['name']), '{{TAGLINE}}': html.escape(web.get('tagline', '')),
                            '{{ICON_HREF}}': icon_href, '{{THEME}}': theme, '{{ART}}': art, '{{LAB}}': lab,
-                           '{{LINKS}}': links, '{{CITE}}': cite_html, '{{BODYCLASS}}': ('cards slim' if (web.get('front') or {}).get('mode') == 'cards' else '' if (web.get('header') or {}).get('compact', True) else 'full-header'), '{{VERSION}}': version,
+                           '{{LINKS}}': links, '{{CITE}}': cite_html, '{{BODYCLASS}}': ('' if (web.get('header') or {}).get('compact', True) else 'full-header'), '{{VERSION}}': version,
                            '{{FONTS}}': (f'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
                                          f'<link rel="stylesheet" href="{html.escape(fonts["stylesheet"])}">') if fonts.get('stylesheet') else '',
                            '<link rel="stylesheet" href="assets/kit.css">': css, '<script src="assets/kit.js"></script>': js,

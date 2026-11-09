@@ -196,8 +196,7 @@
     return '<nav class="toc flat">' + pages.map(pg => `<a class="toc-p${pg.cur ? ' on' : ''}" href="${esc(pg.href)}"${pg.cur ? ' aria-current="page"' : ''}>${esc(pg.name.textContent.trim())}</a>` +
       (pg.cur && raw.length ? `<div class="toc-secs">${raw.map(item).join('')}</div>` : '')).join('') + '</nav>';
   }
-  const CARDS = D.front?.mode === 'cards';        // the cards front end: Filters only, a panel beside the page or a full-height drawer, never pinned
-  const pinned = () => !CARDS && (R.pin === 'on' && innerWidth >= PIN_MIN) || (R.pin === 'auto' && innerWidth >= PIN_AUTO);
+  const pinned = () => (R.pin === 'on' && innerWidth >= PIN_MIN) || (R.pin === 'auto' && innerWidth >= PIN_AUTO);
   // scroll-spy: the section in view is marked in the list
   let spyTick = false, jumpId = null;
   function watchSections() {
@@ -232,12 +231,6 @@
     document.body.classList.toggle('rail-open', open);
     if (open) { el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); } else { el.removeAttribute('role'); el.removeAttribute('aria-modal'); }
     ['#view', '.toolbar', '.hero', 'footer.site'].forEach(sel => { const x = document.querySelector(sel); if (x) x.inert = open; });
-    if (CARDS) {
-      R.tab = 'filters';
-      el.setAttribute('aria-labelledby', 'rail-title');
-      el.innerHTML = !open ? '' : `<div class="rail-head"><h2 id="rail-title" tabindex="-1">Filters</h2>${K.variantSwitch ? K.variantSwitch() : ''}<button type="button" class="btn small" data-rail-close>Close</button></div>` +
-        `<div class="rail-body">${filtersTab()}</div><div class="rail-show"><button type="button" class="btn accent" data-rail-close>Show ${int(nMarks())} ${esc(nMarks() === 1 ? W.mark : W.marks)}</button></div>`;
-    } else
     el.innerHTML = `<div class="rail-head"><span class="seg" role="group"><button type="button" data-rail-tab="sections" aria-pressed="${R.tab === 'sections'}">☰ Sections</button>` +
       `<button type="button" data-rail-tab="filters" aria-pressed="${R.tab === 'filters'}">⏚ Filters${Object.keys(S.f).length ? ` <span class="badge">${Object.keys(S.f).length}</span>` : ''}</button></span>` +
       (innerWidth >= PIN_MIN ? `<button type="button" class="btn small" data-rail-pin title="${pinned() ? 'Show the sidebar only when asked (☰)' : 'Keep the sidebar beside the page'}">${pinned() ? 'Unpin' : 'Pin'}</button>` : '') + `${pinned() ? '' : '<button type="button" class="btn small" data-rail-close aria-label="Close">×</button>'}</div>` +
@@ -251,7 +244,6 @@
     }
     else if (open && !wasOpen) (el.querySelector('[data-rail-tab][aria-pressed="true"]') || el.querySelector('#rail-title'))?.focus();
     else if (!open && wasOpen) (R.opener && document.contains(R.opener) ? R.opener : document.querySelector('.fr-filter') || document.querySelector('[data-rail-open="filters"]'))?.focus({ preventScroll: true });
-    if (CARDS && open && (!document.activeElement || document.activeElement === document.body)) el.querySelector('#rail-title')?.focus({ preventScroll: true });    // the panel was drawn again (its data arrived) under the reader's focus
   }
   addEventListener('resize', () => { setRailWidth(); if (document.body.classList.contains('rail-pinned') !== pinned()) rail(); });
   // the width grip: drag (or arrow keys) to resize the pinned sidebar; double-click for the automatic width

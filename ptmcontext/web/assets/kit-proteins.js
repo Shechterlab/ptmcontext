@@ -59,33 +59,6 @@
     return lead + `<div class="pgroup-tools"><button type="button" class="btn small" data-folds="open">Open all</button> <button type="button" class="btn small" data-folds="close">Close all</button></div>` + out;
   }
 
-  // ---- the cards front end's protein page: the map, then Network, 3D and Sites as one block, the other cards folded below ----
-  const CARDS = D.front?.mode === 'cards';
-  const TABS = [['p-sites', 'Sites'], ['p-ix', 'Interactions'], ['p-struct', '3D']];
-  // the block shows one of its sections: the one the reader opened last (or an address named), else the network when the protein has
-  // partners in the site's table, else the sites
-  function tabState() {
-    const ids = TABS.map(t => t[0]), asked = ids.filter(id => PV.open[id] === true), dflt = 'p-sites';
-    const cur = asked.length ? asked[asked.length - 1] : dflt;
-    return { cur, on: Object.fromEntries(ids.map(id => [id, id === cur])) };
-  }
-  function cardsLayout(html, p, rec, tabs) {
-    const parts = html.split(/(?=<details class="pfold" id=")/), lead = /^<details class="pfold" id=/.test(parts[0]) ? '' : parts.shift();
-    const idOf = h => (/^<details class="pfold" id="([^"]+)"/.exec(h) || [])[1];
-    const take = id => { const k = parts.findIndex(h => idOf(h) === id); return k < 0 ? '' : parts.splice(k, 1)[0]; };
-    const map = take('p-map'), panes = TABS.map(([id, t]) => [id, t, take(id)]).filter(x => x[2]);
-    const bar = `<div class="ptabs" role="group" aria-label="${esc(p.gene || p.acc)}: network, 3D structure and sites">${panes.map(([id, t]) => `<button type="button" class="ptab" data-ptab="${id}" aria-pressed="${id === tabs.cur}">${esc(t)}</button>`).join('')}</div>`;
-    const more = K.pfoldsLayout && PRO.headings?.length ? K.pfoldsLayout(arrangeFolds(parts.join(''), true)) : arrangeFolds(parts.join(''), true);
-    return lead + map + (panes.length ? `<div class="pview">${bar}${panes.map(x => x[2]).join('')}</div>` : '') +
-      (more ? `<h2 class="p-more">More about ${esc(p.gene || p.acc)}</h2>${more}` : '');
-  }
-  document.addEventListener('click', e => {
-    const b = e.target.closest?.('[data-ptab]'); if (!b) return;
-    const id = b.dataset.ptab;
-    TABS.forEach(([x]) => { const d = document.getElementById(x); if (d) d.open = x === id; });
-    document.querySelectorAll('[data-ptab]').forEach(x => x.setAttribute('aria-pressed', x === b));
-  });
-
   // ---- a protein's page: as the Methylarginine Site Explorer's ------------------------------------------------------
   const PV = { acc: '', rec: null, err: '', af: null, uni: null, uniJson: null, pdb: null, pdbAll: false, ix: null, site: null, span: null, spanArg: '', more: false, fn: false, open: {}, scrolled: null,
     tb: null, evOpen: new Set(), pf: '', focus: '', qDone: false, light: null, lightP: null, lightAll: false, cleanArg: false };
@@ -308,9 +281,7 @@
     const uniRow = kv(`UniProt at ${esc(siteOf(p, m[0]))}`, PV.uniJson ? (uniShow.length ? uniShow.map(featLine).join('<br>') : '<span class="muted">no feature at this residue</span>') + ` <span class="muted">· <a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry#ptm_processing">UniProt ${esc(p.acc)}</a>, read live</span>` : '<span class="muted">asking UniProt…</span>');
     const citeRow = CC.cite?.attribute && SPECS[CC.cite.attribute] ? kv(esc(CL_WORDS.reported), K.card.reportedBy(c)) : '';
     const restRows = rest.map(n => kv(esc(SPECS[n].label), attrHtml(m, n, true), SPECS[n].help)).join('') + (K.shown?.on && K.shown.counted(m) ? kv(esc(cap(K.shown.label())), esc(K.shown.tip(m, false))) : '');
-    const nMore = qmore.length + (nones.length ? 1 : 0);
-    const siteHtml = CARDS ? `<dl class="sc-kv">${siteRows}${citeRow}</dl><details class="sc-more"><summary>All site features <span class="muted">· ${int(nMore + (restRows ? 1 : 0) + 1)} more</span></summary><dl class="sc-kv">${qmore.join('')}${nones.length ? kv('Nothing recorded', `<span class="muted">${esc(nones.join(' · '))}</span>`) : ''}${restRows}${uniRow}</dl></details>`
-      : `<dl class="sc-kv">${siteRows}${qmore.join('')}${restRows}${uniRow}${citeRow}</dl>`;
+    const siteHtml = `<dl class="sc-kv">${siteRows}${qmore.join('')}${restRows}${uniRow}${citeRow}</dl>`;
     const ev = ready ? K.card.evidenceBlock(c) : '', recs = ready ? K.card.recordsBlock(c) : '', wr = ready ? K.card.writerBlock(c) : '';
     const hasEvRow = ready && (K.card.has(CC.sources?.table) || (CC.tables || []).some(x => K.card.has(x.table)) || (CC.calls?.tables || []).some(K.card.has));
     const varBlock = `<section class="sc-vars" aria-label="Variants at ${esc(siteOf(p, m[0]))}"><h4>Variants at ${esc(siteOf(p, m[0]))}</h4><dl class="sc-kv">` +
@@ -320,8 +291,7 @@
       (num ? `<p class="muted small">${esc(num.note || num.label || 'Numbered as papers do')} · UniProt ${esc(resAt(p, m[0]))}${m[0]}</p>` : '') + '</div>' +
       `<span class="tools">${typeof K.show3d === 'function' ? '<button type="button" class="btn small" data-site-3d>Show in 3D</button>' : ''}${hasEvRow ? '<button type="button" class="btn small" data-site-ev>Source evidence</button>' : ''}` +
       `<a class="btn small" href="${esc(K.link('protein', p.acc + '/' + m[0]))}" target="_blank" rel="noopener" title="This ${esc(W.mark)}'s card on its own page">Open in a new tab</a><button type="button" class="btn small" data-site-copy title="Copy a link that opens this page with ${esc(siteOf(p, m[0]))} selected">Copy link</button>${K.expBar(['pdf', 'png', 'tsv'], 'cexp', 'the site card', 'sources')}<button type="button" class="btn small" data-site-close aria-label="Close">×</button></span></div>` +
-      varBlock + (CARDS ? `<div class="sc-grid"><section class="sc-site"><h4>Site</h4>${siteHtml}</section><div class="sc-col">${ev}${recs}${wr}</div></div>`
-        : `<div class="sc-grid${ev ? '' : ' one'}">${ev}<section class="sc-site"><h4>Site</h4>${siteHtml}</section>${recs}${wr}</div>`) +
+      varBlock + (`<div class="sc-grid${ev ? '' : ' one'}">${ev}<section class="sc-site"><h4>Site</h4>${siteHtml}</section>${recs}${wr}</div>`) +
       (!ready && Object.keys(D.tables || {}).length ? '<p class="muted small">Loading tables…</p>' : '') + '</section>';
   }
   function siteCardTsv() {
@@ -404,7 +374,7 @@
   function headline(p, rec) {
     const facts = D.protein_view?.facts; if (!facts?.length) return '';
     const n = rec.marks.length, fill = (t, extra = {}) => String(t || '').replace(/\{residues\}/g, W.residues).replace(/\{marks\}/g, W.marks).replace(/\{class\}/g, extra.cls || '');
-    const cards = facts.filter(f => !(CARDS && f.hide_in === 'cards')).map(f => {
+    const cards = facts.map(f => {
       let big = '', lab = '', tip = typeof f.tip === 'string' ? f.tip : '', word = '';
       if (f.count) {
         big = f.of === 'candidates' ? `${int(n)} of ${int(p.cand)}` : int(n); lab = fill(f.label || cap(W.marks));
@@ -529,20 +499,18 @@
     }
     if (PV.rec && PV.site && !PV.rec.marks.some(m => m[0] === PV.site) && !shownAt(PV.rec, PV.site)) { PV.site = null; PV.cleanArg = true; }
     const selTxt = K.sel?.active() ? `${int(K.sel.nMarks())} ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)} · selection` : `all ${esc(W.marks)}`;
-    const nm = p.gene || p.acc, siteTxt = PV.site ? (PV.rec ? siteOf(p, PV.site) : String(PV.site)) : PV.span ? `${int(PV.span[0])}–${int(PV.span[1])}` : '';
-    const head = (K.front ? K.front.trail([[nm, K.link('protein', p.acc)], ...(siteTxt ? [[siteTxt]] : [])]) : `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> <span class="muted">(${selTxt})</span> › <b>${esc(p.gene || p.acc)}</b>${PV.site ? ` › ${esc(PV.rec ? siteOf(p, PV.site) : PV.site)}` : PV.span ? ` › ${int(PV.span[0])}–${int(PV.span[1])}` : ''}</p>`) +
+    const head = (`<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> <span class="muted">(${selTxt})</span> › <b>${esc(p.gene || p.acc)}</b>${PV.site ? ` › ${esc(PV.rec ? siteOf(p, PV.site) : PV.site)}` : PV.span ? ` › ${int(PV.span[0])}–${int(PV.span[1])}` : ''}</p>`) +
       protHead(p);
     if (!PV.rec) return head + `<p class="empty">${PV.err ? esc(PV.err) : 'Loading…'}</p>`;
     const rec = PV.rec, sel = K.sel?.active() ? K.sel.selectedPositions(acc) : null;
-    const tabs = CARDS ? tabState() : null;
-    const isOpen = (id, open) => (tabs && id in tabs.on ? tabs.on[id] : CARDS ? !!PV.open[id] || (id === 'p-map' && PV.open[id] !== false) : (PV.open[id] ?? foldOpen(id, open)));
+    const isOpen = (id, open) => PV.open[id] ?? foldOpen(id, open);
     const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${isOpen(id, open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
     const nSrc = Object.keys(SPECS).find(n => SPECS[n].kind === 'list' && SPECS[n].link);
-    const page = laid => (CARDS ? cardsLayout(laid, p, rec, tabs) : arrangeFolds(laid));
+    const page = laid => arrangeFolds(laid);
     return head +
       (sel && sel.size < rec.marks.length ? `<p class="note">${int(sel.size)} of ${int(rec.marks.length)} ${esc(W.marks)} match your selection; the others are faded. <button class="linkish" type="button" data-sel-clear-all>Clear filters</button></p>` : '') +
       page(
-      fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''}`, `<div class="card-head">${CARDS ? '' : mapExp(['pdf', 'svg', 'png', 'tsv'])}</div><div id="pmap" class="pmap"></div>${CARDS ? `<div class="map-exp-below">${mapExp(['pdf', 'svg', 'png', 'tsv'])}</div>` : ''}${siteCard(p, rec)}`, true) +
+      fold('p-map', 'Protein map', `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''}`, `<div class="card-head">${mapExp(['pdf', 'svg', 'png', 'tsv'])}</div><div id="pmap" class="pmap"></div>${siteCard(p, rec)}`, true) +
       (headline(p, rec) || legacyFacts(p, rec, nSrc)) +
       fold('p-sites', `${esc(cap(W.marks))}`, `${int(rec.marks.length)}${nSrc ? ` · ${int(new Set(rec.marks.flatMap(m => (attrVal(m, nSrc) || '').split(SPECS[nSrc].separator || '; ').filter(Boolean))).size)} ${esc(SPECS[nSrc].label.toLowerCase())}` : ''}${rec.shown?.length ? ` · ${int(rec.shown.length)} more ${esc(K.shown.row())}` : ''}`, sitesTable(p, rec, sel), true) +
       fold('p-score', `${esc(cap(W.marks))} vs other ${esc(W.residues)} in ${esc(p.gene || p.acc)}`, esc(`Can't be tested for one protein${baseText() ? '; dataset-wide: ' + baseText() : ''}`), `${scoreVerdict(p, rec)}<div class="hub">${scoreRows(p, rec)}</div>`, false) +
@@ -573,7 +541,7 @@
     PV.site = sitePos && /^\d+$/.test(sitePos) ? +sitePos : null; K.site.state.focus = PV.site; K.site.state.acc = p.acc;
     if (PV.rec && PV.site && !shownAt(PV.rec, PV.site)) { PV.site = null; PV.cleanArg = true; }
     const p = sp, n = PV.rec?.shown?.length || 0;
-    const head = (K.front ? K.front.trail([[p.gene || p.acc, K.link('protein', p.acc)], ...(PV.site ? [[siteOf(p, PV.site)]] : [])]) : `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">${esc(K.shown.row())}</span>${PV.site ? ` › ${esc(siteOf(p, PV.site))}` : ''}</p>`) + protHead(p, true);
+    const head = (`<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">${esc(K.shown.row())}</span>${PV.site ? ` › ${esc(siteOf(p, PV.site))}` : ''}</p>`) + protHead(p, true);
     if (!PV.rec) return head + `<p class="empty">${PV.err ? esc(PV.err) : 'Loading…'}</p>`;
     const rec = PV.rec;
     const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${(PV.open[id] ?? open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
@@ -586,7 +554,7 @@
       fold('p-sites', esc(cap(W.marks)), `${int(n)} ${esc(K.shown.row())}`, `${table}`, true) +
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
       (K.s3d ? fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) : '');
-    return CARDS ? cardsLayout(page, p, null, { cur: 'p-sites', on: {} }) : page;     // the cards layout here too: the map, then the rest under "More about"
+    return page;
   }
 
   // ---- a protein without marks: a light page with its map, the records that name it as a partner, and the proteins
@@ -606,7 +574,7 @@
     const shownP = PV.lightAll ? partners : partners.slice(0, 40);
     const fold = (id, title, sum, body, open) => `<details class="pfold" id="${id}"${(PV.open[id] ?? open) ? ' open' : ''}><summary><span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary><div class="pfold-body">${body}</div></details>`;
     const asP = K.card.asPartner(x, p.gene || p.acc, (a, pos) => `${byAcc[a]?.gene || a} ${siteOf(byAcc[a] || { acc: a }, pos)}`);
-    const page = (K.front ? K.front.trail([[p.gene || p.acc]]) : `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">no ${esc(W.mark)}</span></p>`) + protHead(p, true) +
+    const page = (`<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a> › <b>${esc(p.gene || p.acc)}</b> <span class="muted">no ${esc(W.mark)}</span></p>`) + protHead(p, true) +
       `<p class="note">No ${esc(W.mark)} on ${esc(p.gene || p.acc)}. None of its sources reports one, which means not reported, not shown to be un${esc(W.marked)}. This page shows its map, the ${esc(W.marks)} of other proteins it is recorded binding, and its partners with ${esc(W.marks)}.</p>` +
       `<div class="facts"><div class="fact"><b>${int(p.len)}</b><span>Residues</span></div><div class="fact"><b>${int(nRes)}</b><span>${esc(cap(W.residues))}</span></div>` +
       (ptab ? `<div class="fact"><b>${int(partners.length)}</b><span>Partners with ${esc(W.marks)}</span></div>` : '') + '</div>' +
@@ -617,7 +585,7 @@
       fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
       (K.s3d ? fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) : '') +           // kit-3d.js
       (K.lightFolds || []).map(f => f(p, null, fold)).join('');
-    return CARDS ? cardsLayout(page, p, null, { cur: '', on: {} }) : page;
+    return page;
   }
   // a search for one name that only a protein without marks has (MAPT): Enter opens its light page; the search goes
   const lightFind = (idx, key) => { const u = String(key).toUpperCase(); return idx.find(r => r[0] === u.replace(/-\d+$/, '')) || idx.find(r => String(r[1]).toUpperCase() === u) ||

@@ -13,7 +13,7 @@
   if (!D.front || !window.PTMC_STATS?.listTest) return;
   const ST = window.PTMC_STATS, F = D.front;
   const short = aid => F.short?.[aid] || A[aid]?.title || aid;
-  const trail = parts => (K.front ? K.front.trail(parts) : `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <b>${esc(parts[parts.length - 1][0])}</b></p>`);
+  const trail = parts => `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <b>${esc(parts[parts.length - 1][0])}</b></p>`;
   const SHOWN = 20;
   // the questions tested: the protein-set questions the cards show (their facets), in their order; a card's further
   // questions (every disease term, every pathway) are left out, as the home leaves them out
@@ -97,8 +97,7 @@
     K.go('list'); return true;
   };
   K.listLink = () => (K.sel.namesProteins() && new Set(K.sel.compute().q.genes).size >= 2 ? `<a class="btn small" href="${esc(K.link('list'))}">Test this list</a>` : '');
-  if (K.front) K.front.listLink = K.listLink;
-  else (K.selTools ||= []).push(K.listLink);            // the classic selection bar: a button when the search names two or more genes
+  (K.selTools ||= []).push(K.listLink);            // the classic selection bar: a button when the search names two or more genes
   (K.methodParts ||= []).push(() => `<section id="m-list"><h3>Your gene list</h3><p>A list of genes or proteins pasted in the search can be tested against the sets of the ${int(QS.length)} protein-set questions the Overview shows (${QS.map(a => esc(short(a))).join(', ')}). ` +
     `For each set, the list’s ${esc(W.marked)} proteins are compared with the ${esc(W.marked)} proteins that the set’s source annotates: that source’s own background, as in the site’s other tests (genes, not proteins, for a gene-based source). ` +
     `With n of the list in the background, N in the background, M of those in the set and k of the list in the set, p is the chance of k or more by a one-sided hypergeometric test, fold is (k/n)/(M/N), and q is Benjamini–Hochberg over every set tested, small sets included. ` +

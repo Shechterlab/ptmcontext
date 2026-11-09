@@ -151,7 +151,7 @@
         paint(acc);
         // website.protein.open: a fold the site starts open opens when its orthologs arrive, unless the reader has touched it
         const f = document.getElementById('p-cons');
-        if (f && curAcc() === acc && D.front?.mode !== 'cards' && K.foldStarts?.('p-cons') && !K.foldTouched?.('p-cons')) f.open = true;
+        if (f && curAcc() === acc && K.foldStarts?.('p-cons') && !K.foldTouched?.('p-cons')) f.open = true;
       });
     }).catch(e => { st.phase = 'fail'; st.err = fail(e); st.who = st.ensg ? 'Ensembl Compara' : 'UniProt'; paint(acc); });
   }

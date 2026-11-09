@@ -1215,7 +1215,7 @@ website:                  # the look and words of the website (ptmc web); layout
   examples: [FUS, TAF15 EWSR1 FUS, "disease:als", FUS R216, "motif:RGG"]   # the first three are the chips under the search box
   placeholders: {highlight: "FUS, TDP-43, HNRNPA1 R218", partners: "PRMT5, SMN1", motif: "GXRG, [RK]XR, PRPR", motif_either: "RGG,GAR"}
   default_background: other reviewed human proteins   # examples inside the Highlight and partner boxes
-  front:                   # the cards front end (CONTRACTS.md, 'The cards front end'); mode: classic keeps the classic Overview
+  front:                   # the front block (CONTRACTS.md, 'The front block'): short names, row labels, pathways
     mode: classic
     rows: 5
     cards:

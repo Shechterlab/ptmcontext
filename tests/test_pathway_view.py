@@ -23,7 +23,7 @@ def _built(tmp_path, pathways=PATHWAYS):
     root = _site(tmp_path)
     p = root / 'sites' / 'toy.yaml'
     site = yaml.safe_load(p.read_text())
-    site['website']['front'] = {'mode': 'cards', **({'pathways': pathways} if pathways else {})}
+    site['website']['front'] = {'mode': 'classic', **({'pathways': pathways} if pathways else {})}
     p.write_text(yaml.safe_dump(site, sort_keys=False))
     S.run(p, root=root / 'data', log=lambda *_: None)
     return root, web.build(p, log=lambda *_: None)

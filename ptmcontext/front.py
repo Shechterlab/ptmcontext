@@ -1,13 +1,12 @@
-"""The cards front end's configuration (website.front): which questions each home card shows, the short words, the
-glossary, the example searches. A separate block from the classic Overview's sections (website.overview), so the two
-fronts can hold different groupings. Without a block, the cards derive from the analyses' section fields.
+"""The front block (website.front): the short words, row labels, glossary and example searches the Overview's tiles, the
+gene-list test and the pathway view read, and the cards that group the questions. A separate block from the Overview's
+sections (website.overview). Without a block, the cards derive from the analyses' section fields.
 
 resolve() gives the page its normalized form (D.front); problems() is what ptmc check reports."""
 from __future__ import annotations
 
 import re
 
-MODES = ('classic', 'cards')
 DEFAULT_ROWS = 5
 DEFAULT_Q_MAX = 0.05
 DEFAULT_MORE = 'More questions'
@@ -62,7 +61,7 @@ def _placed(site: dict, card: dict) -> list[str]:
 
 
 def resolve(site: dict, titles: dict | None = None) -> dict:
-    """The front block as the page reads it: mode, cards (each with its questions, facets and home rows), the questions
+    """The front block as the page reads it: cards (each with its questions, facets and home rows), the questions
     left to "More", short words, glossary and examples. `titles` are the analyses' titles as the website shows them."""
     web = site.get('website') or {}
     fr = web.get('front') or {}
@@ -96,7 +95,7 @@ def resolve(site: dict, titles: dict | None = None) -> dict:
     more = fr.get('more', DEFAULT_MORE)
     left = [q for q in question_ids(site) if q not in seen]
     examples = [e if isinstance(e, dict) else {'label': e, 'query': e} for e in fr.get('examples', web.get('examples') or [])]
-    return {'mode': fr.get('mode', 'classic'), 'rows': rows, 'cards': out,
+    return {'rows': rows, 'cards': out,
             'more': {'title': more, 'questions': left} if more is not False else {'title': '', 'questions': []},
             'short': {i: (fr.get('short') or {}).get(i) or title(i) for i in question_ids(site)},
             'row_labels': fr.get('row_labels') or {}, 'summary_only': fr.get('summary_only') or {},

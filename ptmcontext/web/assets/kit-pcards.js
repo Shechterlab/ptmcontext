@@ -99,7 +99,7 @@
     return mapsTable(p, ms) + K.cell.drawings(p);
   }
   // the classic page's own fold right after the protein map: the cell and its nucleus, drawn for this protein, the maps' table folded under them
-  const CELLFOLD = D.front?.mode !== 'cards' && !!PC.location?.maps;
+  const CELLFOLD = !!PC.location?.maps;
   function cellBuild(p) {
     if (!K.cell || !K.sel.data()) return { html: '<p class="muted small">Loading…</p>', wait: true };
     const ms = K.cell.maps(p), nar = matchMedia('(max-width: 700px)').matches, dr = ms ? (nar ? K.cell.drawingsNarrow(p) : K.cell.drawings(p)) : '';
