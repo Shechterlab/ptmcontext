@@ -7,6 +7,7 @@ lede: Position of each modification in proteins, and which proteins are modified
 intro:
   - "ptmcontext puts many post-translational marks on one reference proteome and asks the same questions of each."
   - "Every mark is tested fairly within each protein: a site is compared with the other residues of its own protein, so long proteins and disordered regions do not inflate the result. Pick a mark to explore."
+logo: sites/art/ptmcontext_logo.svg
 cta: "Explore {marks} →"
 soon_label: Coming soon
 soon_cta: In preparation

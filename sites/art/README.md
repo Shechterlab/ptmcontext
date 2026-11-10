@@ -5,6 +5,13 @@ methylarginine drawing, its icon and the Shechter lab logo are the lab's own, ta
 Site Explorer (Shechterlab/PTM_Pipeline `docs/index.html` and `docs/assets/`, commit b0d9049). A site without `art`
 gets a drawn protein with its marks, made by the kit.
 
+**Regenerated art.** The header pictures of the three marks (`*-hero.svg`) and the logos (`*_logo.svg`, `ptmcontext_logo.svg`
+for the landing page) are written by `tools/make_ptm_art.py` (not run by the build): each structure is a side chain from the
+C-alpha (wavy bond to the backbone) drawn by RDKit from the SMILES in `ptm-structures.tsv` (also in each `<g data-smiles>`),
+at one bond length, 120 degree angles, explicit charges (guanidinium and ammonium +, phosphate 2-); the methyl groups or the
+phosphate take the site's light accent. Each logo is one family: a tile in the site's band, a white lens with the accent as its
+glass and the mark (R, K, P) in it. The older hand-drawn text below describes the first versions.
+
 The methyllysine drawing (Kme1, Kme2 and Kme3: a lysine side chain with one, two or three methyl groups on the ε-amine,
 in the style of the methylarginine drawing) and its icon (the same magnifying glass in the site's purple) are drawn for
 the Methyllysine Site Explorer (`methyllysine-hero.svg`, `methyllysine-icon.svg`).

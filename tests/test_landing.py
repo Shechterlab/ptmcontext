@@ -139,3 +139,26 @@ def test_cards_go_in_the_group_their_site_file_names(tmp_path):
     assert len(sections) == 2 and 'Other organisms' not in sections[0] and 'Other organisms' in sections[1]
     assert 'class="sites compact"' in sections[1] and 'href="toyb/"' in sections[1] and 'href="toya/"' in sections[0]
     assert 'Stub Explorer' in sections[0]  # a card without a group goes in the first
+
+
+def test_the_logo_comes_from_the_site_file_to_the_header_the_favicon_and_the_cards(tmp_path):
+    root, a = _toy(tmp_path, 'toya')
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#123456"/></svg>'
+    (root / 'art').mkdir()
+    (root / 'art' / 'toya_logo.svg').write_text(svg)
+    (root / 'art' / 'hub_logo.svg').write_text(svg.replace('123456', '654321'))
+    spec = yaml.safe_load(a.read_text())
+    spec['website']['logo'] = 'art/toya_logo.svg'
+    a.write_text(yaml.safe_dump(spec, sort_keys=False, allow_unicode=True))
+    S.run(a, root=root / 'data', log=lambda *_: None)
+    web.build(a, log=lambda *_: None)
+    out = root / 'out' / 'toya' / 'web'
+    assert (out / 'assets' / 'logo.svg').read_text() == svg
+    page = (out / 'index.html').read_text()
+    assert '<link rel="icon" href="assets/logo.svg">' in page and 'class="site-mark" src="assets/logo.svg"' in page
+    cfg = tmp_path / 'landing.yml'
+    cfg.write_text(yaml.safe_dump({**CFG, 'logo': 'art/hub_logo.svg'}))
+    land = web.pages([a], tmp_path / 'site', out_root=root, log=lambda *_: None, landing_config=cfg).read_text()
+    assert 'class="card-logo" src="toya/assets/logo.svg"' in land  # the live card's logo, from its site's build
+    assert '<link rel="icon" href="logo.svg">' in land and 'class="site-mark" src="logo.svg"' in land
+    assert (tmp_path / 'site' / 'logo.svg').read_text().count('654321') == 1

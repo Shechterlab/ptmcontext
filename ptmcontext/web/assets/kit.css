@@ -334,7 +334,7 @@ select {
 .hero-art {
   position: absolute;
   right: max(16px, env(safe-area-inset-right, 0px));
-  top: 7.2rem;
+  top: 8.4rem; /* under the links row, which ends at about 8rem */
   width: min(30rem, 33%);
   height: 8.5rem;
   pointer-events: none;
@@ -344,6 +344,15 @@ select {
   display: block;
   width: 100%;
   height: 100%;
+}
+/* a picture that states its size (width and height: the structures of the marks, one bond length everywhere) keeps it, and only
+   shrinks to fit */
+.hero-art svg[width] {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 100%;
+  margin-left: auto;
 }
 @media (max-width: 62rem) {
   .hero-art {
@@ -8383,12 +8392,14 @@ a.pchip:hover {
   opacity: 0.85;
 }
 
-/* ---- A large screen (1200 x 800 or more), classic layout: the site's name, counts and citation line stay in view above the sticky
-   toolbar. The strip is fixed (no room in the page) and the toolbar sticks 44 px below the top, so nothing moves when it shows. */
+/* ---- The sticky bar, on every screen: the site's logo and name, the site switcher and "How to cite" stay in view above the sticky
+   toolbar (the lab, its affiliation and the version are in the full header and the footer: a sticky bar carries only what is
+   needed from anywhere). The counts join it on a large screen (1200 x 800 or more); a phone (under 640 px) keeps the logo and the
+   switcher. The strip is fixed (no room in the page) and the toolbar sticks 44 px below the top, so nothing moves when it shows. */
 .dock {
   display: none;
 }
-@media (min-width: 1200px) and (min-height: 800px) {
+@media screen {
   body {
     --dock-h: 44px;
   }
@@ -8438,7 +8449,7 @@ a.pchip:hover {
     border-radius: 6px;
   }
   .dock-stats {
-    display: inline-flex;
+    display: none;
     gap: 1rem;
     font-size: 0.8125rem;
     white-space: nowrap;
@@ -8450,22 +8461,57 @@ a.pchip:hover {
   .dock-stats a:hover {
     text-decoration: underline;
   }
-  .dock-cite {
+  .dock-end {
     margin-left: auto;
-    font-size: 0.8125rem;
-    opacity: 0.92;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     min-width: 0;
   }
-  .dock-cite p {
-    display: inline;
-    margin: 0;
+  .dock-cite {
+    font-size: 0.8125rem;
+    white-space: nowrap;
   }
   .dock-cite a {
     text-decoration: underline;
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
   }
+  .dock .site-switch-btn {
+    min-height: 32px;
+    padding: 0 0.7rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+  .dock .site-switch-list {
+    right: 0;
+    left: auto;
+  }
+  .dock .wrap {
+    gap: 1rem;
+  }
+}
+@media screen and (min-width: 1200px) and (min-height: 800px) {
+  .dock-stats {
+    display: inline-flex;
+  }
+}
+@media screen and (max-width: 639px) {
+  .dock-name span,
+  .dock-cite,
+  .dock .site-switch-btn b,
+  .dock .sw-colon {
+    display: none;
+  }
+  .dock-end {
+    gap: 0;
+  }
+  .dock-name {
+    flex: none;
+  }
+}
+@media screen {
   .dock :focus-visible {
     outline: 3px solid #fff;
     outline-offset: 2px;

@@ -52,16 +52,16 @@
     if (f) p.push('sw=' + encodeURIComponent(name));
     return `../${encodeURIComponent(site)}/#overview` + (p.length ? '?' + p.join('&') : '');
   };
-  const build = (list) => {
-    const side = document.querySelector('.brand-side');
-    if (!side || list.length < 2) return;
-    const me = list.find((s) => s.id === here);
+  // one switcher in `parent`: the header's side (first) or the sticky bar's end (`bar`); each has its own ids
+  const mount = (list, parent, bar) => {
+    const me = list.find((s) => s.id === here),
+      uid = bar ? 'site-switch-list-bar' : 'site-switch-list';
     const wrap = document.createElement('div');
-    wrap.className = 'site-switch';
+    wrap.className = bar ? 'site-switch in-bar' : 'site-switch';
     wrap.innerHTML =
-      '<button type="button" class="site-switch-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="site-switch-list" ' +
-      `title="Open another site">Mark: <b>${esc(me?.label || '')}</b> <span aria-hidden="true">▾</span></button>` +
-      '<ul id="site-switch-list" class="site-switch-list" role="menu" aria-label="Sites" hidden>' +
+      `<button type="button" class="site-switch-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="${uid}" ` +
+      `title="Open another site"><span>Mark<span class="sw-colon">:</span></span> <b>${esc(me?.label || '')}</b> <span aria-hidden="true">▾</span></button>` +
+      `<ul id="${uid}" class="site-switch-list" role="menu" aria-label="Sites" hidden>` +
       list
         .map(
           (s) =>
@@ -70,7 +70,8 @@
         )
         .join('') +
       '</ul>';
-    side.prepend(wrap);
+    if (bar) parent.append(wrap);
+    else parent.prepend(wrap);
     const btn = wrap.querySelector('button'),
       menu = wrap.querySelector('ul'),
       items = [...menu.querySelectorAll('a')];
@@ -120,6 +121,13 @@
     document.addEventListener('click', (e) => {
       if (!menu.hidden && !wrap.contains(e.target)) close(false);
     });
+  };
+  const build = (list) => {
+    const side = document.querySelector('.brand-side');
+    if (list.length < 2) return;
+    if (side) mount(list, side, false);
+    const end = document.querySelector('#dock .dock-end');
+    if (end) mount(list, end, true);
   };
   const start = async () => {
     try {

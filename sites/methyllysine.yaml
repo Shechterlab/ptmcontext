@@ -819,7 +819,7 @@ website:                  # the look and words of the website (ptmc web); layout
   band: ["#5b21b6", "#3b0764"]      # the header gradient: purple
   accent: "#b45309"                 # the amber rule, active tab and links
   accent_dark: "#fbbf24"
-  icon: sites/art/methyllysine-icon.svg
+  logo: sites/art/methyllysine_logo.svg
   art: sites/art/methyllysine-hero.svg
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
   links:

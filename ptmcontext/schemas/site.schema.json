@@ -1787,9 +1787,13 @@
           "type": "string",
           "pattern": "^#[0-9a-fA-F]{6}$"
         },
+        "logo": {
+          "type": "string",
+          "description": "the site's logo: an SVG file, relative to the repository (the header's mark, the favicon and the landing card's); default: a drawn mark in the band's colors"
+        },
         "icon": {
           "type": "string",
-          "description": "an SVG file, relative to the repository"
+          "description": "the older name of logo"
         },
         "art": {
           "type": "string",

@@ -39,7 +39,9 @@ CSS = """
 .land-card .band { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 0.35rem; min-height: 11rem; padding: 0.9rem 1.1rem 0.9rem; background: linear-gradient(160deg, var(--c1), var(--c2)); border-bottom: 4px solid var(--ac); color: #fff; }
 .land-card .art { height: 6.8rem; color: rgba(255, 255, 255, 0.88); }
 .land-card .art svg { display: block; width: 100%; height: 100%; }
-.land-card h2 { margin: 0; font-size: 1.3rem; line-height: 1.2; }
+.land-card h2 { margin: 0; display: flex; align-items: center; gap: 0.6rem; font-size: 1.3rem; line-height: 1.2; }
+.land-card .card-logo { flex: none; width: 36px; height: 36px; border-radius: 8px; }
+.land-title { display: flex; align-items: center; gap: 0.7rem; }
 .land-card h2 a { color: #fff; text-decoration: none; }
 .land-card h2 a::after { content: ''; position: absolute; inset: 0; z-index: 1; }
 .land-card .badge { position: absolute; top: 0.8rem; right: 0.8rem; padding: 0.15rem 0.65rem; border-radius: 999px; background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.55); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.02em; }
@@ -140,13 +142,16 @@ def card(c: dict, cfg: dict) -> str:
     sid = html.escape(c['id'])
     title = f'<a href="{html.escape(c["href"])}">{name}</a>' if live else name
     art = f'<div class="art" aria-hidden="true">{c["art"]}</div>' if c.get('art') else ''
+    logo = (
+        f'<img class="card-logo" src="{html.escape(c["logo"])}" alt="" width="36" height="36">' if c.get('logo') else ''
+    )
     badge = f'<span class="badge">{html.escape(c["badge"])}</span>' if c.get('badge') else ''
     nums = ''.join(f'<div><dt>{html.escape(str(k))}</dt><dd>{_number(v)}</dd></div>' for v, k in c.get('nums') or [])
     arrow = html.escape(c['cta'])
     off = '' if live else ' aria-disabled="true"'
     return (
         f'<li><article class="land-card {"live" if live else "soon"}" id="{sid}" aria-labelledby="card-{sid}" style="{c.get("vars", "")}">'
-        f'<div class="band">{badge}{art}<h2 id="card-{sid}">{title}</h2></div><div class="body">'
+        f'<div class="band">{badge}{art}<h2 id="card-{sid}">{logo}{title}</h2></div><div class="body">'
         + (f'<p class="hook">{html.escape(c["hook"])}</p>' if c.get('hook') else '')
         + (f'<p class="ask">{html.escape(c["question"])}</p>' if c.get('question') else '')
         + (f'<dl class="nums">{nums}</dl>' if nums else '')
@@ -180,7 +185,16 @@ def ordered(cards: list[dict], cfg: dict) -> list[dict]:
     return sorted(cards, key=lambda c: rank.get(c['id'], len(rank)))
 
 
-def page(cards: list[dict], cfg: dict, *, kit_css: str | None, lab_html: str, fonts_css: str, built_with: str) -> str:
+def page(
+    cards: list[dict],
+    cfg: dict,
+    *,
+    kit_css: str | None,
+    lab_html: str,
+    fonts_css: str,
+    built_with: str,
+    logo: str | None = None,
+) -> str:
     title = html.escape(cfg.get('title') or 'ptmcontext')
     desc = html.escape(cfg.get('description') or '')
     lede = html.escape(cfg.get('lede') or '')
@@ -214,12 +228,13 @@ def page(cards: list[dict], cfg: dict, *, kit_css: str | None, lab_html: str, fo
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
 <meta name="description" content="{desc}">
+{f'<link rel="icon" href="{html.escape(logo)}">' if logo else ''}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="{html.escape(fonts_css)}">
 {f'<link rel="stylesheet" href="{html.escape(kit_css)}">' if kit_css else ''}
 <style>{CSS}</style></head>
 <body><a class="skip" href="#sites">Skip to the sites</a>
-<header class="hero"><div class="wrap"><div class="brand"><h1>{title}</h1><div class="brand-side">{lab_html}</div></div>
+<header class="hero"><div class="wrap"><div class="brand"><h1{' class="land-title"' if logo else ''}>{f'<img class="site-mark" src="{html.escape(logo)}" alt="" width="52" height="52">' if logo else ''}{title}</h1><div class="brand-side">{lab_html}</div></div>
 {f'<div class="lede"><p class="lede-what">{lede}</p></div>' if lede else ''}</div></header>
 <main class="wrap" id="sites">
 {f'<section class="land-intro" aria-label="About">{intro}</section>' if intro else ''}
