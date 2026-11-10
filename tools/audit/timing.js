@@ -11,8 +11,8 @@ const args = process.argv.slice(2);
 const base = args[0];
 if (!base) { console.error('usage: timing.js <base-url> [--gene G] [--genes "A,B"] [--tabs "#a,#b"]'); process.exit(2); }
 const opt = (k, d) => { const i = args.indexOf('--' + k); return i > 0 ? args[i + 1] : d; };
-const GENE = opt('gene', 'FUS');
-const GENES = opt('genes', 'FUS,EWSR1,TAF15,HNRNPA1,HNRNPA2B1,HNRNPK,HNRNPU,SRSF1,SRSF2,NPM1,NCL,FBL,DDX3X,DDX5,PABPC1,YBX1,KHDRBS1,SYNCRIP,ELAVL1,G3BP1').split(',');
+// without --gene / --genes, the site's own proteins (its first listed ones) are used, read from the page
+let GENE = opt('gene', ''), GENES = opt('genes', '') ? opt('genes', '').split(',') : [];
 const QUERY = opt('query', '');
 const TABS = opt('tabs', '#overview,#proteins,#sites,#method').split(',');
 
@@ -48,6 +48,8 @@ const TABS = opt('tabs', '#overview,#proteins,#sites,#method').split(',');
   const box = () => page.$('input[type=search], #q, input[placeholder*=earch]');
   await settle('first paint to settled', () => page.goto(base.replace(/#.*/, '') + '#overview', { waitUntil: 'commit' }));
   out.first_contentful_paint_ms = await page.evaluate(() => Math.round((performance.getEntriesByName('first-contentful-paint')[0] || {}).startTime || 0));
+  const own = await page.evaluate(() => ((window.PTMC && window.PTMC.D.proteins) || []).slice(0, 20).map(p => p[1] || p[0]));
+  GENE = GENE || own[0] || ''; GENES = GENES.length ? GENES : own;
   await settle('search ' + GENE + ' to its page', async () => { const x = await box(); await x.fill(GENE); await x.press('Enter'); });
   for (const t of TABS) await settle('tab ' + t, () => page.evaluate(h => { location.hash = h; }, t));
   await page.evaluate(() => { location.hash = '#overview'; }); await page.waitForTimeout(1500);

@@ -2,7 +2,7 @@
 /* Broken-link tracking for a built site: links and controls inside the page's cards and boxes that lead nowhere or do nothing.
    node tools/audit/links.js <base-url> [--yeast <url>] [--external] [--max N] [--workers N] [--no-selection] [--only "#overview,#help"] [--verbose] [--out report.json]
    Visits the Overview and every question page, Proteins, Sites, Disordered regions, Interactions and its question pages, All tests, Methods
-   & data, Help, and three protein pages (FUS, HNRNPA1 and, with --yeast, one yeast protein), each without and with a selection (the
+   & data, Help, and protein pages (two of the site's own example proteins and, with --yeast, one yeast protein), each without and with a selection (the
    first example search the page offers). On each page:
      internal links   every a[href^="#"] in the page: it must resolve to a view (the address keeps its view, the page is drawn and its
                       title says which question or section it is) or to an element id, with no page error. Checked once per mode.
@@ -256,6 +256,9 @@ async function discover(ctx, root) {
   };
   await add();
   const eg = await pg.evaluate(() => document.querySelector('[data-try]')?.dataset.try || '');
+  const names = await pg.evaluate(() =>
+    ((window.PTMC && window.PTMC.D.site.examples) || []).map((e) => String(e).split(/\s+/)[0]).filter(Boolean)
+  );
   const ix = await (async () => {
     await open(pg, root + '#interactions');
     await add();
@@ -270,12 +273,13 @@ async function discover(ctx, root) {
   const prot = await pg.evaluate(() =>
     [...document.querySelectorAll('a[href*="#protein/"]')].map((a) => a.getAttribute('href').split('?')[0])
   );
-  // the three protein pages: FUS and HNRNPA1 by name when the site has them, else the first proteins its table lists
+  // the protein pages: the site's own example proteins (its site file's examples) when it lists them, else the first proteins its table lists
   const have = (g) => [...gene, ...prot, ...seeds].find((h) => new RegExp('^#protein/' + g + '(/|$)', 'i').test(h));
   await pg.close();
   const views = ['#overview', '#proteins', '#sites', '#idrs', '#interactions', '#statistics', '#method', '#help'];
   const pages = [...new Set([...views, ...seeds.filter((h) => /^#(overview|interactions|method)\//.test(h))])];
-  const proteins = [have('FUS') || '#protein/FUS', have('HNRNPA1') || '#protein/HNRNPA1'];
+  const named = names.map((g) => have(g.replace(/[^\w.-]/g, ''))).filter(Boolean);
+  const proteins = [...new Set([...named, ...prot])].slice(0, 2);
   return { pages, proteins, prot: prot[0], eg };
 }
 

@@ -88,7 +88,7 @@ const BAD = /\bundefined\b|\bNaN\b|(^|[\s:=(])null([\s,.)]|$)(?!model)|\[object 
       pages.push(...extra);
     }
   }
-  const clickPages = ['#overview', '#protein/FUS', '?q='];
+  const clickPages = ['#overview', pages.find(h => h.startsWith('#protein/')) || '#proteins', '?q='];
   const qpage = pages.find(h => h.startsWith('#overview/')); if (qpage) clickPages.push(qpage);
   const CLICK_SEL = 'summary, button, [role=tab], .tab, .tabs a, [role=button]';
   const sigOf = () => page.evaluate(() => { const m = document.body;
