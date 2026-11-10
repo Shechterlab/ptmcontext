@@ -2823,6 +2823,52 @@
     mctx.font = `${weight} ${size}px ${fam}`;
     return mctx.measureText(t).width;
   };
+  // axis labels that would overlap: the 1× (or, on a linear axis, the label nearest the middle) stays, then the labels nearest
+  // to it that still clear those kept by `gap` px. items: [{x: 0..1, lab, minor?, w?}] (w: the label's width in px, else measured
+  // at `size`); width: the axis's px. Returns the items kept, in their order.
+  function thinTicks(items, width, size = 10, gap = 5) {
+    const one = items.find((t) => t.lab === '1×'),
+      mid = one ? one.x : 0.5,
+      wOf = (t) => (t.w != null ? t.w : tw(t.lab, size));
+    const order = [...items].sort(
+      (p, q) =>
+        (q === one) - (p === one) || !!p.minor - !!q.minor || Math.abs(p.x - mid) - Math.abs(q.x - mid) || p.x - q.x
+    );
+    const kept = [];
+    for (const t of order) {
+      const c = t.x * width,
+        h = wOf(t) / 2;
+      if (t === one || kept.every((u) => Math.abs(c - u.x * width) >= h + wOf(u) / 2 + gap)) kept.push(t);
+    }
+    return items.filter((t) => kept.includes(t));
+  }
+  // on the page: the axis labels of a chart or a tile that overlap at the width they are drawn at are hidden (the 1× stays),
+  // again when the window changes
+  function thinAxesDom(root = document) {
+    root.querySelectorAll('.qaxis .ticks, .fr-ax .tk').forEach((box) => {
+      const els = [...box.children];
+      els.forEach((e) => e.classList.remove('th'));
+      const width = box.getBoundingClientRect().width;
+      if (!width) return;
+      const shown = els
+        .filter((e) => getComputedStyle(e).visibility !== 'hidden')
+        .map((e) => ({
+          e,
+          lab: e.textContent.trim(),
+          x: parseFloat(e.style.left) / 100,
+          minor: e.classList.contains('minor'),
+          w: e.getBoundingClientRect().width,
+        }));
+      const kept = new Set(thinTicks(shown, width, 10, 4));
+      shown.forEach((t) => t.e.classList.toggle('th', !kept.has(t)));
+    });
+  }
+  (K.afterRender ||= []).push(() => thinAxesDom());
+  let thinPending = 0;
+  addEventListener('resize', () => {
+    cancelAnimationFrame(thinPending);
+    thinPending = requestAnimationFrame(() => thinAxesDom());
+  });
   function wrap(text, width, size, weight, fam) {
     const out = [];
     let cur = '';
@@ -3033,7 +3079,7 @@
       )
     );
     parts.push(...gp, ...rp);
-    M.axis.ticks.forEach((t) =>
+    thinTicks(M.axis.ticks, X1 - X0, 10).forEach((t) =>
       T(X0 + t.x * (X1 - X0), y + 15, t.lab, { size: 10, anchor: 'middle', fill: PAL.muted })
     );
     y += 15;
@@ -3725,6 +3771,8 @@
     FF,
     FFH,
     tw,
+    thinTicks,
+    thinAxesDom,
     wrap,
     fit,
     DIR_WORDS,
