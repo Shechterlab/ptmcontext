@@ -1059,7 +1059,7 @@ card without those lines. The strongest result is chosen from the build (the lar
 per question, on at least 20 marks) unless `website.landing.findings` names one. A site whose outputs are missing is left out with a warning under `--skip-missing`, else the build stops.
 
 The page's own words are a landing config (`ptmc pages --landing FILE`, else `landing.yml` beside the first site file):
-`title`, `description`, `lede`, `logo` (an SVG file for the page's header and favicon), `intro` (paragraphs), `cta`, `order` (card ids), `groups` (`[{id, title, note, compact}]`:
+`title`, `description`, `lede`, `logo` (an SVG file for the page's header and favicon), `switcher: {label}` (the word of the sites' header and sticky-bar switcher, "PTM"; else a site file's `website.switcher.label`; written to `sites.json`), `intro` (paragraphs), `cta`, `order` (card ids), `groups` (`[{id, title, note, compact}]`:
 rows of cards, a card going in the group named by its site's `landing.group`, else the first; a `compact` row has smaller cards,
 e.g. other organisms), `footer: {links: [{label, url}], note}`,
 and `soon`: cards without a link for sites not built yet (`id`, `name`, `tagline`, `question`, `band`, `accent`,

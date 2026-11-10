@@ -1806,6 +1806,7 @@ def pages(
     (out / '.nojekyll').write_text('')
     cfg = LP.load_config(landing_config, site_paths[0] if site_paths else None)
     cards, lab, registry, first_built, root_last = [], None, [], None, Path('.')
+    switcher_label = (cfg.get('switcher') or {}).get('label')
     for sp in site_paths:
         site = load_site(sp)
         web = site.get('website', {})
@@ -1826,6 +1827,7 @@ def pages(
         band = web.get('band', DEFAULT_BAND)
         lab = lab or web.get('lab')
         landing = web.get('landing') or {}
+        switcher_label = switcher_label or (web.get('switcher') or {}).get('label')
         registry.append(
             {
                 'id': site['id'],
@@ -1877,7 +1879,7 @@ def pages(
         log(f'  {site["id"]} -> {dest}')
     cards += [LP.soon_card(s, cfg) for s in cfg.get('soon') or []]
     # the sites' own header menu reads this list (kit-switch.js)
-    (out / 'sites.json').write_text(json.dumps({'sites': registry}, indent=1))
+    (out / 'sites.json').write_text(json.dumps({'switcher_label': switcher_label, 'sites': registry}, indent=1))
     # the landing page's own logo (landing.yml `logo`: an SVG file, relative to the working directory or the first site's repository)
     logo_href = None
     if cfg.get('logo'):

@@ -149,6 +149,7 @@ def test_the_logo_comes_from_the_site_file_to_the_header_the_favicon_and_the_car
     (root / 'art' / 'hub_logo.svg').write_text(svg.replace('123456', '654321'))
     spec = yaml.safe_load(a.read_text())
     spec['website']['logo'] = 'art/toya_logo.svg'
+    spec['website']['switcher'] = {'label': 'Mod'}
     a.write_text(yaml.safe_dump(spec, sort_keys=False, allow_unicode=True))
     S.run(a, root=root / 'data', log=lambda *_: None)
     web.build(a, log=lambda *_: None)
@@ -162,3 +163,6 @@ def test_the_logo_comes_from_the_site_file_to_the_header_the_favicon_and_the_car
     assert 'class="card-logo" src="toya/assets/logo.svg"' in land  # the live card's logo, from its site's build
     assert '<link rel="icon" href="logo.svg">' in land and 'class="site-mark" src="logo.svg"' in land
     assert (tmp_path / 'site' / 'logo.svg').read_text().count('654321') == 1
+    import json
+
+    assert json.loads((tmp_path / 'site' / 'sites.json').read_text())['switcher_label'] == 'Mod'  # the site file's word

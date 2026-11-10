@@ -1,4 +1,4 @@
-/* The site switcher: a "Mark" menu in the header that lists the sibling sites and opens one with the reader's search
+/* The site switcher: a menu (its word is `switcher_label` of sites.json: the landing config's `switcher.label`, else a site file's `website.switcher.label`) in the header that lists the sibling sites and opens one with the reader's search
    (q=), highlight (hl=) and filters (f=). The list is sites.json, which `ptmc pages` writes beside the sites' folders
    ({sites: [{id, label, listed, in_switcher}]}); a site served alone has none, and no menu is drawn. A site that is not
    listed on the landing page appears only in the menu of an unlisted site, or where its own file says in_switcher.
@@ -53,14 +53,14 @@
     return `../${encodeURIComponent(site)}/#overview` + (p.length ? '?' + p.join('&') : '');
   };
   // one switcher in `parent`: the header's side (first) or the sticky bar's end (`bar`); each has its own ids
-  const mount = (list, parent, bar) => {
+  const mount = (list, parent, bar, word) => {
     const me = list.find((s) => s.id === here),
       uid = bar ? 'site-switch-list-bar' : 'site-switch-list';
     const wrap = document.createElement('div');
     wrap.className = bar ? 'site-switch in-bar' : 'site-switch';
     wrap.innerHTML =
-      `<button type="button" class="site-switch-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="${uid}" ` +
-      `title="Open another site"><span>Mark<span class="sw-colon">:</span></span> <b>${esc(me?.label || '')}</b> <span aria-hidden="true">▾</span></button>` +
+      `<button type="button" class="site-switch-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="${uid}" aria-label="Switch ${esc(word)} site: ${esc(me?.label || '')}" ` +
+      `title="Open another site"><span>${esc(word)}<span class="sw-colon">:</span></span> <b>${esc(me?.label || '')}</b> <span aria-hidden="true">▾</span></button>` +
       `<ul id="${uid}" class="site-switch-list" role="menu" aria-label="Sites" hidden>` +
       list
         .map(
@@ -122,22 +122,23 @@
       if (!menu.hidden && !wrap.contains(e.target)) close(false);
     });
   };
-  const build = (list) => {
+  const build = (list, word) => {
     const side = document.querySelector('.brand-side');
     if (list.length < 2) return;
-    if (side) mount(list, side, false);
+    if (side) mount(list, side, false, word);
     const end = document.querySelector('#dock .dock-end');
-    if (end) mount(list, end, true);
+    if (end) mount(list, end, true, word);
   };
   const start = async () => {
     try {
       const r = await fetch('../sites.json', { cache: 'no-cache' });
       if (!r.ok) return;
-      const all = (await r.json()).sites || [],
+      const reg = await r.json(),
+        all = reg.sites || [],
         mine = all.find((s) => s.id === here),
         // unlisted sites are in the menu of an unlisted site, and where their own file says so
         list = all.filter((s) => s.listed || s.in_switcher || s.id === here || (mine && !mine.listed));
-      build(list);
+      build(list, reg.switcher_label || 'Site');
     } catch (e) {
       /* served alone: no list of sites, no menu */
     }
