@@ -1042,6 +1042,7 @@ website:                  # the look and words of the website (ptmc web); layout
     partner_classes:
       kind: values
       attribute: bound_by
+      tested_by: partner_class_test        # the table under the bars: is each class enriched among the partners of the proteins?
       title: Writers, erasers and readers
       question: "Which methyllysines are on proteins that bind a writer, an eraser or a reader?"
       sub: "Methyllysines on proteins with a STRING physical partner (score 0.7 or more) in each writer, eraser or reader class"
@@ -1049,7 +1050,7 @@ website:                  # the look and words of the website (ptmc web); layout
       noun: partner classes
       top: 8
       note: "A class describes the protein's physical partners. STRING associations are to the whole protein, so a count does not show that a partner writes, erases or reads that lysine. The SET-domain and JmjC classes include proteins that do not act on lysine, and the sets are of human proteins in UniProt 2026_03."
-      method: "The site file lists the partner classes (website.search.partners.classes) by InterPro entry and gene, with the query that made each set. A protein is in a class when one of its STRING physical partners is. The share of all reviewed human proteins in each class is the baseline to compare with."
+      method: "The site file lists the partner classes (website.search.partners.classes) by InterPro entry and gene, with the query that made each set. A protein is in a class when one of its STRING physical partners is. The share of all reviewed human proteins in each class is the baseline to compare with. What is counted: each bar is the number of methyllysines lying on a protein that has a STRING physical partner (score 0.7 or more) in the class; a protein with partners in several classes is in each bar. The table under the bars tests whether methylated proteins are more often partners of a class than the other proteins that have physical partners (one-sided hypergeometric test, q by Benjamini-Hochberg); the bar counts sites, the test counts proteins."
     states:
       kind: values
       attribute: state

@@ -4550,6 +4550,10 @@
                 "type": "string",
                 "description": "its section of the Method page: how the counts were made"
               },
+              "tested_by": {
+                "type": "string",
+                "description": "values: the id of a protein-set question that tests the same classes; its table (marked proteins with a partner in the class, fold enrichment, q) is shown under the counts"
+              },
               "attribute": {
                 "type": "string",
                 "description": "values: a list or category attribute of the marks"

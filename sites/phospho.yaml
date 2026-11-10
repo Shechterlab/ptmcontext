@@ -1086,6 +1086,7 @@ website:                  # the look and words of the website (ptmc web); layout
     partner_classes:
       kind: values
       attribute: bound_by
+      tested_by: partner_class_test        # the table under the bars: is each class enriched among the partners of the proteins?
       title: Kinases, phosphatases and readers
       question: "Which phosphosites are on proteins that bind a kinase, a phosphatase or a reader?"
       sub: "Phosphosites on proteins with a STRING physical partner (score 0.7 or more) in each kinase, phosphatase or reader class"
@@ -1093,7 +1094,7 @@ website:                  # the look and words of the website (ptmc web); layout
       noun: partner classes
       top: 8
       note: "A class describes the protein's physical partners. STRING associations are to the whole protein, so a count does not show that a partner phosphorylates, dephosphorylates or reads that site. The kinase and phosphatase sets are UniProt keyword sets (candidates, including pseudokinases); the reader sets are InterPro domain entries and include proteins whose domain does not bind phosphopeptides. The sets are of human proteins in UniProt 2026_04."
-      method: "The site file lists the partner classes (website.search.partners.classes) by InterPro entry or by a file of UniProt accessions with the query that made it. A protein is in a class when one of its STRING physical partners is. The share of all reviewed human proteins in each class is the baseline to compare with."
+      method: "The site file lists the partner classes (website.search.partners.classes) by InterPro entry or by a file of UniProt accessions with the query that made it. A protein is in a class when one of its STRING physical partners is. The share of all reviewed human proteins in each class is the baseline to compare with. What is counted: each bar is the number of sites lying on a protein that has a STRING physical partner (score 0.7 or more) in the class; a protein with partners in several classes is in each bar. The table under the bars tests whether phosphorylated proteins are more often partners of a class than the other proteins that have physical partners (one-sided hypergeometric test, q by Benjamini-Hochberg); the bar counts sites, the test counts proteins."
     residues:
       kind: values
       attribute: residue
