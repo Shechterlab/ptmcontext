@@ -19,6 +19,8 @@ from ptmcontext import web
 from ptmcontext.profile import load_profile
 from ptmcontext.snapshot import Snapshot, md5_file
 
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
+
 ASSETS = Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets'
 
 #          1         11        21
@@ -77,7 +79,7 @@ def test_near_leaves_the_residue_out_and_orders_by_distance(table):
 
 def test_the_layer_is_generic_over_the_entry(table):
     snap = Snapshot({'P': SEQ})
-    ctx = L.Context(snap, load_profile('methylarginine'), {})
+    ctx = L.Context(snap, load_profile(MARKS / 'methylarginine.yaml'), {})
     ctx.context = {'phos': CM.read(ENTRY, table, snap)}
     layer = L.get('near_marks', ctx, {'marks': 'phos', 'window': 7, 'noun': 'phosphosite'}, 'near_phos')
     cand = snap.residues(['R'])
@@ -150,7 +152,7 @@ def _toy_doc():
         'schema_version': 1,
         'id': 't',
         'title': 'T',
-        'mark': 'methylarginine',
+        'mark': str(MARKS / 'methylarginine.yaml'),
         'snapshot': {'input': 'f', 'release': 'x'},
         'marks': {'input': 'm', 'accession': 'a', 'position': 'p'},
         'analyses': [{'id': 'motif', 'layer': 'motif'}],
@@ -201,7 +203,7 @@ def _toy(tmp_path):
         'id': 'toy',
         'title': 'A toy site',
         'status': 'working',
-        'mark': 'methylarginine',
+        'mark': str(MARKS / 'methylarginine.yaml'),
         'manifest': 'sites/toy.inputs.json',
         'snapshot': {'input': 'toy_fasta', 'release': 'Toy 2026_01'},
         'marks': {'input': 'toy_marks', 'accession': 'acc', 'position': 'pos', 'residue_mismatch': 'error'},

@@ -20,6 +20,8 @@ from ptmcontext import web
 from ptmcontext.snapshot import md5_file
 from ptmcontext.web import nucleic as N
 
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
+
 P1 = 'MRGGRAAAAARAAAAAAAAAARAAAAAAAAARGGAAAAAAAAR'
 P2 = 'MRAAARAAARAAAAAAAAAAAAAARAAAR'
 ASSETS = Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets'
@@ -174,7 +176,7 @@ def _toy(tmp_path, nucleic=True):
         'id': 'toy',
         'title': 'A toy site',
         'status': 'working',
-        'mark': 'methylarginine',
+        'mark': str(MARKS / 'methylarginine.yaml'),
         'manifest': 'sites/toy.inputs.json',
         'snapshot': {'input': 'toy_fasta', 'release': 'Toy 2026_01'},
         'inputs': {},

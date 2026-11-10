@@ -15,6 +15,8 @@ from ptmcontext import site as S
 from ptmcontext.profile import load_profile
 from ptmcontext.snapshot import Snapshot
 
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
+
 
 def write(path: Path, rows: list[list[str]]) -> Path:
     path.write_text('\n'.join('\t'.join(r) for r in rows) + '\n')
@@ -135,7 +137,7 @@ def lists(tmp_path):
     snap = Snapshot({'P1': 'MRAARAAR', 'P2': 'MRARA', 'P3': 'MRR'})
     ctx = L.Context(
         snap,
-        load_profile('methylarginine'),
+        load_profile(MARKS / 'methylarginine.yaml'),
         {'in_a': a, 'in_b': b, 'genes': g},
         formats={str(a): mapping, str(b): mapping},
     )

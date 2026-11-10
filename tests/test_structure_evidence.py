@@ -4,6 +4,7 @@ page's data; a site without them builds the same and gets only the live structur
 
 from __future__ import annotations
 
+from pathlib import Path
 import json
 import re
 
@@ -13,6 +14,8 @@ import yaml
 from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
+
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
 #                 1        10        20        30        40
 P1 = 'MRGGRAAAAARAAAAAAAAAARAAAAAAAAARGGAAAAAAAAR'
@@ -101,7 +104,7 @@ def _toy(tmp_path, structure: bool):
         'id': 'toy',
         'title': 'A toy site',
         'status': 'working',
-        'mark': 'methylarginine',
+        'mark': str(MARKS / 'methylarginine.yaml'),
         'manifest': 'sites/toy.inputs.json',
         'snapshot': {'input': 'toy_fasta', 'release': 'Toy 2026_01'},
         'inputs': roles,

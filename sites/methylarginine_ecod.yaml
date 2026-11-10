@@ -6,7 +6,7 @@ schema_version: 1
 id: methylarginine_ecod
 title: Human methylarginine sites, structural (ECOD) domains
 status: working
-mark: methylarginine
+mark: sites/marks/methylarginine.yaml
 manifest: sites/methylarginine_ecod.inputs.json
 
 snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}

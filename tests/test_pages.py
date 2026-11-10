@@ -5,6 +5,7 @@ The tables are in the formats of the protein pages' tables. Nothing here names a
 
 from __future__ import annotations
 
+from pathlib import Path
 import json
 import re
 
@@ -14,6 +15,8 @@ import yaml
 from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
+
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
 #                 1        10        20        30        40
 P1 = 'MRGGRAAAAARAAAAAAAAAARAAAAAAAAARGGAAAAAAAAR'  # R at 2, 5, 11, 22, 32, 43
@@ -95,7 +98,7 @@ def _toy_site(tmp_path, pages=True):
         'id': 'toy',
         'title': 'A toy site',
         'status': 'working',
-        'mark': 'methylarginine',
+        'mark': str(MARKS / 'methylarginine.yaml'),
         'manifest': 'sites/toy.inputs.json',
         'snapshot': {'input': 'toy_fasta', 'release': 'Toy 2026_01'},
         'inputs': {'crosslinks': 'toy_xl', 'measured': 'toy_measured'},

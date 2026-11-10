@@ -5,6 +5,8 @@ shows them (site data, selection data) through the same paths as the built-in qu
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import json
 import re
 
@@ -16,6 +18,8 @@ from ptmcontext import layers as L
 from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
+
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
 #                 1        10        20        30        40
 P1 = 'MRGGRAAAAARAAAAAAAAAARAAAAAAAAARGGAAAAAAAAR'
@@ -85,7 +89,7 @@ def _toy_site(tmp_path):
         'id': 'toy',
         'title': 'A toy site',
         'status': 'working',
-        'mark': 'methylarginine',
+        'mark': str(MARKS / 'methylarginine.yaml'),
         'manifest': 'sites/toy.inputs.json',
         'snapshot': {'input': 'toy_fasta', 'release': 'Toy 2026_01'},
         'inputs': {'condensates': 'toy_condensates', 'confidence': 'toy_scores'},
@@ -191,7 +195,7 @@ def _ctx_with(tmp_path, tables: dict, formats: dict):
         frame.to_csv(paths[role], sep='\t', index=False)
     return L.Context(
         Snapshot({'P1': P1, 'P2': P2}),
-        load_profile('methylarginine'),
+        load_profile(MARKS / 'methylarginine.yaml'),
         paths,
         formats={str(paths[r]): f for r, f in formats.items()},
     )

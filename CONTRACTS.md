@@ -5,7 +5,7 @@ Nine plain-data formats, and the tables the protein pages show (at the end). Cod
 
 | Contract | Format | Schema | Written by | Read by |
 |---|---|---|---|---|
-| **Mark profile** | YAML | `ptmcontext/schemas/profile.schema.json` | a person | the layers (motifs), the tests (residues, words) |
+| **Mark file** (the mark profile) | YAML | `ptmcontext/schemas/profile.schema.json` | a person (`sites/marks/<mark>.yaml`, named by the site file's `mark:` path) | the layers (motifs), the tests (residues, words) |
 | **Site** | YAML | `ptmcontext/schemas/site.schema.json` | a person | `ptmc run` |
 | **Input manifest** | JSON | `ptmcontext/schemas/inputs.schema.json` | `ptmc stage`, `ptmc inputs record` | every build |
 | **Unit table** | TSV | `ptmcontext/schemas/units.schema.json` | stagers, other repositories | the layers |
@@ -20,6 +20,15 @@ Nine plain-data formats, and the tables the protein pages show (at the end). Cod
 | **Structure evidence** | TSV, columns named in the site file | `website.protein.structure` in `ptmcontext/schemas/site.schema.json` | a release, a lab, any table mapped to it | the protein page's 3D viewer (`kit-3d.js`) |
 | **Conservation across species** | none (read live) | `website.protein.conservation` in `ptmcontext/schemas/site.schema.json` | any site | the protein page's conservation card and the selection's logo (`kit-conserve.js`) |
 | **RNA and DNA interactions** | TSV, columns named in the site file | `website.protein.nucleic` in `ptmcontext/schemas/site.schema.json` | a release, a lab, any table mapped to it | the protein page's RNA and DNA card (`kit-prna.js`) |
+
+### Mark file
+
+A mark file holds everything specific to one modification: residues, state codes, writers (with ids and citations),
+motif families, stickers and the words the pages use. The package carries none: a site file names its mark file by
+path in `mark:`, relative to the repository that holds the site file (`mark: sites/marks/<mark>.yaml`); a bare id
+(`mark: methylarginine`) is an error. Sites of one mark share one file. `ptmcontext/schemas/profile.schema.json` is the
+schema; `ptmc check` validates it. `words` also supply the generic nouns the pages say (a marked residue, a stickers
+noun), so no page text names a mark.
 
 ## Statistics row
 

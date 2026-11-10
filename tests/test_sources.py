@@ -1,5 +1,6 @@
 """Several sources filling one role, and the SHEPHARD stager: offline, on tables built by hand."""
 
+from pathlib import Path
 import json
 
 import jsonschema
@@ -12,6 +13,8 @@ from ptmcontext import stage
 from ptmcontext import units as U
 from ptmcontext.profile import validate
 from ptmcontext.snapshot import Snapshot
+
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
 
 def _domains(rows, source):
@@ -78,7 +81,7 @@ def test_the_site_schema_takes_first_of_and_refuses_other_rules():
         'schema_version': 1,
         'id': 's',
         'title': 't',
-        'mark': 'phospho',
+        'mark': str(MARKS / 'phospho.yaml'),
         'snapshot': {'input': 'fa', 'release': 'UniProt 2026_03'},
         'marks': {'input': 'm', 'accession': 'a', 'position': 'p'},
         'analyses': [{'id': 'x', 'layer': 'disorder'}],

@@ -25,7 +25,7 @@ from . import residue_tests as RT
 from . import context_marks as CM
 from . import statistics as ST
 from .parity import Result, compare, compare_table
-from .profile import check_residues, load_profile, read_config, validate
+from .profile import check_residues, site_profile, read_config, validate
 from .snapshot import Snapshot, md5_file
 
 REPO = Path(__file__).resolve().parents[1]
@@ -134,7 +134,7 @@ def _analysis_words(site: dict) -> dict:
     flags layer without labels of its own takes the profile's motif families). Plugins are not loaded to check a file."""
     out = {}
     try:
-        fams = [f['name'] for f in load_profile(site['mark']).motif_families]
+        fams = [f['name'] for f in site_profile(site).motif_families]
     except Exception:  # noqa: BLE001  (a profile problem is reported elsewhere)
         fams = []
     for a in site.get('analyses', []):
@@ -1687,7 +1687,7 @@ def run(
             f'the site file says its sequences are {release}, but the staged file is {staged!r}: '
             f'update snapshot.release in {Path(site_path).name} (and every result that depends on it), or stage {release}'
         )
-    profile = load_profile(site['mark'])
+    profile = site_profile(site)
     snap = Snapshot.from_fasta(paths[site['snapshot']['input']], release=site['snapshot']['release'])
 
     def fill(value):

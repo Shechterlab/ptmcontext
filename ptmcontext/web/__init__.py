@@ -29,7 +29,7 @@ from ..citation import kit_citation, site_citation
 from ..front import resolve as front_resolve
 from ..inputs import load as load_manifest
 from ..inputs import role_inputs, site_input_names
-from ..profile import load_profile
+from ..profile import site_profile
 from ..site import code_commit, load_site, manifest_of, presence_only, root_of
 from .counts import counts_data
 from .glance import glance
@@ -1246,7 +1246,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         web.get('tables') or {}
     ).values():  # presence-only values: no row of theirs is read from any table (tables.read)
         tb['presence_only'] = hide
-    profile = load_profile(site['mark'])
+    profile = site_profile(site)
     root = root_of(site)
     folder = Path(out_root or root) / site['outputs']['folder']
     if not (folder / 'statistics.tsv').exists():
@@ -1853,7 +1853,7 @@ def pages(
         # the one-file copy (<id>.html, up to 84 MB) is for offline use: it stays in the build folder, not in the published site
         shutil.copytree(src, dest, ignore=lambda d, names: [f'{site["id"]}.html'] if Path(d) == src else [])
         run = json.loads((src.parent / 'run.json').read_text())
-        profile = load_profile(site['mark'])
+        profile = site_profile(site)
         band = web.get('band', DEFAULT_BAND)
         lab = lab or web.get('lab')
         # each site's card: its marks, where they fall (one bar), its strongest findings and three ways to start; the

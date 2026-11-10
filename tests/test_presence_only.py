@@ -4,6 +4,7 @@ flag at each site, with its label, and no start, end or sequence of it reaches a
 
 from __future__ import annotations
 
+from pathlib import Path
 import copy
 import json
 
@@ -13,6 +14,8 @@ import yaml
 from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
+
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
 P1 = 'MRGGRAAAAARAAAAAAAAAARAAAAAAAAARGGAAAAAAAAR'
 SECRET = 'QQQWWWKKKPEP'  # a measured peptide's sequence
@@ -77,7 +80,7 @@ def _toy(tmp_path):
         'id': 'toy',
         'title': 'A toy site',
         'status': 'working',
-        'mark': 'methylarginine',
+        'mark': str(MARKS / 'methylarginine.yaml'),
         'manifest': 'sites/toy.inputs.json',
         'snapshot': {'input': 'toy_fasta', 'release': 'Toy 2026_01'},
         'inputs': {'evidence': 'toy_evidence'},

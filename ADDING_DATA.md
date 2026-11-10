@@ -12,7 +12,7 @@ Every new dataset is exactly one of these. If it is none of them, stop and ask.
 | **sequences** | a new UniProt release, another organism | a snapshot: `ptmc stage uniprot <proteome>` |
 | **regions** | disorder, domains, flanks, charged segments, a lab's own regions | any table of intervals filling a **role**: a **unit table** (`schemas/units.schema.json`), or any layout its manifest entry maps with `columns`; a new kind of region is tested by the `regions` layer (no code) |
 | **marked residues** | a PTM site list, an MS experiment's sites | a **marks table** (accession, position, plus any columns) selected by a site file |
-| **a mark** | a modification not yet profiled | a **profile** (`ptmcontext/profiles/<mark>.yaml`) |
+| **a mark** | a modification not yet profiled | a **mark file** (`sites/marks/<mark>.yaml`) |
 | **a per-residue value** | AlphaFold pLDDT, conservation, a variant-effect score | a per-residue table read by a **column mapping**, tested by the `residue_values` layer (no code) |
 | **a per-protein annotation** | pathways, locations, classes, condensates, abundance | a (set, protein) table or class hierarchy for a **protein-set test** (no code); rows kept by other tables (`where`), old accessions through a history (`history`) |
 | **a per-gene annotation** | disease terms (DisGeNET), any sets keyed by another identifier | a (set, identifier) table, with the tables that map the site's proteins to that identifier, for a **protein-set test** (no code); families of its sets by name: a rules file in `sites/data/` |

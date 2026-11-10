@@ -8,24 +8,26 @@ import yaml
 from ptmcontext import inputs as I
 from ptmcontext.set_tests import roles_of
 from ptmcontext import layers as L
-from ptmcontext.profile import load_profile, validate
+from ptmcontext.profile import load_profile, site_profile, validate
 from ptmcontext.site import load_site
 
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
+
 REPO = Path(__file__).resolve().parents[1]
-PROFILES = sorted(p.stem for p in (REPO / 'ptmcontext' / 'profiles').glob('*.yaml'))
+PROFILES = sorted(p.stem for p in (REPO / 'sites' / 'marks').glob('*.yaml'))
 SITES = sorted((REPO / 'sites').glob('*.yaml'))
 
 
 @pytest.mark.parametrize('name', PROFILES)
-def test_packaged_profiles_meet_the_contract(name):
-    p = load_profile(name)
+def test_mark_files_meet_the_contract(name):
+    p = load_profile(MARKS / f'{name}.yaml')
     assert p.residues and p.background('marked_proteins').startswith('other ')
 
 
 @pytest.mark.parametrize('path', SITES, ids=lambda p: p.stem)
 def test_site_configs_name_known_inputs_layers_and_profiles(path):
     site = load_site(path)
-    load_profile(site['mark'])
+    site_profile(site)
     manifest = I.load(REPO / site['manifest']) if site.get('manifest') else I.load()
     for name in I.site_input_names(site):
         assert name in manifest, name
@@ -84,5 +86,25 @@ def w(left: str, right: str) -> str:
     ],
 )
 def test_methylarginine_motif_rules(window, family, expected):
-    p = load_profile('methylarginine')
+    p = load_profile(MARKS / 'methylarginine.yaml')
     assert bool(p.motif_flags(pd.Series([window]))[family].iloc[0]) is expected
+
+
+def test_a_bare_mark_id_no_longer_resolves():
+    with pytest.raises(ValueError, match='not a mark file'):
+        load_profile('methylarginine')
+
+
+def test_a_toy_site_reads_its_own_mark_file_by_path(tmp_path):
+    """The mark file lives in the repository that holds the site file; the package carries no mark content."""
+    from ptmcontext.profile import REPO as PKG_REPO
+
+    data = yaml.safe_load((MARKS / 'phospho.yaml').read_text())
+    data['id'] = 'toymark'
+    (tmp_path / 'sites' / 'marks').mkdir(parents=True)
+    (tmp_path / 'sites' / 'marks' / 'toymark.yaml').write_text(yaml.safe_dump(data))
+    site = {'mark': 'sites/marks/toymark.yaml', '__root__': str(tmp_path)}
+    assert site_profile(site).id == 'toymark'
+    with pytest.raises(ValueError, match='not a mark file'):
+        site_profile({'mark': 'sites/marks/missing.yaml', '__root__': str(tmp_path)})
+    assert not list((PKG_REPO / 'ptmcontext').rglob('profiles'))

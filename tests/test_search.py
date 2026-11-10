@@ -22,6 +22,8 @@ from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
 
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
+
 #    1        10        20        30        40
 P1 = 'MRGGRAAAAARAAAAAAAAAARAAAAAAAAARGGAAAAAAAAR'
 P2 = 'MRAAARAAARAAAAAAAAAAAAAARAAPRPRAAAR'
@@ -128,7 +130,7 @@ def _toy(tmp_path, with_search=True):
         'id': 'toy',
         'title': 'A toy site',
         'status': 'working',
-        'mark': 'methylarginine',
+        'mark': str(MARKS / 'methylarginine.yaml'),
         'manifest': 'sites/toy.inputs.json',
         'snapshot': {'input': 'toy_fasta', 'release': 'Toy 2026_01'},
         'inputs': {},

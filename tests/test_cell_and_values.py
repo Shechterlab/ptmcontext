@@ -6,6 +6,7 @@ names what the blocks get wrong. Nothing here names a source: the same files in 
 
 from __future__ import annotations
 
+from pathlib import Path
 import json
 import re
 
@@ -16,6 +17,8 @@ from ptmcontext import set_tests as T
 from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
+
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
 PROTS = [f'P{i}' for i in range(1, 13)]
 SEQ = 'MRGGRAAAAARAAAAAAAAAR'
@@ -82,7 +85,7 @@ def _toy(tmp_path):
         'id': 'toy',
         'title': 'A toy site',
         'status': 'working',
-        'mark': 'methylarginine',
+        'mark': str(MARKS / 'methylarginine.yaml'),
         'manifest': 'sites/toy.inputs.json',
         'snapshot': {'input': 'fasta', 'release': 'Toy 1'},
         'inputs': {k: k for k in files if k not in ('fasta', 'marks')},

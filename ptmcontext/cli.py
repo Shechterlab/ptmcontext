@@ -25,7 +25,7 @@ from pathlib import Path
 from . import inputs as I
 from . import layers as L
 from . import site as S
-from .profile import load_profile
+from .profile import site_profile
 from .snapshot import md5_file
 
 
@@ -43,7 +43,7 @@ def cmd_run(a) -> int:
 
 def cmd_check(a) -> int:
     site = S.load_site(a.site)
-    profile = load_profile(site['mark'])
+    profile = site_profile(site)
     entries = I.load(S.manifest_of(site))
     named = I.site_input_names(site)
     missing = [n for n in named if n not in entries]

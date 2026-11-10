@@ -1,4 +1,4 @@
-"""The mark profile: everything that is specific to one modification, as data (profiles/<mark>.json).
+"""The mark file (the "profile"): everything that is specific to one modification, as data (sites/marks/<mark>.yaml).
 
 The rest of the code reads the residue, the states, the motifs and the words for text from here, so no module carries
 a mark-specific literal. schemas/profile.schema.json is the contract.
@@ -14,6 +14,8 @@ from pathlib import Path
 import pandas as pd
 
 from .snapshot import Snapshot
+
+REPO = Path(__file__).resolve().parents[1]
 
 
 def _packaged(kind: str, name: str) -> Path:
@@ -135,15 +137,23 @@ def read_config(path: str | Path) -> dict:
     return json.loads(text)
 
 
-def load_profile(name_or_path: str | Path) -> Profile:
-    """A packaged profile by id (methylarginine, phospho, methyllysine) or a profile file anywhere (YAML or JSON),
-    validated against the contract."""
-    p = Path(name_or_path)
-    if not p.suffix:
-        p = _packaged('profiles', f'{name_or_path}.yaml')
+def load_profile(path: str | Path) -> Profile:
+    """A mark file (YAML or JSON) by its path, validated against the contract. A bare id no longer resolves: the
+    package carries no mark content, so each site file names its mark file by path (`mark:`)."""
+    p = Path(path)
+    if not p.suffix or not p.is_file():
+        raise ValueError(
+            f'{str(path)!r} is not a mark file: a mark is given by the path of its file (for example '
+            f'sites/marks/<mark>.yaml, relative to the repository that holds the site file), not by a packaged id'
+        )
     data = read_config(p)
     validate(data, 'profile')
     return Profile(data)
+
+
+def site_profile(site: dict) -> Profile:
+    """The mark file the site's `mark` names (a path relative to the repository that holds the site file)."""
+    return load_profile(Path(site.get('__root__', REPO)) / site['mark'])
 
 
 def check_residues(profile: Profile, snapshot: Snapshot, marked: pd.DataFrame) -> pd.DataFrame:

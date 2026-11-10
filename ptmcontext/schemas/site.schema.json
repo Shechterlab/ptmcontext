@@ -39,7 +39,7 @@
     },
     "mark": {
       "type": "string",
-      "description": "a packaged profile id, or a path to a profile file"
+      "description": "the path of the site's mark file (see CONTRACTS.md, Mark file), relative to the repository that holds this site file, e.g. sites/marks/<mark>.yaml"
     },
     "snapshot": {
       "type": "object",

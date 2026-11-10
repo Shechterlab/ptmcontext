@@ -1,3 +1,4 @@
+from pathlib import Path
 from importlib import metadata
 
 import numpy as np
@@ -10,6 +11,8 @@ from ptmcontext import units as U
 from ptmcontext.layers.context import classify, unit_context
 from ptmcontext.profile import load_profile
 from ptmcontext.snapshot import Snapshot
+
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
 
 def test_classify_inside_near_far_and_termini():
@@ -51,7 +54,7 @@ def _toy_context(tmp_path):
     pd.DataFrame({'canonical_UniProtAC': ['P1'], 'fragment_start': [1], 'fragment_end': [12]}).to_csv(
         mobidb, sep='\t', index=False
     )
-    return L.Context(snap, load_profile('methylarginine'), {'disorder': mobidb})
+    return L.Context(snap, load_profile(MARKS / 'methylarginine.yaml'), {'disorder': mobidb})
 
 
 def test_residue_test_counts_and_rows(tmp_path):

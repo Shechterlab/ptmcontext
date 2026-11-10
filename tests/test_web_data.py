@@ -12,6 +12,8 @@ import pytest
 from ptmcontext import site as S
 from ptmcontext.web import selection_data
 
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
+
 SITES = Path(__file__).resolve().parents[1] / 'sites'
 
 
@@ -134,7 +136,7 @@ def test_left_out_sites_count_on_neither_side(tmp_path):
     pd.DataFrame({'canonical_UniProtAC': ['P1'], 'fragment_start': [1], 'fragment_end': [12]}).to_csv(
         mob, sep='\t', index=False
     )
-    ctx = L.Context(snap, load_profile('methylarginine'), {'disorder': mob})
+    ctx = L.Context(snap, load_profile(MARKS / 'methylarginine.yaml'), {'disorder': mob})
     table = pd.DataFrame({'acc': ['P1', 'P1', 'P1'], 'pos': ['2', '5', '11'], 'flag': ['', 'pending', 'dropped']})
     spec = {
         'accession': 'acc',

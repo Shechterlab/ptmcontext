@@ -5,7 +5,7 @@ schema_version: 1
 id: phospho
 title: Human phosphosites (offline pilot)
 status: offline_pilot
-mark: phospho
+mark: sites/marks/phospho.yaml
 
 snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}
 inputs:

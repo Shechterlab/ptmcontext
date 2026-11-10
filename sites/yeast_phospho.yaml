@@ -4,7 +4,7 @@ schema_version: 1
 id: yeast_phospho
 title: Saccharomyces cerevisiae phosphosites (UniProt)
 status: working
-mark: phospho
+mark: sites/marks/phospho.yaml
 manifest: sites/yeast_phospho.inputs.json      # written by ptmc stage
 
 snapshot: {input: uniprot_fasta, release: "UniProt 2026_04"}

@@ -25,6 +25,7 @@ REPO = Path(__file__).resolve().parents[1]
 #                 1        10        20        30        40
 P1 = 'MRGGRAAAAARAAAAAAAAAARAAAAAAAAARGGAAAAAAAAR'
 P2 = 'MRAAARAAARAAAAAAAAAAAAAARAAAR'
+MARK_FILES = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 MARKS = pd.DataFrame(
     {  # five marks, with the sources that report each and two experiments
         'acc': ['P1', 'P1', 'P1', 'P2', 'P2'],
@@ -155,7 +156,7 @@ def _toy_site(tmp_path, counts=True):
         'id': 'toy',
         'title': 'A toy site',
         'status': 'working',
-        'mark': 'methylarginine',
+        'mark': str(MARK_FILES / 'methylarginine.yaml'),
         'manifest': 'sites/toy.inputs.json',
         'snapshot': {'input': 'toy_fasta', 'release': 'Toy 2026_01'},
         'marks': marks,

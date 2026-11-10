@@ -4,7 +4,7 @@ schema_version: 1
 id: methylarginine
 title: Human methylarginine sites
 status: working
-mark: methylarginine
+mark: sites/marks/methylarginine.yaml
 
 snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}   # quoted: unquoted, YAML reads 2026_03 as 202603
 inputs:                # role the layers read: manifest input that fills it

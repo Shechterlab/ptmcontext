@@ -1,6 +1,7 @@
 """Charge parameters (ptmcontext.charge) and the IDR charge layer, on sequences worked out by hand."""
 
 import itertools
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -10,6 +11,8 @@ from ptmcontext import charge as CH
 from ptmcontext import layers as L
 from ptmcontext import units as U
 from ptmcontext.snapshot import Snapshot
+
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
 
 def test_fractions_and_regions():
@@ -82,7 +85,7 @@ def test_the_run_writes_each_idr_with_its_charge_and_what_is_inside(tmp_path):
         ),
         path,
     )
-    ctx = L.Context(snap, load_profile('methylarginine'), {'disorder': path})
+    ctx = L.Context(snap, load_profile(MARKS / 'methylarginine.yaml'), {'disorder': path})
     marked = pd.DataFrame({'accession': ['A', 'A', 'A', 'B'], 'position': [31, 34, 69, 2]})
     pending = pd.DataFrame({'accession': ['A'], 'position': [37]})
     layer = L.BUILT_IN['idr_charge']

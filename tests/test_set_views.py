@@ -7,6 +7,7 @@ a site without them gets none of it."""
 
 from __future__ import annotations
 
+from pathlib import Path
 import json
 import re
 
@@ -18,6 +19,8 @@ from scipy.stats import hypergeom
 from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
+
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
 SEQ = 'MRGGRAAAARAAAAR'
 PROTEINS = [f'P{i}' for i in range(1, 9)]
@@ -129,7 +132,7 @@ def _site(tmp_path, views=True):
         'id': 'toy',
         'title': 'A toy site',
         'status': 'working',
-        'mark': 'methylarginine',
+        'mark': str(MARKS / 'methylarginine.yaml'),
         'manifest': 'sites/toy.inputs.json',
         'snapshot': {'input': 'toy_fasta', 'release': 'Toy 2026_01'},
         'inputs': {'onto_members': 'onto_members', 'onto_terms': 'onto_terms', 'terms': 'terms'},

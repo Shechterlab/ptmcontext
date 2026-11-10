@@ -28,6 +28,8 @@ from ptmcontext.layers.configured import sticker_counts
 from ptmcontext.profile import load_profile
 from ptmcontext.snapshot import Snapshot, md5_file
 
+MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
+
 ASSETS = Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets'
 #          1         11        21
 SEQ = 'MRYAARAAAFRAAAAAAWWAARAAAAAAAAAAAAAAAAARY'
@@ -56,7 +58,7 @@ def test_sticker_counts_leave_the_residue_out_and_stop_at_the_ends():
 
 def test_the_neighbours_layer_classes_and_the_profiles_stickers():
     snap = Snapshot({'P': SEQ})
-    ctx = L.Context(snap, load_profile('methylarginine'), {})
+    ctx = L.Context(snap, load_profile(MARKS / 'methylarginine.yaml'), {})
     layer = L.get('neighbours', ctx, {'window': 5, 'noun': 'aromatic residue'}, 'sticker_context_5')
     cand = snap.residues(['R'])
     out = layer(cand, ctx)['category']
@@ -71,21 +73,21 @@ def test_the_neighbours_layer_classes_and_the_profiles_stickers():
     assert list(only_w) != list(out)
     with pytest.raises(ValueError):
         L.get('neighbours', ctx, {}, 'x')  # a window is needed
-    bare = load_profile('methylarginine')
+    bare = load_profile(MARKS / 'methylarginine.yaml')
     bare.data.pop('stickers')
     with pytest.raises(ValueError, match='names no stickers'):
         L.get('neighbours', L.Context(snap, bare, {}), {'window': 3}, 'x')(cand, L.Context(snap, bare, {}))
 
 
 def test_the_profile_names_its_stickers_and_the_schema_checks_them():
-    st = load_profile('methylarginine').stickers
+    st = load_profile(MARKS / 'methylarginine.yaml').stickers
     assert (
         st['residues'] == ['Y', 'F', 'W']
         and st['nouns'] == 'aromatic residues'
         and st['heading'] == 'Aromatic patterning'
     )
-    assert load_profile('phospho').stickers['residues'] == ['Y', 'F', 'W']
-    bad = dict(load_profile('methylarginine').data, stickers={'residues': ['aromatic']})
+    assert load_profile(MARKS / 'phospho.yaml').stickers['residues'] == ['Y', 'F', 'W']
+    bad = dict(load_profile(MARKS / 'methylarginine.yaml').data, stickers={'residues': ['aromatic']})
     with pytest.raises(Exception):
         from ptmcontext.profile import validate
 
@@ -107,7 +109,7 @@ def _ctx(tmp_path, seqs, regions):
     pd.DataFrame(regions, columns=['canonical_UniProtAC', 'fragment_start', 'fragment_end']).to_csv(
         mobidb, sep='\t', index=False
     )
-    return L.Context(snap, load_profile('methylarginine'), {'disorder': mobidb})
+    return L.Context(snap, load_profile(MARKS / 'methylarginine.yaml'), {'disorder': mobidb})
 
 
 def test_only_in_idr_counts_the_residues_inside_idrs(tmp_path):
@@ -345,7 +347,7 @@ def _toy_site(tmp_path):
         'id': 'toy',
         'title': 'A toy site',
         'status': 'working',
-        'mark': 'methylarginine',
+        'mark': str(MARKS / 'methylarginine.yaml'),
         'manifest': 'sites/toy.inputs.json',
         'snapshot': {'input': 'toy_fasta', 'release': 'Toy 2026_01'},
         'marks': {'input': 'toy_marks', 'accession': 'acc', 'position': 'pos', 'residue_mismatch': 'error'},
