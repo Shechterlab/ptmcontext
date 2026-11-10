@@ -48,3 +48,10 @@ def test_the_page_and_the_export_both_thin_their_axis():
     src = KIT.read_text()
     assert 'thinTicks(M.axis.ticks, X1 - X0, 10)' in src  # the SVG, PNG and PDF exports
     assert "querySelectorAll('.qaxis .ticks, .fr-ax .tk')" in src  # the card on the page, at its drawn width
+
+
+def test_rows_of_a_question_of_tests_are_coded_by_stratum():
+    # the page reads the statistics table itself: a test repeated on a stratum is the class <category>_<stratum>, as the build codes it,
+    # so "Any interface" in three strata is three rows with three labels
+    src = KIT.read_text()
+    assert "category: coded ? `${g('category')}_${g('stratum')}` : g('category')" in src

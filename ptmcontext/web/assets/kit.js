@@ -200,9 +200,11 @@
     D.rows = lines.map((l) => {
       const x = l.split('\t'),
         g = (c) => x[col[c]];
+      // a question of several tests codes a test of another stratum <category>_<stratum> (as the build does), so each row is a class
+      const coded = A[g('analysis')]?.counting && !['all', ''].includes(g('stratum'));
       return {
         analysis: g('analysis'),
-        category: g('category'),
+        category: coded ? `${g('category')}_${g('stratum')}` : g('category'),
         method: g('method'),
         a: +g('a'),
         b: +g('b'),
