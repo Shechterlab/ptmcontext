@@ -55,7 +55,7 @@ upstream ───────────► staged files ──► snapshot �
 ## The website
 
 `ptmc web sites/<site>.yaml` writes `out/<site>/web/index.html` with `assets/` (for GitHub Pages) and `<site>.html`
-(one file, for sharing). Layout and behavior are the kit's, in the Methylarginine Site Explorer's look: the header
+(one file, for offline use; `ptmc pages` leaves it out of the published site). Layout and behavior are the kit's, in the Methylarginine Site Explorer's look: the header
 band with its orange rule, the search with example chips, tabs with counts, cards of dot rows, light and dark themes.
 A site's `website:` block sets its name, tagline, band colors, accent, type, icon, header picture, lab, links,
 example searches, the tiles under the header (`stats`), what the Overview opens with (`overview`: sections of tiles,

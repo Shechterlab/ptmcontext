@@ -98,9 +98,13 @@ DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
 
 def _with_families(analyses: list, site: dict) -> list:
     """analyses[].family (the site file): questions that are variants of one base share a family name, and the sidebar
-    lists them as one entry."""
-    fam = {a['id']: a['family'] for a in site.get('analyses', []) if a.get('family')}
-    return [{**a, 'family': fam[a['id']]} if a['id'] in fam else a for a in analyses]
+    lists them as one entry, naming each by what differs (its `family_label`, else its title less the family's name)."""
+    keep = {
+        a['id']: {k: a[k] for k in ('family', 'family_label') if a.get(k)}
+        for a in site.get('analyses', [])
+        if a.get('family')
+    }
+    return [{**a, **keep[a['id']]} if a['id'] in keep else a for a in analyses]
 
 
 def _asset(name: str) -> Path:
@@ -1828,7 +1832,7 @@ def pages(
     site_paths: list, out: str | Path, out_root: str | Path | None = None, log=print, skip_missing: bool = False
 ) -> Path:
     """One folder to publish (GitHub Pages, or any static host): each site's website under its id, and a landing page
-    in the same look listing them. Run ptmc run and ptmc web for each site first; with skip_missing, a site whose
+    in the same look listing them (without each site's one-file copy, which `ptmc web` still writes). Run ptmc run and ptmc web for each site first; with skip_missing, a site whose
     website was not built (its sources could not be fetched) is left out with a warning instead of failing the rest."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
@@ -1846,7 +1850,8 @@ def pages(
         dest = out / site['id']
         if dest.exists():
             shutil.rmtree(dest)
-        shutil.copytree(src, dest)
+        # the one-file copy (<id>.html, up to 84 MB) is for offline use: it stays in the build folder, not in the published site
+        shutil.copytree(src, dest, ignore=lambda d, names: [f'{site["id"]}.html'] if Path(d) == src else [])
         run = json.loads((src.parent / 'run.json').read_text())
         profile = load_profile(site['mark'])
         band = web.get('band', DEFAULT_BAND)

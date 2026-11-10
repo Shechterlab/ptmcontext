@@ -640,21 +640,38 @@
   } catch (e) {
     tocOpen = {};
   }
+  // inside an opened family only what differs: the label (or title) less the family's name, leading punctuation and
+  // an "in" join; a trailing parenthesis joins with a comma ("X, in IDRs (within 3)" -> "in IDRs, within 3")
+  function famLabel([, lab, , , fam, own]) {
+    if (own) return own;
+    if (!fam || !lab.startsWith(fam)) return lab;
+    let r = lab
+      .slice(fam.length)
+      .replace(/^[\s,:;\u2013\u2014-]+/, '')
+      .trim();
+    const m = r.match(/^(.*?)\s*\(([^()]*)\)$/);
+    if (m) r = [m[1].trim(), m[2].trim()].filter(Boolean).join(', ');
+    return r || lab;
+  }
   function sectionsTab() {
     const raw = (K.sections?.[S.view]?.() || []).filter((x) => x[0] !== 'view');
     // a link to another view, or to the same view with a different question (?a=), is current only when both match
     const aOf = (h) => (h.match(/[?&]a=([^&]*)/) || [])[1] || '',
       cur = K.link(S.view, S.arg),
       here = (h) => cur.split('?')[0] === h.split('?')[0] && (S.view !== 'statistics' || (S.a || '') === aOf(h));
-    // a section with nothing listed under it (not drawn yet, or one question of its own name) is a heading-styled jump
+    // a section with nothing listed under it (or one question of its own name) is a heading-styled jump
     const lone = ([id, lab]) =>
       `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="toc-group toc-lone"><span class="car" aria-hidden="true"></span>${esc(lab)}</a>`;
-    const leaf = ([id, lab, lev, href]) =>
-      lev === 0 && !href
+    const leaf = (x, inFam) => {
+      const [id, lab, lev, href] = x,
+        text = inFam ? famLabel(x) : lab,
+        tip = text !== lab ? ` title="${esc(lab)}"` : '';
+      return lev === 0 && !href
         ? lone([id, lab])
         : href
-          ? `<a href="${esc(href)}" class="sub l1${here(href) ? ' on' : ''}"${here(href) ? ' aria-current="page"' : ''}>${esc(lab)}</a>`
-          : `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="sub l1">${esc(lab)}</a>`;
+          ? `<a href="${esc(href)}" class="sub l1${here(href) ? ' on' : ''}"${here(href) ? ' aria-current="page"' : ''}${tip}>${esc(text)}</a>`
+          : `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="sub l1"${tip}>${esc(text)}</a>`;
+    };
     // a group heading (a level-0 entry with entries under it) is a disclosure; entries sharing a family (an analysis'
     // `family` in the site file) are one entry with a disclosure of its own. Open: the reader's choice this session,
     // else only when it holds the current page
@@ -684,16 +701,22 @@
       const kids = g.kids
         .map((k) => {
           const f = k[4];
-          if (!f || famCount(g.kids, f) < 2) return leaf(k);
+          if (!f || famCount(g.kids, f) < 2) return leaf(k, false);
           if (done.has(f)) return '';
           done.add(f);
           const vs = g.kids.filter((y) => y[4] === f);
-          return disclosure(`${S.view}|f|${g.head[1]}|${f}`, f, vs.map(leaf).join(''), 'sub l1 fam', vs.some(isCur));
+          return disclosure(
+            `${S.view}|f|${g.head[1]}|${f}`,
+            f,
+            vs.map((y) => leaf(y, true)).join(''),
+            'sub l1 fam',
+            vs.some(isCur)
+          );
         })
         .join('');
       return `<div class="toc-grp">${disclosure(`${S.view}|g|${g.head[1]}`, g.head[1], kids, 'toc-group', g.kids.some(isCur))}</div>`;
     };
-    const item = (e) => (e.head ? group(e) : leaf(e.leaf));
+    const item = (e) => (e.head ? group(e) : leaf(e.leaf, false));
     const pages = [...document.querySelectorAll('#tabs a.tab')].map((a) => ({
       href: a.getAttribute('href'),
       name: a.cloneNode(true),
@@ -1117,7 +1140,13 @@
       '[data-jump]',
       (el, e) => {
         e.preventDefault();
-        const t = document.getElementById(el.dataset.jump);
+        let t = document.getElementById(el.dataset.jump);
+        // a tile of a section not drawn yet: draw the section, then go to the tile
+        const drew = !t && K.ovDrawThrough?.(el.dataset.jump);
+        if (drew) {
+          K.render();
+          t = document.getElementById(el.dataset.jump);
+        }
         if (t) {
           if (R.open && !pinned()) {
             R.open = false;
@@ -1125,7 +1154,13 @@
           }
           for (let d = t; d; d = d.parentElement?.closest('details')) if (d.tagName === 'DETAILS') d.open = true;
           jumpId = el.dataset.jump;
-          t.scrollIntoView({ behavior: K.smooth?.() || 'smooth', block: 'start' });
+          // sections just drawn are still taking their size: go at once, and again when they have
+          t.scrollIntoView({ behavior: drew ? 'instant' : K.smooth?.() || 'smooth', block: 'start' });
+          if (drew)
+            setTimeout(
+              () => document.getElementById(el.dataset.jump)?.scrollIntoView({ behavior: 'instant', block: 'start' }),
+              400
+            );
           setTimeout(watchSections, 700);
         }
       },

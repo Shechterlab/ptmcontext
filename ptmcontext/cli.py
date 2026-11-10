@@ -11,7 +11,7 @@ ptmc stage mobidb --out DIR/inputs --manifest sites/yeast.inputs.json --prefix y
 ptmc stage shephard s_cerevisiae --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
                                               stage a proteome from upstream, recording release, date and MD5
 ptmc web sites/methylarginine.yaml            the site's website, from its run: out/<site>/web/index.html and <site>.html
-ptmc pages sites/a.yaml sites/b.yaml --out _site  the built sites and a landing page, ready to publish
+ptmc pages sites/a.yaml sites/b.yaml --out _site  the built sites (not their one-file copies) and a landing page, ready to publish
 ptmc layers                                     the layers built in, and those installed packages offer
 """
 

@@ -215,6 +215,15 @@ jobs:
         with:
           name: skipped-sites
           path: skipped_sites.txt
+      # the one-file copies (out/<site>/web/<site>.html, up to 84 MB each) are not published on Pages: kept as a workflow artifact
+      - uses: actions/upload-artifact@v4
+        with:
+          name: one-file-copies
+          path: |
+            out/*/web/*.html
+            !out/*/web/index.html
+          retention-days: 30
+          if-no-files-found: ignore
       - run: ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/yeast_phospho.yaml --out _site --skip-missing
       - uses: actions/upload-pages-artifact@v3
         with:

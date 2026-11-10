@@ -1777,6 +1777,15 @@
     );
   }
   K.ovOpen = new Set(); // the later Overview sections the reader opened on this visit
+  // the section whose tile has this element id (the sidebar jumps to tiles of sections not drawn yet)
+  // and draws it with every section above it, so that nothing drawn later moves the tile while the page scrolls to it
+  K.ovDrawThrough = (id) => {
+    const all = secList(),
+      i = all.findIndex((x) => x.cards.some((c) => `tile-${c.analysis}` === id));
+    if (i < 0) return false;
+    all.slice(0, i + 1).forEach((x) => K.ovOpen.add(x.name));
+    return true;
+  };
   K.clicks.push([
     '[data-ov-open]',
     (el) => {
@@ -2115,7 +2124,7 @@
   // selection and the baseline)
   K.sections.overview = () => [
     ...(selOn() ? [['view', vsOn() ? 'Your selection, against ' + vsName() : 'Your selection', 1]] : []),
-    ...secList().flatMap((x, i) => {
+    ...secList().flatMap((x) => {
       const sid = `sec-${x.name.replace(/\W+/g, '-').toLowerCase()}`,
         tileOf = (c) =>
           S.arg
@@ -2125,8 +2134,16 @@
                 1,
                 link('overview', c.analysis),
                 A[c.analysis].family,
+                A[c.analysis].family_label,
               ]
-            : [`tile-${c.analysis}`, c.title || A[c.analysis].title, 1, undefined, A[c.analysis].family];
+            : [
+                `tile-${c.analysis}`,
+                c.title || A[c.analysis].title,
+                1,
+                undefined,
+                A[c.analysis].family,
+                A[c.analysis].family_label,
+              ];
       // an opened question: its own section lists the questions, the others are one line that opens their first (the list stays short)
       if (S.arg) {
         const mine = x.cards.some((c) => c.analysis === S.arg || (c.views || []).some((v) => v.analysis === S.arg));
@@ -2134,14 +2151,11 @@
           ? [[sid, x.name, 0], ...x.cards.map(tileOf)]
           : [[sid, x.name, 1, link('overview', x.cards[0]?.analysis || '')]];
       }
-      // a section not drawn yet is its name alone; one drawn lists the tiles that show (not those behind its "More on ..." fold)
-      const later =
-        !selOn() && (D.overview?.draw_first ?? 2) >= 0 && i >= (D.overview?.draw_first ?? 2) && !K.ovOpen.has(x.name);
+      // every section lists the tiles that show (not those behind its "More on ..." fold), drawn yet or not: the list
+      // comes from the site's questions, so the sidebar is the same on first paint as after scrolling
       return [
         [sid, x.name, 0],
-        ...(later ? [] : x.show > 0 && !selOn() && x.cards.length > x.show ? x.cards.slice(0, x.show) : x.cards).map(
-          tileOf
-        ),
+        ...(x.show > 0 && !selOn() && x.cards.length > x.show ? x.cards.slice(0, x.show) : x.cards).map(tileOf),
       ];
     }),
     ...(selOn() || S.arg ? [] : (K.overviewSections || []).flatMap((f) => f())),
@@ -2162,6 +2176,7 @@
                 1,
                 link('statistics', '', { a: c.analysis }),
                 A[c.analysis].family,
+                A[c.analysis].family_label,
               ]),
             ]
           : [];

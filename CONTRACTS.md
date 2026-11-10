@@ -46,7 +46,10 @@ Conventions:
   set lie within `window` residues of it on either side; the set is `with.residues` or the mark profile's `stickers`.
 - Questions that are variants of one base (the same test at other window sizes, or inside IDRs) may share a
   `family:` (any text, the entry's name). The website's Sections sidebar then lists them as one entry with a caret
-  that reveals the variants; the questions, their pages and their statistics are unchanged. Group headings in that
+  that reveals the variants, each named by what differs: its title less the family's name (and any leading
+  punctuation; a trailing parenthesis joins with a comma, so "X, in IDRs (within 3)" under family "X" reads
+  "in IDRs, within 3"), or the question's own `family_label:` where that reads badly; the full title is the entry's
+  tooltip. The questions, their pages and their statistics are unchanged. Group headings in that
   sidebar are the Overview's `website.overview.sections` names, each a disclosure that is open only when it holds the
   current page (a reader's own choice is kept for the session).
 - `enricher`: protein-set tests (clusterProfiler's `enricher`). `a, b, c, d` are k, n − k, M − k and N − M − n + k

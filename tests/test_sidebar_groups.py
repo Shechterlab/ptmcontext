@@ -53,3 +53,73 @@ def test_the_sidebar_opens_a_group_only_around_the_current_page():
     assert 'A[c.analysis].family' in (ASSETS / 'kit.js').read_text()
     css = (ASSETS / 'kit.css').read_text()
     assert ".toc .tgl[aria-expanded='true'] .car::before" in css and '.toc .toc-kids[hidden]' in css
+
+
+def _fam_label(title, family, own=None):
+    import json
+    import re
+    import subprocess
+
+    js = (ASSETS / 'kit-rail.js').read_text()
+    fn = re.search(r'  function famLabel\(.*?\n  \}\n', js, re.S).group(0)
+    out = subprocess.run(
+        [
+            'node',
+            '-e',
+            f'{fn}\nconsole.log(JSON.stringify(famLabel([0, {json.dumps(title)}, 1, 0, {json.dumps(family)}, {json.dumps(own)}])))',
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return json.loads(out)
+
+
+def test_a_family_entry_shows_only_what_differs():
+    fam = 'Next to aromatic residues'
+    assert _fam_label(f'{fam} (within 3)', fam) == 'within 3'
+    assert _fam_label(f'{fam}, in IDRs (within 5)', fam) == 'in IDRs, within 5'
+    assert _fam_label(f'{fam}: in IDRs', fam) == 'in IDRs'
+    assert _fam_label('Something else', fam) == 'Something else'  # not a prefix: the title
+    assert _fam_label(fam, fam) == fam  # nothing differs: the title
+    assert _fam_label(f'{fam} (within 3)', fam, 'close') == 'close'  # the question's own label wins
+
+
+def test_family_label_is_in_the_schema_and_reaches_the_page_data(tmp_path):
+    import json
+
+    schema = json.loads((Path(S.__file__).parent / 'schemas' / 'site.schema.json').read_text())
+    assert '"family_label"' in json.dumps(schema)
+    root = _toy(tmp_path)
+    path = root / 'sites' / 'toy.yaml'
+    site = yaml.safe_load(path.read_text())
+    site['analyses'][0].update(family='Toy motifs', family_label='first')
+    path.write_text(yaml.safe_dump(site, sort_keys=False))
+    assert S.website_problems(S.load_site(path)) == []
+    a = _page_data(_build(root))['analyses'][0]
+    assert (a['family'], a['family_label']) == ('Toy motifs', 'first')
+    # the full title is untouched, and the rail names it as the entry's tooltip
+    assert a['title'] == site['analyses'][0].get('title', a['title'])
+    assert 'title="${esc(lab)}"' in (ASSETS / 'kit-rail.js').read_text()
+
+
+def test_every_overview_section_lists_its_questions_drawn_or_not():
+    kit = (ASSETS / 'kit.js').read_text()
+    assert 'const later =' not in kit and 'K.ovDrawThrough' in kit
+    rail = (ASSETS / 'kit-rail.js').read_text()
+    # a tile of a section not drawn yet draws the section, then scrolls to the tile
+    assert 'K.ovDrawThrough?.(el.dataset.jump)' in rail
+
+
+def test_pages_leave_out_the_one_file_copy_and_web_still_writes_it(tmp_path):
+    from ptmcontext import web
+
+    root = _toy(tmp_path)
+    index = _build(root)
+    assert (index.parent / 'toy.html').exists()
+    out = tmp_path / 'pub'
+    web.pages([root / 'sites' / 'toy.yaml'], out, log=lambda *_: None)
+    assert (out / 'toy' / 'index.html').exists() and not (out / 'toy' / 'toy.html').exists()
+    assert not list(out.rglob('toy.html'))
+    wf = (Path(__file__).resolve().parents[1] / '.github' / 'workflows' / 'pages.yml').read_text()
+    assert 'actions/upload-artifact@v4' in wf and 'retention-days: 30' in wf and 'out/*/web/*.html' in wf
