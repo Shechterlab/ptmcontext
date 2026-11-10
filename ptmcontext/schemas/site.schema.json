@@ -5661,6 +5661,25 @@
                   "maximum": 50,
                   "description": "residues each side of the mark the windows hold (default 15)"
                 },
+                "near_examples": {
+                  "type": "array",
+                  "description": "patterns the box suggests after the `near` key and quotes in its help (the first one); left out, none are suggested",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "pattern"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "pattern": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
                 "help": {
                   "type": "string"
                 }

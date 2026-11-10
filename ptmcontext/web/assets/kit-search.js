@@ -23,7 +23,9 @@
     PSPEC = D.protein_attributes?.specs || {},
     SRCH = D.search || {},
     SITE_PH = D.site.placeholders || {},
-    PHM = (SITE_PH.motif || '').split(/\s*,\s*/).filter(Boolean);
+    PHM = (SITE_PH.motif || '').split(/\s*,\s*/).filter(Boolean),
+    NEAR_EX = SRCH.patterns?.near_examples || [], // suggestions for the near pattern, from the site file
+    EXGENE = ((D.site.examples || []).find((e) => /\s[A-Z]?\d+$/.test(e)) || 'GENE 123').split(/\s+/)[0];
   K.searchNote = true; // the selection bar leaves what the search could not read to the line
 
   // ---- the elements: a list under the box, and a line under the toolbar's search -----------------------------------
@@ -71,7 +73,10 @@
       add(
         SRCH.patterns.near,
         `motif within ±${SRCH.patterns.span || 15}`,
-        `a pattern ` + `anywhere within ${SRCH.patterns.span || 15} residues of the ${W.mark}, such as PRPR`
+        `a pattern ` +
+          `anywhere within ${SRCH.patterns.span || 15} residues of the ${W.mark}${
+            NEAR_EX.length ? `, such as ${NEAR_EX[0].pattern}` : ''
+          }`
       );
     Object.entries(K.searchTermHelp || {}).forEach(([k, h]) => add(k, h.label || k, h.help || ''));
     Object.entries(D.search_aliases || {}).forEach(([k, to]) =>
@@ -91,12 +96,7 @@
       out = [];
     const T = (SRCH.terms || {})[key0];
     if (T) Object.keys(T.values).forEach((v) => out.push([v, T.help ? '' : v]));
-    if (SRCH.patterns?.near === key0)
-      [
-        ['PRPR', 'Pro-Arg repeats'],
-        ['RGRG', 'RG repeat'],
-        ['YGG', 'Tyr-Gly-Gly'],
-      ].forEach((x) => out.push(x));
+    if (SRCH.patterns?.near === key0) NEAR_EX.forEach((x) => out.push([x.pattern, x.label || '']));
     if (K.searchTermValues?.[key0]) out.push(...K.searchTermValues[key0]());
     if (A[key]?.kind === 'residue' && sd)
       (sd.classes[key] || []).forEach((c) =>
@@ -511,7 +511,7 @@
           `as ${aa}${pos} in every protein: <b>${int(c.marks?.length || 0)}</b> ${esc(
             c.marks?.length === 1 ? W.mark : W.marks
           )} on <b>${int(c.proteins?.size || 0)}</b> protein${c.proteins?.size === 1 ? '' : 's'}. The change to ${esc(to === '*' ? 'a stop' : to)} is not matched;` +
-          ` name the protein (FUS ${aa}${pos}${to}) to open its site.`
+          ` name the protein (${EXGENE} ${aa}${pos}${to}) to open its site.`
       )
     );
     if (prots.size || q.sites.length) {

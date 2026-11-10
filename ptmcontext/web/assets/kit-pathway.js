@@ -1,7 +1,7 @@
 /* The pathway view (website.front.pathways; the Overview's tiles and question pages): a "Proteins" button on the rows of a pathway question opens
-   the pathway's sub-pathways as groups of protein chips. A methylated protein is filled, with its sites (those of the
-   selection, when there is one); a protein of the pathway with none is an outline, muted; the methylated come first, and
-   each group says "k of n methylated in your selection". Chips open the protein's page. The groups follow the filters,
+   the pathway's sub-pathways as groups of protein chips. A marked protein is filled, with its sites (those of the
+   selection, when there is one); a protein of the pathway with none is an outline, muted; the marked come first, and
+   each group says "k of n marked in your selection". Chips open the protein's page. The groups follow the filters,
    and the address keeps the pathway (pw=). The pathway's proteins and sub-pathways are one small file (data/pathways/<set>.json,
    built with the site from its own hierarchy and membership tables), read only when it is opened; nothing is asked of the
    pathway source's service, only linked. A module of the site kit; which questions are pathway questions comes from the
@@ -105,7 +105,7 @@
       const sites = `${int(x.n)} ${x.n === 1 ? K.W.mark : K.W.marks}`;
       return x.here
         ? `<a class="pchip${x.on ? ' on' : ' off'}" href="${esc(K.link('protein', x.a))}" title="${esc(
-            `${x.g} (${x.a}): ${x.on ? sites + word : 'methylated, but not in your selection'}`
+            `${x.g} (${x.a}): ${x.on ? sites + word : `${K.W.marked}, but not in your selection`}`
           )}"><b>${esc(x.g)}</b>${x.on ? `<small>${int(x.n)}</small>` : ''}</a>`
         : `<span class="pchip none" title="${esc(`${x.g} (${x.a}): none in this dataset`)}"><b>${esc(x.g)}</b></span>`;
     };
@@ -113,7 +113,7 @@
       const ms = sorted(g.ms);
       return (
         `<details class="pwgroup" id="pwg-${esc(String(g.id).replace(/\W/g, '_'))}"${open ? ' open' : ''}><summary>` +
-        `<span class="pwgname">${esc(g.name)}</span><span class="pwgk"><b>${int(g.k)}</b> of ${int(ms.length)} methylated${word}</span></summary>` +
+        `<span class="pwgname">${esc(g.name)}</span><span class="pwgk"><b>${int(g.k)}</b> of ${int(ms.length)} ${esc(K.W.marked)}${word}</span></summary>` +
         `<div class="pchips">${ms.slice(0, SHOWN).map(chip).join('')}${
           ms.length > SHOWN
             ? `<button type="button" ` +
@@ -126,14 +126,14 @@
       one = d.groups.length === 1;
     box.innerHTML =
       `<p class="pwsum"><b>${int(k0)}</b> of ${int(d.acc.length)} proteins in this pathway are ` +
-      `methylated${word}${
+      `${K.W.marked}${word}${
         one
           ? ''
-          : `, in ${int(d.groups.length)} sub-pathways${d.top ? ' (those with most methylated proteins first)' : ''}`
+          : `, in ${int(d.groups.length)} sub-pathways${d.top ? ` (those with most ${K.W.marked} proteins first)` : ''}`
       }.</p>` +
-      (`<p class="pwlegend"><span class="pchip on"><b>GENE</b><small>3</small></span> methylated, with its ${esc(K.W.marks)}${word} <span class="pchip ` +
-        `none"><b>GENE</b></span> in the pathway, not methylated here${
-          act ? ' <span class="pchip off"><b>GENE</b></span> methylated, outside your selection' : ''
+      (`<p class="pwlegend"><span class="pchip on"><b>GENE</b><small>3</small></span> ${esc(K.W.marked)}, with its ${esc(K.W.marks)}${word} <span class="pchip ` +
+        `none"><b>GENE</b></span> in the pathway, not ${esc(K.W.marked)} here${
+          act ? ` <span class="pchip off"><b>GENE</b></span> ${esc(K.W.marked)}, outside your selection` : ''
         }</p>`) +
       groups.map((g, n) => group(g, n < (d.top ? 4 : 8))).join('');
     box.querySelectorAll('[data-pw-all]').forEach((b) => {

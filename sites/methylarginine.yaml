@@ -1699,6 +1699,10 @@ website:                  # the look and words of the website (ptmc web); layout
     patterns:                # the motif finder: a pattern of residues on the sites' sequence windows
       at: motif              # motif:GXRG covers the site (motif families keep their names: motif:RGG)
       near: window           # window:PRPR anywhere within the span
+      near_examples:         # the suggestions after window:
+        - {pattern: PRPR, label: Pro-Arg repeats}
+        - {pattern: RGRG, label: RG repeat}
+        - {pattern: YGG, label: Tyr-Gly-Gly}
       span: 15
     terms:                   # the explorer's other search words, as this site's filters
       go:
