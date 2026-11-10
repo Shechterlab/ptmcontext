@@ -227,7 +227,7 @@ def derive(site: dict, folder: Path, log=print, write: bool = False) -> None:
     marks[col] = [by.get(a, '') for a in (marks['accession'] if 'accession' in marks.columns else marks.iloc[:, 0])]
     marks.to_csv(folder / 'marks.tsv', sep='\t', index=False)
     site['marks'].setdefault('attributes', {})[name] = spec[name]
-    log(f'  {name}: {sum(1 for v in marks[col] if v):,} {site["mark"]} marks on proteins with a partner of a class')
+    log(f'  {name}: {sum(1 for v in marks[col] if v):,} {site["id"]} marks on proteins with a partner of a class')
 
 
 def _paths(run: dict) -> dict:

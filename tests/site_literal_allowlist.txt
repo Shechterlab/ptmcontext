@@ -1,0 +1,53 @@
+# Mark and site literals that ptmcontext/ may still contain (tests/test_no_site_literals.py).
+# path | literal | most occurrences allowed | why. A new occurrence, or one in a file not listed, fails the test;
+# remove a line when its occurrence goes. Only comments, docstrings and schema descriptions belong here.
+ptmcontext/cli.py | methylarginine | 2 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/cli.py | arginine | 2 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/layers/charge.py | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/layers/charge.py | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/layers/context.py | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/layers/context.py | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/layers/domains.py | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/layers/domains.py | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/profile.py | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/question.py | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/question.py | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/schemas/site.schema.json | FUS | 1 | an example in a comment or schema description, never read as data
+ptmcontext/schemas/site.schema.json | PRPR | 2 | an example in a comment or schema description, never read as data
+ptmcontext/schemas/statistics.schema.json | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/schemas/statistics.schema.json | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/statistics.py | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/statistics.py | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/stats.py | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/stats.py | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/__init__.py | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/__init__.py | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-3d.js | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-3d.js | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-columns.js | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-columns.js | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-hilite.js | FUS | 3 | an example in a comment or schema description, never read as data
+ptmcontext/web/assets/kit-interactions.js | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-interactions.js | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-map.js | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-map.js | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-proteins.js | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-proteins.js | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-proteins.js | FUS | 5 | an example in a comment or schema description, never read as data
+ptmcontext/web/assets/kit-select.js | PRMT | 2 | an example in a comment or schema description, never read as data
+ptmcontext/web/assets/kit-select.js | FUS | 1 | an example in a comment or schema description, never read as data
+ptmcontext/web/assets/kit-select.js | PRPR | 1 | an example in a comment or schema description, never read as data
+ptmcontext/web/assets/kit-sites.js | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-sites.js | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-tabfig.js | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-tabfig.js | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-tables.js | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit-tables.js | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit.css | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit.css | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit.js | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit.js | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/assets/kit.js | PRMT | 1 | an example in a comment or schema description, never read as data
+ptmcontext/web/assets/kit.js | FUS | 3 | an example in a comment or schema description, never read as data
+ptmcontext/web/structure.py | methylarginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
+ptmcontext/web/structure.py | arginine | 1 | provenance: names the Methylarginine Site Explorer release or design the method was taken from
