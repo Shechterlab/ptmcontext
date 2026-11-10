@@ -355,7 +355,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Partner classes
     question: "Are phosphorylated proteins more often partners of kinases, phosphatases and readers than other proteins that have physical partners?"
-    sub: "Phosphorylated proteins against the proteins with a STRING physical partner (score 0.7 or more), by whether one of their partners is in each kinase, phosphatase or reader class (one-sided hypergeometric test). A protein with a partner in several classes is in each. The partner is a partner of the whole protein, so a class says what the protein binds, not what acts on the site"
+    sub: "Phosphorylated proteins against the proteins with a STRING physical partner (score 0.7 or more), by whether one of their partners is in each kinase, phosphatase or reader class (one-sided hypergeometric test). A protein with a partner in several classes is in each. The partner is a partner of the whole protein, so a class says what the protein binds, not what acts on the site; and well-studied proteins have more partners and more sites, so every class is expected to look enriched to some degree"
     section: Kinases, phosphatases and readers
     sets: {input: string_partners, partner_classes: string}
     universe: annotated
