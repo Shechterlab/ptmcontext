@@ -963,7 +963,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near phosphosites (within 10)
     question: "Are methylarginines more often near a phosphosite than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite (UniProt and iPTMnet, by-similarity records left out) lies within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methylarginines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) lies within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methylarginines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
     section: Other marks
   - id: near_methyllysine
     layer: near_marks
@@ -971,7 +971,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methyllysines (within 10)
     question: "Are methylarginines more often near a methyllysine than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a methyllysine (UniProt and iPTMnet, by-similarity records left out) lies within 10 residues on either side. Few proteins carry a recorded methyllysine"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a methyllysine (UniProt, iPTMnet, CPLM and Berryhill 2023, by-similarity records left out) lies within 10 residues on either side. Few proteins carry a recorded methyllysine"
     section: Other marks
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
@@ -1225,12 +1225,13 @@ context_marks:
     colour: "#0891B2"          # cyan: apart from the red and slate of the data, the motif green and the purples of other sites
     colour_dark: "#1FA2C4"
     citation:
-      short: UniProt and iPTMnet
-      cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: CC BY-NC-SA 4.0
+      short: UniProt, iPTMnet and Ochoa 2020
+      cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Ochoa et al., Nat Biotechnol 38:365-373 (2020), doi:10.1038/s41587-019-0344-3 (the article is not open access; its supplementary table is included by the owner's decision)"
+      licence: "CC BY-NC-SA 4.0; Ochoa 2020 included by the owner's decision"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
+      Ochoa 2020: {cite: "Ochoa et al., Nat Biotechnol 38:365 (2020), included by the owner's decision", doi: 10.1038/s41587-019-0344-3}
   - id: methyllysine
     label: Methyllysine
     input: context_methyllysine_sites_v1_5_0
@@ -1238,13 +1239,14 @@ context_marks:
     colour: "#5E6E75"          # the site's neutral, secondary style
     colour_dark: "#A3AEB3"
     citation:
-      short: UniProt, iPTMnet and CPLM
-      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license; its sites are included pending the authors' permission)"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license (included pending the authors' permission)"
+      short: UniProt, iPTMnet, CPLM and Berryhill 2023
+      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license; its sites are included pending the authors' permission); Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license (included pending the authors' permission); Berryhill 2023 article CC BY 4.0"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
       CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022), included pending the authors' permission", doi: 10.1093/nar/gkab849}
+      Berryhill 2023: {cite: "Berryhill et al., Sci Rep 13:377 (2023)", doi: 10.1038/s41598-022-27175-x}
 
 outputs: {folder: out/methylarginine}
 citation: sites/methylarginine.citation.cff   # the citation, data sources, version and date: edit there

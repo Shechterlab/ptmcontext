@@ -1055,9 +1055,9 @@
   }
   function contrastResidue(qid, method, G) {
     // marks the question counts: not on a protein it leaves out, and, for a question that counts only the residues inside
-    // some regions (only_in), only the marks inside them (those with a class)
+    // some regions (only_in) or a part of the marks (subset), only the marks inside them (those with a class)
     const skip = new Set(SD.counted?.[qid]?.skip || []),
-      ri = A[qid]?.only_in ? AN().indexOf(qid) : -1;
+      ri = A[qid]?.only_in || A[qid]?.subset ? AN().indexOf(qid) : -1;
     const kept = (i) => !skip.has(SD.marks[i][0]) && (ri < 0 || SD.marks[i][2][ri].length > 0);
     G = { ...G, g1: G.g1.filter(kept), g2: G.g2.filter(kept) };
     const m1 = G.g1.map((i) => SD.marks[i]),

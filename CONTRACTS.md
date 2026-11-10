@@ -53,6 +53,16 @@ Conventions:
   layer is needed, so that the website can tell the marks outside). The `neighbours` layer (`with: {window, residues,
   many, noun}`) places a residue in `none`, `one` or `two_plus` (`many` or more) according to how many residues of a
   set lie within `window` residues of it on either side; the set is `with.residues` or the mark profile's `stickers`.
+- A question (residue, several tests, or protein sets; not `conditional_logit`) may count only a part of the marks
+  (`marks_where`: a condition, or `all_of` conditions, on the marks table's columns, as `marks.exclude` reads them):
+  the marks with a kept row that meets it, e.g. the lysines with a row whose `state` is `me3`; a mark may meet several
+  subsets. The marks outside are other residues in a residue question (the website shows them as not counted in it, as
+  marks outside `only_in`), and not marked proteins in a protein-set question; a residue question needs a class layer
+  for this. run.json's `analyses.<id>.marks_where` records `{where, marks, proteins}`. Rather than copy each question
+  by hand, a site lists `marks_subsets: [{id, label, where, analyses: [question ids], note?}]`: at load, each listed
+  question gets a copy `<id>_<subset id>` with `marks_where` set, its title followed by `, <label>`, `note` added to
+  its `sub`, and the base question's `family` (its title, unless it has one) with `family_label: <label>`, so that the
+  sidebar lists a question and its subsets as one entry. A question without a title or family cannot be repeated.
 - Questions that are variants of one base (the same test at other window sizes, or inside IDRs) may share a
   `family:` (any text, the entry's name). The website's Sections sidebar then lists them as one entry with a caret
   that reveals the variants, each named by what differs: its title less the family's name (and any leading

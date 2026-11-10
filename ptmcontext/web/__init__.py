@@ -454,6 +454,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                 'help': helps,
                 'new': bool(a.get('new')),
                 **({'only_in': True} if a.get('only_in') else {}),
+                **({'subset': True} if a.get('marks_where') else {}),
                 **_class_order(a, lw),
             }
         )
@@ -1005,7 +1006,8 @@ def selection_data(
     # a residue question that counts only the residues inside some regions (only_in) counts, for each of its classes, the
     # other candidates inside them, and not the marks outside them: the same shape
     for aid in analyses:
-        if aid in by_test or not ((run.get('analyses') or {}).get(aid) or {}).get('only_in'):
+        used = (run.get('analyses') or {}).get(aid) or {}
+        if aid in by_test or not (used.get('only_in') or used.get('marks_where')):
             continue
         g = counts[counts['analysis'] == aid]
         total = g.drop_duplicates('accession').set_index('accession')['others_total'].astype(int)

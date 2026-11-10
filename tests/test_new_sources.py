@@ -608,3 +608,67 @@ def test_all_of_sets_aside_rows_that_meet_two_conditions_at_once(tmp_path):
     assert (
         main.record['marks']['counted'] == 3 and full.record['marks']['counted'] == 5
     )  # P1 2 and P2 2 (x and y) set aside
+
+
+def test_marks_subsets_repeat_questions_on_part_of_the_marks(tmp_path):
+    import jsonschema
+
+    root = _toy_site(tmp_path)
+    data = root / 'data'
+    pd.DataFrame(  # P1 2 has a row of each state; P1 5 and P2 2 are state b only; P1 32 and P2 25 state a only
+        {
+            'acc': ['P1', 'P1', 'P1', 'P1', 'P2', 'P2'],
+            'pos': [2, 2, 5, 32, 2, 25],
+            'state': ['a', 'b', 'b', 'a', 'b', 'a'],
+        }
+    ).to_csv(data / 'marks.tsv', sep='\t', index=False)
+    man = json.loads((root / 'sites' / 'toy.inputs.json').read_text())
+    man['inputs']['toy_marks']['md5'] = md5_file(data / 'marks.tsv')
+    (root / 'sites' / 'toy.inputs.json').write_text(json.dumps(man, indent=1))
+    site = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
+    site['analyses'][1]['title'] = 'Model confidence'
+    site['analyses'][1]['sub'] = 'Marks against the other residues'
+    site['marks_subsets'] = [
+        {
+            'id': 'a',
+            'label': 'state a',
+            'where': {'column': 'state', 'equals': 'a'},
+            'note': 'Only state a counts',
+            'analyses': ['confidence'],
+        },
+        {'id': 'b', 'label': 'state b', 'where': {'column': 'state', 'equals': 'b'}, 'analyses': ['confidence']},
+    ]
+    schema = json.loads((S.Path(S.__file__).parent / 'schemas' / 'site.schema.json').read_text())
+    jsonschema.validate(site, schema)
+    bad = json.loads(json.dumps(site))
+    del bad['marks_subsets'][0]['where']
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(bad, schema)
+    path = root / 'sites' / 'toy.yaml'
+    path.write_text(yaml.safe_dump(site, sort_keys=False))
+    loaded = S.load_site(path)
+    ids = [a['id'] for a in loaded['analyses']]
+    assert ids == ['condensates', 'confidence', 'confidence_a', 'confidence_b']
+    base, a_var = loaded['analyses'][1], loaded['analyses'][2]
+    assert base['family'] == 'Model confidence' and 'marks_where' not in base
+    assert a_var['family'] == 'Model confidence' and a_var['family_label'] == 'state a'
+    assert a_var['title'] == 'Model confidence, state a' and a_var['sub'].endswith('Only state a counts')
+    run = S.run(path, root=data, log=lambda *_: None)
+    hi = run.rows[(run.rows['method'] == 'fisher') & (run.rows['category'] == 'high')].set_index('analysis')
+    # five sites; state a: P1 2 and 32, P2 25; state b: P1 2 and 5, P2 2 (high confidence: only P1 2 and 5)
+    assert hi.loc['confidence', 'a'] == 2
+    assert hi.loc['confidence_a', 'a'] == 1 and hi.loc['confidence_b', 'a'] == 2
+    # each question counts its own marks (the sites outside a subset are other residues in it)
+    t = run.rows[(run.rows['method'] == 'fisher') & (run.rows['analysis'] != 'condensates')]
+    assert t.groupby('analysis').apply(lambda g: int((g['a'] + g['b']).iloc[0])).to_dict() == {
+        'confidence': 5,
+        'confidence_a': 3,
+        'confidence_b': 3,
+    }
+    used = run.record['analyses']['confidence_a']['marks_where']
+    assert used['marks'] == 3 and used['proteins'] == 2 and run.record['marks']['counted'] == 5
+    clash = json.loads(json.dumps(site))
+    clash['marks_subsets'][0]['analyses'] = ['nothing']
+    path.write_text(yaml.safe_dump(clash, sort_keys=False))
+    with pytest.raises(ValueError, match='not among the analyses'):
+        S.load_site(path)

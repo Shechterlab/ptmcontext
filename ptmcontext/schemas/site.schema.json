@@ -1105,6 +1105,10 @@
             "type": "string",
             "description": "with a family: the entry's name under the family's caret, where the title less the family's name reads badly; the full title stays on the page, in tables and exports, and is the entry's tooltip"
           },
+          "marks_where": {
+            "$ref": "#/$defs/row_condition",
+            "description": "count only the marks (for a protein-set question, the marked proteins) with a row of the marks table that meets this condition, e.g. the marks with a row whose state is one value; the marks outside are other residues in a residue question, and the rest of the universe in a protein-set question. Not for conditional_logit. Usually written once, as marks_subsets, which makes the variants"
+          },
           "only_in": {
             "description": "residue and conditional_logit: count only the marks and candidate residues inside the IDRs ('idr') or inside the regions of an interval table ({role, kind})",
             "oneOf": [
@@ -6872,6 +6876,47 @@
           }
         }
       },
+    "marks_subsets": {
+      "type": "array",
+      "description": "the same questions on a part of the marks, at the same run (one state of the mark, say): each subset adds, for every question it lists, a variant with marks_where set, id '<question>_<subset id>', named by the subset's label and grouped with its base question in the sidebar (family)",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "where",
+          "analyses"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*$",
+            "description": "added to each question's id after an underscore"
+          },
+          "label": {
+            "type": "string",
+            "description": "what the sidebar shows under the question's family, and added to its title after a comma (its short name)"
+          },
+          "where": {
+            "$ref": "#/$defs/row_condition",
+            "description": "the rows of the marks table that make a mark part of the subset (marks_where)"
+          },
+          "note": {
+            "type": "string",
+            "description": "a sentence added to each variant's sub-title, where its base question has one (Only the marks with a trimethyl record are counted)"
+          },
+          "analyses": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "description": "the ids of the site's questions to repeat on the subset; each needs a title or a family"
+          }
+        }
+      }
+    },
     "variants": {
       "type": "object",
       "description": "the same site run on other marks (for example with lower-confidence sites added): ptmc run --variant <name> writes it under <outputs.folder>/variants/<name>, and the website offers a switch to it",

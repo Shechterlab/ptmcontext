@@ -515,12 +515,12 @@
     },
     "methyllysine_sites_v1_5_0": {
       "file": "releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv",
-      "md5": "2fbdbee2ed9ef212a67d8c10d408e257",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/cf1dfa1/releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv (commit cf1dfa1, release v1.5.0): UniProt 2026_04 N6-methyllysine, N6,N6-dimethyllysine and N6,N6,N6-trimethyllysine records, iPTMnet 6.2 lysine methylation records, and the 5,356 validated human lysine methylation sites of CPLM 4.0 (Zhang et al., Nucleic Acids Res 50:D451, 2022; Methylation.txt of 2021-06-13), included pending the authors' permission",
-      "version": "v1.5.0 (2026-11-10): 5,899 rows on 5,481 lysines of 2,967 proteins; evidence_class experimental 2,849, by-similarity 190, unspecified 2,860 rows; 5,356 rows report CPLM (cplm_evidence Exp. 618, Exp./Dat. 1,880, Dat. 2,858)",
-      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet 6.2, CC BY-NC-SA 4.0); UniProt data CC BY 4.0; CPLM 4.0 states no license (copyright notice, All Rights Reserved): its rows are included by the owner's decision of 2026-11-09, pending the authors' permission",
+      "md5": "1b3e1ebcf56327eeded54b2486aac856",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/ae0ea32/releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv (commit ae0ea32, release v1.5.0): UniProt 2026_04 N6-methyllysine, N6,N6-dimethyllysine and N6,N6,N6-trimethyllysine records, iPTMnet 6.2 lysine methylation records, and the 5,356 validated human lysine methylation sites of CPLM 4.0 (Zhang et al., Nucleic Acids Res 50:D451, 2022; Methylation.txt of 2021-06-13), included pending the authors' permission, and the methyllysine sites of Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (Supplementary Table 5, states me1, me2 and me3; HEK293T and U2OS cells)",
+      "version": "v1.5.0 (2026-11-10): 10,889 rows on 10,040 lysines of 4,781 proteins; evidence_class experimental 7,848, by-similarity 181, unspecified 2,860 rows; 5,356 rows report CPLM (cplm_evidence Exp. 618, Exp./Dat. 1,880, Dat. 2,858); 5,072 rows report Berryhill 2023 (me1, me2, me3)",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet 6.2, CC BY-NC-SA 4.0); UniProt data CC BY 4.0; CPLM 4.0 states no license (copyright notice, All Rights Reserved): its rows are included by the owner's decision of 2026-11-09, pending the authors' permission; Berryhill 2023: the article is CC BY 4.0, its Supplementary Table 5 carries no separate license notice and is included by the owner's decision of 2026-11-10",
       "role": "input",
-      "note": "No reference release: the statistics of this site are new. UniProt 2026_04 against the 2026_03 reference sequences: 2 residue mismatches dropped by the release; iPTMnet and CPLM give no methylation degree (state me). CPLM rows are the ones whose sources name CPLM; the main view drops those labelled Dat. alone (cplm_evidence), a switch keeps them."
+      "note": "No reference release: the statistics of this site are new. UniProt 2026_04 against the 2026_03 reference sequences: 2 residue mismatches dropped by the release; iPTMnet and CPLM give no methylation degree (state me); Berryhill 2023 gives me1, me2 or me3 with its cell lines and enrichments. CPLM rows are the ones whose sources name CPLM; the main view drops those labelled Dat. alone (cplm_evidence), a switch keeps them."
     },
     "string_physical_v12_5": {
       "file": "inputs/interactions/string_v12.5_human_physical_links_score400.tsv",
@@ -542,7 +542,7 @@
     "context_methylarginine_sites_v1_4_3": {
       "file": "releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv",
       "md5": "50dd293d1a3dd94ce7a0fb3168eae3bd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/cf1dfa1/releases/v1.4.3 (the same bytes as at b0d9049, the methylarginine site's pin)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/ae0ea32/releases/v1.4.3 (the same bytes as at b0d9049, the methylarginine site's pin)",
       "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), as a context mark of the methyllysine site",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
@@ -550,12 +550,12 @@
     },
     "context_phosphorylation_sites_v1_5_0": {
       "file": "releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv",
-      "md5": "937931b37ff8a0e3fb9bc23f9c5834e5",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/cf1dfa1/releases/v1.5.0",
-      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-10); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
-      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
+      "md5": "2b4cacbbedf48862d8c2816b9157c8fe",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/ae0ea32/releases/v1.5.0",
+      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Ochoa 2020; positions on UniProt 2026_03",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Ochoa et al., Nat Biotechnol 38:365 (2020): the article is not open access and its supplementary table carries no license, included by the owner's decision of 2026-11-10",
       "role": "input",
-      "note": "Context marks: phosphorylation sites of the human reviewed proteome (72,134 rows), one row per residue and state, with sources (UniProt, iPTMnet), evidence class and PubMed IDs. Shown beside the methyllysines by the protein map and the near_phospho question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit cf1dfa1."
+      "note": "Context marks: phosphorylation sites of the human reviewed proteome (142,415 rows), one row per residue and state, with sources (UniProt, iPTMnet, Ochoa 2020), evidence class and PubMed IDs. Shown beside the methyllysines by the protein map and the near_phospho question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit ae0ea32."
     }
   }
 }

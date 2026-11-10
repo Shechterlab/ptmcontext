@@ -53,7 +53,50 @@ def load_site(path: str | Path) -> dict:
     site = read_config(path)
     validate(site, 'site')
     site['__root__'] = str(Path(path).resolve().parent.parent)
-    return CM.expand(site)
+    return CM.expand(expand_subsets(site))
+
+
+def expand_subsets(site: dict) -> dict:
+    """marks_subsets: for each subset and each question it lists, a copy of the question that counts only the marks the
+    subset's condition holds for (marks_where), with id '<question>_<subset id>', the subset's label added to its title,
+    and the family of its base question, so that the sidebar lists them as one entry. The base question is unchanged
+    (it gains the family). A site without marks_subsets is returned as it is."""
+    subsets = site.get('marks_subsets') or []
+    if not subsets:
+        return site
+    by_id = {a['id']: a for a in site['analyses']}
+    extra: dict[str, list] = {}
+    for sub in subsets:
+        for aid in sub['analyses']:
+            base = by_id.get(aid)
+            where = f'marks_subsets {sub["id"]}: question {aid!r}'
+            if base is None:
+                raise ValueError(f'{where} is not among the analyses')
+            if base.get('test') == 'conditional_logit' or base.get('marks_where'):
+                raise ValueError(
+                    f'{where} cannot be repeated on a subset (a model, or a question that has its own marks_where)'
+                )
+            family = base.get('family') or base.get('title')
+            if not family:
+                raise ValueError(f'{where} needs a title or a family, to name its entry in the sidebar')
+            new_id = f'{aid}_{sub["id"]}'
+            if new_id in by_id:
+                raise ValueError(f'{where}: {new_id!r} is already a question')
+            v = copy.deepcopy(base)
+            v.update(id=new_id, marks_where=sub['where'], family=family, family_label=sub['label'])
+            if base.get('title'):
+                v['title'] = f'{base["title"]}, {sub["label"]}'
+            if base.get('sub') and sub.get('note'):
+                v['sub'] = f'{base["sub"]}. {sub["note"]}'
+            by_id[new_id] = v
+            extra.setdefault(aid, []).append(v)
+    out = []
+    for a in site['analyses']:
+        if a['id'] in extra and not a.get('family'):
+            a = {**a, 'family': a.get('family') or a['title']}
+        out.append(a)
+        out += extra.get(a['id'], [])
+    return {**site, 'analyses': out}
 
 
 def presence_only(site: dict) -> set[str]:
@@ -175,11 +218,16 @@ def roles_missing(site: dict) -> list[str]:
     ]
     words = _analysis_words(site)
     out += [
-        f'{a["id"]}: only_in: needs a layer of classes (a flags layer cannot say which marks lie outside the regions)'
+        f'{a["id"]}: only_in and marks_where need a layer of classes (a flags layer cannot say which marks lie outside the regions or the subset)'
         for a in site.get('analyses', [])
-        if a.get('only_in')
+        if (a.get('only_in') or a.get('marks_where'))
         and a.get('test') != 'conditional_logit'
         and (words.get(a['id']) or {}).get('shape') == 'flags'
+    ]
+    out += [
+        f'{a["id"]}: marks_where cannot be used with a conditional_logit model'
+        for a in site.get('analyses', [])
+        if a.get('marks_where') and a.get('test') == 'conditional_logit'
     ]
     from .question import expand
 
@@ -1158,6 +1206,17 @@ def select_marks(spec: dict, table: pd.DataFrame, snapshot: Snapshot, profile) -
     return marked.reset_index(drop=True), report
 
 
+def subset_marks(spec: dict, table: pd.DataFrame, marked: pd.DataFrame, cond: dict) -> pd.DataFrame:
+    """The counted marks with a kept row of the marks table that the condition holds for (an analysis's marks_where:
+    the marks with a row of one state, say). A mark's other rows may be of any other kind."""
+    rows = _kept_rows(spec, table)
+    hit = rows[_holds(rows, cond)]
+    pos = pd.to_numeric(hit[spec['position']], errors='coerce')
+    keys = set(zip(hit[spec['accession']].astype(str).str.strip(), pos.fillna(-1).astype(int)))
+    keep = [(a, int(p)) in keys for a, p in zip(marked['accession'], marked['position'])]
+    return marked[keep].reset_index(drop=True)
+
+
 def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame, rows: str = 'kept') -> pd.DataFrame:
     """For each counted mark, the columns the site file keeps for the website (marks.attributes), as text; a mark on
     several rows of the table takes its first row's. Columns 'a.<name>' (and 'a.<name>.link'), keyed by accession and
@@ -1736,7 +1795,11 @@ def run(
     parts, layers_used, kept, set_names, set_keep, layer_objs = [], {}, {}, [], {}, {}
     if skip_new:
         site = {**site, 'analyses': [a for a in site['analyses'] if not a.get('new')]}
+    marks_all = marked
     for analysis in site['analyses']:
+        marked = marks_all  # the questions that count a part of the marks (marks_where) read their own
+        if analysis.get('marks_where'):
+            marked = subset_marks(spec, table, marks_all, analysis['marks_where'])
         if analysis.get('test') == 'protein_sets':
             from .set_tests import families_file, protein_set_test, roles_of
 
@@ -1882,6 +1945,15 @@ def run(
             )
         )
         log(f'  {analysis["id"]:18s} {len(parts[-1]):3d} rows')
+    marked = marks_all
+    for analysis in site['analyses']:  # what each subset question counted, for the website
+        if analysis.get('marks_where'):
+            part = subset_marks(spec, table, marks_all, analysis['marks_where'])
+            layers_used[analysis['id']]['marks_where'] = {
+                'where': analysis['marks_where'],
+                'marks': int(len(part)),
+                'proteins': int(part['accession'].nunique()),
+            }
     rows = pd.concat(parts, ignore_index=True)
     record = {
         'tool': 'ptmcontext',

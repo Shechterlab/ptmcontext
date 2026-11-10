@@ -5,7 +5,7 @@ message: "Please cite the data sources: there is no paper for this site yet."
 title: "Human methyllysine sites (ptmcontext site, release v1.5.0 of PTM_Pipeline)"
 version: "0.1.0"
 date-released: "2026-11-10"
-url: "https://github.com/Shechterlab/PTM_Pipeline/tree/cf1dfa15b1b4e3d38d6553c5d7bf944ca4a12f63/releases/v1.5.0"
+url: "https://github.com/Shechterlab/PTM_Pipeline/tree/ae0ea32/releases/v1.5.0"
 license: "CC-BY-NC-SA-4.0"
 authors:
   - name: "Shechter Lab, Albert Einstein College of Medicine"
@@ -196,6 +196,23 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     end: D459
     year: 2022
     doi: "10.1093/nar/gkab849"
+  - type: article   # the methyllysine sites of Berryhill et al. 2023 (Supplementary Table 5): the article is CC BY 4.0, the table carries no separate license notice and is included by the owner's decision
+    authors: [{family-names: Berryhill, given-names: CA}, {family-names: Hanquier, given-names: JN}, {family-names: Doud, given-names: EH}, {name: "et al."}]
+    title: "Global lysine methylome profiling using systematically characterized affinity reagents"
+    journal: "Sci Rep"
+    volume: 13
+    start: 377
+    year: 2023
+    doi: "10.1038/s41598-022-27175-x"
+  - type: article   # the phosphosites shown beside the methyllysines (Supplementary Table 3): the article is not open access and the table carries no license; included by the owner's decision
+    authors: [{family-names: Ochoa, given-names: D}, {family-names: Jarnuczak, given-names: AF}, {family-names: Viéitez, given-names: C}, {name: "et al."}]
+    title: "The functional landscape of the human phosphoproteome"
+    journal: "Nat Biotechnol"
+    volume: 38
+    start: 365
+    end: 373
+    year: 2020
+    doi: "10.1038/s41587-019-0344-3"
   - type: article   # Crossref: online 2024-11-18; the article is in volume 53 (2025)
     authors: [{family-names: Szklarczyk, given-names: D}, {family-names: Nastou, given-names: K}, {family-names: Koutrouli, given-names: M}, {name: "et al."}]
     title: "The STRING database in 2025: protein networks with directionality of regulation"
