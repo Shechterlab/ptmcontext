@@ -357,3 +357,64 @@ def test_strata_of_one_test_get_distinct_labels():
     two = {'id': 'q', 'tests': [{'category': c, 'inside': 'r', 'label': 'Same'} for c in ('a', 'b')]}
     with pytest.raises(ValueError, match='same label'):
         Q.question_layer(two)
+
+
+def test_only_in_residues_and_motif_count_one_class_of_residues():
+    from ptmcontext.residue_tests import residue_test
+
+    snap = Snapshot({'P': 'SPASAYAYATP' + 'AAAA', 'Q': 'TPAYASAYAYAS'})
+    ctx = L.Context(snap, load_profile(MARK), {})
+    marked = pd.DataFrame({'accession': ['P', 'P', 'Q'], 'position': [1, 4, 4]})
+    layer = L.get('motif_families', None, {'families': [{'name': 'any', 'pattern': '[STY]'}]}, 'mf')
+    both = residue_test(
+        ctx, marked, layer, 'x', methods=('fisher',), only_in={'residues': 'ST', 'motif': {'pattern': '[ST]P'}}
+    )
+    # only S/T followed by P count: P1, P10 (T10 then P11), Q1; marks among them: P1 only (P4 and Q4 do not fit)
+    r = both.set_index('category').loc['any']
+    assert (r['a'], r['b'], r['c'], r['d']) == (1, 0, 2, 0)
+    ty = residue_test(ctx, marked, layer, 'x', methods=('fisher',), only_in={'residues': 'y'})
+    assert (ty['a'].iloc[0], ty['c'].iloc[0]) == (1, 4)  # the five tyrosines of the two proteins, one marked (Q4)
+    with pytest.raises(ValueError, match='unknown keys'):
+        residue_test(ctx, marked, layer, 'x', only_in={'residues': 'S', 'where': 1})
+
+
+def test_partner_classes_give_each_class_the_proteins_with_a_partner_in_it(tmp_path):
+    from ptmcontext.web import search as SE
+
+    f = tmp_path / 'string.tsv'
+    f.write_text(
+        'protein_a\tprotein_b\tgene_b\tgene_a\tscore\n'
+        'P1\tW1\tWRT\tAAA\t900\nP2\tW1\tWRT\tBBB\t900\nP3\tR1\tRDR\tCCC\t900\nP4\tP1\tAAA\tDDD\t900\n'
+    )
+    site = {
+        'website': {
+            'tables': {
+                't': {
+                    'input': 'string',
+                    'format': 'protein_partners',
+                    'both_ways': {'partner': 'gene_a'},
+                    'columns': {
+                        'accession': 'protein_a',
+                        'partner_accession': 'protein_b',
+                        'partner': 'gene_b',
+                        'score': 'score',
+                    },
+                }
+            },
+            'search': {
+                'partners': {
+                    'table': 't',
+                    'classes': {
+                        'writer': {'label': 'a writer', 'role': 'writer', 'genes': ['WRT']},
+                        'reader': {'label': 'a reader', 'role': 'reader', 'genes': ['RDR']},
+                    },
+                }
+            },
+        }
+    }
+    pairs, names, annotated = SE.class_set_pairs(site, {'string_partners': f}, None, 'string_partners')
+    got = {s: set(g['protein']) for s, g in pairs.groupby('set')}
+    # P1 and P2 have the writer as a partner (read both ways, so W1 itself has P1 and P2 as partners but is no writer's partner)
+    assert got == {'writer': {'P1', 'P2'}, 'reader': {'P3'}}
+    assert names == {'writer': 'a writer', 'reader': 'a reader'}
+    assert annotated == {'P1', 'P2', 'P3', 'P4', 'W1', 'R1'}  # every protein the table lists: the background
