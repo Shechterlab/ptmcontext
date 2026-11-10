@@ -25,7 +25,7 @@ marks:
 
 analyses:
   - {id: domain_context, layer: domain_context}
-  - {id: domain_class, layer: domain_class}
+  - {id: domain_class, layer: domain_class, with: {classes: sites/data/domain_classes.json}}
   - {id: structure_context, layer: structure_context}
 
 outputs: {folder: out/methylarginine_interpro_ecod}

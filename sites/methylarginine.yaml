@@ -910,7 +910,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - {id: motif, layer: motif}
   - {id: disorder, layer: disorder}
   - {id: domain_context, layer: domain_context}
-  - {id: domain_class, layer: domain_class}
+  - {id: domain_class, layer: domain_class, with: {classes: sites/data/domain_classes.json}}
   - {id: structure_context, layer: structure_context}
   - {id: idr_charge, layer: idr_charge, new: true}   # not in the release: CIDER's charge classes of IDRs
   # Stickers: aromatic residues pair with arginine (cation-pi), and methylation weakens those contacts (Hofweber 2018, Qamar

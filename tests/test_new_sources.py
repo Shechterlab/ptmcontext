@@ -171,7 +171,7 @@ def test_a_layer_made_from_parameters_says_what_it_lacks():
     with pytest.raises(ValueError, match='one more than bins'):
         L.get('residue_values', None, {'role': 'r', 'bins': [1, 2], 'classes': ['a', 'b']}, 'x')
     with pytest.raises(ValueError, match='takes no parameters'):
-        L.get('disorder', None, {'role': 'x'}, 'x')
+        L.get('motif', None, {'role': 'x'}, 'x')
 
 
 def test_a_file_no_reader_knows_asks_for_a_column_mapping(tmp_path):

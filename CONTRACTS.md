@@ -341,6 +341,15 @@ Columns), and the same columns in the downloads (where the site file lists them:
 `website.proteins.columns`, `.download`, `website.filters`). They are context only: a context mark never changes which
 residues are marks or any statistic.
 
+Built-in layers take optional `with:` parameters; their labels and questions follow the values (the defaults are the
+v1.4.3 release's): `disorder`, `domain`, `domain_context` `{window: 20}` (residues from a region's edge that count as
+its boundary); `idr` `{window: 20, min_length: 20}` (the shortest merged disordered region that is an IDR);
+`idr_charge` `{min_length: 20}`; `structure_context` `{near: 10, mid: 30}`. `domain_class` reads its classes from the
+site: `with: {classes: sites/data/domain_classes.json}`, a path relative to the repository that holds the site file, to
+a JSON or YAML file `{domain_classes: [{label, patterns: [regular expression, ...]}, ...]}` (the first class whose
+pattern matches the lower-cased domain name, subtype and members names it). `ptmc stage mobidb --feature <key>` stages
+another MobiDB feature than the release's `prediction-disorder-th_50`.
+
 The `near_marks` layer (`with: {marks: <id>, window, noun}`) is the question "Near other marks": residues by whether a
 mark of the entry lies within `window` residues on either side, the residue itself left out: `near`, `none`. Mark such an
 analysis `new: true`; both tests run as for any residue question.

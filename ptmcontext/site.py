@@ -1704,6 +1704,7 @@ def run(
         profile,
         {r: v for r, v in filled.items() if v is not None},
         trusted_plugins=tuple(site.get('trusted_plugins', [])),
+        root=root_of(site),
         formats=input_formats(names, paths, entries),
         names={role: I.role_inputs(v)[1][0] for role, v in roles.items() if I.role_inputs(v)[0] == 'one'},
     )

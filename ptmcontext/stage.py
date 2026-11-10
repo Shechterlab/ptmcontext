@@ -369,7 +369,13 @@ def _stage_uniprot(a) -> dict:
 
 @register_stager('mobidb', "MobiDB disordered regions for the staged proteome's entries")
 def _stage_mobidb(a) -> dict:
-    return mobidb(_snapshot_fasta(a.out, a.prefix), Path(a.out), Path(a.manifest), a.prefix)
+    return mobidb(
+        _snapshot_fasta(a.out, a.prefix),
+        Path(a.out),
+        Path(a.manifest),
+        a.prefix,
+        getattr(a, 'feature', None) or MOBIDB_FEATURE,
+    )
 
 
 @register_stager(

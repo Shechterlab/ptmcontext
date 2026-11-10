@@ -641,7 +641,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - {id: motif, layer: motif, new: true}
   - {id: disorder, layer: disorder, new: true}
   - {id: domain_context, layer: domain_context, new: true}
-  - {id: domain_class, layer: domain_class, new: true}
+  - {id: domain_class, layer: domain_class, with: {classes: sites/data/domain_classes.json}, new: true}
   - {id: structure_context, layer: structure_context, new: true}
   - {id: idr_charge, layer: idr_charge, new: true}   # not in the release: CIDER's charge classes of IDRs
   # Near other marks: are methyllysines more often within 10 residues of another mark than the other lysines of their

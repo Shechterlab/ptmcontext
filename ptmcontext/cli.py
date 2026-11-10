@@ -248,6 +248,9 @@ def main(argv=None) -> int:
         'proteome', nargs='?', help='UniProt proteome id (uniprot), or shephard-data proteome folder (shephard)'
     )
     s.add_argument('--commit', help='shephard-data commit (default: the one this version of ptmcontext pins)')
+    s.add_argument(
+        '--feature', help='MobiDB feature to keep (mobidb; default: the consensus prediction-disorder-th_50)'
+    )
     s.add_argument('--out', required=True, help='folder for the staged files (its parent is the --root of ptmc run)')
     s.add_argument('--manifest', required=True, help="the site's input manifest (written or updated)")
     s.add_argument('--prefix', required=True, help='file name prefix, e.g. yeast')

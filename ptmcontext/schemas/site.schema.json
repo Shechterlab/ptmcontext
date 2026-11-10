@@ -1204,7 +1204,7 @@
           },
           "with": {
             "type": "object",
-            "description": "the parameters of a layer made from them (ptmc layers lists them): regions {role, kind, window, noun, nouns, labels, help, title, question, sub, section, track}; residue_values {role, bins, classes, missing, noun, labels, help, title, question, sub, section, track}; residue_lists {flags: {flag: role}, noun, labels, help, title, question, sub, section}"
+            "description": "the parameters of a layer made from them (ptmc layers lists them): regions {role, kind, window, noun, nouns, labels, help, title, question, sub, section, track}; residue_values {role, bins, classes, missing, noun, labels, help, title, question, sub, section, track}; residue_lists {flags: {flag: role}, noun, labels, help, title, question, sub, section}; built-in layers: disorder {window}, idr {window, min_length}, domain {window}, domain_context {window}, structure_context {near, mid}, idr_charge {min_length} (each optional, the documented default 20, 20, 20, 20, 10 and 30, 20), domain_class {classes: the path of a file of domain classes, required}"
           },
           "proteins": {
             "type": "object",

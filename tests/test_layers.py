@@ -107,3 +107,31 @@ def test_protein_outputs_count_each_protein(tmp_path):
     assert c.loc[('P1', 'ordered'), 'marks_total'] == 2 and c.loc[('P1', 'ordered'), 'others_total'] == 4
     prot = out['proteins.tsv'].set_index('accession')
     assert prot.loc['P1', 'marks'] == 2 and prot.loc['P1', 'candidates'] == 6
+
+
+def test_built_in_layers_take_with_parameters_and_their_labels_follow():
+    default = L.get('idr')
+    assert default.labels['idr_boundary'] == 'Ordered, ≤20 aa from an IDR'
+    bound = L.get('idr', None, {'window': 15, 'min_length': 30})
+    assert bound.labels['idr_boundary'] == 'Ordered, ≤15 aa from an IDR'
+    assert bound.labels['no_idr'] == 'No IDR of 30 aa or more' and '30 or more' in bound.question
+    assert bound.tracks[0].help.endswith('of 30 residues or more')
+    s = L.get('structure_context', None, {'near': 5, 'mid': 25})
+    assert (
+        s.labels['idr_mid_domain'] == 'IDR 6–25 aa from a domain'
+        and s.labels['idr_far_from_domain'] == 'IDR >25 aa from any domain'
+    )
+    with pytest.raises(ValueError, match='takes no parameter'):
+        L.get('idr', None, {'nope': 1})
+    with pytest.raises(ValueError, match='takes no parameters'):
+        L.get('motif', None, {'window': 3})
+
+
+def test_domain_class_needs_its_class_list_from_the_site_file(tmp_path):
+    from ptmcontext.layers.domains import classify_text, domain_classes
+
+    (tmp_path / 'c.json').write_text('{"domain_classes": [{"label": "Toy", "patterns": ["toy"]}]}')
+    blocks = domain_classes('c.json', tmp_path)
+    assert classify_text('A toy domain', blocks, 'Other') == 'Toy'
+    with pytest.raises(ValueError, match='needs its class list'):
+        L.get('domain_class').compute(pd.DataFrame(), None)

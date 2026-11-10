@@ -22,6 +22,7 @@ and records each plugin's distribution and version in its provenance.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from importlib import metadata
 from pathlib import Path
@@ -56,6 +57,7 @@ class Context:
     formats: dict[str, dict] = field(default_factory=dict)  # an input's manifest name (or path) -> its column mapping
     names: dict[str, str] = field(default_factory=dict)  # a role filled by one input -> that input's manifest name
     context: dict = field(default_factory=dict)  # context mark id -> its residues (context_marks.read), for near_marks
+    root: Path | None = None  # the repository that holds the site file: where a layer's `with:` paths are relative to
     _cache: dict = field(default_factory=dict, repr=False)
 
     def mapping(self, path, name: str = ''):
@@ -145,12 +147,14 @@ class Layer:
     tracks: tuple = ()  # what it draws on the protein pages (Track), if anything
     ordered: bool = False  # its classes have an order (that of labels), which pages keep
     groups: tuple = ()  # ((heading, (class codes, ...)), ...): headed groups of its classes, in order
+    params: dict = field(default_factory=dict)  # optional `with:` parameters of a built-in layer -> documented default
+    values: dict = field(default_factory=dict)  # the parameters as bound for one analysis (defaults and the site's)
 
     def __call__(self, residues: pd.DataFrame, ctx: Context) -> pd.DataFrame:
         missing = [n for n in self.needs if n not in ctx.inputs]
         if missing:
             raise KeyError(f'layer {self.name} needs inputs {missing}')
-        out = self.compute(residues, ctx)
+        out = self.compute(residues, ctx, **self.values) if self.params else self.compute(residues, ctx)
         if self.shape == 'class' and 'category' not in out.columns:
             raise ValueError(f'layer {self.name}: a class layer must return a category column')
         return out
@@ -177,6 +181,7 @@ class Track:
 
 
 BUILT_IN: dict[str, Layer] = {}
+TEMPLATES: dict[str, Layer] = {}  # built-in layers with parameters, before the defaults are filled in
 FACTORIES: dict[str, Callable[[dict, str], Layer]] = {}
 
 
@@ -194,9 +199,13 @@ def register(
     tracks: tuple = (),
     ordered: bool = False,
     groups: tuple = (),
+    params: dict | None = None,
 ):
     """Decorator for the package's own layers. ordered: the classes have an order, that of labels (from inside a domain
-    outwards, say), which the website keeps instead of sorting them by effect; groups: headed groups of them."""
+    outwards, say), which the website keeps instead of sorting them by effect; groups: headed groups of them; params:
+    the optional `with:` parameters a site file may set, each with its documented default (the function takes them as
+    keyword arguments). A parameter shows in the layer's words as <name> (or <name+1>, <name-1>), filled in at binding,
+    so a label such as "≤<window> aa" follows the value; a tracks entry may be a function of the bound values."""
 
     def wrap(fn):
         BUILT_IN[name] = Layer(
@@ -214,7 +223,12 @@ def register(
             tracks=tuple(tracks),
             ordered=ordered,
             groups=tuple((g, tuple(cs)) for g, cs in groups),
+            params=dict(params or {}),
+            values=dict(params or {}),
         )
+        if params:  # the words keep their <name> tokens in TEMPLATES; the built-in entry is filled with the defaults
+            TEMPLATES[name] = BUILT_IN[name]
+            BUILT_IN[name] = bind(BUILT_IN[name], {})
         return fn
 
     return wrap
@@ -235,11 +249,51 @@ def plugins() -> dict[str, metadata.EntryPoint]:
     return {ep.name: ep for ep in metadata.entry_points(group=ENTRY_POINT_GROUP)}
 
 
+_TOKEN = re.compile(r'<(\w+)([+-]\d+)?>')
+
+
+def _fill(text, values: dict):
+    if not isinstance(text, str):
+        return text
+
+    def one(m):
+        v = values[m.group(1)]
+        return str(v + int(m.group(2))) if m.group(2) else str(v)
+
+    return _TOKEN.sub(lambda m: one(m) if m.group(1) in values else m.group(0), text)
+
+
+def bind(layer: Layer, given: dict) -> Layer:
+    """A built-in layer with a site file's `with:` parameters (its documented defaults for those not given), the
+    parameters filled into its words and its tracks."""
+    from dataclasses import replace
+
+    unknown = sorted(set(given) - set(layer.params))
+    if unknown:
+        raise ValueError(f'layer {layer.name!r} takes no parameter {unknown} (with: {sorted(layer.params)})')
+    values = {**layer.params, **given}
+    f = lambda t: _fill(t, values)  # noqa: E731
+    return replace(
+        layer,
+        values=values,
+        describe=f(layer.describe),
+        title=f(layer.title),
+        question=f(layer.question),
+        sub=f(layer.sub),
+        labels={k: f(v) for k, v in layer.labels.items()},
+        help={k: f(v) for k, v in layer.help.items()},
+        groups=tuple((f(g), cs) for g, cs in layer.groups),
+        tracks=tuple(t(values) if callable(t) else t for t in layer.tracks),
+    )
+
+
 def get(name: str, ctx: Context | None = None, params: dict | None = None, analysis: str = '') -> Layer:
     """A built-in layer, a layer made from parameters (a factory, with the analysis's `with:`), or a plugin layer whose
     distribution the context trusts."""
     if name in FACTORIES:
         return FACTORIES[name](dict(params or {}), analysis or name)
+    if name in BUILT_IN and BUILT_IN[name].params:
+        return bind(TEMPLATES[name], params or {})
     if params:
         raise ValueError(
             f'layer {name!r} takes no parameters (with:); layers made from parameters: {sorted(FACTORIES)}'
