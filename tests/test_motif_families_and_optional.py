@@ -418,3 +418,20 @@ def test_partner_classes_give_each_class_the_proteins_with_a_partner_in_it(tmp_p
     assert got == {'writer': {'P1', 'P2'}, 'reader': {'P3'}}
     assert names == {'writer': 'a writer', 'reader': 'a reader'}
     assert annotated == {'P1', 'P2', 'P3', 'P4', 'W1', 'R1'}  # every protein the table lists: the background
+
+
+def test_similar_sets_are_grouped_by_the_jaccard_index_of_their_marked_proteins():
+    from ptmcontext.web import similar_sets
+
+    sets = {
+        'a1': {'M': 9, 'marked': ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10']},
+        'a2': {'M': 9, 'marked': ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9']},  # 9 of 10: 0.9
+        'b': {'M': 3, 'marked': ['p1', 'p2', 'p3']},
+        'c': {'M': 2, 'marked': ['q1', 'q2']},
+        'c2': {'M': 2, 'marked': ['q1', 'q2']},
+        'none': {'M': 4, 'marked': []},
+    }
+    assert similar_sets(sets, {'jaccard': 0.9}) == [['a1', 'a2'], ['c', 'c2']]
+    assert similar_sets(sets, {}) == [['c', 'c2']]  # identical only
+    with pytest.raises(ValueError, match='jaccard'):
+        similar_sets(sets, {'jaccard': 0})

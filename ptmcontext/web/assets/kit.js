@@ -765,6 +765,29 @@
   // the site file's), in its groups; any other puts the sets that differ first and sorts by effect, or by evidence
   // (order: q); catch-all classes ("No …") and classes without a test go last
   const TAIL = /^(no |not |unknown|unassigned)/i;
+  // sets with (nearly) the same marked proteins (a.similar, from website's analysis.collapse_similar) are one row: the first of
+  // them in the rows' order, "X (+n similar)", the others named in its hover; the statistics keep every row
+  const collapseSimilar = (a, rows) => {
+    if (!a.similar?.length) return rows;
+    const by = new Map(rows.map((r) => [r.category, r])),
+      drop = new Set(),
+      out = new Map();
+    for (const g of a.similar) {
+      const have = g.map((c) => by.get(c)).filter((r) => r && !r.mine);
+      if (have.length < 2) continue;
+      have.sort((x, y) => rows.indexOf(x) - rows.indexOf(y));
+      const [rep, ...rest] = have;
+      rest.forEach((r) => drop.add(r));
+      out.set(rep, {
+        ...rep,
+        label: `${rep.label} (+${rest.length} similar)`,
+        similar: rest.map((r) => r.label),
+        help: `${rep.help ? rep.help + ' ' : ''}Also, with the same ${W.marks}' proteins (listed once): ${rest.map((r) => r.label).join('; ')}`,
+      });
+    }
+    return rows.filter((r) => !drop.has(r)).map((r) => out.get(r) || r);
+  };
+  K.collapseSimilar = collapseSimilar;
   function chartRows(a, m, card = cardOf(a.id)) {
     const rows = withRef(
       a,
@@ -791,12 +814,15 @@
       const i = groups.findIndex((g) => g.classes.includes(r.category));
       return i < 0 ? groups.length : i;
     };
-    return rows.sort(
-      (x, y) =>
-        gi(x) - gi(y) ||
-        (a.ordered
-          ? at(x) - at(y) || eff(x, y)
-          : tail(x) - tail(y) || (sets && !x.vs ? ORDER[x.dir] - ORDER[y.dir] : 0) || eff(x, y))
+    return collapseSimilar(
+      a,
+      rows.sort(
+        (x, y) =>
+          gi(x) - gi(y) ||
+          (a.ordered
+            ? at(x) - at(y) || eff(x, y)
+            : tail(x) - tail(y) || (sets && !x.vs ? ORDER[x.dir] - ORDER[y.dir] : 0) || eff(x, y))
+      )
     );
   }
   // the rows a question shows: every class, and of a protein-set question of more than 12 sets the first 8 until
@@ -1199,7 +1225,7 @@
       ? ` data-f="${esc(fkeyOf(a))}" data-v="${esc(r.category)}" role="button" ` +
           `tabindex="0" title="Click to select the ${esc(W.marks)} ${
             SETS(r.analysis) ? 'on proteins in' : 'in'
-          } ${esc(r.label)}"`
+          } ${esc(r.label)}${r.similar ? '. Also, with the same proteins: ' + esc(r.similar.join('; ')) : ''}"`
       : '';
   };
   // against other marks: each class as two shares on one axis, the selection's (filled) and the others' (hollow)
@@ -1271,7 +1297,7 @@
   function tileState(card) {
     const a = A[card.analysis],
       max = card.rows || OV.rows || 7;
-    const rows = smallSel() ? rowsFor(a, S.m) : withRef(a, rowsOf(a, S.m), S.m);
+    const rows = collapseSimilar(a, smallSel() ? rowsFor(a, S.m) : withRef(a, rowsOf(a, S.m), S.m));
     let { shown, more, left } = pick(rows, max, card);
     const whole = selOn() && !vsOn() && !smallSel() ? rowsFor(a, S.m) : null;
     const made = selOn() && rows.some((r) => r.descriptive);

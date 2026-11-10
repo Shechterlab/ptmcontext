@@ -5700,13 +5700,19 @@ details.score.small .tq .t,
 .tiles,
 .grid-auto {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(var(--grid-min, 21rem), 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--grid-min, 17rem), 100%), 1fr));
   grid-auto-flow: dense;
   align-items: start;
   gap: 1rem;
 }
 .tiles > .tile:only-child {
   max-width: 44rem;
+}
+/* a count card (bars and a long axis) takes two columns where there are three or more, so it never stands alone in a row */
+@media (min-width: 60rem) {
+  .tiles > .cnt-card {
+    grid-column: span 2;
+  }
 }
 .tfoot {
   margin: 0;

@@ -344,6 +344,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     min_size: 3
     background: other proteins in a curated Complex Portal complex
     link: "https://www.ebi.ac.uk/complexportal/complex/{}"
+    collapse_similar: {jaccard: 0.9}      # variants with (nearly) the same phosphorylated members are one row on the website, "X (+n similar)"; the statistics keep every row
   # Are phosphorylated proteins more often partners of a class than other proteins with partners? The sets are the site's
   # partner classes (website.search.partners): a protein is in a class's set when one of its STRING physical partners
   # (score 0.7 or more) is in the class. The background is the proteins STRING lists with at least one such partner,

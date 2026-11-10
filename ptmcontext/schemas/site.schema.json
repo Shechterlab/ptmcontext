@@ -1378,6 +1378,19 @@
               }
             }
           },
+          "collapse_similar": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "protein_sets: the website lists sets with (nearly) the same marked proteins as one row, \"X (+n similar)\", the variants in its hover; the statistics table keeps every row",
+            "properties": {
+              "jaccard": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1,
+                "description": "the least Jaccard index of two sets' marked proteins to be collapsed (default 1: identical)"
+              }
+            }
+          },
           "hierarchy": {
             "type": "object",
             "required": [
