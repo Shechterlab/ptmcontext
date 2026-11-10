@@ -350,6 +350,10 @@ a JSON or YAML file `{domain_classes: [{label, patterns: [regular expression, ..
 pattern matches the lower-cased domain name, subtype and members names it). `ptmc stage mobidb --feature <key>` stages
 another MobiDB feature than the release's `prediction-disorder-th_50`.
 
+`website.search.patterns.near_examples` (a list of `{pattern, label}`) gives the suggestions after the `near` key; the box
+quotes the first in its help, and a site that lists none suggests none. `website.legacy_routes` maps an older site's
+protein-page section keys (`p-dom`) to the folds that hold them now.
+
 The `near_marks` layer (`with: {marks: <id>, window, noun}`) is the question "Near other marks": residues by whether a
 mark of the entry lies within `window` residues on either side, the residue itself left out: `near`, `none`. Mark such an
 analysis `new: true`; both tests run as for any residue question.
