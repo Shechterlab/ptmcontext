@@ -149,7 +149,7 @@ def members_file(root: Path | None, c: dict) -> set[str]:
     import pandas as pd
 
     lines = (Path(root or '.') / c['genes_file']).read_text().splitlines()
-    t = pd.read_csv(io.StringIO('\n'.join(x for x in lines if not x.startswith('#'))), sep='\t', dtype=str, keep_default_na=False)
+    t = pd.read_csv(io.StringIO('\n'.join(x for x in lines if not x.startswith('#'))), sep='\t', dtype=str, keep_default_na=False, quoting=3)
     return {str(x).strip().upper() for col in ('accession', 'gene') if col in t.columns for x in t[col] if str(x).strip()}
 
 

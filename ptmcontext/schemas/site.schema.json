@@ -176,6 +176,13 @@
                 },
                 "description": "value -> its label on the page, in the order shown"
               },
+              "bands": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "description": "cut a number column at these thresholds into the classes b0 (below the first), b1 (from the first), ... (empty for no number): a category whose values name them (b0: Below 0.2, ...), so a count question or a filter can use a score in bands"
+              },
               "optional": {
                 "type": "boolean",
                 "description": "true: the attribute exists only where the marks table has its column (a column a later release may add, a score); without the column the attribute and everything built on it (filters, columns, downloads, count questions and their cards, header tiles) are left out"

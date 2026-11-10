@@ -265,7 +265,9 @@ description, href) and a variant's page names its way back (`variant.base`): a s
 `separator` of a list (default `; `), display names for its `values`, a `link` (another column, aligned item by item,
 and a URL with `{}`, as each study to its DOI), `records` (a value that is a database, linked to its own record of the
 protein: a URL with `{acc}`), `colours`, `colour` (the map and Sites tab may color by it), `filter`, `control`
-(`chips`, or `select` for many values) and `help`. `optional: true` makes the attribute exist only where the marks table has its `column`: without it `ptmc run` leaves the
+(`chips`, or `select` for many values) and `help`. `bands: [t1, t2, ...]` cuts a number column into the classes `b0` (below `t1`), `b1` (from `t1`), ... (empty where the cell is no number): a
+category attribute (`kind: category`, `values: {b0: Below 0.2, ...}`) that a `kind: values` count question or a filter can use.
+`optional: true` makes the attribute exist only where the marks table has its `column`: without it `ptmc run` leaves the
 attribute out, and with it everything the site file builds on it (filters, table columns and downloads, `website.counts`
 questions that read it and the Overview cards naming them, header tiles, map colorings); `ptmc web` does the same for a run
 that lacks the column. One site file then serves a table before and after a column (a functional score) is merged into it.

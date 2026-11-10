@@ -234,3 +234,11 @@ def test_the_subset_is_a_context_table_of_its_own_only_where_scores_exist(tmp_pa
     g = tmp_path / 'd.tsv'
     pd.read_csv(f, sep='\t').drop(columns='sc').to_csv(g, sep='\t', index=False)
     assert list(CM.tables(site, {'ctx_table': g}, Snapshot({'P': 'A' * 30}))) == ['phos']
+
+
+def test_a_number_column_is_cut_into_bands():
+    table = pd.DataFrame({'a': ['P', 'P', 'P', 'P'], 'p': ['1', '2', '3', '4'], 'v': ['0.1', '0.5', '0.9', '']})
+    spec = {'accession': 'a', 'position': 'p', 'attributes': {'band': {'column': 'v', 'kind': 'category', 'bands': [0.2, 0.5]}}}
+    marked = pd.DataFrame({'accession': ['P'] * 4, 'position': [1, 2, 3, 4]})
+    out = S.mark_attributes(spec, table, marked)
+    assert list(out['a.band']) == ['b0', 'b2', 'b2', '']  # 0.5 is from the second threshold

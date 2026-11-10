@@ -35,7 +35,10 @@ def forget(site: dict, names: set[str]) -> set[str]:
     def hit(x) -> bool:
         if isinstance(x, str):
             return x in drop
-        return isinstance(x, dict) and (x.get('attribute') in names or x.get('analysis') in gone or x.get('opens') in gone)
+        if not isinstance(x, dict):
+            return False
+        at, an, op = x.get('attribute'), x.get('analysis'), x.get('opens')
+        return (isinstance(at, str) and at in names) or (isinstance(an, str) and an in gone) or (isinstance(op, str) and op in gone)
 
     def clean(node):
         if isinstance(node, list):

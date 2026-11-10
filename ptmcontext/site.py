@@ -1260,6 +1260,10 @@ def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame, rows:
         out = f'a.{name}'
         if a.get('present'):  # whether the column holds anything: 'yes' or 'no'
             t[out] = t[out].str.strip().ne('').map({True: 'yes', False: 'no'})
+        elif a.get('bands'):  # a number cut at the thresholds: b0 below the first, b1 from it, ..., empty without a number
+            cuts = sorted(float(x) for x in a['bands'])
+            num = pd.to_numeric(t[out], errors='coerce')
+            t[out] = ['' if pd.isna(x) else f'b{sum(x >= c for c in cuts)}' for x in num]
         elif out in paired:  # two lists in step: each value is "<value>:<its partner>"
             sep = a.get('separator', '; ')
             t[out] = [

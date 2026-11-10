@@ -239,6 +239,13 @@ identifiers still count as annotated (the background). `ptmc check` reads the ru
 and every column its tables must have; the run records the file's MD5. Record each mapping table in the manifest like
 any input: the identifiers are only as good as the map.
 
+A question of named patterns of the sequence around each residue (kinase motif classes, reader motifs) is a
+`motif_families` layer, no code: `layer: motif_families`, `with: {flank: 10, families: [{name, label, help, pattern: "R..[ST]",
+start: -3, marks: [{mark: <context id>, at: -3}]}]}` (CONTRACTS.md, Motif families). A column a later release of the marks
+table may add (a score) is read where it exists: give its attribute `optional: true` (and `bands: [..]` for a category
+from a number), and a context mark `columns.score` with a `subset` (CONTRACTS.md, Marks and Context marks). The members of
+a partner class may sit in a file under `sites/data/` (`genes_file`, with the query and date in its `#` lines).
+
 A question of several yes-or-no tests, each against the residues its evidence could reach (an RNA crosslink among
 the residues of the proteins with one, an interface among the residues a structure observed), needs no code either:
 
