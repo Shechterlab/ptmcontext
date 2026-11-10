@@ -197,6 +197,36 @@
       }
     },
   };
+  // what lasts for the browser session only (the fold of the combined row, the marks the reader turned off in its legend)
+  const sstore = {
+    get: (k, d) => {
+      try {
+        const v = sessionStorage.getItem(k);
+        return v == null ? d : JSON.parse(v);
+      } catch (e) {
+        return d;
+      }
+    },
+    set: (k, v) => {
+      try {
+        sessionStorage.setItem(k, JSON.stringify(v));
+      } catch (e) {
+        /* */
+      }
+    },
+  };
+  // the combined "All marks" row (website.protein.map.combined_marks): the site's own marks and every context mark as
+  // glyphs on one track, each mark in its color and shape, with a legend that turns a mark off and on; the context
+  // marks' own rows (map rows with context_mark) fold behind it
+  const CMB = CFG.combined_marks === false ? null : CFG.combined_marks || {};
+  const HOV = CFG.hover || {}; // the hovers' fields (website.protein.map.hover)
+  const HOVER_CTX = HOV.context || ['mark', 'residue', 'detail', 'source', 'click'];
+  const CTX_ROWS = OWN_ROWS.filter((r) => r.context_mark);
+  const CTX_IDS = [...new Set(CTX_ROWS.map((r) => r.context_mark))];
+  const COMB_ON = !!CMB && CTX_IDS.length + 1 >= (CMB.min_marks || 3);
+  const coarse = () => !!window.matchMedia?.('(pointer: coarse)').matches;
+  // glyph shapes, one for each mark in the legend's order: a mark is never told apart by color alone
+  const SHAPES = ['circle', 'square', 'diamond', 'triangle', 'down', 'plus', 'hexagon', 'cross'];
   // the site's own marks by a score (website.protein.map.marks_view: {attribute, at_least, label}): drawn at first only
   // where the attribute's number passes (a mark without one does not), the row's label a link to show every mark; the
   // choice is kept in the browser. Absent where the attribute is (an optional one a run lacks).
@@ -398,6 +428,8 @@
     labels: store.get('ptmc-map-labels', 'auto'),
     size: { mm: '', dpi: 600, ...store.get('ptmc-map-size', {}) },
     keyOpen: store.get('ptmc-map-key', null),
+    fold: COMB_ON ? !!sstore.get('ptmc-map-fold', CMB.default !== 'unfolded') : false, // the per-mark rows folded behind the combined row
+    combOff: new Set(sstore.get('ptmc-map-comb-off', [])), // marks turned off in the combined row's legend
     zoom: null,
     items: [],
     rowsMenu: false,
@@ -1414,6 +1446,9 @@
       span2,
       atMark,
       X,
+      marks,
+      resName,
+      ex,
     } = c;
     c.y = yB + 22;
     if (below.length) {
@@ -1566,6 +1601,231 @@
       c.y += h + 6;
       keyFill.forEach(([c, l, st]) => key(SW.box(c, 1, st), l));
     };
+    // a row's hover and pinned card for one item. A context mark's hover is the concise one the site file lists
+    // (website.protein.map.hover.context); its pinned card has everything
+    const ownTipper = (r) => {
+      const CL = r.classes || {},
+        order = Object.keys(CL),
+        clsOf = (x) => CL[x[3]] || {};
+      const valText = (v) =>
+        v == null || v === ''
+          ? ''
+          : (r.value ? (v === 1 ? r.value.one || r.value.many : r.value.many || r.value.one) || '{n}' : '{n}').replace(
+              '{n}',
+              fmtNum(v)
+            );
+      const ctxHover = (x) => {
+        const head = [],
+          lines = [],
+          label = String(x[4] || '');
+        HOVER_CTX.forEach((f) => {
+          if (f === 'mark') head.push(`<b>${esc(r.title)}</b>`);
+          else if (f === 'residue') head.push(esc(resName(x[1])));
+          else if (f === 'detail') {
+            if (label && label !== r.title) lines.push(esc(label));
+          } else if (f === 'score') {
+            if (x[5] != null) lines.push(esc(valText(x[5])));
+          } else if (f === 'source') {
+            const names = [
+              ...new Set(
+                String(x[7] || '')
+                  .split('; ')
+                  .filter(Boolean)
+              ),
+            ].filter((n) => !label.includes(n));
+            if (names.length) lines.push(esc(names.map((n) => SOURCES[n]?.label || n).join(', ')));
+          } else if (f === 'click')
+            lines.push(`<span class="muted">${coarse() ? 'Tap again' : 'Click'} for details and links</span>`);
+        });
+        return [head.join(' · '), ...lines].filter(Boolean).join('<br>');
+      };
+      return (x, full) => {
+        if (r.context_mark && !full) return ctxHover(x);
+        const cs = clsOf(x),
+          head =
+            !order.length && x[4] && x[1] === x[2]
+              ? `<b>${esc(x[4])}</b>${x[5] != null ? ' ' + esc(valText(x[5])) : ''}`
+              : `<b>${esc(cs.label || x[4] || r.title)}</b> ${span2(x[1], x[2])}${
+                  cs.label && x[4] ? '<br>' + esc(x[4]) : ''
+                }${x[5] != null ? '<br>' + esc(valText(x[5])) : ''}`;
+        const words =
+          r.sequence?.words && x[8]
+            ? '<br>' + esc(r.sequence.words.replace('{n}', x[8].n).replace('{strong}', x[8].strong))
+            : '';
+        const srcs = [...String(x[7] || '').split('; '), ...(cs.sources || [])].filter(Boolean);
+        const ref = x[6]
+          ? `<br>${
+              full && refLink(x[6])
+                ? `<a href="${esc(refLink(x[6]))}" target="_blank" ` + `rel="noopener">${esc(x[6])}</a>`
+                : esc(x[6])
+            }`
+          : '';
+        return (
+          head +
+          (x[1] === x[2] && atMark.has(x[1]) ? ` · at a ${esc(W.mark)}` : '') +
+          words +
+          ref +
+          insideHtml(x[1], x[2], full) +
+          (srcs.length
+            ? `<br>${
+                full
+                  ? sourcesHtml([...new Set(srcs)], true)
+                  : esc([...new Set(srcs)].map((n) => SOURCES[n]?.label || n).join(', '))
+              }`
+            : '') +
+          (cs.help ? `<br><span class="muted">${esc(cs.help)}</span>` : '') +
+          `<br><span class="muted">${esc(r.title)}${
+            full
+              ? ': ' + esc(ownHelp(r))
+              : r.sequence
+                ? ', found in the sequence'
+                : ownVersion(r)
+                  ? ' · ' + esc(ownVersion(r))
+                  : ''
+          }</span>`
+        );
+      };
+    };
+    // the combined "All marks" row: one track, each mark a glyph of its own shape in its color, and a legend that turns a
+    // mark off and on (aria-pressed; the glyph, not the color, tells the marks apart)
+    const glyph = (shape, x, y, r, col, attr = '', op = 1) => {
+      const f = `fill="${col}" stroke="${P.surf}" stroke-width="0.8"${op < 1 ? ` opacity="${op}"` : ''}`,
+        ln = `fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round"${op < 1 ? ` opacity="${op}"` : ''}`,
+        q = (n) => r1(n),
+        hit = `<rect x="${q(x - 4.5)}" y="${q(y - 4.5)}" width="9" height="9" fill="transparent"/>`;
+      let g;
+      if (shape === 'circle') g = `<circle cx="${q(x)}" cy="${q(y)}" r="${r}" ${f}/>`;
+      else if (shape === 'square')
+        g = `<rect x="${q(x - r * 0.9)}" y="${q(y - r * 0.9)}" width="${q(r * 1.8)}" height="${q(r * 1.8)}" ${f}/>`;
+      else if (shape === 'diamond')
+        g = `<polygon points="${q(x)},${q(y - r * 1.3)} ${q(x + r * 1.3)},${q(y)} ${q(x)},${q(y + r * 1.3)} ${q(x - r * 1.3)},${q(y)}" ${f}/>`;
+      else if (shape === 'triangle')
+        g = `<polygon points="${q(x)},${q(y - r * 1.2)} ${q(x + r * 1.15)},${q(y + r * 0.9)} ${q(x - r * 1.15)},${q(y + r * 0.9)}" ${f}/>`;
+      else if (shape === 'down')
+        g = `<polygon points="${q(x)},${q(y + r * 1.2)} ${q(x + r * 1.15)},${q(y - r * 0.9)} ${q(x - r * 1.15)},${q(y - r * 0.9)}" ${f}/>`;
+      else if (shape === 'hexagon')
+        g = `<polygon points="${[0, 1, 2, 3, 4, 5]
+          .map(
+            (k) => `${q(x + r * 1.15 * Math.cos((k * Math.PI) / 3))},${q(y + r * 1.15 * Math.sin((k * Math.PI) / 3))}`
+          )
+          .join(' ')}" ${f}/>`;
+      else if (shape === 'plus')
+        g = `<path d="M${q(x - r)} ${q(y)}H${q(x + r)}M${q(x)} ${q(y - r)}V${q(y + r)}" ${ln}/>`;
+      else
+        g = `<path d="M${q(x - r * 0.8)} ${q(y - r * 0.8)}L${q(x + r * 0.8)} ${q(y + r * 0.8)}M${q(x + r * 0.8)} ${q(y - r * 0.8)}L${q(x - r * 0.8)} ${q(y + r * 0.8)}" ${ln}/>`;
+      return `<g${attr}>${hit}${g}</g>`;
+    };
+    const combinedRow = () => {
+      const acc = p.acc,
+        marksIn = marks.filter((m) => inView(m[0], m[0]));
+      const defs = {
+        site: {
+          id: 'site',
+          label: cap(W.marks),
+          col: P.accent,
+          help: `the ${W.marks} of this site`,
+          pts: marksIn.map((m) => ({ pos: m[0], own: true })),
+        },
+      };
+      CTX_IDS.forEach((id) => {
+        const rows = CTX_ROWS.filter((r) => r.context_mark === id),
+          r = rows.find((q) => isOn(ownId(q))) || rows[rows.length - 1],
+          its = ownItems(acc, r);
+        const tipOf = ownTipper(r);
+        defs[id] = {
+          id,
+          label: rows[rows.length - 1].title, // the entry's name, not its subset row's
+          col: cfgColour(r, 'colour', P, P.variant),
+          help: r.help || r.title,
+          pts: (its || [])
+            .filter((x) => inView(x[1], x[1]))
+            .map((x) => ({ pos: x[1], x, r, tip: () => tipOf(x, false), card: () => tipOf(x, true) })),
+        };
+      });
+      const named = (CMB.order || []).filter((k) => defs[k]),
+        order = [...new Set([...named, 'site', ...CTX_IDS])].map((k) => ({ ...defs[k], shape: SHAPES[0] }));
+      order.forEach((d, k) => (d.shape = SHAPES[k % SHAPES.length]));
+      const lab = CMB.label || 'All marks';
+      // lanes: a glyph that would stand on the one before in its lane goes to the next, up to three
+      const all = order
+        .filter((d) => !M.combOff.has(d.id))
+        .flatMap((d) => d.pts.map((q) => ({ ...q, d })))
+        .sort((a, b) => a.pos - b.pos);
+      const lastX = [-1e9, -1e9, -1e9];
+      all.forEach((q) => {
+        const x = X(q.pos);
+        let l = lastX.findIndex((e) => x - e >= 7);
+        if (l < 0) l = lastX.indexOf(Math.min(...lastX));
+        q.lane = l;
+        q.x = x;
+        lastX[l] = x;
+      });
+      const lanes = Math.max(1, ...all.map((q) => q.lane + 1)),
+        gh = 7,
+        th = 8 + lanes * gh,
+        top = c.y;
+      baseLine(top + th / 2);
+      all.forEach((q) => {
+        const y = top + 4 + gh / 2 + q.lane * gh + (lanes > 1 ? 0 : 1);
+        let attr = '';
+        if (!ex) {
+          const k = it(
+            q.own
+              ? {
+                  get tip() {
+                    return K.prot?.siteTip ? K.prot.siteTip(q.pos) : resName(q.pos);
+                  },
+                  site: q.pos,
+                  noclick: true,
+                  a: q.pos,
+                  b: q.pos,
+                }
+              : {
+                  get tip() {
+                    return (this._t ||= q.tip());
+                  },
+                  card: q.card,
+                  a: q.x[1],
+                  b: q.x[2],
+                  src: { own: q.r, x: q.x },
+                  noclick: true,
+                }
+          );
+          attr = ` data-mi="${k}"`;
+        }
+        parts.push(glyph(q.d.shape, q.x, y, 3, q.d.col, attr));
+      });
+      rowLabel(
+        lab,
+        top + th / 2,
+        `${order.map((d) => d.label).join(', ')}, together on one track; each mark has its own shape and color. ${CMB.help || ''}`.trim()
+      );
+      c.y += th + 2;
+      // the legend: an entry for each mark, a button that turns it off and on
+      let lx = X0,
+        ly = c.y;
+      const gap = 14;
+      order.forEach((d) => {
+        const n = d.pts.length,
+          off = M.combOff.has(d.id),
+          text = `${d.label} (${n})`,
+          w = 14 + K.tw(text, 9.5) * SL;
+        if (lx > X0 && lx + w > X1) {
+          lx = X0;
+          ly += 15;
+        }
+        const attr = ex
+          ? ''
+          : ` data-comb="${esc(d.id)}" tabindex="0" role="button" aria-pressed="${!off}" aria-label="${esc(d.label)}, ${n} in view, ${off ? 'hidden' : 'shown'}. Press to ${off ? 'show' : 'hide'}" style="cursor:pointer"`;
+        parts.push(
+          `<g${attr}><rect x="${r1(lx - 2)}" y="${r1(ly - 1)}" width="${r1(w + 2)}" height="13" rx="3" fill="transparent"/>` +
+            glyph(d.shape, lx + 4, ly + 5.5, 3, d.col, '', off ? 0.35 : 1) +
+            `<text x="${r1(lx + 12)}" y="${r1(ly + 9)}" font-size="9.5" fill="${off ? P.muted : P.ink}"${off ? ' text-decoration="line-through"' : ''}>${esc(text)}</text></g>`
+        );
+        lx += w + gap;
+      });
+      c.y = ly + 17;
+    };
     // a row of the site file's: its items, each drawn by its class's mark, with its words and sources
     const ownRow = (id, r) => {
       const row = ROW_OF[id];
@@ -1613,58 +1873,7 @@
           vOp && x[5] != null
             ? r1(0.18 + 0.32 * Math.min(1, Math.max(0, (x[5] - vOp[0]) / Math.max(1e-9, vOp[1] - vOp[0]))))
             : (clsOf(x).opacity ?? r.opacity ?? 1);
-      const valText = (v) =>
-        v == null || v === ''
-          ? ''
-          : (r.value ? (v === 1 ? r.value.one || r.value.many : r.value.many || r.value.one) || '{n}' : '{n}').replace(
-              '{n}',
-              fmtNum(v)
-            );
-      const tipOf = (x, full) => {
-        const cs = clsOf(x),
-          head =
-            !order.length && x[4] && x[1] === x[2]
-              ? `<b>${esc(x[4])}</b>${x[5] != null ? ' ' + esc(valText(x[5])) : ''}`
-              : `<b>${esc(cs.label || x[4] || r.title)}</b> ${span2(x[1], x[2])}${
-                  cs.label && x[4] ? '<br>' + esc(x[4]) : ''
-                }${x[5] != null ? '<br>' + esc(valText(x[5])) : ''}`;
-        const words =
-          r.sequence?.words && x[8]
-            ? '<br>' + esc(r.sequence.words.replace('{n}', x[8].n).replace('{strong}', x[8].strong))
-            : '';
-        const srcs = [...String(x[7] || '').split('; '), ...(cs.sources || [])].filter(Boolean);
-        const ref = x[6]
-          ? `<br>${
-              full && refLink(x[6])
-                ? `<a href="${esc(refLink(x[6]))}" target="_blank" ` + `rel="noopener">${esc(x[6])}</a>`
-                : esc(x[6])
-            }`
-          : '';
-        return (
-          head +
-          (x[1] === x[2] && atMark.has(x[1]) ? ` · at a ${esc(W.mark)}` : '') +
-          words +
-          ref +
-          insideHtml(x[1], x[2], full) +
-          (srcs.length
-            ? `<br>${
-                full
-                  ? sourcesHtml([...new Set(srcs)], true)
-                  : esc([...new Set(srcs)].map((n) => SOURCES[n]?.label || n).join(', '))
-              }`
-            : '') +
-          (cs.help ? `<br><span class="muted">${esc(cs.help)}</span>` : '') +
-          `<br><span class="muted">${esc(r.title)}${
-            full
-              ? ': ' + esc(ownHelp(r))
-              : r.sequence
-                ? ', found in the sequence'
-                : ownVersion(r)
-                  ? ' · ' + esc(ownVersion(r))
-                  : ''
-          }</span>`
-        );
-      };
+      const tipOf = ownTipper(r);
       if (shown.every((x) => markOf(x) === 'named')) {
         const h = namedBoxes(
           shown.map((x) => ({ a: x[1], b: x[2], x })),
@@ -1693,7 +1902,14 @@
           const mk = markOf(x),
             c = colourOf(x),
             op = opOf(x),
-            k = it({ tip: tipOf(x, false), card: tipOf(x, true), a: x[1], b: x[2], src: { own: r, x } }),
+            k = it({
+              tip: tipOf(x, false),
+              card: tipOf(x, true),
+              a: x[1],
+              b: x[2],
+              src: { own: r, x },
+              noclick: !!r.context_mark,
+            }),
             attr = ` data-mi="${k}"`;
           const a = XA(x[1]),
             w = Math.max(1.6, XB(x[2]) - a),
@@ -1846,11 +2062,12 @@
         key(SW.box(col, 0.85), title);
       }
     };
-    Object.assign(c, { zoomed, noneIn, msg, baseLine, labelAt, uniRow, ownRow, pdbRows });
+    Object.assign(c, { zoomed, noneIn, msg, baseLine, labelAt, uniRow, ownRow, combinedRow, pdbRows });
   }
   function draw_rows(c) {
     const {
       ownRow,
+      combinedRow,
       pdbRows,
       uniRow,
       P,
@@ -1886,8 +2103,10 @@
       af,
       L,
     } = c;
+    if (COMB_ON) combinedRow();
     for (const id of rowOrder()) {
       if (!isOn(id) || isBackbone(id)) continue;
+      if (COMB_ON && M.fold && OWN[id]?.context_mark) continue; // folded behind the combined row
       const row = ROW_OF[id];
       if (OWN[id]) {
         c.rowSwap = OWN[id].swap ? ownId({ id: OWN[id].swap }) : '';
@@ -2285,6 +2504,12 @@
             `data-map-labels="${k}" aria-pressed="${M.labels === k}" title="${esc(t)}">${l}</button>`
         )
         .join('')}</span></span>` +
+      (COMB_ON
+        ? `<button type="button" class="btn small" data-map-fold aria-expanded="${!M.fold}" ` +
+          `title="${esc(`The ${CTX_IDS.length} context marks have a row each; they are folded into the combined row at first`)}">${
+            M.fold ? 'Show each mark' : 'Fold marks'
+          }</button>`
+        : '') +
       `<span class="rows-wrap"><button type="button" class="btn small" data-map-rows aria-expanded="${M.rowsMenu}">Rows ▾</button>${M.rowsMenu ? rowsMenu() : ''}</span>` +
       (M.zoom
         ? `<span class="map-range small" id="map-range">residues ${int(M.zoom[0])}–${int(M.zoom[1])} of ${int(M.ctx?.p?.len || 0)}</span><button ` +
@@ -2325,7 +2550,9 @@
           const r = ROW_OF[id];
           return (
             `<div class="rm-row">` +
-            `<label title="${esc(r[3])}"><input type="checkbox" data-map-row="${id}"${isOn(id) ? ' checked' : ''}> ${esc(r[1])} <span class="muted">${esc(r[2])}</span></label>` +
+            `<label title="${esc(r[3])}"><input type="checkbox" data-map-row="${id}"${isOn(id) ? ' checked' : ''}> ${esc(r[1])} <span class="muted">${esc(r[2])}${
+              COMB_ON && M.fold && OWN[id]?.context_mark ? ', folded in All marks' : ''
+            }</span></label>` +
             `<span><button type="button" data-map-move="${id}" data-d="-1" aria-label="Up">↑</button><button ` +
             `type="button" data-map-move="${id}" data-d="1" aria-label="Down">↓</button></span></div>`
           );
@@ -2587,7 +2814,7 @@
       cross.setAttribute('visibility', 'visible');
     };
     svg.addEventListener('pointerdown', (ev) => {
-      if (ev.button !== 0 || ev.target.closest('[data-mi],[data-msite]')) return;
+      if (ev.button !== 0 || ev.target.closest('[data-mi],[data-msite],[data-comb]')) return;
       d0 = toPos(ev);
       if (d0 == null) return;
       svg.setPointerCapture(ev.pointerId);
@@ -2611,7 +2838,7 @@
       if (d0 != null) svg.dispatchEvent(new MouseEvent('mousemove', ev));
     });
     svg.addEventListener('dblclick', (ev) => {
-      if (M.zoom && !ev.target.closest('[data-mi],[data-msite]')) {
+      if (M.zoom && !ev.target.closest('[data-mi],[data-msite],[data-comb]')) {
         M.zoom = null;
         render(el, ctx);
       }
@@ -2837,6 +3064,16 @@
     const el = document.getElementById('pmap');
     if (el && M.ctx) render(el, M.ctx);
   };
+  // a mark of the combined row turned off or on in its legend (kept for the session); focus stays on its entry
+  function toggleComb(id) {
+    if (M.combOff.has(id)) M.combOff.delete(id);
+    else M.combOff.add(id);
+    sstore.set('ptmc-map-comb-off', [...M.combOff]);
+    redraw();
+    [...document.querySelectorAll('#pmap [data-comb]')]
+      .find((e) => e.dataset.comb === id)
+      ?.focus({ preventScroll: true });
+  }
   const saveRows = () => {
     store.set('ptmc-map-off', [...M.off]);
     store.set('ptmc-map-order', rowOrder());
@@ -2872,6 +3109,15 @@
         redraw();
       },
     ],
+    [
+      '[data-map-fold]',
+      () => {
+        M.fold = !M.fold;
+        sstore.set('ptmc-map-fold', M.fold);
+        redraw();
+      },
+    ],
+    ['[data-comb]', (el) => toggleComb(el.dataset.comb)],
     [
       '[data-map-rows]',
       () => {
@@ -2931,7 +3177,10 @@
       '[data-mi]',
       (el) => {
         if (!el.closest('#pmap') || el.hasAttribute('data-msite')) return;
-        togglePin(M.items[+el.dataset.mi]);
+        const x = M.items[+el.dataset.mi];
+        if (x?.site != null)
+          K.site?.focus(M.ctx.p.acc, x.site, { from: 'map' }); // a site's glyph in the combined row: its card
+        else togglePin(x);
       },
     ],
     ['[data-pin-close]', () => closePin(true)]
@@ -2981,6 +3230,12 @@
         all[j].setAttribute('tabindex', '0');
         all[j].focus();
       }
+      return;
+    }
+    const cb = e.target.closest?.('#pmap [data-comb]');
+    if (cb && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      toggleComb(cb.dataset.comb);
       return;
     }
     const n = e.target.closest?.('#pmap [data-mi]:not([data-msite])');
@@ -3043,14 +3298,78 @@
       );
     return rows.concat(tracks).join('');
   });
+  // the context marks within win residues of a position (either side, the position itself left out), nearest first:
+  // [{mark, res, pos, dist, score}]. A score is read from the subset row's label (the number it ends with)
+  function nearby(acc, pos, win) {
+    const its = itemsOf(acc);
+    if (!its) return [];
+    const out = [];
+    CTX_IDS.forEach((id) => {
+      const rows = CTX_ROWS.filter((r) => r.context_mark === id),
+        full = rows[rows.length - 1],
+        scores = new Map();
+      rows.slice(0, -1).forEach((r) => {
+        const k = ROW_INDEX.indexOf(r.id);
+        its
+          .filter((x) => x[0] === k)
+          .forEach((x) => {
+            const m = String(x[4] || '').match(/(-?\d*\.?\d+)\s*$/);
+            if (m) scores.set(x[1], m[1]);
+          });
+      });
+      const k = ROW_INDEX.indexOf(full.id);
+      its
+        .filter((x) => x[0] === k && x[1] !== pos && Math.abs(x[1] - pos) <= win)
+        .forEach((x) =>
+          out.push({
+            mark: full.title,
+            res: K.prot?.siteLabel ? K.prot.siteLabel(acc, x[1]) : String(x[1]),
+            pos: x[1],
+            dist: x[1] - pos,
+            score: scores.get(x[1]) ?? null,
+          })
+        );
+    });
+    return out.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist) || a.dist - b.dist);
+  }
+  // on a touch screen the first tap on a mark shows its hover, a second tap on the same mark opens its detail
+  {
+    let last = null,
+      kind = '';
+    const markOf = (t) => t.closest?.('#pmap [data-msite], #pmap [data-mi]');
+    document.addEventListener(
+      'pointerdown',
+      (e) => {
+        kind = e.pointerType;
+        if (kind === 'touch' && markOf(e.target) !== last) last = null;
+      },
+      true
+    );
+    document.addEventListener(
+      'click',
+      (e) => {
+        const n = kind === 'touch' ? markOf(e.target) : null;
+        if (!n || n.hasAttribute('data-comb')) return;
+        if (n === last) {
+          last = null;
+          return;
+        }
+        last = n;
+        e.preventDefault();
+        e.stopPropagation();
+        n.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: e.clientX, clientY: e.clientY }));
+      },
+      true
+    );
+  }
   // every hover ends with the same muted line (a mark's own click opens its card instead)
-  const CLICK = '<br><span class="muted">Click for details and links</span>';
+  const CLICK = () => `<br><span class="muted">${coarse() ? 'Tap again' : 'Click'} for details and links</span>`;
   K.tips.push(
     [
       '[data-mi]',
       (el) => {
         const x = M.items[+el.dataset.mi];
-        return x && x.tip ? x.tip + (el.hasAttribute('data-msite') ? '' : CLICK) : '';
+        return x && x.tip ? x.tip + (el.hasAttribute('data-msite') || x.noclick ? '' : CLICK()) : '';
       },
     ],
     ['[data-rowhelp]', (el) => esc(el.dataset.rowhelp)]
@@ -3097,6 +3416,7 @@
     render,
     exportOpts,
     cross: (pos) => M.cross?.(pos),
+    nearby,
     figure,
     fileName,
     siteColour,

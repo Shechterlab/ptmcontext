@@ -1176,6 +1176,12 @@ website:                  # the look and words of the website (ptmc web); layout
       include: [{column: combined_score, at_least: 700}]
   protein:                 # the protein page
     open_partners: true
+    map:
+      combined_marks: {default: folded}   # one "All marks" row (the site's marks and every context mark, a shape and color each); the context marks' rows fold behind it
+      hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
+        site: [name, chips, nearby, click]
+        chips: [sources, cplm_evidence, {attribute: pmids, count: PMIDs}]
+        context: [mark, residue, detail, source, click]
     numbering:             # positions typed in a search read as the protein's page numbers them
       - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
         names: "^(putative |core )?histone (h1|h2a|h2b|h3|h4|macro-h2a)\\b|^testis-specific h1 histone|^histone h3-like centromeric"

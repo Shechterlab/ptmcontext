@@ -471,7 +471,7 @@ def test_the_protein_cards_name_no_enzyme_family():
 
 def test_the_map_ends_every_hover_with_a_click_line_and_pins_a_source_link():
     js = (ASSETS / 'kit-map.js').read_text()
-    assert 'Click for details and links' in js and 'const sourceLine' in js
+    assert "'Click'" in js and ' for details and links' in js and 'const sourceLine' in js
     assert js.count('src: {') >= 5  # tracks, domains, segment rows and the site's own rows say which row they belong to
     schema = json.loads(
         (Path(__file__).resolve().parents[1] / 'ptmcontext' / 'schemas' / 'site.schema.json').read_text()

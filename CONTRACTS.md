@@ -457,6 +457,31 @@ reader's choice is kept in the browser. The attribute is usually `optional` (a s
 the run lacks it the whole row of marks is drawn as before. It is the map-row `swap` of the context marks for the marks
 the site itself counts; no statistic, count or filter changes.
 
+**The combined "All marks" row.** `website.protein.map.combined_marks: {default?, label?, order?, min_marks?}` (or `false`)
+draws, at the top of the rows, one track that holds the site's own marks and every context mark: each mark a glyph of its
+own shape (circle, square, diamond, triangle up, triangle down, plus, hexagon, cross: eight, so seven marks never share
+one) in its own color (a context mark's `colour`), with a legend of the same glyphs that turns a mark off and on (a
+keyboard-reachable button with `aria-pressed`; a mark that is off is struck through). The rows of the context marks (map
+rows with `context_mark: <id>`, which `context_marks` writes) are folded behind it: a "Show each mark" button above the map
+(and the Rows menu) unfolds them. `default` is `folded` (the default) or `unfolded`; `order` names the marks in the
+legend's order, `site` for the site's own marks and a context mark's id for the others (the rest follow); `min_marks`
+(default 3) is the fewest marks, the site's own included, for which the row is drawn. The fold and the marks turned off
+are kept for the browser session. The PDF, SVG and PNG exports draw the row and its legend as shown, and the per-mark rows
+when unfolded.
+
+**Map hovers.** `website.protein.map.hover` sets what the hovers of the protein map say; the rest is on the pinned card
+(a click on a context mark) and the site card (a click on a site). `site` lists the fields of a site's hover, in order:
+`name` (residue and position, and the color class), `chips` (a line of short evidence chips), `nearby` (the context marks
+within `window` residues, default 10, with signed distance and, where a subset row carries it, a score; at most
+`nearby_max`, default 3, then "+n more"), `window` (the sequence window), `classes` (the site's questions), `attributes`
+(every attribute with a value), `shown` (the shown-not-counted line) and `click`. The default is `[name, chips, nearby,
+click]`. `chips` lists the attributes of the chip line (an attribute name, or `{attribute, count: "PMIDs"}` to show the
+number of values and that word; a number attribute shows its label and value); the default is the first three attributes
+marked `provenance`, each at most two values. `context` lists the fields of a context mark's hover: `mark`, `residue`
+(residue and position), `detail` (the row's label: state, evidence, score), `score` (a number the item carries), `source`
+(its sources, where the detail does not name them) and `click`; the default is `[mark, residue, detail, source, click]`.
+On a touch screen the first tap on a mark shows its hover and a second tap opens the detail.
+
 `ptmc run` writes `map_items.tsv` (`accession, row, start, end, class, label, value, ref, sources`, for the proteins
 with a mark); `ptmc web` splits it into `data/map/NN.json` (64 shards by the protein files' rule: `{accession: [[row
 index, start, end, class, label, value, ref, sources], ...]}`, empty trailing fields left out) and names the rows in

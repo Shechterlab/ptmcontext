@@ -2535,6 +2535,11 @@ website:                  # the look and words of the website (ptmc web); layout
       nearest_domain: {table: site, name: nearest_domain_name, ref: nearest_domain_interpro, side: domain_side, distance: domain_edge_distance,
                        url: "https://www.ebi.ac.uk/interpro/entry/InterPro/{ref}/", sides: {N_terminal_to_domain: N-term, C_terminal_to_domain: C-term, inside: inside}}
     map:                   # the protein map: more ways to color the sites, and rows of the release's own evidence
+      combined_marks: {default: folded}   # one "All marks" row (the site's marks and every context mark, a shape and color each); the context marks' rows fold behind it
+      hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
+        site: [name, chips, nearby, click]
+        chips: [studies]
+        context: [mark, residue, detail, source, click]
       colour_by:           # in this order; the original explorer's modes, from the sites' attributes
         - state
         - id: methyl_ip

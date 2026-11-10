@@ -1205,5 +1205,10 @@ website:                  # the look and words of the website (ptmc web); layout
   protein:                 # the protein page
     open_partners: true
     map:
+      combined_marks: {default: folded}   # one "All marks" row (the site's marks and every context mark, a shape and color each); the context marks' rows fold behind it
+      hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
+        site: [name, chips, nearby, click]
+        chips: [sources, {attribute: pmids, count: PMIDs}, functional_score]
+        context: [mark, residue, detail, source, click]
       marks_view: {attribute: functional_score, at_least: 0.5, label: score ≥ 0.5}   # at first only the sites Ochoa 2020 scores 0.5 or more (sites without a score are hidden too); a click on the row label shows all
       hide_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row would repeat the phosphosites: one source for them
