@@ -64,7 +64,7 @@ ALLOWED = {
     'residue_values': WORDS | {'role', 'kind', 'bins', 'classes', 'missing'},
     'residue_lists': WORDS - {'track', 'track_help', 'colours'} | {'flags'},
     'neighbours': WORDS - {'track', 'track_help', 'colours'} | {'residues', 'window', 'many'},
-    'near_marks': WORDS - {'track', 'track_help', 'colours'} | {'marks', 'window'},
+    'near_marks': WORDS - {'track', 'track_help', 'colours'} | {'marks', 'window'},  # window 0: the residue itself
     'motif_families': WORDS - {'track', 'track_help', 'colours', 'labels', 'help'} | {'families', 'flank'},
 }
 
@@ -359,35 +359,51 @@ def near_marks(params: dict, aid: str) -> Layer:
     _need(params, aid, 'marks', 'window', layer='near_marks')
     mid, window = params['marks'], int(params['window'])
     noun = params.get('noun', mid.replace('_', ' '))
-    labels = {'near': f'A {noun} within ±{window}', 'none': f'No {noun} within ±{window}'}
-    helps = {
-        'near': f'At least one {noun} (context marks: {mid}) within {window} residues on either side',
-        'none': f'No {noun} within {window} residues on either side, or the protein has none',
-    }
+    if window == 0:  # the residue itself carries the mark
+        labels = {'near': f'Also has a {noun}', 'none': f'No {noun}'}
+        helps = {
+            'near': f'The residue itself is also in the {mid} table (context marks)',
+            'none': f'The residue is not in the {mid} table, or the protein has none',
+        }
+    else:
+        labels = {'near': f'A {noun} within ±{window}', 'none': f'No {noun} within ±{window}'}
+        helps = {
+            'near': f'At least one {noun} (context marks: {mid}) within {window} residues on either side',
+            'none': f'No {noun} within {window} residues on either side, or the protein has none',
+        }
     labels.update(params.get('labels', {}))
     helps.update(params.get('help', {}))
 
     def compute(residues: pd.DataFrame, ctx) -> pd.DataFrame:
-        from ..context_marks import near
+        from ..context_marks import near, same
 
         if mid not in ctx.context:
             raise KeyError(f'analysis {aid!r}: no context mark {mid!r} (context_marks, and its input present)')
-        n = near(residues, ctx.context[mid], window)['n'].to_numpy()
+        if window == 0:
+            n = same(residues, ctx.context[mid]).to_numpy().astype(int)
+        else:
+            n = near(residues, ctx.context[mid], window)['n'].to_numpy()
         return pd.DataFrame({'category': np.where(n > 0, 'near', 'none').astype(object)}, index=residues.index)
 
     return Layer(
         'near_marks',
         'class',
-        f'residues by whether a {noun} (context mark {mid}) lies within ±{window}: near, none',
+        f'residues by whether a {noun} (context mark {mid}) '
+        + ('is at the residue itself' if window == 0 else f'lies within ±{window}')
+        + ': near, none',
         compute,
         labels=labels,
         help=helps,
         ordered=True,
         **_words(
             params,
-            params.get('title', f'Near {noun}s (±{window})'),
-            f'Are {{marks}} more often within {window} residues of a {noun} than the other {{residues}} of the same proteins?',
-            f'{{Marks}} against the other {{residues}} of the same proteins, by whether a {noun} lies within {window} residues on either side',
+            params.get('title', f'Near {noun}s (±{window})' if window else f'Also a {noun} site'),
+            f'Are {{marks}} more often within {window} residues of a {noun} than the other {{residues}} of the same proteins?'
+            if window
+            else f'Are {{marks}} more often also a {noun} site than the other {{residues}} of the same proteins?',
+            f'{{Marks}} against the other {{residues}} of the same proteins, by whether a {noun} lies within {window} residues on either side'
+            if window
+            else f'{{Marks}} against the other {{residues}} of the same proteins, by whether the residue itself is also a {noun} site',
         ),
     )
 

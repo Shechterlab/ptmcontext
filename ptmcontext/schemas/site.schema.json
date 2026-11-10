@@ -6961,6 +6961,33 @@
                 }
               }
             },
+            "exclude": {
+              "type": "array",
+              "description": "rows left out, on any column of the table: a list of {column, in: [values]} (one table split into marks: 'other acylations' is every acyl type but acetyl)",
+              "items": {
+                "type": "object",
+                "required": [
+                  "column",
+                  "in"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "column": {
+                    "type": "string"
+                  },
+                  "in": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "same_residue": {
+              "type": "boolean",
+              "description": "also say, per residue, that the residue itself carries this mark (site card 'Also modified at this residue', a filter, a download); a near_marks question with window: 0 tests it"
+            },
             "replaces_ptm_kinds": {
               "type": "array",
               "items": {

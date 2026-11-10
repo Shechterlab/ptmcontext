@@ -981,6 +981,38 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     question: "Are methylarginines more often near a methyllysine than the other arginines of their protein?"
     sub: "Methylarginines against the other arginines of the same proteins, by whether a methyllysine (UniProt, iPTMnet, CPLM and Berryhill 2023, by-similarity records left out) lies within 10 residues on either side. Few proteins carry a recorded methyllysine"
     section: Other marks
+  - id: near_acetylation
+    layer: near_marks
+    with: {marks: acetylation, window: 10, noun: "acetylation site", labels: {near: "An acetylation site within ±10", none: "No acetylation site within ±10"}}
+    new: true
+    title: Near acetylation sites (within 10)
+    question: "Are methylarginines more often near an acetylation site than the other arginines of their protein?"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) lies within 10 residues on either side. Acetylation is among the most studied lysine marks and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
+    section: Other marks
+  - id: near_other_acylation
+    layer: near_marks
+    with: {marks: other_acylation, window: 10, noun: "other acylation site", labels: {near: "Another lysine acylation within ±10", none: "No other acylation site within ±10"}}
+    new: true
+    title: Near other acylation sites (within 10)
+    question: "Are methylarginines more often near another lysine acylation than the other arginines of their protein?"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) lies within 10 residues on either side. These marks (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    section: Other marks
+  - id: near_ubiquitination
+    layer: near_marks
+    with: {marks: ubiquitination, window: 10, noun: "ubiquitination site", labels: {near: "A ubiquitination site within ±10", none: "No ubiquitination site within ±10"}}
+    new: true
+    title: Near ubiquitination sites (within 10)
+    question: "Are methylarginines more often near a ubiquitination site than the other arginines of their protein?"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a ubiquitination site (by-similarity records left out) lies within 10 residues on either side"
+    section: Other marks
+  - id: near_sumoylation
+    layer: near_marks
+    with: {marks: sumoylation, window: 10, noun: "SUMOylation site", labels: {near: "A SUMOylation site within ±10", none: "No SUMOylation site within ±10"}}
+    new: true
+    title: Near SUMOylation sites (within 10)
+    question: "Are methylarginines more often near a SUMOylation site than the other arginines of their protein?"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a SUMOylation site (by-similarity records left out) lies within 10 residues on either side"
+    section: Other marks
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
   - id: which_factor
@@ -1256,6 +1288,72 @@ context_marks:
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
       CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022), included pending the authors' permission", doi: 10.1093/nar/gkab849}
       Berryhill 2023: {cite: "Berryhill et al., Sci Rep 13:377 (2023)", doi: 10.1038/s41598-022-27175-x}
+  - id: acetylation
+    label: Acetylation
+    noun: acetylation site
+    plural: Acetylation sites
+    input: context_acetylation_sites_v1_5_0
+    columns: {accession: canonical_UniProtAC, position: position, residue: residue, evidence: evidence_class, sources: sources}
+    replaces_ptm_kinds: [Lys acyl]   # the live UniProt "Other PTMs" row would repeat the lysine acylations: one source for them
+    colour: "#15803d"          # green: apart from the orange, violet, cyan and olive of the other marks (5.0:1 on white)
+    colour_dark: "#4ade80"     # 9.3:1 on the dark surface
+    citation:
+      short: UniProt and iPTMnet
+      cite: "Lysine acetylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: CC BY-NC-SA 4.0
+    sources:
+      UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
+      iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
+  - id: other_acylation
+    label: Other acylations
+    noun: non-acetyl acylation site
+    plural: Other acylation sites
+    input: context_lysine_acylation_sites_v1_5_0
+    columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: acyl_type, evidence: evidence_class, sources: sources}
+    exclude: [{column: acyl_type, in: [acetyl]}]   # acetylation is its own mark above; the rest, as one group, 12 acyl types
+    colour: "#8a7a1c"          # olive: 4.3:1 on white
+    colour_dark: "#ddd06a"     # 10.3:1 on the dark surface
+    citation:
+      short: UniProt and iPTMnet
+      cite: "Lysine acylation sites (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl, methacryl, isonicotinyl, benzoyl, butyryl, malonyl, propionyl) of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: CC BY-NC-SA 4.0
+    sources:
+      UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
+      iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
+  - id: ubiquitination
+    label: Ubiquitination
+    noun: ubiquitination site
+    plural: Ubiquitination sites
+    input: context_ubiquitination_sites_v1_5_0
+    columns: {accession: canonical_UniProtAC, position: position, residue: residue, evidence: evidence_class, sources: sources}
+    replaces_ptm_kinds: [Ubiquitin]   # the live UniProt "Other PTMs" row would repeat the ubiquitination sites: one source for them
+    colour: "#be185d"          # rose: 6.0:1 on white
+    colour_dark: "#f9a8d4"     # 9.0:1 on the dark surface
+    citation:
+      short: CPLM, UniProt and iPTMnet
+      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license; its sites are included pending the authors' permission); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license (included pending the authors' permission)"
+    sources:
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022), included pending the authors' permission", doi: 10.1093/nar/gkab849}
+      UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
+      iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
+  - id: sumoylation
+    label: SUMOylation
+    noun: SUMOylation site
+    plural: SUMOylation sites
+    input: context_sumoylation_sites_v1_5_0
+    columns: {accession: canonical_UniProtAC, position: position, residue: residue, evidence: evidence_class, sources: sources}
+    replaces_ptm_kinds: [SUMO]   # the live UniProt "Other PTMs" row would repeat the SUMOylation sites: one source for them
+    colour: "#0369a1"          # blue: 5.9:1 on white
+    colour_dark: "#7dd3fc"     # 9.8:1 on the dark surface
+    citation:
+      short: CPLM, UniProt and iPTMnet
+      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license; its sites are included pending the authors' permission); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license (included pending the authors' permission)"
+    sources:
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022), included pending the authors' permission", doi: 10.1093/nar/gkab849}
+      UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
+      iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
 
 outputs: {folder: out/methylarginine}
 citation: sites/methylarginine.citation.cff   # the citation, data sources, version and date: edit there

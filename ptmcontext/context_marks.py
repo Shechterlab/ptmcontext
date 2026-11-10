@@ -39,6 +39,12 @@ def noun(entry: dict) -> str:
     return n if any(c.isupper() for c in n[1:]) else n[:1].lower() + n[1:]
 
 
+def with_article(entry: dict) -> str:
+    """The noun with its indefinite article ('a phosphosite', 'an acetylation site')."""
+    n = noun(entry)
+    return ('an ' if n[:1].lower() in 'aeiou' else 'a ') + n
+
+
 def drop(entry: dict) -> list[str]:
     return list(entry['drop_evidence']) if 'drop_evidence' in entry else DEFAULT_DROP
 
@@ -66,6 +72,9 @@ def problems(site: dict) -> list[str]:
                 out.append(f'{where}: a subset needs at_least or at_most (or both)')
             if not re.fullmatch(r'[a-z][a-z0-9_]*', str(sub.get('id', ''))):
                 out.append(f'{where}: subset.id is lower-case letters, digits and _')
+        for rule in e.get('exclude') or []:
+            if not (isinstance(rule, dict) and rule.get('column') and isinstance(rule.get('in'), list)):
+                out.append(f'{where}: exclude is a list of {{column, in: [values]}}')
         if site.get('inputs', {}).get(role(e)) not in (None, e['input']):
             out.append(f'{where}: inputs.{role(e)} is already filled')
     return out
@@ -77,6 +86,10 @@ def read(entry: dict, path: str | Path, snapshot=None) -> pd.DataFrame:
     One row per residue and state."""
     cols = dict(entry['columns'])
     df = pd.read_csv(path, sep=entry.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False)
+    for rule in entry.get('exclude') or []:  # rows whose value of a table column is listed are left out
+        if rule['column'] not in df.columns:
+            raise ValueError(f'context_marks.{entry["id"]}: {Path(path).name} has no column {rule["column"]!r}')
+        df = df[~df[rule['column']].astype(str).str.strip().isin(rule['in'])]
     for k in OPTIONAL:  # an optional column the table lacks is read as empty
         if cols.get(k) and cols[k] not in df.columns:
             cols.pop(k)
@@ -179,6 +192,14 @@ def near(residues: pd.DataFrame, table: pd.DataFrame, w: int) -> pd.DataFrame:
     return pd.DataFrame({'n': n, 'nearest': nearest, 'hits': hits}, index=residues.index)
 
 
+def same(residues: pd.DataFrame, table: pd.DataFrame) -> pd.Series:
+    """For each (accession, position) row of residues (in order): whether the table has a mark at that very residue."""
+    have = set(zip(table['accession'], table['position'].astype(int)))
+    return pd.Series(
+        [(a, int(p)) in have for a, p in zip(residues['accession'], residues['position'])], index=residues.index
+    )
+
+
 def signed(d: int) -> str:
     return f'+{d}' if d > 0 else f'−{abs(d)}'
 
@@ -203,7 +224,16 @@ def map_row(entry: dict, after: str) -> dict:
                 'label': ' · '.join(parts) if parts else entry['label'],
                 **({'sources': cols['sources']} if cols.get('sources') else {}),
             },
-            **({'exclude': [{'column': cols['evidence'], 'in': drop(entry)}]} if drop(entry) else {}),
+            **(
+                {
+                    'exclude': [
+                        *([{'column': cols['evidence'], 'in': drop(entry)}] if drop(entry) else []),
+                        *(entry.get('exclude') or []),
+                    ]
+                }
+                if drop(entry) or entry.get('exclude')
+                else {}
+            ),
         },
         'mark': 'tick',
         'context_mark': entry['id'],
@@ -240,6 +270,8 @@ def subset_row(entry: dict, after: str) -> dict:
 
 def attribute_names(entry: dict) -> dict[str, str]:
     names = {'near': f'ctx_near_{entry["id"]}', 'count': f'ctx_n_{entry["id"]}'}
+    if entry.get('same_residue'):
+        names['same'] = f'ctx_same_{entry["id"]}'
     if subset(entry):
         names['near_subset'] = f'ctx_near_{subset_id(entry)}'
     return names
@@ -258,10 +290,19 @@ def specs(site: dict) -> tuple[dict, dict]:
         f'(minus: toward the N terminus). Context only: from ' + ', '.join(e['label'] for e in entries(site)),
         'derived': True,
     }
+    if any(e.get('same_residue') for e in entries(site)):
+        marks['ctx_same'] = {
+            'label': 'Also modified at this residue',
+            'kind': 'list',
+            'separator': '; ',
+            'help': 'Other modifications reported at this very residue (context only): '
+            + ', '.join(e['label'] for e in entries(site) if e.get('same_residue')),
+            'derived': True,
+        }
     for e in entries(site):
         a = attribute_names(e)
         marks[a['near']] = {
-            'label': f'Has a {noun(e)} within ±{w}',
+            'label': f'Has {with_article(e)} within ±{w}',
             'kind': 'category',
             'values': {'yes': f'{e["label"]} within ±{w}', 'no': f'None within ±{w}'},
             'filter': True,
@@ -270,7 +311,7 @@ def specs(site: dict) -> tuple[dict, dict]:
         }
         if 'near_subset' in a:  # present only where the table has scores (the run writes it then)
             marks[a['near_subset']] = {
-                'label': f'Has a {noun(e)} ({subset_label(e)}) within ±{w}',
+                'label': f'Has {with_article(e)} ({subset_label(e)}) within ±{w}',
                 'kind': 'category',
                 'values': {'yes': f'{e["label"]} ({subset_label(e)}) within ±{w}', 'no': f'None within ±{w}'},
                 'filter': True,
@@ -278,6 +319,15 @@ def specs(site: dict) -> tuple[dict, dict]:
                 f'residues of the site on either side',
                 'derived': True,
                 'optional': True,
+            }
+        if 'same' in a:  # opt-in: the residue itself also carries the mark
+            marks[a['same']] = {
+                'label': f'Also has {with_article(e)} at this residue',
+                'kind': 'category',
+                'values': {'yes': f'{e["label"]} at this residue', 'no': 'Not at this residue'},
+                'filter': True,
+                'help': f'The residue itself is also in the {e["label"]} table (from {e["citation"].get("short", e["label"])})',
+                'derived': True,
             }
         prots[a['count']] = {
             'label': e.get('plural') or e['label'] + 's',
@@ -360,12 +410,18 @@ def expand(site: dict) -> dict:
             dl.append({'name': f'{e["id"]}_sites', 'attribute': n})
     card = (web.get('protein') or {}).get('card')
     if isinstance(card, dict):  # the card lists the marks nearby in one row; the yes/no filters repeat it
-        card['hide'] = [*card.get('hide', []), *[attribute_names(e)['near'] for e in es]]
+        card['hide'] = [
+            *card.get('hide', []),
+            *[attribute_names(e)['near'] for e in es],
+            *[attribute_names(e)['same'] for e in es if e.get('same_residue')],
+        ]
     sdl = sites.get('download')
     if isinstance(sdl, list):
         sdl.append({'name': 'other_marks_nearby', 'attribute': 'ctx_near'})
         for e in es:
             sdl.append({'name': f'{e["id"]}_within_{window(site)}', 'attribute': attribute_names(e)['near']})
+            if e.get('same_residue'):
+                sdl.append({'name': f'{e["id"]}_same_residue', 'attribute': attribute_names(e)['same']})
     return site
 
 
@@ -386,6 +442,25 @@ def derive(
         if has_subset(e, ctx_tables[e['id']]):  # the subset's own column, only where the table has scores
             sub_hits = near(m, subset_rows(e, ctx_tables[e['id']]), w)
             a[f'a.{attribute_names(e)["near_subset"]}'] = ['yes' if n else 'no' for n in sub_hits['n']]
+    for e in kept:
+        if e.get('same_residue'):
+            a[f'a.{attribute_names(e)["same"]}'] = ['yes' if h else 'no' for h in same(m, ctx_tables[e['id']])]
+    if any(e.get('same_residue') for e in kept):
+        found = {}  # (accession, position) -> its states, per same_residue entry
+        for e in kept:
+            if e.get('same_residue'):
+                found[e['id']] = {
+                    (r.accession, r.position): r.state for r in sites_of(ctx_tables[e['id']]).itertuples()
+                }
+        tags = []
+        for acc, pos in zip(m['accession'], m['position'].astype(int)):
+            parts = []
+            for e in kept:
+                if e.get('same_residue') and (acc, pos) in found[e['id']]:
+                    st = found[e['id']][(acc, pos)]
+                    parts.append(f'{e["label"]} ({st})' if st else e['label'])
+            tags.append('; '.join(parts))
+        a['a.ctx_same'] = tags
     letters = {}
     for e in kept:
         c = sites_of(ctx_tables[e['id']])

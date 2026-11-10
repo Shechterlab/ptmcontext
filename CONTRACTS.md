@@ -13,7 +13,7 @@ Nine plain-data formats, and the tables the protein pages show (at the end). Cod
 | **Set families** | YAML | `ptmcontext/schemas/set_families.schema.json` | a person (a site's own data file, `sites/data/`) | protein-set questions that gather sets into families |
 | **Per-mark table** | TSV (any columns; the site file names its key and the columns kept) | `marks.tables` in `ptmcontext/schemas/site.schema.json` | a source, another repository, a user | the website's count questions (`website.counts`) |
 | **Map rows** | TSV in any layout, mapped to the format's columns in the site file | `ptmcontext/schemas/site.schema.json` (`website.protein.map.rows`) | a backend's release, or a person | `ptmc run` (map_items.tsv), the protein map |
-| **Context marks** | TSV (any layout; the site file names its key columns) | `context_marks` in `ptmcontext/schemas/site.schema.json` | a release (PTM_Pipeline v1.5.0: phosphorylation, methyllysine), any residue table | `ptmc run`, the website (map row, site card, filters, tables, downloads), the `near_marks` layer |
+| **Context marks** | TSV (any layout; the site file names its key columns) | `context_marks` in `ptmcontext/schemas/site.schema.json` | a release (PTM_Pipeline v1.5.0: phosphorylation, methyllysine, acetylation and other lysine acylation), any residue table | `ptmc run`, the website (map row, site card, filters, tables, downloads), the `near_marks` layer |
 | **Set hierarchy** | TSV | below (`hierarchy:` in the site schema) | an ontology's export, a person | the website's views of an ontology question |
 | **Published set results** | TSV (any columns) | below (`reference.tables` in the site schema) | a release, another pipeline | the parity check of one protein-set question |
 | **Citation** | YAML (CITATION.cff 1.2.0) | [citation-file-format.github.io](https://citation-file-format.github.io/) | a person | every page and download; GitHub and Zenodo read it too |
@@ -344,6 +344,8 @@ Other modifications shown beside a site's own mark, declared in the site file as
 | `columns` | yes | `accession` and `position` (1-based, on the snapshot); optional `residue` (rows whose letter differs from the snapshot are dropped), `state`, `evidence`, `sources` (`; `-separated), `score` (a number column; read where the table has it, treated as absent where it has not) |
 | `subset` | no | `{id, at_least and/or at_most, label?, default?: subset \| all}`: the marks whose `columns.score` passes (a "near high-score phosphosites" variant). Active only where the table has the score column; see below |
 | `replaces_ptm_kinds` | no | kinds of the protein map's live UniProt "Other PTMs" row (`config/uniprot_ptm_kinds.json`, such as `Phospho`) this entry covers: that row leaves them out (`website.protein.map.hide_ptm_kinds`, which a site may also write), so one mark has one source |
+| `exclude` | no | rows left out, on any column of the table: `[{column, in: [values]}]` (one table read as several marks: "other acylations" is the acylation table without `acyl_type: acetyl`); the map row leaves them out too |
+| `same_residue` | no | `true`: also say, per residue, that the residue itself is in this table: the attribute `ctx_same` ("Also modified at this residue", a list shown on the site card, of the marks and their states), the filter `ctx_same_<id>` and a download column. A residue's own row never counts as "near" |
 | `drop_evidence` | no | values of `columns.evidence` whose rows are dropped (default `[by-similarity]`; `[]` keeps all) |
 | `colour`, `colour_dark` | yes, no | the map row's tick |
 | `citation` | yes | `cite` (and `short`, `doi`, `url`, `licence`) for the table |
@@ -388,6 +390,11 @@ for a site whose table has them (a run without the key stops with the missing co
 The `near_marks` layer (`with: {marks: <id>, window, noun}`) is the question "Near other marks": residues by whether a
 mark of the entry lies within `window` residues on either side, the residue itself left out: `near`, `none`. Mark such an
 analysis `new: true`; both tests run as for any residue question.
+
+`window: 0` is the same-residue question: residues by whether the residue itself is in the entry's table (labels, question and
+title follow; give `labels:` to name it, such as "Also reported acetylated"). The comparison is the question's usual one,
+the marks against the other residues of the same proteins (the within-protein Mantel-Haenszel), so the number of studies
+of a protein does not drive it; it speaks of reported residues, not of one molecule.
 
 ## Motif families
 

@@ -357,3 +357,36 @@ def test_the_three_site_files_set_the_combined_row_and_the_hovers(name):
     assert m['combined_marks'] == {'default': 'folded'}
     assert m['hover']['site'][0] == 'name' and m['hover']['chips'] and 'context' in m['hover']
     assert all(r.get('context_mark') for r in m['rows'] if r['id'].startswith('ctx_'))
+
+
+def test_exclude_splits_one_table_into_marks(table):
+    snap = Snapshot({'P': SEQ})
+    only_me2 = {**ENTRY, 'exclude': [{'column': 'st', 'in': ['phospho']}]}
+    assert list(CM.read(only_me2, table, snap)['state']) == ['me2']
+    row = CM.expand(_site({'context_marks': [only_me2]}))['website']['protein']['map']['rows'][0]
+    assert row['from']['exclude'] == [{'column': 'ev', 'in': ['by-similarity']}, {'column': 'st', 'in': ['phospho']}]
+    with pytest.raises(ValueError, match='has no column'):
+        CM.read({**ENTRY, 'exclude': [{'column': 'zz', 'in': ['x']}]}, table)
+    with pytest.raises(ValueError, match='exclude is a list'):
+        CM.expand(_site({'context_marks': [{**ENTRY, 'exclude': [{'column': 'st'}]}]}))
+
+
+def test_same_residue_question_and_columns(table):
+    snap = Snapshot({'P': SEQ})
+    entry = {**ENTRY, 'same_residue': True}
+    t = CM.read(entry, table, snap)  # P11 phospho, P17 me2
+    cand = snap.residues(['K', 'S', 'R'])
+    assert list(CM.same(cand, t)) == [p in (11, 17) for p in cand['position']]
+    ctx = L.Context(snap, load_profile(MARKS / 'methylarginine.yaml'), {})
+    ctx.context = {'phos': t}
+    layer = L.get('near_marks', ctx, {'marks': 'phos', 'window': 0, 'noun': 'phosphosite'}, 'same_phos')
+    out = dict(zip(cand['position'], layer(cand, ctx)['category']))
+    assert out[11] == 'near' and out[17] == 'near' and out[6] == 'none'
+    assert layer.labels['near'] == 'Also has a phosphosite' and 'also a phosphosite site' in layer.question
+    marks, _ = CM.specs(CM.expand(_site({'context_marks': [entry]})))
+    assert marks['ctx_same']['kind'] == 'list' and marks['ctx_same_phos']['filter'] is True
+    assert 'ctx_same_phos' not in CM.specs(CM.expand(_site()))[0]
+    m = pd.DataFrame({'accession': ['P', 'P'], 'position': [11, 12]})
+    a, _ = CM.derive({'context_marks': [entry], 'website': {}}, {'phos': t}, m, {'P'})
+    assert list(a['a.ctx_same_phos']) == ['yes', 'no'] and list(a['a.ctx_same']) == ['Phosphosite (phospho)', '']
+    assert list(a['a.ctx_near_phos']) == ['yes', 'yes']  # the same residue is not "near": R12 sees S11 and K17

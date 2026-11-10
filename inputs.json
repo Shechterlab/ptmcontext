@@ -1393,6 +1393,42 @@
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Ochoa et al., Nat Biotechnol 38:365 (2020): the article is not open access and its supplementary table carries no license, included by the owner's decision of 2026-11-10",
       "role": "input",
       "note": "Phosphorylation sites of the human reviewed proteome (142,415 rows), one row per residue and state, with sources (UniProt, iPTMnet, Ochoa 2020), evidence class (experimental, by-similarity, text-mined, unspecified), iPTMnet upstream databases and PubMed IDs. Shown as context beside the site's own mark; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit ae0ea32."
+    },
+    "context_acetylation_sites_v1_5_0": {
+      "file": "releases/v1.5.0/human_acetylation_sites_v1.5.0.tsv",
+      "md5": "079ce9e22305fcb01fb9f035fca778f7",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/ae0ea32/releases/v1.5.0",
+      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-10); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
+      "role": "input",
+      "note": "Context marks: lysine acetylation sites of the human reviewed proteome (4,597 rows on 4,597 residues of 1,834 proteins), one row per residue, with sources (UniProt, iPTMnet), evidence class (experimental, by-similarity, unspecified), iPTMnet upstream databases and PubMed IDs. Shown beside the methylarginines, methyllysines and phosphosites by the protein map and the near_acetylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit ae0ea32."
+    },
+    "context_lysine_acylation_sites_v1_5_0": {
+      "file": "releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv",
+      "md5": "4164819cece8710a79904b9901cfa2bf",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/ae0ea32/releases/v1.5.0",
+      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-10); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
+      "role": "input",
+      "note": "Context marks: lysine acylation sites of the human reviewed proteome (8,008 rows on 5,504 residues of 1,945 proteins; 13 acyl types in acyl_type, 4,597 of them acetyl), one row per residue and acyl type, with sources, evidence class and PubMed IDs. Read as the mark 'other acylations' (every acyl type but acetyl) beside the methylarginines, methyllysines and phosphosites by the protein map and the near_other_acylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit ae0ea32."
+    },
+    "context_ubiquitination_sites_v1_5_0": {
+      "file": "releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv",
+      "md5": "1c870912a219afa4329fc79d9a813983",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/cbfb514/releases/v1.5.0",
+      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-10); positions on UniProt 2026_03",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; CPLM 4.0 states no license: its rows are included by the owner's decision of 2026-11-09, pending the authors' permission",
+      "role": "input",
+      "note": "Context marks: lysine ubiquitination sites of the human reviewed proteome (123,932 rows on 11,862 proteins; CPLM 4.0 123,753, UniProt 951, iPTMnet 610 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity), CPLM evidence label and PubMed IDs. Shown beside the site's own mark by the protein map and the near_ubiquitination question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit cbfb514."
+    },
+    "context_sumoylation_sites_v1_5_0": {
+      "file": "releases/v1.5.0/human_sumoylation_sites_v1.5.0.tsv",
+      "md5": "3a3d021bf7a2a352ba9807d425c65973",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/cbfb514/releases/v1.5.0",
+      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-10); positions on UniProt 2026_03",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; CPLM 4.0 states no license: its rows are included by the owner's decision of 2026-11-09, pending the authors' permission",
+      "role": "input",
+      "note": "Context marks: lysine SUMOylation sites of the human reviewed proteome (39,633 rows on 6,102 proteins; CPLM 4.0, UniProt and iPTMnet), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity), CPLM evidence label and PubMed IDs. Shown beside the site's own mark by the protein map and the near_sumoylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit cbfb514."
     }
   }
 }
