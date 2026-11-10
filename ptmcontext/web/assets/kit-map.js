@@ -197,6 +197,22 @@
       }
     },
   };
+  // the site's own marks by a score (website.protein.map.marks_view: {attribute, at_least, label}): drawn at first only
+  // where the attribute's number passes (a mark without one does not), the row's label a link to show every mark; the
+  // choice is kept in the browser. Absent where the attribute is (an optional one a run lacks).
+  const MV =
+    CFG.marks_view && SPECS[CFG.marks_view.attribute]
+      ? {
+          ...CFG.marks_view,
+          label: CFG.marks_view.label || `${SPECS[CFG.marks_view.attribute].label} ≥ ${CFG.marks_view.at_least}`,
+        }
+      : null;
+  const MV_ALL = { on: !!store.get('ptmc-map-marks-all', false) };
+  const MV_PASS = (m) => {
+    if (!MV || MV_ALL.on) return true;
+    const v = m[3]?.[attrIdx(MV.attribute)];
+    return v !== '' && v != null && Number(v) >= Number(MV.at_least);
+  };
   // the inputs that fill a role, by version (for the hovers' provenance)
   const rolesOf = (x) => x.roles || (x.role ? [x.role] : []);
   const roleVersion = (role) =>
@@ -972,7 +988,7 @@
   function draw_marks(c) {
     const { rec, inView, X } = c;
     // the marks: stacked heads (a head moves up a level within 11 px of the one before it at that level)
-    const marks = rec.marks.filter((m) => inView(m[0], m[0])).sort((a, b) => a[0] - b[0]);
+    const marks = rec.marks.filter((m) => inView(m[0], m[0]) && MV_PASS(m)).sort((a, b) => a[0] - b[0]);
     const lastX = [];
     const level = new Map();
     marks.forEach((m) => {
@@ -1085,7 +1101,9 @@
       const sw =
         c.rowSwap && !ex
           ? ` data-map-swap="${esc(c.rowSwap)}" data-map-swap-from="${esc(c.rowFrom)}" text-decoration="underline" style="cursor:pointer"`
-          : '';
+          : c.rowToggle && !ex
+            ? ` data-map-marks-toggle="1" text-decoration="underline" style="cursor:pointer"`
+            : '';
       if (sw) help += ' Click the label to switch rows.';
       const size = 11;
       let t = lab; // track labels are never smaller than 11; one that does not fit is cut, its hover has the whole
@@ -1336,13 +1354,18 @@
         );
       }
     });
-    if (marks.length)
+    if (marks.length || (MV && rec.marks.length)) {
+      c.rowToggle = !!MV;
       rowLabel(
-        cap(W.marks),
+        MV ? `${cap(W.marks)}: ${MV_ALL.on ? 'all' : MV.label}` : cap(W.marks),
         top + 8 + (nLev - 1) * 5.5,
-        `the ${W.marks} of this site, colored as ` + `chosen above; click one for its card`,
+        MV
+          ? `the ${W.marks} of this site${MV_ALL.on ? '' : ` with ${MV.label}`}, colored as chosen above (${marks.length} of ${rec.marks.length} here)`
+          : `the ${W.marks} of this site, colored as ` + `chosen above; click one for its card`,
         true
       );
+      c.rowToggle = false;
+    }
     if (marks.some((m) => hatched(m))) key(SW.hatch(P.muted), HATCH_LABEL);
     // the marks the site shows and counts nowhere (K.shown, website.shown_marks): hatched ticks on the backbone, in
     // their color, each with its tag's hover; a click pins it with a link to its card
@@ -2827,6 +2850,14 @@
       (el) => {
         M.labels = el.dataset.mapLabels;
         store.set('ptmc-map-labels', M.labels);
+        redraw();
+      },
+    ],
+    [
+      '[data-map-marks-toggle]',
+      () => {
+        MV_ALL.on = !MV_ALL.on;
+        store.set('ptmc-map-marks-all', MV_ALL.on);
         redraw();
       },
     ],

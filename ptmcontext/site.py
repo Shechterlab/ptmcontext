@@ -1260,7 +1260,9 @@ def mark_attributes(spec: dict, table: pd.DataFrame, marked: pd.DataFrame, rows:
         out = f'a.{name}'
         if a.get('present'):  # whether the column holds anything: 'yes' or 'no'
             t[out] = t[out].str.strip().ne('').map({True: 'yes', False: 'no'})
-        elif a.get('bands'):  # a number cut at the thresholds: b0 below the first, b1 from it, ..., empty without a number
+        elif a.get(
+            'bands'
+        ):  # a number cut at the thresholds: b0 below the first, b1 from it, ..., empty without a number
             cuts = sorted(float(x) for x in a['bands'])
             num = pd.to_numeric(t[out], errors='coerce')
             t[out] = ['' if pd.isna(x) else f'b{sum(x >= c for c in cuts)}' for x in num]
@@ -1471,7 +1473,8 @@ def class_counts(m: pd.DataFrame, kept: dict) -> list[pd.DataFrame]:
         ann, is_m, is_l = k['annotated'], k['is_marked'], k['is_left']
         mk = ann[is_m].set_index(['accession', 'position'])
         if k['columns'] is None:
-            m[aid] = [mk['category'].get((a, p), '') for a, p in zip(m['accession'], m['position'])]
+            cat = dict(zip(mk.index, mk['category']))  # a dict, not Series.get: a MultiIndex lookup costs milliseconds
+            m[aid] = [cat.get((a, p), '') for a, p in zip(m['accession'], m['position'])]
             g = (
                 ann[~is_l]
                 .assign(marked=is_m[~is_l])
@@ -1486,8 +1489,9 @@ def class_counts(m: pd.DataFrame, kept: dict) -> list[pd.DataFrame]:
             )
         else:
             flags = k['columns']
+            have = {f: dict(zip(mk.index, mk[f])) for f in flags}
             m[aid] = [
-                ';'.join(f for f in flags if bool(mk[f].get((a, p), False)))
+                ';'.join(f for f in flags if bool(have[f].get((a, p), False)))
                 for a, p in zip(m['accession'], m['position'])
             ]
             sub = ann[~is_l].assign(marked=is_m[~is_l])

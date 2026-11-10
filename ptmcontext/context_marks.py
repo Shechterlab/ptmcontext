@@ -122,7 +122,11 @@ def subset_label(entry: dict) -> str:
 
 def has_subset(entry: dict, table: pd.DataFrame) -> bool:
     """Whether the table has scores to cut a subset by (the column existed and holds a number)."""
-    return bool(subset(entry)) and 'score' in table.columns and pd.to_numeric(table['score'], errors='coerce').notna().any()
+    return (
+        bool(subset(entry))
+        and 'score' in table.columns
+        and pd.to_numeric(table['score'], errors='coerce').notna().any()
+    )
 
 
 def subset_rows(entry: dict, table: pd.DataFrame) -> pd.DataFrame:
@@ -225,7 +229,7 @@ def subset_row(entry: dict, after: str) -> dict:
     row.update(
         id='ctx_' + subset_id(entry),
         title=f'{entry["label"]}: {subset_label(entry)}',
-        help=f'{entry["label"]} positions with {subset_label(entry)} (the site\'s {entry["input"]} input); '
+        help=f"{entry['label']} positions with {subset_label(entry)} (the site's {entry['input']} input); "
         f'click the row label to show every {noun(entry)}',
         default='off' if sub.get('default') == 'all' else 'on',
         swap='ctx_' + entry['id'],
@@ -433,7 +437,9 @@ def register(site: dict, folder: Path, log=print) -> None:
                         r['default'] = e.get('default', 'on')
                         r['after'] = dead_after(site, e, mmap['rows'])
                 log(f'  context_marks.{e["id"]}: no scores in the run: the subset ({subset_label(e)}) is left out')
-    site['marks'].setdefault('attributes', {}).update({n: {k: v for k, v in s.items() if k != 'optional'} for n, s in got.items()})
+    site['marks'].setdefault('attributes', {}).update(
+        {n: {k: v for k, v in s.items() if k != 'optional'} for n, s in got.items()}
+    )
     ph = head('protein_attributes.tsv')
     pgot = {n: s for n, s in prots.items() if f'p.{n}' in ph}
     if pgot:

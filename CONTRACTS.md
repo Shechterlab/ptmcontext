@@ -450,6 +450,13 @@ section instead. A row may instead be found in each protein's sequence (`sequenc
 `min` matches of a regular expression, each within `gap` residues of the one before). A row whose data a protein lacks is
 not drawn on it, and a site without rows has none.
 
+**The site's own marks by a score.** `website.protein.map.marks_view: {attribute, at_least, label?}` draws the site's own marks
+on the protein map at first only where the number attribute (`kind: number`) is at least `at_least`; a mark without a
+number is hidden too. The label of the marks row ("<marks>: <label>") is a link that shows every mark (and back); the
+reader's choice is kept in the browser. The attribute is usually `optional` (a score merged into the table later): where
+the run lacks it the whole row of marks is drawn as before. It is the map-row `swap` of the context marks for the marks
+the site itself counts; no statistic, count or filter changes.
+
 `ptmc run` writes `map_items.tsv` (`accession, row, start, end, class, label, value, ref, sources`, for the proteins
 with a mark); `ptmc web` splits it into `data/map/NN.json` (64 shards by the protein files' rule: `{accession: [[row
 index, start, end, class, label, value, ref, sources], ...]}`, empty trailing fields left out) and names the rows in

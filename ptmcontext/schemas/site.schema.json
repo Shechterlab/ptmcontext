@@ -7638,6 +7638,17 @@
           },
           "description": "kinds of the live UniProt 'Other PTMs' row to leave out (a context mark's replaces_ptm_kinds adds to them)"
         },
+        "marks_view": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["attribute", "at_least"],
+          "description": "the site's own marks on the protein map by a number attribute: drawn at first only where it is at least at_least (a mark without a number is hidden too), the row's label a link to show every mark (kept in the browser). Absent where the attribute is (an optional one a run lacks)",
+          "properties": {
+            "attribute": {"type": "string", "description": "a marks attribute of kind number"},
+            "at_least": {"type": "number"},
+            "label": {"type": "string", "description": "the row label's words after the mark's name while the cut applies (default: the attribute's label and threshold)"}
+          }
+        },
         "colour_by": {
           "type": "array",
           "description": "the ways to color the marks, in this order: an attribute with colour: true by its name, or a mode made from the marks' attributes (each mark takes the first class whose conditions hold, else otherwise). Color attributes not named follow",

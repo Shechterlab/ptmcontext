@@ -5,12 +5,12 @@ message: "Please cite the data sources: there is no paper for this site yet."
 title: "Human phosphosites (ptmcontext site, release v1.5.0 of PTM_Pipeline)"
 version: "0.1.0"
 date-released: "2026-11-10"
-url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0"
+url: "https://github.com/Shechterlab/PTM_Pipeline/tree/ae0ea326adb166ae81bd362a7c923533301d116a/releases/v1.5.0"
 license: "CC-BY-NC-SA-4.0"
 authors:
   - name: "Shechter Lab, Albert Einstein College of Medicine"
 # No paper describes this site yet, so there is no preferred-citation; the data sources below are cited with every export.
-references:   # the data sources: cited with every export (DOIs of the new ones checked on Crossref, 9 Nov 2026)
+references:   # the data sources: cited with every export (DOIs of the new ones checked on Crossref, 9-10 Nov 2026)
   - type: article
     authors: [{name: "UniProt Consortium"}]
     title: "UniProt: the Universal Protein Knowledgebase in 2025"
@@ -357,3 +357,20 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     end: 373
     year: 2020
     doi: "10.1038/s41587-019-0344-3"
+  - type: article   # the methyllysine sites of CPLM 4.0 (DOI checked on Crossref, 10 Nov 2026: Nucleic Acids Res 50:D451-D459, online 2021-09-28). CPLM states no license: its sites are included by the owner's decision, pending the authors' permission
+    authors: [{family-names: Zhang, given-names: W}, {family-names: Tan, given-names: X}, {family-names: Lin, given-names: S}, {name: "et al."}]
+    title: "CPLM 4.0: an updated database with rich annotations for protein lysine modifications (sites included pending the authors' permission)"
+    journal: "Nucleic Acids Res"
+    volume: 50
+    start: D451
+    end: D459
+    year: 2022
+    doi: "10.1093/nar/gkab849"
+  - type: article   # the methyllysine sites of Berryhill et al. 2023 (Supplementary Table 5): the article is CC BY 4.0, the table carries no separate license notice and is included by the owner's decision
+    authors: [{family-names: Berryhill, given-names: CA}, {family-names: Hanquier, given-names: JN}, {family-names: Doud, given-names: EH}, {name: "et al."}]
+    title: "Global lysine methylome profiling using systematically characterized affinity reagents"
+    journal: "Sci Rep"
+    volume: 13
+    start: 377
+    year: 2023
+    doi: "10.1038/s41598-022-27175-x"

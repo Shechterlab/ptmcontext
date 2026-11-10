@@ -693,6 +693,15 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     question: "Are methyllysines more often near a phosphosite than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) lies within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methyllysines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
     section: Other marks
+  - id: near_phospho_high
+    family_label: All states
+    layer: near_marks
+    with: {marks: phospho_high, window: 10, noun: high-score phosphosite}
+    new: true
+    title: Near high-score phosphosites (within 10)
+    question: "Are methyllysines more often near a high-score phosphosite than the other lysines of their protein?"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite with an Ochoa et al. 2020 functional score of 0.5 or more (about 10,900 sites; the score is a model of how likely a site is functionally important) lies within 10 residues on either side. Sites without a score are not counted as high-score. The comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    section: Other marks
   - id: near_methylarginine
     family_label: All states
     layer: near_marks
@@ -742,17 +751,17 @@ marks_subsets:           # the key questions again on the lysines of one methyla
     label: Kme1
     where: {column: state, equals: me1}
     note: "Only the lysines with a monomethyl (Kme1) record are counted as methylated"
-    analyses: [histone, panther_group, disorder, near_methylarginine, near_phospho]
+    analyses: [histone, panther_group, disorder, near_methylarginine, near_phospho, near_phospho_high]
   - id: me2
     label: Kme2
     where: {column: state, equals: me2}
     note: "Only the lysines with a dimethyl (Kme2) record are counted as methylated"
-    analyses: [histone, panther_group, disorder, near_methylarginine, near_phospho]
+    analyses: [histone, panther_group, disorder, near_methylarginine, near_phospho, near_phospho_high]
   - id: me3
     label: Kme3
     where: {column: state, equals: me3}
     note: "Only the lysines with a trimethyl (Kme3) record are counted as methylated"
-    analyses: [histone, panther_group, disorder, near_methylarginine, near_phospho]
+    analyses: [histone, panther_group, disorder, near_methylarginine, near_phospho, near_phospho_high]
 
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
@@ -782,7 +791,8 @@ context_marks:
   - id: phospho
     label: Phosphosite
     input: context_phosphorylation_sites_v1_5_0
-    columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
+    columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources, score: functional_score}
+    subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # shown at first: the sites Ochoa 2020 scores 0.5 or more (about 10,900); a click on the row label shows all. Sites with no score (UniProt or iPTMnet only) are hidden at first too, by the owner's decision
     replaces_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row leaves its Phospho kind out: one source for phosphosites
     colour: "#0891B2"          # cyan: apart from the purples of this site and the orange of methylarginines
     colour_dark: "#1FA2C4"
@@ -916,6 +926,10 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: near_phospho_me1}
           - {analysis: near_phospho_me2}
           - {analysis: near_phospho_me3}
+          - {analysis: near_phospho_high}
+          - {analysis: near_phospho_high_me1}
+          - {analysis: near_phospho_high_me2}
+          - {analysis: near_phospho_high_me3}
           - {analysis: near_methylarginine}
           - {analysis: near_methylarginine_me1}
           - {analysis: near_methylarginine_me2}

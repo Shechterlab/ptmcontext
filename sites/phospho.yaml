@@ -1,13 +1,13 @@
-# Site: the human phosphosites, from UniProt and iPTMnet (release v1.5.0 of PTM_Pipeline). The same code and the same
+# Site: the human phosphosites, from UniProt, iPTMnet and Ochoa et al. 2020 (release v1.5.0 of PTM_Pipeline). The same code and the same
 # generic inputs as the methylarginine and methyllysine sites; its own marks, focus, words and colors. There is no earlier
 # release to match, so every statistic is new (no reference). Contract: ptmcontext/schemas/site.schema.json.
-# The marks table may later carry a functional score column (Ochoa et al. 2020, merged into the same table): the
-# attributes, filters and tiles that read it are `optional` and appear only where the column exists.
+# The marks table carries Ochoa et al. 2020's functional score (and its mass-spectrometry evidence) beside UniProt and iPTMnet:
+# the attributes, filters and tiles that read the score are `optional`, so the same file also serves an earlier table.
 schema_version: 1
 id: phospho
 title: Human phosphosites
 status: working
-mark: phospho
+mark: sites/marks/phospho.yaml
 manifest: sites/phospho.inputs.json
 snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}   # quoted: unquoted, YAML reads 2026_03 as 202603
 inputs:                # role the layers read: manifest input that fills it
@@ -46,8 +46,8 @@ inputs:                # role the layers read: manifest input that fills it
   complexes: complex_portal_complexes
 
 marks:
-  # The release's own table: a row per phosphorylated residue. The main view counts the residues with an experimental,
-  # text-mined or unspecified record; the residues UniProt reports only by similarity (ECO:0000250 and other records
+  # The release's own table: a row per phosphorylated residue. The main view counts the residues with an experimental
+  # record (UniProt, iPTMnet, or Ochoa 2020's mass spectrometry), a text-mined or an unspecified one; the residues UniProt reports only by similarity (ECO:0000250 and other records
   # without an experimental code) are the lower-confidence variant, as on the methylarginine and methyllysine sites.
   input: phosphorylation_sites_v1_5_0
   accession: canonical_UniProtAC
@@ -82,9 +82,9 @@ marks:
       records:             # a database's own record of the protein
         UniProt: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"
         iPTMnet: "https://research.bioinformatics.udel.edu/iptmnet/entry/{acc}/"
-      values: {UniProt: UniProt, iPTMnet: iPTMnet}
+      values: {UniProt: UniProt, iPTMnet: iPTMnet, "Ochoa 2020": "Ochoa 2020"}
       filter: true
-      help: The databases that report the residue
+      help: "The databases that report the residue (Ochoa 2020: the mass-spectrometry phosphoproteome of Ochoa et al., Nat Biotechnol 38:365)"
     iptmnet_sources:
       column: iptmnet_sources
       provenance: true
@@ -100,8 +100,8 @@ marks:
       separator: "; "
       link: {column: pmids, url: "https://pubmed.ncbi.nlm.nih.gov/{}/"}
       help: The papers the records cite
-    # Optional: Ochoa et al. 2020's functional score (0 to 1) will be merged into this table as a column. Until then the
-    # column is absent and none of what follows (the attribute, its bands, its filters, its tiles) appears.
+    # Ochoa et al. 2020's functional score (0 to 1), merged into the table. `optional`: where the column is absent (an earlier
+    # table) none of what follows (the attribute, its bands, its filters, its tiles) appears.
     functional_score:
       column: functional_score
       optional: true
@@ -119,6 +119,43 @@ marks:
       colours: {b0: "#cbd5e1", b1: "#38bdf8", b2: "#1e40af"}
       filter: true
       help: The functional score in three bands (below 0.2, from 0.2 to below 0.5, 0.5 or more)
+    best_localization_probability:
+      column: best_localization_probability
+      optional: true
+      provenance: true
+      label: Localization probability
+      kind: number
+      filter: true
+      help: "Ochoa 2020: the best probability that the phosphate sits on this residue and not on a neighbor, over the experiments that saw it (0 to 1; a low value means the position within the peptide is uncertain)"
+    best_pep:
+      column: best_pep
+      optional: true
+      provenance: true
+      label: Best PEP
+      kind: number
+      help: "Ochoa 2020: the best posterior error probability of a peptide spectrum match for the site (lower is more certain)"
+    biological_samples:
+      column: biological_samples
+      optional: true
+      provenance: true
+      label: Biological samples
+      kind: number
+      filter: true
+      help: "Ochoa 2020: the number of biological samples (cell lines, tissues, conditions) in which the site was seen"
+    spectral_counts:
+      column: spectral_counts
+      optional: true
+      provenance: true
+      label: Spectral counts
+      kind: number
+      help: "Ochoa 2020: the number of spectra that identified the site"
+    iptmnet_score:
+      column: iptmnet_score
+      optional: true
+      provenance: true
+      label: iPTMnet score
+      kind: number
+      help: "iPTMnet's own confidence score for the site, where it gave one"
 analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel); all new: no release to match
   # Which kinases? Kinase motif classes: patterns of the sequence around the site, each a class tested against the other
   # serines, threonines and tyrosines of the same proteins. Positions are relative to the site (0); the residue itself
@@ -213,7 +250,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methyllysine (the methyllysine site's release v1.5.0, by-similarity records left out) lies within 10 residues on either side"
     section: Other marks
   # - id: near_acylation        # lysine acylation (acetyl, succinyl, ...): a table of the same release family is not in
-  #   layer: near_marks         # the pinned PTM_Pipeline commit (5b1c3bd); add its manifest entry and the
+  #   layer: near_marks         # the pinned PTM_Pipeline commit (ae0ea32); add its manifest entry and the
   #   with: {marks: acylation, window: 10, noun: lysine acylation}   # context_marks entry below, then this question
   #   new: true
   #   title: Near lysine acylation (within 10)
@@ -744,7 +781,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
         - {name: lines_with_probability, label: lines screened}
   - {id: disorder, layer: disorder, new: true}
   - {id: domain_context, layer: domain_context, new: true}
-  - {id: domain_class, layer: domain_class, new: true}
+  - {id: domain_class, layer: domain_class, with: {classes: sites/data/domain_classes.json}, new: true}
   - {id: structure_context, layer: structure_context, new: true}
   - {id: idr_charge, layer: idr_charge, new: true}   # not in the release: CIDER's charge classes of IDRs
 variants:                # the same questions on other marks; ptmc run --variant <name>
@@ -779,14 +816,16 @@ context_marks:
     colour: "#7c3aed"          # violet, the methyllysine site's color
     colour_dark: "#a78bfa"
     citation:
-      short: UniProt and iPTMnet
-      cite: "Methyllysine sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: CC BY-NC-SA 4.0
+      short: UniProt, iPTMnet, CPLM and Berryhill 2023
+      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license; its sites are included pending the authors' permission); Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license (included pending the authors' permission); Berryhill 2023 article CC BY 4.0"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022), included pending the authors' permission", doi: 10.1093/nar/gkab849}
+      Berryhill 2023: {cite: "Berryhill et al., Sci Rep 13:377 (2023)", doi: 10.1038/s41598-022-27175-x}
   # - id: acylation              # lysine acylation (acetyl, succinyl, ...), a table of the same release family: not in the
-  #   label: Lysine acylation    # pinned PTM_Pipeline commit (5b1c3bd). With its manifest entry:
+  #   label: Lysine acylation    # pinned PTM_Pipeline commit (ae0ea32). With its manifest entry:
   #   input: context_lysine_acylation_sites_v1_5_0
   #   columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: acyl_type, evidence: evidence_class, sources: sources}
   #   colour: "#047857"
@@ -801,7 +840,10 @@ website:                  # the look and words of the website (ptmc web); layout
   name: Phosphosite Explorer
   tagline: "Human protein phosphorylation sites from public databases."
   # published at /ptmcontext/phospho/; listed on the landing page and in the sites' header menu
-  landing: {tagline: "Human protein phosphorylation sites from public databases.", in_switcher: true}
+  landing:
+    tagline: "Human protein phosphorylation sites from public databases."
+    question: "Where do phosphosites fall in human proteins, which kinase motifs do they follow, and which are likely functional?"
+    in_switcher: true
   band: ["#1e40af", "#172554"]      # the header gradient: blue
   accent: "#0e7490"                 # the cyan rule, active tab and links
   accent_dark: "#22d3ee"
@@ -1053,18 +1095,22 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency]}
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
     - {name: Provenance, attributes: [sources, iptmnet_sources]}
-  dataset: {label: data release, version: v1.5.0, date: "2026-11-09", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0"}
-  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). Cite the paper, the archive and the databases that report the sites you use (How to cite)."
+  dataset: {label: data release, version: v1.5.0, date: "2026-11-10", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/ae0ea326adb166ae81bd362a7c923533301d116a/releases/v1.5.0"}
+  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). The phosphosites and functional scores of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3 (rows whose databases name Ochoa 2020) come from an article that is not open access, and its supplementary table carries no license: they are included by the owner's decision of 2026-11-10, cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. The methyllysine rows shown beside the phosphosites include CPLM 4.0 (Zhang et al., Nucleic Acids Res 50:D451, 2022), which states no license and is included pending the authors' permission. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
-    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class and sources"}
-    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
-    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
-    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/ae0ea326adb166ae81bd362a7c923533301d116a/releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class, sources, Ochoa 2020 functional score and mass-spectrometry evidence (Ochoa 2020 rows included by the owner's decision, not open access)"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/ae0ea326adb166ae81bd362a7c923533301d116a/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/ae0ea326adb166ae81bd362a7c923533301d116a/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/ae0ea326adb166ae81bd362a7c923533301d116a/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
   search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
     patterns:                # the motif finder: a pattern of residues on the sites' sequence windows
       at: motif              # motif:SPXK covers the site
       near: window           # window:RXXS anywhere within the span
       span: 15
+      near_examples:         # the suggestions after window:
+        - {pattern: "RXXS", label: "Arg at -3 of the site (basophilic)"}
+        - {pattern: "SPXX", label: "Pro just after a Ser"}
+        - {pattern: "DXXD", label: "two acidic residues 3 apart"}
     spacing: {label: "Another phosphosite within", within: [2, 3, 5, 10, 20]}
     partners:                # the proteins' physical partners (a protein_partners table)
       table: string
@@ -1159,4 +1205,5 @@ website:                  # the look and words of the website (ptmc web); layout
   protein:                 # the protein page
     open_partners: true
     map:
+      marks_view: {attribute: functional_score, at_least: 0.5, label: score ≥ 0.5}   # at first only the sites Ochoa 2020 scores 0.5 or more (sites without a score are hidden too); a click on the row label shows all
       hide_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row would repeat the phosphosites: one source for them

@@ -471,7 +471,9 @@ def motif_families(params: dict, aid: str) -> Layer:
             hit = np.array([bool(w) and motif_match(w, flank, f['patterns']) for w in windows], dtype=bool)
             for c in f['marks']:
                 if c['mark'] not in ctx.context:
-                    raise KeyError(f'analysis {aid!r}: no context mark {c["mark"]!r} (context_marks, and its input present)')
+                    raise KeyError(
+                        f'analysis {aid!r}: no context mark {c["mark"]!r} (context_marks, and its input present)'
+                    )
                 t = sites_of(ctx.context[c['mark']])
                 have = set(zip(t['accession'], t['position'].astype(int)))
                 offs = [int(c['at'])] if 'at' in c else range(int(c['within'][0]), int(c['within'][1]) + 1)

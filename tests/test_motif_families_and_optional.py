@@ -18,10 +18,13 @@ from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import Snapshot
 
+from pathlib import Path
+
 from test_context_marks import ENTRY, _toy
 from ptmcontext.profile import load_profile
 
 #          1         11        21
+MARK = Path(__file__).resolve().parents[1] / 'sites' / 'marks' / 'phospho.yaml'
 SEQ = 'MRAAAKSPAAEEAAKRAASTPAAAAAAAAAAAAAAAAAAAAAAA'
 
 
@@ -32,7 +35,7 @@ def _layer(families, **kw):
 def _flags(families, seq=SEQ, residues=('S', 'T'), ctx=None, **kw):
     snap = Snapshot({'P': seq})
     cand = snap.residues(list(residues))
-    c = ctx or L.Context(snap, load_profile('phospho'), {})
+    c = ctx or L.Context(snap, load_profile(MARK), {})
     out = _layer(families, **kw)(cand, c)
     return dict(zip(cand['position'], zip(*[out[k] for k in out.columns]))), list(out.columns)
 
@@ -51,7 +54,10 @@ def test_patterns_are_anchored_at_an_offset_and_the_residue_must_lie_inside_the_
     assert got[19] == (False, True, False, False)  # R16 three before; T20 follows, not P
     assert got[20] == (True, False, False, False)  # T-P
     # a second pattern of a family: S-x-x-K (S12? no) -- add K at +3 of a serine
-    got2, _ = _flags([{'name': 'e', 'patterns': [{'pattern': 'R[ST]', 'start': -1}, {'pattern': '[ST]..K', 'start': 0}]}], seq='RSAAAATAAK')
+    got2, _ = _flags(
+        [{'name': 'e', 'patterns': [{'pattern': 'R[ST]', 'start': -1}, {'pattern': '[ST]..K', 'start': 0}]}],
+        seq='RSAAAATAAK',
+    )
     assert got2[2] == (True,) and got2[7] == (True,)  # R-S by the first pattern, T-x-x-K by the second
 
 
@@ -64,15 +70,19 @@ def test_padding_past_the_chain_end_never_matches():
 
 def test_a_context_mark_can_be_required_at_an_offset(tmp_path):
     snap = Snapshot({'P': SEQ})
-    ctx = L.Context(snap, load_profile('phospho'), {})
-    ctx.context = {'ra': pd.DataFrame({'accession': ['P'], 'position': [16], 'residue': ['R'], 'state': ['m'], 'evidence': [''], 'sources': ['']})}
+    ctx = L.Context(snap, load_profile(MARK), {})
+    ctx.context = {
+        'ra': pd.DataFrame(
+            {'accession': ['P'], 'position': [16], 'residue': ['R'], 'state': ['m'], 'evidence': [''], 'sources': ['']}
+        )
+    }
     fams = [{'name': 'shared', 'pattern': 'R..[ST]', 'start': -3, 'marks': [{'mark': 'ra', 'at': -3}]}]
     got, _ = _flags(fams, ctx=ctx)
     assert got[19] == (True,)  # R16 is a mark of the context table
     ctx.context = {'ra': ctx.context['ra'].assign(position=[15])}
     assert _flags(fams, ctx=ctx)[0][19] == (False,)  # a mark elsewhere
     with pytest.raises(KeyError, match='no context mark'):
-        _flags(fams, ctx=L.Context(snap, load_profile('phospho'), {}))
+        _flags(fams, ctx=L.Context(snap, load_profile(MARK), {}))
 
 
 def test_bad_families_are_named():
@@ -123,7 +133,14 @@ def _site_with(tmp_path, scored: bool, graded: bool):
     site['context_marks'][0]['columns']['score'] = 'sc'
     site['context_marks'][0]['subset'] = {'id': 'high', 'at_least': 0.5}
     site['marks']['attributes'] = {
-        'grade': {'column': 'grade', 'label': 'Grade', 'kind': 'category', 'values': {'high': 'High', 'low': 'Low'}, 'filter': True, 'optional': True}
+        'grade': {
+            'column': 'grade',
+            'label': 'Grade',
+            'kind': 'category',
+            'values': {'high': 'High', 'low': 'Low'},
+            'filter': True,
+            'optional': True,
+        }
     }
     site['analyses'].append(
         {
@@ -133,7 +150,13 @@ def _site_with(tmp_path, scored: bool, graded: bool):
             'with': {
                 'families': [
                     {'name': 'rk', 'label': 'R-x-K', 'pattern': 'R.K', 'start': -2},
-                    {'name': 'shared', 'label': 'S-x-x-R', 'pattern': '[SK]..R', 'start': 0, 'marks': [{'mark': 'ctx', 'at': 0}]},
+                    {
+                        'name': 'shared',
+                        'label': 'S-x-x-R',
+                        'pattern': '[SK]..R',
+                        'start': 0,
+                        'marks': [{'mark': 'ctx', 'at': 0}],
+                    },
                 ],
                 'noun': 'toy motif',
             },
@@ -141,10 +164,21 @@ def _site_with(tmp_path, scored: bool, graded: bool):
     )
     web_ = site['website']
     web_['counts'] = {
-        'grades': {'kind': 'values', 'attribute': 'grade', 'title': 'Grades', 'question': 'Which grades?', 'sub': 's', 'unit': ['grade', 'grades'], 'noun': 'grades', 'top': 2}
+        'grades': {
+            'kind': 'values',
+            'attribute': 'grade',
+            'title': 'Grades',
+            'question': 'Which grades?',
+            'sub': 's',
+            'unit': ['grade', 'grades'],
+            'noun': 'grades',
+            'top': 2,
+        }
     }
     web_['filters'] = [{'name': 'Grade', 'attributes': ['grade']}, {'name': 'Motifs', 'analyses': ['motif']}]
-    web_['overview'] = {'sections': [{'name': 'Counts', 'cards': ['grades']}, {'name': 'Motifs', 'cards': [{'analysis': 'flags'}]}]}
+    web_['overview'] = {
+        'sections': [{'name': 'Counts', 'cards': ['grades']}, {'name': 'Motifs', 'cards': [{'analysis': 'flags'}]}]
+    }
     path.write_text(yaml.safe_dump(site, sort_keys=False))
     return root, path
 
@@ -152,7 +186,9 @@ def _site_with(tmp_path, scored: bool, graded: bool):
 def _built(root, path):
     S.run(path, root=root / 'data', log=lambda *_: None)
     index = web.build(path, log=lambda *_: None)
-    d = json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1))
+    d = json.loads(
+        re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1)
+    )
     return d, pd.read_csv(root / 'out' / 'toy' / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
 
 
@@ -200,7 +236,10 @@ def test_prune_forgets_the_attribute_its_filters_counts_and_cards():
     assert list(site['marks']['attributes']) == ['b'] and w['filters'] == [{'name': 'B', 'attributes': ['b']}]
     assert list(w['counts']) == ['cb'] and w['stats'] == [{'attribute': 'b'}]
     assert w['overview']['sections'][0]['cards'] == ['cb']
-    assert OP.prune_marks({'marks': {'attributes': {'a': {'column': 'x', 'optional': True}}}}, pd.DataFrame({'x': []})) == []
+    assert (
+        OP.prune_marks({'marks': {'attributes': {'a': {'column': 'x', 'optional': True}}}}, pd.DataFrame({'x': []}))
+        == []
+    )
 
 
 def test_a_subset_needs_a_score_column_and_a_threshold():
@@ -215,16 +254,26 @@ def test_a_partner_class_lists_its_members_in_a_file(tmp_path):
     from ptmcontext.web.search import members_file
 
     (tmp_path / 'sites' / 'data').mkdir(parents=True)
-    (tmp_path / 'sites' / 'data' / 'k.tsv').write_text('# a query, a date\n# another line\naccession\tgene\nP1\tg1\nP2\t\n')
+    (tmp_path / 'sites' / 'data' / 'k.tsv').write_text(
+        '# a query, a date\n# another line\naccession\tgene\nP1\tg1\nP2\t\n'
+    )
     assert members_file(tmp_path, {'genes_file': 'sites/data/k.tsv'}) == {'P1', 'G1', 'P2'}
     assert members_file(tmp_path, {}) == set()
 
 
 def test_the_subset_is_a_context_table_of_its_own_only_where_scores_exist(tmp_path):
-    e = {**ENTRY, 'columns': {**{k: v for k, v in ENTRY['columns'].items() if k != 'residue'}, 'score': 'sc'}, 'subset': {'id': 'hi', 'at_least': 0.5}}
+    e = {
+        **ENTRY,
+        'columns': {**{k: v for k, v in ENTRY['columns'].items() if k != 'residue'}, 'score': 'sc'},
+        'subset': {'id': 'hi', 'at_least': 0.5},
+    }
     f = tmp_path / 'c.tsv'
     pd.DataFrame(
-        [('P', 11, 'S', 'phospho', 'experimental', 'x', '0.9'), ('P', 20, 'S', 'phospho', 'experimental', 'x', '0.2'), ('P', 22, 'S', 'phospho', 'experimental', 'x', '')],
+        [
+            ('P', 11, 'S', 'phospho', 'experimental', 'x', '0.9'),
+            ('P', 20, 'S', 'phospho', 'experimental', 'x', '0.2'),
+            ('P', 22, 'S', 'phospho', 'experimental', 'x', ''),
+        ],
         columns=['ac', 'pos', 'aa', 'st', 'ev', 'src', 'sc'],
     ).to_csv(f, sep='\t', index=False)
     site = {'context_marks': [e]}
@@ -238,7 +287,29 @@ def test_the_subset_is_a_context_table_of_its_own_only_where_scores_exist(tmp_pa
 
 def test_a_number_column_is_cut_into_bands():
     table = pd.DataFrame({'a': ['P', 'P', 'P', 'P'], 'p': ['1', '2', '3', '4'], 'v': ['0.1', '0.5', '0.9', '']})
-    spec = {'accession': 'a', 'position': 'p', 'attributes': {'band': {'column': 'v', 'kind': 'category', 'bands': [0.2, 0.5]}}}
+    spec = {
+        'accession': 'a',
+        'position': 'p',
+        'attributes': {'band': {'column': 'v', 'kind': 'category', 'bands': [0.2, 0.5]}},
+    }
     marked = pd.DataFrame({'accession': ['P'] * 4, 'position': [1, 2, 3, 4]})
     out = S.mark_attributes(spec, table, marked)
     assert list(out['a.band']) == ['b0', 'b2', 'b2', '']  # 0.5 is from the second threshold
+
+
+def test_marks_view_is_validated_and_reaches_the_map_config(tmp_path):
+    root, path = _site_with(tmp_path, scored=True, graded=True)
+    site = yaml.safe_load(path.read_text())
+    site['website'].setdefault('protein', {}).setdefault('map', {})['marks_view'] = {
+        'attribute': 'grade',
+        'at_least': 0.5,
+        'label': 'grade ≥ 0.5',
+    }
+    path.write_text(yaml.safe_dump(site, sort_keys=False))
+    assert S.website_problems(S.load_site(path)) == []
+    d, _ = _built(root, path)
+    assert d['protein_view']['map']['marks_view'] == {'attribute': 'grade', 'at_least': 0.5, 'label': 'grade ≥ 0.5'}
+    site['website']['protein']['map']['marks_view'] = {'attribute': 'grade'}  # a threshold is required
+    path.write_text(yaml.safe_dump(site, sort_keys=False))
+    with pytest.raises(Exception):
+        S.load_site(path)
