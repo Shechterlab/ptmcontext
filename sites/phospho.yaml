@@ -1,31 +1,1162 @@
-# Site: phosphosites through the same code, OFFLINE. The second mark is a test of the code, not a result: the input is
-# marked not trusted in the manifest (no build script, no release date), so this site runs only with
-# --allow-untrusted and its outputs stay out of the repository (out/ is ignored).
+# Site: the human phosphosites, from UniProt and iPTMnet (release v1.5.0 of PTM_Pipeline). The same code and the same
+# generic inputs as the methylarginine and methyllysine sites; its own marks, focus, words and colors. There is no earlier
+# release to match, so every statistic is new (no reference). Contract: ptmcontext/schemas/site.schema.json.
+# The marks table may later carry a functional score column (Ochoa et al. 2020, merged into the same table): the
+# attributes, filters and tiles that read it are `optional` and appear only where the column exists.
 schema_version: 1
 id: phospho
-title: Human phosphosites (offline pilot)
-status: offline_pilot
-mark: sites/marks/phospho.yaml
-
-snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}
-inputs:
+title: Human phosphosites
+status: working
+mark: phospho
+manifest: sites/phospho.inputs.json
+snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}   # quoted: unquoted, YAML reads 2026_03 as 202603
+inputs:                # role the layers read: manifest input that fills it
   disorder: mobidb_disorder
   domains: interpro_domains
+  reactome: reactome_protein_pathways
+  reactome_names: reactome_pathways
+  hpa: hpa_locations
+  abundance: paxdb_abundance
+  panther_classes: panther_protein_classes
+  panther_ontology: panther_class_ontology
+  uniprot_entries: uniprot_entries
+  gene_symbols: orghs_symbol_entrez
+  disgenet: disgenet_term_genes
+  hdo_term_genes: hdo_term_genes
+  hdo_terms: hdo_terms
+  accession_history: uniprot_accession_history
+  cdcode_membership: cdcode_membership
+  cdcode_proteins: cdcode_proteins
+  cdcode_condensates: cdcode_condensates
+  cdcode_members: cdcode_members_2_3
+  hcm: hcm_cell_map
+  organelle_ip: organelle_ip
+  chromatin: chromatin_probability
+  depmap_genes: depmap_gene_effect
+  interpro_entries: interpro_all_entries         # the readers' protein sets, by InterPro entry
+  # interactions (the methylarginine site's roles, less the RNA and DNA evidence and its release tables)
+  uniprot_disorder: uniprot_disordered_regions
+  uniprot_domains: uniprot_domain_regions
+  pdb_interfaces: {all_of: [pdbe_kb_interfaces_2026_10_16, pdbe_kb_interfaces_2026_10_20, pdbe_kb_interfaces_2026_10_21,
+                            pdbe_kb_interfaces_2026_10_21_2, pdbe_kb_interfaces_2026_10_21_3, pdbe_kb_interfaces_2026_10_25]}
+  pdb_observed: sifts_observed_ranges
+  predicted_interfaces: protvar_interfaces
+  intact_mutations: intact_mutations
+  intact_binding_regions: intact_binding_regions
+  complexes: complex_portal_complexes
 
 marks:
-  input: iptmnet_master
-  accession: substrate_UniProtAC
+  # The release's own table: a row per phosphorylated residue. The main view counts the residues with an experimental,
+  # text-mined or unspecified record; the residues UniProt reports only by similarity (ECO:0000250 and other records
+  # without an experimental code) are the lower-confidence variant, as on the methylarginine and methyllysine sites.
+  input: phosphorylation_sites_v1_5_0
+  accession: canonical_UniProtAC
   position: position
-  include:
-    - {column: ptm_type, equals: PHOSPHORYLATION}
-    - {column: residue, in: [S, T, Y]}
-  residue_mismatch: drop      # records placed on other sequence versions: dropped, and counted in the run record
+  exclude:
+    - {column: evidence_class, equals: by-similarity}     # in the main view their residues count as other residues
+  residue_mismatch: error
+  attributes:          # what the website keeps for each site: to color, filter and explain it (no test reads these)
+    residue:
+      column: residue
+      label: Residue
+      kind: category
+      values: {S: Serine (pS), T: Threonine (pT), Y: Tyrosine (pY)}
+      colours: {S: "#0e7490", T: "#1d4ed8", Y: "#b45309"}
+      colour: true
+      filter: true
+      help: The phosphorylated residue. Serine and threonine are phosphorylated by serine/threonine kinases, tyrosine by tyrosine kinases (and dual-specificity kinases)
+    evidence_class:
+      column: evidence_class
+      provenance: true                       # how the site was found, not what it is
+      label: Evidence
+      kind: category
+      values: {experimental: Experimental, text-mined: "Text-mined (iPTMnet, RLIMS-P)", unspecified: "Unspecified (iPTMnet's copy of UniProt)", by-similarity: By similarity}
+      filter: true
+      help: "The best class of the records at the site. Experimental: UniProt ECO:0000269 or ECO:0007744, or an iPTMnet record curated from an experiment. Text-mined: an iPTMnet record found by text mining of the literature only. Unspecified: only iPTMnet's copy of UniProt, which has no ECO code. By similarity: UniProt's annotation by similarity to another species (the lower-confidence view)"
+    sources:
+      column: sources
+      provenance: true
+      label: Databases
+      kind: list
+      separator: "; "
+      records:             # a database's own record of the protein
+        UniProt: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"
+        iPTMnet: "https://research.bioinformatics.udel.edu/iptmnet/entry/{acc}/"
+      values: {UniProt: UniProt, iPTMnet: iPTMnet}
+      filter: true
+      help: The databases that report the residue
+    iptmnet_sources:
+      column: iptmnet_sources
+      provenance: true
+      label: iPTMnet's upstream databases
+      kind: list
+      separator: "; "
+      filter: true
+      help: The databases iPTMnet collected the record from (unip is its copy of UniProt)
+    pmids:
+      column: pmids
+      label: PubMed IDs
+      kind: list
+      separator: "; "
+      link: {column: pmids, url: "https://pubmed.ncbi.nlm.nih.gov/{}/"}
+      help: The papers the records cite
+    # Optional: Ochoa et al. 2020's functional score (0 to 1) will be merged into this table as a column. Until then the
+    # column is absent and none of what follows (the attribute, its bands, its filters, its tiles) appears.
+    functional_score:
+      column: functional_score
+      optional: true
+      label: Functional score
+      kind: number
+      filter: true
+      help: "Ochoa et al. 2020 functional score of the phosphosite (0 to 1): a model of how likely the site is functionally important, from its conservation, structure, kinase and other features"
+    functional_band:
+      column: functional_score
+      optional: true
+      bands: [0.2, 0.5]
+      label: Functional score band
+      kind: category
+      values: {b0: "Below 0.2", b1: "0.2 to 0.5", b2: "0.5 or more"}
+      colours: {b0: "#cbd5e1", b1: "#38bdf8", b2: "#1e40af"}
+      filter: true
+      help: The functional score in three bands (below 0.2, from 0.2 to below 0.5, 0.5 or more)
+analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel); all new: no release to match
+  # Which kinases? Kinase motif classes: patterns of the sequence around the site, each a class tested against the other
+  # serines, threonines and tyrosines of the same proteins. Positions are relative to the site (0); the residue itself
+  # must lie inside the pattern. These are sequence classes that kinases prefer, not assignments of a kinase to a site:
+  # most kinases have a class of preferences, and many sites fit several classes or none (Johnson et al. 2023, Nature
+  # 613:759, doi:10.1038/s41586-022-05575-3, map each Ser/Thr kinase's full motif; its supplementary scores are not used
+  # here: see the report). Sources: proline-directed (CDKs, MAP kinases, GSK3): Kennelly & Krebs 1991, J Biol Chem
+  # 266:15555; Songyang et al. 1994, Curr Biol 4:973; Songyang et al. 1996, Mol Cell Biol 16:6486. Basophilic (PKA, PKC,
+  # AKT, CaMKII, with Arg at -3 or -2): Kennelly & Krebs 1991; Alessi et al. 1996, FEBS Lett 399:333 (AKT: R-x-R-x-x-S/T).
+  # Acidophilic (CK2, and CK1 after a priming phosphate): Meggio & Pinna 2003, FASEB J 17:349 (S/T-x-x-E/D); Songyang et
+  # al. 1996. Tyrosine: every pY is a tyrosine kinase site, so that class is the residue's own composition.
+  - id: kinase_motifs
+    layer: motif_families
+    new: true
+    with:
+      flank: 10
+      noun: kinase motif
+      title: Kinase motif classes
+      question: "Which kinase motif classes do phosphosites follow, against the other serines, threonines and tyrosines of their proteins?"
+      sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by the sequence class a kinase family prefers: proline-directed, basophilic (Arg at -3 or -2), acidophilic, and tyrosine. A class is a sequence pattern, not a kinase assignment; a site may fit several"
+      section: Which kinases?
+      families:
+        - {name: proline_directed, label: "S/T-P (proline-directed)", pattern: "[ST]P", start: 0,
+           help: "Ser or Thr followed by Pro at +1: the sequence preferred by CDKs, MAP kinases and GSK3 (Kennelly & Krebs 1991; Songyang et al. 1994, 1996)"}
+        - {name: basophilic_m3, label: "R-x-x-S/T (basic at -3)", pattern: "R..[ST]", start: -3,
+           help: "Arg at -3 of the Ser or Thr: the core of the PKA, PKC, AKT and CaMKII preference (Kennelly & Krebs 1991; Alessi et al. 1996)"}
+        - {name: basophilic_m2, label: "R-x-S/T (basic at -2)", pattern: "R.[ST]", start: -2,
+           help: "Arg at -2 of the Ser or Thr: a basophilic preference of PKC and other AGC kinases (Songyang et al. 1994)"}
+        - {name: acidophilic_p3, label: "S/T-x-x-D/E (acidic at +3)", pattern: "[ST]..[DE]", start: 0,
+           help: "Asp or Glu at +3 of the Ser or Thr: the acidophilic preference of CK2 (Meggio & Pinna 2003; Songyang et al. 1996)"}
+        - {name: tyrosine, label: "pY (tyrosine kinases)", pattern: "Y", start: 0,
+           help: "The residue is a tyrosine, so its kinase is a tyrosine kinase or a dual-specificity kinase. This class is the composition of the residues, so read it with the residue filter"}
+  # Is it functional? Reader motifs: sequences that phosphopeptide-binding domains recognize once the site is phosphorylated.
+  # 14-3-3: mode 1 R-S-x-pS-x-P and mode 2 R-x-(Y/F)-x-pS-x-P (Muslin et al. 1996, Cell 84:889; Yaffe et al. 1997, Cell
+  # 91:961), and the relaxed mode 1 R-x-x-pS-x-P. Polo-box domain of PLK1: S-pS/pT-P (Elia et al. 2003, Science 299:1228).
+  # Pin1 WW domain: pS/pT-P (Lu et al. 1999, Science 283:1325; Yaffe et al. 1997, Science 278:1957). Phosphodegron of
+  # beta-TrCP: D-pS-G-x-x-pS, either serine (Wu et al. 2003, Mol Cell 11:1445, beta-catenin D-pS-G-I-H-pS). SH2 domains:
+  # pY with hydrophobic residues at +1 and +3 (Src family), pY-x-N (Grb2), pY-[M/V]-x-M (PI3K p85) (Songyang et al. 1993,
+  # Cell 72:767). FHA domains: pT-x-x-D (Durocher et al. 2000, Mol Cell 6:1169). BRCT domains: pS-x-x-F (Manke et al. 2003,
+  # Science 302:636). A site that fits a reader motif is a candidate for binding, not shown to bind.
+  - id: reader_motifs
+    layer: motif_families
+    new: true
+    with:
+      flank: 10
+      noun: reader motif
+      title: Reader motifs
+      question: "Do phosphosites sit in the motifs that phosphopeptide-binding domains read, against the other serines, threonines and tyrosines of their proteins?"
+      sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by the sequence a reader domain binds when the site is phosphorylated: 14-3-3, polo-box, Pin1 WW, the beta-TrCP phosphodegron, SH2, FHA and BRCT. A motif is a candidate binding site, not shown to bind"
+      section: Is it functional?
+      families:
+        - {name: ytt_mode1, label: "14-3-3 mode 1 (R-S-x-pS-x-P)", pattern: "RS.[ST].P", start: -3,
+           help: "Arg at -3, Ser at -2 and Pro at +2: the first 14-3-3 binding mode (Muslin et al. 1996; Yaffe et al. 1997)"}
+        - {name: ytt_mode1_relaxed, label: "14-3-3, relaxed (R-x-x-pS-x-P)", pattern: "R..[ST].P", start: -3,
+           help: "Arg at -3 and Pro at +2, with any residue at -2: the relaxed form of mode 1"}
+        - {name: ytt_mode2, label: "14-3-3 mode 2 (R-x-Y/F-x-pS-x-P)", pattern: "R.[FY].[ST].P", start: -4,
+           help: "Arg at -4, Tyr or Phe at -2 and Pro at +2: the second 14-3-3 binding mode (Yaffe et al. 1997)"}
+        - {name: polo_box, label: "Polo-box (S-pS/pT-P)", pattern: "S[ST]P", start: -1,
+           help: "Ser at -1 and Pro at +1: the motif the polo-box domain of PLK1 binds (Elia et al. 2003)"}
+        - {name: pin1_ww, label: "Pin1 (pS/pT-P)", pattern: "[ST]P", start: 0,
+           help: "Phosphoserine or phosphothreonine before Pro: bound by the WW domain of Pin1, whose prolyl isomerase domain acts on it (Yaffe et al. 1997; Lu et al. 1999). The sequence is the proline-directed kinase class"}
+        - name: phosphodegron_btrcp
+          label: "beta-TrCP phosphodegron (D-pS-G-x-x-pS)"
+          patterns: [{pattern: "DSG..S", start: -1}, {pattern: "DSG..S", start: -5}]
+          help: "Either serine of D-S-G-x-x-S, the degron beta-TrCP binds once both serines are phosphorylated (Wu et al. 2003)"
+        - {name: sh2_hydrophobic, label: "SH2 (pY-x-x-I/L/V/M)", pattern: "Y..[ILVM]", start: 0,
+           help: "Tyr with a hydrophobic residue at +3: the SH2 preference of Src-family kinases (pY-E-E-I) (Songyang et al. 1993)"}
+        - {name: sh2_grb2, label: "SH2 Grb2 (pY-x-N)", pattern: "Y.N", start: 0,
+           help: "Tyr with Asn at +2: the Grb2 SH2 preference (Songyang et al. 1993)"}
+        - {name: sh2_pi3k, label: "SH2 PI3K (pY-M/V-x-M)", pattern: "Y[MV].M", start: 0,
+           help: "Tyr, then Met or Val, then any residue and Met: the PI3K p85 SH2 preference (Songyang et al. 1993)"}
+        - {name: fha, label: "FHA (pT-x-x-D)", pattern: "T..D", start: 0,
+           help: "Thr with Asp at +3: the preference of FHA domains such as Rad53's (Durocher et al. 2000)"}
+        - {name: brct, label: "BRCT (pS-x-x-F)", pattern: "S..F", start: 0,
+           help: "Ser with Phe at +3: the preference of the BRCT repeats of BRCA1 (Manke et al. 2003)"}
+  # Crosstalk: are phosphosites more often within 10 residues of another modification than the other serines,
+  # threonines and tyrosines of their protein? Context marks (context_marks below), not part of any release's analyses
+  - id: near_methylarginine
+    layer: near_marks
+    with: {marks: methylarginine, window: 10, noun: methylarginine}
+    new: true
+    title: Near methylarginines (within 10)
+    question: "Are phosphosites more often near a methylarginine than the other serines, threonines and tyrosines of their protein?"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3) lies within 10 residues on either side. Both marks are best studied on abundant, much-studied proteins, so the within-protein comparison is the fairer one"
+    section: Other marks
+  - id: near_methyllysine
+    layer: near_marks
+    with: {marks: methyllysine, window: 10, noun: methyllysine}
+    new: true
+    title: Near methyllysines (within 10)
+    question: "Are phosphosites more often near a methyllysine than the other serines, threonines and tyrosines of their protein?"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methyllysine (the methyllysine site's release v1.5.0, by-similarity records left out) lies within 10 residues on either side"
+    section: Other marks
+  # - id: near_acylation        # lysine acylation (acetyl, succinyl, ...): a table of the same release family is not in
+  #   layer: near_marks         # the pinned PTM_Pipeline commit (5b1c3bd); add its manifest entry and the
+  #   with: {marks: acylation, window: 10, noun: lysine acylation}   # context_marks entry below, then this question
+  #   new: true
+  #   title: Near lysine acylation (within 10)
+  #   section: Other marks
+  # The arginine of a basophilic motif that is itself methylated: R-x-x-S/T (or R-x-S/T) with the Arg a methylarginine
+  # of the methylarginine site (PRMT substrates and AGC-kinase motifs share the arginine). A pattern that holds with a
+  # context mark at an offset (CONTRACTS.md, Motif families).
+  - id: shared_arginine
+    layer: motif_families
+    new: true
+    with:
+      flank: 10
+      noun: shared arginine
+      title: Shared arginine
+      question: "Are phosphosites more often in a basophilic motif whose arginine is methylated than the other serines and threonines of their protein?"
+      sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins: the Ser or Thr has an Arg at -3 (R-x-x-S/T) or -2 (R-x-S/T) that is a methylarginine of release v1.4.3. Methylation of the Arg could change the kinase's access to the site"
+      section: Other marks
+      families:
+        - {name: methylated_R_m3, label: "R-x-x-S/T, the Arg methylated", pattern: "R..[ST]", start: -3, marks: [{mark: methylarginine, at: -3}],
+           help: "Arg at -3 of the Ser or Thr, and that Arg is a methylarginine of the methylarginine site (release v1.4.3)"}
+        - {name: methylated_R_m2, label: "R-x-S/T, the Arg methylated", pattern: "R.[ST]", start: -2, marks: [{mark: methylarginine, at: -2}],
+           help: "Arg at -2 of the Ser or Thr, and that Arg is a methylarginine of the methylarginine site (release v1.4.3)"}
+  # Interactions: each a question of yes-or-no tests, each against the serines, threonines and tyrosines its evidence could have reached: the
+  # residues a structure observed or a model covers. Every candidate counts in the pooled test, and the within-protein
+  # row reports those counts (counting: every_candidate).
+  - id: pdb_interface
+    new: true
+    title: PDB interfaces
+    question: "Are phosphosites at interfaces in experimental structures?"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins observed in a PDB structure, at a PDBe-KB interface with RNA, DNA, a protein or any partner; all, ordered (outside UniProt disordered regions) and in domains"
+    section: Protein interactions
+    counting: every_candidate
+    background: other Ser/Thr/Tyr residues of the same proteins observed in a PDB structure
+    proteins_with: pdb_interfaces                       # proteins PDBe-KB lists with an interface
+    covered_by: pdb_observed                            # residues a PDB chain models (SIFTS)
+    tests:
+      - {category: protein, inside: {role: pdb_interfaces, where: [{column: class, matches: "([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2})(-[0-9]+)?"}]}, label: Protein interface}
+      - {category: any, inside: {role: pdb_interfaces, where: [{column: class, matches: "RNA|DNA|([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2})(-[0-9]+)?"}]}, label: Any interface}
+    strata:
+      - {stratum: all}
+      - {stratum: ordered, outside_of: uniprot_disorder}
+      - {stratum: domain, covered_by: uniprot_domains}
+  - id: predicted_interface
+    new: true
+    title: Predicted interfaces
+    question: "Are phosphosites at predicted protein interfaces?"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt)"
+    section: Protein interactions
+    counting: every_candidate
+    background: other Ser/Thr/Tyr residues of the same proteins
+    tests:
+      - {category: pdockq_0.23, inside: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}]},
+         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}], on_candidates: true}, label: "pDockQ ≥ 0.23"}
+      - {category: pdockq_0.5, inside: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}]},
+         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}], on_candidates: true}, label: "pDockQ ≥ 0.5"}
+    strata:
+      - {stratum: all}
+      - {stratum: ordered, outside_of: uniprot_disorder}
+      - {stratum: disordered, covered_by: uniprot_disorder}
+  - id: intact
+    new: true
+    title: IntAct mutations and binding regions
+    question: "Are phosphosites where IntAct maps interactions?"
+    sub: "Phosphosites whose mutation changes an interaction, against the other mutated serines, threonines and tyrosines; and inside an IntAct binding region of at most 20 residues, against the other serines, threonines and tyrosines of the proteins with one (all, and in UniProt disordered regions)"
+    section: Protein interactions
+    counting: every_candidate
+    tests:
+      - {category: mutation_changes_interaction, inside: {role: intact_mutations, where: [{column: class, matches: "(?!MI:2226$).*"}]},
+         covered_by: intact_mutations, background: other Ser/Thr/Tyr residues of the same proteins with an IntAct mutation, label: Mutation changes an interaction}
+      - {category: binding_region, inside: intact_binding_regions, proteins_with: intact_binding_regions,
+         background: other Ser/Thr/Tyr residues of the same proteins with an IntAct binding region, label: IntAct binding region}
+      - {category: binding_region_disordered, inside: intact_binding_regions, proteins_with: intact_binding_regions, covered_by: uniprot_disorder,
+         background: other Ser/Thr/Tyr residues of the same proteins with an IntAct binding region, label: "Binding region, disordered residues"}
 
-analyses:
-  - {id: motif, layer: motif}
-  - {id: disorder, layer: disorder}
-  - {id: idr, layer: idr}
-  - {id: domain_context, layer: domain_context}
-  - {id: structure_context, layer: structure_context}
+  # Complexes: Complex Portal's curated human complexes, each a set of its members
+  - id: complex
+    test: protein_sets
+    new: true
+    title: Protein complexes
+    question: "Which complexes have more phosphorylated members than expected?"
+    sub: "Phosphorylated proteins against the proteins in Complex Portal's curated human complexes, by complex of at least 3 members (one-sided hypergeometric test); a protein in several complexes is in each"
+    section: Protein interactions
+    sets:
+      input: complexes
+      set: complex_id
+      protein: uniprot_accession
+      include: [{column: curation, equals: curated}]
+    names: {input: complexes, set: complex_id, name: complex_name}
+    universe: annotated
+    min_size: 3
+    background: other proteins in a curated Complex Portal complex
+    link: "https://www.ebi.ac.uk/complexportal/complex/{}"
+  - id: panther_group
+    new: true
+    test: protein_sets
+    title: Protein classes (PANTHER), grouped
+    question: "Which protein classes hold more phosphorylated proteins than expected?"
+    sub: "Phosphorylated proteins against the reviewed human proteome, by PANTHER protein class (grouped); every protein is in one group (one-sided hypergeometric test)"
+    section: Protein classes and pathways
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: top
+      groups:                   # the release's overview groups (PTM_Pipeline config/panther_class_groups.json)
+          "Transcription, chromatin and DNA": [PC00264, PC00077, PC00009]
+          "RNA processing and translation": [PC00031, PC00263]
+          "Metabolic enzymes": [PC00262]
+          "Protein-modifying enzymes": [PC00260]
+          "Signalling: receptors, ligands and modulators": [PC00197, PC00207, PC00095, PC00060]
+          "Transport and membrane traffic": [PC00227, PC00219, PC00150]
+          "Cytoskeleton, adhesion and matrix": [PC00085, PC00211, PC00069, PC00070, PC00102]
+          "Scaffolds, adaptors and chaperones": [PC00226, PC00072]
+          "Immunity and defence": [PC00090]
+          "Other PANTHER classes": [PC00237, PC00210]
+      unclassified: No PANTHER protein class
+    universe: snapshot
+    whole_universe: true
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: panther_class
+    new: true
+    test: protein_sets
+    title: Protein classes (PANTHER)
+    question: "Which PANTHER protein classes hold more phosphorylated proteins than expected?"
+    sub: "Phosphorylated proteins against the reviewed human proteome, by top-level PANTHER protein class; every protein is in one class (one-sided hypergeometric test)"
+    section: Protein classes and pathways
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: top
+      unclassified: No PANTHER protein class
+    universe: snapshot
+    whole_universe: true
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: panther_subclass
+    new: true
+    test: protein_sets
+    title: Protein subclasses (PANTHER)
+    question: "Which PANTHER protein subclasses hold more phosphorylated proteins than expected?"
+    sub: "Phosphorylated proteins against the reviewed human proteome, every PANTHER class below the top level with 10 or more proteins; subclasses overlap (one-sided hypergeometric test)"
+    section: Protein classes and pathways
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: below_top
+    universe: snapshot
+    whole_universe: true
+    min_size: 10
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: reactome_top_level
+    new: true
+    test: protein_sets
+    title: Reactome pathways, top level
+    question: "Which top-level Reactome pathways hold more phosphorylated proteins than expected?"
+    sub: "Phosphorylated proteins against the other proteins with a Reactome pathway, by top-level pathway (one-sided hypergeometric test)"
+    section: Protein classes and pathways
+    sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
+    names: {input: reactome_names, set: pathway_id, name: name, include: [{column: depth, equals: "0"}]}
+    background: other reviewed human proteins with at least one Reactome 97 pathway
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: reactome_pathway
+    new: true
+    test: protein_sets
+    title: Reactome pathways
+    question: "Which Reactome pathways, at any level, hold more phosphorylated proteins than expected?"
+    sub: "Phosphorylated proteins against the other proteins with a Reactome pathway, every pathway of 10 to 500 proteins (one-sided hypergeometric test)"
+    section: Protein classes and pathways
+    sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
+    names: {input: reactome_names, set: pathway_id, name: name}
+    min_size: 10
+    max_size: 500
+    background: other reviewed human proteins with at least one Reactome 97 pathway
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Biomolecular condensates (scripts/12_condensate_enrichment.py): CD-CODE's membership (export v2.2), kept for human
+  # proteins (its protein table) in human condensates that are not synthetic (its condensate table); a member named by
+  # a secondary accession counts as its current entry where the accession history names exactly one, and a member on
+  # no reviewed entry is dropped. Every condensate of five or more members is tested against the reviewed proteome
+  # (condensate_proteome) and against the proteins in any of these condensates (condensate); the release lists them by
+  # fold enrichment, then by phosphorylated members. The release keeps a condensate whose taxon is 9606 or whose species is
+  # named Homo sapiens: in this export the name holds for every 9606 condensate and for two more (taxon 9607: RdRp
+  # condensates, LANA body), so the name alone keeps the same ones; the protein table's taxon and name always agree.
+  # The CD-CODE 2.3 confidence of each membership (0-5) is for the website's filter only.
+  - id: condensate_proteome
+    new: true
+    test: protein_sets
+    title: Biomolecular condensates
+    question: "Which biomolecular condensates are over-represented (CD-CODE)?"
+    sub: "CD-CODE condensates with a higher fraction of phosphorylated members than the reviewed proteome: every human condensate (not synthetic) with at least five members, its members against all reviewed human proteins (one-sided hypergeometric test). Condensate proteins are about twice as often phosphorylated as proteins in general, so most condensates are enriched relative to the proteome, and few relative to other condensates"
+    section: Location, chromatin and condensates
+    sets:
+      input: cdcode_membership
+      set: condensate_id
+      protein: uniprotkb_ac
+      where:
+        - {column: uniprotkb_ac, input: cdcode_proteins, key: uniprot_id, include: [{column: species_name, equals: Homo sapiens}]}
+        - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
+    names: {input: cdcode_condensates, set: uid, name: name}
+    universe: snapshot
+    whole_universe: true
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    scores: {input: cdcode_members, set: condensate_uid, protein: uniprot_accession, value: confidence_score, label: Membership confidence (CD-CODE),
+             help: "CD-CODE's 0-5 confidence that the protein belongs to the condensate (CD-CODE 2.3)", levels: [2, 3, 4, 5], max: 5}
+    filter: {label: CD-CODE condensate (phosphorylated members), any: In any CD-CODE condensate, sets: all}   # every condensate with a phosphorylated member, as the original
+  - id: condensate
+    new: true
+    test: protein_sets
+    title: Biomolecular condensates, against other condensate proteins
+    question: "Which biomolecular condensates stand out among condensate proteins (CD-CODE)?"
+    sub: "CD-CODE condensates with a higher fraction of phosphorylated members than all condensate proteins: every human condensate (not synthetic) with at least five members, its members against the proteins in any of these condensates, about half of which are phosphorylated (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: cdcode_membership
+      set: condensate_id
+      protein: uniprotkb_ac
+      where:
+        - {column: uniprotkb_ac, input: cdcode_proteins, key: uniprot_id, include: [{column: species_name, equals: Homo sapiens}]}
+        - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
+    names: {input: cdcode_condensates, set: uid, name: name}
+    universe: annotated            # the proteins in any of these condensates
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
+    background: other human proteins in CD-CODE condensates (export of 2026-03-18)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Roles in condensates: CD-CODE 2.3 gives each membership its roles (driver, client, regulator, member, or unknown; a
+  # membership may have several). A protein is in a role's set when it has that role in any human condensate; each set is
+  # tested against the other proteins of the human condensates
+  - id: condensate_role
+    test: protein_sets
+    new: true
+    title: Roles in condensates
+    question: "Are phosphorylated proteins more often drivers of condensates than clients or other members (CD-CODE)?"
+    sub: "Proteins by their role in CD-CODE 2.3 condensates (human, not synthetic): driver, client, regulator, member or unknown, a protein in the role of every membership that lists it. Each role's proteins against the other proteins in these condensates (one-sided hypergeometric test). This export lists drivers, members and unknown roles only"
+    section: Location, chromatin and condensates
+    sets:
+      input: cdcode_members
+      protein: uniprot_accession
+      exclusive: false
+      where:
+        - {column: condensate_uid, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
+      rules:
+        - {set: driver, when: [{column: roles, contains: driver}]}
+        - {set: client, when: [{column: roles, contains: client}]}
+        - {set: regulator, when: [{column: roles, contains: regulator}]}
+        - {set: member, when: [{column: roles, contains: member}]}
+        - {set: unknown, when: [{column: roles, contains: unknown}]}
+    universe: annotated
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}]
+    labels: {driver: Drivers, client: Clients, regulator: Regulators, member: Other members, unknown: Role unknown}
+    help:
+      driver: "Proteins that CD-CODE lists as a driver of at least one human condensate: the condensate depends on them to form"
+      client: "Proteins that CD-CODE lists as a client of at least one human condensate: they are recruited but do not drive it"
+      regulator: "Proteins that CD-CODE lists as a regulator of at least one human condensate"
+      member: "Proteins that CD-CODE lists as a member of at least one human condensate, with no further role stated"
+      unknown: "Proteins whose role CD-CODE does not state"
+    background: other human proteins in CD-CODE 2.3 condensates (export of 2026-10-16)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: hpa_location
+    new: true
+    test: protein_sets
+    title: Where in the cell
+    question: "Where in the cell are phosphorylated proteins found more often than other proteins?"
+    sub: "Phosphorylated proteins against the other proteins with a Human Protein Atlas location scored Approved or better (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets: {input: hpa, set: location, protein: canonical_UniProtAC, exclude: [{column: reliability, equals: Uncertain}]}
+    whole_universe: true
+    background: other proteins with an HPA 25.1 location (Approved or better)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Where in the cell, beyond the Human Protein Atlas (scripts/cell_maps.py): each map tested against the proteins it
+  # places, compartment by compartment (compartments of at least 5 proteins), and again within PaxDb abundance deciles.
+  # The regions of the cell: each map's compartments gathered into the nucleus, the cytoplasm and the organelles and
+  # membranes (sites/data/methylarginine_cell_regions.yaml), in the three maps that place proteins all over the cell
+  - id: cell_region_hpa
+    new: true
+    test: protein_sets
+    title: Regions of the cell (Human Protein Atlas)
+    question: "Where do phosphorylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Phosphorylated proteins against the other proteins with a Human Protein Atlas location (Approved or better), with locations grouped into three regions of the cell (cilia and sperm structures are in none) (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: hpa
+      set: location
+      protein: canonical_UniProtAC
+      exclude: [{column: reliability, equals: Uncertain}]
+      families: {rules: sites/data/methylarginine_cell_regions.yaml}
+    whole_universe: true
+    min_size: 5
+    background: "other proteins with an HPA 25.1 location (Approved or better). A region is the Human Protein Atlas locations it holds (scripts/cell_maps.py, REGION_OF)"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_region_hcm
+    new: true
+    test: protein_sets
+    title: Regions of the cell (Human Cell Map)
+    question: "Where do phosphorylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Phosphorylated proteins against the other proteins the Human Cell Map localizes (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: hcm
+      set: nmf_compartment
+      protein: canonical_UniProtAC
+      families: {rules: sites/data/methylarginine_cell_regions.yaml}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments). A region is the Human Cell Map compartments it holds (scripts/cell_maps.py, REGION_OF)"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_region_organelle_ip
+    new: true
+    test: protein_sets
+    title: Regions of the cell (organelle IP)
+    question: "Where do phosphorylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Phosphorylated proteins against the other proteins classified by organelle IP (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: organelle_ip
+      set: compartment
+      protein: canonical_UniProtAC
+      exclude: [{column: compartment, equals: unclassified}]
+      families: {rules: sites/data/methylarginine_cell_regions.yaml}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins organelle IP classifies (HEK293T). A region is the Organelle IP it holds (scripts/cell_maps.py, REGION_OF)"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_hcm_compartment
+    new: true
+    test: protein_sets
+    title: Human Cell Map compartments
+    question: "Where do phosphorylated proteins localize in the cell, by the Human Cell Map's compartments?"
+    sub: "Phosphorylated proteins against the other proteins the Human Cell Map localizes (HEK293 BioID from 192 baits; Go et al. 2021), by NMF compartment (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets: {input: hcm, set: nmf_compartment, protein: canonical_UniProtAC}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_hcm_domain
+    new: true
+    test: protein_sets
+    title: Human Cell Map domains
+    question: "Where do phosphorylated proteins localize in the cell, by the Human Cell Map's finer domains?"
+    sub: "Phosphorylated proteins against the other proteins the Human Cell Map places in a SAFE domain (HEK293 BioID; Go et al. 2021), domain by domain (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets: {input: hcm, set: safe_domain, protein: canonical_UniProtAC, exclude: [{column: safe_domain, equals: ""}]}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins the Human Cell Map places in a SAFE domain
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_organelle_ip
+    new: true
+    test: protein_sets
+    title: Organelle IP
+    question: "Which organelles are phosphorylated proteins enriched in, by organelle immunoprecipitation?"
+    sub: "Phosphorylated proteins against the other proteins classified by organelle IP (HEK293T; Hein et al. 2025), cluster by cluster (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets: {input: organelle_ip, set: compartment, protein: canonical_UniProtAC, exclude: [{column: compartment, equals: unclassified}]}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins organelle IP classifies (HEK293T)
+    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granules (cell map),
+             p-body: P-body, actin_cytoskeleton: Actin cytoskeleton, centrosome: Centrosome, proteasome: Proteasome,
+             14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
+             early_endosome: Early endosome, recycling_endosome: Recycling endosome, lysosome: Lysosome,
+             mitochondrion: Mitochondrion, peroxisome: Peroxisome, plasma_membrane: Plasma membrane}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  - id: cell_chromatin
+    new: true
+    test: protein_sets
+    title: Chromatin probability
+    question: "Are phosphorylated proteins on chromatin more often than other proteins?"
+    sub: "Phosphorylated proteins against the other proteins with an interphase chromatin probability (chromatin enrichment for proteomics; Kustatscher et al. 2014), in four bins (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: chromatin
+      protein: canonical_UniProtAC
+      rules:                       # each protein in the first bin it reaches (scripts/cell_maps.py, CHEP_BINS)
+        - {set: "ICP >= 0.8 (chromatin)", when: [{column: interphase_chromatin_probability, at_least: 0.8}]}
+        - {set: "ICP 0.5-0.8", when: [{column: interphase_chromatin_probability, at_least: 0.5}]}
+        - {set: "ICP 0.2-0.5", when: [{column: interphase_chromatin_probability, at_least: 0.2}]}
+        - {set: "ICP < 0.2 (not chromatin)"}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins with an interphase chromatin probability
+    labels: {"ICP >= 0.8 (chromatin)": "Chromatin (probability ≥ 0.8)", "ICP 0.5-0.8": "Chromatin probability 0.5–0.8", "ICP 0.2-0.5": "Chromatin probability 0.2–0.5",
+             "ICP < 0.2 (not chromatin)": "Not chromatin (probability < 0.2)"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+  # Disease families (scripts/14_disease_enrichment.py): DisGeNET terms (as DOSE 4.4.0 ships them) gathered into
+  # families by name (the release's rules, sites/data/methylarginine_disease_families.yaml); the sets are Entrez genes,
+  # each protein's through its UniProt primary gene name (the first of several) and org.Hs.eg.db's symbols. Every
+  # reviewed protein's genes are the universe, those with a DisGeNET term the background; the eight audited families
+  # and the additional ones are tested apart (BH within each)
+  - id: disease_family
+    new: true
+    test: protein_sets
+    title: Disease families (DisGeNET)
+    question: "Which disease gene sets are over-represented?"
+    sub: "Genes of phosphorylated proteins vs all reviewed human genes with a DisGeNET term, by disease family: the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
+    set_note: "A family of DisGeNET disease terms gathered by name; one of the eight whose rules were checked by hand."
+    section: Disease and cancer
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets:
+      input: disgenet
+      set: term_id
+      protein: entrez_id
+      families: {rules: sites/data/methylarginine_disease_families.yaml, by: term_name, lists: [audited]}
+    universe: snapshot
+    background: other reviewed human genes (Entrez) with a DisGeNET term
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
+  - id: disease_family_additional
+    new: true
+    test: protein_sets
+    title: Disease families, additional
+    question: "Which of the additional disease families, mostly clinical signs, are over-represented?"
+    sub: "Genes of phosphorylated proteins vs all reviewed human genes with a DisGeNET term, by additional disease family: grouped automatically by matching words in the disease terms, not checked by hand, mostly clinical signs; tested apart from the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
+    set_note: "A family of DisGeNET disease terms grouped automatically by matching words; not checked by hand."
+    section: Disease and cancer
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets:
+      input: disgenet
+      set: term_id
+      protein: entrez_id
+      families: {rules: sites/data/methylarginine_disease_families.yaml, by: term_name, lists: [additional]}
+    universe: snapshot
+    background: other reviewed human genes (Entrez) with a DisGeNET term
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
+  # Disease Ontology (scripts/14_disease_enrichment.py): the gene sets DOSE enrichDO tests (each term holds the genes of
+  # the terms under it; Human Disease Ontology 2026-09-30), on the genes of the disease families: every reviewed
+  # protein's genes are the universe, those with a Disease Ontology term the background, and every term of 10 genes or
+  # more with a phosphorylated gene is tested. The release keeps these rows in a supporting table, not in its statistics
+  # table, so the run checks them against that table (reference.tables)
+  - id: disease_ontology
+    new: true
+    test: protein_sets
+    title: Disease Ontology
+    question: "Which Disease Ontology terms hold more genes of phosphorylated proteins than expected?"
+    sub: "Genes of phosphorylated proteins vs all reviewed human genes with a Disease Ontology term, every term of at least 10 genes; a term includes the genes of its child terms (one-sided hypergeometric test, as DOSE's enrichDO). Association, not causation"
+    section: Disease and cancer
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets: {input: hdo_term_genes, set: term_id, protein: entrez_id}
+    names: {input: hdo_terms, set: term_id, name: name}
+    hierarchy: {input: hdo_terms, set: term_id, parents: parents, root: "DOID:4"}
+    universe: snapshot
+    min_size: 10
+    link: "https://disease-ontology.org/?id={}"
+    filter: {label: Disease Ontology term (phosphorylated proteins)}
+    background: other reviewed human genes (Entrez) with a Disease Ontology term
+  # DisGeNET terms one by one (scripts/14_disease_enrichment.py): the terms of the disease families, each tested as
+  # DOSE's enrichDGN tests it (terms of 10 to 300 genes), against the same background. In the release's supporting
+  # tables, not its statistics table: the run checks them against supporting/disease_terms_tested (reference.tables)
+  - id: disease_term
+    new: true
+    test: protein_sets
+    title: DisGeNET terms
+    question: "Which DisGeNET disease terms hold more genes of phosphorylated proteins than expected?"
+    sub: "Genes of phosphorylated proteins vs all reviewed human genes with a DisGeNET term, every term of 10 to 300 genes (one-sided hypergeometric test, as DOSE's enrichDGN). Association, not causation"
+    section: Disease and cancer
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets: {input: disgenet, set: term_id, protein: entrez_id}
+    names: {input: disgenet, set: term_id, name: term_name}
+    universe: snapshot
+    min_size: 10
+    max_size: 300
+    link: "https://www.disgenet.com/search?view=DISEASES&idents={}&source=ALL&tab=GDA"
+    background: other reviewed human genes (Entrez) with a DisGeNET term
+  # Cancer cell lines (scripts/release_layers.py, CANCER): cancer cell genetics beside the sites, not evidence about
+  # phosphorylation. The dependency classes partition the entries whose gene DepMap 24Q4 screened (gene_effect)
+  - id: depmap_dependency
+    new: true
+    test: protein_sets
+    title: Cancer cell dependency
+    question: "Do cancer cell lines depend on these proteins more than on others? (DepMap CRISPR screens)"
+    sub: "DepMap Public 24Q4 dependency classes, phosphorylated proteins vs all screened reviewed proteins (one per gene); the dependency of 1,178 cancer cell lines on them in CRISPR knockout screens. Cancer genetics, not evidence about phosphorylation (one-sided hypergeometric test)"
+    section: Disease and cancer
+    sets:
+      input: depmap_genes
+      protein: canonical_UniProtAC
+      rules:                       # the share of the screened lines whose dependency probability is at least 0.5
+        - {set: common_essential, when: [{column: common_essential, equals: "True"}]}
+        - {set: most_lines, when: [{ratio: [dependent_lines, lines_with_probability], at_least: 0.5}]}
+        - {set: some_lines, when: [{ratio: [dependent_lines, lines_with_probability], at_least: 0.05}]}
+        - {set: few_or_none}
+    whole_universe: true
+    order: [{categories: [common_essential, most_lines, some_lines, few_or_none]}]
+    background: other reviewed human proteins whose gene DepMap 24Q4 screened (CRISPR, Chronos)
+    labels: {common_essential: Commonly essential, most_lines: "Most lines (≥ 50%)", some_lines: "Some lines (5–50%)", few_or_none: "Few or none (< 5%)"}
+    help:
+      common_essential: "DepMap 24Q4 calls the gene commonly essential (CRISPRInferredCommonEssentials: it ranks among the strongest dependencies of at least 90% of lines)"
+      most_lines: "not commonly essential, and at least 50% of the screened lines depend on it"
+      some_lines: "not commonly essential, and 5% to under 50% of the lines depend on it (selective dependencies)"
+      few_or_none: "fewer than 5% of the lines depend on it"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    values:                        # each screened protein's numbers, for the website (website.set_views); no test reads them
+      columns:
+        - {name: median, label: median gene effect, background: true}
+        - {name: dependent_lines, label: lines that depend on it}
+        - {name: lines_with_probability, label: lines screened}
+  - {id: disorder, layer: disorder, new: true}
+  - {id: domain_context, layer: domain_context, new: true}
+  - {id: domain_class, layer: domain_class, new: true}
+  - {id: structure_context, layer: structure_context, new: true}
+  - {id: idr_charge, layer: idr_charge, new: true}   # not in the release: CIDER's charge classes of IDRs
+variants:                # the same questions on other marks; ptmc run --variant <name>
+  with_lower_confidence:
+    label: With lower-confidence sites
+    description: "The residues UniProt reports only by similarity to another species (ECO:0000250 and other records without an experimental code) counted too, from the same table"
+    marks_select: {exclude: []}
+    attributes: {}
+
+# Context marks: other modifications of the same proteins, shown beside the phosphosites (CONTRACTS.md, Context marks):
+# methylarginine (the sites table of release v1.4.3, the methylarginine site's own marks) and methyllysine (the sites table
+# of release v1.5.0). A map row, "Other marks nearby" on the site card, a filter, table columns and downloads follow from
+# these entries; the near_marks questions test them. Both tables are in sites/phospho.inputs.json.
+context_marks:
+  - id: methylarginine
+    label: Methylarginine
+    input: context_methylarginine_sites_v1_4_3
+    columns: {accession: uniprot_accession, position: position, residue: residue, state: methyl_state}
+    replaces_ptm_kinds: [Methyl]   # the live UniProt "Other PTMs" row would repeat the methylations: one source for them
+    drop_evidence: []          # the v1.4.3 table has no evidence column: every row is kept
+    colour: "#C2410C"          # the methylarginine site's orange accent
+    colour_dark: "#FB923C"
+    citation:
+      short: Methylarginine Site Explorer
+      cite: "Methylarginine sites of the human reviewed proteome, release v1.4.3 of PTM_Pipeline: DeAngelo et al., Cell Chem Biol 33:1404-1421 (2026), doi:10.1016/j.chembiol.2026.09.011"
+      doi: 10.1016/j.chembiol.2026.09.011
+      licence: CC BY-NC-SA 4.0
+  - id: methyllysine
+    label: Methyllysine
+    input: context_methyllysine_sites_v1_5_0
+    columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
+    colour: "#7c3aed"          # violet, the methyllysine site's color
+    colour_dark: "#a78bfa"
+    citation:
+      short: UniProt and iPTMnet
+      cite: "Methyllysine sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: CC BY-NC-SA 4.0
+    sources:
+      UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
+      iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
+  # - id: acylation              # lysine acylation (acetyl, succinyl, ...), a table of the same release family: not in the
+  #   label: Lysine acylation    # pinned PTM_Pipeline commit (5b1c3bd). With its manifest entry:
+  #   input: context_lysine_acylation_sites_v1_5_0
+  #   columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: acyl_type, evidence: evidence_class, sources: sources}
+  #   colour: "#047857"
+  #   colour_dark: "#34d399"
+  #   citation: {short: UniProt and iPTMnet, cite: "...", licence: CC BY-NC-SA 4.0}
 
 outputs: {folder: out/phospho}
+citation: sites/phospho.citation.cff   # the citation, data sources, version and date: edit there
+
+website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
+  context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
+  name: Phosphosite Explorer
+  tagline: "Human protein phosphorylation sites from public databases."
+  # published at /ptmcontext/phospho/; listed on the landing page and in the sites' header menu
+  landing: {tagline: "Human protein phosphorylation sites from public databases.", in_switcher: true}
+  band: ["#1e40af", "#172554"]      # the header gradient: blue
+  accent: "#0e7490"                 # the cyan rule, active tab and links
+  accent_dark: "#22d3ee"
+  icon: sites/art/phospho-icon.svg
+  art: sites/art/phospho-hero.svg
+  lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
+  links:
+    - {label: Documentation, url: "#method"}
+    - {label: Download data, url: "#method/download"}
+    - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
+    - {label: Research, url: "https://www.shechterlab.org/research/"}
+    - {label: Publications, url: "https://www.shechterlab.org/publications/"}
+  examples: [TP53, "AKT1 MAPK1 EGFR", "kinase_motifs:proline_directed", "TP53 S15", "AKT1 S473"]   # the first three are the chips under the search box
+  placeholders: {highlight: "TP53 S15, AKT1 S473, EGFR Y1068", partners: "AKT1, CDK1, YWHAZ", motif: "SPXK, RXXS, DSGXXS", motif_either: "SP,TP"}
+  default_background: other reviewed human proteins   # examples inside the Highlight and partner boxes
+  start:                   # the Overview's start panel for a first visit, and the Help page's starts (kit-help.js)
+    protein: TP53
+    text: "Human phosphorylation sites from UniProt and iPTMnet: their positions, proteins and partners. Each tile is one question, comparing the phosphosites with the other serines, threonines and tyrosines of the same proteins. Search a protein or a gene list to test your own selection."
+    examples:
+      - {label: A tumor suppressor, query: TP53, help: "p53's phosphosites, with its kinase motifs and readers."}
+      - {label: A list of genes, query: AKT1 MAPK1 EGFR, help: "Every question is tested again on their phosphosites."}
+      - {label: One site in its structure, query: TP53 S15, help: "Its protein's domain and disorder map, the evidence for the site, and its structures."}
+  stats: [marks, proteins, {attribute: sources, label: databases, opens: provenance}]
+  overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
+    statistic_label: true  # each tile names its statistic
+    cell_first: false
+    question: "Which proteins are phosphorylated?"
+    rows: 7
+    random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end
+    sections:
+      - name: Which kinases?
+        about: "Kinase motif classes: the sequence around the site that proline-directed, basophilic and acidophilic kinases prefer, and tyrosine kinases."
+        cards:
+          - {analysis: kinase_motifs, title: Kinase motif classes}
+      - name: Is it functional?
+        about: "Reader motifs that bind the phosphorylated site (14-3-3, polo-box, Pin1, the beta-TrCP degron, SH2, FHA, BRCT) and, where the table has it, the functional score."
+        cards:
+          - {analysis: reader_motifs, title: Reader motifs}
+          - functional_scores
+      - name: Where in the protein
+        about: "Where along the protein the phosphosites fall: folded or disordered parts, domains, the charge of disordered regions, and PDB interfaces."
+        cards:
+          - {analysis: disorder}
+          - {analysis: structure_context}
+          - {analysis: domain_class, title: Nearest domain class}
+          - {analysis: idr_charge}
+          - {analysis: pdb_interface, title: Interfaces in PDB structures}
+      - name: Other marks
+        about: "Whether phosphosites sit near other modifications (context marks: methylarginines and methyllysines), within 10 residues, and in a basophilic motif whose arginine is methylated."
+        cards:
+          - {analysis: near_methylarginine}
+          - {analysis: near_methyllysine}
+          - {analysis: shared_arginine}
+      - name: Protein interactions
+        about: "Whether phosphosites sit where a protein touches another: predicted interfaces, IntAct features and complexes."
+        cards:
+          - {analysis: predicted_interface, title: Predicted interfaces}
+          - {analysis: intact, title: IntAct binding regions and mutations}
+          - {analysis: complex, title: Protein complexes}
+      - name: Kinases, phosphatases and readers
+        about: "The kinases that add phosphate, the phosphatases that remove it and the 14-3-3, SH2, FHA, WW, BRCT and polo-box proteins that read it, and the phosphorylated proteins that bind them."
+        #  counted from the partner classes (website.search.partners), not tested
+        cards: [partner_classes]
+      - name: Evidence
+        about: "How well supported the phosphosites are, and which residues and databases they come from."
+        #  counted, not tested (website.counts)
+        cards: [residues, evidence]
+      - name: Location, chromatin and condensates
+        about: "Where in the cell the phosphorylated proteins localize, how much is on chromatin, and which condensates hold them."
+        cards:
+          - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
+          - {analysis: cell_chromatin, title: Chromatin probability}
+          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
+          - {analysis: condensate_role, title: Roles in condensates}
+      - name: Protein classes and pathways
+        about: "Protein classes and pathways of the phosphorylated proteins."
+        cards:
+          - {analysis: panther_group, title: Protein classes}
+          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
+          - {analysis: panther_subclass, title: Protein subclasses}
+      - name: Disease and cancer
+        about: "Diseases linked to the phosphorylated proteins, and cancer cell dependency."
+        show: 1
+        more: More on disease
+        cards:
+          - analysis: disease_family
+            title: Disease
+            views:               # one question, two vocabularies: a switch on its page
+              - label: DisGeNET families
+                analysis: disease_family
+                more: {analysis: disease_family_additional, label: "Show {n} more families", head: "Additional families"}
+                members:
+                  analysis: disease_term
+                  label: Show the DisGeNET terms
+                  noun: term
+                  nouns: DisGeNET terms
+                  id_label: UMLS CUI
+                  none: terms in no family
+                  of:
+                    - {analysis: disease_family, label: disease families checked by hand}
+                    - {analysis: disease_family_additional, label: "additional families, mostly clinical signs"}
+              - label: Disease Ontology
+                analysis: disease_ontology
+                ontology: {short: 50, compare: 4, tree: 100, id_label: DOID, noun: term, nouns: terms}
+          - {analysis: depmap_dependency, title: Cancer cell dependency}
+      - name: More questions
+        about: "Further pathways, cell maps, protein classes and domains, one question each."
+        cards: [panther_class, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, {analysis: hpa_location, title: Human Protein Atlas locations},
+                cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q},
+                domain_context]
+  cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
+    id: where_in_the_cell
+    title: Where in the cell
+    question: "Where do phosphorylated proteins localize in the cell?"
+    intro: "Five maps from four studies place proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
+    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map, pending their license. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
+    maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
+      - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
+         how: "antibody staining in many cell lines; locations of Approved or better reliability with 20 or more proteins",
+         ref: HPA 25.1, doi: 10.1126/science.aal3321, url: "https://www.proteinatlas.org/humanproteome/subcellular", licence: CC BY 4.0, min_members: 20}
+      - {analysis: cell_hcm_compartment, regions: cell_region_hcm, name: Human Cell Map, short: Cell Map, method: Proximity labeling, cells: HEK293,
+         how: "proximity labeling from 192 baits; each protein is assigned to the compartment whose baits label it most",
+         ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
+      - {analysis: cell_hcm_domain, name: "Human Cell Map, finer domains", short: Cell Map domains, method: Proximity labeling, cells: HEK293,
+         how: "the same map at a finer scale: neighborhoods of proteins that label one another (SAFE domains)",
+         ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
+      - {analysis: cell_organelle_ip, regions: cell_region_organelle_ip, name: Organelle IP, short: Organelle IP, method: Organelle pull-down, cells: HEK293T,
+         how: "Organelles immunoprecipitated one by one. Each protein is assigned to the organelle it co-purifies with.",
+         ref: Hein et al. 2025, doi: 10.1016/j.cell.2024.11.028, url: "https://github.com/czbiohub-sf/Organelle_IP_analyses_and_figures", licence: BSD-3-Clause (analysis repository)}
+      - {analysis: cell_chromatin, graded: true, name: Chromatin probability, short: ChEP, method: Fractionation, cells: human cell lines,
+         how: "probability that a protein is chromatin-bound, from chromatin enrichment across many conditions",
+         ref: Kustatscher et al. 2014, doi: 10.1002/embj.201387614, url: "https://doi.org/10.1002/embj.201387614", licence: CC BY}
+    regions:               # the sets of each map's regions question, and the part of the drawings each colors
+      - {label: Nucleus, part: nucleus, in_text: the nucleus}
+      - {label: Cytoplasm, in_text: the cytoplasm}
+      - {label: Organelles and membranes, in_text: the organelles and membranes}
+    compartments:          # the grid's rows: each a set in some maps, and the part of the drawings it colors (also: parts
+      - group: Nucleus     # it colors when they have no row of their own); the release's groups (data/subcellular.json)
+        rows:
+          - {label: Chromatin, part: chromatin, also: [periphery, perinucleolar], sets: {cell_hcm_compartment: chromatin, cell_chromatin: "ICP >= 0.8 (chromatin)"}}
+          - {label: Nucleoplasm, part: nucleoplasm, also: [nucleus], sets: {cell_hcm_compartment: nucleoplasm, cell_organelle_ip: nucleus, hpa_location: Nucleoplasm}}
+          - {label: Nucleolus, part: nucleolus, sets: {cell_hcm_compartment: nucleolus, cell_organelle_ip: nucleolus, hpa_location: Nucleoli}}
+          - {label: Nuclear speckles, part: speckles, sets: {cell_hcm_domain: "splicing speckles, nucleolus", hpa_location: Nuclear speckles}}
+          - {label: Paraspeckles, part: paraspeckles, sets: {cell_hcm_domain: paraspeckles}}
+          - {label: "Nuclear bodies (PML, Cajal …)", name: Nuclear bodies, part: bodies, also: [cajal, pml], sets: {cell_hcm_compartment: nuclear body, hpa_location: Nuclear bodies}}
+          - {label: Nuclear envelope and lamina, name: Nuclear envelope, part: envelope, sets: {cell_hcm_compartment: nuclear outer membrane-ER membrane network, hpa_location: Nuclear membrane}}
+          - {label: Nuclear pores, part: pores, sets: {cell_hcm_domain: nuclear pore}}
+          - {label: Mitotic chromosome, sets: {hpa_location: Mitotic chromosome}}
+      - group: Cytoplasm
+        rows:
+          - {label: "RNA granules (stress granules, P-bodies)", name: "Stress granules (cell map)", part: granules, sets: {cell_hcm_compartment: cytoplasmic ribonucleoprotein granule, cell_hcm_domain: cytoplasmic ribonucleoprotein granule, cell_organelle_ip: stress_granule}}
+          - {label: P-bodies, part: pbodies, in_text: P-bodies, sets: {cell_organelle_ip: p-body, cell_hcm_domain: "centrosome enriched, P-body enriched"}}
+          - {label: Translation, name: Ribosomes and translation, part: ribosomes, sets: {cell_organelle_ip: translation}}
+          - {label: Cytosol, part: cytosol, sets: {cell_hcm_compartment: "actin cytoskeleton, cytosol", cell_organelle_ip: cytosol, hpa_location: Cytosol}}
+          - {label: Actin cytoskeleton, name: Actin cortex, part: actin, sets: {cell_organelle_ip: actin_cytoskeleton, cell_hcm_domain: actin cytoskeleton, hpa_location: Actin filaments}}
+          - {label: Microtubules, part: microtubules, sets: {cell_hcm_compartment: microtubule cytoskeleton, hpa_location: Microtubules}}
+          - {label: Centrosome, part: centrosome, sets: {cell_hcm_compartment: centrosome, cell_organelle_ip: centrosome, hpa_location: Centrosome}}
+          - {label: Proteasome, sets: {cell_organelle_ip: proteasome}}
+      - group: Organelles and membranes
+        rows:
+          - {label: Mitochondria, part: mito, sets: {cell_hcm_compartment: mitochondrial matrix, cell_organelle_ip: mitochondrion, hpa_location: Mitochondria}}
+          - {label: Endoplasmic reticulum, part: er, in_text: the ER, sets: {cell_hcm_compartment: ER membrane, cell_organelle_ip: ER, hpa_location: Endoplasmic reticulum}}
+          - {label: Golgi, name: Golgi apparatus, part: golgi, in_text: the Golgi, sets: {cell_hcm_compartment: Golgi apparatus, cell_organelle_ip: Golgi, hpa_location: Golgi apparatus}}
+          - {label: Endosomes and lysosomes, part: endolyso, sets: {cell_hcm_compartment: "endosome, lysosome", cell_organelle_ip: lysosome, hpa_location: Vesicles}}
+          - {label: Peroxisomes, part: perox, sets: {cell_hcm_compartment: "mitochondrial outer membrane, peroxisome", cell_organelle_ip: peroxisome}}
+          - {label: Plasma membrane, part: pm, sets: {cell_hcm_compartment: plasma membrane, cell_organelle_ip: plasma_membrane, hpa_location: Plasma membrane}}
+    drawings:              # the kit's drawings (CONTRACTS.md names their parts), in order
+      - {drawing: cell, title: "The cell"}
+      - {drawing: nucleus, title: "The nucleus"}
+  set_views:               # a protein-set question drawn with its proteins' numbers (kit-values.js): DepMap's dependency
+    - analysis: depmap_dependency
+      meter: common_essential                   # the class whose share the tile shows
+      meter_words: commonly essential in cancer cell lines
+      population: screened proteins
+      intro: "{n} of {the} {total} {who} were screened (DepMap 24Q4, 1,178 cell lines). A protein's score is its median Chronos gene effect across the lines: 0 is no effect, −1 the median of commonly essential genes, and lower is a stronger dependency."
+      box: {value: median, title: Median gene effect of each protein, axis: "median gene effect per protein (Chronos)",
+            sub: "DepMap Public 24Q4 CRISPR (Chronos), median gene effect per protein across 1,178 lines. Boxes span the middle half of proteins, whiskers the 5th to 95th percentile. Lower is a stronger dependency"}
+      caveat: "Essential proteins are abundant, and mass spectrometry finds abundant proteins most often, so phosphorylated proteins look more essential than the proteome whatever their phosphorylation does. A selection is also compared with the other phosphorylated proteins, which share that bias, and that comparison is fairer."
+      chips:
+        - {title: Strongest dependencies, value: median, order: ascending}
+        - {title: Selective dependencies, note: "not commonly essential; 5% to under half of the lines depend on them, share shown", sets: [some_lines],
+           share: [dependent_lines, lines_with_probability], order: descending}
+      credit: "DepMap Public 24Q4 (doi:10.25452/figshare.plus.27993248; CC BY 4.0; Tsherniak et al. 2017; Chronos, Dempster et al. 2021). Commonly essential: DepMap's list of genes that at least 90% of lines rank among their strongest dependencies. A line depends on a gene when DepMap's dependency probability is at least 0.5. The results on tumors are in whole or part based upon data generated by the TCGA Research Network (https://www.cancer.gov/tcga): MC3 somatic calls (Ellrott et al. 2018)."
+  counts:                  # questions answered by counting the sites, not by a test (CONTRACTS.md, count questions)
+    partner_classes:
+      kind: values
+      attribute: bound_by
+      title: Kinases, phosphatases and readers
+      question: "Which phosphosites are on proteins that bind a kinase, a phosphatase or a reader?"
+      sub: "Phosphosites on proteins with a STRING physical partner (score 0.7 or more) in each kinase, phosphatase or reader class"
+      unit: [class, classes]
+      noun: partner classes
+      top: 8
+      note: "A class describes the protein's physical partners. STRING associations are to the whole protein, so a count does not show that a partner phosphorylates, dephosphorylates or reads that site. The kinase and phosphatase sets are UniProt keyword sets (candidates, including pseudokinases); the reader sets are InterPro domain entries and include proteins whose domain does not bind phosphopeptides. The sets are of human proteins in UniProt 2026_04."
+      method: "The site file lists the partner classes (website.search.partners.classes) by InterPro entry or by a file of UniProt accessions with the query that made it. A protein is in a class when one of its STRING physical partners is. The share of all reviewed human proteins in each class is the baseline to compare with."
+    residues:
+      kind: values
+      attribute: residue
+      title: Residue
+      question: "Which residues are phosphorylated?"
+      sub: "Phosphosites by residue: serine (pS), threonine (pT) or tyrosine (pY)"
+      unit: [residue, residues]
+      noun: residues
+      top: 3
+      note: "A tyrosine is a small share of the residues of a proteome and of the phosphosites; the questions compare each site with the other serines, threonines and tyrosines of its own protein, so the residue's share does not explain their results."
+      method: "The release's residue column, one row per phosphorylated residue."
+    evidence:
+      kind: values
+      attribute: evidence_class
+      title: Evidence
+      question: "How well supported are the phosphosites?"
+      sub: "Phosphosites by the best class of their records: experimental, text-mined, or unspecified (iPTMnet's copy of UniProt, with no evidence code)"
+      unit: [class, classes]
+      noun: evidence classes
+      top: 3
+      note: "The sites counted here have an experimental, text-mined or unspecified record. The sites UniProt reports only by similarity to another species are the lower-confidence variant (the switch at the top)."
+      method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, or an iPTMnet record curated from an experiment; text-mined is an iPTMnet record from text mining only; unspecified is iPTMnet's copy of UniProt, which has no ECO code."
+    provenance:
+      kind: values
+      attribute: sources
+      title: Provenance
+      question: "Which databases report the phosphosites?"
+      sub: "Phosphosites reported by each database"
+      unit: [database, databases]
+      noun: databases
+      top: 2
+      note: "iPTMnet carries a copy of UniProt: 11,692 phosphorylation rows have unip as their only upstream database, so both databases agreeing is not always two measurements."
+      method: "Each phosphosite lists the databases that report it (the release's sources column). A database's count is the phosphosites it reports."
+    functional_scores:     # only where the marks table has a functional_score column (marks.attributes.functional_band is optional)
+      kind: values
+      attribute: functional_band
+      title: Functional score
+      question: "How many phosphosites have a high functional score?"
+      sub: "Phosphosites by functional score band (Ochoa et al. 2020): below 0.2, 0.2 to 0.5, 0.5 or more"
+      unit: [band, bands]
+      noun: score bands
+      top: 3
+      note: "The score is a model's estimate of how likely a site is to matter for the cell, not a measurement of its function; it is highest for sites that are conserved, in structured regions, or have a known kinase."
+      method: "The functional_score column of the sites table (Ochoa et al. 2020), cut at 0.2 and 0.5."
+  filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
+    - {name: Kinase motifs, analyses: [kinase_motifs]}
+    - {name: Reader motifs, analyses: [reader_motifs]}
+    - {name: Residue and evidence, attributes: [residue, evidence_class]}
+    - {name: Functional score, attributes: [functional_score, functional_band]}
+    - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
+    - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex], keys: ["b:class", "b:gene", "b:score"]}
+    - {name: Protein class, analyses: [panther_group, panther_class, reactome_top_level], proteins: [marks]}
+    - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome]}
+    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency]}
+    - {name: Sequence motif, keys: ["m:at", "m:near"]}
+    - {name: Provenance, attributes: [sources, iptmnet_sources]}
+  dataset: {label: data release, version: v1.5.0, date: "2026-11-09", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0"}
+  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). Cite the paper, the archive and the databases that report the sites you use (How to cite)."
+  downloads:               # the release's files, at the commit the site was built from
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class and sources"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+  search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
+    patterns:                # the motif finder: a pattern of residues on the sites' sequence windows
+      at: motif              # motif:SPXK covers the site
+      near: window           # window:RXXS anywhere within the span
+      span: 15
+    spacing: {label: "Another phosphosite within", within: [2, 3, 5, 10, 20]}
+    partners:                # the proteins' physical partners (a protein_partners table)
+      table: string
+      key: binds
+      label: Has a physical partner that is
+      gene_label: Binds a specific protein
+      score_label: STRING physical confidence
+      help: "STRING 12.5 physical associations of the phosphorylated protein (score 0.7 or more)"
+      interpro: interpro_entries           # the InterPro entry intervals the classes' interpro ids are read from
+      attribute: {id: bound_by, label: Partner classes of the protein, help: "The classes of the physical partners of the phosphorylated protein"}
+      # Each set is a query on open data, recorded with its source and release. Kinases and phosphatases are UniProt
+      # keyword queries of 2026-11-10 against UniProt release 2026_04 (reviewed human entries, organism 9606), saved with
+      # their query in sites/data/phospho_*.tsv: KW-0723 Serine/threonine-protein kinase, KW-0829 Tyrosine-protein
+      # kinase, KW-0904 Protein phosphatase. InterPro entries are read from the InterPro 108.0 entry intervals this
+      # site's manifest holds (https://www.ebi.ac.uk/interpro/api/entry/interpro/IPRxxxxxx/, checked 2026-11-10;
+      # members of the entry on the reviewed human proteome).
+      classes:
+        writer_stk:
+          label: a serine/threonine kinase (writer)
+          role: writer
+          reads: phosphorylates Ser or Thr
+          genes_file: sites/data/phospho_ser_thr_kinases.tsv
+          help: "UniProt keyword KW-0723, serine/threonine-protein kinase (reviewed human entries, UniProt 2026_04): candidates, which include pseudokinases and dual-specificity kinases"
+        writer_ptk:
+          label: a tyrosine kinase (writer)
+          role: writer
+          reads: phosphorylates Tyr
+          genes_file: sites/data/phospho_tyr_kinases.tsv
+          help: "UniProt keyword KW-0829, tyrosine-protein kinase (reviewed human entries, UniProt 2026_04): candidates, which include pseudokinases and dual-specificity kinases"
+        eraser_pp:
+          label: a protein phosphatase (eraser)
+          role: eraser
+          reads: removes phosphate from pSer, pThr or pTyr
+          genes_file: sites/data/phospho_phosphatases.tsv
+          help: "UniProt keyword KW-0904, protein phosphatase (reviewed human entries, UniProt 2026_04)"
+        reader_1433:
+          label: a 14-3-3 protein (reader)
+          role: reader
+          reads: pSer or pThr in R-S-x-pS-x-P and R-x-Y/F-x-pS-x-P
+          interpro: [IPR000308]
+          help: "14-3-3 protein family (IPR000308, InterPro 108.0): the seven human 14-3-3 isoforms"
+        reader_sh2:
+          label: an SH2-domain protein (reader)
+          role: reader
+          reads: pTyr in its sequence context
+          interpro: [IPR000980]
+          help: "SH2 domain (IPR000980, InterPro 108.0). Not every SH2 domain needs phosphotyrosine"
+        reader_fha:
+          label: an FHA-domain protein (reader)
+          role: reader
+          reads: pThr (pT-x-x-D)
+          interpro: [IPR000253]
+          help: "Forkhead-associated domain (IPR000253, InterPro 108.0)"
+        reader_ww:
+          label: a WW-domain protein (reader)
+          role: reader
+          reads: some bind pSer-Pro or pThr-Pro (Pin1)
+          interpro: [IPR001202]
+          help: "WW domain (IPR001202, InterPro 108.0). Most WW domains bind proline-rich peptides without phosphate; Pin1's reads pS/pT-P"
+        reader_brct:
+          label: a BRCT-domain protein (reader)
+          role: reader
+          reads: pSer (pS-x-x-F) in some
+          interpro: [IPR001357]
+          help: "BRCT domain (IPR001357, InterPro 108.0). Some BRCT repeats bind phosphopeptides, others DNA or protein"
+        reader_polo:
+          label: a polo-box protein (reader)
+          role: reader
+          reads: pSer or pThr (S-pS/pT-P)
+          interpro: [IPR000959]
+          help: "POLO box domain (IPR000959, InterPro 108.0): PLK1, PLK2, PLK3, PLK4 and PLK5"
+      marked: another phosphorylated protein
+      other: any other protein
+      scores: [0.7, 0.9]
+  tabs:                    # the top tabs' words (the addresses #statistics and #method stay; #idrs opens its question)
+    overview: {label: Overview, hint: "Click a class row to select its sites, or a tile's title to open the question."}
+    proteins: {label: Proteins, hint: "One row per protein with phosphosites. Filter, sort and download."}
+    sites: {label: Sites, hint: "One row per phosphosite, with its residue and evidence. Filter, sort and download."}
+    idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of phosphorylated proteins, and the phosphosites in them.", as: section, question: idr_charge}
+    statistics: {label: All tests, hint: "Every test on the site, one row per class, with odds ratio, interval and q value."}
+    method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
+    help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
+  partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
+  compare: {min_proteins: 10, min_marks: 30}
+  tables:                  # tables the protein pages show (no test reads them), each in a format of CONTRACTS.md
+    string:                # STRING v12.5 physical links, each pair listed once and read both ways, at score 0.7 or more
+      input: string_physical_v12_5
+      format: protein_partners
+      columns: {accession: protein_a, partner_accession: protein_b, partner: gene_b, score: combined_score}
+      both_ways: {partner: gene_a}
+      include: [{column: combined_score, at_least: 700}]
+  protein:                 # the protein page
+    open_partners: true
+    map:
+      hide_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row would repeat the phosphosites: one source for them

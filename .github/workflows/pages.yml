@@ -171,6 +171,23 @@ jobs:
           node tools/audit/export_overlap.js http://localhost:8932/index.html --proteins P68431,P04637 --selection "$sel" || fail=1
           node tools/audit/export_legend.js http://localhost:8932/index.html --pdf --cdn "$RUNNER_TEMP/cdn" --proteins P68431,P04637 --selection "$sel" || fail=1
           exit $fail
+      # The phosphosite site (listed on the landing page and in the sites' header menu): release v1.5.0 of PTM_Pipeline, pinned
+      # above, with the generic inputs the other sites read. No reference release: every statistic is new.
+      - name: Phosphosite site
+        run: |
+          ptmc run sites/phospho.yaml --root reference
+          ptmc web sites/phospho.yaml
+      - name: Export audits, phosphosite (text overlap, legends)
+        timeout-minutes: 60
+        run: |
+          python3 -m http.server 8933 --directory out/phospho/web >/dev/null 2>&1 &
+          sleep 2
+          export NODE_PATH="$RUNNER_TEMP/pw/node_modules"
+          fail=0
+          sel="f=p:kinase_motifs~proline_directed"
+          node tools/audit/export_overlap.js http://localhost:8933/index.html --proteins P04637,P31749 --selection "$sel" || fail=1
+          node tools/audit/export_legend.js http://localhost:8933/index.html --pdf --cdn "$RUNNER_TEMP/cdn" --proteins P04637,P31749 --selection "$sel" || fail=1
+          exit $fail
       - name: Last good yeast inputs
         # the staged files are cached under the manifest's hash: a UniProt, MobiDB or SHEPHARD outage reuses the last run
         # that staged them, instead of leaving the site out
@@ -224,7 +241,7 @@ jobs:
             !out/*/web/index.html
           retention-days: 30
           if-no-files-found: ignore
-      - run: ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/yeast_phospho.yaml --out _site --skip-missing
+      - run: ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml sites/yeast_phospho.yaml --out _site --skip-missing
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
