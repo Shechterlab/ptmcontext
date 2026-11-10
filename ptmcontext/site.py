@@ -85,6 +85,8 @@ def expand_subsets(site: dict) -> dict:
                 raise ValueError(f'{where}: {new_id!r} is already a question')
             v = copy.deepcopy(base)
             v.update(id=new_id, marks_where=sub['where'], family=family, family_label=sub['label'])
+            v.pop('note', None)  # a note on the base question's result (and its filters) is not said of a subset's
+            v.pop('note_filters', None)
             if base.get('title'):
                 v['title'] = f'{base["title"]}, {sub["label"]}'
             if base.get('sub') and sub.get('note'):

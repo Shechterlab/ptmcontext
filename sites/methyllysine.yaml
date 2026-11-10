@@ -728,6 +728,12 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     question: "Are methyllysines more often near a methylarginine than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3, by-similarity records left out) lies within 10 residues on either side"
     section: Other marks
+    note: "The association comes from the database-curated sources: lysines that only CPLM reports are 2.42x near a methylarginine and those of UniProt or iPTMnet 1.97x, while Berryhill et al.'s affinity-enriched sites are 0.84x (not significant). That points to which proteins were studied, not to a link between the two marks. Select a source to see its lysines:"
+    note_filters:
+      - {label: CPLM, query: "sources:CPLM"}
+      - {label: UniProt, query: "sources:UniProt"}
+      - {label: iPTMnet, query: "sources:iPTMnet"}
+      - {label: Berryhill 2023, query: "sources:Berryhill"}
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
   - id: which_factor

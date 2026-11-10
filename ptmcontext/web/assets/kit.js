@@ -2005,6 +2005,15 @@
             }`
           : ''
       }</p>` +
+      // the site file's note on this question (analysis.note), and one-click filters (analysis.note_filters: label, query)
+      (a.note && !vsOn()
+        ? `<p class="page-note note">${esc(a.note)}${(a.note_filters || [])
+            .map(
+              (f) =>
+                ` <button type="button" class="chip" data-try="${esc(f.query)}" title="Select the ${esc(W.marks)} that match ${esc(f.query)}">${esc(f.label)}</button>`
+            )
+            .join('')}</p>`
+        : '') +
       `<section class="pcard">${
         (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
         (K.questionBody && K.questionBody(a, rows, card)) ??

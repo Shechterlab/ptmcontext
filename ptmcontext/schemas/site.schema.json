@@ -1378,6 +1378,31 @@
               }
             }
           },
+          "note": {
+            "type": "string",
+            "description": "a note under the question's title on its page (what the result does and does not show)"
+          },
+          "note_filters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "label",
+                "query"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "query": {
+                  "type": "string",
+                  "description": "a search query the button puts in the search box (a filter such as sources:CPLM)"
+                }
+              }
+            },
+            "description": "buttons beside the note that select marks by a search query"
+          },
           "collapse_similar": {
             "type": "object",
             "additionalProperties": false,
