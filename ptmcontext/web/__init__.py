@@ -455,7 +455,9 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                 'new': bool(a.get('new')),
                 **({'only_in': True} if a.get('only_in') else {}),
                 **({'subset': True} if a.get('marks_where') else {}),
-                **({'note': a['note']} if a.get('note') else {}),  # a note under the question, with its one-click filters
+                **(
+                    {'note': a['note']} if a.get('note') else {}
+                ),  # a note under the question, with its one-click filters
                 **({'note_filters': a['note_filters']} if a.get('note_filters') else {}),
                 **_class_order(a, lw),
             }
