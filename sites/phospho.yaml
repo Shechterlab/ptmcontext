@@ -33,6 +33,7 @@ inputs:                # role the layers read: manifest input that fills it
   organelle_ip: organelle_ip
   chromatin: chromatin_probability
   depmap_genes: depmap_gene_effect
+  string_partners: string_physical_v12_5         # the partner classes' test reads the STRING table whole (the page reads it by its manifest name)
   interpro_entries: interpro_all_entries         # the readers' protein sets, by InterPro entry
   # interactions (the methylarginine site's roles, less the RNA and DNA evidence and its release tables)
   uniprot_disorder: uniprot_disordered_regions
@@ -343,6 +344,21 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     min_size: 3
     background: other proteins in a curated Complex Portal complex
     link: "https://www.ebi.ac.uk/complexportal/complex/{}"
+  # Are phosphorylated proteins more often partners of a class than other proteins with partners? The sets are the site's
+  # partner classes (website.search.partners): a protein is in a class's set when one of its STRING physical partners
+  # (score 0.7 or more) is in the class. The background is the proteins STRING lists with at least one such partner,
+  # not the proteome: a protein with no physical partner cannot be in any set, and well-studied proteins have both
+  # partners and phosphorylated, so the proteome would show that and not the class.
+  - id: partner_class_test
+    test: protein_sets
+    new: true
+    title: Partner classes
+    question: "Are phosphorylated proteins more often partners of kinases, phosphatases and readers than other proteins that have physical partners?"
+    sub: "Phosphorylated proteins against the proteins with a STRING physical partner (score 0.7 or more), by whether one of their partners is in each kinase, phosphatase or reader class (one-sided hypergeometric test). A protein with a partner in several classes is in each. The partner is a partner of the whole protein, so a class says what the protein binds, not what acts on the site"
+    section: Kinases, phosphatases and readers
+    sets: {input: string_partners, partner_classes: string}
+    universe: annotated
+    background: other human proteins with a STRING physical partner (score 0.7 or more)
   - id: panther_group
     new: true
     test: protein_sets
@@ -779,7 +795,46 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
         - {name: median, label: median gene effect, background: true}
         - {name: dependent_lines, label: lines that depend on it}
         - {name: lines_with_probability, label: lines screened}
-  - {id: disorder, layer: disorder, new: true}
+  # Does the disorder effect differ by kinase motif class? The disorder question again on the sites of one class: only the
+  # residues of the class count, marks and other candidates alike (only_in: residues, motif), so that each class is compared
+  # with the other residues of its own type in the same protein. pY is the tyrosines, against the other tyrosines.
+  - {id: disorder, layer: disorder, new: true, title: Disorder context, family: Disorder context, family_label: All sites}
+  - id: disorder_proline_directed
+    layer: disorder
+    new: true
+    title: "Disorder context, proline-directed sites"
+    family: Disorder context
+    family_label: "Proline-directed (S/T-P)"
+    question: "Do proline-directed phosphosites fall in disordered regions more often than the other residues that fit the same pattern in their proteins?"
+    sub: "Phosphosites of the proline-directed class (S/T-P) against the other serines and threonines of the same proteins that fit the same pattern, by MobiDB disorder class; read the disordered row against the all-sites question for the difference"
+    only_in: {residues: ST, motif: {pattern: "[ST]P", start: 0}}
+  - id: disorder_basophilic
+    layer: disorder
+    new: true
+    title: "Disorder context, basophilic sites"
+    family: Disorder context
+    family_label: "Basophilic (Arg at -3 or -2)"
+    question: "Do basophilic phosphosites fall in disordered regions more often than the other residues that fit the same pattern in their proteins?"
+    sub: "Phosphosites of the basophilic class (R-x-x-S/T or R-x-S/T) against the other serines and threonines of the same proteins that fit the same pattern, by MobiDB disorder class; read the disordered row against the all-sites question for the difference"
+    only_in: {residues: ST, motif: {patterns: [{pattern: "R..[ST]", start: -3}, {pattern: "R.[ST]", start: -2}]}}
+  - id: disorder_acidophilic
+    layer: disorder
+    new: true
+    title: "Disorder context, acidophilic sites"
+    family: Disorder context
+    family_label: "Acidophilic (acidic at +3)"
+    question: "Do acidophilic phosphosites fall in disordered regions more often than the other residues that fit the same pattern in their proteins?"
+    sub: "Phosphosites of the acidophilic class (S/T-x-x-D/E) against the other serines and threonines of the same proteins that fit the same pattern, by MobiDB disorder class; read the disordered row against the all-sites question for the difference"
+    only_in: {residues: ST, motif: {pattern: "[ST]..[DE]", start: 0}}
+  - id: disorder_tyrosine
+    layer: disorder
+    new: true
+    title: "Disorder context, tyrosine sites"
+    family: Disorder context
+    family_label: "pY (tyrosine kinases)"
+    question: "Do phosphotyrosines fall in disordered regions more often than the other tyrosines of their proteins?"
+    sub: "Phosphotyrosines against the other tyrosines of the same proteins, by MobiDB disorder class: the residue's own background, as a tyrosine kinase class has no sequence pattern of its own here"
+    only_in: {residues: Y}
   - {id: domain_context, layer: domain_context, new: true}
   - {id: domain_class, layer: domain_class, with: {classes: sites/data/domain_classes.json}, new: true}
   - {id: structure_context, layer: structure_context, new: true}
@@ -905,8 +960,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: complex, title: Protein complexes}
       - name: Kinases, phosphatases and readers
         about: "The kinases that add phosphate, the phosphatases that remove it and the 14-3-3, SH2, FHA, WW, BRCT and polo-box proteins that read it, and the phosphorylated proteins that bind them."
-        #  counted from the partner classes (website.search.partners), not tested
-        cards: [partner_classes]
+        cards: [partner_classes, {analysis: partner_class_test}]   # the counts, and the test of the same classes
       - name: Evidence
         about: "How well supported the phosphosites are, and which residues and databases they come from."
         #  counted, not tested (website.counts)

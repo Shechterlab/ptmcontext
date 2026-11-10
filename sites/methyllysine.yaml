@@ -33,6 +33,7 @@ inputs:                # role the layers read: manifest input that fills it
   organelle_ip: organelle_ip
   chromatin: chromatin_probability
   depmap_genes: depmap_gene_effect
+  string_partners: string_physical_v12_5         # the partner classes' test reads the STRING table whole (the page reads it by its manifest name)
   interpro_entries: interpro_all_entries         # the writers', erasers' and readers' protein sets, by InterPro entry
   # interactions (the methylarginine site's roles, less the RNA and DNA evidence and its release tables)
   uniprot_disorder: uniprot_disordered_regions
@@ -211,6 +212,21 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     min_size: 3
     background: other proteins in a curated Complex Portal complex
     link: "https://www.ebi.ac.uk/complexportal/complex/{}"
+  # Are methylated proteins more often partners of a class than other proteins with partners? The sets are the site's
+  # partner classes (website.search.partners): a protein is in a class's set when one of its STRING physical partners
+  # (score 0.7 or more) is in the class. The background is the proteins STRING lists with at least one such partner,
+  # not the proteome: a protein with no physical partner cannot be in any set, and well-studied proteins have both
+  # partners and methylated, so the proteome would show that and not the class.
+  - id: partner_class_test
+    test: protein_sets
+    new: true
+    title: Partner classes
+    question: "Are methylated proteins more often partners of writers, erasers and readers than other proteins that have physical partners?"
+    sub: "Methylated proteins against the proteins with a STRING physical partner (score 0.7 or more), by whether one of their partners is in each writer, eraser or reader class (one-sided hypergeometric test). A protein with a partner in several classes is in each. The partner is a partner of the whole protein, so a class says what the protein binds, not what acts on the site"
+    section: Writers, erasers and readers
+    sets: {input: string_partners, partner_classes: string}
+    universe: annotated
+    background: other human proteins with a STRING physical partner (score 0.7 or more)
   # Histone or not: the PANTHER families of the core and linker histones against every other reviewed protein. The
   # family names are PANTHER 19.0's (HISTONE H1, H2A, H2B, H3, H4: the histones themselves, not the enzymes that act on them)
   - id: histone
@@ -855,8 +871,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: complex, title: Protein complexes}
       - name: Writers, erasers and readers
         about: "The enzymes that add and remove methyl groups, the proteins that read them, and the methylated proteins that bind them."
-        #  counted from the partner classes (website.search.partners), not tested
-        cards: [partner_classes]
+        cards: [partner_classes, {analysis: partner_class_test}]   # the counts, and the test of the same classes
       - name: Histones, protein classes and pathways
         about: "Histones and other protein classes and pathways of the methylated proteins."
         cards:

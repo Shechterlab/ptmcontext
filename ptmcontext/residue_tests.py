@@ -137,10 +137,32 @@ def residue_test(
     return pd.DataFrame(rows)
 
 
+def residues_matching(ctx: L.Context, cand: pd.DataFrame, rule: dict) -> np.ndarray:
+    """Whether each candidate residue is one of `residues` (letters) and, with `motif` ({pattern, start} or {patterns},
+    flank: as a motif family), has the pattern in its window: the residues a question counts when it is about one class
+    of them (the serines and threonines followed by a proline)."""
+    unknown = sorted(set(rule) - {'residues', 'motif', 'flank'})
+    if unknown:
+        raise ValueError(f'only_in: unknown keys {unknown} (residues, motif, flank)')
+    keep = np.ones(len(cand), dtype=bool)
+    if rule.get('residues'):
+        keep &= cand['residue'].isin(set(str(rule['residues']).upper())).to_numpy()
+    if rule.get('motif'):
+        from .layers.configured import _motif_family, motif_match
+
+        flank = int(rule.get('flank', 10))
+        fam = _motif_family({'name': 'only_in', **rule['motif']}, 'only_in', flank)
+        windows = ctx.snapshot.windows(cand, flank).to_numpy()
+        keep &= np.array([bool(w) and motif_match(w, flank, fam['patterns']) for w in windows], dtype=bool)
+    return keep
+
+
 def inside_regions(ctx: L.Context, cand: pd.DataFrame, only_in) -> np.ndarray:
     """Whether each candidate residue is inside a region of 'idr' (the IDRs) or of {role, kind} (an interval table)."""
     from .question import covered
 
+    if isinstance(only_in, dict) and ({'residues', 'motif'} & set(only_in)) and 'role' not in only_in:
+        return residues_matching(ctx, cand, only_in)
     if only_in == 'idr':
         from .layers.context import idr_units
 

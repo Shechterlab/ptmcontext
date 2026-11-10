@@ -429,6 +429,7 @@ def read_sets(
     root=None,
     formats: dict | None = None,
     gathered: dict | None = None,
+    site: dict | None = None,
 ) -> tuple[pd.DataFrame, dict, set]:
     """(set, protein) pairs, the sets' names, and the identifiers the source annotates (what the background is drawn
     from), from the tables a site's analysis names (set_table: the rows kept and their members). With families, each
@@ -436,6 +437,10 @@ def read_sets(
     and the lists tested); the source still annotates every identifier of its table, in a family or not. gathered, if
     given, receives each tested family's own sets (family -> sorted set ids), for a website's table of member sets."""
     src = spec['sets']
+    if src.get('partner_classes'):  # the proteins with a partner in each class of the site's partner classes
+        from .web.search import class_set_pairs
+
+        return class_set_pairs(site or {}, paths, root, src['input'])
     if 'classes' in src:
         pairs = class_sets(src, paths, universe or set(), formats)
         return pairs, {}, set(pairs['protein'])
@@ -507,6 +512,8 @@ def spec_problems(spec: dict, root=None, files: dict | None = None, formats: dic
                     out.append(
                         f'{aid}: set {it["set"]!r}: role {tb["input"]} ({Path(path).name}) has no column {sorted(cols - have)}'
                     )
+        return out
+    if src.get('partner_classes'):  # its sets are the site's partner classes: the site check reads those
         return out
     fam = src.get('families')
     if fam:
@@ -907,6 +914,7 @@ def protein_set_test(
     formats: dict | None = None,
     ctx=None,
     left_out: list | None = None,
+    site: dict | None = None,
 ) -> tuple[pd.DataFrame, dict]:
     """Statistics rows of one protein-set analysis of a site, and the names of its sets. keep, if given, receives what
     a website needs to test a selection of the marked proteins again: the background's size, which marked proteins (or
@@ -935,7 +943,7 @@ def protein_set_test(
         set().union(*(id_of[p] for p in marked_proteins if p in id_of)) if id_of is not None else set(marked_proteins)
     )
     gathered: dict[str, list] = {}
-    pairs, names, annotated = read_sets(spec, paths, proteome, root, formats, gathered=gathered)
+    pairs, names, annotated = read_sets(spec, paths, proteome, root, formats, gathered=gathered, site=site)
     universe = annotated if spec.get('universe', 'annotated') == 'annotated' else proteome
     whole = spec.get('whole_universe', False)
     background = background_of(universe, annotated, whole)

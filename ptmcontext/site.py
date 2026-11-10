@@ -1838,6 +1838,7 @@ def run(
                 formats=ctx.formats,
                 ctx=ctx,
                 left_out=left,
+                site=site,
             )
             parts.append(rows_)
             set_names += [(analysis['id'], k, names.get(k, '')) for k in rows_['category']] if len(rows_) else []
