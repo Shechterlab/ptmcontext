@@ -306,7 +306,7 @@
           strong: '#c7d4d9',
           bg: K.PAL.bg,
           soft: '#eef3f5',
-          accent: css('--accent-l') || '#c2410c',
+          accent: css('--accent-l') || K.accent(),
         }
       : {
           ink: css('--ink'),
@@ -678,7 +678,7 @@
           KL,
           KT + KH - 8,
           `Few IDRs here, so each is a dot at its κ, in any region (outer ring: ` +
-            `orange with selected ${W.marks}, gray without).`,
+            `accent color with selected ${W.marks}, gray without).`,
           { size: 10, fill: P.muted }
         )
       );

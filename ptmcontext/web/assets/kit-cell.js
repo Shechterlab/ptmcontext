@@ -1454,13 +1454,15 @@
   const svgOf = (f, cls, role = 'group') =>
     `<svg class="${cls}" viewBox="0 0 ${f.W} ${f.H}" style="max-width:${f.W}px" role="${role}" aria-label="${esc(f.aria)}">${f.g}</svg>`;
   // an export takes the light palette and inline styles (PDF and PNG renderers read no stylesheet)
-  const EXPORT_VARS =
-    '--ink:#111827;--ink-2:#374151;--muted:#5f6f78;--line:#e0e8eb;--line-strong:#c7d4d9;--surface:#ffffff;--accent:#c2410c;--more:#b42318;--less:#334155;' +
+  const exportVars = () =>
+    '--ink:#111827;--ink-2:#374151;--muted:#5f6f78;--line:#e0e8eb;--line-strong:#c7d4d9;--surface:#ffffff;--accent:' +
+    K.accent() +
+    ';--more:#b42318;--less:#334155;' +
     TONES.light.map(([k, v]) => `--t-${k}:${v};`).join('');
   function inlined(f) {
     const holder = document.createElement('div');
     holder.className = 'cell-x';
-    holder.style.cssText = `position:fixed;left:-100000px;top:0;width:${f.W}px;${EXPORT_VARS}`;
+    holder.style.cssText = `position:fixed;left:-100000px;top:0;width:${f.W}px;${exportVars()}`;
     holder.innerHTML = svgOf(f, 'cell-x-svg', 'img');
     document.body.appendChild(holder);
     const PROPS = [

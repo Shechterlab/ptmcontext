@@ -319,7 +319,7 @@
           same: K.PAL.same,
           bg: K.PAL.bg,
           soft: '#eef3f5',
-          accent: '#c2410c',
+          accent: K.accent(),
         }
       : {
           ink: css('--ink'),
@@ -381,7 +381,7 @@
     let y = 16,
       grp = null;
     parts.push(
-      txt(P, 0, y, 'Arginine is…'.replace('Arginine', cap(W.residue)), { size: 10, fill: P.muted, weight: 600 }),
+      txt(P, 0, y, `${cap(W.residue)} is…`, { size: 10, fill: P.muted, weight: 600 }),
       txt(P, FX, y, `Odds ratio, ${METHOD[m].toLowerCase()} (log scale)`, { size: 10, fill: P.muted, weight: 600 }),
       txt(P, Wd - 4, y, 'OR [95% CI] · q', { size: 10, fill: P.muted, weight: 600, anchor: 'end' })
     );

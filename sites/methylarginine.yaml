@@ -1824,6 +1824,11 @@ website:                  # the look and words of the website (ptmc web); layout
     statistics: {label: All tests, hint: "Every test on the site, one row per class, with odds ratio, interval and q value."}
     method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
     help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
+  legacy_routes:           # the explorer's protein-page section keys (#ACC/p-dom) and the folds that hold them here
+    p-dom: p-regions
+    p-3d: p-struct
+    p-func: p-kinds
+    p-path: p-kinds
   legacy_links:            # the explorer's Overview anchors (#overview/ov-pan, ...) open the same questions here
     ov-pan: panther_group
     ov-dis: disease_family

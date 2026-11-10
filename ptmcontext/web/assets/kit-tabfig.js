@@ -132,8 +132,8 @@
     rows.forEach((r, ri) => {
       if (r.hl)
         parts.push(
-          `<rect x="${P}" y="${y}" width="${total.toFixed(1)}" height="${RH}" fill="#fbe3d3"/>` +
-            `<rect x="${P}" y="${y}" width="3" height="${RH}" fill="#c2410c"/>`
+          `<rect x="${P}" y="${y}" width="${total.toFixed(1)}" height="${RH}" fill="${K.accentSoft()}"/>` +
+            `<rect x="${P}" y="${y}" width="3" height="${RH}" fill="${K.accent()}"/>`
         );
       else if (ri % 2)
         parts.push(`<rect x="${P}" y="${y}" width="${total.toFixed(1)}" height="${RH}" fill="#f3f6f7"/>`);

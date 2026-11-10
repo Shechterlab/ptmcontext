@@ -1,13 +1,15 @@
-/* The site kit's look: the Methylarginine Site Explorer's design (teal band, orange rule, IBM Plex Serif and Inter, sticky
+/* The site kit's look: a colored band and rule, IBM Plex Serif and Inter, sticky
    search and tabs, cards of dot rows), with everything that differs between sites as variables a site file sets:
-   --band-1, --band-2 (the header gradient), --accent (light theme), --accent-d (dark theme), --brand-ink(-d). */
+   --band-1, --band-2 (the header gradient), --accent-l (light theme), --accent-d (dark theme), --accent-soft (the accent
+   lightened, for the band; the page build sets it), --brand-ink(-d). The defaults are neutral greys. */
 :root {
-  --band-1: #155e75;
-  --band-2: #0f3b47;
-  --accent-l: #c2410c;
-  --accent-d: #fb923c;
-  --brand-ink-l: #155e75;
-  --brand-ink-d: #6cc6db;
+  --band-1: #374151;
+  --band-2: #111827;
+  --accent-l: #4b5563;
+  --accent-d: #9ca3af;
+  --accent-soft: color-mix(in srgb, var(--accent-d) 70%, #fff);
+  --brand-ink-l: #374151;
+  --brand-ink-d: #cbd5e1;
   --accent: var(--accent-l);
   --accent-dark: color-mix(in srgb, var(--accent-l) 78%, #000);
   --on-accent: #ffffff;
@@ -242,8 +244,8 @@ select {
   text-decoration-color: rgba(255, 255, 255, 0.45);
 }
 .brand-links a:hover {
-  color: #fdba74;
-  text-decoration-color: #fdba74;
+  color: var(--accent-soft);
+  text-decoration-color: var(--accent-soft);
 }
 .lede {
   max-width: 46rem;
@@ -267,10 +269,10 @@ select {
 }
 .lede a {
   color: #fff;
-  text-decoration-color: #fdba74;
+  text-decoration-color: var(--accent-soft);
 }
 .lede a:hover {
-  color: #fdba74;
+  color: var(--accent-soft);
 }
 .doi-badge {
   display: inline-flex;
@@ -317,7 +319,7 @@ select {
 }
 .stat:hover {
   background: rgba(255, 255, 255, 0.14);
-  border-color: #fdba74;
+  border-color: var(--accent-soft);
 }
 .stat b {
   font-family: var(--font-heading);
@@ -2331,8 +2333,8 @@ body.has-selection .tabs {
 /* ---- review fixes ------------------------------------------------------------------------------------------------- */
 .sel-miss {
   font-size: 0.82rem;
-  color: #9a3412;
-  background: color-mix(in srgb, #f97316 12%, var(--surface));
+  color: var(--accent-dark);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   border-radius: 0.3rem;
   padding: 0.05rem 0.45rem;
 }

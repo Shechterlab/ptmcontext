@@ -4189,7 +4189,7 @@
                 "perturbations": {
                   "type": "object",
                   "additionalProperties": false,
-                  "description": "PRMT inhibitors, knockouts and knockdowns: a column per condition of website.protein.card.calls (its tables and attributes), a row per mark, a mark per call",
+                  "description": "the perturbations card (the writer enzyme's inhibitors, knockouts and knockdowns, say): a column per condition of website.protein.card.calls (its tables and attributes), a row per mark, a mark per call",
                   "properties": {
                     "title": {
                       "type": "string"
@@ -4340,6 +4340,13 @@
               }
             }
           }
+        },
+        "legacy_routes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "an older site's protein-page section keys (#protein/ACC/p-dom) and the fold of the protein page each opens now (p-regions); the page's own fold ids need no entry"
         },
         "legacy_links": {
           "type": "object",

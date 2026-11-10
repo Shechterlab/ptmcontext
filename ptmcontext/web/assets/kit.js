@@ -350,8 +350,8 @@
       routed = siteless(K.routes[S.view].path(a)) !== siteless(S.arg);
       S.arg = a;
     }
-    // the original explorer's links: #ACC and #ACC/R216 open the protein; ?q= before the hash is the search
-    // (and #FUS, #FUS/R216, #TDP-43, #P35637/p-na: any old hash that names a protein, read by the protein page's route,
+    // the original explorer's links: #ACC and #ACC/<site> open the protein; ?q= before the hash is the search
+    // (and #GENE, #GENE/<site>, #ACC/p-na: any old hash that names a protein, read by the protein page's route,
     // with its site as the page numbers it; an upper-case name no protein with marks has, a protein without marks)
     const named =
       S.view === 'overview' &&
@@ -2798,6 +2798,26 @@
     ns: '#ffffff',
     bg: '#ffffff',
   };
+  // the site's accent for exports (which sit on white: the light theme's) and a pale tint of it, from the site file's
+  // website.accent; a neutral grey where the page has none
+  const accent = () => {
+    const v = (getComputedStyle(document.documentElement).getPropertyValue('--accent-l') || '').trim();
+    return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v) ? v : '#4b5563';
+  };
+  const accentSoft = (t = 0.86) => {
+    const h = accent().slice(1),
+      x = h.length === 3 ? [...h].map((c) => c + c) : h.match(/../g);
+    return (
+      '#' +
+      x
+        .map((c) =>
+          Math.round(parseInt(c, 16) * (1 - t) + 255 * t)
+            .toString(16)
+            .padStart(2, '0')
+        )
+        .join('')
+    );
+  };
   const mctx = document.createElement('canvas').getContext('2d');
   const tw = (t, size, weight = 400, fam = FF) => {
     mctx.font = `${weight} ${size}px ${fam}`;
@@ -3700,6 +3720,8 @@
     variantSwitch,
     CIT,
     PAL,
+    accent,
+    accentSoft,
     FF,
     FFH,
     tw,

@@ -29,6 +29,8 @@
   const attrIdx = (name) => AT.indexOf(name);
   const CFG = (D.protein_view || {}).map || {}; // the site file's website.protein.map
   const HIDE_PTM = new Set(CFG.hide_ptm_kinds || []); // kinds a context mark of the site file covers (replaces_ptm_kinds)
+  const STK = D.stickers || null, // the mark file's sticker residues: a map row, when it names any
+    STK_TITLE = STK ? cap(STK.noun.split(' ')[0]) : '';
   const OWN_ROWS = (CFG.rows || []).filter((r) => r && r.id);
   const ROW_INDEX = D.map_rows || []; // the rows' ids, as the items name them
   const SOURCES = CFG.sources || {};
@@ -153,7 +155,7 @@
       line: css('--line-strong') || '#c7d4d9',
       faint: css('--line') || '#e0e8eb',
       surf: css('--surface') || '#ffffff',
-      accent: css('--accent') || '#c2410c',
+      accent: css('--accent') || K.accent(),
     };
   }
   // a color the site file gives (with its dark-theme twin); 'ink' is the text color
@@ -271,7 +273,16 @@
         'scale (J Mol Biol 157:105, 1982), hydrophobic up (amber), hydrophilic down ' +
         '(teal); the axis runs from −3 to +3',
     ],
-    ['aromatic', 'Aromatic', 'sequence', 'Aromatic residues (F, Y, W): the “stickers” of many disordered regions'],
+    ...(STK
+      ? [
+          [
+            'aromatic',
+            STK_TITLE,
+            'sequence',
+            `${cap(STK.nouns)} (${STK.residues.join(', ')}): the “stickers” of many disordered regions`,
+          ],
+        ]
+      : []),
     [
       'residues',
       `All ${W.residues}`,
@@ -1314,7 +1325,7 @@
         ringed.push([x, y]);
         parts.push(
           `<circle cx="${r1(x)}" cy="${r1(y)}" r="${(on ? 10.5 : 9) + 3 * near}" fill="none" ` +
-            `stroke="${ex ? '#c2410c' : 'var(--accent)'}" stroke-width="2.2" stroke-dasharray="3 2" ` +
+            `stroke="${ex ? K.accent() : 'var(--accent)'}" stroke-width="2.2" stroke-dasharray="3 2" ` +
             `pointer-events="none"><title>Highlighted</title></circle>`
         );
       }
@@ -1958,15 +1969,15 @@
         key(SW.split(cu, cd), isC ? 'Charge, 5-aa mean (+ / −)' : 'Hydropathy, 9-aa mean (hydrophobic / hydrophilic)');
       } else if (id === 'aromatic' && seq) {
         for (let i = za; i <= zb; i++)
-          if ('FYW'.includes(seq[i - 1])) {
+          if (STK.residues.includes(seq[i - 1])) {
             const xx = r1(X(i));
             parts.push(
-              `<line x1="${xx}" x2="${xx}" y1="${c.y + (seq[i - 1] === 'W' ? 0 : 2)}" y2="${c.y + 12}" stroke="${P.aro[seq[i - 1]]}" stroke-width="1"/>`
+              `<line x1="${xx}" x2="${xx}" y1="${c.y + (seq[i - 1] === 'W' ? 0 : 2)}" y2="${c.y + 12}" stroke="${P.aro[seq[i - 1]] || P.muted}" stroke-width="1"/>`
             );
           }
-        rowLabel(row[1], c.y + 6, `${row[3]}. F teal, Y violet, W amber`);
+        rowLabel(row[1], c.y + 6, row[3]);
         c.y += 20;
-        Object.entries(P.aro).forEach(([aa, c]) => key(SW.tick(c), `Aromatic ${aa}`));
+        STK.residues.forEach((aa) => key(SW.tick(P.aro[aa] || P.muted), `${STK_TITLE} ${aa}`));
       } else if (id === 'residues' && seq) {
         const res = new Set(D.residues || []);
         for (let i = za; i <= zb; i++)

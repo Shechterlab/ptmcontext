@@ -220,7 +220,7 @@
     holder.style.cssText =
       `position:fixed;left:-100000px;top:0;width:${f.W}px;--ink:#111827;--ink-2:#374151;` +
       `--muted:#5f6f78;--line:#e0e8eb;--line-strong:#c7d4d9;--surface:#ffffff;--more:#b42318;--less:#334155;` +
-      `--accent:#c2410c`;
+      `--accent:${K.accent()}`;
     holder.innerHTML = svgOf(f);
     document.body.appendChild(holder);
     try {

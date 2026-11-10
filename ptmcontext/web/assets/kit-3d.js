@@ -1706,7 +1706,7 @@
     restyle(false);
     mol.label = v.addLabel(`${rl(pos)}${pdbMode && !mol.pdb.pred ? ` (${mol.pdb.chain}${auth})` : ''}`, {
       position: { x: at.x, y: at.y, z: at.z },
-      backgroundColor: '#C2410C',
+      backgroundColor: K.accent(),
       backgroundOpacity: 0.95,
       fontColor: '#FFFFFF',
       fontSize: 13,

@@ -452,7 +452,7 @@
     let y = 4;
     const max = axis(c.values[0]?.[2] || 1);
     if (on) {
-      T(SX, y + 8, 'SELECTED', { anchor: 'end', size: 8.5, weight: 'bold', fill: '#c2410c' });
+      T(SX, y + 8, 'SELECTED', { anchor: 'end', size: 8.5, weight: 'bold', fill: K.accent() });
       T(VX, y + 8, 'ALL', { anchor: 'end', size: 8.5, weight: 'bold', fill: P.muted });
       y += 12;
     }
@@ -465,7 +465,7 @@
             `rx="2" fill="${fillc}"/>`
         );
         T(VX, y + 12, int(n), { anchor: 'end', size: 10.5, fill: P.muted });
-        if (on) T(SX, y + 12, int(s), { anchor: 'end', size: 10.5, weight: 'bold', fill: '#c2410c' });
+        if (on) T(SX, y + 12, int(s), { anchor: 'end', size: 10.5, weight: 'bold', fill: K.accent() });
         y += H;
       });
     bars(
@@ -494,7 +494,7 @@
     const legend = on
       ? [
           ['#566a73', null, 'whole dataset'],
-          ['#c2410c', null, 'your selection (orange numbers)'],
+          [K.accent(), null, 'your selection (highlighted numbers)'],
         ]
       : [];
     const note =
@@ -575,7 +575,7 @@
         T(SX, yc + 4, sr[k].n ? `${int(sr[k].down)} of ${int(sr[k].n)}` : '–', {
           anchor: 'end',
           weight: 'bold',
-          fill: '#c2410c',
+          fill: K.accent(),
         });
       y += h;
       parts.push(`<line x1="${L}" x2="${Wd - 20}" y1="${y}" y2="${y}" stroke="${P.line}"/>`);

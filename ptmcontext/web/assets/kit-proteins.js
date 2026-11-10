@@ -899,30 +899,28 @@
   const nameOf = (x) =>
     P_BY_NAME[String(x || '').toUpperCase()] || (norm(x).length >= 3 ? P_BY_NORM[norm(x)] : null) || null;
   const ACC_RE = /^([A-NR-Z][0-9][A-Z0-9]{3}[0-9]|[OPQ][0-9][A-Z0-9]{3}[0-9])(-\d+)?$/i;
-  // an old section key (the explorer's #ACC/p-na) and the fold that holds that section here
-  const SECTION = {
-    'p-map': 'p-map',
-    'p-sites': 'p-sites',
-    'p-seq': 'p-seq',
-    'p-dom': 'p-regions',
-    'p-3d': 'p-struct',
-    'p-ix': 'p-ix',
-    'p-na': 'p-na',
-    'p-cond': 'p-cond',
-    'p-dis': 'p-dis',
-    'p-depmap': 'p-depmap',
-    'p-pert': 'p-pert',
-    'p-exp': 'p-exp',
-    'p-cluster': 'p-cluster',
-    'p-ptm': 'p-ptm',
-    'p-func': 'p-kinds',
-    'p-path': 'p-kinds',
-    'p-score': 'p-score',
-    'p-kinds': 'p-kinds',
-    'p-regions': 'p-regions',
-    'p-struct': 'p-struct',
-    'p-cons': 'p-cons',
-  };
+  // a section key in a link (#ACC/p-na) and the fold that holds it: this page's own folds, and the renamed ones a site
+  // lists (website.legacy_routes: old key -> fold)
+  const FOLDS = [
+    'p-map',
+    'p-sites',
+    'p-seq',
+    'p-ix',
+    'p-na',
+    'p-cond',
+    'p-dis',
+    'p-depmap',
+    'p-pert',
+    'p-exp',
+    'p-cluster',
+    'p-ptm',
+    'p-score',
+    'p-kinds',
+    'p-regions',
+    'p-struct',
+    'p-cons',
+  ];
+  const SECTION = { ...Object.fromEntries(FOLDS.map((f) => [f, f])), ...(D.legacy_routes || {}) };
   // a site's part of the address, read as the page numbers it: R2 or 2 on a protein numbered without its first residue
   const readAt = (acc, at) => {
     if (!at) return '';

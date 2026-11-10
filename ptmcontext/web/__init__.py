@@ -43,7 +43,8 @@ FONTS = {
     'stylesheet': 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:wght@500;600;700'
     '&family=Inter:wght@400;500;600;700&display=swap',
 }
-DEFAULT_BAND = ['#155e75', '#0f3b47']
+# neutral greys for a site file that sets no colors of its own (website.band, accent, accent_dark): a site is meant to set them
+DEFAULT_BAND = ['#374151', '#111827']
 # The kit's modules, in the order the page loads them: THE ORDER MATTERS. A module reads what an earlier one put on K (kit-select.js
 # before the rail, search, selection views and pages that read K.sel; kit-tabfig.js before the pages that export tables; kit-tile.js
 # before kit.js, which draws the tiles), and kit.js, last, runs them all. Add a module after the ones it reads, one per line.
@@ -93,7 +94,7 @@ MODULES = (
     'kit-figures.js',
     'kit.js',
 )
-DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#c2410c', '#fb923c'
+DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#4b5563', '#9ca3af'
 
 
 def _with_families(analyses: list, site: dict) -> list:
@@ -134,9 +135,9 @@ def _mix(hex_: str, other: str, t: float) -> str:
     return '#' + ''.join(f'{round((x * (1 - t) + y * t) * 255):02x}' for x, y in zip(a, b))
 
 
-def default_art(profile, accent: str = '#fdba74') -> str:
+def default_art(profile, accent: str) -> str:
     """A protein drawn as a line: two folded domains, a disordered stretch between them, and the mark's residues as
-    lollipops, in the style of the methylarginine drawing (white lines, the marks in light orange)."""
+    lollipops (white lines, the marks in `accent`, a light tint of the site's accent)."""
     res = profile.residues[0]
     heads = [(200, 30), (222, 22), (246, 30), (270, 22), (338, 30)]
     wave = 'M170,70 ' + ' '.join(f'q6.5,{-9 if i % 2 == 0 else 9} 13,0' for i in range(10))
@@ -555,6 +556,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'protein_view': web.get('protein'),
         'compare': web.get('compare'),
         'legacy_links': web.get('legacy_links') or {},
+        'legacy_routes': web.get('legacy_routes') or {},
         'tabs': web.get('tabs') or {},
         'search_aliases': web.get('search_aliases') or {},
         'legacy_params': web.get('legacy_params') or {},
@@ -1269,12 +1271,13 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     fonts = {**FONTS, **web.get('fonts', {})}
     theme = (
         f'--band-1: {band[0]}; --band-2: {band[1]}; --accent-l: {accent}; --accent-d: {accent_dark}; '
+        f'--accent-soft: {_mix(accent_dark, "#ffffff", 0.3)}; '
         f'--brand-ink-l: {brand_ink}; --brand-ink-d: {brand_ink_dark}; '
         f'--font-heading: {fonts["heading"]}; --font-body: {fonts["body"]}; --font-mono: {fonts["mono"]};'
     )
 
     icon = (root / web['icon']).read_text() if web.get('icon') else default_icon(band[0], accent_dark)
-    art = (root / web['art']).read_text() if web.get('art') else default_art(profile)
+    art = (root / web['art']).read_text() if web.get('art') else default_art(profile, _mix(accent_dark, '#ffffff', 0.3))
     logo = (root / web['lab']['logo']).read_text() if web.get('lab', {}).get('logo') else ''
     from . import search as SE
 

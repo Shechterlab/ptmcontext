@@ -17,7 +17,8 @@
   if (!CV || !(CV.species || []).length || !CV.ensembl) return;
   const RES = D.residues || [];
   const KEPT = RES.length === 1 ? RES[0] : 'the same residue'; // "still R"
-  const REF = CV.reference || 'Reference'; // the source organism's name, from the site file (website.protein.conservation.reference)
+  const REF = CV.reference || 'Reference',
+    REF_WORD = REF.replace(/^([A-Z])([a-z])/, (m, a, b) => a.toLowerCase() + b); // the source organism's name, from the site file (website.protein.conservation.reference)
   const CATALOGUE = CV.species,
     SIMILAR = new Set(CV.similar || []),
     ENS = CV.ensembl;
@@ -480,7 +481,7 @@
       W: Wd,
       note:
         `Outlined: the same residue as in ${REF}. Dots: other ${W.marks} of the protein. ` +
-        `% id.: identity of the ortholog to the human protein (Ensembl).`,
+        `% id.: identity of the ortholog to the ${REF_WORD} protein (Ensembl).`,
       extra: { ensembl_gene: st.ensg, orthologs: model.rows.map((r) => `${r.name} ${r.prot}`) },
     });
   }
