@@ -76,7 +76,7 @@ flowchart LR
 - **Domain sources compared:** `sites/methylarginine_interpro_ecod.yaml` fills the proteins InterPro leaves without
   domains with SHEPHARD's ECOD domains (sites without domain data 1,579 → 754); every domain result of the release
   holds.
-- **A second organism by configuration:** yeast phosphosites staged from UniProt 2026_03, MobiDB and SHEPHARD in
+- **A second organism by configuration (not published; kept as an example):** yeast phosphosites staged from UniProt 2026_03, MobiDB and SHEPHARD in
   about 50 s and run in 21 s. UniProt's domain features cover 1,937 of 6,067 yeast proteins; SHEPHARD's ECOD domains
   fill 2,506 more, so 79% of the phosphosites (4,702 of 5,930) are on a protein with domain data, up from 47%.
 - **A website per site, from its file:** `ptmc web` gives the Methylarginine Site Explorer's look with the site's own

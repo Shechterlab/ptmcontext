@@ -1,6 +1,7 @@
 """The entry pages' pictures, chosen from a site's own statistics: where its marks fall (one analysis whose classes
 partition the marks) and its strongest findings (one row per question). A site file may name them (website.start.share,
-website.start.findings, and website.landing); without them they are computed here, so another site gets the same
+website.start.findings, and website.landing; website.landing.from_section limits the computed findings to the questions
+of one Overview section); without them they are computed here, so another site gets the same
 pictures with no code. The result is embedded in the site's page (D.glance) and written to web/glance.json for the
 landing page."""
 
@@ -67,10 +68,15 @@ def share(analyses: list, rows: list, counted: int, spec: dict | None = None) ->
 
 
 def findings(
-    analyses: list, rows: list, spec: list | None = None, n: int = N_FINDINGS, row_labels: dict | None = None
+    analyses: list,
+    rows: list,
+    spec: list | None = None,
+    n: int = N_FINDINGS,
+    row_labels: dict | None = None,
+    only: set | None = None,
 ) -> list:
     """The strongest results, one per question: named by the site (analysis and class), else the largest effects at
-    q <= 0.05 that rest on at least MIN_N marks, by the question's usual test."""
+    q <= 0.05 that rest on at least MIN_N marks, by the question's usual test. `only`: the questions to choose from."""
     by_id = {a['id']: a for a in analyses}
     methods: dict[str, set] = {}
     for r in rows:
@@ -78,8 +84,10 @@ def findings(
     pool = []
     for r in rows:
         a = by_id.get(r['analysis'])
-        if not a or r['method'] != (
-            _preferred(a) if _preferred(a) in methods[a['id']] else sorted(methods[a['id']])[0]
+        if (
+            not a
+            or (only is not None and a['id'] not in only)
+            or r['method'] != (_preferred(a) if _preferred(a) in methods[a['id']] else sorted(methods[a['id']])[0])
         ):
             continue
         e = _eff(r)
@@ -128,10 +136,14 @@ def glance(
     start: dict | None,
     landing: dict | None = None,
     row_labels: dict | None = None,
+    only: set | None = None,
 ) -> dict:
     """What the entry pages draw. The landing page's own choices (website.landing) win over the start panel's."""
     start, landing = start or {}, landing or {}
-    return {
+    out = {
         'share': share(analyses, rows, counted, landing.get('share') or start.get('share')),
         'findings': findings(analyses, rows, landing.get('findings') or start.get('findings'), row_labels=row_labels),
     }
+    if only is not None and not landing.get('findings'):  # the landing card's own, from one Overview section
+        out['landing_findings'] = findings(analyses, rows, None, row_labels=row_labels, only=only)
+    return out

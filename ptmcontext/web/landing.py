@@ -106,7 +106,7 @@ def _number(n) -> str:
 
 def _result(gl: dict) -> str:
     """The site's strongest finding as a sentence with a small bar (the odds ratio on a log axis, centred on 1×)."""
-    fs = (gl or {}).get('findings') or []
+    fs = (gl or {}).get('landing_findings') or (gl or {}).get('findings') or []
     if not fs:
         return ''
     f = fs[0]

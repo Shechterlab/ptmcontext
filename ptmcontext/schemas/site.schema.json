@@ -6045,6 +6045,10 @@
               "type": "string",
               "description": "the site's name in the header's site switcher (default: the mark profile's name)"
             },
+            "from_section": {
+              "type": "string",
+              "description": "the name of an Overview section: the landing card's strongest result is chosen from its questions (the start panel keeps its own) (a card that draws the cell stands for the website.cell maps' questions), so the landing card's result matches what the site opens with; ignored when findings are named"
+            },
             "in_switcher": {
               "type": "boolean",
               "description": "the site is in the header menu of the listed sites (an unlisted site only with this)"
