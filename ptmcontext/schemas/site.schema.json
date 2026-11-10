@@ -176,6 +176,10 @@
                 },
                 "description": "value -> its label on the page, in the order shown"
               },
+              "optional": {
+                "type": "boolean",
+                "description": "true: the attribute exists only where the marks table has its column (a column a later release may add, a score); without the column the attribute and everything built on it (filters, columns, downloads, count questions and their cards, header tiles) are left out"
+              },
               "join_rows": {
                 "type": "boolean",
                 "description": "list: a mark on several rows of the table (one per methylation state, say) keeps every row's values, each once, in the order of the rows; without it a mark takes its first row's"
@@ -5857,6 +5861,10 @@
                               "type": "string"
                             }
                           },
+                          "genes_file": {
+                            "type": "string",
+                            "description": "a file of members, relative to the repository (a tab-separated table with a header, lines starting with # skipped): its accession or gene column lists the members, as genes does. Record the query that made it in its # lines"
+                          },
                           "except": {
                             "type": "array",
                             "items": {
@@ -6810,6 +6818,41 @@
                 },
                 "sources": {
                   "type": "string"
+                },
+                "score": {
+                  "type": "string",
+                  "description": "an optional number column (a functional score): read where the table has it; a subset cuts the marks by it"
+                }
+              }
+            },
+            "subset": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "description": "a subset of the marks by their score (columns.score): at_least and/or at_most. Active only where the table has the score column: then the protein map row of the entry shows the subset at first (or all marks, with default: all) and the row's label switches to the other, and a filter 'has a mark of the subset within the window' is added",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "its words (default: the score column with the threshold)"
+                },
+                "at_least": {
+                  "type": "number"
+                },
+                "at_most": {
+                  "type": "number"
+                },
+                "default": {
+                  "enum": [
+                    "subset",
+                    "all"
+                  ],
+                  "description": "what the map row shows at first (default subset)"
                 }
               }
             },
@@ -7774,6 +7817,10 @@
                         "type": "boolean",
                         "description": "true: the marks table itself (accession and position default to the marks' own)"
                       },
+                      "optional": {
+                        "type": "boolean",
+                        "description": "true: where the table lacks a column this mapping names, the row has no items from it (columns a later release may add, a score)"
+                      },
                       "sep": {
                         "type": "string",
                         "description": "the table's separator (default a tab)"
@@ -7873,6 +7920,10 @@
                         "marks": {
                           "type": "boolean",
                           "description": "true: the marks table itself (accession and position default to the marks' own)"
+                        },
+                        "optional": {
+                          "type": "boolean",
+                          "description": "true: where the table lacks a column this mapping names, the row has no items from it (columns a later release may add, a score)"
                         },
                         "sep": {
                           "type": "string",
@@ -8041,6 +8092,10 @@
                   "off"
                 ],
                 "description": "the row's default in either front end (classic or cards), when it should differ from default"
+              },
+              "swap": {
+                "type": "string",
+                "description": "the id of another row of this list: clicking this row's label turns this row off and that one on (a subset of marks shown first, one click to show all)"
               },
               "mark": {
                 "enum": [

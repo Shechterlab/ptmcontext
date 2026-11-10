@@ -265,7 +265,11 @@ description, href) and a variant's page names its way back (`variant.base`): a s
 `separator` of a list (default `; `), display names for its `values`, a `link` (another column, aligned item by item,
 and a URL with `{}`, as each study to its DOI), `records` (a value that is a database, linked to its own record of the
 protein: a URL with `{acc}`), `colours`, `colour` (the map and Sites tab may color by it), `filter`, `control`
-(`chips`, or `select` for many values) and `help`. `join_rows: true` (a list) is for a mark on several rows of its table, one per methylation degree say: the mark keeps every row's values, each once, in the order of the rows (else the first row's); `present: true` makes the value whether the column holds anything
+(`chips`, or `select` for many values) and `help`. `optional: true` makes the attribute exist only where the marks table has its `column`: without it `ptmc run` leaves the
+attribute out, and with it everything the site file builds on it (filters, table columns and downloads, `website.counts`
+questions that read it and the Overview cards naming them, header tiles, map colorings); `ptmc web` does the same for a run
+that lacks the column. One site file then serves a table before and after a column (a functional score) is merged into it.
+`join_rows: true` (a list) is for a mark on several rows of its table, one per methylation degree say: the mark keeps every row's values, each once, in the order of the rows (else the first row's); `present: true` makes the value whether the column holds anything
 (`yes` or `no`: "changed in tumors" over a column of changes); `pair_with` names a second list column in step with the
 first, and each value becomes `<value>:<its partner>` (a perturbation and its call; lists of different lengths are an
 error). A mark on several rows takes the first kept row's values.
@@ -332,7 +336,8 @@ Other modifications shown beside a site's own mark, declared in the site file as
 | `id` | yes | lower-case letters, digits and `_`; the role `context_<id>`, the map row `ctx_<id>`, the attributes `ctx_near_<id>` and `ctx_n_<id>` |
 | `label`, `plural`, `noun` | label | the mark's name ("Phosphosite"), its plural, and the word inside a sentence (default: the label, lower-cased) |
 | `input` | yes | a manifest entry (CHECKSUM and license as any input): a table of residues, one row per residue and state |
-| `columns` | yes | `accession` and `position` (1-based, on the snapshot); optional `residue` (rows whose letter differs from the snapshot are dropped), `state`, `evidence`, `sources` (`; `-separated) |
+| `columns` | yes | `accession` and `position` (1-based, on the snapshot); optional `residue` (rows whose letter differs from the snapshot are dropped), `state`, `evidence`, `sources` (`; `-separated), `score` (a number column; read where the table has it, treated as absent where it has not) |
+| `subset` | no | `{id, at_least and/or at_most, label?, default?: subset \| all}`: the marks whose `columns.score` passes (a "near high-score phosphosites" variant). Active only where the table has the score column; see below |
 | `replaces_ptm_kinds` | no | kinds of the protein map's live UniProt "Other PTMs" row (`config/uniprot_ptm_kinds.json`, such as `Phospho`) this entry covers: that row leaves them out (`website.protein.map.hide_ptm_kinds`, which a site may also write), so one mark has one source |
 | `drop_evidence` | no | values of `columns.evidence` whose rows are dropped (default `[by-similarity]`; `[]` keeps all) |
 | `colour`, `colour_dark` | yes, no | the map row's tick |
@@ -364,9 +369,49 @@ another MobiDB feature than the release's `prediction-disorder-th_50`.
 quotes the first in its help, and a site that lists none suggests none. `website.legacy_routes` maps an older site's
 protein-page section keys (`p-dom`) to the folds that hold them now.
 
+**A subset by score.** An entry with `columns.score` and `subset: {id: high, at_least: 0.5}` adds, where the table has a
+score column holding numbers: the attribute `ctx_near_<id>_<subset id>` ("has a <noun> (<subset>) within ±N", yes/no, with
+its filter, under the entry's other filters); and a second protein-map row, `ctx_<id>_<subset id>`, with each tick's
+score in its hover, drawn before the row of all the entry's marks. The subset row is shown at first and the row of all
+marks is off (`subset.default: all` reverses them); the label of the row shown is a link that switches to the other
+(map row `swap`), and the reader's choice is kept in the browser. Where the table lacks the column (a release before the
+scores were merged into it), `ptmc run` writes none of this, and `ptmc web` drops the row, the attribute and its filter
+and shows every mark at first, so one site file serves the table before and after. The score never enters a statistic by itself. A `near_marks` question may name the subset as its marks
+(`marks: <id>_<subset id>`); the table is registered under that key only where the scores exist, so such a question is
+for a site whose table has them (a run without the key stops with the missing context mark).
+
 The `near_marks` layer (`with: {marks: <id>, window, noun}`) is the question "Near other marks": residues by whether a
 mark of the entry lies within `window` residues on either side, the residue itself left out: `near`, `none`. Mark such an
 analysis `new: true`; both tests run as for any residue question.
+
+## Motif families
+
+`layer: motif_families` is a question of named patterns of the sequence around each residue, with no code: a flags layer
+(each family a class, tested as the mark profile's motif families are), read from the site file's `with:`:
+
+```yaml
+- id: kinase_motifs
+  layer: motif_families
+  new: true
+  with:
+    flank: 10                      # residues read either side (default 10)
+    noun: kinase motif             # words: title, question, sub, section as for any made layer
+    families:
+      - {name: proline_directed, label: "[ST]-P", help: "Pro at +1", pattern: "[ST]P", start: 0, cite: "..."}
+      - {name: basophilic, label: "R-x-x-[ST]", pattern: "R..[ST]", start: -3}
+      - name: either                                   # several patterns: any one
+        patterns: [{pattern: "DSG..S", start: -1}, {pattern: "DSG..S", start: -5}]
+      - {name: shared_arginine, pattern: "R..[ST]", start: -3, marks: [{mark: methylarginine, at: -3}]}
+```
+
+A `pattern` is a regular expression (Python `re`) over the residues from `start` on, matched at that offset from the residue
+(0 is the residue itself, negative upstream: `R..[ST]` with `start: -3` puts the Arg three before and the Ser or Thr on the
+residue). It matches only if the residue lies inside the match and the match holds no position past either end of the
+chain; `.` therefore never reads off the chain. `start` runs from `-flank` to 0. A family names `pattern` and `start`, or
+`patterns` (any one matches). `marks` adds conditions on the site's context marks (`{mark: <context mark id>, at: N}` or
+`within: [lo, hi]`, N from the residue): all must hold, so a motif's residue can be required to carry another mark. A
+family has `name` (letters, digits, `_`), `label`, `help` and `cite` (documentation only). Unknown keys, a pattern that
+does not compile, a `start` outside the window and a `marks` condition without its mark are errors, named by `ptmc run`.
 
 ## Map rows
 
@@ -394,6 +439,9 @@ Options of a table: `role` (a role of `inputs:`, so the file is in a manifest) o
 accession and position by default); `include`/`exclude` conditions as for marks; `split`, a separator: cells of
 `class`, `label`, `value` and `ref` holding lists in step become one item per entry (lists of different lengths are an
 error); `values`, codes of a column in words (`{column: {code: words}}`); `sep` for a table that is not tab-separated.
+A table's `optional: true` gives no items where its table lacks a column the mapping names (a release that adds a score
+later). `at_least` and `at_most` keep rows by a number in a column (a cell that is not a number meets neither). A row's
+`swap: <row id>` makes its label a link that turns it off and the named row on (a subset first, all one click away).
 A row's `link` is a page about its evidence for a pinned item with no link of its own: a URL with `{gene}`, `{label}` (the
 item's label) and `{position}`; a row the pipeline computes (a track, a motif found in the sequence) links to its Method
 section instead. A row may instead be found in each protein's sequence (`sequence: {motif, min, gap, label, strong}`: runs of at least
@@ -770,7 +818,7 @@ site from a few rows in each format.
 | `partners: {table, key?, label?, gene_label?, score_label?, help?, classes?: {code: label \| class}, interpro?, attribute?: {id, label?, help?}, marked?, other?, scores?: [x]}` | a `protein_partners` table | filters `b:class` (a partner of a class code, `marked`, or `other`: neither), `b:gene` (a gene or accession), `b:score` (the partners counted: score at least x); search key `<key>:<class>` or `<key>:<gene>`. `data/partners.json` (read when first used; inlined in the one-file copy): `{genes, accessions, classes, bits (a partner's classes as bits), marked (0/1), rows: {protein index: [partner index, score × 1000, ...]}}` |
 
 A **partner class** (`classes.<code>`) is a label, or `{label, role: writer | reader | anti-reader | cofactor | eraser, reads?, interpro?: [IPR...],
-genes?: [symbol or accession], except?: [codes], pmid?, help?}`. Its members are the partners with one of the genes, or with one of the InterPro ids
+genes?: [symbol or accession], genes_file?: <path>, except?: [codes], pmid?, help?}`. `genes_file` is a tab-separated table with a header (lines starting with `#` are skipped, and record the query and date that made it) in the repository, usually under `sites/data/`: the values of its `accession` and `gene` columns are members as `genes` are. Its members are the partners with one of the genes, or with one of the InterPro ids
 (read from the entry intervals of the site's input role named by `interpro`: columns `canonical_UniProtAC`, `interpro_accession`), less the members of the
 classes in `except`; when classes are given this way the table's `classes` column is not read. The chip's hover shows the role, what it reads, the help and the
 PMID. `attribute` adds a list attribute to the marks (the classes of the partners of a mark's protein, written into the run's `marks.tsv` as `a.<id>` when the

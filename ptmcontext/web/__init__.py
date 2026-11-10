@@ -1285,6 +1285,10 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     SE.derive(site, folder, log)
     from .. import context_marks as CM
 
+    from .. import optional as OP
+
+    for n in OP.prune_run(site, folder):
+        log(f'  optional attribute {n}: not in the run (its column is absent from the table): left out')
     CM.register(site, folder, log)
     data = site_data(site, folder, profile)
     # the switch between the site and its variants: each variant that has been run, and the way back

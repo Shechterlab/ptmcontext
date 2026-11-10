@@ -1081,6 +1081,12 @@
     const rowLabel = (lab, yMid, help, aside) => {
       if (!aside) drawnRows.push(lab);
       c.cur = lab;
+      // a row that names another to swap with (map row `swap`): its label is a link that turns this row off and that one on
+      const sw =
+        c.rowSwap && !ex
+          ? ` data-map-swap="${esc(c.rowSwap)}" data-map-swap-from="${esc(c.rowFrom)}" text-decoration="underline" style="cursor:pointer"`
+          : '';
+      if (sw) help += ' Click the label to switch rows.';
       const size = 11;
       let t = lab; // track labels are never smaller than 11; one that does not fit is cut, its hover has the whole
       if (narrow && K.tw(t, size, 600) > ML - 6) {
@@ -1099,7 +1105,7 @@
           parts.push(
             `<text x="2" y="${r1(yMid - 1)}" font-size="10" font-weight="600" fill="${P.muted}"${
               ex ? '' : ` data-rowhelp="${esc(lab + ': ' + help)}"`
-            }>${esc(a)}</text><text ` +
+            }${sw}>${esc(a)}</text><text ` +
               `x="2" y="${r1(yMid + 10)}" font-size="10" font-weight="600" fill="${P.muted}">${esc(b)}</text>`
           );
           return;
@@ -1112,7 +1118,7 @@
       parts.push(
         `<text x="2" y="${r1(yMid + size * 0.36)}" font-size="${r1(size)}" font-weight="600" fill="${P.muted}"${
           ex ? '' : ` data-rowhelp="${esc(lab + ': ' + help)}"`
-        }>${esc(t)}</text>`
+        }${sw}>${esc(t)}</text>`
       );
     };
     labels.forEach((l) => {
@@ -1860,8 +1866,12 @@
     for (const id of rowOrder()) {
       if (!isOn(id) || isBackbone(id)) continue;
       const row = ROW_OF[id];
-      if (OWN[id]) ownRow(id, OWN[id]);
-      else if (id === 'pdb') pdbRows(row);
+      if (OWN[id]) {
+        c.rowSwap = OWN[id].swap ? ownId({ id: OWN[id].swap }) : '';
+        c.rowFrom = id;
+        ownRow(id, OWN[id]);
+        c.rowSwap = '';
+      } else if (id === 'pdb') pdbRows(row);
       else if (id === 'uni_dom')
         uniRow(
           row,
@@ -2817,6 +2827,17 @@
       (el) => {
         M.labels = el.dataset.mapLabels;
         store.set('ptmc-map-labels', M.labels);
+        redraw();
+      },
+    ],
+    [
+      '[data-map-swap]',
+      (el) => {
+        // a row swaps with another: this one off, that one on
+        if (!ROW_OF[el.dataset.mapSwap]) return;
+        M.off.add(el.dataset.mapSwapFrom);
+        M.off.delete(el.dataset.mapSwap);
+        saveRows();
         redraw();
       },
     ],

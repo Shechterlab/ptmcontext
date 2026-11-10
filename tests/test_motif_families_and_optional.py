@@ -1,0 +1,236 @@
+"""Motif families (a generic question over named patterns around each residue), optional columns (an attribute that
+exists only where the marks table has its column), a context mark's subset by score, and a partner class listed in a file:
+each on a toy site, none naming a real mark."""
+
+from __future__ import annotations
+
+import json
+import re
+
+import pandas as pd
+import pytest
+import yaml
+
+from ptmcontext import context_marks as CM
+from ptmcontext import layers as L
+from ptmcontext import optional as OP
+from ptmcontext import site as S
+from ptmcontext import web
+from ptmcontext.snapshot import Snapshot
+
+from test_context_marks import ENTRY, _toy
+from ptmcontext.profile import load_profile
+
+#          1         11        21
+SEQ = 'MRAAAKSPAAEEAAKRAASTPAAAAAAAAAAAAAAAAAAAAAAA'
+
+
+def _layer(families, **kw):
+    return L.get('motif_families', None, {'families': families, **kw}, 'mf')
+
+
+def _flags(families, seq=SEQ, residues=('S', 'T'), ctx=None, **kw):
+    snap = Snapshot({'P': seq})
+    cand = snap.residues(list(residues))
+    c = ctx or L.Context(snap, load_profile('phospho'), {})
+    out = _layer(families, **kw)(cand, c)
+    return dict(zip(cand['position'], zip(*[out[k] for k in out.columns]))), list(out.columns)
+
+
+def test_patterns_are_anchored_at_an_offset_and_the_residue_must_lie_inside_the_match():
+    fams = [
+        {'name': 'pro', 'pattern': '[ST]P', 'start': 0},
+        {'name': 'basic3', 'pattern': 'R..[ST]', 'start': -3},
+        {'name': 'acid3', 'pattern': '[ST]..[DE]', 'start': 0},
+        {'name': 'either', 'patterns': [{'pattern': 'R[ST]', 'start': -1}, {'pattern': '[ST]..K', 'start': 0}]},
+    ]
+    got, cols = _flags(fams)
+    assert cols == ['pro', 'basic3', 'acid3', 'either']
+    # M1 R2 A A A K6 S7 P8 A A E11 E12 A A K15 R16 A A S19 T20 P21: each residue against the four families
+    assert got[7] == (True, False, False, False)  # S-P; no R three before; A three after; no R-S/T, no S-x-x-K
+    assert got[19] == (False, True, False, False)  # R16 three before; T20 follows, not P
+    assert got[20] == (True, False, False, False)  # T-P
+    # a second pattern of a family: S-x-x-K (S12? no) -- add K at +3 of a serine
+    got2, _ = _flags([{'name': 'e', 'patterns': [{'pattern': 'R[ST]', 'start': -1}, {'pattern': '[ST]..K', 'start': 0}]}], seq='RSAAAATAAK')
+    assert got2[2] == (True,) and got2[7] == (True,)  # R-S by the first pattern, T-x-x-K by the second
+
+
+def test_padding_past_the_chain_end_never_matches():
+    got, _ = _flags([{'name': 'tail', 'pattern': '[ST]..', 'start': 0}], seq='AAAAST')
+    assert got[5] == (False,) and got[6] == (False,)  # the pattern runs off the end of the chain
+    got, _ = _flags([{'name': 'head', 'pattern': 'R..[ST]', 'start': -3}], seq='RAASAT')
+    assert got[4] == (True,) and got[6] == (False,)
+
+
+def test_a_context_mark_can_be_required_at_an_offset(tmp_path):
+    snap = Snapshot({'P': SEQ})
+    ctx = L.Context(snap, load_profile('phospho'), {})
+    ctx.context = {'ra': pd.DataFrame({'accession': ['P'], 'position': [16], 'residue': ['R'], 'state': ['m'], 'evidence': [''], 'sources': ['']})}
+    fams = [{'name': 'shared', 'pattern': 'R..[ST]', 'start': -3, 'marks': [{'mark': 'ra', 'at': -3}]}]
+    got, _ = _flags(fams, ctx=ctx)
+    assert got[19] == (True,)  # R16 is a mark of the context table
+    ctx.context = {'ra': ctx.context['ra'].assign(position=[15])}
+    assert _flags(fams, ctx=ctx)[0][19] == (False,)  # a mark elsewhere
+    with pytest.raises(KeyError, match='no context mark'):
+        _flags(fams, ctx=L.Context(snap, load_profile('phospho'), {}))
+
+
+def test_bad_families_are_named():
+    for bad, msg in [
+        ([{'name': 'x', 'pattern': '[', 'start': 0}], 'bad pattern'),
+        ([{'name': 'x', 'pattern': 'S', 'start': 1}], 'outside the window'),
+        ([{'name': 'x', 'pattern': 'S', 'start': -30}], 'outside the window'),
+        ([{'name': 'x'}], 'give a pattern'),
+        ([{'name': 'x', 'pattern': 'S'}, {'name': 'x', 'pattern': 'T'}], 'two motif families'),
+        ([{'name': 'x', 'pattern': 'S', 'colour': 'red'}], 'unknown keys'),
+        ([{'name': 'x', 'pattern': 'S', 'marks': [{'mark': 'a'}]}], 'marks condition'),
+    ]:
+        with pytest.raises(ValueError, match=msg):
+            _layer(bad)
+    with pytest.raises(ValueError, match='does not know'):
+        _layer([{'name': 'x', 'pattern': 'S'}], window=3)
+
+
+def test_its_classes_are_the_families_with_their_words():
+    lay = _layer([{'name': 'pro', 'label': 'S/T-P', 'help': 'Pro at +1', 'pattern': '[ST]P'}], noun='kinase motif')
+    assert lay.shape == 'flags' and lay.labels == {'pro': 'S/T-P'} and lay.help == {'pro': 'Pro at +1'}
+    assert lay.title == 'Kinase motif families'
+
+
+# ---- optional columns, a score subset and a file of members on a toy site ---------------------------------------------
+
+
+def _site_with(tmp_path, scored: bool, graded: bool):
+    root = _toy(tmp_path)
+    data = root / 'data'
+    path = root / 'sites' / 'toy.yaml'
+    site = yaml.safe_load(path.read_text())
+    ctx = pd.read_csv(data / 'ctx.tsv', sep='\t', dtype=str)
+    if scored:
+        ctx['sc'] = [f'{(i % 10) / 10:.1f}' for i in range(len(ctx))]
+        ctx.to_csv(data / 'ctx.tsv', sep='\t', index=False)
+    marks = pd.read_csv(data / 'marks.tsv', sep='\t', dtype=str)
+    if graded:
+        marks['grade'] = ['high' if i % 2 else 'low' for i in range(len(marks))]
+        marks.to_csv(data / 'marks.tsv', sep='\t', index=False)
+    # the manifest holds the new bytes
+    from ptmcontext.snapshot import md5_file
+
+    mf = json.loads((root / 'sites' / 'toy.inputs.json').read_text())
+    for k, f in (('toy_ctx', 'ctx.tsv'), ('toy_marks', 'marks.tsv')):
+        mf['inputs'][k]['md5'] = md5_file(data / f)
+    (root / 'sites' / 'toy.inputs.json').write_text(json.dumps(mf))
+    site['context_marks'][0]['columns']['score'] = 'sc'
+    site['context_marks'][0]['subset'] = {'id': 'high', 'at_least': 0.5}
+    site['marks']['attributes'] = {
+        'grade': {'column': 'grade', 'label': 'Grade', 'kind': 'category', 'values': {'high': 'High', 'low': 'Low'}, 'filter': True, 'optional': True}
+    }
+    site['analyses'].append(
+        {
+            'id': 'flags',
+            'layer': 'motif_families',
+            'new': True,
+            'with': {
+                'families': [
+                    {'name': 'rk', 'label': 'R-x-K', 'pattern': 'R.K', 'start': -2},
+                    {'name': 'shared', 'label': 'S-x-x-R', 'pattern': '[SK]..R', 'start': 0, 'marks': [{'mark': 'ctx', 'at': 0}]},
+                ],
+                'noun': 'toy motif',
+            },
+        }
+    )
+    web_ = site['website']
+    web_['counts'] = {
+        'grades': {'kind': 'values', 'attribute': 'grade', 'title': 'Grades', 'question': 'Which grades?', 'sub': 's', 'unit': ['grade', 'grades'], 'noun': 'grades', 'top': 2}
+    }
+    web_['filters'] = [{'name': 'Grade', 'attributes': ['grade']}, {'name': 'Motifs', 'analyses': ['motif']}]
+    web_['overview'] = {'sections': [{'name': 'Counts', 'cards': ['grades']}, {'name': 'Motifs', 'cards': [{'analysis': 'flags'}]}]}
+    path.write_text(yaml.safe_dump(site, sort_keys=False))
+    return root, path
+
+
+def _built(root, path):
+    S.run(path, root=root / 'data', log=lambda *_: None)
+    index = web.build(path, log=lambda *_: None)
+    d = json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1))
+    return d, pd.read_csv(root / 'out' / 'toy' / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
+
+
+def test_with_the_columns_the_attribute_the_subset_and_their_rows_appear(tmp_path):
+    root, path = _site_with(tmp_path, scored=True, graded=True)
+    assert S.website_problems(S.load_site(path)) == []
+    d, marks = _built(root, path)
+    assert 'grade' in d['attribute_specs'] and 'a.grade' in marks.columns
+    assert 'ctx_near_ctx_high' in d['attribute_specs'] and 'a.ctx_near_ctx_high' in marks.columns
+    rows = {r['id']: r for r in d['protein_view']['map']['rows']}
+    assert rows['ctx_ctx_high']['default'] == 'on' and rows['ctx_ctx_high']['swap'] == 'ctx_ctx'
+    assert rows['ctx_ctx']['default'] == 'off' and rows['ctx_ctx']['swap'] == 'ctx_ctx_high'
+    assert list(rows).index('ctx_ctx_high') < list(rows).index('ctx_ctx')  # the subset row first
+    assert 'grades' in d['count_questions'] and 'flags' in json.dumps(d['overview'])
+    assert [g['name'] for g in d['filters']][:1] == ['Grade']
+    items = pd.read_csv(root / 'out' / 'toy' / 'map_items.tsv', sep='\t', dtype=str, keep_default_na=False)
+    high = items[items['row'] == 'ctx_ctx_high']
+    assert len(high) and high['label'].str.contains('sc 0').all()
+    assert len(high) < len(items[items['row'] == 'ctx_ctx'])  # a subset of the marks
+
+
+def test_without_the_columns_everything_built_on_them_is_left_out(tmp_path):
+    root, path = _site_with(tmp_path, scored=False, graded=False)
+    d, marks = _built(root, path)
+    assert 'grade' not in d['attribute_specs'] and 'a.grade' not in marks.columns
+    assert 'ctx_near_ctx_high' not in d['attribute_specs'] and 'a.ctx_near_ctx_high' not in marks.columns
+    rows = {r['id']: r for r in d['protein_view']['map']['rows']}
+    assert 'ctx_ctx_high' not in rows and 'swap' not in rows['ctx_ctx'] and rows['ctx_ctx']['default'] == 'on'
+    assert 'grades' not in d['count_questions'] and 'ctx_near_ctx' in d['attribute_specs']
+    assert 'Grade' not in [g['name'] for g in d['filters']] and 'grades' not in json.dumps(d['overview'])
+
+
+def test_prune_forgets_the_attribute_its_filters_counts_and_cards():
+    site = {
+        'marks': {'attributes': {'a': {'column': 'x', 'optional': True}, 'b': {'column': 'y'}}},
+        'website': {
+            'filters': [{'name': 'A', 'attributes': ['a']}, {'name': 'B', 'attributes': ['a', 'b']}],
+            'counts': {'ca': {'kind': 'values', 'attribute': 'a'}, 'cb': {'kind': 'values', 'attribute': 'b'}},
+            'stats': [{'attribute': 'a'}, {'attribute': 'b'}],
+            'overview': {'sections': [{'name': 'S', 'cards': ['ca', 'cb', {'analysis': 'ca'}]}]},
+        },
+    }
+    assert OP.prune_marks(site, pd.DataFrame({'y': []})) == ['a']
+    w = site['website']
+    assert list(site['marks']['attributes']) == ['b'] and w['filters'] == [{'name': 'B', 'attributes': ['b']}]
+    assert list(w['counts']) == ['cb'] and w['stats'] == [{'attribute': 'b'}]
+    assert w['overview']['sections'][0]['cards'] == ['cb']
+    assert OP.prune_marks({'marks': {'attributes': {'a': {'column': 'x', 'optional': True}}}}, pd.DataFrame({'x': []})) == []
+
+
+def test_a_subset_needs_a_score_column_and_a_threshold():
+    s = {'context_marks': [{**ENTRY, 'subset': {'id': 'hi', 'at_least': 0.5}}], 'website': {}}
+    assert any('needs columns.score' in p for p in CM.problems(s))
+    e = {**ENTRY, 'columns': {**ENTRY['columns'], 'score': 'sc'}}
+    assert CM.problems({'context_marks': [{**e, 'subset': {'id': 'hi', 'at_least': 0.5}}]}) == []
+    assert any('at_least or at_most' in p for p in CM.problems({'context_marks': [{**e, 'subset': {'id': 'hi'}}]}))
+
+
+def test_a_partner_class_lists_its_members_in_a_file(tmp_path):
+    from ptmcontext.web.search import members_file
+
+    (tmp_path / 'sites' / 'data').mkdir(parents=True)
+    (tmp_path / 'sites' / 'data' / 'k.tsv').write_text('# a query, a date\n# another line\naccession\tgene\nP1\tg1\nP2\t\n')
+    assert members_file(tmp_path, {'genes_file': 'sites/data/k.tsv'}) == {'P1', 'G1', 'P2'}
+    assert members_file(tmp_path, {}) == set()
+
+
+def test_the_subset_is_a_context_table_of_its_own_only_where_scores_exist(tmp_path):
+    e = {**ENTRY, 'columns': {**{k: v for k, v in ENTRY['columns'].items() if k != 'residue'}, 'score': 'sc'}, 'subset': {'id': 'hi', 'at_least': 0.5}}
+    f = tmp_path / 'c.tsv'
+    pd.DataFrame(
+        [('P', 11, 'S', 'phospho', 'experimental', 'x', '0.9'), ('P', 20, 'S', 'phospho', 'experimental', 'x', '0.2'), ('P', 22, 'S', 'phospho', 'experimental', 'x', '')],
+        columns=['ac', 'pos', 'aa', 'st', 'ev', 'src', 'sc'],
+    ).to_csv(f, sep='\t', index=False)
+    site = {'context_marks': [e]}
+    got = CM.tables(site, {'ctx_table': f}, Snapshot({'P': 'A' * 30}))
+    assert list(got['phos']['position']) == [11, 20, 22] and list(got['phos_hi']['position']) == [11]
+    # a table without the column: the entry still reads, with no subset
+    g = tmp_path / 'd.tsv'
+    pd.read_csv(f, sep='\t').drop(columns='sc').to_csv(g, sep='\t', index=False)
+    assert list(CM.tables(site, {'ctx_table': g}, Snapshot({'P': 'A' * 30}))) == ['phos']

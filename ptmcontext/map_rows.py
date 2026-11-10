@@ -86,6 +86,14 @@ def named_columns(f: dict) -> set[str]:
 
 def _holds(frame: pd.DataFrame, cond: dict) -> pd.Series:
     col = frame[cond['column']].astype(str)
+    if 'at_least' in cond or 'at_most' in cond:  # a number: a cell that is not one meets neither
+        num = pd.to_numeric(col, errors='coerce')
+        keep = num.notna()
+        if 'at_least' in cond:
+            keep &= num >= float(cond['at_least'])
+        if 'at_most' in cond:
+            keep &= num <= float(cond['at_most'])
+        return keep
     if 'equals' in cond:
         return col == str(cond['equals'])
     if 'in' in cond:
@@ -140,6 +148,8 @@ def read_items(f: dict, table: pd.DataFrame, row: dict, marks_cols: tuple[str, s
         cols.setdefault('accession', marks_cols[0])
         if not cols.get('start'):
             cols.setdefault('position', marks_cols[1])
+    if f.get('optional') and (named_columns({**f, 'columns': cols}) - set(table.columns)):
+        return pd.DataFrame(columns=ITEM_COLUMNS)  # an optional table that lacks a column it maps: no items
     df = table
     for cond in f.get('include') or []:
         df = df[_holds(df, cond)]
@@ -323,7 +333,7 @@ def mapping_problems(site: dict, files: dict[str, list[Path]], marks_path: Path 
                 if p is None or not Path(p).exists():
                     continue
                 have = set(pd.read_csv(p, sep=f.get('sep', '\t'), nrows=0).columns)
-                if want - have:
+                if want - have and not f.get('optional'):
                     out.append(
                         f'website.protein.map.rows {r["id"]!r}: {Path(p).name} has no column {sorted(want - have)}'
                     )

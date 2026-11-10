@@ -23,6 +23,7 @@ from . import inputs as I
 from . import layers as L
 from . import residue_tests as RT
 from . import context_marks as CM
+from . import optional as OP
 from . import statistics as ST
 from .parity import Result, compare, compare_table
 from .profile import check_residues, site_profile, read_config, validate
@@ -1776,6 +1777,7 @@ def run(
     )
     ctx.context = CM.tables(site, paths, snap)  # the context marks, by id (website.context_marks), read once
     table, added = read_marks_table(site, paths)
+    OP.prune_marks(site, table)  # optional attributes whose column this table lacks (and what builds on them)
     spec = marks_spec(site, table)
     marked, report = select_marks(spec, table, snap, profile)
     if added:

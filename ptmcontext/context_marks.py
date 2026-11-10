@@ -17,7 +17,8 @@ import pandas as pd
 DEFAULT_WINDOW = 7
 DEFAULT_DROP = ['by-similarity']
 ROLE = 'context_{}'
-COLUMNS = ('accession', 'position', 'residue', 'state', 'evidence', 'sources')
+COLUMNS = ('accession', 'position', 'residue', 'state', 'evidence', 'sources', 'score')
+OPTIONAL = ('score',)  # columns a table may lack (a later release adds them): the entry then has no score or subset
 
 
 def entries(site: dict) -> list[dict]:
@@ -57,6 +58,14 @@ def problems(site: dict) -> list[str]:
                 out.append(f'{where}: columns needs {k!r}')
         if drop(e) and not cols.get('evidence'):
             out.append(f'{where}: drop_evidence needs columns.evidence (or drop_evidence: [])')
+        sub = e.get('subset')
+        if sub:
+            if not cols.get('score'):
+                out.append(f'{where}: a subset needs columns.score')
+            if ('at_least' in sub) == ('at_most' in sub) and not ('at_least' in sub and 'at_most' in sub):
+                out.append(f'{where}: a subset needs at_least or at_most (or both)')
+            if not re.fullmatch(r'[a-z][a-z0-9_]*', str(sub.get('id', ''))):
+                out.append(f'{where}: subset.id is lower-case letters, digits and _')
         if site.get('inputs', {}).get(role(e)) not in (None, e['input']):
             out.append(f'{where}: inputs.{role(e)} is already filled')
     return out
@@ -66,8 +75,11 @@ def read(entry: dict, path: str | Path, snapshot=None) -> pd.DataFrame:
     """The entry's table: accession, position (int), residue, state, evidence, sources (text, '' where the entry names
     no column), the evidence filter applied; with a snapshot, rows whose residue the snapshot does not have dropped.
     One row per residue and state."""
-    cols = entry['columns']
+    cols = dict(entry['columns'])
     df = pd.read_csv(path, sep=entry.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False)
+    for k in OPTIONAL:  # an optional column the table lacks is read as empty
+        if cols.get(k) and cols[k] not in df.columns:
+            cols.pop(k)
     missing = sorted({c for c in (cols[k] for k in COLUMNS if cols.get(k))} - set(df.columns))
     if missing:
         raise ValueError(f'context_marks.{entry["id"]}: {Path(path).name} has no column {missing}')
@@ -90,9 +102,48 @@ def read(entry: dict, path: str | Path, snapshot=None) -> pd.DataFrame:
     return out.drop_duplicates(['accession', 'position', 'state']).reset_index(drop=True)
 
 
+def subset(entry: dict) -> dict | None:
+    """The entry's declared subset ({id, label, at_least or at_most, default}) when it names a score column, else None."""
+    sub = entry.get('subset')
+    return sub if sub and (entry.get('columns') or {}).get('score') else None
+
+
+def subset_id(entry: dict) -> str:
+    return f'{entry["id"]}_{entry["subset"]["id"]}'
+
+
+def subset_label(entry: dict) -> str:
+    sub = entry['subset']
+    if sub.get('label'):
+        return sub['label']
+    col = entry['columns']['score']
+    return f'{col} ≥ {sub["at_least"]:g}' if 'at_least' in sub else f'{col} ≤ {sub["at_most"]:g}'
+
+
+def has_subset(entry: dict, table: pd.DataFrame) -> bool:
+    """Whether the table has scores to cut a subset by (the column existed and holds a number)."""
+    return bool(subset(entry)) and 'score' in table.columns and pd.to_numeric(table['score'], errors='coerce').notna().any()
+
+
+def subset_rows(entry: dict, table: pd.DataFrame) -> pd.DataFrame:
+    """The rows of the table inside the entry's subset (a score that is not a number is in none)."""
+    sub, num = entry['subset'], pd.to_numeric(table['score'], errors='coerce')
+    keep = num.notna()
+    if 'at_least' in sub:
+        keep &= num >= float(sub['at_least'])
+    if 'at_most' in sub:
+        keep &= num <= float(sub['at_most'])
+    return table[keep]
+
+
 def tables(site: dict, paths: dict, snapshot=None) -> dict[str, pd.DataFrame]:
-    """id -> table, for the entries whose input a run has."""
-    return {e['id']: read(e, paths[e['input']], snapshot) for e in entries(site) if e['input'] in paths}
+    """id -> table, for the entries whose input a run has; and `<id>_<subset id>` -> the rows inside the entry's subset,
+    where its table has scores (a near_marks question may name it)."""
+    out = {e['id']: read(e, paths[e['input']], snapshot) for e in entries(site) if e['input'] in paths}
+    for e in entries(site):
+        if e['id'] in out and has_subset(e, out[e['id']]):
+            out[subset_id(e)] = subset_rows(e, out[e['id']]).reset_index(drop=True)
+    return out
 
 
 def sites_of(table: pd.DataFrame) -> pd.DataFrame:
@@ -160,8 +211,33 @@ def map_row(entry: dict, after: str) -> dict:
     return row
 
 
+def subset_row(entry: dict, after: str) -> dict:
+    """The map row of the entry's subset (the marks whose score passes): drawn first, with the row of all the entry's
+    marks a click away (map row `swap`), or the other way round when the subset says `default: all`. Where the table has
+    no score column the row has no items (the source is `optional`), and the web build drops it (`register`)."""
+    cols, sub = entry['columns'], entry['subset']
+    row = map_row(entry, after)
+    parts = [f'{{{cols[k]}}}' for k in ('state', 'evidence', 'sources') if cols.get(k)]
+    row['from']['columns']['label'] = ' · '.join([*parts, f'{cols["score"]} {{{cols["score"]}:.3g}}'])
+    cond = {'column': cols['score']}
+    cond.update({k: sub[k] for k in ('at_least', 'at_most') if k in sub})
+    row['from'] = {**row['from'], 'optional': True, 'include': [cond]}
+    row.update(
+        id='ctx_' + subset_id(entry),
+        title=f'{entry["label"]}: {subset_label(entry)}',
+        help=f'{entry["label"]} positions with {subset_label(entry)} (the site\'s {entry["input"]} input); '
+        f'click the row label to show every {noun(entry)}',
+        default='off' if sub.get('default') == 'all' else 'on',
+        swap='ctx_' + entry['id'],
+    )
+    return row
+
+
 def attribute_names(entry: dict) -> dict[str, str]:
-    return {'near': f'ctx_near_{entry["id"]}', 'count': f'ctx_n_{entry["id"]}'}
+    names = {'near': f'ctx_near_{entry["id"]}', 'count': f'ctx_n_{entry["id"]}'}
+    if subset(entry):
+        names['near_subset'] = f'ctx_near_{subset_id(entry)}'
+    return names
 
 
 def specs(site: dict) -> tuple[dict, dict]:
@@ -187,6 +263,17 @@ def specs(site: dict) -> tuple[dict, dict]:
             'help': f'{e["label"]} (from {e["citation"].get("short", e["label"])}) within {w} residues of the site on either side',
             'derived': True,
         }
+        if 'near_subset' in a:  # present only where the table has scores (the run writes it then)
+            marks[a['near_subset']] = {
+                'label': f'Has a {noun(e)} ({subset_label(e)}) within ±{w}',
+                'kind': 'category',
+                'values': {'yes': f'{e["label"]} ({subset_label(e)}) within ±{w}', 'no': f'None within ±{w}'},
+                'filter': True,
+                'help': f'A {noun(e)} with {subset_label(e)} (from {e["citation"].get("short", e["label"])}) within {w} '
+                f'residues of the site on either side',
+                'derived': True,
+                'optional': True,
+            }
         prots[a['count']] = {
             'label': e.get('plural') or e['label'] + 's',
             'kind': 'number',
@@ -213,7 +300,14 @@ def expand(site: dict) -> dict:
     rows = mmap.setdefault('rows', [])
     for e in es:
         inputs[role(e)] = e['input']
-        rows.append(map_row(e, after))
+        row = map_row(e, after)
+        if subset(e):  # the subset row first, the row of all marks a click away
+            if e['subset'].get('default') != 'all':
+                row['default'] = 'off'
+            row['swap'] = 'ctx_' + subset_id(e)
+            rows.append(subset_row(e, after))
+            row['after'] = 'ctx_' + subset_id(e)
+        rows.append(row)
         if e.get('replaces_ptm_kinds'):
             mmap['hide_ptm_kinds'] = [*mmap.get('hide_ptm_kinds', []), *e['replaces_ptm_kinds']]
         after = 'ctx_' + e['id']
@@ -284,6 +378,9 @@ def derive(
     hits = {e['id']: near(m, ctx_tables[e['id']], w) for e in kept}
     for e in kept:
         a[f'a.{attribute_names(e)["near"]}'] = ['yes' if n else 'no' for n in hits[e['id']]['n']]
+        if has_subset(e, ctx_tables[e['id']]):  # the subset's own column, only where the table has scores
+            sub_hits = near(m, subset_rows(e, ctx_tables[e['id']]), w)
+            a[f'a.{attribute_names(e)["near_subset"]}'] = ['yes' if n else 'no' for n in sub_hits['n']]
     letters = {}
     for e in kept:
         c = sites_of(ctx_tables[e['id']])
@@ -305,7 +402,9 @@ def derive(
 
 def register(site: dict, folder: Path, log=print) -> None:
     """Register the derived attributes among the site's own, for the columns the run wrote (the web build never
-    changes a run's output; a run made before the entries existed is told to be run again)."""
+    changes a run's output; a run made before the entries existed is told to be run again). A subset the run has no
+    scores for (the table lacked the column) is left out: its attribute, filter and map row, and the row of all marks
+    is shown at first again."""
     marks, prots = specs(site)
     if not marks:
         return
@@ -316,10 +415,34 @@ def register(site: dict, folder: Path, log=print) -> None:
 
     have = head('marks.tsv')
     got = {n: s for n, s in marks.items() if f'a.{n}' in have}
-    if len(got) < len(marks):
+    if len([n for n in marks if not marks[n].get('optional')]) > len([n for n in got if not marks[n].get('optional')]):
         log('  context_marks: the run has no such columns in marks.tsv; run the site again to add them')
-    site['marks'].setdefault('attributes', {}).update(got)
+    absent = {n for n, s in marks.items() if s.get('optional') and n not in got}
+    if absent:
+        from .optional import forget
+
+        forget(site, absent)
+        mmap = site['website']['protein']['map']
+        for e in entries(site):
+            if subset(e) and attribute_names(e)['near_subset'] in absent:
+                dead = 'ctx_' + subset_id(e)
+                mmap['rows'] = [r for r in mmap['rows'] if r['id'] != dead]
+                for r in mmap['rows']:
+                    if r['id'] == 'ctx_' + e['id']:
+                        r.pop('swap', None)
+                        r['default'] = e.get('default', 'on')
+                        r['after'] = dead_after(site, e, mmap['rows'])
+                log(f'  context_marks.{e["id"]}: no scores in the run: the subset ({subset_label(e)}) is left out')
+    site['marks'].setdefault('attributes', {}).update({n: {k: v for k, v in s.items() if k != 'optional'} for n, s in got.items()})
     ph = head('protein_attributes.tsv')
     pgot = {n: s for n, s in prots.items() if f'p.{n}' in ph}
     if pgot:
         site.setdefault('proteins', {}).setdefault('attributes', {}).update(pgot)
+
+
+def dead_after(site: dict, entry: dict, rows: list[dict]) -> str:
+    """The row the entry's row of all marks follows once its subset row is gone: that of the entry before it, else the
+    site's context_after."""
+    ids = [e['id'] for e in entries(site)]
+    k = ids.index(entry['id'])
+    return 'ctx_' + ids[k - 1] if k else (site.get('website') or {}).get('context_after', 'ptm')

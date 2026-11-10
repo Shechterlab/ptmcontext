@@ -6,6 +6,8 @@
                    the site's thresholds (a role filled by a per-residue table mapped with `columns`)
   residue_lists    flags: whether a residue is listed in each of several tables (a change seen in tumors, a crosslink),
                    each table a role filled by a list of residues mapped with `columns` {accession, position}
+  motif_families  flags: named patterns of the sequence around each residue (regular expressions anchored at an
+                  offset from the residue, optionally with a context mark at an offset), each a class
   near_marks      residues by whether a context mark (the site file's context_marks entry named by with: marks) lies
                   within a window along the chain, the residue itself left out: near, none (with: window)
   neighbors       residues by how many residues of a set (the profile's stickers, or with: residues) lie within a
@@ -63,6 +65,7 @@ ALLOWED = {
     'residue_lists': WORDS - {'track', 'track_help', 'colours'} | {'flags'},
     'neighbours': WORDS - {'track', 'track_help', 'colours'} | {'residues', 'window', 'many'},
     'near_marks': WORDS - {'track', 'track_help', 'colours'} | {'marks', 'window'},
+    'motif_families': WORDS - {'track', 'track_help', 'colours', 'labels', 'help'} | {'families', 'flank'},
 }
 
 
@@ -385,5 +388,108 @@ def near_marks(params: dict, aid: str) -> Layer:
             params.get('title', f'Near {noun}s (±{window})'),
             f'Are {{marks}} more often within {window} residues of a {noun} than the other {{residues}} of the same proteins?',
             f'{{Marks}} against the other {{residues}} of the same proteins, by whether a {noun} lies within {window} residues on either side',
+        ),
+    )
+
+
+MOTIF_FIELDS = {'name', 'label', 'help', 'pattern', 'start', 'patterns', 'marks', 'cite'}
+
+
+def _motif_family(f: dict, aid: str, flank: int) -> dict:
+    """One family, checked: its patterns (regular expressions, each anchored `start` residues from the residue; start 0
+    is the residue itself, negative upstream) compiled, and its context-mark conditions."""
+    import re
+
+    if not isinstance(f, dict) or not f.get('name'):
+        raise ValueError(f'analysis {aid!r}: each motif family needs a name')
+    name = f['name']
+    unknown = sorted(set(f) - MOTIF_FIELDS)
+    if unknown:
+        raise ValueError(f'analysis {aid!r}, family {name!r}: unknown keys {unknown} (it knows {sorted(MOTIF_FIELDS)})')
+    if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]*', str(name)):
+        raise ValueError(f'analysis {aid!r}: family name {name!r}: letters, digits and _ only')
+    pats = f.get('patterns') or ([{'pattern': f['pattern'], 'start': f.get('start', 0)}] if 'pattern' in f else [])
+    if not pats:
+        raise ValueError(f'analysis {aid!r}, family {name!r}: give a pattern (and start), or patterns')
+    out = []
+    for p in pats:
+        start = int(p.get('start', 0))
+        if not -flank <= start <= 0:
+            raise ValueError(
+                f'analysis {aid!r}, family {name!r}: start {start} is outside the window (-{flank} to 0: it is the offset '
+                f'of the first residue of the pattern; the residue itself, offset 0, must lie inside the match)'
+            )
+        try:
+            out.append({'re': re.compile(p['pattern']), 'start': start})
+        except (re.error, KeyError) as exc:
+            raise ValueError(f'analysis {aid!r}, family {name!r}: bad pattern {p!r} ({exc})') from exc
+    marks = []
+    for c in f.get('marks') or []:
+        if 'mark' not in c or ('at' in c) == ('within' in c):
+            raise ValueError(
+                f'analysis {aid!r}, family {name!r}: a marks condition is {{mark, at}} or {{mark, within: [lo, hi]}}'
+            )
+        marks.append(c)
+    return {'name': name, 'patterns': out, 'marks': marks}
+
+
+def motif_match(window: str, flank: int, patterns: list) -> bool:
+    """Whether any pattern matches the window (the residue at index `flank`) with the residue inside the match and no
+    padding (_, past a chain's end) in it."""
+    for p in patterns:
+        i = flank + p['start']
+        m = p['re'].match(window, i) if i >= 0 else None
+        if m and m.end() > flank and '_' not in m.group(0):
+            return True
+    return False
+
+
+@factory('motif_families')
+def motif_families(params: dict, aid: str) -> Layer:
+    """Flags: named patterns of the sequence around each residue, each a regular expression anchored at an offset."""
+    _need(params, aid, 'families', layer='motif_families')
+    flank = int(params.get('flank', 10))
+    raw = params['families']
+    if not isinstance(raw, list) or not raw:
+        raise ValueError(f'analysis {aid!r}: with.families must be a list of families')
+    fams = [_motif_family(f, aid, flank) for f in raw]
+    names = [f['name'] for f in fams]
+    if len(set(names)) != len(names):
+        raise ValueError(f'analysis {aid!r}: two motif families with one name')
+    labels = {f['name']: f.get('label', f.get('pattern', f['name'])) for f in raw}
+    helps = {f['name']: f.get('help', '') for f in raw}
+    noun = params.get('noun', 'motif')
+
+    def compute(residues: pd.DataFrame, ctx) -> pd.DataFrame:
+        from ..context_marks import sites_of
+
+        windows = ctx.snapshot.windows(residues, flank).to_numpy()
+        acc = residues['accession'].to_numpy()
+        pos = residues['position'].to_numpy(dtype=np.int64)
+        out = {}
+        for f in fams:
+            hit = np.array([bool(w) and motif_match(w, flank, f['patterns']) for w in windows], dtype=bool)
+            for c in f['marks']:
+                if c['mark'] not in ctx.context:
+                    raise KeyError(f'analysis {aid!r}: no context mark {c["mark"]!r} (context_marks, and its input present)')
+                t = sites_of(ctx.context[c['mark']])
+                have = set(zip(t['accession'], t['position'].astype(int)))
+                offs = [int(c['at'])] if 'at' in c else range(int(c['within'][0]), int(c['within'][1]) + 1)
+                hit &= np.array([any((a, int(p) + o) in have for o in offs if o) for a, p in zip(acc, pos)], dtype=bool)
+            out[f['name']] = hit
+        return pd.DataFrame(out, index=residues.index)
+
+    return Layer(
+        'motif_families',
+        'flags',
+        f'{len(fams)} {noun} families: patterns of the sequence around each residue',
+        compute,
+        labels=labels,
+        help=helps,
+        **_words(
+            params,
+            _cap(noun) + ' families',
+            f'Which {noun}s surround {{marks}}, against the other {{residues}} of the same proteins?',
+            '{Marks} and the other {residues} of the same proteins, by the sequence around them',
         ),
     )

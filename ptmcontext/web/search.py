@@ -97,8 +97,10 @@ def problems(site: dict) -> list[str]:
                 if not re.fullmatch(r'IPR\d{6}', str(i))
             ]
             out += [f'{where}: except {x!r} is not a class' for x in c.get('except') or [] if x not in pt['classes']]
-            if not (c.get('interpro') or c.get('genes')):
-                out.append(f'{where}: name its members, by interpro ids or genes')
+            if not (c.get('interpro') or c.get('genes') or c.get('genes_file')):
+                out.append(f'{where}: name its members, by interpro ids, genes or a genes_file')
+            if c.get('genes_file') and not (Path(site.get('__root__', '.')) / c['genes_file']).exists():
+                out.append(f'{where}: genes_file {c["genes_file"]!r} does not exist')
     pat = sc.get('patterns') or {}
     if pat.get('near') and (pat['near'] in ids or pat['near'] in attrs):
         out.append(f'website.search.patterns.near: {pat["near"]!r} is a question or an attribute; name another key')
@@ -135,6 +137,20 @@ def class_words(pt: dict) -> tuple[dict, dict]:
         else:
             labels[code] = c
     return labels, info
+
+
+def members_file(root: Path | None, c: dict) -> set[str]:
+    """The members a partner class lists in its genes_file (upper case): the `accession` and `gene` columns of a
+    tab-separated table with a header, lines starting with # skipped (they record the query that made the file)."""
+    if not c.get('genes_file'):
+        return set()
+    import io
+
+    import pandas as pd
+
+    lines = (Path(root or '.') / c['genes_file']).read_text().splitlines()
+    t = pd.read_csv(io.StringIO('\n'.join(x for x in lines if not x.startswith('#'))), sep='\t', dtype=str, keep_default_na=False)
+    return {str(x).strip().upper() for col in ('accession', 'gene') if col in t.columns for x in t[col] if str(x).strip()}
 
 
 def _members(pt: dict, run: dict, paths: dict, accessions: set) -> dict:
@@ -214,7 +230,7 @@ def derive(site: dict, folder: Path, log=print, write: bool = False) -> None:
         return
     marks = pd.read_csv(folder / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
     accs = sorted(set(marks['accession'])) if 'accession' in marks.columns else sorted(set(marks.iloc[:, 0]))
-    p = partners([[a] for a in accs], tspec, path, pt, run, paths)
+    p = partners([[a] for a in accs], tspec, path, pt, run, paths, Path(site.get('__root__', '.')))
     codes = [c for c in p['classes'] if c in spec[name]['values']]
     mask = {c: 1 << p['classes'].index(c) for c in codes}
     by = {}
@@ -287,7 +303,13 @@ def nearby(sel: dict, listing: list, spec: dict, path: Path, within: int) -> dic
 
 
 def partners(
-    listing: list, spec: dict, path: Path, pt: dict, run: dict | None = None, paths: dict | None = None
+    listing: list,
+    spec: dict,
+    path: Path,
+    pt: dict,
+    run: dict | None = None,
+    paths: dict | None = None,
+    root: Path | None = None,
 ) -> dict:
     """data/partners.json: the partners of the marked proteins (a protein_partners table)."""
     from . import tables as T
@@ -316,7 +338,7 @@ def partners(
                     codes.append(c)
                 bits[k] |= 1 << codes.index(c)
     for code, c in defs.items():  # members named in the site file: by gene (or accession) and by InterPro id
-        genes = {str(g).upper() for g in c.get('genes') or []}
+        genes = {str(g).upper() for g in c.get('genes') or []} | members_file(root, c)
         for k, a in enumerate(accs):
             if a.upper() in genes or gene[k].upper() in genes or a in by_ipr.get(code, ()):
                 bits[k] |= 1 << codes.index(code)
@@ -383,7 +405,7 @@ def data(site: dict, run: dict, sel: dict, listing: list, fasta: Path | None, ou
             log('  website.search.partners: its table is not in the run record; left out')
             sc.pop('partners')
         else:
-            p = partners(listing, spec, path, pt, run, paths)
+            p = partners(listing, spec, path, pt, run, paths, Path(site.get('__root__', '.')))
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(json.dumps(p, separators=(',', ':')))
             labels, info = class_words(pt)
