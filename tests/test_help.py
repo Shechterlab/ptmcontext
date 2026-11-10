@@ -87,9 +87,9 @@ def test_the_start_panel_and_help_reach_the_page_and_the_landing_page(tmp_path):
         assert data.get('start') == (START if p == a else None)  # absent: the kit chooses from the examples
     land = web.pages([a, b], tmp_path / 'site', out_root=root, log=lambda *_: None).read_text()
     assert '<html lang="en">' in land and 'class="skip"' in land and '<main' in land and '<footer' in land
-    assert 'How to start' not in land and land.count('class="land-card"') == 2
-    # the configured starts for one site, the examples for the other; each opens that site with the search filled
-    assert 'href="toya/#overview?q=GP1%20GP2%20GP3">GP1 GP2 GP3' in land and 'href="toyb/#overview?q=GP1">GP1' in land
+    assert 'How to start' not in land and land.count('class="land-card live"') == 2
+    # each card is one link into its site (the start panel's examples are on the site itself)
+    assert 'href="toya/"' in land and 'href="toyb/"' in land
     assert (root / 'out' / 'toya' / 'web' / 'glance.json').exists()
     # no link inside another (a card is an article with its own links, not one link)
     assert not re.search(r'<a [^>]*>(?:(?!</a>).)*<a ', land, re.S)

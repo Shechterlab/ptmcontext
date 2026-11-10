@@ -61,7 +61,11 @@ citation: sites/yeast_phospho.citation.cff
 website:
   name: Yeast Phosphosite Explorer
   tagline: "Budding yeast phosphosites from UniProt."
-  landing: {tagline: "Budding yeast sites from UniProt.", label: Yeast phosphosites}
+  landing:
+    tagline: "Budding yeast phosphosites from UniProt."
+    question: "Where do yeast phosphosites fall in their proteins, and which protein classes carry them?"
+    label: Yeast phosphosites
+    group: other
   band: ["#334155", "#0f172a"]      # graphite: neutral beside the data colors; the orange rule ties it to its siblings
   accent: "#c2410c"
   accent_dark: "#fb923c"

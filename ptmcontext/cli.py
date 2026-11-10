@@ -182,7 +182,7 @@ def cmd_web(a) -> int:
 def cmd_pages(a) -> int:
     from . import web
 
-    web.pages(a.sites, a.out, out_root=a.out_root, skip_missing=a.skip_missing)
+    web.pages(a.sites, a.out, out_root=a.out_root, skip_missing=a.skip_missing, landing_config=a.landing)
     return 0
 
 
@@ -272,6 +272,9 @@ def main(argv=None) -> int:
     s.add_argument('--out-root', default=None)
     s.add_argument(
         '--skip-missing', action='store_true', help='leave out, with a warning, a site whose website was not built'
+    )
+    s.add_argument(
+        '--landing', default=None, help="the landing page's words (default: landing.yml beside the first site file)"
     )
     s.set_defaults(fn=cmd_pages)
 

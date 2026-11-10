@@ -743,8 +743,10 @@ website:                  # the look and words of the website (ptmc web); layout
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Methyllysine Site Explorer
   tagline: "Human lysine methylation sites from public databases."
-  # published at /ptmcontext/methyllysine/, off the landing page's list for now; the sites' header menu lists it
-  landing: {tagline: "Human lysine methylation sites from public databases.", unlisted: true, in_switcher: true}
+  landing:                 # the landing page's card (ptmc pages) and the header menu of the sites
+    tagline: "Human lysine methylation sites from public databases."
+    question: "Which proteins carry methyllysine, and what sets a methylated lysine apart from the other lysines of its protein?"
+    in_switcher: true
   band: ["#5b21b6", "#3b0764"]      # the header gradient: purple
   accent: "#b45309"                 # the amber rule, active tab and links
   accent_dark: "#fbbf24"

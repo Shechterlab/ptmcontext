@@ -88,7 +88,7 @@ def test_an_unlisted_site_is_built_but_not_on_the_landing_page_and_is_in_the_men
         S.run(p, root=root / 'data', log=lambda *_: None)
         web.build(p, log=lambda *_: None)
     land = web.pages([a, b], tmp_path / 'site', out_root=root, log=lambda *_: None).read_text()
-    assert land.count('class="land-card"') == 1 and 'href="toyb/"' not in land
+    assert land.count('class="land-card live"') == 1 and 'href="toyb/"' not in land
     assert (tmp_path / 'site' / 'toyb' / 'index.html').exists()
     reg = json.loads((tmp_path / 'site' / 'sites.json').read_text())['sites']
     assert reg == [

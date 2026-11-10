@@ -1,0 +1,29 @@
+# The landing page of `ptmc pages` (read from beside the first site file, or --landing FILE): the page's own words and
+# the cards of sites not built yet. Each built site's card comes from its site file (website.name, band, accent, art,
+# landing.tagline / question / cta, stats) and its build (the numbers, the strongest result). CONTRACTS.md, "The landing page".
+title: Modifications in proteins
+description: "Websites, one per modification and proteome, that test where modification sites lie in proteins and which protein classes are enriched for them."
+lede: Position of each modification in proteins, and which proteins are modified.
+intro:
+  - "ptmcontext puts many post-translational marks on one reference proteome and asks the same questions of each."
+  - "Every mark is tested fairly within each protein: a site is compared with the other residues of its own protein, so long proteins and disordered regions do not inflate the result. Pick a mark to explore."
+cta: "Explore {marks} →"
+soon_label: Coming soon
+soon_cta: In preparation
+order: [methylarginine, methyllysine, phospho, yeast_phospho]
+groups:                    # a card goes in the group its site file names (website.landing.group), else the first
+  - {id: human, title: null}
+  - {id: other, title: Other organisms, compact: true}
+soon:                      # sites not built yet: a card without a link, until the site is added to the pages build
+  - id: phospho
+    name: Human Phosphosite Explorer
+    tagline: "Human phosphorylation sites from public databases."
+    question: "Where do phosphosites fall in human proteins, and which protein classes carry them?"
+    band: ["#1e40af", "#172554"]
+    accent: "#0e7490"
+    accent_dark: "#22d3ee"
+footer:
+  links:
+    - {label: Cite ptmcontext, url: "https://github.com/Shechterlab/ptmcontext/blob/main/CITATION.cff"}
+    - {label: Code, url: "https://github.com/Shechterlab/ptmcontext"}
+    - {label: Shechter Lab, url: "https://www.shechterlab.org/"}

@@ -6020,7 +6020,7 @@
         "landing": {
           "type": "object",
           "additionalProperties": false,
-          "description": "the landing page's card for this site; share and findings default to the start panel's",
+          "description": "the landing page's card for this site (tagline, question, button, the strongest result); share and findings default to the start panel's",
           "properties": {
             "label": {
               "type": "string",
@@ -6028,7 +6028,7 @@
             },
             "in_switcher": {
               "type": "boolean",
-              "description": "an unlisted site that the switcher of the listed sites shows too"
+              "description": "the site is in the header menu of the listed sites (an unlisted site only with this)"
             },
             "unlisted": {
               "type": "boolean",
@@ -6082,6 +6082,18 @@
             "tagline": {
               "type": "string",
               "description": "a line of at most ten words for the card; defaults to website.tagline"
+            },
+            "question": {
+              "type": "string",
+              "description": "the card's line of what a reader can ask of the site"
+            },
+            "group": {
+              "type": "string",
+              "description": "the landing config's group (its groups list) this card goes in, e.g. a smaller row for other organisms; without it, the first group"
+            },
+            "cta": {
+              "type": "string",
+              "description": "the card's button (default: the landing config's cta, 'Explore {marks} →')"
             }
           }
         },

@@ -18,7 +18,6 @@ import re
 import shutil
 from importlib import resources
 from pathlib import Path
-from urllib.parse import quote
 
 import ptmstats
 
@@ -1779,68 +1778,26 @@ def _licence_words(spdx: str) -> str:
     )
 
 
-def _card_pictures(gl: dict, sid: str) -> str:
-    """A landing card's pictures, the same marks as the site's own first screen (kit-glance.js): the bar of where the
-    marks fall, with its legend, and the strongest findings as small bars, each linking to its question."""
-    out = ''
-    s = gl.get('share')
-
-    def pct(n):
-        return f'{100 * n / s["total"]:.0f}' if 100 * n / s['total'] >= 1 else '< 1'
-
-    if s and s.get('parts'):
-        top = max((p for p in s['parts'] if p['slot']), key=lambda p: p['n'], default=s['parts'][0])
-        label = ', '.join(f'{p["label"]} {pct(p["n"])}%' for p in s['parts'])
-        out += (
-            f'<div class="gl-share"><p class="gl-lead"><b class="gl-big">{pct(top["n"])}%</b> <span>{html.escape(top["label"])}</span></p>'
-            f'<div class="gl-bar" role="img" aria-label="{html.escape(label)}">'
-            + ''.join(f'<i class="gl-seg s{p["slot"]}" style="flex:{p["n"]} 1 0"></i>' for p in s['parts'])
-            + '</div>'
-            '<ul class="gl-legend">'
-            + ''.join(
-                f'<li><i class="gl-sw s{p["slot"]}"></i>{html.escape(p["label"])} <b>{pct(p["n"])}%</b></li>'
-                for p in s['parts']
-            )
-            + '</ul></div>'
-        )
-    rows = ''
-    for f in gl.get('findings') or []:
-        e = f['eff']
-        w = min(1, abs(math.log2(e)) / 4) * 50
-        # the number as the question's page writes it (the odds ratio itself, not its inverse)
-        vtxt = (
-            '> 1,000'
-            if e >= 1000
-            else format(e, '.0f')
-            if e >= 10
-            else format(e, '.1f')
-            if e >= 1.2
-            else format(e, '.2f')
-            if e >= 0.01
-            else '< 0.01'
-        )
-        side = 'left' if f['dir'] == 'more' else 'right'
-        rows += (
-            f'<li><a href="{sid}/#overview/{html.escape(quote(f["analysis"]))}" title="{html.escape(f["title"])}: {html.escape(f["label"])}. Open the question.">'
-            f'<span class="gl-name">{html.escape(f["label"])}</span><span class="gl-axis" aria-hidden="true"><i class="gl-fill {f["dir"]}" style="{side}:50%;width:{w:.0f}%"></i></span>'
-            f'<span class="gl-val {f["dir"]}">{vtxt}× {"more" if f["dir"] == "more" else "less"} often</span></a></li>'
-        )
-    if rows:
-        rows += '<li class="gl-ax"><span></span><span class="gl-axcap"><span>‹ less</span><b>1×</b><span>more ›</span></span><span></span></li>'
-        out += f'<ol class="gl-finds gl-card-finds">{rows}</ol>'
-    return out
-
-
 def pages(
-    site_paths: list, out: str | Path, out_root: str | Path | None = None, log=print, skip_missing: bool = False
+    site_paths: list,
+    out: str | Path,
+    out_root: str | Path | None = None,
+    log=print,
+    skip_missing: bool = False,
+    landing_config: str | Path | None = None,
 ) -> Path:
     """One folder to publish (GitHub Pages, or any static host): each site's website under its id, and a landing page
-    in the same look listing them (without each site's one-file copy, which `ptmc web` still writes). Run ptmc run and ptmc web for each site first; with skip_missing, a site whose
-    website was not built (its sources could not be fetched) is left out with a warning instead of failing the rest."""
+    in the same look: one card per site (landing.py), its words from the site files and the landing config (without each
+    site's one-file copy, which `ptmc web` still writes). Run ptmc run and ptmc web for each site first; with
+    skip_missing, a site whose website was not built (its sources could not be fetched) is left out with a warning
+    instead of failing the rest."""
+    from . import landing as LP
+
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     (out / '.nojekyll').write_text('')
-    cards, lab, registry = [], None, []
+    cfg = LP.load_config(landing_config, site_paths[0] if site_paths else None)
+    cards, lab, registry, first_built = [], None, [], None
     for sp in site_paths:
         site = load_site(sp)
         web = site.get('website', {})
@@ -1855,24 +1812,10 @@ def pages(
             shutil.rmtree(dest)
         # the one-file copy (<id>.html, up to 84 MB) is for offline use: it stays in the build folder, not in the published site
         shutil.copytree(src, dest, ignore=lambda d, names: [f'{site["id"]}.html'] if Path(d) == src else [])
-        run = json.loads((src.parent / 'run.json').read_text())
+        first_built = first_built or site['id']
         profile = site_profile(site)
         band = web.get('band', DEFAULT_BAND)
         lab = lab or web.get('lab')
-        # each site's card: its marks, where they fall (one bar), its strongest findings and three ways to start; the
-        # pictures are the site's own (web/glance.json, chosen in website.landing or website.start)
-        sid, name, marks_word = (
-            html.escape(site['id']),
-            html.escape(web.get('name', site['title'])),
-            html.escape(profile.words['marks']),
-        )
-        starts = [x for x in ((web.get('start') or {}).get('examples') or []) if x.get('query')] or [
-            {'query': e} for e in (web.get('examples') or [])
-        ]
-        start_links = ''.join(
-            f'<li><a href="{sid}/#overview?q={html.escape(quote(x["query"]))}">{html.escape(x.get("query"))}</a></li>'
-            for x in starts[:3]
-        )
         landing = web.get('landing') or {}
         registry.append(
             {
@@ -1885,17 +1828,44 @@ def pages(
         if landing.get('unlisted'):  # its folder is published; its card is not on the landing page
             log(f'  {site["id"]} -> {dest} (unlisted)')
             continue
-        gl = json.loads((src / 'glance.json').read_text()) if (src / 'glance.json').exists() else {}
-        pictures = _card_pictures(gl, sid)
-        tagline = (web.get('landing') or {}).get('tagline') or web.get('tagline', '')
+
+        # the numbers and the striking result are the site's own build; a build without them gives a card without them
+        def _read(name):
+            f = src.parent / name if name == 'run.json' else src / name
+            try:
+                return json.loads(f.read_text())
+            except (OSError, ValueError):
+                return {}
+
+        run, gl = _read('run.json'), _read('glance.json')
+        marks_word = profile.words['marks']
+        nums = []
+        if (run.get('marks') or {}).get('counted') is not None:
+            nums = [(run['marks']['counted'], marks_word), (run['marks'].get('proteins'), 'proteins')]
+        for st in web.get('stats') or []:
+            if isinstance(st, dict) and st.get('attribute'):
+                rep = reporters(site, src.parent)
+                if rep and rep['items']:
+                    nums.append((len(rep['items']), st.get('label') or rep['label']))
+        art_file = root_of(site) / web['art'] if web.get('art') else None
+        cta = landing.get('cta') or (cfg.get('cta') or 'Explore {marks} →').format(marks=marks_word)
         cards.append(
-            f'<article class="land-card" aria-labelledby="card-{sid}"><div class="band" style="background:linear-gradient(160deg,{band[0]},{band[1]})">'
-            f'<h2 id="card-{sid}"><a href="{sid}/">{name}</a></h2></div><div class="body"><p>{html.escape(tagline)} '
-            f'<span class="muted">{run["marks"]["counted"]:,} {marks_word}, {run["marks"]["proteins"]:,} proteins.</span></p>{pictures}'
-            + (f'<ul class="starts" aria-label="Start with">{start_links}</ul>' if start_links else '')
-            + '</div></article>'
+            {
+                'id': site['id'],
+                'name': web.get('name', site['title']),
+                'hook': landing.get('tagline') or web.get('tagline', ''),
+                'question': landing.get('question'),
+                'nums': nums,
+                'result': LP._result(gl),
+                'art': art_file.read_text() if art_file and art_file.exists() else '',
+                'vars': LP._vars(band, web.get('accent'), web.get('accent_dark')),
+                'group': landing.get('group'),
+                'href': f'{site["id"]}/',
+                'cta': cta,
+            }
         )
         log(f'  {site["id"]} -> {dest}')
+    cards += [LP.soon_card(s, cfg) for s in cfg.get('soon') or []]
     # the sites' own header menu reads this list (kit-switch.js)
     (out / 'sites.json').write_text(json.dumps({'sites': registry}, indent=1))
     kit = kit_citation()
@@ -1907,50 +1877,19 @@ def pages(
         if lab
         else ''
     )
-    kit_link = f'<a href="{html.escape(kit["url"])}">ptmcontext</a>'
-    page = f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Modifications in proteins · ptmcontext</title>
-<meta name="description" content="Websites, one per modification and proteome, that test where modification sites lie in proteins and which protein classes are enriched for them.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="{html.escape(FONTS['stylesheet'])}">
-<link rel="stylesheet" href="{html.escape(site_paths and load_site(site_paths[0])['id'])}/assets/kit.css">
-<style>
-.sites {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); align-items: start; gap: 1rem; padding-block: 0.5rem 1rem; }}
-.land-card {{ position: relative; display: grid; grid-template-rows: auto 1fr; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow); color: var(--ink); }}
-.land-card:hover, .land-card:focus-within {{ box-shadow: var(--shadow-hover); }}
-.land-card .band {{ padding: 1.1rem 1.1rem 1rem; border-bottom: 3px solid var(--accent-l); }}
-.land-card h2 {{ font-size: 1.3rem; }}
-.land-card h2 a {{ color: #fff; text-decoration: none; }}
-.land-card h2 a:hover {{ text-decoration: underline; }}
-.land-card h2 a:focus-visible {{ outline: 3px solid #fff; outline-offset: 3px; }}
-.land-card .body {{ display: grid; align-content: start; gap: 0.5rem; padding: 0.9rem 1.1rem 1.1rem; font-size: 0.92rem; }}
-.land-card .body p {{ margin: 0; }}
-.facts {{ margin: 0; padding-left: 1.1rem; color: var(--ink-2); display: grid; gap: 0.15rem; }}
-.gl-card-finds a, .gl-card-finds .gl-ax {{ grid-template-columns: minmax(0, 1fr) 7rem 5.5rem; }}
-.gl-card-finds .gl-name {{ white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.3; }}
-.land-card .gl-big {{ font-size: 1.7rem; }}
-.starts {{ list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }}
-.starts a {{ display: inline-flex; gap: 0.4rem; align-items: center; min-height: 32px; padding: 0.2rem 0.7rem; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-2); color: var(--ink); text-decoration: none; }}
-.starts a:hover {{ border-color: var(--accent); }}
-.starts .mono {{ color: var(--accent-dark); }}
-.land-card .open {{ font-weight: 600; display: inline-block; min-height: 24px; }}
-.how {{ max-width: 62rem; padding-block: 1.25rem 0.5rem; }}
-.how h2 {{ font-size: 1.25rem; margin-bottom: 0.4rem; }}
-.how ol {{ margin: 0; padding-left: 1.3rem; display: grid; gap: 0.25rem; }}
-.land-foot {{ margin-top: 2rem; padding-block: 1rem 2rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }}
-.land-foot p {{ max-width: 62rem; margin: 0 0 0.4rem; }}
-.hero :focus-visible {{ outline: 3px solid #fff; outline-offset: 2px; }}
-</style></head>
-<body><a class="skip" href="#sites">Skip to the sites</a>
-<header class="hero"><div class="wrap"><div class="brand"><h1>Modifications in proteins</h1><div class="brand-side">{lab_html}</div></div>
-<div class="lede"><p class="lede-what">Position of each modification in proteins, and which proteins are modified.</p></div></div></header>
-<main class="wrap" id="sites">
-<h2 class="vh">The sites</h2>
-<div class="sites">{''.join(cards)}</div></main>
-<footer class="wrap land-foot"><p>Updated {html.escape(human_date(_now()))}. Built with {kit_link} {html.escape(kit['version'])}, {html.escape(_licence_words(kit.get('licence', 'MIT')))} license. Each site's data carry the license its page states.</p>
-<p>No cookies, no tracking: every test runs in your browser, and nothing you search or select leaves it.</p></footer></body></html>
-"""
-    (out / 'index.html').write_text(page)
+    built_with = (
+        f'Updated {html.escape(human_date(_now()))}. Built with <a href="{html.escape(kit["url"])}">ptmcontext</a> '
+        f'{html.escape(kit["version"])}, {html.escape(_licence_words(kit.get("licence", "MIT")))} license. '
+        "Each site's data carry the license its page states."
+    )
+    text = LP.page(
+        cards,
+        cfg,
+        kit_css=f'{first_built}/assets/kit.css' if first_built else None,
+        lab_html=lab_html,
+        fonts_css=FONTS['stylesheet'],
+        built_with=built_with,
+    )
+    (out / 'index.html').write_text(text)
     log(f'  -> {out / "index.html"}')
     return out / 'index.html'

@@ -1251,7 +1251,9 @@ website:                  # the look and words of the website (ptmc web); layout
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Methylarginine Site Explorer
   tagline: "Human arginine methylation sites from published studies."
-  landing: {tagline: "Human sites from published studies."}
+  landing:
+    tagline: "Human arginine methylation sites from published studies."
+    question: "Which proteins carry methylarginine, and where in the protein, and in what company, does the mark fall?"
   band: ["#155e75", "#0f3b47"]      # the header gradient: teal
   accent: "#c2410c"                 # the orange rule, active tab and links; shared by the lab's sites
   accent_dark: "#fb923c"
