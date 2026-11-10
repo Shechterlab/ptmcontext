@@ -1238,9 +1238,13 @@ context_marks:
     colour: "#5E6E75"          # the site's neutral, secondary style
     colour_dark: "#A3AEB3"
     citation:
-      short: UniProt and iPTMnet
-      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: CC BY-NC-SA 4.0
+      short: UniProt, iPTMnet and CPLM
+      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license; its sites are included pending the authors' permission)"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license (included pending the authors' permission)"
+    sources:
+      UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
+      iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022), included pending the authors' permission", doi: 10.1093/nar/gkab849}
 
 outputs: {folder: out/methylarginine}
 citation: sites/methylarginine.citation.cff   # the citation, data sources, version and date: edit there

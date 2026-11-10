@@ -241,7 +241,7 @@ sequences. Domain units add `subtype` (domain, repeat), `ref` (the source's acce
 ## Marks
 
 Any TSV with an accession column and a position column; the site file names them and selects rows with `include` and
-`exclude` conditions (`equals`, `in`, `contains`). Positions must be on the snapshot's sequences. `marks.add` appends the rows of
+`exclude` conditions (`equals`, `in`, `contains`; `{all_of: [conditions]}` holds for a row when every listed condition does, to set aside rows that are one value in one column and another in a second, as `marks.exclude`, `left_out`, `marks_select` and `marks.add` read it). Positions must be on the snapshot's sequences. `marks.add` appends the rows of
 further tables (each its manifest `input`, with its own `include`, `exclude` and `left_out`: rows counted on neither side).
 A site's `variants` run the same questions on other marks (`not_compared`: questions a variant runs but does not
 check against its reference, each with why): each has a `label`, tables to add (`marks_add`) and its own

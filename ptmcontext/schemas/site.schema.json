@@ -121,14 +121,14 @@
         "include": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/condition"
+            "$ref": "#/$defs/row_condition"
           },
           "description": "rows kept: every condition holds"
         },
         "exclude": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/condition"
+            "$ref": "#/$defs/row_condition"
           },
           "description": "rows dropped: their residues count as other residues, like any unmarked candidate"
         },
@@ -255,7 +255,7 @@
         "left_out": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/condition"
+            "$ref": "#/$defs/row_condition"
           },
           "description": "rows kept pending: counted on neither side of a residue test (neither as marks nor as other residues), unlike exclude, which drops the row and leaves its residue among the others"
         },
@@ -276,20 +276,20 @@
               "include": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/condition"
+                  "$ref": "#/$defs/row_condition"
                 },
                 "description": "its rows kept: every condition holds"
               },
               "exclude": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/condition"
+                  "$ref": "#/$defs/row_condition"
                 }
               },
               "left_out": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/condition"
+                  "$ref": "#/$defs/row_condition"
                 },
                 "description": "its rows counted on neither side (neither marks nor other residues), as marks.left_out"
               }
@@ -6897,19 +6897,19 @@
               "include": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/condition"
+                  "$ref": "#/$defs/row_condition"
                 }
               },
               "exclude": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/condition"
+                  "$ref": "#/$defs/row_condition"
                 }
               },
               "left_out": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/condition"
+                  "$ref": "#/$defs/row_condition"
                 }
               }
             }
@@ -6931,20 +6931,20 @@
                 "include": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/$defs/condition"
+                    "$ref": "#/$defs/row_condition"
                   },
                   "description": "its rows kept: every condition holds"
                 },
                 "exclude": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/$defs/condition"
+                    "$ref": "#/$defs/row_condition"
                   }
                 },
                 "left_out": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/$defs/condition"
+                    "$ref": "#/$defs/row_condition"
                   },
                   "description": "its rows counted on neither side (neither marks nor other residues), as marks.left_out"
                 }
@@ -7364,6 +7364,30 @@
     }
   },
   "$defs": {
+    "row_condition": {
+      "description": "a condition on the rows of a marks table: a condition, or all_of, which holds for a row when every condition listed holds for it (exclude rows that are one thing in one column and another in a second)",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/condition"
+        },
+        {
+          "type": "object",
+          "required": [
+            "all_of"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "all_of": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          }
+        }
+      ]
+    },
     "condition": {
       "type": "object",
       "required": [

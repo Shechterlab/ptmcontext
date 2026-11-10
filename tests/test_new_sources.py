@@ -575,3 +575,36 @@ def test_random_maps_are_configured_in_the_site_file(tmp_path):
     (root / 'sites' / 'bad.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
     with pytest.raises(Exception, match='minimum'):  # the schema bounds n
         S.load_site(root / 'sites' / 'bad.yaml')
+
+
+def test_all_of_sets_aside_rows_that_meet_two_conditions_at_once(tmp_path):
+    import jsonschema
+
+    root = _toy_site(tmp_path)
+    data = root / 'data'
+    pd.DataFrame(
+        {
+            'acc': ['P1', 'P1', 'P1', 'P2', 'P2'],
+            'pos': [2, 5, 32, 2, 25],
+            'src': ['x', 'x', 'w', 'x', 'w'],
+            'cls': ['y', 'z', 'y', 'y', 'z'],
+        }
+    ).to_csv(data / 'marks.tsv', sep='\t', index=False)
+    man = json.loads((root / 'sites' / 'toy.inputs.json').read_text())
+    man['inputs']['toy_marks']['md5'] = md5_file(data / 'marks.tsv')
+    (root / 'sites' / 'toy.inputs.json').write_text(json.dumps(man, indent=1))
+    site = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
+    site['marks']['exclude'] = [{'all_of': [{'column': 'src', 'equals': 'x'}, {'column': 'cls', 'in': ['y']}]}]
+    site['variants'] = {'all': {'label': 'All rows', 'marks_select': {'exclude': []}, 'attributes': {}}}
+    schema = json.loads((S.Path(S.__file__).parent / 'schemas' / 'site.schema.json').read_text())
+    jsonschema.validate(site, schema)
+    bad = json.loads(json.dumps(site))
+    bad['marks']['exclude'] = [{'all_of': [{'column': 'src', 'equals': 'x'}]}]  # one condition is not a conjunction
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(bad, schema)
+    (root / 'sites' / 'toy.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
+    main = S.run(root / 'sites' / 'toy.yaml', root=data, log=lambda *_: None)
+    full = S.run(root / 'sites' / 'toy.yaml', root=data, log=lambda *_: None, variant='all')
+    assert (
+        main.record['marks']['counted'] == 3 and full.record['marks']['counted'] == 5
+    )  # P1 2 and P2 2 (x and y) set aside

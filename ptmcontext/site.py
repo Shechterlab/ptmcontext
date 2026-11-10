@@ -1075,6 +1075,13 @@ def manifest_of(site: dict) -> Path:
 
 
 def _holds(frame: pd.DataFrame, cond: dict) -> pd.Series:
+    """Whether each row meets a condition on the marks table: equals, in or contains on a column's text, or all_of, a
+    list of such conditions that all hold for the row."""
+    if 'all_of' in cond:
+        out = pd.Series(True, index=frame.index)
+        for part in cond['all_of']:
+            out &= _holds(frame, part)
+        return out
     col = frame[cond['column']].astype(str)
     if 'equals' in cond:
         return col == cond['equals']

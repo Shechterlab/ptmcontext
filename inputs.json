@@ -1378,21 +1378,21 @@
     },
     "context_methyllysine_sites_v1_5_0": {
       "file": "releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv",
-      "md5": "2403b652d71ad1d5996468065810383a",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd/releases/v1.5.0",
-      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-09); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
-      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
+      "md5": "2fbdbee2ed9ef212a67d8c10d408e257",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/cf1dfa1/releases/v1.5.0",
+      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and CPLM 4.0; positions on UniProt 2026_03",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; CPLM 4.0 states no license: its rows are included by the owner's decision of 2026-11-09, pending the authors' permission",
       "role": "input",
-      "note": "Methyllysine sites of the human reviewed proteome (756 rows on 412 residues), one row per residue and state, with sources (UniProt, iPTMnet), evidence class (experimental, by-similarity, text-mined, unspecified), iPTMnet upstream databases and PubMed IDs. Shown as context beside the site's own mark; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 5b1c3bd."
+      "note": "Methyllysine sites of the human reviewed proteome (5,899 rows on 5,481 residues), one row per residue and state, with sources (UniProt, iPTMnet, CPLM), evidence class (experimental, by-similarity, text-mined, unspecified), iPTMnet upstream databases, CPLM evidence label and PubMed IDs. Shown as context beside the site's own mark; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit cf1dfa1."
     },
     "context_phosphorylation_sites_v1_5_0": {
       "file": "releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv",
       "md5": "937931b37ff8a0e3fb9bc23f9c5834e5",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd/releases/v1.5.0",
-      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-09); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/cf1dfa1/releases/v1.5.0",
+      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-10); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
       "role": "input",
-      "note": "Phosphorylation sites of the human reviewed proteome (72,134 rows), one row per residue and state, with sources (UniProt, iPTMnet), evidence class (experimental, by-similarity, text-mined, unspecified), iPTMnet upstream databases and PubMed IDs. Shown as context beside the site's own mark; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 5b1c3bd."
+      "note": "Phosphorylation sites of the human reviewed proteome (72,134 rows), one row per residue and state, with sources (UniProt, iPTMnet), evidence class (experimental, by-similarity, text-mined, unspecified), iPTMnet upstream databases and PubMed IDs. Shown as context beside the site's own mark; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit cf1dfa1."
     }
   }
 }

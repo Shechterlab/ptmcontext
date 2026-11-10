@@ -4,8 +4,8 @@ cff-version: 1.2.0
 message: "Please cite the data sources: there is no paper for this site yet."
 title: "Human methyllysine sites (ptmcontext site, release v1.5.0 of PTM_Pipeline)"
 version: "0.1.0"
-date-released: "2026-11-09"
-url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0"
+date-released: "2026-11-10"
+url: "https://github.com/Shechterlab/PTM_Pipeline/tree/cf1dfa15b1b4e3d38d6553c5d7bf944ca4a12f63/releases/v1.5.0"
 license: "CC-BY-NC-SA-4.0"
 authors:
   - name: "Shechter Lab, Albert Einstein College of Medicine"
@@ -187,6 +187,15 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     end: D550
     year: 2018
     doi: "10.1093/nar/gkx1104"
+  - type: article   # the methyllysine sites of CPLM 4.0 (DOI checked on Crossref, 10 Nov 2026: Nucleic Acids Res 50:D451-D459, online 2021-09-28). CPLM states no license: its sites are included by the owner's decision, pending the authors' permission
+    authors: [{family-names: Zhang, given-names: W}, {family-names: Tan, given-names: X}, {family-names: Lin, given-names: S}, {name: "et al."}]
+    title: "CPLM 4.0: an updated database with rich annotations for protein lysine modifications (sites included pending the authors' permission)"
+    journal: "Nucleic Acids Res"
+    volume: 50
+    start: D451
+    end: D459
+    year: 2022
+    doi: "10.1093/nar/gkab849"
   - type: article   # Crossref: online 2024-11-18; the article is in volume 53 (2025)
     authors: [{family-names: Szklarczyk, given-names: D}, {family-names: Nastou, given-names: K}, {family-names: Koutrouli, given-names: M}, {name: "et al."}]
     title: "The STRING database in 2025: protein networks with directionality of regulation"

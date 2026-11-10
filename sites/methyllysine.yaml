@@ -1,4 +1,5 @@
-# Site: the human methyllysine sites, from UniProt and iPTMnet (release v1.5.0 of PTM_Pipeline). The same code and the same
+# Site: the human methyllysine sites, from UniProt, iPTMnet and CPLM 4.0 (release v1.5.0 of PTM_Pipeline; CPLM states no license: its
+# sites are included by the owner's decision of 2026-11-09, cited, pending the authors' permission). The same code and the same
 # generic inputs as the methylarginine site; its own marks, questions, focus, words and colors. There is no earlier
 # release to match, so every statistic is new (no reference). Contract: ptmcontext/schemas/site.schema.json.
 schema_version: 1
@@ -46,13 +47,16 @@ inputs:                # role the layers read: manifest input that fills it
 
 marks:
   # The release's own table: a row per lysine and methylation state. The main view counts the lysines with an
-  # experimental or unspecified record; the lysines UniProt reports only by similarity (ECO:0000250 and other records
-  # without an experimental code) are the lower-confidence variant, as the methylarginine site's switch.
+  # experimental record (UniProt, iPTMnet, or CPLM labelled Exp. or Exp./Dat.) or an unspecified iPTMnet record. Behind the
+  # lower-confidence switch, as the methylarginine site's: the rows UniProt reports only by similarity (ECO:0000250 and
+  # other records without an experimental code), and the rows only CPLM reports with the label Dat. (taken from another
+  # database; CPLM names no experiment). A lysine with any other row still counts.
   input: methyllysine_sites_v1_5_0
   accession: canonical_UniProtAC
   position: position
   exclude:
     - {column: evidence_class, equals: by-similarity}     # in the main view their lysines count as other lysines
+    - all_of: [{column: sources, equals: CPLM}, {column: cplm_evidence, equals: Dat.}]    # CPLM's database-derived records alone
   residue_mismatch: error
   attributes:          # what the website keeps for each site: to color, filter and explain it (no test reads these)
     state:
@@ -71,9 +75,9 @@ marks:
       label: Evidence
       kind: list
       separator: "; "
-      values: {experimental: Experimental, unspecified: "Unspecified (iPTMnet's copy of UniProt)", by-similarity: By similarity}
+      values: {experimental: Experimental, unspecified: Unspecified, by-similarity: By similarity}
       filter: true
-      help: "The best class of the records at the site. Experimental: UniProt ECO:0000269 or ECO:0007744, or an iPTMnet record curated from an experiment. Unspecified: only iPTMnet's copy of UniProt, which has no ECO code. By similarity: UniProt records without an experimental code, mainly ECO:0000250"
+      help: "The best class of the records at the site. Experimental: UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, or a CPLM record labelled Exp. or Exp./Dat. Unspecified: only iPTMnet's copy of UniProt, which has no ECO code, or only a CPLM record labelled Dat. By similarity: UniProt records without an experimental code, mainly ECO:0000250"
     sources:
       column: sources
       join_rows: true
@@ -84,9 +88,19 @@ marks:
       records:             # a database's own record of the protein
         UniProt: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"
         iPTMnet: "https://research.bioinformatics.udel.edu/iptmnet/entry/{acc}/"
-      values: {UniProt: UniProt, iPTMnet: iPTMnet}
+      values: {UniProt: UniProt, iPTMnet: iPTMnet, CPLM: CPLM 4.0}
       filter: true
-      help: The databases that report the lysine
+      help: The databases that report the lysine. CPLM 4.0 states no license; its sites are included pending the authors' permission
+    cplm_evidence:
+      column: cplm_evidence
+      join_rows: true
+      provenance: true
+      label: CPLM evidence
+      kind: list
+      separator: "; "
+      values: {Exp.: "Exp. (experimental paper)", Exp./Dat.: "Exp./Dat. (experimental paper and another database)", Dat.: "Dat. (another database only)"}
+      filter: true
+      help: "CPLM 4.0's own evidence label for the lysine, as CPLM gives it. Exp.: curated from an experimental paper; Exp./Dat.: also reported by another database; Dat.: another database only (these sit behind the lower-confidence switch)"
     iptmnet_sources:
       column: iptmnet_sources
       join_rows: true
@@ -699,7 +713,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites
-    description: "The lysines UniProt reports only by similarity to another species (ECO:0000250 and other records without an experimental code) counted too, from the same table"
+    description: "Also counts the lysines UniProt reports only by similarity to another species (ECO:0000250 and other records without an experimental code) and the lysines only CPLM reports with its evidence label Dat. (taken from another database), from the same table"
     marks_select: {exclude: []}
     attributes: {}
 
@@ -764,7 +778,7 @@ website:                  # the look and words of the website (ptmc web); layout
   default_background: other reviewed human proteins   # examples inside the Highlight and partner boxes
   start:                   # the Overview's start panel for a first visit, and the Help page's starts (kit-help.js)
     protein: H3C1
-    text: "Human lysine methylation sites from UniProt and iPTMnet: their positions, proteins and partners. Each tile is one question, comparing the methyllysines with the other lysines of the same proteins. Search a protein or a gene list to test your own selection."
+    text: "Human lysine methylation sites from UniProt, iPTMnet and CPLM 4.0: their positions, proteins and partners. Each tile is one question, comparing the methyllysines with the other lysines of the same proteins. Search a protein or a gene list to test your own selection."
     examples:
       - {label: A histone, query: H3C1, help: "Histone H3's methyllysines (H3 K4, K9, K27 and K36 are K5, K10, K28 and K37 in UniProt's numbering)."}
       - {label: A list of genes, query: TP53 DNMT1 EHMT2, help: "Every question is tested again on their methyllysines."}
@@ -960,8 +974,8 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [class, classes]
       noun: evidence classes
       top: 3
-      note: "The sites counted here have an experimental or an unspecified record. The sites UniProt reports only by similarity to another species are the lower-confidence variant (the switch at the top)."
-      method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, or an iPTMnet record curated from an experiment; unspecified is iPTMnet's copy of UniProt, which has no ECO code."
+      note: "The sites counted here have an experimental record, or an unspecified iPTMnet record. The sites UniProt reports only by similarity to another species, and those only CPLM reports as taken from another database (its Dat. label), are the lower-confidence variant (the switch at the top)."
+      method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, or a CPLM record labelled Exp. or Exp./Dat.; unspecified is iPTMnet's copy of UniProt, which has no ECO code, or a CPLM record labelled Dat."
     provenance:
       kind: values
       attribute: sources
@@ -971,7 +985,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [database, databases]
       noun: databases
       top: 2
-      note: "iPTMnet carries a copy of UniProt: 217 methyllysine rows have unip as their only upstream database, so both databases agreeing is not always two measurements."
+      note: "iPTMnet carries a copy of UniProt: 217 methyllysine rows have unip as their only upstream database, so both databases agreeing is not always two measurements. CPLM 4.0 compiles records from other databases too (its Dat. label), so a lysine that CPLM and another database both report may rest on one original record."
       method: "Each methyllysine lists the databases that report it (the release's sources column). A database's count is the methyllysines it reports."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex], keys: ["b:class", "b:gene", "b:score"]}
@@ -983,13 +997,13 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: RNA and DNA, analyses: [pdb_interface_na]}
     - {name: Provenance, attributes: [sources, iptmnet_sources]}
-  dataset: {label: data release, version: v1.5.0, date: "2026-11-09", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0"}
-  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). Cite the paper, the archive and the databases that report the sites you use (How to cite)."
+  dataset: {label: data release, version: v1.5.0, date: "2026-11-10", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/cf1dfa15b1b4e3d38d6553c5d7bf944ca4a12f63/releases/v1.5.0"}
+  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). CPLM 4.0 states no license: its sites (rows whose databases name CPLM) are included by the owner's decision, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022), pending the authors' permission, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
-    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv", format: TSV, note: "every methyllysine record: one row per lysine and degree, with its evidence class and sources"}
-    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
-    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
-    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/5b1c3bd3571feeb60ada1cafe64933af7711abb9/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/cf1dfa15b1b4e3d38d6553c5d7bf944ca4a12f63/releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv", format: TSV, note: "every methyllysine record: one row per lysine and degree, with its evidence class, sources and CPLM evidence label (CPLM sites included pending the authors' permission)"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/cf1dfa15b1b4e3d38d6553c5d7bf944ca4a12f63/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/cf1dfa15b1b4e3d38d6553c5d7bf944ca4a12f63/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/cf1dfa15b1b4e3d38d6553c5d7bf944ca4a12f63/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
   search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
     shorthand: {H4: P62805, H3: P68431, "H3.1": P68431, "H3.3": P84243}   # names papers use for a protein (H4K20, H3 K9)
     patterns:                # the motif finder: a pattern of residues on the sites' sequence windows
