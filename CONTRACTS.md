@@ -131,7 +131,7 @@ Conventions:
   syntax). Restrictions add up from the analysis, the test and the stratum (`strata:`, every test again on part of its
   candidates; the row's `stratum`, and its class code `<category>_<stratum>`). `counting: proteins_with_both` (default,
   as above) or `every_candidate` (the pooled test counts every candidate the test keeps, and the within-protein row
-  reports those counts; no within-protein row for a test of one protein). `background` names the background per test.
+  reports those counts; no within-protein row for a test of one protein). `background` names the background per test. A test's `label` names its class; a stratum may add a `suffix` (`", ordered regions"`) to the label of each test it repeats. Classes that would share a label take the stratum's name (`Any interface (domain)`), and two classes with the same label that way are an error.
 - `enricher` on **one set per item** (`sets.each`): each item is a set: the proteins with a unit in its `units` roles or
   listed in its `table` (`{input, protein, include, exclude}`), tested against its own universe (`universe_units`: the
   proteins with a unit there; else the analysis's universe), one hypergeometric test each, BH over the items;
@@ -412,7 +412,7 @@ residue). It matches only if the residue lies inside the match and the match hol
 chain; `.` therefore never reads off the chain. `start` runs from `-flank` to 0. A family names `pattern` and `start`, or
 `patterns` (any one matches). `marks` adds conditions on the site's context marks (`{mark: <context mark id>, at: N}` or
 `within: [lo, hi]`, N from the residue): all must hold, so a motif's residue can be required to carry another mark. A
-family has `name` (letters, digits, `_`), `label`, `help` and `cite` (documentation only). Unknown keys, a pattern that
+family has `name` (letters, digits, `_`), `label`, `help` and `cite` (documentation only), and optionally `among`: a string of residue letters (`ST`). A family with `among` is tested only among residues of those letters, in the class and in the background alike, in both tests (a motif of serines and threonines is not compared with the tyrosines, whose share of the background alone would move its odds ratio; a family that every residue of its `among` fits has an odds ratio of 1 by construction, so it is not worth a row). Unknown keys, a pattern that
 does not compile, a `start` outside the window and a `marks` condition without its mark are errors, named by `ptmc run`.
 
 ## Map rows

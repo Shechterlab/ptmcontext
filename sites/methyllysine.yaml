@@ -159,8 +159,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: any, inside: {role: pdb_interfaces, where: [{column: class, matches: "RNA|DNA|([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2})(-[0-9]+)?"}]}, label: Any interface}
     strata:
       - {stratum: all}
-      - {stratum: ordered, outside_of: uniprot_disorder}
-      - {stratum: domain, covered_by: uniprot_domains}
+      - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
+      - {stratum: domain, covered_by: uniprot_domains, suffix: ", in domains"}
   - id: predicted_interface
     new: true
     title: Predicted interfaces
@@ -176,8 +176,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
          proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}], on_candidates: true}, label: "pDockQ ≥ 0.5"}
     strata:
       - {stratum: all}
-      - {stratum: ordered, outside_of: uniprot_disorder}
-      - {stratum: disordered, covered_by: uniprot_disorder}
+      - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
+      - {stratum: disordered, covered_by: uniprot_disorder, suffix: ", disordered regions"}
   - id: intact
     new: true
     title: IntAct mutations and binding regions
@@ -743,8 +743,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: dna, inside: {role: pdb_interfaces, where: [{column: class, equals: DNA}]}, label: DNA interface}
     strata:
       - {stratum: all}
-      - {stratum: ordered, outside_of: uniprot_disorder}
-      - {stratum: domain, covered_by: uniprot_domains}
+      - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
+      - {stratum: domain, covered_by: uniprot_domains, suffix: ", in domains"}
 marks_subsets:           # the key questions again on the lysines of one methylation degree (a lysine with a row of the degree counts; the
                          # others are other lysines): each adds '<question>_<id>' to the sidebar, under its question's entry (family)
   - id: me1

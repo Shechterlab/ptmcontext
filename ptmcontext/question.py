@@ -52,7 +52,17 @@ from .profile import _matches, check_residues
 
 RESTRICT = ('proteins_with', 'covered_by', 'outside_of', 'with_value', 'unless')
 CLASS_KEYS = ('inside', 'within', 'value', 'at_most', 'below', 'at_least', 'above')
-TEST_KEYS = {'category', 'stratum', 'label', 'help', 'background', 'background_within', *CLASS_KEYS, *RESTRICT}
+TEST_KEYS = {
+    'category',
+    'stratum',
+    'label',
+    'suffix',
+    'help',
+    'background',
+    'background_within',
+    *CLASS_KEYS,
+    *RESTRICT,
+}
 COUNTING = ('proteins_with_both', 'every_candidate')
 
 
@@ -320,14 +330,42 @@ class Question:
         return fisher, within
 
 
+def distinct_labels(aid: str, tests: list[dict], labels: dict) -> dict:
+    """Every class of a question has a label of its own (a card lists them as rows). Two tests that differ only by
+    stratum share the test's label, so the stratum is added to the label ("Any interface (ordered)") unless the site gave
+    a `suffix` or its own `labels`; labels that are still the same are an error, named by the site check."""
+    count: dict = {}
+    for v in labels.values():
+        count[v] = count.get(v, 0) + 1
+    out = {}
+    for t in tests:
+        v = labels[t['code']]
+        if count[v] > 1 and t['stratum'] != 'all':
+            v = f'{v} ({t["stratum"].replace("_", " ")})'
+        out[t['code']] = v
+    seen: dict = {}
+    for code, v in out.items():
+        if v in seen:
+            raise ValueError(
+                f'{aid}: classes {seen[v]!r} and {code!r} have the same label {v!r}: give one a label or suffix'
+            )
+        seen[v] = code
+    return out
+
+
 def question_layer(spec: dict) -> L.Layer:
     """What the website shows of a question, as a flags layer would describe itself (its tests are its classes; the
     roles its tests read; the tracks the site file asks it to draw)."""
     tests = expand(spec)
     labels = {
-        t['code']: t.get('label') or (spec.get('labels') or {}).get(t['code']) or t['code'].replace('_', ' ')
+        t['code']: (
+            f'{t["label"]}{t.get("suffix", "")}'
+            if t.get('label')
+            else (spec.get('labels') or {}).get(t['code']) or t['code'].replace('_', ' ')
+        )
         for t in tests
     }
+    labels = distinct_labels(spec['id'], tests, labels)
     helps = {t['code']: t.get('help') or (spec.get('help') or {}).get(t['code'], '') for t in tests}
     tracks = []
     for role, tr in (spec.get('tracks') or {}).items():

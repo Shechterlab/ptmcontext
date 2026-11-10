@@ -313,3 +313,47 @@ def test_marks_view_is_validated_and_reaches_the_map_config(tmp_path):
     path.write_text(yaml.safe_dump(site, sort_keys=False))
     with pytest.raises(Exception):
         S.load_site(path)
+
+
+def test_a_family_with_among_is_tested_against_its_own_residues_only():
+    from ptmcontext.residue_tests import residue_test
+
+    # two proteins: S and T sites with Pro after, and Y sites. Each family is counted only among its residues.
+    seqs = {'P': 'SPASAYAYAYAT', 'Q': 'TPAYASAYAYAS'}
+    snap = Snapshot(seqs)
+    ctx = L.Context(snap, load_profile(MARK), {})
+    marked = pd.DataFrame({'accession': ['P', 'P', 'P', 'Q', 'Q', 'Q'], 'position': [1, 6, 8, 1, 4, 8]})
+    fams = [
+        {'name': 'pro', 'pattern': '[ST]P', 'start': 0, 'among': 'st'},
+        {'name': 'tyr', 'pattern': 'Y', 'start': 0, 'among': 'Y'},
+        {'name': 'any', 'pattern': '[STY]', 'start': 0},
+    ]
+    rows = residue_test(ctx, marked, _layer(fams), 'x', methods=('fisher',)).set_index('category')
+    # S/T candidates: P has S1 S4 T12, Q has T1 S6 S12; marked S/T: P1, Q1
+    assert (rows.loc['pro', ['a', 'b', 'c', 'd']] == [2, 0, 0, 4]).all()
+    # Y candidates: P 6 8 10, Q 4 8 10; marked Y: P6, P8, Q4, Q8; the S/T residues are not in this background
+    assert (rows.loc['tyr', ['a', 'b', 'c', 'd']] == [4, 0, 2, 0]).all()
+    # no among: every candidate residue, as before
+    assert rows.loc['any', 'a'] == 6 and rows.loc['any', 'a'] + rows.loc['any', 'b'] == 6
+    with pytest.raises(ValueError, match='among'):
+        _layer([{'name': 'bad', 'pattern': 'S', 'among': 'S1'}])
+
+
+def test_strata_of_one_test_get_distinct_labels():
+    from ptmcontext import question as Q
+
+    spec = {
+        'id': 'q',
+        'tests': [{'category': 'any', 'inside': 'r', 'label': 'Any interface'}],
+        'strata': [{'stratum': 'all'}, {'stratum': 'ordered', 'suffix': ', ordered regions'}, {'stratum': 'domain'}],
+    }
+    labels = Q.question_layer(spec).labels
+    # the site's suffix, else the stratum's name; the first keeps the test's own label
+    assert labels == {
+        'any': 'Any interface',
+        'any_ordered': 'Any interface, ordered regions',
+        'any_domain': 'Any interface (domain)',
+    }
+    two = {'id': 'q', 'tests': [{'category': c, 'inside': 'r', 'label': 'Same'} for c in ('a', 'b')]}
+    with pytest.raises(ValueError, match='same label'):
+        Q.question_layer(two)

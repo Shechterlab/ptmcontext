@@ -166,7 +166,9 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   # 266:15555; Songyang et al. 1994, Curr Biol 4:973; Songyang et al. 1996, Mol Cell Biol 16:6486. Basophilic (PKA, PKC,
   # AKT, CaMKII, with Arg at -3 or -2): Kennelly & Krebs 1991; Alessi et al. 1996, FEBS Lett 399:333 (AKT: R-x-R-x-x-S/T).
   # Acidophilic (CK2, and CK1 after a priming phosphate): Meggio & Pinna 2003, FASEB J 17:349 (S/T-x-x-E/D); Songyang et
-  # al. 1996. Tyrosine: every pY is a tyrosine kinase site, so that class is the residue's own composition.
+  # al. 1996. Each class has `among`: the residues it is tested among (a class is compared with the other residues of its
+  # own type, not with a background that mixes S, T and Y). Tyrosine has no class here: every pY is a tyrosine kinase
+  # site, so against the other tyrosines it would be 1 by construction.
   - id: kinase_motifs
     layer: motif_families
     new: true
@@ -174,24 +176,23 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       flank: 10
       noun: kinase motif
       title: Kinase motif classes
-      question: "Which kinase motif classes do phosphosites follow, against the other serines, threonines and tyrosines of their proteins?"
-      sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by the sequence class a kinase family prefers: proline-directed, basophilic (Arg at -3 or -2), acidophilic, and tyrosine. A class is a sequence pattern, not a kinase assignment; a site may fit several"
+      question: "Which kinase motif classes do phosphosites follow, against the residues of their own type in their proteins?"
+      sub: "Each class is tested against residues of its own type, in the same proteins: the serine and threonine classes against the other serines and threonines, (a class tested against tyrosines too would partly show the residue type: pY alone is 0.39x of all residues). Tyrosine has no class of its own here, since every pY is a tyrosine kinase site; the pY motifs are in the reader motifs, tested against the other tyrosines. The sequence class a kinase family prefers: proline-directed, basophilic (Arg at -3 or -2) and acidophilic. A class is a sequence pattern, not a kinase assignment; a site may fit several"
       section: Which kinases?
       families:
-        - {name: proline_directed, label: "S/T-P (proline-directed)", pattern: "[ST]P", start: 0,
+        - {name: proline_directed, label: "S/T-P (proline-directed)", pattern: "[ST]P", start: 0, among: ST,
            help: "Ser or Thr followed by Pro at +1: the sequence preferred by CDKs, MAP kinases and GSK3 (Kennelly & Krebs 1991; Songyang et al. 1994, 1996)"}
-        - {name: basophilic_m3, label: "R-x-x-S/T (basic at -3)", pattern: "R..[ST]", start: -3,
+        - {name: basophilic_m3, label: "R-x-x-S/T (basic at -3)", pattern: "R..[ST]", start: -3, among: ST,
            help: "Arg at -3 of the Ser or Thr: the core of the PKA, PKC, AKT and CaMKII preference (Kennelly & Krebs 1991; Alessi et al. 1996)"}
-        - {name: basophilic_m2, label: "R-x-S/T (basic at -2)", pattern: "R.[ST]", start: -2,
+        - {name: basophilic_m2, label: "R-x-S/T (basic at -2)", pattern: "R.[ST]", start: -2, among: ST,
            help: "Arg at -2 of the Ser or Thr: a basophilic preference of PKC and other AGC kinases (Songyang et al. 1994)"}
-        - {name: acidophilic_p3, label: "S/T-x-x-D/E (acidic at +3)", pattern: "[ST]..[DE]", start: 0,
+        - {name: acidophilic_p3, label: "S/T-x-x-D/E (acidic at +3)", pattern: "[ST]..[DE]", start: 0, among: ST,
            help: "Asp or Glu at +3 of the Ser or Thr: the acidophilic preference of CK2 (Meggio & Pinna 2003; Songyang et al. 1996)"}
-        - {name: tyrosine, label: "pY (tyrosine kinases)", pattern: "Y", start: 0,
-           help: "The residue is a tyrosine, so its kinase is a tyrosine kinase or a dual-specificity kinase. This class is the composition of the residues, so read it with the residue filter"}
   # Is it functional? Reader motifs: sequences that phosphopeptide-binding domains recognize once the site is phosphorylated.
   # 14-3-3: mode 1 R-S-x-pS-x-P and mode 2 R-x-(Y/F)-x-pS-x-P (Muslin et al. 1996, Cell 84:889; Yaffe et al. 1997, Cell
   # 91:961), and the relaxed mode 1 R-x-x-pS-x-P. Polo-box domain of PLK1: S-pS/pT-P (Elia et al. 2003, Science 299:1228).
-  # Pin1 WW domain: pS/pT-P (Lu et al. 1999, Science 283:1325; Yaffe et al. 1997, Science 278:1957). Phosphodegron of
+  # Pin1 WW domain (pS/pT-P: Lu et al. 1999, Science 283:1325; Yaffe et al. 1997, Science 278:1957) reads the sequence of
+  # the proline-directed kinase class (28,149 identical sites), so it has no family of its own. Phosphodegron of
   # beta-TrCP: D-pS-G-x-x-pS, either serine (Wu et al. 2003, Mol Cell 11:1445, beta-catenin D-pS-G-I-H-pS). SH2 domains:
   # pY with hydrophobic residues at +1 and +3 (Src family), pY-x-N (Grb2), pY-[M/V]-x-M (PI3K p85) (Songyang et al. 1993,
   # Cell 72:767). FHA domains: pT-x-x-D (Durocher et al. 2000, Mol Cell 6:1169). BRCT domains: pS-x-x-F (Manke et al. 2003,
@@ -203,33 +204,32 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       flank: 10
       noun: reader motif
       title: Reader motifs
-      question: "Do phosphosites sit in the motifs that phosphopeptide-binding domains read, against the other serines, threonines and tyrosines of their proteins?"
-      sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by the sequence a reader domain binds when the site is phosphorylated: 14-3-3, polo-box, Pin1 WW, the beta-TrCP phosphodegron, SH2, FHA and BRCT. A motif is a candidate binding site, not shown to bind"
+      question: "Do phosphosites sit in the motifs that phosphopeptide-binding domains read, against the residues of their own type in their proteins?"
+      sub: "Phosphosites against the other residues of their own type (serines and threonines, threonines, serines or tyrosines, as the motif has it) in the same proteins, by the sequence a reader domain binds when the site is phosphorylated: 14-3-3, polo-box, the beta-TrCP phosphodegron, SH2, FHA and BRCT. Pin1 binds pS/pT-P, the proline-directed class of the kinase motifs, so it has no row of its own. A motif is a candidate binding site, not shown to bind"
       section: Is it functional?
       families:
-        - {name: ytt_mode1, label: "14-3-3 mode 1 (R-S-x-pS-x-P)", pattern: "RS.[ST].P", start: -3,
+        - {name: ytt_mode1, label: "14-3-3 mode 1 (R-S-x-pS-x-P)", pattern: "RS.[ST].P", start: -3, among: ST,
            help: "Arg at -3, Ser at -2 and Pro at +2: the first 14-3-3 binding mode (Muslin et al. 1996; Yaffe et al. 1997)"}
-        - {name: ytt_mode1_relaxed, label: "14-3-3, relaxed (R-x-x-pS-x-P)", pattern: "R..[ST].P", start: -3,
+        - {name: ytt_mode1_relaxed, label: "14-3-3, relaxed (R-x-x-pS-x-P)", pattern: "R..[ST].P", start: -3, among: ST,
            help: "Arg at -3 and Pro at +2, with any residue at -2: the relaxed form of mode 1"}
-        - {name: ytt_mode2, label: "14-3-3 mode 2 (R-x-Y/F-x-pS-x-P)", pattern: "R.[FY].[ST].P", start: -4,
+        - {name: ytt_mode2, label: "14-3-3 mode 2 (R-x-Y/F-x-pS-x-P)", pattern: "R.[FY].[ST].P", start: -4, among: ST,
            help: "Arg at -4, Tyr or Phe at -2 and Pro at +2: the second 14-3-3 binding mode (Yaffe et al. 1997)"}
-        - {name: polo_box, label: "Polo-box (S-pS/pT-P)", pattern: "S[ST]P", start: -1,
+        - {name: polo_box, label: "Polo-box (S-pS/pT-P)", pattern: "S[ST]P", start: -1, among: ST,
            help: "Ser at -1 and Pro at +1: the motif the polo-box domain of PLK1 binds (Elia et al. 2003)"}
-        - {name: pin1_ww, label: "Pin1 (pS/pT-P)", pattern: "[ST]P", start: 0,
-           help: "Phosphoserine or phosphothreonine before Pro: bound by the WW domain of Pin1, whose prolyl isomerase domain acts on it (Yaffe et al. 1997; Lu et al. 1999). The sequence is the proline-directed kinase class"}
         - name: phosphodegron_btrcp
           label: "beta-TrCP phosphodegron (D-pS-G-x-x-pS)"
+          among: S
           patterns: [{pattern: "DSG..S", start: -1}, {pattern: "DSG..S", start: -5}]
           help: "Either serine of D-S-G-x-x-S, the degron beta-TrCP binds once both serines are phosphorylated (Wu et al. 2003)"
-        - {name: sh2_hydrophobic, label: "SH2 (pY-x-x-I/L/V/M)", pattern: "Y..[ILVM]", start: 0,
+        - {name: sh2_hydrophobic, label: "SH2 (pY-x-x-I/L/V/M)", pattern: "Y..[ILVM]", start: 0, among: Y,
            help: "Tyr with a hydrophobic residue at +3: the SH2 preference of Src-family kinases (pY-E-E-I) (Songyang et al. 1993)"}
-        - {name: sh2_grb2, label: "SH2 Grb2 (pY-x-N)", pattern: "Y.N", start: 0,
+        - {name: sh2_grb2, label: "SH2 Grb2 (pY-x-N)", pattern: "Y.N", start: 0, among: Y,
            help: "Tyr with Asn at +2: the Grb2 SH2 preference (Songyang et al. 1993)"}
-        - {name: sh2_pi3k, label: "SH2 PI3K (pY-M/V-x-M)", pattern: "Y[MV].M", start: 0,
+        - {name: sh2_pi3k, label: "SH2 PI3K (pY-M/V-x-M)", pattern: "Y[MV].M", start: 0, among: Y,
            help: "Tyr, then Met or Val, then any residue and Met: the PI3K p85 SH2 preference (Songyang et al. 1993)"}
-        - {name: fha, label: "FHA (pT-x-x-D)", pattern: "T..D", start: 0,
+        - {name: fha, label: "FHA (pT-x-x-D)", pattern: "T..D", start: 0, among: T,
            help: "Thr with Asp at +3: the preference of FHA domains such as Rad53's (Durocher et al. 2000)"}
-        - {name: brct, label: "BRCT (pS-x-x-F)", pattern: "S..F", start: 0,
+        - {name: brct, label: "BRCT (pS-x-x-F)", pattern: "S..F", start: 0, among: S,
            help: "Ser with Phe at +3: the preference of the BRCT repeats of BRCA1 (Manke et al. 2003)"}
   # Crosstalk: are phosphosites more often within 10 residues of another modification than the other serines,
   # threonines and tyrosines of their protein? Context marks (context_marks below), not part of any release's analyses
@@ -291,8 +291,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: any, inside: {role: pdb_interfaces, where: [{column: class, matches: "RNA|DNA|([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2})(-[0-9]+)?"}]}, label: Any interface}
     strata:
       - {stratum: all}
-      - {stratum: ordered, outside_of: uniprot_disorder}
-      - {stratum: domain, covered_by: uniprot_domains}
+      - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
+      - {stratum: domain, covered_by: uniprot_domains, suffix: ", in domains"}
   - id: predicted_interface
     new: true
     title: Predicted interfaces
@@ -308,8 +308,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
          proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}], on_candidates: true}, label: "pDockQ ≥ 0.5"}
     strata:
       - {stratum: all}
-      - {stratum: ordered, outside_of: uniprot_disorder}
-      - {stratum: disordered, covered_by: uniprot_disorder}
+      - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
+      - {stratum: disordered, covered_by: uniprot_disorder, suffix: ", disordered regions"}
   - id: intact
     new: true
     title: IntAct mutations and binding regions
@@ -875,11 +875,11 @@ website:                  # the look and words of the website (ptmc web); layout
     random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end
     sections:
       - name: Which kinases?
-        about: "Kinase motif classes: the sequence around the site that proline-directed, basophilic and acidophilic kinases prefer, and tyrosine kinases."
+        about: "Kinase motif classes: the sequence around the site that proline-directed, basophilic and acidophilic kinases prefer, each tested against residues of its own type."
         cards:
           - {analysis: kinase_motifs, title: Kinase motif classes}
       - name: Is it functional?
-        about: "Reader motifs that bind the phosphorylated site (14-3-3, polo-box, Pin1, the beta-TrCP degron, SH2, FHA, BRCT) and, where the table has it, the functional score."
+        about: "Reader motifs that bind the phosphorylated site (14-3-3, polo-box, the beta-TrCP degron, SH2, FHA, BRCT) and, where the table has it, the functional score."
         cards:
           - {analysis: reader_motifs, title: Reader motifs}
           - functional_scores

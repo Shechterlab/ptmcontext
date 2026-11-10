@@ -110,6 +110,7 @@ def residue_test(
     same = targets if alone == 'count' else targets[targets['accession'].isin(set(background['accession']))]
     rows = []
     methods = tuple(methods)
+    among = layer.among if columns is not None else {}
     if 'fisher' in methods:
         rows += _fisher(
             same,
@@ -119,6 +120,7 @@ def residue_test(
             stratum,
             ctx.profile.background('marked_proteins') + pooled_label,
             order,
+            among,
         )
     if 'mantel_haenszel' in methods:
         rows += _within_protein(
@@ -130,6 +132,7 @@ def residue_test(
             ctx.profile.background('same_protein'),
             order,
             alone == 'count',
+            among,
         )
     return pd.DataFrame(rows)
 
@@ -159,8 +162,14 @@ def _ordered(rows: list[dict], order: list | None) -> list[dict]:
     return ordered(pd.DataFrame(rows), order).to_dict('records')
 
 
-def _counts_by_category(targets, background, columns):
-    """(category, a, n_target, c, n_background) for a class layer (categories in sorted order) or a flags layer."""
+def _scoped(frame, col, among):
+    """The rows a flag is tested among: all of them, or the residues the flag names (a family's `among`)."""
+    return frame[frame['residue'].isin(set(among[col]))] if col in among else frame
+
+
+def _counts_by_category(targets, background, columns, among=None):
+    """(category, a, n_target, c, n_background) for a class layer (categories in sorted order) or a flags layer, each
+    flag counted among its own residues when it names them."""
     nt, nb = len(targets), len(background)
     if columns is None:
         ta, bc = targets['category'].value_counts(), background['category'].value_counts()
@@ -168,12 +177,13 @@ def _counts_by_category(targets, background, columns):
             yield cat, int(ta.get(cat, 0)), nt, int(bc.get(cat, 0)), nb
     else:
         for col in columns:
-            yield col, int(targets[col].sum()), nt, int(background[col].sum()), nb
+            t, b = _scoped(targets, col, among or {}), _scoped(background, col, among or {})
+            yield col, int(t[col].sum()), len(t), int(b[col].sum()), len(b)
 
 
-def _fisher(targets, background, columns, analysis, stratum, label, order=None):
+def _fisher(targets, background, columns, analysis, stratum, label, order=None, among=None):
     rows = []
-    for cat, a, nt, c, nb in _counts_by_category(targets, background, columns):
+    for cat, a, nt, c, nb in _counts_by_category(targets, background, columns, among):
         b, d = nt - a, nb - c
         odds = stats.haldane_odds_ratio(a, b, c, d)
         rows.append(
@@ -200,7 +210,7 @@ def _fisher(targets, background, columns, analysis, stratum, label, order=None):
     return _ordered(out.to_dict('records'), order)
 
 
-def _within_protein(targets, background, columns, analysis, stratum, label, order=None, alone=False):
+def _within_protein(targets, background, columns, analysis, stratum, label, order=None, alone=False, among=None):
     # each protein with marks and other candidate residues a stratum; with alone, also those with marks only, whose
     # tables add to a and b and nothing else (they are not informative)
     proteins = sorted(set(targets['accession']) if alone else set(targets['accession']) & set(background['accession']))
@@ -212,6 +222,7 @@ def _within_protein(targets, background, columns, analysis, stratum, label, orde
         )
         n_t = targets.groupby('accession').size().reindex(proteins, fill_value=0)
         n_o = background.groupby('accession').size().reindex(proteins, fill_value=0)
+        n_by = {}
     else:
         cats = columns
         tt = targets[targets['accession'].isin(proteins)]
@@ -220,9 +231,16 @@ def _within_protein(targets, background, columns, analysis, stratum, label, orde
         o = bb.groupby('accession')[columns].sum().reindex(proteins, fill_value=0)
         n_t = tt.groupby('accession').size().reindex(proteins, fill_value=0)
         n_o = bb.groupby('accession').size().reindex(proteins, fill_value=0)
-    nt_arr, no_arr = n_t.to_numpy(dtype=np.int64), n_o.to_numpy(dtype=np.int64)
+        n_by = {}
+        for col in among or {}:  # a flag tested among some residues: its own totals
+            n_by[col] = tuple(
+                _scoped(f, col, among).groupby('accession').size().reindex(proteins, fill_value=0) for f in (tt, bb)
+            )
+            t[col] = _scoped(tt, col, among).groupby('accession')[col].sum().reindex(proteins, fill_value=0)
+            o[col] = _scoped(bb, col, among).groupby('accession')[col].sum().reindex(proteins, fill_value=0)
     rows = []
     for cat in cats:
+        nt_arr, no_arr = (x.to_numpy(dtype=np.int64) for x in n_by.get(cat, (n_t, n_o)))
         a = t[cat].to_numpy(dtype=np.int64)
         c = o[cat].to_numpy(dtype=np.int64)
         tables = [(int(x), int(y - x), int(z), int(w - z)) for x, y, z, w in zip(a, nt_arr, c, no_arr)]
