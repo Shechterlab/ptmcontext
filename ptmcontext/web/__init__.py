@@ -456,7 +456,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                 **({'only_in': True} if a.get('only_in') else {}),
                 **({'subset': True} if a.get('marks_where') else {}),
                 **(
-                    {'note': a['note']} if a.get('note') else {}
+                    {'note': note_text(a['note'], stats)} if a.get('note') else {}
                 ),  # a note under the question, with its one-click filters
                 **({'note_filters': a['note_filters']} if a.get('note_filters') else {}),
                 **_class_order(a, lw),
@@ -622,11 +622,35 @@ def site_data(site: dict, folder: Path, profile) -> dict:
             web.get('landing'),
             (web.get('front') or {}).get('row_labels'),
             section_analyses(web, (web.get('landing') or {}).get('from_section')),
+            section_locations(web, (web.get('landing') or {}).get('from_section')),
         ),
         'citation': site_citation(site),
         'kit': {**kit_citation(), 'version': __version__, 'commit': run.get('code_commit') or code_commit()},
         'statistics_tsv': (folder / 'statistics.tsv').read_text(),
     }
+
+
+NOTE_NUMBER = re.compile(r'\{(or|sig):([a-z0-9_]+):([A-Za-z0-9_]+)\}')
+
+
+def note_text(note: str, stats) -> str:
+    """A question's note with its numbers read from the statistics, so that they are not typed: {or:<question>:<class>}
+    is the odds ratio of that class in the question's within-protein test (Mantel-Haenszel; the pooled test where the
+    question has none), to two decimals and x; {sig:<question>:<class>} says whether that row is significant (q < 0.05).
+    A question that is not in the statistics is an error."""
+
+    def value(m):
+        kind, aid, cls = m.group(1), m.group(2), m.group(3)
+        rows = stats[(stats['analysis'] == aid) & (stats['category'] == cls)]
+        if rows.empty:
+            raise ValueError(f'note: no statistics row for the class {cls!r} of the question {aid!r}')
+        methods = set(rows['method'])
+        row = rows[rows['method'] == ('mantel_haenszel' if 'mantel_haenszel' in methods else sorted(methods)[0])].iloc[0]
+        if kind == 'sig':
+            return 'significant' if float(row['q']) < 0.05 else 'not significant'
+        return f'{float(row["odds_ratio"]):.2f}x'
+
+    return NOTE_NUMBER.sub(value, note)
 
 
 def section_analyses(web: dict, name: str | None) -> set | None:
@@ -645,6 +669,20 @@ def section_analyses(web: dict, name: str | None) -> set | None:
             if a == cell.get('id'):
                 ids |= {m.get('analysis') for m in cell.get('maps') or []}
     return ids
+
+
+def section_locations(web: dict, name: str | None) -> dict | None:
+    """The classes that are locations on the cell card of the Overview section `name` (website.landing.from_section):
+    each map question's classes that a compartment of the cell drawing (website.cell.compartments) names. A class of a
+    map that is no compartment (a domain, a cluster) is not a location. None: no section named, or no drawing."""
+    if not name:
+        return None
+    out: dict[str, set] = {}
+    for group in (web.get('cell') or {}).get('compartments') or []:
+        for row in group.get('rows') or []:
+            for aid, cat in (row.get('sets') or {}).items():
+                out.setdefault(aid, set()).add(cat)
+    return out or None
 
 
 def first_screen_attributes(web: dict) -> set[str]:

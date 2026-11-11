@@ -111,6 +111,13 @@ def residue_test(
     rows = []
     methods = tuple(methods)
     among = layer.among if columns is not None else {}
+
+    def label_of(scope: str, suffix: str = '') -> str | dict:
+        # a flag tested among some residues is compared with those residues only: its own background wording
+        if not among:
+            return ctx.profile.background(scope) + suffix
+        return {col: ctx.profile.background(scope, among.get(col)) + suffix for col in columns}
+
     if 'fisher' in methods:
         rows += _fisher(
             same,
@@ -118,7 +125,7 @@ def residue_test(
             columns,
             analysis,
             stratum,
-            ctx.profile.background('marked_proteins') + pooled_label,
+            label_of('marked_proteins', pooled_label),
             order,
             among,
         )
@@ -129,7 +136,7 @@ def residue_test(
             columns,
             analysis,
             stratum,
-            ctx.profile.background('same_protein'),
+            label_of('same_protein'),
             order,
             alone == 'count',
             among,
@@ -189,6 +196,11 @@ def _scoped(frame, col, among):
     return frame[frame['residue'].isin(set(among[col]))] if col in among else frame
 
 
+def _label_for(label, cat):
+    """The background wording of one row: the question's, or a flag's own when it is tested among some residues."""
+    return label[cat] if isinstance(label, dict) else label
+
+
 def _counts_by_category(targets, background, columns, among=None):
     """(category, a, n_target, c, n_background) for a class layer (categories in sorted order) or a flags layer, each
     flag counted among its own residues when it names them."""
@@ -221,7 +233,7 @@ def _fisher(targets, background, columns, analysis, stratum, label, order=None, 
                 'log2_odds_ratio': stats.log2_or_nan(odds),
                 'p': stats.fisher_p(a, b, c, d),
                 'method': 'fisher',
-                'background': label,
+                'background': _label_for(label, cat),
             }
         )
     if not rows:
@@ -282,7 +294,7 @@ def _within_protein(targets, background, columns, analysis, stratum, label, orde
                 'odds_ratio_ci_high': hi,
                 'p': p,
                 'method': 'mantel_haenszel',
-                'background': label,
+                'background': _label_for(label, cat),
                 'n_strata': used,
             }
         )

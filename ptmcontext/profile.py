@@ -76,17 +76,29 @@ class Profile:
             }
         )
 
-    def background(self, scope: str) -> str:
+    def background(self, scope: str, letters: str | None = None) -> str:
         """The background wording of a statistics row, from the profile's words (e.g. 'other arginines of the
-        methylated proteins')."""
+        methylated proteins'). letters: the residues a class is compared with, when it is not all of the mark's
+        residues (a family's `among`), named from words.residue_names."""
         w = self.words
+        residues = self.residue_list(letters) if letters else w['residues']
         if scope == 'marked_proteins':
-            return f'other {w["residues"]} of the {w["marked"]} proteins'
+            return f'other {residues} of the {w["marked"]} proteins'
         if scope == 'same_protein':
-            return f'other {w["residues"]} of the same protein, each protein a stratum'
+            return f'other {residues} of the same protein, each protein a stratum'
         if scope == 'proteome':
-            return f'other {w["residues"]} of the proteome'
+            return f'other {residues} of the proteome'
         raise ValueError(f'unknown background scope {scope!r}')
+
+    def residue_list(self, letters: str) -> str:
+        """The plural names of some residues, in the order given: 'serines and threonines' for 'ST' (words.residue_names
+        maps each letter to its singular name)."""
+        names = self.data.get('residue_names') or {}
+        missing = [x for x in letters if x not in names]
+        if missing:
+            raise ValueError(f'words.residue_names has no name for {missing} (the profile needs one for each residue)')
+        parts = [names[x] + 's' for x in letters]
+        return parts[0] if len(parts) == 1 else ', '.join(parts[:-1]) + ' and ' + parts[-1]
 
     def motif_flags(self, windows: pd.Series) -> pd.DataFrame:
         """One boolean column per motif family (named by the family), from sequence windows centered on the residue."""

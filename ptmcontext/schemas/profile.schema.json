@@ -33,6 +33,16 @@
         "pattern": "^[ACDEFGHIKLMNPQRSTVWY]$"
       }
     },
+    "residue_names": {
+      "type": "object",
+      "description": "the singular name of each residue letter a family may be tested among (a family's among): its rows say which residues they are compared with, e.g. serines and threonines",
+      "propertyNames": {
+        "pattern": "^[ACDEFGHIKLMNPQRSTVWY]$"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
     "states": {
       "type": "array",
       "minItems": 1,

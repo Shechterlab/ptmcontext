@@ -1869,7 +1869,7 @@
           "properties": {
             "label": {
               "type": "string",
-              "description": "its word (\"PTM\": PTM: Methyllysine); the landing config's switcher.label wins"
+              "description": "its word, for example \"PTM\"; the landing config's switcher.label wins"
             }
           }
         },
@@ -7558,7 +7558,7 @@
   },
   "$defs": {
     "row_condition": {
-      "description": "a condition on the rows of a marks table: a condition, or all_of, which holds for a row when every condition listed holds for it (exclude rows that are one thing in one column and another in a second)",
+      "description": "a condition on the rows of a marks table: a condition, or all_of, which holds for a row when every condition listed holds for it (exclude rows that are one thing in one column and another in a second), or any_of, which holds when one of them does",
       "oneOf": [
         {
           "$ref": "#/$defs/condition"
@@ -7571,6 +7571,22 @@
           "additionalProperties": false,
           "properties": {
             "all_of": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "any_of"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "any_of": {
               "type": "array",
               "minItems": 2,
               "items": {

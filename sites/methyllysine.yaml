@@ -728,7 +728,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     question: "Are methyllysines more often near a methylarginine than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3, by-similarity records left out) lies within 10 residues on either side"
     section: Other marks
-    note: "The association comes from the database-curated sources: lysines that only CPLM reports are 2.42x near a methylarginine and those of UniProt or iPTMnet 1.97x, while Berryhill et al.'s affinity-enriched sites are 0.84x (not significant). That points to which proteins were studied, not to a link between the two marks. Select a source to see its lysines:"
+    note: "The association comes from the database-curated sources: lysines that only CPLM reports are {or:near_methylarginine_cplm:near} near a methylarginine and those of UniProt or iPTMnet {or:near_methylarginine_uniprotipt:near}, while Berryhill et al.'s affinity-enriched sites are {or:near_methylarginine_berryhill:near} ({sig:near_methylarginine_berryhill:near}). That points to which proteins were studied, not to a link between the two marks. Select a source to see its lysines:"   # the numbers are the statistics' (the source subsets below)
     note_filters:
       - {label: CPLM, query: "sources:CPLM"}
       - {label: UniProt, query: "sources:UniProt"}
@@ -785,6 +785,22 @@ marks_subsets:           # the key questions again on the lysines of one methyla
     where: {column: state, equals: me3}
     note: "Only the lysines with a trimethyl (Kme3) record are counted as methylated"
     analyses: [histone, panther_group, disorder, near_methylarginine, near_phospho, near_phospho_high]
+  # the sources of the near-methylarginine note: the lysines each database reports (sources, a ';'-separated list)
+  - id: cplm
+    label: CPLM only
+    where: {column: sources, equals: CPLM}
+    note: "Only the lysines that CPLM alone reports are counted as methylated"
+    analyses: [near_methylarginine]
+  - id: uniprotipt
+    label: UniProt or iPTMnet
+    where: {any_of: [{column: sources, contains: UniProt}, {column: sources, contains: iPTMnet}]}
+    note: "Only the lysines that UniProt or iPTMnet reports (alone or with other databases) are counted as methylated"
+    analyses: [near_methylarginine]
+  - id: berryhill
+    label: Berryhill 2023 only
+    where: {column: sources, equals: "Berryhill 2023"}
+    note: "Only the lysines that Berryhill et al. 2023 alone reports are counted as methylated"
+    analyses: [near_methylarginine]
 
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:

@@ -3,6 +3,7 @@ schema_version: 1
 id: phospho
 name: "Phosphorylation (S, T, Y)"
 residues: [S, T, Y]
+residue_names: {S: serine, T: threonine, Y: tyrosine}   # a family's among letters, named in its rows' background
 
 states:   # PSI-MOD terms checked against EBI OLS, 2026-11-01
   - {code: pS, label: phosphoserine, psi_mod: "MOD:00046", pdb_component: SEP}

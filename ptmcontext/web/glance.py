@@ -74,9 +74,12 @@ def findings(
     n: int = N_FINDINGS,
     row_labels: dict | None = None,
     only: set | None = None,
+    locations: dict | None = None,
 ) -> list:
     """The strongest results, one per question: named by the site (analysis and class), else the largest effects at
-    q <= 0.05 that rest on at least MIN_N marks, by the question's usual test. `only`: the questions to choose from."""
+    q <= 0.05 that rest on at least MIN_N marks, by the question's usual test. `only`: the questions to choose from.
+    locations: for a map question, the classes that are locations (a compartment); its other classes (a domain, a
+    cluster) are not chosen."""
     by_id = {a['id']: a for a in analyses}
     methods: dict[str, set] = {}
     for r in rows:
@@ -88,6 +91,7 @@ def findings(
             not a
             or (only is not None and a['id'] not in only)
             or r['method'] != (_preferred(a) if _preferred(a) in methods[a['id']] else sorted(methods[a['id']])[0])
+            or (locations and a['id'] in locations and r['category'] not in locations[a['id']])
         ):
             continue
         e = _eff(r)
@@ -137,6 +141,7 @@ def glance(
     landing: dict | None = None,
     row_labels: dict | None = None,
     only: set | None = None,
+    locations: dict | None = None,
 ) -> dict:
     """What the entry pages draw. The landing page's own choices (website.landing) win over the start panel's."""
     start, landing = start or {}, landing or {}
@@ -145,5 +150,5 @@ def glance(
         'findings': findings(analyses, rows, landing.get('findings') or start.get('findings'), row_labels=row_labels),
     }
     if only is not None and not landing.get('findings'):  # the landing card's own, from one Overview section
-        out['landing_findings'] = findings(analyses, rows, None, row_labels=row_labels, only=only)
+        out['landing_findings'] = findings(analyses, rows, None, row_labels=row_labels, only=only, locations=locations)
     return out
