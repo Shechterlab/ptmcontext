@@ -65,7 +65,7 @@ marks:
       colours: {S: "#0e7490", T: "#1d4ed8", Y: "#b45309"}
       colour: true
       filter: true
-      help: The phosphorylated residue. Serine and threonine are phosphorylated by serine/threonine kinases, tyrosine by tyrosine kinases (and dual-specificity kinases). Sph, Tph and Yph name the phosphorylated residue as in the Brno nomenclature for modified residues (Turner, Nat Struct Mol Biol 12:110-112, 2005, doi:10.1038/nsmb0205-110)
+      help: The phosphorylated residue. Serine and threonine are phosphorylated by serine/threonine kinases, tyrosine by tyrosine kinases (and dual-specificity kinases). Sph, Tph and Yph name the phosphorylated residue as in the Brno nomenclature for modified histones (Turner, Nat Struct Mol Biol 12:110-112, 2005, doi:10.1038/nsmb0205-110)
     evidence_class:
       column: evidence_class
       provenance: true                       # how the site was found, not what it is
