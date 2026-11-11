@@ -4360,9 +4360,11 @@
           )}</b> ${esc(s.querySelector('span')?.textContent || '')}</a>`
       )
       .join('');
-    const cite = [...document.querySelectorAll('.hero .lede > :not(.lede-what)')]
-      .map((p) => p.innerHTML.replace(/\sid="[^"]*"/g, ''))
-      .join(' · ');
+    // only "How to cite" stays in the bar: the version, the lab and its affiliation are in the full header and the footer
+    const cite = [...document.querySelectorAll('.hero .lede a[href="#method/cite"]')]
+      .slice(0, 1)
+      .map((c) => `<a href="${esc(c.getAttribute('href'))}">${esc(c.textContent.trim())}</a>`)
+      .join('');
     d.innerHTML =
       `<div class="wrap"><a class="dock-name" href="${esc(a.getAttribute('href'))}" title="Back to the ` +
       `overview">${
@@ -4370,7 +4372,7 @@
           ? `<img src="${esc(a.querySelector('img').getAttribute('src'))}" alt="" ` + `width="28" height="28">`
           : ''
       }<span>${esc(a.textContent.trim())}</span></a>` +
-      `<span class="dock-stats">${stats}</span><span class="dock-cite">${cite}</span></div>`;
+      `<span class="dock-stats">${stats}</span><span class="dock-end"><span class="dock-cite">${cite}</span></span></div>`;
   }
   K.dock = dock;
   const dockOn = () => {

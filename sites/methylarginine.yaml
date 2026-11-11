@@ -1272,7 +1272,8 @@ website:                  # the look and words of the website (ptmc web); layout
   band: ["#155e75", "#0f3b47"]      # the header gradient: teal
   accent: "#c2410c"                 # the orange rule, active tab and links; shared by the lab's sites
   accent_dark: "#fb923c"
-  icon: sites/art/methylarginine-icon.svg
+  logo: sites/art/methylarginine_logo.svg
+  switcher: {label: PTM}            # the site switcher reads "PTM: <site> ▾"
   art: sites/art/methylarginine-hero.svg
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
   links:

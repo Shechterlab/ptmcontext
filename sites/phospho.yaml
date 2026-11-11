@@ -903,7 +903,8 @@ website:                  # the look and words of the website (ptmc web); layout
   band: ["#1e40af", "#172554"]      # the header gradient: blue
   accent: "#0e7490"                 # the cyan rule, active tab and links
   accent_dark: "#22d3ee"
-  icon: sites/art/phospho-icon.svg
+  logo: sites/art/phospho_logo.svg
+  switcher: {label: PTM}            # the site switcher reads "PTM: <site> ▾"
   art: sites/art/phospho-hero.svg
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
   links:

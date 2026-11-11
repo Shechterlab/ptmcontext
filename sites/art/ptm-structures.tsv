@@ -1,0 +1,10 @@
+site	name	caption	smiles
+methylarginine	Rme1	monomethyl	*CCCCNC(=[NH2+])NC
+methylarginine	Rme2a	asymmetric dimethyl	*CCCCNC(=[NH2+])N(C)C
+methylarginine	Rme2s	symmetric dimethyl	*CCCCNC(=[N+]([H])C)NC
+methyllysine	Kme1	monomethyl	*CCCCC[N+]([H])([H])C
+methyllysine	Kme2	dimethyl	*CCCCC[N+]([H])(C)C
+methyllysine	Kme3	trimethyl	*CCCCC[N+](C)(C)C
+phospho	pS	phosphoserine	*CCOP([O-])([O-])=O
+phospho	pT	phosphothreonine	*CC(OP([O-])([O-])=O)C
+phospho	pY	phosphotyrosine	*CCc1ccc(OP([O-])([O-])=O)cc1

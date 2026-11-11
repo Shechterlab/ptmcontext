@@ -1326,7 +1326,9 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         f'--font-heading: {fonts["heading"]}; --font-body: {fonts["body"]}; --font-mono: {fonts["mono"]};'
     )
 
-    icon = (root / web['icon']).read_text() if web.get('icon') else default_icon(band[0], accent_dark)
+    # the site's logo (website.logo; website.icon is the older name): the header's mark, the favicon and the landing card's
+    logo_file = web.get('logo') or web.get('icon')
+    icon = (root / logo_file).read_text() if logo_file else default_icon(band[0], accent_dark)
     art = (root / web['art']).read_text() if web.get('art') else default_art(profile, _mix(accent_dark, '#ffffff', 0.3))
     logo = (root / web['lab']['logo']).read_text() if web.get('lab', {}).get('logo') else ''
     from . import search as SE
@@ -1565,7 +1567,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
 
     def page(inline: bool) -> str:
         icon_href = (
-            'data:image/svg+xml;base64,' + base64.b64encode(icon.encode()).decode() if inline else 'assets/icon.svg'
+            'data:image/svg+xml;base64,' + base64.b64encode(icon.encode()).decode() if inline else 'assets/logo.svg'
         )
         logo_href = (
             'data:image/svg+xml;base64,' + base64.b64encode(logo.encode()).decode() if inline else 'assets/lab.svg'
@@ -1630,7 +1632,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         for key, value in {
             '{{NAME}}': html.escape(web['name']),
             '{{TAGLINE}}': html.escape(web.get('tagline', '')),
-            '{{ICON_HREF}}': icon_href,
+            '{{LOGO_HREF}}': icon_href,
             '{{THEME}}': theme,
             '{{ART}}': art,
             '{{LAB}}': lab,
@@ -1655,7 +1657,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
 
     for name in ('kit.css', *MODULES):
         shutil.copyfile(_asset(f'assets/{name}'), out / 'assets' / name)
-    (out / 'assets' / 'icon.svg').write_text(icon)
+    (out / 'assets' / 'logo.svg').write_text(icon)
     if logo:
         (out / 'assets' / 'lab.svg').write_text(logo)
     (out / 'glance.json').write_text(
@@ -1859,7 +1861,8 @@ def pages(
     out.mkdir(parents=True, exist_ok=True)
     (out / '.nojekyll').write_text('')
     cfg = LP.load_config(landing_config, site_paths[0] if site_paths else None)
-    cards, lab, registry, first_built = [], None, [], None
+    cards, lab, registry, first_built, root_last = [], None, [], None, Path('.')
+    switcher_label = (cfg.get('switcher') or {}).get('label')
     for sp in site_paths:
         site = load_site(sp)
         web = site.get('website', {})
@@ -1875,10 +1878,12 @@ def pages(
         # the one-file copy (<id>.html, up to 84 MB) is for offline use: it stays in the build folder, not in the published site
         shutil.copytree(src, dest, ignore=lambda d, names: [f'{site["id"]}.html'] if Path(d) == src else [])
         first_built = first_built or site['id']
+        root_last = root_of(site)
         profile = site_profile(site)
         band = web.get('band', DEFAULT_BAND)
         lab = lab or web.get('lab')
         landing = web.get('landing') or {}
+        switcher_label = switcher_label or (web.get('switcher') or {}).get('label')
         registry.append(
             {
                 'id': site['id'],
@@ -1923,13 +1928,21 @@ def pages(
                 'vars': LP._vars(band, web.get('accent'), web.get('accent_dark')),
                 'group': landing.get('group'),
                 'href': f'{site["id"]}/',
+                'logo': f'{site["id"]}/assets/logo.svg',
                 'cta': cta,
             }
         )
         log(f'  {site["id"]} -> {dest}')
     cards += [LP.soon_card(s, cfg) for s in cfg.get('soon') or []]
     # the sites' own header menu reads this list (kit-switch.js)
-    (out / 'sites.json').write_text(json.dumps({'sites': registry}, indent=1))
+    (out / 'sites.json').write_text(json.dumps({'switcher_label': switcher_label, 'sites': registry}, indent=1))
+    # the landing page's own logo (landing.yml `logo`: an SVG file, relative to the working directory or the first site's repository)
+    logo_href = None
+    if cfg.get('logo'):
+        lf = next((f for f in (Path(cfg['logo']), root_last / cfg['logo']) if f.is_file()), None)
+        if lf:
+            (out / 'logo.svg').write_text(lf.read_text())
+            logo_href = 'logo.svg'
     kit = kit_citation()
     lab_html = (
         (
@@ -1951,6 +1964,7 @@ def pages(
         lab_html=lab_html,
         fonts_css=FONTS['stylesheet'],
         built_with=built_with,
+        logo=logo_href,
     )
     (out / 'index.html').write_text(text)
     log(f'  -> {out / "index.html"}')
