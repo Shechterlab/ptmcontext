@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ptmcontext"
-version = "0.1.0"
+version = "0.2.0"
 description = "One proteome background, many units and marks: the Shechter lab's shared model of the human proteome (sequence, regions, domains, modifications) and the tests and release format built on it"
 requires-python = ">=3.10"
 license = { text = "MIT" }

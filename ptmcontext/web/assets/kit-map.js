@@ -1100,7 +1100,6 @@
   function draw_rowlabel(c) {
     const {
       drawnRows,
-      narrow,
       ML,
       parts,
       P,
@@ -1136,8 +1135,8 @@
       if (sw) help += ' Click the label to switch rows.';
       const size = 11;
       let t = lab; // track labels are never smaller than 11; one that does not fit is cut, its hover has the whole
-      if (narrow && K.tw(t, size, 600) > ML - 6) {
-        // a phone: the label wraps onto two lines at a space (the hover has the whole), the second cut only if it still does not fit
+      if (K.tw(t, size, 600) > ML - 6) {
+        // a label that does not fit wraps onto two lines at a space (the hover has the whole), the second cut only if it still does not fit
         const cut = (x) => {
           while (x.length > 3 && K.tw(x + '…', 10, 600) > ML - 6) x = x.slice(0, -1);
           return x + '…';
