@@ -1,7 +1,7 @@
 # Build every site from its sources and publish them on GitHub Pages, with a landing page. Runs on each push to develop,
 # the working branch the site is served from, and to main (and by hand). Pages' source must be "GitHub Actions", and
 # the github-pages environment must allow develop among its deployment branches. The methylarginine site reads the release's public inputs as data, checked against inputs.json, and
-# must still equal release v1.4.3.
+# must still equal release v1.4.3. The export audits (text overlap, legends) run in tests.yml, so a deploy does not wait for them.
 # (The yeast site is not published: sites/yeast_phospho.yaml stays as an example of a second organism.)
 name: pages
 on:
@@ -132,28 +132,6 @@ jobs:
           ptmc run sites/methylarginine.yaml --root reference --variant with_lower_confidence
           ptmc web sites/methylarginine.yaml
           ptmc web sites/methylarginine.yaml --variant with_lower_confidence
-      # What every download of the built methylarginine site draws: no text over another or across a line of its figure, and every
-      # card's color key (and legend) in the export, SVG and PDF (PNG is drawn from the same SVG as the PDF). The site is served
-      # as it is built and walked in a headless browser, without and with a selection; any hit fails the job and holds the deploy.
-      - uses: actions/setup-node@v5
-        with:
-          node-version: "22"
-      - name: Export audits (text overlap, legends)
-        timeout-minutes: 60
-        run: |
-          sudo apt-get install -y --no-install-recommends poppler-utils
-          mkdir -p "$RUNNER_TEMP/pw" && (cd "$RUNNER_TEMP/pw" && npm init -y >/dev/null && npm install playwright@1.63.0 && npx playwright install --with-deps chromium)
-          python3 -m http.server 8931 --directory out/methylarginine/web >/dev/null 2>&1 &
-          sleep 2
-          export NODE_PATH="$RUNNER_TEMP/pw/node_modules"
-          # the PDF's libraries and fonts, which the kit loads from these addresses; the page may reach nothing else
-          mkdir -p "$RUNNER_TEMP/cdn" && cd "$RUNNER_TEMP/cdn"
-          for u in $(grep -ohE "https://(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net)/[^'\"]+\.(js|ttf)" "$GITHUB_WORKSPACE"/ptmcontext/web/assets/kit.js | sort -u); do curl -fsSL -O "$u"; done
-          cd "$GITHUB_WORKSPACE"
-          fail=0
-          node tools/audit/export_overlap.js http://localhost:8931/index.html || fail=1
-          node tools/audit/export_legend.js http://localhost:8931/index.html --pdf --cdn "$RUNNER_TEMP/cdn" || fail=1
-          exit $fail
       # The methyllysine site (unlisted on the landing page; in the sites' header menu): release v1.5.0 of PTM_Pipeline, pinned
       # above, with the generic inputs the methylarginine site reads. It has no reference release: every statistic is new.
       - name: Methyllysine site
@@ -162,36 +140,12 @@ jobs:
           ptmc run sites/methyllysine.yaml --root reference --variant with_lower_confidence
           ptmc web sites/methyllysine.yaml
           ptmc web sites/methyllysine.yaml --variant with_lower_confidence
-      - name: Export audits, methyllysine (text overlap, legends)
-        timeout-minutes: 60
-        run: |
-          python3 -m http.server 8932 --directory out/methyllysine/web >/dev/null 2>&1 &
-          sleep 2
-          export NODE_PATH="$RUNNER_TEMP/pw/node_modules"
-          fail=0
-          # the walk's default selections and proteins are the methylarginine site's: this site's own (a histone class, its
-          # chromatin class, histone H3 and p53)
-          sel="f=p:histone~histone|f=p:panther_group~Transcription, chromatin and DNA"
-          node tools/audit/export_overlap.js http://localhost:8932/index.html --proteins P68431,P04637 --selection "$sel" || fail=1
-          node tools/audit/export_legend.js http://localhost:8932/index.html --pdf --cdn "$RUNNER_TEMP/cdn" --proteins P68431,P04637 --selection "$sel" || fail=1
-          exit $fail
       # The phosphosite site (listed on the landing page and in the sites' header menu): release v1.5.0 of PTM_Pipeline, pinned
       # above, with the generic inputs the other sites read. No reference release: every statistic is new.
       - name: Phosphosite site
         run: |
           ptmc run sites/phospho.yaml --root reference
           ptmc web sites/phospho.yaml
-      - name: Export audits, phosphosite (text overlap, legends)
-        timeout-minutes: 60
-        run: |
-          python3 -m http.server 8933 --directory out/phospho/web >/dev/null 2>&1 &
-          sleep 2
-          export NODE_PATH="$RUNNER_TEMP/pw/node_modules"
-          fail=0
-          sel="f=p:kinase_motifs~proline_directed"
-          node tools/audit/export_overlap.js http://localhost:8933/index.html --proteins P04637,P31749 --selection "$sel" || fail=1
-          node tools/audit/export_legend.js http://localhost:8933/index.html --pdf --cdn "$RUNNER_TEMP/cdn" --proteins P04637,P31749 --selection "$sel" || fail=1
-          exit $fail
       # the one-file copies (out/<site>/web/<site>.html, up to 84 MB each) are not published on Pages: kept as a workflow artifact
       - uses: actions/upload-artifact@v4
         with:
