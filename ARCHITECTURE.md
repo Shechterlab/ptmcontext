@@ -97,6 +97,7 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 | Module | What it does |
 |---|---|
 | `kit-busy.js` | a quiet progress bar and screen-reader status while a data file of the site is still coming (wraps `fetch`) |
+| `kit-papers.js` | PubMed identifiers: `K.papers.ids(value)` splits on `;`, `,` or space, `K.papers.links(ids)` is one link each, a long list collapsed to "N papers" |
 | `kit-cols.js` | values by name (`K.cols`): a mark record's classes and attributes by column name, whatever a site has |
 | `kit-late.js` | data read when first asked for (`D.late`: the protein attributes' values in `data/site.json`) |
 | `kit-stats.js` | the tests in the browser; this is `ptmstats.js` of packages/ptmstats, copied under that name |
@@ -112,6 +113,7 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 | `kit-map.js` | the protein map: marks as lollipops over the domains and regions, with rows from named sources |
 | `kit-3d.js` | the protein page's 3D structure (3Dmol.js loaded when it opens); `website.features.structure_3d` switches it off |
 | `kit-columns.js` | a table's optional columns in a Columns menu, remembered per table |
+| `kit-tablefit.js` | marks a table wider than its card (`.has-x`) and puts a "scroll sideways" hint above it; the edge fade and the visible scrollbar are in `kit.css` |
 | `kit-sitecard.js` | the site card's blocks, the sites table's cells and Evidence rows, the citation box |
 | `kit-pagepdf.js` | a page as an A4 PDF without the print dialog |
 | `kit-proteins.js` | a page per protein (map, its marks, live cards) and the protein page's sections registry (`K.proteinFoldSections`) |

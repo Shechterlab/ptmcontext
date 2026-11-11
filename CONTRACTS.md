@@ -479,6 +479,12 @@ legend's order, `site` for the site's own marks and a context mark's id for the 
 are kept for the browser session. The PDF, SVG and PNG exports draw the row and its legend as shown, and the per-mark rows
 when unfolded.
 
+**The order of the map's rows.** The Rows menu lists the rows with a handle: drag it, or focus it and press the up and
+down arrow keys (the arrow buttons do the same); "Reset order" restores the default. The order is kept in the browser and
+in the address as `rows=<id>,<id>,...` (only when it is not the default), so a link keeps it, and the PDF, SVG and PNG
+exports draw the rows in it. The exports' sizes are the screen layout, a single column (85 mm), a double column (180 mm) or
+a custom width in millimeters; the text is laid out to print at no less than 6 pt, with the key and the citation.
+
 **Map hovers.** `website.protein.map.hover` sets what the hovers of the protein map say; the rest is on the pinned card
 (a click on a context mark) and the site card (a click on a site). `site` lists the fields of a site's hover, in order:
 `name` (residue and position, and the color class), `chips` (a line of short evidence chips), `nearby` (the context marks
