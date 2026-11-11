@@ -376,11 +376,13 @@ def test_the_site_card_shows_the_formats_with_the_site_files_words(tmp_path):
     tb = {**shard['P1'], '_s': shard.get('_s', [])}
     script = f"""
 global.window = {{}}; global.document = {{ getElementById: () => null, addEventListener: () => {{}} }};
+eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-papers.js'))}, 'utf8'));
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-sitecard.js'))}, 'utf8'));
 const D = {json.dumps(data)}, esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}})[c]);
 const K = {{ D, W: D.words, esc, int: n => String(n), cap: t => String(t)[0].toUpperCase() + String(t).slice(1), clicks: [], link: (v, a) => '#' + v + '/' + a,
   map: {{ attrColour: () => '#000' }}, preamble: () => '', CIT: {{}}, download: () => {{}} }};
 window.PTMC_MODULES[0](K);
+window.PTMC_MODULES[1](K);
 const attrs = {{ state: 'me1', ev: 'xl; pred', studies: 'LabA; LabB', rec_class: '' }};
 const c = {{ p: {{ acc: 'P1' }}, tb: {json.dumps(tb)}, acc: 'P1', pos: 2, gene: 'ONE', label: 'R2', seq: {json.dumps(P1)}, window: '______MRGGRAAAA',
   shown: q => q, attr: n => attrs[n] ?? '', attrHtml: (n, v) => v, isListed: a => a === 'P2' }};
@@ -428,11 +430,13 @@ def test_the_sites_pages_one_small_file_draws_the_same_blocks_as_the_shards(tmp_
     assert (folder / 'sites_default.json').stat().st_size < sum(f.stat().st_size for f in (folder / 'e').glob('*.json'))
     script = f"""
 global.window = {{}}; global.document = {{ getElementById: () => null, addEventListener: () => {{}} }};
+eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-papers.js'))}, 'utf8'));
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-sitecard.js'))}, 'utf8'));
 const D = {json.dumps(data)}, esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}})[c]);
 const K = {{ D, W: D.words, esc, int: n => String(n), cap: t => String(t)[0].toUpperCase() + String(t).slice(1), clicks: [], link: (v, a) => '#' + v + '/' + a,
   map: {{ attrColour: () => '#000' }}, preamble: () => '', CIT: {{}}, download: () => {{}} }};
 window.PTMC_MODULES[0](K);
+window.PTMC_MODULES[1](K);
 const attrs = {{ state: 'me1', ev: 'xl; pred', studies: 'LabA; LabB', rec_class: '' }};
 const full = {{ ...{json.dumps(whole)}['P1'], _s: {json.dumps(whole.get('_s', []))} }}, part = {{ ...({json.dumps(small)}['P1'] || {{}}), _s: {json.dumps(small.get('_s', []))} }};
 const draw = (tb, pos) => {{ const c = {{ p: {{ acc: 'P1' }}, tb, acc: 'P1', pos, gene: 'ONE', label: 'R' + pos, seq: '', window: '', shown: q => q,
