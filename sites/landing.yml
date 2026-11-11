@@ -5,8 +5,8 @@ title: Modifications in proteins
 description: "Websites, one per modification and proteome, that test where modification sites lie in proteins and which protein classes are enriched for them."
 lede: Position of each modification in proteins, and which proteins are modified.
 intro:
-  - "ptmcontext puts many post-translational marks on one reference proteome and asks the same questions of each."
-  - "Every mark is tested fairly within each protein: a site is compared with the other residues of its own protein, so long proteins and disordered regions do not inflate the result. Pick a mark to explore."
+  - "ptmcontext puts many post-translational modifications on one reference proteome and asks the same questions of each."
+  - "Every modification is tested within each protein: a site is compared with the other residues of its own protein, so long proteins and disordered regions do not inflate the result. Pick a modification to explore."
 logo: sites/art/ptmcontext_logo.svg
 switcher: {label: PTM}
 cta: "Explore {marks} →"

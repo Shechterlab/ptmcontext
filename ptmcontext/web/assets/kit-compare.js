@@ -38,7 +38,7 @@
       (K.sel.active() && S.vs === 'residues' && K.sel.nMarks()
         ? `<button class="btn ` +
           `small" type="button" data-apart-here title="Selected ${esc(W.marks)} against the other ${esc(W.marks)}, question ` +
-          `by question">What sets it apart? ›</button>`
+          `by question">How does it differ? ›</button>`
         : '') +
       (K.sel.savedList().length
         ? `<button class="btn small" type="button" data-go-compare title="Compare this ` +

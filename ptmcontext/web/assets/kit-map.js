@@ -340,7 +340,7 @@
       `${cap(W.marks)} in UniProt`,
       'live',
       `The ${W.marks} as UniProt reports them (Modified residue ` +
-        `features named in the mark’s profile), inked where this site has the ${W.mark} too`,
+        `features named in the modification’s profile), inked where this site has the ${W.mark} too`,
     ],
     [
       'variants',
@@ -1795,7 +1795,7 @@
       rowLabel(
         lab,
         top + th / 2,
-        `${order.map((d) => d.label).join(', ')}, together on one track; each mark has its own shape and color. ${CMB.help || ''}`.trim()
+        `${order.map((d) => d.label).join(', ')}, together on one track; each modification has its own shape and color. ${CMB.help || ''}`.trim()
       );
       c.y += th + 2;
       // the legend: an entry for each mark, a button that turns it off and on
@@ -2504,8 +2504,8 @@
         .join('')}</span></span>` +
       (COMB_ON
         ? `<button type="button" class="btn small" data-map-fold aria-expanded="${!M.fold}" ` +
-          `title="${esc(`The ${CTX_IDS.length} context marks have a row each; they are folded into the combined row at first`)}">${
-            M.fold ? 'Show each mark' : 'Fold marks'
+          `title="${esc(`The ${CTX_IDS.length} other modifications each have a row; they start folded into the combined row`)}">${
+            M.fold ? 'Show each modification' : 'Combine modifications'
           }</button>`
         : '') +
       `<span class="rows-wrap"><button type="button" class="btn small" data-map-rows aria-expanded="${M.rowsMenu}">Rows ▾</button>${M.rowsMenu ? rowsMenu() : ''}</span>` +

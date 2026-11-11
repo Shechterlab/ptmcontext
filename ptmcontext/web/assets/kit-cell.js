@@ -2514,7 +2514,7 @@
         `<th>Its compartment</th><th>${esc(cap(here))}</th><th>Against ${esc(alike)}</th></tr></thead><tbody>${trs}</tbody></table>` +
         `</div>`) +
       `<div class="cell-members"><div class="fig-head"><span class="flabel">${
-        scoped ? 'Proteins of your selection found here' : `${esc(cap(W.marked))} proteins ` + `placed here`
+        scoped ? 'Proteins of your selection found here' : `${esc(cap(W.marked))} proteins ` + `found here`
       }${mem ? ` (${int(mem.length)})` : ''}</span>` +
       (mem && mem.length
         ? `<span><button class="btn small" type="button" data-cell-select>Select these ${int(mem.length)} proteins</button>` +
@@ -2559,7 +2559,7 @@
       : K.selOn()
         ? ` <b>Your selection</b> ${
             K.vsOn()
-              ? 'is compared with other marks; the maps compare proteins, so this page shows'
+              ? 'is compared with other modifications; the maps compare proteins, so this page shows'
               : 'is too small to test; this page shows'
           } all ${esc(W.marked)} proteins.`
         : '';

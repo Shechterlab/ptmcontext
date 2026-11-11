@@ -249,7 +249,7 @@ marks:
       separator: "; "
       control: select
       filter: true
-      help: "Each knockout, knockdown or inhibitor that quantified a peptide carrying the site, with its call (twofold at q < 0.05, or the published call): peptide-level evidence"
+      help: "Each knockout, knockdown or inhibitor that quantified a peptide containing the site, with its call (twofold at q < 0.05, or the published call): peptide-level evidence"
       values:
         "carm1_ko_mcf7:decreased": "CARM1 knockout (MCF7): decreased"
         "carm1_ko_mcf7:increased": "CARM1 knockout (MCF7): increased"
@@ -576,7 +576,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     filter: {label: CD-CODE condensate (methylated members), any: In any CD-CODE condensate, sets: all}   # every condensate with a methylated member, as the original
   - id: condensate
     test: protein_sets
-    title: Biomolecular condensates, against other condensate proteins
+    title: Biomolecular condensates, compared with other condensate proteins
     question: "Which biomolecular condensates stand out among condensate proteins (CD-CODE)?"
     sub: "CD-CODE condensates with a higher fraction of methylated members than all condensate proteins: every human condensate (not synthetic) with at least five members, its members against the proteins in any of these condensates, about half of which are methylated (one-sided hypergeometric test)"
     section: Protein classes and pathways
@@ -924,7 +924,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Next to aromatic residues (within 3)
     question: "Are methylarginines more often next to aromatic residues than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) lie within 3 residues on either side. Aromatic residues pair with arginine in condensates (cation–π), and methylation weakens that contact"
+    sub: "Methylarginines against the other arginines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) are within 3 residues on either side. Aromatic residues pair with arginine in condensates (cation–π), and methylation weakens that contact"
     section: Position in the protein
   - id: sticker_context_5
     family: Next to aromatic residues
@@ -933,7 +933,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Next to aromatic residues (within 5)
     question: "Are methylarginines more often next to aromatic residues than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) lie within 5 residues on either side"
+    sub: "Methylarginines against the other arginines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) are within 5 residues on either side"
     section: Position in the protein
   - id: sticker_context_3_idr
     family: Next to aromatic residues
@@ -943,7 +943,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Next to aromatic residues, in IDRs (within 3)
     question: "Inside disordered regions, are methylarginines more often next to aromatic residues than the other arginines there?"
-    sub: "Only arginines inside IDRs of 20 or more residues: methylarginines against the other arginines of the same proteins in IDRs, by how many aromatic residues lie within 3 residues on either side"
+    sub: "Only arginines inside IDRs of 20 or more residues: methylarginines against the other arginines of the same proteins in IDRs, by how many aromatic residues are within 3 residues on either side"
     section: Position in the protein
   - id: sticker_context_5_idr
     family: Next to aromatic residues
@@ -953,7 +953,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Next to aromatic residues, in IDRs (within 5)
     question: "Inside disordered regions, are methylarginines more often next to aromatic residues than the other arginines there?"
-    sub: "Only arginines inside IDRs of 20 or more residues: methylarginines against the other arginines of the same proteins in IDRs, by how many aromatic residues lie within 5 residues on either side"
+    sub: "Only arginines inside IDRs of 20 or more residues: methylarginines against the other arginines of the same proteins in IDRs, by how many aromatic residues are within 5 residues on either side"
     section: Position in the protein
   # Near other marks: are methylarginines more often within 10 residues of another modification than the other
   # arginines of their proteins? Context marks (context_marks above), not part of the release's analyses
@@ -963,56 +963,56 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near phosphosites (±10 residues)
     question: "Are methylarginines more often near a phosphosite than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) lies within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methylarginines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
-    section: Other marks
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) is within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methylarginines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
+    section: Other modifications
   - id: near_phospho_high
     layer: near_marks
     with: {marks: phospho_high, window: 10, noun: high-score phosphosite}
     new: true
     title: Near high-score phosphosites (±10 residues)
     question: "Are methylarginines more often near a high-score phosphosite than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite with an Ochoa et al. 2020 functional score of 0.5 or more (about 10,900 sites; the score is a model of how likely a site is functionally important) lies within 10 residues on either side. Sites without a score are not counted as high-score. The comparison within each protein limits the effect of heavily studied proteins, not removes it"
-    section: Other marks
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite with an Ochoa et al. 2020 functional score of 0.5 or more (about 10,900 sites; the score is a model of how likely a site is functionally important) is within 10 residues on either side. Sites without a score are not counted as high-score. The comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    section: Other modifications
   - id: near_methyllysine
     layer: near_marks
     with: {marks: methyllysine, window: 10, noun: methyllysine}
     new: true
     title: Near methyllysines (±10 residues)
     question: "Are methylarginines more often near a methyllysine than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a methyllysine (UniProt, iPTMnet, CPLM and Berryhill 2023, by-similarity records left out) lies within 10 residues on either side. Few proteins carry a recorded methyllysine"
-    section: Other marks
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a methyllysine (UniProt, iPTMnet, CPLM and Berryhill 2023, by-similarity records left out) is within 10 residues on either side. Few proteins carry a recorded methyllysine"
+    section: Other modifications
   - id: near_acetylation
     layer: near_marks
     with: {marks: acetylation, window: 10, noun: "acetylation site", labels: {near: "An acetylation site within ±10", none: "No acetylation site within ±10"}}
     new: true
     title: Near acetylation sites (±10 residues)
     question: "Are methylarginines more often near an acetylation site than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) lies within 10 residues on either side. Acetylation is among the most studied lysine marks and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
-    section: Other marks
+    sub: "Methylarginines against the other arginines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
+    section: Other modifications
   - id: near_other_acylation
     layer: near_marks
     with: {marks: other_acylation, window: 10, noun: "other acylation site", labels: {near: "Another lysine acylation within ±10", none: "No other acylation site within ±10"}}
     new: true
     title: Near other acylation sites (±10 residues)
     question: "Are methylarginines more often near another lysine acylation than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) lies within 10 residues on either side. These marks (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
-    section: Other marks
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) is within 10 residues on either side. These modifications (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    section: Other modifications
   - id: near_ubiquitination
     layer: near_marks
     with: {marks: ubiquitination, window: 10, noun: "ubiquitination site", labels: {near: "A ubiquitination site within ±10", none: "No ubiquitination site within ±10"}}
     new: true
     title: Near ubiquitination sites (±10 residues)
     question: "Are methylarginines more often near a ubiquitination site than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a ubiquitination site (by-similarity records left out) lies within 10 residues on either side"
-    section: Other marks
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a ubiquitination site (by-similarity records left out) is within 10 residues on either side"
+    section: Other modifications
   - id: near_sumoylation
     layer: near_marks
     with: {marks: sumoylation, window: 10, noun: "SUMOylation site", labels: {near: "A SUMOylation site within ±10", none: "No SUMOylation site within ±10"}}
     new: true
     title: Near SUMOylation sites (±10 residues)
     question: "Are methylarginines more often near a SUMOylation site than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a SUMOylation site (by-similarity records left out) lies within 10 residues on either side"
-    section: Other marks
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a SUMOylation site (by-similarity records left out) is within 10 residues on either side"
+    section: Other modifications
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
   - id: which_factor
@@ -1254,7 +1254,7 @@ variants:                # the same questions on other marks; ptmc run --variant
 
 
 # Context marks: other modifications shown beside the methylarginines (CONTRACTS.md, Context marks). The release v1.5.0
-# tables; by-similarity rows are dropped (the default). A map row, "Other marks nearby" on the site card, a filter, table
+# tables; by-similarity rows are dropped (the default). A map row, "Other modifications nearby" on the site card, a filter, table
 # columns and downloads follow from these entries; the near_marks questions below test them.
 context_marks:
   - id: phospho
@@ -1367,7 +1367,7 @@ website:                  # the look and words of the website (ptmc web); layout
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
     tagline: "Human arginine methylation sites from published studies."
-    question: "Which proteins carry methylarginine, and where in the protein, and in what company, does the mark fall?"
+    question: "Which proteins carry methylarginine, and where in the protein is it, and what other modifications are nearby?"
   band: ["#155e75", "#0f3b47"]      # the header gradient: teal
   accent: "#c2410c"                 # the orange rule, active tab and links; shared by the lab's sites
   accent_dark: "#fb923c"
@@ -1533,7 +1533,7 @@ website:                  # the look and words of the website (ptmc web); layout
     text: "Human arginine methylation sites from published studies and databases: their positions, proteins and disease links. Each tile is one question, comparing the methylarginines with the other arginines of the same proteins. Search a protein, a gene list or a disease to test your own selection."
     examples:
       - {label: A list of genes, query: TAF15 EWSR1 FUS, help: "Every question is tested again on their methylarginines."}
-      - {label: A disease, query: "disease_family:ALS", help: "Methylarginines on proteins linked to a disease family, and what sets them apart."}
+      - {label: A disease, query: "disease_family:ALS", help: "Methylarginines on proteins linked to a disease family, and how they differ from other sites."}
       - {label: One site in its structure, query: FUS R216, help: "Its protein's domain and disorder map, the evidence for the site, and its structures."}
   stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
@@ -1569,7 +1569,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
           - {analysis: condensate_role, title: Roles in condensates}
       - name: Where in the protein
-        about: "Where along the protein the methylated arginines fall: motifs, folded or disordered parts, domains."
+        about: "Where in the protein the methylated arginines are: motifs, folded or disordered parts, domains."
         cards:
           - {analysis: structure_context}
           - {analysis: idr_charge}
@@ -1584,8 +1584,8 @@ website:                  # the look and words of the website (ptmc web); layout
         about: "Whether methylated arginines touch RNA, DNA or other proteins. The Interactions page has the tests."
         #  the Interactions page's tile (website.pages[].overview)
         cards: []
-      - name: Other marks
-        about: "Whether methylated arginines sit near other modifications (context marks: phosphosites and methyllysines), within 10 residues."
+      - name: Other modifications
+        about: "Whether methylated arginines are near other modifications (phosphosites and methyllysines), within 10 residues."
         cards:
           - {analysis: near_phospho}
           - {analysis: near_phospho_high}
@@ -1734,7 +1734,7 @@ website:                  # the look and words of the website (ptmc web); layout
       two_or_more: on proteins with partners in two or more classes
       top: 8
       bins: 4
-      note: "A class describes the protein's physical partners. STRING associations are to the whole protein, so a count does not show that a partner writes or reads that arginine. Methyllysine readers fall in the uncurated Tudor class."
+      note: "A class describes the protein's physical partners. STRING associations are to the whole protein, so a count does not show that a partner writes or reads that arginine. Methyllysine readers are in the uncurated Tudor class."
       method: "The site file lists the partner classes (website.search.partners.classes) by gene and InterPro id, each with the paper that shows its role. A protein is in a class when one of its STRING physical partners is."
     provenance:
       kind: values
@@ -1760,7 +1760,7 @@ website:                  # the look and words of the website (ptmc web); layout
       first: Perturbation
       group: Methyl-IP
       calls: {down: decreased, up: increased}
-      note: "Rows count the methylarginines an experiment measured and those that changed. A site is decreased when a peptide carrying it went down and none went up, and increased for the reverse. A peptide with several methylarginines gives each the same change. Maron rows: sites measured in that methyl-IP, with a peptide changing at adjusted p ≤ 0.05. CARM1 knockout rows: sites measured in that cell line, with a peptide changing at least twofold at BH q < 0.05. Other rows: sites quantified, called at twofold and q < 0.05, or by the published call where the row says so (the PRMT1 knockdown, 2 against 2 samples, and the Li et al. 2021 arms, one SILAC experiment each, untested). The Li et al. PRMT5 knockdown lists only decreased sites. Median change is the median over sites of each site's median log2 change (inhibitor minus DMSO for Maron rows, perturbed over control for the rest)."
+      note: "Rows count the methylarginines an experiment measured and those that changed. A site is decreased when a peptide containing it went down and none went up, and increased for the reverse. A peptide with several methylarginines gives each the same change. Maron rows: sites measured in that methyl-IP, with a peptide changing at adjusted p ≤ 0.05. CARM1 knockout rows: sites measured in that cell line, with a peptide changing at least twofold at BH q < 0.05. Other rows: sites quantified, called at twofold and q < 0.05, or by the published call where the row says so (the PRMT1 knockdown, 2 against 2 samples, and the Li et al. 2021 arms, one SILAC experiment each, untested). The Li et al. PRMT5 knockdown lists only decreased sites. Median change is the median over sites of each site's median log2 change (inhibitor minus DMSO for Maron rows, perturbed over control for the rest)."
       method: "The release's supporting tables give each site's call and change per experiment: maron2021_inhibitors (Maron et al. 2021 Table S3), carm1_ko (Shishkova et al. 2017) and writer_perturbations. The calls of the last two are the site table's perturbation_calls (the perturbation filter). Counts and medians are descriptive. No test is run here."
       rows:
         - {name: GSK591, note: PRMT5 inhibitor, group: Rme1, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: MMA}, change: log2_diff_median}
@@ -1846,7 +1846,7 @@ website:                  # the look and words of the website (ptmc web); layout
       other_ptms:
         key: ptm
         label: Other PTM nearby
-        help: "Another modification near the site, other than the context marks (phosphosites, methyllysines), from the PTM master table (iPTMnet export, not exhaustive)"
+        help: "Another modification near the site, other than these (phosphosites, methyllysines), from the PTM master table (iPTMnet export, not exhaustive)"
         kinds: {lys_acyl: Lys acylation, ub_sumo: "Ub or SUMO (K)"}
         within: [2, 5, 10, 20]
       residues:
@@ -2316,8 +2316,8 @@ website:                  # the look and words of the website (ptmc web); layout
         note: "Data: DepMap Public 24Q4 (CRISPR, Chronos; CC BY 4.0) and TCGA tumors (MC3 somatic calls from the GDC, open access; based on data generated by the TCGA Research Network). A change counts only at an arginine of the canonical UniProt sequence."
       perturbations:
         title: PRMT inhibitors, knockouts and knockdowns
-        sub: "Did a peptide carrying the site change in PRMT knockouts, knockdowns or inhibitors?"
-        note: "A call is a peptide-level change: a site is decreased when a peptide carrying it decreased and none increased (twofold at q < 0.05, or the study's own call for the knockdowns and the PRMT7 inhibitor). Not quantified is left blank."
+        sub: "Did a peptide containing the site change in PRMT knockouts, knockdowns or inhibitors?"
+        note: "A call is a peptide-level change: a site is decreased when a peptide containing it decreased and none increased (twofold at q < 0.05, or the study's own call for the knockdowns and the PRMT7 inhibitor). Not quantified is left blank."
       experiments:
         title: Experiments on its methylation
         table: experiments
@@ -2331,7 +2331,7 @@ website:                  # the look and words of the website (ptmc web); layout
       other_ptms:
         title: Other PTMs
         table: other_ptms
-        sub: "Modifications recorded on this protein other than the context marks (phosphosites and methyllysines, shown on the protein map and the site card)."
+        sub: "Modifications recorded on this protein other than these (phosphosites and methyllysines, shown on the protein map and the site card)."
         kinds: {lys_acyl: Lysine acylation, ub_sumo: Ubiquitin and SUMO}
         near: 10
         note: "Not an exhaustive list: it holds only what the cross-PTM table used here contains (an iPTMnet export of HPRD, literature mining and other curated sources, plus UniProt), so modifications reported elsewhere may be missing."
@@ -2577,13 +2577,13 @@ website:                  # the look and words of the website (ptmc web); layout
         suggest:
           label: Writer suggested
           rules:
-            - {attribute: methyl_ip, has: [SDMA], suggests: PRMT5, because: "a peptide carrying it was recovered by the SDMA antibody (symmetric dimethylation, made by PRMT5)"}
-            - {attribute: methyl_ip, has: [ADMA], suggests: type I PRMTs, because: "a peptide carrying it was recovered by the ADMA antibody (asymmetric dimethylation, made by type I PRMTs such as PRMT1 and CARM1)"}
-            - {attribute: gsk591, has: [decreased], suggests: PRMT5, because: "a peptide carrying it decreased with the PRMT5 inhibitor GSK591, and none increased"}
-            - {attribute: ms023, has: [decreased], suggests: type I PRMTs, because: "a peptide carrying it decreased with the type I PRMT inhibitor MS023, and none increased"}
+            - {attribute: methyl_ip, has: [SDMA], suggests: PRMT5, because: "a peptide containing it was recovered by the SDMA antibody (symmetric dimethylation, made by PRMT5)"}
+            - {attribute: methyl_ip, has: [ADMA], suggests: type I PRMTs, because: "a peptide containing it was recovered by the ADMA antibody (asymmetric dimethylation, made by type I PRMTs such as PRMT1 and CARM1)"}
+            - {attribute: gsk591, has: [decreased], suggests: PRMT5, because: "a peptide containing it decreased with the PRMT5 inhibitor GSK591, and none increased"}
+            - {attribute: ms023, has: [decreased], suggests: type I PRMTs, because: "a peptide containing it decreased with the type I PRMT inhibitor MS023, and none increased"}
             - {attribute: perturbation, has: ["carm1_ko_mcf7:decreased", "carm1_ko_mdamb231:decreased"], suggests: CARM1, replaces: type I PRMTs,
-               because: "a peptide carrying it decreased in CARM1 knockout cells, and none increased"}
-          none: "No writer suggested: no peptide carrying it was recovered by the ADMA or SDMA antibodies or fell with a PRMT inhibitor or knockout"
+               because: "a peptide containing it decreased in CARM1 knockout cells, and none increased"}
+          none: "No writer suggested: no peptide containing it was recovered by the ADMA or SDMA antibodies or fell with a PRMT inhibitor or knockout"
           sources: [Maron2021]
         partners:                            # a protein_partners table: its partners of some classes
           table: string
@@ -2607,7 +2607,7 @@ website:                  # the look and words of the website (ptmc web); layout
       tables:              # site_table tables shown in the Evidence row, each with its words
         - table: inhibitors
           title: PRMT inhibitor response
-          note: "Maron et al. 2021 Table S3, over the peptides carrying this site. A call means a peptide carrying the site changed (adj. p ≤ 0.05). A peptide with several methylarginines changes for any of them, so only the single-site column speaks for this arginine alone. The median is descriptive."
+          note: "Maron et al. 2021 Table S3, over the peptides containing this site. A call means a peptide containing the site changed (adj. p ≤ 0.05). A peptide with several methylarginines changes for any of them, so only the single-site column speaks for this arginine alone. The median is descriptive."
           source: Maron2021
           columns:
             - {column: antibody, label: Methyl-IP}
@@ -2847,7 +2847,7 @@ website:                  # the look and words of the website (ptmc web); layout
       title: Are methylarginines enriched at contacts with RNA, DNA or other proteins?
       sub: "Each methylarginine against the other arginines of its protein that the evidence could reach, in living cells (crosslinks and RNA-bound peptides), in solved structures and in predicted complexes. Also the proteins and partners with such evidence."
       method: |
-        Each residue test compares the methylarginines with the other arginines of the same proteins, as the release does, but each against the arginines its evidence could have reached: the proteins with that kind of evidence, the residues a PDB structure observed (SIFTS), or the residues an experiment measured. Within each protein: a Mantel–Haenszel odds ratio with its 95% CI, each protein a stratum; pooled: Fisher's exact test. In these questions every candidate arginine counts in the pooled test, as in the release. q is Benjamini–Hochberg within each question and test.
+        Each residue test compares the methylarginines with the other arginines of the same proteins, as the release does, but each against the arginines its evidence could have reached: the proteins with that kind of evidence, the residues a PDB structure observed (SIFTS), or the residues an experiment measured. Within each protein: a Mantel–Haenszel odds ratio with its 95% CI, each protein analyzed on its own; pooled: Fisher's exact test. In these questions every candidate arginine counts in the pooled test, as in the release. q is Benjamini–Hochberg within each question and test.
 
         The protein-set tests (proteins found binding RNA or DNA in cells; Gene Ontology RNA and DNA binding) count proteins: the methylated proteins in each set against the other proteins each experiment measured, or every reviewed human protein (one-sided hypergeometric test), again within PaxDb abundance deciles.
 

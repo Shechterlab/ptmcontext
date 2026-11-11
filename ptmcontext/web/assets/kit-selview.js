@@ -166,7 +166,7 @@
     // the row is merged into the selection bar: its summary line sits there, and the bar's button opens this
     return (
       `<details class="apart" id="sel-apart"${memo.open ? ' open' : ' hidden'}><summary><span class="apart-h">` +
-      `What sets it apart from the other ${esc(W.marks)}?</span> <span class="apart-sum muted" id="apart-sum">` +
+      `How does it differ from the other ${esc(W.marks)}?</span> <span class="apart-sum muted" id="apart-sum">` +
       `Comparing…</span></summary><div id="apart-body"></div></details>`
     );
   });
@@ -188,7 +188,7 @@
       body.innerHTML =
         `<div class="apart-card"><div class="apart-top"><p class="muted small">Your ${int(m.G.g1.length)} ${esc(W.marks)} against the other ${int(m.G.g2.length)}, across ` +
         `all proteins. The classes that differ most (q ≤ ${PADJ()}) with their odds ratio and both shares.</p>` +
-        K.expBar(['pdf', 'svg', 'png', 'tsv'], 'apexp', 'what sets it apart', 'apart') +
+        K.expBar(['pdf', 'svg', 'png', 'tsv'], 'apexp', 'how it differs', 'apart') +
         '</div>' +
         (m.shown.length
           ? `<svg class="apart-forest" viewBox="0 0 680 ${f.H}" role="img" aria-label="The classes ` +
@@ -411,8 +411,8 @@
   // ---- their Method sections ---------------------------------------------------------------------------------------
   (K.methodParts ||= []).push(
     () =>
-      `<section id="m-apart"><h3>What sets a selection apart</h3><p>A selection’s ${esc(W.marks)} are compared ` +
-      `with the other ${esc(W.marks)}, class by class, for every question about where ${esc(W.marks)} sit and ` +
+      `<section id="m-apart"><h3>How a selection differs</h3><p>A selection’s ${esc(W.marks)} are compared ` +
+      `with the other ${esc(W.marks)}, class by class, for every question about where ${esc(W.marks)} are and ` +
       `every attribute of the ${esc(W.marks)} except how they were found. Test: Fisher’s exact test on the 2×2 ` +
       `table of all proteins, Haldane odds ratio with Woolf’s 95% CI, Benjamini–Hochberg q within each question. A ` +
       `class differs at q ≤ ${PADJ()} and 1.1× or more, with at least 10 ${esc(W.marks)} in it across both sides. ` +

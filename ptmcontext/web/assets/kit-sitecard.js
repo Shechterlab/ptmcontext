@@ -533,7 +533,7 @@
       )
       .join('')}<span><span ` +
     `class="muted">${esc(CL.quiet || 'n.s.')}</span> measured, no significant change</span><span><span ` +
-    `class="muted">–</span> not measured</span><span class="muted">a number beside a mark: how many experiments ` +
+    `class="muted">–</span> not measured</span><span class="muted">a number beside a site: how many experiments ` +
     `· hover for the numbers</span></p>`;
   function calls(c, compact) {
     if (!(CL.tables || []).some(has) && !Object.keys(CL.attributes || {}).some((a) => SPECS[a])) return '';
@@ -731,7 +731,7 @@
     )}</span>${
       x.other_marks
         ? ` <span class="sp-marks" ` +
-          `title="Other marks of the protein in the experiment">+ ${esc(x.other_marks)}</span>`
+          `title="Other modifications of the protein in the experiment">+ ${esc(x.other_marks)}</span>`
         : ''
     }`;
   const papersCell = (x) => {

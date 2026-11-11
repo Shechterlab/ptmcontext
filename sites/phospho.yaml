@@ -205,7 +205,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       flank: 10
       noun: reader motif
       title: Reader motifs
-      question: "Do phosphosites sit in the motifs that phosphopeptide-binding domains read, against the residues of their own type in their proteins?"
+      question: "Are phosphosites in the motifs that phosphopeptide-binding domains recognize more often than other residues of the same type in their proteins?"
       sub: "Phosphosites against the other residues of their own type (serines and threonines, threonines, serines or tyrosines, as the motif has it) in the same proteins, by the sequence a reader domain binds when the site is phosphorylated: 14-3-3, polo-box, the beta-TrCP phosphodegron, SH2, FHA and BRCT. Pin1 binds pS/pT-P, the proline-directed class of the kinase motifs, so it has no row of its own. A motif is a candidate binding site, not shown to bind"
       section: Is it functional?
       families:
@@ -240,48 +240,48 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methylarginines (±10 residues)
     question: "Are phosphosites more often near a methylarginine than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3) lies within 10 residues on either side. Both marks are best studied on abundant, much-studied proteins, so the within-protein comparison is the fairer one"
-    section: Other marks
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3) is within 10 residues on either side. Both modifications are best studied on abundant, much-studied proteins, so the within-protein comparison is the fairer one"
+    section: Other modifications
   - id: near_methyllysine
     layer: near_marks
     with: {marks: methyllysine, window: 10, noun: methyllysine}
     new: true
     title: Near methyllysines (±10 residues)
     question: "Are phosphosites more often near a methyllysine than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methyllysine (the methyllysine site's release v1.5.0, by-similarity records left out) lies within 10 residues on either side"
-    section: Other marks
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methyllysine (the methyllysine site's release v1.5.0, by-similarity records left out) is within 10 residues on either side"
+    section: Other modifications
   - id: near_acetylation
     layer: near_marks
     with: {marks: acetylation, window: 10, noun: "acetylation site", labels: {near: "An acetylation site within ±10", none: "No acetylation site within ±10"}}
     new: true
     title: Near acetylation sites (±10 residues)
     question: "Are phosphosites more often near an acetylation site than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) lies within 10 residues on either side. Acetylation is among the most studied lysine marks and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
-    section: Other marks
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
+    section: Other modifications
   - id: near_other_acylation
     layer: near_marks
     with: {marks: other_acylation, window: 10, noun: "other acylation site", labels: {near: "Another lysine acylation within ±10", none: "No other acylation site within ±10"}}
     new: true
     title: Near other acylation sites (±10 residues)
     question: "Are phosphosites more often near another lysine acylation than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) lies within 10 residues on either side. These marks (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
-    section: Other marks
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) is within 10 residues on either side. These modifications (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    section: Other modifications
   - id: near_ubiquitination
     layer: near_marks
     with: {marks: ubiquitination, window: 10, noun: "ubiquitination site", labels: {near: "A ubiquitination site within ±10", none: "No ubiquitination site within ±10"}}
     new: true
     title: Near ubiquitination sites (±10 residues)
     question: "Are phosphosites more often near a ubiquitination site than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a ubiquitination site (by-similarity records left out) lies within 10 residues on either side"
-    section: Other marks
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a ubiquitination site (by-similarity records left out) is within 10 residues on either side"
+    section: Other modifications
   - id: near_sumoylation
     layer: near_marks
     with: {marks: sumoylation, window: 10, noun: "SUMOylation site", labels: {near: "A SUMOylation site within ±10", none: "No SUMOylation site within ±10"}}
     new: true
     title: Near SUMOylation sites (±10 residues)
     question: "Are phosphosites more often near a SUMOylation site than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a SUMOylation site (by-similarity records left out) lies within 10 residues on either side"
-    section: Other marks
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a SUMOylation site (by-similarity records left out) is within 10 residues on either side"
+    section: Other modifications
   # The arginine of a basophilic motif that is itself methylated: R-x-x-S/T (or R-x-S/T) with the Arg a methylarginine
   # of the methylarginine site (PRMT substrates and AGC-kinase motifs share the arginine). A pattern that holds with a
   # context mark at an offset (CONTRACTS.md, Motif families).
@@ -294,7 +294,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       title: Shared arginine
       question: "Are phosphosites more often in a basophilic motif whose arginine is methylated than the other serines and threonines of their protein?"
       sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins: the Ser or Thr has an Arg at -3 (R-x-x-S/T) or -2 (R-x-S/T) that is a methylarginine of release v1.4.3. Methylation of the Arg could change the kinase's access to the site"
-      section: Other marks
+      section: Other modifications
       families:
         - {name: methylated_R_m3, label: "R-x-x-S/T, the Arg methylated", pattern: "R..[ST]", start: -3, marks: [{mark: methylarginine, at: -3}],
            help: "Arg at -3 of the Ser or Thr, and that Arg is a methylarginine of the methylarginine site (release v1.4.3)"}
@@ -512,7 +512,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: condensate
     new: true
     test: protein_sets
-    title: Biomolecular condensates, against other condensate proteins
+    title: Biomolecular condensates, compared with other condensate proteins
     question: "Which biomolecular condensates stand out among condensate proteins (CD-CODE)?"
     sub: "CD-CODE condensates with a higher fraction of phosphorylated members than all condensate proteins: every human condensate (not synthetic) with at least five members, its members against the proteins in any of these condensates, about half of which are phosphorylated (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
@@ -832,7 +832,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: "Disorder context, proline-directed sites"
     family: Disorder context
     family_label: "Proline-directed (S/T-P)"
-    question: "Do proline-directed phosphosites fall in disordered regions more often than the other residues that fit the same pattern in their proteins?"
+    question: "Are proline-directed phosphosites found in disordered regions more often than the other residues that fit the same pattern in their proteins?"
     sub: "Phosphosites of the proline-directed class (S/T-P) against the other serines and threonines of the same proteins that fit the same pattern, by MobiDB disorder class; read the disordered row against the all-sites question for the difference"
     only_in: {residues: ST, motif: {pattern: "[ST]P", start: 0}}
   - id: disorder_basophilic
@@ -841,7 +841,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: "Disorder context, basophilic sites"
     family: Disorder context
     family_label: "Basophilic (Arg at -3 or -2)"
-    question: "Do basophilic phosphosites fall in disordered regions more often than the other residues that fit the same pattern in their proteins?"
+    question: "Are basophilic phosphosites found in disordered regions more often than the other residues that fit the same pattern in their proteins?"
     sub: "Phosphosites of the basophilic class (R-x-x-S/T or R-x-S/T) against the other serines and threonines of the same proteins that fit the same pattern, by MobiDB disorder class; read the disordered row against the all-sites question for the difference"
     only_in: {residues: ST, motif: {patterns: [{pattern: "R..[ST]", start: -3}, {pattern: "R.[ST]", start: -2}]}}
   - id: disorder_acidophilic
@@ -850,7 +850,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: "Disorder context, acidophilic sites"
     family: Disorder context
     family_label: "Acidophilic (acidic at +3)"
-    question: "Do acidophilic phosphosites fall in disordered regions more often than the other residues that fit the same pattern in their proteins?"
+    question: "Are acidophilic phosphosites found in disordered regions more often than the other residues that fit the same pattern in their proteins?"
     sub: "Phosphosites of the acidophilic class (S/T-x-x-D/E) against the other serines and threonines of the same proteins that fit the same pattern, by MobiDB disorder class; read the disordered row against the all-sites question for the difference"
     only_in: {residues: ST, motif: {pattern: "[ST]..[DE]", start: 0}}
   - id: disorder_tyrosine
@@ -859,7 +859,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: "Disorder context, tyrosine sites"
     family: Disorder context
     family_label: "pY (tyrosine kinases)"
-    question: "Do phosphotyrosines fall in disordered regions more often than the other tyrosines of their proteins?"
+    question: "Are phosphotyrosines found in disordered regions more often than the other tyrosines of their proteins?"
     sub: "Phosphotyrosines against the other tyrosines of the same proteins, by MobiDB disorder class: the residue's own background, as a tyrosine kinase class has no sequence pattern of its own here"
     only_in: {residues: Y}
   - {id: domain_context, layer: domain_context, new: true}
@@ -875,7 +875,7 @@ variants:                # the same questions on other marks; ptmc run --variant
 
 # Context marks: other modifications of the same proteins, shown beside the phosphosites (CONTRACTS.md, Context marks):
 # methylarginine (the sites table of release v1.4.3, the methylarginine site's own marks) and methyllysine (the sites table
-# of release v1.5.0). A map row, "Other marks nearby" on the site card, a filter, table columns and downloads follow from
+# of release v1.5.0). A map row, "Other modifications nearby" on the site card, a filter, table columns and downloads follow from
 # these entries; the near_marks questions test them. Both tables are in sites/phospho.inputs.json.
 context_marks:
   - id: methylarginine
@@ -984,7 +984,7 @@ website:                  # the look and words of the website (ptmc web); layout
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
     tagline: "Human protein phosphorylation sites from public databases."
-    question: "Where do phosphosites fall in human proteins, which kinase motifs do they follow, and which are likely functional?"
+    question: "Where are phosphosites in human proteins, which kinase motifs do they match, and which are likely functional?"
     in_switcher: true
   band: ["#1e40af", "#172554"]      # the header gradient: blue
   accent: "#0e7490"                 # the cyan rule, active tab and links
@@ -1031,7 +1031,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
           - {analysis: condensate_role, title: Roles in condensates}
       - name: Where in the protein
-        about: "Where along the protein the phosphosites fall: folded or disordered parts, domains, the charge of disordered regions."
+        about: "Where in the protein the phosphosites are: folded or disordered parts, domains, the charge of disordered regions."
         cards:
           - {analysis: disorder}
           - {analysis: idr_charge}
@@ -1046,14 +1046,14 @@ website:                  # the look and words of the website (ptmc web); layout
         cards:
           - {analysis: reader_motifs, title: Reader motifs}
           - functional_scores
-      - name: Other marks
-        about: "Whether phosphosites sit near other modifications (context marks: methylarginines and methyllysines), within 10 residues, and in a basophilic motif whose arginine is methylated."
+      - name: Other modifications
+        about: "Whether phosphosites are near other modifications (methylarginines and methyllysines), within 10 residues, and in a basophilic motif whose arginine is methylated."
         cards:
           - {analysis: near_methylarginine}
           - {analysis: near_methyllysine}
           - {analysis: shared_arginine}
       - name: Interactions and enzymes
-        about: "Whether phosphosites sit where a protein touches another (PDB and predicted interfaces, IntAct features, complexes), and the kinases, phosphatases and readers that add, remove and bind the mark."
+        about: "Whether phosphosites are where a protein touches another (PDB and predicted interfaces, IntAct features, complexes), and the kinases, phosphatases and readers that add, remove and bind the modification."
         #  the partner classes are counted (website.search.partners), and the test of the same classes is a card of its own
         cards:
           - {analysis: pdb_interface, title: Interfaces in PDB structures}

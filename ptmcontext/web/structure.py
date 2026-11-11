@@ -45,9 +45,9 @@ def _table(site: dict, part: str) -> dict | None:
 def roles(site: dict) -> dict[str, str]:
     """The manifest inputs the viewer reads, with what for (the Method page's Data table)."""
     words = {
-        'contacts': 'the 3D viewer: PDB entries with a contact at a mark',
-        'bound': 'the 3D viewer: the RNA and DNA bound at a mark',
-        'predicted': 'the 3D viewer: predicted complexes at a mark',
+        'contacts': 'the 3D viewer: PDB entries with a contact at the modified site',
+        'bound': 'the 3D viewer: the RNA and DNA bound at the modified site',
+        'predicted': 'the 3D viewer: predicted complexes at the modified site',
         'residues': 'the 3D viewer: colors along the chain',
     }
     out: dict[str, list] = {}

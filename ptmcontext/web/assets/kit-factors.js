@@ -178,7 +178,7 @@
     `Each odds ratio compares a ${W.mark} with the other ${W.residues} of the same protein (one ` +
     `stratum per protein, ${info(id)}). The filled marks are the factor's odds ratio taking all the factors ` +
     `together, so the others are held fixed; the hollow marks are the same factor in a model by itself. Bars are ` +
-    `95% confidence intervals (Wald). Factors that go together (a motif that sits in disordered regions, say) ` +
+    `95% confidence intervals (Wald). Factors that go together (a motif found in disordered regions, say) ` +
     `share an effect when taken alone and split it when taken together. Listed by the strength of the evidence ` +
     `taking all together (the size of the estimate over its standard error). A conditional logistic regression ` +
     `(Breslow & Day 1980), the several-factor form of the Mantel–Haenszel test; an association, not a cause.`;
@@ -204,7 +204,7 @@
     return (
       K.preamble(
         a.title,
-        `${a.question} A conditional logistic regression, one stratum per protein: ${info(id)}. Whole dataset. ${noteOf(id)}`
+        `${a.question} A conditional logistic regression, one group per protein: ${info(id)}. Whole dataset. ${noteOf(id)}`
       ) +
       [
         'factor',

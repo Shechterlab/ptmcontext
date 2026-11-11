@@ -108,7 +108,7 @@
   const METHOD_PHRASE = {
     mantel_haenszel: 'compared within each protein (Mantel–Haenszel)',
     fisher: 'across all proteins (Fisher’s exact test)',
-    study: 'compared within the marks reported by the same sources (Mantel–Haenszel)',
+    study: 'compared among sites reported by the same sources (Mantel–Haenszel)',
   };
   const A = Object.fromEntries(D.analyses.map((a) => [a.id, a]));
   // the Overview's switch: its words, and what each compares
@@ -1169,7 +1169,7 @@
   const strength = (r) =>
     r.dir === 'more' ? Math.log(r.lo ?? r.eff) : r.dir === 'less' ? -Math.log(r.hi ?? r.eff) : 0;
   const enough = (r) => r.a + r.c >= 10;
-  const vsName = () => (S.vs === 'cmp' ? `the marks of ${cmpName()}` : `the other ${W.marks}`);
+  const vsName = () => (S.vs === 'cmp' ? `the sites of ${cmpName()}` : `the other ${W.marks}`);
   const cmpName = () => {
     const x = (K.sel.savedList() || []).find((y) => (y.hash.split('?')[1] || '') === S.cmp);
     if (x) return `“${x.name}”`;
@@ -1184,7 +1184,7 @@
   K.selEffect = () =>
     'All tabs show only these · ' +
     (vsOn()
-      ? `compared with ${S.vs === 'cmp' ? 'the marks of ' + cmpName() : 'the other ' + W.marks}`
+      ? `compared with ${S.vs === 'cmp' ? 'the sites of ' + cmpName() : 'the other ' + W.marks}`
       : S.m === 'fisher'
         ? `tested against all other ${W.residues}`
         : S.m === 'study'
@@ -1524,7 +1524,7 @@
         `all proteins puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact ` +
         `test). ${
           D.analyses.some((a) => a.kind === 'protein_sets')
-            ? `Questions about kinds of protein show the ` +
+            ? `Questions about protein types show the ` +
               `fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). `
             : ''
         }Red: more ` +
@@ -2429,9 +2429,9 @@
       (`<span id="m-g1"></span><section id="m-tests"><h3>How the tests work</h3><p>Each question asks whether a ${esc(W.mark)} is more ` +
         `or less likely than another ${esc(W.residue)} of the same protein to lie in a class, such as a ` +
         `disordered region, a domain or a motif. Each class is tested two ways.</p><ul>`) +
-      (`<li>Within each protein, every protein is a stratum and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)}: Mantel–Haenszel ` +
+      (`<li>Within each protein, each protein is analyzed on its own and its ${esc(W.marks)} are compared only with its own ${esc(W.residues)}: Mantel–Haenszel ` +
         `odds ratio, 95% confidence interval (Robins–Breslow–Greenland), continuity-corrected ` +
-        `Cochran–Mantel–Haenszel test. This separates where ${esc(W.marks)} sit from which proteins were found ${esc(W.marked)}, since abundant ` +
+        `Cochran–Mantel–Haenszel test. This separates where in a protein ${esc(W.marks)} occur from which proteins were found ${esc(W.marked)}, since abundant ` +
         `proteins are detected more often and differ in structure.</li>`) +
       (`<li>Across all proteins, all the ${esc(W.residues)} of the ${esc(W.marked)} proteins are taken together: ` +
         `Fisher’s exact test, Haldane–Anscombe odds ratio.</li></ul>`) +
@@ -2484,7 +2484,7 @@
       privacySection() +
       sourcesSection() +
       (`<section id="m-made"><h3>How this site is made</h3><p>One file, <span class="mono">${esc(D.site.config)}</span>, ` +
-        `sets the mark, the sequences and regions, the questions, the colors and the pictures. ptmcontext ${esc(D.kit.version)} (commit ` +
+        `sets the modification, the sequences and regions, the questions, the colors and the pictures. ptmcontext ${esc(D.kit.version)} (commit ` +
         `<span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(RUN.written))}. The citation,` +
         ` version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>`) +
       (`<p>Every download carries its citation, data sources, versions, inputs and export date, printed under each ` +
@@ -2523,9 +2523,9 @@
   // ---- citing, and provenance: every export carries the same block -----------------------------------------------------
   const CIT = D.citation || {};
   const EXP_HELP = {
-    pdf: 'PDF: vector, fonts embedded, with its citation and provenance',
-    svg: 'SVG: vector, editable, with its citation and provenance in the file',
-    png: 'PNG at 300 dpi, with its citation and provenance in the image and its text fields',
+    pdf: 'PDF: vector, fonts embedded, with its citation and sources',
+    svg: 'SVG: vector, editable, with its citation and sources in the file',
+    png: 'PNG at 300 dpi, with its citation and sources in the image and its text fields',
     tsv: 'TSV: the rows, under # lines saying what they are, how to cite them and where they come from',
   };
   const shortCommit = (c) =>
@@ -2544,7 +2544,7 @@
       (m === 'fisher'
         ? `Across all proteins: the ${W.marks} in each class against all the other ${W.residues} of the ${W.marked} proteins ` +
           `(two-sided Fisher’s exact test, Haldane–Anscombe odds ratio).`
-        : `Within each protein, every protein is a stratum and its ${W.marks} are compared only with its own ${W.residues} (Mantel–Haenszel ` +
+        : `Within each protein, each protein is analyzed separately: its ${W.marks} are compared only with its own ${W.residues} (Mantel–Haenszel ` +
           `odds ratio with 95% confidence interval, continuity-corrected Cochran–Mantel–Haenszel test).`) +
       (` Only ${W.marks} on proteins with another ${W.residue} are counted. q is Benjamini–Hochberg across the ` +
         `classes. Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Hollow: no significant ` +

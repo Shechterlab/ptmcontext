@@ -859,10 +859,10 @@
     const sp = K.sharePair(r);
     if (!sp) return '';
     const [a, b] = sp.split(' vs ');
-    return `${a} of ${W.marks} vs ${b} of other ${W.residues} lie in this region`;
+    return `${a} of ${W.marks} vs ${b} of other ${W.residues} are in this region`;
   };
   const shareTip =
-    `The share of the ${W.marks} that lie in this region against the share of the other ${W.residues} that do: ` +
+    `The share of the ${W.marks} that are in this region against the share of the other ${W.residues} that do: ` +
     `the two shares the odds ratio compares. It counts the ${W.marks} on proteins with another ${W.residue} (the Overview’s ` +
     `test), so its counts can differ from the column to the left.`;
   const testCell = (r) =>
@@ -1058,7 +1058,7 @@
         `${int(scoped().length)} IDRs on ${int(new Set(scoped().map((x) => x.p)).size)} proteins; bars: the share ` +
         `of the ${W.residues} in each region's IDRs that are ${W.marked} (dashed: all IDRs); right: the ` +
         `Overview's within-protein odds ratio with its 95% interval and, in gray under it, the share of the ${W.marks} against ` +
-        `the share of the other ${W.residues} that lie in the region`,
+        `the share of the other ${W.residues} that are in the region`,
       body: parts.join(''),
       bodyH: y + 24,
       W: DW,

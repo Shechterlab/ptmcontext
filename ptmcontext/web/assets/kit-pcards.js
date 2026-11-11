@@ -640,7 +640,7 @@
       `<p class="pc-key">${Object.entries(marks)
         .map(([c, m]) => `<span><span class="trend c-${esc(c)}"><b>${esc(m)}</b></span> ${esc(word(words, c))}</span>`)
         .join('')}<span>○ no ` +
-      `significant change</span><span>blank: not quantified · hover a mark for its numbers</span></p>`;
+      `significant change</span><span>blank: not quantified · hover a site for its numbers</span></p>`;
     const html =
       head +
       keyP +

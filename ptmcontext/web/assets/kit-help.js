@@ -180,7 +180,7 @@
     ['h-pages', 'Tables, maps and charts'],
     ['h-selection', 'Your selection'],
     ['h-compare', 'Comparing'],
-    ['h-read', 'Reading a figure'],
+    ['h-read', 'How to read a figure'],
     ['h-export', 'Downloads'],
     ['h-cite', 'Citing'],
     ['h-share', 'Sharing a link, and going back'],

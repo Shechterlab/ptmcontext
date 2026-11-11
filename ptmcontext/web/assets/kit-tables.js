@@ -543,7 +543,7 @@
       by = (x, y) => prov(x) - prov(y) || strength(y) - strength(x);
     const up = sig.filter((r) => r.dir === 'more').sort(by),
       dn = sig.filter((r) => r.dir === 'less').sort(by);
-    // near-duplicates count once and circular features are flagged: the rule shared with the selection bar and What sets it apart (kit-select.js featureFamilies)
+    // near-duplicates count once and circular features are flagged: the rule shared with the selection bar and How does it differ (kit-select.js featureFamilies)
     const mark = (list) => K.sel.featureFamilies(list);
     return {
       G,
@@ -599,7 +599,7 @@
       ? `<div class="tbl-card"><table class="tbl compact stackable prof-tbl"><thead><tr><th>` +
         `Feature</th><th class="num">Here</th><th class="num hide-xs">Other ${esc(W.marks)}</th><th class="num" ` +
         `title="The share of the selection with the feature divided by the share of the other ${esc(W.marks)} (the odds ` +
-        `ratio, in What sets it apart, is a different measure)">Share ratio</th><th class="num">q</th></tr></thead>` +
+        `ratio, in How does it differ, is a different measure)">Share ratio</th><th class="num">q</th></tr></thead>` +
         `<tbody>` +
         EN.rows.map((r, i) => row(r, i, false)).join('') +
         F.dn

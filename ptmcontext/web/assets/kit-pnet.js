@@ -712,7 +712,7 @@
           ifaceFold(p, rec) +
           (`<details class="pn-fold"><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING, live; ` +
             `drag the nodes${
-              hasIface ? '; open to draw it' : `; folded, as no ${esc(W.mark)} sits at an interface`
+              hasIface ? '; open to draw it' : `; folded, as no ${esc(W.mark)} is at an interface`
             }</span></summary>${net}</details>`),
         true
       );

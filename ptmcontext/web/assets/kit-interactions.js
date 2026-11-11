@@ -513,7 +513,7 @@
         `<p class="muted small">${
           m === 'mantel_haenszel'
             ? 'Within each protein: a Mantel–Haenszel odds ratio with its 95% CI ' +
-              '(Robins–Breslow–Greenland), each protein a stratum'
+              '(Robins–Breslow–Greenland), each protein analyzed separately'
             : 'Across all proteins: Fisher’s exact test, the Haldane–Anscombe odds ratio'
         }; q: Benjamini–Hochberg ` + `within the question.</p>`
       );

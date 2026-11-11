@@ -98,7 +98,7 @@
                       .slice(0, 8)
                       .map(([a, n]) => link(a, n))
                       .join(', ')}${x.also.length > 8 ? ` <span class="muted">+${x.also.length - 8}</span>` : ''}`
-                  : '<span class="muted">binds none of the other partners that carry the mark</span>'
+                  : '<span class="muted">binds none of the other partners that carry the modification</span>'
               }</li>`
           )
           .join('')}</ul>`

@@ -63,7 +63,7 @@ website:
   tagline: "Budding yeast phosphosites from UniProt."
   landing:
     tagline: "Budding yeast phosphosites from UniProt."
-    question: "Where do yeast phosphosites fall in their proteins, and which protein classes carry them?"
+    question: "Where are yeast phosphosites in their proteins, and which protein classes have them?"
     label: Yeast phosphosites
     group: other
     unlisted: true          # not published: kept as an example of a second organism

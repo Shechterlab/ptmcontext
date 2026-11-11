@@ -21,7 +21,7 @@ FORMAT = {
     'eclip': 'protein_records',
 }
 WORDS = {
-    'near': 'RNA and DNA touching a residue beside a mark',
+    'near': 'RNA and DNA touching a residue next to the modification',
     'regions': 'runs of residues bound to RNA or DNA in structures',
     'crosslinks': 'residues crosslinked to RNA or DNA in cells',
     'motifs': 'DNA-binding profiles',

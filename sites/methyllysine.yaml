@@ -383,7 +383,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: condensate
     new: true
     test: protein_sets
-    title: Biomolecular condensates, against other condensate proteins
+    title: Biomolecular condensates, compared with other condensate proteins
     question: "Which biomolecular condensates stand out among condensate proteins (CD-CODE)?"
     sub: "CD-CODE condensates with a higher fraction of methylated members than all condensate proteins: every human condensate (not synthetic) with at least five members, its members against the proteins in any of these condensates, about half of which are methylated (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
@@ -708,8 +708,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near phosphosites (±10 residues)
     question: "Are methyllysines more often near a phosphosite than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) lies within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methyllysines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
-    section: Other marks
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) is within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methyllysines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
+    section: Other modifications
   - id: near_phospho_high
     family_label: All states
     layer: near_marks
@@ -717,8 +717,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near high-score phosphosites (±10 residues)
     question: "Are methyllysines more often near a high-score phosphosite than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite with an Ochoa et al. 2020 functional score of 0.5 or more (about 10,900 sites; the score is a model of how likely a site is functionally important) lies within 10 residues on either side. Sites without a score are not counted as high-score. The comparison within each protein limits the effect of heavily studied proteins, not removes it"
-    section: Other marks
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite with an Ochoa et al. 2020 functional score of 0.5 or more (about 10,900 sites; the score is a model of how likely a site is functionally important) is within 10 residues on either side. Sites without a score are not counted as high-score. The comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    section: Other modifications
   - id: near_methylarginine
     family_label: All states
     layer: near_marks
@@ -726,8 +726,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methylarginines (±10 residues)
     question: "Are methyllysines more often near a methylarginine than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3, by-similarity records left out) lies within 10 residues on either side"
-    section: Other marks
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3, by-similarity records left out) is within 10 residues on either side"
+    section: Other modifications
     note: "The association comes from the database-curated sources: lysines that only CPLM reports are {or:near_methylarginine_cplm:near} near a methylarginine and those of UniProt or iPTMnet {or:near_methylarginine_uniprotipt:near}, while Berryhill et al.'s affinity-enriched sites are {or:near_methylarginine_berryhill:near} ({sig:near_methylarginine_berryhill:near}). That points to which proteins were studied, not to a link between the two marks. Select a source to see its lysines:"   # the numbers are the statistics' (the source subsets below)
     note_filters:
       - {label: CPLM, query: "sources:CPLM"}
@@ -741,8 +741,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near acetylation sites (±10 residues)
     question: "Are methyllysines more often near an acetylation site than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) lies within 10 residues on either side. Acetylation is among the most studied lysine marks and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
-    section: Other marks
+    sub: "Methyllysines against the other lysines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
+    section: Other modifications
   - id: near_other_acylation
     family_label: All states
     layer: near_marks
@@ -750,8 +750,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near other acylation sites (±10 residues)
     question: "Are methyllysines more often near another lysine acylation than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) lies within 10 residues on either side. These marks (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
-    section: Other marks
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) is within 10 residues on either side. These modifications (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    section: Other modifications
   # Both marks on one lysine: is a methyllysine more often also reported acetylated than the other lysines of its
   # protein? The comparison within each protein (Mantel-Haenszel over proteins) holds the protein fixed, so how much it
   # has been studied, how many lysines it has and how acetylated it is overall do not drive the result; a lysine can carry
@@ -764,7 +764,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Methylated and acetylated lysines
     question: "Are methyllysines more often also reported acetylated than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether the lysine itself is also an acetylation site (UniProt and iPTMnet, by-similarity records left out). Methylation and acetylation compete for the same lysine, and both are best known on much-studied proteins such as histones, so the comparison is made within each protein: it asks whether, among the lysines of one protein, the methylated ones are the acetylated ones more often than chance"
-    section: Other marks
+    section: Other modifications
   - id: near_ubiquitination
     family_label: All states
     layer: near_marks
@@ -772,8 +772,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near ubiquitination sites (±10 residues)
     question: "Are methyllysines more often near a ubiquitination site than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether a ubiquitination site (by-similarity records left out) lies within 10 residues on either side"
-    section: Other marks
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a ubiquitination site (by-similarity records left out) is within 10 residues on either side"
+    section: Other modifications
   - id: near_sumoylation
     family_label: All states
     layer: near_marks
@@ -781,8 +781,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near SUMOylation sites (±10 residues)
     question: "Are methyllysines more often near a SUMOylation site than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether a SUMOylation site (by-similarity records left out) lies within 10 residues on either side"
-    section: Other marks
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a SUMOylation site (by-similarity records left out) is within 10 residues on either side"
+    section: Other modifications
   - id: same_ubiquitination
     family_label: All states
     layer: near_marks
@@ -791,7 +791,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Methylated and ubiquitinated lysines
     question: "Are methyllysines more often also reported ubiquitinated than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether the lysine itself is also a ubiquitination site (CPLM 4.0, UniProt and iPTMnet, by-similarity records left out). Ubiquitination is reported on about two lysines in five of the proteins in this table, mostly by large mass-spectrometry studies of the proteome, so the comparison is made within each protein; methylation and ubiquitin compete for the same lysine"
-    section: Other marks
+    section: Other modifications
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
   - id: which_factor
@@ -869,7 +869,7 @@ variants:                # the same questions on other marks; ptmc run --variant
 
 # Context marks: other modifications of the same proteins, shown beside the methyllysines (CONTRACTS.md, Context marks):
 # methylarginine (the sites table of release v1.4.3, the methylarginine site's own marks) and phosphorylation (the sites
-# table of release v1.5.0). A map row, "Other marks nearby" on the site card, a filter, table columns and downloads follow
+# table of release v1.5.0). A map row, "Other modifications nearby" on the site card, a filter, table columns and downloads follow
 # from these entries; the near_marks questions below test them. Both tables are in sites/methyllysine.inputs.json.
 context_marks:
   - id: methylarginine
@@ -1035,7 +1035,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
           - {analysis: condensate_role, title: Roles in condensates}
       - name: Where in the protein
-        about: "Where along the protein the methylated lysines fall: sequence motifs, folded or disordered parts, domains, the charge of disordered regions."
+        about: "Where in the protein the methylated lysines are: sequence motifs, folded or disordered parts, domains, the charge of disordered regions."
         cards:
           - {analysis: disorder}
           - {analysis: disorder_me1}
@@ -1050,8 +1050,8 @@ website:                  # the look and words of the website (ptmc web); layout
         about: "How many methyl groups the sites carry: mono-, di- and trimethyllysine."
         #  counted, not tested (website.counts)
         cards: [states]
-      - name: Other marks
-        about: "Whether methyllysines sit near other modifications (context marks: methylarginines and phosphosites), within 10 residues."
+      - name: Other modifications
+        about: "Whether methyllysines are near other modifications (methylarginines and phosphosites), within 10 residues."
         cards:
           - {analysis: near_phospho}
           - {analysis: near_phospho_me1}
@@ -1066,7 +1066,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: near_methylarginine_me2}
           - {analysis: near_methylarginine_me3}
       - name: Interactions and enzymes
-        about: "Whether methyllysines sit where a protein touches another or at an RNA or DNA interface, and the enzymes that add and remove methyl groups, the proteins that read them and the methylated proteins that bind them."
+        about: "Whether methyllysines are where a protein touches another or at an RNA or DNA interface, and the enzymes that add and remove methyl groups, the proteins that read them and the methylated proteins that bind them."
         #  the partner classes are counted (website.search.partners), and the test of the same classes is a card of its own
         cards:
           - {analysis: pdb_interface, title: Interfaces in PDB structures}

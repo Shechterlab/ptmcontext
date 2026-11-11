@@ -4,7 +4,7 @@
    around a focused residue, site labels, the entry's other chains, bound RNA and DNA and ligands; a side panel with
    the entry, its chains and partners, the marks it resolves and what they touch; lists of the experimental entries,
    homologous structures and predicted complexes; and the view as a figure (PDF, SVG, PNG, TSV), as ChimeraX and PyMOL
-   scripts and as coordinates (mmCIF, PDB) with the marks listed.
+   scripts and as coordinates (mmCIF, PDB) with the modified sites listed.
 
    Live, by UniProt accession, as the explorer read them: AlphaFold DB (models, AlphaMissense), PDBe (SIFTS mappings,
    observed residues, modified residues), RCSB (search, entry descriptions, coordinates) and ProtVar (predicted pairs).
@@ -3219,7 +3219,7 @@
                 `${k} (${xs.map((x) => `${dateWords(x.version) || x.input}, MD5 ${x.md5.slice(0, 8)}…`).join('; ')})`
             )
             .join('; ')}. `
-        : 'Nothing in this view comes from the site’s own tables except the marks. ') +
+        : 'Nothing in this view comes from the site’s own tables except the modified sites. ') +
       `Drawn with ${LIB_CITE}.`
     );
   }
@@ -4520,9 +4520,9 @@
         `says which parts came live and which from these tables.</p>`
       : '') +
     ('<p>Downloads: the view as a figure (PDF, SVG, or PNG at three times screen ' +
-      'resolution) with its key, citation and sources; a TSV of the marks in the ' +
+      'resolution) with its key, citation and sources; a TSV of the modified sites in the ' +
       'model; ChimeraX and PyMOL scripts that rebuild the view; and the coordinates ' +
-      '(mmCIF, PDB) with the marks listed.</p></section>');
+      '(mmCIF, PDB) with the modified sites listed.</p></section>');
   (K.methodParts ||= []).push(methodSection);
 
   // ---- the module's styles -------------------------------------------------------------------------------------------------------
