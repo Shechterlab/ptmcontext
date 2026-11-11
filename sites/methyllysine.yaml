@@ -835,7 +835,8 @@ website:                  # the look and words of the website (ptmc web); layout
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Methyllysine Site Explorer
   tagline: "Human lysine methylation sites from public databases."
-  landing:                 # the landing page's card (ptmc pages) and the header menu of the sites
+  landing:
+    from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with                 # the landing page's card (ptmc pages) and the header menu of the sites
     tagline: "Human lysine methylation sites from public databases."
     question: "Which proteins carry methyllysine, and what sets a methylated lysine apart from the other lysines of its protein?"
     in_switcher: true
@@ -865,23 +866,18 @@ website:                  # the look and words of the website (ptmc web); layout
   stats: [marks, proteins, {attribute: sources, label: databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
     statistic_label: true  # each tile names its statistic
-    cell_first: false      # the drawing of the cell stays in its section: protein interactions open the Overview
     question: "Which proteins are lysine methylated?"
     rows: 7
     random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end
     sections:
-      - name: Protein interactions
-        about: "Whether methyllysines sit where a protein touches another: PDB and predicted interfaces, IntAct features, complexes and partners."
+      - name: Where in the cell
+        about: "Where in the cell the methylated proteins localize, and how much is on chromatin."
+        #  the drawing of the cell on the Overview (website.cell: the maps of the cell as one question)
         cards:
-          - {analysis: pdb_interface, title: Interfaces in PDB structures}
-          - {analysis: predicted_interface, title: Predicted interfaces}
-          - {analysis: intact, title: IntAct binding regions and mutations}
-          - {analysis: complex, title: Protein complexes}
-      - name: Writers, erasers and readers
-        about: "The enzymes that add and remove methyl groups, the proteins that read them, and the methylated proteins that bind them."
-        cards: [partner_classes, {analysis: partner_class_test}]   # the counts, and the test of the same classes
-      - name: Histones, protein classes and pathways
-        about: "Histones and other protein classes and pathways of the methylated proteins."
+          - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
+          - {analysis: cell_chromatin, title: Chromatin probability}
+      - name: Which proteins
+        about: "Histones, protein classes, pathways and condensates of the methylated proteins."
         cards:
           - {analysis: histone, title: Histones and other proteins}
           - {analysis: histone_me1}
@@ -893,18 +889,50 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: panther_group_me3}
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
-      - name: Methylation state
-        about: "How many methyl groups the sites carry, and the evidence behind them."
-        #  counted, not tested (website.counts)
-        cards: [states, evidence]
-      - name: Location, chromatin and condensates
-        about: "Where in the cell the methylated proteins localize, how much is on chromatin, and which condensates hold them."
-        #  the drawing of the cell on the Overview (website.cell: the maps of the cell as one question)
-        cards:
-          - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
-          - {analysis: cell_chromatin, title: Chromatin probability}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
           - {analysis: condensate_role, title: Roles in condensates}
+      - name: Where in the protein
+        about: "Where along the protein the methylated lysines fall: sequence motifs, folded or disordered parts, domains, the charge of disordered regions."
+        cards:
+          - {analysis: disorder}
+          - {analysis: disorder_me1}
+          - {analysis: disorder_me2}
+          - {analysis: disorder_me3}
+          - {analysis: idr_charge}
+          - {analysis: structure_context}
+          - {analysis: domain_class, title: Nearest domain class}
+          - {analysis: motif, title: Sequence motifs}
+          - {analysis: which_factor, wide: true}
+      - name: Methylation state
+        about: "How many methyl groups the sites carry: mono-, di- and trimethyllysine."
+        #  counted, not tested (website.counts)
+        cards: [states]
+      - name: Other marks
+        about: "Whether methyllysines sit near other modifications (context marks: methylarginines and phosphosites), within 10 residues."
+        cards:
+          - {analysis: near_phospho}
+          - {analysis: near_phospho_me1}
+          - {analysis: near_phospho_me2}
+          - {analysis: near_phospho_me3}
+          - {analysis: near_phospho_high}
+          - {analysis: near_phospho_high_me1}
+          - {analysis: near_phospho_high_me2}
+          - {analysis: near_phospho_high_me3}
+          - {analysis: near_methylarginine}
+          - {analysis: near_methylarginine_me1}
+          - {analysis: near_methylarginine_me2}
+          - {analysis: near_methylarginine_me3}
+      - name: Interactions and enzymes
+        about: "Whether methyllysines sit where a protein touches another or at an RNA or DNA interface, and the enzymes that add and remove methyl groups, the proteins that read them and the methylated proteins that bind them."
+        #  the partner classes are counted (website.search.partners), and the test of the same classes is a card of its own
+        cards:
+          - {analysis: pdb_interface, title: Interfaces in PDB structures}
+          - {analysis: predicted_interface, title: Predicted interfaces}
+          - {analysis: intact, title: IntAct binding regions and mutations}
+          - {analysis: complex, title: Protein complexes}
+          - {analysis: pdb_interface_na, title: RNA and DNA interfaces in PDB structures}
+          - partner_classes
+          - {analysis: partner_class_test}
       - name: Disease and cancer
         about: "Diseases linked to the methylated proteins, and cancer cell dependency."
         show: 1
@@ -930,37 +958,10 @@ website:                  # the look and words of the website (ptmc web); layout
                 analysis: disease_ontology
                 ontology: {short: 50, compare: 4, tree: 100, id_label: DOID, noun: term, nouns: terms}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
-      - name: Motif, disorder and structure
-        about: "Where along the protein the methylated lysines fall: sequence motifs, folded or disordered parts, domains, the charge of disordered regions."
-        cards:
-          - {analysis: motif, title: Sequence motifs}
-          - {analysis: disorder}
-          - {analysis: disorder_me1}
-          - {analysis: disorder_me2}
-          - {analysis: disorder_me3}
-          - {analysis: structure_context}
-          - {analysis: domain_class, title: Nearest domain class}
-          - {analysis: idr_charge}
-          - {analysis: which_factor, wide: true}
-      - name: Other marks
-        about: "Whether methyllysines sit near other modifications (context marks: methylarginines and phosphosites), within 10 residues."
-        cards:
-          - {analysis: near_phospho}
-          - {analysis: near_phospho_me1}
-          - {analysis: near_phospho_me2}
-          - {analysis: near_phospho_me3}
-          - {analysis: near_phospho_high}
-          - {analysis: near_phospho_high_me1}
-          - {analysis: near_phospho_high_me2}
-          - {analysis: near_phospho_high_me3}
-          - {analysis: near_methylarginine}
-          - {analysis: near_methylarginine_me1}
-          - {analysis: near_methylarginine_me2}
-          - {analysis: near_methylarginine_me3}
-      - name: RNA and DNA
-        about: "Whether methyllysines sit at an interface with RNA or DNA in PDB structures."
-        cards:
-          - {analysis: pdb_interface_na, title: RNA and DNA interfaces in PDB structures}
+      - name: Evidence and studies
+        about: "How well supported the methylation sites are, and which databases they come from."
+        #  counted, not tested (website.counts)
+        cards: [evidence]
       - name: More questions
         about: "Further pathways, cell maps, protein classes and complexes, one question each."
         cards: [panther_class, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, {analysis: hpa_location, title: Human Protein Atlas locations},

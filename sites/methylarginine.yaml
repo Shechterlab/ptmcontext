@@ -1267,6 +1267,7 @@ website:                  # the look and words of the website (ptmc web); layout
   name: Methylarginine Site Explorer
   tagline: "Human arginine methylation sites from published studies."
   landing:
+    from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
     tagline: "Human arginine methylation sites from published studies."
     question: "Which proteins carry methylarginine, and where in the protein, and in what company, does the mark fall?"
   band: ["#155e75", "#0f3b47"]      # the header gradient: teal
@@ -1456,6 +1457,47 @@ website:                  # the look and words of the website (ptmc web); layout
         - {label: proteins in condensates, query: "f=p:condensate_proteome~*", view: proteins}
         - {label: proteins with dense clusters, query: "f=r:dense_q~0.05", view: proteins}
     sections:
+      - name: Where in the cell
+        about: "Where in the cell the methylated proteins localize."
+        #  its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
+        cards:
+          - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
+      - name: Which proteins
+        about: "Protein classes, pathways and condensates of the methylated proteins."
+        cards:
+          - {analysis: panther_group, title: Protein classes}
+          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
+          - {analysis: panther_subclass, title: Protein subclasses}
+          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
+          - {analysis: condensate_role, title: Roles in condensates}
+      - name: Where in the protein
+        about: "Where along the protein the methylated arginines fall: motifs, folded or disordered parts, domains."
+        cards:
+          - {analysis: structure_context}
+          - {analysis: idr_charge}
+          - {analysis: domain_class, title: Nearest domain class}
+          - {analysis: motif, title: Sequence motifs}
+          - {analysis: sticker_context_3}
+          - {analysis: sticker_context_5}
+          - {analysis: sticker_context_3_idr}
+          - {analysis: sticker_context_5_idr}
+          - {analysis: which_factor, wide: true}
+      - name: RNA and DNA binding
+        about: "Whether methylated arginines touch RNA, DNA or other proteins. The Interactions page has the tests."
+        #  the Interactions page's tile (website.pages[].overview)
+        cards: []
+      - name: Other marks
+        about: "Whether methylated arginines sit near other modifications (context marks: phosphosites and methyllysines), within 10 residues."
+        cards:
+          - {analysis: near_phospho}
+          - {analysis: near_phospho_high}
+          - {analysis: near_methyllysine}
+      - name: Interactions and enzymes
+        about: "The enzymes that add methyl groups, the proteins that read them, and what happens when the enzymes are blocked. Protein partners are with the RNA and DNA tile above."
+        #  counted from the partner classes (website.search.partners), not tested
+        cards:
+          - reader_classes
+          - {analysis: perturbations, wide: true}
       - name: Disease and cancer
         about: "Diseases linked to the methylated proteins."
         show: 1
@@ -1498,46 +1540,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: disease_family_additional, title: "More disease families"}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
           - {analysis: cancer_change, title: Changes in tumors and cell lines}
-      - name: Protein classes and pathways
-        about: "Protein classes and pathways of the methylated proteins."
-        cards:
-          - {analysis: panther_group, title: Protein classes}
-          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
-          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
-          - {analysis: panther_subclass, title: Protein subclasses}
-          - {analysis: condensate_role, title: Roles in condensates}
-      - name: Where in the cell
-        about: "Where in the cell the methylated proteins localize."
-        #  its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
-        cards:
-          - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
-      - name: Position in the protein
-        about: "Where along the protein the methylated arginines fall: motifs, folded or disordered parts, domains."
-        cards:
-          - {analysis: motif, title: Sequence motifs}
-          - {analysis: structure_context}
-          - {analysis: domain_class, title: Nearest domain class}
-          - {analysis: idr_charge}
-          - {analysis: sticker_context_3}
-          - {analysis: sticker_context_5}
-          - {analysis: sticker_context_3_idr}
-          - {analysis: sticker_context_5_idr}
-          - {analysis: which_factor, wide: true}
-      - name: Other marks
-        about: "Whether methylated arginines sit near other modifications (context marks: phosphosites and methyllysines), within 10 residues."
-        cards:
-          - {analysis: near_phospho}
-          - {analysis: near_phospho_high}
-          - {analysis: near_methyllysine}
-      - name: Interactions and binding
-        about: "Whether methylated arginines touch RNA, DNA or other proteins. The Interactions page has the tests."
-        #  the Interactions page's tile (website.pages[].overview)
-        cards: []
-      - name: Methylation enzymes and readers
-        about: "The enzymes that add methyl groups, the proteins that read them, and what happens when the enzymes are blocked."
-        #  counted from the partner classes (website.search.partners), not tested
-        cards: [reader_classes, {analysis: perturbations, wide: true}]
-      - name: Studies and sources
+      - name: Evidence and studies
         about: "Which studies and databases reported the sites."
         #  counted, not tested (website.counts)
         cards: [provenance]
@@ -2811,7 +2814,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - {share: {table: string, of: partner_accession, flag: partner_marked}, label: of their partners are methylated (22% of human proteins), tag: Protein partners, section: ixs-partners, glyph: protein}
         - {counts: [{attribute: nucleic_acid, values: [rna_at]}, {attribute: nucleic_acid, values: [dna_at]}], label: methylarginines in contact with RNA · with DNA, tag: Solved structures · to explore, section: ix-na, glyph: structure}
       overview:
-        section: Interactions and binding
+        section: RNA and DNA binding
         title: Interactions and binding
         question: How many sites have interaction evidence, and are they enriched at contacts with RNA, DNA or other proteins? Each test against the other arginines of the same proteins that the evidence could reach (within each protein).
         bar: interaction

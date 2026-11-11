@@ -1,8 +1,8 @@
 # Build every site from its sources and publish them on GitHub Pages, with a landing page. Runs on each push to develop,
 # the working branch the site is served from, and to main (and by hand). Pages' source must be "GitHub Actions", and
 # the github-pages environment must allow develop among its deployment branches. The methylarginine site reads the release's public inputs as data, checked against inputs.json, and
-# must still equal release v1.4.3; the yeast site is staged afresh from UniProt, MobiDB and SHEPHARD (pinned), and stops if UniProt has
-# moved to a release its site file does not name.
+# must still equal release v1.4.3.
+# (The yeast site is not published: sites/yeast_phospho.yaml stays as an example of a second organism.)
 name: pages
 on:
   push:
@@ -188,50 +188,6 @@ jobs:
           node tools/audit/export_overlap.js http://localhost:8933/index.html --proteins P04637,P31749 --selection "$sel" || fail=1
           node tools/audit/export_legend.js http://localhost:8933/index.html --pdf --cdn "$RUNNER_TEMP/cdn" --proteins P04637,P31749 --selection "$sel" || fail=1
           exit $fail
-      - name: Last good yeast inputs
-        # the staged files are cached under the manifest's hash: a UniProt, MobiDB or SHEPHARD outage reuses the last run
-        # that staged them, instead of leaving the site out
-        id: yeast_cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            data/inputs
-            sites/yeast_phospho.inputs.json
-          key: yeast-inputs-${{ hashFiles('sites/yeast_phospho.inputs.json', 'sites/yeast_phospho.yaml') }}-${{ github.run_id }}
-          restore-keys: |
-            yeast-inputs-${{ hashFiles('sites/yeast_phospho.inputs.json', 'sites/yeast_phospho.yaml') }}-
-      - name: Yeast phosphosites, staged from UniProt, MobiDB and SHEPHARD
-        # an outage at one of these sources leaves the yeast site out of this deploy, not the methylarginine site
-        id: yeast
-        continue-on-error: true
-        run: |
-          # what the cache restored (the files and the manifest that names their MD5s), kept aside before staging overwrites them
-          if [ "${{ steps.yeast_cache.outputs.cache-matched-key }}" != "" ] && [ -d data/inputs ]; then
-            cp -r data/inputs "$RUNNER_TEMP/yeast_cached"; cp sites/yeast_phospho.inputs.json "$RUNNER_TEMP/yeast_cached.json"
-          fi
-          if ptmc stage uniprot UP000002311 --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast \
-            && ptmc stage mobidb --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast \
-            && ptmc stage shephard s_cerevisiae --out data/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast \
-            && ptmc run sites/yeast_phospho.yaml --root data; then :
-          elif [ -d "$RUNNER_TEMP/yeast_cached" ]; then
-            echo "::warning title=yeast_phospho staged afresh failed::using the last cached inputs"
-            rm -rf data/inputs && cp -r "$RUNNER_TEMP/yeast_cached" data/inputs && cp "$RUNNER_TEMP/yeast_cached.json" sites/yeast_phospho.inputs.json
-            ptmc run sites/yeast_phospho.yaml --root data
-          else
-            exit 1
-          fi
-          ptmc web sites/yeast_phospho.yaml
-      - name: Name any skipped site
-        if: steps.yeast.outcome == 'failure'
-        run: |
-          echo "::warning title=Site skipped::yeast_phospho was left out of this deploy (see the yeast step); the report job opens or updates the pages-failure issue"
-          echo "skipped=yeast_phospho" >> "$GITHUB_STEP_SUMMARY"
-          echo "yeast_phospho" > skipped_sites.txt
-      - uses: actions/upload-artifact@v4
-        if: steps.yeast.outcome == 'failure'
-        with:
-          name: skipped-sites
-          path: skipped_sites.txt
       # the one-file copies (out/<site>/web/<site>.html, up to 84 MB each) are not published on Pages: kept as a workflow artifact
       - uses: actions/upload-artifact@v4
         with:
@@ -241,7 +197,7 @@ jobs:
             !out/*/web/index.html
           retention-days: 30
           if-no-files-found: ignore
-      - run: ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml sites/yeast_phospho.yaml --out _site --skip-missing
+      - run: ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml --out _site --skip-missing
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

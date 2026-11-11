@@ -139,4 +139,15 @@ def test_the_entry_pictures_come_from_the_statistics_or_the_site_file():
         },
     )
     assert [p['label'] for p in named['share']['parts']] == ['in it', 'other'] and named['findings'][0]['dir'] == 'less'
+    # only the questions of one section (website.landing.from_section) are chosen from
+    only = glance(analyses, rows, 100, None, None, None, {'where'})
+    assert [(f['analysis'], f['class']) for f in only['landing_findings']] == [('where', 'in')]
+    assert [f['analysis'] for f in only['findings']] == ['sets', 'where']  # the start panel's are unchanged
+    from ptmcontext.web import section_analyses
+
+    web = {
+        'cell': {'id': 'cell_q', 'maps': [{'analysis': 'where'}]},
+        'overview': {'sections': [{'name': 'Cell', 'cards': [{'analysis': 'cell_q', 'drawing': True}, 'sets']}]},
+    }
+    assert section_analyses(web, 'Cell') == {'cell_q', 'where', 'sets'} and section_analyses(web, None) is None
     assert glance(analyses, rows, 1000, None)['share'] is None  # no question's classes add up to the marks

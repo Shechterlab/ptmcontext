@@ -621,11 +621,30 @@ def site_data(site: dict, folder: Path, profile) -> dict:
             web.get('start'),
             web.get('landing'),
             (web.get('front') or {}).get('row_labels'),
+            section_analyses(web, (web.get('landing') or {}).get('from_section')),
         ),
         'citation': site_citation(site),
         'kit': {**kit_citation(), 'version': __version__, 'commit': run.get('code_commit') or code_commit()},
         'statistics_tsv': (folder / 'statistics.tsv').read_text(),
     }
+
+
+def section_analyses(web: dict, name: str | None) -> set | None:
+    """The questions of the Overview section `name` (website.landing.from_section): its cards', and, for the card that
+    draws the cell, the maps' questions (website.cell.maps). None: no section named."""
+    if not name:
+        return None
+    ids: set = set()
+    cell = web.get('cell') or {}
+    for sec in (web.get('overview') or {}).get('sections') or []:
+        if sec.get('name') != name:
+            continue
+        for c in sec.get('cards') or []:
+            a = c if isinstance(c, str) else c.get('analysis')
+            ids.add(a)
+            if a == cell.get('id'):
+                ids |= {m.get('analysis') for m in cell.get('maps') or []}
+    return ids
 
 
 def first_screen_attributes(web: dict) -> set[str]:

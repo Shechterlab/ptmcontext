@@ -1100,7 +1100,7 @@ The Overview's start panel and each landing-page card draw three pictures from t
 `D.glance`): one bar of where the marks fall (a question whose classes add up to the marks), the three strongest findings
 (one per question, q <= 0.05, at least 20 marks) and, on the site only, one example protein as a map. Without a choice
 in the site file they are computed; `website.start` (`share: {analysis, classes, labels}`, `findings: [{analysis, class}]`,
-`protein`) names them, and `website.landing` (`share`, `findings`, `tagline`) overrides them for the landing card. `website.landing.unlisted: true` builds the
+`protein`) names them, and `website.landing` (`share`, `findings`, `tagline`) overrides them for the landing card; `website.landing.from_section: <Overview section>` chooses the landing card's result from that section's questions only (the card that draws the cell stands for the `website.cell` maps), so the card's result (`landing_findings` in `glance.json`) matches what the Overview opens with; the start panel keeps its own. `website.landing.unlisted: true` builds the
 site's folder with `ptmc pages` but leaves its card off the landing page. `ptmc pages` also writes `sites.json` beside the folders
 (`{sites: [{id, label, listed, in_switcher}]}`, the label being `landing.label` or the mark profile's name): the header's "Mark" menu
 (kit-switch.js) reads it, lists the listed sites, lists an unlisted site only in the menu of an unlisted site or where its own

@@ -66,6 +66,8 @@ website:
     question: "Where do yeast phosphosites fall in their proteins, and which protein classes carry them?"
     label: Yeast phosphosites
     group: other
+    unlisted: true          # not published: kept as an example of a second organism
+    in_switcher: false
   band: ["#334155", "#0f172a"]      # graphite: neutral beside the data colors; the orange rule ties it to its siblings
   accent: "#c2410c"
   accent_dark: "#fb923c"

@@ -897,6 +897,7 @@ website:                  # the look and words of the website (ptmc web); layout
   tagline: "Human protein phosphorylation sites from public databases."
   # published at /ptmcontext/phospho/; listed on the landing page and in the sites' header menu
   landing:
+    from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
     tagline: "Human protein phosphorylation sites from public databases."
     question: "Where do phosphosites fall in human proteins, which kinase motifs do they follow, and which are likely functional?"
     in_switcher: true
@@ -926,11 +927,31 @@ website:                  # the look and words of the website (ptmc web); layout
   stats: [marks, proteins, {attribute: sources, label: databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
     statistic_label: true  # each tile names its statistic
-    cell_first: false
     question: "Which proteins are phosphorylated?"
     rows: 7
     random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end
     sections:
+      - name: Where in the cell
+        about: "Where in the cell the phosphorylated proteins localize, and how much is on chromatin."
+        #  the drawing of the cell on the Overview (website.cell: the maps of the cell as one question)
+        cards:
+          - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
+          - {analysis: cell_chromatin, title: Chromatin probability}
+      - name: Which proteins
+        about: "Protein classes, pathways and condensates of the phosphorylated proteins."
+        cards:
+          - {analysis: panther_group, title: Protein classes}
+          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
+          - {analysis: panther_subclass, title: Protein subclasses}
+          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
+          - {analysis: condensate_role, title: Roles in condensates}
+      - name: Where in the protein
+        about: "Where along the protein the phosphosites fall: folded or disordered parts, domains, the charge of disordered regions."
+        cards:
+          - {analysis: disorder}
+          - {analysis: idr_charge}
+          - {analysis: structure_context}
+          - {analysis: domain_class, title: Nearest domain class}
       - name: Which kinases?
         about: "Kinase motif classes: the sequence around the site that proline-directed, basophilic and acidophilic kinases prefer, each tested against residues of its own type."
         cards:
@@ -940,46 +961,22 @@ website:                  # the look and words of the website (ptmc web); layout
         cards:
           - {analysis: reader_motifs, title: Reader motifs}
           - functional_scores
-      - name: Where in the protein
-        about: "Where along the protein the phosphosites fall: folded or disordered parts, domains, the charge of disordered regions, and PDB interfaces."
-        cards:
-          - {analysis: disorder}
-          - {analysis: structure_context}
-          - {analysis: domain_class, title: Nearest domain class}
-          - {analysis: idr_charge}
-          - {analysis: pdb_interface, title: Interfaces in PDB structures}
       - name: Other marks
         about: "Whether phosphosites sit near other modifications (context marks: methylarginines and methyllysines), within 10 residues, and in a basophilic motif whose arginine is methylated."
         cards:
           - {analysis: near_methylarginine}
           - {analysis: near_methyllysine}
           - {analysis: shared_arginine}
-      - name: Protein interactions
-        about: "Whether phosphosites sit where a protein touches another: predicted interfaces, IntAct features and complexes."
+      - name: Interactions and enzymes
+        about: "Whether phosphosites sit where a protein touches another (PDB and predicted interfaces, IntAct features, complexes), and the kinases, phosphatases and readers that add, remove and bind the mark."
+        #  the partner classes are counted (website.search.partners), and the test of the same classes is a card of its own
         cards:
+          - {analysis: pdb_interface, title: Interfaces in PDB structures}
           - {analysis: predicted_interface, title: Predicted interfaces}
           - {analysis: intact, title: IntAct binding regions and mutations}
           - {analysis: complex, title: Protein complexes}
-      - name: Kinases, phosphatases and readers
-        about: "The kinases that add phosphate, the phosphatases that remove it and the 14-3-3, SH2, FHA, WW, BRCT and polo-box proteins that read it, and the phosphorylated proteins that bind them."
-        cards: [partner_classes, {analysis: partner_class_test}]   # the counts, and the test of the same classes
-      - name: Evidence
-        about: "How well supported the phosphosites are, and which residues and databases they come from."
-        #  counted, not tested (website.counts)
-        cards: [residues, evidence]
-      - name: Location, chromatin and condensates
-        about: "Where in the cell the phosphorylated proteins localize, how much is on chromatin, and which condensates hold them."
-        cards:
-          - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
-          - {analysis: cell_chromatin, title: Chromatin probability}
-          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
-          - {analysis: condensate_role, title: Roles in condensates}
-      - name: Protein classes and pathways
-        about: "Protein classes and pathways of the phosphorylated proteins."
-        cards:
-          - {analysis: panther_group, title: Protein classes}
-          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
-          - {analysis: panther_subclass, title: Protein subclasses}
+          - partner_classes
+          - {analysis: partner_class_test}
       - name: Disease and cancer
         about: "Diseases linked to the phosphorylated proteins, and cancer cell dependency."
         show: 1
@@ -1005,6 +1002,10 @@ website:                  # the look and words of the website (ptmc web); layout
                 analysis: disease_ontology
                 ontology: {short: 50, compare: 4, tree: 100, id_label: DOID, noun: term, nouns: terms}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
+      - name: Evidence and studies
+        about: "How well supported the phosphosites are, and which residues and databases they come from."
+        #  counted, not tested (website.counts)
+        cards: [residues, evidence]
       - name: More questions
         about: "Further pathways, cell maps, protein classes and domains, one question each."
         cards: [panther_class, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, {analysis: hpa_location, title: Human Protein Atlas locations},
