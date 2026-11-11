@@ -1426,7 +1426,7 @@
       "md5": "3a3d021bf7a2a352ba9807d425c65973",
       "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/bdb5b86/releases/v1.5.0",
       "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-10); positions on UniProt 2026_03",
-      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; CPLM 4.0 states no license: its rows are included by the owner's decision of 2026-11-09, pending the authors' permission",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; CPLM 4.0 states no license: its rows are included",
       "role": "input",
       "note": "Context marks: lysine SUMOylation sites of the human reviewed proteome (39,633 rows on 6,102 proteins; CPLM 4.0, UniProt and iPTMnet), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity), CPLM evidence label and PubMed IDs. Shown beside the site's own mark by the protein map and the near_sumoylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit bdb5b86."
     }
