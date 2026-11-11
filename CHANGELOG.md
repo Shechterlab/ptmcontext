@@ -4,8 +4,7 @@
 
 What changed for readers of the three sites (methylarginine, methyllysine, phosphosites):
 
-- The methyllysine and phosphosite sites read PTM_Pipeline v1.5.0 at commit 4a1c568. Its SUMOylation table now holds
-  the UniProt and iPTMnet sites only (5,540 sites); the CPLM 4.0 SUMOylation sites are no longer in it.
+- The methyllysine and phosphosite sites read PTM_Pipeline v1.5.0 at commit bdb5b86.
 - Each statistic row on the methyllysine and phosphosite sites says "each protein analyzed separately" and "with each
   abundance decile analyzed separately" instead of "a stratum". The methylarginine site keeps the v1.4.3 wording.
 - Protein map row labels that do not fit wrap onto two lines instead of ending in "…", on the page and in exports.

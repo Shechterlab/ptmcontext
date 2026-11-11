@@ -965,10 +965,11 @@ context_marks:
     colour: "#0369a1"          # blue: 5.9:1 on white
     colour_dark: "#7dd3fc"     # 9.8:1 on the dark surface
     citation:
-      short: UniProt and iPTMnet
-      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0"
+      short: CPLM, UniProt and iPTMnet
+      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
     sources:
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
 
@@ -1237,13 +1238,13 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency]}
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
     - {name: Data sources, attributes: [sources, iptmnet_sources]}
-  dataset: {label: PTM_Pipeline data release, version: v1.5.0 at 4a1c568, date: "2026-11-10", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/4a1c568d78c87524cedf9ebfeafd16b411d3eebe/releases/v1.5.0"}
+  dataset: {label: PTM_Pipeline data release, version: v1.5.0 at bdb5b86, date: "2026-11-10", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0"}
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). The phosphosites and functional scores of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3 (rows whose databases name Ochoa 2020) come from an article that is not open access, and its supplementary table carries no license: they are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. The methyllysine rows shown beside the phosphosites include CPLM 4.0 (Zhang et al., Nucleic Acids Res 50:D451, 2022), which states no license. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
-    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/4a1c568d78c87524cedf9ebfeafd16b411d3eebe/releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class, sources, Ochoa 2020 functional score and mass-spectrometry evidence (Ochoa 2020 rows included, not open access)"}
-    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/4a1c568d78c87524cedf9ebfeafd16b411d3eebe/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
-    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/4a1c568d78c87524cedf9ebfeafd16b411d3eebe/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
-    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/4a1c568d78c87524cedf9ebfeafd16b411d3eebe/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class, sources, Ochoa 2020 functional score and mass-spectrometry evidence (Ochoa 2020 rows included, not open access)"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
   search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
     patterns:                # the motif finder: a pattern of residues on the sites' sequence windows
       at: motif              # motif:SPXK covers the site
