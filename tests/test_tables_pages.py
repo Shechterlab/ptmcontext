@@ -179,5 +179,5 @@ const prot = K.views.proteins.render(); const sites = K.views.sites.render();
 click('[data-ptsv]')(null); console.log(JSON.stringify({ prot, sites, ptsv: got.tsv }));""",
     )
     assert 'Length' in out['prot'] and 'minimap' in out['prot']
-    assert 'Window ±7' in out['sites'] and 'R2' in out['sites']
+    assert 'Sequence (±7 residues)' in out['sites'] and 'R2' in out['sites']
     assert [r for r in out['ptsv'].splitlines() if not r.startswith('#')][0].startswith('accession\tgene')
