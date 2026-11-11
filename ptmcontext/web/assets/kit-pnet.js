@@ -1067,7 +1067,7 @@
       gene = CUR.self.gene || CUR.acc;
     return (
       `<div class="tbl-card"><table class="tbl"><caption class="pn-sr">STRING partners of ${esc(gene)}</caption>` +
-      `<thead><tr><th>Partner</th><th>UniProt</th><th class="num">Score</th><th>Evidence</th>${PD ? '<th>Class</th>' : ''}<th class="num">${esc(cap0(W.marks))} here</th>` +
+      `<thead><tr><th>Partner</th><th>UniProt</th><th class="num">Score</th><th>Evidence</th>${PD ? '<th>Class</th>' : ''}<th class="num">On this protein</th>` +
       `</tr></thead><tbody>` +
       rows
         .map(

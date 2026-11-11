@@ -624,8 +624,10 @@
   };
   const paperKey = (r) => r.pubmed || r.doi || r.citation || '';
   const paperA = (r) => {
-    const url = r.pubmed
-      ? `https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(r.pubmed)}/`
+    const pml = K.papers.ids(r.pubmed);
+    if (pml.length > 1 && !r.citation) return K.papers.links(pml, { label: (id) => 'PMID ' + id });
+    const url = pml.length
+      ? `https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(pml[0])}/`
       : r.doi
         ? `https://doi.org/${r.doi}`
         : '';
@@ -996,14 +998,7 @@
         const via = [
           (SR.tables || {})[r.source_table] || '',
           r.pubmed
-            ? 'PubMed ' +
-              list(r.pubmed.replace(/[,\s]+/g, ';'))
-                .map(
-                  (id) =>
-                    `<a href="https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(id)}/" target="_blank" ` +
-                    `rel="noopener">${esc(id)}</a>`
-                )
-                .join(', ')
+            ? 'PubMed ' + K.papers.links(K.papers.ids(r.pubmed))
             : '',
         ].filter(Boolean);
         const acc0 = r.reported_accession || '',

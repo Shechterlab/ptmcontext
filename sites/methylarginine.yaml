@@ -961,7 +961,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: phospho, window: 10, noun: phosphosite}
     new: true
-    title: Near phosphosites (within 10)
+    title: Near phosphosites (±10 residues)
     question: "Are methylarginines more often near a phosphosite than the other arginines of their protein?"
     sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) lies within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methylarginines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
     section: Other marks
@@ -969,7 +969,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: phospho_high, window: 10, noun: high-score phosphosite}
     new: true
-    title: Near high-score phosphosites (within 10)
+    title: Near high-score phosphosites (±10 residues)
     question: "Are methylarginines more often near a high-score phosphosite than the other arginines of their protein?"
     sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite with an Ochoa et al. 2020 functional score of 0.5 or more (about 10,900 sites; the score is a model of how likely a site is functionally important) lies within 10 residues on either side. Sites without a score are not counted as high-score. The comparison within each protein limits the effect of heavily studied proteins, not removes it"
     section: Other marks
@@ -977,7 +977,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: methyllysine, window: 10, noun: methyllysine}
     new: true
-    title: Near methyllysines (within 10)
+    title: Near methyllysines (±10 residues)
     question: "Are methylarginines more often near a methyllysine than the other arginines of their protein?"
     sub: "Methylarginines against the other arginines of the same proteins, by whether a methyllysine (UniProt, iPTMnet, CPLM and Berryhill 2023, by-similarity records left out) lies within 10 residues on either side. Few proteins carry a recorded methyllysine"
     section: Other marks
@@ -985,7 +985,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: acetylation, window: 10, noun: "acetylation site", labels: {near: "An acetylation site within ±10", none: "No acetylation site within ±10"}}
     new: true
-    title: Near acetylation sites (within 10)
+    title: Near acetylation sites (±10 residues)
     question: "Are methylarginines more often near an acetylation site than the other arginines of their protein?"
     sub: "Methylarginines against the other arginines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) lies within 10 residues on either side. Acetylation is among the most studied lysine marks and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
     section: Other marks
@@ -993,7 +993,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: other_acylation, window: 10, noun: "other acylation site", labels: {near: "Another lysine acylation within ±10", none: "No other acylation site within ±10"}}
     new: true
-    title: Near other acylation sites (within 10)
+    title: Near other acylation sites (±10 residues)
     question: "Are methylarginines more often near another lysine acylation than the other arginines of their protein?"
     sub: "Methylarginines against the other arginines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) lies within 10 residues on either side. These marks (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
     section: Other marks
@@ -1001,7 +1001,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: ubiquitination, window: 10, noun: "ubiquitination site", labels: {near: "A ubiquitination site within ±10", none: "No ubiquitination site within ±10"}}
     new: true
-    title: Near ubiquitination sites (within 10)
+    title: Near ubiquitination sites (±10 residues)
     question: "Are methylarginines more often near a ubiquitination site than the other arginines of their protein?"
     sub: "Methylarginines against the other arginines of the same proteins, by whether a ubiquitination site (by-similarity records left out) lies within 10 residues on either side"
     section: Other marks
@@ -1009,7 +1009,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: sumoylation, window: 10, noun: "SUMOylation site", labels: {near: "A SUMOylation site within ±10", none: "No SUMOylation site within ±10"}}
     new: true
-    title: Near SUMOylation sites (within 10)
+    title: Near SUMOylation sites (±10 residues)
     question: "Are methylarginines more often near a SUMOylation site than the other arginines of their protein?"
     sub: "Methylarginines against the other arginines of the same proteins, by whether a SUMOylation site (by-similarity records left out) lies within 10 residues on either side"
     section: Other marks
@@ -1740,7 +1740,7 @@ website:                  # the look and words of the website (ptmc web); layout
       kind: values
       attribute: studies
       number: n_studies
-      title: Provenance
+      title: Data sources
       question: "Which studies and databases report the methylarginines?"
       sub: "Methylarginines reported by each study or database"
       distribution: "Studies or databases reporting each {mark}"
@@ -1788,7 +1788,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Clustering and crosstalk, keys: ["d:marks", "o:other_ptms"], proteins: [dense_q, architecture]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
-    - {name: Provenance, attributes: [studies, n_studies, localised_by]}
+    - {name: Data sources, attributes: [studies, n_studies, localised_by]}
   dataset: {label: data release, version: v1.4.3, date: "2026-10-31", doi: "10.5281/zenodo.22696798", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3"}
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
@@ -2458,7 +2458,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {analysis: motif, best: true, label: "in {class} motifs", kind: Sequence motif, glyph: letters, opens: p-score}
       - {analysis: disorder, classes: [disordered], label: in disordered regions, kind: Position in the protein, glyph: wave, opens: p-regions}
       - {attribute: evidence, values: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, rbrid_residue_published_rule, rbrid_region],
-         label: in RNA-bound fragments or peptides, kind: Measured in cells · not a structural contact, glyph: squiggle, opens: p-sites,
+         label: in RNA-bound fragments or peptides, kind: Seen in cells, not a direct contact, glyph: squiggle, opens: p-sites,
          tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RBR-ID+ peptide. This is where RNA binds in cells, not a structural contact: the RNA and DNA interactions section counts the sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
       - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
       - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds, hide_in: cards}

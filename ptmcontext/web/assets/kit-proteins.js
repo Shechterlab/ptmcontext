@@ -352,8 +352,8 @@
           `<details class="score small"><summary><span class="pm" aria-hidden="true"></span><span class="tq">` +
           `<span class="t">${esc(a.title)}</span></span><span class="ans">${ans}</span><span class="go" ` +
           `aria-hidden="true"></span></summary>` +
-          (`<div class="card-body"><div class="tbl-card"><table class="tbl"><thead><tr><th>Class</th><th class="num">${esc(cap(W.marks))} here</th>` +
-            `<th class="num">Other ${esc(W.residues)} here</th></tr></thead><tbody>`) +
+          (`<div class="card-body"><div class="tbl-card"><table class="tbl"><thead><tr><th>Class</th><th class="num">On this protein</th>` +
+            `<th class="num">Other ${esc(W.residues)} on this protein</th></tr></thead><tbody>`) +
           all
             .map(
               ([c, mi, oi, m2 = mt, o2 = ot]) =>
@@ -556,7 +556,7 @@
       ...(K.shown.cfg.counted?.when || []).map((c) => c.attribute),
     ]); // the counted ones' attribute says nothing of these
     const rows =
-      kv('Window ±7', `<span class="mono">${winHtml(m[1])}</span>`) +
+      kv('Sequence (±7 residues)', `<span class="mono">${winHtml(m[1])}</span>`) +
       kv(esc(cap(K.shown.label())), esc(K.shown.tip(m, true))) +
       shownAttrs(m)
         .filter((n) => !skip.has(n) && attrVal(m, n) !== '')
@@ -646,14 +646,7 @@
       }${
         pm(f).length
           ? ' (PubMed ' +
-            pm(f)
-              .slice(0, 8)
-              .map(
-                (id) =>
-                  `<a href="https://pubmed.ncbi.nlm.nih.gov/${esc(id)}/" target="_blank" ` +
-                  `rel="noopener">${esc(id)}</a>`
-              )
-              .join(', ') +
+            K.papers.links(K.papers.ids(pm(f))) +
             ')'
           : ''
       }`;
@@ -738,7 +731,7 @@
           )
         : '';
     const siteRows =
-      kv('Window ±7', `<span class="mono">${winHtml(m[1])}</span>`) +
+      kv('Sequence (±7 residues)', `<span class="mono">${winHtml(m[1])}</span>`) +
       qrows.join('') +
       afRow +
       ((CC.states || []).length ? kv(esc(CL_WORDS.states), ready ? K.card.states(c) : wait) : '') +
@@ -1219,7 +1212,7 @@
             numOf(p) ? `<br><span ` + `class="muted small">UniProt ${m[0]}</span>` : ''
           }<div class="tags">${K.shown.tag(m, true)}</div></td>` +
           (colourAttr ? `<td data-label="${esc(SPECS[colourAttr].label)}">${pillOf(m, colourAttr)}</td>` : '') +
-          `<td class="cwin" data-label="Window ±7"><span class="mono">${winHtml(m[1])}</span></td>` +
+          `<td class="cwin" data-label="Sequence (±7 residues)"><span class="mono">${winHtml(m[1])}</span></td>` +
           shown
             .map(
               (col) =>
@@ -1259,7 +1252,7 @@
                 .toLowerCase()
             )}"`
           : ''
-      }>Window ±7${FLAGS.length ? ' · tags' : ''}</th>${shown
+      }>Sequence (±7 residues)${FLAGS.length ? ' · labels' : ''}</th>${shown
         .map((c) => `<th>${esc(c.label)}</th>`)
         .join('')}<th><span ` + `class="vh">Actions</span></th></tr>`;
     const n = 3 + (colourAttr ? 1 : 0) + shown.length;
@@ -1294,7 +1287,7 @@
               K.shown?.on && K.shown.counted(m) ? `<div class="tags">${K.shown.tag(m, false)}</div>` : ''
             }</td>` +
             (colourAttr ? `<td data-label="${esc(SPECS[colourAttr].label)}">${pillOf(m, colourAttr)}</td>` : '') +
-            `<td class="cwin" data-label="Window ±7"><span class="mono">${winHtml(m[1])}</span>${FLAGS.map((aid) =>
+            `<td class="cwin" data-label="Sequence (±7 residues)"><span class="mono">${winHtml(m[1])}</span>${FLAGS.map((aid) =>
               flagTags(aid, K.cols.markClass(m, aid))
             ).join('')}</td>` +
             shown.map((col) => `<td class="cw" data-label="${esc(col.label)}">${cellOf(col, c, m)}</td>`).join('') +
@@ -1577,7 +1570,7 @@
     const table =
       `<div class="tbl-card"><table class="tbl stbl stackable"><thead><tr><th>Site</th>${
         colourAttr ? `<th>${esc(SPECS[colourAttr].label)}</th>` : ''
-      }<th>Window ±7</th>${shown.map((c) => `<th>${esc(c.label)}</th>`).join('')}<th><span ` +
+      }<th>Sequence (±7 residues)</th>${shown.map((c) => `<th>${esc(c.label)}</th>`).join('')}<th><span ` +
       `class="vh">Actions</span></th></tr></thead><tbody>${shownRows(p, rec, shown, null, '')}</tbody></table>` +
       `</div>`;
     const page =

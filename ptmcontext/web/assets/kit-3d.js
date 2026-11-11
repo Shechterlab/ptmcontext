@@ -2917,9 +2917,11 @@
         's3d-pred',
         [
           SD.predicted ? `${int(pv.length)} partner${pv.length === 1 ? '' : 's'} at a site` : '',
-          list
+          list?.length
             ? `${int(list.length)} AlphaFold ` + `DB complex${list.length === 1 ? '' : 'es'}`
-            : 'AlphaFold DB did not answer',
+            : list
+              ? '' // a 404: AlphaFold DB has none for this protein, which is not worth a line
+              : 'AlphaFold DB did not answer',
         ]
           .filter(Boolean)
           .join(' · ')
@@ -2929,7 +2931,7 @@
         return;
       }
       if (!list.length) {
-        hold.innerHTML = `<p class="muted">AlphaFold DB has no predicted complex of ${esc(base)}.</p>`;
+        hold.innerHTML = ''; // none predicted (the API's 404): hidden quietly
         return;
       }
       T.afcx = list;

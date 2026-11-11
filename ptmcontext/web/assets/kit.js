@@ -2271,8 +2271,8 @@
     ['or', 'Effect (95% CI)', (r) => r.eff ?? -1, true],
     ['log2', 'log2(OR)', (r) => K.l2(r) ?? -99, true],
     ['q', 'q', (r) => r.q ?? 2, true],
-    ['dir', 'Reading', (r) => r.dir, false],
-    ['strata', 'Strata', (r) => r.strata ?? -1, true],
+    ['dir', 'What it means', (r) => r.dir, false],
+    ['strata', 'Subgroups', (r) => r.strata ?? -1, true],
   ];
   function shownStatistics() {
     // a protein-set question with no abundance repeat has its hypergeometric rows under either test

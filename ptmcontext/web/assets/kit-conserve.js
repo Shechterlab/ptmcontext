@@ -117,12 +117,12 @@
   // =================================================================================================================
   const UNI = (acc) => `https://rest.uniprot.org/uniprotkb/${acc}.json`; // the address the protein page's own card reads
   const orthoUrl = (ensg) =>
-    `${String(ENS.rest).replace(/\/$/, '')}/homology/id/${encodeURIComponent(ENS.source)}/${encodeURIComponent(ensg)}?type=orthologs;` +
-    `aligned=1;sequence=protein;cigar_line=0;${ENS.compara ? 'compara=' + encodeURIComponent(ENS.compara) + ';' : ''}` +
+    `${String(ENS.rest).replace(/\/$/, '')}/homology/id/${encodeURIComponent(ENS.source)}/${encodeURIComponent(ensg)}?type=orthologs&` +
+    `aligned=1&sequence=protein&cigar_line=0${ENS.compara ? '&compara=' + encodeURIComponent(ENS.compara) : ''}&` +
     SPECIES()
       .map((s) => 'target_species=' + s.id)
-      .join(';') +
-    ';content-type=application/json';
+      .join('&') +
+    '&content-type=application/json';
   const ensgOf = (j) =>
     [
       ...new Set(

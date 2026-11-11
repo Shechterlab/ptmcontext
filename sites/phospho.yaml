@@ -238,7 +238,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: methylarginine, window: 10, noun: methylarginine}
     new: true
-    title: Near methylarginines (within 10)
+    title: Near methylarginines (±10 residues)
     question: "Are phosphosites more often near a methylarginine than the other serines, threonines and tyrosines of their protein?"
     sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3) lies within 10 residues on either side. Both marks are best studied on abundant, much-studied proteins, so the within-protein comparison is the fairer one"
     section: Other marks
@@ -246,7 +246,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: methyllysine, window: 10, noun: methyllysine}
     new: true
-    title: Near methyllysines (within 10)
+    title: Near methyllysines (±10 residues)
     question: "Are phosphosites more often near a methyllysine than the other serines, threonines and tyrosines of their protein?"
     sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methyllysine (the methyllysine site's release v1.5.0, by-similarity records left out) lies within 10 residues on either side"
     section: Other marks
@@ -254,7 +254,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: acetylation, window: 10, noun: "acetylation site", labels: {near: "An acetylation site within ±10", none: "No acetylation site within ±10"}}
     new: true
-    title: Near acetylation sites (within 10)
+    title: Near acetylation sites (±10 residues)
     question: "Are phosphosites more often near an acetylation site than the other serines, threonines and tyrosines of their protein?"
     sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) lies within 10 residues on either side. Acetylation is among the most studied lysine marks and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
     section: Other marks
@@ -262,7 +262,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: other_acylation, window: 10, noun: "other acylation site", labels: {near: "Another lysine acylation within ±10", none: "No other acylation site within ±10"}}
     new: true
-    title: Near other acylation sites (within 10)
+    title: Near other acylation sites (±10 residues)
     question: "Are phosphosites more often near another lysine acylation than the other serines, threonines and tyrosines of their protein?"
     sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) lies within 10 residues on either side. These marks (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
     section: Other marks
@@ -270,7 +270,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: ubiquitination, window: 10, noun: "ubiquitination site", labels: {near: "A ubiquitination site within ±10", none: "No ubiquitination site within ±10"}}
     new: true
-    title: Near ubiquitination sites (within 10)
+    title: Near ubiquitination sites (±10 residues)
     question: "Are phosphosites more often near a ubiquitination site than the other serines, threonines and tyrosines of their protein?"
     sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a ubiquitination site (by-similarity records left out) lies within 10 residues on either side"
     section: Other marks
@@ -278,7 +278,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: sumoylation, window: 10, noun: "SUMOylation site", labels: {near: "A SUMOylation site within ±10", none: "No SUMOylation site within ±10"}}
     new: true
-    title: Near SUMOylation sites (within 10)
+    title: Near SUMOylation sites (±10 residues)
     question: "Are phosphosites more often near a SUMOylation site than the other serines, threonines and tyrosines of their protein?"
     sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a SUMOylation site (by-similarity records left out) lies within 10 residues on either side"
     section: Other marks
@@ -1207,7 +1207,7 @@ website:                  # the look and words of the website (ptmc web); layout
     provenance:
       kind: values
       attribute: sources
-      title: Provenance
+      title: Data sources
       question: "Which databases report the phosphosites?"
       sub: "Phosphosites reported by each database"
       unit: [database, databases]
@@ -1237,7 +1237,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome]}
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency]}
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
-    - {name: Provenance, attributes: [sources, iptmnet_sources]}
+    - {name: Data sources, attributes: [sources, iptmnet_sources]}
   dataset: {label: data release, version: v1.5.0, date: "2026-11-10", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/ae0ea326adb166ae81bd362a7c923533301d116a/releases/v1.5.0"}
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). The phosphosites and functional scores of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3 (rows whose databases name Ochoa 2020) come from an article that is not open access, and its supplementary table carries no license: they are included by the owner's decision of 2026-11-10, cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. The methyllysine rows shown beside the phosphosites include CPLM 4.0 (Zhang et al., Nucleic Acids Res 50:D451, 2022), which states no license and is included pending the authors' permission. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from

@@ -109,7 +109,7 @@ marks:
       column: berryhill_cell_lines
       join_rows: true
       provenance: true
-      label: Berryhill cell line
+      label: Cell line (Berryhill)
       kind: list
       separator: ";"
       colour: true
@@ -706,7 +706,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: phospho, window: 10, noun: phosphosite}
     new: true
-    title: Near phosphosites (within 10)
+    title: Near phosphosites (±10 residues)
     question: "Are methyllysines more often near a phosphosite than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) lies within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methyllysines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
     section: Other marks
@@ -715,7 +715,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: phospho_high, window: 10, noun: high-score phosphosite}
     new: true
-    title: Near high-score phosphosites (within 10)
+    title: Near high-score phosphosites (±10 residues)
     question: "Are methyllysines more often near a high-score phosphosite than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite with an Ochoa et al. 2020 functional score of 0.5 or more (about 10,900 sites; the score is a model of how likely a site is functionally important) lies within 10 residues on either side. Sites without a score are not counted as high-score. The comparison within each protein limits the effect of heavily studied proteins, not removes it"
     section: Other marks
@@ -724,7 +724,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: methylarginine, window: 10, noun: methylarginine}
     new: true
-    title: Near methylarginines (within 10)
+    title: Near methylarginines (±10 residues)
     question: "Are methyllysines more often near a methylarginine than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3, by-similarity records left out) lies within 10 residues on either side"
     section: Other marks
@@ -739,7 +739,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: acetylation, window: 10, noun: "acetylation site", labels: {near: "An acetylation site within ±10", none: "No acetylation site within ±10"}}
     new: true
-    title: Near acetylation sites (within 10)
+    title: Near acetylation sites (±10 residues)
     question: "Are methyllysines more often near an acetylation site than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) lies within 10 residues on either side. Acetylation is among the most studied lysine marks and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
     section: Other marks
@@ -748,7 +748,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: other_acylation, window: 10, noun: "other acylation site", labels: {near: "Another lysine acylation within ±10", none: "No other acylation site within ±10"}}
     new: true
-    title: Near other acylation sites (within 10)
+    title: Near other acylation sites (±10 residues)
     question: "Are methyllysines more often near another lysine acylation than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) lies within 10 residues on either side. These marks (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
     section: Other marks
@@ -770,7 +770,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: ubiquitination, window: 10, noun: "ubiquitination site", labels: {near: "A ubiquitination site within ±10", none: "No ubiquitination site within ±10"}}
     new: true
-    title: Near ubiquitination sites (within 10)
+    title: Near ubiquitination sites (±10 residues)
     question: "Are methyllysines more often near a ubiquitination site than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether a ubiquitination site (by-similarity records left out) lies within 10 residues on either side"
     section: Other marks
@@ -779,7 +779,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     layer: near_marks
     with: {marks: sumoylation, window: 10, noun: "SUMOylation site", labels: {near: "A SUMOylation site within ±10", none: "No SUMOylation site within ±10"}}
     new: true
-    title: Near SUMOylation sites (within 10)
+    title: Near SUMOylation sites (±10 residues)
     question: "Are methyllysines more often near a SUMOylation site than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether a SUMOylation site (by-similarity records left out) lies within 10 residues on either side"
     section: Other marks
@@ -1221,7 +1221,7 @@ website:                  # the look and words of the website (ptmc web); layout
     provenance:
       kind: values
       attribute: sources
-      title: Provenance
+      title: Data sources
       question: "Which databases report the methyllysines?"
       sub: "Methyllysines reported by each database"
       unit: [database, databases]
@@ -1238,7 +1238,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: RNA and DNA, analyses: [pdb_interface_na]}
-    - {name: Provenance, attributes: [sources, berryhill_cell_lines, berryhill_enrichment, iptmnet_sources]}
+    - {name: Data sources, attributes: [sources, berryhill_cell_lines, berryhill_enrichment, iptmnet_sources]}
   dataset: {label: data release, version: v1.5.0, date: "2026-11-10", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/ae0ea32/releases/v1.5.0"}
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). CPLM 4.0 states no license: its sites (rows whose databases name CPLM) are included by the owner's decision, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022), pending the authors' permission, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (the article is CC BY 4.0; its Supplementary Table 5 carries no separate license notice and is included by the owner's decision) is cited the same way. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from

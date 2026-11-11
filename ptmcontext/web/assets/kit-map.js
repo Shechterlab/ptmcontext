@@ -693,10 +693,7 @@
       pm.length
         ? ' · PubMed ' +
           (full
-            ? pm
-                .slice(0, 12)
-                .map((id) => `<a href="https://pubmed.ncbi.nlm.nih.gov/${esc(id)}/">${esc(id)}</a>`)
-                .join(', ')
+            ? K.papers.links(K.papers.ids(pm))
             : esc(pm.slice(0, 4).join(', ')) + (pm.length > 4 ? ` +${pm.length - 4}` : ''))
         : ''
     }</span>`;

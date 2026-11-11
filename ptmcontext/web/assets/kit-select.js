@@ -229,8 +229,11 @@
           return `<a href="${esc(rec.replace('{acc}', encodeURIComponent(acc)))}" title="${esc(
             `${lab}: its record of ${acc}${id ? `; its paper: ${id}` : ''}`
           )}">${esc(lab)}</a>`;
-        if (s.link && id)
-          return `<a href="${esc(s.link.url.replace('{}', id))}" title="${esc(`${lab}: ${id}`)}">${esc(lab)}</a>`;
+        if (s.link && id) {
+          const pl = K.papers.ids(id); // one paper, or several ("123;456", "123, 456"): a link each, a long list collapsed
+          if (pl.length > 1) return `${esc(lab)} (${K.papers.links(pl, { url: s.link.url })})`;
+          return `<a href="${esc(s.link.url.replace('{}', encodeURIComponent(pl[0] || id)))}" title="${esc(`${lab}: ${id}`)}">${esc(lab)}</a>`;
+        }
         return esc(lab);
       };
     const all = vals.filter(Boolean),

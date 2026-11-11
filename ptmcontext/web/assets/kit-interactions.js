@@ -286,13 +286,7 @@
       case 'doi':
         return `<a href="https://doi.org/${esc(v)}">doi</a>`;
       case 'pubmed':
-        return many(
-          String(v)
-            .split(/[;,\s]+/)
-            .filter(Boolean),
-          (x) => `<a href="https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(x)}/">PMID ${esc(x)}</a>`,
-          2
-        );
+        return K.papers.links(K.papers.ids(v), { label: (x) => 'PMID ' + x, max: 3 });
       case 'url':
         return `<a href="${esc(v)}">link</a>`;
       case 'sequence':

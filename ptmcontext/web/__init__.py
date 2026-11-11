@@ -49,6 +49,7 @@ DEFAULT_BAND = ['#374151', '#111827']
 # before kit.js, which draws the tiles), and kit.js, last, runs them all. Add a module after the ones it reads, one per line.
 MODULES = (
     'kit-busy.js',
+    'kit-papers.js',
     'kit-cols.js',
     'kit-late.js',
     'kit-stats.js',

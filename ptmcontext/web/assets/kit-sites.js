@@ -198,7 +198,7 @@
       : []),
     {
       id: 'window',
-      label: `Window ±7${
+      label: `Sequence (±7 residues)${
         tagAids().length
           ? ' · ' +
             (SV.window?.label ||

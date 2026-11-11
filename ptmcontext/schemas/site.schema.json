@@ -2790,7 +2790,7 @@
               "properties": {
                 "label": {
                   "type": "string",
-                  "description": "the column's name after \"Window ±7 · \" (default: the titles of the tag analyses)"
+                  "description": "the column's name after \"Sequence (±7 residues) · \" (default: the titles of the tag analyses)"
                 },
                 "colours": {
                   "type": "object",

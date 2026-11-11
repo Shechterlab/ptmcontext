@@ -456,8 +456,8 @@
               id: rowId(L, gi, ri),
               cells: hit.map((aid) => [aid, null]),
               tone: 'u2',
-              value: 'placed here',
-              maps: hit.length + (hit.length === 1 ? ' map' : ' maps'),
+              value: 'Found here',
+              maps: hit.length + (hit.length === 1 ? ' study' : ' studies'),
             };
           (row.also || []).forEach((k) => {
             within[k] ||= row.part;
@@ -563,7 +563,7 @@
       if (ONE)
         return (
           tipAttr(
-            `<b>${esc(name || rowName(p.row))}</b>: this protein is placed here by ${and(
+            `<b>${esc(name || rowName(p.row))}</b>: this protein is found here by ${and(
               p.cells.map(([aid]) => esc(DS(aid).name))
             )}`
           ) + ` data-cell-zpart="${esc(k)}"`
@@ -2077,7 +2077,7 @@
                 `<li${hot.includes(m) ? ' class="hl"' : ''}><a href="${esc(K.link('protein', m.acc))}" title="${esc(
                   m.gene + ' (' + m.acc + '): ' + m.maps.map((a) => DS(a).name).join(', ')
                 )}">${esc(m.gene)}</a> <span ` +
-                `class="muted small">${int(m.maps.length)} ${m.maps.length === 1 ? 'map' : 'maps'}</span>${
+                `class="muted small">${int(m.maps.length)} ${m.maps.length === 1 ? 'study' : 'studies'}</span>${
                   hot.includes(m) ? ' <span class="small" aria-label="highlighted">★</span>' : ''
                 }</li>`
             )
@@ -2514,7 +2514,7 @@
         `<th>Its compartment</th><th>${esc(cap(here))}</th><th>Against ${esc(alike)}</th></tr></thead><tbody>${trs}</tbody></table>` +
         `</div>`) +
       `<div class="cell-members"><div class="fig-head"><span class="flabel">${
-        scoped ? 'Proteins of your selection placed here' : `${esc(cap(W.marked))} proteins ` + `placed here`
+        scoped ? 'Proteins of your selection found here' : `${esc(cap(W.marked))} proteins ` + `placed here`
       }${mem ? ` (${int(mem.length)})` : ''}</span>` +
       (mem && mem.length
         ? `<span><button class="btn small" type="button" data-cell-select>Select these ${int(mem.length)} proteins</button>` +
@@ -2529,7 +2529,7 @@
                 (m) =>
                   `<a class="cell-chip" ` +
                   `href="${esc(K.link('protein', m.acc))}" title="${esc(
-                    `${m.gene} (${m.acc}): placed here by ${m.maps.map((k) => DS(k).name).join(', ')}`
+                    `${m.gene} (${m.acc}): found here by ${m.maps.map((k) => DS(k).name).join(', ')}`
                   )}">${esc(m.gene)}${multi && m.maps.length > 1 ? `<sup>${m.maps.length}</sup>` : ''}</a>`
               )
               .join('')}</p>` +
@@ -2718,7 +2718,7 @@
           () =>
             K.preamble(
               `${C.title || 'Where in the cell'}: ${rowName(row)}`,
-              `${who(scopedNow())} placed here,` + ` and the maps that place each`
+              `${who(scopedNow())} found here,` + ` and the maps that place each`
             ) +
             'gene\taccession\t' +
             cols.map((k) => DS(k).name).join('\t') +
