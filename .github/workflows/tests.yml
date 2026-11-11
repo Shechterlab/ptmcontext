@@ -16,6 +16,10 @@ jobs:
             inputs/reference
             releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv
             releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv
+            releases/v1.5.0/human_acetylation_sites_v1.5.0.tsv
+            releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv
+            releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv
+            releases/v1.5.0/human_sumoylation_sites_v1.5.0.tsv
             inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv
             inputs/annotation/interpro_108.0_domain_intervals.tsv
             inputs/annotation/interpro_108.0_all_entry_intervals.tsv
