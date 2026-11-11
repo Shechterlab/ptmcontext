@@ -1,12 +1,12 @@
 # The landing page of `ptmc pages` (read from beside the first site file, or --landing FILE): the page's own words and
 # the cards of sites not built yet. Each built site's card comes from its site file (website.name, band, accent, art,
 # landing.tagline / question / cta, stats) and its build (the numbers, the strongest result). CONTRACTS.md, "The landing page".
-title: Modifications in proteins
-description: "Websites, one per modification and proteome, that test where modification sites lie in proteins and which protein classes are enriched for them."
-lede: Position of each modification in proteins, and which proteins are modified.
+title: Human protein modification sites
+description: "One website for each protein modification. Each tests where modified sites lie in human proteins and which kinds of proteins carry them."
+lede: Which proteins carry each modification, and which regions of those proteins it is found in.
 intro:
-  - "ptmcontext puts many post-translational modifications on one reference proteome and asks the same questions of each."
-  - "Every modification is tested within each protein: a site is compared with the other residues of its own protein, so long proteins and disordered regions do not inflate the result. Pick a modification to explore."
+  - "Each modification has its own site. All are built the same way from the human reference proteome."
+  - "Each test compares a modified residue with the other residues of the same protein, and is repeated across all proteins. A long or disordered protein alone does not drive a result. Choose a modification."
 logo: sites/art/ptmcontext_logo.svg
 switcher: {label: PTM}
 cta: "Explore {marks} →"

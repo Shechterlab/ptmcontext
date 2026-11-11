@@ -1366,7 +1366,7 @@ website:                  # the look and words of the website (ptmc web); layout
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
     tagline: "Human arginine methylation sites from published studies."
-    question: "Which proteins carry methylarginine, and where in the protein is it, and what other modifications are nearby?"
+    question: "Which proteins carry methylarginine, where in the protein is it, and which other modifications are nearby?"
   band: ["#155e75", "#0f3b47"]      # the header gradient: teal
   accent: "#c2410c"                 # the orange rule, active tab and links; shared by the lab's sites
   accent_dark: "#fb923c"

@@ -48,17 +48,52 @@ SITES = {
     ),
     'phospho': (
         '#67e8f9',
-        'Phosphoserine (pS), phosphothreonine (pT) and phosphotyrosine (pY)',
+        'Phosphoserine (Sph), phosphothreonine (Tph) and phosphotyrosine (Yph)',
         [
-            ('pS', 'phosphoserine', '*CCOP([O-])([O-])=O', PHOSPHATE, 5),
-            ('pT', 'phosphothreonine', '*CC(OP([O-])([O-])=O)C', PHOSPHATE, 5),
-            ('pY', 'phosphotyrosine', '*CCc1ccc(OP([O-])([O-])=O)cc1', PHOSPHATE, 4),
+            ('Sph', 'phosphoserine', '*CCOP([O-])([O-])=O', PHOSPHATE, 'ser'),
+            ('Tph', 'phosphothreonine', '*CC(OP([O-])([O-])=O)C', PHOSPHATE, 'thr'),
+            ('Yph', 'phosphotyrosine', '*CCc1ccc(OP([O-])([O-])=O)cc1', PHOSPHATE, 'tyr'),
         ],
     ),
 }
 
 
-def depict(smiles: str, accent_smarts: str, spine: int):
+def cross(coords: dict, p: int, ester: int, minus: tuple[int, int], oxo: int) -> None:
+    """Lay out the phosphate's three other oxygens on P at 90 degrees: the P=O in line with the ester bond, the two O-
+    above and below it, symmetric about the P-O axis."""
+    px, py = coords[p].x, coords[p].y
+    phi = math.atan2(coords[ester].y - py, coords[ester].x - px)
+    for idx, turn in ((minus[0], 90), (oxo, 180), (minus[1], 270)):
+        a = phi + math.radians(turn)
+        coords[idx] = Geometry.Point2D(px + 1.5 * math.cos(a), py + 1.5 * math.sin(a))
+
+
+def layout(kind: str) -> dict:
+    """Fixed coordinates (bond length 1.5) of the phospho structures, C-alpha at (0, 0 or dy)."""
+    dx, dy = 1.5 * math.cos(math.radians(30)), 1.5 * math.sin(math.radians(30))
+    P = Geometry.Point2D
+    if kind in ('ser', 'thr'):  # the zigzag stub, C-alpha, C-beta, O, P; atoms 5, 6 are O-, 7 is =O, 8 the Thr methyl
+        c = {i: P((i - 1) * dx, dy if i % 2 else 0.0) for i in range(5)}
+        cross(c, 4, 3, (5, 6), 7)
+        if kind == 'thr':
+            c[8] = P(c[2].x, c[2].y - 1.5)
+        return c
+    # Tyr: the C-beta-to-ring bond and the whole para axis (ring, O, P, =O) are horizontal, the C-alpha is 60 degrees up
+    # from the C-beta and the stub runs left from it: every angle 120 degrees, the P=O continuing the axis
+    hx, hy = 1.5 * math.cos(math.radians(60)), 1.5 * math.sin(math.radians(60))
+    y = -hy
+    c = {0: P(-1.5, 0.0), 1: P(0.0, 0.0), 2: P(hx, y)}
+    # atoms 3 ipso, 4 ortho, 5 meta, 6 para, 7 O, 8 P, 9 and 10 O-, 11 =O, 12 meta, 13 ortho
+    ring = {3: (0.0, 0.0), 4: (0.75, 1.299), 5: (2.25, 1.299), 6: (3.0, 0.0), 12: (2.25, -1.299), 13: (0.75, -1.299)}
+    for i, (rx, ry) in ring.items():
+        c[i] = P(hx + 1.5 + rx, y + ry)
+    c[7] = P(c[6].x + 1.5, y)
+    c[8] = P(c[7].x + 1.5, y)
+    cross(c, 8, 7, (9, 10), 11)
+    return c
+
+
+def depict(smiles: str, accent_smarts: str, spine):
     """(mol, svg body, C-alpha x, y, extent, accent atoms) of one structure, extent relative to the C-alpha."""
     ps = Chem.SmilesParserParams()
     ps.removeHs = False  # a charged N keeps the H atoms its SMILES writes: they are drawn on their own bonds, away from the charge
@@ -78,7 +113,10 @@ def depict(smiles: str, accent_smarts: str, spine: int):
     # the first `spine` atoms (the stub, C-alpha and the chain) are a fixed zigzag of 120 degree angles, the stub down, the
     # C-alpha up; the depictor places the rest (branches, ring, phosphate) around them
     dx, dy = 1.5 * math.cos(math.radians(30)), 1.5 * math.sin(math.radians(30))
-    fixed = {i: Geometry.Point2D((i - 1) * dx, dy if i % 2 else 0.0) for i in range(spine)}
+    if isinstance(spine, str):  # the phospho structures are laid out atom by atom (see layout)
+        fixed = layout(spine)
+    else:
+        fixed = {i: Geometry.Point2D((i - 1) * dx, dy if i % 2 else 0.0) for i in range(spine)}
     rdDepictor.Compute2DCoords(mol, coordMap=fixed)
     d = rdMolDraw2D.MolDraw2DSVG(600, 400)
     o = d.drawOptions()
@@ -238,7 +276,7 @@ def write_logos():
     dots = ''.join(
         f'<circle cx="{x}" cy="29" r="4.3" fill="{c}"/>' for x, c in ((19, '#fb923c'), (29, '#fbbf24'), (39, '#22d3ee'))
     )
-    (ART / 'ptmcontext_logo.svg').write_text(logo('#1e293b', '#334155', dots, 'Modifications in proteins'))
+    (ART / 'ptmcontext_logo.svg').write_text(logo('#1e293b', '#334155', dots, 'Human protein modification sites'))
 
 
 def main(argv):
