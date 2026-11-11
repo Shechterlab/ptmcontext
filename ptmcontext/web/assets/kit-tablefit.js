@@ -3,6 +3,7 @@
    the page and marks each scrolling table (.has-x). */
 (window.PTMC_MODULES ||= []).push(() => {
   'use strict';
+  if (typeof MutationObserver === 'undefined' || typeof requestAnimationFrame === 'undefined') return; // not in a page
   let queued = false;
   const hintOf = (el) =>
     el.previousElementSibling?.classList.contains('scroll-hint') ? el.previousElementSibling : null;

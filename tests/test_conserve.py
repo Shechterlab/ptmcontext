@@ -126,8 +126,9 @@ console.log(JSON.stringify({{ url: C.orthoUrl('ENSG1'), at: model.rows.map(r => 
     out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
     assert (
         out['url'].startswith('https://r/homology/id/saccharomyces_cerevisiae/ENSG1?')
-        and 'compara=fungi;' in out['url']
-        and 'target_species=mus_musculus;target_species=danio_rerio' in out['url']
+        and 'compara=fungi&' in out['url']
+        and 'target_species=mus_musculus&target_species=danio_rerio' in out['url']
+        and ';' not in out['url']  # Ensembl REST takes '&'-joined parameters
     )
     assert out['at'] == [['S', 'T', 'A'], ['A', 'A', 'A']]
     assert out['n1'] == 2 and out['n2'] == 1  # S2 and T5 against S8: the profile's S and T only, not the A's
