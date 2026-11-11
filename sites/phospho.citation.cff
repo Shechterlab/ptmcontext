@@ -10,7 +10,7 @@ license: "CC-BY-NC-SA-4.0"
 authors:
   - name: "Shechter Lab, Albert Einstein College of Medicine"
 # No paper describes this site yet, so there is no preferred-citation; the data sources below are cited with every export.
-references:   # the data sources: cited with every export (DOIs of the new ones checked on Crossref, 9-10 Nov 2026)
+references:   # the data sources: cited with every export 
   - type: article
     authors: [{name: "UniProt Consortium"}]
     title: "UniProt: the Universal Protein Knowledgebase in 2025"
@@ -100,7 +100,7 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     end: 609
     year: 2015
     doi: "10.1093/bioinformatics/btu684"
-  - type: article   # Crossref gives no volume or pages (online 2019-11-04); these are the release's (inputs/MANIFEST.tsv)
+  - type: article   # the record gives no volume or pages (online 2019-11-04); these are the release's (inputs/MANIFEST.tsv)
     authors: [{family-names: Piñero, given-names: J}, {family-names: Ramírez-Anguita, given-names: JM}, {family-names: Saüch-Pitarch, given-names: J}, {name: "et al."}]
     title: "The DisGeNET knowledge platform for disease genomics: 2019 update"
     journal: "Nucleic Acids Res"
@@ -114,7 +114,7 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     version: "3.22.0"
     publisher: Bioconductor
     doi: "10.18129/B9.bioc.org.Hs.eg.db"
-  - type: article   # Crossref (1 Nov 2026): Nat Methods 20(5):673-676, online 6 Apr 2023; 12 authors
+  - type: article   # Nat Methods 20(5):673-676, online 6 Apr 2023; 12 authors
     authors: [{family-names: Rostam, given-names: N}, {family-names: Ghosh, given-names: S}, {family-names: Chow, given-names: CFW}, {name: "et al."}]
     title: "CD-CODE: crowdsourcing condensate database and encyclopedia"
     journal: "Nat Methods"
@@ -123,7 +123,7 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     end: 676
     year: 2023
     doi: "10.1038/s41592-023-01831-0"
-  # the maps of the cell (Where in the cell); checked on Crossref (2 Nov 2026)
+  # the maps of the cell (Where in the cell)
   - type: article
     authors: [{family-names: Go, given-names: CD}, {family-names: Knight, given-names: JDR}, {family-names: Rajasekharan, given-names: A}, {name: "et al."}]
     title: "A proximity-dependent biotinylation map of a human cell"
@@ -185,7 +185,7 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     end: D550
     year: 2018
     doi: "10.1093/nar/gkx1104"
-  - type: article   # Crossref: online 2024-11-18; the article is in volume 53 (2025)
+  - type: article   # online 2024-11-18; the article is in volume 53 (2025)
     authors: [{family-names: Szklarczyk, given-names: D}, {family-names: Nastou, given-names: K}, {family-names: Koutrouli, given-names: M}, {name: "et al."}]
     title: "The STRING database in 2025: protein networks with directionality of regulation"
     journal: "Nucleic Acids Res"
@@ -194,7 +194,7 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     end: D737
     year: 2025
     doi: "10.1093/nar/gkae1113"
-  - type: article   # Crossref: online 2021-11; in volume 50 (2022)
+  - type: article   # online 2021-11; in volume 50 (2022)
     authors: [{family-names: Meldal, given-names: BHM}, {family-names: Perfetto, given-names: L}, {family-names: Combe, given-names: C}, {name: "et al."}]
     title: "Complex Portal 2022: new curation frontiers"
     journal: "Nucleic Acids Res"
@@ -203,7 +203,7 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     end: D586
     year: 2022
     doi: "10.1093/nar/gkab991"
-  - type: article   # Crossref: online 2021-11; in volume 50 (2022)
+  - type: article   # online 2021-11; in volume 50 (2022)
     authors: [{family-names: del Toro, given-names: N}, {family-names: Shrivastava, given-names: A}, {family-names: Ragueneau, given-names: E}, {name: "et al."}]
     title: "The IntAct database: efficient access to fine-grained molecular interaction data"
     journal: "Nucleic Acids Res"
@@ -212,7 +212,7 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     end: D653
     year: 2022
     doi: "10.1093/nar/gkab1006"
-  # Kinase and reader motifs (the questions "Which kinases?" and "Is it functional?"); every DOI checked on Crossref, 10 Nov 2026
+  # Kinase and reader motifs (the questions "Which kinases?" and "Is it functional?")
   - type: article
     authors: [{family-names: Johnson, given-names: JL}, {family-names: Yaron, given-names: TM}, {family-names: Huntsman, given-names: EM}, {name: "et al."}]
     title: "An atlas of substrate specificities for the human serine/threonine kinome"
@@ -339,7 +339,7 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     end: 1182
     year: 2000
     doi: "10.1016/S1097-2765(00)00114-3"
-  - type: article   # Crossref lists one author for this record ("S. Zhou", an incomplete author field); the paper is by Songyang Z et al., Cell 72:767-778 (1993)
+  - type: article   # the record lists one author for this record ("S. Zhou", an incomplete author field); the paper is by Songyang Z et al., Cell 72:767-778 (1993)
     authors: [{family-names: Songyang, given-names: Z}, {name: "et al."}]
     title: "SH2 domains recognize specific phosphopeptide sequences"
     journal: "Cell"
@@ -348,7 +348,7 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     end: 778
     year: 1993
     doi: "10.1016/0092-8674(93)90404-E"
-  - type: article   # Crossref: online 2019-12-09, in volume 38 (2020)
+  - type: article   # online 2019-12-09, in volume 38 (2020)
     authors: [{family-names: Ochoa, given-names: D}, {family-names: Jarnuczak, given-names: AF}, {family-names: Viéitez, given-names: C}, {name: "et al."}]
     title: "The functional landscape of the human phosphoproteome"
     journal: "Nat Biotechnol"
@@ -357,16 +357,16 @@ references:   # the data sources: cited with every export (DOIs of the new ones 
     end: 373
     year: 2020
     doi: "10.1038/s41587-019-0344-3"
-  - type: article   # the methyllysine sites of CPLM 4.0 (DOI checked on Crossref, 10 Nov 2026: Nucleic Acids Res 50:D451-D459, online 2021-09-28). CPLM states no license: its sites are included by the owner's decision, pending the authors' permission
+  - type: article   # the methyllysine sites of CPLM 4.0 . CPLM states no license: its sites are included
     authors: [{family-names: Zhang, given-names: W}, {family-names: Tan, given-names: X}, {family-names: Lin, given-names: S}, {name: "et al."}]
-    title: "CPLM 4.0: an updated database with rich annotations for protein lysine modifications (sites included pending the authors' permission)"
+    title: "CPLM 4.0: an updated database with rich annotations for protein lysine modifications"
     journal: "Nucleic Acids Res"
     volume: 50
     start: D451
     end: D459
     year: 2022
     doi: "10.1093/nar/gkab849"
-  - type: article   # the methyllysine sites of Berryhill et al. 2023 (Supplementary Table 5): the article is CC BY 4.0, the table carries no separate license notice and is included by the owner's decision
+  - type: article   # the methyllysine sites of Berryhill et al. 2023 (Supplementary Table 5): the article is CC BY 4.0, the table carries no separate license notice
     authors: [{family-names: Berryhill, given-names: CA}, {family-names: Hanquier, given-names: JN}, {family-names: Doud, given-names: EH}, {name: "et al."}]
     title: "Global lysine methylome profiling using systematically characterized affinity reagents"
     journal: "Sci Rep"

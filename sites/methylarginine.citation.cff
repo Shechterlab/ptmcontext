@@ -22,7 +22,7 @@ preferred-citation:
   end: 1421
   year: 2026
   doi: "10.1016/j.chembiol.2026.09.011"
-references:   # the data sources: cited with every export (DOIs checked on Crossref, 1 Nov 2026)
+references:   # the data sources: cited with every export 
   - type: dataset
     authors:   # as the Zenodo record lists them
       - {family-names: DeAngelo, given-names: JD}
@@ -123,7 +123,7 @@ references:   # the data sources: cited with every export (DOIs checked on Cross
     end: 609
     year: 2015
     doi: "10.1093/bioinformatics/btu684"
-  - type: article   # Crossref gives no volume or pages (online 2019-11-04); these are the release's (inputs/MANIFEST.tsv)
+  - type: article   # the record gives no volume or pages (online 2019-11-04); these are the release's (inputs/MANIFEST.tsv)
     authors: [{family-names: Piñero, given-names: J}, {family-names: Ramírez-Anguita, given-names: JM}, {family-names: Saüch-Pitarch, given-names: J}, {name: "et al."}]
     title: "The DisGeNET knowledge platform for disease genomics: 2019 update"
     journal: "Nucleic Acids Res"
@@ -137,7 +137,7 @@ references:   # the data sources: cited with every export (DOIs checked on Cross
     version: "3.22.0"
     publisher: Bioconductor
     doi: "10.18129/B9.bioc.org.Hs.eg.db"
-  - type: article   # Crossref (1 Nov 2026): Nat Methods 20(5):673-676, online 6 Apr 2023; 12 authors
+  - type: article   # Nat Methods 20(5):673-676, online 6 Apr 2023; 12 authors
     authors: [{family-names: Rostam, given-names: N}, {family-names: Ghosh, given-names: S}, {family-names: Chow, given-names: CFW}, {name: "et al."}]
     title: "CD-CODE: crowdsourcing condensate database and encyclopedia"
     journal: "Nat Methods"
@@ -148,8 +148,8 @@ references:   # the data sources: cited with every export (DOIs checked on Cross
     doi: "10.1038/s41592-023-01831-0"
   # the two PRMT perturbation studies the PRMT inhibitors, knockouts and knockdowns question reads that report no site of
   # their own; Maron et al. 2021, Hartel et al. 2019, Lu et al. 2024 and Li et al. 2021 are cited as studies reporting
-  # sites (Method > Sources). Both checked on Crossref (2 Nov 2026): CC BY 4.0
-  - type: article   # Crossref: Nat Commun 8:15571, published 24 May 2017; 7 authors
+  # sites (Method > Sources). CC BY 4.0
+  - type: article   # Nat Commun 8:15571, published 24 May 2017; 7 authors
     authors: [{family-names: Shishkova, given-names: E}, {family-names: Zeng, given-names: H}, {family-names: Liu, given-names: F}, {name: "et al."}]
     title: "Global mapping of CARM1 substrates defines enzyme specificity and substrate recognition"
     journal: "Nat Commun"
@@ -157,7 +157,7 @@ references:   # the data sources: cited with every export (DOIs checked on Cross
     start: 15571
     year: 2017
     doi: "10.1038/ncomms15571"
-  - type: article   # Crossref: Nat Commun 11:2396, published 14 May 2020; 31 authors
+  - type: article   # Nat Commun 11:2396, published 14 May 2020; 31 authors
     authors: [{family-names: Szewczyk, given-names: MM}, {family-names: Ishikawa, given-names: Y}, {family-names: Organ, given-names: S}, {name: "et al."}]
     title: "Pharmacological inhibition of PRMT7 links arginine monomethylation to the cellular stress response"
     journal: "Nat Commun"
@@ -165,7 +165,7 @@ references:   # the data sources: cited with every export (DOIs checked on Cross
     start: 2396
     year: 2020
     doi: "10.1038/s41467-020-16271-z"
-  # Where in the cell: the maps beyond the Human Protein Atlas (DOIs checked on Crossref, 1 Nov 2026)
+  # Where in the cell: the maps beyond the Human Protein Atlas 
   - type: article
     authors: [{family-names: Go, given-names: CD}, {family-names: Knight, given-names: JDR}, {family-names: Rajasekharan, given-names: A}, {name: "et al."}]
     title: "A proximity-dependent biotinylation map of a human cell"

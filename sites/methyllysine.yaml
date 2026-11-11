@@ -1,5 +1,5 @@
 # Site: the human methyllysine sites, from UniProt, iPTMnet, CPLM 4.0 and Berryhill et al. 2023 (release v1.5.0 of PTM_Pipeline; CPLM
-# states no license: its sites are included by the owner's decision of 2026-11-09, cited, pending the authors' permission). The same code and the same
+# states no license: its sites are included, cited). The same code and the same
 # generic inputs as the methylarginine site; its own marks, questions, focus, words and colors. There is no earlier
 # release to match, so every statistic is new (no reference). Contract: ptmcontext/schemas/site.schema.json.
 schema_version: 1
@@ -94,7 +94,7 @@ marks:
       values: {UniProt: UniProt, iPTMnet: iPTMnet, CPLM: CPLM 4.0, Berryhill 2023: "Berryhill et al. 2023"}
       colour: true
       filter: true
-      help: "The databases and the study that report the lysine. CPLM 4.0 states no license; its sites are included pending the authors' permission. Berryhill 2023: Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x, global lysine methylome profiling with characterized affinity reagents (its Supplementary Table 5)"
+      help: "The databases and the study that report the lysine. CPLM 4.0 states no license. Berryhill 2023: Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x, global lysine methylome profiling with characterized affinity reagents (its Supplementary Table 5)"
     cplm_evidence:
       column: cplm_evidence
       join_rows: true
@@ -889,18 +889,18 @@ context_marks:
     label: Phosphosite
     input: context_phosphorylation_sites_v1_5_0
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources, score: functional_score}
-    subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # shown at first: the sites Ochoa 2020 scores 0.5 or more (about 10,900); a click on the row label shows all. Sites with no score (UniProt or iPTMnet only) are hidden at first too, by the owner's decision
+    subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # shown at first: the sites Ochoa 2020 scores 0.5 or more (about 10,900); a click on the row label shows all. Sites with no score (UniProt or iPTMnet only) are hidden at first too
     replaces_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row leaves its Phospho kind out: one source for phosphosites
     colour: "#0891B2"          # cyan: apart from the purples of this site and the orange of methylarginines
     colour_dark: "#1FA2C4"
     citation:
       short: UniProt, iPTMnet and Ochoa 2020
-      cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Ochoa et al., Nat Biotechnol 38:365-373 (2020), doi:10.1038/s41587-019-0344-3 (the article is not open access; its supplementary table is included by the owner's decision)"
-      licence: "CC BY-NC-SA 4.0; Ochoa 2020 included by the owner's decision"
+      cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Ochoa et al., Nat Biotechnol 38:365-373 (2020), doi:10.1038/s41587-019-0344-3 (the article is not open access; its supplementary table is included)"
+      licence: "CC BY-NC-SA 4.0; Ochoa 2020 included"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
-      Ochoa 2020: {cite: "Ochoa et al., Nat Biotechnol 38:365 (2020), included by the owner's decision", doi: 10.1038/s41587-019-0344-3}
+      Ochoa 2020: {cite: "Ochoa et al., Nat Biotechnol 38:365 (2020)", doi: 10.1038/s41587-019-0344-3}
   - id: acetylation
     label: Acetylation
     noun: acetylation site
@@ -947,10 +947,10 @@ context_marks:
     colour_dark: "#f9a8d4"     # 9.0:1 on the dark surface
     citation:
       short: CPLM, UniProt and iPTMnet
-      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license; its sites are included pending the authors' permission); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license (included pending the authors' permission)"
+      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
     sources:
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022), included pending the authors' permission", doi: 10.1093/nar/gkab849}
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: sumoylation
@@ -964,10 +964,10 @@ context_marks:
     colour_dark: "#7dd3fc"     # 9.8:1 on the dark surface
     citation:
       short: CPLM, UniProt and iPTMnet
-      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license; its sites are included pending the authors' permission); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license (included pending the authors' permission)"
+      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
     sources:
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022), included pending the authors' permission", doi: 10.1093/nar/gkab849}
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
 
@@ -1115,7 +1115,7 @@ website:                  # the look and words of the website (ptmc web); layout
     title: Where in the cell
     question: "Where do methylated proteins localize in the cell?"
     intro: "Five maps from four studies place proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
-    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map, pending their license. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
+    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
     maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
       - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
          how: "antibody staining in many cell lines; locations of Approved or better reliability with 20 or more proteins",
@@ -1240,9 +1240,9 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: RNA and DNA, analyses: [pdb_interface_na]}
     - {name: Data sources, attributes: [sources, berryhill_cell_lines, berryhill_enrichment, iptmnet_sources]}
   dataset: {label: data release, version: v1.5.0, date: "2026-11-10", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/ae0ea32/releases/v1.5.0"}
-  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). CPLM 4.0 states no license: its sites (rows whose databases name CPLM) are included by the owner's decision, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022), pending the authors' permission, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (the article is CC BY 4.0; its Supplementary Table 5 carries no separate license notice and is included by the owner's decision) is cited the same way. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
+  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). CPLM 4.0 states no license: its sites (rows whose databases name CPLM) are included, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022), and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (the article is CC BY 4.0; its Supplementary Table 5 carries no separate license notice and is included) is cited the same way. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
-    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/ae0ea32/releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv", format: TSV, note: "every methyllysine record: one row per lysine and degree, with its evidence class, sources and CPLM evidence label (CPLM sites included pending the authors' permission)"}
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/ae0ea32/releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv", format: TSV, note: "every methyllysine record: one row per lysine and degree, with its evidence class, sources and CPLM evidence label (CPLM sites)"}
     - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/ae0ea32/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
     - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/ae0ea32/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
     - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/ae0ea32/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}

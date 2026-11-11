@@ -81,7 +81,7 @@ marks:
   input: methylarginine_sites_v1_4_3
   accession: uniprot_accession
   position: position
-  left_out:            # sites kept pending: counted on neither side (none of v1.4.3's sites carries this flag; the
+  left_out:            # sites held back: counted on neither side (none of v1.4.3's sites carries this flag; the
     - {column: flags, contains: one_sided_window}   # release keeps them in a separate table)
   residue_mismatch: error
   attributes:          # what the website keeps for each site: to color, filter and explain it (no test reads these)
@@ -817,7 +817,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
              "ICP < 0.2 (not chromatin)": "Not chromatin (probability < 0.2)"}
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   # Where the RNAs bound by proteins with eCLIP data gather (scripts/cell_maps.py, GENE_MAPS): the release's calls per
-  # protein and map (supporting/eclip_rna_compartments). The nuclear-body map (Barutcu et al. 2022) stays out: license pending
+  # protein and map (supporting/eclip_rna_compartments). The nuclear-body map (Barutcu et al. 2022) stays out
   - id: eclip_rna_apexseq
     test: protein_sets
     title: Bound RNAs by APEX-seq
@@ -1261,18 +1261,18 @@ context_marks:
     label: Phosphosite
     input: context_phosphorylation_sites_v1_5_0
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources, score: functional_score}
-    subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # shown at first: the sites Ochoa 2020 scores 0.5 or more (about 10,900); a click on the row label shows all. Sites with no score (UniProt or iPTMnet only) are hidden at first too, by the owner's decision
+    subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # shown at first: the sites Ochoa 2020 scores 0.5 or more (about 10,900); a click on the row label shows all. Sites with no score (UniProt or iPTMnet only) are hidden at first too
     replaces_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row leaves its Phospho kind out: one source for phosphosites
     colour: "#0891B2"          # cyan: apart from the red and slate of the data, the motif green and the purples of other sites
     colour_dark: "#1FA2C4"
     citation:
       short: UniProt, iPTMnet and Ochoa 2020
-      cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Ochoa et al., Nat Biotechnol 38:365-373 (2020), doi:10.1038/s41587-019-0344-3 (the article is not open access; its supplementary table is included by the owner's decision)"
-      licence: "CC BY-NC-SA 4.0; Ochoa 2020 included by the owner's decision"
+      cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Ochoa et al., Nat Biotechnol 38:365-373 (2020), doi:10.1038/s41587-019-0344-3 (the article is not open access; its supplementary table is included)"
+      licence: "CC BY-NC-SA 4.0; Ochoa 2020 included"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
-      Ochoa 2020: {cite: "Ochoa et al., Nat Biotechnol 38:365 (2020), included by the owner's decision", doi: 10.1038/s41587-019-0344-3}
+      Ochoa 2020: {cite: "Ochoa et al., Nat Biotechnol 38:365 (2020)", doi: 10.1038/s41587-019-0344-3}
   - id: methyllysine
     label: Methyllysine
     input: context_methyllysine_sites_v1_5_0
@@ -1281,12 +1281,12 @@ context_marks:
     colour_dark: "#A3AEB3"
     citation:
       short: UniProt, iPTMnet, CPLM and Berryhill 2023
-      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license; its sites are included pending the authors' permission); Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license (included pending the authors' permission); Berryhill 2023 article CC BY 4.0"
+      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license; Berryhill 2023 article CC BY 4.0"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022), included pending the authors' permission", doi: 10.1093/nar/gkab849}
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       Berryhill 2023: {cite: "Berryhill et al., Sci Rep 13:377 (2023)", doi: 10.1038/s41598-022-27175-x}
   - id: acetylation
     label: Acetylation
@@ -1331,10 +1331,10 @@ context_marks:
     colour_dark: "#f9a8d4"     # 9.0:1 on the dark surface
     citation:
       short: CPLM, UniProt and iPTMnet
-      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license; its sites are included pending the authors' permission); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license (included pending the authors' permission)"
+      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
     sources:
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022), included pending the authors' permission", doi: 10.1093/nar/gkab849}
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: sumoylation
@@ -1348,10 +1348,10 @@ context_marks:
     colour_dark: "#7dd3fc"     # 9.8:1 on the dark surface
     citation:
       short: CPLM, UniProt and iPTMnet
-      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license; its sites are included pending the authors' permission); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license (included pending the authors' permission)"
+      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
     sources:
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022), included pending the authors' permission", doi: 10.1093/nar/gkab849}
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
 
@@ -1652,7 +1652,7 @@ website:                  # the look and words of the website (ptmc web); layout
     title: Where in the cell
     question: "Where do methylated proteins localize in the cell?"
     intro: "Five maps from four studies place proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
-    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map, pending their license. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
+    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
     maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
       - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
          how: "antibody staining in many cell lines; locations of Approved or better reliability with 20 or more proteins",
