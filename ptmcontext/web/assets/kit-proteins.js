@@ -2620,27 +2620,75 @@
   K.tips.push(['[data-hl-tip]', (el) => el.dataset.hlTip || '']);
   // the attributes the shown marks' tag lists in its hover (website.shown_marks), not listed again
   const tagAttrs = new Set(K.shown?.on ? [...(K.shown.cfg.tests?.attributes || []), ...(K.shown.cfg.also || [])] : []);
-  K.tips.push([
-    '[data-msite]',
-    (el) => {
-      const pos = +el.dataset.msite,
-        m = PV.rec?.marks.find((x) => x[0] === pos);
-      if (!m) return '';
-      const c = K.map.siteColour(m);
-      return (
-        `<b>${esc(site(pos))}</b>${c.label ? ' · ' + esc(c.label) : ''}<br><span class="win">${winHtml(m[1])}</span><br>` +
-        markClasses(m)
-          .map(([aid, v]) => `${esc(A[aid]?.title || aid)}: ${esc(classText(aid, v))}`)
-          .join('<br>') +
+  // a site's hover (website.protein.map.hover.site: the fields in order): concise, a name, a line of evidence chips and
+  // the marks nearby; the question classes, the window and every attribute are on the site card
+  const HV = (D.protein_view?.map || {}).hover || {};
+  const HOVER_SITE = HV.site || ['name', 'chips', 'nearby', 'click'];
+  const coarse = () => !!window.matchMedia?.('(pointer: coarse)').matches;
+  const chipOf = (m, spec) => {
+    const n = typeof spec === 'string' ? spec : spec.attribute,
+      s = SPECS[n];
+    const v = s ? attrVal(m, n) : '';
+    if (!s || v === '' || v == null) return '';
+    if (s.kind === 'list') {
+      const vals = String(v)
+        .split(s.separator || '; ')
+        .filter(Boolean);
+      if (spec.count) return `${vals.length} ${vals.length === 1 ? spec.count.replace(/s$/, '') : spec.count}`;
+      const lab = (x) => (K.sel?.valueLabel ? K.sel.valueLabel(n, x) : x);
+      return vals.length > 2 ? `${lab(vals[0])}, ${lab(vals[1])} +${vals.length - 2}` : vals.map(lab).join(', ');
+    }
+    if (spec.count) return `${v} ${spec.count}`;
+    if (s.kind === 'number') return `${s.label} ${Number.isFinite(+v) ? +(+v).toPrecision(3) : v}`;
+    return K.sel?.valueLabel ? K.sel.valueLabel(n, v) : String(v);
+  };
+  const chipSpecs = () =>
+    HV.chips ||
+    Object.keys(SPECS)
+      .filter((n) => SPECS[n].provenance && !SPECS[n].present)
+      .slice(0, 3);
+  const nearbyHtml = (pos) => {
+    const win = HV.window || 10,
+      max = HV.nearby_max || 3,
+      hits = K.map?.nearby ? K.map.nearby(PV.acc, pos, win) : [];
+    if (!hits.length) return '';
+    const word = (h) =>
+      `${esc(h.res)} ${esc(h.mark)} ${h.dist > 0 ? '+' : '−'}${Math.abs(h.dist)}${h.score != null ? ` (${esc(h.score)})` : ''}`;
+    return (
+      `<span class="muted">nearby:</span> ${hits.slice(0, max).map(word).join(' · ')}` +
+      (hits.length > max ? ` · +${hits.length - max} more` : '')
+    );
+  };
+  function siteTip(pos) {
+    const m = PV.rec?.marks.find((x) => x[0] === pos);
+    if (!m) return '';
+    const c = K.map.siteColour(m),
+      out = [];
+    HOVER_SITE.forEach((f) => {
+      if (f === 'name') out.push(`<b>${esc(site(pos))}</b>${c.label ? ' · ' + esc(c.label) : ''}`);
+      else if (f === 'chips') {
+        const chips = chipSpecs()
+          .map((sp) => chipOf(m, sp))
+          .filter(Boolean);
+        if (chips.length) out.push(chips.map(esc).join(' · '));
+      } else if (f === 'nearby') {
+        const h = nearbyHtml(pos);
+        if (h) out.push(h);
+      } else if (f === 'window') out.push(`<span class="win">${winHtml(m[1])}</span>`);
+      else if (f === 'classes')
+        markClasses(m).forEach(([aid, v]) => out.push(`${esc(A[aid]?.title || aid)}: ${esc(classText(aid, v))}`));
+      else if (f === 'attributes')
         shownAttrs(m)
           .filter((n) => !tagAttrs.has(n))
-          .map((n) => `<br><span class="muted">${esc(SPECS[n].label)}:</span> ${attrHtml(m, n, false)}`)
-          .join('') +
-        (K.shown?.on && K.shown.counted(m)
-          ? `<br><b>${esc(cap(K.shown.label()))}</b>: ${esc(K.shown.tip(m, false))}`
-          : '') +
-        '<br><span class="muted">Click for its card</span>'
-      );
-    },
-  ]);
+          .forEach((n) => out.push(`<span class="muted">${esc(SPECS[n].label)}:</span> ${attrHtml(m, n, false)}`));
+      else if (f === 'shown') {
+        if (K.shown?.on && K.shown.counted(m))
+          out.push(`<b>${esc(cap(K.shown.label()))}</b>: ${esc(K.shown.tip(m, false))}`);
+      } else if (f === 'click')
+        out.push(`<span class="muted">${coarse() ? 'Tap again for details' : 'Click for details'}</span>`);
+    });
+    return out.join('<br>');
+  }
+  K.prot.siteTip = siteTip;
+  K.tips.push(['[data-msite]', (el) => siteTip(+el.dataset.msite)]);
 });

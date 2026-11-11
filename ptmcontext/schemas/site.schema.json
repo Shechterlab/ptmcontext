@@ -7717,6 +7717,59 @@
           },
           "description": "kinds of the live UniProt 'Other PTMs' row to leave out (a context mark's replaces_ptm_kinds adds to them)"
         },
+        "combined_marks": {
+          "description": "a compact 'All marks' row at the top of the map: one track holding the site's own marks and every context mark, each a glyph of its own shape in its color, with a legend (a click on an entry turns that mark off and on). The rows of the context marks fold behind it. false: no combined row",
+          "oneOf": [
+            {"const": false},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "default": {"enum": ["folded", "unfolded"], "description": "the per-mark rows at first (default folded); the reader's choice is kept for the browser session"},
+                "label": {"type": "string", "description": "the row's name (default: All marks)"},
+                "order": {"type": "array", "items": {"type": "string"}, "description": "the marks in the legend's order and the glyph shapes' order: 'site' for the site's own marks, else context mark ids; marks not named follow (default: the site's marks, then the context marks in the site file's order)"},
+                "min_marks": {"type": "integer", "minimum": 2, "description": "the fewest marks (the site's own included) for which the row is drawn (default 3)"}
+              }
+            }
+          ]
+        },
+        "hover": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "what the hovers of the protein map say (CONTRACTS.md, Map hovers): the fields of a site's hover and of a context mark's hover, in order; everything else is on the pinned card and the site card",
+          "properties": {
+            "site": {
+              "type": "array",
+              "items": {"enum": ["name", "chips", "nearby", "window", "classes", "attributes", "shown", "click"]},
+              "description": "name (residue and position, the colour class), chips (a line of short evidence chips), nearby (context marks within the window), window (the sequence window), classes (the site's question classes), attributes (every attribute with a value), shown (the shown-not-counted line), click. Default: name, chips, nearby, click"
+            },
+            "chips": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {"type": "string"},
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["attribute"],
+                    "properties": {
+                      "attribute": {"type": "string"},
+                      "count": {"type": "string", "description": "show the number of values and this word ('3 PMIDs') instead of the values"}
+                    }
+                  }
+                ]
+              },
+              "description": "the attributes of the evidence chip line, in order (default: the first three attributes marked provenance, each at most two values)"
+            },
+            "context": {
+              "type": "array",
+              "items": {"enum": ["mark", "residue", "detail", "score", "source", "click"]},
+              "description": "a context mark's hover: mark (its name), residue (residue and position), detail (its state, evidence and score as the row words them), score (a number the item carries), source (its sources, where the detail does not name them), click. Default: mark, residue, detail, source, click"
+            },
+            "window": {"type": "integer", "minimum": 1, "description": "residues either side of a site that count as nearby (default 10)"},
+            "nearby_max": {"type": "integer", "minimum": 1, "description": "the most nearby marks named (default 3, then '+n')"}
+          }
+        },
         "marks_view": {
           "type": "object",
           "additionalProperties": false,
@@ -8193,6 +8246,10 @@
               "swap": {
                 "type": "string",
                 "description": "the id of another row of this list: clicking this row's label turns this row off and that one on (a subset of marks shown first, one click to show all)"
+              },
+              "context_mark": {
+                "type": "string",
+                "description": "the id of the context mark this row draws (set for the rows made from context_marks): the row is one of the marks of the combined 'All marks' row and folds behind it (website.protein.map.combined_marks)"
               },
               "mark": {
                 "enum": [

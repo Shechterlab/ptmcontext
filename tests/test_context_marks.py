@@ -272,3 +272,88 @@ def test_a_toy_site_runs_the_question_derives_the_columns_and_builds_the_page(tm
     specs = d['attribute_specs']
     assert 'ctx_near' in specs and specs['ctx_near_ctx']['label'] == 'Has a serine or lysine within ±6'
     assert 'ctx_ctx' in json.dumps(d['map_rows']) and d['site']['name'] == 'Toy Explorer'
+
+
+MARK_IDS = ['methylarginine', 'methyllysine', 'phospho', 'acetyl', 'acyl', 'ubiquitin', 'sumo']
+
+
+def _seven():
+    return _site(
+        {
+            'context_marks': [
+                {**ENTRY, 'id': i, 'label': i.capitalize(), 'colour': f'#{(k + 1) * 0x2A3B4C % 0xFFFFFF:06X}'}
+                for k, i in enumerate(MARK_IDS)
+            ]
+        }
+    )
+
+
+def test_seven_context_marks_each_make_a_row_that_folds_behind_the_combined_row():
+    s = CM.expand(_seven())
+    rows = s['website']['protein']['map']['rows']
+    assert [r['id'] for r in rows] == ['ctx_' + i for i in MARK_IDS]
+    assert [r['context_mark'] for r in rows] == MARK_IDS  # the kit folds rows that name a context mark
+    assert len({r['colour'] for r in rows}) == 7
+
+
+def test_the_schema_checks_the_combined_row_and_the_hover_settings():
+    import jsonschema
+
+    from ptmcontext.profile import schema
+
+    sch = {'$schema': schema('site')['$schema'], '$defs': schema('site')['$defs'], '$ref': '#/$defs/protein_map'}
+
+    def validate(doc, _name):
+        jsonschema.validate(doc, sch)
+
+    def site(map_):
+        return map_
+
+    validate(
+        site(
+            {
+                'combined_marks': {
+                    'default': 'folded',
+                    'order': ['site', 'phos'],
+                    'label': 'All marks',
+                    'min_marks': 3,
+                },
+                'hover': {
+                    'site': ['name', 'chips', 'nearby', 'click'],
+                    'chips': ['sources', {'attribute': 'pmids', 'count': 'PMIDs'}],
+                    'context': ['mark', 'residue', 'detail', 'source', 'click'],
+                    'window': 10,
+                    'nearby_max': 3,
+                },
+            }
+        ),
+        'site',
+    )
+    validate(site({'combined_marks': False}), 'site')
+    for bad in (
+        {'combined_marks': {'default': 'half'}},
+        {'combined_marks': {'colour': 'red'}},
+        {'hover': {'site': ['sequence']}},
+        {'hover': {'context': ['colour']}},
+        {'hover': {'fields': []}},
+    ):
+        with pytest.raises(Exception):
+            validate(site(bad), 'site')
+
+
+def test_the_kit_reads_the_combined_row_and_hover_settings_and_keeps_the_pieces_accessible():
+    js = (ASSETS / 'kit-map.js').read_text()
+    for name in ('CFG.combined_marks', 'CFG.hover', 'context_mark', 'sessionStorage', 'aria-pressed', 'data-map-fold'):
+        assert name in js, name
+    # a mark is told apart by its shape as well as its color: at least eight shapes, so seven marks never share one
+    assert re.search(r"const SHAPES = \[('\w+',? ?){8,}\]", js)
+    prot = (ASSETS / 'kit-proteins.js').read_text()
+    assert "HV.site || ['name', 'chips', 'nearby', 'click']" in prot and 'K.map?.nearby' in prot
+
+
+@pytest.mark.parametrize('name', ['methylarginine', 'methyllysine', 'phospho'])
+def test_the_three_site_files_set_the_combined_row_and_the_hovers(name):
+    m = S.load_site(Path(__file__).resolve().parents[1] / 'sites' / f'{name}.yaml')['website']['protein']['map']
+    assert m['combined_marks'] == {'default': 'folded'}
+    assert m['hover']['site'][0] == 'name' and m['hover']['chips'] and 'context' in m['hover']
+    assert all(r.get('context_mark') for r in m['rows'] if r['id'].startswith('ctx_'))

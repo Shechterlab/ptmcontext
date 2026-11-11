@@ -206,6 +206,7 @@ def map_row(entry: dict, after: str) -> dict:
             **({'exclude': [{'column': cols['evidence'], 'in': drop(entry)}]} if drop(entry) else {}),
         },
         'mark': 'tick',
+        'context_mark': entry['id'],
         'labels': 'marks',
         'key': entry['label'],
         'colour': entry['colour'],
