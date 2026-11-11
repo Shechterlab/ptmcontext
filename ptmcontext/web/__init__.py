@@ -645,7 +645,8 @@ def note_text(note: str, stats) -> str:
         if rows.empty:
             raise ValueError(f'note: no statistics row for the class {cls!r} of the question {aid!r}')
         methods = set(rows['method'])
-        row = rows[rows['method'] == ('mantel_haenszel' if 'mantel_haenszel' in methods else sorted(methods)[0])].iloc[0]
+        method = 'mantel_haenszel' if 'mantel_haenszel' in methods else sorted(methods)[0]
+        row = rows[rows['method'] == method].iloc[0]
         if kind == 'sig':
             return 'significant' if float(row['q']) < 0.05 else 'not significant'
         return f'{float(row["odds_ratio"]):.2f}x'

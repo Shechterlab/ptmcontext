@@ -32,9 +32,7 @@ def _mapping(loader, node, deep=False):
 
 _StrictLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _mapping)
 
-SITE_FILES = sorted(
-    [*REPO.glob('sites/*.yaml'), *REPO.glob('sites/*.yml'), *REPO.glob('sites/marks/*.yaml')]
-)
+SITE_FILES = sorted([*REPO.glob('sites/*.yaml'), *REPO.glob('sites/*.yml'), *REPO.glob('sites/marks/*.yaml')])
 
 
 @pytest.mark.parametrize('path', SITE_FILES, ids=lambda p: p.name)
@@ -70,9 +68,30 @@ def test_any_of_row_condition_holds_when_one_part_does():
 def test_note_numbers_come_from_the_statistics():
     stats = pd.DataFrame(
         [
-            {'analysis': 'q_cplm', 'category': 'near', 'stratum': 'all', 'method': 'fisher', 'odds_ratio': 9.9, 'q': 0.5},
-            {'analysis': 'q_cplm', 'category': 'near', 'stratum': 'all', 'method': 'mantel_haenszel', 'odds_ratio': 2.418, 'q': 0.001},
-            {'analysis': 'q_b', 'category': 'near', 'stratum': 'all', 'method': 'mantel_haenszel', 'odds_ratio': 0.84, 'q': 0.4},
+            {
+                'analysis': 'q_cplm',
+                'category': 'near',
+                'stratum': 'all',
+                'method': 'fisher',
+                'odds_ratio': 9.9,
+                'q': 0.5,
+            },
+            {
+                'analysis': 'q_cplm',
+                'category': 'near',
+                'stratum': 'all',
+                'method': 'mantel_haenszel',
+                'odds_ratio': 2.418,
+                'q': 0.001,
+            },
+            {
+                'analysis': 'q_b',
+                'category': 'near',
+                'stratum': 'all',
+                'method': 'mantel_haenszel',
+                'odds_ratio': 0.84,
+                'q': 0.4,
+            },
         ]
     )
     text = web.note_text('CPLM {or:q_cplm:near}; other {or:q_b:near} ({sig:q_b:near}), {sig:q_cplm:near}.', stats)
@@ -92,16 +111,30 @@ def test_location_findings_skip_classes_that_are_not_compartments():
     ]
 
     def row(aid, cat, orr, q=0.001, a=40):
-        return {'analysis': aid, 'category': cat, 'method': 'mantel_haenszel', 'or': orr, 'odds_ratio': orr,
-                'q': q, 'a': a, 'fold': None}
+        return {
+            'analysis': aid,
+            'category': cat,
+            'method': 'mantel_haenszel',
+            'or': orr,
+            'odds_ratio': orr,
+            'q': q,
+            'a': a,
+            'fold': None,
+        }
 
-    rows = [row('cell_hcm_domain', '14-3-3 scaffold', 3.0), row('cell_hcm_domain', 'nucleolus', 1.5),
-            row('cell_chromatin', 'ICP >= 0.8 (chromatin)', 1.3)]
+    rows = [
+        row('cell_hcm_domain', '14-3-3 scaffold', 3.0),
+        row('cell_hcm_domain', 'nucleolus', 1.5),
+        row('cell_chromatin', 'ICP >= 0.8 (chromatin)', 1.3),
+    ]
     only = {'cell_hcm_domain', 'cell_chromatin'}
     free = G.findings(analyses, rows, None, only=only)
     assert free[0]['class'] == '14-3-3 scaffold'
     located = G.findings(
-        analyses, rows, None, only=only,
+        analyses,
+        rows,
+        None,
+        only=only,
         locations={'cell_hcm_domain': {'nucleolus'}, 'cell_chromatin': {'ICP >= 0.8 (chromatin)'}},
     )
     assert [f['class'] for f in located] == ['nucleolus', 'ICP >= 0.8 (chromatin)']
