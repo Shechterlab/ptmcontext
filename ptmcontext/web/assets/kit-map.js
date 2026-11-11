@@ -2471,9 +2471,10 @@
   const PANEL = [
       ['', 'Screen layout'],
       ['85', 'Single column, 85 mm'],
-      ['114', '1.5 columns, 114 mm'],
-      ['174', 'Full width, 174 mm'],
+      ['180', 'Double column, 180 mm'],
+      ['custom', 'Custom width…'],
     ],
+    PRESET = new Set(['', '85', '180']),
     DPI = [300, 600, 1000];
   // a journal column: the canvas narrowed until its smallest labels (8.5 units) print at 6 pt, as the explorer's panels
   const panelUnits = (mm) => Math.round(mm / ((6 * 25.4) / 72 / 8.5));
@@ -2522,8 +2523,13 @@
       `<details class="exp-opt"><summary title="The exports' size: the screen layout, or a journal column, ` +
       `laid out again at that width">Size</summary><div class="exp-opt-body">` +
       `<label>Export size <select data-map-size>${PANEL.map(
-        ([v, l]) => `<option value="${v}"${String(M.size.mm) === v ? ' selected' : ''}>${l}</option>`
+        ([v, l]) =>
+          `<option value="${v}"${(PRESET.has(String(M.size.mm)) ? String(M.size.mm) : 'custom') === v ? ' selected' : ''}>${l}</option>`
       ).join('')}</select></label>` +
+      (PRESET.has(String(M.size.mm))
+        ? ''
+        : `<label>Width <input type="number" data-map-mm min="40" max="400" step="1" value="${esc(M.size.mm === 'custom' ? 120 : M.size.mm)}" ` +
+          `style="width:4.5rem"> mm</label>`) +
       (`<label>PNG <select data-map-dpi${M.size.mm ? '' : ' disabled title="Pick a column width first"'}>${DPI.map(
         (v) => `<option value="${v}"${+M.size.dpi === v ? ' selected' : ''}>${v} dpi</option>`
       ).join('')}</select>` +
@@ -2546,16 +2552,19 @@
         .map((id) => {
           const r = ROW_OF[id];
           return (
-            `<div class="rm-row">` +
+            `<div class="rm-row" draggable="true" data-map-drag="${esc(id)}">` +
+            `<button type="button" class="rm-grip" data-map-grip="${esc(id)}" aria-label="${esc(`Move ${r[1]}: drag, or use the up and down arrow keys`)}" ` +
+            `title="Drag to move, or press the up and down arrow keys">⠿</button>` +
             `<label title="${esc(r[3])}"><input type="checkbox" data-map-row="${id}"${isOn(id) ? ' checked' : ''}> ${esc(r[1])} <span class="muted">${esc(r[2])}${
               COMB_ON && M.fold && OWN[id]?.context_mark ? ', folded in All marks' : ''
             }</span></label>` +
-            `<span><button type="button" data-map-move="${id}" data-d="-1" aria-label="Up">↑</button><button ` +
-            `type="button" data-map-move="${id}" data-d="1" aria-label="Down">↓</button></span></div>`
+            `<span><button type="button" data-map-move="${id}" data-d="-1" aria-label="${esc(`Move ${r[1]} up`)}">↑</button><button ` +
+            `type="button" data-map-move="${id}" data-d="1" aria-label="${esc(`Move ${r[1]} down`)}">↓</button></span></div>`
           );
         })
         .join('') +
-      `<p><button type="button" class="linkish" data-map-defaults>Default rows</button></p></div>`
+      `<p class="rm-foot"><button type="button" class="linkish" data-map-reset-order>Reset order</button> · ` +
+      `<button type="button" class="linkish" data-map-defaults>Default rows</button></p></div>`
     );
   }
   // the key under the map, drawn with the map's own marks: the color mode first, then what the rows drew
@@ -3071,6 +3080,83 @@
       .find((e) => e.dataset.comb === id)
       ?.focus({ preventScroll: true });
   }
+  // the rows the Rows menu lists (the backbone overlays are not rows), moved one place or dropped on another row
+  const listRows = () => rowOrder().filter((id) => !isBackbone(id));
+  function setRows(rows, focus) {
+    M.order = [...ROWS.map((r) => r[0]).filter(isBackbone), ...rows];
+    saveRows();
+    K.writeHash(false); // the order is in the address (rows=), so a link to the map keeps it
+    redraw();
+    if (focus) document.querySelector(focus)?.focus({ preventScroll: true });
+  }
+  function moveRow(id, d, focus) {
+    const rows = listRows(),
+      i = rows.indexOf(id),
+      j = i + d;
+    if (i < 0 || j < 0 || j >= rows.length) return;
+    [rows[i], rows[j]] = [rows[j], rows[i]];
+    setRows(rows, focus || `[data-map-grip="${id}"]`);
+  }
+  function dropRow(id, onto, after) {
+    const rows = listRows().filter((x) => x !== id),
+      k = rows.indexOf(onto);
+    if (k < 0 || id === onto) return;
+    rows.splice(k + (after ? 1 : 0), 0, id);
+    setRows(rows, `[data-map-grip="${id}"]`);
+  }
+  document.addEventListener('keydown', (e) => {
+    const g = e.target.closest?.('[data-map-grip]');
+    if (!g || e.altKey || e.ctrlKey || e.metaKey) return;
+    const d = { ArrowUp: -1, ArrowDown: 1 }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    moveRow(g.dataset.mapGrip, d);
+  });
+  let dragId = null;
+  document.addEventListener('dragstart', (e) => {
+    const r = e.target.closest?.('[data-map-drag]');
+    if (!r) return;
+    dragId = r.dataset.mapDrag;
+    e.dataTransfer.effectAllowed = 'move';
+    try {
+      e.dataTransfer.setData('text/plain', dragId);
+    } catch (err) {
+      /* */
+    }
+    r.classList.add('rm-drag');
+  });
+  document.addEventListener('dragover', (e) => {
+    const r = e.target.closest?.('[data-map-drag]');
+    if (!dragId || !r) return;
+    e.preventDefault();
+    const b = r.getBoundingClientRect();
+    document.querySelectorAll('.rm-over,.rm-over-after').forEach((x) => x.classList.remove('rm-over', 'rm-over-after'));
+    r.classList.add(e.clientY > b.top + b.height / 2 ? 'rm-over-after' : 'rm-over');
+  });
+  document.addEventListener('drop', (e) => {
+    const r = e.target.closest?.('[data-map-drag]');
+    if (!dragId || !r) return;
+    e.preventDefault();
+    const b = r.getBoundingClientRect(),
+      id = dragId;
+    dragId = null;
+    dropRow(id, r.dataset.mapDrag, e.clientY > b.top + b.height / 2);
+  });
+  document.addEventListener('dragend', () => {
+    dragId = null;
+    document
+      .querySelectorAll('.rm-drag,.rm-over,.rm-over-after')
+      .forEach((x) => x.classList.remove('rm-drag', 'rm-over', 'rm-over-after'));
+  });
+  // the order of the rows is part of the address, when it is not the default: #protein/TP53?rows=a,b,c
+  K.paramsOut.push((p) => {
+    const o = rowOrder().join(',');
+    if (o !== DEFAULT_ORDER.join(',') && M.order !== DEFAULT_ORDER) p.set('rows', o);
+  });
+  K.paramsIn.push((p) => {
+    const r = (p.get('rows') || '').split(',').filter((id) => ROW_OF[id]);
+    if (r.length && r.join(',') !== M.order.join(',')) M.order = r;
+  });
   const saveRows = () => {
     store.set('ptmc-map-off', [...M.off]);
     store.set('ptmc-map-order', rowOrder());
@@ -3134,17 +3220,22 @@
     ],
     [
       '[data-map-move]',
-      (el) => {
-        // moves among the rows the menu lists (the backbone overlays are not rows)
-        const rows = rowOrder().filter((id) => !isBackbone(id)),
-          i = rows.indexOf(el.dataset.mapMove),
-          j = i + +el.dataset.d;
-        if (j >= 0 && j < rows.length) {
-          [rows[i], rows[j]] = [rows[j], rows[i]];
-          M.order = [...ROWS.map((r) => r[0]).filter(isBackbone), ...rows];
-          saveRows();
-          redraw();
-        }
+      (el) =>
+        moveRow(el.dataset.mapMove, +el.dataset.d, `[data-map-move="${el.dataset.mapMove}"][data-d="${el.dataset.d}"]`),
+    ],
+    [
+      '[data-map-grip]',
+      () => {
+        /* a click on the handle does nothing: it is dragged or moved with the arrow keys */
+      },
+    ],
+    [
+      '[data-map-reset-order]',
+      () => {
+        M.order = DEFAULT_ORDER.slice();
+        saveRows();
+        K.writeHash(false);
+        redraw();
       },
     ],
     [
@@ -3153,6 +3244,7 @@
         M.off = new Set(DEFAULT_OFF);
         M.order = DEFAULT_ORDER.slice();
         saveRows();
+        K.writeHash(false);
         redraw();
       },
     ],
@@ -3189,9 +3281,25 @@
       store.set('ptmc-map-colour', M.colour);
       redraw();
     }
-    if (d.mapSize != null) {
-      M.size.mm = e.target.value;
+    if (d.mapMm != null) {
+      const v = Math.max(40, Math.min(400, Math.round(+e.target.value) || 120));
+      M.size.mm = String(v);
       store.set('ptmc-map-size', M.size);
+    }
+    if (d.mapSize != null) {
+      M.size.mm =
+        e.target.value === 'custom' ? (PRESET.has(String(M.size.mm)) ? '120' : String(M.size.mm)) : e.target.value;
+      store.set('ptmc-map-size', M.size);
+      const box = e.target.closest('.exp-opt-body'),
+        had = box?.querySelector('[data-map-mm]');
+      if (box && e.target.value === 'custom' && !had) {
+        e.target
+          .closest('label')
+          .insertAdjacentHTML(
+            'afterend',
+            `<label>Width <input type="number" data-map-mm min="40" max="400" step="1" value="${esc(M.size.mm)}" style="width:4.5rem"> mm</label>`
+          );
+      } else if (had && e.target.value !== 'custom') had.closest('label').remove();
       document.querySelectorAll('[data-map-dpi]').forEach((x) => {
         x.disabled = !M.size.mm;
         x.title = M.size.mm ? '' : 'Pick a column width first';

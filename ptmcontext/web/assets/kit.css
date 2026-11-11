@@ -9262,3 +9262,123 @@ a.btn:hover {
   width: 0.9em;
   flex: none;
 }
+
+/* ---- tables that fit (the last word on cell wrapping, so it sits at the end) ----------------------------------------
+   Cells wrap: only numbers and identifiers stay on one line. A sequence window and its labels take two lines. Where a
+   table is still wider than its card (a phone), it scrolls: an edge fade, a hint above it and a scrollbar that stays. */
+.tbl th,
+.tbl td {
+  white-space: normal;
+  overflow-wrap: break-word;
+  vertical-align: top;
+}
+.tbl th.num,
+.tbl td.num,
+.tbl td.nw,
+.tbl td.cwin .mono,
+.tbl td .acc {
+  white-space: nowrap;
+}
+html[data-density] .sites-tbl td.cwin {
+  white-space: normal;
+}
+html[data-density] .sites-tbl td.cwin > .mono {
+  display: block;
+  white-space: nowrap;
+}
+html[data-density] .sites-tbl td.cwin > .tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 0.15rem;
+}
+html[data-density] .sites-tbl .tags,
+html[data-density] .sites-tbl .cv,
+html[data-density] .sites-tbl .src-tags {
+  flex-wrap: wrap;
+  max-width: 18rem;
+  white-space: normal;
+}
+html[data-density] .sites-tbl .src-tags {
+  display: flex;
+  gap: 0.2rem 0.35rem;
+}
+.tbl-card,
+.tbl-wrap {
+  scrollbar-width: auto;
+  scrollbar-color: var(--muted) var(--line);
+}
+.scroll-hint {
+  margin: 0.2rem 0 0.15rem;
+  text-align: right;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.scroll-hint[hidden] {
+  display: none;
+}
+@media print {
+  .scroll-hint {
+    display: none;
+  }
+}
+/* a long list of papers: "N papers" opens in place */
+details.pm-more {
+  display: inline;
+}
+details.pm-more > summary {
+  display: inline;
+  cursor: pointer;
+  color: var(--accent-dark, var(--accent));
+  list-style: none;
+}
+details.pm-more > summary::-webkit-details-marker {
+  display: none;
+}
+details.pm-more > summary::after {
+  content: ' ▾';
+}
+details.pm-more[open] > summary::after {
+  content: ' ▴';
+}
+details.pm-more .pm-list {
+  display: block;
+  margin-top: 0.2rem;
+  max-width: 22rem;
+  overflow-wrap: anywhere;
+}
+/* the Rows menu: a handle to drag a row, the arrow buttons, and where a dragged row lands */
+.rows-menu .rm-row {
+  gap: 0.3rem;
+  border-radius: 0.3rem;
+}
+.rows-menu .rm-row > label {
+  flex: 1;
+  min-width: 0;
+}
+.rows-menu .rm-grip {
+  cursor: grab;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--muted);
+  padding: 0 0.3rem;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+.rows-menu .rm-grip:hover,
+.rows-menu .rm-grip:focus-visible {
+  color: var(--ink);
+  border-color: var(--line);
+}
+.rows-menu .rm-drag {
+  opacity: 0.45;
+}
+.rows-menu .rm-over {
+  box-shadow: 0 -2px 0 var(--accent);
+}
+.rows-menu .rm-over-after {
+  box-shadow: 0 2px 0 var(--accent);
+}
+.rows-menu .rm-foot {
+  margin: 0.4rem 0 0;
+}

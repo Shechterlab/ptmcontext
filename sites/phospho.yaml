@@ -1345,6 +1345,11 @@ website:                  # the look and words of the website (ptmc web); layout
       columns: {accession: protein_a, partner_accession: protein_b, partner: gene_b, score: combined_score}
       both_ways: {partner: gene_a}
       include: [{column: combined_score, at_least: 700}]
+  sites:                   # the Sites tab
+    table:                 # the optional columns (the Columns menu): the same set on every site, where the data has it
+      - {id: src, label: Reported by, attribute: sources, default: true, hide: sm}
+      - {id: ctx, label: Context, menu: Disorder and domain context, analyses: [disorder, domain_context], hide: xs}
+      - {id: struct, label: Structural context, analyses: [structure_context], hide: sm}
   protein:                 # the protein page
     open_partners: true
     map:

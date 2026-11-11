@@ -66,6 +66,7 @@ MODULES = (
     'kit-map.js',
     'kit-3d.js',
     'kit-columns.js',
+    'kit-tablefit.js',
     'kit-sitecard.js',
     'kit-pagepdf.js',
     'kit-proteins.js',

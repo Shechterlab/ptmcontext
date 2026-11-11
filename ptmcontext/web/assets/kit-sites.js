@@ -254,12 +254,16 @@
         ...ctxs.map((a) => ({ id: 'q:' + a, label: A[a]?.title || a, analyses: [a], default: true })),
       ];
     }
+    // the 3D column, on every site: opens the structure at the site (the viewer of the protein page)
+    cs = [...cs.filter((c) => c.id !== 'view3d'), { id: 'view3d', label: '3D', view3d: true, default: true }];
     return cs.filter((c) =>
-      c.attribute
-        ? SPECS[c.attribute] && c.attribute !== colourAttr
-        : c.analyses
-          ? c.analyses.every((a) => A[a])
-          : (c.show || []).some((k) => BLOCKS.has(k) && !PROT_ONLY.has(k))
+      c.view3d
+        ? typeof K.show3d === 'function'
+        : c.attribute
+          ? SPECS[c.attribute] && c.attribute !== colourAttr
+          : c.analyses
+            ? c.analyses.every((a) => A[a])
+            : (c.show || []).some((k) => BLOCKS.has(k) && !PROT_ONLY.has(k))
     );
   }
   const WAITS = new Set(['sequences', 'around', 'calls', 'states', 'changes', 'nearest_domain']); // blocks drawn once the tables are in
@@ -306,6 +310,11 @@
     return any ? r : null;
   }
   function optCell(c, m) {
+    if (c.view3d)
+      return m.lc
+        ? dash
+        : `<button type="button" class="btn small" data-sites-3d="${esc(pr(m[0]).acc)}/${m[1]}" ` +
+            `title="Show ${esc(siteName(pr(m[0]), m[1], m))} in the 3D structure">3D</button>`;
     if (c.attribute) {
       const s = SPECS[c.attribute],
         v = vals(m, c.attribute);
@@ -426,6 +435,7 @@
     }</span>`;
   }
   function optKey(c, m) {
+    if (c.view3d) return null;
     if (c.attribute) {
       const s = SPECS[c.attribute],
         v = vals(m, c.attribute).filter((x) => x !== '');
@@ -1002,6 +1012,13 @@
       },
     ],
     ['[data-sites-exp]', (el) => download(el)],
+    [
+      '[data-sites-3d]',
+      (el) => {
+        const [acc, pos] = el.dataset.sites3d.split('/');
+        if (typeof K.show3d === 'function') K.show3d(acc, +pos);
+      },
+    ],
     [
       'tr[data-goto]',
       (el, e) => {

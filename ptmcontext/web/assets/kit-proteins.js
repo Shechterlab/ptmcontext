@@ -643,13 +643,7 @@
           ? ` · <a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry#disease_variants" ` +
             `target="_blank" rel="noopener">${esc(f.featureId)}</a>`
           : ''
-      }${
-        pm(f).length
-          ? ' (PubMed ' +
-            K.papers.links(K.papers.ids(pm(f))) +
-            ')'
-          : ''
-      }`;
+      }${pm(f).length ? ' (PubMed ' + K.papers.links(K.papers.ids(pm(f))) + ')' : ''}`;
     };
     const kv = (dt, dd, tip) =>
       dd ? `<div><dt${tip ? ` title="${esc(tip)}"` : ''}>${dt}</dt><dd>${dd}</dd></div>` : '';
@@ -1287,8 +1281,8 @@
               K.shown?.on && K.shown.counted(m) ? `<div class="tags">${K.shown.tag(m, false)}</div>` : ''
             }</td>` +
             (colourAttr ? `<td data-label="${esc(SPECS[colourAttr].label)}">${pillOf(m, colourAttr)}</td>` : '') +
-            `<td class="cwin" data-label="Sequence (±7 residues)"><span class="mono">${winHtml(m[1])}</span>${FLAGS.map((aid) =>
-              flagTags(aid, K.cols.markClass(m, aid))
+            `<td class="cwin" data-label="Sequence (±7 residues)"><span class="mono">${winHtml(m[1])}</span>${FLAGS.map(
+              (aid) => flagTags(aid, K.cols.markClass(m, aid))
             ).join('')}</td>` +
             shown.map((col) => `<td class="cw" data-label="${esc(col.label)}">${cellOf(col, c, m)}</td>`).join('') +
             `<td class="nw" data-label=""><span class="row-acts">${

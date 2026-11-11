@@ -997,9 +997,7 @@
         const name = r.doi || lk?.doi ? doiA(r.doi || lk.doi, esc(st)) : esc(st);
         const via = [
           (SR.tables || {})[r.source_table] || '',
-          r.pubmed
-            ? 'PubMed ' + K.papers.links(K.papers.ids(r.pubmed))
-            : '',
+          r.pubmed ? 'PubMed ' + K.papers.links(K.papers.ids(r.pubmed)) : '',
         ].filter(Boolean);
         const acc0 = r.reported_accession || '',
           pos0 = r.reported_position === '' || r.reported_position == null ? null : +r.reported_position;
