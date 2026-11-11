@@ -70,13 +70,16 @@ def cross(coords: dict, p: int, ester: int, minus: tuple[int, int], oxo: int) ->
 
 def layout(kind: str) -> dict:
     """Fixed coordinates (bond length 1.5) of the phospho structures, C-alpha at (0, 0 or dy)."""
-    dx, dy = 1.5 * math.cos(math.radians(30)), 1.5 * math.sin(math.radians(30))
     P = Geometry.Point2D
-    if kind in ('ser', 'thr'):  # the zigzag stub, C-alpha, C-beta, O, P; atoms 5, 6 are O-, 7 is =O, 8 the Thr methyl
-        c = {i: P((i - 1) * dx, dy if i % 2 else 0.0) for i in range(5)}
+    if kind in ('ser', 'thr'):
+        # the C-alpha to C-beta bond is horizontal, the C-beta to O bond runs 60 degrees up from it and the O-P bond is
+        # horizontal again, so the P=O continues the axis as for Tyr; every angle is 120 degrees. Atoms: 0 stub (down
+        # left of the C-alpha), 1 C-alpha, 2 C-beta, 3 O, 4 P, 5 and 6 O-, 7 =O, 8 the Thr methyl (down right of C-beta)
+        hx, hy = 1.5 * math.cos(math.radians(60)), 1.5 * math.sin(math.radians(60))
+        c = {0: P(-hx, -hy), 1: P(0.0, 0.0), 2: P(1.5, 0.0), 3: P(1.5 + hx, hy), 4: P(3.0 + hx, hy)}
         cross(c, 4, 3, (5, 6), 7)
         if kind == 'thr':
-            c[8] = P(c[2].x, c[2].y - 1.5)
+            c[8] = P(1.5 + hx, -hy)
         return c
     # Tyr: the C-beta-to-ring bond and the whole para axis (ring, O, P, =O) are horizontal, the C-alpha is 60 degrees up
     # from the C-beta and the stub runs left from it: every angle 120 degrees, the P=O continuing the axis
