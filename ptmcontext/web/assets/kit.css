@@ -9269,7 +9269,7 @@ a.btn:hover {
 .tbl th,
 .tbl td {
   white-space: normal;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere; /* unlike break-word, it lets a long unbroken string (a sequence) shrink the column */
   vertical-align: top;
 }
 .tbl th.num,
@@ -9423,4 +9423,7 @@ html[data-density] .stbl .src-tags a {
   overflow: visible;
   text-overflow: clip;
   white-space: normal;
+}
+html[data-density] .sites-tbl .cv {
+  max-width: 13rem;
 }

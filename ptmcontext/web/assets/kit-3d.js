@@ -4621,7 +4621,8 @@
 .s3d-sub-body { padding: 0 .9rem .8rem; }
 .s3d-tbl td { vertical-align: top; }
 .s3d-tbl tr.on td { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
-.s3d-what { display: grid; font-size: .78rem; color: var(--ink-2); max-width: 36rem; white-space: normal; }
+.s3d-what { display: block; font-size: .78rem; color: var(--ink-2); max-width: 30rem; white-space: normal; overflow-wrap: anywhere; }
+.s3d-what > span { display: block; }
 .s3d-hl { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
 .solo3d #view *:not(:has(#s3d)):not(#s3d):not(#s3d *), .solo3d .hero, .solo3d .toolbar, .solo3d .rail, .solo3d ` +
     `footer.site, .solo3d .skip, .solo3d #s3d-newtab { display: none !important; }
