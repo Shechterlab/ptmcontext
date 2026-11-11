@@ -455,6 +455,10 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                 'new': bool(a.get('new')),
                 **({'only_in': True} if a.get('only_in') else {}),
                 **({'subset': True} if a.get('marks_where') else {}),
+                **(
+                    {'note': a['note']} if a.get('note') else {}
+                ),  # a note under the question, with its one-click filters
+                **({'note_filters': a['note_filters']} if a.get('note_filters') else {}),
                 **_class_order(a, lw),
             }
         )
@@ -635,6 +639,27 @@ def first_screen_attributes(web: dict) -> set[str]:
     return {x for x in out if x}
 
 
+def similar_sets(sets: dict, rule: dict) -> list[list[str]]:
+    """Groups of tested sets that hold (nearly) the same marked proteins, for a display that lists them as one row
+    (analysis.collapse_similar: {jaccard: 0.9}). The sets, largest marked membership first, each join the first group whose
+    first set they match at the Jaccard index or above. Only groups of two or more are returned; no statistics change."""
+    cut = float(rule.get('jaccard', 1.0))
+    if not 0 < cut <= 1:
+        raise ValueError('collapse_similar.jaccard is a number above 0 and at most 1')
+    order = sorted((s for s, v in sets.items() if v['marked']), key=lambda s: (-len(sets[s]['marked']), s))
+    groups: list[list[str]] = []
+    for s in order:
+        mine = set(sets[s]['marked'])
+        for g in groups:
+            other = set(sets[g[0]]['marked'])
+            if len(mine & other) / len(mine | other) >= cut:
+                g.append(s)
+                break
+        else:
+            groups.append([s])
+    return [sorted(g) for g in groups if len(g) > 1]
+
+
 def set_structure(site: dict, kept: dict) -> dict:
     """What the website's views of protein-set questions read beside the rows, from the run's protein_sets.json: for a
     question with a hierarchy, each tested set's parents and the root (an ontology's tree and its most specific sets);
@@ -643,6 +668,10 @@ def set_structure(site: dict, kept: dict) -> dict:
     out: dict[str, dict] = {}
     for a in site['analyses']:
         k = kept.get(a['id']) or {}
+        if a.get('collapse_similar') and k.get('sets'):
+            groups = similar_sets(k['sets'], a['collapse_similar'])
+            if groups:
+                out.setdefault(a['id'], {})['similar'] = groups
         if a.get('hierarchy') and k.get('parents') is not None:
             out.setdefault(a['id'], {}).update({'parents': k['parents'], 'root': k.get('root', '')})
     cards = [

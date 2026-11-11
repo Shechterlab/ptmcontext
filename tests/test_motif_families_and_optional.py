@@ -313,3 +313,125 @@ def test_marks_view_is_validated_and_reaches_the_map_config(tmp_path):
     path.write_text(yaml.safe_dump(site, sort_keys=False))
     with pytest.raises(Exception):
         S.load_site(path)
+
+
+def test_a_family_with_among_is_tested_against_its_own_residues_only():
+    from ptmcontext.residue_tests import residue_test
+
+    # two proteins: S and T sites with Pro after, and Y sites. Each family is counted only among its residues.
+    seqs = {'P': 'SPASAYAYAYAT', 'Q': 'TPAYASAYAYAS'}
+    snap = Snapshot(seqs)
+    ctx = L.Context(snap, load_profile(MARK), {})
+    marked = pd.DataFrame({'accession': ['P', 'P', 'P', 'Q', 'Q', 'Q'], 'position': [1, 6, 8, 1, 4, 8]})
+    fams = [
+        {'name': 'pro', 'pattern': '[ST]P', 'start': 0, 'among': 'st'},
+        {'name': 'tyr', 'pattern': 'Y', 'start': 0, 'among': 'Y'},
+        {'name': 'any', 'pattern': '[STY]', 'start': 0},
+    ]
+    rows = residue_test(ctx, marked, _layer(fams), 'x', methods=('fisher',)).set_index('category')
+    # S/T candidates: P has S1 S4 T12, Q has T1 S6 S12; marked S/T: P1, Q1
+    assert (rows.loc['pro', ['a', 'b', 'c', 'd']] == [2, 0, 0, 4]).all()
+    # Y candidates: P 6 8 10, Q 4 8 10; marked Y: P6, P8, Q4, Q8; the S/T residues are not in this background
+    assert (rows.loc['tyr', ['a', 'b', 'c', 'd']] == [4, 0, 2, 0]).all()
+    # no among: every candidate residue, as before
+    assert rows.loc['any', 'a'] == 6 and rows.loc['any', 'a'] + rows.loc['any', 'b'] == 6
+    with pytest.raises(ValueError, match='among'):
+        _layer([{'name': 'bad', 'pattern': 'S', 'among': 'S1'}])
+
+
+def test_strata_of_one_test_get_distinct_labels():
+    from ptmcontext import question as Q
+
+    spec = {
+        'id': 'q',
+        'tests': [{'category': 'any', 'inside': 'r', 'label': 'Any interface'}],
+        'strata': [{'stratum': 'all'}, {'stratum': 'ordered', 'suffix': ', ordered regions'}, {'stratum': 'domain'}],
+    }
+    labels = Q.question_layer(spec).labels
+    # the site's suffix, else the stratum's name; the first keeps the test's own label
+    assert labels == {
+        'any': 'Any interface',
+        'any_ordered': 'Any interface, ordered regions',
+        'any_domain': 'Any interface (domain)',
+    }
+    two = {'id': 'q', 'tests': [{'category': c, 'inside': 'r', 'label': 'Same'} for c in ('a', 'b')]}
+    with pytest.raises(ValueError, match='same label'):
+        Q.question_layer(two)
+
+
+def test_only_in_residues_and_motif_count_one_class_of_residues():
+    from ptmcontext.residue_tests import residue_test
+
+    snap = Snapshot({'P': 'SPASAYAYATP' + 'AAAA', 'Q': 'TPAYASAYAYAS'})
+    ctx = L.Context(snap, load_profile(MARK), {})
+    marked = pd.DataFrame({'accession': ['P', 'P', 'Q'], 'position': [1, 4, 4]})
+    layer = L.get('motif_families', None, {'families': [{'name': 'any', 'pattern': '[STY]'}]}, 'mf')
+    both = residue_test(
+        ctx, marked, layer, 'x', methods=('fisher',), only_in={'residues': 'ST', 'motif': {'pattern': '[ST]P'}}
+    )
+    # only S/T followed by P count: P1, P10 (T10 then P11), Q1; marks among them: P1 only (P4 and Q4 do not fit)
+    r = both.set_index('category').loc['any']
+    assert (r['a'], r['b'], r['c'], r['d']) == (1, 0, 2, 0)
+    ty = residue_test(ctx, marked, layer, 'x', methods=('fisher',), only_in={'residues': 'y'})
+    assert (ty['a'].iloc[0], ty['c'].iloc[0]) == (1, 4)  # the five tyrosines of the two proteins, one marked (Q4)
+    with pytest.raises(ValueError, match='unknown keys'):
+        residue_test(ctx, marked, layer, 'x', only_in={'residues': 'S', 'where': 1})
+
+
+def test_partner_classes_give_each_class_the_proteins_with_a_partner_in_it(tmp_path):
+    from ptmcontext.web import search as SE
+
+    f = tmp_path / 'string.tsv'
+    f.write_text(
+        'protein_a\tprotein_b\tgene_b\tgene_a\tscore\n'
+        'P1\tW1\tWRT\tAAA\t900\nP2\tW1\tWRT\tBBB\t900\nP3\tR1\tRDR\tCCC\t900\nP4\tP1\tAAA\tDDD\t900\n'
+    )
+    site = {
+        'website': {
+            'tables': {
+                't': {
+                    'input': 'string',
+                    'format': 'protein_partners',
+                    'both_ways': {'partner': 'gene_a'},
+                    'columns': {
+                        'accession': 'protein_a',
+                        'partner_accession': 'protein_b',
+                        'partner': 'gene_b',
+                        'score': 'score',
+                    },
+                }
+            },
+            'search': {
+                'partners': {
+                    'table': 't',
+                    'classes': {
+                        'writer': {'label': 'a writer', 'role': 'writer', 'genes': ['WRT']},
+                        'reader': {'label': 'a reader', 'role': 'reader', 'genes': ['RDR']},
+                    },
+                }
+            },
+        }
+    }
+    pairs, names, annotated = SE.class_set_pairs(site, {'string_partners': f}, None, 'string_partners')
+    got = {s: set(g['protein']) for s, g in pairs.groupby('set')}
+    # P1 and P2 have the writer as a partner (read both ways, so W1 itself has P1 and P2 as partners but is no writer's partner)
+    assert got == {'writer': {'P1', 'P2'}, 'reader': {'P3'}}
+    assert names == {'writer': 'a writer', 'reader': 'a reader'}
+    assert annotated == {'P1', 'P2', 'P3', 'P4', 'W1', 'R1'}  # every protein the table lists: the background
+
+
+def test_similar_sets_are_grouped_by_the_jaccard_index_of_their_marked_proteins():
+    from ptmcontext.web import similar_sets
+
+    sets = {
+        'a1': {'M': 9, 'marked': ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10']},
+        'a2': {'M': 9, 'marked': ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9']},  # 9 of 10: 0.9
+        'b': {'M': 3, 'marked': ['p1', 'p2', 'p3']},
+        'c': {'M': 2, 'marked': ['q1', 'q2']},
+        'c2': {'M': 2, 'marked': ['q1', 'q2']},
+        'none': {'M': 4, 'marked': []},
+    }
+    assert similar_sets(sets, {'jaccard': 0.9}) == [['a1', 'a2'], ['c', 'c2']]
+    assert similar_sets(sets, {}) == [['c', 'c2']]  # identical only
+    with pytest.raises(ValueError, match='jaccard'):
+        similar_sets(sets, {'jaccard': 0})

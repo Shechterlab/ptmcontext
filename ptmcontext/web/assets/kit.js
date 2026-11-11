@@ -200,9 +200,11 @@
     D.rows = lines.map((l) => {
       const x = l.split('\t'),
         g = (c) => x[col[c]];
+      // a question of several tests codes a test of another stratum <category>_<stratum> (as the build does), so each row is a class
+      const coded = A[g('analysis')]?.counting && !['all', ''].includes(g('stratum'));
       return {
         analysis: g('analysis'),
-        category: g('category'),
+        category: coded ? `${g('category')}_${g('stratum')}` : g('category'),
         method: g('method'),
         a: +g('a'),
         b: +g('b'),
@@ -765,6 +767,29 @@
   // the site file's), in its groups; any other puts the sets that differ first and sorts by effect, or by evidence
   // (order: q); catch-all classes ("No …") and classes without a test go last
   const TAIL = /^(no |not |unknown|unassigned)/i;
+  // sets with (nearly) the same marked proteins (a.similar, from website's analysis.collapse_similar) are one row: the first of
+  // them in the rows' order, "X (+n similar)", the others named in its hover; the statistics keep every row
+  const collapseSimilar = (a, rows) => {
+    if (!a.similar?.length) return rows;
+    const by = new Map(rows.map((r) => [r.category, r])),
+      drop = new Set(),
+      out = new Map();
+    for (const g of a.similar) {
+      const have = g.map((c) => by.get(c)).filter((r) => r && !r.mine);
+      if (have.length < 2) continue;
+      have.sort((x, y) => rows.indexOf(x) - rows.indexOf(y));
+      const [rep, ...rest] = have;
+      rest.forEach((r) => drop.add(r));
+      out.set(rep, {
+        ...rep,
+        label: `${rep.label} (+${rest.length} similar)`,
+        similar: rest.map((r) => r.label),
+        help: `${rep.help ? rep.help + ' ' : ''}Also, with the same ${W.marks}' proteins (listed once): ${rest.map((r) => r.label).join('; ')}`,
+      });
+    }
+    return rows.filter((r) => !drop.has(r)).map((r) => out.get(r) || r);
+  };
+  K.collapseSimilar = collapseSimilar;
   function chartRows(a, m, card = cardOf(a.id)) {
     const rows = withRef(
       a,
@@ -791,12 +816,15 @@
       const i = groups.findIndex((g) => g.classes.includes(r.category));
       return i < 0 ? groups.length : i;
     };
-    return rows.sort(
-      (x, y) =>
-        gi(x) - gi(y) ||
-        (a.ordered
-          ? at(x) - at(y) || eff(x, y)
-          : tail(x) - tail(y) || (sets && !x.vs ? ORDER[x.dir] - ORDER[y.dir] : 0) || eff(x, y))
+    return collapseSimilar(
+      a,
+      rows.sort(
+        (x, y) =>
+          gi(x) - gi(y) ||
+          (a.ordered
+            ? at(x) - at(y) || eff(x, y)
+            : tail(x) - tail(y) || (sets && !x.vs ? ORDER[x.dir] - ORDER[y.dir] : 0) || eff(x, y))
+      )
     );
   }
   // the rows a question shows: every class, and of a protein-set question of more than 12 sets the first 8 until
@@ -1199,7 +1227,7 @@
       ? ` data-f="${esc(fkeyOf(a))}" data-v="${esc(r.category)}" role="button" ` +
           `tabindex="0" title="Click to select the ${esc(W.marks)} ${
             SETS(r.analysis) ? 'on proteins in' : 'in'
-          } ${esc(r.label)}"`
+          } ${esc(r.label)}${r.similar ? '. Also, with the same proteins: ' + esc(r.similar.join('; ')) : ''}"`
       : '';
   };
   // against other marks: each class as two shares on one axis, the selection's (filled) and the others' (hollow)
@@ -1271,7 +1299,7 @@
   function tileState(card) {
     const a = A[card.analysis],
       max = card.rows || OV.rows || 7;
-    const rows = smallSel() ? rowsFor(a, S.m) : withRef(a, rowsOf(a, S.m), S.m);
+    const rows = collapseSimilar(a, smallSel() ? rowsFor(a, S.m) : withRef(a, rowsOf(a, S.m), S.m));
     let { shown, more, left } = pick(rows, max, card);
     const whole = selOn() && !vsOn() && !smallSel() ? rowsFor(a, S.m) : null;
     const made = selOn() && rows.some((r) => r.descriptive);
@@ -1979,6 +2007,15 @@
             }`
           : ''
       }</p>` +
+      // the site file's note on this question (analysis.note), and one-click filters (analysis.note_filters: label, query)
+      (a.note && !vsOn()
+        ? `<p class="page-note note">${esc(a.note)}${(a.note_filters || [])
+            .map(
+              (f) =>
+                ` <button type="button" class="chip" data-try="${esc(f.query)}" title="Select the ${esc(W.marks)} that match ${esc(f.query)}">${esc(f.label)}</button>`
+            )
+            .join('')}</p>`
+        : '') +
       `<section class="pcard">${
         (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
         (K.questionBody && K.questionBody(a, rows, card)) ??
@@ -2823,6 +2860,52 @@
     mctx.font = `${weight} ${size}px ${fam}`;
     return mctx.measureText(t).width;
   };
+  // axis labels that would overlap: the 1× (or, on a linear axis, the label nearest the middle) stays, then the labels nearest
+  // to it that still clear those kept by `gap` px. items: [{x: 0..1, lab, minor?, w?}] (w: the label's width in px, else measured
+  // at `size`); width: the axis's px. Returns the items kept, in their order.
+  function thinTicks(items, width, size = 10, gap = 5) {
+    const one = items.find((t) => t.lab === '1×'),
+      mid = one ? one.x : 0.5,
+      wOf = (t) => (t.w != null ? t.w : tw(t.lab, size));
+    const order = [...items].sort(
+      (p, q) =>
+        (q === one) - (p === one) || !!p.minor - !!q.minor || Math.abs(p.x - mid) - Math.abs(q.x - mid) || p.x - q.x
+    );
+    const kept = [];
+    for (const t of order) {
+      const c = t.x * width,
+        h = wOf(t) / 2;
+      if (t === one || kept.every((u) => Math.abs(c - u.x * width) >= h + wOf(u) / 2 + gap)) kept.push(t);
+    }
+    return items.filter((t) => kept.includes(t));
+  }
+  // on the page: the axis labels of a chart or a tile that overlap at the width they are drawn at are hidden (the 1× stays),
+  // again when the window changes
+  function thinAxesDom(root = document) {
+    root.querySelectorAll('.qaxis .ticks, .fr-ax .tk').forEach((box) => {
+      const els = [...box.children];
+      els.forEach((e) => e.classList.remove('th'));
+      const width = box.getBoundingClientRect().width;
+      if (!width) return;
+      const shown = els
+        .filter((e) => getComputedStyle(e).visibility !== 'hidden')
+        .map((e) => ({
+          e,
+          lab: e.textContent.trim(),
+          x: parseFloat(e.style.left) / 100,
+          minor: e.classList.contains('minor'),
+          w: e.getBoundingClientRect().width,
+        }));
+      const kept = new Set(thinTicks(shown, width, 10, 4));
+      shown.forEach((t) => t.e.classList.toggle('th', !kept.has(t)));
+    });
+  }
+  (K.afterRender ||= []).push(() => thinAxesDom());
+  let thinPending = 0;
+  addEventListener('resize', () => {
+    cancelAnimationFrame(thinPending);
+    thinPending = requestAnimationFrame(() => thinAxesDom());
+  });
   function wrap(text, width, size, weight, fam) {
     const out = [];
     let cur = '';
@@ -3033,7 +3116,7 @@
       )
     );
     parts.push(...gp, ...rp);
-    M.axis.ticks.forEach((t) =>
+    thinTicks(M.axis.ticks, X1 - X0, 10).forEach((t) =>
       T(X0 + t.x * (X1 - X0), y + 15, t.lab, { size: 10, anchor: 'middle', fill: PAL.muted })
     );
     y += 15;
@@ -3725,6 +3808,8 @@
     FF,
     FFH,
     tw,
+    thinTicks,
+    thinAxesDom,
     wrap,
     fit,
     DIR_WORDS,

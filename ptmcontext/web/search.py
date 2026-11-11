@@ -373,6 +373,33 @@ def partners(
     }
 
 
+def class_set_pairs(site: dict, inputs: dict, root: Path | None = None, role: str | None = None):
+    """(pairs, names, annotated) for a protein-set test of the partner classes (sets.partner_classes: the id of a
+    website.tables protein_partners table): a protein is in a class's set when one of its partners is in the class
+    (website.search.partners.classes, by InterPro entry, gene or genes_file, as the page's filter reads them). The
+    proteins the table lists are the source's own, the background of a test that takes the annotated proteins."""
+    import pandas as pd
+
+    from . import tables as T
+
+    pt = ((site.get('website') or {}).get('search') or {}).get('partners') or {}
+    tspec = ((site.get('website') or {}).get('tables') or {}).get(pt.get('table'))
+    if not pt.get('classes') or not tspec:
+        raise ValueError('sets.partner_classes needs website.search.partners (its classes and its table)')
+    path = inputs[role or tspec['input']]
+    t = T.read(tspec, path)
+    accs = sorted(set(t['accession']))
+    p = partners([[a] for a in accs], tspec, path, pt, {}, inputs, root)
+    labels, _ = class_words(pt)
+    codes = [c for c in p['classes'] if c in labels]
+    bit = {c: 1 << p['classes'].index(c) for c in codes}
+    pairs = set()
+    for k, row in p['rows'].items():
+        for i in range(0, len(row), 2):
+            pairs |= {(c, accs[int(k)]) for c, m in bit.items() if p['bits'][row[i]] & m}
+    return pd.DataFrame(sorted(pairs), columns=['set', 'protein']), labels, set(accs)
+
+
 def data(site: dict, run: dict, sel: dict, listing: list, fasta: Path | None, out: Path, log=print) -> dict:
     """Add the search's data to the selection data (windows, nearby distances); write data/partners.json; return
     what the page's own data carry (D.search)."""

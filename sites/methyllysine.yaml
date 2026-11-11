@@ -33,6 +33,7 @@ inputs:                # role the layers read: manifest input that fills it
   organelle_ip: organelle_ip
   chromatin: chromatin_probability
   depmap_genes: depmap_gene_effect
+  string_partners: string_physical_v12_5         # the partner classes' test reads the STRING table whole (the page reads it by its manifest name)
   interpro_entries: interpro_all_entries         # the writers', erasers' and readers' protein sets, by InterPro entry
   # interactions (the methylarginine site's roles, less the RNA and DNA evidence and its release tables)
   uniprot_disorder: uniprot_disordered_regions
@@ -159,8 +160,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: any, inside: {role: pdb_interfaces, where: [{column: class, matches: "RNA|DNA|([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2})(-[0-9]+)?"}]}, label: Any interface}
     strata:
       - {stratum: all}
-      - {stratum: ordered, outside_of: uniprot_disorder}
-      - {stratum: domain, covered_by: uniprot_domains}
+      - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
+      - {stratum: domain, covered_by: uniprot_domains, suffix: ", in domains"}
   - id: predicted_interface
     new: true
     title: Predicted interfaces
@@ -176,8 +177,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
          proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}], on_candidates: true}, label: "pDockQ ≥ 0.5"}
     strata:
       - {stratum: all}
-      - {stratum: ordered, outside_of: uniprot_disorder}
-      - {stratum: disordered, covered_by: uniprot_disorder}
+      - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
+      - {stratum: disordered, covered_by: uniprot_disorder, suffix: ", disordered regions"}
   - id: intact
     new: true
     title: IntAct mutations and binding regions
@@ -211,6 +212,22 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     min_size: 3
     background: other proteins in a curated Complex Portal complex
     link: "https://www.ebi.ac.uk/complexportal/complex/{}"
+    collapse_similar: {jaccard: 0.9}      # variants with (nearly) the same methylated members are one row on the website, "X (+n similar)"; the statistics keep every row
+  # Are methylated proteins more often partners of a class than other proteins with partners? The sets are the site's
+  # partner classes (website.search.partners): a protein is in a class's set when one of its STRING physical partners
+  # (score 0.7 or more) is in the class. The background is the proteins STRING lists with at least one such partner,
+  # not the proteome: a protein with no physical partner cannot be in any set, and well-studied proteins have both
+  # partners and methylated, so the proteome would show that and not the class.
+  - id: partner_class_test
+    test: protein_sets
+    new: true
+    title: Partner classes
+    question: "Are methylated proteins more often partners of writers, erasers and readers than other proteins that have physical partners?"
+    sub: "Methylated proteins against the proteins with a STRING physical partner (score 0.7 or more), by whether one of their partners is in each writer, eraser or reader class (one-sided hypergeometric test). A protein with a partner in several classes is in each. The partner is a partner of the whole protein, so a class says what the protein binds, not what acts on the site; and well-studied proteins have more partners and more sites, so every class is expected to look enriched to some degree"
+    section: Writers, erasers and readers
+    sets: {input: string_partners, partner_classes: string}
+    universe: annotated
+    background: other human proteins with a STRING physical partner (score 0.7 or more)
   # Histone or not: the PANTHER families of the core and linker histones against every other reviewed protein. The
   # family names are PANTHER 19.0's (HISTONE H1, H2A, H2B, H3, H4: the histones themselves, not the enzymes that act on them)
   - id: histone
@@ -711,6 +728,12 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     question: "Are methyllysines more often near a methylarginine than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3, by-similarity records left out) lies within 10 residues on either side"
     section: Other marks
+    note: "The association comes from the database-curated sources: lysines that only CPLM reports are 2.42x near a methylarginine and those of UniProt or iPTMnet 1.97x, while Berryhill et al.'s affinity-enriched sites are 0.84x (not significant). That points to which proteins were studied, not to a link between the two marks. Select a source to see its lysines:"
+    note_filters:
+      - {label: CPLM, query: "sources:CPLM"}
+      - {label: UniProt, query: "sources:UniProt"}
+      - {label: iPTMnet, query: "sources:iPTMnet"}
+      - {label: Berryhill 2023, query: "sources:Berryhill"}
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
   - id: which_factor
@@ -743,8 +766,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: dna, inside: {role: pdb_interfaces, where: [{column: class, equals: DNA}]}, label: DNA interface}
     strata:
       - {stratum: all}
-      - {stratum: ordered, outside_of: uniprot_disorder}
-      - {stratum: domain, covered_by: uniprot_domains}
+      - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
+      - {stratum: domain, covered_by: uniprot_domains, suffix: ", in domains"}
 marks_subsets:           # the key questions again on the lysines of one methylation degree (a lysine with a row of the degree counts; the
                          # others are other lysines): each adds '<question>_<id>' to the sidebar, under its question's entry (family)
   - id: me1
@@ -855,8 +878,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: complex, title: Protein complexes}
       - name: Writers, erasers and readers
         about: "The enzymes that add and remove methyl groups, the proteins that read them, and the methylated proteins that bind them."
-        #  counted from the partner classes (website.search.partners), not tested
-        cards: [partner_classes]
+        cards: [partner_classes, {analysis: partner_class_test}]   # the counts, and the test of the same classes
       - name: Histones, protein classes and pathways
         about: "Histones and other protein classes and pathways of the methylated proteins."
         cards:
@@ -1020,6 +1042,7 @@ website:                  # the look and words of the website (ptmc web); layout
     partner_classes:
       kind: values
       attribute: bound_by
+      tested_by: partner_class_test        # the table under the bars: is each class enriched among the partners of the proteins?
       title: Writers, erasers and readers
       question: "Which methyllysines are on proteins that bind a writer, an eraser or a reader?"
       sub: "Methyllysines on proteins with a STRING physical partner (score 0.7 or more) in each writer, eraser or reader class"
@@ -1027,7 +1050,7 @@ website:                  # the look and words of the website (ptmc web); layout
       noun: partner classes
       top: 8
       note: "A class describes the protein's physical partners. STRING associations are to the whole protein, so a count does not show that a partner writes, erases or reads that lysine. The SET-domain and JmjC classes include proteins that do not act on lysine, and the sets are of human proteins in UniProt 2026_03."
-      method: "The site file lists the partner classes (website.search.partners.classes) by InterPro entry and gene, with the query that made each set. A protein is in a class when one of its STRING physical partners is. The share of all reviewed human proteins in each class is the baseline to compare with."
+      method: "The site file lists the partner classes (website.search.partners.classes) by InterPro entry and gene, with the query that made each set. A protein is in a class when one of its STRING physical partners is. The share of all reviewed human proteins in each class is the baseline to compare with. What is counted: each bar is the number of methyllysines lying on a protein that has a STRING physical partner (score 0.7 or more) in the class; a protein with partners in several classes is in each bar. The table under the bars tests whether methylated proteins are more often partners of a class than the other proteins that have physical partners (one-sided hypergeometric test, q by Benjamini-Hochberg); the bar counts sites, the test counts proteins."
     states:
       kind: values
       attribute: state

@@ -336,7 +336,32 @@
       '</div>' +
       `<div class="cnt-two${c.list ? '' : ' one'}"><div><div class="cbars${c.list ? ' x' : ''}${on ? ' s' : ''}">${vals}</div>${ticks}<p class="cnt-axis">${esc(W.marks)} reported</p></div>${dist}</div>` +
       (c.list ? '' : `<p class="cnt-note">${esc(c.note || '')}</p>`) +
+      testedHtml(c) +
       '</section>'
+    );
+  }
+  // a count card that a protein-set question tests (counts.<id>.tested_by): what the bars count, and the test beside them
+  function testedHtml(c) {
+    const t = c.tested;
+    if (!t || !t.rows?.length) return '';
+    const fold = (r) => (r.fold == null ? '–' : K.fxn(r.fold) + '×'),
+      q = (r) => (r.q == null ? '–' : r.q < 0.001 ? '< 0.001' : r.q.toFixed(3)),
+      sig = (r) => r.q != null && r.q <= K.PADJ && r.fold > 1;
+    return (
+      `<div class="cnt-test"><p class="cnt-note"><b>What is counted.</b> A bar is the number of ${esc(W.marks)} on proteins with a partner ` +
+      `in the class. The test below counts proteins instead: of the ${esc(W.marked)} proteins, how many have a partner in the class, ` +
+      `against ${esc(t.background || 'the background')} (one-sided hypergeometric test; ` +
+      `<a href="${esc(K.link('overview', t.id))}">${esc(t.title)}</a>).</p>` +
+      `<div class="tbl-card cnt-wrap"><table class="tbl cnt-tbl"><thead><tr><th>Class</th><th>${esc(W.marked)} proteins with a partner in it</th>` +
+      `<th>Background proteins with one</th><th>Fold</th><th>q</th></tr></thead><tbody>` +
+      t.rows
+        .map(
+          (r) =>
+            `<tr${sig(r) ? ' class="sig"' : ''}><td>${esc(r.label)}</td><td>${int(r.k)} of ${int(r.n)} (${pc(r.k, r.n)}%)</td>` +
+            `<td>${int(r.M)} of ${int(r.N)} (${pc(r.M, r.N)}%)</td><td>${fold(r)}</td><td>${q(r)}</td></tr>`
+        )
+        .join('') +
+      '</tbody></table></div></div>'
     );
   }
   function responsesPage(id, card) {

@@ -49,8 +49,10 @@ Conventions:
 - Rows are in the order the analysis gives (`order:`, a list of categories), else: pooled residue rows by odds ratio,
   within-protein rows by category, protein-set rows by p.
 - A residue question may count only the residues inside the IDRs (`only_in: idr`) or inside the regions of an interval
-  table (`only_in: {role, kind}`): the marks and candidate residues outside are counted on neither side (and a class
-  layer is needed, so that the website can tell the marks outside). The `neighbours` layer (`with: {window, residues,
+  table (`only_in: {role, kind}`), or only the residues of some letters that fit a motif (`only_in: {residues: ST, motif:
+  {pattern: "[ST]P", start: 0}, flank: 10}`, `motif` as a motif family's pattern, so that a question can be asked of one class
+  of residues, and `residues` alone for one residue type): the marks and candidate residues outside are counted on neither
+  side (and a class layer is needed, so that the website can tell the marks outside). The `neighbours` layer (`with: {window, residues,
   many, noun}`) places a residue in `none`, `one` or `two_plus` (`many` or more) according to how many residues of a
   set lie within `window` residues of it on either side; the set is `with.residues` or the mark profile's `stickers`.
 - A question (residue, several tests, or protein sets; not `conditional_logit`) may count only a part of the marks
@@ -96,6 +98,7 @@ Conventions:
   conditions all hold for it (`equals`, `in`, `contains` on text; `at_least` and `below` on a column's number or the
   `ratio` of two columns, missing where the second is 0 or empty; a rule without conditions takes every row left);
   the source annotates every protein of the table's rows.
+- `enricher` on partner classes (`sets: {input: <role of the partners table>, partner_classes: <id of its website.tables protein_partners table>}`): a set for each class of `website.search.partners.classes` (read as the page's partner filter reads them), holding the proteins with a partner in the class; the proteins the table lists are the annotated ones, so with `universe: annotated` the background is the proteins with any partner (a protein with none cannot be in a set, and well-studied proteins have both partners and marks).
 - `enricher` on sets made by overlapping rules (`sets.exclusive: false`): each rule takes every row whose conditions
   hold, so a row may be in several sets (a CD-CODE membership whose roles are "driver; member" is in the driver set and
   in the member set). A protein is in a set when any of its rows is.
@@ -131,7 +134,7 @@ Conventions:
   syntax). Restrictions add up from the analysis, the test and the stratum (`strata:`, every test again on part of its
   candidates; the row's `stratum`, and its class code `<category>_<stratum>`). `counting: proteins_with_both` (default,
   as above) or `every_candidate` (the pooled test counts every candidate the test keeps, and the within-protein row
-  reports those counts; no within-protein row for a test of one protein). `background` names the background per test.
+  reports those counts; no within-protein row for a test of one protein). `background` names the background per test. A test's `label` names its class; a stratum may add a `suffix` (`", ordered regions"`) to the label of each test it repeats. Classes that would share a label take the stratum's name (`Any interface (domain)`), and two classes with the same label that way are an error.
 - `enricher` on **one set per item** (`sets.each`): each item is a set: the proteins with a unit in its `units` roles or
   listed in its `table` (`{input, protein, include, exclude}`), tested against its own universe (`universe_units`: the
   proteins with a unit there; else the analysis's universe), one hypergeometric test each, BH over the items;
@@ -412,7 +415,7 @@ residue). It matches only if the residue lies inside the match and the match hol
 chain; `.` therefore never reads off the chain. `start` runs from `-flank` to 0. A family names `pattern` and `start`, or
 `patterns` (any one matches). `marks` adds conditions on the site's context marks (`{mark: <context mark id>, at: N}` or
 `within: [lo, hi]`, N from the residue): all must hold, so a motif's residue can be required to carry another mark. A
-family has `name` (letters, digits, `_`), `label`, `help` and `cite` (documentation only). Unknown keys, a pattern that
+family has `name` (letters, digits, `_`), `label`, `help` and `cite` (documentation only), and optionally `among`: a string of residue letters (`ST`). A family with `among` is tested only among residues of those letters, in the class and in the background alike, in both tests (a motif of serines and threonines is not compared with the tyrosines, whose share of the background alone would move its odds ratio; a family that every residue of its `among` fits has an odds ratio of 1 by construction, so it is not worth a row). Unknown keys, a pattern that
 does not compile, a `start` outside the window and a `marks` condition without its mark are errors, named by `ptmc run`.
 
 ## Map rows

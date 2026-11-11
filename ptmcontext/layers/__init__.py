@@ -146,6 +146,7 @@ class Layer:
     section: str = ''  # the Overview section it is listed under
     tracks: tuple = ()  # what it draws on the protein pages (Track), if anything
     ordered: bool = False  # its classes have an order (that of labels), which pages keep
+    among: dict = field(default_factory=dict)  # flag -> residue letters: the flag is tested only among those residues
     groups: tuple = ()  # ((heading, (class codes, ...)), ...): headed groups of its classes, in order
     params: dict = field(default_factory=dict)  # optional `with:` parameters of a built-in layer -> documented default
     values: dict = field(default_factory=dict)  # the parameters as bound for one analysis (defaults and the site's)

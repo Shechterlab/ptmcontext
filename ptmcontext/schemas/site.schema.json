@@ -576,6 +576,25 @@
                 "type": "object",
                 "required": [
                   "input",
+                  "partner_classes"
+                ],
+                "additionalProperties": false,
+                "description": "protein_sets: a set for each partner class of website.search.partners (a protein is in a class's set when one of its partners is); the annotated proteins are those the partners table lists",
+                "properties": {
+                  "input": {
+                    "type": "string",
+                    "description": "role of the partners table's input"
+                  },
+                  "partner_classes": {
+                    "type": "string",
+                    "description": "the id of the website.tables protein_partners table"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "input",
                   "protein",
                   "classes",
                   "ontology",
@@ -1121,7 +1140,7 @@
             "description": "count only the marks (for a protein-set question, the marked proteins) with a row of the marks table that meets this condition, e.g. the marks with a row whose state is one value; the marks outside are other residues in a residue question, and the rest of the universe in a protein-set question. Not for conditional_logit. Usually written once, as marks_subsets, which makes the variants"
           },
           "only_in": {
-            "description": "residue and conditional_logit: count only the marks and candidate residues inside the IDRs ('idr') or inside the regions of an interval table ({role, kind})",
+            "description": "residue and conditional_logit: count only the marks and candidate residues inside the IDRs ('idr'), inside the regions of an interval table ({role, kind}), or among residues of some letters and a motif ({residues, motif})",
             "oneOf": [
               {
                 "const": "idr"
@@ -1138,6 +1157,24 @@
                   },
                   "kind": {
                     "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "minProperties": 1,
+                "description": "the residues of some letters (`residues`: \"ST\") and, with `motif`, those whose sequence window has the pattern ({pattern, start} or {patterns: [...]}, as a motif family; `flank`, default 10)",
+                "properties": {
+                  "residues": {
+                    "type": "string"
+                  },
+                  "motif": {
+                    "type": "object"
+                  },
+                  "flank": {
+                    "type": "integer",
+                    "minimum": 1
                   }
                 }
               }
@@ -1338,6 +1375,44 @@
                 "items": {
                   "$ref": "#/$defs/condition"
                 }
+              }
+            }
+          },
+          "note": {
+            "type": "string",
+            "description": "a note under the question's title on its page (what the result does and does not show)"
+          },
+          "note_filters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "label",
+                "query"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "query": {
+                  "type": "string",
+                  "description": "a search query the button puts in the search box (a filter such as sources:CPLM)"
+                }
+              }
+            },
+            "description": "buttons beside the note that select marks by a search query"
+          },
+          "collapse_similar": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "protein_sets: the website lists sets with (nearly) the same marked proteins as one row, \"X (+n similar)\", the variants in its hover; the statistics table keeps every row",
+            "properties": {
+              "jaccard": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1,
+                "description": "the least Jaccard index of two sets' marked proteins to be collapsed (default 1: identical)"
               }
             }
           },
@@ -4474,6 +4549,10 @@
               "method": {
                 "type": "string",
                 "description": "its section of the Method page: how the counts were made"
+              },
+              "tested_by": {
+                "type": "string",
+                "description": "values: the id of a protein-set question that tests the same classes; its table (marked proteins with a partner in the class, fold enrichment, q) is shown under the counts"
               },
               "attribute": {
                 "type": "string",
@@ -8532,6 +8611,10 @@
         "stratum": {
           "type": "string",
           "description": "the statistics row's stratum (default all)"
+        },
+        "suffix": {
+          "type": "string",
+          "description": "added to the label of each test this stratum repeats (\", ordered regions\")"
         },
         "background": {
           "type": "string",

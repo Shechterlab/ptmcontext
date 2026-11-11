@@ -158,6 +158,52 @@ def responses_count(c: dict, marks: pd.DataFrame, attrs: dict, folder: Path) -> 
     }, entries
 
 
+def tested_rows(site: dict, folder: Path, aid: str) -> dict | None:
+    """The test that goes with a count card (counts.<id>.tested_by: a protein-set question of the site): its title and, for
+    each set it tested, the marked proteins in the set against all, the background's share, the fold enrichment and q. None
+    when the run has no such rows (the card then says nothing of a test)."""
+    f = folder / 'statistics.tsv'
+    if not f.exists():
+        return None
+    st = pd.read_csv(f, sep='\t', dtype=str, keep_default_na=False)
+    st = st[(st['analysis'] == aid) & (st['method'] == 'enricher')]
+    if not len(st):
+        return None
+    spec = next((a for a in site['analyses'] if a['id'] == aid), {})
+    names = {}
+    if (folder / 'set_names.tsv').exists():
+        sn = pd.read_csv(folder / 'set_names.tsv', sep='\t', dtype=str, keep_default_na=False)
+        names = {r['set']: r['name'] for r in sn.to_dict('records') if r.get('analysis') == aid and r.get('name')}
+
+    def num(v):
+        try:
+            return float(v)
+        except ValueError:
+            return None
+
+    rows = []
+    for r in st.to_dict('records'):
+        k, b, m, d = (int(r[x]) for x in ('a', 'b', 'c', 'd'))
+        rows.append(
+            {
+                'category': r['category'],
+                'label': names.get(r['category'], r['category']),
+                'k': k,  # marked proteins with a partner in the class
+                'n': k + b,  # marked proteins tested
+                'M': k + m,  # proteins in the background with one
+                'N': k + b + m + d,  # the background
+                'fold': num(r['fold_enrichment']),
+                'q': num(r['q']),
+            }
+        )
+    return {
+        'id': aid,
+        'title': spec.get('title', aid),
+        'background': spec.get('background', ''),
+        'rows': sorted(rows, key=lambda x: (x['q'] is None, x['q'] or 0, x['label'])),
+    }
+
+
 def counts_data(site: dict, folder: Path) -> tuple[dict, dict]:
     """(the page's count questions, with the whole dataset's counts; each responses question's marks per row, for
     data/selection.json). Empty when the site has none."""
@@ -173,6 +219,8 @@ def counts_data(site: dict, folder: Path) -> tuple[dict, dict]:
         words = {k: c[k] for k in ('title', 'question', 'sub', 'head', 'note', 'method') if c.get(k)}
         if c['kind'] == 'values':
             page[cid] = {**words, **values_count(c, marks, attrs)}
+            if c.get('tested_by'):
+                page[cid]['tested'] = tested_rows(site, folder, c['tested_by'])
         else:
             body, rows = responses_count(c, marks, attrs, folder)
             tables = site['marks'].get('tables') or {}

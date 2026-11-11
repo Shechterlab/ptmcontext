@@ -392,7 +392,7 @@ def near_marks(params: dict, aid: str) -> Layer:
     )
 
 
-MOTIF_FIELDS = {'name', 'label', 'help', 'pattern', 'start', 'patterns', 'marks', 'cite'}
+MOTIF_FIELDS = {'name', 'label', 'help', 'pattern', 'start', 'patterns', 'marks', 'cite', 'among'}
 
 
 def _motif_family(f: dict, aid: str, flank: int) -> dict:
@@ -430,7 +430,10 @@ def _motif_family(f: dict, aid: str, flank: int) -> dict:
                 f'analysis {aid!r}, family {name!r}: a marks condition is {{mark, at}} or {{mark, within: [lo, hi]}}'
             )
         marks.append(c)
-    return {'name': name, 'patterns': out, 'marks': marks}
+    among = f.get('among')
+    if among is not None and (not isinstance(among, str) or not among.isalpha()):
+        raise ValueError(f'analysis {aid!r}, family {name!r}: among is a string of residue letters, e.g. "ST"')
+    return {'name': name, 'patterns': out, 'marks': marks, 'among': among.upper() if among else None}
 
 
 def motif_match(window: str, flank: int, patterns: list) -> bool:
@@ -488,6 +491,7 @@ def motif_families(params: dict, aid: str) -> Layer:
         compute,
         labels=labels,
         help=helps,
+        among={f['name']: f['among'] for f in fams if f['among']},
         **_words(
             params,
             _cap(noun) + ' families',
