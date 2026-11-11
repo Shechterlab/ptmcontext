@@ -19,7 +19,8 @@
       return {};
     }
   })();
-  const shardOf = (acc) => [...acc].reduce((n, c) => n + c.charCodeAt(0), 0) % (D.shards || 64);
+  // the files of the tables (D.e_shards) and of the light pages (D.u_shards) are fewer than the protein files (D.shards)
+  const shardOf = (acc, n) => [...acc].reduce((s, c) => s + c.charCodeAt(0), 0) % (n || D.shards || 64);
   const cache = {};
   const getShard = (dir, k) => {
     const key = String(k).padStart(2, '0');
@@ -32,7 +33,7 @@
   // a shard writes its repeated strings once ('_s'); a number in a row (but a position) is an index there
   const load = (acc) =>
     Object.keys(TH).length
-      ? getShard('e', shardOf(acc)).then(
+      ? getShard('e', shardOf(acc, D.e_shards)).then(
           (sh) => ({ ...(sh[acc] || {}), _s: sh._s || [] }),
           () => null
         )
@@ -50,7 +51,7 @@
       .then((f) => (defData = f)));
   const defaultTb = (acc) => (defData ? (defTb[acc] ||= { ...(defData[acc] || {}), _s: defData._s || [] }) : undefined);
   const light = (acc) =>
-    getShard('u', shardOf(acc)).then(
+    getShard('u', shardOf(acc, D.u_shards)).then(
       (sh) => (sh[acc] ? { ...sh[acc], _s: sh._s || [] } : null),
       () => null
     );

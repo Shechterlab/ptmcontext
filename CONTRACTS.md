@@ -458,7 +458,7 @@ the run lacks it the whole row of marks is drawn as before. It is the map-row `s
 the site itself counts; no statistic, count or filter changes.
 
 `ptmc run` writes `map_items.tsv` (`accession, row, start, end, class, label, value, ref, sources`, for the proteins
-with a mark); `ptmc web` splits it into `data/map/NN.json` (64 shards by the protein files' rule: `{accession: [[row
+with a mark); `ptmc web` splits it into `data/map/NN.json` (`map_shards` files of about 0.4 MB, by the sum of an accession's character codes modulo their number: `{accession: [[row
 index, start, end, class, label, value, ref, sources], ...]}`, empty trailing fields left out) and names the rows in
 order in the site data (`map_rows`).
 
@@ -591,8 +591,8 @@ shows). Every value is text unless said otherwise; empty means not known. Lists 
 | `protein_partners` (a table that lists each pair once says `both_ways: {partner: <column naming the row's first protein>}`: every row is also read the other way round) | `accession` | **`partner_accession`**, **`score`** (number), `partner`, `partner_marked` (true/false), `classes` (a list of codes) | the card's partners of some classes (`card.writer.partners`), and on a protein without marks the proteins with marks associated with it |
 | `protein_records` | `accession` | any columns: the site file names each (`columns:` maps the input's column to the name the card reads; `values:` keeps others under their own names); several rows a protein | the protein page's cards (below): locations, condensate memberships, dependency, experiments, clustering |
 
-`ptmc web` keeps each protein's rows beside its page (`data/e/NN.json`, the shards of `data/p`), the rows that name a
-protein without marks as a partner (`site_records`, `protein_partners`) on that protein's light page (`data/u/NN.json`,
+`ptmc web` keeps each protein's rows beside its page (`data/e/NN.json`, `e_shards` files of about 0.4 MB by the rule of `map_shards`), the rows that name a
+protein without marks as a partner (`site_records`, `protein_partners`) on that protein's light page (`data/u/NN.json`, `u_shards` files,
 with its name, length and sequence from the snapshot; `data/u/index.json` lists those proteins), and lookups in the
 page's data (`D.lookups`); `D.tables` gives each table's format and columns. In a shard, a string seen twice or more is
 written once (`_s`) and its places hold its index; positions, `start` and `end` are the only numbers.
@@ -886,7 +886,8 @@ card holds (every question must be reachable).
 
 `pathways` gives the rows of a pathway question a **Proteins** button that opens the pathway's sub-pathways as groups of
 protein chips (methylated first, filled, with their sites; the others outlined; "k of n methylated in your selection"; the
-address keeps `pw=<set>`). `ptmc web` writes `data/pathways/<set>.json` for every tested set from the two tables, read only
+address keeps `pw=<set>`). `ptmc web` writes the record of every tested set from the two tables into `data/pathways/NN.json` (16 files; a set is in
+the file numbered the sum of its id's character codes modulo 16, a map from set id to record), read only
 when a pathway is opened: `{id, name, top, n, acc, gene, groups: [{id, name, m}]}`, `gene` empty for a protein the site
 lists. Genes of other proteins come from the snapshot's FASTA. The hierarchy table has a set id column and a parents column;
 the members table a set id and a UniProt accession per row. Nothing is asked of the source's service; the page links to it.

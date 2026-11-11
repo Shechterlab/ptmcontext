@@ -192,10 +192,10 @@ def test_map_rows_from_tables_in_the_contract_format(tmp_path):
     index = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None)
     page = index.read_text()
     data = json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', page, re.S).group(1))
-    assert data['map_rows'] == ['evidence', 'changes', 'near'] and data['map_shards'] == 64
+    assert data['map_rows'] == ['evidence', 'changes', 'near'] and data['map_shards'] == 1
     assert [r['id'] for r in data['protein_view']['map']['rows']] == ['evidence', 'changes', 'near', 'rg']
     assert data['inputs']['toy_evidence']['use'] == 'the protein map: Evidence in cells'
-    key = f'{web.shard_of("P1"):02d}'
+    key = f'{web.shard_of("P1", data["map_shards"]):02d}'
     shard = json.loads((index.parent / 'data' / 'map' / f'{key}.json').read_text())
     assert shard['P1'][0] == [0, 1, 8, 'fragment', '', 2, '', 'MS; XL']
     assert [0, 32, 32, 'crosslink', '', 1, '', 'XL'] in shard['P1'] and [1, 2, 2, '', 'R2C', 3] in shard['P1']

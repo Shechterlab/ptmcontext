@@ -13,16 +13,20 @@
   if (!CFG.length) return;
   const cfgOf = (aid) => CFG.find((c) => c.analyses.includes(aid));
   const PI = Object.fromEntries((D.proteins || []).map((p, i) => [p[0], i]));
-  const fileOf = (id) => String(id).replace(/[^A-Za-z0-9._-]/g, '_') + '.json';
+  // a set's record is in one of a few files: the sum of its id's character codes, modulo the number of files (pathways.py)
+  const SHARDS = 16;
+  const fileOf = (id) =>
+    String([...String(id)].reduce((n, c) => n + c.codePointAt(0), 0) % SHARDS).padStart(2, '0') + '.json';
   const SHOWN = 48;
   const cache = {};
-  const load = (cfg, id) =>
-    (cache[cfg.dir + id] ||= fetch(cfg.dir + fileOf(id))
+  const file = (cfg, id) =>
+    (cache[cfg.dir + fileOf(id)] ||= fetch(cfg.dir + fileOf(id))
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .catch((e) => {
-        delete cache[cfg.dir + id];
+        delete cache[cfg.dir + fileOf(id)];
         throw e;
       }));
+  const load = (cfg, id) => file(cfg, id).then((f) => f[id] || Promise.reject(new Error('missing')));
 
   // ---- the address: pw=<set> -------------------------------------------------------------------------------------------------
   const onPage = () => S.view === 'overview' && !!S.arg && !!cfgOf(S.arg);

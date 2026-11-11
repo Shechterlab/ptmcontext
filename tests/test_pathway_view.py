@@ -40,8 +40,13 @@ def _built(tmp_path, pathways=PATHWAYS):
     return root, web.build(p, log=lambda *_: None)
 
 
+def _records(index, set_id):  # the file a set's record is in (a map from set id to record)
+    f = index.parent / 'data' / 'pathways' / PW.file_name(set_id)
+    return json.loads(f.read_text()) if f.exists() else {}
+
+
 def _file(index, set_id):
-    return json.loads((index.parent / 'data' / 'pathways' / PW.file_name(set_id)).read_text())
+    return _records(index, set_id)[set_id]
 
 
 def test_a_pathway_file_holds_its_members_groups_and_genes(tmp_path):
@@ -67,8 +72,11 @@ def test_a_pathway_file_holds_its_members_groups_and_genes(tmp_path):
     assert d1['top'] is False and [g['id'] for g in d1['groups']] == ['D2'] and d1['n'] == 4
     d2 = _file(index, 'D2')
     assert [g['id'] for g in d2['groups']] == ['D4'] and d2['n'] == 3
-    # D4 is under the question's minimum set size: it is not tested, so it has no file
-    assert not (index.parent / 'data' / 'pathways' / PW.file_name('D4')).exists()
+    # D4 is under the question's minimum set size: it is not tested, so it has no record
+    assert (
+        'D4' not in _records(index, 'D4')
+        and len(list((index.parent / 'data' / 'pathways').glob('*.json'))) <= PW.SHARDS
+    )
     # the page learns where the files are and what to say about their source, and the one-file copy has none
     front = _page(index)['front']
     assert front['pathways'] == [{'analyses': ['onto'], 'dir': 'data/pathways/', 'source': PATHWAYS[0]['source']}]

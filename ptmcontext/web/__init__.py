@@ -687,9 +687,22 @@ def stratum_questions(web: dict) -> set:
     return {x for m in cell.get('maps', []) for x in (m.get('analysis'), m.get('regions')) if x}
 
 
-def shard_of(accession: str) -> int:
-    """The protein file an accession is in: the sum of its character codes, modulo 64 (kit.js computes the same)."""
-    return sum(map(ord, accession)) % SHARDS
+def shard_of(accession: str, n: int | None = None) -> int:
+    """The protein file an accession is in: the sum of its character codes, modulo 64 (kit.js computes the same), or
+    modulo `n` for the files that hold fewer, larger shards (the map rows, the tables and the light pages)."""
+    return sum(map(ord, accession)) % (n or SHARDS)
+
+
+def _dumps(value) -> str:
+    return json.dumps(value, separators=(',', ':'), default=int)
+
+
+SHARD_BYTES = 400_000  # what a shard of the map rows, of the tables or of the light pages holds
+
+
+def shard_count(nbytes: int) -> int:
+    """How many files hold `nbytes` of per-protein records, about SHARD_BYTES each (at least 1, at most SHARDS)."""
+    return max(1, min(SHARDS, -(-nbytes // SHARD_BYTES)))
 
 
 # the fields of a row of the protein list (data.proteins), in order
@@ -1147,8 +1160,8 @@ def unit_value_data(folder: Path, listing: list, tracks: list[dict]) -> dict:
 def protein_tables(
     specs: dict, run: dict, data: dict, listing: list, fasta: Path, out: Path, log=print, records: dict | None = None
 ) -> tuple[dict, int]:
-    """Pack the site's website.tables (tables.py) for the protein pages: each protein's rows into data/e/NN.json (the
-    shards of data/p), the rows that name a protein without marks into its light page's record in data/u/NN.json (with its
+    """Pack the site's website.tables (tables.py) for the protein pages: each protein's rows into data/e/NN.json (D.e_shards files, by accession,
+    like data/p but fewer, larger), the rows that name a protein without marks into its light page's record in data/u/NN.json (D.u_shards files; with its
     name, length and sequence from the snapshot), and an index of those proteins (data/u/index.json). Adds the tables'
     columns (D.tables), lookups (D.lookups) and other names of the proteins (D.protein_aliases) to the page's data. A
     table whose input the run did not record is left out, with a line saying so."""
@@ -1199,20 +1212,22 @@ def protein_tables(
             f'  sites page default columns: {len(compact):,} proteins, {(out / "data" / "sites_default.json").stat().st_size / 1e6:.1f} MB in one file'
         )
     shards: dict[int, dict] = {}
+    n_e = data['e_shards'] = shard_count(sum(len(_dumps(tb)) for tb in rows.values()))
     for acc, tb in rows.items():
-        shards.setdefault(shard_of(acc), {})[acc] = tb
+        shards.setdefault(shard_of(acc, n_e), {})[acc] = tb
+    shutil.rmtree(out / 'data' / 'e', ignore_errors=True)
     (out / 'data' / 'e').mkdir(parents=True, exist_ok=True)
-    for k in range(SHARDS):  # every shard, so a protein with no rows reads an empty one
+    for k in range(n_e):  # every shard, so a protein with no rows reads an empty one
         shards[k] = T.dedupe(shards.get(k, {}))
         (out / 'data' / 'e' / f'{k:02d}.json').write_text(json.dumps(shards[k], separators=(',', ':'), default=int))
     # the light pages: every protein of the snapshot without a mark, with the rows naming it as a partner
-    light: dict[int, dict] = {}
+    light_rows: dict[str, dict] = {}
     index = []
     for acc, seq in seqs.items():
         if acc in marked:
             continue
         h = head.get(acc, {})
-        light.setdefault(shard_of(acc), {})[acc] = {
+        light_rows[acc] = {
             'gene': h.get('gene', ''),
             'name': h.get('name', ''),
             'entry': h.get('entry', ''),
@@ -1221,8 +1236,13 @@ def protein_tables(
             'tables': partner.get(acc, {}),
         }
         index.append([acc, h.get('gene', ''), h.get('entry', ''), sum(len(v) for v in partner.get(acc, {}).values())])
+    n_u = data['u_shards'] = shard_count(sum(len(_dumps(r)) for r in light_rows.values()))
+    light: dict[int, dict] = {}
+    for acc, r in light_rows.items():
+        light.setdefault(shard_of(acc, n_u), {})[acc] = r
+    shutil.rmtree(out / 'data' / 'u', ignore_errors=True)
     (out / 'data' / 'u').mkdir(parents=True, exist_ok=True)
-    for k in range(SHARDS):
+    for k in range(n_u):
         (out / 'data' / 'u' / f'{k:02d}.json').write_text(
             json.dumps(T.dedupe(light.get(k, {})), separators=(',', ':'), default=int)
         )
@@ -1385,10 +1405,17 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             (out / 'data' / 'p' / f'{k:02d}.json').write_text(json.dumps(recs, separators=(',', ':')))
     # the protein map's own rows: one file per shard, which the map reads when a protein opens
     map_ids, map_shards = map_data(folder, site)
-    data['map_rows'], data['map_shards'] = map_ids, (SHARDS if map_shards else 0)
+    data['map_rows'], data['map_shards'] = map_ids, 0
     if (out / 'data' / 'map').exists():
         shutil.rmtree(out / 'data' / 'map')
     if map_shards:
+        # the rows of a protein are in the file numbered by its accession modulo the files there are: about SHARD_BYTES each
+        by_protein = {acc: items for sh in map_shards.values() for acc, items in sh.items()}
+        n_map = shard_count(len(_dumps(by_protein)))
+        map_shards = {k: {} for k in range(n_map)}
+        for acc, items in by_protein.items():
+            map_shards[shard_of(acc, n_map)][acc] = items
+        data['map_shards'] = n_map
         (out / 'data' / 'map').mkdir(parents=True, exist_ok=True)
         for k, recs in map_shards.items():
             (out / 'data' / 'map' / f'{k:02d}.json').write_text(json.dumps(recs, separators=(',', ':')))

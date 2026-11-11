@@ -1,5 +1,6 @@
-"""The pathway view's data (website.front.pathways): for every set a pathway question tests, one small file,
-data/pathways/<set>.json, read only when a reader opens that pathway (kit-pathway.js). It holds the pathway's name, every
+"""The pathway view's data (website.front.pathways): for every set a pathway question tests, one record, kept in
+data/pathways/<NN>.json (a set's file is the sum of the character codes of its id, modulo 16: a few files, not one per
+set) and read only when a reader opens that pathway (kit-pathway.js). A file maps set ids to records. A record holds the pathway's name, every
 protein of it (accession and, for those the site has no methylation for, the gene) and its sub-pathways as lists of
 those proteins, from the site's own hierarchy table and set-membership table; nothing is asked of the source's service.
 
@@ -12,7 +13,6 @@ those proteins, from the site's own hierarchy table and set-membership table; no
 from __future__ import annotations
 
 import json
-import re
 import shutil
 from collections import defaultdict
 from pathlib import Path
@@ -20,11 +20,18 @@ from pathlib import Path
 from ..snapshot import md5_file, parse_fasta_headers
 
 DIR = 'data/pathways'
+SHARDS = 16
+
+
+def _write(path: Path, value) -> int:
+    text = json.dumps(value, separators=(',', ':'), ensure_ascii=False)
+    path.write_text(text)
+    return len(text)
 
 
 def file_name(set_id: str) -> str:
-    """The file of a set: its id with anything but letters, digits and . _ - replaced (kit-pathway.js does the same)."""
-    return re.sub(r'[^A-Za-z0-9._-]', '_', str(set_id)) + '.json'
+    """The file of a set: the sum of its id's character codes, modulo SHARDS, in two digits (kit-pathway.js does the same)."""
+    return f'{sum(map(ord, str(set_id))) % SHARDS:02d}.json'
 
 
 def _path(site: dict, run: dict, ref: str, log) -> Path | None:
@@ -54,6 +61,7 @@ def build(site: dict, run: dict, kept: dict, listing: list, fasta: Path, out: Pa
     genes = {r[0]: r[1] for r in listing}
     names: dict[str, str] | None = None
     result = []
+    records: dict[str, dict] = {}
     for cfg in cfgs:
         h, m = cfg['hierarchy'], cfg['members']
         hf, mf = _path(site, run, h['input'], log), _path(site, run, m['input'], log)
@@ -95,10 +103,15 @@ def build(site: dict, run: dict, kept: dict, listing: list, fasta: Path, out: Pa
                     for g in groups
                 ],
             }
-            (folder / file_name(sid)).write_text(json.dumps(d, separators=(',', ':'), ensure_ascii=False))
+            records[sid] = d
         src = dict(cfg.get('source') or {})
         result.append({'analyses': list(cfg['analyses']), 'dir': DIR + '/', 'source': src})
-        log(
-            f'  pathway view: {len(todo):,} pathways of {", ".join(cfg["analyses"])}, {sum(f.stat().st_size for f in folder.glob("*.json")) / 1e6:.1f} MB'
-        )
+        log(f'  pathway view: {len(todo):,} pathways of {", ".join(cfg["analyses"])}')
+    if records:
+        folder.mkdir(parents=True, exist_ok=True)
+        files: dict[str, dict] = {}
+        for sid, d in records.items():
+            files.setdefault(file_name(sid), {})[sid] = d
+        size = sum(_write(folder / name, recs) for name, recs in files.items())
+        log(f'  pathway view: {len(records):,} pathways in {len(files)} files, {size / 1e6:.1f} MB')
     return result

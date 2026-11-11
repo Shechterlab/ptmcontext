@@ -18,6 +18,7 @@ import yaml
 
 from ptmcontext import site as S
 from ptmcontext import web
+from shard_files import shard_path
 from ptmcontext.snapshot import md5_file
 from ptmcontext.web import tables as T
 
@@ -306,7 +307,7 @@ def _page_data(index):
 
 def _rows(folder, acc):
     """A protein's rows in a shard, its repeated strings read back (a site-keyed row's first value is its position)."""
-    sh = json.loads((folder / f'{web.shard_of(acc):02d}.json').read_text())
+    sh = json.loads(shard_path(folder, acc).read_text())
     s = sh.get('_s', [])
     back = lambda xs: [s[x] if isinstance(x, int) else x for x in xs]  # noqa: E731
     return {
@@ -332,7 +333,7 @@ def test_the_tables_reach_each_protein_in_their_formats(tmp_path):
     assert [r[0] for r in p1['src']] == [2, 2]  # a record placed nowhere is not kept
     assert [r[:2] for r in p1['meas']] == [[2, 'ko_a'], [5, 'ko_a']]
     # a protein without marks: its record on its light page, the rows that name it, and the index that finds it
-    u = json.loads((index.parent / 'data' / 'u' / f'{web.shard_of("P3"):02d}.json').read_text())
+    u = json.loads(shard_path(index.parent / 'data' / 'u', 'P3').read_text())
     p3 = u['P3']
     assert p3['gene'] == 'THREE' and p3['seq'] == P3
     assert sorted(p3['tables']) == ['rec', 'str']
@@ -371,7 +372,7 @@ def test_the_site_card_shows_the_formats_with_the_site_files_words(tmp_path):
     S.run(root / 'sites' / 'toy.yaml', root=root / 'data', log=lambda *_: None)
     index = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None)
     data = _page_data(index)
-    shard = json.loads((index.parent / 'data' / 'e' / f'{web.shard_of("P1"):02d}.json').read_text())
+    shard = json.loads(shard_path(index.parent / 'data' / 'e', 'P1').read_text())
     tb = {**shard['P1'], '_s': shard.get('_s', [])}
     script = f"""
 global.window = {{}}; global.document = {{ getElementById: () => null, addEventListener: () => {{}} }};
@@ -423,7 +424,7 @@ def test_the_sites_pages_one_small_file_draws_the_same_blocks_as_the_shards(tmp_
     assert data['sites_default']['blocks'] == ['status', 'tags', 'sequences', 'around', 'calls']
     assert 'ev' in data['sites_default']['tables'] and 'meas' in data['sites_default']['tables']
     small = json.loads((folder / 'sites_default.json').read_text())
-    whole = json.loads((folder / 'e' / f'{web.shard_of("P1"):02d}.json').read_text())
+    whole = json.loads(shard_path(folder / 'e', 'P1').read_text())
     assert (folder / 'sites_default.json').stat().st_size < sum(f.stat().st_size for f in (folder / 'e').glob('*.json'))
     script = f"""
 global.window = {{}}; global.document = {{ getElementById: () => null, addEventListener: () => {{}} }};

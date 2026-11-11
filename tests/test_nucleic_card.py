@@ -15,6 +15,7 @@ import pandas as pd
 import pytest
 import yaml
 
+from shard_files import shard_path
 from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
@@ -241,7 +242,7 @@ def test_the_card_counts_what_the_tables_hold_and_a_protein_without_data_has_non
         return sh[acc]
 
     def tables(acc):
-        sh = json.loads((folder / 'e' / f'{web.shard_of(acc):02d}.json').read_text())
+        sh = json.loads(shard_path(folder / 'e', acc).read_text())
         return {**sh.get(acc, {}), '_s': sh.get('_s', [])}
 
     script = f"""

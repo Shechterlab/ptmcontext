@@ -13,6 +13,7 @@ import yaml
 
 from ptmcontext import site as S
 from ptmcontext import web
+from shard_files import shard_path
 from ptmcontext.snapshot import md5_file
 
 MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
@@ -158,9 +159,9 @@ def test_extents_of_a_presence_only_source_never_reach_the_build(tmp_path):
     flagged = items[items['class'] == CODE]
     assert list(zip(flagged['start'], flagged['end'])) == [('2', '2')]  # the flag at the site, no stretch
     # no stretch of the kind in the map shard or the tables' shards, and the other kinds are kept
-    shard = json.loads((index.parent / 'data' / 'map' / f'{web.shard_of("P1"):02d}.json').read_text())['P1']
+    shard = json.loads(shard_path(index.parent / 'data' / 'map', 'P1').read_text())['P1']
     assert [i[1:3] for i in shard if i[3] == CODE] == [[2, 2]]
-    ev = json.loads((index.parent / 'data' / 'e' / f'{web.shard_of("P1"):02d}.json').read_text())['P1']
+    ev = json.loads(shard_path(index.parent / 'data' / 'e', 'P1').read_text())['P1']
     assert all(CODE not in json.dumps(rows) for rows in ev.values())
     assert [r[0] for r in ev['sev']] == [2, 32] and ev['res'] == [[32, 32, 'xl']]
 
