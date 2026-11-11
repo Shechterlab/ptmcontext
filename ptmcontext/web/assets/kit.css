@@ -9382,3 +9382,45 @@ details.pm-more .pm-list {
 .rows-menu .rm-foot {
   margin: 0.4rem 0 0;
 }
+/* the protein page's sites table, too: its cells wrap in the compact density */
+html[data-density] .stbl td {
+  white-space: normal;
+  vertical-align: top;
+}
+html[data-density] .stbl td.num,
+html[data-density] .stbl td.nw {
+  white-space: nowrap;
+}
+html[data-density] .stbl td.cw,
+html[data-density] .stbl td.cwin {
+  white-space: normal;
+  max-width: none;
+}
+html[data-density] .stbl td.cwin > .mono {
+  display: block;
+  white-space: nowrap;
+}
+html[data-density] .stbl td.cwin > .tags {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 18rem;
+  margin: 0.15rem 0 0;
+  overflow: visible;
+}
+html[data-density] .stbl td .tags,
+html[data-density] .stbl td .cv,
+html[data-density] .stbl .na-meta,
+html[data-density] .stbl .src-tags {
+  flex-wrap: wrap;
+  white-space: normal;
+  margin-left: 0;
+}
+html[data-density] .stbl .sdot {
+  white-space: normal;
+}
+html[data-density] .stbl .src-tags a {
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}

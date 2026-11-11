@@ -219,6 +219,7 @@
   const valueLabel = (attr, v) => (SPECS[attr]?.values || {})[v] ?? (v === '' ? 'none' : v);
   // a list attribute's values as links: a database to its own record of the protein (records, {acc}), else each value
   // to its paper (link); the first three, and the rest named in the "+n" tooltip unless full
+  const isPapers = (attr) => /pubmed/i.test(SPECS[attr]?.link?.url || '');
   function listHtml(attr, vals, ids, acc, full) {
     const s = SPECS[attr] || {},
       item = (v, i) => {
@@ -236,8 +237,11 @@
         }
         return esc(lab);
       };
-    const all = vals.filter(Boolean),
-      shown = full ? all : all.slice(0, 3),
+    const all = vals.filter(Boolean);
+    // a list of papers (the attribute links to PubMed): one link each, and "N papers" opens the list when it is long
+    if (isPapers(attr) && all.length > 3)
+      return K.papers.links(K.papers.ids(all.map((v, i) => (ids?.[i] ? ids[i] : v))), { url: s.link.url });
+    const shown = full ? all : all.slice(0, 3),
       rest = all.slice(shown.length).map((v) => valueLabel(attr, v));
     return (
       shown.map(item).join(', ') +
@@ -1510,6 +1514,7 @@
       valueLabel,
       classLabel,
       listHtml,
+      isPapers,
       select,
       stateOfHash,
       termFilter,

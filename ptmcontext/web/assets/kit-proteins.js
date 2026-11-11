@@ -268,7 +268,7 @@
       const sep = s.separator || '; ',
         vals = v ? v.split(sep) : [],
         ids = s.link ? attrVal(m, name + '.link').split(sep) : [];
-      if (K.density.compact() && !full && vals.length > 1) {
+      if (K.density.compact() && !full && vals.length > 1 && !K.sel.isPapers(name)) {
         // compact rows: the first one and "+n" (all on hover)
         return (
           `<span class="src-tags">${K.sel.listHtml(
