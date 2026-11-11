@@ -38,8 +38,11 @@ def test_the_legend_audit_and_the_walk_they_share_parse():
         assert word in text
 
 
-def test_the_pages_build_runs_both_export_audits_and_fails_on_a_hit():
-    flow = (SCRIPT.parents[2] / '.github' / 'workflows' / 'pages.yml').read_text()
+def test_the_tests_workflow_runs_both_export_audits_on_every_site_and_pages_does_not():
+    pages = (SCRIPT.parents[2] / '.github' / 'workflows' / 'pages.yml').read_text()
+    assert 'export_overlap.js' not in pages and 'export_legend.js' not in pages  # a deploy does not wait for them
+    flow = (SCRIPT.parents[2] / '.github' / 'workflows' / 'tests.yml').read_text()
+    assert all(f'site: {s}' in flow for s in ('methylarginine', 'methyllysine', 'phospho'))
     assert 'tools/audit/export_overlap.js' in flow and 'tools/audit/export_legend.js' in flow
     assert 'npx playwright install --with-deps chromium' in flow and '|| fail=1' in flow and 'exit $fail' in flow
 

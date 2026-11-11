@@ -77,7 +77,8 @@ Python package, SciPy and statsmodels on random tables.
 ## Publishing
 
 `.github/workflows/pages.yml` builds every site on each push to `develop` or `main` and publishes them with a landing page on
-GitHub Pages (Settings → Pages → Source: GitHub Actions). By hand:
+GitHub Pages (Settings → Pages → Source: GitHub Actions). The export audits (text overlap, legends) of each site run
+in `.github/workflows/tests.yml`. By hand:
 
 ```bash
 ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml --out _site   # after ptmc run and ptmc web for each
