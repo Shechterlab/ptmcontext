@@ -98,7 +98,7 @@ marks:
       column: pmids
       label: PubMed IDs
       kind: list
-      separator: "; "
+      separator: ";"
       link: {column: pmids, url: "https://pubmed.ncbi.nlm.nih.gov/{}/"}
       help: The papers the records cite
     # Ochoa et al. 2020's functional score (0 to 1), merged into the table. `optional`: where the column is absent (an earlier

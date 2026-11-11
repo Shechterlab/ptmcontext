@@ -3626,7 +3626,7 @@
             .map(
               ([v, k]) =>
                 `<tr><td>${esc((s.values || {})[v] || v)}</td><td class="num">${int(k)}</td><td>${
-                  links[v] ? `<a href="${esc(s.link.url.replace('{}', links[v]))}">${esc(links[v])}</a>` : ''
+                  links[v] ? K.papers.links(K.papers.ids(links[v]), { url: s.link.url }) : ''
                 }</td></tr>`
             )
             .join('') +
