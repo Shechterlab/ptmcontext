@@ -76,6 +76,12 @@ class Profile:
             }
         )
 
+    @property
+    def within_protein(self) -> str:
+        """How a within-protein background says that each protein is analyzed on its own (words.within_protein; default
+        'each protein a stratum')."""
+        return self.words.get('within_protein', 'each protein a stratum')
+
     def background(self, scope: str, letters: str | None = None) -> str:
         """The background wording of a statistics row, from the profile's words (e.g. 'other arginines of the
         methylated proteins'). letters: the residues a class is compared with, when it is not all of the mark's
@@ -85,7 +91,7 @@ class Profile:
         if scope == 'marked_proteins':
             return f'other {residues} of the {w["marked"]} proteins'
         if scope == 'same_protein':
-            return f'other {residues} of the same protein, each protein a stratum'
+            return f'other {residues} of the same protein, {self.within_protein}'
         if scope == 'proteome':
             return f'other {residues} of the proteome'
         raise ValueError(f'unknown background scope {scope!r}')

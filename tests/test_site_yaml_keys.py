@@ -43,12 +43,12 @@ def test_site_file_has_no_duplicate_keys(path):
 def test_residue_names_are_plural_in_the_background_wording():
     profile = load_profile(REPO / 'sites' / 'marks' / 'phospho.yaml')
     assert profile.background('same_protein', 'ST') == (
-        'other serines and threonines of the same protein, each protein a stratum'
+        'other serines and threonines of the same protein, each protein analyzed separately'
     )
     assert profile.background('marked_proteins', 'Y') == 'other tyrosines of the phosphorylated proteins'
     # without letters the profile's own wording stays
     assert profile.background('same_protein') == (
-        'other serines, threonines and tyrosines of the same protein, each protein a stratum'
+        'other serines, threonines and tyrosines of the same protein, each protein analyzed separately'
     )
 
 

@@ -39,6 +39,7 @@ words:
   marked_long: phosphorylated
   writer: kinase
   writers: kinases
+  within_protein: each protein analyzed separately
 
 uniprot_features:   # the mark as UniProt names it (Modified residue descriptions): drawn in its own map row
   - "Phosphoserine"

@@ -253,7 +253,7 @@ class Question:
             )
             tables = [tuple(int(x) for x in r) for r in g.to_numpy()]
             bg = t.get('background', bg_default)
-            bgw = t.get('background_within', bg + ', each protein a stratum')
+            bgw = t.get('background_within', bg + ', ' + profile.within_protein)
             f, w = self._rows(t, tables, bg, bgw)
             fisher += f
             within += w

@@ -1,5 +1,5 @@
-# Mark profile: lysine methylation. The site table is release v1.5.0 of PTM_Pipeline (UniProt and iPTMnet); CPLM 4.0 is
-# all rights reserved and cannot be redistributed.
+# Mark profile: lysine methylation. The site table is release v1.5.0 of PTM_Pipeline (UniProt, iPTMnet, CPLM 4.0 and
+# Berryhill 2023); CPLM 4.0 states no license.
 schema_version: 1
 id: methyllysine
 name: Methyllysine
@@ -36,6 +36,7 @@ words:
   marked_long: lysine methylated
   writer: lysine methyltransferase
   writers: lysine methyltransferases
+  within_protein: each protein analyzed separately
 
 uniprot_features:   # the mark as UniProt names it (Modified residue descriptions): drawn in its own map row
   - "N6-methyllysine"

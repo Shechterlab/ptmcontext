@@ -30,7 +30,7 @@ from . import layers as L
 from . import stats
 from .residue_tests import candidates_and_marks, inside_regions
 
-BACKGROUND = 'other {residues} of the same protein, each protein a stratum, in a model of the factors together or alone'
+BACKGROUND = 'other {residues} of the same protein, {within}, in a model of the factors together or alone'
 
 
 def covariate_columns(spec: dict) -> list[str]:
@@ -156,7 +156,7 @@ def conditional_model(
             null_loglik=fits['adjusted'][1]['null_loglik'],
             lr_p=fits['adjusted'][1]['lr_p'],
         )
-    label = BACKGROUND.format(residues=ctx.profile.word('residues'))
+    label = BACKGROUND.format(residues=ctx.profile.word('residues'), within=ctx.profile.within_protein)
     for stratum in ('adjusted', 'alone'):
         block = []
         for n in names:
