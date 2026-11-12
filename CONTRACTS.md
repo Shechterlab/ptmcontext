@@ -469,7 +469,7 @@ the site itself counts; no statistic, count or filter changes.
 
 **The "All modifications" block.** `website.protein.map.combined_marks: {default?, label?, order?, min_marks?}` (or `false`)
 draws, at the top of the rows, one compact block for the site's own modification and every context mark: a thin lane
-(8 px) for each modification, its short name on the left (`Kme`, `Rme`, `Sph/Tph/Yph`, `Kac`, `Kacyl`, `Kub`, `Ksu`) and a
+(9 px) for each modification, its short name on the left (`Kme`, `Rme`, `Sph/Tph/Yph`, `Kac`, `Kacyl`, `Kub`, `Ksu`) and a
 tick at each position in the modification's color, the site's own first. A lane the protein has no marks for is not drawn.
 Below the lanes a legend with the counts turns a modification off and on (a keyboard-reachable button with
 `aria-pressed`; one that is off is struck through and loses its lane). The short name of the site's own modification is

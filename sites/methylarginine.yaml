@@ -828,7 +828,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
            member_when: [{column: gathers, equals: "true"}]}
     whole_universe: true
     min_size: 5
-    background: "the other proteins with eCLIP data that APEX-seq tests (at least 20 bound RNAs assigned to a compartment). A set is the proteins whose bound RNAs gather in the compartment"
+    background: "the other proteins with eCLIP data that APEX-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein APEX-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   - id: eclip_gene_tsaseq
@@ -841,7 +841,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
            member_when: [{column: gathers, equals: "true"}]}
     whole_universe: true
     min_size: 5
-    background: "the other proteins with eCLIP data that TSA-seq tests (at least 20 bound RNAs assigned to a compartment). A set is the proteins whose bound RNAs gather in the compartment"
+    background: "the other proteins with eCLIP data that TSA-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein TSA-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   - id: eclip_gene_hic
@@ -854,7 +854,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
            member_when: [{column: gathers, equals: "true"}]}
     whole_universe: true
     min_size: 5
-    background: "the other proteins with eCLIP data that Hi-C subcompartments tests (at least 20 bound RNAs assigned to a compartment). A set is the proteins whose bound RNAs gather in the compartment"
+    background: "the other proteins with eCLIP data that Hi-C subcompartments tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein Hi-C subcompartments tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   # Cancer cell lines (scripts/release_layers.py, CANCER): cancer cell genetics beside the sites, not evidence about

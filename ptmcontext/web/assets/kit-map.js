@@ -1717,7 +1717,7 @@
         order = [...new Set([...named, 'site', ...CTX_IDS])].map((k) => defs[k]);
       const lab = CMB.label || 'All modifications';
       const lanes = order.filter((d) => d.pts.length && !M.combOff.has(d.id)),
-        lh = 8,
+        lh = 9,
         hh = 13,
         top = c.y,
         th = hh + lanes.length * lh + 3;
@@ -1731,7 +1731,7 @@
         const yc = top + hh + k * lh + lh / 2;
         baseLine(yc);
         parts.push(
-          `<text x="${X0 - 5}" y="${r1(yc + 2.8)}" text-anchor="end" font-size="8" font-weight="600" fill="${P.ink}"${
+          `<text x="${X0 - 5}" y="${r1(yc + 2.6)}" text-anchor="end" font-size="7.5" font-weight="600" fill="${P.ink}"${
             ex ? '' : ` data-rowhelp="${esc(`${d.short}: ${d.label}, ${d.pts.length} in view`)}"`
           }>${esc(d.short)}</text>`
         );

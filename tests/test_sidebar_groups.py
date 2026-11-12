@@ -122,4 +122,9 @@ def test_pages_leave_out_the_one_file_copy_and_web_still_writes_it(tmp_path):
     assert (out / 'toy' / 'index.html').exists() and not (out / 'toy' / 'toy.html').exists()
     assert not list(out.rglob('toy.html'))
     wf = (Path(__file__).resolve().parents[1] / '.github' / 'workflows' / 'pages.yml').read_text()
-    assert 'actions/upload-artifact@v4' in wf and 'retention-days: 30' in wf and 'out/*/web/*.html' in wf
+    assert (
+        'actions/upload-artifact@v4' in wf
+        and 'retention-days: 30' in wf
+        and 'out/${{ matrix.site }}/web/${{ matrix.site }}.html' in wf
+        and '!out/${{ matrix.site }}/web/${{ matrix.site }}.html' in wf
+    )
