@@ -251,17 +251,17 @@
           ? ''
           : `<p class="cell-where">${
               sets.length || grades.length
-                ? `<b>Compartments:</b> ${esc(sets.join(' · '))}${grades.length ? `; ${esc(grades.join(', '))}` : ''}`
-                : `<span class="muted">` + `No map places ${esc(gene(p))} in a compartment.</span>`
+                ? `<b>Found in:</b> ${esc(sets.join(' · '))}${grades.length ? `; ${esc(grades.join(', '))}` : ''}`
+                : `<span class="muted">` + `No map finds ${esc(gene(p))} in a compartment.</span>`
             }</p>`) +
         `<details class="pc-mapsfold"><summary>Cell maps table <span class="muted">· each map's words on ${esc(gene(p))}</span></summary>${mapsTable(p, ms)}</details>`,
       sum:
         sets.length || grades.length
-          ? `${nPl} of ${ms.length} maps place it: ${sumList(sets, 3)}${
+          ? `${nPl} of ${ms.length} maps find it: ${sumList(sets, 3)}${
               grades.length ? (sets.length ? '; ' : '') + grades.join(', ') : ''
             }`
-          : `${ms.length} maps, none ` + `places it in a compartment`,
-      pic: K.pfolds ? K.pfolds.bigN([[`${nPl}/${ms.length}`, 'maps place it']]) : '',
+          : `${ms.length} maps, none ` + `finds it in a compartment`,
+      pic: K.pfolds ? K.pfolds.bigN([[`${nPl}/${ms.length}`, 'maps find it']]) : '',
     };
   }
   // where the RNAs the protein binds gather: for each map of the bound RNAs (protein-set questions), the compartments of the protein's own sets, each with the dataset's test of it

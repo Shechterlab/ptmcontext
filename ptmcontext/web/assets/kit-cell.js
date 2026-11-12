@@ -448,16 +448,19 @@
     for (const L of [LAYERS.part, LAYERS.region]) {
       L.groups.forEach(([, rows], gi) =>
         rows.forEach((row, ri) => {
-          const hit = L.cols.filter((aid) => row.map[aid] && K.sel.setHas(aid, row.map[aid], ONE.i));
-          if (row.part && hit.length)
+          const hit = L.cols.filter((aid) => row.map[aid] && K.sel.setHas(aid, row.map[aid], ONE.i)),
+            tested = L.cols.some((aid) => row.map[aid]);
+          // every compartment is named: found (colored, with the number of studies), not found (gray) or not tested (no map has it)
+          if (row.part && !(P[row.part] && P[row.part].found))
             P[row.part] = {
               row,
               L,
               id: rowId(L, gi, ri),
               cells: hit.map((aid) => [aid, null]),
-              tone: 'u2',
-              value: 'Found here',
-              maps: hit.length + (hit.length === 1 ? ' study' : ' studies'),
+              found: hit.length > 0,
+              tone: hit.length ? 'u2' : tested ? 'ns' : 'na',
+              value: hit.length ? 'Found here' : tested ? 'Not found here' : 'Not tested',
+              maps: hit.length ? hit.length + (hit.length === 1 ? ' study' : ' studies') : '',
             };
           (row.also || []).forEach((k) => {
             within[k] ||= row.part;
@@ -491,15 +494,11 @@
   const oneTsv = (p) => () =>
     K.preamble(
       `${C.title || 'Where in the cell'}: ${p.gene || p.acc}`,
-      'the compartments each map places the protein in'
+      'every compartment: found here (with the studies), not found here, or not tested'
     ) +
-    'map\tcompartment\n' +
-    (oneMaps(p) || [])
-      .flatMap((r) =>
-        (r.sets.length ? r.sets : [r.placed ? '(none of its compartments)' : '(not in the map)']).map((x) =>
-          [r.name, x].join('\t')
-        )
-      )
+    'compartment\tstatus\tstudies\n' +
+    Object.values(withOne(p, () => oneParts().P))
+      .map((q) => [rowName(q.row), q.value.toLowerCase(), q.cells.map(([aid]) => DS(aid).name).join('; ')].join('\t'))
       .join('\n') +
     '\n';
   function oneDrawings(p) {
@@ -513,15 +512,19 @@
       const k = 'p-' + d.drawing;
       FIGS[k] = {
         title: () => `${p.gene || p.acc}: the ${d.drawing}`,
-        sub: () => `A part is colored when a map ` + `places ${p.gene || p.acc} there.`,
+        sub: () =>
+          `Every compartment is named: colored where a study found ${p.gene || p.acc}, gray where none did, ` +
+          `outlined where no study tested it.`,
         make: () => withOne(p, () => DRAW[d.drawing](false)),
         tsv: oneTsv(p),
         zoom: d.drawing,
         one: { i: p.i },
-        note: () => 'Colored: a map places the protein in that part. Dashed outline: no map does.',
+        note: () =>
+          'Colored: found here, with the number of studies. Gray: not found here. Dashed outline: not tested.',
         legend: () => [
-          [toneOf('up-2'), toneOf('up-3'), 'a map places the protein there'],
-          ['#ffffff', '#8a96a0', 'no map does'],
+          [toneOf('up-2'), toneOf('up-3'), 'found here'],
+          [toneOf('mid'), '#8a96a0', 'not found here'],
+          ['#ffffff', '#8a96a0', 'not tested'],
         ],
       };
       return block(k, `The ${d.drawing}`, 'cell-fig cell-onep');
@@ -563,9 +566,9 @@
       if (ONE)
         return (
           tipAttr(
-            `<b>${esc(name || rowName(p.row))}</b>: this protein is assigned here by ${and(
-              p.cells.map(([aid]) => esc(DS(aid).name))
-            )}`
+            `<b>${esc(name || rowName(p.row))}</b>: ${
+              p.found ? 'found here by ' + and(p.cells.map(([aid]) => esc(DS(aid).name))) : esc(p.value.toLowerCase())
+            }`
           ) + ` data-cell-zpart="${esc(k)}"`
         );
       const only =
@@ -1388,7 +1391,7 @@
     );
     const X = (v) => LW + CW + BW / 2 + (Math.max(-1, Math.min(1, v / ext)) * BW) / 2;
     let g = `<text class="cg-m" x="${LW + CW - 6}" y="12" text-anchor="end">${
-      scoped ? 'selected/placed' : W.marked + '/placed'
+      scoped ? 'selected/in map' : W.marked + '/in map'
     }</text>`;
     for (let k = -ext; k <= ext; k++)
       g +=
@@ -2067,7 +2070,7 @@
       `<h4>${esc(rowName(row))}</h4><p class="muted small">${
         scoped ? 'Proteins of your selection' : `All ${esc(W.marked)} proteins`
       } the maps ` +
-      `place here: <b>${int(mem.length)}</b>${
+      `find here: <b>${int(mem.length)}</b>${
         hot.length ? `; ${int(hot.length)} highlighted, listed first` : ''
       }. ${scoped ? '' : 'The most maps first.'}</p>` +
       (shown.length
