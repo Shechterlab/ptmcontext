@@ -1,0 +1,57 @@
+# Mark profile: lysine modifications (acetylation and other acylations, ubiquitination and SUMOylation), as one set of
+# marks with a type. The site tables are release v1.5.0 of PTM_Pipeline (UniProt, iPTMnet and CPLM 4.0); CPLM 4.0
+# states no license.
+schema_version: 1
+id: lysine
+name: Lysine modifications
+residues: [K]
+
+states:   # PSI-MOD terms checked against EBI OLS, 2026-11-12. Codes follow the Brno nomenclature's pattern (histone, residue, modification:
+          # Turner BM, Nat Struct Mol Biol 12:110-112 (2005), doi:10.1038/nsmb0205-110; the article is not open access and only its abstract was read,
+          # so the forms below are the usual ones in the literature: ac, ub and su as in Brno's list; the acyl forms are the common ones, not Brno's).
+          # Succinyl is succ and SUMO is su, so no two types share a code.
+  - {code: Kac, label: N6-acetyllysine, psi_mod: "MOD:00064", pdb_component: ALY}
+  - {code: Kub, label: ubiquitinylated lysine, psi_mod: "MOD:01148"}
+  - {code: Ksu, label: sumoylated lysine, psi_mod: "MOD:01149"}
+  - {code: Kcr, label: N6-crotonyl-L-lysine, psi_mod: "MOD:01892"}
+  - {code: Ksucc, label: N6-succinyl-L-lysine, psi_mod: "MOD:01819"}
+  - {code: Khib, label: N6-(2-hydroxyisobutanoyl)-L-lysine, psi_mod: "MOD:02093"}
+  - {code: Kbhb, label: "N6-((3R)-3-hydroxybutanoyl)-L-lysine", psi_mod: "MOD:02094"}
+  - {code: Kglu, label: N6-glutaryl-L-lysine, psi_mod: "MOD:02095"}
+  - {code: Kmal, label: N6-malonyl-L-lysine, psi_mod: "MOD:01893"}
+  - {code: Kpr, label: N6-propanoyl-L-lysine, psi_mod: "MOD:01398"}
+  - {code: Kbu, label: N6-butanoyl-L-lysine, psi_mod: "MOD:01781"}
+  - {code: Kla, label: N6-lactoyllysine}
+  - {code: Kbz, label: N6-benzoyllysine}
+  - {code: Kmea, label: N6-methacryllysine}
+  - {code: Kinic, label: N6-isonicotinyllysine}
+
+modified_charge: {K: null}   # the charge of a modified lysine depends on the modification: no single value
+
+enzymes:
+  writers: []
+  erasers: []
+  reader_domains: []
+
+motifs:            # read in the 15-residue window centered on the lysine (window_flank 7); patterns of the sequence around it, not curated rules
+  window_flank: 7
+  families:
+    - {name: SUMO_consensus, label: "ψ-K-x-D/E", help: "A large hydrophobic residue (V, I or L) at −1 and Asp or Glu at +2: the SUMOylation consensus", all: [{at: -1, in: VIL}, {at: 2, in: DE}]}
+    - {name: R_before, label: "Arg at −1", help: "Arg right before the lysine", all: [{at: -1, in: R}]}
+    - {name: ST_after, label: "Ser or Thr at +1", help: "Ser or Thr right after the lysine", all: [{at: 1, in: ST}]}
+    - {name: G_before, label: "Gly at −1", help: "Gly right before the lysine", all: [{at: -1, in: G}]}
+    - {name: KK, label: "Another Lys at −1 or +1", help: "A second Lys next to the lysine", any: [{at: -1, in: K}, {at: 1, in: K}]}
+    - {name: basic_neighbours, label: "Lys or Arg within ±3", help: "Another Lys or Arg within 3 residues on either side", any: [{within: [-3, -1], in: KR}, {within: [1, 3], in: KR}]}
+    - {name: acidic_neighbours, label: "Asp or Glu within ±3", help: "An Asp or Glu within 3 residues on either side", any: [{within: [-3, -1], in: DE}, {within: [1, 3], in: DE}]}
+
+words:
+  mark: modified lysine
+  marks: modified lysines
+  residue: lysine
+  residues: lysines
+  marked: modified
+  marked_long: lysine modified
+  writer: lysine-modifying enzyme
+  writers: lysine-modifying enzymes
+  within_protein: each protein analyzed separately
+

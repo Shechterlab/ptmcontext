@@ -1,0 +1,1263 @@
+# Site: the human lysine modification sites (acetylation and the other lysine acylations, ubiquitination and SUMOylation),
+# from UniProt, iPTMnet and CPLM 4.0 (release v1.5.0 of PTM_Pipeline; CPLM states no license: its sites are included, cited).
+# The same code and the same generic inputs as the methyllysine site; its own marks, questions, focus, words and colors.
+# The four release tables are one set of marks, a row per lysine and type (marks.add with set: acyl_type); each type is a
+# filter, and the key questions run again on each type with at least 200 lysines (marks_subsets). There is no earlier
+# release to match, so every statistic is new (no reference). Contract: ptmcontext/schemas/site.schema.json.
+schema_version: 1
+id: lysine
+title: Human lysine modification sites
+status: working
+mark: sites/marks/lysine.yaml
+manifest: sites/lysine.inputs.json
+
+snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}   # quoted: unquoted, YAML reads 2026_03 as 202603
+inputs:                # role the layers read: manifest input that fills it
+  disorder: mobidb_disorder
+  domains: interpro_domains
+  reactome: reactome_protein_pathways
+  reactome_names: reactome_pathways
+  hpa: hpa_locations
+  abundance: paxdb_abundance
+  panther_classes: panther_protein_classes
+  panther_ontology: panther_class_ontology
+  uniprot_entries: uniprot_entries
+  gene_symbols: orghs_symbol_entrez
+  disgenet: disgenet_term_genes
+  hdo_term_genes: hdo_term_genes
+  hdo_terms: hdo_terms
+  accession_history: uniprot_accession_history
+  cdcode_membership: cdcode_membership
+  cdcode_proteins: cdcode_proteins
+  cdcode_condensates: cdcode_condensates
+  cdcode_members: cdcode_members_2_3
+  hcm: hcm_cell_map
+  organelle_ip: organelle_ip
+  chromatin: chromatin_probability
+  depmap_genes: depmap_gene_effect
+  # interactions (the methyllysine site's roles)
+  uniprot_disorder: uniprot_disordered_regions
+  uniprot_domains: uniprot_domain_regions
+  pdb_interfaces: {all_of: [pdbe_kb_interfaces_2026_10_16, pdbe_kb_interfaces_2026_10_20, pdbe_kb_interfaces_2026_10_21,
+                            pdbe_kb_interfaces_2026_10_21_2, pdbe_kb_interfaces_2026_10_21_3, pdbe_kb_interfaces_2026_10_25]}
+  pdb_observed: sifts_observed_ranges
+  predicted_interfaces: protvar_interfaces
+  intact_mutations: intact_mutations
+  intact_binding_regions: intact_binding_regions
+  complexes: complex_portal_complexes
+
+marks:
+  # The release's four tables, one set of marks: a row per lysine and type, the type in acyl_type (acetyl, ubiquitin, sumo, or
+  # the acyl type of the acylation table, acetyl rows of which come from the acetylation table). The main view counts the
+  # lysines with an experimental record (UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment,
+  # a CPLM record labelled Exp. or Exp./Dat.) or an unspecified iPTMnet record. Behind the lower-confidence switch, as the
+  # methyllysine site's: the rows UniProt reports only by similarity (ECO:0000250 and other records without an experimental
+  # code), and the rows only CPLM reports with the label Dat. (taken from another database; CPLM names no experiment).
+  input: acetylation_sites_v1_5_0
+  accession: canonical_UniProtAC
+  position: position
+  add:
+    - {input: lysine_acylation_sites_v1_5_0, exclude: [{column: acyl_type, equals: acetyl}]}
+    - {input: ubiquitination_sites_v1_5_0, set: {acyl_type: ubiquitin}}
+    - {input: sumoylation_sites_v1_5_0, set: {acyl_type: sumo}}
+  exclude:
+    - {column: evidence_class, equals: by-similarity}     # in the main view their lysines count as other lysines
+    - all_of: [{column: sources, equals: CPLM}, {column: cplm_evidence, equals: Dat.}]    # CPLM's database-derived records alone
+  parts:                # a lysine of one type, for the questions on a lysine that carries another (near_marks, window 0)
+    - {id: acetylation, where: {column: acyl_type, equals: acetyl}}
+    - {id: ubiquitination, where: {column: acyl_type, equals: ubiquitin}}
+    - {id: sumoylation, where: {column: acyl_type, equals: sumo}}
+  residue_mismatch: error
+  attributes:          # what the website keeps for each site: to color, filter and explain it (no test reads these)
+    acyl_type:
+      column: acyl_type
+      join_rows: true                       # a lysine has a row for each type it carries: all of them
+      label: Modification
+      kind: list
+      separator: "; "
+      values:
+        acetyl: Acetylation (Kac)
+        ubiquitin: Ubiquitination (Kub)
+        sumo: SUMOylation (Ksu)
+        2-hydroxyisobutyryl: 2-Hydroxyisobutyrylation (Khib)
+        beta-hydroxybutyryl: β-Hydroxybutyrylation (Kbhb)
+        crotonyl: Crotonylation (Kcr)
+        glutaryl: Glutarylation (Kglu)
+        succinyl: Succinylation (Ksucc)
+        lactoyl: Lactoylation (Kla)
+        methacryl: Methacrylation (Kmea)
+        isonicotinyl: Isonicotinylation (Kinic)
+        benzoyl: Benzoylation (Kbz)
+        butyryl: Butyrylation (Kbu)
+        malonyl: Malonylation (Kmal)
+        propionyl: Propionylation (Kpr)
+      colours:
+        acetyl: "#15803d"
+        ubiquitin: "#be185d"
+        sumo: "#0369a1"
+        2-hydroxyisobutyryl: "#8a7a1c"
+        beta-hydroxybutyryl: "#854d0e"
+        crotonyl: "#475569"
+        glutaryl: "#4d7c0f"
+        succinyl: "#b91c1c"
+        lactoyl: "#a16207"
+        methacryl: "#4338ca"
+        isonicotinyl: "#0f766e"
+        benzoyl: "#9d174d"
+        butyryl: "#57534e"
+        malonyl: "#1e3a8a"
+        propionyl: "#3f6212"
+      colour: true
+      filter: true
+      help: "The modifications reported on the lysine, one row each. Codes follow the usual form of the Brno histone nomenclature (ac, ub, su) with the lysine letter: Kac, Kub, Ksu for acetylation, ubiquitination and SUMOylation, and the common short names for the acylations (Khib, Kbhb, Kcr, Kglu, Ksucc, Kla, Kmea, Kinic, Kbz, Kbu, Kmal, Kpr). Succinylation is Ksucc, so it does not share a code with SUMOylation"
+    evidence_class:
+      column: evidence_class
+      join_rows: true
+      provenance: true                       # how the site was found, not what it is
+      label: Evidence
+      kind: list
+      separator: "; "
+      values: {experimental: Experimental, unspecified: Unspecified, by-similarity: By similarity}
+      colour: true
+      filter: true
+      help: "The best class of the records at the site. Experimental: UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, or a CPLM record labelled Exp. or Exp./Dat. Unspecified: an iPTMnet record whose source has no evidence code, or a CPLM record labelled Dat. alone with another database. By similarity: UniProt's ECO:0000250 (lower-confidence variant)"
+    sources:
+      column: sources
+      join_rows: true
+      provenance: true
+      label: Databases
+      kind: list
+      separator: "; "
+      records:             # a database's own record of the protein
+        UniProt: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"
+        iPTMnet: "https://research.bioinformatics.udel.edu/iptmnet/entry/{acc}/"
+      values: {UniProt: UniProt, iPTMnet: iPTMnet, CPLM: CPLM 4.0}
+      colour: true
+      filter: true
+      help: "The databases that report the lysine. Ubiquitination and SUMOylation sites are mostly from CPLM 4.0, which states no license; the counts are on the Methods page"
+    cplm_evidence:
+      column: cplm_evidence
+      join_rows: true
+      provenance: true
+      label: CPLM evidence
+      kind: list
+      separator: "; "
+      values: {Exp.: "Exp. (experimental paper)", Exp./Dat.: "Exp./Dat. (experimental paper and another database)", Dat.: "Dat. (another database only)"}
+      filter: true
+      help: "CPLM 4.0's own evidence label for the lysine, as CPLM gives it. Exp.: curated from an experimental paper; Exp./Dat.: also reported by another database; Dat.: another database only (these sit behind the lower-confidence switch). Empty for a lysine CPLM does not report"
+    iptmnet_score:
+      column: iptmnet_score
+      join_rows: true
+      provenance: true
+      label: iPTMnet score
+      kind: list
+      separator: "; "
+      filter: true
+      help: "iPTMnet 6.2's own score of the residue (1 to 4), calculated by iPTMnet from the evidence sources on its website; given only where iPTMnet reports the lysine"
+    iptmnet_sources:
+      column: iptmnet_sources
+      join_rows: true
+      provenance: true
+      label: iPTMnet's upstream databases
+      kind: list
+      separator: "; "
+      filter: true
+      help: The databases iPTMnet collected the record from (unip is its copy of UniProt)
+    pmids:
+      column: pmids
+      join_rows: true
+      label: PubMed IDs
+      kind: list
+      separator: ";"
+      link: {column: pmids, url: "https://pubmed.ncbi.nlm.nih.gov/{}/"}
+      help: The papers the records cite
+analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel); all new: no release to match
+  - id: pdb_interface
+    new: true
+    title: PDB interfaces
+    question: "Are modified lysines at interfaces in experimental structures?"
+    sub: "Modified lysines against the other lysines of the same proteins observed in a PDB structure, at a PDBe-KB interface with RNA, DNA, a protein or any partner; all, ordered (outside UniProt disordered regions) and in domains"
+    section: Protein interactions
+    counting: every_candidate
+    background: other lysines of the same proteins observed in a PDB structure
+    proteins_with: pdb_interfaces                       # proteins PDBe-KB lists with an interface
+    covered_by: pdb_observed                            # residues a PDB chain models (SIFTS)
+    tests:
+      - {category: protein, inside: {role: pdb_interfaces, where: [{column: class, matches: "([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2})(-[0-9]+)?"}]}, label: Protein interface}
+      - {category: any, inside: {role: pdb_interfaces, where: [{column: class, matches: "RNA|DNA|([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2})(-[0-9]+)?"}]}, label: Any interface}
+    strata:
+      - {stratum: all}
+      - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
+      - {stratum: domain, covered_by: uniprot_domains, suffix: ", in domains"}
+  - id: predicted_interface
+    new: true
+    title: Predicted interfaces
+    question: "Are modified lysines at predicted protein interfaces?"
+    sub: "Modified lysines against the other lysines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt)"
+    section: Protein interactions
+    counting: every_candidate
+    background: other lysines of the same proteins
+    tests:
+      - {category: pdockq_0.23, inside: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}]},
+         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}], on_candidates: true}, label: "pDockQ ≥ 0.23"}
+      - {category: pdockq_0.5, inside: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}]},
+         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}], on_candidates: true}, label: "pDockQ ≥ 0.5"}
+    strata:
+      - {stratum: all}
+      - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
+      - {stratum: disordered, covered_by: uniprot_disorder, suffix: ", disordered regions"}
+  - id: intact
+    new: true
+    title: IntAct mutations and binding regions
+    question: "Are modified lysines where IntAct maps interactions?"
+    sub: "Modified lysines whose mutation changes an interaction, against the other mutated lysines; and inside an IntAct binding region of at most 20 residues, against the other lysines of the proteins with one (all, and in UniProt disordered regions)"
+    section: Protein interactions
+    counting: every_candidate
+    tests:
+      - {category: mutation_changes_interaction, inside: {role: intact_mutations, where: [{column: class, matches: "(?!MI:2226$).*"}]},
+         covered_by: intact_mutations, background: other lysines of the same proteins with an IntAct mutation, label: Mutation changes an interaction}
+      - {category: binding_region, inside: intact_binding_regions, proteins_with: intact_binding_regions,
+         background: other lysines of the same proteins with an IntAct binding region, label: IntAct binding region}
+      - {category: binding_region_disordered, inside: intact_binding_regions, proteins_with: intact_binding_regions, covered_by: uniprot_disorder,
+         background: other lysines of the same proteins with an IntAct binding region, label: "Binding region, disordered residues"}
+  - id: complex
+    test: protein_sets
+    new: true
+    title: Protein complexes
+    question: "Which complexes have more members with modified lysines than expected?"
+    sub: "Proteins with modified lysines against the proteins in Complex Portal's curated human complexes, by complex of at least 3 members (one-sided hypergeometric test); a protein in several complexes is in each"
+    section: Protein interactions
+    sets:
+      input: complexes
+      set: complex_id
+      protein: uniprot_accession
+      include: [{column: curation, equals: curated}]
+    names: {input: complexes, set: complex_id, name: complex_name}
+    universe: annotated
+    min_size: 3
+    background: other proteins in a curated Complex Portal complex
+    link: "https://www.ebi.ac.uk/complexportal/complex/{}"
+    collapse_similar: {jaccard: 0.9}      # variants with (nearly) the same members with modified lysines are one row on the website, "X (+n similar)"; the statistics keep every row
+  - id: histone
+    family_label: All types
+    test: protein_sets
+    new: true
+    title: Histones and other proteins
+    question: "Are proteins with modified lysines more often histones than other proteins?"
+    sub: "Proteins with modified lysines against the reviewed human proteome, by whether PANTHER places the protein in a histone family (H1, H2A, H2B, H3 or H4) or not (one-sided hypergeometric test)"
+    section: Histones, protein classes and pathways
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      rules:
+        - {set: histone, when: [{column: family_name, in: [HISTONE H1, HISTONE H2A, HISTONE H2B, HISTONE H3, HISTONE H4]}]}
+        - {set: non_histone}
+    universe: snapshot
+    whole_universe: true
+    background: other reviewed human proteins
+    order: [{categories: [histone, non_histone]}]
+    labels: {histone: Histones, non_histone: Other proteins}
+    help:
+      histone: "PANTHER families HISTONE H1, H2A, H2B, H3 and H4 (PANTHER 19.0): the histones of the nucleosome and the linker histones"
+      non_histone: "every other reviewed human protein, including the enzymes that modify histones"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: panther_group
+    family_label: All types
+    new: true
+    test: protein_sets
+    title: Protein classes (PANTHER), grouped
+    question: "Which protein classes hold more proteins with modified lysines than expected?"
+    sub: "Proteins with modified lysines against the reviewed human proteome, by PANTHER protein class (grouped); every protein is in one group (one-sided hypergeometric test)"
+    section: Histones, protein classes and pathways
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: top
+      groups:                   # the release's overview groups (PTM_Pipeline config/panther_class_groups.json)
+          "Transcription, chromatin and DNA": [PC00264, PC00077, PC00009]
+          "RNA processing and translation": [PC00031, PC00263]
+          "Metabolic enzymes": [PC00262]
+          "Protein-modifying enzymes": [PC00260]
+          "Signalling: receptors, ligands and modulators": [PC00197, PC00207, PC00095, PC00060]
+          "Transport and membrane traffic": [PC00227, PC00219, PC00150]
+          "Cytoskeleton, adhesion and matrix": [PC00085, PC00211, PC00069, PC00070, PC00102]
+          "Scaffolds, adaptors and chaperones": [PC00226, PC00072]
+          "Immunity and defence": [PC00090]
+          "Other PANTHER classes": [PC00237, PC00210]
+      unclassified: No PANTHER protein class
+    universe: snapshot
+    whole_universe: true
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: panther_class
+    new: true
+    test: protein_sets
+    title: Protein classes (PANTHER)
+    question: "Which PANTHER protein classes hold more proteins with modified lysines than expected?"
+    sub: "Proteins with modified lysines against the reviewed human proteome, by top-level PANTHER protein class; every protein is in one class (one-sided hypergeometric test)"
+    section: Histones, protein classes and pathways
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: top
+      unclassified: No PANTHER protein class
+    universe: snapshot
+    whole_universe: true
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: panther_subclass
+    new: true
+    test: protein_sets
+    title: Protein subclasses (PANTHER)
+    question: "Which PANTHER protein subclasses hold more proteins with modified lysines than expected?"
+    sub: "Proteins with modified lysines against the reviewed human proteome, every PANTHER class below the top level with 10 or more proteins; subclasses overlap (one-sided hypergeometric test)"
+    section: Histones, protein classes and pathways
+    sets:
+      input: panther_classes
+      protein: uniprot_accession
+      classes: protein_class_ids
+      ontology: {input: panther_ontology, id: class_id, name: name, parent: parent_id, root: PC00000}
+      level: below_top
+    universe: snapshot
+    whole_universe: true
+    min_size: 10
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: reactome_top_level
+    family_label: All types
+    new: true
+    test: protein_sets
+    title: Reactome pathways, top level
+    question: "Which top-level Reactome pathways hold more proteins with modified lysines than expected?"
+    sub: "Proteins with modified lysines against the other proteins with a Reactome pathway, by top-level pathway (one-sided hypergeometric test)"
+    section: Histones, protein classes and pathways
+    sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
+    names: {input: reactome_names, set: pathway_id, name: name, include: [{column: depth, equals: "0"}]}
+    background: other reviewed human proteins with at least one Reactome 97 pathway
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: reactome_pathway
+    new: true
+    test: protein_sets
+    title: Reactome pathways
+    question: "Which Reactome pathways, at any level, hold more proteins with modified lysines than expected?"
+    sub: "Proteins with modified lysines against the other proteins with a Reactome pathway, every pathway of 10 to 500 proteins (one-sided hypergeometric test)"
+    section: Histones, protein classes and pathways
+    sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
+    names: {input: reactome_names, set: pathway_id, name: name}
+    min_size: 10
+    max_size: 500
+    background: other reviewed human proteins with at least one Reactome 97 pathway
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: condensate_proteome
+    new: true
+    test: protein_sets
+    title: Biomolecular condensates
+    question: "Which biomolecular condensates are over-represented (CD-CODE)?"
+    sub: "CD-CODE condensates with a higher fraction of members with modified lysines than the reviewed proteome: every human condensate (not synthetic) with at least five members, its members against all reviewed human proteins (one-sided hypergeometric test). Condensate proteins are about twice as often modified as proteins in general, so most condensates are enriched relative to the proteome, and few relative to other condensates"
+    section: Location, chromatin and condensates
+    sets:
+      input: cdcode_membership
+      set: condensate_id
+      protein: uniprotkb_ac
+      where:
+        - {column: uniprotkb_ac, input: cdcode_proteins, key: uniprot_id, include: [{column: species_name, equals: Homo sapiens}]}
+        - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
+    names: {input: cdcode_condensates, set: uid, name: name}
+    universe: snapshot
+    whole_universe: true
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
+    background: other reviewed human proteins
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+    scores: {input: cdcode_members, set: condensate_uid, protein: uniprot_accession, value: confidence_score, label: Membership confidence (CD-CODE),
+             help: "CD-CODE's 0-5 confidence that the protein belongs to the condensate (CD-CODE 2.3)", levels: [2, 3, 4, 5], max: 5}
+    filter: {label: CD-CODE condensate (members with modified lysines), any: In any CD-CODE condensate, sets: all}   # every condensate with a modified member, as the original
+  - id: condensate
+    new: true
+    test: protein_sets
+    title: Biomolecular condensates, compared with other condensate proteins
+    question: "Which biomolecular condensates stand out among condensate proteins (CD-CODE)?"
+    sub: "CD-CODE condensates with a higher fraction of members with modified lysines than all condensate proteins: every human condensate (not synthetic) with at least five members, its members against the proteins in any of these condensates, about half of which are modified (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: cdcode_membership
+      set: condensate_id
+      protein: uniprotkb_ac
+      where:
+        - {column: uniprotkb_ac, input: cdcode_proteins, key: uniprot_id, include: [{column: species_name, equals: Homo sapiens}]}
+        - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
+    names: {input: cdcode_condensates, set: uid, name: name}
+    universe: annotated            # the proteins in any of these condensates
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
+    background: other human proteins in CD-CODE condensates (export of 2026-03-18)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: condensate_role
+    test: protein_sets
+    new: true
+    title: Roles in condensates
+    question: "Are proteins with modified lysines more often drivers of condensates than clients or other members (CD-CODE)?"
+    sub: "Proteins by their role in CD-CODE 2.3 condensates (human, not synthetic): driver, client, regulator, member or unknown, a protein in the role of every membership that lists it. Each role's proteins against the other proteins in these condensates (one-sided hypergeometric test). This export lists drivers, members and unknown roles only"
+    section: Location, chromatin and condensates
+    sets:
+      input: cdcode_members
+      protein: uniprot_accession
+      exclusive: false
+      where:
+        - {column: condensate_uid, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
+      rules:
+        - {set: driver, when: [{column: roles, contains: driver}]}
+        - {set: client, when: [{column: roles, contains: client}]}
+        - {set: regulator, when: [{column: roles, contains: regulator}]}
+        - {set: member, when: [{column: roles, contains: member}]}
+        - {set: unknown, when: [{column: roles, contains: unknown}]}
+    universe: annotated
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}]
+    labels: {driver: Drivers, client: Clients, regulator: Regulators, member: Other members, unknown: Role unknown}
+    help:
+      driver: "Proteins that CD-CODE lists as a driver of at least one human condensate: the condensate depends on them to form"
+      client: "Proteins that CD-CODE lists as a client of at least one human condensate: they are recruited but do not drive it"
+      regulator: "Proteins that CD-CODE lists as a regulator of at least one human condensate"
+      member: "Proteins that CD-CODE lists as a member of at least one human condensate, with no further role stated"
+      unknown: "Proteins whose role CD-CODE does not state"
+    background: other human proteins in CD-CODE 2.3 condensates (export of 2026-10-16)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: hpa_location
+    family_label: All types
+    new: true
+    test: protein_sets
+    title: Where in the cell
+    question: "Where in the cell are proteins with modified lysines found more often than other proteins?"
+    sub: "Proteins with modified lysines against the other proteins with a Human Protein Atlas location scored Approved or better (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets: {input: hpa, set: location, protein: canonical_UniProtAC, exclude: [{column: reliability, equals: Uncertain}]}
+    whole_universe: true
+    background: other proteins with an HPA 25.1 location (Approved or better)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: cell_region_hpa
+    new: true
+    test: protein_sets
+    title: Regions of the cell (Human Protein Atlas)
+    question: "Where do proteins with modified lysines localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Proteins with modified lysines against the other proteins with a Human Protein Atlas location (Approved or better), with locations grouped into three regions of the cell (cilia and sperm structures are in none) (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: hpa
+      set: location
+      protein: canonical_UniProtAC
+      exclude: [{column: reliability, equals: Uncertain}]
+      families: {rules: sites/data/methylarginine_cell_regions.yaml}
+    whole_universe: true
+    min_size: 5
+    background: "other proteins with an HPA 25.1 location (Approved or better). A region is the Human Protein Atlas locations it holds (scripts/cell_maps.py, REGION_OF)"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: cell_region_hcm
+    new: true
+    test: protein_sets
+    title: Regions of the cell (Human Cell Map)
+    question: "Where do proteins with modified lysines localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Proteins with modified lysines against the other proteins the Human Cell Map localizes (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: hcm
+      set: nmf_compartment
+      protein: canonical_UniProtAC
+      families: {rules: sites/data/methylarginine_cell_regions.yaml}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments). A region is the Human Cell Map compartments it holds (scripts/cell_maps.py, REGION_OF)"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: cell_region_organelle_ip
+    new: true
+    test: protein_sets
+    title: Regions of the cell (organelle IP)
+    question: "Where do proteins with modified lysines localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    sub: "Proteins with modified lysines against the other proteins classified by organelle IP (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: organelle_ip
+      set: compartment
+      protein: canonical_UniProtAC
+      exclude: [{column: compartment, equals: unclassified}]
+      families: {rules: sites/data/methylarginine_cell_regions.yaml}
+    whole_universe: true
+    min_size: 5
+    background: "the other proteins organelle IP classifies (HEK293T). A region is the Organelle IP it holds (scripts/cell_maps.py, REGION_OF)"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: cell_hcm_compartment
+    new: true
+    test: protein_sets
+    title: Human Cell Map compartments
+    question: "Where do proteins with modified lysines localize in the cell, by the Human Cell Map's compartments?"
+    sub: "Proteins with modified lysines against the other proteins the Human Cell Map localizes (HEK293 BioID from 192 baits; Go et al. 2021), by NMF compartment (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets: {input: hcm, set: nmf_compartment, protein: canonical_UniProtAC}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments)
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: cell_hcm_domain
+    new: true
+    test: protein_sets
+    title: Human Cell Map domains
+    question: "Where do proteins with modified lysines localize in the cell, by the Human Cell Map's finer domains?"
+    sub: "Proteins with modified lysines against the other proteins the Human Cell Map places in a SAFE domain (HEK293 BioID; Go et al. 2021), domain by domain (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets: {input: hcm, set: safe_domain, protein: canonical_UniProtAC, exclude: [{column: safe_domain, equals: ""}]}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins the Human Cell Map places in a SAFE domain
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: cell_organelle_ip
+    new: true
+    test: protein_sets
+    title: Organelle IP
+    question: "Which organelles are proteins with modified lysines enriched in, by organelle immunoprecipitation?"
+    sub: "Proteins with modified lysines against the other proteins classified by organelle IP (HEK293T; Hein et al. 2025), cluster by cluster (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets: {input: organelle_ip, set: compartment, protein: canonical_UniProtAC, exclude: [{column: compartment, equals: unclassified}]}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins organelle IP classifies (HEK293T)
+    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granules (cell map),
+             p-body: P-body, actin_cytoskeleton: Actin cytoskeleton, centrosome: Centrosome, proteasome: Proteasome,
+             14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
+             early_endosome: Early endosome, recycling_endosome: Recycling endosome, lysosome: Lysosome,
+             mitochondrion: Mitochondrion, peroxisome: Peroxisome, plasma_membrane: Plasma membrane}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: cell_chromatin
+    family_label: All types
+    new: true
+    test: protein_sets
+    title: Chromatin probability
+    question: "Are proteins with modified lysines on chromatin more often than other proteins?"
+    sub: "Proteins with modified lysines against the other proteins with an interphase chromatin probability (chromatin enrichment for proteomics; Kustatscher et al. 2014), in four bins (one-sided hypergeometric test)"
+    section: Location, chromatin and condensates
+    sets:
+      input: chromatin
+      protein: canonical_UniProtAC
+      rules:                       # each protein in the first bin it reaches (scripts/cell_maps.py, CHEP_BINS)
+        - {set: "ICP >= 0.8 (chromatin)", when: [{column: interphase_chromatin_probability, at_least: 0.8}]}
+        - {set: "ICP 0.5-0.8", when: [{column: interphase_chromatin_probability, at_least: 0.5}]}
+        - {set: "ICP 0.2-0.5", when: [{column: interphase_chromatin_probability, at_least: 0.2}]}
+        - {set: "ICP < 0.2 (not chromatin)"}
+    whole_universe: true
+    min_size: 5
+    background: the other proteins with an interphase chromatin probability
+    labels: {"ICP >= 0.8 (chromatin)": "Chromatin (probability ≥ 0.8)", "ICP 0.5-0.8": "Chromatin probability 0.5–0.8", "ICP 0.2-0.5": "Chromatin probability 0.2–0.5",
+             "ICP < 0.2 (not chromatin)": "Not chromatin (probability < 0.2)"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+  - id: disease_family
+    new: true
+    test: protein_sets
+    title: Disease families (DisGeNET)
+    question: "Which disease gene sets are over-represented?"
+    sub: "Genes of proteins with modified lysines vs all reviewed human genes with a DisGeNET term, by disease family: the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
+    set_note: "A family of DisGeNET disease terms gathered by name; one of the eight whose rules were checked by hand."
+    section: Disease and cancer
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets:
+      input: disgenet
+      set: term_id
+      protein: entrez_id
+      families: {rules: sites/data/methylarginine_disease_families.yaml, by: term_name, lists: [audited]}
+    universe: snapshot
+    background: other reviewed human genes (Entrez) with a DisGeNET term
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", with each abundance decile analyzed separately"}
+  - id: disease_family_additional
+    new: true
+    test: protein_sets
+    title: Disease families, additional
+    question: "Which of the additional disease families, mostly clinical signs, are over-represented?"
+    sub: "Genes of proteins with modified lysines vs all reviewed human genes with a DisGeNET term, by additional disease family: grouped automatically by matching words in the disease terms, not checked by hand, mostly clinical signs; tested apart from the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
+    set_note: "A family of DisGeNET disease terms grouped automatically by matching words; not checked by hand."
+    section: Disease and cancer
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets:
+      input: disgenet
+      set: term_id
+      protein: entrez_id
+      families: {rules: sites/data/methylarginine_disease_families.yaml, by: term_name, lists: [additional]}
+    universe: snapshot
+    background: other reviewed human genes (Entrez) with a DisGeNET term
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", with each abundance decile analyzed separately"}
+  - id: disease_ontology
+    new: true
+    test: protein_sets
+    title: Disease Ontology
+    question: "Which Disease Ontology terms hold more genes of proteins with modified lysines than expected?"
+    sub: "Genes of proteins with modified lysines vs all reviewed human genes with a Disease Ontology term, every term of at least 10 genes; a term includes the genes of its child terms (one-sided hypergeometric test, as DOSE's enrichDO). Association, not causation"
+    section: Disease and cancer
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets: {input: hdo_term_genes, set: term_id, protein: entrez_id}
+    names: {input: hdo_terms, set: term_id, name: name}
+    hierarchy: {input: hdo_terms, set: term_id, parents: parents, root: "DOID:4"}
+    universe: snapshot
+    min_size: 10
+    link: "https://disease-ontology.org/?id={}"
+    filter: {label: Disease Ontology term (proteins with modified lysines)}
+    background: other reviewed human genes (Entrez) with a Disease Ontology term
+  - id: disease_term
+    new: true
+    test: protein_sets
+    title: DisGeNET terms
+    question: "Which DisGeNET disease terms hold more genes of proteins with modified lysines than expected?"
+    sub: "Genes of proteins with modified lysines vs all reviewed human genes with a DisGeNET term, every term of 10 to 300 genes (one-sided hypergeometric test, as DOSE's enrichDGN). Association, not causation"
+    section: Disease and cancer
+    identifiers:
+      noun: gene
+      nouns: genes
+      map:
+        - {input: uniprot_entries, from: Entry, to: "Gene Names (primary)", separator: ";", take: first}
+        - {input: gene_symbols, from: symbol, to: entrez_id}
+    sets: {input: disgenet, set: term_id, protein: entrez_id}
+    names: {input: disgenet, set: term_id, name: term_name}
+    universe: snapshot
+    min_size: 10
+    max_size: 300
+    link: "https://www.disgenet.com/search?view=DISEASES&idents={}&source=ALL&tab=GDA"
+    background: other reviewed human genes (Entrez) with a DisGeNET term
+  - id: depmap_dependency
+    new: true
+    test: protein_sets
+    title: Cancer cell dependency
+    question: "Do cancer cell lines depend on these proteins more than on others? (DepMap CRISPR screens)"
+    sub: "DepMap Public 24Q4 dependency classes, proteins with modified lysines vs all screened reviewed proteins (one per gene); the dependency of 1,178 cancer cell lines on them in CRISPR knockout screens. Cancer genetics, not evidence about modification (one-sided hypergeometric test)"
+    section: Disease and cancer
+    sets:
+      input: depmap_genes
+      protein: canonical_UniProtAC
+      rules:                       # the share of the screened lines whose dependency probability is at least 0.5
+        - {set: common_essential, when: [{column: common_essential, equals: "True"}]}
+        - {set: most_lines, when: [{ratio: [dependent_lines, lines_with_probability], at_least: 0.5}]}
+        - {set: some_lines, when: [{ratio: [dependent_lines, lines_with_probability], at_least: 0.05}]}
+        - {set: few_or_none}
+    whole_universe: true
+    order: [{categories: [common_essential, most_lines, some_lines, few_or_none]}]
+    background: other reviewed human proteins whose gene DepMap 24Q4 screened (CRISPR, Chronos)
+    labels: {common_essential: Commonly essential, most_lines: "Most lines (≥ 50%)", some_lines: "Some lines (5–50%)", few_or_none: "Few or none (< 5%)"}
+    help:
+      common_essential: "DepMap 24Q4 calls the gene commonly essential (CRISPRInferredCommonEssentials: it ranks among the strongest dependencies of at least 90% of lines)"
+      most_lines: "not commonly essential, and at least 50% of the screened lines depend on it"
+      some_lines: "not commonly essential, and 5% to under 50% of the lines depend on it (selective dependencies)"
+      few_or_none: "fewer than 5% of the lines depend on it"
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
+    values:                        # each screened protein's numbers, for the website (website.set_views); no test reads them
+      columns:
+        - {name: median, label: median gene effect, background: true}
+        - {name: dependent_lines, label: lines that depend on it}
+        - {name: lines_with_probability, label: lines screened}
+  - {id: motif, layer: motif, new: true, title: Sequence motifs, family_label: All types}
+  - {id: disorder, layer: disorder, title: Disorder context, family_label: All types, new: true}
+  - {id: domain_context, layer: domain_context, new: true}
+  - {id: domain_class, layer: domain_class, with: {classes: sites/data/domain_classes.json}, new: true, title: Nearest domain class, family_label: All types}
+  - {id: structure_context, layer: structure_context, new: true, title: Structural context, family_label: All types}
+  - {id: idr_charge, layer: idr_charge, new: true, title: Charge of the IDR, family_label: All types}   # not in the release: CIDER's charge classes of IDRs
+  # Near other marks: are modified lysines more often within 10 residues of another mark than the other lysines of their
+  # protein? Context marks (context_marks below), not part of the release's analyses
+  - id: near_phospho
+    family_label: All types
+    layer: near_marks
+    with: {marks: phospho, window: 10, noun: phosphosite}
+    new: true
+    title: Near phosphosites (±10 residues)
+    question: "Are modified lysines more often near a phosphosite than the other lysines of their protein?"
+    sub: "Modified lysines against the other lysines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) is within 10 residues on either side. Phosphosites are heavily studied, so a protein with many modified lysines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
+    section: Other modifications
+  - id: near_phospho_high
+    family_label: All types
+    layer: near_marks
+    with: {marks: phospho_high, window: 10, noun: high-score phosphosite}
+    new: true
+    title: Near high-score phosphosites (±10 residues)
+    question: "Are modified lysines more often near a high-score phosphosite than the other lysines of their protein?"
+    sub: "Modified lysines against the other lysines of the same proteins, by whether a phosphosite with an Ochoa et al. 2020 functional score of 0.5 or more (about 10,900 sites; the score is a model of how likely a site is functionally important) is within 10 residues on either side. Sites without a score are not counted as high-score. The comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    section: Other modifications
+  - id: near_methylarginine
+    family_label: All types
+    layer: near_marks
+    with: {marks: methylarginine, window: 10, noun: methylarginine}
+    new: true
+    title: Near methylarginines (±10 residues)
+    question: "Are modified lysines more often near a methylarginine than the other lysines of their protein?"
+    sub: "Modified lysines against the other lysines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3, by-similarity records left out) is within 10 residues on either side"
+    section: Other modifications
+  - id: near_methyllysine
+    family_label: All types
+    layer: near_marks
+    with: {marks: methyllysine, window: 10, noun: methyllysine}
+    new: true
+    title: Near methyllysines (±10 residues)
+    question: "Are modified lysines more often near a methyllysine than the other lysines of their protein?"
+    sub: "Modified lysines against the other lysines of the same proteins, by whether a methyllysine (UniProt, iPTMnet, CPLM 4.0 and Berryhill et al. 2023, release v1.5.0 of the methyllysine site; by-similarity records left out) is within 10 residues on either side, the lysine itself left out. A lysine that is itself methylated is asked about in the next section"
+    section: Other modifications
+  # The same lysine carrying two modifications: is a lysine with one modification more often also reported with another
+  # than the other lysines of its protein? The comparison within each protein (Mantel-Haenszel over proteins) holds the
+  # protein fixed, so how much it has been studied, how many lysines it has and how modified it is overall do not drive
+  # the result; a lysine can carry either modification on different copies of the protein, so overlap is a statement about
+  # reported residues, not one molecule. The pair is symmetric in its odds ratio, so each pair is asked once.
+  - id: same_ac_ub
+    layer: near_marks
+    with: {marks: ubiquitination, window: 0, noun: ubiquitination site, labels: {near: "Also reported ubiquitinated", none: "Not reported ubiquitinated"}}
+    marks_where: {column: acyl_type, equals: acetyl}
+    new: true
+    title: Acetylated and ubiquitinated lysines
+    question: "Are acetylated lysines more often also reported ubiquitinated than the other lysines of their protein?"
+    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a ubiquitination site. Both modifications target lysine's amino group, so one lysine can carry only one of them at a time; the question is whether, among the lysines of one protein, the acetylated ones have been reported ubiquitinated more or less often. Most ubiquitination sites come from CPLM 4.0"
+    section: Same lysine, different modifications
+  - id: same_ac_su
+    layer: near_marks
+    with: {marks: sumoylation, window: 0, noun: SUMOylation site, labels: {near: "Also reported SUMOylated", none: "Not reported SUMOylated"}}
+    marks_where: {column: acyl_type, equals: acetyl}
+    new: true
+    title: Acetylated and SUMOylated lysines
+    question: "Are acetylated lysines more often also reported SUMOylated than the other lysines of their protein?"
+    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a SUMOylation site. Most SUMOylation sites come from CPLM 4.0"
+    section: Same lysine, different modifications
+  - id: same_ub_su
+    layer: near_marks
+    with: {marks: sumoylation, window: 0, noun: SUMOylation site, labels: {near: "Also reported SUMOylated", none: "Not reported SUMOylated"}}
+    marks_where: {column: acyl_type, equals: ubiquitin}
+    new: true
+    title: Ubiquitinated and SUMOylated lysines
+    question: "Are ubiquitinated lysines more often also reported SUMOylated than the other lysines of their protein?"
+    sub: "Ubiquitinated lysines against the other lysines of the same proteins, by whether the lysine itself is also a SUMOylation site. Ubiquitin and SUMO attach to the same amino group, and both lists are mostly from CPLM 4.0, which compiles them from large mass-spectrometry studies of the proteome"
+    section: Same lysine, different modifications
+  - id: same_ac_methyl
+    layer: near_marks
+    with: {marks: methyllysine, window: 0, noun: methyllysine, labels: {near: "Also reported methylated", none: "Not reported methylated"}}
+    marks_where: {column: acyl_type, equals: acetyl}
+    new: true
+    title: Acetylated and methylated lysines
+    question: "Are acetylated lysines more often also reported methylated than the other lysines of their protein?"
+    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (the methyllysine site's release v1.5.0, by-similarity records left out). Acetylation and methylation compete for the same lysine, and both are best known on much-studied proteins such as histones, so the comparison is made within each protein"
+    section: Same lysine, different modifications
+  - id: same_ub_methyl
+    layer: near_marks
+    with: {marks: methyllysine, window: 0, noun: methyllysine, labels: {near: "Also reported methylated", none: "Not reported methylated"}}
+    marks_where: {column: acyl_type, equals: ubiquitin}
+    new: true
+    title: Ubiquitinated and methylated lysines
+    question: "Are ubiquitinated lysines more often also reported methylated than the other lysines of their protein?"
+    sub: "Ubiquitinated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (the methyllysine site's release v1.5.0, by-similarity records left out). Most ubiquitination sites come from large mass-spectrometry studies of the proteome (CPLM 4.0), so the comparison is made within each protein"
+    section: Same lysine, different modifications
+  - id: same_su_methyl
+    layer: near_marks
+    with: {marks: methyllysine, window: 0, noun: methyllysine, labels: {near: "Also reported methylated", none: "Not reported methylated"}}
+    marks_where: {column: acyl_type, equals: sumo}
+    new: true
+    title: SUMOylated and methylated lysines
+    question: "Are SUMOylated lysines more often also reported methylated than the other lysines of their protein?"
+    sub: "SUMOylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (the methyllysine site's release v1.5.0, by-similarity records left out)"
+    section: Same lysine, different modifications
+  # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
+  # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
+  - id: which_factor
+    test: conditional_logit
+    new: true
+    title: Which factor matters most?
+    question: "Taking all factors together, which ones set a modified lysine apart from the other lysines of its protein?"
+    sub: "One model: each modified lysine (of any type) against the other lysines of its protein, three factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
+    section: Where in the protein
+    covariates:
+      - {name: in_idr, label: In a disordered region, help: "Inside an IDR of 20 or more residues", layer: idr, is: [idr]}
+      - {name: net_charge, label: "Local net charge (per +1)", help: "Lys and Arg minus Asp and Glu within 7 residues on either side, the lysine itself left out; the odds ratio is for each extra +1", window_sum: {window: 7, weights: {K: 1, R: 1, D: -1, E: -1}}}
+      - {name: domain_distal, label: Far from any domain, help: "More than 20 residues from a domain, and not between two domains", layer: domain_context, is: [distal]}
+  - id: pdb_interface_na
+    new: true
+    title: RNA and DNA interfaces in PDB structures
+    question: "Are modified lysines at interfaces with RNA or DNA in experimental structures?"
+    sub: "Modified lysines against the other lysines of the same proteins observed in a PDB structure, at a PDBe-KB interface with RNA or with DNA; all, ordered (outside UniProt disordered regions) and in domains"
+    section: RNA and DNA
+    counting: every_candidate
+    background: other lysines of the same proteins observed in a PDB structure
+    proteins_with: pdb_interfaces                       # proteins PDBe-KB lists with an interface
+    covered_by: pdb_observed                            # residues a PDB chain models (SIFTS)
+    tests:
+      - {category: rna, inside: {role: pdb_interfaces, where: [{column: class, equals: RNA}]}, label: RNA interface}
+      - {category: dna, inside: {role: pdb_interfaces, where: [{column: class, equals: DNA}]}, label: DNA interface}
+    strata:
+      - {stratum: all}
+      - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
+      - {stratum: domain, covered_by: uniprot_domains, suffix: ", in domains"}
+marks_subsets:           # the key questions again on the lysines of one type (a lysine with a row of the type counts; the others are other
+                         # lysines): each adds '<question>_<id>' to the sidebar, under its question's entry (family). A type gets its own
+                         # repeat when it has at least 200 lysines in the main view; every type is a filter (Modification) whatever its count
+  - id: ac
+    label: Kac
+    where: {column: acyl_type, equals: acetyl}
+    note: "Only the lysines with a acetylation (Kac) record are counted as modified"
+    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
+  - id: ub
+    label: Kub
+    where: {column: acyl_type, equals: ubiquitin}
+    note: "Only the lysines with a ubiquitination (Kub) record are counted as modified"
+    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
+  - id: su
+    label: Ksu
+    where: {column: acyl_type, equals: sumo}
+    note: "Only the lysines with a SUMOylation (Ksu) record are counted as modified"
+    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
+  - id: hib
+    label: Khib
+    where: {column: acyl_type, equals: 2-hydroxyisobutyryl}
+    note: "Only the lysines with a 2-hydroxyisobutyrylation (Khib) record are counted as modified"
+    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
+  - id: bhb
+    label: Kbhb
+    where: {column: acyl_type, equals: beta-hydroxybutyryl}
+    note: "Only the lysines with a β-hydroxybutyrylation (Kbhb) record are counted as modified"
+    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
+  - id: cr
+    label: Kcr
+    where: {column: acyl_type, equals: crotonyl}
+    note: "Only the lysines with a crotonylation (Kcr) record are counted as modified"
+    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
+  - id: glu
+    label: Kglu
+    where: {column: acyl_type, equals: glutaryl}
+    note: "Only the lysines with a glutarylation (Kglu) record are counted as modified"
+    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
+
+variants:                # the same questions on other marks; ptmc run --variant <name>
+  with_lower_confidence:
+    label: With lower-confidence sites
+    description: "Also counts the lysines UniProt reports only by similarity to another species (ECO:0000250 and other records without an experimental code) and the lysines only CPLM reports with its evidence label Dat. (taken from another database), from the same tables"
+    marks_select: {exclude: []}
+    attributes: {}
+
+# Context marks: other modifications of the same proteins, shown beside the lysine modifications (CONTRACTS.md, Context marks):
+# methylarginine (the sites table of release v1.4.3, the methylarginine site's own marks), methyllysine and phosphorylation (the
+# sites tables of release v1.5.0). A map row, "Other modifications nearby" on the site card, a filter, table columns and downloads
+# follow from these entries; the near_marks questions test them. The tables are in sites/lysine.inputs.json. The site's own
+# types (acetylation, ubiquitination, SUMOylation) are parts of its marks (marks.parts), not context marks.
+context_marks:
+  - id: methylarginine
+    label: Methylarginine
+    input: context_methylarginine_sites_v1_4_3
+    columns: {accession: uniprot_accession, position: position, residue: residue, state: methyl_state}
+    replaces_ptm_kinds: [Methyl]   # the live UniProt "Other PTMs" row would repeat the methylarginines and methyllysines: one source for them
+    drop_evidence: []          # the v1.4.3 table has no evidence column: every row is kept
+    colour: "#C2410C"          # the methylarginine site's orange accent
+    colour_dark: "#FB923C"
+    citation:
+      short: Methylarginine Site Explorer
+      cite: "Methylarginine sites of the human reviewed proteome, release v1.4.3 of PTM_Pipeline: DeAngelo et al., Cell Chem Biol 33:1404-1421 (2026), doi:10.1016/j.chembiol.2026.09.011"
+      doi: 10.1016/j.chembiol.2026.09.011
+      licence: CC BY-NC-SA 4.0
+  - id: methyllysine
+    label: Methyllysine
+    input: context_methyllysine_sites_v1_5_0
+    columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
+    same_residue: true          # a lysine that is also methylated says so on its card
+    colour: "#7c3aed"          # violet, the methyllysine site's color
+    colour_dark: "#a78bfa"
+    citation:
+      short: UniProt, iPTMnet, CPLM and Berryhill 2023
+      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license; Berryhill 2023 article CC BY 4.0"
+    sources:
+      UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
+      iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
+      Berryhill 2023: {cite: "Berryhill et al., Sci Rep 13:377 (2023)", doi: 10.1038/s41598-022-27175-x}
+  - id: phospho
+    label: Phosphosite
+    input: context_phosphorylation_sites_v1_5_0
+    columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources, score: functional_score}
+    subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # shown at first: the sites Ochoa 2020 scores 0.5 or more (about 10,900); a click on the row label shows all. Sites with no score (UniProt or iPTMnet only) are hidden at first too
+    replaces_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row leaves its Phospho kind out: one source for phosphosites
+    colour: "#0891B2"          # cyan: apart from the orange of methylarginines, the violet of methyllysines and the greens, rose and blue of the types
+    colour_dark: "#1FA2C4"
+    citation:
+      short: UniProt, iPTMnet and Ochoa 2020
+      cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Ochoa et al., Nat Biotechnol 38:365-373 (2020), doi:10.1038/s41587-019-0344-3 (the article is not open access; its supplementary table is included)"
+      licence: "CC BY-NC-SA 4.0; Ochoa 2020 included"
+    sources:
+      UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
+      iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
+      Ochoa 2020: {cite: "Ochoa et al., Nat Biotechnol 38:365 (2020)", doi: 10.1038/s41587-019-0344-3}
+outputs: {folder: out/lysine}
+citation: sites/lysine.citation.cff   # the citation, data sources, version and date: edit there
+
+website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
+  context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
+  name: Lysine Modification Explorer
+  tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from public databases."
+  landing:
+    from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
+    tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from public databases."
+    question: "Which proteins carry modified lysines, and how do modified lysines differ from the other lysines of their protein?"
+    in_switcher: true
+  band: ["#14532d", "#052e16"]      # the header gradient: deep green
+  accent: "#4d7c0f"                 # the lime rule, active tab and links (5.0:1 on white)
+  accent_dark: "#bef264"
+  logo: sites/art/lysine_logo.svg
+  switcher: {label: PTM}            # the site switcher reads "PTM: <site> ▾"
+  art: sites/art/lysine-hero.svg
+  lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
+  links:
+    - {label: Documentation, url: "#method"}
+    - {label: Download data, url: "#method/download"}
+    - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
+    - {label: Research, url: "https://www.shechterlab.org/research/"}
+    - {label: Publications, url: "https://www.shechterlab.org/publications/"}
+  examples: [H3C1, "TP53 MDM2 UBE2I", "histone:histone", TP53 K372, H3 K9]   # the first three are the chips under the search box
+  placeholders: {highlight: "H3C1 K10, TP53 K372, TP53 K382", partners: "UBE2I, CREBBP, HDAC1", motif: "VKXE, KKXK", motif_either: "KK,KXE"}
+  default_background: other reviewed human proteins   # examples inside the Highlight and partner boxes
+  start:                   # the Overview's start panel for a first visit, and the Help page's starts (kit-help.js)
+    protein: TP53
+    text: "Human lysine acetylation, other acylation, ubiquitination and SUMOylation sites from UniProt, iPTMnet and CPLM 4.0: their positions, proteins and partners. Each tile is one question, comparing the modified lysines with the other lysines of the same proteins, for all types and again for each type with enough sites. Search a protein or a gene list to test your own selection."
+    examples:
+      - {label: A histone, query: H3C1, help: "Histone H3's modified lysines (H3 K4, K9, K27 and K36 are K5, K10, K28 and K37 in UniProt's numbering)."}
+      - {label: A list of genes, query: TP53 MDM2 UBE2I, help: "Every question is tested again on their modified lysines."}
+      - {label: One site in its structure, query: TP53 K372, help: "Its protein's domain and disorder map, the evidence for the site, and its structures."}
+  stats: [marks, proteins, {attribute: sources, label: databases, opens: provenance}]
+  overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
+    statistic_label: true  # each tile names its statistic
+    question: "Which proteins carry modified lysines?"
+    rows: 7
+    random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end
+    sections:
+      - name: Where in the cell
+        about: "Where in the cell the proteins with modified lysines localize, and how much is on chromatin."
+        #  the drawing of the cell on the Overview (website.cell: the maps of the cell as one question)
+        cards:
+          - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
+          - {analysis: cell_chromatin, title: Chromatin probability}
+          - {analysis: cell_chromatin_ac}
+          - {analysis: cell_chromatin_ub}
+          - {analysis: cell_chromatin_su}
+      - name: Which proteins
+        about: "Histones, protein classes, pathways and condensates of the proteins with modified lysines, for all types and for each type with at least 200 lysines."
+        cards:
+          - {analysis: histone, title: Histones and other proteins}
+          - {analysis: histone_ac}
+          - {analysis: histone_ub}
+          - {analysis: histone_su}
+          - {analysis: histone_hib}
+          - {analysis: histone_bhb}
+          - {analysis: histone_cr}
+          - {analysis: histone_glu}
+          - {analysis: panther_group, title: Protein classes}
+          - {analysis: panther_group_ac}
+          - {analysis: panther_group_ub}
+          - {analysis: panther_group_su}
+          - {analysis: panther_group_hib}
+          - {analysis: panther_group_bhb}
+          - {analysis: panther_group_cr}
+          - {analysis: panther_group_glu}
+          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
+          - {analysis: reactome_top_level_ac}
+          - {analysis: reactome_top_level_ub}
+          - {analysis: reactome_top_level_su}
+          - {analysis: panther_subclass, title: Protein subclasses}
+          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
+          - {analysis: condensate_role, title: Roles in condensates}
+      - name: Where in the protein
+        about: "Where in the protein the modified lysines are: sequence motifs, folded or disordered parts, domains, the charge of disordered regions."
+        cards:
+          - {analysis: disorder}
+          - {analysis: disorder_ac}
+          - {analysis: disorder_ub}
+          - {analysis: disorder_su}
+          - {analysis: disorder_hib}
+          - {analysis: disorder_bhb}
+          - {analysis: disorder_cr}
+          - {analysis: disorder_glu}
+          - {analysis: idr_charge}
+          - {analysis: idr_charge_ac}
+          - {analysis: idr_charge_ub}
+          - {analysis: idr_charge_su}
+          - {analysis: structure_context}
+          - {analysis: structure_context_ac}
+          - {analysis: structure_context_ub}
+          - {analysis: structure_context_su}
+          - {analysis: domain_class, title: Nearest domain class}
+          - {analysis: domain_class_ac}
+          - {analysis: domain_class_ub}
+          - {analysis: domain_class_su}
+          - {analysis: motif, title: Sequence motifs}
+          - {analysis: which_factor, wide: true}
+      - name: Modification type
+        about: "How many lysines carry each modification: acetylation, ubiquitination, SUMOylation and the other acylations, each its own type."
+        #  counted, not tested (website.counts)
+        cards: [types]
+      - name: Same lysine, different modifications
+        about: "Whether a lysine with one modification is also reported with another more often than the other lysines of its protein: acetylation, ubiquitination, SUMOylation and methylation."
+        cards:
+          - {analysis: same_ac_ub}
+          - {analysis: same_ac_su}
+          - {analysis: same_ub_su}
+          - {analysis: same_ac_methyl}
+          - {analysis: same_ub_methyl}
+          - {analysis: same_su_methyl}
+      - name: Other modifications
+        about: "Whether modified lysines are near other modifications (methylarginines, methyllysines and phosphosites), within 10 residues."
+        cards:
+          - {analysis: near_methylarginine}
+          - {analysis: near_methylarginine_ac}
+          - {analysis: near_methylarginine_ub}
+          - {analysis: near_methylarginine_su}
+          - {analysis: near_methyllysine}
+          - {analysis: near_methyllysine_ac}
+          - {analysis: near_methyllysine_ub}
+          - {analysis: near_methyllysine_su}
+          - {analysis: near_phospho}
+          - {analysis: near_phospho_ac}
+          - {analysis: near_phospho_ub}
+          - {analysis: near_phospho_su}
+          - {analysis: near_phospho_high}
+          - {analysis: near_phospho_high_ac}
+          - {analysis: near_phospho_high_ub}
+          - {analysis: near_phospho_high_su}
+      - name: Interactions
+        about: "Whether modified lysines are where a protein touches another or at an RNA or DNA interface, and the complexes their proteins are in."
+        cards:
+          - {analysis: pdb_interface, title: Interfaces in PDB structures}
+          - {analysis: predicted_interface, title: Predicted interfaces}
+          - {analysis: intact, title: IntAct binding regions and mutations}
+          - {analysis: complex, title: Protein complexes}
+          - {analysis: pdb_interface_na, title: RNA and DNA interfaces in PDB structures}
+      - name: Disease and cancer
+        about: "Diseases linked to the proteins with modified lysines, and cancer cell dependency."
+        show: 1
+        more: More on disease
+        cards:
+          - analysis: disease_family
+            title: Disease
+            views:               # one question, two vocabularies: a switch on its page
+              - label: DisGeNET families
+                analysis: disease_family
+                more: {analysis: disease_family_additional, label: "Show {n} more families", head: "Additional families"}
+                members:
+                  analysis: disease_term
+                  label: Show the DisGeNET terms
+                  noun: term
+                  nouns: DisGeNET terms
+                  id_label: UMLS CUI
+                  none: terms in no family
+                  of:
+                    - {analysis: disease_family, label: disease families checked by hand}
+                    - {analysis: disease_family_additional, label: "additional families, mostly clinical signs"}
+              - label: Disease Ontology
+                analysis: disease_ontology
+                ontology: {short: 50, compare: 4, tree: 100, id_label: DOID, noun: term, nouns: terms}
+          - {analysis: depmap_dependency, title: Cancer cell dependency}
+      - name: Evidence and studies
+        about: "How well supported the modification sites are, and which databases they come from. Ubiquitination and SUMOylation sites are mostly from CPLM 4.0: the databases tile shows how many sites each database reports."
+        #  counted, not tested (website.counts)
+        cards: [provenance, evidence, cplm]
+      - name: More questions
+        about: "Further pathways, cell maps, protein classes and complexes, one question each."
+        cards: [panther_class, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, {analysis: hpa_location, title: Human Protein Atlas locations},
+                cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q},
+                domain_context]
+  cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
+    id: where_in_the_cell
+    title: Where in the cell
+    question: "Where do proteins with modified lysines localize in the cell?"
+    intro: "Five maps from four studies place proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
+    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
+    maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
+      - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
+         how: "antibody staining in many cell lines; locations of Approved or better reliability with 20 or more proteins",
+         ref: HPA 25.1, doi: 10.1126/science.aal3321, url: "https://www.proteinatlas.org/humanproteome/subcellular", licence: CC BY 4.0, min_members: 20}
+      - {analysis: cell_hcm_compartment, regions: cell_region_hcm, name: Human Cell Map, short: Cell Map, method: Proximity labeling, cells: HEK293,
+         how: "proximity labeling from 192 baits; each protein is assigned to the compartment whose baits label it most",
+         ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
+      - {analysis: cell_hcm_domain, name: "Human Cell Map, finer domains", short: Cell Map domains, method: Proximity labeling, cells: HEK293,
+         how: "the same map at a finer scale: neighborhoods of proteins that label one another (SAFE domains)",
+         ref: Go et al. 2021, doi: 10.1038/s41586-021-03592-2, url: "https://humancellmap.org", licence: CC BY 4.0}
+      - {analysis: cell_organelle_ip, regions: cell_region_organelle_ip, name: Organelle IP, short: Organelle IP, method: Organelle pull-down, cells: HEK293T,
+         how: "Organelles immunoprecipitated one by one. Each protein is assigned to the organelle it co-purifies with.",
+         ref: Hein et al. 2025, doi: 10.1016/j.cell.2024.11.028, url: "https://github.com/czbiohub-sf/Organelle_IP_analyses_and_figures", licence: BSD-3-Clause (analysis repository)}
+      - {analysis: cell_chromatin, graded: true, name: Chromatin probability, short: ChEP, method: Fractionation, cells: human cell lines,
+         how: "probability that a protein is chromatin-bound, from chromatin enrichment across many conditions",
+         ref: Kustatscher et al. 2014, doi: 10.1002/embj.201387614, url: "https://doi.org/10.1002/embj.201387614", licence: CC BY}
+    regions:               # the sets of each map's regions question, and the part of the drawings each colors
+      - {label: Nucleus, part: nucleus, in_text: the nucleus}
+      - {label: Cytoplasm, in_text: the cytoplasm}
+      - {label: Organelles and membranes, in_text: the organelles and membranes}
+    compartments:          # the grid's rows: each a set in some maps, and the part of the drawings it colors (also: parts
+      - group: Nucleus     # it colors when they have no row of their own); the release's groups (data/subcellular.json)
+        rows:
+          - {label: Chromatin, part: chromatin, also: [periphery, perinucleolar], sets: {cell_hcm_compartment: chromatin, cell_chromatin: "ICP >= 0.8 (chromatin)"}}
+          - {label: Nucleoplasm, part: nucleoplasm, also: [nucleus], sets: {cell_hcm_compartment: nucleoplasm, cell_organelle_ip: nucleus, hpa_location: Nucleoplasm}}
+          - {label: Nucleolus, part: nucleolus, sets: {cell_hcm_compartment: nucleolus, cell_organelle_ip: nucleolus, hpa_location: Nucleoli}}
+          - {label: Nuclear speckles, part: speckles, sets: {cell_hcm_domain: "splicing speckles, nucleolus", hpa_location: Nuclear speckles}}
+          - {label: Paraspeckles, part: paraspeckles, sets: {cell_hcm_domain: paraspeckles}}
+          - {label: "Nuclear bodies (PML, Cajal …)", name: Nuclear bodies, part: bodies, also: [cajal, pml], sets: {cell_hcm_compartment: nuclear body, hpa_location: Nuclear bodies}}
+          - {label: Nuclear envelope and lamina, name: Nuclear envelope, part: envelope, sets: {cell_hcm_compartment: nuclear outer membrane-ER membrane network, hpa_location: Nuclear membrane}}
+          - {label: Nuclear pores, part: pores, sets: {cell_hcm_domain: nuclear pore}}
+          - {label: Mitotic chromosome, sets: {hpa_location: Mitotic chromosome}}
+      - group: Cytoplasm
+        rows:
+          - {label: "RNA granules (stress granules, P-bodies)", name: "Stress granules (cell map)", part: granules, sets: {cell_hcm_compartment: cytoplasmic ribonucleoprotein granule, cell_hcm_domain: cytoplasmic ribonucleoprotein granule, cell_organelle_ip: stress_granule}}
+          - {label: P-bodies, part: pbodies, in_text: P-bodies, sets: {cell_organelle_ip: p-body, cell_hcm_domain: "centrosome enriched, P-body enriched"}}
+          - {label: Translation, name: Ribosomes and translation, part: ribosomes, sets: {cell_organelle_ip: translation}}
+          - {label: Cytosol, part: cytosol, sets: {cell_hcm_compartment: "actin cytoskeleton, cytosol", cell_organelle_ip: cytosol, hpa_location: Cytosol}}
+          - {label: Actin cytoskeleton, name: Actin cortex, part: actin, sets: {cell_organelle_ip: actin_cytoskeleton, cell_hcm_domain: actin cytoskeleton, hpa_location: Actin filaments}}
+          - {label: Microtubules, part: microtubules, sets: {cell_hcm_compartment: microtubule cytoskeleton, hpa_location: Microtubules}}
+          - {label: Centrosome, part: centrosome, sets: {cell_hcm_compartment: centrosome, cell_organelle_ip: centrosome, hpa_location: Centrosome}}
+          - {label: Proteasome, sets: {cell_organelle_ip: proteasome}}
+      - group: Organelles and membranes
+        rows:
+          - {label: Mitochondria, part: mito, sets: {cell_hcm_compartment: mitochondrial matrix, cell_organelle_ip: mitochondrion, hpa_location: Mitochondria}}
+          - {label: Endoplasmic reticulum, part: er, in_text: the ER, sets: {cell_hcm_compartment: ER membrane, cell_organelle_ip: ER, hpa_location: Endoplasmic reticulum}}
+          - {label: Golgi, name: Golgi apparatus, part: golgi, in_text: the Golgi, sets: {cell_hcm_compartment: Golgi apparatus, cell_organelle_ip: Golgi, hpa_location: Golgi apparatus}}
+          - {label: Endosomes and lysosomes, part: endolyso, sets: {cell_hcm_compartment: "endosome, lysosome", cell_organelle_ip: lysosome, hpa_location: Vesicles}}
+          - {label: Peroxisomes, part: perox, sets: {cell_hcm_compartment: "mitochondrial outer membrane, peroxisome", cell_organelle_ip: peroxisome}}
+          - {label: Plasma membrane, part: pm, sets: {cell_hcm_compartment: plasma membrane, cell_organelle_ip: plasma_membrane, hpa_location: Plasma membrane}}
+    drawings:              # the kit's drawings (CONTRACTS.md names their parts), in order
+      - {drawing: cell, title: "The cell"}
+      - {drawing: nucleus, title: "The nucleus"}
+  set_views:               # a protein-set question drawn with its proteins' numbers (kit-values.js): DepMap's dependency
+    - analysis: depmap_dependency
+      meter: common_essential                   # the class whose share the tile shows
+      meter_words: commonly essential in cancer cell lines
+      population: screened proteins
+      intro: "{n} of {the} {total} {who} were screened (DepMap 24Q4, 1,178 cell lines). A protein's score is its median Chronos gene effect across the lines: 0 is no effect, −1 the median of commonly essential genes, and lower is a stronger dependency."
+      box: {value: median, title: Median gene effect of each protein, axis: "median gene effect per protein (Chronos)",
+            sub: "DepMap Public 24Q4 CRISPR (Chronos), median gene effect per protein across 1,178 lines. Boxes span the middle half of proteins, whiskers the 5th to 95th percentile. Lower is a stronger dependency"}
+      caveat: "Essential proteins are abundant, and mass spectrometry finds abundant proteins most often, so proteins with modified lysines look more essential than the proteome whatever their modification does. A selection is also compared with the other proteins with modified lysines, which share that bias, and that comparison is fairer."
+      chips:
+        - {title: Strongest dependencies, value: median, order: ascending}
+        - {title: Selective dependencies, note: "not commonly essential; 5% to under half of the lines depend on them, share shown", sets: [some_lines],
+           share: [dependent_lines, lines_with_probability], order: descending}
+      credit: "DepMap Public 24Q4 (doi:10.25452/figshare.plus.27993248; CC BY 4.0; Tsherniak et al. 2017; Chronos, Dempster et al. 2021). Commonly essential: DepMap's list of genes that at least 90% of lines rank among their strongest dependencies. A line depends on a gene when DepMap's dependency probability is at least 0.5. The results on tumors are in whole or part based upon data generated by the TCGA Research Network (https://www.cancer.gov/tcga): MC3 somatic calls (Ellrott et al. 2018)."
+  counts:                  # questions answered by counting the sites, not by a test (CONTRACTS.md, count questions)
+    types:
+      kind: values
+      attribute: acyl_type
+      title: Modification type
+      question: "How many lysines carry each modification?"
+      sub: "Modified lysines by the modification reported: acetylation (Kac), ubiquitination (Kub), SUMOylation (Ksu) and each acylation (Kcr, Khib, Kbhb, Kglu, Ksucc, Kla, Kmea, Kinic, Kbz, Kbu, Kmal, Kpr)"
+      unit: [type, types]
+      noun: types
+      top: 4
+      note: "A lysine has a row for each modification a database reports, so it counts under each. Each type is also a filter (Modification). The key questions are run again for each type with at least 200 lysines: the types with fewer have counts and filters only."
+      method: "Each lysine lists the modifications its records give (the release tables' type: acyl_type for acetylation and the acylations, one table each for ubiquitination and SUMOylation). A type's count is the lysines with a record of it, by-similarity records and CPLM records labelled Dat. alone left out."
+    cplm:
+      kind: values
+      attribute: cplm_evidence
+      title: CPLM evidence
+      question: "How well supported are the lysines CPLM 4.0 reports?"
+      sub: "Modified lysines reported by CPLM 4.0, by its own evidence label: Exp. (experimental paper) or Exp./Dat. (experimental paper and another database)"
+      unit: [label, labels]
+      noun: CPLM labels
+      top: 3
+      note: "Most ubiquitination and SUMOylation sites are from CPLM 4.0. Its Dat. records (taken from another database, with no experiment named) alone are in the lower-confidence variant (the switch at the top)."
+      method: "CPLM 4.0's own evidence label for the lysine (the release's cplm_evidence column), joined over the lysine's rows. Lysines CPLM does not report have none and are not counted here."
+    evidence:
+      kind: values
+      attribute: evidence_class
+      title: Evidence
+      question: "How well supported are the modified lysines?"
+      sub: "Modified lysines by the best class of their records: experimental, or unspecified (iPTMnet's copy of UniProt, with no evidence code)"
+      unit: [class, classes]
+      noun: evidence classes
+      top: 3
+      note: "The sites counted here have an experimental record, or an unspecified iPTMnet record. The sites UniProt reports only by similarity to another species, and those only CPLM reports as taken from another database (its Dat. label), are the lower-confidence variant (the switch at the top)."
+      method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, or a CPLM record labelled Exp. or Exp./Dat.; unspecified is iPTMnet's copy of UniProt, which has no ECO code."
+    provenance:
+      kind: values
+      attribute: sources
+      title: Data sources
+      question: "Which databases report the modified lysines?"
+      sub: "Modified lysines reported by each database"
+      unit: [database, databases]
+      noun: databases
+      top: 3
+      note: "iPTMnet carries a copy of UniProt, so both databases agreeing is not always two measurements. CPLM 4.0 compiles records from other databases too (its Dat. label), so a lysine that CPLM and another database both report may rest on one original record. CPLM 4.0 states no license; its sites are included and cited."
+      method: "Each lysine lists the databases that report it (the release's sources column). A database's count is the lysines it reports."
+  filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
+    - {name: Data sources, attributes: [sources, cplm_evidence, evidence_class, iptmnet_score, iptmnet_sources]}
+    - {name: Modification, attributes: [acyl_type]}
+    - {name: Histone and protein class, analyses: [histone, panther_group, panther_class, reactome_top_level], proteins: [marks]}
+    - {name: Same lysine, analyses: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl]}
+    - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex]}
+    - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome]}
+    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency]}
+    - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
+    - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
+    - {name: RNA and DNA, analyses: [pdb_interface_na]}
+  dataset: {label: PTM_Pipeline data release, version: v1.5.0 at bdb5b86, date: "2026-11-10", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/bdb5b86/releases/v1.5.0"}
+  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). CPLM 4.0 states no license: its sites (rows whose databases name CPLM) are included, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022), and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
+  downloads:               # the release's files, at the commit the site was built from
+    - {label: Acetylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86/releases/v1.5.0/human_acetylation_sites_v1.5.0.tsv", format: TSV, note: "every acetylation record: one row per lysine, with its evidence class and sources"}
+    - {label: Other acylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86/releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv", format: TSV, note: "every lysine acylation record (acetyl and 12 other acyl types, in acyl_type): one row per lysine and type"}
+    - {label: Ubiquitination sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86/releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv", format: TSV, note: "every ubiquitination record, with its evidence class, sources and CPLM evidence label (123,932 rows, 123,753 of them from CPLM 4.0)"}
+    - {label: SUMOylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86/releases/v1.5.0/human_sumoylation_sites_v1.5.0.tsv", format: TSV, note: "every SUMOylation record, with its evidence class, sources and CPLM evidence label (39,633 rows, 39,493 of them from CPLM 4.0)"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/bdb5b86/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/bdb5b86/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+  search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
+    shorthand: {H4: P62805, H3: P68431, "H3.1": P68431, "H3.3": P84243}   # names papers use for a protein (H4K20, H3 K9)
+    patterns:                # the motif finder: a pattern of residues on the sites' sequence windows
+      at: motif              # motif:KKXE covers the site (motif families keep their names: motif:SUMO_consensus)
+      near: window           # window:KKXK anywhere within the span
+      span: 15
+    spacing: {label: "Another modified lysine within", within: [2, 3, 5, 10, 20]}
+  tabs:                    # the top tabs' words (the addresses #statistics and #method stay; #idrs opens its question)
+    overview: {label: Overview, hint: "Click a class row to select its sites, or a tile's title to open the question."}
+    proteins: {label: Proteins, hint: "One row per protein with modified lysines. Filter, sort and download."}
+    sites: {label: Sites, hint: "One row per modified lysine, with its modifications and evidence. Filter, sort and download."}
+    idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of proteins with modified lysines, and the modified lysines in them.", as: section, question: idr_charge}
+    statistics: {label: All tests, hint: "Every test on the site, one row per class, with odds ratio, interval and q value."}
+    method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
+    help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
+  partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
+  compare: {min_proteins: 10, min_marks: 30}
+  tables:                  # tables the protein pages show (no test reads them), each in a format of CONTRACTS.md
+    string:                # STRING v12.5 physical links, each pair listed once and read both ways, at score 0.7 or more
+      input: string_physical_v12_5
+      format: protein_partners
+      columns: {accession: protein_a, partner_accession: protein_b, partner: gene_b, score: combined_score}
+      both_ways: {partner: gene_a}
+      include: [{column: combined_score, at_least: 700}]
+  sites:                   # the Sites tab
+    table:                 # the optional columns (the Columns menu): the same set on every site, where the data has it
+      - {id: type, label: Modification, attribute: acyl_type, default: true, hide: xs}
+      - {id: src, label: Reported by, attribute: sources, default: true, hide: sm}
+      - {id: cplm, label: CPLM evidence, attribute: cplm_evidence, hide: sm}
+      - {id: ctx, label: Context, menu: Disorder and domain context, analyses: [disorder, domain_context], hide: xs}
+      - {id: struct, label: Structural context, analyses: [structure_context], hide: sm}
+  protein:                 # the protein page
+    open_partners: true
+    map:
+      hide_ptm_kinds: [SUMO, Ubiquitin, Lys acyl]   # the live UniProt row would repeat the lysine modifications of the tables
+      combined_marks: {default: folded}   # one "All marks" row (the site's marks and every context mark, a shape and color each); the context marks' rows fold behind it
+      hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
+        site: [name, chips, nearby, click]
+        chips: [sources, cplm_evidence, {attribute: pmids, count: PMIDs}]
+        context: [mark, residue, detail, source, click]
+    numbering:             # positions typed in a search read as the protein's page numbers them
+      - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
+        names: "^(putative |core )?histone (h1|h2a|h2b|h3|h4|macro-h2a)\\b|^testis-specific h1 histone|^histone h3-like centromeric"
+        offset: -1
+        label: histone numbering
+        note: "Histone numbering, without the initiator methionine"
