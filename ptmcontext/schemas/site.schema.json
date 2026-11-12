@@ -1168,10 +1168,27 @@
             "description": "count only the marks (for a protein-set question, the marked proteins) with a row of the marks table that meets this condition, e.g. the marks with a row whose state is one value; the marks outside are other residues in a residue question, and the rest of the universe in a protein-set question. Not for conditional_logit. Usually written once, as marks_subsets, which makes the variants"
           },
           "only_in": {
-            "description": "residue and conditional_logit: count only the marks and candidate residues inside the IDRs ('idr'), inside the regions of an interval table ({role, kind}), or among residues of some letters and a motif ({residues, motif})",
+            "description": "residue and conditional_logit: count only the marks and candidate residues inside the IDRs ('idr'), inside the regions of an interval table ({role, kind}), among residues of some letters and a motif ({residues, motif}), or among the residues some marks are reported on ({marks: [ids]})",
             "oneOf": [
               {
                 "const": "idr"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "marks"
+                ],
+                "additionalProperties": false,
+                "description": "only the residues that are one of these marks: 'site' (the site's own counted marks, every one, whatever the question's marks_where), a context mark's id or a part of the marks (marks.parts), as near_marks reads them; a question asked only among the residues a method reports modified at all",
+                "properties": {
+                  "marks": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               },
               {
                 "type": "object",
@@ -2252,6 +2269,24 @@
                             "wide": {
                               "type": "boolean",
                               "description": "spans two columns where the page has room"
+                            },
+                            "beside": {
+                              "type": "object",
+                              "required": [
+                                "analysis",
+                                "label"
+                              ],
+                              "additionalProperties": false,
+                              "description": "another question's result for the tile's first class, on a line under the tile's rows ('<label>: OR x, q y', the method the tile shows): the same question asked another way, a control",
+                              "properties": {
+                                "analysis": {
+                                  "type": "string",
+                                  "description": "a residue question with the same classes"
+                                },
+                                "label": {
+                                  "type": "string"
+                                }
+                              }
                             },
                             "drawing": {
                               "type": [
@@ -7827,7 +7862,17 @@
                 "default": {"enum": ["folded", "unfolded"], "description": "the per-modification rows at first (default folded); the reader's choice is kept for the browser session"},
                 "label": {"type": "string", "description": "the block's name (default: All modifications)"},
                 "order": {"type": "array", "items": {"type": "string"}, "description": "the marks in the legend's order and the glyph shapes' order: 'site' for the site's own marks, else context mark ids; marks not named follow (default: the site's marks, then the context marks in the site file's order)"},
-                "min_marks": {"type": "integer", "minimum": 2, "description": "the fewest marks (the site's own included) for which the row is drawn (default 3)"}
+                "min_marks": {"type": "integer", "minimum": 2, "description": "the fewest marks (the site's own included) for which the row is drawn (default 3)"},
+                "split": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["attribute"],
+                  "description": "the site's own lane split into one lane for each value of one of its attributes (a site whose marks are several modifications, the kind of each in a column): a mark with several values is in each of their lanes, colored as the attribute's values; 'site' in order stands for all of them",
+                  "properties": {
+                    "attribute": {"type": "string", "description": "a marks attribute (marks.attributes) of kind category or list"},
+                    "short": {"type": "object", "additionalProperties": {"type": "string"}, "description": "each value's lane name (default: the value's label)"}
+                  }
+                }
               }
             }
           ]

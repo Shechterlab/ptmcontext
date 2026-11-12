@@ -57,6 +57,7 @@ class Context:
     formats: dict[str, dict] = field(default_factory=dict)  # an input's manifest name (or path) -> its column mapping
     names: dict[str, str] = field(default_factory=dict)  # a role filled by one input -> that input's manifest name
     context: dict = field(default_factory=dict)  # context mark id -> its residues (context_marks.read), for near_marks
+    own_marks: object = None  # the site's counted marks (accession, position), for only_in: {marks: [site]}
     root: Path | None = None  # the repository that holds the site file: where a layer's `with:` paths are relative to
     _cache: dict = field(default_factory=dict, repr=False)
 

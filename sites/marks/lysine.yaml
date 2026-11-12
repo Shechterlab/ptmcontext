@@ -6,6 +6,8 @@ id: lysine
 name: Lysine modifications
 residues: [K]
 
+short: "Kac/Kub/Ksu/Kacyl"   # its lane name in the map's "All modifications" block (the site splits it into a lane for each type)
+
 states:   # PSI-MOD terms checked against EBI OLS, 2026-11-12. Codes follow the Brno nomenclature's pattern (histone, residue, modification:
           # Turner BM, Nat Struct Mol Biol 12:110-112 (2005), doi:10.1038/nsmb0205-110; the article is not open access and only its abstract was read,
           # so the forms below are the usual ones in the literature: ac, ub and su as in Brno's list; the acyl forms are the common ones, not Brno's).

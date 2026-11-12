@@ -83,7 +83,7 @@ def residue_test(
     out the marks of a protein with no other candidate residue, 'count' counts them. order: the rows' order, as a
     protein-set question's (default: pooled rows by odds ratio, within-protein rows by category). pooled_label:
     added to the pooled rows' background. only_in: count only the marks and candidate residues inside the regions of
-    'idr' (the IDRs) or of {role, kind} (any interval table)."""
+    'idr' (the IDRs) or of {role, kind} (any interval table), of some letters or a motif, or among some marks."""
     layer = L.get(layer, ctx) if isinstance(layer, str) else layer
     if proteins is not None:
         marked = marked[marked['accession'].isin(proteins)]
@@ -164,10 +164,42 @@ def residues_matching(ctx: L.Context, cand: pd.DataFrame, rule: dict) -> np.ndar
     return keep
 
 
+OWN_MARKS = (
+    'site'  # in only_in: {marks: [...]}, the site's own counted marks (every one, whatever the question's marks_where)
+)
+
+
+def among_marks(ctx: L.Context, cand: pd.DataFrame, ids) -> np.ndarray:
+    """Whether each candidate residue is one of the marks named: 'site' (the site's own counted marks, all of them) or
+    the id of a context mark or of a part of the site's marks (marks.parts), as near_marks reads them. A question asked
+    only among the residues some mark is reported on: those a method detects at all, say."""
+    if isinstance(ids, str):
+        ids = [ids]
+    tables = getattr(ctx, 'context', None) or {}
+    keys: set = set()
+    for i in ids:
+        if i == OWN_MARKS:
+            frame = getattr(ctx, 'own_marks', None)
+            if frame is None:
+                raise ValueError("only_in: {marks: ['site']} needs the site's counted marks")
+        elif i in tables:
+            frame = tables[i]
+        else:
+            raise ValueError(f'only_in: no mark {i!r} (site, a context mark or a part of the marks: {sorted(tables)})')
+        keys |= set(_keys(frame[['accession', 'position']].dropna()))
+    return _keys(cand).isin(keys).to_numpy()
+
+
 def inside_regions(ctx: L.Context, cand: pd.DataFrame, only_in) -> np.ndarray:
-    """Whether each candidate residue is inside a region of 'idr' (the IDRs) or of {role, kind} (an interval table)."""
+    """Whether each candidate residue is inside a region of 'idr' (the IDRs) or of {role, kind} (an interval table), is
+    of some letters or a motif ({residues, motif}), or is one of some marks ({marks: [ids]})."""
     from .question import covered
 
+    if isinstance(only_in, dict) and 'marks' in only_in:
+        unknown = sorted(set(only_in) - {'marks'})
+        if unknown:
+            raise ValueError(f'only_in: unknown keys {unknown} beside marks')
+        return among_marks(ctx, cand, only_in['marks'])
     if isinstance(only_in, dict) and ({'residues', 'motif'} & set(only_in)) and 'role' not in only_in:
         return residues_matching(ctx, cand, only_in)
     if only_in == 'idr':

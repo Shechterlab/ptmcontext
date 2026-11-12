@@ -1390,7 +1390,7 @@
       "md5": "2b4cacbbedf48862d8c2816b9157c8fe",
       "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/e1852ba/releases/v1.5.0",
       "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Ochoa 2020; positions on UniProt 2026_03",
-      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Ochoa et al., Nat Biotechnol 38:365 (2020): the article is not open access and its supplementary table carries no license, included",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Ochoa et al., Nat Biotechnol 38:365 (2020): the article is not open access and its supplementary table has no license, included",
       "role": "input",
       "note": "Phosphorylation sites of the human reviewed proteome (142,415 rows), one row per residue and state, with sources (UniProt, iPTMnet, Ochoa 2020), evidence class (experimental, by-similarity, text-mined, unspecified), iPTMnet upstream databases and PubMed IDs. Shown as context beside the site's own mark; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit e1852ba."
     },

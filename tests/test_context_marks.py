@@ -340,8 +340,10 @@ def test_the_schema_checks_the_combined_row_and_the_hover_settings():
         'site',
     )
     validate(site({'combined_marks': False}), 'site')
+    validate(site({'combined_marks': {'split': {'attribute': 'kind', 'short': {'acetyl': 'Kac'}}}}), 'site')
     for bad in (
         {'combined_marks': {'default': 'half'}},
+        {'combined_marks': {'split': {'short': {'acetyl': 'Kac'}}}},
         {'combined_marks': {'colour': 'red'}},
         {'default_off': 'ptm'},
         {'hover': {'site': ['sequence']}},
@@ -364,6 +366,7 @@ def test_the_kit_reads_the_combined_row_and_hover_settings_and_keeps_the_pieces_
         'CFG.default_off',
         'lanes.forEach',
         'd.pts.length && !M.combOff',
+        'CMB.split',  # the site's own lane split by an attribute: a lane for each value the protein has
     ):
         assert name in js, name
     assert 'SHAPES' not in js and 'All marks' not in js
@@ -371,10 +374,14 @@ def test_the_kit_reads_the_combined_row_and_hover_settings_and_keeps_the_pieces_
     assert "HV.site || ['name', 'chips', 'nearby', 'click']" in prot and 'K.map?.nearby' in prot
 
 
-@pytest.mark.parametrize('name', ['methylarginine', 'methyllysine', 'phospho'])
-def test_the_three_site_files_set_the_combined_row_and_the_hovers(name):
+@pytest.mark.parametrize('name', ['methylarginine', 'methyllysine', 'phospho', 'lysine'])
+def test_the_site_files_set_the_combined_row_and_the_hovers(name):
     m = S.load_site(Path(__file__).resolve().parents[1] / 'sites' / f'{name}.yaml')['website']['protein']['map']
-    assert m['combined_marks'] == {'default': 'folded'}
+    assert m['combined_marks']['default'] == 'folded'
+    split = m['combined_marks'].get('split')
+    if split:  # a site of several modifications: a lane for each, named by its code (every value has a name)
+        values = S.load_site(Path(__file__).resolve().parents[1] / 'sites' / f'{name}.yaml')['marks']['attributes']
+        assert set(split['short']) == set(values[split['attribute']]['values'])
     assert m['default_off'] == ['ptm']  # the grey live UniProt row starts off
     assert all(r.get('short') for r in m['rows'] if r['id'].startswith('ctx_'))
     assert m['hover']['site'][0] == 'name' and m['hover']['chips'] and 'context' in m['hover']
@@ -414,7 +421,50 @@ def test_same_residue_question_and_columns(table):
     assert list(a['a.ctx_near_phos']) == ['yes', 'yes']  # the same residue is not "near": R12 sees S11 and K17
 
 
-@pytest.mark.parametrize('name', ['methylarginine', 'methyllysine', 'phospho'])
+@pytest.mark.parametrize('name', ['methylarginine', 'methyllysine', 'phospho', 'lysine'])
 def test_each_mark_file_names_its_lane(name):
     prof = yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / 'marks' / f'{name}.yaml').read_text())
     assert prof['short']
+
+
+def test_only_in_marks_asks_the_same_residue_question_among_the_residues_found_modified():
+    """only_in: {marks: [...]}: count only the residues some mark is reported on ('site' for the site's own counted marks,
+    every one, or a context mark or part by id): a control for residues a method finds far more often than others."""
+    from ptmcontext.residue_tests import residue_test
+
+    snap = Snapshot({'P': 'KAKAKAKAKAKA'})  # lysines at 1, 3, 5, 7, 9, 11
+    ctx = L.Context(snap, load_profile(MARKS / 'methyllysine.yaml'), {})
+    frame = lambda ps: pd.DataFrame({'accession': ['P'] * len(ps), 'position': ps})  # noqa: E731
+    ctx.context = {'ub': frame([3, 5, 7])}
+    ctx.own_marks = frame([1, 3, 5])  # the site's counted marks; the question's own (its marks_where) are 1 and 3
+    layer = L.get('near_marks', ctx, {'marks': 'ub', 'window': 0, 'noun': 'ubiquitination site'}, 'same_ub')
+    cells = lambda r: tuple(int(r[k]) for k in 'abcd')  # noqa: E731
+    near = lambda rows: rows.set_index('category').loc['near']  # noqa: E731
+    every = residue_test(ctx, frame([1, 3]), layer, 'same_ub', methods=('fisher',))
+    assert cells(near(every)) == (1, 1, 2, 2)  # the other lysines: 5, 7 (ub) and 9, 11
+    among = residue_test(ctx, frame([1, 3]), layer, 'same_ub', methods=('fisher',), only_in={'marks': ['site', 'ub']})
+    assert cells(near(among)) == (1, 1, 2, 0)  # 9 and 11 carry no mark: counted on neither side
+    with pytest.raises(ValueError, match="no mark 'nope'"):
+        residue_test(ctx, frame([1, 3]), layer, 'x', only_in={'marks': ['nope']})
+    with pytest.raises(ValueError, match='unknown keys'):
+        residue_test(ctx, frame([1, 3]), layer, 'x', only_in={'marks': ['ub'], 'role': 'r'})
+
+
+def test_only_in_marks_names_known_marks_and_a_card_s_beside_reads_a_question():
+    from ptmcontext.profile import validate
+
+    site = S.load_site(Path(__file__).resolve().parents[1] / 'sites' / 'lysine.yaml')
+    ctl = {a['id']: a for a in site['analyses']}['same_ac_ub_modified']
+    # among the lysines with a modification other than the two compared (which would otherwise decide who counts)
+    assert ctl['only_in'] == {'marks': ['sumoylation', 'other_acylation', 'methyllysine']}
+    assert ctl['marks_where'] == {'column': 'acyl_type', 'equals': 'acetyl'}
+    assert ctl['background'].startswith('other lysines with another modification')
+    bad = {**site, 'analyses': [{**ctl, 'only_in': {'marks': ['site', 'acylation']}}]}
+    assert any("only_in reads mark 'acylation'" in p for p in S.roles_missing(bad))
+    cards = [c for s in site['website']['overview']['sections'] for c in s['cards'] if isinstance(c, dict)]
+    beside = {c['analysis']: c['beside']['analysis'] for c in cards if c.get('beside')}
+    assert beside['same_ac_ub'] == 'same_ac_ub_modified' and len(beside) == 6
+    with pytest.raises(Exception):
+        validate({**site, 'analyses': [{**ctl, 'only_in': {'marks': []}}]}, 'site')
+    js = (ASSETS / 'kit.js').read_text()
+    assert 'card.beside' in js and 'tbeside' in js

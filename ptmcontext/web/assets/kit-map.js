@@ -1697,6 +1697,37 @@
           pts: marksIn.map((m) => ({ pos: m[0], own: true })),
         },
       };
+      // split: {attribute, short?}: the site's own lane becomes one lane for each value of the attribute the protein has (a mark
+      // with several values is in each of their lanes), named by `short` (else the value's label), in the attribute's colors
+      const SPL = CMB.split && SPECS[CMB.split.attribute] ? CMB.split : null,
+        siteIds = ['site'];
+      if (SPL) {
+        const s = SPECS[SPL.attribute],
+          ix = attrIdx(SPL.attribute),
+          valsOf = (m) =>
+            String(m[3]?.[ix] ?? '')
+              .split(s.separator || '; ')
+              .filter(Boolean),
+          has = new Set();
+        ctx.rec.marks.forEach((m) => valsOf(m).forEach((v) => has.add(v)));
+        const known = Object.keys(s.values || {}),
+          vals = [...known.filter((v) => has.has(v)), ...[...has].filter((v) => !known.includes(v)).sort()];
+        delete defs.site;
+        siteIds.length = 0;
+        vals.forEach((v) => {
+          const id = `site:${v}`,
+            label = K.sel?.valueLabel ? K.sel.valueLabel(SPL.attribute, v) : (s.values || {})[v] || v;
+          siteIds.push(id);
+          defs[id] = {
+            id,
+            label,
+            short: (SPL.short || {})[v] || label,
+            col: attrColour(SPL.attribute, v),
+            help: label,
+            pts: marksIn.filter((m) => valsOf(m).includes(v)).map((m) => ({ pos: m[0], own: true })),
+          };
+        });
+      }
       CTX_IDS.forEach((id) => {
         const rows = CTX_ROWS.filter((r) => r.context_mark === id),
           r = rows.find((q) => isOn(ownId(q))) || rows[rows.length - 1],
@@ -1713,8 +1744,8 @@
             .map((x) => ({ pos: x[1], x, r, tip: () => tipOf(x, false), card: () => tipOf(x, true) })),
         };
       });
-      const named = (CMB.order || []).filter((k) => defs[k]),
-        order = [...new Set([...named, 'site', ...CTX_IDS])].map((k) => defs[k]);
+      const named = (CMB.order || []).flatMap((k) => (k === 'site' ? siteIds : [k])).filter((k) => defs[k]),
+        order = [...new Set([...named, ...siteIds, ...CTX_IDS])].map((k) => defs[k]);
       const lab = CMB.label || 'All modifications';
       const lanes = order.filter((d) => d.pts.length && !M.combOff.has(d.id)),
         lh = 9,

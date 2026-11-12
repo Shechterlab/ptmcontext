@@ -8557,6 +8557,11 @@ a.pchip:hover {
   line-height: 1.35;
   color: var(--ink-2);
 }
+.tile .tbeside {
+  margin: 0.3rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+}
 .tile .tkey {
   margin: 0.3rem 0 0;
   font-size: 0.75rem;

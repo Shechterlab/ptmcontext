@@ -1398,6 +1398,7 @@
               rows.some((r) => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'
             }</p>`) +
       (fr && ms.some((x) => x.wv != null) ? '<p class="tkey">Dashed ring: the whole dataset.</p>' : '') +
+      besideLine(card, shown) +
       (made
         ? `<p class="tfoot"><b>Whole dataset.</b> ${foot}</p>`
         : fr
@@ -1411,6 +1412,21 @@
             `the question at the ${more} not shown here">+${more} more ›</a>`
           : ''
       }</div></article>`
+    );
+  }
+  // an Overview card's beside: {analysis, label}: another question's result for the tile's first class (not a 'Not ...'
+  // one), on one line (a
+  // control asked another way), in the method the tile shows, retested on a selection as every question is
+  function besideLine(card, shown) {
+    const b = card.beside,
+      other = b && A[b.analysis];
+    const first = shown.find((x) => !EXCL.test(x.label || '')) || shown[0];
+    if (!other || !first || first.absent) return '';
+    const r = (rowsOf(other, S.m) || []).find((x) => x.category === first.category);
+    if (!r || r.or == null) return '';
+    return (
+      `<p class="tbeside"><a href="${esc(link('overview', other.id))}">${esc(b.label)}</a>: ` +
+      `OR ${esc(fxn(r.or))}, q ${esc(fq(r.q))}</p>`
     );
   }
   // a tile row as the cards' rows read it: the short row label (website.front.row_labels), the interval, q, n and the whole dataset's ring

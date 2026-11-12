@@ -51,8 +51,13 @@ Conventions:
 - A residue question may count only the residues inside the IDRs (`only_in: idr`) or inside the regions of an interval
   table (`only_in: {role, kind}`), or only the residues of some letters that fit a motif (`only_in: {residues: ST, motif:
   {pattern: "[ST]P", start: 0}, flank: 10}`, `motif` as a motif family's pattern, so that a question can be asked of one class
-  of residues, and `residues` alone for one residue type): the marks and candidate residues outside are counted on neither
-  side (and a class layer is needed, so that the website can tell the marks outside). The `neighbours` layer (`with: {window, residues,
+  of residues, and `residues` alone for one residue type), or only the residues some marks are reported on
+  (`only_in: {marks: [ids]}`: `site` for the site's own counted marks, every one whatever the question's `marks_where`, a
+  context mark's id or a part of the marks, `marks.parts`; a question asked again among the residues a method finds
+  modified at all, as a control for how detectable each residue is): the marks and candidate residues outside are counted
+  on neither side (and a class layer is needed, so that the website can tell the marks outside). A residue question's
+  `background` (and `background_within`, default `<background>, <within protein>`) replaces the words of its rows'
+  background column. The `neighbours` layer (`with: {window, residues,
   many, noun}`) places a residue in `none`, `one` or `two_plus` (`many` or more) according to how many residues of a
   set lie within `window` residues of it on either side; the set is `with.residues` or the mark profile's `stickers`.
 - A question (residue, several tests, or protein sets; not `conditional_logit`) may count only a part of the marks
@@ -472,7 +477,7 @@ reader's choice is kept in the browser. The attribute is usually `optional` (a s
 the run lacks it the whole row of marks is drawn as before. It is the map-row `swap` of the context marks for the marks
 the site itself counts; no statistic, count or filter changes.
 
-**The "All modifications" block.** `website.protein.map.combined_marks: {default?, label?, order?, min_marks?}` (or `false`)
+**The "All modifications" block.** `website.protein.map.combined_marks: {default?, label?, order?, min_marks?, split?}` (or `false`)
 draws, at the top of the rows, one compact block for the site's own modification and every context mark: a thin lane
 (9 px) for each modification, its short name on the left (`Kme`, `Rme`, `Sph/Tph/Yph`, `Kac`, `Kacyl`, `Kub`, `Ksu`) and a
 tick at each position in the modification's color, the site's own first. A lane the protein has no marks for is not drawn.
@@ -482,7 +487,10 @@ Below the lanes a legend with the counts turns a modification off and on (a keyb
 entry (default: its label). The rows of the context marks (map rows with `context_mark: <id>`, which `context_marks`
 writes) are folded behind the block: the "Show each modification" button above the map (and the Rows menu) unfolds them.
 `default` is `folded` (the default) or `unfolded`; `order` names the modifications in the legend's and the lanes' order,
-`site` for the site's own and a context mark's id for the others (the rest follow); `min_marks` (default 3) is the fewest
+`site` for the site's own and a context mark's id for the others (the rest follow); `split: {attribute, short?}` draws the
+site's own marks as one lane for each value of that attribute the protein has (a site whose marks are several
+modifications, the kind of each in a column: `Kac`, `Kub`, `Ksu`, `Kcr`, ...), named by `short` (default: the value's label)
+and colored as the attribute's values, a mark with several values in each of their lanes; `min_marks` (default 3) is the fewest
 modifications, the site's own included, for which the block is drawn; `label` renames it (default "All modifications").
 The fold and the modifications turned off are kept for the browser session. The PDF, SVG and PNG exports draw the block and
 its legend as shown, and the per-modification rows when unfolded.
@@ -887,6 +895,9 @@ classes in `except`; when classes are given this way the table's `classes` colum
 PMID. `attribute` adds a list attribute to the marks (the classes of the partners of a mark's protein, written into the run's `marks.tsv` as `a.<id>` when the
 website is built), which a `kind: values` count question can tile. Site-file defaults the kit keeps off when absent: `website.sites.sort: {by: <column id>, desc?}`,
 `website.protein.open_partners`, `website.protein.conservation.logo_mode: freq | bits`, `website.overview.statistic_label`.
+An Overview card's `beside: {analysis, label}` adds a line under the tile's rows with another question's result for the tile's
+first class, "<label>: OR x, q y" in the method the tile shows (the same question asked another way: a control, such as
+`only_in: {marks: [...]}`); the other question keeps its own page and rows in the downloads.
 `website.overview.random_maps: {n: 3, title?, min_marks?, open?, enabled?}` (kit-random.js) is a closed fold, "Example proteins", at the end of the Overview: `n` proteins drawn at random, each end to end as one row in the protein map's style, with a small "Draw three others" link; absent or `enabled: false`, nothing is drawn.
 
 **Header, folds and the footer.** `website.header.compact` (default true): the full header band (title, counts, citation line) shows on the Overview at the top only; every other page, and a question opened from the Overview, has a 56 px band with the site name (a link to the Overview), and only the search, the selection line and the tabs stay in view (on a phone they slide away on the way down and back on the way up, and are not animated under reduced motion); false keeps the full band everywhere. `website.overview.draw_first` (default 2) is how many Overview sections are drawn in full; `website.overview.cell_first: false` keeps the section whose card draws the cell (`drawing: true`) where the site file lists it, under its heading, instead of opening the Overview with it; later ones are a heading and a line, drawn when opened or scrolled to (a selection draws all). Examples start closed: `website.overview.starting_points.open`, `random_maps.open`, `website.pages[].groups[].open` and `groups[].sections[].open` (a `place: top` section) are false unless true. Folds are open or closed for one visit; a saved selection ("Save") stores the open folds with it and restores them when opened, and the address does not carry them. The footer shows "updated <date>" (the `ptmc web` time, `data.built`) with the kit version and short commit.

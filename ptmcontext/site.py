@@ -253,6 +253,15 @@ def roles_missing(site: dict) -> list[str]:
         and a.get('test') != 'conditional_logit'
         and (words.get(a['id']) or {}).get('shape') == 'flags'
     ]
+    known = {'site'} | {c['id'] for c in site.get('context_marks') or []}
+    known |= {q['id'] for q in (site.get('marks') or {}).get('parts') or []}
+    out += [
+        f'{a["id"]}: only_in reads mark {m!r}, which is not site, a context mark or a part of the marks ({sorted(known)})'
+        for a in site.get('analyses', [])
+        if isinstance(a.get('only_in'), dict) and 'marks' in a['only_in']
+        for m in a['only_in']['marks']
+        if m not in known
+    ]
     out += [
         f'{a["id"]}: marks_where cannot be used with a conditional_logit model'
         for a in site.get('analyses', [])
@@ -277,7 +286,12 @@ def roles_missing(site: dict) -> list[str]:
                 for r in covariate_roles(a)
                 if r not in roles
             ]
-            if a.get('only_in') and a['only_in'] != 'idr' and a['only_in'].get('role') not in roles:
+            if (
+                a.get('only_in')
+                and a['only_in'] != 'idr'
+                and 'marks' not in a['only_in']
+                and a['only_in'].get('role') not in roles
+            ):
                 out.append(f'{a["id"]}: only_in reads role {a["only_in"].get("role")!r}, which inputs: does not fill')
     return out
 
@@ -498,6 +512,8 @@ def website_problems(site: dict) -> list[str]:
                 out.append(f'website.overview, section {sec.get("name")!r}: no analysis {aid!r}')
             if isinstance(c, dict):
                 out += view_problems(c, sets, f'website.overview card {aid!r}')
+            if isinstance(c, dict) and c.get('beside') and c['beside']['analysis'] not in ids:
+                out.append(f'website.overview card {aid!r}: beside reads no analysis {c["beside"]["analysis"]!r}')
     for g in web.get('filters') or []:
         out += [
             f'website.filters, group {g.get("name")!r}: no analysis {a!r}'
@@ -1840,6 +1856,7 @@ def run(
     if skip_new:
         site = {**site, 'analyses': [a for a in site['analyses'] if not a.get('new')]}
     marks_all = marked
+    ctx.own_marks = marks_all  # only_in: {marks: [site, ...]} reads every counted mark
     for analysis in site['analyses']:
         marked = marks_all  # the questions that count a part of the marks (marks_where) read their own
         if analysis.get('marks_where'):
@@ -1989,6 +2006,10 @@ def run(
                 only_in=analysis.get('only_in'),
             )
         )
+        if analysis.get('background') and len(parts[-1]):  # its own words for what the marks are compared with
+            bg, rows_ = analysis['background'], parts[-1]
+            within = analysis.get('background_within', f'{bg}, {profile.within_protein}')
+            rows_['background'] = [within if m == 'mantel_haenszel' else bg for m in rows_['method']]
         log(f'  {analysis["id"]:18s} {len(parts[-1]):3d} rows')
     marked = marks_all
     for analysis in site['analyses']:  # what each subset question counted, for the website

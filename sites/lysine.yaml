@@ -63,10 +63,11 @@ marks:
   exclude:
     - {column: evidence_class, equals: by-similarity}     # in the main view their lysines count as other lysines
     - all_of: [{column: sources, equals: CPLM}, {column: cplm_evidence, equals: Dat.}]    # CPLM's database-derived records alone
-  parts:                # a lysine of one type, for the questions on a lysine that carries another (near_marks, window 0)
+  parts:                # a lysine of one type, for the questions on a lysine that has another (near_marks, window 0)
     - {id: acetylation, where: {column: acyl_type, equals: acetyl}}
     - {id: ubiquitination, where: {column: acyl_type, equals: ubiquitin}}
     - {id: sumoylation, where: {column: acyl_type, equals: sumo}}
+    - {id: other_acylation, where: {column: acyl_type, in: [2-hydroxyisobutyryl, beta-hydroxybutyryl, crotonyl, glutaryl, succinyl, lactoyl, methacryl, isonicotinyl, benzoyl, butyryl, malonyl, propionyl, phosphoglyceryl, biotinyl, lipoyl]}}
   residue_mismatch: error
   attributes:          # what the website keeps for each site: to color, filter and explain it (no test reads these)
     acyl_type:
@@ -731,8 +732,23 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     marks_where: {column: acyl_type, equals: acetyl}
     new: true
     title: Acetylated and ubiquitinated lysines
+    family: Acetylated and ubiquitinated lysines
+    family_label: All lysines
     question: "Are acetylated lysines more often also reported ubiquitinated than the other lysines of their protein?"
-    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a ubiquitination site. Both modifications target lysine's amino group, so one lysine can carry only one of them at a time; the question is whether, among the lysines of one protein, the acetylated ones have been reported ubiquitinated more or less often. Most ubiquitination sites come from CPLM 4.0"
+    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a ubiquitination site. Both modifications target lysine's amino group, so one lysine can have only one of them at a time; the question is whether, among the lysines of one protein, the acetylated ones have been reported ubiquitinated more or less often. Most ubiquitination sites come from CPLM 4.0"
+    section: Same lysine, different modifications
+  - id: same_ac_ub_modified
+    layer: near_marks
+    with: {marks: ubiquitination, window: 0, noun: ubiquitination site, labels: {near: "Also reported ubiquitinated", none: "Not reported ubiquitinated"}}
+    marks_where: {column: acyl_type, equals: acetyl}
+    new: true
+    title: "Acetylated and ubiquitinated lysines, among lysines with another modification"
+    family: Acetylated and ubiquitinated lysines
+    family_label: Among lysines with another modification
+    only_in: {marks: [sumoylation, other_acylation, methyllysine]}   # only the lysines with a modification other than the two compared: found modified at all
+    background: other lysines with another modification, of the same proteins
+    question: "Are acetylated lysines more often also reported ubiquitinated than the other lysines of their protein that have another modification?"
+    sub: "The same question asked only among the lysines reported with some other modification (another type on this site, or methylation; not the two compared here), each protein analyzed separately. Mass spectrometry finds some lysines far more easily than others, which alone could make two modifications seem to share lysines; every lysine counted here was found modified at least once. The two compared modifications do not decide which lysines count: if they did, the lysines without the first would mostly be those with the second, and the comparison would lean toward fewer shared lysines"
     section: Same lysine, different modifications
   - id: same_ac_su
     layer: near_marks
@@ -740,8 +756,23 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     marks_where: {column: acyl_type, equals: acetyl}
     new: true
     title: Acetylated and SUMOylated lysines
+    family: Acetylated and SUMOylated lysines
+    family_label: All lysines
     question: "Are acetylated lysines more often also reported SUMOylated than the other lysines of their protein?"
     sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a SUMOylation site. Most SUMOylation sites come from CPLM 4.0"
+    section: Same lysine, different modifications
+  - id: same_ac_su_modified
+    layer: near_marks
+    with: {marks: sumoylation, window: 0, noun: SUMOylation site, labels: {near: "Also reported SUMOylated", none: "Not reported SUMOylated"}}
+    marks_where: {column: acyl_type, equals: acetyl}
+    new: true
+    title: "Acetylated and SUMOylated lysines, among lysines with another modification"
+    family: Acetylated and SUMOylated lysines
+    family_label: Among lysines with another modification
+    only_in: {marks: [ubiquitination, other_acylation, methyllysine]}   # only the lysines with a modification other than the two compared: found modified at all
+    background: other lysines with another modification, of the same proteins
+    question: "Are acetylated lysines more often also reported SUMOylated than the other lysines of their protein that have another modification?"
+    sub: "The same question asked only among the lysines reported with some other modification (another type on this site, or methylation; not the two compared here), each protein analyzed separately. Mass spectrometry finds some lysines far more easily than others, which alone could make two modifications seem to share lysines; every lysine counted here was found modified at least once. The two compared modifications do not decide which lysines count: if they did, the lysines without the first would mostly be those with the second, and the comparison would lean toward fewer shared lysines"
     section: Same lysine, different modifications
   - id: same_ub_su
     layer: near_marks
@@ -749,8 +780,23 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     marks_where: {column: acyl_type, equals: ubiquitin}
     new: true
     title: Ubiquitinated and SUMOylated lysines
+    family: Ubiquitinated and SUMOylated lysines
+    family_label: All lysines
     question: "Are ubiquitinated lysines more often also reported SUMOylated than the other lysines of their protein?"
     sub: "Ubiquitinated lysines against the other lysines of the same proteins, by whether the lysine itself is also a SUMOylation site. Ubiquitin and SUMO attach to the same amino group, and both lists are mostly from CPLM 4.0, which compiles them from large mass-spectrometry studies of the proteome"
+    section: Same lysine, different modifications
+  - id: same_ub_su_modified
+    layer: near_marks
+    with: {marks: sumoylation, window: 0, noun: SUMOylation site, labels: {near: "Also reported SUMOylated", none: "Not reported SUMOylated"}}
+    marks_where: {column: acyl_type, equals: ubiquitin}
+    new: true
+    title: "Ubiquitinated and SUMOylated lysines, among lysines with another modification"
+    family: Ubiquitinated and SUMOylated lysines
+    family_label: Among lysines with another modification
+    only_in: {marks: [acetylation, other_acylation, methyllysine]}   # only the lysines with a modification other than the two compared: found modified at all
+    background: other lysines with another modification, of the same proteins
+    question: "Are ubiquitinated lysines more often also reported SUMOylated than the other lysines of their protein that have another modification?"
+    sub: "The same question asked only among the lysines reported with some other modification (another type on this site, or methylation; not the two compared here), each protein analyzed separately. Mass spectrometry finds some lysines far more easily than others, which alone could make two modifications seem to share lysines; every lysine counted here was found modified at least once. The two compared modifications do not decide which lysines count: if they did, the lysines without the first would mostly be those with the second, and the comparison would lean toward fewer shared lysines"
     section: Same lysine, different modifications
   - id: same_ac_methyl
     layer: near_marks
@@ -758,8 +804,23 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     marks_where: {column: acyl_type, equals: acetyl}
     new: true
     title: Acetylated and methylated lysines
+    family: Acetylated and methylated lysines
+    family_label: All lysines
     question: "Are acetylated lysines more often also reported methylated than the other lysines of their protein?"
     sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (the methyllysine site's release v1.5.0, by-similarity records left out). Acetylation and methylation compete for the same lysine, and both are best known on much-studied proteins such as histones, so the comparison is made within each protein"
+    section: Same lysine, different modifications
+  - id: same_ac_methyl_modified
+    layer: near_marks
+    with: {marks: methyllysine, window: 0, noun: methyllysine, labels: {near: "Also reported methylated", none: "Not reported methylated"}}
+    marks_where: {column: acyl_type, equals: acetyl}
+    new: true
+    title: "Acetylated and methylated lysines, among lysines with another modification"
+    family: Acetylated and methylated lysines
+    family_label: Among lysines with another modification
+    only_in: {marks: [ubiquitination, sumoylation, other_acylation]}   # only the lysines with a modification other than the two compared: found modified at all
+    background: other lysines with another modification, of the same proteins
+    question: "Are acetylated lysines more often also reported methylated than the other lysines of their protein that have another modification?"
+    sub: "The same question asked only among the lysines reported with some other modification (another type on this site, or methylation; not the two compared here), each protein analyzed separately. Mass spectrometry finds some lysines far more easily than others, which alone could make two modifications seem to share lysines; every lysine counted here was found modified at least once. The two compared modifications do not decide which lysines count: if they did, the lysines without the first would mostly be those with the second, and the comparison would lean toward fewer shared lysines"
     section: Same lysine, different modifications
   - id: same_ub_methyl
     layer: near_marks
@@ -767,8 +828,23 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     marks_where: {column: acyl_type, equals: ubiquitin}
     new: true
     title: Ubiquitinated and methylated lysines
+    family: Ubiquitinated and methylated lysines
+    family_label: All lysines
     question: "Are ubiquitinated lysines more often also reported methylated than the other lysines of their protein?"
     sub: "Ubiquitinated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (the methyllysine site's release v1.5.0, by-similarity records left out). Most ubiquitination sites come from large mass-spectrometry studies of the proteome (CPLM 4.0), so the comparison is made within each protein"
+    section: Same lysine, different modifications
+  - id: same_ub_methyl_modified
+    layer: near_marks
+    with: {marks: methyllysine, window: 0, noun: methyllysine, labels: {near: "Also reported methylated", none: "Not reported methylated"}}
+    marks_where: {column: acyl_type, equals: ubiquitin}
+    new: true
+    title: "Ubiquitinated and methylated lysines, among lysines with another modification"
+    family: Ubiquitinated and methylated lysines
+    family_label: Among lysines with another modification
+    only_in: {marks: [acetylation, sumoylation, other_acylation]}   # only the lysines with a modification other than the two compared: found modified at all
+    background: other lysines with another modification, of the same proteins
+    question: "Are ubiquitinated lysines more often also reported methylated than the other lysines of their protein that have another modification?"
+    sub: "The same question asked only among the lysines reported with some other modification (another type on this site, or methylation; not the two compared here), each protein analyzed separately. Mass spectrometry finds some lysines far more easily than others, which alone could make two modifications seem to share lysines; every lysine counted here was found modified at least once. The two compared modifications do not decide which lysines count: if they did, the lysines without the first would mostly be those with the second, and the comparison would lean toward fewer shared lysines"
     section: Same lysine, different modifications
   - id: same_su_methyl
     layer: near_marks
@@ -776,8 +852,23 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     marks_where: {column: acyl_type, equals: sumo}
     new: true
     title: SUMOylated and methylated lysines
+    family: SUMOylated and methylated lysines
+    family_label: All lysines
     question: "Are SUMOylated lysines more often also reported methylated than the other lysines of their protein?"
     sub: "SUMOylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (the methyllysine site's release v1.5.0, by-similarity records left out)"
+    section: Same lysine, different modifications
+  - id: same_su_methyl_modified
+    layer: near_marks
+    with: {marks: methyllysine, window: 0, noun: methyllysine, labels: {near: "Also reported methylated", none: "Not reported methylated"}}
+    marks_where: {column: acyl_type, equals: sumo}
+    new: true
+    title: "SUMOylated and methylated lysines, among lysines with another modification"
+    family: SUMOylated and methylated lysines
+    family_label: Among lysines with another modification
+    only_in: {marks: [acetylation, ubiquitination, other_acylation]}   # only the lysines with a modification other than the two compared: found modified at all
+    background: other lysines with another modification, of the same proteins
+    question: "Are SUMOylated lysines more often also reported methylated than the other lysines of their protein that have another modification?"
+    sub: "The same question asked only among the lysines reported with some other modification (another type on this site, or methylation; not the two compared here), each protein analyzed separately. Mass spectrometry finds some lysines far more easily than others, which alone could make two modifications seem to share lysines; every lysine counted here was found modified at least once. The two compared modifications do not decide which lysines count: if they did, the lysines without the first would mostly be those with the second, and the comparison would lean toward fewer shared lysines"
     section: Same lysine, different modifications
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
@@ -785,7 +876,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: conditional_logit
     new: true
     title: Which factor matters most?
-    question: "Taking all factors together, which ones set a modified lysine apart from the other lysines of its protein?"
+    question: "Taking all factors together, which ones distinguish a modified lysine from the other lysines of its protein?"
     sub: "One model: each modified lysine (of any type) against the other lysines of its protein, three factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
     section: Where in the protein
     covariates:
@@ -815,7 +906,7 @@ marks_subsets:           # the key questions again on the lysines of one type (a
   - id: ac
     label: Kac
     where: {column: acyl_type, equals: acetyl}
-    note: "Only the lysines with a acetylation (Kac) record are counted as modified"
+    note: "Only the lysines with an acetylation (Kac) record are counted as modified"
     analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
   - id: ub
     label: Kub
@@ -883,6 +974,7 @@ variants:                # the same questions on other marks; ptmc run --variant
 context_marks:
   - id: methylarginine
     label: Methylarginine
+    short: "Rme"   # the lane name in the map's "All modifications" block
     input: context_methylarginine_sites_v1_4_3
     columns: {accession: uniprot_accession, position: position, residue: residue, state: methyl_state}
     replaces_ptm_kinds: [Methyl]   # the live UniProt "Other PTMs" row would repeat the methylarginines and methyllysines: one source for them
@@ -896,6 +988,7 @@ context_marks:
       licence: CC BY-NC-SA 4.0
   - id: methyllysine
     label: Methyllysine
+    short: "Kme"
     input: context_methyllysine_sites_v1_5_0
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
     same_residue: true          # a lysine that is also methylated says so on its card
@@ -912,6 +1005,7 @@ context_marks:
       Berryhill 2023: {cite: "Berryhill et al., Sci Rep 13:377 (2023)", doi: 10.1038/s41598-022-27175-x}
   - id: phospho
     label: Phosphosite
+    short: "Sph/Tph/Yph"
     input: context_phosphorylation_sites_v1_5_0
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources, score: functional_score}
     subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # shown at first: the sites Ochoa 2020 scores 0.5 or more (about 10,900); a click on the row label shows all. Sites with no score (UniProt or iPTMnet only) are hidden at first too
@@ -936,7 +1030,7 @@ website:                  # the look and words of the website (ptmc web); layout
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
     tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from public databases."
-    question: "Which proteins carry modified lysines, and how do modified lysines differ from the other lysines of their protein?"
+    question: "Which proteins have modified lysines, and how do modified lysines differ from the other lysines of their protein?"
     in_switcher: true
   band: ["#14532d", "#052e16"]      # the header gradient: deep green
   accent: "#4d7c0f"                 # the lime rule, active tab and links (5.0:1 on white)
@@ -962,9 +1056,9 @@ website:                  # the look and words of the website (ptmc web); layout
       - {label: A list of genes, query: TP53 MDM2 UBE2I, help: "Every question is tested again on their modified lysines."}
       - {label: One site in its structure, query: TP53 K372, help: "Its protein's domain and disorder map, the evidence for the site, and its structures."}
   stats: [marks, proteins, {attribute: sources, label: databases, opens: provenance}]
-  overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
+  overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
-    question: "Which proteins carry modified lysines?"
+    question: "Which proteins have modified lysines?"
     rows: 7
     random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end
     sections:
@@ -979,6 +1073,15 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: cell_chromatin_su}
           - {analysis: cell_chromatin_cr}
           - {analysis: cell_chromatin_hib}
+      - name: Same lysine, different modifications
+        about: "Whether a lysine with one modification is also reported with another more often than the other lysines of its protein: acetylation, ubiquitination, SUMOylation and methylation. Mass spectrometry finds some lysines far more often than others, so each tile also gives the result among lysines with another modification."
+        cards:                                  # beside each pair: the same question among the lysines reported modified at all
+          - {analysis: same_ac_ub, beside: {analysis: same_ac_ub_modified, label: Among lysines with another modification}}
+          - {analysis: same_ac_su, beside: {analysis: same_ac_su_modified, label: Among lysines with another modification}}
+          - {analysis: same_ub_su, beside: {analysis: same_ub_su_modified, label: Among lysines with another modification}}
+          - {analysis: same_ac_methyl, beside: {analysis: same_ac_methyl_modified, label: Among lysines with another modification}}
+          - {analysis: same_ub_methyl, beside: {analysis: same_ub_methyl_modified, label: Among lysines with another modification}}
+          - {analysis: same_su_methyl, beside: {analysis: same_su_methyl_modified, label: Among lysines with another modification}}
       - name: Which proteins
         about: "Histones, protein classes, pathways and condensates of the proteins with modified lysines, for all types and for each type with at least 200 lysines (the Overview shows the larger types; the sidebar lists every one)."
         cards:
@@ -1051,15 +1154,9 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: motif, title: Sequence motifs}
           - {analysis: which_factor, wide: true}
       - name: Modification type
-        about: "How many lysines carry each modification: acetylation, ubiquitination, SUMOylation and the other acylations, each its own type."
+        about: "How many lysines have each modification: acetylation, ubiquitination, SUMOylation and the other acylations, each its own type."
         #  counted, not tested (website.counts)
         cards: [types]
-      - name: Same lysine, different modifications
-        about: "Whether a lysine with one modification is also reported with another more often than the other lysines of its protein: acetylation, ubiquitination, SUMOylation and methylation."
-        cards:
-          - {analysis: same_ac_methyl}
-          - {analysis: same_ub_methyl}
-          - {analysis: same_su_methyl}
       - name: Other modifications
         about: "Whether modified lysines are near other modifications (methylarginines, methyllysines and phosphosites), within 10 residues."
         cards:
@@ -1133,7 +1230,7 @@ website:                  # the look and words of the website (ptmc web); layout
     id: where_in_the_cell
     title: Where in the cell
     question: "Where do proteins with modified lysines localize in the cell?"
-    intro: "Five maps from four studies place proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
+    intro: "Five maps from four studies locate proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
     note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
     maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
       - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
@@ -1207,7 +1304,7 @@ website:                  # the look and words of the website (ptmc web); layout
       kind: values
       attribute: acyl_type
       title: Modification type
-      question: "How many lysines carry each modification?"
+      question: "How many lysines have each modification?"
       sub: "Modified lysines by the modification reported: acetylation (Kac), ubiquitination (Kub), SUMOylation (Ksu) and each acylation (Kcr, Khib, Kbhb, Kglu, Ksucc, Kla, Kmea, Kinic, Kbz, Kbu, Kmal, Kpr)"
       unit: [type, types]
       noun: types
@@ -1245,7 +1342,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [database, databases]
       noun: databases
       top: 3
-      note: "iPTMnet carries a copy of UniProt, so both databases agreeing is not always two measurements. CPLM 4.0 compiles records from other databases too (its Dat. label), so a lysine that CPLM and another database both report may rest on one original record. CPLM 4.0 states no license; its sites are included and cited. In the main view of the pinned release, CPLM reports 189,852 of the 191,372 lysine-and-type records (99%), alone or with another database: ubiquitination and SUMOylation 99.9% each, acetylation 99.6%, crotonylation 100%. The other 1,520 are from UniProt or iPTMnet alone, among them most glutaryl, lactoyl, benzoyl, methacryl and isonicotinyl records."
+      note: "iPTMnet contains a copy of UniProt, so both databases agreeing is not always two measurements. CPLM 4.0 compiles records from other databases too (its Dat. label), so a lysine that CPLM and another database both report may rest on one original record. CPLM 4.0 states no license; its sites are included and cited. In the main view of the pinned release, CPLM reports 189,852 of the 191,372 lysine-and-type records (99%), alone or with another database: ubiquitination and SUMOylation 99.9% each, acetylation 99.6%, crotonylation 100%. The other 1,520 are from UniProt or iPTMnet alone, among them most glutaryl, lactoyl, benzoyl, methacryl and isonicotinyl records."
       method: "Each lysine lists the databases that report it (the release's sources column). A database's count is the lysines it reports."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Data sources, attributes: [sources, cplm_evidence, evidence_class, iptmnet_score, iptmnet_sources]}
@@ -1303,7 +1400,14 @@ website:                  # the look and words of the website (ptmc web); layout
     open_partners: true
     map:
       hide_ptm_kinds: [SUMO, Ubiquitin, Lys acyl]   # the live UniProt row would repeat the lysine modifications of the tables
-      combined_marks: {default: folded}   # one "All marks" row (the site's marks and every context mark, a shape and color each); the context marks' rows fold behind it
+      combined_marks:      # one "All modifications" block (a thin lane for each modification, the site's own first); the rows of the context marks fold behind it
+        default: folded
+        split:             # a lane for each lysine modification the protein has, named by its code
+          attribute: acyl_type
+          short: {acetyl: Kac, ubiquitin: Kub, sumo: Ksu, 2-hydroxyisobutyryl: Khib, beta-hydroxybutyryl: Kbhb, crotonyl: Kcr, glutaryl: Kglu,
+                  succinyl: Ksucc, lactoyl: Kla, methacryl: Kmea, isonicotinyl: Kinic, benzoyl: Kbz, butyryl: Kbu, malonyl: Kmal,
+                  propionyl: Kpr, phosphoglyceryl: Kpgly, biotinyl: Kbio, lipoyl: Klip}
+      default_off: [ptm]                  # the grey live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
       hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
         site: [name, chips, nearby, click]
         chips: [sources, cplm_evidence, {attribute: pmids, count: PMIDs}]
