@@ -2,6 +2,8 @@
 # the working branch the site is served from, and to main (and by hand). Pages' source must be "GitHub Actions", and
 # the github-pages environment must allow develop among its deployment branches. The methylarginine site reads the release's public inputs as data, checked against inputs.json, and
 # must still equal release v1.4.3. The export audits (text overlap, legends) run in tests.yml, so a deploy does not wait for them.
+# The three sites are built in parallel jobs (one matrix entry each, the slowest about 40 minutes instead of the three in a row,
+# about 85); a last job downloads their websites, assembles them with the landing page (ptmc pages) and uploads the Pages artifact.
 # (The yeast site is not published: sites/yeast_phospho.yaml stays as an example of a second organism.)
 name: pages
 on:
@@ -17,7 +19,13 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
+    name: build (${{ matrix.site }})
     runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        site: [methylarginine, methyllysine, phospho]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/checkout@v5
@@ -126,41 +134,56 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e packages/ptmstats -e .
-      - name: Methylarginine site
+      # Methylarginine: the release's public inputs as data (v1.4.3). Methyllysine (unlisted on the landing page; in the sites'
+      # header menu) and phosphosites (listed): release v1.5.0 of PTM_Pipeline, pinned above, with the generic inputs the
+      # methylarginine site reads. Those two have no reference release: every statistic is new.
+      - name: Run and build ${{ matrix.site }}
         run: |
-          ptmc run sites/methylarginine.yaml --root reference
-          ptmc run sites/methylarginine.yaml --root reference --variant with_lower_confidence
-          ptmc web sites/methylarginine.yaml
-          ptmc web sites/methylarginine.yaml --variant with_lower_confidence
-      # The methyllysine site (unlisted on the landing page; in the sites' header menu): release v1.5.0 of PTM_Pipeline, pinned
-      # above, with the generic inputs the methylarginine site reads. It has no reference release: every statistic is new.
-      - name: Methyllysine site
-        run: |
-          ptmc run sites/methyllysine.yaml --root reference
-          ptmc run sites/methyllysine.yaml --root reference --variant with_lower_confidence
-          ptmc web sites/methyllysine.yaml
-          ptmc web sites/methyllysine.yaml --variant with_lower_confidence
-      # The phosphosite site (listed on the landing page and in the sites' header menu): release v1.5.0 of PTM_Pipeline, pinned
-      # above, with the generic inputs the other sites read. No reference release: every statistic is new.
-      - name: Phosphosite site
-        run: |
-          ptmc run sites/phospho.yaml --root reference
-          ptmc web sites/phospho.yaml
-      # the one-file copies (out/<site>/web/<site>.html, up to 84 MB each) are not published on Pages: kept as a workflow artifact
+          ptmc run sites/${{ matrix.site }}.yaml --root reference
+          [ "${{ matrix.site }}" = phospho ] || ptmc run sites/${{ matrix.site }}.yaml --root reference --variant with_lower_confidence
+          ptmc web sites/${{ matrix.site }}.yaml
+          [ "${{ matrix.site }}" = phospho ] || ptmc web sites/${{ matrix.site }}.yaml --variant with_lower_confidence
+      # the website and the run record, which the landing page reads; the one-file copy (out/<site>/web/<site>.html, up to
+      # 84 MB) is not published on Pages: kept in its own artifact
       - uses: actions/upload-artifact@v4
         with:
-          name: one-file-copies
+          name: site-${{ matrix.site }}
           path: |
-            out/*/web/*.html
-            !out/*/web/index.html
+            out/${{ matrix.site }}/web
+            out/${{ matrix.site }}/run.json
+            !out/${{ matrix.site }}/web/${{ matrix.site }}.html
+          retention-days: 1
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: one-file-copy-${{ matrix.site }}
+          path: out/${{ matrix.site }}/web/${{ matrix.site }}.html
           retention-days: 30
           if-no-files-found: ignore
+  assemble:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e packages/ptmstats -e .
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: site-*
+          path: out-parts
+      # each artifact holds out/<site>/..., kept under its own name: move them back to out/<site>
+      - run: |
+          mkdir -p out
+          for d in out-parts/site-*; do mkdir -p "out/${d#out-parts/site-}"; cp -a "$d"/. "out/${d#out-parts/site-}/"; done
+          ls out/*
       - run: ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml --out _site --skip-missing
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
   deploy:
-    needs: build
+    needs: assemble
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -174,7 +197,7 @@ jobs:
   # one open issue says the published site is stale: opened (or commented on) when a build or deploy fails, closed when a
   # deploy succeeds; watch the label "pages-failure" instead of Actions' e-mails
   report:
-    needs: [build, deploy]
+    needs: [build, assemble, deploy]
     if: always() && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -188,7 +211,7 @@ jobs:
       - env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          RESULT: ${{ needs.build.result }}/${{ needs.deploy.result }}
+          RESULT: ${{ needs.build.result == 'success' && needs.assemble.result || needs.build.result }}/${{ needs.deploy.result }}
           RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SHA: ${{ github.sha }}
           REF: ${{ github.ref_name }}

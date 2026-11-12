@@ -1,6 +1,24 @@
 name: tests
 on: [push, pull_request]
 jobs:
+  # The jobs run side by side: lint (seconds), the tests, and the link audit, which builds a site (about 25 minutes).
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e packages/ptmstats -e ".[test]" ruff
+      - run: ruff check ptmcontext tests packages --select E,F,W --ignore E501
+      - run: ruff format --check ptmcontext tests packages
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      # the site kit's scripts and stylesheet (ptmcontext/web/assets): formatting and a minimal lint (eslint.config.js)
+      - run: npx --yes prettier@3.8.1 --check "ptmcontext/web/assets/*.js" "ptmcontext/web/assets/*.css"
+      - run: npx --yes eslint@10.1.0 ptmcontext/web/assets
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -109,18 +127,127 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: pip install -e packages/ptmstats -e ".[test]" ruff
-      - run: ruff check ptmcontext tests packages --select E,F,W --ignore E501
-      - run: ruff format --check ptmcontext tests packages
+      - run: pip install -e packages/ptmstats -e ".[test]"
       - uses: actions/setup-node@v5
         with:
           node-version: "22"
-      # the site kit's scripts and stylesheet (ptmcontext/web/assets): formatting and a minimal lint (eslint.config.js)
-      - run: npx --yes prettier@3.8.1 --check "ptmcontext/web/assets/*.js" "ptmcontext/web/assets/*.css"
-      - run: npx --yes eslint@10.1.0 ptmcontext/web/assets
       - run: pytest -q
         env:
           PTMCONTEXT_ROOT: reference
+
+  link-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      # The parity test reads release v1.4.3's inputs and statistics as data (checked against inputs.json MD5s);
+      # no code of that repository is run.
+      - uses: actions/checkout@v5
+        with:
+          repository: Shechterlab/PTM_Pipeline
+          ref: bdb5b86cb7e64e30a44512fde917f59dfe5135ca  # PTM_Pipeline; actions/checkout needs the full hash
+          path: reference
+          sparse-checkout: |
+            inputs/reference
+            releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv
+            releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv
+            releases/v1.5.0/human_acetylation_sites_v1.5.0.tsv
+            releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv
+            releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv
+            releases/v1.5.0/human_sumoylation_sites_v1.5.0.tsv
+            inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv
+            inputs/annotation/interpro_108.0_domain_intervals.tsv
+            inputs/annotation/interpro_108.0_all_entry_intervals.tsv
+            inputs/layers/reactome_human_protein_pathways.tsv
+            inputs/layers/reactome_human_pathways.tsv
+            inputs/layers/hpa_subcellular_locations.tsv
+            inputs/layers/paxdb_human_integrated_abundance.tsv
+            inputs/annotation/panther_19.0_protein_classes.tsv
+            inputs/annotation/panther_19.0_protein_class_ontology.tsv
+            inputs/disease/dose_4.4.0_disgenet_term_genes.tsv
+            inputs/disease/orghsegdb_3.22.0_symbol_entrez.tsv
+            inputs/disease/hdo_2026-09-30_term_genes.tsv
+            inputs/disease/hdo_2026-09-30_terms.tsv
+            inputs/annotation/cdcode_protein_membership_v2.2.tsv
+            inputs/annotation/cdcode_proteins_2026-03-18.csv
+            inputs/annotation/cdcode_condensates_2026-03-18.csv
+            inputs/interactions/cdcode_2.3_condensate_members_2026-10-16.tsv
+            inputs/layers/cell_map_hcm_go2021.tsv
+            inputs/layers/cell_map_organelle_ip_hein2025.tsv
+            inputs/layers/cell_map_chromatin_kustatscher2014.tsv
+            inputs/layers/depmap_24q4_gene_effect_summary.tsv
+            inputs/layers/depmap_24q4_arginine_changes.tsv
+            inputs/layers/tcga_mc3_arginine_changes.tsv
+            releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
+            releases/v1.4.3/statistics_v1.4.3.tsv
+            releases/v1.4.3/human_methylarginine_proteins_v1.4.3.tsv
+            releases/v1.4.3/supporting/nucleic_acid_contacts_v1.4.3.tsv
+            releases/v1.4.3/supporting/nucleic_acid_near_sites_v1.4.3.tsv
+            releases/v1.4.3/supporting/dna_motifs_v1.4.3.tsv
+            releases/v1.4.3/supporting/eclip_v1.4.3.tsv
+            releases/v1.4.3/supporting/nucleic_acid_regions_v1.4.3.tsv
+            releases/v1.4.3/supporting/rna_bind_n_seq_v1.4.3.tsv
+            releases/v1.4.3/supporting/protein_partners_v1.4.3.tsv
+            releases/v1.4.3/supporting/other_ptm_sites_v1.4.3.tsv
+            releases/v1.4.3/supporting/functional_experiments_v1.4.3.tsv
+            releases/v1.4.3/supporting/residue_evidence_v1.4.3.tsv
+            releases/v1.4.3/supporting/site_interaction_records_v1.4.3.tsv
+            releases/v1.4.3/supporting/site_interactions_v1.4.3.tsv
+            releases/v1.4.3/supporting/source_records_v1.4.3.tsv
+            releases/v1.4.3/studies_v1.4.3.tsv
+            releases/v1.4.3/supporting/carm1_ko_v1.4.3.tsv
+            releases/v1.4.3/supporting/maron2021_inhibitors_v1.4.3.tsv
+            releases/v1.4.3/supporting/writer_perturbations_v1.4.3.tsv
+            releases/v1.4.3/human_methylarginine_lower_confidence_sites_v1.4.3.tsv
+            releases/v1.4.3/statistics_with_lower_confidence_v1.4.3.tsv
+            releases/v1.4.3/supporting/density_windows_v1.4.3.tsv
+            releases/v1.4.3/supporting/disease_ontology_v1.4.3.tsv
+            releases/v1.4.3/supporting/disease_terms_tested_v1.4.3.tsv
+            releases/v1.4.3/analyses_with_lower_confidence/disease/disease_ontology.tsv
+            releases/v1.4.3/analyses_with_lower_confidence/disease/disease_terms.tsv
+            inputs/interactions/capri_panhale2019_adj_peptides.tsv
+            inputs/interactions/capri_panhale2019_measured_peptides.tsv
+            inputs/interactions/capri_panhale2019_xl_peptides.tsv
+            inputs/interactions/intact_binding_regions_human_2026-10-19.tsv
+            inputs/interactions/intact_mutations_human_2026-10-19.tsv
+            inputs/interactions/pclap_mullari2017_peptides.tsv
+            inputs/interactions/pdbe_kb_interface_residues_2026-10-16.tsv
+            inputs/interactions/pdbe_kb_interface_residues_2026-10-20.tsv
+            inputs/interactions/pdbe_kb_interface_residues_2026-10-21.tsv
+            inputs/interactions/pdbe_kb_interface_residues_2026-10-21_2.tsv
+            inputs/interactions/pdbe_kb_interface_residues_2026-10-21_3.tsv
+            inputs/interactions/pdbe_kb_interface_residues_2026-10-25.tsv
+            inputs/interactions/pepr_ms_v2_table_s2_rna_crosslinked_peptides.tsv
+            inputs/interactions/pepr_ms_v2_table_s3_focused_sites.tsv
+            inputs/interactions/protvar_predicted_interfaces_2024.05.28_pdockq0.23.tsv
+            inputs/interactions/quickgo_human_rna_dna_binding_2026-10-16.tsv
+            inputs/interactions/rbdmap_castello2016_measured_peptides.tsv
+            inputs/interactions/rbdmap_castello2016_rna_bound_fragments.tsv
+            inputs/interactions/rbrid_oksuz2023_k562_coverage.tsv
+            inputs/interactions/rbrid_oksuz2023_k562_positive_residues.tsv
+            inputs/interactions/rbrid_oksuz2023_k562_segments.tsv
+            inputs/interactions/sifts_observed_ranges_human_2026-10-16.tsv
+            inputs/interactions/trendel2025_dna_crosslink_localisation.tsv
+            inputs/interactions/trendel2025_dna_crosslinked_peptides.tsv
+            inputs/interactions/trendel2025_mcf7_dna_interactome.tsv
+            inputs/interactions/uniprot_human_dna_binding_regions_2026-10-16.tsv
+            inputs/interactions/uniprot_human_regions_2026-10-16.tsv
+            releases/v1.4.3/supporting/arginine_nucleic_acid_distances_v1.4.3.tsv
+            releases/v1.4.3/supporting/complexes_v1.4.3.tsv
+            releases/v1.4.3/supporting/dna_motifs_v1.4.3.tsv
+            releases/v1.4.3/supporting/eclip_v1.4.3.tsv
+            releases/v1.4.3/supporting/eclip_rna_compartments_v1.4.3.tsv
+            releases/v1.4.3/supporting/arginine_background_v1.4.3.tsv
+            releases/v1.4.3/supporting/htr_selex_v1.4.3.tsv
+            releases/v1.4.3/supporting/rna_bind_n_seq_v1.4.3.tsv
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e packages/ptmstats -e .
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
       # every internal link and control of the built site (tools/audit/links.js, without the external links: links.yml checks those
       # weekly); fails on a link to no view, a control that does nothing or a page error
       - name: Link audit (internal)
