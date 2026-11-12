@@ -181,6 +181,10 @@
         "type": "string"
       }
     },
+    "short": {
+      "type": "string",
+      "description": "a short name for the mark's lane in the protein map's 'All modifications' block (Kme, Rme, Sph/Tph/Yph: the Brno names); default: the state codes joined by '/'"
+    },
     "uniprot_features": {
       "type": "array",
       "items": {

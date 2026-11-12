@@ -237,6 +237,7 @@ def map_row(entry: dict, after: str) -> dict:
         },
         'mark': 'tick',
         'context_mark': entry['id'],
+        **({'short': entry['short']} if entry.get('short') else {}),
         'labels': 'marks',
         'key': entry['label'],
         'colour': entry['colour'],

@@ -8,7 +8,14 @@ from pathlib import Path
 
 CSS = (Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets' / 'kit.css').read_text()
 CELLS = ('.tbl th', '.tbl td', '.stbl td', '.sites-tbl td')
-OPT_IN = ('.tbl td.mono.wrap-any', '#m-data .tbl td.mono', '.tbl td .wrap-any', '.tbl td.ids', '.stbl td.ids', '.sites-tbl td.ids')
+OPT_IN = (
+    '.tbl td.mono.wrap-any',
+    '#m-data .tbl td.mono',
+    '.tbl td .wrap-any',
+    '.tbl td.ids',
+    '.stbl td.ids',
+    '.sites-tbl td.ids',
+)
 
 
 def _rules():

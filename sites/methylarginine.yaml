@@ -1259,6 +1259,7 @@ variants:                # the same questions on other marks; ptmc run --variant
 context_marks:
   - id: phospho
     label: Phosphosite
+    short: "Sph/Tph/Yph"
     input: context_phosphorylation_sites_v1_5_0
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources, score: functional_score}
     subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # shown at first: the sites Ochoa 2020 scores 0.5 or more (about 10,900); a click on the row label shows all. Sites with no score (UniProt or iPTMnet only) are hidden at first too
@@ -1275,6 +1276,7 @@ context_marks:
       Ochoa 2020: {cite: "Ochoa et al., Nat Biotechnol 38:365 (2020)", doi: 10.1038/s41587-019-0344-3}
   - id: methyllysine
     label: Methyllysine
+    short: "Kme"
     input: context_methyllysine_sites_v1_5_0
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
     colour: "#5E6E75"          # the site's neutral, secondary style
@@ -1290,6 +1292,7 @@ context_marks:
       Berryhill 2023: {cite: "Berryhill et al., Sci Rep 13:377 (2023)", doi: 10.1038/s41598-022-27175-x}
   - id: acetylation
     label: Acetylation
+    short: "Kac"
     noun: acetylation site
     plural: Acetylation sites
     input: context_acetylation_sites_v1_5_0
@@ -1306,6 +1309,7 @@ context_marks:
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: other_acylation
     label: Other acylations
+    short: "Kacyl"
     noun: non-acetyl acylation site
     plural: Other acylation sites
     input: context_lysine_acylation_sites_v1_5_0
@@ -1322,6 +1326,7 @@ context_marks:
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: ubiquitination
     label: Ubiquitination
+    short: "Kub"
     noun: ubiquitination site
     plural: Ubiquitination sites
     input: context_ubiquitination_sites_v1_5_0
@@ -1339,6 +1344,7 @@ context_marks:
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: sumoylation
     label: SUMOylation
+    short: "Ksu"
     noun: SUMOylation site
     plural: SUMOylation sites
     input: context_sumoylation_sites_v1_5_0
@@ -2637,7 +2643,8 @@ website:                  # the look and words of the website (ptmc web); layout
       nearest_domain: {table: site, name: nearest_domain_name, ref: nearest_domain_interpro, side: domain_side, distance: domain_edge_distance,
                        url: "https://www.ebi.ac.uk/interpro/entry/InterPro/{ref}/", sides: {N_terminal_to_domain: N-term, C_terminal_to_domain: C-term, inside: inside}}
     map:                   # the protein map: more ways to color the sites, and rows of the release's own evidence
-      combined_marks: {default: folded}   # one "All marks" row (the site's marks and every context mark, a shape and color each); the context marks' rows fold behind it
+      combined_marks: {default: folded}   # one "All modifications" block (a thin lane for each modification, the site's own first); the rows of the context marks fold behind it
+      default_off: [ptm]                  # the grey live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
       hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
         site: [name, chips, nearby, click]
         chips: [studies]

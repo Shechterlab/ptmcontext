@@ -5,6 +5,8 @@ id: methyllysine
 name: Methyllysine
 residues: [K]
 
+short: "Kme"   # its lane name in the map's "All modifications" block
+
 states:   # PSI-MOD terms checked against EBI OLS, 2026-11-01 (the release's codes me1, me2 and me3 are these three; me is a degree not stated)
   - {code: Kme1, label: monomethyllysine, psi_mod: "MOD:00085", pdb_component: MLZ}
   - {code: Kme2, label: dimethyllysine, psi_mod: "MOD:00084", pdb_component: MLY}

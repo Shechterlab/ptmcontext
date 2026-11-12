@@ -5,6 +5,8 @@ name: "Phosphorylation (S, T, Y)"
 residues: [S, T, Y]
 residue_names: {S: serine, T: threonine, Y: tyrosine}   # a family's among letters, named in its rows' background
 
+short: "Sph/Tph/Yph"   # its lane name in the map's "All modifications" block
+
 states:   # PSI-MOD terms checked against EBI OLS, 2026-11-01
   # Codes follow the Brno nomenclature: Turner BM, Nat Struct Mol Biol 12:110-112 (2005), doi:10.1038/nsmb0205-110
   - {code: Sph, label: phosphoserine, psi_mod: "MOD:00046", pdb_component: SEP}

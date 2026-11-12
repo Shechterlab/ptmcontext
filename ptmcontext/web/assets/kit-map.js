@@ -215,9 +215,9 @@
       }
     },
   };
-  // the combined "All marks" row (website.protein.map.combined_marks): the site's own marks and every context mark as
-  // glyphs on one track, each mark in its color and shape, with a legend that turns a mark off and on; the context
-  // marks' own rows (map rows with context_mark) fold behind it
+  // the "All modifications" block (website.protein.map.combined_marks): a thin lane for each modification, the site's
+  // own first, with a legend that turns a modification off and on; the context marks' own rows (map rows with
+  // context_mark) fold behind it
   const CMB = CFG.combined_marks === false ? null : CFG.combined_marks || {};
   const HOV = CFG.hover || {}; // the hovers' fields (website.protein.map.hover)
   const HOVER_CTX = HOV.context || ['mark', 'residue', 'detail', 'source', 'click'];
@@ -225,8 +225,6 @@
   const CTX_IDS = [...new Set(CTX_ROWS.map((r) => r.context_mark))];
   const COMB_ON = !!CMB && CTX_IDS.length + 1 >= (CMB.min_marks || 3);
   const coarse = () => !!window.matchMedia?.('(pointer: coarse)').matches;
-  // glyph shapes, one for each mark in the legend's order: a mark is never told apart by color alone
-  const SHAPES = ['circle', 'square', 'diamond', 'triangle', 'down', 'plus', 'hexagon', 'cross'];
   // the site's own marks by a score (website.protein.map.marks_view: {attribute, at_least, label}): drawn at first only
   // where the attribute's number passes (a mark without one does not), the row's label a link to show every mark; the
   // choice is kept in the browser. Absent where the attribute is (an optional one a run lacks).
@@ -415,6 +413,7 @@
     'composition',
     'aromatic',
     ...OWN_ROWS.filter((r) => (r.cards_default ?? r.default) === 'off').map(ownId),
+    ...(CFG.default_off || []), // website.protein.map.default_off: the grey live UniProt row, ...
   ];
   const DEFAULT_ORDER = ROWS.map((r) => r[0]);
   const known = new Set(store.get('ptmc-map-known', []));
@@ -1682,35 +1681,9 @@
         );
       };
     };
-    // the combined "All marks" row: one track, each mark a glyph of its own shape in its color, and a legend that turns a
-    // mark off and on (aria-pressed; the glyph, not the color, tells the marks apart)
-    const glyph = (shape, x, y, r, col, attr = '', op = 1) => {
-      const f = `fill="${col}" stroke="${P.surf}" stroke-width="0.8"${op < 1 ? ` opacity="${op}"` : ''}`,
-        ln = `fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round"${op < 1 ? ` opacity="${op}"` : ''}`,
-        q = (n) => r1(n),
-        hit = `<rect x="${q(x - 4.5)}" y="${q(y - 4.5)}" width="9" height="9" fill="transparent"/>`;
-      let g;
-      if (shape === 'circle') g = `<circle cx="${q(x)}" cy="${q(y)}" r="${r}" ${f}/>`;
-      else if (shape === 'square')
-        g = `<rect x="${q(x - r * 0.9)}" y="${q(y - r * 0.9)}" width="${q(r * 1.8)}" height="${q(r * 1.8)}" ${f}/>`;
-      else if (shape === 'diamond')
-        g = `<polygon points="${q(x)},${q(y - r * 1.3)} ${q(x + r * 1.3)},${q(y)} ${q(x)},${q(y + r * 1.3)} ${q(x - r * 1.3)},${q(y)}" ${f}/>`;
-      else if (shape === 'triangle')
-        g = `<polygon points="${q(x)},${q(y - r * 1.2)} ${q(x + r * 1.15)},${q(y + r * 0.9)} ${q(x - r * 1.15)},${q(y + r * 0.9)}" ${f}/>`;
-      else if (shape === 'down')
-        g = `<polygon points="${q(x)},${q(y + r * 1.2)} ${q(x + r * 1.15)},${q(y - r * 0.9)} ${q(x - r * 1.15)},${q(y - r * 0.9)}" ${f}/>`;
-      else if (shape === 'hexagon')
-        g = `<polygon points="${[0, 1, 2, 3, 4, 5]
-          .map(
-            (k) => `${q(x + r * 1.15 * Math.cos((k * Math.PI) / 3))},${q(y + r * 1.15 * Math.sin((k * Math.PI) / 3))}`
-          )
-          .join(' ')}" ${f}/>`;
-      else if (shape === 'plus')
-        g = `<path d="M${q(x - r)} ${q(y)}H${q(x + r)}M${q(x)} ${q(y - r)}V${q(y + r)}" ${ln}/>`;
-      else
-        g = `<path d="M${q(x - r * 0.8)} ${q(y - r * 0.8)}L${q(x + r * 0.8)} ${q(y + r * 0.8)}M${q(x + r * 0.8)} ${q(y - r * 0.8)}L${q(x - r * 0.8)} ${q(y + r * 0.8)}" ${ln}/>`;
-      return `<g${attr}>${hit}${g}</g>`;
-    };
+    // the "All modifications" block (website.protein.map.combined_marks): one thin lane for each modification the protein has,
+    // the site's own first, a short name on the left and a colored tick at each position; a legend with counts turns a
+    // modification off and on (aria-pressed; the lane's name, not only its color, tells them apart)
     const combinedRow = () => {
       const acc = p.acc,
         marksIn = marks.filter((m) => inView(m[0], m[0]));
@@ -1718,6 +1691,7 @@
         site: {
           id: 'site',
           label: cap(W.marks),
+          short: D.profile_short || cap(W.marks),
           col: P.accent,
           help: `the ${W.marks} of this site`,
           pts: marksIn.map((m) => ({ pos: m[0], own: true })),
@@ -1731,6 +1705,7 @@
         defs[id] = {
           id,
           label: rows[rows.length - 1].title, // the entry's name, not its subset row's
+          short: rows[rows.length - 1].short || rows[rows.length - 1].title,
           col: cfgColour(r, 'colour', P, P.variant),
           help: r.help || r.title,
           pts: (its || [])
@@ -1739,65 +1714,65 @@
         };
       });
       const named = (CMB.order || []).filter((k) => defs[k]),
-        order = [...new Set([...named, 'site', ...CTX_IDS])].map((k) => ({ ...defs[k], shape: SHAPES[0] }));
-      order.forEach((d, k) => (d.shape = SHAPES[k % SHAPES.length]));
-      const lab = CMB.label || 'All marks';
-      // lanes: a glyph that would stand on the one before in its lane goes to the next, up to three
-      const all = order
-        .filter((d) => !M.combOff.has(d.id))
-        .flatMap((d) => d.pts.map((q) => ({ ...q, d })))
-        .sort((a, b) => a.pos - b.pos);
-      const lastX = [-1e9, -1e9, -1e9];
-      all.forEach((q) => {
-        const x = X(q.pos);
-        let l = lastX.findIndex((e) => x - e >= 7);
-        if (l < 0) l = lastX.indexOf(Math.min(...lastX));
-        q.lane = l;
-        q.x = x;
-        lastX[l] = x;
-      });
-      const lanes = Math.max(1, ...all.map((q) => q.lane + 1)),
-        gh = 7,
-        th = 8 + lanes * gh,
-        top = c.y;
-      baseLine(top + th / 2);
-      all.forEach((q) => {
-        const y = top + 4 + gh / 2 + q.lane * gh + (lanes > 1 ? 0 : 1);
-        let attr = '';
-        if (!ex) {
-          const k = it(
-            q.own
-              ? {
-                  get tip() {
-                    return K.prot?.siteTip ? K.prot.siteTip(q.pos) : resName(q.pos);
-                  },
-                  site: q.pos,
-                  noclick: true,
-                  a: q.pos,
-                  b: q.pos,
-                }
-              : {
-                  get tip() {
-                    return (this._t ||= q.tip());
-                  },
-                  card: q.card,
-                  a: q.x[1],
-                  b: q.x[2],
-                  src: { own: q.r, x: q.x },
-                  noclick: true,
-                }
-          );
-          attr = ` data-mi="${k}"`;
-        }
-        parts.push(glyph(q.d.shape, q.x, y, 3, q.d.col, attr));
-      });
+        order = [...new Set([...named, 'site', ...CTX_IDS])].map((k) => defs[k]);
+      const lab = CMB.label || 'All modifications';
+      const lanes = order.filter((d) => d.pts.length && !M.combOff.has(d.id)),
+        lh = 8,
+        hh = 13,
+        top = c.y,
+        th = hh + lanes.length * lh + 3;
       rowLabel(
         lab,
-        top + th / 2,
-        `${order.map((d) => d.label).join(', ')}, together on one track; each modification has its own shape and color. ${CMB.help || ''}`.trim()
+        top + 6,
+        `${order.map((d) => `${d.short}: ${d.label}`).join('; ')}. One lane for each modification the protein has, ` +
+          `a tick at each position. ${CMB.help || ''}`.trim()
       );
+      lanes.forEach((d, k) => {
+        const yc = top + hh + k * lh + lh / 2;
+        baseLine(yc);
+        parts.push(
+          `<text x="${X0 - 5}" y="${r1(yc + 2.8)}" text-anchor="end" font-size="8" font-weight="600" fill="${P.ink}"${
+            ex ? '' : ` data-rowhelp="${esc(`${d.short}: ${d.label}, ${d.pts.length} in view`)}"`
+          }>${esc(d.short)}</text>`
+        );
+        d.pts.forEach((q) => {
+          q.x = X(q.pos);
+          let attr = '';
+          if (!ex) {
+            const i = it(
+              q.own
+                ? {
+                    get tip() {
+                      return K.prot?.siteTip ? K.prot.siteTip(q.pos) : resName(q.pos);
+                    },
+                    site: q.pos,
+                    noclick: true,
+                    a: q.pos,
+                    b: q.pos,
+                  }
+                : {
+                    get tip() {
+                      return (this._t ||= q.tip());
+                    },
+                    card: q.card,
+                    a: q.x[1],
+                    b: q.x[2],
+                    src: { own: q.r, x: q.x },
+                    noclick: true,
+                  }
+            );
+            attr = ` data-mi="${i}"`;
+          }
+          const tk = MK.tick(q.x, yc, lh - 2, d.col, '', 2);
+          parts.push(
+            attr
+              ? `<g${attr}><rect x="${r1(q.x - 3)}" y="${r1(yc - lh / 2)}" width="6" height="${lh}" fill="transparent"/>${tk}</g>`
+              : tk
+          );
+        });
+      });
       c.y += th + 2;
-      // the legend: an entry for each mark, a button that turns it off and on
+      // the legend: an entry for each modification, with its count, a button that turns it off and on
       let lx = X0,
         ly = c.y;
       const gap = 14;
@@ -1815,8 +1790,8 @@
           : ` data-comb="${esc(d.id)}" tabindex="0" role="button" aria-pressed="${!off}" aria-label="${esc(d.label)}, ${n} in view, ${off ? 'hidden' : 'shown'}. Press to ${off ? 'show' : 'hide'}" style="cursor:pointer"`;
         parts.push(
           `<g${attr}><rect x="${r1(lx - 2)}" y="${r1(ly - 1)}" width="${r1(w + 2)}" height="13" rx="3" fill="transparent"/>` +
-            glyph(d.shape, lx + 4, ly + 5.5, 3, d.col, '', off ? 0.35 : 1) +
-            `<text x="${r1(lx + 12)}" y="${r1(ly + 9)}" font-size="9.5" fill="${off ? P.muted : P.ink}"${off ? ' text-decoration="line-through"' : ''}>${esc(text)}</text></g>`
+            MK.tick(lx + 3, ly + 5.5, 10, d.col, '', 2.4, off ? 0.35 : 1) +
+            `<text x="${r1(lx + 10)}" y="${r1(ly + 9)}" font-size="9.5" fill="${off ? P.muted : P.ink}"${off ? ' text-decoration="line-through"' : ''}>${esc(text)}</text></g>`
         );
         lx += w + gap;
       });
@@ -2503,8 +2478,8 @@
         .join('')}</span></span>` +
       (COMB_ON
         ? `<button type="button" class="btn small" data-map-fold aria-expanded="${!M.fold}" ` +
-          `title="${esc(`The ${CTX_IDS.length} other modifications each have a row; they start folded into the combined row`)}">${
-            M.fold ? 'Show each modification' : 'Combine modifications'
+          `title="${esc(`The ${CTX_IDS.length} other modifications each have a row; they start folded into the All modifications block`)}">${
+            M.fold ? 'Show each modification' : 'Fold into All modifications'
           }</button>`
         : '') +
       `<span class="rows-wrap"><button type="button" class="btn small" data-map-rows aria-expanded="${M.rowsMenu}">Rows ▾</button>${M.rowsMenu ? rowsMenu() : ''}</span>` +
@@ -2555,7 +2530,7 @@
             `<button type="button" class="rm-grip" data-map-grip="${esc(id)}" aria-label="${esc(`Move ${r[1]}: drag, or use the up and down arrow keys`)}" ` +
             `title="Drag to move, or press the up and down arrow keys">⠿</button>` +
             `<label title="${esc(r[3])}"><input type="checkbox" data-map-row="${id}"${isOn(id) ? ' checked' : ''}> ${esc(r[1])} <span class="muted">${esc(r[2])}${
-              COMB_ON && M.fold && OWN[id]?.context_mark ? ', folded in All marks' : ''
+              COMB_ON && M.fold && OWN[id]?.context_mark ? ', folded in All modifications' : ''
             }</span></label>` +
             `<span><button type="button" data-map-move="${id}" data-d="-1" aria-label="${esc(`Move ${r[1]} up`)}">↑</button><button ` +
             `type="button" data-map-move="${id}" data-d="1" aria-label="${esc(`Move ${r[1]} down`)}">↓</button></span></div>`

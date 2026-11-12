@@ -5,6 +5,8 @@ id: methylarginine
 name: Methylarginine
 residues: [R]
 
+short: "Rme"   # its lane name in the map's "All modifications" block
+
 states:   # PSI-MOD terms checked against EBI OLS, 2026-11-01; PDB components as the release reads structures
   - {code: Rme1,  label: monomethylarginine, psi_mod: "MOD:00414", pdb_component: NMM}
   - {code: Rme2a, label: asymmetric dimethylarginine, psi_mod: "MOD:00077", pdb_component: DA2}

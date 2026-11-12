@@ -281,7 +281,13 @@ def _seven():
     return _site(
         {
             'context_marks': [
-                {**ENTRY, 'id': i, 'label': i.capitalize(), 'colour': f'#{(k + 1) * 0x2A3B4C % 0xFFFFFF:06X}'}
+                {
+                    **ENTRY,
+                    'id': i,
+                    'label': i.capitalize(),
+                    'short': f'S{k}',
+                    'colour': f'#{(k + 1) * 0x2A3B4C % 0xFFFFFF:06X}',
+                }
                 for k, i in enumerate(MARK_IDS)
             ]
         }
@@ -294,6 +300,9 @@ def test_seven_context_marks_each_make_a_row_that_folds_behind_the_combined_row(
     assert [r['id'] for r in rows] == ['ctx_' + i for i in MARK_IDS]
     assert [r['context_mark'] for r in rows] == MARK_IDS  # the kit folds rows that name a context mark
     assert len({r['colour'] for r in rows}) == 7
+    assert [r['short'] for r in rows] == [
+        f'S{k}' for k in range(7)
+    ]  # each lane's short name in the All modifications block
 
 
 def test_the_schema_checks_the_combined_row_and_the_hover_settings():
@@ -312,6 +321,7 @@ def test_the_schema_checks_the_combined_row_and_the_hover_settings():
     validate(
         site(
             {
+                'default_off': ['ptm'],
                 'combined_marks': {
                     'default': 'folded',
                     'order': ['site', 'phos'],
@@ -333,6 +343,7 @@ def test_the_schema_checks_the_combined_row_and_the_hover_settings():
     for bad in (
         {'combined_marks': {'default': 'half'}},
         {'combined_marks': {'colour': 'red'}},
+        {'default_off': 'ptm'},
         {'hover': {'site': ['sequence']}},
         {'hover': {'context': ['colour']}},
         {'hover': {'fields': []}},
@@ -345,8 +356,17 @@ def test_the_kit_reads_the_combined_row_and_hover_settings_and_keeps_the_pieces_
     js = (ASSETS / 'kit-map.js').read_text()
     for name in ('CFG.combined_marks', 'CFG.hover', 'context_mark', 'sessionStorage', 'aria-pressed', 'data-map-fold'):
         assert name in js, name
-    # a mark is told apart by its shape as well as its color: at least eight shapes, so seven marks never share one
-    assert re.search(r"const SHAPES = \[('\w+',? ?){8,}\]", js)
+    # the All modifications block: a thin lane for each modification (seven here), its short name on the left, a tick at
+    # each position, lanes the protein has no marks for left out, the site's own first
+    for name in (
+        'All modifications',
+        'profile_short',
+        'CFG.default_off',
+        'lanes.forEach',
+        'd.pts.length && !M.combOff',
+    ):
+        assert name in js, name
+    assert 'SHAPES' not in js and 'All marks' not in js
     prot = (ASSETS / 'kit-proteins.js').read_text()
     assert "HV.site || ['name', 'chips', 'nearby', 'click']" in prot and 'K.map?.nearby' in prot
 
@@ -355,6 +375,8 @@ def test_the_kit_reads_the_combined_row_and_hover_settings_and_keeps_the_pieces_
 def test_the_three_site_files_set_the_combined_row_and_the_hovers(name):
     m = S.load_site(Path(__file__).resolve().parents[1] / 'sites' / f'{name}.yaml')['website']['protein']['map']
     assert m['combined_marks'] == {'default': 'folded'}
+    assert m['default_off'] == ['ptm']  # the grey live UniProt row starts off
+    assert all(r.get('short') for r in m['rows'] if r['id'].startswith('ctx_'))
     assert m['hover']['site'][0] == 'name' and m['hover']['chips'] and 'context' in m['hover']
     assert all(r.get('context_mark') for r in m['rows'] if r['id'].startswith('ctx_'))
 
@@ -390,3 +412,9 @@ def test_same_residue_question_and_columns(table):
     a, _ = CM.derive({'context_marks': [entry], 'website': {}}, {'phos': t}, m, {'P'})
     assert list(a['a.ctx_same_phos']) == ['yes', 'no'] and list(a['a.ctx_same']) == ['Phosphosite (phospho)', '']
     assert list(a['a.ctx_near_phos']) == ['yes', 'yes']  # the same residue is not "near": R12 sees S11 and K17
+
+
+@pytest.mark.parametrize('name', ['methylarginine', 'methyllysine', 'phospho'])
+def test_each_mark_file_names_its_lane(name):
+    prof = yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / 'marks' / f'{name}.yaml').read_text())
+    assert prof['short']

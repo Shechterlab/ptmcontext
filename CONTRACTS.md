@@ -339,7 +339,7 @@ Other modifications shown beside a site's own mark, declared in the site file as
 | Field | Required | Is |
 |---|---|---|
 | `id` | yes | lower-case letters, digits and `_`; the role `context_<id>`, the map row `ctx_<id>`, the attributes `ctx_near_<id>` and `ctx_n_<id>` |
-| `label`, `plural`, `noun` | label | the mark's name ("Phosphosite"), its plural, and the word inside a sentence (default: the label, lower-cased) |
+| `label`, `plural`, `noun`, `short` | label | the mark's name ("Phosphosite"), its plural, the word inside a sentence (default: the label, lower-cased), and its short lane name in the map's "All modifications" block (`Kac`; default: the label) |
 | `input` | yes | a manifest entry (CHECKSUM and license as any input): a table of residues, one row per residue and state |
 | `columns` | yes | `accession` and `position` (1-based, on the snapshot); optional `residue` (rows whose letter differs from the snapshot are dropped), `state`, `evidence`, `sources` (`; `-separated), `score` (a number column; read where the table has it, treated as absent where it has not) |
 | `subset` | no | `{id, at_least and/or at_most, label?, default?: subset \| all}`: the marks whose `columns.score` passes (a "near high-score phosphosites" variant). Active only where the table has the score column; see below |
@@ -467,17 +467,25 @@ reader's choice is kept in the browser. The attribute is usually `optional` (a s
 the run lacks it the whole row of marks is drawn as before. It is the map-row `swap` of the context marks for the marks
 the site itself counts; no statistic, count or filter changes.
 
-**The combined "All marks" row.** `website.protein.map.combined_marks: {default?, label?, order?, min_marks?}` (or `false`)
-draws, at the top of the rows, one track that holds the site's own marks and every context mark: each mark a glyph of its
-own shape (circle, square, diamond, triangle up, triangle down, plus, hexagon, cross: eight, so seven marks never share
-one) in its own color (a context mark's `colour`), with a legend of the same glyphs that turns a mark off and on (a
-keyboard-reachable button with `aria-pressed`; a mark that is off is struck through). The rows of the context marks (map
-rows with `context_mark: <id>`, which `context_marks` writes) are folded behind it: a "Show each mark" button above the map
-(and the Rows menu) unfolds them. `default` is `folded` (the default) or `unfolded`; `order` names the marks in the
-legend's order, `site` for the site's own marks and a context mark's id for the others (the rest follow); `min_marks`
-(default 3) is the fewest marks, the site's own included, for which the row is drawn. The fold and the marks turned off
-are kept for the browser session. The PDF, SVG and PNG exports draw the row and its legend as shown, and the per-mark rows
-when unfolded.
+**The "All modifications" block.** `website.protein.map.combined_marks: {default?, label?, order?, min_marks?}` (or `false`)
+draws, at the top of the rows, one compact block for the site's own modification and every context mark: a thin lane
+(8 px) for each modification, its short name on the left (`Kme`, `Rme`, `Sph/Tph/Yph`, `Kac`, `Kacyl`, `Kub`, `Ksu`) and a
+tick at each position in the modification's color, the site's own first. A lane the protein has no marks for is not drawn.
+Below the lanes a legend with the counts turns a modification off and on (a keyboard-reachable button with
+`aria-pressed`; one that is off is struck through and loses its lane). The short name of the site's own modification is
+`short` in its mark profile (default: the state codes joined by `/`); a context mark's is `short` in its `context_marks`
+entry (default: its label). The rows of the context marks (map rows with `context_mark: <id>`, which `context_marks`
+writes) are folded behind the block: the "Show each modification" button above the map (and the Rows menu) unfolds them.
+`default` is `folded` (the default) or `unfolded`; `order` names the modifications in the legend's and the lanes' order,
+`site` for the site's own and a context mark's id for the others (the rest follow); `min_marks` (default 3) is the fewest
+modifications, the site's own included, for which the block is drawn; `label` renames it (default "All modifications").
+The fold and the modifications turned off are kept for the browser session. The PDF, SVG and PNG exports draw the block and
+its legend as shown, and the per-modification rows when unfolded.
+
+**Rows that start off.** `website.protein.map.default_off: [row id, ...]` lists map rows that are off until the reader
+turns them on in the Rows menu (kept in the browser; "Default rows" restores the list). The built-in ids are `ptm` (the
+grey live UniProt row of other modifications: glycosylation, lipidation, cross-links, the rest), `variants`, `mutagen`,
+`pdb`, `plddt`, `uni_dom`, `regions` and `residues`; a site's own row is `cf:<id>`. The three sites list `ptm`.
 
 **The order of the map's rows.** The Rows menu lists the rows with a handle: drag it, or focus it and press the up and
 down arrow keys (the arrow buttons do the same); "Reset order" restores the default. The order is kept in the browser and

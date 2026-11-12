@@ -550,6 +550,9 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         )['links'],
         'tracks': _tracks(folder),
         'profile_uniprot': profile.data.get('uniprot_features', []),
+        # the mark's short name in the map's "All modifications" block (the profile's, else its state codes)
+        'profile_short': profile.data.get('short')
+        or '/'.join(str(x.get('code')) for x in profile.data.get('states', []) if x.get('code')),
         # the header (website.header.compact: false keeps the full band on every page) and when this build was made, for the footer
         'header': web.get('header') or {},
         'built': _now(),

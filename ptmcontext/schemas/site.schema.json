@@ -6883,6 +6883,10 @@
             "plural": {
               "type": "string"
             },
+            "short": {
+              "type": "string",
+              "description": "a short name for the lane of this mark in the protein map's 'All modifications' block (Kac, Kub; default: the label)"
+            },
             "noun": {
               "type": "string",
               "description": "the mark inside a sentence (default: the label, lower-cased)"
@@ -7772,6 +7776,11 @@
       "additionalProperties": false,
       "description": "the protein map: more ways to color the marks, the papers behind its sources, and rows of the site's own evidence (CONTRACTS.md, Map rows)",
       "properties": {
+        "default_off": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "ids of map rows that start turned off (the Rows menu turns them on; the reader's choice is kept in the browser): the built-in rows 'ptm' (the grey live UniProt row of other modifications: glycosylation, lipidation, cross-links), 'variants', 'mutagen', 'plddt', 'pdb', ... or a site row as 'cf:<id>'. A row not named here is on unless its own default is off"
+        },
         "hide_ptm_kinds": {
           "type": "array",
           "items": {
@@ -7780,15 +7789,15 @@
           "description": "kinds of the live UniProt 'Other PTMs' row to leave out (a context mark's replaces_ptm_kinds adds to them)"
         },
         "combined_marks": {
-          "description": "a compact 'All marks' row at the top of the map: one track holding the site's own marks and every context mark, each a glyph of its own shape in its color, with a legend (a click on an entry turns that mark off and on). The rows of the context marks fold behind it. false: no combined row",
+          "description": "a compact 'All modifications' block at the top of the map: one thin lane for each modification, the site's own first, with a short name on the left and a colored tick at each position, and a legend with counts (a click on an entry turns that modification off and on). A lane the protein has no marks for is not drawn. The rows of the context marks fold behind the block. false: no block",
           "oneOf": [
             {"const": false},
             {
               "type": "object",
               "additionalProperties": false,
               "properties": {
-                "default": {"enum": ["folded", "unfolded"], "description": "the per-mark rows at first (default folded); the reader's choice is kept for the browser session"},
-                "label": {"type": "string", "description": "the row's name (default: All marks)"},
+                "default": {"enum": ["folded", "unfolded"], "description": "the per-modification rows at first (default folded); the reader's choice is kept for the browser session"},
+                "label": {"type": "string", "description": "the block's name (default: All modifications)"},
                 "order": {"type": "array", "items": {"type": "string"}, "description": "the marks in the legend's order and the glyph shapes' order: 'site' for the site's own marks, else context mark ids; marks not named follow (default: the site's marks, then the context marks in the site file's order)"},
                 "min_marks": {"type": "integer", "minimum": 2, "description": "the fewest marks (the site's own included) for which the row is drawn (default 3)"}
               }
@@ -8308,6 +8317,10 @@
               "swap": {
                 "type": "string",
                 "description": "the id of another row of this list: clicking this row's label turns this row off and that one on (a subset of marks shown first, one click to show all)"
+              },
+              "short": {
+                "type": "string",
+                "description": "a short name for the lane of this row's context mark in the 'All modifications' block"
               },
               "context_mark": {
                 "type": "string",
