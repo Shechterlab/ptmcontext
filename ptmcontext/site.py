@@ -155,6 +155,7 @@ def read_marks_table(site: dict, paths: dict) -> tuple[pd.DataFrame, dict]:
         for cond in add.get('left_out', []):
             aside |= _holds(extra, cond)
         aside &= ~keep
+        extra = extra.assign(**{k: str(v) for k, v in (add.get('set') or {}).items()})  # after the conditions read
         added[add['input']] = (
             {'marks': int(keep.sum()), 'left_out': int(aside.sum())} if add.get('left_out') else int(keep.sum())
         )
@@ -165,6 +166,25 @@ def read_marks_table(site: dict, paths: dict) -> tuple[pd.DataFrame, dict]:
 
 
 LEFT_OUT_COLUMN = '__left_out_by_add__'
+
+
+def mark_parts(spec: dict, table: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """marks.parts: id -> the kept rows of the marks table that the part's condition holds for, in the layout of a
+    context mark's table (accession, position, residue, state, evidence, sources), for near_marks questions."""
+    rows, out = _kept_rows(spec, table), {}
+    for part in spec.get('parts') or []:
+        hit = rows[_holds(rows, part['where'])]
+        out[part['id']] = pd.DataFrame(
+            {
+                'accession': hit[spec['accession']].astype(str).str.strip().to_numpy(),
+                'position': pd.to_numeric(hit[spec['position']], errors='coerce').to_numpy(),
+                'residue': '',
+                'state': '',
+                'evidence': '',
+                'sources': '',
+            }
+        ).dropna(subset=['position']).astype({'position': int}).drop_duplicates().reset_index(drop=True)
+    return out
 
 
 def marks_spec(site: dict, table: pd.DataFrame) -> dict:
@@ -1794,6 +1814,7 @@ def run(
     table, added = read_marks_table(site, paths)
     OP.prune_marks(site, table)  # optional attributes whose column this table lacks (and what builds on them)
     spec = marks_spec(site, table)
+    ctx.context.update(mark_parts(spec, table))  # parts of the site's own marks, read by near_marks like context marks
     marked, report = select_marks(spec, table, snap, profile)
     if added:
         report['added'] = added

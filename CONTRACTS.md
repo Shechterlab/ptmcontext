@@ -256,6 +256,11 @@ sequences. Domain units add `subtype` (domain, repeat), `ref` (the source's acce
 Any TSV with an accession column and a position column; the site file names them and selects rows with `include` and
 `exclude` conditions (`equals`, `in`, `contains`; `{all_of: [conditions]}` holds for a row when every listed condition does, to set aside rows that are one value in one column and another in a second, as `marks.exclude`, `left_out`, `marks_select` and `marks.add` read it). Positions must be on the snapshot's sequences. `marks.add` appends the rows of
 further tables (each its manifest `input`, with its own `include`, `exclude` and `left_out`: rows counted on neither side).
+`set: {column: value}` on an entry writes that column on every row the table gives (after its conditions are read), so
+tables of several kinds of mark make one marks table with a type column (a filter, a color, a `marks_where` subset).
+`marks.parts: [{id, where}]` names parts of the site's own marks (the kept rows a condition holds for): a `near_marks`
+question may read one as `with: {marks: <id>}`, like a context mark but with no map row, filter or card line of its own
+(`window: 0` asks whether a lysine of one type is also of another). The id must not be a context mark's.
 A site's `variants` run the same questions on other marks (`not_compared`: questions a variant runs but does not
 check against its reference, each with why): each has a `label`, tables to add (`marks_add`) and its own
 `reference`, and `attributes` of the marks it adds; `marks_select: {include, exclude, left_out}` replaces the site's own row conditions for the variant (the main view sets some rows of the table aside, the variant counts them, from the same table: `{exclude: []}`); `ptmc run --variant <name>` writes it under

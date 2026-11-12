@@ -303,10 +303,38 @@
                   "$ref": "#/$defs/row_condition"
                 },
                 "description": "its rows counted on neither side (neither marks nor other residues), as marks.left_out"
+              },
+              "set": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "columns written on every row this table gives, after its conditions are read (a type column: {acyl_type: ubiquitin}); one marks table is then one set of marks with the kind of each row in a column"
               }
             }
           },
           "description": "further tables whose rows are marks too, appended to the marks table before it is read"
+        },
+        "parts": {
+          "type": "array",
+          "description": "named parts of the site's own marks, for near_marks questions (with: {marks: <id>}), read like a context mark but with no map row, filter or card line of their own (the marks already show them): each is the kept rows of the marks table that its condition holds for",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "where"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "where": {
+                "$ref": "#/$defs/row_condition"
+              }
+            }
+          }
         },
         "tables": {
           "type": "object",

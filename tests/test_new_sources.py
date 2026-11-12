@@ -672,3 +672,47 @@ def test_marks_subsets_repeat_questions_on_part_of_the_marks(tmp_path):
     path.write_text(yaml.safe_dump(clash, sort_keys=False))
     with pytest.raises(ValueError, match='not among the analyses'):
         S.load_site(path)
+
+
+def test_added_tables_can_set_a_column_and_a_part_of_the_marks_can_be_a_near_marks_question(tmp_path):
+    """marks.add[].set writes a type column on the rows a table gives, and marks.parts names the marks with a type for
+    near_marks questions (here, the same residue): one marks table of several kinds, no context mark table."""
+    root = _toy_site(tmp_path)
+    data = root / 'data'
+    pd.DataFrame({'acc': ['P1', 'P1', 'P2'], 'pos': [5, 11, 6]}).to_csv(data / 'extra.tsv', sep='\t', index=False)
+    man = json.loads((root / 'sites' / 'toy.inputs.json').read_text())
+    man['inputs']['toy_extra'] = {
+        'file': 'extra.tsv',
+        'md5': md5_file(data / 'extra.tsv'),
+        'source': 'synthetic, for a test',
+        'version': 'test 1',
+        'licence': 'CC0 1.0',
+    }
+    (root / 'sites' / 'toy.inputs.json').write_text(json.dumps(man, indent=1))
+    site = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
+    site['marks']['add'] = [
+        {'input': 'toy_extra', 'exclude': [{'column': 'pos', 'equals': '6'}], 'set': {'kind': 'second'}}
+    ]
+    site['marks']['parts'] = [{'id': 'second', 'where': {'column': 'kind', 'equals': 'second'}}]
+    site['analyses'] = [
+        {
+            'id': 'same_second',
+            'layer': 'near_marks',
+            'with': {'marks': 'second', 'window': 0, 'noun': 'second-table mark'},
+        },
+        {
+            'id': 'same_second_only',
+            'layer': 'near_marks',
+            'with': {'marks': 'second', 'window': 0, 'noun': 'second-table mark'},
+            'marks_where': {'column': 'kind', 'equals': 'second'},
+        },
+    ]
+    site['website'] = {'name': 'Toy Explorer'}
+    (root / 'sites' / 'toy.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
+    run = S.run(root / 'sites' / 'toy.yaml', root=data, log=lambda *_: None)
+    assert run.record['marks']['added'] == {'toy_extra': 2}
+    rows = run.rows[run.rows['method'] == 'fisher']
+    near = lambda a: rows[(rows['analysis'] == a) & (rows['category'] == 'near')].iloc[0]  # noqa: E731
+    # the marks are P1 2, 5, 11, 32 and P2 2, 25; P1 5 and 11 are also in the second table
+    assert near('same_second')['a'] == 2
+    assert near('same_second_only')['a'] == 2
