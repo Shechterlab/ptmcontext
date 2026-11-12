@@ -3,8 +3,8 @@
 cff-version: 1.2.0
 message: "Please cite the paper and the original data sources."
 title: "Human methylarginine sites (ptmcontext rebuild, checked against release v1.4.3)"
-version: "0.2.0"
-date-released: "2026-11-11"
+version: "0.3.0"
+date-released: "2026-11-12"
 url: "https://shechterlab.github.io/PTM_Pipeline/"
 license: "CC-BY-NC-SA-4.0"
 authors:
