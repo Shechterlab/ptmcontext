@@ -256,7 +256,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near acetylation sites (±10 residues)
     question: "Are phosphosites more often near an acetylation site than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether an acetylation site (CPLM 4.0, UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
     section: Other modifications
   - id: near_other_acylation
     layer: near_marks
@@ -264,7 +264,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near other acylation sites (±10 residues)
     question: "Are phosphosites more often near another lysine acylation than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) is within 10 residues on either side. These modifications (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a lysine acylation other than acetylation (CPLM 4.0, UniProt and iPTMnet, by-similarity records left out; 15 acyl types) is within 10 residues on either side. These modifications (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
     section: Other modifications
   - id: near_ubiquitination
     layer: near_marks
@@ -919,10 +919,11 @@ context_marks:
     colour: "#15803d"          # green: apart from the orange, violet, cyan and olive of the other marks (5.0:1 on white)
     colour_dark: "#4ade80"     # 9.3:1 on the dark surface
     citation:
-      short: UniProt and iPTMnet
-      cite: "Lysine acetylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: CC BY-NC-SA 4.0
+      short: CPLM, UniProt and iPTMnet
+      cite: "Lysine acetylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
     sources:
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: other_acylation
@@ -932,14 +933,15 @@ context_marks:
     plural: Other acylation sites
     input: context_lysine_acylation_sites_v1_5_0
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: acyl_type, evidence: evidence_class, sources: sources}
-    exclude: [{column: acyl_type, in: [acetyl]}]   # acetylation is its own mark above; the rest, as one group, 12 acyl types
+    exclude: [{column: acyl_type, in: [acetyl]}]   # acetylation is its own mark above; the rest, as one group, 15 acyl types
     colour: "#8a7a1c"          # olive: 4.3:1 on white
     colour_dark: "#ddd06a"     # 10.3:1 on the dark surface
     citation:
-      short: UniProt and iPTMnet
-      cite: "Lysine acylation sites (succinyl, 2-hydroxyisobutyryl, beta-hydroxybutyryl, lactoyl, glutaryl, crotonyl, methacryl, isonicotinyl, benzoyl, butyryl, malonyl, propionyl) of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: CC BY-NC-SA 4.0
+      short: CPLM, UniProt and iPTMnet
+      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactoyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl, phosphoglyceryl, biotinyl, lipoyl) of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
     sources:
+      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: ubiquitination
@@ -1244,13 +1246,13 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency]}
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
     - {name: Data sources, attributes: [sources, iptmnet_sources]}
-  dataset: {label: PTM_Pipeline data release, version: v1.5.0 at bdb5b86, date: "2026-11-10", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0"}
+  dataset: {label: PTM_Pipeline data release, version: v1.5.0 at e1852ba, date: "2026-11-12", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/e1852ba6be2eff4a281adb47678c326801ea78bf/releases/v1.5.0"}
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). The phosphosites and functional scores of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3 (rows whose databases name Ochoa 2020) come from an article that is not open access, and its supplementary table has no license: they are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. The methyllysine rows shown beside the phosphosites include CPLM 4.0 (Zhang et al., Nucleic Acids Res 50:D451, 2022), which states no license. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
-    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class, sources, Ochoa 2020 functional score and mass-spectrometry evidence (Ochoa 2020 rows included, not open access)"}
-    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
-    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
-    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/e1852ba6be2eff4a281adb47678c326801ea78bf/releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class, sources, Ochoa 2020 functional score and mass-spectrometry evidence (Ochoa 2020 rows included, not open access)"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/e1852ba6be2eff4a281adb47678c326801ea78bf/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/e1852ba6be2eff4a281adb47678c326801ea78bf/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/e1852ba6be2eff4a281adb47678c326801ea78bf/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
   search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
     patterns:                # the motif finder: a pattern of residues on the sites' sequence windows
       at: motif              # motif:SPXK covers the site
