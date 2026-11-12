@@ -366,7 +366,7 @@ references:   # the data sources: cited with every export
     end: D459
     year: 2022
     doi: "10.1093/nar/gkab849"
-  - type: article   # the methyllysine sites of Berryhill et al. 2023 (Supplementary Table 5): the article is CC BY 4.0, the table carries no separate license notice
+  - type: article   # the methyllysine sites of Berryhill et al. 2023 (Supplementary Table 5): the article is CC BY 4.0, the table has no separate license notice
     authors: [{family-names: Berryhill, given-names: CA}, {family-names: Hanquier, given-names: JN}, {family-names: Doud, given-names: EH}, {name: "et al."}]
     title: "Global lysine methylome profiling using systematically characterized affinity reagents"
     journal: "Sci Rep"

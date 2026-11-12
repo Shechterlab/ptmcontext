@@ -496,7 +496,7 @@
     'map\tcompartment\n' +
     (oneMaps(p) || [])
       .flatMap((r) =>
-        (r.sets.length ? r.sets : [r.placed ? '(none of its compartments)' : '(not placed)']).map((x) =>
+        (r.sets.length ? r.sets : [r.placed ? '(none of its compartments)' : '(not in the map)']).map((x) =>
           [r.name, x].join('\t')
         )
       )
@@ -534,7 +534,7 @@
       (d) =>
         `<figure class="cell-fig cell-onen"><figcaption class="vh">${esc(cap(d.drawing))}</figcaption>` +
         `<div class="cell-draw" data-cell-one="${esc(d.drawing)}" data-i="${p.i}" role="img" aria-label="${esc(
-          `${p.gene || p.acc}: the ${d.drawing}, the parts ` + `placed by a map colored`
+          `${p.gene || p.acc}: the ${d.drawing}, the parts ` + `colored by a map`
         )}"></div></figure>`
     ).join('');
   function fillOne() {
@@ -563,7 +563,7 @@
       if (ONE)
         return (
           tipAttr(
-            `<b>${esc(name || rowName(p.row))}</b>: this protein is found here by ${and(
+            `<b>${esc(name || rowName(p.row))}</b>: this protein is assigned here by ${and(
               p.cells.map(([aid]) => esc(DS(aid).name))
             )}`
           ) + ` data-cell-zpart="${esc(k)}"`
@@ -1435,8 +1435,8 @@
     return (
       K.preamble(
         `${C.title || 'Where in the cell'}: ${DS(aid).name}`,
-        `each compartment holding at least ${MAP[aid].min_members || 1} proteins: ${who(scoped)} placed there,` +
-          ` the fold enrichment against all the proteins the map places (one-sided hypergeometric, BH)${
+        `each compartment holding at least ${MAP[aid].min_members || 1} proteins: ${who(scoped)} assigned there,` +
+          ` the fold enrichment against all the proteins the map covers (one-sided hypergeometric, BH)${
             stratified(aid) ? ', and the comparison within the abundance strata (Mantel–Haenszel)' : ''
           }`
       ) +
@@ -2529,7 +2529,7 @@
                 (m) =>
                   `<a class="cell-chip" ` +
                   `href="${esc(K.link('protein', m.acc))}" title="${esc(
-                    `${m.gene} (${m.acc}): found here by ${m.maps.map((k) => DS(k).name).join(', ')}`
+                    `${m.gene} (${m.acc}): assigned here by ${m.maps.map((k) => DS(k).name).join(', ')}`
                   )}">${esc(m.gene)}${multi && m.maps.length > 1 ? `<sup>${m.maps.length}</sup>` : ''}</a>`
               )
               .join('')}</p>` +
@@ -2555,7 +2555,7 @@
     ).join('');
     const selNote = scoped
       ? ` Your selection is tested map by map: ${int(selTests(MAPS[0].analysis)?.n || 0)} of its proteins ` +
-        `are placed by ${esc(DS(MAPS[0].analysis).name)}; each map counts its own proteins.`
+        `are in ${esc(DS(MAPS[0].analysis).name)}; each map counts its own proteins.`
       : K.selOn()
         ? ` <b>Your selection</b> ${
             K.vsOn()
@@ -2571,7 +2571,7 @@
           : esc(ds.ref || ''),
         esc(ds.cells || ''),
         esc(ds.licence || ''),
-        ds.universe ? `${int(ds.universe)} proteins placed, ${pc(ds.marked, ds.universe)}% ${esc(W.marked)}` : '',
+        ds.universe ? `${int(ds.universe)} proteins in the map, ${pc(ds.marked, ds.universe)}% ${esc(W.marked)}` : '',
         `<a href="${esc(K.link('overview', m.analysis))}">its question</a>`,
       ].filter(Boolean);
       return `${esc(ds.name)} (${bits.join('; ')})`;

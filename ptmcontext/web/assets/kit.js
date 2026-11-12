@@ -2487,7 +2487,7 @@
         `sets the modification, the sequences and regions, the questions, the colors and the pictures. ptmcontext ${esc(D.kit.version)} (commit ` +
         `<span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(RUN.written))}. The citation,` +
         ` version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>`) +
-      (`<p>Every download carries its citation, data sources, versions, inputs and export date, printed under each ` +
+      (`<p>Every download includes its citation, data sources, versions, inputs and export date, printed under each ` +
         `figure and kept in the file (SVG metadata, PNG text fields, PDF properties, TSV # lines).</p></section>` +
         `</div>`)
     );

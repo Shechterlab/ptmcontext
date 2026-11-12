@@ -279,7 +279,7 @@
       ) +
       sec(
         'h-export',
-        `<p>Figures download as PDF, SVG, PNG (300 dpi) or TSV, and tables as TSV. Each file carries ` +
+        `<p>Figures download as PDF, SVG, PNG (300 dpi) or TSV, and tables as TSV. Each file includes ` +
           `its test, citation, sources, versions and export date, in the file's metadata or a TSV's <span ` +
           `class="mono">#</span> lines. The Method button beside a figure opens how it was made.</p>`
       ) +

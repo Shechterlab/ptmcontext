@@ -6885,7 +6885,7 @@
             },
             "short": {
               "type": "string",
-              "description": "a short name for the lane of this mark in the protein map's 'All modifications' block (Kac, Kub; default: the label)"
+              "description": "a short name for the lane of this mark in the protein map's 'All modifications' block (default: the label)"
             },
             "noun": {
               "type": "string",

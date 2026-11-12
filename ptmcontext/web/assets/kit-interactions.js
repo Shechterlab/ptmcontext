@@ -1632,7 +1632,7 @@
                 )}" title="Select the ${int(x.n)} ${esc(W.marked)} protein${x.n === 1 ? '' : 's'} that ${esc(x.l)} pairs with">` +
                 (`<span class="lab">${esc(x.l)}${
                   x.acc && byAcc[String(x.acc).split('-')[0]] != null
-                    ? ' <span class="ix-tag" title="It carries ' +
+                    ? ' <span class="ix-tag" title="It has ' +
                       esc(W.marks) +
                       ' itself">itself ' +
                       esc(W.marked) +

@@ -206,8 +206,8 @@
             m.sets.length
               ? esc(m.sets.join(' · '))
               : m.placed
-                ? '<span class="muted">placed, in none of its compartments</span>'
-                : '<span class="muted">not placed by this map</span>'
+                ? '<span class="muted">in this map, in none of its compartments</span>'
+                : '<span class="muted">not in this map</span>'
           }</td></tr>`
       )
       .join('')}</tbody></table>` +
@@ -251,7 +251,7 @@
           ? ''
           : `<p class="cell-where">${
               sets.length || grades.length
-                ? `<b>Placed in:</b> ${esc(sets.join(' · '))}${grades.length ? `; ${esc(grades.join(', '))}` : ''}`
+                ? `<b>Compartments:</b> ${esc(sets.join(' · '))}${grades.length ? `; ${esc(grades.join(', '))}` : ''}`
                 : `<span class="muted">` + `No map places ${esc(gene(p))} in a compartment.</span>`
             }</p>`) +
         `<details class="pc-mapsfold"><summary>Cell maps table <span class="muted">· each map's words on ${esc(gene(p))}</span></summary>${mapsTable(p, ms)}</details>`,
@@ -507,7 +507,7 @@
         `<p class="small">${ch
           .map(
             (x, k) =>
-              `${int(nSites[k])} of its ${plural(total, W.mark, W.marks)} ${nSites[k] === 1 ? 'carries' : 'carry'} a change ` +
+              `${int(nSites[k])} of its ${plural(total, W.mark, W.marks)} ${nSites[k] === 1 ? 'has' : 'have'} a change ` +
               `in at least one ${esc((x.unit || ['record'])[0])} (${esc(x.label)})`
           )
           .join('; ')}.</p>` +

@@ -45,7 +45,7 @@ analyses:
     test: conditional_logit
     new: true
     title: Which factor matters most?
-    question: "Taking all factors together, which ones set a phosphosite apart from the other serines, threonines and tyrosines of its protein?"
+    question: "Taking all factors together, which ones distinguish a phosphosite from the other serines, threonines and tyrosines of its protein?"
     sub: "One model: each phosphosite against the other serines, threonines and tyrosines of its protein, all five factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
     section: Position in the protein
     covariates:

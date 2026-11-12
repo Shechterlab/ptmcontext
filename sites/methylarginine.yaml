@@ -182,7 +182,7 @@ marks:
       colours: {"yes": "#B42318", "no": "#D9DEE2"}
       colour: true
       filter: true
-      help: "Whether a TCGA tumor (MC3 public calls) carries a missense or stop change of this arginine. This counts every methylarginine; the tumor question compares only the proteins whose gene DepMap screened, so its count is smaller"
+      help: "Whether a TCGA tumor (MC3 public calls) has a missense or stop change at this arginine. This counts every methylarginine; the tumor question compares only the proteins whose gene DepMap screened, so its count is smaller"
     depmap:
       column: depmap_changes
       label: Changes in DepMap cell lines
@@ -196,7 +196,7 @@ marks:
       kind: category
       values: {"yes": Changed in a cell line, "no": Not changed}
       filter: true
-      help: "Whether a DepMap 24Q4 cell line carries a missense or stop change of this arginine"
+      help: "Whether a DepMap 24Q4 cell line has a missense or stop change at this arginine"
     maron_s2:
       column: maron2021_s2_states
       provenance: true                       # which study measured the site, as much as what it is
@@ -828,7 +828,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
            member_when: [{column: gathers, equals: "true"}]}
     whole_universe: true
     min_size: 5
-    background: "the other proteins with eCLIP data that APEX-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
+    background: "the other proteins with eCLIP data that APEX-seq tests (at least 20 bound RNAs assigned to a compartment). A set is the proteins whose bound RNAs gather in the compartment"
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein APEX-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   - id: eclip_gene_tsaseq
@@ -841,7 +841,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
            member_when: [{column: gathers, equals: "true"}]}
     whole_universe: true
     min_size: 5
-    background: "the other proteins with eCLIP data that TSA-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
+    background: "the other proteins with eCLIP data that TSA-seq tests (at least 20 bound RNAs assigned to a compartment). A set is the proteins whose bound RNAs gather in the compartment"
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein TSA-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   - id: eclip_gene_hic
@@ -854,7 +854,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
            member_when: [{column: gathers, equals: "true"}]}
     whole_universe: true
     min_size: 5
-    background: "the other proteins with eCLIP data that Hi-C subcompartments tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
+    background: "the other proteins with eCLIP data that Hi-C subcompartments tests (at least 20 bound RNAs assigned to a compartment). A set is the proteins whose bound RNAs gather in the compartment"
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein Hi-C subcompartments tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   # Cancer cell lines (scripts/release_layers.py, CANCER): cancer cell genetics beside the sites, not evidence about
@@ -1019,7 +1019,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: conditional_logit
     new: true
     title: Which factor matters most?
-    question: "Taking all factors together, which ones set a methylarginine apart from the other arginines of its protein?"
+    question: "Taking all factors together, which ones distinguish a methylarginine from the other arginines of its protein?"
     sub: "One model: each methylarginine against the other arginines of its protein, all five factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
     section: Position in the protein
     covariates:
@@ -1373,7 +1373,7 @@ website:                  # the look and words of the website (ptmc web); layout
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
     tagline: "Human arginine methylation sites from published studies."
-    question: "Which proteins carry methylarginine, where in the protein is it, and which other modifications are nearby?"
+    question: "Which proteins have methylarginine, where in the protein is it, and which other modifications are nearby?"
   band: ["#155e75", "#0f3b47"]      # the header gradient: teal
   accent: "#c2410c"                 # the orange rule, active tab and links; shared by the lab's sites
   accent_dark: "#fb923c"
@@ -1542,7 +1542,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {label: A disease, query: "disease_family:ALS", help: "Methylarginines on proteins linked to a disease family, and how they differ from other sites."}
       - {label: One site in its structure, query: FUS R216, help: "Its protein's domain and disorder map, the evidence for the site, and its structures."}
   stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
-  overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
+  overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
     question: "Which proteins are arginine methylated?"
     rows: 7
@@ -1760,7 +1760,7 @@ website:                  # the look and words of the website (ptmc web); layout
     perturbations:
       kind: responses
       title: PRMT inhibitors, knockouts and knockdowns
-      question: "Which methylarginines carry a peptide that decreases when PRMTs are inhibited or knocked out?"
+      question: "Which methylarginines have a peptide that decreases when PRMTs are inhibited or knocked out?"
       sub: "Methylarginines that change when a PRMT is inhibited, knocked out or knocked down (Maron et al. 2021; Shishkova et al. 2017; Szewczyk et al. 2020; Hartel et al. 2019; Lu et al. 2024; Li et al. 2021)"
       head: "Methylarginines with a peptide that decreased with each PRMT inhibitor, knockout or knockdown"
       first: Perturbation
@@ -2993,7 +2993,7 @@ website:                  # the look and words of the website (ptmc web); layout
                   values: [rna_crosslink, rbdmap_fragment, capri_adj_peptide, capri_xl_peptide, pclap_peptide, rbrid_residue, dna_crosslink, pdb_rna, pdb_dna, pdb_protein, intact_mutation, intact_binding_region, intact_methylated, predicted_interface, predicted_contact]
                   top: 15
             - id: ix-cm
-              title: Which sites carry which evidence
+              title: Which evidence each site has
               question: Do sites with a feature (motif, disorder, methylation class) have a type of evidence more often? Check one site.
               tile: 0
               blocks:

@@ -339,7 +339,7 @@ Other modifications shown beside a site's own mark, declared in the site file as
 | Field | Required | Is |
 |---|---|---|
 | `id` | yes | lower-case letters, digits and `_`; the role `context_<id>`, the map row `ctx_<id>`, the attributes `ctx_near_<id>` and `ctx_n_<id>` |
-| `label`, `plural`, `noun`, `short` | label | the mark's name ("Phosphosite"), its plural, the word inside a sentence (default: the label, lower-cased), and its short lane name in the map's "All modifications" block (`Kac`; default: the label) |
+| `label`, `plural`, `noun`, `short` | label | the mark's name ("Phosphosite"), its plural, the word inside a sentence (default: the label, lower-cased), and its short lane name in the map's "All modifications" block (default: the label) |
 | `input` | yes | a manifest entry (CHECKSUM and license as any input): a table of residues, one row per residue and state |
 | `columns` | yes | `accession` and `position` (1-based, on the snapshot); optional `residue` (rows whose letter differs from the snapshot are dropped), `state`, `evidence`, `sources` (`; `-separated), `score` (a number column; read where the table has it, treated as absent where it has not) |
 | `subset` | no | `{id, at_least and/or at_most, label?, default?: subset \| all}`: the marks whose `columns.score` passes (a "near high-score phosphosites" variant). Active only where the table has the score column; see below |

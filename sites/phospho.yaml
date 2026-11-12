@@ -127,7 +127,7 @@ marks:
       label: Localization probability
       kind: number
       filter: true
-      help: "Ochoa 2020: the best probability that the phosphate sits on this residue and not on a neighbor, over the experiments that saw it (0 to 1; a low value means the position within the peptide is uncertain)"
+      help: "Ochoa 2020: the best probability that the phosphate is on this residue and not on a neighbor, over the experiments that saw it (0 to 1; a low value means the position within the peptide is uncertain)"
     best_pep:
       column: best_pep
       optional: true
@@ -1016,7 +1016,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {label: A list of genes, query: AKT1 MAPK1 EGFR, help: "Every question is tested again on their phosphosites."}
       - {label: One site in its structure, query: TP53 S15, help: "Its protein's domain and disorder map, the evidence for the site, and its structures."}
   stats: [marks, proteins, {attribute: sources, label: databases, opens: provenance}]
-  overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
+  overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
     question: "Which proteins are phosphorylated?"
     rows: 7
@@ -1219,7 +1219,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [database, databases]
       noun: databases
       top: 2
-      note: "iPTMnet carries a copy of UniProt: 11,692 phosphorylation rows have unip as their only upstream database, so both databases agreeing is not always two measurements."
+      note: "iPTMnet contains a copy of UniProt: 11,692 phosphorylation rows have unip as their only upstream database, so both databases agreeing is not always two measurements."
       method: "Each phosphosite lists the databases that report it (the release's sources column). A database's count is the phosphosites it reports."
     functional_scores:     # only where the marks table has a functional_score column (marks.attributes.functional_band is optional)
       kind: values
@@ -1245,7 +1245,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
     - {name: Data sources, attributes: [sources, iptmnet_sources]}
   dataset: {label: PTM_Pipeline data release, version: v1.5.0 at bdb5b86, date: "2026-11-10", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0"}
-  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). The phosphosites and functional scores of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3 (rows whose databases name Ochoa 2020) come from an article that is not open access, and its supplementary table carries no license: they are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. The methyllysine rows shown beside the phosphosites include CPLM 4.0 (Zhang et al., Nucleic Acids Res 50:D451, 2022), which states no license. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
+  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). The phosphosites and functional scores of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3 (rows whose databases name Ochoa 2020) come from an article that is not open access, and its supplementary table has no license: they are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. The methyllysine rows shown beside the phosphosites include CPLM 4.0 (Zhang et al., Nucleic Acids Res 50:D451, 2022), which states no license. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class, sources, Ochoa 2020 functional score and mass-spectrometry evidence (Ochoa 2020 rows included, not open access)"}
     - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86cb7e64e30a44512fde917f59dfe5135ca/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}

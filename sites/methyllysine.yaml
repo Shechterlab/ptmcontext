@@ -798,7 +798,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: conditional_logit
     new: true
     title: Which factor matters most?
-    question: "Taking all factors together, which ones set a methyllysine apart from the other lysines of its protein?"
+    question: "Taking all factors together, which ones distinguish a methyllysine from the other lysines of its protein?"
     sub: "One model: each methyllysine against the other lysines of its protein, all four factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
     section: Motif, disorder and structure
     covariates:
@@ -987,7 +987,7 @@ website:                  # the look and words of the website (ptmc web); layout
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with                 # the landing page's card (ptmc pages) and the header menu of the sites
     tagline: "Human lysine methylation sites from public databases."
-    question: "Which proteins carry methyllysine, and how do methylated lysines differ from the other lysines of their protein?"
+    question: "Which proteins have methyllysine, and how do methylated lysines differ from the other lysines of their protein?"
     in_switcher: true
   band: ["#5b21b6", "#3b0764"]      # the header gradient: purple
   accent: "#b45309"                 # the amber rule, active tab and links
@@ -1013,7 +1013,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {label: A list of genes, query: TP53 DNMT1 EHMT2, help: "Every question is tested again on their methyllysines."}
       - {label: One site in its structure, query: TAF10 K189, help: "Its protein's domain and disorder map, the evidence for the site, and its structures."}
   stats: [marks, proteins, {attribute: sources, label: databases, opens: provenance}]
-  overview:                # what the Overview opens with: tiles, in sections, each with its most telling classes
+  overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
     question: "Which proteins are lysine methylated?"
     rows: 7
@@ -1053,7 +1053,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: motif, title: Sequence motifs}
           - {analysis: which_factor, wide: true}
       - name: Methylation state
-        about: "How many methyl groups the sites carry: mono-, di- and trimethyllysine."
+        about: "How many methyl groups the sites have: mono-, di- and trimethyllysine."
         #  counted, not tested (website.counts)
         cards: [states]
       - name: Other modifications
@@ -1206,7 +1206,7 @@ website:                  # the look and words of the website (ptmc web); layout
       kind: values
       attribute: state
       title: Methylation state
-      question: "How many methyl groups do the methyllysines carry?"
+      question: "How many methyl groups do the methyllysines have?"
       sub: "Methyllysines by the degree of methylation reported: mono (Kme1), di (Kme2) or trimethyl (Kme3), or methylated with the degree not stated"
       unit: [degree, degrees]
       noun: degrees
@@ -1233,7 +1233,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [database, databases]
       noun: databases
       top: 2
-      note: "iPTMnet carries a copy of UniProt: 217 methyllysine rows have unip as their only upstream database, so both databases agreeing is not always two measurements. CPLM 4.0 compiles records from other databases too (its Dat. label), so a lysine that CPLM and another database both report may rest on one original record. Berryhill 2023 is one study (Sci Rep 13:377), a mass-spectrometry experiment of its own in HEK293T and U2OS cells."
+      note: "iPTMnet contains a copy of UniProt: 217 methyllysine rows have unip as their only upstream database, so both databases agreeing is not always two measurements. CPLM 4.0 compiles records from other databases too (its Dat. label), so a lysine that CPLM and another database both report may rest on one original record. Berryhill 2023 is one study (Sci Rep 13:377), a mass-spectrometry experiment of its own in HEK293T and U2OS cells."
       method: "Each methyllysine lists the databases that report it (the release's sources column). A database's count is the methyllysines it reports."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex], keys: ["b:class", "b:gene", "b:score"]}
@@ -1246,7 +1246,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: RNA and DNA, analyses: [pdb_interface_na]}
     - {name: Data sources, attributes: [sources, berryhill_cell_lines, berryhill_enrichment, iptmnet_sources]}
   dataset: {label: PTM_Pipeline data release, version: v1.5.0 at bdb5b86, date: "2026-11-10", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/bdb5b86/releases/v1.5.0"}
-  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). CPLM 4.0 states no license: its sites (rows whose databases name CPLM) are included, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022), and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (the article is CC BY 4.0; its Supplementary Table 5 carries no separate license notice and is included) is cited the same way. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
+  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). CPLM 4.0 states no license: its sites (rows whose databases name CPLM) are included, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022), and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (the article is CC BY 4.0; its Supplementary Table 5 has no separate license notice and is included) is cited the same way. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86/releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv", format: TSV, note: "every methyllysine record: one row per lysine and degree, with its evidence class, sources and CPLM evidence label (CPLM sites)"}
     - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}

@@ -1928,7 +1928,7 @@
       .sort(
         (x, y) => tracks.findIndex((t) => t.kind === x[0]) - tracks.findIndex((t) => t.kind === y[0]) || x[1] - y[1]
       );
-    if (!rows.length) return `<p class="muted">No region is placed on this protein.</p>`;
+    if (!rows.length) return `<p class="muted">No region is listed for this protein.</p>`;
     return (
       `<div class="card-head">${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'regexp', 'the regions', 'data')}</div>` +
       (`<div class="tbl-card"><table class="tbl"><thead><tr><th>Kind</th><th class="num">From–to</th><th>Name or ` +

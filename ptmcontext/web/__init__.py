@@ -2018,7 +2018,7 @@ def pages(
     built_with = (
         f'Updated {html.escape(human_date(_now()))}. Built with <a href="{html.escape(kit["url"])}">ptmcontext</a> '
         f'{html.escape(kit["version"])}, {html.escape(_licence_words(kit.get("licence", "MIT")))} license. '
-        "Each site's data carry the license its page states."
+        "Each site's data are under the license its page states."
     )
     text = LP.page(
         cards,

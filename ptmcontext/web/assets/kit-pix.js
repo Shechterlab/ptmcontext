@@ -98,7 +98,7 @@
                       .slice(0, 8)
                       .map(([a, n]) => link(a, n))
                       .join(', ')}${x.also.length > 8 ? ` <span class="muted">+${x.also.length - 8}</span>` : ''}`
-                  : '<span class="muted">binds none of the other partners that carry the modification</span>'
+                  : '<span class="muted">binds none of the other partners that have the modification</span>'
               }</li>`
           )
           .join('')}</ul>`
@@ -149,7 +149,7 @@
         )}</div>`;
       if (UI.tab === 'partners') {
         out +=
-          `<p class="pix-head"><b>${int(marked)} of ${int(parts.length)} partners (${pc(marked, parts.length)})</b> carry ${esc(W.marks)} themselves${
+          `<p class="pix-head"><b>${int(marked)} of ${int(parts.length)} partners (${pc(marked, parts.length)})</b> have ${esc(W.marks)} themselves${
             base != null
               ? `, against ${pc(D.counts.proteins, D.run.snapshot.entries)} of the reviewed ` + `proteome`
               : ''
@@ -206,7 +206,7 @@
                 }</button></p>`
               : '')
           : `<p class="muted small">No complex of the sets used here holds ${esc(gene)} with another protein that ` +
-            `carries ${esc(W.marks)}.</p>`;
+            `has ${esc(W.marks)}.</p>`;
       out += '</section>';
       // 3. writers and readers
       if (Object.keys(PT.classes || {}).length) {

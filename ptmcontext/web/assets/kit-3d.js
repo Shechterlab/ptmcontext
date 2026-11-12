@@ -965,7 +965,7 @@
         message(
           det.chain && !det.coverage
             ? `PDBe did not say which residues ${UP(id)} chain ${det.chain} models, so its ${NOUNS} cannot be ` +
-                `placed; try again later.`
+                `located; try again later.`
             : ''
         );
         paint();
@@ -3211,7 +3211,7 @@
         .split(', ')
         .slice(1)
         .join(', ')} on ${pr.structure.read_live.split(', ')[0]}; residues ` +
-      `placed by ${pr.structure.placed_by}. ` +
+      `mapped by ${pr.structure.placed_by}. ` +
       (tables.length
         ? `From the site’s tables: ${tables
             .map(
@@ -4489,7 +4489,7 @@
     `experimental chain that models most of the protein, any PDB entry and chain from its menu, or the AlphaFold ` +
     `DB model. It is read live by UniProt accession when the section opens and drawn with ${esc(LIB_CITE)}. ` +
     (`The experimental chain comes from PDBe’s SIFTS best structures: among chains whose mapping spans most of the ` +
-      `protein, the one PDBe says observes most residues. Each ${esc(NOUN)} is placed through its SIFTS segment ` +
+      `protein, the one PDBe says observes most residues. Each ${esc(NOUN)} is mapped through its SIFTS segment ` +
       `and PDBe’s observed residues, so only ${esc(NOUNS)} in the deposited model are drawn. A homologous ` +
       `structure (RCSB sequence search, MMseqs2, at least 30% identity) places them through the alignment, and ` +
       `AlphaFold or predicted complex models use UniProt numbering. `) +
