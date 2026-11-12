@@ -174,16 +174,22 @@ def mark_parts(spec: dict, table: pd.DataFrame) -> dict[str, pd.DataFrame]:
     rows, out = _kept_rows(spec, table), {}
     for part in spec.get('parts') or []:
         hit = rows[_holds(rows, part['where'])]
-        out[part['id']] = pd.DataFrame(
-            {
-                'accession': hit[spec['accession']].astype(str).str.strip().to_numpy(),
-                'position': pd.to_numeric(hit[spec['position']], errors='coerce').to_numpy(),
-                'residue': '',
-                'state': '',
-                'evidence': '',
-                'sources': '',
-            }
-        ).dropna(subset=['position']).astype({'position': int}).drop_duplicates().reset_index(drop=True)
+        out[part['id']] = (
+            pd.DataFrame(
+                {
+                    'accession': hit[spec['accession']].astype(str).str.strip().to_numpy(),
+                    'position': pd.to_numeric(hit[spec['position']], errors='coerce').to_numpy(),
+                    'residue': '',
+                    'state': '',
+                    'evidence': '',
+                    'sources': '',
+                }
+            )
+            .dropna(subset=['position'])
+            .astype({'position': int})
+            .drop_duplicates()
+            .reset_index(drop=True)
+        )
     return out
 
 

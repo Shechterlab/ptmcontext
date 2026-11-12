@@ -105,7 +105,10 @@ def layout(kind: str) -> dict:
     return c
 
 
-END_LABELS = {'Kub': 'Ub', 'Ksu': 'SUMO'}  # the far end of an isopeptide: the protein it leads to, written as a label, by structure name
+END_LABELS = {
+    'Kub': 'Ub',
+    'Ksu': 'SUMO',
+}  # the far end of an isopeptide: the protein it leads to, written as a label, by structure name
 
 
 def depict(smiles: str, accent_smarts: str, spine, end_label: str = ''):
@@ -115,7 +118,9 @@ def depict(smiles: str, accent_smarts: str, spine, end_label: str = ''):
     mol = Chem.MolFromSmiles(smiles, ps)
     for a in mol.GetAtoms():
         if a.GetAtomicNum() == 0:
-            a.SetProp('atomLabel', end_label if end_label and a.GetIdx() > 0 else ' ')  # the backbone stub is a bare end of the wavy bond
+            a.SetProp(
+                'atomLabel', end_label if end_label and a.GetIdx() > 0 else ' '
+            )  # the backbone stub is a bare end of the wavy bond
     mol.GetBondWithIdx(0).SetBondDir(Chem.BondDir.UNKNOWN)  # wavy
     methyls = [
         a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6 and a.GetDegree() == 1 and a.GetTotalNumHs() == 3
