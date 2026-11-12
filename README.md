@@ -19,7 +19,7 @@ Landing page: <https://shechterlab.github.io/ptmcontext/>
 The methylarginine site rebuilds the statistics of release v1.4.3 of the
 [Methylarginine Site Explorer](https://github.com/Shechterlab/PTM_Pipeline) without running its code.
 `tests/test_parity_v1_4_3.py` checks that 4,549 of the release's 4,659 rows are reproduced exactly.
-The methyllysine and phosphosite sites have no earlier release, so all their statistics are new. Each site also shows the
+The methyllysine, phosphosite and lysine modification sites have no earlier release, so all their statistics are new. Each site also shows the
 other modifications on each protein and tests whether its sites are within 10 residues of them. Each site's Methods page
 describes its inputs, tests and caveats.
 
@@ -31,7 +31,8 @@ Every input is in a manifest with its source, release and MD5. Staging is the on
 The sites read releases of [PTM_Pipeline](https://github.com/Shechterlab/PTM_Pipeline) pinned by commit: v1.4.3 for
 methylarginine, and v1.5.0 for methyllysine, phosphorylation, acetylation and other acylations, ubiquitination and
 SUMOylation. The v1.5.0 tables come from UniProt, iPTMnet, CPLM 4.0, Berryhill et al. 2023 and Ochoa et al. 2020. CPLM
-4.0 states no license. Its human lysine methylation, ubiquitination and SUMOylation sites are included and cited.
+4.0 states no license. Its human lysine methylation, acetylation, other acylation, ubiquitination and SUMOylation sites
+are included and cited.
 
 ## Build a site
 

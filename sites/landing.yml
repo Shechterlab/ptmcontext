@@ -12,7 +12,7 @@ switcher: {label: PTM}
 cta: "Explore {marks} →"
 soon_label: Coming soon
 soon_cta: In preparation
-order: [methylarginine, methyllysine, phospho]
+order: [methylarginine, methyllysine, lysine, phospho]
 groups:                    # a card goes in the group its site file names (website.landing.group), else the first
   - {id: human, title: null}
   - {id: other, title: Other organisms, compact: true}
