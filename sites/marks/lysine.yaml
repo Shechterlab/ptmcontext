@@ -21,6 +21,9 @@ states:   # PSI-MOD terms checked against EBI OLS, 2026-11-12. Codes follow the 
   - {code: Kmal, label: N6-malonyl-L-lysine, psi_mod: "MOD:01893"}
   - {code: Kpr, label: N6-propanoyl-L-lysine, psi_mod: "MOD:01398"}
   - {code: Kbu, label: N6-butanoyl-L-lysine, psi_mod: "MOD:01781"}
+  - {code: Kpgly, label: N6-phosphoglyceryllysine}
+  - {code: Kbio, label: N6-biotinyllysine}
+  - {code: Klip, label: N6-lipoyllysine}
   - {code: Kla, label: N6-lactoyllysine}
   - {code: Kbz, label: N6-benzoyllysine}
   - {code: Kmea, label: N6-methacryllysine}

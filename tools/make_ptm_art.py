@@ -46,6 +46,15 @@ SITES = {
             ('Kme3', 'trimethyl', '*CCCCC[N+](C)(C)C', '[CH3]', 7),
         ],
     ),
+    'lysine': (
+        '#bef264',
+        'Acetyllysine (Kac), ubiquitinated lysine (Kub: isopeptide bond to Gly76 of ubiquitin) and SUMOylated lysine (Ksu: isopeptide bond to the C-terminal Gly of SUMO)',
+        [
+            ('Kac', 'acetyl', '*CCCCCNC(C)=O', '[CH3]', 7),
+            ('Kub', 'ubiquitin, via Gly76', '*CCCCCNC(=O)CN*', 'C(=O)CN', 7),
+            ('Ksu', 'SUMO, via its C-terminal Gly', '*CCCCCNC(=O)CN*', 'C(=O)CN', 7),
+        ],
+    ),
     'phospho': (
         '#67e8f9',
         'Phosphoserine (Sph), phosphothreonine (Tph) and phosphotyrosine (Yph)',
@@ -96,14 +105,17 @@ def layout(kind: str) -> dict:
     return c
 
 
-def depict(smiles: str, accent_smarts: str, spine):
+END_LABELS = {'Kub': 'Ub', 'Ksu': 'SUMO'}  # the far end of an isopeptide: the protein it leads to, written as a label, by structure name
+
+
+def depict(smiles: str, accent_smarts: str, spine, end_label: str = ''):
     """(mol, svg body, C-alpha x, y, extent, accent atoms) of one structure, extent relative to the C-alpha."""
     ps = Chem.SmilesParserParams()
     ps.removeHs = False  # a charged N keeps the H atoms its SMILES writes: they are drawn on their own bonds, away from the charge
     mol = Chem.MolFromSmiles(smiles, ps)
     for a in mol.GetAtoms():
         if a.GetAtomicNum() == 0:
-            a.SetProp('atomLabel', ' ')  # the backbone stub is a bare end of the wavy bond
+            a.SetProp('atomLabel', end_label if end_label and a.GetIdx() > 0 else ' ')  # the backbone stub is a bare end of the wavy bond
     mol.GetBondWithIdx(0).SetBondDir(Chem.BondDir.UNKNOWN)  # wavy
     methyls = [
         a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6 and a.GetDegree() == 1 and a.GetTotalNumHs() == 3
@@ -212,7 +224,7 @@ def paint(body: str, mol, acc: set[int], accent: str) -> str:
 def build(site: str):
     accent, label, items = SITES[site]
     parts, rows = [], []
-    drawn = [depict(smi, acc, sp) for _, _, smi, acc, sp in items]
+    drawn = [depict(smi, acc, sp, END_LABELS.get(name, '')) for name, _, smi, acc, sp in items]
     gap = 22
     x = 0.0
     top = min(d[3][2] for d in drawn)
@@ -257,6 +269,7 @@ LOGOS = {  # site -> (band colour, accent, glyph, title)
     'methylarginine': ('#155e75', '#c2410c', 'R', 'Methylarginine Site Explorer'),
     'methyllysine': ('#5b21b6', '#b45309', 'K', 'Methyllysine Site Explorer'),
     'phospho': ('#1e40af', '#0e7490', 'P', 'Phosphosite Explorer'),
+    'lysine': ('#14532d', '#4d7c0f', 'K', 'Lysine Modification Explorer'),
 }
 
 

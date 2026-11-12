@@ -91,6 +91,9 @@ marks:
         butyryl: Butyrylation (Kbu)
         malonyl: Malonylation (Kmal)
         propionyl: Propionylation (Kpr)
+        phosphoglyceryl: Phosphoglycerylation (Kpgly)
+        biotinyl: Biotinylation (Kbio)
+        lipoyl: Lipoylation (Klip)
       colours:
         acetyl: "#15803d"
         ubiquitin: "#be185d"
@@ -107,9 +110,12 @@ marks:
         butyryl: "#57534e"
         malonyl: "#1e3a8a"
         propionyl: "#3f6212"
+        phosphoglyceryl: "#7f1d1d"
+        biotinyl: "#713f12"
+        lipoyl: "#365314"
       colour: true
       filter: true
-      help: "The modifications reported on the lysine, one row each. Codes follow the usual form of the Brno histone nomenclature (ac, ub, su) with the lysine letter: Kac, Kub, Ksu for acetylation, ubiquitination and SUMOylation, and the common short names for the acylations (Khib, Kbhb, Kcr, Kglu, Ksucc, Kla, Kmea, Kinic, Kbz, Kbu, Kmal, Kpr). Succinylation is Ksucc, so it does not share a code with SUMOylation"
+      help: "The modifications reported on the lysine, one row each. Codes follow the usual form of the Brno histone nomenclature (ac, ub, su) with the lysine letter: Kac, Kub, Ksu for acetylation, ubiquitination and SUMOylation, and the common short names for the acylations (Khib, Kbhb, Kcr, Kglu, Ksucc, Kla, Kmea, Kinic, Kbz, Kbu, Kmal, Kpr, Kpgly, Kbio, Klip). Succinylation is Ksucc, so it does not share a code with SUMOylation"
     evidence_class:
       column: evidence_class
       join_rows: true
@@ -134,7 +140,7 @@ marks:
       values: {UniProt: UniProt, iPTMnet: iPTMnet, CPLM: CPLM 4.0}
       colour: true
       filter: true
-      help: "The databases that report the lysine. Ubiquitination and SUMOylation sites are mostly from CPLM 4.0, which states no license; the counts are on the Methods page"
+      help: "The databases that report the lysine. Most sites of every large type are from CPLM 4.0, which states no license: in the main view of the pinned release, CPLM reports 99.6% of the acetylation, 99.9% of the ubiquitination, 99.9% of the SUMOylation, 100% of the crotonylation and 97% of the 2-hydroxyisobutyrylation sites (alone or with another database); the Databases filter and the data sources tile give the counts"
     cplm_evidence:
       column: cplm_evidence
       join_rows: true
@@ -821,25 +827,45 @@ marks_subsets:           # the key questions again on the lysines of one type (a
     where: {column: acyl_type, equals: sumo}
     note: "Only the lysines with a SUMOylation (Ksu) record are counted as modified"
     analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
+  - id: cr
+    label: Kcr
+    where: {column: acyl_type, equals: crotonyl}
+    note: "Only the lysines with a crotonylation (Kcr) record are counted as modified"
+    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
   - id: hib
     label: Khib
     where: {column: acyl_type, equals: 2-hydroxyisobutyryl}
     note: "Only the lysines with a 2-hydroxyisobutyrylation (Khib) record are counted as modified"
+    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
+  - id: mal
+    label: Kmal
+    where: {column: acyl_type, equals: malonyl}
+    note: "Only the lysines with a malonylation (Kmal) record are counted as modified"
+    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
+  - id: succ
+    label: Ksucc
+    where: {column: acyl_type, equals: succinyl}
+    note: "Only the lysines with a succinylation (Ksucc) record are counted as modified"
     analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
   - id: bhb
     label: Kbhb
     where: {column: acyl_type, equals: beta-hydroxybutyryl}
     note: "Only the lysines with a β-hydroxybutyrylation (Kbhb) record are counted as modified"
     analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
-  - id: cr
-    label: Kcr
-    where: {column: acyl_type, equals: crotonyl}
-    note: "Only the lysines with a crotonylation (Kcr) record are counted as modified"
-    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
   - id: glu
     label: Kglu
     where: {column: acyl_type, equals: glutaryl}
     note: "Only the lysines with a glutarylation (Kglu) record are counted as modified"
+    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
+  - id: la
+    label: Kla
+    where: {column: acyl_type, equals: lactoyl}
+    note: "Only the lysines with a lactoylation (Kla) record are counted as modified"
+    analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
+  - id: bu
+    label: Kbu
+    where: {column: acyl_type, equals: butyryl}
+    note: "Only the lysines with a butyrylation (Kbu) record are counted as modified"
     analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
 
 variants:                # the same questions on other marks; ptmc run --variant <name>
@@ -951,29 +977,41 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: cell_chromatin_ac}
           - {analysis: cell_chromatin_ub}
           - {analysis: cell_chromatin_su}
+          - {analysis: cell_chromatin_cr}
+          - {analysis: cell_chromatin_hib}
       - name: Which proteins
-        about: "Histones, protein classes, pathways and condensates of the proteins with modified lysines, for all types and for each type with at least 200 lysines."
+        about: "Histones, protein classes, pathways and condensates of the proteins with modified lysines, for all types and for each type with at least 200 lysines (the Overview shows the larger types; the sidebar lists every one)."
         cards:
           - {analysis: histone, title: Histones and other proteins}
           - {analysis: histone_ac}
           - {analysis: histone_ub}
           - {analysis: histone_su}
-          - {analysis: histone_hib}
-          - {analysis: histone_bhb}
           - {analysis: histone_cr}
+          - {analysis: histone_hib}
+          - {analysis: histone_mal}
+          - {analysis: histone_succ}
+          - {analysis: histone_bhb}
           - {analysis: histone_glu}
+          - {analysis: histone_la}
+          - {analysis: histone_bu}
           - {analysis: panther_group, title: Protein classes}
           - {analysis: panther_group_ac}
           - {analysis: panther_group_ub}
           - {analysis: panther_group_su}
-          - {analysis: panther_group_hib}
-          - {analysis: panther_group_bhb}
           - {analysis: panther_group_cr}
+          - {analysis: panther_group_hib}
+          - {analysis: panther_group_mal}
+          - {analysis: panther_group_succ}
+          - {analysis: panther_group_bhb}
           - {analysis: panther_group_glu}
+          - {analysis: panther_group_la}
+          - {analysis: panther_group_bu}
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: reactome_top_level_ac}
           - {analysis: reactome_top_level_ub}
           - {analysis: reactome_top_level_su}
+          - {analysis: reactome_top_level_cr}
+          - {analysis: reactome_top_level_hib}
           - {analysis: panther_subclass, title: Protein subclasses}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
           - {analysis: condensate_role, title: Roles in condensates}
@@ -984,22 +1022,32 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: disorder_ac}
           - {analysis: disorder_ub}
           - {analysis: disorder_su}
-          - {analysis: disorder_hib}
-          - {analysis: disorder_bhb}
           - {analysis: disorder_cr}
+          - {analysis: disorder_hib}
+          - {analysis: disorder_mal}
+          - {analysis: disorder_succ}
+          - {analysis: disorder_bhb}
           - {analysis: disorder_glu}
+          - {analysis: disorder_la}
+          - {analysis: disorder_bu}
           - {analysis: idr_charge}
           - {analysis: idr_charge_ac}
           - {analysis: idr_charge_ub}
           - {analysis: idr_charge_su}
+          - {analysis: idr_charge_cr}
+          - {analysis: idr_charge_hib}
           - {analysis: structure_context}
           - {analysis: structure_context_ac}
           - {analysis: structure_context_ub}
           - {analysis: structure_context_su}
+          - {analysis: structure_context_cr}
+          - {analysis: structure_context_hib}
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: domain_class_ac}
           - {analysis: domain_class_ub}
           - {analysis: domain_class_su}
+          - {analysis: domain_class_cr}
+          - {analysis: domain_class_hib}
           - {analysis: motif, title: Sequence motifs}
           - {analysis: which_factor, wide: true}
       - name: Modification type
@@ -1009,9 +1057,6 @@ website:                  # the look and words of the website (ptmc web); layout
       - name: Same lysine, different modifications
         about: "Whether a lysine with one modification is also reported with another more often than the other lysines of its protein: acetylation, ubiquitination, SUMOylation and methylation."
         cards:
-          - {analysis: same_ac_ub}
-          - {analysis: same_ac_su}
-          - {analysis: same_ub_su}
           - {analysis: same_ac_methyl}
           - {analysis: same_ub_methyl}
           - {analysis: same_su_methyl}
@@ -1022,18 +1067,26 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: near_methylarginine_ac}
           - {analysis: near_methylarginine_ub}
           - {analysis: near_methylarginine_su}
+          - {analysis: near_methylarginine_cr}
+          - {analysis: near_methylarginine_hib}
           - {analysis: near_methyllysine}
           - {analysis: near_methyllysine_ac}
           - {analysis: near_methyllysine_ub}
           - {analysis: near_methyllysine_su}
+          - {analysis: near_methyllysine_cr}
+          - {analysis: near_methyllysine_hib}
           - {analysis: near_phospho}
           - {analysis: near_phospho_ac}
           - {analysis: near_phospho_ub}
           - {analysis: near_phospho_su}
+          - {analysis: near_phospho_cr}
+          - {analysis: near_phospho_hib}
           - {analysis: near_phospho_high}
           - {analysis: near_phospho_high_ac}
           - {analysis: near_phospho_high_ub}
           - {analysis: near_phospho_high_su}
+          - {analysis: near_phospho_high_cr}
+          - {analysis: near_phospho_high_hib}
       - name: Interactions
         about: "Whether modified lysines are where a protein touches another or at an RNA or DNA interface, and the complexes their proteins are in."
         cards:
@@ -1170,7 +1223,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [label, labels]
       noun: CPLM labels
       top: 3
-      note: "Most ubiquitination and SUMOylation sites are from CPLM 4.0. Its Dat. records (taken from another database, with no experiment named) alone are in the lower-confidence variant (the switch at the top)."
+      note: "Nearly all ubiquitination, SUMOylation and acetylation sites, and most acylation sites, are from CPLM 4.0. Its Dat. records (taken from another database, with no experiment named) alone are in the lower-confidence variant (the switch at the top)."
       method: "CPLM 4.0's own evidence label for the lysine (the release's cplm_evidence column), joined over the lysine's rows. Lysines CPLM does not report have none and are not counted here."
     evidence:
       kind: values
@@ -1192,7 +1245,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [database, databases]
       noun: databases
       top: 3
-      note: "iPTMnet carries a copy of UniProt, so both databases agreeing is not always two measurements. CPLM 4.0 compiles records from other databases too (its Dat. label), so a lysine that CPLM and another database both report may rest on one original record. CPLM 4.0 states no license; its sites are included and cited."
+      note: "iPTMnet carries a copy of UniProt, so both databases agreeing is not always two measurements. CPLM 4.0 compiles records from other databases too (its Dat. label), so a lysine that CPLM and another database both report may rest on one original record. CPLM 4.0 states no license; its sites are included and cited. In the main view of the pinned release, CPLM reports 189,852 of the 191,372 lysine-and-type records (99%), alone or with another database: ubiquitination and SUMOylation 99.9% each, acetylation 99.6%, crotonylation 100%. The other 1,520 are from UniProt or iPTMnet alone, among them most glutaryl, lactoyl, benzoyl, methacryl and isonicotinyl records."
       method: "Each lysine lists the databases that report it (the release's sources column). A database's count is the lysines it reports."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Data sources, attributes: [sources, cplm_evidence, evidence_class, iptmnet_score, iptmnet_sources]}
@@ -1205,16 +1258,16 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: RNA and DNA, analyses: [pdb_interface_na]}
-  dataset: {label: PTM_Pipeline data release, version: v1.5.0 at bdb5b86, date: "2026-11-10", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/bdb5b86/releases/v1.5.0"}
+  dataset: {label: PTM_Pipeline data release, version: v1.5.0 at 10c228f, date: "2026-11-12", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/10c228f/releases/v1.5.0"}
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). CPLM 4.0 states no license: its sites (rows whose databases name CPLM) are included, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022), and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
-    - {label: Acetylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86/releases/v1.5.0/human_acetylation_sites_v1.5.0.tsv", format: TSV, note: "every acetylation record: one row per lysine, with its evidence class and sources"}
-    - {label: Other acylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86/releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv", format: TSV, note: "every lysine acylation record (acetyl and 12 other acyl types, in acyl_type): one row per lysine and type"}
-    - {label: Ubiquitination sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86/releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv", format: TSV, note: "every ubiquitination record, with its evidence class, sources and CPLM evidence label (123,932 rows, 123,753 of them from CPLM 4.0)"}
-    - {label: SUMOylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86/releases/v1.5.0/human_sumoylation_sites_v1.5.0.tsv", format: TSV, note: "every SUMOylation record, with its evidence class, sources and CPLM evidence label (39,633 rows, 39,493 of them from CPLM 4.0)"}
-    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/bdb5b86/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
-    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/bdb5b86/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
-    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/bdb5b86/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+    - {label: Acetylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/10c228f/releases/v1.5.0/human_acetylation_sites_v1.5.0.tsv", format: TSV, note: "every acetylation record: one row per lysine, with its evidence class, sources and CPLM evidence label (53,177 rows)"}
+    - {label: Other acylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/10c228f/releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv", format: TSV, note: "every lysine acylation record (acetyl and 15 other acyl types, in acyl_type): one row per lysine and type"}
+    - {label: Ubiquitination sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/10c228f/releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv", format: TSV, note: "every ubiquitination record, with its evidence class, sources and CPLM evidence label (123,932 rows, 123,753 of them from CPLM 4.0)"}
+    - {label: SUMOylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/10c228f/releases/v1.5.0/human_sumoylation_sites_v1.5.0.tsv", format: TSV, note: "every SUMOylation record, with its evidence class, sources and CPLM evidence label (39,633 rows, 39,493 of them from CPLM 4.0)"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/10c228f/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/10c228f/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/10c228f/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
   search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
     shorthand: {H4: P62805, H3: P68431, "H3.1": P68431, "H3.3": P84243}   # names papers use for a protein (H4K20, H3 K9)
     patterns:                # the motif finder: a pattern of residues on the sites' sequence windows

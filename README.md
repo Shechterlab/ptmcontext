@@ -13,6 +13,7 @@ Landing page: <https://shechterlab.github.io/ptmcontext/>
 |---|---|
 | Human methylarginine sites | <https://shechterlab.github.io/ptmcontext/methylarginine/> |
 | Human methyllysine sites | <https://shechterlab.github.io/ptmcontext/methyllysine/> |
+| Human lysine modification sites (acetylation and other acylations, ubiquitination, SUMOylation) | <https://shechterlab.github.io/ptmcontext/lysine/> |
 | Human phosphosites | <https://shechterlab.github.io/ptmcontext/phospho/> |
 
 The methylarginine site rebuilds the statistics of release v1.4.3 of the
@@ -81,7 +82,7 @@ GitHub Pages (Settings → Pages → Source: GitHub Actions). The export audits 
 in `.github/workflows/tests.yml`. By hand:
 
 ```bash
-ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml --out _site   # after ptmc run and ptmc web for each
+ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml sites/lysine.yaml --out _site   # after ptmc run and ptmc web for each
 ```
 
 ## Read next

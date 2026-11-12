@@ -2,8 +2,8 @@
 # the working branch the site is served from, and to main (and by hand). Pages' source must be "GitHub Actions", and
 # the github-pages environment must allow develop among its deployment branches. The methylarginine site reads the release's public inputs as data, checked against inputs.json, and
 # must still equal release v1.4.3. The export audits (text overlap, legends) run in tests.yml, so a deploy does not wait for them.
-# The three sites are built in parallel jobs (one matrix entry each, the slowest about 40 minutes instead of the three in a row,
-# about 85); a last job downloads their websites, assembles them with the landing page (ptmc pages) and uploads the Pages artifact.
+# The four sites are built in parallel jobs (one matrix entry each, the slowest about 45 minutes instead of the four in a row,
+# about two hours); a last job downloads their websites, assembles them with the landing page (ptmc pages) and uploads the Pages artifact.
 # (The yeast site is not published: sites/yeast_phospho.yaml stays as an example of a second organism.)
 name: pages
 on:
@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        site: [methylarginine, methyllysine, phospho]
+        site: [methylarginine, methyllysine, phospho, lysine]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/checkout@v5
@@ -135,14 +135,16 @@ jobs:
           python-version: "3.12"
       - run: pip install -e packages/ptmstats -e .
       # Methylarginine: the release's public inputs as data (v1.4.3). Methyllysine (unlisted on the landing page; in the sites'
-      # header menu) and phosphosites (listed): release v1.5.0 of PTM_Pipeline, pinned above, with the generic inputs the
-      # methylarginine site reads. Those two have no reference release: every statistic is new.
+      # header menu), phosphosites and lysine modifications (listed): release v1.5.0 of PTM_Pipeline, pinned above, with the
+      # generic inputs the methylarginine site reads. Those three have no reference release: every statistic is new. The
+      # lower-confidence variants of the phosphosite and lysine sites are not built here.
       - name: Run and build ${{ matrix.site }}
         run: |
           ptmc run sites/${{ matrix.site }}.yaml --root reference
-          [ "${{ matrix.site }}" = phospho ] || ptmc run sites/${{ matrix.site }}.yaml --root reference --variant with_lower_confidence
+          case "${{ matrix.site }}" in phospho|lysine) lower=no ;; *) lower=yes ;; esac
+          [ "$lower" = no ] || ptmc run sites/${{ matrix.site }}.yaml --root reference --variant with_lower_confidence
           ptmc web sites/${{ matrix.site }}.yaml
-          [ "${{ matrix.site }}" = phospho ] || ptmc web sites/${{ matrix.site }}.yaml --variant with_lower_confidence
+          [ "$lower" = no ] || ptmc web sites/${{ matrix.site }}.yaml --variant with_lower_confidence
       # the website and the run record, which the landing page reads; the one-file copy (out/<site>/web/<site>.html, up to
       # 84 MB) is not published on Pages: kept in its own artifact
       - uses: actions/upload-artifact@v4
@@ -178,7 +180,7 @@ jobs:
           mkdir -p out
           for d in out-parts/site-*; do mkdir -p "out/${d#out-parts/site-}"; cp -a "$d"/. "out/${d#out-parts/site-}/"; done
           ls out/*
-      - run: ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml --out _site --skip-missing
+      - run: ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml sites/lysine.yaml --out _site --skip-missing
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

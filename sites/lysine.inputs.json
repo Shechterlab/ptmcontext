@@ -550,21 +550,21 @@
   },
   "acetylation_sites_v1_5_0": {
    "file": "releases/v1.5.0/human_acetylation_sites_v1.5.0.tsv",
-   "md5": "079ce9e22305fcb01fb9f035fca778f7",
-   "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/bdb5b86/releases/v1.5.0",
-   "version": "Release v1.5.0 of PTM_Pipeline (2026-11-10); positions on UniProt 2026_03",
-   "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
+   "md5": "f913576ea2dabcb9444c160f2eb925a9",
+   "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/10c228f/releases/v1.5.0",
+   "version": "Release v1.5.0 of PTM_Pipeline (commit 10c228f, 2026-11-12); positions on UniProt 2026_03",
+   "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; CPLM 4.0 states no license: its rows are included, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022)",
    "role": "input",
-   "note": "Lysine acetylation sites of the human reviewed proteome (4,597 rows on 4,597 residues of 1,834 proteins), one row per residue, with sources (UniProt, iPTMnet), evidence class, iPTMnet upstream databases and PubMed IDs. The lysine site's marks of type acetyl. Pinned to PTM_Pipeline commit bdb5b86."
+   "note": "Lysine acetylation sites of the human reviewed proteome (53,177 rows on 53,177 residues of 9,336 proteins; CPLM 4.0, UniProt and iPTMnet), one row per residue, with sources, evidence class, CPLM evidence label, iPTMnet upstream databases and PubMed IDs. The lysine site's marks of type acetyl. Pinned to PTM_Pipeline commit 10c228f."
   },
   "lysine_acylation_sites_v1_5_0": {
    "file": "releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv",
-   "md5": "4164819cece8710a79904b9901cfa2bf",
-   "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/bdb5b86/releases/v1.5.0",
-   "version": "Release v1.5.0 of PTM_Pipeline (2026-11-10); positions on UniProt 2026_03",
-   "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
+   "md5": "860ba02dafae6ebca77c3e0a0c2dc69f",
+   "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/10c228f/releases/v1.5.0",
+   "version": "Release v1.5.0 of PTM_Pipeline (commit 10c228f, 2026-11-12); positions on UniProt 2026_03",
+   "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; CPLM 4.0 states no license: its rows are included, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022)",
    "role": "input",
-   "note": "Lysine acylation sites of the human reviewed proteome (8,008 rows on 5,504 residues of 1,945 proteins; 13 acyl types in acyl_type, 4,597 of them acetyl, which the lysine site reads from the acetylation table), one row per residue and acyl type. The lysine site's marks of each acyl type other than acetyl, each kept as its own type. Pinned to PTM_Pipeline commit bdb5b86."
+   "note": "Lysine acylation sites of the human reviewed proteome (88,816 rows on 61,549 residues of 9,857 proteins; CPLM 4.0, UniProt and iPTMnet; 16 acyl types in acyl_type, 53,177 of them acetyl, which the lysine site reads from the acetylation table), one row per residue and acyl type. The lysine site's marks of each acyl type other than acetyl, each kept as its own type. Pinned to PTM_Pipeline commit 10c228f."
   },
   "ubiquitination_sites_v1_5_0": {
    "file": "releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv",

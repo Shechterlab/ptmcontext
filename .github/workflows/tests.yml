@@ -1,7 +1,8 @@
 name: tests
 on: [push, pull_request]
 jobs:
-  # The jobs run side by side: lint (seconds), the tests, and the link audit, which builds a site (about 25 minutes).
+  # The jobs run side by side: lint (seconds), the tests, and the link audit, one job per site, each building its site
+  # (about 25 minutes, the lysine site about 45).
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -136,8 +137,13 @@ jobs:
           PTMCONTEXT_ROOT: reference
 
   link-audit:
+    name: link-audit (${{ matrix.site }})
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        site: [methylarginine, methyllysine, phospho, lysine]
     steps:
       - uses: actions/checkout@v5
       # The parity test reads release v1.4.3's inputs and statistics as data (checked against inputs.json MD5s);
@@ -254,11 +260,11 @@ jobs:
         env:
           PTMCONTEXT_ROOT: reference
         run: |
-          ptmc run sites/methylarginine.yaml --root reference
-          ptmc web sites/methylarginine.yaml
+          ptmc run sites/${{ matrix.site }}.yaml --root reference
+          ptmc web sites/${{ matrix.site }}.yaml
           npm install --no-save playwright@1.63.0
           npx playwright install --with-deps chromium
-          python3 -m http.server 8841 --directory out/methylarginine/web >/dev/null 2>&1 &
+          python3 -m http.server 8841 --directory out/${{ matrix.site }}/web >/dev/null 2>&1 &
           sleep 2
           node tools/audit/links.js http://localhost:8841/index.html --max 4 --workers 4
 
@@ -284,6 +290,9 @@ jobs:
           - site: phospho
             proteins: P04637,P31749
             selection: "f=p:kinase_motifs~proline_directed"
+          - site: lysine
+            proteins: P68431,P04637
+            selection: "f=p:histone~histone|f=p:panther_group~Transcription, chromatin and DNA"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/checkout@v5
