@@ -2475,7 +2475,9 @@ body.has-selection .tabs {
 }
 .stbl td,
 .sites-tbl td {
-  overflow-wrap: anywhere;
+  overflow-wrap: normal; /* a word is never cut: the column is as wide as its longest word (see "tables that fit") */
+  word-break: normal;
+  hyphens: manual;
 }
 @media print {
   :root {
@@ -2777,7 +2779,9 @@ pre.seq {
   word-break: break-all;
 }
 .tbl td {
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: manual;
 }
 .sites-tbl .tags {
   display: block;
@@ -9269,8 +9273,18 @@ a.btn:hover {
 .tbl th,
 .tbl td {
   white-space: normal;
-  overflow-wrap: anywhere; /* unlike break-word, it lets a long unbroken string (a sequence) shrink the column */
+  overflow-wrap: normal; /* a line breaks at a space (or a hyphen), never inside a word: a word sets the column's least width */
+  word-break: normal;
+  hyphens: manual;
   vertical-align: top;
+}
+/* only a long unbroken token (a sequence, a list of identifiers without spaces) may break anywhere, so it cannot widen the table */
+.tbl td.mono.wrap-any,
+.tbl td .wrap-any,
+.tbl td.ids,
+.stbl td.ids,
+.sites-tbl td.ids {
+  overflow-wrap: anywhere;
 }
 .tbl th.num,
 .tbl td.num,
