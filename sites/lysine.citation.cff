@@ -3,9 +3,9 @@
 cff-version: 1.2.0
 message: "Please cite the data sources: there is no paper for this site yet."
 title: "Human lysine modification sites (ptmcontext site, release v1.5.0 of PTM_Pipeline)"
-version: "0.3.0"
-date-released: "2026-11-12"
-url: "https://github.com/Shechterlab/PTM_Pipeline/tree/e1852ba/releases/v1.5.0"
+version: "0.3.1"
+date-released: "2026-11-13"
+url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5fadf74/releases/v1.5.0"
 license: "CC-BY-NC-SA-4.0"
 authors:
   - name: "Shechter Lab, Albert Einstein College of Medicine"
@@ -196,6 +196,24 @@ references:   # the data sources: cited with every export
     end: D459
     year: 2022
     doi: "10.1093/nar/gkab849"
+  - type: article   # the SUMO-2 sites of Hendriks et al. 2017 (Supplementary Table 1): the article is not open access, the table carries no notice of its own; included, cited
+    authors: [{family-names: Hendriks, given-names: IA}, {family-names: Lyon, given-names: D}, {family-names: Young, given-names: C}, {name: "et al."}]
+    title: "Site-specific mapping of the human SUMO proteome reveals co-modification with phosphorylation"
+    journal: "Nat Struct Mol Biol"
+    volume: 24
+    start: 325
+    end: 336
+    year: 2017
+    doi: "10.1038/nsmb.3366"
+  - type: article   # the ubiquitination sites of Akimov et al. 2018 (Supplementary Table 1): the article is not open access, the table carries no notice of its own; included, cited
+    authors: [{family-names: Akimov, given-names: V}, {family-names: Barrio-Hernandez, given-names: I}, {family-names: Hansen, given-names: SVF}, {name: "et al."}]
+    title: "UbiSite approach for comprehensive mapping of lysine and N-terminal ubiquitination sites"
+    journal: "Nat Struct Mol Biol"
+    volume: 25
+    start: 631
+    end: 640
+    year: 2018
+    doi: "10.1038/s41594-018-0084-y"
   - type: article   # the methyllysine sites of Berryhill et al. 2023 (Supplementary Table 5): the article is CC BY 4.0, the table has no separate license notice
     authors: [{family-names: Berryhill, given-names: CA}, {family-names: Hanquier, given-names: JN}, {family-names: Doud, given-names: EH}, {name: "et al."}]
     title: "Global lysine methylome profiling using systematically characterized affinity reagents"
