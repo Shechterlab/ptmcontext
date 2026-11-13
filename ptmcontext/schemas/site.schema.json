@@ -7945,7 +7945,7 @@
           "type": "object",
           "additionalProperties": false,
           "required": ["attribute", "at_least"],
-          "description": "the site's own marks on the protein map by a number attribute: drawn at first only where it is at least at_least (a mark without a number is hidden too), the row's label a link to show every mark (kept in the browser). Absent where the attribute is (an optional one a run lacks)",
+          "description": "the site's own marks on the protein map by a number attribute: an option: every mark is drawn at first, the row's label a link that keeps only marks where it is at least at_least (a mark without a number is hidden then; kept in the browser). Absent where the attribute is (an optional one a run lacks)",
           "properties": {
             "attribute": {"type": "string", "description": "a marks attribute of kind number"},
             "at_least": {"type": "number"},

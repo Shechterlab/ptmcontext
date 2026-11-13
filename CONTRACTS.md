@@ -470,12 +470,12 @@ section instead. A row may instead be found in each protein's sequence (`sequenc
 `min` matches of a regular expression, each within `gap` residues of the one before). A row whose data a protein lacks is
 not drawn on it, and a site without rows has none.
 
-**The site's own marks by a score.** `website.protein.map.marks_view: {attribute, at_least, label?}` draws the site's own marks
-on the protein map at first only where the number attribute (`kind: number`) is at least `at_least`; a mark without a
-number is hidden too. The label of the marks row ("<marks>: <label>") is a link that shows every mark (and back); the
-reader's choice is kept in the browser. The attribute is usually `optional` (a score merged into the table later): where
-the run lacks it the whole row of marks is drawn as before. It is the map-row `swap` of the context marks for the marks
-the site itself counts; no statistic, count or filter changes.
+**The site's own marks by a score.** `website.protein.map.marks_view: {attribute, at_least, label?}` offers the site's own marks
+on the protein map by the number attribute (`kind: number`) as an option: every mark is drawn at first, and the label of the
+marks row ("<marks>: all") is a link that keeps only the marks whose number is at least `at_least` (a mark without a
+number is hidden then), and shows "n of m" beside the label. The reader's choice is kept in the browser. The attribute is
+usually `optional` (a score merged into the table later): where the run lacks it the row is drawn as before. No statistic,
+count or filter changes.
 
 **The "All modifications" block.** `website.protein.map.combined_marks: {default?, label?, order?, min_marks?, split?}` (or `false`)
 draws, at the top of the rows, one compact block for the site's own modification and every context mark: a thin lane

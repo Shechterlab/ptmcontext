@@ -2901,10 +2901,19 @@
             : '') +
           (`<p class="src">${esc(tableWords('predicted'))}; models ` + `read live.</p>`)
         : `<p class="muted">The site’s tables name no predicted complex with a ${esc(NOUN)} at the interface.</p>`;
+    // AlphaFold DB answers 404 for a protein with no predicted complex, and the browser logs that as an error: it is asked
+    // at once only where the site's tables name a predicted partner (or it was asked before), else on the reader's request
+    const askNow = pv.length > 0 || !!cache.cx[base];
     box.innerHTML =
-      tableHtml + '<div id="s3d-afcx"><p class="muted">Asking AlphaFold DB for predicted complexes…</p></div>';
+      tableHtml +
+      '<div id="s3d-afcx">' +
+      (askNow
+        ? '<p class="muted">Asking AlphaFold DB for predicted complexes…</p>'
+        : '<p><button type="button" class="linkish" data-s3d-afask>Check AlphaFold DB for predicted complexes</button></p>') +
+      '</div>';
     T.predList = pv;
-    (cache.cx[base] ||= getJson(`https://alphafold.ebi.ac.uk/api/complex/${encodeURIComponent(base)}`).then(
+    const ask = () =>
+      (cache.cx[base] ||= getJson(`https://alphafold.ebi.ac.uk/api/complex/${encodeURIComponent(base)}`).then(
       (d) =>
         (Array.isArray(d) ? d : [])
           .filter((x) => x.isComplex !== false && (x.uniprotAccession || []).includes(base))
@@ -2931,7 +2940,7 @@
         return;
       }
       if (!list.length) {
-        hold.innerHTML = ''; // none predicted (the API's 404): hidden quietly
+        hold.innerHTML = askNow ? '' : '<p class="muted">AlphaFold DB has no predicted complex for this protein.</p>'; // none (the API's 404)
         return;
       }
       T.afcx = list;
@@ -2973,7 +2982,9 @@
           '4.0), read live. EMBL-EBI’s guidance: ipTM above 0.8 is a confident prediction, ' +
           'below 0.6 likely a failed one; low pLDDT in disordered regions can lower ipTM ' +
           'even when the complex is right.</p>');
-    });
+      });
+    T.askAf = ask;
+    if (askNow) ask();
   }
   // a predicted model: spec() resolves to {url, chain, names, label, method, scores, link, pae}; numbering is UniProt's
   function showModel(spec, focus) {
@@ -4352,6 +4363,13 @@
           at = el.dataset.s3dAt != null ? +el.dataset.s3dAt : null;
         apply({ entry: id, pos: at ?? T.highlight, chain: null });
         scrollToViewer();
+      },
+    ],
+    [
+      '[data-s3d-afask]',
+      (el) => {
+        el.closest('#s3d-afcx').innerHTML = '<p class="muted">Asking AlphaFold DB for predicted complexes…</p>';
+        T.askAf?.();
       },
     ],
     [

@@ -67,7 +67,7 @@
     const c = compute(),
       bad = new Set((c.unresolved || []).map((x) => x.toLowerCase())),
       words = plainOf(S.q)
-        .split(' ')
+        .split(/[\s,;]+/) // a list typed "TP53, MYC" has no commas of its own in the chip: they are the joiner
         .filter((t) => t && !bad.has(t.toLowerCase()));
     if (!words.length) return null;
     const list = c.q.genes.length > 0 && !c.q.sites.length,

@@ -1369,5 +1369,5 @@ website:                  # the look and words of the website (ptmc web); layout
         site: [name, chips, nearby, click]
         chips: [sources, {attribute: pmids, count: PMIDs}, functional_score]
         context: [mark, residue, detail, source, click]
-      marks_view: {attribute: functional_score, at_least: 0.5, label: score ≥ 0.5}   # at first only the sites Ochoa 2020 scores 0.5 or more (sites without a score are hidden too); a click on the row label shows all
+      marks_view: {attribute: functional_score, at_least: 0.5, label: score ≥ 0.5}   # every site at first; a click on the row label keeps the sites Ochoa 2020 scores 0.5 or more
       hide_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row would repeat the phosphosites: one source for them

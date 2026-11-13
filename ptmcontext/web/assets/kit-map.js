@@ -235,7 +235,7 @@
           label: CFG.marks_view.label || `${SPECS[CFG.marks_view.attribute].label} ≥ ${CFG.marks_view.at_least}`,
         }
       : null;
-  const MV_ALL = { on: !!store.get('ptmc-map-marks-all', false) };
+  const MV_ALL = { on: !!store.get('ptmc-map-marks-all', true) }; // every mark at first; the score cut is the reader's option
   const MV_PASS = (m) => {
     if (!MV || MV_ALL.on) return true;
     const v = m[3]?.[attrIdx(MV.attribute)];
@@ -1384,7 +1384,7 @@
     if (marks.length || (MV && rec.marks.length)) {
       c.rowToggle = !!MV;
       rowLabel(
-        MV ? `${cap(W.marks)}: ${MV_ALL.on ? 'all' : MV.label}` : cap(W.marks),
+        MV ? `${cap(W.marks)}: ${MV_ALL.on ? 'all' : `${MV.label} (${marks.length} of ${rec.marks.length})`}` : cap(W.marks),
         top + 8 + (nLev - 1) * 5.5,
         MV
           ? `the ${W.marks} of this site${MV_ALL.on ? '' : ` with ${MV.label}`}, colored as chosen above (${marks.length} of ${rec.marks.length} here)`
@@ -3372,7 +3372,12 @@
       !document.getElementById('pmap')
     )
       return;
-    if (M.pin) {
+    if (M.rowsMenu) {
+      M.rowsMenu = false;
+      e.preventDefault();
+      redraw();
+      document.querySelector('[data-map-rows]')?.focus(); // the menu's button gets the focus back
+    } else if (M.pin) {
       closePin(true);
       e.stopPropagation();
     } else if (M.zoom) {
