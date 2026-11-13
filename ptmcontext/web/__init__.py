@@ -30,6 +30,7 @@ from ..inputs import load as load_manifest
 from ..inputs import role_inputs, site_input_names
 from ..profile import site_profile
 from ..site import code_commit, load_site, manifest_of, presence_only, root_of
+from .cellpct import cell_percent
 from .counts import counts_data
 from .glance import glance
 from . import structure as S3D
@@ -581,6 +582,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
             if web.get('cell')
             else {}
         ),
+        # the share of each compartment's proteins with a mark, counted here (the cell maps' "percent with sites" view)
+        **({'cell_pct': cell_percent(web['cell'], kept)} if web.get('cell') else {}),
         **({'set_views': web['set_views']} if web.get('set_views') else {}),
         **({'models': models} if models else {}),
         # the profile's sticker residues, for the IDRs' patterning line (kit-idrs.js)
