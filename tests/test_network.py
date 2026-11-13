@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import random
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -79,8 +80,10 @@ def _full(n=40, seed=3):
             if rnd.random() < (0.5 if same else 0.02):
                 edges.append([i, j, 3 if rnd.random() < 0.2 else 1, rnd.choice([0, 0, 750, 950]) if True else 0])
     edges = [[a, b, f if s or f & 2 else 1, s or 800] for a, b, f, s in edges]
-    terms = [[f'term {k}', 0, f'T{k}'] for k in range(4)]
-    ann = [[i // 10] + ([] if i % 5 else [3]) for i in range(n)]
+    terms = [[f'term {k}', 0, f'T{k}', k + 2] for k in range(4)]
+    # a second source: a shallow and a deep term for each block of ten, so q ties and the depth decides
+    terms += [[f'alt {k}{d}', 1, f'A{k}{d}', 3 + 4 * d] for k in range(4) for d in (0, 1)]
+    ann = [[i // 10, 4 + 2 * (i // 10), 5 + 2 * (i // 10)] + ([] if i % 5 else [3]) for i in range(n)]
     return {
         'sources': [
             {'kind': 'pairs', 'id': 'p'},
@@ -130,6 +133,8 @@ def test_the_browser_twin_gives_the_same_clusters_and_labels(tmp_path):
         ({**OPT, 'top': 25}, None, [0]),
         ({**OPT, 'min_score': 900}, set(range(5, 33)), None),
         ({**OPT, 'resolution': 1.5}, set(range(0, 40, 2)), [0, 1]),
+        ({**OPT, 'label': 1, 'min_overlap': 2}, None, None),
+        ({**OPT, 'label': 0, 'top': 30}, set(range(3, 40)), None),
     ]
     want = [NW.make_view(full, o, s, e) for o, s, e in cases]
     prog = (
@@ -178,7 +183,7 @@ def _network(extra=None):
                 'input': 'ann',
                 'set': 'term',
                 'protein': 'protein',
-                'names': {'input': 'ann_names', 'set': 'term', 'name': 'name'},
+                'names': {'input': 'ann_names', 'set': 'term', 'name': 'name', 'depth': 'depth'},
                 'min_term': 2,
                 'cite': 'Terms paper',
             }
@@ -225,9 +230,12 @@ def _with_network(tmp_path, cfg):
         columns=['complex_id', 'curation', 'uniprot_accession'],
     ).to_csv(data / 'cplx.tsv', sep='\t', index=False)
     pd.DataFrame(
-        [('TA', p) for p in ('P1', 'P2')] + [('TB', p) for p in ('P5', 'P6', 'P7')], columns=['term', 'protein']
+        [('TA', p, 'true') for p in ('P1', 'P2')]
+        + [('TA', 'P3', 'false')]  # P3 holds term A on IEA alone
+        + [('TB', p, 'true') for p in ('P5', 'P6', 'P7')],
+        columns=['term', 'protein', 'non_iea'],
     ).to_csv(data / 'ann.tsv', sep='\t', index=False)
-    pd.DataFrame([('TA', 'term A'), ('TB', 'term B')], columns=['term', 'name']).to_csv(
+    pd.DataFrame([('TA', 'term A', 4), ('TB', 'term B', 2)], columns=['term', 'name', 'depth']).to_csv(
         data / 'ann_names.tsv', sep='\t', index=False
     )
     mp = root / 'sites' / 'toy.inputs.json'
@@ -276,6 +284,48 @@ def test_the_block_writes_two_lazy_files_and_a_page_config_but_not_the_first_pay
     # the one-file copy has no network view
     one = (index.parent / 'toy.html').read_text()
     assert '"files":{"view":' not in one
+
+
+def _terms(tmp_path, lab):
+    root, p, index = _built(tmp_path, _network({'label_from': [{**_network()['label_from'][0], **lab}]}))
+    full = json.loads((index.parent / 'data' / 'network_full.json').read_text())
+    data = json.loads(
+        re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1)
+    )
+    return full, data['network']['labels']
+
+
+def test_only_non_iea_rows_count_by_default_and_a_shallow_term_is_left_out(tmp_path):
+    full, labels = _terms(tmp_path, {})
+    n_a = sum(0 in a for a in full['ann'])
+    assert n_a == 2 and full['terms'][0] == [
+        'term A',
+        0,
+        'TA',
+        4,
+    ]  # P3's IEA-only row is not counted; depth rides along
+    assert labels[0]['non_iea'] is True and labels[0]['min_depth'] == 0
+    full, labels = _terms(tmp_path / 'b', {'non_iea': False})
+    # counting P3's IEA-only row too, term A covers 3 of the 4 nodes: over the 50% a table may hold, so it is left out
+    assert full['terms'] == [] and labels[0]['non_iea'] is False
+    full, _ = _terms(tmp_path / 'c', {'min_term': 1, 'min_depth': 3})
+    assert [t[0] for t in full['terms']] == ['term A']  # term B lies 2 steps below the root
+    full, _ = _terms(tmp_path / 'd', {'min_term': 1})
+    assert [t[0] for t in full['terms']] == ['term A', 'term B']
+
+
+def test_equal_q_goes_to_the_deeper_term_and_a_source_can_be_chosen():
+    # the same 10 proteins hold two terms, so p and q are equal: the deeper term names the cluster
+    comm = [0] * 10 + [1] * 50
+    ann = [[0, 1, 2] for _ in range(10)] + [[2] for _ in range(50)]
+    terms = [['shallow', 0, 'S', 3], ['deep', 0, 'D', 7], ['other source', 1, 'O', 9]]
+    opt = {**NW.DEFAULTS, 'max_fraction': 0.5, 'label': 0}
+    assert NW.label_clusters(comm, ann, terms, opt)[0]['term'] == 'deep'
+    assert NW.label_clusters(comm, ann, terms, {**opt, 'label': None})[0]['term'] in ('deep', 'other source')
+    only1 = NW.label_clusters(comm, [[2] for _ in ann], terms, {**opt, 'label': 1, 'max_fraction': 1})
+    assert only1[0].get('term') in (None, 'other source')
+    # a source the terms do not have names no cluster
+    assert NW.label_clusters(comm, ann, terms, {**opt, 'label': 5})[0]['term'] is None
 
 
 def test_complex_edges_skip_predicted_and_large_complexes_and_the_default_matches_make_view(tmp_path):

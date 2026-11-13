@@ -83,9 +83,11 @@
     );
     return nodeComm.map((c) => rank.get(c));
   }
-  // each cluster's term: the smallest one-sided hypergeometric p among the terms with min_overlap or more of its proteins
-  // that annotate min_term or more of the network's N proteins and at most max_fraction of them, against all the network's
-  // proteins; q is Benjamini-Hochberg over the terms tested in the cluster; no label above max_q
+  // each cluster's term: the smallest q (Benjamini-Hochberg over the terms tested in the cluster; equal to 1e-9 relative)
+  // among the terms with min_overlap or more of its proteins that annotate min_term or more of the network's N proteins and
+  // at most max_fraction of them (one-sided hypergeometric p against all the network's proteins), a tie going to the deeper
+  // term, then the smaller p, the term with fewer proteins, the name; no label above max_q. With opt.label set, only the
+  // terms of that source (a term's second item)
   function labelClusters(comm, ann, terms, opt) {
     const N = comm.length,
       members = [];
@@ -95,7 +97,14 @@
     const ex = new Set(opt.exclude || []),
       ok = new Set();
     count.forEach((m, t) => {
-      if (m >= opt.min_term && m / N <= opt.max_fraction && !ex.has(terms[t][2]) && !ex.has(terms[t][0])) ok.add(t);
+      if (
+        m >= opt.min_term &&
+        m / N <= opt.max_fraction &&
+        (opt.label == null || terms[t][1] === opt.label) &&
+        !ex.has(terms[t][2]) &&
+        !ex.has(terms[t][0])
+      )
+        ok.add(t);
     });
     return members.map((mem) => {
       const n = mem.length,
@@ -105,16 +114,22 @@
       if (!tested.length) return { n, term: null };
       const ps = tested.map((t) => window.PTMC_STATS.hyperSF(kOf.get(t), N, count.get(t), n)),
         qs = window.PTMC_STATS.bh(ps);
+      const dp = (j) => terms[tested[j]][3] || 0,
+        cnt = (j) => count.get(tested[j]),
+        nm = (j) => terms[tested[j]][0],
+        // does tested[x] beat tested[y] on equal q: deeper, then smaller p, fewer proteins, name
+        wins = (x, y) =>
+          dp(x) !== dp(y)
+            ? dp(x) > dp(y)
+            : ps[x] !== ps[y]
+              ? ps[x] < ps[y]
+              : cnt(x) !== cnt(y)
+                ? cnt(x) < cnt(y)
+                : nm(x) < nm(y);
       let best = 0;
       for (let j = 1; j < tested.length; j++) {
-        const a = ps[j],
-          b = ps[best],
-          same = Math.abs(a - b) <= 1e-9 * Math.max(a, b),
-          ca = count.get(tested[j]),
-          cb = count.get(tested[best]),
-          na = terms[tested[j]][0],
-          nb = terms[tested[best]][0];
-        if (same ? ca < cb || (ca === cb && na < nb) : a < b) best = j;
+        const same = Math.abs(qs[j] - qs[best]) <= 1e-9 * Math.max(qs[j], qs[best]);
+        if (same ? wins(j, best) : qs[j] < qs[best]) best = j;
       }
       if (!(qs[best] <= opt.max_q)) return { n, term: null };
       const t = tested[best];

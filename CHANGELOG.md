@@ -3,11 +3,18 @@
 ## Unreleased
 
 - New Network tab (all four sites): the proteins with sites as one network, with STRING physical links and curated
-  Complex Portal complexes as edges, grouped into Louvain clusters, each named by its most enriched Reactome pathway
-  (q on hover). Colour by cluster or by the share of sites in disordered regions, the domain class, and (phosphosites) the
-  kinase and reader motif classes. A selection is clustered again in the browser. Table view, SVG, PNG and TSV exports, a
+  Complex Portal complexes as edges, grouped into Louvain clusters, each named by its most enriched GO biological process
+  (q on hover; a menu names them by Reactome pathway instead). A GO term counts only if it lies at least three steps below
+  the root, annotates 5 or more and at most 20% of the network's proteins, and rests on evidence other than IEA; the
+  smallest q wins, and equal q goes to the deeper term. Long names are shortened in the figure only.
+  Colour by cluster or by the share of sites in disordered regions, the domain class, and (phosphosites) the kinase and
+  reader motif classes. A selection is clustered again in the browser. Table view, SVG, PNG and TSV exports, a
   tile on the Overview. For the code: `website.network` (schema, CONTRACTS.md, `ptmcontext/web/network.py`,
-  `kit-netcore.js`, `kit-network.js`).
+  `kit-netcore.js`, `kit-network.js`). The build needs PTM_Pipeline commit aa895fc (PR 24, not yet merged), which stages
+  the GO biological process tables (`inputs/annotation/go_bp_human_2026-11-04.tsv` and `go_bp_terms_2026-11-04.tsv`; GO
+  Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000),
+  doi:10.1038/75556; CC BY 4.0); the pin stays at 5fadf74 until that PR merges, and a checkout at the pinned commit does not have these
+  files.
 
 ## 0.3.1 (2026-11-13)
 

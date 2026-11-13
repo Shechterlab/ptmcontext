@@ -4,7 +4,7 @@
      edges     the sources the site file lists (a scored table such as STRING physical links, curated complexes): solid for
                the scored source, dashed for complexes, thicker where both hold; each source has a switch.
      clusters  Louvain communities (kit-netcore.js); a cluster smaller than the minimum, or past the eighth, is grey "Other".
-     labels    the term of the smallest hypergeometric p in the cluster against the network's proteins (q on hover).
+     labels    the term of the smallest q in the cluster (ties to the deeper term), against the network's proteins; one source at a time (Name clusters by).
      colour    by cluster (default) or by any "colour by" the site file lists (a share of the protein's sites, or the commonest
                value among them); cluster names stay on the figure as labels and outlines.
    The default network is precomputed (data/network.json); a selection or another option makes it again in the browser from
@@ -60,13 +60,15 @@
     minc: OPT.min_cluster,
     src: SRC.map((_, i) => i),
     colour: 'cluster',
+    label: 0,
   };
   const KEY = 'ptmc-network:' + (D.site?.id || '');
   const UI = { ...DEF, zoom: 1, mode: 'network', hi: -1, find: '', pin: null, hide: [] };
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || '{}');
-    ['score', 'top', 'minc', 'src', 'colour'].forEach((k) => s[k] != null && (UI[k] = s[k]));
+    ['score', 'top', 'minc', 'src', 'colour', 'label'].forEach((k) => s[k] != null && (UI[k] = s[k]));
     if (!OPT.steps.includes(UI.score)) UI.score = DEF.score;
+    if (!(UI.label >= 0 && UI.label < NC.labels.length)) UI.label = DEF.label;
     if (UI.colour !== 'cluster' && !CB.some((c) => c.id === UI.colour)) UI.colour = 'cluster';
   } catch (e) {
     /* no storage: the defaults */
@@ -75,7 +77,7 @@
     try {
       localStorage.setItem(
         KEY,
-        JSON.stringify({ score: UI.score, top: UI.top, minc: UI.minc, src: UI.src, colour: UI.colour })
+        JSON.stringify({ score: UI.score, top: UI.top, minc: UI.minc, src: UI.src, colour: UI.colour, label: UI.label })
       );
     } catch (e) {
       /* no storage */
@@ -86,6 +88,7 @@
     UI.score === DEF.score &&
     UI.top === DEF.top &&
     UI.colour === 'cluster' &&
+    UI.label === DEF.label &&
     UI.src.length === DEF.src.length;
   // ---- the files, read when the view first needs them ---------------------------------------------------------------------
   const FILE = { view: null, full: null };
@@ -114,7 +117,7 @@
     return null;
   };
   // ---- the model: nodes with their cluster, edges, labels ---------------------------------------------------------------
-  const optNow = () => ({ ...OPT, top: UI.top, min_score: UI.score });
+  const optNow = () => ({ ...OPT, top: UI.top, min_score: UI.score, label: UI.label });
   let cache = { key: '', M: null };
   function model() {
     const sel = K.sel?.active();
@@ -123,6 +126,7 @@
       UI.score,
       UI.top,
       UI.src,
+      UI.label,
       UI.colour === 'cluster' ? 0 : 1,
       sel ? K.sel.describe() : '',
     ]);
@@ -337,7 +341,13 @@
         ? Math.min(820, Math.max(520, 400 + Math.sqrt(M.nodes.length) * 24))
         : Math.min(720, Math.max(440, 330 + Math.sqrt(M.nodes.length) * 21))
     );
-  const clip = (t, n) => (t.length > n ? t.slice(0, n - 1) + '…' : t);
+  // the figure's short form of a name (the hover and the table keep the whole name): cut at a space when one lies late enough
+  const clip = (t, n) => {
+    if (t.length <= n) return t;
+    const cut = t.slice(0, n - 1),
+      sp = cut.lastIndexOf(' ');
+    return (sp >= n * 0.4 ? cut.slice(0, sp) : cut).replace(/[ ,;:(-]+$/, '') + '…';
+  };
   const hit = (M) => {
     const q = UI.find.trim().toUpperCase();
     if (!q) return new Set();
@@ -524,18 +534,19 @@
   function methodText() {
     const p = SRC.find((s) => s.kind === 'pairs'),
       g = SRC.filter((s) => s.kind === 'groups'),
-      lab = NC.labels.map((l) => l.label).join(' and ');
+      L = NC.labels[UI.label] || NC.labels[0] || {},
+      lab = L.label || '';
     const bits = [
       `Nodes are the proteins with ${W.marks}; a node's size is its number of ${W.marks}. By default the ${int(OPT.top)} proteins with the most ${W.marks} are taken (the number can be changed), and proteins left with no edge among them are dropped. With a selection, the network is the selected proteins' (the same limit applies).`,
       p
         ? `An edge joins two proteins that ${p.label} links with a score of ${OPT.min_score / 1000} or more${g.length ? `, or that ${g.map((x) => x.label).join(' and ')} puts in one ${g.length === 1 ? 'group' : 'of its groups'}` : ''}${g.length ? ` (groups of more than ${int(g[0].max_size)} proteins are left out)` : ''}. Solid lines are ${esc(p.label)}, dashed lines are ${g.map((x) => esc(x.label)).join(' and ') || 'the other source'}, and a thicker line is a link in more than one source. Each source can be switched off.`
         : `An edge joins two proteins that share a group in ${sourceNames()}.`,
       `Clusters are communities found by Louvain modularity optimisation (Blondel et al. 2008) on the edges, weighted by score. A cluster with fewer than ${OPT.min_cluster} proteins, or past the ${NCOL} largest, is grey "Other".`,
-      `Each cluster is named by the term from ${lab || 'the annotation'} with the smallest one-sided hypergeometric p among the cluster's proteins, tested against all the proteins of the network (terms that annotate more than ${Math.round(OPT.max_fraction * 100)}% of the network or fewer than ${OPT.min_term} of its proteins are left out, and at least ${OPT.min_overlap} proteins of the cluster must have it). q is the Benjamini–Hochberg value over the terms tested in that cluster; a cluster whose best q is above ${OPT.max_q} has no name. The default network is computed when the site is built, and a selection or another setting is clustered again in the browser by the same method.`,
+      `Each cluster is named by the term from ${lab || 'the annotation'} with the smallest q: a one-sided hypergeometric p for the cluster's proteins against all the proteins of the network, adjusted by Benjamini–Hochberg over the terms tested in that cluster (terms that annotate more than ${Math.round(OPT.max_fraction * 100)}% of the network or fewer than ${OPT.min_term} of its proteins are left out, and at least ${OPT.min_overlap} proteins of the cluster must have it${L.min_depth ? `; terms less than ${L.min_depth} steps below the root are not used` : ''}${L.non_iea ? '; only annotations with evidence other than IEA are counted' : ''}). Of terms with the same q the deeper, more specific one is taken. A cluster whose best q is above ${OPT.max_q} has no name; long names are shortened in the figure only. The default network is computed when the site is built, and a selection or another setting is clustered again in the browser by the same method.`,
     ];
     const cites = [
       ...SRC.map((s) => s.cite).filter(Boolean),
-      ...NC.labels.map((l) => l.cite).filter(Boolean),
+      ...[NC.labels[UI.label] || NC.labels[0]].map((l) => l?.cite).filter(Boolean),
       'Blondel et al., J Stat Mech P10008 (2008), doi:10.1088/1742-5468/2008/10/P10008',
     ];
     return { bits, cites };
@@ -553,6 +564,14 @@
       .join('')}</select></label>`;
   const controls = () =>
     `<div class="nw-bar" role="group" aria-label="Network options">` +
+    (NC.labels.length > 1
+      ? sel(
+          'label',
+          'Name clusters by',
+          NC.labels.map((l, i) => [i, l.label]),
+          UI.label
+        )
+      : '') +
     sel('colour', 'Colour by', [['cluster', 'Cluster (term)'], ...CB.map((c) => [c.id, c.name])], UI.colour) +
     (SRC.some((s) => s.kind === 'pairs')
       ? sel(
@@ -747,12 +766,13 @@
     const k = t.dataset?.nw;
     if (!k) return;
     if (k === 'colour') UI.colour = t.value;
+    else if (k === 'label') UI.label = +t.value;
     else if (k === 'minc') {
       UI.minc = +t.value;
       save();
       return K.render();
     } else UI[k === 'score' ? 'score' : 'top'] = +t.value;
-    if (UI.colour !== 'cluster') load('full');
+    if (UI.colour !== 'cluster' || UI.label !== DEF.label) load('full');
     again();
   });
   document.addEventListener('submit', (e) => {

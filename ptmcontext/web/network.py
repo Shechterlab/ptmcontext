@@ -34,6 +34,7 @@ DEFAULTS = {
     'min_overlap': 3,
     'min_term': 5,
     'max_fraction': 0.2,
+    'label': 0,
     'min_score': 700,
     'complex_weight': 700,
     'complex_max_size': 40,
@@ -125,8 +126,10 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
     """For each cluster (a community number, in order), the term of the smallest one-sided hypergeometric p among the
     terms the cluster has `min_overlap` or more proteins in, that annotate `min_term` or more of the network's N proteins
     and no more than `max_fraction` of them (broad terms are left out), against all the network's proteins. q is
-    Benjamini-Hochberg over the terms tested in that cluster. A cluster whose best q is above `max_q` has no label. Ties
-    (p equal to 1e-9 relative) go to the term with fewer proteins, then the name."""
+    Benjamini-Hochberg over the terms tested in that cluster. The label is the term of the smallest q (equal to 1e-9
+    relative), a tie going to the deeper term, then the smaller p, then the term with fewer proteins, then the name. A
+    cluster whose best q is above `max_q` has no label. With `opt['label']` set, only the terms of that source (the
+    second number of a term) are used."""
     N = len(comm)
     members = defaultdict(list)
     for i, c in enumerate(comm):
@@ -137,6 +140,7 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
         for t, m in count.items()
         if m >= opt['min_term']
         and m / N <= opt['max_fraction']
+        and (opt.get('label') is None or terms[t][1] == opt['label'])
         and not (terms[t][2] in opt.get('exclude', ()) or terms[t][0] in opt.get('exclude', ()))
     }
     out = []
@@ -151,13 +155,18 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
             qs = [float(x) for x in benjamini_hochberg(ps)]
 
             def key(j):
-                return (ps[j], count[tested[j]], terms[tested[j]][0])
+                return (
+                    -(terms[tested[j]][3] if len(terms[tested[j]]) > 3 else 0),
+                    ps[j],
+                    count[tested[j]],
+                    terms[tested[j]][0],
+                )
 
             best = 0
             for j in range(1, len(tested)):
-                a, b = ps[j], ps[best]
+                a, b = qs[j], qs[best]
                 same = abs(a - b) <= 1e-9 * max(a, b)
-                if (same and key(j)[1:] < key(best)[1:]) or (not same and a < b):
+                if (same and key(j) < key(best)) or (not same and a < b):
                     best = j
             if qs[best] <= opt['max_q']:
                 t = tested[best]
@@ -357,18 +366,27 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
     # the terms of the labels: sets annotating at least min_term of the nodes
     terms, ann = [], [[] for _ in nodes]
     labels = []
-    for li, lab in enumerate(cfg.get('label_from') or []):
+    for lab in cfg.get('label_from') or []:
+        li = len(labels)  # the source's number among those read
         mf = _path(site, run, lab['input'], log)
         nf = _path(site, run, lab['names']['input'], log) if lab.get('names') else None
         if mf is None:
             continue
         mt = _table(mf)
+        has_iea = 'non_iea' in mt.columns
+        if lab.get('non_iea', True) and has_iea:
+            mt = mt[mt['non_iea'] == 'true']
         mt = mt[mt[lab['protein']].map(base).isin(ix)]
-        names = {}
+        names, depth = {}, {}
         if nf is not None:
             nt = _table(nf)
             nt = _where(nt, {c['column']: c['equals'] for c in lab['names'].get('include', [])})
             names = dict(zip(nt[lab['names']['set']], nt[lab['names'].get('name', lab['names']['set'])]))
+            if lab['names'].get('depth'):
+                depth = {
+                    s: int(d) for s, d in zip(nt[lab['names']['set']], nt[lab['names']['depth']]) if d.strip().isdigit()
+                }
+        lowest = int(lab.get('min_depth', 0))
         by_set: dict[str, set] = defaultdict(set)
         for s, p in zip(mt[lab['set']], mt[lab['protein']].map(base)):
             by_set[s].add(p)
@@ -376,11 +394,20 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
         for s in sorted(by_set):
             if len(by_set[s]) < lo or len(by_set[s]) / max(1, len(nodes)) > 0.5:
                 continue
+            if lowest and depth.get(s, 0) < lowest:
+                continue
             t = len(terms)
-            terms.append([names.get(s, s), li, s])
+            terms.append([names.get(s, s), li, s, depth.get(s, 0)])
             for p in by_set[s]:
                 ann[ix[p]].append(t)
-        labels.append({k: lab.get(k, '') for k in ('label', 'cite', 'url')} | {'id': lab.get('id', f'label{li}')})
+        labels.append(
+            {k: lab.get(k, '') for k in ('label', 'cite', 'url')}
+            | {
+                'id': lab.get('id', f'label{li}'),
+                'min_depth': lowest,
+                'non_iea': bool(lab.get('non_iea', True) and has_iea),
+            }
+        )
     cols = _table(folder / 'marks.tsv') if cfg.get('color_by') else None
     if cols is not None:
         cols['base'] = cols['accession'].map(base)

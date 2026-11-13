@@ -46,6 +46,8 @@ jobs:
             inputs/annotation/interpro_108.0_all_entry_intervals.tsv
             inputs/layers/reactome_human_protein_pathways.tsv
             inputs/layers/reactome_human_pathways.tsv
+            inputs/annotation/go_bp_human_2026-11-04.tsv
+            inputs/annotation/go_bp_terms_2026-11-04.tsv
             inputs/layers/hpa_subcellular_locations.tsv
             inputs/layers/paxdb_human_integrated_abundance.tsv
             inputs/annotation/panther_19.0_protein_classes.tsv

@@ -12,6 +12,8 @@ inputs:                # role the layers read: manifest input that fills it
   domains: interpro_domains
   reactome: reactome_protein_pathways
   reactome_names: reactome_pathways
+  go_bp: go_bp_annotations                       # the network view's cluster names
+  go_terms: go_bp_terms
   string_partners: string_physical_v12_5         # the network view's STRING links
   complexes: complex_portal_complexes            # and its curated complexes
   hpa: hpa_locations
@@ -1978,16 +1980,27 @@ website:                  # the look and words of the website (ptmc web); layout
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   network:                 # the Network view (kit-network.js): the proteins with sites as one network, clustered, each cluster named by its most enriched term
     title: Network
-    about: "Methylated proteins as one network: STRING physical links and curated complexes join them, communities are the clusters, and each cluster is named by its most enriched Reactome pathway. Node size is the number of sites."
+    about: "Methylated proteins as one network: STRING physical links and curated complexes join them, communities are the clusters, and each cluster is named by its most enriched GO biological process (or Reactome pathway). Node size is the number of sites."
     edges:
       - {id: string_physical, kind: pairs, label: STRING physical, input: string_partners, min_score: 700, cite: "STRING v12.5: Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113", url: "https://string-db.org"}
       - {id: complex_portal, kind: groups, label: Complex Portal complexes, input: complexes, where: {curation: curated}, max_size: 40, weight: 700, cite: "Complex Portal (curated complexes, CC0): Meldal et al., Nucleic Acids Res 50:D578 (2022), doi:10.1093/nar/gkab991", url: "https://www.ebi.ac.uk/complexportal"}
-    label_from:
-      - label: Reactome
+    label_from:             # the first source names the clusters; the others are in the Label by menu
+      - id: go_bp
+        label: GO biological process
+        input: go_bp
+        set: go_id
+        protein: uniprot_accession
+        names: {input: go_terms, set: go_id, name: go_name, depth: depth_min}
+        min_depth: 3            # a term must lie at least three steps below the root
+        non_iea: true           # count only annotations with evidence other than IEA (false: all)
+        cite: "Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556; GOA human annotations of 2026-11-04"
+        url: "https://geneontology.org"
+      - id: reactome
+        label: Reactome
         input: reactome
         set: pathway_id
         protein: canonical_UniProtAC
-        names: {input: reactome_names, set: pathway_id, name: name}
+        names: {input: reactome_names, set: pathway_id, name: name, depth: depth}
         cite: "Reactome release 97: Ragueneau et al., Nucleic Acids Res 54:D673 (2026), doi:10.1093/nar/gkaf1223"
         url: "https://reactome.org"
     top: 300
@@ -1996,7 +2009,7 @@ website:                  # the look and words of the website (ptmc web); layout
     color_by:
       - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}
       - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}
-    tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites as one network of physical links and complexes, in clusters named by Reactome pathway."}
+    tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites as one network of physical links and complexes, in clusters named by GO biological process."}
   compare: {stratify: studies, min_proteins: 10, min_marks: 30}      # "compared with other methylarginines, within studies": the same reporting sources
   proteins:                # the Proteins page (kit-tables.js): its table's columns after the protein and its sites, in the Columns
                            # menu (default: true shows at first), and its download's columns; the explorer's

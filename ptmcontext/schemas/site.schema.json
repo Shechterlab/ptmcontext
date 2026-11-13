@@ -2251,7 +2251,7 @@
                   "set",
                   "protein"
                 ],
-                "description": "a table of published terms that name the clusters: a set column and a protein column (Reactome, Gene Ontology biological process, ...). Terms of all sources compete; the smallest p names the cluster",
+                "description": "a table of published terms that name the clusters: a set column and a protein column (Reactome, Gene Ontology biological process, ...). The first source names the clusters by default; the page offers the others in its Label by menu. A cluster is named by the term of smallest q, ties to the deeper term",
                 "properties": {
                   "id": {
                     "type": "string",
@@ -2293,6 +2293,10 @@
                         "type": "string",
                         "description": "the name column (default the id)"
                       },
+                      "depth": {
+                        "type": "string",
+                        "description": "the column with the term's depth below the root (a tie between terms of one q goes to the deeper; default 0)"
+                      },
                       "include": {
                         "type": "array",
                         "items": {
@@ -2318,6 +2322,15 @@
                     "type": "integer",
                     "description": "the fewest proteins of the network a term must annotate (default 5)",
                     "minimum": 1
+                  },
+                  "min_depth": {
+                    "type": "integer",
+                    "description": "terms with a smaller `names.depth` are not used (default: all)",
+                    "minimum": 0
+                  },
+                  "non_iea": {
+                    "type": "boolean",
+                    "description": "true (default): when the table has a `non_iea` column, count only its rows where it is `true`; false counts every row"
                   },
                   "cite": {
                     "type": "string",
