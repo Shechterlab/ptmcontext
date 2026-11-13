@@ -46,6 +46,14 @@
       s2 = c + d ? c / (c + d) : null;
     return { a, b, c, d, or: f.or, p: f.p, fold: s1 != null && s2 ? s1 / s2 : null };
   }
+  const MIN_N = 5; // a region of fewer elements is counted, not tested
+  // a region too small to test has no fold, p or q, and is left out of the Benjamini-Hochberg family
+  const settle = (rows, minN) => {
+    rows.forEach((r) => {
+      if (r.n < minN) Object.assign(r, { few: true, p: null, q: null, fold: null });
+    });
+    return bhAll(rows.filter((r) => !r.few));
+  };
   const bhAll = (rows) => {
     const q = ST.bh(rows.map((r) => r.p));
     rows.forEach((r, i) => {
@@ -106,7 +114,13 @@
   const rowsOf = (aid) =>
     (labelCache[aid] ||= (
       A[aid]?.kind === 'protein_sets' ? K.rowsFor(A[aid], 'enricher') : K.rowsFor(A[aid], 'mantel_haenszel') || []
-    ).map((r) => ({ id: r.category, label: F.row_labels?.[aid]?.[r.category] || r.label || r.category })));
+    )
+      .filter((r) => !(C.leave_out?.[aid] || []).includes(r.category))
+      .map((r) => ({
+        id: r.category,
+        label: F.row_labels?.[aid]?.[r.category] || r.label || r.category,
+        size: (r.a ?? 0) + (r.c ?? 0),
+      })));
   const uniq = (rows) => [...new Map(rows.map((r) => [r.id, r])).values()];
   const short = (aid) => F.short?.[aid] || A[aid]?.title || aid;
   const savedList = () => (K.sel.savedList ? K.sel.savedList() : []);
@@ -116,7 +130,16 @@
     if (pool) return pool;
     pool = [];
     sets.forEach((aid) =>
-      uniq(rowsOf(aid)).forEach((r) => pool.push({ id: `s:${aid}:${r.id}`, label: r.label, group: short(aid) }))
+      uniq(rowsOf(aid)).forEach((r) =>
+        pool.push({
+          id: `s:${aid}:${r.id}`,
+          label: r.label,
+          group: short(aid),
+          size: r.size,
+          broad: C.n && r.size > 0.25 * C.n,
+          note: C.notes?.[aid] || '',
+        })
+      )
     );
     classQs.forEach((aid) =>
       uniq(rowsOf(aid)).forEach((r) => pool.push({ id: `c:${aid}:${r.id}`, label: r.label, group: short(aid) }))
@@ -254,7 +277,7 @@
 
   // ---- the result: regions of the chosen terms in the chosen unit ---------------------------------------------------------
   let RES = null;
-  async function compute(ids, unit) {
+  async function compute(ids, unit, minN = MIN_N) {
     await loadUniverse();
     const ts = (await Promise.all(ids.map(resolve))).filter(Boolean),
       nT = ts.length;
@@ -294,7 +317,7 @@
             return r;
           })
           .filter((r) => r.mask && r.n);
-        bhAll(tests);
+        settle(tests, minN);
         res.test = 'sites';
       }
       const pset = new Array(1 << nT).fill(0).map(() => new Set());
@@ -335,7 +358,10 @@
       res.N = N;
       res.M = M;
       if (!U.partial) {
-        bhAll(res.rows.filter((r) => r.mask && r.n));
+        settle(
+          res.rows.filter((r) => r.mask && r.n),
+          minN
+        );
         res.test = 'proteins';
         // each term's every protein (a family of its own for q)
         res.totals = ts.map((t, i) => {
@@ -350,7 +376,7 @@
             }
           return { i, ...proteinTest(k, n, M, N), sites: w };
         });
-        bhAll(res.totals);
+        settle(res.totals, minN);
       }
     }
     res.rows[0].outside = true; // the proteins in none of the terms: counted, not shown as a region
@@ -518,6 +544,12 @@
     sites:
       'Fisher’s exact test (pooled, as the residue questions’ “across all proteins” rows) of the residues of the proteins with sites: the share that are sites in the region against outside it; q is Benjamini–Hochberg across the regions shown.',
   };
+  // fold, p and q of a row: too few to test; 0x when none has sites; a note where a huge set gives a tiny p at a small fold
+  const foldCells = (r) =>
+    r.few
+      ? `<td class="num">—</td><td class="num" colspan="2">too few to test</td>`
+      : `<td class="num">${r.k === 0 ? '0×' : fn(r.fold)}</td><td class="num">${r.p == null ? '–' : K.fq(r.p)}</td><td class="num">${r.q == null ? '–' : K.fq(r.q)}</td>`;
+  const broad = (r) => !r.few && r.fold != null && r.fold > 0.8 && r.fold < 1.25 && r.q != null && r.q < 1e-3;
   function tableHtml(res) {
     const sites = res.unit === 'sites',
       rows = res.rows.filter((r) => r.mask && r.n).sort((a, b) => b.n - a.n);
@@ -533,19 +565,18 @@
           ? `<th scope="col" class="num" title="${esc(TESTS.proteins)}">Fold</th><th scope="col" class="num" title="${esc(TESTS.proteins)}">p</th><th scope="col" class="num">q</th>`
           : '') +
         `<th scope="col" class="num">Sites</th>`;
-    const body = (r, name, attrs = '') =>
+    const body = (r, name0, attrs = '') => {
+      const name = name0 + (broad(r) ? ' <span class="muted ov-flag">large set; small effect</span>' : '');
+      return;
       sites
         ? `<tr${attrs}><th scope="row">${name}</th><td class="num">${int(r.n)}</td><td class="num">${int(r.proteins ?? 0)}</td>` +
-          (t
-            ? `<td class="num">${r.p == null ? '–' : fn(r.fold)}</td><td class="num">${r.p == null ? '–' : K.fq(r.p)}</td><td class="num">${r.q == null ? '–' : K.fq(r.q)}</td>`
-            : '') +
+          (t ? foldCells(r) : '') +
           '</tr>'
         : `<tr${attrs}><th scope="row">${name}</th><td class="num">${int(r.n)}</td><td class="num">${int(r.k)}</td>` +
           `<td class="num">${r.n ? `${((100 * r.k) / r.n).toFixed(1)}%` : '–'}</td>` +
-          (t
-            ? `<td class="num">${fn(r.fold)}</td><td class="num">${r.p == null ? '–' : K.fq(r.p)}</td><td class="num">${r.q == null ? '–' : K.fq(r.q)}</td>`
-            : '') +
+          (t ? foldCells(r) : '') +
           `<td class="num">${int(r.sites ?? 0)}</td></tr>`;
+    };
     const main = rows
       .map((r) =>
         body(
@@ -634,7 +665,7 @@
     const full = S.ot.length >= MAXT;
     return (
       `<div class="ov-pick"><div class="ov-chips">${chips || '<span class="muted">No term chosen.</span>'}</div>` +
-      `<label class="flabel" for="ov-q">Add a term (${int(termPool().length)}: ${esc([...new Set(termPool().map((t) => t.group))].slice(0, 4).join(', '))}…)</label>` +
+      `<label class="flabel" for="ov-q">Add a term (${int(termPool().length)} to choose from)</label>` +
       `<input id="ov-q" type="search" autocomplete="off" placeholder="${full ? `At most ${MAXT} terms` : 'Search: a pathway, a location, a disease, a family…'}"${full ? ' disabled' : ''}>` +
       `<div id="ov-res" class="ov-res" role="listbox" aria-label="Matching terms">${resultsHtml('')}</div>` +
       `<details class="ov-genes"><summary>Add a list of genes</summary><textarea id="ov-genes" rows="2" placeholder="Gene names or accessions"></textarea> <button type="button" class="btn small" data-ov-genes${full ? ' disabled' : ''}>Add</button></details></div>`
@@ -653,7 +684,10 @@
     return hit
       .map((t) => {
         const head = t.group !== g ? `<p class="ov-grp">${esc((g = t.group))}</p>` : '';
-        return `${head}<button type="button" class="ov-opt" role="option" data-ov-add="${esc(t.id)}">${esc(t.label)}</button>`;
+        const more = [t.size ? `${int(t.size)} proteins` : '', t.broad ? 'very broad' : '', t.note]
+          .filter(Boolean)
+          .join(' · ');
+        return `${head}<button type="button" class="ov-opt" role="option" data-ov-add="${esc(t.id)}">${esc(t.label)}${more ? ` <span class="muted ov-more">${esc(more)}</span>` : ''}</button>`;
       })
       .join('');
   }
@@ -681,7 +715,7 @@
     const key = JSON.stringify([S.ot, S.ou, !!K.sel.peek()]);
     const head =
       trail +
-      `<div class="page-head"><h2>Overlap</h2></div><p class="page-sub">Choose two to ${MAXT} terms. See which ${unitWord(S.ou)} they share, and whether the ${S.ou === 'sites' ? 'sites' : `${W.marked} proteins`} in each region are more or fewer than expected.</p>`;
+      `<div class="page-head"><h2>Overlap</h2></div><p class="page-sub">Choose 2 to ${MAXT} terms. See which ${unitWord(S.ou)} they share, and whether the ${S.ou === 'sites' ? 'sites' : `${W.marked} proteins`} in each region are more or fewer than expected.</p>`;
     if (S.ot.length < 2) {
       RES = null;
       return head + pickerHtml() + (S.ot.length ? '' : '');
@@ -885,7 +919,7 @@
       }; a protein is a reader when it carries any of a family’s Pfam or InterPro entries.</p></section>`
   );
   K.overlap = {
-    core: { regions, proteinTest, siteTest, bhAll, lens, distance },
+    core: { regions, proteinTest, siteTest, bhAll, settle, lens, distance, MIN_N },
     resolve,
     compute,
     tsv,

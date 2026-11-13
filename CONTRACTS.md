@@ -973,6 +973,8 @@ website:
   overlap:
     terms_from: [panther_class, reactome_pathway]   # questions whose sets (protein-set) or classes are terms
     max_terms: 4
+    leave_out: {some_question: [set_id]}             # sets not offered and not written (data that is not public)
+    notes: {some_question: one main location per protein}   # shown under its terms in the picker
     units: [proteins, sites, enzymes, readers]       # default [proteins, sites]; a unit with nothing to show is hidden
     enzymes: {roles: [writer, eraser]}               # classes of website.search.partners with these roles, by gene or genes_file
     readers:                                         # a protein is a reader when it carries any listed entry
@@ -994,7 +996,7 @@ and `tests/test_overlap.py` checks it equals the engine's `statistics.tsv` row o
 the regions shown (the whole terms have a q of their own). Sites: the sites of the region (a site is in a term when its protein is, or, for a class or a
 selection, when it is) with, only where every term describes proteins, Fisher's exact test (`ptmstats.fisher_p`) of the residues of the proteins with
 sites, the sites in the region against the other candidate residues there and outside, pooled as the residue questions' "across all proteins" rows; with a
-term that describes sites, counts only. Colors are four fixed categorical slots (`--ov1` to `--ov4`; `validate_palette.js` passes for slots 1 to 4 in light
+term that describes sites, counts only. A region of fewer than 5 elements is counted, not tested (no fold, p or q, and left out of the Benjamini-Hochberg family); a fold of 0 is shown as 0x; a region with a fold between 0.8 and 1.25 and q below 0.001 is flagged "large set; small effect"; the picker marks a term of over a quarter of the reviewed proteins "very broad" and shows every term's size. Both `sets.each` and ordinary protein-set questions can be terms. Colors are four fixed categorical slots (`--ov1` to `--ov4`; `validate_palette.js` passes for slots 1 to 4 in light
 and dark); each region is also labelled A to D and listed in the table.
 
 ### The gene-list test

@@ -1351,6 +1351,7 @@ website:                  # the look and words of the website (ptmc web); layout
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, complex, condensate_proteome]
     max_terms: 4
+    notes: {cell_hcm_compartment: one main location per protein, cell_hcm_domain: one main location per protein, cell_organelle_ip: one main location per protein}
     units: [proteins, sites, readers, enzymes]
     enzymes: {roles: [writer, eraser]}
     readers:           # a protein is a reader when it carries any listed Pfam or InterPro entry (each id checked on InterPro)

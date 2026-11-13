@@ -2174,7 +2174,12 @@ def run(
             }
         elif (folder / 'map_items.tsv').exists():
             (folder / 'map_items.tsv').unlink()
-        overlap_sets = {a: k.pop('members') for a, k in set_keep.items() if 'members' in k}
+        leave = ((site.get('website') or {}).get('overlap') or {}).get('leave_out') or {}
+        overlap_sets = {
+            a: {s: m for s, m in k.pop('members').items() if s not in leave.get(a, ())}
+            for a, k in set_keep.items()
+            if 'members' in k
+        }
         if overlap_sets:  # every protein of each set, for the website's Overlap page (the proteins without a mark too)
             universe = sorted(snap.sequences)
             at = {a: i for i, a in enumerate(universe)}

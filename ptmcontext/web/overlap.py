@@ -94,7 +94,9 @@ def build(site: dict, run: dict, folder: Path, listing: list, fasta: Path, out: 
         raw = json.loads(members.read_text())
         uni = raw['universe']
         _write(target / 'universe.json', {'acc': uni})
+        leave = cfg.get('leave_out') or {}
         for aid, sets in raw['sets'].items():
+            sets = {k: v for k, v in sets.items() if k not in leave.get(aid, ())}
             _write(target / 'sets' / f'{aid}.json', sets)
         page['sets'] = sorted(raw['sets'])
         log(f'  overlap: {len(uni):,} proteins, {len(raw["sets"])} questions of sets')
@@ -151,5 +153,8 @@ def build(site: dict, run: dict, folder: Path, listing: list, fasta: Path, out: 
         ]
         for k, v in fams.items()
     }
-    page['notes'] = {f['id']: f['note'] for f in fams.get('readers', []) if f.get('note')}
+    page['notes'] = dict(cfg.get('notes') or {})  # a question's note under its terms
+    page['leave_out'] = dict(cfg.get('leave_out') or {})
+    page['n'] = len(uni)
+    page['family_notes'] = {f['id']: f['note'] for f in fams.get('readers', []) if f.get('note')}
     return page

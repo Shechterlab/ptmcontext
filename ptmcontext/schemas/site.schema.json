@@ -5222,6 +5222,23 @@
           "additionalProperties": false,
           "description": "the Overlap page (CONTRACTS.md, 'The Overlap page'): the reader picks 2 to 4 terms and sees how their proteins (or sites, enzymes, readers) overlap, with enrichment for each region",
           "properties": {
+            "leave_out": {
+              "type": "object",
+              "description": "sets of a question that are not offered as terms and whose members are not written (a question's set id: [ids])",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "notes": {
+              "type": "object",
+              "description": "a question id: a short note shown under its terms in the picker (what a set means)",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
             "terms_from": {
               "type": "array",
               "items": {

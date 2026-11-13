@@ -54,6 +54,8 @@ def _build(tmp_path):
     site['website']['overlap'] = {
         'terms_from': ['onto', 'term'],
         'max_terms': 4,
+        'leave_out': {'term': ['T4']},
+        'notes': {'onto': 'a note'},
         'units': ['proteins', 'sites', 'readers'],
         'readers': {'source': 'interpro_entries', 'families': [FAMILY]},
     }
@@ -93,6 +95,8 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
     assert raw['universe'] == [f'P{i}' for i in range(1, 9)]  # every reviewed protein, P8 and P4 included
     assert 'members' not in json.loads((out / 'protein_sets.json').read_text())['onto']
     assert (ov / 'universe.json').exists() and (ov / 'sets' / 'onto.json').exists()
+    term_sets = json.loads((ov / 'sets' / 'term.json').read_text())
+    assert 'T3' in term_sets and 'T4' not in term_sets  # a set left out is not written
     fams = json.loads((ov / 'families.json').read_text())
     assert [(f['name'], f['m']) for f in fams['readers']] == [('Madeup', [0, 3])]  # P1 by IPR, P4 by Pfam
     page = _page_data(index)
@@ -116,12 +120,13 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
         : sel(u);
       K.preamble = (t, w) => '# ' + t + ': ' + w + NL; K.g6 = v => String(v);
       K.sel.data(); await K.sel.ready;
-      const r2 = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'proteins');
-      const r3 = await K.overlap.compute(['s:onto:D1', 's:onto:D2', 's:term:T3'], 'proteins');
-      const rs = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'sites');
-      const rr = await K.overlap.compute(['s:onto:D1', 'f:readers:Madeup'], 'readers');
+      const r2 = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'proteins', 1);
+      const r3 = await K.overlap.compute(['s:onto:D1', 's:onto:D2', 's:term:T3'], 'proteins', 1);
+      const rs = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'sites', 1);
+      const rr = await K.overlap.compute(['s:onto:D1', 'f:readers:Madeup'], 'readers', 1);
+      const rd = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'proteins');
       const strip = r => ({ ts: r.ts.map(t => t.id), rows: r.rows, totals: r.totals, N: r.N, M: r.M, test: r.test });
-      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), tsv: K.overlap.tsv(r2) }));
+      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), rd: strip(rd), tsv: K.overlap.tsv(r2) }));
     """
     run = subprocess.run(
         ['node', '-e', head + harness + '(async () => {' + body + '})();'], capture_output=True, text=True
@@ -156,3 +161,10 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
     q = {x['mask']: x for x in j['rr']['rows']}
     assert q[3]['n'] == 2 and q[3]['k'] == 1
     assert j['tsv'].startswith('# ') and 'region\tterms\tproteins' in j['tsv']
+    # a region of fewer than 5 proteins is counted, not tested, and is left out of the Benjamini-Hochberg family
+    assert all(
+        r['few'] and r['p'] is None and r['q'] is None and r['fold'] is None
+        for r in j['rd']['rows']
+        if r['mask'] and r['n']
+    )
+    assert all(t['few'] for t in j['rd']['totals'])  # D2 and D3 hold 3 proteins each
