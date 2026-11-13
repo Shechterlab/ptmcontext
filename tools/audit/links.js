@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /* Broken-link tracking for a built site: links and controls inside the page's cards and boxes that lead nowhere or do nothing.
    node tools/audit/links.js <base-url> [--yeast <url>] [--external] [--max N] [--workers N] [--no-selection] [--only "#overview,#help"] [--verbose] [--out report.json]
+     [--budget MINUTES]
    Visits the Overview and every question page, Proteins, Sites, Disordered regions, Interactions and its question pages, All tests, Methods
    & data, Help, and protein pages (two of the site's own example proteins and, with --yeast, one yeast protein), each without and with a selection (the
    first example search the page offers). On each page:
@@ -11,6 +12,9 @@
                       --max per page (default 8; with a selection half of that); a control that does nothing is dead.
      external links   with --external, each a[href^=http] is fetched once (HEAD, then GET): 4xx and 5xx are broken (429 and a bot check such as Cloudflare's
                       are unverified); a network failure or timeout is unverified, listed apart and never fails the run.
+   --budget: no new page is started after that many minutes; the pages not visited are listed in the report (skipped) and
+   named in the summary, and what was checked still counts. --verbose prints each page and each break as it is found; a
+   SIGTERM or SIGINT (a job's time limit) writes the report of what was checked so far.
    Exit 1 when an internal link is broken, a control is dead, a page throws, or (with --external) an external link answers 4xx/5xx.
    JSON report on stdout (or --out); a one-line summary and the list of breaks on stderr. */
 'use strict';
@@ -40,10 +44,18 @@ const report = {
   broken: [],
   dead: [],
   errors: [],
+  skipped: [], // pages not visited: the --budget ran out
   external: { ok: 0, broken: [], unverified: [] },
   checked: { pages: 0, links: 0, controls: 0 },
 };
 const externals = new Map(); // url -> first page it was seen on
+const T0 = Date.now();
+const BUDGET = opt('budget') ? +opt('budget') * 60000 : Infinity;
+// a break, kept for the report and, with --verbose, printed as it is found
+const note = (list, item) => {
+  report[list].push(item);
+  if (flag('verbose')) console.error(`  ${list}: ${JSON.stringify(item)}`);
+};
 
 // what makes a control "do something": the page's markup or address changed, or a download, popup, dialog, print or copy happened
 const SNAP = () => {
@@ -183,7 +195,7 @@ async function visit(ctx, site, label, url, sel, state, out) {
   const where = `${site} ${label}${sel ? ' [selection]' : ''}`;
   await open(pg, full);
   out.checked.pages++;
-  if (errs.length) out.errors.push({ where, why: errs[0] });
+  if (errs.length) note('errors', { where, why: errs[0] });
   // anchors
   const anchors = await pg.evaluate(ANCHORS);
   for (const a of anchors) {
@@ -192,7 +204,7 @@ async function visit(ctx, site, label, url, sel, state, out) {
       const r = await checkHash(pg, full, a.href, state);
       if (!r.ok && !state.reported.has(a.href + '|' + r.why)) {
         state.reported.add(a.href + '|' + r.why);
-        out.broken.push({ where, href: a.href, text: a.text, why: r.why });
+        note('broken', { where, href: a.href, text: a.text, why: r.why });
       }
       await pg.evaluate((h) => (location.hash = h), new URL(full).hash);
       await pg.waitForTimeout(300);
@@ -229,9 +241,9 @@ async function visit(ctx, site, label, url, sel, state, out) {
       await pg.waitForTimeout(900);
       const after = await pg.evaluate(SNAP).catch(() => 'navigated');
       const did = after !== before || downloads + popups + state.dialogs > d0;
-      if (errs.length > e0) out.errors.push({ where, control: `${c.tag} “${c.text}”`, why: errs[errs.length - 1] });
+      if (errs.length > e0) note('errors', { where, control: `${c.tag} “${c.text}”`, why: errs[errs.length - 1] });
       else if (!did)
-        out.dead.push({
+        note('dead', {
           where,
           control: `${c.tag} “${c.text}”${c.data ? ' [' + c.data + ']' : ''}`,
           why: 'nothing changed after a click',
@@ -324,11 +336,15 @@ async function runSite(browser, name, root, isYeast) {
       const k = next++;
       if (k >= jobs.length) break;
       const [h, sel] = jobs[k];
+      if (Date.now() - T0 > BUDGET) {
+        report.skipped.push(`${name} ${h}${sel ? ' [selection]' : ''}`);
+        continue;
+      }
       if (flag('verbose')) console.error(`[${k + 1}/${jobs.length}] ${name} ${h}${sel ? ' [selection]' : ''}`);
       try {
         await visit(ctx, name, h, root + h, sel, state, report);
       } catch (e) {
-        report.errors.push({ where: `${name} ${h}`, why: 'the visit failed: ' + String(e.message).slice(0, 120) });
+        note('errors', { where: `${name} ${h}`, why: 'the visit failed: ' + String(e.message).slice(0, 120) });
       }
     }
     await ctx.close();
@@ -382,12 +398,7 @@ async function checkExternal() {
   await rc.dispose();
 }
 
-(async () => {
-  const browser = await chromium.launch();
-  await runSite(browser, 'main', norm(base), false);
-  if (yeast) await runSite(browser, 'yeast', norm(yeast), true);
-  await browser.close();
-  if (flag('external')) await checkExternal();
+function finish(note) {
   const fail =
     report.broken.length +
     report.dead.length +
@@ -410,5 +421,26 @@ async function checkExternal() {
         : '')
   );
   if (L.length) console.error(L.join('\n'));
+  if (note) console.error(note);
+  if (report.skipped.length)
+    console.error(
+      `${report.skipped.length} pages not visited (--budget ${opt('budget')} minutes): ${report.skipped.join(', ')}`
+    );
+  return fail;
+}
+// a job's time limit (SIGTERM) or Ctrl-C: the report of what was checked so far, and a failure
+['SIGTERM', 'SIGINT'].forEach((s) =>
+  process.on(s, () => {
+    finish(`stopped by ${s}: the report holds what was checked before it`);
+    process.exit(1);
+  })
+);
+(async () => {
+  const browser = await chromium.launch();
+  await runSite(browser, 'main', norm(base), false);
+  if (yeast) await runSite(browser, 'yeast', norm(yeast), true);
+  await browser.close();
+  if (flag('external')) await checkExternal();
+  const fail = finish();
   process.exit(fail ? 1 : 0);
 })();
