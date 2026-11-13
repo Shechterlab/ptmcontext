@@ -149,7 +149,7 @@ marks:
       label: CPLM evidence
       kind: list
       separator: "; "
-      values: {Exp.: "Exp. (experimental paper)", Exp./Dat.: "Exp./Dat. (experimental paper and another database)", Dat.: "Dat. (another database only)"}
+      values: {Exp.: "Exp. (experimental paper)", Exp./Dat.: "Exp./Dat. (paper and another database)", Dat.: "Dat. (another database only)"}
       filter: true
       help: "CPLM 4.0's own evidence label for the lysine, as CPLM gives it. Exp.: curated from an experimental paper; Exp./Dat.: also reported by another database; Dat.: another database only (these sit behind the lower-confidence switch). Empty for a lysine CPLM does not report"
     iptmnet_score:

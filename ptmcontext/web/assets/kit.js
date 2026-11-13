@@ -1426,7 +1426,7 @@
     if (!r || r.or == null) return '';
     return (
       `<p class="tbeside"><a href="${esc(link('overview', other.id))}">${esc(b.label)}</a>: ` +
-      `OR ${esc(fxn(r.or))}, q ${esc(fq(r.q))}</p>`
+      `<span class="nw">OR ${esc(fxn(r.or))}, q ${esc(fq(r.q))}</span></p>`
     );
   }
   // a tile row as the cards' rows read it: the short row label (website.front.row_labels), the interval, q, n and the whole dataset's ring
