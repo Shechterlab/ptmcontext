@@ -1538,7 +1538,7 @@
   }
   const keyWords = () =>
     `Red: ${who(scopedNow())} are more likely to be found there than ${alike}. Slate: less ` +
-    `likely, deeper for larger odds ratios. Grey: no difference, or the maps disagree. Dashed outline: no map ` +
+    `likely, deeper for larger odds ratios. Gray: no difference, or the maps disagree. Dashed outline: no map ` +
     `measures it.`;
   const testWords = () =>
     allStrat
@@ -1973,6 +1973,16 @@
       '</ul></section>'
     );
   }
+  // the maps behind each odds ratio of the tile: a region or part takes the median of the maps that have it
+  function mapsUsed(scoped) {
+    const ns = Object.values(parts(scoped).P)
+      .map((p) => p.maps)
+      .filter((n) => n > 0);
+    if (!ns.length) return 'median of the maps';
+    const lo = Math.min(...ns),
+      hi = Math.max(...ns);
+    return lo === hi ? `median of ${lo} map${lo === 1 ? '' : 's'}` : `median of ${lo} to ${hi} maps`;
+  }
   function bigTile(card) {
     TIPS = [];
     const scoped = scopedNow(),
@@ -2017,7 +2027,7 @@
       `<h3>${esc(title)}</h3>${K.detailsLink(ID)}</header>` +
       `<p class="tans cell-ans">${cellAnswer(regs, up, scoped)}</p><div class="cell-pair">${figs}</div>` +
       `<div class="cp-cols">${DRAWINGS.map((d) => partList(d, ps)).join('')}</div>` +
-      `<p class="tkey">Odds ratio against ${esc(alike)}, median of ${MAPS.length} maps.</p>${note}<div class="tact">${bar}</div></article>`
+      `<p class="tkey">Odds ratio against ${esc(alike)}, ${mapsUsed(scoped)}.</p>${note}<div class="tact">${bar}</div></article>`
     );
   }
   const toggle = (part) => {
@@ -2582,7 +2592,7 @@
     return (
       `<div class="card-body cell-page"><p class="cell-lead">${lead(regs, up, scoped, false)}</p>` +
       (`<p class="small">${esc(C.intro || '')} Red: ${esc(who(scoped))} are more likely to be found there than ${esc(alike)}. Slate: ` +
-        `less likely. Grey: no difference.${selNote}</p>`) +
+        `less likely. Gray: no difference.${selNote}</p>`) +
       colourKey() +
       regionsBlock +
       drawings +
@@ -2636,7 +2646,7 @@
             ).join(', ')}`
           : ''
       }. ${esc(testWords())}</p>` +
-      (`<p>The site file (website.cell) maps each grid row to a compartment of each map and to the part of the ` +
+      (`<p>Each grid row is mapped to a compartment of each map and to the part of the ` +
         `drawings it colors. A selection is tested again in the browser, map by map, the same way${
           allStrat ? ', over the abundance strata of each map’s proteins' : ''
         }. It is not ` +

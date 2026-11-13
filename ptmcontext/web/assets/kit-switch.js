@@ -138,7 +138,7 @@
         mine = all.find((s) => s.id === here),
         // unlisted sites are in the menu of an unlisted site, and where their own file says so
         list = all.filter((s) => s.listed || s.in_switcher || s.id === here || (mine && !mine.listed));
-      build(list, reg.switcher_label || 'Site');
+      build(list, reg.switcher_label || 'Explorer');
     } catch (e) {
       /* served alone: no list of sites, no menu */
     }

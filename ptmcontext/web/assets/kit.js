@@ -108,7 +108,7 @@
   const METHOD_PHRASE = {
     mantel_haenszel: 'compared within each protein (Mantel–Haenszel)',
     fisher: 'across all proteins (Fisher’s exact test)',
-    study: 'compared among sites reported by the same sources (Mantel–Haenszel)',
+    study: 'compared among sites reported by the same studies or databases (Mantel–Haenszel)',
   };
   const A = Object.fromEntries(D.analyses.map((a) => [a.id, a]));
   // the Overview's switch: its words, and what each compares
@@ -119,13 +119,13 @@
         `similar abundance for protein-level questions.`,
     ],
     fisher: ['across all proteins', `Pools all candidate ${W.residues} of all proteins (Fisher’s exact test, crude).`],
-    study: ['within studies', `Compare ${W.marks} only with ` + `those reported by the same sources.`],
+    study: ['within studies', `Compare ${W.marks} only with ` + `those reported by the same studies or databases.`],
   };
   // plain words for the terms of the tests, shown on hover (an abbr) and in one line on the Help page
   const GLOSS = {
     fold: 'How many times more often than in the comparison group. 1× means no difference.',
     'odds ratio': 'How many times higher the odds are inside the class than outside it. 2× means twice the odds.',
-    q: 'The p value corrected for the many tests made on this site. A difference counts at q ≤ 0.05 and at least 1.1×.',
+    q: 'The p value corrected for the many tests made in this explorer. A difference counts at q ≤ 0.05 and at least 1.1×.',
     'within each protein':
       `Each ${W.mark} is compared only with the other ${W.residues} of the same protein, so a ` +
       `protein with many sites does not dominate.`,
@@ -1192,7 +1192,7 @@
       : S.m === 'fisher'
         ? `tested against all other ${W.residues}`
         : S.m === 'study'
-          ? `tested against ${W.marks} from the same sources`
+          ? `tested against ${W.marks} from the same studies or databases`
           : `tested against other ${W.residues} of the same proteins`);
   const selTestable = () => !selOn() || (K.sel.data() && K.sel.testable() && K.sel.nMarks() > 0);
   // which rows a tile shows: up to 7, the classes that differ most first (a few of those less often, if any), then
@@ -1512,10 +1512,10 @@
   const againstHtml = () =>
     `<p class="against"><span class="flabel">Compared with</span><span class="seg" ` +
     `role="group" aria-label="Compared with">` +
-    (`<button type="button" data-vs="residues" aria-pressed="${S.vs === 'residues'}" title="The site’s own tests: ` +
+    (`<button type="button" data-vs="residues" aria-pressed="${S.vs === 'residues'}" title="This explorer’s own tests: ` +
       `the selected ${esc(W.marks)} against the other ${esc(W.residues)} of their proteins">other ${esc(W.residues)}</button>`) +
     (`<button type="button" data-vs="marks" aria-pressed="${S.vs === 'marks'}" title="What sets the selection ` +
-      `apart: its ${esc(W.marks)} against the site’s other ${esc(W.marks)}">other ${esc(W.marks)}</button>`) +
+      `apart: its ${esc(W.marks)} against the other ${esc(W.marks)} of this explorer">other ${esc(W.marks)}</button>`) +
     (S.vs === 'cmp' ? `<button type="button" data-vs="cmp" aria-pressed="true">${esc(cmpName())}</button>` : '') +
     (K.views.compare
       ? `<button type="button" class="linkish" data-go-compare title="Compare with a saved ` +
@@ -1554,7 +1554,7 @@
               `fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). `
             : ''
         }Red: more ` +
-        `often (q ≤ 0.05 and at least 1.1×). Slate: less often. Grey: significant but within 1.1×. Hollow: no ` +
+        `often (q ≤ 0.05 and at least 1.1×). Slate: less often. Gray: significant but within 1.1×. Hollow: no ` +
         `significant difference. A tile shows the classes that differ most and opens to every class. Hover a row ` +
         `for its counts.</p>`
       : '';
@@ -1806,11 +1806,11 @@
               `class="muted">(${esc(inText(A[r.analysis].title))})</span>: ${pcS(share1(r))} of these vs ${pcS(share2(r))} of the others`
           )
           .join('; ')}. Differences ` +
-        `above may reflect which sources report these ${esc(W.marks)}${
+        `above may reflect which studies or databases report these ${esc(W.marks)}${
           K.sel.STUDY && S.m !== 'study'
             ? `: <button ` +
               `type="button" class="linkish" data-m="study">compare within studies</button>, where each ${esc(W.mark)} is compared ` +
-              `only with ${esc(W.marks)} reported by the same sources.`
+              `only with ${esc(W.marks)} reported by the same studies or databases.`
             : S.m === 'study'
               ? '; the comparison above is within studies, so they do not explain it.'
               : '.'
@@ -2167,7 +2167,7 @@
     ];
     return (
       `<section id="m-privacy"><h3>Licenses and privacy</h3>` +
-      (`<p>Licences: the code (ptmcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} license${
+      (`<p>Licenses: the code (ptmcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} license${
         D.kit.url ? ` (<a href="${esc(D.kit.url)}">source</a>)` : ''
       }. This site’s ` +
         `data and figures are under ${esc(hlicence(CIT.licence || 'their sources’ terms'))}, and each source ` +
@@ -2191,8 +2191,8 @@
       ['m-g2', 'The data', 0],
       ['m-data', 'Data', 1],
       ['m-sources', 'Sources', 1],
-      ['m-g3', 'The site', 0],
-      ['m-made', 'How this site is made', 1],
+      ['m-g3', 'The explorer', 0],
+      ['m-made', 'How this explorer is made', 1],
       ['m-cite', 'How to cite', 1],
       ['m-download', 'Download the data', 1],
       ['m-search', 'Search terms', 1],
@@ -2529,7 +2529,7 @@
       searchSection() +
       privacySection() +
       sourcesSection() +
-      (`<section id="m-made"><h3>How this site is made</h3><p>One file, <span class="mono">${esc(D.site.config)}</span>, ` +
+      (`<section id="m-made"><h3>How this explorer is made</h3><p>One file, <span class="mono">${esc(D.site.config)}</span>, ` +
         `sets the modification, the sequences and regions, the questions, the colors and the pictures. ptmcontext ${esc(D.kit.version)} (commit ` +
         `<span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(RUN.written))}. The citation,` +
         ` version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>`) +
@@ -2655,7 +2655,7 @@
     if (!x) return '';
     return x.test === 'protein_sets'
       ? `protein-set ` + `test of the ${x.sets} input`
-      : `layer ${x.layer} (${x.origin})${x.with ? ', made from the site file’s parameters' : ''}`;
+      : `layer ${x.layer} (${x.origin})${x.with ? ', made with the parameters of its definition' : ''}`;
   };
   function creditLines() {
     const RUN = D.run,
@@ -4105,7 +4105,7 @@
                 set ? 'across all proteins' : METHOD[r.method] || esc(r.method)
               }${
                 r.strata
-                  ? `, ${int(r.strata)} informative ${r.method === 'study' ? 'groups of sources' : 'proteins'}`
+                  ? `, ${int(r.strata)} informative ${r.method === 'study' ? 'groups of studies or databases' : 'proteins'}`
                   : ''
               }`
         }, q ${fq(r.q)}` +

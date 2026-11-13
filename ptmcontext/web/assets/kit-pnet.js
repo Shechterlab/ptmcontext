@@ -24,7 +24,7 @@
     ['dscore', 'databases'],
     ['tscore', 'text mining'],
     ['ascore', 'co-expression'],
-    ['nscore', 'neighbourhood'],
+    ['nscore', 'gene neighborhood'],
     ['fscore', 'gene fusion'],
     ['pscore', 'co-occurrence'],
   ];
@@ -476,7 +476,7 @@
     if (nd.self) return `<b>${esc(nd.name)}</b> ${esc(nd.acc)}<br>The protein this page is about`;
     if (nd.ring)
       return `<b>${esc(nd.name)}</b> ${esc(nd.acc || 'no accession')}<br>Second ring: STRING ${esc(OPT.net)} score ${nd.score.toFixed(3)} to ${esc(nd.via)}<br>${
-        nd.p ? `${int(nd.marks)} ${esc(nd.marks === 1 ? W.mark : W.marks)} in this site` : ''
+        nd.p ? `${int(nd.marks)} ${esc(nd.marks === 1 ? W.mark : W.marks)} in this explorer` : ''
       }${nd.cls ? (nd.p ? '<br>' : '') + esc(className(nd.cls)) : ''}`;
     const ev = CHANNELS.filter(([f]) => +nd.ev[f] > 0)
       .sort(([a], [b]) => nd.ev[b] - nd.ev[a])
@@ -485,8 +485,8 @@
     return (
       `<b>${esc(nd.name)}</b> ${esc(nd.acc || 'no accession')}<br>STRING ${esc(OPT.net)} score ${nd.score.toFixed(3)}${ev ? ` (${esc(ev)})` : ''}<br>` +
       (nd.p
-        ? `${int(nd.marks)} ${esc(nd.marks === 1 ? W.mark : W.marks)} in this site${nd.p.gene && nd.cls ? '' : ''}`
-        : `No ${esc(W.mark)} in this site`) +
+        ? `${int(nd.marks)} ${esc(nd.marks === 1 ? W.mark : W.marks)} in this explorer${nd.p.gene && nd.cls ? '' : ''}`
+        : `No ${esc(W.mark)} in this explorer`) +
       (nd.cls ? `<br>${esc(className(nd.cls))}` : '') +
       (nd.p ? '<br>Click to open its page; drag to move it' : '<br>Drag to move it')
     );
@@ -534,7 +534,10 @@
       out = [];
     const sw = (look, text) => ({ look, text });
     if (mode === 'methyl')
-      out.push(sw(['me'], `has ${W.marks} in this site (larger: more)`), sw(['no'], `no ${W.mark} in this site`));
+      out.push(
+        sw(['me'], `has ${W.marks} in this explorer (larger: more)`),
+        sw(['no'], `no ${W.mark} in this explorer`)
+      );
     else if (mode === 'class') {
       const present = new Set(L.nodes.map((n) => n.cls).filter(Boolean));
       CLASS_IDS()
@@ -710,7 +713,7 @@
         'who binds its ' + esc(W.marks) + ', partners, complexes and the network',
         K.pix.html(p, rec, K.prot.tables(p.acc)) +
           ifaceFold(p, rec) +
-          (`<details class="pn-fold"><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING, live; ` +
+          (`<details class="pn-fold"><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING; ` +
             `drag the nodes${
               hasIface ? '; open to draw it' : `; folded, as no ${esc(W.mark)} is at an interface`
             }</span></summary>${net}</details>`),
@@ -720,7 +723,7 @@
     return fold(
       'p-ix',
       'Protein interactions',
-      'STRING, live; drag the nodes',
+      'STRING; drag the nodes',
       `<div class="card-head">` +
         (`${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${optionsHtml()}<div class="pn-box" ` +
           `id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>`) +
@@ -1150,7 +1153,7 @@
       bodyH: VH,
       W: VW,
       note:
-        `Line width: STRING score. Larger nodes have more ${W.marks} in this site. STRING${CUR.st.ver ? ' v' + CUR.st.ver : ''} (${CITE}), retrieved ${today()}. An association ` +
+        `Line width: STRING score. Larger nodes have more ${W.marks} in this explorer. STRING${CUR.st.ver ? ' v' + CUR.st.ver : ''} (${CITE}), retrieved ${today()}. An association ` +
         `is to the whole protein.`,
       extra: { string_taxon: IXP.species, network: OPT.net, min_score: OPT.conf / 1000 },
     });

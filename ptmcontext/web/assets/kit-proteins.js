@@ -178,7 +178,7 @@
         if (PV.acc === acc) {
           PV.err =
             location.protocol === 'file:'
-              ? 'This copy of the site cannot read the protein files from disk. Open the hosted ' +
+              ? 'This copy of the website cannot read the protein files from disk. Open the hosted ' +
                 'site, or index.html through a local web server.'
               : 'The protein’s file could not be read.';
           K.render();
@@ -568,7 +568,7 @@
         typeof K.show3d === 'function' ? '<button type="button" class="btn small" data-site-3d>Show in 3D</button>' : ''
       }<button type="button" ` +
         `class="btn small" data-site-close aria-label="Close">×</button></span></div>`) +
-      (`<p class="note small">Shown only: not one of the ${int(D.counts.marks)} ${esc(W.marks)} this site counts, ` +
+      (`<p class="note small">Shown only: not one of the ${int(D.counts.marks)} ${esc(W.marks)} this explorer counts, ` +
         `and in no count, chart or test.</p><dl class="sc-kv">${rows}</dl></section>`)
     );
   }
@@ -1045,7 +1045,7 @@
               names.slice(0, 12).map(setLab).join('; ')
             )}${names.length > 12 ? ' …' : ''}` +
             (best
-              ? `<br>${esc(setLab(best.category))}: across the site, ${esc(W.marked)} proteins are ${esc(K.fxn(best.eff))}× over-represented ` +
+              ? `<br>${esc(setLab(best.category))}: across this explorer, ${esc(W.marked)} proteins are ${esc(K.fxn(best.eff))}× over-represented ` +
                 `in it (q ${K.fq(best.q)})`
               : '');
         } else {
@@ -1598,7 +1598,7 @@
     if (L.state === 'look') return `<p class="empty">Looking up ${esc(key)}…</p>`;
     if (L.state === 'none')
       return (
-        `<div class="empty"><p><b>No protein ${esc(key)} in this site.</b> Its proteins ` +
+        `<div class="empty"><p><b>No protein ${esc(key)} in this explorer.</b> Its proteins ` +
         `are the ${esc(D.run.snapshot?.release || 'reference')} sequences; ${esc(key)} is not one of them, or ` +
         `names a protein by another name.</p>` +
         (`${
@@ -1638,7 +1638,7 @@
       `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a>` +
       ` › <b>${esc(p.gene || p.acc)}</b> <span class="muted">no ${esc(W.mark)}</span></p>` +
       protHead(p, true) +
-      (`<p class="note">No ${esc(W.mark)} on ${esc(p.gene || p.acc)}. None of its sources reports one, which means ` +
+      (`<p class="note">No ${esc(W.mark)} on ${esc(p.gene || p.acc)}. None of its studies or databases reports one, which means ` +
         `not reported, not shown to be un${esc(W.marked)}. This page shows its map, the ${esc(W.marks)} of other ` +
         `proteins it is recorded binding, and its partners with ${esc(W.marks)}.</p>`) +
       `<div class="facts"><div class="fact"><b>${int(p.len)}</b><span>Residues</span></div><div class="fact"><b>${int(nRes)}</b><span>${esc(cap(W.residues))}</span></div>` +
@@ -1911,7 +1911,7 @@
     return covLine + `<div class="kinds">${blocks}</div>` + nhKey;
   }
 
-  // ---- domains and regions: every region the site's questions read, as a table, with the marks inside each --------
+  // ---- domains and regions: every region the questions of this explorer read, as a table, with the marks inside each --------
   function regionsHtml(p, rec) {
     const tracks = D.tracks || [],
       title = (k) => (tracks.find((t) => t.kind === k) || {}).title || k;
@@ -1999,7 +1999,7 @@
   }
   function sequenceHtml(p, rec, sel) {
     const seq = rec.seq || '';
-    if (!seq) return `<p class="muted">No sequence in this copy of the site.</p>`;
+    if (!seq) return `<p class="muted">No sequence in this copy of the website.</p>`;
     const at = new Map(rec.marks.map((m) => [m[0], m]));
     const res = (i) => {
       const m = at.get(i),
@@ -2146,7 +2146,7 @@
           `<b>UniProt has changed this sequence</b> since ${esc(
             D.run.snapshot?.release || 'the release these results use'
           )}. Positions ` +
-          `on this page are on that release’s sequence; the live cards below may not line up with them.`;
+          `on this page are on that release’s sequence; the cards below, retrieved from UniProt, may not line up with them.`;
       }
     });
     // AlphaFold DB: the model's confidence along the map (only if its sequence is the same); the model in 3D is kit-3d.js's
@@ -2405,7 +2405,7 @@
           {
             title: `Domains and ` + `regions of ${p.gene || p.acc}`,
             sub:
-              `${p.name || ''} (${p.acc}); every region the site's questions read, ` +
+              `${p.name || ''} (${p.acc}); every region the questions of this explorer read, ` +
               `with the ${W.marks} inside each`,
             total: PV.rec.units.length,
           },
