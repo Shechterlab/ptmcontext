@@ -7,7 +7,7 @@ methyllysine	Kme2	dimethyl	*CCCCC[N+]([H])(C)C
 methyllysine	Kme3	trimethyl	*CCCCC[N+](C)(C)C
 lysine	Kac	acetyl	*CCCCCNC(C)=O
 lysine	Kub	ubiquitin, via Gly76	*CCCCCNC(=O)CN*
-lysine	Ksu	SUMO, via its C-terminal Gly	*CCCCCNC(=O)CN*
+lysine	SUMO	SUMO, via its C-terminal Gly	*CCCCCNC(=O)CN*
 phospho	Sph	phosphoserine	*CCOP([O-])([O-])=O
 phospho	Tph	phosphothreonine	*CC(OP([O-])([O-])=O)C
 phospho	Yph	phosphotyrosine	*CCc1ccc(OP([O-])([O-])=O)cc1

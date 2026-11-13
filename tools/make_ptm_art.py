@@ -48,11 +48,11 @@ SITES = {
     ),
     'lysine': (
         '#bef264',
-        'Acetyllysine (Kac), ubiquitinated lysine (Kub: isopeptide bond to Gly76 of ubiquitin) and SUMOylated lysine (Ksu: isopeptide bond to the C-terminal Gly of SUMO)',
+        'Acetyllysine (Kac), ubiquitinated lysine (Kub: isopeptide bond to Gly76 of ubiquitin) and SUMOylated lysine (SUMO: isopeptide bond to the C-terminal Gly of SUMO)',
         [
             ('Kac', 'acetyl', '*CCCCCNC(C)=O', '[CH3]', 7),
             ('Kub', 'ubiquitin, via Gly76', '*CCCCCNC(=O)CN*', 'C(=O)CN', 7),
-            ('Ksu', 'SUMO, via its C-terminal Gly', '*CCCCCNC(=O)CN*', 'C(=O)CN', 7),
+            ('SUMO', 'SUMO, via its C-terminal Gly', '*CCCCCNC(=O)CN*', 'C(=O)CN', 7),
         ],
     ),
     'phospho': (
@@ -107,7 +107,7 @@ def layout(kind: str) -> dict:
 
 END_LABELS = {
     'Kub': 'Ub',
-    'Ksu': 'SUMO',
+    'SUMO': 'SUMO',
 }  # the far end of an isopeptide: the protein it leads to, written as a label, by structure name
 
 
