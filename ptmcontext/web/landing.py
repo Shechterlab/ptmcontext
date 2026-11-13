@@ -22,7 +22,7 @@ SEARCH_JS = (Path(__file__).parent / 'assets' / 'land-search.js').read_text()
 SEARCH_HTML = (
     '<section class="land-search" role="search" aria-label="Find a protein">'
     '<label for="land-q">Find a protein</label>'
-    '<input id="land-q" type="search" autocomplete="off" spellcheck="false" placeholder="Gene name or UniProt accession, e.g. FUS or P35637" '
+    '<input id="land-q" type="search" autocomplete="off" spellcheck="false" placeholder="Gene name or UniProt accession" '
     'aria-controls="land-hits">'
     '<p class="say" id="land-say" role="status"></p><ul id="land-hits" aria-label="Proteins found"></ul></section>'
 )
