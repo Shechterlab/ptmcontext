@@ -81,3 +81,37 @@ def test_the_option_is_checked_and_reaches_the_page(tmp_path):
         re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1)
     )
     assert d['reading'] == {'min_set': 12, 'min_maps': 3}
+
+
+def test_the_landing_card_reads_the_cell_as_the_cell_card_does():
+    from ptmcontext.web.glance import cell_findings
+
+    def m(aid, cat, a, c, q=1e-6, n=1000, N=10000):
+        return {**_set(cat, a, n - a, c, N - n - c, q), 'analysis': aid}
+
+    cell = {
+        'id': 'where',
+        'title': 'Where',
+        'compartments': [
+            {
+                'group': 'g',
+                'rows': [
+                    {'label': 'Tiny', 'part': 'tiny', 'sets': {'m1': 'tiny', 'm2': 'tiny'}},  # 15 marked: too few
+                    {'label': 'One map', 'part': 'one', 'sets': {'m1': 'one'}},
+                    {'label': 'Both', 'part': 'both', 'sets': {'m1': 'both', 'm2': 'both'}},
+                ],
+            }
+        ],
+    }
+    rows = [
+        m('m1', 'tiny', 15, 5),
+        m('m2', 'tiny', 15, 5),
+        m('m1', 'one', 300, 100),
+        m('m1', 'both', 200, 300),
+        m('m2', 'both', 150, 250),
+    ]
+    got = cell_findings(rows, cell)
+    assert [f['label'] for f in got] == ['Both'] and got[0]['maps'] == 2
+    folds = sorted(r['fold'] for r in rows[3:])
+    assert abs(got[0]['eff'] - (folds[0] * folds[1]) ** 0.5) < 1e-9  # the median of two: their geometric mean
+    assert [f['label'] for f in cell_findings(rows, cell, {'min_maps': 1, 'min_group': 5})][:1] == ['Tiny']

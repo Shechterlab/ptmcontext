@@ -630,6 +630,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
             section_analyses(web, (web.get('landing') or {}).get('from_section')),
             section_locations(web, (web.get('landing') or {}).get('from_section')),
             web.get('reading'),
+            web.get('cell') if section_locations(web, (web.get('landing') or {}).get('from_section')) else None,
         ),
         'citation': site_citation(site),
         'kit': {**kit_citation(), 'version': __version__, 'commit': run.get('code_commit') or code_commit()},

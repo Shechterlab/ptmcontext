@@ -20,7 +20,7 @@ def _eff(r: dict):
     return e if e is not None and 0 < e < BIG else None
 
 
-READING = {'min_set': 30}  # website.reading's defaults that bear on a finding (the kit holds the rest)
+READING = {'min_set': 30, 'min_maps': 2, 'min_group': 20}  # website.reading's defaults, as the kit's
 FOLD_METHODS = ('fisher', 'mantel_haenszel', 'study')
 
 
@@ -172,6 +172,55 @@ def findings(
     return out[:n]
 
 
+def cell_findings(rows: list, cell: dict, reading: dict | None = None) -> list:
+    """The parts of the cell as the Overview's cell card reads them (kit-cell.js): each compartment row's maps, each map
+    its fold read by its test (within abundance strata where it has them), a map speaking for the part only with at
+    least min_group marked proteins and as many others there; a part differs when at least min_maps of those maps
+    differ the same way (q <= 0.05, a fold of 1.1x or more, the test pointing the same way) and none the other way, by
+    their median fold. Largest first."""
+    rd = {**READING, **(reading or {})}
+    by = {}
+    for r in rows:
+        by[(r['analysis'], r['category'], r['method'])] = r
+    out = []
+    for group in cell.get('compartments') or []:
+        for row in group.get('rows') or []:
+            folds, up, down = [], 0, 0
+            for aid, cat in (row.get('sets') or {}).items():
+                e = by.get((aid, cat, 'enricher'))
+                if not e or e.get('fold') is None or e['a'] < rd['min_group'] or (e.get('c') or 0) < rd['min_group']:
+                    continue
+                st = by.get((aid, cat, 'mantel_haenszel'))
+                f, t, q = e['fold'], _eff(st) if st else None, (st or e)['q']
+                if not 0 < f < BIG:
+                    continue
+                folds.append(math.log2(f))
+                if q is not None and q <= PADJ and (t is None or (f >= 1) == (t >= 1)):
+                    up += f >= MIN_EFFECT
+                    down += f <= 1 / MIN_EFFECT
+            if not folds:
+                continue
+            folds.sort()
+            h = len(folds) // 2
+            med = folds[h] if len(folds) % 2 else (folds[h - 1] + folds[h]) / 2
+            if (med > 0 and up >= rd['min_maps'] and not down) or (med < 0 and down >= rd['min_maps'] and not up):
+                out.append(
+                    {
+                        'analysis': cell.get('id'),
+                        'class': row.get('part') or row['label'],
+                        'title': cell.get('title', cell.get('id')),
+                        'label': row.get('name') or row['label'],
+                        'eff': 2**med,
+                        'q': None,
+                        'n': None,
+                        'dir': 'more' if med > 0 else 'less',
+                        'sets': True,
+                        'maps': up + down,
+                    }
+                )
+    return sorted(out, key=lambda f: -abs(math.log(f['eff'])))
+
+
 def glance(
     analyses: list,
     rows: list,
@@ -182,8 +231,11 @@ def glance(
     only: set | None = None,
     locations: dict | None = None,
     reading: dict | None = None,
+    cell: dict | None = None,
 ) -> dict:
-    """What the entry pages draw. The landing page's own choices (website.landing) win over the start panel's."""
+    """What the entry pages draw. The landing page's own choices (website.landing) win over the start panel's. cell:
+    the site's cell maps when the landing card's section holds them: its parts are read as the cell card reads them,
+    not map by map."""
     start, landing = start or {}, landing or {}
     out = {
         'share': share(analyses, rows, counted, landing.get('share') or start.get('share')),
@@ -192,7 +244,15 @@ def glance(
         ),
     }
     if only is not None and not landing.get('findings'):  # the landing card's own, from one Overview section
-        out['landing_findings'] = findings(
-            analyses, rows, None, row_labels=row_labels, only=only, locations=locations, reading=reading
+        maps = {
+            aid
+            for g in (cell or {}).get('compartments') or []
+            for r in g.get('rows') or []
+            for aid in r.get('sets') or {}
+        }
+        rest = findings(
+            analyses, rows, None, row_labels=row_labels, only=only - maps, locations=locations, reading=reading
         )
+        parts = cell_findings(rows, cell, reading) if cell else []
+        out['landing_findings'] = sorted(parts[:1] + rest, key=lambda f: -abs(math.log(f['eff'])))[:N_FINDINGS]
     return out
