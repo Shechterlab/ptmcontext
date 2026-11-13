@@ -183,7 +183,7 @@ def _network(extra=None):
                 'input': 'ann',
                 'set': 'term',
                 'protein': 'protein',
-                'names': {'input': 'ann_names', 'set': 'term', 'name': 'name', 'depth': 'depth'},
+                'names': {'input': 'ann_names', 'set': 'term', 'name': 'name', 'depth': 'depth', 'size': 'size'},
                 'min_term': 2,
                 'cite': 'Terms paper',
             }
@@ -235,7 +235,7 @@ def _with_network(tmp_path, cfg):
         + [('TB', p, 'true') for p in ('P5', 'P6', 'P7')],
         columns=['term', 'protein', 'non_iea'],
     ).to_csv(data / 'ann.tsv', sep='\t', index=False)
-    pd.DataFrame([('TA', 'term A', 4), ('TB', 'term B', 2)], columns=['term', 'name', 'depth']).to_csv(
+    pd.DataFrame([('TA', 'term A', 4, 900), ('TB', 'term B', 2, 30)], columns=['term', 'name', 'depth', 'size']).to_csv(
         data / 'ann_names.tsv', sep='\t', index=False
     )
     mp = root / 'sites' / 'toy.inputs.json'
@@ -310,6 +310,9 @@ def test_only_non_iea_rows_count_by_default_and_a_shallow_term_is_left_out(tmp_p
     assert full['terms'] == [] and labels[0]['non_iea'] is False
     full, _ = _terms(tmp_path / 'c', {'min_term': 1, 'min_depth': 3})
     assert [t[0] for t in full['terms']] == ['term A']  # term B lies 2 steps below the root
+    # a term that annotates more proteins of the whole proteome than max_size is too general to name a cluster
+    full, labels = _terms(tmp_path / 'e', {'min_term': 1, 'max_size': 100})
+    assert [t[0] for t in full['terms']] == ['term B'] and labels[0]['max_size'] == 100
     full, _ = _terms(tmp_path / 'd', {'min_term': 1})
     assert [t[0] for t in full['terms']] == ['term A', 'term B']
 

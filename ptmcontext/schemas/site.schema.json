@@ -2293,6 +2293,10 @@
                         "type": "string",
                         "description": "the name column (default the id)"
                       },
+                      "size": {
+                        "type": "string",
+                        "description": "the column with the number of proteins in the whole proteome that hold the term (for `max_size`)"
+                      },
                       "depth": {
                         "type": "string",
                         "description": "the column with the term's depth below the root (a tie between terms of one q goes to the deeper; default 0)"
@@ -2328,6 +2332,11 @@
                     "description": "terms with a smaller `names.depth` are not used (default: all)",
                     "minimum": 0
                   },
+                  "max_size": {
+                    "type": "integer",
+                    "description": "terms that annotate more than this many proteins of the whole proteome (`names.size`) are not used: too general to say what a cluster is about (default: no limit)",
+                    "minimum": 1
+                  },
                   "non_iea": {
                     "type": "boolean",
                     "description": "true (default): when the table has a `non_iea` column, count only its rows where it is `true`; false counts every row"
@@ -2342,6 +2351,40 @@
                   }
                 }
               }
+            },
+            "clusters": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the page's Clusters menu: `default` is `auto` (Louvain at `resolution`) or a number of clusters; `min`, `max` and `step` give the numbers the menu offers. A chosen number is reached by trying 24 resolutions (from 0.25, 15% apart) and taking the partition whose number of clusters (communities of `min_cluster` or more proteins) is closest",
+              "properties": {
+                "default": {
+                  "anyOf": [
+                    {
+                      "const": "auto"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 2
+                    }
+                  ]
+                },
+                "min": {
+                  "type": "integer",
+                  "minimum": 2
+                },
+                "max": {
+                  "type": "integer",
+                  "minimum": 2
+                },
+                "step": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "claim": {
+              "type": "string",
+              "description": "the exported figure's title, with {n} for the number of clusters (the reader can change it)"
             },
             "color_by": {
               "type": "array",

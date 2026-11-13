@@ -1361,8 +1361,9 @@ website:                  # the look and words of the website (ptmc web); layout
         input: go_bp
         set: go_id
         protein: uniprot_accession
-        names: {input: go_terms, set: go_id, name: go_name, depth: depth_min}
+        names: {input: go_terms, set: go_id, name: go_name, depth: depth_min, size: n_proteins}
         min_depth: 3            # a term must lie at least three steps below the root
+        max_size: 1500          # and annotate at most this many proteins of the whole proteome
         non_iea: true           # count only annotations with evidence other than IEA (false: all)
         cite: "Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556; GOA human annotations of 2026-11-04"
         url: "https://geneontology.org"
@@ -1377,6 +1378,8 @@ website:                  # the look and words of the website (ptmc web); layout
     top: 300
     min_cluster: 5
     cluster: louvain
+    clusters: {default: auto, min: 4, max: 16}   # the page's Clusters menu: auto (Louvain at its default resolution) or a target number
+    claim: "Phosphorylated proteins form {n} functional clusters"   # the exported figure's title
     color_by:
       - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}
       - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}

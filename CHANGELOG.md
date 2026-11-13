@@ -10,11 +10,17 @@
   Colour by cluster or by the share of sites in disordered regions, the domain class, and (phosphosites) the kinase and
   reader motif classes. A selection is clustered again in the browser. Table view, SVG, PNG and TSV exports, a
   tile on the Overview. For the code: `website.network` (schema, CONTRACTS.md, `ptmcontext/web/network.py`,
-  `kit-netcore.js`, `kit-network.js`). The build needs PTM_Pipeline commit aa895fc (PR 24, not yet merged), which stages
+  `kit-netcore.js`, `kit-network.js`). The sites read PTM_Pipeline at commit 4557062 (the merge of its pull request 24), which stages
   the GO biological process tables (`inputs/annotation/go_bp_human_2026-11-04.tsv` and `go_bp_terms_2026-11-04.tsv`; GO
   Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000),
-  doi:10.1038/75556; CC BY 4.0); the pin stays at 5fadf74 until that PR merges, and a checkout at the pinned commit does not have these
-  files.
+  doi:10.1038/75556; CC BY 4.0); the CI and Pages checkouts are pinned to it.
+- The Network figure is laid out in groups: every cluster has a region of its own, clusters of look-alike colours are
+  kept apart, links between clusters are drawn as one band per pair, names sit beside the regions in a short form, and
+  hovering a protein or a cluster lights what it is joined to. The default figure is laid out when the site is built; a
+  phone gets its own portrait layout with numbered badges and a list. A Clusters menu asks for a number of clusters. A GO term
+  must also annotate at most 1,500 proteins of the proteome to name a cluster. The exports (slide, or paper at 180 mm)
+  carry a title that is a claim, one sentence, a key and a short credit; commit, file names and address stay in the file's
+  metadata. Cluster slot 6 is now a brown.
 
 ## 0.3.1 (2026-11-13)
 

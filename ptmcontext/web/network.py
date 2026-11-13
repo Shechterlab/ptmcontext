@@ -16,6 +16,7 @@ same order on the same integers, so that the page's default and this file's agre
 from __future__ import annotations
 
 import json
+import math
 from collections import Counter, defaultdict
 from itertools import combinations
 from pathlib import Path
@@ -24,6 +25,7 @@ import pandas as pd
 from ptmstats import benjamini_hochberg, hypergeom_sf
 
 from ..snapshot import md5_file
+from .netlayout import layout
 
 DEFAULTS = {
     'top': 300,
@@ -35,6 +37,7 @@ DEFAULTS = {
     'min_term': 5,
     'max_fraction': 0.2,
     'label': 0,
+    'clusters': None,
     'min_score': 700,
     'complex_weight': 700,
     'complex_max_size': 40,
@@ -119,6 +122,36 @@ def louvain(n: int, edges: list, resolution: float = 1.0) -> list[int]:
         low.setdefault(c, i)
     rank = {c: k for k, c in enumerate(sorted(sizes, key=lambda c: (-sizes[c], low[c])))}
     return [rank[c] for c in node_comm]
+
+
+# ---- a chosen number of clusters: the resolution that gets closest ---------------------------------------------------------
+def resolutions() -> list[float]:
+    """The resolutions tried for a chosen number of clusters: 0.25 and then 24 steps of 15% (to about 5.6), made by repeated
+    multiplication so that the browser's twin has the same numbers."""
+    out, r = [], 0.25
+    for _ in range(24):
+        out.append(r)
+        r = r * 1.15
+    return out
+
+
+def communities(n: int, edges: list, opt: dict) -> list[int]:
+    """The clusters of a graph: Louvain at the options' resolution, or, when `opt['clusters']` names a number, the
+    partition among those of the resolutions of `resolutions()` that has the number of clusters (communities of
+    `min_cluster` or more proteins) closest to it; of equal distance the resolution nearest the default one (in ratio),
+    then the lower. A graph that cannot reach it gives the nearest it can."""
+    target = opt.get('clusters')
+    if not target:
+        return louvain(n, edges, opt['resolution'])
+    best = None
+    for res in resolutions():
+        comm = louvain(n, edges, res)
+        size = Counter(comm)
+        count = sum(1 for v in size.values() if v >= opt['min_cluster'])
+        key = (abs(count - int(target)), abs(math.log(res / opt['resolution'])))
+        if best is None or key < best[0]:
+            best = (key, comm)
+    return best[1]
 
 
 # ---- labels: the most enriched term of each cluster ---------------------------------------------------------------------
@@ -216,7 +249,7 @@ def make_view(full: dict, opt: dict, select: set | None = None, sources: list | 
             edges.append((a, b, fl, score, w))
     live = sorted({x for e in edges for x in e[:2]})
     pos = {g: k for k, g in enumerate(live)}
-    comm = louvain(len(live), [(pos[a], pos[b], w) for a, b, _, _, w in edges], opt['resolution'])
+    comm = communities(len(live), [(pos[a], pos[b], w) for a, b, _, _, w in edges], opt)
     ann = [full['ann'][g] for g in live]
     labels = label_clusters(comm, ann, full['terms'], opt)
     return {
@@ -261,6 +294,10 @@ def settings(cfg: dict) -> dict:
     opt['floor'] = int(cfg.get('floor', opt['min_score']))
     opt['steps'] = sorted({opt['min_score']} | {s for s in STEPS if s >= opt['floor']})
     opt['exclude'] = list(cfg.get('exclude_terms') or [])
+    cl = cfg.get('clusters') or {}
+    opt['clusters'] = int(cl['default']) if isinstance(cl.get('default'), int) else None
+    opt['cluster_range'] = [int(cl.get('min', 4)), int(cl.get('max', 16)), int(cl.get('step', 1))]
+    opt['max_shown'] = max(int(cfg.get('max_clusters', DEFAULTS['max_clusters'])), opt['clusters'] or 0)
     return opt
 
 
@@ -377,16 +414,21 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
         if lab.get('non_iea', True) and has_iea:
             mt = mt[mt['non_iea'] == 'true']
         mt = mt[mt[lab['protein']].map(base).isin(ix)]
-        names, depth = {}, {}
+        names, depth, whole = {}, {}, {}
         if nf is not None:
             nt = _table(nf)
             nt = _where(nt, {c['column']: c['equals'] for c in lab['names'].get('include', [])})
             names = dict(zip(nt[lab['names']['set']], nt[lab['names'].get('name', lab['names']['set'])]))
+            if lab['names'].get('size'):
+                whole = {
+                    s: int(d) for s, d in zip(nt[lab['names']['set']], nt[lab['names']['size']]) if d.strip().isdigit()
+                }
             if lab['names'].get('depth'):
                 depth = {
                     s: int(d) for s, d in zip(nt[lab['names']['set']], nt[lab['names']['depth']]) if d.strip().isdigit()
                 }
         lowest = int(lab.get('min_depth', 0))
+        cap = int(lab.get('max_size', 0))
         by_set: dict[str, set] = defaultdict(set)
         for s, p in zip(mt[lab['set']], mt[lab['protein']].map(base)):
             by_set[s].add(p)
@@ -395,6 +437,8 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
             if len(by_set[s]) < lo or len(by_set[s]) / max(1, len(nodes)) > 0.5:
                 continue
             if lowest and depth.get(s, 0) < lowest:
+                continue
+            if cap and whole.get(s, 0) > cap:  # too common in the whole proteome to say what a cluster is about
                 continue
             t = len(terms)
             terms.append([names.get(s, s), li, s, depth.get(s, 0)])
@@ -405,6 +449,7 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
             | {
                 'id': lab.get('id', f'label{li}'),
                 'min_depth': lowest,
+                'max_size': cap,
                 'non_iea': bool(lab.get('non_iea', True) and has_iea),
             }
         )
@@ -428,6 +473,8 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
         'comm': view['comm'],
         'labels': view['labels'],
     }
+    lay_in = {k: default[k] for k in ('gene', 'sites', 'comm', 'edges', 'labels')}
+    default['layout'] = {v: layout(lay_in, v, opt['min_cluster'], opt['max_shown']) for v in ('desktop', 'phone')}
     (out / 'data').mkdir(parents=True, exist_ok=True)
 
     def dump(name, value):
@@ -455,12 +502,18 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
         f'{len(edges):,} edges in all ({n2 / 1e6:.1f} MB)'
     )
     shown = [x for x in view['labels'] if x['n'] >= opt['min_cluster']][: opt['max_clusters']]
-    keys = ('title', 'about', 'tile')
+    keys = ('title', 'about', 'tile', 'claim')
     return {
         **{k: cfg[k] for k in keys if cfg.get(k)},
         'files': {'view': 'data/network.json', 'full': 'data/network_full.json'},
         'options': {k: opt[k] for k in DEFAULTS if k in opt}
-        | {'steps': opt['steps'], 'floor': opt['floor'], 'exclude': opt['exclude']},
+        | {
+            'steps': opt['steps'],
+            'floor': opt['floor'],
+            'exclude': opt['exclude'],
+            'cluster_range': opt['cluster_range'],
+            'max_shown': opt['max_shown'],
+        },
         'sources': srcs,
         'labels': labels,
         'default': {

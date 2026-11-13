@@ -92,6 +92,7 @@ MODULES = (
     'kit-genelist.js',
     'kit-pathway.js',
     'kit-netcore.js',
+    'kit-netlayout.js',
     'kit-network.js',
     'kit-tile.js',
     'kit-figures.js',

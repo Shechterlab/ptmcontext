@@ -1454,7 +1454,7 @@
       "version": "GOA human GAF 2.2 generated 2026-11-04 15:05 (checked against GO 2026-10-23); go-basic 2026-07-26; downloaded 2026-11-13",
       "licence": "CC BY 4.0",
       "role": "input",
-      "note": "GO biological process terms of reviewed human proteins, direct and propagated (is_a, part_of) with evidence codes; non_iea is false for rows that rest on IEA alone. Staged by PTM_Pipeline commit aa895fc (PR 24); this repository checks the bytes. Citation: Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556"
+      "note": "GO biological process terms of reviewed human proteins, direct and propagated (is_a, part_of) with evidence codes; non_iea is false for rows that rest on IEA alone. Citation: Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556"
     },
     "go_bp_terms": {
       "file": "inputs/annotation/go_bp_terms_2026-11-04.tsv",
@@ -1463,7 +1463,7 @@
       "version": "GOA human GAF 2.2 generated 2026-11-04 15:05 (checked against GO 2026-10-23); go-basic 2026-07-26; downloaded 2026-11-13",
       "licence": "CC BY 4.0",
       "role": "input",
-      "note": "Names and depths of the terms in go_bp_annotations. Staged by PTM_Pipeline commit aa895fc (PR 24); this repository checks the bytes."
+      "note": "Names and depths of the terms in go_bp_annotations."
     }
   }
 }

@@ -83,6 +83,25 @@
     );
     return nodeComm.map((c) => rank.get(c));
   }
+  // a chosen number of clusters: of the resolutions 0.25 and then 24 steps of 15% (by repeated multiplication, as in
+  // network.py), the partition whose number of clusters (communities of min_cluster or more proteins) is closest to the
+  // target; of equal distance the resolution nearest the default one (in ratio), then the lower
+  function communities(n, edges, opt) {
+    if (!opt.clusters) return louvain(n, edges, opt.resolution);
+    let best = null,
+      res = 0.25;
+    for (let k = 0; k < 24; k++, res = res * 1.15) {
+      const comm = louvain(n, edges, res),
+        size = new Map();
+      comm.forEach((c) => size.set(c, (size.get(c) || 0) + 1));
+      let count = 0;
+      size.forEach((v) => v >= opt.min_cluster && count++);
+      const d = Math.abs(count - opt.clusters),
+        e = Math.abs(Math.log(res / opt.resolution));
+      if (best === null || d < best[0] || (d === best[0] && e < best[1])) best = [d, e, comm];
+    }
+    return best[2];
+  }
   // each cluster's term: the smallest q (Benjamini-Hochberg over the terms tested in the cluster; equal to 1e-9 relative)
   // among the terms with min_overlap or more of its proteins that annotate min_term or more of the network's N proteins and
   // at most max_fraction of them (one-sided hypergeometric p against all the network's proteins), a tie going to the deeper
@@ -176,10 +195,10 @@
     }
     const live = [...new Set(edges.flatMap((e) => [e[0], e[1]]))].sort((a, b) => a - b),
       pos = new Map(live.map((g, k) => [g, k])),
-      comm = louvain(
+      comm = communities(
         live.length,
         edges.map((e) => [pos.get(e[0]), pos.get(e[1]), e[4]]),
-        opt.resolution
+        opt
       );
     return {
       nodes: live,
@@ -193,5 +212,5 @@
       ),
     };
   }
-  K.netcore = { louvain, labelClusters, makeView };
+  K.netcore = { louvain, communities, labelClusters, makeView };
 });

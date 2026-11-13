@@ -975,6 +975,9 @@ tables the site's `inputs:` roles name; nothing is asked of a service.
 | `top`, `min_cluster`, `max_clusters`, `resolution`, `cluster` | proteins taken (most sites first; 300), the smallest cluster not grey (5), clusters coloured (8, the palette), Louvain resolution (1), method (`louvain`) |
 | `min_score`, `floor` | the scored source's default threshold, and the lowest the page offers (the thresholds offered are 0.4, 0.7 and 0.9 from `floor` up) |
 | `max_q`, `min_overlap`, `min_term`, `max_fraction`, `exclude_terms` | a label needs q at most `max_q` (0.05), at least `min_overlap` proteins of the cluster (3); a term must annotate `min_term` or more of the network's proteins (5) and at most `max_fraction` of them (0.2: broad terms are left out); `exclude_terms` lists ids or names never used. A cluster is named by the term of its smallest q; terms of equal q (to 1e-9 relative) go to the deeper (`names.depth`), then the smaller p, the term with fewer proteins, the name |
+| `clusters` | `{default, min, max, step}`: the page's Clusters menu. `default` is `auto` (Louvain at `resolution`) or a number; the menu offers `auto` and `min` to `max`. A number is reached by trying 24 resolutions (0.25, then steps of 15%, made by repeated multiplication) and taking the partition whose number of clusters (communities of `min_cluster` or more proteins) is closest, then the resolution nearest the default one, then the lower. Python and the browser do the same |
+| `claim` | the exported figure's title, with `{n}` for the number of clusters |
+| `label_from[].max_size`, `names.size` | terms that annotate more than `max_size` proteins of the whole proteome (the `size` column) are not used |
 | `tile` | `{section, title, text}`: the Overview tile, in the named Overview section |
 
 The network: the nodes are the proteins with sites (by canonical accession; node size is the sites), the candidates the
@@ -1184,3 +1187,16 @@ site's folder with `ptmc pages` but leaves its card off the landing page. `ptmc 
 `landing.in_switcher` is true, and opens the chosen site with the reader's search (`q=`), highlight (`hl=`) and filters (`f=`); the
 filters the target does not have are dropped, and the target says how many in a short notice. A site served alone has no
 `sites.json` and no menu.
+
+The figure (`ptmcontext/web/netlayout.py`, twin `kit-netlayout.js`): each cluster is laid out on its own links (500 steps of
+repulsion, spring, collision and gravity from a spiral seed), the clusters are packed as discs (16 fixed starts; clusters of
+confusable colours, and clusters sharing a colour when there are more than eight, 40 units apart instead of 16; the cluster
+with most links to the others tends to the middle), each is turned to face its partners, and the smaller clusters go on one
+shelf. Outlines are flat washes, links inside a cluster are drawn in its colour, links between two clusters are one band
+per pair with 6 or more links, names sit outside the outlines (short form: parentheses, a ", via ..." clause and anything
+after a comma dropped; two lines at most) and are placed where they touch nothing, gene labels for the three biggest
+proteins of each cluster likewise. There is no randomness and the arithmetic is the same in both languages, so the build's
+figure and the browser's agree to within a rounding; the default figure is written into `data/network.json` for a desktop
+and a phone (numbered badges and a list), any other view is laid out in the browser (in a Web Worker when large). An export
+is laid out again at the width of its preset (slide 960 units, paper 680 units drawn at 180 mm) with the type sizes of the
+figure style guide.
