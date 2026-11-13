@@ -966,7 +966,7 @@ The one-file copy has no pathway files and so no button. A site without `pathway
 `#overlap?t=<terms>` (kit-overlap.js; `website.overlap`, schema in site.schema.json) compares two to `max_terms` (at most 4) terms. The address keeps the
 terms (`t`, comma-separated, each percent-encoded: `s:<question>:<set>` a set of a protein-set question, `c:<question>:<class>` a class of another
 question, `f:readers:<family>` and `f:enzymes:<class>`, `a:<attribute>:<value>` a protein attribute, `sel` the current selection, `sv:<name>` a
-selection saved in this browser, `g:<names>` a pasted list), the unit (`ou`), the display (`ov`: `venn` or `upset`) and the open region (`or`).
+selection saved in this browser, `g:<names>` a pasted list), the unit (`ou`) and the open region (`or`); an old link's `ov` is read and ignored.
 
 ```yaml
 website:
@@ -1006,8 +1006,18 @@ and `tests/test_overlap.py` checks it equals the engine's `statistics.tsv` row o
 the regions shown (the whole terms have a q of their own). Sites: the sites of the region (a site is in a term when its protein is, or, for a class or a
 selection, when it is) with, only where every term describes proteins, Fisher's exact test (`ptmstats.fisher_p`) of the residues of the proteins with
 sites, the sites in the region against the other candidate residues there and outside, pooled as the residue questions' "across all proteins" rows; with a
-term that describes sites, counts only. A region of fewer than 5 elements is counted, not tested (no fold, p or q, and left out of the Benjamini-Hochberg family); a fold of 0 is shown as 0x; a region with a fold between 0.8 and 1.25 and q below 0.001 is flagged "large set; small effect"; the picker marks a term of over a quarter of the reviewed proteins "very broad" and shows every term's size. Both `sets.each` and ordinary protein-set questions can be terms. Colors are four fixed categorical slots (`--ov1` to `--ov4`; `validate_palette.js` passes for slots 1 to 4 in light
-and dark); each region is also labelled A to D and listed in the table.
+term that describes sites, counts only. A region of fewer than 5 elements is counted, not tested (no fold, p or q, and left out of the Benjamini-Hochberg family); a fold of 0 is shown as 0x; a region with a fold between 0.8 and 1.25 and q below 0.001 is flagged "large set; small effect"; the picker marks a term of over a quarter of the reviewed proteins "very broad" and shows every term's size. Both `sets.each` and ordinary protein-set questions can be terms. Figure. One row grammar for any number of terms: a block of the terms ("every protein of each term", which is also the colour key) and a block of the
+regions, largest first. A region row has a membership dot matrix (filled in the term's colour when in, a small hollow dot when out) with a short label
+("only B", "A + C"), a split size bar (with sites, then without; the tip reads "k / n") and the share with sites as a bar from the baseline rule (the
+share of all reviewed proteins) to the region's share, with its 95% Wilson interval, filled (more `--more`, fewer `--less`) where q < 0.05 and hollow
+where not; the values are the share, the fold and q. A region under 5 is counted ("3 of 3 · not tested"). One very large value cuts the size axis
+(its bars are marked //). For 2 or 3 terms an area-proportional Euler glyph sits above (circles fitted to the exclusive regions by Nelder-Mead, counts
+labelled inside at the pole of inaccessibility or outside on a leader, nothing overlapping; the largest misfit is stated when above 1%); a row and its
+region in the glyph highlight together, and either selects. No glyph for 4 terms. The Sites unit shows the fold on a log axis centred at 1x with the
+odds ratio's Woolf interval. The layout is a container query (a narrow figure puts the values under the bars). Keys and colour tokens are `--ov1` to
+`--ov4` (terms, `validate_palette.js` passes for slots 1 to 4 in light and dark) and `--ov-k`, `--ov-n`, `--ov-ref`, `--ov-fill`; the directions are the
+site's `--more` and `--less`. The export is the same rows as one SVG, 940 px wide (SVG, PNG), and the TSV adds `ci95_lo`, `ci95_hi` (Wilson interval of
+the share; Woolf interval of the odds ratio for sites) and `tested` (0 or 1).
 
 ### The gene-list test
 
