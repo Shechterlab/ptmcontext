@@ -1969,7 +1969,21 @@
               (t.ref || '').toLowerCase().includes(w)
           )
         : all.filter((t) => t.group === 'Selections' || t.group === 'Readers' || t.group === 'Enzymes')
-    ).slice(0, 40);
+    )
+      .map((t, i) => [
+        t,
+        i,
+        w
+          ? t.label.toLowerCase().startsWith(w) || (t.ref || '').toLowerCase() === w
+            ? 0
+            : t.label.toLowerCase().includes(w)
+              ? 1
+              : 2
+          : 0,
+      ])
+      .sort((x, y) => x[2] - y[2] || x[1] - y[1])
+      .map((x) => x[0])
+      .slice(0, 40);
     if (!hit.length) return `<p class="muted">${w ? 'No term matches.' : 'Type to search.'}</p>`;
     let g = '';
     return hit
