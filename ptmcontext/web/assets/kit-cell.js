@@ -827,14 +827,15 @@
               const wt = p.view === 'percent' ? 700 : 400;
               if (!v || K.tw(v + m, 13, wt) * 1.2 <= room) return [it, null];
               const ls = K.wrap(v, room / 1.2, 13, wt);
-              return [it, ls.length > 2 ? [ls[0], K.fit(ls.slice(1).join(' '), room, 13, wt, 1.2)] : ls];
+              return [it, ls.length > 3 ? [ls[0], ls[1], K.fit(ls.slice(2).join(' '), room, 13, wt, 1.2)] : ls];
             })
           ),
           wide = list.some((it) => vals.get(it)),
           // labels of two-line values still fit between the top and the bottom of the drawing
           gap = wide
             ? Math.min(
-                (list.some((it) => lines.get(it).length > 1) ? 66 : 52) + 14,
+                (list.some((it) => lines.get(it).length > 1) ? 66 : 52) +
+                  14 * (Math.max(...list.map((it) => vals.get(it)?.length || 1)) - 1),
                 (H - 56) / Math.max(1, list.length - 1)
               )
             : list.some((it) => lines.get(it).length > 1)
