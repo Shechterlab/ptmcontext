@@ -9449,3 +9449,178 @@ html[data-density] .stbl .src-tags a {
 html[data-density] .sites-tbl .cv {
   max-width: 13rem;
 }
+
+/* The Overlap page (kit-overlap.js): four categorical slots, validated with the data-viz palette checker in light and dark */
+:root {
+  --ov1: #2a78d6;
+  --ov2: #eb6834;
+  --ov3: #1baf7a;
+  --ov4: #eda100;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --ov1: #3987e5;
+    --ov2: #d95926;
+    --ov3: #199e70;
+    --ov4: #c98500;
+  }
+}
+:root[data-theme='dark'] {
+  --ov1: #3987e5;
+  --ov2: #d95926;
+  --ov3: #199e70;
+  --ov4: #c98500;
+}
+.ov-pick {
+  display: grid;
+  gap: 8px;
+  max-width: 640px;
+  margin: 0 0 16px;
+}
+.ov-pick input[type='search'] {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.ov-pick textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.ov-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ov-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--surface);
+  max-width: 100%;
+}
+.ov-sw {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex: none;
+}
+.ov-res {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px;
+  background: var(--surface);
+}
+.ov-grp {
+  margin: 6px 4px 2px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ov-opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 8px 8px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ov-opt:hover,
+.ov-opt:focus-visible {
+  background: var(--surface-2);
+}
+.ov-ctl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 8px 0;
+}
+.ov-unit {
+  display: inline-flex;
+  gap: 4px;
+}
+.ov-unit .btn.on {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.ov-legend {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: grid;
+  gap: 4px;
+}
+.ov-legend li {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ov-fig {
+  margin: 8px 0;
+  max-width: 460px;
+}
+.ov-svg svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+.ov-reg {
+  cursor: pointer;
+}
+.ov-reg:focus-visible rect,
+.ov-reg:hover rect {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.ov-reg.on rect {
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+.ov-region {
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 12px 0;
+  background: var(--surface);
+}
+.ov-list {
+  columns: 3 120px;
+  list-style: none;
+  padding: 0;
+  margin: 6px 0;
+  max-height: 260px;
+  overflow: auto;
+}
+.ov-tbl tr.ov-on th,
+.ov-tbl tr.ov-on td {
+  background: var(--surface-2);
+}
+.ov-tbl .ov-totals td,
+.ov-tbl .ov-totals th {
+  color: var(--muted);
+}
+.ov-cmp {
+  margin-left: 6px;
+}
