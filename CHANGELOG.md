@@ -19,11 +19,15 @@ What changed for readers:
   together; the per-type versions (chromatin, histones, protein classes, disorder and the rest) stay on each question's page,
   which links to them, in All tests and in the downloads.
 - An address with a leading slash, such as `#/protein/P68431` or `#/protein/H3C1`, opens the protein page.
+- The Methods page lists the 200 sources that report the most sites (the lysine site's PubMed IDs drew a page of about
+  200,000 elements, which crashed the browser); every one stays in the Sites download. The lysine site's selection data
+  is 119 MB instead of about 200 MB, so pages that test a selection need less memory.
 
 For the code: an Overview card's `beside` may be a list of lines; a question's page links to the other questions of its
 `family`; `tools/audit/links.js --budget MINUTES` stops starting pages after that time and lists the rest, `--verbose`
 prints each break as found, and a SIGTERM writes the report so far; the tests workflow's link audit sets workers and a
-budget per site (two workers for the lysine site).
+budget per site (two workers for the lysine site); in the selection data a question that counts some marks only
+(`only_in`, `marks_where`) has one table for all its classes (`by_test[id].all`, `outside: unclassed`).
 
 ## 0.3.0 (2026-11-12)
 
