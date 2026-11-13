@@ -866,6 +866,21 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - {id: domain_class, layer: domain_class, with: {classes: sites/data/domain_classes.json}, new: true}
   - {id: structure_context, layer: structure_context, new: true}
   - {id: idr_charge, layer: idr_charge, new: true}   # not in the release: CIDER's charge classes of IDRs
+# Controls (CONTRACTS.md, Controls): questions repeated with one change each, shown on each question's page beside its
+# result (not as Overview tiles)
+controls:
+  - id: inidr
+    label: inside IDRs
+    note: "Only the serines, threonines and tyrosines inside intrinsically disordered regions (MobiDB) count, phosphosites and other serines, threonines and tyrosines alike, so the result is not a matter of disorder"
+    analyses: [near_methylarginine, near_methyllysine, near_acetylation, near_other_acylation, near_ubiquitination, near_sumoylation, idr_charge]
+    only_in: idr
+  - id: detect
+    label: in detectable peptides
+    note: "Only the serines, threonines and tyrosines that lie in a tryptic peptide of 7 to 35 residues count, phosphosites and other serines, threonines and tyrosines alike: the protein cut in silico after K and R (not before P), the residue itself left uncut as a modified one would be. Within each protein, protein abundance is already the same on both sides; this sets aside the residues a peptide-based study could hardly have reported"
+    analyses: [disorder, structure_context, domain_class, idr_charge]
+    only_in:
+      digest: {after: KR, not_before: P, min_length: 7, max_length: 35}
+
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites

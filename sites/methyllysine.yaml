@@ -860,6 +860,24 @@ marks_subsets:           # the key questions again on the lysines of one methyla
     note: "Only the lysines that Berryhill et al. 2023 alone reports are counted as methylated"
     analyses: [near_methylarginine]
 
+# Controls (CONTRACTS.md, Controls): questions repeated with one change each, shown on each question's page beside its
+# result (not as Overview tiles)
+controls:
+  - id: nohist
+    label: histones set aside
+    note: "Histones set aside (PANTHER families HISTONE H1, H2A, H2B, H3 and H4, as the question Histones and other proteins defines them): neither their methyllysines nor their other residues count"
+    analyses: [same_acetylation, same_ubiquitination, cell_chromatin]
+    without_proteins:
+      input: panther_classes
+      column: uniprot_accession
+      include: [{column: family_name, in: [HISTONE H1, HISTONE H2A, HISTONE H2B, HISTONE H3, HISTONE H4]}]
+      label: histones
+  - id: inidr
+    label: inside IDRs
+    note: "Only the lysines inside intrinsically disordered regions (MobiDB) count, methyllysines and other lysines alike, so the result is not a matter of disorder"
+    analyses: [near_phospho, near_phospho_high, near_methylarginine, near_acetylation, near_other_acylation, near_ubiquitination, near_sumoylation, idr_charge]
+    only_in: idr
+
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites

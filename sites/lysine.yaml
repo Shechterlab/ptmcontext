@@ -1056,6 +1056,30 @@ marks_subsets:           # the key questions again on the lysines of one type (a
     note: "Only the lysines with a butyrylation (Kbu) record are counted as modified"
     analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
 
+# Controls (CONTRACTS.md, Controls): questions repeated with one change each, shown on each question's page beside its
+# result (not as Overview tiles)
+controls:
+  - id: nohist
+    label: histones set aside
+    note: "Histones set aside (PANTHER families HISTONE H1, H2A, H2B, H3 and H4, as the question Histones and other proteins defines them): neither their modified lysines nor their other residues count"
+    analyses: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl, cell_chromatin]
+    without_proteins:
+      input: panther_classes
+      column: uniprot_accession
+      include: [{column: family_name, in: [HISTONE H1, HISTONE H2A, HISTONE H2B, HISTONE H3, HISTONE H4]}]
+      label: histones
+  - id: inidr
+    label: inside IDRs
+    note: "Only the lysines inside intrinsically disordered regions (MobiDB) count, modified lysines and other lysines alike, so the result is not a matter of disorder"
+    analyses: [near_phospho, near_phospho_high, near_methylarginine, near_methyllysine, idr_charge]
+    only_in: idr
+  - id: detect
+    label: in detectable peptides
+    note: "Only the lysines that lie in a tryptic peptide of 7 to 35 residues count, modified lysines and other lysines alike: the protein cut in silico after K and R (not before P), the residue itself left uncut as a modified one would be. Within each protein, protein abundance is already the same on both sides; this sets aside the residues a peptide-based study could hardly have reported"
+    analyses: [disorder, structure_context, domain_class, idr_charge]
+    only_in:
+      digest: {after: KR, not_before: P, min_length: 7, max_length: 35}
+
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites
