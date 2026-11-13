@@ -166,7 +166,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Predicted interfaces
     question: "Are methyllysines at predicted protein interfaces?"
-    sub: "Methyllysines against the other lysines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt)"
+    sub: "Methyllysines against the other lysines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt). Predicted interfaces lie mostly in ordered regions, so the row of all residues partly restates disorder; the ordered and disordered rows compare like with like"
     section: Protein interactions
     counting: every_candidate
     background: other lysines of the same proteins
@@ -803,7 +803,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     section: Motif, disorder and structure
     covariates:
       - {name: in_idr, label: In a disordered region, help: "Inside an IDR of 20 or more residues", layer: idr, is: [idr]}
-      - {name: arks_motif, label: In an ARKS sequence, help: "Arg right before the lysine and Ser or Thr right after it", layer: motif, flags: [ARKS]}
+      - {name: arks_motif, label: In an R-K-S/T sequence, help: "Arg right before the lysine and Ser or Thr right after it", layer: motif, flags: [ARKS]}
       - {name: net_charge, label: "Local net charge (per +1)", help: "Lys and Arg minus Asp and Glu within 7 residues on either side, the lysine itself left out; the odds ratio is for each extra +1", window_sum: {window: 7, weights: {K: 1, R: 1, D: -1, E: -1}}}
       - {name: domain_distal, label: Far from any domain, help: "More than 20 residues from a domain, and not between two domains", layer: domain_context, is: [distal]}
   # Interactions: each a question of yes-or-no tests, each against the lysines its evidence could have reached: the

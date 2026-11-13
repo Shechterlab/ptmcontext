@@ -1054,7 +1054,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: predicted_interface
     title: Predicted interfaces
     question: "Are methylarginines at predicted protein interfaces?"
-    sub: "Methylarginines against the other arginines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt)"
+    sub: "Methylarginines against the other arginines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt). Predicted interfaces lie mostly in ordered regions, so the row of all residues partly restates disorder; the ordered and disordered rows compare like with like"
     section: Interactions and binding
     counting: every_candidate
     candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them

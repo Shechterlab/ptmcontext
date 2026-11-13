@@ -189,7 +189,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
            help: "Arg at -2 of the Ser or Thr: a basophilic preference of PKC and other AGC kinases (Songyang et al. 1994)"}
         - {name: acidophilic_p3, label: "S/T-x-x-D/E (acidic at +3)", pattern: "[ST]..[DE]", start: 0, among: ST,
            help: "Asp or Glu at +3 of the Ser or Thr: the acidophilic preference of CK2 (Meggio & Pinna 2003; Songyang et al. 1996)"}
-  # Is it functional? Reader motifs: sequences that phosphopeptide-binding domains recognize once the site is phosphorylated.
+  # Reader motifs: sequences that phosphopeptide-binding domains recognize once the site is phosphorylated.
   # 14-3-3: mode 1 R-S-x-Sph-x-P and mode 2 R-x-(Y/F)-x-Sph-x-P (Muslin et al. 1996, Cell 84:889; Yaffe et al. 1997, Cell
   # 91:961), and the relaxed mode 1 R-x-x-Sph-x-P. Polo-box domain of PLK1: S-Sph/Tph-P (Elia et al. 2003, Science 299:1228).
   # Pin1 WW domain (Sph/Tph-P: Lu et al. 1999, Science 283:1325; Yaffe et al. 1997, Science 278:1957) reads the sequence of
@@ -207,7 +207,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       title: Reader motifs
       question: "Are phosphosites in the motifs that phosphopeptide-binding domains recognize more often than other residues of the same type in their proteins?"
       sub: "Phosphosites against the other residues of their own type (serines and threonines, threonines, serines or tyrosines, as the motif has it) in the same proteins, by the sequence a reader domain binds when the site is phosphorylated: 14-3-3, polo-box, the beta-TrCP phosphodegron, SH2, FHA and BRCT. Pin1 binds Sph/Tph-P, the proline-directed class of the kinase motifs, so it has no row of its own. A motif is a candidate binding site, not shown to bind"
-      section: Is it functional?
+      section: Reader motifs and functional scores
       families:
         - {name: ytt_mode1, label: "14-3-3 mode 1 (R-S-x-Sph-x-P)", pattern: "RS.[ST].P", start: -3, among: ST,
            help: "Arg at -3, Ser at -2 and Pro at +2: the first 14-3-3 binding mode (Muslin et al. 1996; Yaffe et al. 1997)"}
@@ -324,7 +324,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Predicted interfaces
     question: "Are phosphosites at predicted protein interfaces?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt)"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt). Predicted interfaces lie mostly in ordered regions, so the row of all residues partly restates disorder; the ordered and disordered rows compare like with like"
     section: Protein interactions
     counting: every_candidate
     background: other Ser/Thr/Tyr residues of the same proteins
@@ -1051,7 +1051,7 @@ website:                  # the look and words of the website (ptmc web); layout
         about: "Kinase motif classes: the sequence around the site that proline-directed, basophilic and acidophilic kinases prefer, each tested against residues of its own type."
         cards:
           - {analysis: kinase_motifs, title: Kinase motif classes}
-      - name: Is it functional?
+      - name: Reader motifs and functional scores
         about: "Reader motifs that bind the phosphorylated site (14-3-3, polo-box, the beta-TrCP degron, SH2, FHA, BRCT) and, where the table has it, the functional score."
         cards:
           - {analysis: reader_motifs, title: Reader motifs}
