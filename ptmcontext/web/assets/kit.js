@@ -1125,6 +1125,7 @@
   // the comparison is pooled, and the page says so
   const noWithin = () => vsOn() && (K.sel.contrastGroups()?.mixed ?? 0) < K.sel.MIN.proteins;
   const vsMethod = (m) => (m === 'mantel_haenszel' && noWithin() ? 'fisher' : m);
+  K.vsMethod = vsMethod;
   const rowsOf = (a, m) =>
     vsOn()
       ? K.sel.contrast(a.id, a.kind === 'protein_sets' ? 'enricher' : vsMethod(m)) || []
@@ -1619,8 +1620,18 @@
     // the comparison choice and the legend share one row
     const row = `<div class="ctl-row">${against}${keyP}</div>${howP}`;
     if (vsOn()) return head + row + vsLead();
+    // chosen by a feature of the residue: the other residues were not, so the baseline restates the choice for that
+    // feature and any that goes with it
+    const feats = K.sel.residueFeatures ? K.sel.residueFeatures() : [];
+    const circ = feats.length
+      ? `<p class="note sel-circ">Chosen by a feature of the residue (${esc(feats.join('; '))}). The other ` +
+        `${esc(W.residues)} it is compared with were not chosen that way, so questions about the same or a related ` +
+        `feature partly restate the choice. <button class="linkish" type="button" data-go-apart>Compare with the other ` +
+        `${esc(W.marks)}</button> to ask what else sets these apart.</p>`
+      : '';
     return (
       head +
+      circ +
       (K.sel.testable()
         ? row
         : against +
@@ -1729,13 +1740,12 @@
             }`
           : `the other <b>${int(G.g2.length)}</b>`
       }, ${esc(METHOD_PHRASE[vsMethod(S.m)] || '')}.` +
-      (S.m === 'mantel_haenszel' && noWithin()
+      (noWithin()
         ? ` <span class="muted">Not within each protein: ${
             G.mixed ? `only ${int(G.mixed)} protein${G.mixed === 1 ? ' has' : 's have'}` : 'no protein has'
           } ${esc(W.marks)} on both ` +
-          `sides (your selection takes whole proteins), so ${
-            G.mixed ? 'that test says little' : 'that test cannot be made'
-          }.</span>`
+          `sides (your selection takes whole proteins). Pooled, each ${esc(W.mark)} of a protein would count as an ` +
+          `independent observation, so the shares are shown without a test; the protein-level questions are tested.</span>`
         : '') +
       `</p>`;
     if (!K.sel.testable()) {

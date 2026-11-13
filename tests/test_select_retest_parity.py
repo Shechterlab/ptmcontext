@@ -227,3 +227,48 @@ def test_a_selection_made_with_one_class_of_a_question_whose_classes_exclude_eac
     for m in ('fisher', 'mantel_haenszel'):
         rows = got[f'reg|{m}']
         assert rows and all(r['descriptive'] and r['q'] is None for r in rows), rows
+
+
+VS = r"""
+(async () => {
+  K.sel.data(); await K.sel.ready;
+  Object.assign(S0, STATE);
+  const fam = {};
+  for (const id of AIDS) fam[id] = (K.sel.contrast(id, METHOD) || []).map((r) => ({ category: r.category, p: r.p, q: r.q, descriptive: !!r.descriptive }));
+  console.log(JSON.stringify({ fam, features: K.sel.residueFeatures(), mixed: K.sel.contrastGroups().mixed }));
+})();
+"""
+
+
+def _vs(index, state, method, aids):
+    head = (
+        f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, '
+        f'INDEX = {json.dumps(str(index))}, SEL = {json.dumps(str(index.parent / "data" / "selection.json"))}, '
+        f'AIDS = {json.dumps(aids)}, FILTER = {{}}, STATE = {json.dumps(state)}, METHOD = {json.dumps(method)};'
+    )
+    body = RUN.split('(async () => {')[0] + VS
+    run = subprocess.run(['node', '-e', head + body], capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr[-1500:]
+    return json.loads(run.stdout)
+
+
+def test_against_the_other_marks_q_is_corrected_across_every_question_shown(tmp_path):
+    from ptmstats import benjamini_hochberg
+
+    root, index, stats = _built(tmp_path)
+    aids = ['fams', 'multi', 'reg_only', 'reg', '@kind']
+    out = _vs(index, {'vs': 'marks', 'f': {'a:fams': ['stp']}}, 'mantel_haenszel', aids)
+    # chosen by a residue feature: the page names it in its caveat
+    assert out['features'] and out['mixed'] > 3
+    rows = [r for a in aids for r in out['fam'][a] if not r['descriptive'] and r['p'] is not None]
+    q = benjamini_hochberg([r['p'] for r in rows])
+    assert len(rows) > 3 and all(abs(r['q'] - x) < 1e-12 for r, x in zip(rows, q))
+
+
+def test_a_selection_of_whole_proteins_is_not_tested_pooled_against_the_other_marks(tmp_path):
+    root, index, stats = _built(tmp_path)
+    genes = 'GP00 GP01 GP03 GP04 GP06'
+    out = _vs(index, {'vs': 'marks', 'q': genes}, 'fisher', ['reg', 'fams'])
+    assert out['mixed'] == 0 and out['features'] == []
+    rows = [r for a in ('reg', 'fams') for r in out['fam'][a]]
+    assert rows and all(r['descriptive'] and r['p'] is None for r in rows)
