@@ -602,15 +602,14 @@
         `<th scope="col" class="num">Sites</th>`;
     const body = (r, name0, attrs = '') => {
       const name = name0 + (broad(r) ? ' <span class="muted ov-flag">large set; small effect</span>' : '');
-      return;
-      sites
+      return sites
         ? `<tr${attrs}><th scope="row">${name}</th><td class="num">${int(r.n)}</td><td class="num">${int(r.proteins ?? 0)}</td>` +
-          (t ? foldCells(r) : '') +
-          '</tr>'
+            (t ? foldCells(r) : '') +
+            '</tr>'
         : `<tr${attrs}><th scope="row">${name}</th><td class="num">${int(r.n)}</td><td class="num">${int(r.k)}</td>` +
-          `<td class="num">${r.n ? `${((100 * r.k) / r.n).toFixed(1)}%` : '–'}</td>` +
-          (t ? foldCells(r) : '') +
-          `<td class="num">${int(r.sites ?? 0)}</td></tr>`;
+            `<td class="num">${r.n ? `${((100 * r.k) / r.n).toFixed(1)}%` : '–'}</td>` +
+            (t ? foldCells(r) : '') +
+            `<td class="num">${int(r.sites ?? 0)}</td></tr>`;
     };
     const main = rows
       .map((r) =>
@@ -968,6 +967,7 @@
       }; a protein is a reader when it carries any of a family’s Pfam or InterPro entries.${(C.sources || []).map((src) => ` ${esc(src.title)}: ${src.n.toLocaleString('en')} terms; ${src.cite?.length ? 'cite ' + src.cite.map(esc).join('; ') : ''}.`).join('')}</p></section>`
   );
   K.overlap = {
+    tableHtml,
     core: { regions, proteinTest, siteTest, bhAll, settle, lens, distance, MIN_N },
     resolve,
     compute,

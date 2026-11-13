@@ -153,7 +153,7 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
       global.fetch = u => String(u).startsWith('data/overlap/')
         ? Promise.resolve({ ok: true, json: () => Promise.resolve(JSON.parse(fs.readFileSync(OV + '/' + String(u).slice(13), 'utf8'))) })
         : sel(u);
-      K.preamble = (t, w) => '# ' + t + ': ' + w + NL; K.g6 = v => String(v);
+      K.fx = v => String(v); K.preamble = (t, w) => '# ' + t + ': ' + w + NL; K.g6 = v => String(v);
       K.sel.data(); await K.sel.ready;
       const r2 = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'proteins', 1);
       const r3 = await K.overlap.compute(['s:onto:D1', 's:onto:D2', 's:term:T3'], 'proteins', 1);
@@ -162,7 +162,7 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
       const rr = await K.overlap.compute(['s:onto:D1', 'f:readers:Madeup'], 'readers', 1);
       const rd = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'proteins');
       const strip = r => ({ ts: r.ts.map(t => t.id), rows: r.rows, totals: r.totals, N: r.N, M: r.M, test: r.test });
-      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), rd: strip(rd), rx: strip(rx), tsvx: K.overlap.tsv(rx), tsv: K.overlap.tsv(r2) }));
+      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), rd: strip(rd), rx: strip(rx), tables: [r2, rs, rx].map(r => K.overlap.tableHtml(r)), tsvx: K.overlap.tsv(rx), tsv: K.overlap.tsv(r2) }));
     """
     run = subprocess.run(
         ['node', '-e', head + harness + '(async () => {' + body + '})();'], capture_output=True, text=True
@@ -209,3 +209,7 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
     rx = {x['mask']: x for x in j['rx']['rows']}
     assert (rx[1]['n'], rx[1]['k'], rx[2]['n'], rx[2]['k']) == (3, 3, 3, 1)
     assert 'doi:10.0000/made-up' in j['tsvx'] and 'doi:10.0000/made-up' not in j['tsv']
+    # the tables have real rows, in every unit
+    for html in j['tables']:
+        assert 'undefined' not in html and html.count('<tr') >= 3
+        assert html.count('<th scope="row">') >= 2
