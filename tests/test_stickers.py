@@ -448,14 +448,12 @@ def test_an_only_in_question_gets_its_own_counts_for_a_selection(tmp_path):
     marks = pd.read_csv(root / 'out' / 'toy' / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
     prots = pd.read_csv(root / 'out' / 'toy' / 'proteins.tsv', sep='\t', dtype=str)['accession'].tolist()
     per = {prots.index(a): g for a, g in marks.groupby('accession')}
-    for pi, (others, positions) in {int(p): v for p, v in bt['0'].items()}.items():
-        mine = per[pi]
-        assert sorted(positions) == sorted(
-            int(x) for x in mine.loc[mine['sticker_in_idrs'] == '', 'position']
-        )  # the marks outside the IDRs, which no class counts
-    assert any(positions for _, positions in bt['0'].values()) and len(bt['0']) < len(
-        prots
-    )  # and a protein with no residue inside is left out
+    # one table for every class, and the marks outside the IDRs (which no class counts) are those with no class: the
+    # browser leaves them out, so no positions are written
+    assert bt['outside'] == 'unclassed' and set(bt) == {'all', 'outside'}
+    assert all(positions == [] for _, positions in bt['all'].values())
+    assert (marks['sticker_in_idrs'] == '').any()  # there are marks outside
+    assert len(bt['all']) < len(prots)  # and a protein with no residue inside is left out
     # a flags layer cannot say which marks are outside
     site['analyses'].append({'id': 'bad', 'layer': 'motif', 'only_in': 'idr'})
     (root / 'sites' / 'bad.yaml').write_text(yaml.safe_dump({**site, 'id': 'bad'}, sort_keys=False))

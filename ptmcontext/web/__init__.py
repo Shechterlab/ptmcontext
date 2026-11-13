@@ -1116,13 +1116,11 @@ def selection_data(
             continue
         g = counts[counts['analysis'] == aid]
         total = g.drop_duplicates('accession').set_index('accession')['others_total'].astype(int)
-        outside: dict = {}
-        for acc, pos, cls in zip(marks['accession'], marks['position'], marks[aid]):
-            if not cls:
-                outside.setdefault(pidx[acc], []).append(int(pos))
+        # the same for every class, and the marks it does not count are those with no class in it: written once, as
+        # 'all' with outside 'unclassed' (the browser leaves out a mark with no class), not a list of positions per class
         by_test[aid] = {
-            str(ci): {str(pidx[a]): [int(n), outside.get(pidx[a], [])] for a, n in total.items() if a in pidx}
-            for ci in range(len(classes[aid]))
+            'all': {str(pidx[a]): [int(n), []] for a, n in total.items() if a in pidx},
+            'outside': 'unclassed',
         }
     # protein-set questions: each tested set's size in the background and its marked proteins (protein_sets.json)
     sets = {}

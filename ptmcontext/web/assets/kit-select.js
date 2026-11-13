@@ -826,9 +826,15 @@
           c = 0,
           d = 0;
         for (const [p, all] of Object.entries(byProt)) {
-          const t = own ? (own[ci] || {})[p] : null;
+          // a question counting some marks only (only_in, marks_where) gives one table for every class (own.all), and
+          // the marks it does not count are those with no class in it
+          const t = own ? (own[ci] || own.all || {})[p] : null;
           if (own && !t) continue;
-          const ms = t ? all.filter((x, k) => !t[1].includes(posOf[p][k])) : all;
+          const ms = !t
+            ? all
+            : own.outside === 'unclassed'
+              ? all.filter((x) => x.length)
+              : all.filter((x, k) => !t[1].includes(posOf[p][k]));
           const ot = t ? t[0] : SD.others_total[p],
             oin = (others[p] || {})[ci] || 0,
             ain = ms.filter((x) => x.includes(ci)).length;
