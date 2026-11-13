@@ -604,6 +604,7 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 | `units_<kind>.tsv` | one per unit of a kind with `values`, on a protein with a mark | `accession, start, end, length, class`, the value columns (up to 6 significant digits, empty for missing), `marks` (the counted marks inside) and `other_candidates` (the other candidate residues inside; left-out marks on neither side, as the tests count them). The IDR charge layer writes `units_idr.tsv`: each IDR with `f_plus, f_minus, fcr, ncpr, kappa, region` (its Das–Pappu region, 1 to 5; `class` r1 to r5) and, when the mark profile names `stickers` (aromatic residues, say), `stickers, sticker_spacing, sticker_free` (how many, the median distance between neighbors, the longest stretch without one; a description for the IDRs page, never tested) |
 | `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used, and `counts: {codes, N, sets}`, the background's proteins in each stratum overall and in each set (from the lowest decile, then `none`); with `values`, `values: {columns, marked: {accession: [number or null per column]}, others: {column: sorted numbers}}` (columns with `background: true`); for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; absent when the site has no protein-set question |
 | `protein_sets.json` | per protein-set question | `{N, marked_in_background, sets: {set: {M, marked}}, identifiers?, covariate?, marked_in_any?, filter_sets?, scores?}`: the background size, its marked proteins, and each tested set's size and marked proteins; for the Filters panel, the marked proteins in any of the source's sets (`filter.any`), the untested sets holding a marked protein with their names (`filter.sets: all`) and, with a `scores` table, `{label, help, levels, max, sets: {set: {protein: score}}, any: {protein: best score}}` over the marked proteins (no test reads these); with an abundance input, `covariate: {input, value, strata, proteins: {accession: [value, decile]}}` for the marked proteins, the deciles the stratified test used; for sets of another identifier, `marked_in_background`, `marked` and the covariate's keys are identifiers, and `identifiers: {noun, nouns, proteins: {accession: [identifier]}}` gives each marked protein's identifiers in the background; with a `hierarchy`, `parents: {set: [parent sets]}` (each tested set's parents among the tested sets) and `root`; for sets gathered into families, `gathers: {family: [set ids]}` (each tested family's own sets, which a website's table of member sets groups by); absent when the site has no protein-set question |
+| `overlap_members.json` | when `website.overlap.terms_from` names protein-set questions | `{universe: [every reviewed protein of the snapshot], sets: {question: {set: [index into universe]}}}`: every protein of each tested set, the proteins without a mark too (a set of genes holds the proteins with one of its genes). Not in `protein_sets.json`; not read by any test |
 | `set_names.tsv` | per set | `analysis, set, name` |
 | `marks_<name>.tsv` | per row of a per-mark table (`marks.tables.<name>`) on a counted mark | `accession, position`, then the columns it keeps (text), in the table's order; `run.json` records each table's rows read and kept (`mark_tables`) |
 | `shown_marks.tsv` | one per residue `marks.left_out` (or a variant's `marks_add` `left_out`) keeps pending, on a protein of the snapshot, at a residue it has, and not itself a counted mark | `accession, position, residue, window_15`, then `a.<attribute>` (and `.link`) as `marks.tsv` (from the pending rows): shown on the website, never counted or tested. Header only where the site leaves nothing out |
@@ -981,6 +982,64 @@ when a pathway is opened: `{id, name, top, n, acc, gene, groups: [{id, name, m}]
 lists. Genes of other proteins come from the snapshot's FASTA. The hierarchy table has a set id column and a parents column;
 the members table a set id and a UniProt accession per row. Nothing is asked of the source's service; the page links to it.
 The one-file copy has no pathway files and so no button. A site without `pathways` has none.
+
+### The Overlap page
+
+`#overlap?t=<terms>` (kit-overlap.js; `website.overlap`, schema in site.schema.json) compares two to `max_terms` (at most 4) terms. The address keeps the
+terms (`t`, comma-separated, each percent-encoded: `s:<question>:<set>` a set of a protein-set question, `c:<question>:<class>` a class of another
+question, `f:readers:<family>` and `f:enzymes:<class>`, `a:<attribute>:<value>` a protein attribute, `sel` the current selection, `sv:<name>` a
+selection saved in this browser, `g:<names>` a pasted list), the unit (`ou`) and the open region (`or`); an old link's `ov` is read and ignored.
+
+```yaml
+website:
+  overlap:
+    terms_from: [panther_class, reactome_pathway]   # questions whose sets (protein-set) or classes are terms
+    max_terms: 4
+    leave_out: {some_question: [set_id]}             # sets not offered and not written (data that is not public)
+    notes: {some_question: one main location per protein}   # shown under its terms in the picker
+    term_sources:                                    # more terms, from a table of (term, protein) pairs
+      - id: go_bp
+        title: GO biological process
+        members: {input: go_bp_annotations, protein: uniprot_accession, set: go_id, include: [{column: non_iea, equals: "true"}]}   # the evidence option: drop `include` to keep every annotation
+        names: {input: go_bp_terms, id: go_id, name: go_name}
+        min_size: 5
+        max_size: 5000
+        cite: ["Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031", "Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556"]
+    units: [proteins, sites, enzymes, readers]       # default [proteins, sites]; a unit with nothing to show is hidden
+    enzymes: {roles: [writer, eraser]}               # classes of website.search.partners with these roles, by gene or genes_file
+    readers:                                         # a protein is a reader when it carries any listed entry
+      source: interpro_entries                       # a role: the table of InterPro entries (columns below)
+      columns: {accession: canonical_UniProtAC, ids: [interpro_accession, member_database_accessions]}   # the defaults
+      families:
+        - {name: Tudor, ids: [IPR002999, PF00567], note: "..."}   # a new family is one entry; check each id on InterPro
+```
+
+Data. `ptmc run` writes `overlap_members.json` (above) for the questions in `terms_from`; `ptmc web` turns it into `data/overlap/universe.json`
+(`{acc}`), `data/overlap/sets/<question>.json` (`{set: [index]}`) and `data/overlap/families.json` (`{readers: [{id, name, ids, note, m}],
+enzymes: [{id, name, role, m}]}`, `m` indices into the universe), each read when the page first needs it, and gives the page `D.overlap`. A site run
+before this key existed shows only the proteins with sites (no test). The page reads `selection.json` only through one accessor (`DATA.sd`).
+
+A term source's members are read from the run's recorded inputs at `ptmc web` (it needs a run made with the inputs in the manifest), kept for the proteins of the reviewed proteome with `min_size` to `max_size` of them, and written to `data/overlap/sources/<id>/terms.json` (`{terms: [[id, name, proteins]]}`, read when the page opens, for the picker) and `<NN>.json` (`{term: [index]}`; a term's file is the sum of its id's character codes modulo `shards`, default 16; read when the term is chosen). The term is `x:<source>:<id>` in the address. The picker shows the term's id and size and finds it by either. An export that uses one of its terms carries the source's `cite` lines.
+
+Regions. A region holds the elements (proteins, sites, or the proteins of the readers or enzymes) in exactly its terms. Proteins, enzymes and readers:
+n in the region, k of them with sites, M of the N reviewed proteins with sites; fold = (k/n)/(M/N); p = P(X >= k), X hypergeometric(N, M, n)
+(`ptmstats.hypergeom_sf`, the one-sided test of the protein-set engine, on the same counts: the test is symmetric in the marked proteins and the set,
+and `tests/test_overlap.py` checks it equals the engine's `statistics.tsv` row of a question run over every reviewed protein); q = Benjamini-Hochberg over
+the regions shown (the whole terms have a q of their own). Sites: the sites of the region (a site is in a term when its protein is, or, for a class or a
+selection, when it is) with, only where every term describes proteins, Fisher's exact test (`ptmstats.fisher_p`) of the residues of the proteins with
+sites, the sites in the region against the other candidate residues there and outside, pooled as the residue questions' "across all proteins" rows; with a
+term that describes sites, counts only. A region of fewer than 5 elements is counted, not tested (no fold, p or q, and left out of the Benjamini-Hochberg family); a fold of 0 is shown as 0x; a region with a fold between 0.8 and 1.25 and q below 0.001 is flagged "large set; small effect"; the picker marks a term of over a quarter of the reviewed proteins "very broad" and shows every term's size. Both `sets.each` and ordinary protein-set questions can be terms. Figure. One row grammar for any number of terms: a block of the terms ("every protein of each term", which is also the colour key) and a block of the
+regions, largest first. A region row has a membership dot matrix (filled in the term's colour when in, a small hollow dot when out) with a short label
+("only B", "A + C"), a split size bar (with sites, then without; the tip reads "k / n") and the share with sites as a bar from the baseline rule (the
+share of all reviewed proteins) to the region's share, with its 95% Wilson interval, filled (more `--more`, fewer `--less`) where q < 0.05 and hollow
+where not; the values are the share, the fold and q. A region under 5 is counted ("3 of 3 · not tested"). One very large value cuts the size axis
+(its bars are marked //). For 2 or 3 terms an area-proportional Euler glyph sits above (circles fitted to the exclusive regions by Nelder-Mead, counts
+labelled inside at the pole of inaccessibility or outside on a leader, nothing overlapping; the largest misfit is stated when above 1%); a row and its
+region in the glyph highlight together, and either selects. No glyph for 4 terms. The Sites unit shows the fold on a log axis centred at 1x with the
+odds ratio's Woolf interval. The layout is a container query (a narrow figure puts the values under the bars). Keys and colour tokens are `--ov1` to
+`--ov4` (terms, `validate_palette.js` passes for slots 1 to 4 in light and dark) and `--ov-k`, `--ov-n`, `--ov-ref`, `--ov-fill`; the directions are the
+site's `--more` and `--less`. The export is the same rows as one SVG, 940 px wide (SVG, PNG), and the TSV adds `ci95_lo`, `ci95_hi` (Wilson interval of
+the share; Woolf interval of the odds ratio for sites) and `tested` (0 or 1).
 
 ### The gene-list test
 

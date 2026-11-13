@@ -1898,6 +1898,7 @@ def run(
             f'  table {name:18s} {r["kept"]:,} of {r["rows"]:,} rows, on {r["marks"]:,} {profile.word("marks")} (website only)'
         )
     parts, layers_used, kept, set_names, set_keep, layer_objs = [], {}, {}, [], {}, {}
+    overlap_from = set(((site.get('website') or {}).get('overlap') or {}).get('terms_from') or [])
     if skip_new:
         site = {**site, 'analyses': [a for a in site['analyses'] if not a.get('new')]}
     marks_all = marked
@@ -1935,6 +1936,7 @@ def run(
                 ctx=ctx,
                 left_out=left,
                 site=site,
+                with_members=analysis['id'] in overlap_from,
             )
             parts.append(rows_)
             set_names += [(analysis['id'], k, names.get(k, '')) for k in rows_['category']] if len(rows_) else []
@@ -2212,6 +2214,28 @@ def run(
             }
         elif (folder / 'map_items.tsv').exists():
             (folder / 'map_items.tsv').unlink()
+        leave = ((site.get('website') or {}).get('overlap') or {}).get('leave_out') or {}
+        overlap_sets = {
+            a: {s: m for s, m in k.pop('members').items() if s not in leave.get(a, ())}
+            for a, k in set_keep.items()
+            if 'members' in k
+        }
+        if overlap_sets:  # every protein of each set, for the website's Overlap page (the proteins without a mark too)
+            universe = sorted(snap.sequences)
+            at = {a: i for i, a in enumerate(universe)}
+            (folder / 'overlap_members.json').write_text(
+                json.dumps(
+                    {
+                        'universe': universe,
+                        'sets': {a: {s: [at[p] for p in m] for s, m in v.items()} for a, v in overlap_sets.items()},
+                    },
+                    separators=(',', ':'),
+                )
+                + '\n'
+            )
+            record['output']['overlap_members.json'] = md5_file(folder / 'overlap_members.json')
+        elif (folder / 'overlap_members.json').exists():
+            (folder / 'overlap_members.json').unlink()
         if set_keep:  # for testing a selection again on the website
             (folder / 'protein_sets.json').write_text(json.dumps(set_keep, separators=(',', ':')) + '\n')
             record['output']['protein_sets.json'] = md5_file(folder / 'protein_sets.json')

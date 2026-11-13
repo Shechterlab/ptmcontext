@@ -196,6 +196,12 @@ chromatin (probability ≥ 0.8) 1.7× (as published) → none (no part of the ce
 - Biomolecular condensates (vs other condensates): no longer shown: P-body (1.04×); Stress granule (1.04×); Nucleolus (1.03×). now shown: Presynaptic clusters and postsynaptic densities (0.99×).
 - Domain context: Outside, ≤20 aa from a domain 1.14× → 1.19×; Domain-distal 0.92× → 0.88×. no longer shown: Inter-domain linker (1.16×); In domain (0.92×).
 
+## Unreleased
+
+- Overlap page (`website.overlap`): two to four terms (protein sets, classes, reader families, enzymes, the selection, a gene list) as rows of regions (a membership matrix, a split size bar, the share with sites against all reviewed proteins with its 95% interval) and, for two or three terms, an area-proportional diagram, with proteins, proteins with sites, fold, a hypergeometric test against all reviewed proteins and Benjamini-Hochberg q for each region; also for sites, enzymes and readers. A "Compare with..." button on the rows of protein-set questions. Reader families (Tudor; chromodomain, PHD, MBT, PWWP; 14-3-3, SH2, BRCT; bromodomain, YEATS) are listed in the site files with their Pfam and InterPro ids.
+- Overlap terms from GO biological process (propagated annotations without computational-only evidence, 5 to 5,000 proteins), listed by name, GO id and size; one generic `term_sources` entry in the site file (data from PTM_Pipeline's staged GO tables; cite Gene Ontology Consortium 2023 and Ashburner et al. 2000).
+- `ptmc run` writes `overlap_members.json` (every protein of each set) for the questions an Overlap block names; the statistics are unchanged.
+
 ## 0.3.1 (2026-11-13)
 
 What changed for readers:

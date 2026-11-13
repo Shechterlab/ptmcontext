@@ -90,6 +90,7 @@ MODULES = (
     'kit-pfolds.js',
     'kit-pix.js',
     'kit-genelist.js',
+    'kit-overlap.js',
     'kit-pathway.js',
     'kit-tile.js',
     'kit-figures.js',
@@ -1603,6 +1604,13 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             pw = PW.build(site, run, kept, listing, fasta, out, log)
             if pw:
                 data['front']['pathways'] = pw
+        # the Overlap page's files (website.overlap), read when a reader opens the page
+        if web.get('overlap'):
+            from . import overlap as OV
+
+            ov = OV.build(site, run, folder, listing, fasta, out, log)
+            if ov:
+                data['overlap'] = ov
     # the site's pages (website.pages) and the whole tables they read, one file each, read when a page first needs one
     data['page_tables'], inline_page_tables = (
         page_tables(site, web.get('tables') or {}, run, listing, out, log) if listing else ({}, '')

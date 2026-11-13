@@ -35,6 +35,8 @@ inputs:                # role the layers read: manifest input that fills it
   depmap_genes: depmap_gene_effect
   string_partners: string_physical_v12_5         # the partner classes' test reads the STRING table whole (the page reads it by its manifest name)
   interpro_entries: interpro_all_entries         # the readers' protein sets, by InterPro entry
+  go_bp_annotations: go_bp_annotations         # the Overlap page's GO biological process terms
+  go_bp_terms: go_bp_terms
   # interactions (the methylarginine site's roles, less the RNA and DNA evidence and its release tables)
   uniprot_disorder: uniprot_disordered_regions
   uniprot_domains: uniprot_domain_regions
@@ -1347,6 +1349,27 @@ website:                  # the look and words of the website (ptmc web); layout
     method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
     help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
+  # The Overlap page: 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
+  overlap:
+    terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, complex, condensate_proteome]
+    max_terms: 4
+    term_sources:      # GO biological process, propagated over is_a and part_of, 5 to 5,000 proteins; the evidence include below keeps annotations that are not computational-only (remove it to keep every annotation)
+      - id: go_bp
+        title: GO biological process
+        members: {input: go_bp_annotations, protein: uniprot_accession, set: go_id, include: [{column: non_iea, equals: "true"}]}
+        names: {input: go_bp_terms, id: go_id, name: go_name}
+        min_size: 5
+        max_size: 5000
+        cite: ["Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031", "Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556"]
+    notes: {cell_hcm_compartment: one main location per protein, cell_hcm_domain: one main location per protein, cell_organelle_ip: one main location per protein}
+    units: [proteins, sites, readers, enzymes]
+    enzymes: {roles: [writer, eraser]}
+    readers:           # a protein is a reader when it carries any listed Pfam or InterPro entry (each id checked on InterPro)
+      source: interpro_entries
+      families:
+      - {name: 14-3-3, ids: [IPR000308, IPR023410, PF00244]}
+      - {name: SH2, ids: [IPR000980, PF00017]}
+      - {name: BRCT, ids: [IPR001357, PF00533]}
   compare: {min_proteins: 10, min_marks: 30}
   tables:                  # tables the protein pages show (no test reads them), each in a format of CONTRACTS.md
     string:                # STRING v12.5 physical links, each pair listed once and read both ways, at score 0.7 or more
