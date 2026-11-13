@@ -506,6 +506,8 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
     return {
         **{k: cfg[k] for k in keys if cfg.get(k)},
         'files': {'view': 'data/network.json', 'full': 'data/network_full.json'},
+        'protein_link': bool(cfg.get('protein_link', True)),
+        'protein_preview': bool(cfg.get('protein_preview', True)),
         'options': {k: opt[k] for k in DEFAULTS if k in opt}
         | {
             'steps': opt['steps'],

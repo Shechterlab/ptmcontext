@@ -1517,6 +1517,7 @@
       PV.rec?.entry || p.entry ? `<span class="chip ` + `mono">${esc(PV.rec?.entry || p.entry)}</span>` : ''
     }<a class="btn small" ` +
       `href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}" target="_blank" rel="noopener">UniProt ↗</a>`) +
+    (K.protActions || []).map((f) => f(p, light)).join('') +
     (`<span class="more-links"><button type="button" class="btn small" data-more-links aria-expanded="${PV.more}">More links ` +
       `▾</button><span class="menu" id="more-menu"${PV.more ? '' : ' hidden'}>${LINKS(p.acc)
         .map(([t, u]) => `<a href="${esc(u)}" target="_blank" ` + `rel="noopener">${esc(t)} ↗</a>`)

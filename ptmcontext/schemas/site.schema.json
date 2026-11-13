@@ -2384,7 +2384,7 @@
             },
             "lead": {
               "type": "string",
-              "description": "the one line under the heading (default: the first sentence of `about`, which is given in full under \"How this network is made\")"
+              "description": "the one line under the heading (default: the first sentence of `about`, which is given in full under \"Method\")"
             },
             "controls": {
               "type": "array",
@@ -2403,6 +2403,14 @@
                   "claim"
                 ]
               }
+            },
+            "protein_link": {
+              "type": "boolean",
+              "description": "true (default): every protein's page has a \"See in network\" button that opens the Network view with that protein shown (address: #network?p=<accession>): its cluster lit, its card pinned, the figure zoomed to it. When the protein is not in the network shown, the page raises the number of proteins (to 600 at most) or says why it is not there and offers a lower score"
+            },
+            "protein_preview": {
+              "type": "boolean",
+              "description": "true (default, with `protein_link`): under the button, a small drawing of the protein among its partners of its own cluster (15 at most, most sites first), with the cluster's name in its colour, read from data/network.json when it scrolls into view. A protein that the default view does not draw gets a line saying so"
             },
             "claim": {
               "type": "string",

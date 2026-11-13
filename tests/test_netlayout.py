@@ -265,3 +265,101 @@ def test_the_browser_twin_reaches_the_same_clusters_for_a_chosen_number():
         {'F': full, 'o': o},
     )
     assert js['comm'] == py['comm'] and js['nodes'] == py['nodes']
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
+def test_a_link_to_a_protein_knows_what_the_network_must_change_to_show_it():
+    full = _full()
+    full['byAcc'] = None
+    opt = {**OPT, 'steps': [400, 700, 900]}
+    acc = full['nodes'][3][0]
+    prog = _harness(
+        'const out={};for(const [k,a] of Object.entries(IN.cases))out[k]=K.netcore.focusPlan(IN.F,IN.opt,a,null);'
+        'console.log(JSON.stringify(out));'
+    )
+    got = _node(prog, {'F': full, 'opt': opt, 'cases': {'in': acc, 'iso': 'NOPE', 'iso2': acc.split('-')[0] + '-2'}})
+    assert got['in']['status'] == 'ok' and got['iso']['status'] == 'unknown'
+    assert got['iso2']['status'] == 'ok' and got['iso2']['gi'] == got['in']['gi']  # an isoform is its base accession
+    # what it needs: the rank of the protein and of its best-placed partner by sites, plus one
+    order = sorted(
+        range(len(full['nodes'])), key=lambda i: (-full['nodes'][i][2], full['nodes'][i][1], full['nodes'][i][0])
+    )
+    rank = {g: r for r, g in enumerate(order)}
+    gi = got['in']['gi']
+    partners = [b if a == gi else a for a, b, fl, sc in full['edges'] if gi in (a, b) and (sc >= 700 or fl & 2)]
+    assert got['in']['need'] == max(rank[gi], min(rank[g] for g in partners)) + 1
+    # a protein whose links are all below the score: lower it; with no link at any score: none
+    low = {**full, 'edges': [[a, b, 1, 400] if gi in (a, b) else [a, b, fl, sc] for a, b, fl, sc in full['edges']]}
+    none = {**full, 'edges': [e for e in full['edges'] if gi not in e[:2]]}
+    res = _node(
+        _harness(
+            'console.log(JSON.stringify([K.netcore.focusPlan(IN.low,IN.opt,IN.acc,null),K.netcore.focusPlan(IN.none,IN.opt,IN.acc,null)]));'
+        ),
+        {'low': low, 'none': none, 'opt': opt, 'acc': acc},
+    )
+    assert res[0]['status'] == 'score' and res[0]['lowerTo'] == 400
+    assert res[1]['status'] == 'none'
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
+def test_a_pasted_list_of_genes_is_split_matched_and_counted():
+    nodes = [{'gene': 'FUS', 'acc': 'P35637'}, {'gene': 'TAF15', 'acc': 'Q92804'}, {'gene': 'EWSR1', 'acc': 'Q01844-2'}]
+    text = 'fus, TAF15;\nQ01844  NOPE\tP35637 xyz'
+    got = _node(
+        _harness('const g=K.netcore.findGenes(IN.text,IN.nodes);console.log(JSON.stringify({...g,hits:[...g.hits]}));'),
+        {'text': text, 'nodes': nodes},
+    )
+    assert got['tokens'] == ['fus', 'TAF15', 'Q01844', 'NOPE', 'P35637', 'xyz']  # each once, in order
+    assert sorted(got['hits']) == [0, 1, 2]  # a symbol in any case, an accession, an isoform by its base accession
+    assert got['found'] == ['fus', 'TAF15', 'Q01844', 'P35637'] and got['missing'] == ['NOPE', 'xyz']
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
+def test_the_preview_of_a_protein_is_it_and_the_busiest_partners_of_its_own_cluster():
+    view = _view()
+    comm = view['comm']
+    hub = max(
+        range(len(comm)), key=lambda i: sum(1 for a, b, *_ in view['edges'] if i in (a, b) and comm[a] == comm[b])
+    )
+    got = _node(
+        _harness('console.log(JSON.stringify(K.netcore.previewSlice(IN.view,IN.i,IN.max)));'),
+        {'view': view, 'i': hub, 'max': 4},
+    )
+    partners = {b if a == hub else a for a, b, *_ in view['edges'] if hub in (a, b) and comm[a] == comm[b]}
+    assert (
+        got['nodes'][0] == hub and len(got['nodes']) == min(4, len(partners)) + 1 and got['partners'] == len(partners)
+    )
+    want = sorted(partners, key=lambda j: (-view['sites'][j], view['gene'][j], j))[:4]
+    assert got['nodes'][1:] == want  # most sites first
+    assert all(comm[got['nodes'][a]] == comm[hub] for e in got['edges'] for a in e)  # only links inside the cluster
+    assert all(a < len(got['nodes']) and b < len(got['nodes']) for a, b in got['edges'])
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
+def test_the_see_in_network_link_carries_the_filter_and_follows_the_yaml_switches():
+    prog = _harness(
+        """
+const el=()=>({addEventListener(){}});
+global.matchMedia=()=>({matches:false,addEventListener(){}});
+global.document=el();global.document.querySelectorAll=()=>[];
+global.localStorage={getItem(){return null},setItem(){}};
+const mk=(extra)=>{const K2={D:{site:{id:'x'},network:{options:{steps:[700],min_score:700,top:300,min_cluster:5,cluster_range:[4,16,1]},
+ sources:[{kind:'pairs',label:'L'}],labels:[{label:'GO'}],color_by:[],files:{view:'v.json',full:'f.json'},...extra}},
+ W:{marks:'sites',mark:'site'},esc:(s)=>String(s),int:(n)=>String(n),S:{view:'protein'},netcore:K.netcore,netlayout:K.netlayout,
+ views:{},tabs:[],clicks:[],tips:[],sections:{},methods:[],afterRender:[],paramsIn:[],paramsOut:[],sel:{active:()=>true},
+ link:(v,a,e)=>'#'+v+(a?'/'+a:'')+'?f=HIGHCONF'+(e?'&'+new URLSearchParams(e):'')};
+ window.PTMC_MODULES.forEach(m=>m(K2));return K2.protActions;};
+eval(fs.readFileSync(IN.net,'utf8'));
+const out=[mk({}),mk({protein_link:false}),mk({protein_preview:false})].map(a=>a.map(f=>f({acc:'P35637',gene:'FUS'})).join(''));
+console.log(JSON.stringify(out));
+"""
+    )
+    prog = prog.replace(
+        'const K={};window.PTMC_MODULES.forEach(m=>m(K));',
+        'const K={};window.PTMC_MODULES.forEach(m=>m(K));window.PTMC_MODULES.length=0;',
+    )
+    got = _node(prog, {'net': str(ASSETS / 'kit-network.js')})
+    assert 'href="#network?f=HIGHCONF&amp;p=P35637"' in got[0] or 'href="#network?f=HIGHCONF&p=P35637"' in got[0]
+    assert 'See in network' in got[0] and 'data-nw-prev="P35637"' in got[0]
+    assert got[1] == ''  # protein_link: false
+    assert 'See in network' in got[2] and 'data-nw-prev' not in got[2]  # protein_preview: false

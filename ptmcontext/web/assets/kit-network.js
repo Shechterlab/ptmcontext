@@ -40,29 +40,13 @@
   };
   const OTHER = { light: '#9aa3a8', dark: '#7d8c97' };
   const EX = { light: { edge: '#52606a', bundle: 0.16, wash: 0.085, intra: 0.32, ink: '#111827', muted: '#5f6f78' } };
+  // the figure style guide's sequential ramp (one hue, five steps): a share is drawn in the step it falls in, 0 to 20% and so on
   const RAMP = {
-    light: ['#cde2fb', '#86b6ef', '#3987e5', '#1c5cab', '#0d366b'],
-    dark: ['#184f95', '#256abf', '#3987e5', '#6da7ec', '#b7d3f6'],
+    light: ['#86b6ef', '#5598e7', '#2a78d6', '#1c5cab', '#104281'],
+    dark: ['#184f95', '#256abf', '#3987e5', '#6da7ec', '#9ec5f4'],
   };
-  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const seqHex = (v, mode) => {
-    const st = RAMP[mode],
-      x = Math.max(0, Math.min(1, v)) * (st.length - 1),
-      i = Math.min(st.length - 2, Math.floor(x)),
-      a = hex(st[i]),
-      b = hex(st[i + 1]),
-      t = x - i;
-    return (
-      '#' +
-      a
-        .map((c, k) =>
-          Math.round(c + (b[k] - c) * t)
-            .toString(16)
-            .padStart(2, '0')
-        )
-        .join('')
-    );
-  };
+  const seqStep = (v) => Math.max(0, Math.min(4, Math.floor(v * 5)));
+  const seqHex = (v, mode) => RAMP[mode][seqStep(v)];
   const catVar = (k) => `var(--nw-${k + 1})`;
   // ---- state: the reader's options, kept in this browser ----------------------------------------------------------------
   const DEF = {
@@ -86,6 +70,12 @@
     claim: '',
     zc: -1,
     more: false,
+    nb: false, // the view is the protein and its partners (it is too far down the list of proteins to draw them all)
+    nbSet: null,
+    focus: '', // the accession a link from a protein page names (the address's p=)
+    fz: false, // the drawing is zoomed to it
+    fapply: false,
+    topWas: null, // the number of proteins before it had to be raised to hold the focus
   };
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || '{}');
@@ -103,7 +93,7 @@
         KEY,
         JSON.stringify({
           score: UI.score,
-          top: UI.top,
+          top: UI.topWas ?? UI.top,
           minc: UI.minc,
           src: UI.src,
           colour: UI.colour,
@@ -122,6 +112,8 @@
     UI.colour === 'cluster' &&
     UI.label === DEF.label &&
     UI.clusters === DEF.clusters &&
+    !UI.nb &&
+    !UI.nb &&
     UI.src.length === DEF.src.length;
   const phoneNow = () => matchMedia('(max-width: 760px)').matches;
   // ---- the files, read when the view first needs them ---------------------------------------------------------------------
@@ -172,6 +164,7 @@
       UI.clusters,
       UI.clusters ? UI.minc : 0,
       UI.colour === 'cluster' ? 0 : 1,
+      UI.nb ? UI.focus : '',
       sel ? K.sel.describe() : '',
     ]);
     if (cache.key === key && cache.M) return cache.M;
@@ -190,8 +183,13 @@
       const f = load('full');
       if (!f) return { wait: 'network' };
       if (f.error) return { error: f.error };
-      const pick = sel ? new Set(f.acc.map((a, i) => (K.sel.protSelected(a) ? i : -1)).filter((i) => i >= 0)) : null;
-      const v = K.netcore.makeView(f, optNow(), pick, UI.src);
+      const pick =
+        UI.nb && UI.nbSet
+          ? UI.nbSet
+          : sel
+            ? new Set(f.acc.map((a, i) => (K.sel.protSelected(a) ? i : -1)).filter((i) => i >= 0))
+            : null;
+      const v = K.netcore.makeView(f, UI.nb ? { ...optNow(), top: 1e9 } : optNow(), pick, UI.src);
       M = {
         nodes: v.nodes.map((g, i) => ({ acc: f.acc[g], gene: f.gene[g], sites: f.sites[g], c: v.comm[i], g })),
         edges: v.edges,
@@ -260,7 +258,7 @@
     if (sp.kind === 'sequential') {
       if (v == null) return other;
       if (ex) return seqHex(v, 'light');
-      return `color-mix(in srgb, var(--nw-hi) ${Math.round(v * 100)}%, var(--nw-lo))`;
+      return `var(--fig-seq-${seqStep(v) + 1})`;
     }
     return v < 0 || v >= NCOL ? other : ex ? CAT.light[v] : catVar(v);
   }
@@ -275,6 +273,7 @@
     labels: M.labels,
   });
   let lastFig = '';
+  let FOC = -1; // the node of the protein the address names, when it is drawn
   function layoutFor(M, variant) {
     if (M.layout && UI.minc === OPT.min_cluster) return M.layout[variant];
     const key = variant + '|' + UI.minc,
@@ -295,16 +294,7 @@
     return (hold[key] = K.netlayout.layout(view, variant, UI.minc, maxShown()));
   }
   // ---- the figure ---------------------------------------------------------------------------------------------------------------
-  const hit = (M) => {
-    const q = UI.find.trim().toUpperCase();
-    if (!q) return new Set();
-    const toks = q.split(/[\s,;]+/).filter(Boolean);
-    return new Set(
-      M.nodes
-        .map((nd, i) => (toks.includes(nd.gene.toUpperCase()) || toks.includes(nd.acc) ? i : -1))
-        .filter((i) => i >= 0)
-    );
-  };
+  const hit = (M) => (UI.find.trim() ? K.netcore.findGenes(UI.find, M.nodes).hits : new Set());
   const gbit = SRC.map((s, i) => (s.kind === 'groups' ? 1 << i : 0)).reduce((a, b) => a | b, 0);
   // the neighbours of a protein, and what a cluster is joined to: the nodes and the clusters to light
   const lightNode = (M, i) => {
@@ -319,11 +309,13 @@
     return { nodes, clusters: new Set([c]) };
   };
   // the drawing as an SVG string: classes and data attributes carry what hovering needs; ex: literal colours and no links
-  function svgOf(M, CL, L, ex) {
+  // mini: the small drawing on a protein's page ({ focus: node index }): no links, no hover state, no search or highlight
+  function svgOf(M, CL, L, ex, mini = null) {
     const phone = L.variant === 'phone',
       k = L.k,
-      found = hit(M),
-      lit = UI.hi >= 0 ? lightCluster(M, UI.hi) : null,
+      foc = mini ? mini.focus : FOC,
+      found = mini ? new Set() : hit(M),
+      lit = !mini && UI.hi >= 0 ? lightCluster(M, UI.hi) : null,
       dim = (i) => (lit && !lit.nodes.has(i)) || (found.size && !found.has(i) && !ex);
     const ink = ex ? EX.light.ink : 'var(--ink)',
       muted = ex ? EX.light.muted : 'var(--muted)',
@@ -351,7 +343,7 @@
       const x = CL.list[c],
         d = 'M' + L.hulls[ci].map((p) => f1(p[0]) + ' ' + f1(p[1])).join('L') + 'Z';
       out.push(
-        `<path class="nw-hl" data-nwc="${c}" d="${d}" fill="${clusterFill(x, ex)}" stroke="none" ` +
+        `<path class="${mini ? 'nw-mhl' : 'nw-hl'}"${mini ? '' : ` data-nwc="${c}"`} d="${d}" fill="${clusterFill(x, ex)}" stroke="none" ` +
           (ex ? `fill-opacity="${EX.light.wash}"` : 'style="fill-opacity:var(--nw-wash)"') +
           `${lit && !lit.clusters.has(c) ? ' opacity="0.35"' : ''}/>`
       );
@@ -376,11 +368,12 @@
     out.push('</g><g class="nw-x"></g><g class="nw-nodes">');
     P.forEach((p, i) => {
       const nd = M.nodes[i],
-        ring = found.has(i)
-          ? ` stroke="${ink}" stroke-width="2.4"`
-          : ` stroke="${bg}" stroke-width="${phone ? 1 : 1.4}"`,
+        ring =
+          found.has(i) || i === foc
+            ? ` stroke="${ink}" stroke-width="2.4"`
+            : ` stroke="${bg}" stroke-width="${phone ? 1 : 1.4}"`,
         dot = `<circle class="nw-dot" cx="${f1(p[0])}" cy="${f1(p[1])}" r="${r(i).toFixed(1)}" fill="${fillOf(M, CL, i, ex)}"${ring}/>`;
-      if (ex) out.push(`<g${dim(i) ? ' opacity="0.18"' : ''}>${dot}</g>`);
+      if (ex || mini) out.push(`<g${dim(i) ? ' opacity="0.18"' : ''}>${dot}</g>`);
       else
         out.push(
           `<a href="${esc(K.link('protein', nd.acc))}" class="nw-n" data-nn="${i}" tabindex="-1" aria-label="${esc(nd.gene)}, ${int(nd.sites)} ${esc(W.marks)}"${dim(i) ? ' style="opacity:0.18"' : ''}>` +
@@ -397,7 +390,7 @@
         [x0, y0, x1, y1] = l.box,
         [ax, ay, bx, by] = l.leader,
         fs = L.fs,
-        attrs = `class="nw-cl" data-nwc="${l.c}"${ex ? '' : ' tabindex="-1" role="button" aria-label="' + esc(x.name) + ', ' + int(x.n) + ' proteins"'}`;
+        attrs = `class="${mini ? 'nw-mcl' : 'nw-cl'}"${mini ? '' : ` data-nwc="${l.c}"`}${ex || mini ? '' : ' tabindex="-1" role="button" aria-label="' + esc(x.name) + ', ' + int(x.n) + ' proteins"'}`;
       if (phone) {
         const cx = (x0 + x1) / 2,
           cy = (y0 + y1) / 2,
@@ -437,7 +430,7 @@
       );
     });
     // a gene that was searched for is always named
-    found.forEach((i) => {
+    new Set([...found, ...(foc >= 0 ? [foc] : [])]).forEach((i) => {
       if (named.has(i)) return;
       out.push(text(P[i][0], P[i][1] - r(i) - 5, L.gfs + 1, 650, ink, M.nodes[i].gene, 'text-anchor="middle"', 3));
     });
@@ -478,7 +471,7 @@
     ];
     if (sp && sp.kind === 'sequential')
       bits.push(
-        `<span class="nw-kg"><span class="nw-sub">${esc(sp.name)}</span><span class="nw-ramp nw-ramp-s" aria-hidden="true"></span><span class="nw-sub">0% to 100%; grey: no value</span></span>`
+        `<span class="nw-kg"><span class="nw-sub">${esc(sp.name)}</span><span class="nw-sub">0%</span><span class="nw-seq" aria-hidden="true">${[1, 2, 3, 4, 5].map((n) => `<i style="background:var(--fig-seq-${n})"></i>`).join('')}</span><span class="nw-sub">100%</span><span class="nw-kg">${sw('var(--nw-other)')}No value</span></span>`
       );
     else if (sp) {
       const cats = (NC.color_by.find((c) => c.id === sp.id) || sp).cats || sp.cats || [];
@@ -538,15 +531,14 @@
     const p = SRC.find((s) => s.kind === 'pairs'),
       g = SRC.filter((s) => s.kind === 'groups'),
       L = NC.labels[UI.label] || NC.labels[0] || {},
-      lab = L.label || '';
+      lab = L.label || 'the annotation';
     const bits = [
-      ...(NC.about ? [NC.about] : []),
-      `Nodes are the proteins with ${W.marks}; the area of a node follows its number of ${W.marks}. By default the ${int(OPT.top)} proteins with the most ${W.marks} are taken (the number can be changed), and proteins left with no link among them are dropped. With a selection, the network is the selected proteins' (the same limit applies).`,
+      `Nodes: the ${int(OPT.top)} proteins with the most ${W.marks} (or the selected proteins), sized by their number of ${W.marks}; proteins with no link among them are left out.`,
       p
-        ? `Two proteins are joined when ${p.label} links them with a score of ${OPT.min_score / 1000} or more${g.length ? `, or when ${g.map((x) => x.label).join(' and ')} puts them in one ${g.length === 1 ? 'group' : 'of its groups'}` : ''}${g.length ? ` (groups of more than ${int(g[0].max_size)} proteins are left out)` : ''}. Each source can be switched off.`
-        : `Two proteins are joined when they share a group in ${sourceNames()}.`,
-      `Clusters are communities found by Louvain modularity optimisation (Blondel et al. 2008) on the links, weighted by score. By default the method's resolution is the one the site uses; the Clusters menu asks for a number of clusters instead, and the resolution closest to it is taken. A cluster with fewer than ${UI.minc} proteins is shown among the smaller grey clusters at the bottom. Each cluster is a region of its own; links inside it are drawn in its colour, and links between two clusters are drawn as one band per pair (its width is the number of links; pairs with fewer than 6 links are left out). Hover a protein to see its own links and partners.`,
-      `Each cluster is named by the term from ${lab || 'the annotation'} with the smallest q: a one-sided hypergeometric p for the cluster's proteins against all the proteins of the network, adjusted by Benjamini–Hochberg over the terms tested in that cluster (terms that annotate more than ${Math.round(OPT.max_fraction * 100)}% of the network or fewer than ${OPT.min_term} of its proteins are left out, and at least ${OPT.min_overlap} proteins of the cluster must have it${L.min_depth ? `; terms less than ${L.min_depth} steps below the top of the ontology are not used` : ''}${L.max_size ? `; terms that annotate more than ${int(L.max_size)} proteins of the whole proteome are not used` : ''}${L.non_iea ? '; only annotations with evidence other than electronic annotation (IEA) are counted' : ''}). Of terms with the same q the deeper, more specific one is taken. A cluster whose best q is above ${OPT.max_q} has no name. On the figure a name is shortened to its first phrase; the hover and the table give the whole name. The network you first see is computed when the site is built; a selection or another setting is clustered and laid out again in your browser by the same method.`,
+        ? `Links: two proteins are joined when ${p.label} scores them ${OPT.min_score / 1000} or more${g.length ? ` or ${g.map((x) => x.label).join(' and ')} puts them in one group (groups over ${int(g[0].max_size)} proteins are left out)` : ''}.`
+        : `Links: two proteins are joined when they share a group in ${sourceNames()}.`,
+      `Clusters: Louvain communities (Blondel et al. 2008) of the links; the Clusters menu asks for a number, and communities under ${UI.minc} proteins are grey.`,
+      `Names: the ${lab} term with the smallest q (hypergeometric test against the network, Benjamini–Hochberg) among terms of ${OPT.min_term} proteins or more and at most ${Math.round(OPT.max_fraction * 100)}% of the network${L.min_depth ? `, at least ${L.min_depth} levels below the top` : ''}${L.max_size ? `, with at most ${int(L.max_size)} proteins in the whole proteome` : ''}${L.non_iea ? ', from curated annotations only' : ''}; the figure shows a short form and the hover and table the full name.`,
     ];
     const cites = [
       ...SRC.map((s) => s.cite).filter(Boolean),
@@ -608,7 +600,7 @@
           UI.minc
         ),
       find: () =>
-        `<form class="nw-f nw-find" data-nw-find><span>Find a gene</span><input type="search" name="g" value="${esc(UI.find)}" placeholder="${esc(EG ? 'e.g. ' + EG : 'Gene')}" list="nw-genes" autocomplete="off" aria-label="Gene to highlight"></form>`,
+        `<div class="nw-f nw-find" data-nw-find><span>Find genes</span><textarea name="g" rows="1" spellcheck="false" placeholder="${esc(EG ? 'e.g. ' + EG + ', or a list' : 'Gene symbols or accessions')}" aria-label="Genes to highlight: symbols or accessions, separated by commas, spaces or line breaks">${esc(UI.find)}</textarea></div>`,
       sources: () =>
         `<fieldset class="nw-f nw-srcs"><legend>Links from</legend>${SRC.map(
           (s, i) =>
@@ -647,6 +639,7 @@
   function figureBox(M, CL) {
     const variant = phoneNow() ? 'phone' : 'desktop',
       L = layoutFor(M, variant);
+    if (!L) curL = null;
     if (!L)
       return lastFig
         ? `<div class="nw-fig nw-stale" aria-busy="true">${lastFig}</div><p class="muted" role="status">Laying out the network…</p>`
@@ -663,15 +656,96 @@
     );
   }
   const leadOf = () => NC.lead || String(NC.about || '').split(/(?<=[.!?])\s/)[0];
+  // the protein a link from its page names (p=): where it is in this network, or what to do so that it is
+  const sameAcc = (a, b) => a === b || String(a).split('-')[0] === String(b).split('-')[0];
+  const TOPS = [100, 150, 200, 300, 500, 600];
+  const SITE_GENE = new Map((D.proteins || []).map((p) => [p[0], p[1]]));
+  const geneOf = (acc, f) =>
+    (f && f.nodes ? f.nodes.find((n) => sameAcc(n[0], acc))?.[1] : '') ||
+    SITE_GENE.get(acc) ||
+    SITE_GENE.get(String(acc).split('-')[0]) ||
+    acc;
+  function focusInfo(M) {
+    if (!UI.focus) return null;
+    const i = M.nodes.findIndex((n) => sameAcc(n.acc, UI.focus));
+    if (i >= 0) return { i };
+    const g = geneOf(UI.focus, M.full || FILE.full);
+    if (K.sel?.active())
+      return {
+        note: `<b>${esc(g)}</b> is not in the network of your selection (it has no link here, or lies outside the ${int(UI.top)} proteins with most ${esc(W.marks)}).`,
+      };
+    const f = load('full');
+    if (!f) return { wait: true };
+    if (f.error) return { note: 'The network data did not load.' };
+    const plan = K.netcore.focusPlan(f, optNow(), UI.focus, UI.src);
+    const gene = esc(geneOf(UI.focus, f)),
+      links = SRC.map((s) => s.label).join(' or ');
+    if (plan.status === 'unknown')
+      return {
+        note: `<b>${gene}</b> is not in the network shown: it has no ${esc(links)} link at the lowest score the network keeps (${OPT.steps[0] / 1000}).`,
+      };
+    if (plan.status === 'none')
+      return {
+        note: `<b>${gene}</b> is not in the network shown: it has no ${esc(links)} link in the chosen sources.`,
+      };
+    if (plan.status === 'score')
+      return {
+        note: `<b>${gene}</b> is not in the network shown: it has no ${esc(links)} link at a score of ${UI.score / 1000} or more. <button type="button" class="btn small" data-nw-score="${plan.lowerTo}">Lower the score to ${plan.lowerTo / 1000}</button>`,
+      };
+    const top = TOPS.find((v) => v >= plan.need);
+    if (!top) {
+      // too far down the list to draw with all the others: the protein and its partners, as a network of their own
+      UI.nb = true;
+      UI.nbSet = new Set([plan.gi, ...plan.partners]);
+      return { raised: true };
+    }
+    UI.topWas ??= UI.top;
+    UI.top = Math.max(top, UI.top);
+    return { raised: true };
+  }
+  // the protein's own line in the note: what the pinned card says first
+  const focusCard = (M, i) =>
+    `<span class="muted">${int(M.nodes[i].sites)} ${esc(W.marks)} · ${int(M.deg[i])} ${M.deg[i] === 1 ? 'partner' : 'partners'}</span>`;
+  // what a pasted list found: n of m, the ones the network does not hold, and a way to make them the selection
+  function findNote(M) {
+    if (!UI.find.trim()) return '';
+    const g = K.netcore.findGenes(UI.find, M.nodes);
+    if (g.tokens.length < 2 && !g.missing.length) return '';
+    const list =
+      g.missing.slice(0, 30).map(esc).join(', ') + (g.missing.length > 30 ? ` and ${g.missing.length - 30} more` : '');
+    return `<div class="filter-note nw-fnote" role="status"><b>${int(g.found.length)} of ${int(g.tokens.length)}</b> found${g.missing.length ? `; not in this network: ${list}` : ''}. <button type="button" class="btn small" data-nw-mksel>Make these the selection</button> <button type="button" class="btn small" data-nw-findclear>Clear</button></div>`;
+  }
   function view() {
     const head = `<div class="page-head results-head"><div><h2>${esc(TITLE)}</h2><p class="cx">${esc(leadOf())}</p></div></div>`;
-    const M = model();
+    let M = model();
     if (M.error) return `${head}<p class="muted">The network could not be read (${esc(M.error)}).</p>`;
     if (M.wait) return `${head}<p class="muted" role="status">Loading the network…</p>`;
+    let fi = focusInfo(M);
+    if (fi?.raised) {
+      cache = { key: '', M: null };
+      M = model();
+      if (M.error) return `${head}<p class="muted">The network could not be read (${esc(M.error)}).</p>`;
+      if (M.wait) return `${head}<p class="muted" role="status">Loading the network…</p>`;
+      fi = focusInfo(M);
+    }
+    FOC = fi?.i ?? -1;
+    if (FOC >= 0 && UI.fapply) {
+      UI.hi = M.nodes[FOC].c;
+      UI.pin = FOC;
+      UI.fz = M.nodes.length > 60;
+      UI.ffocus = true;
+      UI.fapply = false;
+    }
     const CL = clusters(M);
     const sel0 = K.sel?.active();
     let note = '';
-    if (sel0)
+    if (fi?.wait)
+      note = '<div class="filter-note nw-fnote" role="status">Looking for the protein in the network…</div>';
+    else if (fi?.note)
+      note = `<div class="filter-note nw-fnote" role="status">${fi.note} <button type="button" class="btn small" data-nw-fclear>Dismiss</button></div>`;
+    else if (FOC >= 0)
+      note = `<div class="filter-note nw-fnote" role="status">Showing <b>${esc(M.nodes[FOC].gene)}</b> (${CL.list[M.nodes[FOC].c].other ? 'a smaller cluster' : 'cluster ' + (CL.list[M.nodes[FOC].c].rank + 1) + ': ' + esc(CL.list[M.nodes[FOC].c].label)}).${UI.nb ? ` It lies outside the ${int(UI.topWas ?? UI.top)} proteins with most ${esc(W.marks)}, so the network drawn is it and its ${int(M.nodes.length - 1)} partners.` : ''}${UI.topWas && !UI.nb ? ` The ${int(UI.top)} proteins with most ${esc(W.marks)} are drawn so that it is in the network.` : ''} ${focusCard(M, FOC)} <button type="button" class="btn small" data-nw-fclear>Show the whole network</button></div>`;
+    if (sel0 && !note)
       note =
         M.picked != null && M.nodes.length
           ? `<div class="filter-note">Your selection: ${int(M.picked)} of its proteins have a link in these sources; ${int(M.nodes.length)} are drawn.</div>`
@@ -684,7 +758,7 @@
         : `<div class="nw-main">${keyHtml(M, CL, { variant: phoneNow() ? 'phone' : 'desktop' }, sum)}${figureBox(M, CL)}${phoneNow() ? listHtml(CL) : ''}</div><div class="nw-pin" role="status">${pinHtml(M, CL)}</div>`;
     const names = `<datalist id="nw-genes">${M.nodes.map((n) => `<option value="${esc(n.gene)}"></option>`).join('')}</datalist>`;
     return (
-      head + controls(CL) + note + body + names + K.fold('nw-how', 'How this network is made', '', methodHtml(), false)
+      head + controls(CL) + note + findNote(M) + body + names + K.fold('nw-how', 'Method', '', methodHtml(), false)
     );
   }
   // a touch screen: the first tap on a node shows its card, with the link
@@ -828,14 +902,13 @@
       `<line x1="3" x2="19" y1="0" y2="0" stroke="#52606a" stroke-opacity="0.35" stroke-width="5" stroke-linecap="round"/>`,
       'Links between clusters (width: how many)'
     );
-    if (sp)
+    if (sp && sp.kind === 'sequential')
       keyItem(
-        0,
-        '',
-        sp.kind === 'sequential'
-          ? `${sp.name}: ${[0, 0.5, 1].map((v) => Math.round(v * 100) + '%').join(' · ')} (light to dark blue)`
-          : `${sp.name}: ${(NC.color_by.find((c) => c.id === sp.id)?.cats || []).join(' · ')}`
+        5 * 11,
+        RAMP.light.map((c, n) => `<rect x="${n * 11}" y="-5" width="10" height="10" fill="${c}"/>`).join(''),
+        `${sp.name}: 0% to 100%`
       );
+    else if (sp) keyItem(0, '', `${sp.name}: ${(NC.color_by.find((c) => c.id === sp.id)?.cats || []).join(' · ')}`);
     y += 10;
     const bodyY = y;
     parts.push(`<g transform="translate(${P},${bodyY}) scale(${s.toFixed(5)})">${fig.svg}</g>`);
@@ -1033,6 +1106,7 @@
     if (!fig) return;
     if (e.key === 'Escape') {
       clearLight();
+      if (UI.focus) return dropFocus();
       if (UI.hi >= 0 || UI.zc >= 0) {
         UI.hi = -1;
         UI.zc = -1;
@@ -1093,20 +1167,32 @@
       if (UI.clusters) cache = { key: '', M: null };
       return K.render();
     } else UI[k === 'score' ? 'score' : 'top'] = +t.value;
+    if (k === 'top') UI.topWas = null;
     UI.hi = -1;
     UI.zc = -1;
+    UI.fz = false;
     if (UI.colour !== 'cluster' || UI.label !== DEF.label || UI.clusters !== DEF.clusters) load('full');
     again();
   });
   document.addEventListener('input', (e) => {
     if (e.target.dataset?.nwClaim != null) UI.claim = e.target.value;
   });
-  document.addEventListener('submit', (e) => {
-    const f = e.target.closest?.('[data-nw-find]');
-    if (!f) return;
-    e.preventDefault();
-    UI.find = f.g.value;
+  // genes to find: applied when the box loses focus, on Enter (a line break with Shift) and after a paste
+  const applyFind = (el) => {
+    if (el.value === UI.find) return;
+    UI.find = el.value;
     K.render();
+  };
+  document.addEventListener('focusout', (e) => e.target.closest?.('[data-nw-find] textarea') && applyFind(e.target));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && e.target.closest?.('[data-nw-find] textarea')) {
+      e.preventDefault();
+      applyFind(e.target);
+    }
+  });
+  document.addEventListener('paste', (e) => {
+    const el = e.target.closest?.('[data-nw-find] textarea');
+    if (el) setTimeout(() => applyFind(el), 0);
   });
   // a phone's drawing zooms to one cluster: the viewBox runs to its outline over 250 ms (at once under reduced motion)
   function zoomBox(c) {
@@ -1159,8 +1245,60 @@
     };
     requestAnimationFrame(tick);
   }
+  // the address's p=: a protein to show. Read from the address, written back by hand (a link built on this page, such as a
+  // protein's, must not carry it)
+  K.paramsIn.push((p) => {
+    if (S.view !== 'network') return;
+    const v = /^[A-Z0-9][A-Z0-9-]{3,19}$/.test(p.get('p') || '') ? p.get('p') : '';
+    if (v !== UI.focus) {
+      if (UI.topWas) UI.top = UI.topWas;
+      Object.assign(UI, { nb: false, nbSet: null, topWas: null });
+      cache = { key: '', M: null };
+      UI.focus = v;
+      UI.fapply = !!v;
+      UI.fz = false;
+      if (!v) UI.pin = null;
+    }
+  });
+  const focusUrl = () => {
+    try {
+      history.replaceState(null, '', K.link('network', '', UI.focus ? { p: UI.focus } : null));
+    } catch (e) {
+      /* no history */
+    }
+  };
+  function dropFocus() {
+    if (UI.topWas) UI.top = UI.topWas;
+    Object.assign(UI, { focus: '', fz: false, fapply: false, pin: null, hi: -1, topWas: null, nb: false, nbSet: null });
+    FOC = -1;
+    focusUrl();
+    again();
+  }
+  // the drawing zoomed to the focused protein: a window of the figure centred on it, then the node takes focus
+  function focusBox() {
+    const svg = svgEl(),
+      L = curL;
+    if (!svg || !L || FOC < 0 || !L.pos[FOC]) return;
+    const w = Math.max(L.w / 2.4, 220),
+      h = (w * L.h) / L.w,
+      c = L.pos[FOC],
+      x = Math.max(0, Math.min(L.w - w, c[0] - w / 2)),
+      y = Math.max(0, Math.min(L.h - h, c[1] - h / 2));
+    svg.setAttribute('viewBox', [x, y, w, h].map((v) => +v.toFixed(1)).join(' '));
+    if (UI.ffocus) {
+      UI.ffocus = false;
+      const a = svg.querySelector(`.nw-n[data-nn="${FOC}"]`);
+      a?.focus({ preventScroll: true });
+      if (a) {
+        const b = a.getBoundingClientRect();
+        scrollBy({ top: b.top + b.height / 2 - innerHeight / 2, behavior: K.smooth() });
+      }
+    }
+  }
   (K.afterRender ||= []).push(() => {
-    if (S.view === 'network' && UI.zc >= 0) applyZoom(false);
+    if (S.view !== 'network') return;
+    if (UI.zc >= 0) applyZoom(false);
+    else if (UI.fz && FOC >= 0) focusBox();
   });
   document.addEventListener(
     'toggle',
@@ -1171,7 +1309,137 @@
   );
   const mq = matchMedia('(max-width: 760px)');
   mq.addEventListener?.('change', () => S.view === 'network' && K.render());
+  // a protein's page: the link, and a small drawing of the protein in its cluster, made when it scrolls into view from the
+  // default view's file (data/network.json, read once)
+  (K.protActions ||= []).push((p) => {
+    if (NC.protein_link === false) return '';
+    const href = esc(K.link('network', '', { p: p.acc }));
+    return (
+      `<a class="btn small" href="${href}" title="Open the network with ${esc(p.gene || p.acc)} shown, its cluster lit">See in network</a>` +
+      (NC.protein_preview === false
+        ? ''
+        : `<span class="nw-prev" data-nw-prev="${esc(p.acc)}" data-href="${href}"></span>`)
+    );
+  });
+  let viewP = null;
+  const loadViewFile = () =>
+    (viewP ||= fetch(NC.files.view)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((j) => (FILE.view ||= j)));
+  // the drawing: the protein, its partners in its cluster (15 at most, most sites first), the links among them, the cluster's
+  // name beside it in its colour; the same drawing code as the figure, at a small size
+  function previewHtml(j, acc, href) {
+    const i = j.nodes.findIndex((n) => sameAcc(n, acc));
+    if (i < 0)
+      return `<span class="muted nw-prev-no">Not among the proteins drawn by default; the link opens the network with it and its partners.</span>`;
+    const view = { gene: j.gene, sites: j.sites, comm: j.comm, edges: j.edges, labels: j.labels },
+      c = j.comm[i],
+      sl = K.netcore.previewSlice(view, i);
+    const sub = {
+      gene: sl.nodes.map((g) => j.gene[g]),
+      sites: sl.nodes.map((g) => j.sites[g]),
+      comm: sl.nodes.map(() => 0),
+      edges: sl.edges,
+      labels: [j.labels[c]],
+    };
+    const pos = K.netlayout.positions(sub, 'desktop', 1, 1);
+    let L = K.netlayout.finish(sub, pos, 'desktop'),
+      s = 1;
+    for (let n = 0; n < 2; n++) {
+      s = Math.min(2.4, 300 / L.w, 190 / L.h);
+      L = K.netlayout.finish(sub, pos, 'desktop', 12.5 / s, 10.5 / s);
+    }
+    s = Math.min(2.4, 300 / L.w, 190 / L.h);
+    L.clabels.forEach((l) => (l.count = `${sl.nodes.length} of ${j.labels[c].n} proteins`));
+    const shown = j.labels
+        .map((l, k) => k)
+        .filter((k) => j.labels[k].n >= OPT.min_cluster)
+        .slice(0, OPT.max_shown || NCOL),
+      rank = shown.indexOf(c),
+      term = j.labels[c].term,
+      sn = K.netlayout.shortName(term);
+    const MM = {
+        nodes: sl.nodes.map((g) => ({ acc: j.nodes[g], gene: j.gene[g], sites: j.sites[g], c: 0, g: -1 })),
+        edges: sl.edges,
+        labels: [j.labels[c]],
+      },
+      CLm = {
+        list: [
+          {
+            c: 0,
+            n: j.labels[c].n,
+            other: rank < 0,
+            rank,
+            slot: rank < 0 ? -1 : rank % NCOL,
+            term,
+            short: sn,
+            l: j.labels[c],
+            name: term || `Cluster ${c + 1}`,
+            label: sn || `Cluster ${c + 1}`,
+          },
+        ],
+        shown: [0],
+      };
+    const svg = svgOf(MM, CLm, L, false, { focus: 0 }).svg;
+    return (
+      `<a class="nw-prev-a" href="${href}" aria-label="${esc(j.gene[i])} among ${int(j.labels[c].n)} proteins of its cluster${term ? ', ' + esc(term) : ''}; open the network">` +
+      `<svg class="nw-prev-svg" width="${Math.round(L.w * s)}" height="${Math.round(L.h * s)}" viewBox="0 0 ${L.w} ${L.h}" role="img" aria-hidden="true">${svg}</svg></a>` +
+      `<span class="nw-prev-cap muted">${esc(j.gene[i])} with ${int(sl.nodes.length - 1)} of its ${int(sl.partners)} partners in its cluster</span>`
+    );
+  }
+  (K.afterRender ||= []).push(() => {
+    const els = [...document.querySelectorAll('.nw-prev:not([data-done])')];
+    if (!els.length) return;
+    const fill = (el) => {
+      if (el.dataset.done) return;
+      el.dataset.done = '1';
+      loadViewFile().then(
+        (j) => {
+          if (el.isConnected) el.innerHTML = previewHtml(j, el.dataset.nwPrev, el.dataset.href);
+        },
+        () => {}
+      );
+    };
+    if (!('IntersectionObserver' in window)) return els.forEach(fill);
+    const io = new IntersectionObserver(
+      (ents) =>
+        ents.forEach((en) => {
+          if (en.isIntersecting) {
+            io.unobserve(en.target);
+            fill(en.target);
+          }
+        }),
+      { rootMargin: '200px' }
+    );
+    els.forEach((el) => io.observe(el));
+  });
   K.clicks.push(
+    [
+      '[data-nw-mksel]',
+      () => {
+        const g = K.netcore.findGenes(UI.find, cache.M?.nodes || []);
+        UI.find = '';
+        S.q = g.tokens.join(' ');
+        K.writeHash(true);
+        K.render();
+      },
+    ],
+    [
+      '[data-nw-findclear]',
+      () => {
+        UI.find = '';
+        K.render();
+      },
+    ],
+    ['[data-nw-fclear],[data-nw-topback]', () => dropFocus()],
+    [
+      '[data-nw-score]',
+      (el) => {
+        UI.score = +el.dataset.nwScore;
+        UI.fz = false;
+        again();
+      },
+    ],
     [
       '[data-nw-row]',
       (el) => {
@@ -1264,7 +1532,7 @@
     '<circle cx="19" cy="17" r="1.6"/><path d="M6.7 8.2l4 7M7 7l10-.7M13.8 16.5l3.8.3M18.6 8l.2 7.4"/></svg>';
   K.sections.network = () => [
     ['view', TITLE, 1, K.link('network')],
-    ['nw-how', 'How this network is made', 1],
+    ['nw-how', 'Method', 1],
   ];
   (K.methods ||= []).push({
     id: 'network',

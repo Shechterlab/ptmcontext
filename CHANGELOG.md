@@ -24,6 +24,13 @@
   downloads) with the others under More options, closed; the summary and the key share one line above the figure, so that
   the figure starts on the first screen of a laptop.
 
+- Network: the Colour by menu offers the share of sites in disordered regions (five steps of the style guide's blue), a **See in
+  network** button on every protein page opens the network with that protein shown, its cluster lit and the drawing zoomed
+  to it (the address is `#network?p=<accession>`; a protein outside the default view makes the page draw more proteins or
+  only the protein and its partners, or says why it is not there), and under the button a small drawing of the protein among
+  its cluster. The button carries the selection and filters. Find genes takes a pasted list and counts and lists what it
+  found. The section under the figure is called Method and is four sentences and the citations.
+
 ## 0.3.1 (2026-11-13)
 
 What changed for readers:

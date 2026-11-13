@@ -395,3 +395,29 @@ def test_the_marked_proteins_of_the_toy_are_the_nodes(tmp_path):
     root, p, index = _built(tmp_path, _network())
     full = json.loads((index.parent / 'data' / 'network_full.json').read_text())
     assert set(full['acc']) <= set(MARKED)
+
+
+def test_every_site_offers_the_disorder_colouring_first_and_the_protein_link(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    for name in ('methylarginine', 'methyllysine', 'phospho', 'lysine'):
+        net = yaml.safe_load((root / 'sites' / f'{name}.yaml').read_text())['website']['network']
+        ids = [c['id'] for c in net['color_by']]
+        assert ids[0] == 'disordered', (
+            name
+        )  # the Colour by menu: Cluster, then the share of sites in disordered regions
+        assert (
+            net['color_by'][0]['name'] == 'Share of sites in disordered regions'
+            and net['color_by'][0]['kind'] == 'sequential'
+        )
+        assert net['protein_link'] is True and net['controls'][:2] == ['clusters', 'colour'], name
+
+
+def test_the_protein_link_switch_reaches_the_page_and_defaults_to_on(tmp_path):
+    for k, extra in enumerate(({}, {'protein_link': False})):
+        root, p, index = _built(tmp_path / str(k), _network(extra))
+        data = json.loads(
+            re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(
+                1
+            )
+        )
+        assert data['network']['protein_link'] is (not extra)

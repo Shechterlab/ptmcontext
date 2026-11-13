@@ -9883,6 +9883,52 @@ html[data-density] .sites-tbl .cv {
   display: flex;
   margin: 2px 0;
 }
+.nw-seq {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.nw-seq i {
+  display: block;
+  width: 16px;
+  height: 11px;
+}
+.nw-prev {
+  flex: 1 0 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.nw-prev:empty {
+  min-height: 1px;
+}
+.nw-prev-a {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 2px;
+  line-height: 0;
+}
+.nw-prev-a:hover,
+.nw-prev-a:focus-visible {
+  border-color: var(--line-strong);
+}
+.nw-prev-svg {
+  font-family: var(--fig-font);
+}
+.nw-prev-cap,
+.nw-prev-no {
+  font-size: 12px;
+}
+.nw-fnote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
 .nw-sum {
   font-weight: 600;
   color: var(--ink-2);

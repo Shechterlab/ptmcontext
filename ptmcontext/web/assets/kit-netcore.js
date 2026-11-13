@@ -212,5 +212,95 @@
       ),
     };
   }
-  K.netcore = { louvain, communities, labelClusters, makeView };
+  // where a protein is, for a link that opens the network at it: its place in `full` (by accession, isoforms by the base one),
+  // and what has to change for the default view to hold it. status: 'unknown' (not a node of the network at all), 'none' (no
+  // link in the enabled sources at any score), 'score' (a link only below the score: lowerTo is the highest step that has
+  // one), 'ok' (a link at the score: `need` is how many proteins, taken by most sites, the view must hold so that the protein
+  // and its best-placed partner are in it; `partners` are its partners at the score)
+  function focusPlan(full, opt, acc, enabled) {
+    const base = (a) => String(a).split('-')[0],
+      gi = full.nodes.findIndex((n) => n[0] === acc || base(n[0]) === base(acc));
+    if (gi < 0) return { status: 'unknown' };
+    const cfg = full.sources,
+      en = enabled || cfg.map((_, i) => i),
+      mask = en.reduce((m, i) => m | (1 << i), 0),
+      pairsIx = cfg.findIndex((s) => s.kind === 'pairs'),
+      pairsBit = pairsIx < 0 ? 0 : 1 << pairsIx;
+    const partners = (score) => {
+      const out = [];
+      for (const [a, b, f0, sc] of full.edges) {
+        if (a !== gi && b !== gi) continue;
+        if ((f0 & mask & pairsBit && sc >= score) || f0 & mask & ~pairsBit) out.push(a === gi ? b : a);
+      }
+      return out;
+    };
+    const here = partners(opt.min_score);
+    if (!here.length) {
+      const lower = (opt.steps || []).filter((s) => s < opt.min_score).sort((x, y) => y - x);
+      const to = lower.find((s) => partners(s).length);
+      return to ? { status: 'score', lowerTo: to, gi } : { status: 'none', gi };
+    }
+    const order = full.nodes
+        .map((_, i) => i)
+        .sort((x, y) => {
+          const p = full.nodes[x],
+            q = full.nodes[y];
+          return q[2] - p[2] || (p[1] < q[1] ? -1 : p[1] > q[1] ? 1 : 0) || (p[0] < q[0] ? -1 : p[0] > q[0] ? 1 : 0);
+        }),
+      rank = new Map(order.map((g, r) => [g, r]));
+    const need = Math.max(rank.get(gi), Math.min(...here.map((g) => rank.get(g)))) + 1;
+    return { status: 'ok', need, gi, partners: [...new Set(here)] };
+  }
+  // the genes of a pasted list (separated by commas, spaces, semicolons or line breaks; symbols or accessions) and which of them
+  // the nodes hold: { tokens, hits: Set of node indexes, found: tokens that are nodes, missing: tokens that are not }
+  function findGenes(text, nodes) {
+    const tokens = [
+        ...new Set(
+          String(text || '')
+            .split(/[\s,;]+/)
+            .filter(Boolean)
+        ),
+      ],
+      at = new Map();
+    nodes.forEach((n, i) => {
+      for (const k of [n.gene, n.acc, String(n.acc).split('-')[0]])
+        if (k && !at.has(k.toUpperCase())) at.set(k.toUpperCase(), i);
+    });
+    const hits = new Set(),
+      found = [],
+      missing = [];
+    for (const t of tokens) {
+      const i = at.get(t.toUpperCase());
+      if (i == null) missing.push(t);
+      else {
+        hits.add(i);
+        found.push(t);
+      }
+    }
+    return { tokens, hits, found, missing };
+  }
+  // the small neighbourhood a protein page draws: the protein, its partners in its own cluster (at most `max`, those with most
+  // sites first) and the links among them; view: { gene, sites, comm, edges }
+  function previewSlice(view, i, max = 15) {
+    const c = view.comm[i],
+      seen = new Set();
+    for (const [a, b] of view.edges) {
+      const j = a === i ? b : b === i ? a : -1;
+      if (j >= 0 && view.comm[j] === c) seen.add(j);
+    }
+    const partners = [...seen]
+      .sort(
+        (x, y) =>
+          view.sites[y] - view.sites[x] ||
+          (view.gene[x] < view.gene[y] ? -1 : view.gene[x] > view.gene[y] ? 1 : 0) ||
+          x - y
+      )
+      .slice(0, max);
+    const nodes = [i, ...partners],
+      at = new Map(nodes.map((g, k) => [g, k])),
+      edges = [];
+    for (const [a, b] of view.edges) if (at.has(a) && at.has(b)) edges.push([at.get(a), at.get(b)]);
+    return { nodes, edges, partners: seen.size };
+  }
+  K.netcore = { louvain, communities, labelClusters, makeView, focusPlan, findGenes, previewSlice };
 });
