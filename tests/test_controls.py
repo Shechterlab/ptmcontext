@@ -197,7 +197,7 @@ def test_a_control_verdict_names_lost_reversed_and_weaker():
     js = (ASSETS / 'kit.js').read_text()
     fn = re.search(r'  function ctlVerdict\(r, c\) \{.*?\n  \}\n', js, re.S).group(0)
     prog = (
-        'const MIN_EFFECT = 1.1;'
+        'const MIN_EFFECT = 1.1; const valOf = (r) => r.shown ?? r.eff;'
         + fn
         + """
 const R = (dir, eff) => ({ dir, eff });

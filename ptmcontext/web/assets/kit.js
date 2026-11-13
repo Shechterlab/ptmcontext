@@ -2102,7 +2102,8 @@
     if (!c) return 'not tested';
     if (c.dir === r.dir) return 'holds';
     if ((c.dir === 'more' || c.dir === 'less') && c.dir !== r.dir) return 'reversed';
-    const same = c.eff != null && (r.dir === 'more' ? c.eff >= MIN_EFFECT : c.eff <= 1 / MIN_EFFECT);
+    const v = valOf(c),
+      same = v != null && (r.dir === 'more' ? v >= MIN_EFFECT : v <= 1 / MIN_EFFECT);
     return same ? 'weaker' : 'lost';
   }
   // the controls a class of a question fails (website.overview.control_badges: which verdicts count, by default lost and
@@ -2129,7 +2130,8 @@
     }
     return FAILS[key][category] || [];
   }
-  const ctlNum = (r) => (r ? `${effText(r)}, q ${fq(r.q)}` : 'not tested');
+  // a result as its row reads (the fold, then the test), so the badge says what its verdict was read from
+  const ctlNum = (r) => (r ? `${fx(valOf(r))}, ${testLine(r)}` : 'not tested');
   const failText = (f) => `fails control: ${f.label}`;
   const failTip = (f) =>
     `${f.verdict} under ${f.label}: ${ctlNum(f.main)} in the question, ${ctlNum(f.ctl)} in the control`;
