@@ -96,14 +96,13 @@
       })
       .slice(0, MAXT);
     S.ou = C.units.includes(p.get('ou')) ? p.get('ou') : 'proteins';
-    S.ov = ['venn', 'upset'].includes(p.get('ov')) ? p.get('ov') : 'auto';
+    S.ov = 'auto'; // an old link's display choice is read and ignored
     S.or = /^\d+$/.test(p.get('or') || '') ? p.get('or') : '';
   });
   K.paramsOut.push((p) => {
     if (S.view !== 'overlap') return;
     if (S.ot.length) p.set('t', S.ot.map((x) => x.replace(/%/g, '%25').replace(/,/g, '%2C')).join(','));
     if (S.ou !== 'proteins') p.set('ou', S.ou);
-    if (S.ov !== 'auto') p.set('ov', S.ov);
     if (S.or) p.set('or', S.or);
   });
 
@@ -421,7 +420,96 @@
     return res;
   }
 
-  // ---- drawing ---------------------------------------------------------------------------------------------------------------
+  // a region's letters for the table: "A + B (not C)"
+  const regionLetters = (mask, nT) => {
+    const idx = [...Array(nT).keys()],
+      inn = idx.filter((i) => mask & (1 << i)).map((i) => LETTERS[i]),
+      out = idx.filter((i) => !(mask & (1 << i))).map((i) => LETTERS[i]);
+    return inn.join(' + ') + (out.length ? ` (not ${out.join(', ')})` : '');
+  };
+  const unitWord = (u) => ({ proteins: 'proteins', sites: 'sites', enzymes: 'enzymes', readers: 'readers' })[u];
+  // ---- the figure: a region matrix with size and share bars, and an area-proportional glyph for two or three terms -------------
+  const NS = 'http://www.w3.org/2000/svg';
+  const QCUT = 0.05;
+  const fmtInt = (v) => Number(v).toLocaleString('en-US');
+  const pct = (v) => (v * 100 >= 99.95 ? '100' : (v * 100).toFixed(1)) + '%';
+  const fqf = (v) => (v == null ? '–' : K.fq(v));
+  const foldFmt = (f, k) =>
+    k === 0 ? '0×' : f == null ? '–' : f < 0.01 ? '< 0.01×' : (f >= 1.25 ? f.toFixed(1) : f.toFixed(2)) + '×';
+  // the 95% Wilson score interval of k/n
+  function wilson(k, n, z = 1.959963984540054) {
+    const p = k / n,
+      d = 1 + (z * z) / n,
+      c = (p + (z * z) / (2 * n)) / d,
+      h = (z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / d;
+    return [Math.max(0, c - h), Math.min(1, c + h)];
+  }
+  // Woolf's 95% interval of the Haldane odds ratio of a 2x2 table (as the pooled Fisher rows)
+  function woolf(a, b, c, d, z = 1.959963984540054) {
+    const o = Math.log(((a + 0.5) * (d + 0.5)) / ((b + 0.5) * (c + 0.5))),
+      s = Math.sqrt(1 / (a + 0.5) + 1 / (b + 0.5) + 1 / (c + 0.5) + 1 / (d + 0.5));
+    return [Math.exp(o - z * s), Math.exp(o + z * s)];
+  }
+  let ctx2d = null;
+  const tw = (s, px = 12, w = 600) => {
+    try {
+      ctx2d ||= document.createElement('canvas').getContext('2d');
+      ctx2d.font = `${w} ${px}px Inter, sans-serif`;
+      return ctx2d.measureText(s).width;
+    } catch (e) {
+      return String(s).length * px * 0.56;
+    }
+  };
+  const el = (tag, attrs = {}, kids = []) => {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    kids.forEach((c) => e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c));
+    return e;
+  };
+  const svgEl = (w, h, kids) => el('svg', { width: w, height: h, viewBox: `0 0 ${w} ${h}`, overflow: 'visible' }, kids);
+  const html = (tag, cls, text) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  };
+  // a bar with a rounded data end and a square end at its baseline
+  function barPath(x0, x1, yc, h, r) {
+    const w = Math.abs(x1 - x0);
+    r = Math.min(r, w / 2, h / 2);
+    const y0 = yc - h / 2,
+      y1 = yc + h / 2;
+    if (x1 >= x0)
+      return `M${x0},${y0}H${x1 - r}A${r},${r} 0 0 1 ${x1},${y0 + r}V${y1 - r}A${r},${r} 0 0 1 ${x1 - r},${y1}H${x0}Z`;
+    return `M${x0},${y0}H${x1 + r}A${r},${r} 0 0 0 ${x1},${y0 + r}V${y1 - r}A${r},${r} 0 0 0 ${x1 + r},${y1}H${x0}Z`;
+  }
+  function niceTicks(max, want = 4) {
+    const raw = max / want,
+      mag = 10 ** Math.floor(Math.log10(raw)),
+      st = [1, 2, 2.5, 5, 10].map((s) => s * mag).find((s) => s >= raw),
+      out = [];
+    for (let v = 0; v <= max * 1.0001; v += st) out.push(+v.toFixed(6));
+    return out;
+  }
+  // the size axis; one value far above the rest cuts the axis (the bars above the gap run to the edge, marked //)
+  function sizeScale(values) {
+    const v = [...values].sort((a, b) => b - a);
+    let cut = -1,
+      ratio = 0;
+    for (let i = 0; i < v.length - 1; i++)
+      if (v[i] / Math.max(1, v[i + 1]) > ratio) {
+        ratio = v[i] / Math.max(1, v[i + 1]);
+        cut = i;
+      }
+    if (ratio > 4 && cut + 1 <= v.length / 3) {
+      const ticks = niceTicks(v[cut + 1] * 1.08);
+      return { max: Math.max(v[cut + 1], ticks.at(-1)), ticks, brk: v[cut], base: v[cut + 1] * 1.08 };
+    }
+    const ticks = niceTicks(v[0] || 1);
+    return { max: Math.max(v[0] || 1, ticks.at(-1)), ticks, brk: Infinity, base: v[0] || 1 };
+  }
+
+  // -- the layout of two or three circles with areas proportional to the counts
   const lens = (r1, r2, d) => {
     if (d >= r1 + r2) return 0;
     if (d <= Math.abs(r1 - r2)) return Math.PI * Math.min(r1, r2) ** 2;
@@ -429,145 +517,1258 @@
       b = r2 * r2 * Math.acos((d * d + r2 * r2 - r1 * r1) / (2 * d * r2));
     return a + b - 0.5 * Math.sqrt((-d + r1 + r2) * (d + r1 - r2) * (d - r1 + r2) * (d + r1 + r2));
   };
-  function distance(r1, r2, area) {
+  function distFor(r1, r2, area) {
     let lo = Math.abs(r1 - r2),
       hi = r1 + r2;
-    for (let k = 0; k < 60; k++) {
+    for (let i = 0; i < 60; i++) {
       const mid = (lo + hi) / 2;
       if (lens(r1, r2, mid) > area) lo = mid;
       else hi = mid;
     }
     return (lo + hi) / 2;
   }
-  // circles for two or three terms: areas proportional to the sizes; the overlaps of pairs set the distances (for three
-  // terms the triple overlap follows from them, and is only approximate)
-  function circles(res) {
-    const n = res.ts.map((t, i) => res.rows.reduce((s, r) => s + (r.mask & (1 << i) ? r.n : 0), 0)),
-      rad = n.map((x) => Math.sqrt(x / Math.PI)),
-      pair = (i, j) => res.rows.reduce((s, r) => s + (r.mask & (1 << i) && r.mask & (1 << j) ? r.n : 0), 0),
-      d = (i, j) => (rad[i] && rad[j] ? distance(rad[i], rad[j], pair(i, j)) : rad[i] + rad[j]);
-    const pos = [[0, 0]];
-    pos.push([d(0, 1), 0]);
-    if (res.nT === 3) {
-      const d12 = d(0, 1),
-        d13 = d(0, 2),
-        d23 = d(1, 2),
-        x = d12 ? (d13 * d13 - d23 * d23 + d12 * d12) / (2 * d12) : 0;
-      pos.push([x, Math.sqrt(Math.max(0, d13 * d13 - x * x))]);
+  // the area common to three circles: exact vertical chords integrated over x (smooth in the parameters)
+  function tripleArea(c) {
+    const lo = Math.max(...c.map((k) => k.x - k.r)),
+      hi = Math.min(...c.map((k) => k.x + k.r));
+    if (lo >= hi) return 0;
+    const S_ = 600,
+      h = (hi - lo) / S_;
+    let s = 0;
+    for (let i = 0; i < S_; i++) {
+      const x = lo + (i + 0.5) * h;
+      let a = -Infinity,
+        b = Infinity;
+      for (const k of c) {
+        const dy = Math.sqrt(Math.max(0, k.r * k.r - (x - k.x) ** 2));
+        a = Math.max(a, k.y - dy);
+        b = Math.min(b, k.y + dy);
+      }
+      if (b > a) s += (b - a) * h;
     }
-    return { rad, pos, n };
+    return s;
   }
-  const regionLetters = (mask, nT) =>
-    [...Array(nT).keys()]
-      .filter((i) => mask & (1 << i))
-      .map((i) => LETTERS[i])
-      .join(' + ') +
-    ([...Array(nT).keys()].filter((i) => !(mask & (1 << i))).length
-      ? ` (not ${[...Array(nT).keys()]
-          .filter((i) => !(mask & (1 << i)))
-          .map((i) => LETTERS[i])
-          .join(', ')})`
-      : '');
-  const regionWords = (res, k) => regionLetters(k, res.nT).replace(/[A-D]/g, (c) => res.ts[LETTERS.indexOf(c)].label);
-  const PAGE = {
-    c: (i) => `var(--ov${i + 1})`,
-    ink: 'var(--ink)',
-    muted: 'var(--muted)',
-    line: 'var(--line-strong)',
-    bg: 'var(--surface)',
-    page: true,
-  };
-  const EXPORT = { c: (i) => LIGHT[i], ink: '#111827', muted: '#5f6f78', line: '#c7d4d9', bg: '#ffffff', page: false };
-  const label = (st, x, y, text, k, w = 34) =>
-    (st.page
-      ? `<g data-ov-reg="${k}" role="button" tabindex="0" aria-label="${esc(`${text}: open this region`)}" class="ov-reg${String(S.or) === String(k) ? ' on' : ''}">`
-      : '<g>') +
-    `<rect x="${(x - w / 2).toFixed(1)}" y="${(y - 9).toFixed(1)}" width="${w}" height="18" rx="9" fill="${st.bg}" fill-opacity=".86" stroke="${st.line}"/>` +
-    `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" font-size="11" fill="${st.ink}">${esc(text)}</text></g>`;
-  function drawVenn(res, st) {
-    const { rad, pos } = circles(res),
-      Wd = 340,
-      pad = 20;
-    const xs = pos.flatMap(([x], i) => [x - rad[i], x + rad[i]]),
-      ys = pos.flatMap(([, y], i) => [y - rad[i], y + rad[i]]),
-      x0 = Math.min(...xs),
-      y0 = Math.min(...ys),
-      sc = Math.min((Wd - 2 * pad) / (Math.max(...xs) - x0 || 1), 260 / (Math.max(...ys) - y0 || 1)),
-      H = Math.ceil((Math.max(...ys) - y0) * sc + 2 * pad),
-      px = (x) => (x - x0) * sc + pad,
-      py = (y) => (y - y0) * sc + pad;
-    const g = [];
-    res.ts.forEach((t, i) => {
-      if (!rad[i]) return;
-      g.push(
-        `<circle cx="${px(pos[i][0]).toFixed(1)}" cy="${py(pos[i][1]).toFixed(1)}" r="${(rad[i] * sc).toFixed(1)}" fill="${st.c(i)}" fill-opacity=".28" stroke="${st.c(i)}" stroke-width="2"/>`
-      );
-    });
-    // the label of a region sits at the centre of the points of the plane that are in it (and in no other)
-    const acc = new Map();
-    for (let y = pad; y < H - pad; y += 3)
-      for (let x = pad; x < Wd - pad; x += 3) {
+  function regionAreas(c) {
+    const A_ = c.map((k) => Math.PI * k.r * k.r),
+      d = (i, j) => Math.hypot(c[i].x - c[j].x, c[i].y - c[j].y);
+    if (c.length === 2) {
+      const o = lens(c[0].r, c[1].r, d(0, 1));
+      return { 1: A_[0] - o, 2: A_[1] - o, 3: o };
+    }
+    const o01 = lens(c[0].r, c[1].r, d(0, 1)),
+      o02 = lens(c[0].r, c[2].r, d(0, 2)),
+      o12 = lens(c[1].r, c[2].r, d(1, 2)),
+      t = tripleArea(c);
+    return {
+      1: A_[0] - o01 - o02 + t,
+      2: A_[1] - o01 - o12 + t,
+      4: A_[2] - o02 - o12 + t,
+      3: o01 - t,
+      5: o02 - t,
+      6: o12 - t,
+      7: t,
+    };
+  }
+  function nelderMead(f, x0, it = 600) {
+    const n = x0.length;
+    let P = [x0, ...x0.map((_, i) => x0.map((v, j) => (i === j ? v + (Math.abs(v) * 0.1 || 0.5) : v)))],
+      F = P.map(f);
+    for (let k = 0; k < it; k++) {
+      const o = [...P.keys()].sort((a, b) => F[a] - F[b]);
+      P = o.map((i) => P[i]);
+      F = o.map((i) => F[i]);
+      const c = P[0].map((_, j) => P.slice(0, n).reduce((s, p) => s + p[j], 0) / n),
+        at = (t) => c.map((v, j) => v + t * (P[n][j] - v)),
+        xr = at(-1),
+        fr = f(xr);
+      if (fr < F[0]) {
+        const xe = at(-2),
+          fe = f(xe);
+        [P[n], F[n]] = fe < fr ? [xe, fe] : [xr, fr];
+      } else if (fr < F[n - 1]) {
+        P[n] = xr;
+        F[n] = fr;
+      } else {
+        const xc = at(0.5),
+          fc = f(xc);
+        if (fc < F[n]) {
+          P[n] = xc;
+          F[n] = fc;
+        } else
+          for (let i = 1; i <= n; i++) {
+            P[i] = P[i].map((v, j) => P[0][j] + 0.5 * (v - P[0][j]));
+            F[i] = f(P[i]);
+          }
+      }
+    }
+    return P[F.indexOf(Math.min(...F))];
+  }
+  // circles of area = the term's size, fitted to the exclusive regions (target: mask -> count); a pair that shares nothing keeps a gap
+  function euler(sizes, target) {
+    const r = sizes.map((s) => Math.sqrt(s / Math.PI)),
+      tot = Object.values(target).reduce((a, b) => a + b, 0) || 1,
+      pairT = (i, j) => Object.entries(target).reduce((s, [m, v]) => s + (m & (1 << i) && m & (1 << j) ? v : 0), 0),
+      gap = (i, j) => 0.18 * Math.min(r[i], r[j]),
+      d0 = (i, j) => (pairT(i, j) > 0 ? distFor(r[i], r[j], pairT(i, j)) : r[i] + r[j] + gap(i, j));
+    if (sizes.length === 2)
+      return {
+        c: [
+          { x: 0, y: 0, r: r[0] },
+          { x: d0(0, 1), y: 0, r: r[1] },
+        ],
+        err: 0,
+      };
+    const build = (p) => [
+        { x: 0, y: 0, r: r[0] },
+        { x: p[0], y: 0, r: r[1] },
+        { x: p[1], y: p[2], r: r[2] },
+      ],
+      loss = (p) => {
+        const c = build(p),
+          a = regionAreas(c);
+        let s = 0;
+        for (const m of [1, 2, 3, 4, 5, 6, 7]) s += ((a[m] - (target[m] || 0)) / tot) ** 2;
+        for (const [i, j] of [
+          [0, 1],
+          [0, 2],
+          [1, 2],
+        ])
+          if (!pairT(i, j)) {
+            const d = Math.hypot(c[i].x - c[j].x, c[i].y - c[j].y),
+              want = r[i] + r[j] + gap(i, j);
+            if (d < want) s += 4 * ((want - d) / (r[i] + r[j])) ** 2;
+          }
+        return s;
+      };
+    const a01 = d0(0, 1),
+      a02 = d0(0, 2),
+      a12 = d0(1, 2),
+      x = (a02 * a02 - a12 * a12 + a01 * a01) / (2 * a01),
+      p = nelderMead(loss, [a01, x, Math.sqrt(Math.max(0, a02 * a02 - x * x)) || 0.01]),
+      c = build(p),
+      a = regionAreas(c),
+      fa = Object.values(a).reduce((s, v) => s + Math.max(0, v), 0),
+      err = Math.max(...[1, 2, 3, 4, 5, 6, 7].map((m) => Math.abs(Math.max(0, a[m]) / fa - (target[m] || 0) / tot)));
+    if (c[2].y < 0) c.forEach((k) => (k.y = -k.y));
+    return { c, err };
+  }
+  // the glyph's layout: circles in pixels, a label for each region (inside at its pole of inaccessibility if it fits, else outside on a
+  // leader), a letter beside each circle; nothing overlaps; the region under any point (mask) for the pointer
+  function glyphLayout(sizes, regions, opt) {
+    const target = {};
+    regions.forEach((r) => (target[r.m] = r.n));
+    const { c, err } = euler(sizes, target),
+      PAD = 34,
+      x0 = Math.min(...c.map((k) => k.x - k.r)),
+      x1 = Math.max(...c.map((k) => k.x + k.r)),
+      y0 = Math.min(...c.map((k) => k.y - k.r)),
+      y1 = Math.max(...c.map((k) => k.y + k.r)),
+      sc = Math.min((opt.w - 2 * PAD) / (x1 - x0 || 1), (opt.h - 2 * PAD) / (y1 - y0 || 1)),
+      W_ = Math.ceil((x1 - x0) * sc + 2 * PAD),
+      H_ = Math.ceil((y1 - y0) * sc + 2 * PAD),
+      C_ = c.map((k) => ({ x: (k.x - x0) * sc + PAD, y: (k.y - y0) * sc + PAD, r: k.r * sc })),
+      mask = new Uint8Array(W_ * H_);
+    for (let y = 0; y < H_; y++)
+      for (let x = 0; x < W_; x++) {
         let m = 0;
-        for (let i = 0; i < res.nT; i++)
-          if (rad[i] && (x - px(pos[i][0])) ** 2 + (y - py(pos[i][1])) ** 2 <= (rad[i] * sc) ** 2) m |= 1 << i;
-        if (m) {
-          const a = acc.get(m) || [0, 0, 0];
-          acc.set(m, [a[0] + x, a[1] + y, a[2] + 1]);
+        C_.forEach((k, i) => {
+          if ((x + 0.5 - k.x) ** 2 + (y + 0.5 - k.y) ** 2 <= k.r * k.r) m |= 1 << i;
+        });
+        mask[y * W_ + x] = m;
+      }
+    const at = (x, y) => (x < 0 || y < 0 || x >= W_ || y >= H_ ? 0 : mask[(y | 0) * W_ + (x | 0)]);
+    function pole(m) {
+      const Dm = new Float32Array(W_ * H_),
+        INF = 1e9;
+      for (let i = 0; i < W_ * H_; i++) Dm[i] = mask[i] === m ? INF : 0;
+      const g = (x, y) => (x < 0 || y < 0 || x >= W_ || y >= H_ ? 0 : Dm[y * W_ + x]);
+      for (let y = 0; y < H_; y++)
+        for (let x = 0; x < W_; x++) {
+          const i = y * W_ + x;
+          if (Dm[i])
+            Dm[i] = Math.min(Dm[i], g(x - 1, y) + 1, g(x, y - 1) + 1, g(x - 1, y - 1) + 1.414, g(x + 1, y - 1) + 1.414);
+        }
+      for (let y = H_ - 1; y >= 0; y--)
+        for (let x = W_ - 1; x >= 0; x--) {
+          const i = y * W_ + x;
+          if (Dm[i])
+            Dm[i] = Math.min(Dm[i], g(x + 1, y) + 1, g(x, y + 1) + 1, g(x + 1, y + 1) + 1.414, g(x - 1, y + 1) + 1.414);
+        }
+      let b = -1,
+        bi = -1;
+      for (let i = 0; i < W_ * H_; i++)
+        if (Dm[i] > b) {
+          b = Dm[i];
+          bi = i;
+        }
+      return b > 0 ? { x: (bi % W_) + 0.5, y: ((bi / W_) | 0) + 0.5, d: b } : null;
+    }
+    const boxes = [],
+      clearOf = (b, m) => {
+        for (let y = Math.floor(b.y); y < b.y + b.h; y++)
+          for (let x = Math.floor(b.x); x < b.x + b.w; x++) if (at(x, y) !== m) return false;
+        return !boxes.some((o) => b.x < o.x + o.w && o.x < b.x + b.w && b.y < o.y + o.h && o.y < b.y + b.h);
+      },
+      tot2 = C_.reduce((s, k) => s + k.r * k.r, 0),
+      cx = C_.reduce((s, k) => s + k.x * k.r * k.r, 0) / tot2,
+      cy = C_.reduce((s, k) => s + k.y * k.r * k.r, 0) / tot2,
+      labels = [],
+      letters = [],
+      leaders = [],
+      outside = [];
+    regions
+      .filter((r) => r.n > 0)
+      .forEach((r) => {
+        const P = pole(r.m),
+          txt = fmtInt(r.n),
+          w = tw(txt, 12, 650) + 6,
+          h = 15;
+        if (P) {
+          const b = { x: P.x - w / 2, y: P.y - h / 2, w, h };
+          if (clearOf(b, r.m)) {
+            boxes.push(b);
+            labels.push({ r, x: P.x, y: P.y, txt });
+            return;
+          }
+        }
+        outside.push({ r, P, txt, w, h });
+      });
+    C_.forEach((k, i) => {
+      const base = Math.atan2(k.y - cy, k.x - cx) || -Math.PI / 2;
+      let best = null;
+      for (let s = 0; s < 48 && !best; s++) {
+        const a = base + (s % 2 ? 1 : -1) * Math.ceil(s / 2) * (Math.PI / 24),
+          lx = k.x + Math.cos(a) * (k.r + 11),
+          ly = k.y + Math.sin(a) * (k.r + 11),
+          b = { x: lx - 6, y: ly - 8, w: 12, h: 16 };
+        if (b.x > -PAD && b.y > -PAD && clearOf(b, 0)) best = { b, lx, ly };
+      }
+      if (best) {
+        boxes.push(best.b);
+        letters.push({ i, x: best.lx, y: best.ly });
+      }
+    });
+    outside.forEach((o) => {
+      const P =
+        o.P ||
+        (() => {
+          let sx = 0,
+            sy = 0,
+            n = 0;
+          for (let i = 0; i < W_ * H_; i++)
+            if (mask[i] === o.r.m) {
+              sx += i % W_;
+              sy += (i / W_) | 0;
+              n++;
+            }
+          return { x: sx / (n || 1), y: sy / (n || 1) };
+        })();
+      const base = Math.atan2(P.y - cy, P.x - cx);
+      let best = null;
+      for (let s = 0; s < 36; s++) {
+        const a = base + (s % 2 ? 1 : -1) * Math.ceil(s / 2) * (Math.PI / 18);
+        for (let rho = 6; rho < 140; rho += 2) {
+          const bx = P.x + Math.cos(a) * rho,
+            by = P.y + Math.sin(a) * rho,
+            b = { x: bx - o.w / 2 - 2, y: by - o.h / 2 - 2, w: o.w + 4, h: o.h + 4 };
+          if (clearOf(b, 0)) {
+            const score = rho + Math.ceil(s / 2) * 6;
+            if (!best || score < best.score) best = { score, bx, by, b };
+            break;
+          }
         }
       }
-    res.rows.forEach((r) => {
-      if (!r.mask || !r.n) return;
-      const a = acc.get(r.mask) || [Wd / 2, H / 2, 1];
-      g.push(label(st, a[0] / a[2], a[1] / a[2], int(r.n), r.mask, 14 + 7 * String(int(r.n)).length));
+      if (!best) return;
+      boxes.push(best.b);
+      labels.push({ r: o.r, x: best.bx, y: best.by, txt: o.txt, out: true });
+      leaders.push({
+        x1: P.x,
+        y1: P.y,
+        x2: Math.max(best.b.x + 2, Math.min(P.x, best.b.x + best.b.w - 2)),
+        y2: Math.max(best.b.y + 2, Math.min(P.y, best.b.y + best.b.h - 2)),
+      });
     });
-    res.ts.forEach((t, i) => {
-      if (!rad[i]) return;
-      const cx = px(pos[i][0]),
-        cy = py(pos[i][1]),
-        ang = res.nT === 3 && i === 2 ? Math.PI / 2 : i === 0 ? -2.4 : -0.7;
-      g.push(
-        `<text x="${(cx + Math.cos(ang) * (rad[i] * sc + 9)).toFixed(1)}" y="${(cy + Math.sin(ang) * (rad[i] * sc + 9) + 4).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="700" fill="${st.c(i)}">${LETTERS[i]}</text>`
+    const all = [...boxes, ...C_.map((k) => ({ x: k.x - k.r - 2, y: k.y - k.r - 2, w: 2 * k.r + 4, h: 2 * k.r + 4 }))],
+      vx = Math.floor(Math.min(...all.map((b) => b.x))) - 2,
+      vy = Math.floor(Math.min(...all.map((b) => b.y))) - 2,
+      vw = Math.ceil(Math.max(...all.map((b) => b.x + b.w))) - vx + 2,
+      vh = Math.ceil(Math.max(...all.map((b) => b.y + b.h))) - vy + 2;
+    return { C: C_, labels, letters, leaders, boxes, err, vx, vy, vw, vh, at };
+  }
+  // the glyph as SVG: circles, the hovered and the selected region washed and outlined through a mask, counts, letters
+  function glyphSvg(L, nTerms, st = {}) {
+    const S_ = el('svg', {
+        width: L.vw,
+        height: L.vh,
+        viewBox: `${L.vx} ${L.vy} ${L.vw} ${L.vh}`,
+        role: 'img',
+        'aria-label': 'Euler diagram of the terms; circle areas are proportional to the counts',
+      }),
+      uid = 'ovg' + Math.random().toString(36).slice(2, 8),
+      defs = el('defs');
+    S_.appendChild(defs);
+    const { C: C_ } = L;
+    C_.forEach((k, i) =>
+      S_.appendChild(
+        el('circle', {
+          cx: k.x,
+          cy: k.y,
+          r: k.r,
+          fill: `var(--ov${i + 1})`,
+          'fill-opacity': 'var(--ov-fill)',
+          style: 'fill-opacity:var(--ov-fill)',
+        })
+      )
+    );
+    [
+      ['hover', 'var(--ink)', 0.06],
+      ['sel', 'var(--accent)', 0.14],
+    ].forEach(([key, col, op]) => {
+      const m = st[key];
+      if (!m) return;
+      const id = uid + key,
+        mk = el('mask', {
+          id,
+          maskUnits: 'userSpaceOnUse',
+          x: L.vx - 10,
+          y: L.vy - 10,
+          width: L.vw + 20,
+          height: L.vh + 20,
+        });
+      mk.appendChild(el('rect', { x: L.vx - 10, y: L.vy - 10, width: L.vw + 20, height: L.vh + 20, fill: 'black' }));
+      C_.forEach((k, i) => {
+        if (m & (1 << i)) mk.appendChild(el('circle', { cx: k.x, cy: k.y, r: k.r, fill: 'white' }));
+      });
+      C_.forEach((k, i) => {
+        if (!(m & (1 << i))) mk.appendChild(el('circle', { cx: k.x, cy: k.y, r: k.r, fill: 'black' }));
+      });
+      defs.appendChild(mk);
+      const g = el('g', { mask: `url(#${id})` }),
+        inn = C_.filter((_, i) => m & (1 << i));
+      if (inn.length > 1) {
+        let ref = null;
+        inn.forEach((k, j) => {
+          const cp = el('clipPath', { id: `${id}c${j}` }, [el('circle', { cx: k.x, cy: k.y, r: k.r })]);
+          if (ref) cp.setAttribute('clip-path', `url(#${ref})`);
+          defs.appendChild(cp);
+          ref = `${id}c${j}`;
+        });
+        g.setAttribute('clip-path', `url(#${ref})`);
+      }
+      g.appendChild(el('rect', { x: L.vx, y: L.vy, width: L.vw, height: L.vh, fill: col, 'fill-opacity': op }));
+      C_.forEach((k) =>
+        g.appendChild(el('circle', { cx: k.x, cy: k.y, r: k.r, fill: 'none', stroke: col, 'stroke-width': 3.2 }))
+      );
+      S_.appendChild(g);
+    });
+    C_.forEach((k, i) =>
+      S_.appendChild(
+        el('circle', { cx: k.x, cy: k.y, r: k.r, fill: 'none', stroke: `var(--ov${i + 1})`, 'stroke-width': 1.5 })
+      )
+    );
+    L.leaders.forEach((l) => {
+      S_.appendChild(el('line', { x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2, stroke: 'var(--ink-2)', 'stroke-width': 1 }));
+      S_.appendChild(
+        el('circle', { cx: l.x1, cy: l.y1, r: 2, fill: 'var(--ink-2)', stroke: 'var(--surface)', 'stroke-width': 1 })
       );
     });
-    return { svg: g.join(''), w: Wd, h: H };
+    L.labels.forEach((l) =>
+      S_.appendChild(
+        el(
+          'text',
+          {
+            x: l.x,
+            y: l.y + 4.2,
+            'text-anchor': 'middle',
+            'font-size': 12,
+            'font-weight': 650,
+            fill: 'var(--ink)',
+            stroke: 'var(--surface)',
+            'stroke-width': 3,
+            'paint-order': 'stroke',
+            'stroke-linejoin': 'round',
+          },
+          [l.txt]
+        )
+      )
+    );
+    L.letters.forEach((l) =>
+      S_.appendChild(
+        el(
+          'text',
+          { x: l.x, y: l.y + 4.5, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 700, fill: 'var(--ink-2)' },
+          [LETTERS[l.i]]
+        )
+      )
+    );
+    return S_;
   }
-  function drawUpset(res, st) {
-    const rows = res.rows.filter((r) => r.mask && r.n).sort((a, b) => b.n - a.n || a.mask - b.mask),
-      Wd = 340,
-      rh = 24,
-      x0 = 16,
-      bx = x0 + res.nT * 20 + 8,
-      bw = Wd - bx - 56,
-      max = Math.max(1, ...rows.map((r) => r.n)),
-      g = [];
-    rows.forEach((r, j) => {
-      const y = 12 + j * rh,
-        on = [...Array(res.nT).keys()].filter((i) => r.mask & (1 << i));
-      if (on.length > 1)
-        g.push(
-          `<line x1="${x0 + on[0] * 20}" x2="${x0 + on[on.length - 1] * 20}" y1="${y}" y2="${y}" stroke="${st.ink}" stroke-width="2"/>`
+
+  // -- the records the rows are drawn from
+  function figData(res) {
+    const sitesU = res.unit === 'sites',
+      base = res.M && res.N ? res.M / res.N : null,
+      regs = res.rows
+        .filter((r) => r.mask && r.n)
+        .sort((a, b) => b.n - a.n || a.mask - b.mask)
+        .map((r) => ({ ...r, m: r.mask, k: sitesU ? r.n : r.k })),
+      terms = res.ts.map((t, i) => {
+        const tot = res.totals?.[i],
+          n = tot ? tot.n : res.rows.filter((r) => r.mask & (1 << i)).reduce((s, r) => s + r.n, 0),
+          k = tot ? tot.k : sitesU ? n : res.rows.filter((r) => r.mask & (1 << i)).reduce((s, r) => s + (r.k || 0), 0);
+        return {
+          L: LETTERS[i],
+          name: t.label,
+          i,
+          m: 1 << i,
+          n,
+          k,
+          p: tot?.p,
+          q: tot?.q,
+          few: tot?.few,
+          sites: tot?.sites,
+          fold: tot?.fold,
+          term: true,
+        };
+      });
+    return { base, regs, terms, sitesU, tested: !!res.test };
+  }
+  const isTested = (r) => !r.few && r.q != null;
+  const dirOf = (r, base, sitesU) => {
+    if (!isTested(r)) return 'nt';
+    if (r.q >= QCUT) return 'ns';
+    return sitesU ? ((r.or ?? r.fold) > 1 ? 'more' : 'less') : r.k / r.n > base ? 'more' : 'less';
+  };
+  const regLabel = (m, nT) => {
+    const l = [...Array(nT).keys()].filter((i) => m & (1 << i)).map((i) => LETTERS[i]);
+    return l.length === 1 ? `only ${l[0]}` : l.join(' + ');
+  };
+
+  // -- cells (SVG, drawn at the measured width of their column)
+  function sizeCell(r, sc, w, phone) {
+    const tip = phone ? 0 : sc.tip,
+      H = 30,
+      yc = H / 2,
+      plotW = w - tip,
+      X = (v) => (v / sc.max) * plotW * (sc.brk < Infinity ? 0.86 : 1),
+      kids = sc.ticks.map((t) =>
+        el('line', { x1: X(t) + 0.5, x2: X(t) + 0.5, y1: 0, y2: H, stroke: 'var(--line)', 'stroke-width': 1 })
+      ),
+      broken = r.n >= sc.brk,
+      end = broken ? plotW : X(r.n),
+      kx = broken ? end * (r.k / r.n) : X(r.k);
+    kids.push(el('line', { x1: 0.5, x2: 0.5, y1: 0, y2: H, stroke: 'var(--line-strong)', 'stroke-width': 1 }));
+    if (r.n) {
+      if (r.k > 0)
+        kids.push(
+          el('path', {
+            d: r.k === r.n ? barPath(0, Math.max(end, 2), yc, 12, 3) : `M0,${yc - 6}H${kx}V${yc + 6}H0Z`,
+            fill: 'var(--ov-k)',
+          })
         );
-      for (let i = 0; i < res.nT; i++)
-        g.push(
-          r.mask & (1 << i)
-            ? `<circle cx="${x0 + i * 20}" cy="${y}" r="6" fill="${st.c(i)}" stroke="${st.ink}" stroke-width="1"/>`
-            : `<circle cx="${x0 + i * 20}" cy="${y}" r="4" fill="${st.line}"/>`
+      if (r.k < r.n)
+        kids.push(
+          el('path', {
+            d: barPath(r.k ? Math.min(kx + 2, end - 1) : 0, Math.max(end, 2), yc, 12, 3),
+            fill: 'var(--ov-n)',
+          })
         );
-      const col = on.length === 1 ? st.c(on[0]) : st.ink;
-      const body =
-        `<rect x="${bx}" y="${y - 8}" width="${Math.max(2, (r.n / max) * bw).toFixed(1)}" height="16" fill="${col}" fill-opacity="${on.length === 1 ? 0.85 : 0.6}" stroke="${col}"/>` +
-        `<text x="${(bx + Math.max(2, (r.n / max) * bw) + 4).toFixed(1)}" y="${y + 4}" font-size="11" fill="${st.ink}">${int(r.n)}</text>`;
-      g.push(
-        st.page
-          ? `<g data-ov-reg="${r.mask}" role="button" tabindex="0" aria-label="${esc(regionLetters(r.mask, res.nT) + ': ' + int(r.n) + ' ' + unitWord(res.unit))}" class="ov-reg${String(S.or) === String(r.mask) ? ' on' : ''}"><rect x="0" y="${y - 12}" width="${Wd}" height="${rh}" fill="transparent"/>${body}</g>`
-          : body
+      if (broken) {
+        const bx = plotW * 0.9;
+        kids.push(
+          el('path', {
+            d: `M${bx - 3},${yc + 9}L${bx + 1},${yc - 9}M${bx + 3},${yc + 9}L${bx + 7},${yc - 9}`,
+            stroke: 'var(--surface)',
+            'stroke-width': 3,
+            fill: 'none',
+          })
+        );
+        kids.push(
+          el('path', {
+            d: `M${bx - 4.5},${yc + 9}L${bx - 0.5},${yc - 9}M${bx + 4.5},${yc + 9}L${bx + 8.5},${yc - 9}`,
+            stroke: 'var(--muted)',
+            'stroke-width': 1,
+            fill: 'none',
+          })
+        );
+      }
+    }
+    if (!phone) {
+      const t = el('text', { x: end + 6, y: yc + 4, 'font-size': 12, fill: 'var(--ink-2)' });
+      if (r.sitesOnly) t.appendChild(el('tspan', { fill: 'var(--ink)', 'font-weight': 600 }, [fmtInt(r.n)]));
+      else {
+        t.appendChild(el('tspan', {}, [fmtInt(r.k) + ' / ']));
+        t.appendChild(el('tspan', { fill: 'var(--ink)', 'font-weight': 600 }, [fmtInt(r.n)]));
+      }
+      kids.push(t);
+    }
+    return svgEl(w, H, kids);
+  }
+  function shareCell(r, base, w, phone) {
+    const H = phone ? 22 : 30,
+      yc = H / 2,
+      X = (v) => v * (w - 6),
+      d = dirOf(r, base),
+      kids = [];
+    [0, 0.25, 0.5, 0.75, 1].forEach((t) =>
+      kids.push(el('line', { x1: X(t) + 0.5, x2: X(t) + 0.5, y1: 0, y2: H, stroke: 'var(--line)', 'stroke-width': 1 }))
+    );
+    kids.push(el('line', { x1: X(base), x2: X(base), y1: 0, y2: H, stroke: 'var(--ov-ref)', 'stroke-width': 1.5 }));
+    if (isTested(r)) {
+      const s = r.k / r.n,
+        [lo, hi] = wilson(r.k, r.n),
+        x0 = X(base),
+        x1 = X(s),
+        p = el('path', { d: barPath(x0, Math.abs(x1 - x0) < 1.5 ? x0 + (x1 >= x0 ? 1.5 : -1.5) : x1, yc, 10, 3) });
+      if (d === 'ns') {
+        p.setAttribute('fill', 'var(--surface)');
+        p.setAttribute('stroke', 'var(--muted)');
+        p.setAttribute('stroke-width', 1.25);
+      } else p.setAttribute('fill', `var(--${d})`);
+      kids.push(p);
+      kids.push(
+        el('path', {
+          d: `M${X(lo)},${yc}H${X(hi)}M${X(lo)},${yc - 4}V${yc + 4}M${X(hi)},${yc - 4}V${yc + 4}`,
+          stroke: 'var(--ink-2)',
+          'stroke-width': 1.25,
+          fill: 'none',
+        })
       );
-    });
-    return { svg: g.join(''), w: Wd, h: 12 + rows.length * rh };
+    }
+    return svgEl(w, H, kids);
   }
-  const unitWord = (u) => ({ proteins: 'proteins', sites: 'sites', enzymes: 'enzymes', readers: 'readers' })[u];
-  const useVenn = (res) => (S.ov === 'venn' || (S.ov === 'auto' && res.nT <= 3)) && res.nT <= 3;
-  const draw = (res, st) => (useVenn(res) ? drawVenn(res, st) : drawUpset(res, st));
+  // the Sites unit's result: fold on a log axis centred at 1x, with the odds ratio's interval
+  function foldDomain(rows) {
+    let m = 1;
+    rows.forEach((r) => {
+      if (!isTested(r)) return;
+      const [lo, hi] = woolf(r.a, r.b, r.c, r.d);
+      m = Math.max(m, Math.abs(Math.log2(lo)), Math.abs(Math.log2(hi)), Math.abs(Math.log2(r.or ?? 1)));
+    });
+    return Math.min(8, Math.max(2, Math.ceil(m)));
+  }
+  function foldCell(r, L2, w, phone) {
+    const H = phone ? 22 : 30,
+      yc = H / 2,
+      X = (v) => ((Math.max(-L2, Math.min(L2, Math.log2(v))) + L2) / (2 * L2)) * (w - 6),
+      kids = [];
+    for (let t = -L2; t <= L2; t++)
+      kids.push(
+        el('line', { x1: X(2 ** t) + 0.5, x2: X(2 ** t) + 0.5, y1: 0, y2: H, stroke: 'var(--line)', 'stroke-width': 1 })
+      );
+    kids.push(el('line', { x1: X(1), x2: X(1), y1: 0, y2: H, stroke: 'var(--ov-ref)', 'stroke-width': 1.5 }));
+    if (isTested(r)) {
+      const f = r.or ?? r.fold,
+        [lo, hi] = woolf(r.a, r.b, r.c, r.d),
+        d = dirOf(r, 0, true),
+        x0 = X(1),
+        x1 = X(f),
+        p = el('path', { d: barPath(x0, Math.abs(x1 - x0) < 1.5 ? x0 + 1.5 : x1, yc, 10, 3) });
+      if (d === 'ns') {
+        p.setAttribute('fill', 'var(--surface)');
+        p.setAttribute('stroke', 'var(--muted)');
+        p.setAttribute('stroke-width', 1.25);
+      } else p.setAttribute('fill', `var(--${d})`);
+      kids.push(p);
+      kids.push(
+        el('path', {
+          d: `M${X(lo)},${yc}H${X(hi)}M${X(lo)},${yc - 4}V${yc + 4}M${X(hi)},${yc - 4}V${yc + 4}`,
+          stroke: 'var(--ink-2)',
+          'stroke-width': 1.25,
+          fill: 'none',
+        })
+      );
+    }
+    return svgEl(w, H, kids);
+  }
+  const tick = (x, anchor, s, ref) =>
+    el(
+      'text',
+      {
+        x,
+        y: 11,
+        'text-anchor': anchor,
+        'font-size': 11,
+        fill: ref ? 'var(--ink)' : 'var(--muted)',
+        ...(ref ? { 'font-weight': 650 } : {}),
+      },
+      [s]
+    );
+  function axisSize(sc, w, phone) {
+    const tip = phone ? 0 : sc.tip,
+      plotW = w - tip,
+      X = (v) => (v / sc.max) * plotW * (sc.brk < Infinity ? 0.86 : 1),
+      kids = [];
+    sc.ticks.forEach((t, i) => {
+      const s = t >= 10000 ? t / 1000 + 'K' : fmtInt(t),
+        hw = tw(s, 11, 400) / 2;
+      kids.push(tick(X(t), i === 0 ? 'start' : X(t) + hw > w ? 'end' : 'middle', s));
+    });
+    return svgEl(w, 15, kids);
+  }
+  function axisShare(base, w) {
+    const X = (v) => v * (w - 6),
+      kids = [],
+      rw = tw(pct(base), 11, 650),
+      rx0 = X(base) - rw / 2 - 5,
+      rx1 = X(base) + rw / 2 + 5;
+    [
+      [0, '0%'],
+      [0.5, '50%'],
+      [1, '100%'],
+    ].forEach(([v, s], i) => {
+      const w0 = tw(s, 11, 400),
+        a = i === 0 ? X(v) : i === 2 ? X(v) - w0 : X(v) - w0 / 2;
+      if (a < rx1 && a + w0 > rx0) return;
+      kids.push(tick(X(v), i === 0 ? 'start' : i === 2 ? 'end' : 'middle', s));
+    });
+    kids.push(tick(X(base), 'middle', pct(base), true));
+    kids.push(el('line', { x1: X(base), x2: X(base), y1: 14, y2: 18, stroke: 'var(--ov-ref)', 'stroke-width': 1.5 }));
+    return svgEl(w, 18, kids);
+  }
+  function axisFold(L2, w) {
+    const X = (v) => ((Math.log2(v) + L2) / (2 * L2)) * (w - 6),
+      kids = [],
+      step = L2 > 4 ? 2 : 1;
+    for (let t = -L2; t <= L2; t += step) {
+      const v = 2 ** t,
+        s = t === 0 ? '1×' : t > 0 ? `${v}×` : `1/${2 ** -t}`;
+      kids.push(tick(X(v), t === -L2 ? 'start' : t === L2 ? 'end' : 'middle', s, t === 0));
+    }
+    kids.push(el('line', { x1: X(1), x2: X(1), y1: 14, y2: 18, stroke: 'var(--ov-ref)', 'stroke-width': 1.5 }));
+    return svgEl(w, 18, kids);
+  }
+  function dotsSvg(m, nT) {
+    const sp = 16,
+      kids = [],
+      on = [...Array(nT).keys()].filter((i) => m & (1 << i));
+    if (on.length > 1)
+      kids.push(
+        el('line', {
+          x1: 6 + on[0] * sp,
+          x2: 6 + on.at(-1) * sp,
+          y1: 10,
+          y2: 10,
+          stroke: 'var(--ink-2)',
+          'stroke-width': 1.5,
+        })
+      );
+    for (let i = 0; i < nT; i++)
+      kids.push(
+        m & (1 << i)
+          ? el('circle', {
+              cx: 6 + i * sp,
+              cy: 10,
+              r: 5,
+              fill: `var(--ov${i + 1})`,
+              stroke: 'var(--surface)',
+              'stroke-width': 1.5,
+            })
+          : el('circle', {
+              cx: 6 + i * sp,
+              cy: 10,
+              r: 3,
+              fill: 'var(--surface)',
+              stroke: 'var(--line-strong)',
+              'stroke-width': 1.25,
+            })
+      );
+    return svgEl(12 + (nT - 1) * sp, 20, kids);
+  }
+  const keyBar = (fill, stroke) =>
+    svgEl(18, 10, [
+      el('rect', {
+        x: 0.6,
+        y: 1,
+        width: 16.8,
+        height: 8,
+        rx: 2,
+        fill,
+        ...(stroke ? { stroke, 'stroke-width': 1.25 } : {}),
+      }),
+    ]);
+  const whisker = () =>
+    svgEl(18, 10, [
+      el('path', { d: 'M2,5H16M2,1V9M16,1V9', stroke: 'var(--ink-2)', 'stroke-width': 1.25, fill: 'none' }),
+    ]);
+  // the key: its items (a function of what the figure shows)
+  function keyItems(fd, res) {
+    const sitesU = fd.sitesU,
+      g1 = sitesU
+        ? [['Sites in the region', [[keyBar('var(--ov-k)'), 'sites']]]]
+        : [
+            [
+              'Proteins in the region',
+              [
+                [keyBar('var(--ov-k)'), 'with sites'],
+                [keyBar('var(--ov-n)'), 'without'],
+              ],
+            ],
+          ],
+      g2 = !fd.tested
+        ? []
+        : [
+            [
+              sitesU
+                ? 'Fold, sites against the other residues (log scale)'
+                : 'Share with sites, against all reviewed proteins',
+              [
+                [keyBar('var(--more)'), 'more (q < 0.05)'],
+                [keyBar('var(--less)'), 'fewer (q < 0.05)'],
+                [keyBar('var(--surface)', 'var(--muted)'), 'no difference'],
+                [whisker(), '95% interval'],
+                [
+                  svgEl(6, 14, [
+                    el('line', { x1: 3, x2: 3, y1: 0, y2: 14, stroke: 'var(--ov-ref)', 'stroke-width': 1.5 }),
+                  ]),
+                  sitesU ? 'no difference (1×)' : `all reviewed proteins, ${pct(fd.base)}`,
+                ],
+              ],
+            ],
+          ];
+    return [...g1, ...g2];
+  }
+  // the footnote's sentences
+  function footNotes(res, fd, sc, cut) {
+    const out = [];
+    if (res.test)
+      out.push(
+        (fd.sitesU
+          ? TESTS.sites
+          : `${TESTS.proteins} ${fmtInt(res.M)} of ${fmtInt(res.N)} reviewed proteins (${pct(fd.base)}) have sites.`) +
+          ` Regions under ${MIN_N} are counted, not tested.`
+      );
+    else
+      out.push(
+        res.partial
+          ? 'Not tested here: only the proteins with sites are known for these terms.'
+          : 'No test: a term describes sites, and the comparison residues are not known for several features at once. Counts only.'
+      );
+    if (cut) out.push('Bars marked // are cut: they are longer than the axis.');
+    return out;
+  }
+  // -- the figure on the page: built as DOM from a result, redrawn when its width changes
+  const UI = { hover: 0, sel: 0, layout: null, rows: [], fig: null, res: null, fd: null, glyphHost: null, tip: null };
+  const regionWords = (res, m) => regWords(res, m);
+  function regWords(res, m) {
+    const inn = res.ts.filter((_, i) => m & (1 << i)).map((t) => t.label),
+      out = res.ts.filter((_, i) => !(m & (1 << i))).map((t) => t.label);
+    return inn.join(' and ') + (out.length ? `, not ${out.join(', not ')}` : '');
+  }
+  const regAria = (res, fd, r) =>
+    `${regLabel(r.m, res.nT)}: ${fmtInt(r.n)} ${unitWord(res.unit)}` +
+    (isTested(r) && !fd.sitesU
+      ? `, ${fmtInt(r.k)} with sites, ${pct(r.k / r.n)}, ${foldFmt(r.k / r.n / fd.base, r.k).replace('×', ' times')} all reviewed proteins, q ${fqf(r.q)}`
+      : '') +
+    '. Open this region.';
+  function valuesCell(r, fd) {
+    const c = html('div', 'c vals');
+    if (!fd.tested) return c;
+    if (!isTested(r)) {
+      c.appendChild(
+        html('span', 'nt', r.few ? `${fd.sitesU ? '' : `${r.k} of `}${r.n} · not tested (n < ${MIN_N})` : '–')
+      );
+      return c;
+    }
+    if (fd.sitesU) {
+      c.appendChild(html('span', 'sh', foldFmt(r.or ?? r.fold)));
+      c.appendChild(html('span', 'fo', ''));
+    } else {
+      c.appendChild(html('span', 'sh', pct(r.k / r.n)));
+      c.appendChild(html('span', 'fo', foldFmt(r.k / r.n / fd.base, r.k)));
+    }
+    c.appendChild(html('span', 'q', 'q ' + fqf(r.q)));
+    return c;
+  }
+  function phoneLine(r, fd) {
+    const pl = html('div', 'phline'),
+      a = html('span', 'a', fd.sitesU ? fmtInt(r.n) : `${fmtInt(r.k)} / ${fmtInt(r.n)}`),
+      b = html('span', 'b');
+    if (fd.tested) {
+      if (isTested(r)) {
+        b.appendChild(html('span', 'sh', fd.sitesU ? foldFmt(r.or ?? r.fold) : pct(r.k / r.n)));
+        b.appendChild(document.createTextNode(fd.sitesU ? ' · ' : ` · ${foldFmt(r.k / r.n / fd.base, r.k)} · `));
+        b.appendChild(html('span', 'q', 'q ' + fqf(r.q)));
+      } else b.appendChild(html('span', 'nt', `not tested (n < ${MIN_N})`));
+    }
+    pl.appendChild(a);
+    pl.appendChild(b);
+    return pl;
+  }
+  function buildFigure(host, res) {
+    host.textContent = '';
+    const fd = figData(res),
+      nT = res.nT,
+      fig = html('figure', 'ovx');
+    fig.style.margin = 0;
+    host.appendChild(fig);
+    const phone = fig.clientWidth <= 560;
+    fig.style.setProperty('--dotsw', `${12 + (nT - 1) * 16 + 4}px`);
+    Object.assign(UI, { fig, res, fd, rows: [], tip: null, glyphHost: null, layout: null });
+    UI.hover = 0;
+    UI.sel = +S.or || 0;
+    const top = html('div', 'ovx-top');
+    fig.appendChild(top);
+    let err = 0;
+    const sizes = fd.terms.map((t) => t.n);
+    if (nT <= 3 && sizes.every((n) => n > 0)) {
+      UI.layout = glyphLayout(
+        sizes,
+        res.rows.filter((r) => r.mask).map((r) => ({ m: r.mask, n: r.n })),
+        { w: 300, h: phone ? 200 : 210 }
+      );
+      err = UI.layout.err;
+      const gw = html('div', 'ovx-glyph');
+      gw.appendChild(glyphSvg(UI.layout, nT, { sel: UI.sel }));
+      top.appendChild(gw);
+      UI.glyphHost = gw;
+    }
+    const key = html('div', 'ovx-key');
+    top.appendChild(key);
+    keyItems(fd, res).forEach(([head, items]) => {
+      const line = html('div', 'kline');
+      line.appendChild(html('span', 'kh', head));
+      items.forEach(([glyph, txt]) => {
+        const s = html('span', 'k');
+        s.appendChild(glyph);
+        s.appendChild(document.createTextNode(txt));
+        line.appendChild(s);
+      });
+      key.appendChild(line);
+    });
+    if (UI.layout)
+      key.appendChild(
+        html(
+          'p',
+          'ovx-note',
+          `Circle and overlap areas are proportional to the counts${err > 0.01 ? ` (largest misfit ${(err * 100).toFixed(1)}% of the total)` : ''}. Small regions are labelled outside, on a leader.`
+        )
+      );
+    const grid = html('div', 'ovx-grid');
+    fig.appendChild(grid);
+    const sc = sizeScale([...fd.terms.map((t) => t.n), ...fd.regs.map((r) => r.n)]),
+      L2 = fd.sitesU ? foldDomain(fd.regs) : 0;
+    const head = html('div', 'r head'),
+      h1 = html('div', 'c lab'),
+      h2 = html('div', 'c'),
+      h3 = html('div', 'c'),
+      h4 = html('div', 'c vals');
+    h2.style.flexDirection = h3.style.flexDirection = 'column';
+    h2.style.alignItems = h3.style.alignItems = 'stretch';
+    const ch = (a, b) => {
+      const s = html('span', 'colh', a);
+      if (b) {
+        s.appendChild(document.createTextNode(' '));
+        s.appendChild(html('span', 'muted', b));
+      }
+      return s;
+    };
+    h2.appendChild(ch(fd.sitesU ? 'Sites' : cap(unitWord(res.unit)), fd.sitesU ? '' : 'with sites / all'));
+    h3.appendChild(ch(!fd.tested ? 'Not tested here' : fd.sitesU ? 'Fold, log scale' : 'Share with sites', ''));
+    if (fd.tested) {
+      const hv = html('span', 'vals vh');
+      hv.appendChild(html('span', 'sh', fd.sitesU ? 'fold' : 'share'));
+      hv.appendChild(html('span', 'fo', fd.sitesU ? '' : 'fold'));
+      hv.appendChild(html('span', 'q', 'q'));
+      h4.appendChild(hv);
+    }
+    [h1, h2, h3, h4].forEach((c) => head.appendChild(c));
+    grid.appendChild(head);
+    const rows = [];
+    const group = (txt, sub) => {
+      const g = html('div', 'grp', txt + ' ');
+      g.appendChild(html('i', '', sub));
+      grid.appendChild(g);
+    };
+    const addRow = (rec, lab, isTerm) => {
+      const r = html('div', `r ${isTerm ? 'term-r' : 'data'}`),
+        c2 = html('div', 'c sz'),
+        c3 = html('div', 'c sh'),
+        c4 = valuesCell(rec, fd);
+      if (!isTerm) {
+        r.dataset.ovReg = String(rec.m);
+        lab.tabIndex = rec.m === (UI.sel || fd.regs[0]?.m) ? 0 : -1;
+        lab.setAttribute('role', 'button');
+        lab.setAttribute('aria-label', regAria(res, fd, rec));
+        if (rec.m === UI.sel) r.classList.add('sel');
+      }
+      [lab, c2, c3, c4].forEach((c) => r.appendChild(c));
+      if (isTerm) {
+        const t = html('div', 'phline top'),
+          n1 = html('span', 'nm1');
+        n1.appendChild(html('b', '', rec.L));
+        n1.appendChild(document.createTextNode(rec.name));
+        t.appendChild(n1);
+        grid.appendChild(t);
+      }
+      grid.appendChild(r);
+      grid.appendChild(phoneLine(rec, fd));
+      rows.push({ rec, c2, c3, r, lab });
+      return r;
+    };
+    group('Terms', '· every protein of each term');
+    fd.terms.forEach((t, i) => {
+      const lab = html('div', 'c lab'),
+        tm = html('span', 'term'),
+        sw = html('span', 'sw'),
+        nm = html('span', 'nm', t.name);
+      sw.style.background = `var(--ov${i + 1})`;
+      tm.appendChild(sw);
+      tm.appendChild(html('b', '', t.L));
+      nm.title = t.name;
+      tm.appendChild(nm);
+      lab.appendChild(tm);
+      if (phone) {
+        lab.textContent = '';
+        lab.appendChild(HTMLSvg(dotsSvg(t.m, nT)));
+      }
+      addRow({ ...t, sitesOnly: fd.sitesU }, lab, true);
+    });
+    group('Regions', `· ${unitWord(res.unit)} in exactly these terms, largest first`);
+    fd.regs.forEach((r) => {
+      const lab = html('div', 'c lab'),
+        rg = html('span', 'reg');
+      rg.appendChild(HTMLSvg(dotsSvg(r.m, nT)));
+      rg.appendChild(html('span', 'rl', regLabel(r.m, nT)));
+      lab.appendChild(rg);
+      addRow({ ...r, sitesOnly: fd.sitesU }, lab, false);
+    });
+    const w2 = rows[0].c2.clientWidth,
+      w3 = rows[0].c3.clientWidth;
+    sc.tip =
+      Math.ceil(
+        Math.max(
+          ...rows.map(({ rec }) => tw(fd.sitesU ? fmtInt(rec.n) : `${fmtInt(rec.k)} / ${fmtInt(rec.n)}`, 12, 600))
+        )
+      ) + 12;
+    {
+      const pw = (phone ? w2 : w2 - sc.tip) * (sc.brk < Infinity ? 0.86 : 1),
+        want = Math.max(2, Math.min(6, Math.floor(pw / 38)));
+      sc.ticks = niceTicks(sc.base, want);
+      sc.max = Math.max(sc.base, sc.ticks.at(-1));
+    }
+    h2.appendChild(axisSize(sc, w2, phone));
+    if (fd.tested) h3.appendChild(fd.sitesU ? axisFold(L2, w3) : axisShare(fd.base, w3));
+    rows.forEach(({ rec, c2, c3 }) => {
+      c2.appendChild(sizeCell(rec, sc, w2, phone));
+      if (fd.tested) c3.appendChild(fd.sitesU ? foldCell(rec, L2, w3, phone) : shareCell(rec, fd.base, w3, phone));
+    });
+    const f = html('div', 'foot');
+    footNotes(res, fd, sc, sc.brk < Infinity).forEach((t, i) => {
+      if (i) f.appendChild(document.createTextNode(' '));
+      f.appendChild(document.createTextNode(t));
+    });
+    const bigs = fd.regs.filter(broad);
+    if (bigs.length) {
+      f.appendChild(document.createTextNode(' '));
+      f.appendChild(
+        html(
+          'b',
+          '',
+          `${bigs.map((r) => regLabel(r.m, nT)).join(', ')}: a very large set, so a tiny p at a small fold (large set; small effect).`
+        )
+      );
+    }
+    fig.appendChild(f);
+    UI.rows = rows;
+    UI.sc = sc;
+    UI.phone = phone;
+  }
+  // an HTML wrapper for an SVG element (so a cell can hold it)
+  const HTMLSvg = (s) => s;
+  // hover: a row's wash, its region outlined in the glyph, and a tooltip with the values first
+  function setHover(m, row) {
+    if (!UI.fig || UI.hover === m) return;
+    UI.hover = m;
+    UI.rows.forEach((x) => x.r.classList.toggle('hover', !x.rec.term && x.rec.m === m));
+    if (UI.layout && UI.glyphHost) {
+      UI.glyphHost.textContent = '';
+      UI.glyphHost.appendChild(glyphSvg(UI.layout, UI.res.nT, { hover: m, sel: UI.sel }));
+    }
+    UI.tip?.remove();
+    UI.tip = null;
+    if (!m || !row || matchMedia?.('(hover: none)').matches) return;
+    const { res, fd } = UI,
+      rec = row.rec,
+      tip = html('div', 'tip'),
+      t1 = html('div', 't1');
+    t1.appendChild(html('b', '', regLabel(rec.m, res.nT)));
+    t1.appendChild(document.createTextNode(' · ' + regWords(res, rec.m)));
+    tip.appendChild(t1);
+    const ln = (keyCol, big, rest) => {
+      const l = html('div', 'ln'),
+        kk = html('span', 'key');
+      kk.style.borderColor = keyCol;
+      l.appendChild(kk);
+      l.appendChild(html('span', 'big', big));
+      l.appendChild(html('span', '', rest));
+      tip.appendChild(l);
+    };
+    if (fd.sitesU) ln('var(--ov-k)', fmtInt(rec.n), `sites on ${fmtInt(rec.proteins ?? 0)} proteins`);
+    else ln('var(--ov-k)', `${fmtInt(rec.k)} / ${fmtInt(rec.n)}`, `${unitWord(res.unit)} with sites`);
+    if (isTested(rec)) {
+      if (fd.sitesU) {
+        const [lo, hi] = woolf(rec.a, rec.b, rec.c, rec.d);
+        ln(
+          `var(--${dirOf(rec, 0, true) === 'ns' ? 'muted' : dirOf(rec, 0, true)})`,
+          foldFmt(rec.or ?? rec.fold),
+          `odds ratio · 95% interval ${lo.toFixed(2)}–${hi.toFixed(2)}`
+        );
+      } else {
+        const [lo, hi] = wilson(rec.k, rec.n);
+        ln(
+          `var(--${dirOf(rec, fd.base) === 'ns' ? 'muted' : dirOf(rec, fd.base)})`,
+          pct(rec.k / rec.n),
+          `with sites · 95% interval ${Math.round(lo * 100)}–${Math.round(hi * 100)}%`
+        );
+        tip.appendChild(
+          html('div', 'ln', `${foldFmt(rec.k / rec.n / fd.base, rec.k)} all reviewed proteins (${pct(fd.base)})`)
+        );
+      }
+      tip.appendChild(html('div', 'ln', `p ${fqf(rec.p)} · q ${fqf(rec.q)}`));
+    }
+    tip.appendChild(
+      html('div', 'hint', `${fmtInt(rec.sites ?? rec.n)} sites · click to list the ${unitWord(res.unit)}`)
+    );
+    UI.fig.appendChild(tip);
+    UI.tip = tip;
+    const fr = UI.fig.getBoundingClientRect(),
+      rr = row.c3.getBoundingClientRect();
+    tip.style.top = `${rr.bottom - fr.top + 6}px`;
+    tip.style.left = `${Math.max(8, Math.min(rr.left - fr.left + 40, fr.width - tip.offsetWidth - 8))}px`;
+  }
+  const rowOf = (target) => {
+    const r = target.closest?.('.ovx .r.data');
+    return r ? UI.rows.find((x) => x.r === r) : null;
+  };
+  document.addEventListener('mouseover', (e) => {
+    if (!UI.fig) return;
+    const row = rowOf(e.target);
+    setHover(row ? row.rec.m : 0, row);
+  });
+  document.addEventListener('focusin', (e) => {
+    if (!UI.fig) return;
+    const row = rowOf(e.target);
+    if (row) setHover(row.rec.m, row);
+  });
+  document.addEventListener('focusout', (e) => {
+    if (UI.fig && rowOf(e.target)) setHover(0, null);
+  });
+  // the glyph's regions are targets too
+  const glyphMask = (e) => {
+    const svg = e.target.closest?.('.ovx-glyph svg');
+    if (!svg || !UI.layout) return 0;
+    const b = svg.getBoundingClientRect(),
+      L = UI.layout;
+    return L.at(((e.clientX - b.left) / b.width) * L.vw + L.vx, ((e.clientY - b.top) / b.height) * L.vh + L.vy);
+  };
+  document.addEventListener('mousemove', (e) => {
+    if (!UI.fig || !e.target.closest?.('.ovx-glyph')) return;
+    const m = glyphMask(e),
+      row = UI.rows.find((x) => !x.rec.term && x.rec.m === m);
+    setHover(row ? m : 0, row || null);
+  });
+  document.addEventListener('click', (e) => {
+    if (!UI.fig || S.view !== 'overlap') return;
+    const m = glyphMask(e);
+    if (m && UI.rows.some((x) => !x.rec.term && x.rec.m === m))
+      set({ or: String(S.or) === String(m) ? '' : String(m) });
+  });
+  // arrows move between rows, Escape clears the selection
+  document.addEventListener('keydown', (e) => {
+    if (!UI.fig || S.view !== 'overlap') return;
+    const row = rowOf(e.target);
+    if (e.key === 'Escape' && S.or) return set({ or: '' });
+    if (!row || !['ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    const reg = UI.rows.filter((x) => !x.rec.term),
+      i = reg.indexOf(row) + (e.key === 'ArrowDown' ? 1 : -1),
+      to = reg[Math.max(0, Math.min(reg.length - 1, i))];
+    e.preventDefault();
+    reg.forEach((x) => (x.lab.tabIndex = x === to ? 0 : -1));
+    to.lab.focus();
+  });
+  // redraw when the figure's width changes
+  let ro = null,
+    lastW = 0;
+  function drawFigure() {
+    const host = document.getElementById('ov-fig');
+    ro?.disconnect();
+    UI.fig = null;
+    if (!host || S.view !== 'overlap' || !RES?.res || RES.res.ts.length < 2) return;
+    buildFigure(host, RES.res);
+    lastW = host.clientWidth;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => {
+        const w = host.clientWidth;
+        if (Math.abs(w - lastW) > 6 && S.view === 'overlap') {
+          lastW = w;
+          buildFigure(host, RES.res);
+        }
+      });
+      ro.observe(host);
+    }
+  }
+  (K.afterRender ||= []).push(drawFigure);
+
+  // -- the export: the same rows as one SVG at a fixed width, no hover or selection
+  const TOK = {
+    surface: '#ffffff',
+    ink: '#111827',
+    'ink-2': '#374151',
+    muted: '#5f6f78',
+    line: '#e0e8eb',
+    'line-strong': '#c7d4d9',
+    accent: '#c2410c',
+    more: '#b42318',
+    less: '#334155',
+    ov1: LIGHT[0],
+    ov2: LIGHT[1],
+    ov3: LIGHT[2],
+    ov4: LIGHT[3],
+    'ov-k': '#155e75',
+    'ov-n': '#94bac6',
+    'ov-ref': '#374151',
+    'ov-fill': '.16',
+  };
+  function exportBody(res, Wd = 900) {
+    const fd = figData(res),
+      nT = res.nT,
+      root = el('g', {}),
+      T = (x, y, s, o = {}) =>
+        root.appendChild(
+          el(
+            'text',
+            {
+              x,
+              y,
+              'font-size': o.size || 12,
+              fill: o.fill || 'var(--ink)',
+              ...(o.w ? { 'font-weight': o.w } : {}),
+              ...(o.anchor ? { 'text-anchor': o.anchor } : {}),
+            },
+            [s]
+          )
+        );
+    let y = 0,
+      gw = 0;
+    const sizes = fd.terms.map((t) => t.n);
+    if (nT <= 3 && sizes.every((n) => n > 0)) {
+      const L = glyphLayout(
+          sizes,
+          res.rows.filter((r) => r.mask).map((r) => ({ m: r.mask, n: r.n })),
+          { w: 300, h: 210 }
+        ),
+        g = glyphSvg(L, nT, {});
+      g.setAttribute('x', 0);
+      g.setAttribute('y', 0);
+      root.appendChild(g);
+      gw = L.vw + 28;
+      y = L.vh;
+    }
+    let ky = 12,
+      kx = gw;
+    keyItems(fd, res).forEach(([head, items]) => {
+      T(gw, ky, head.toUpperCase(), { size: 10, fill: 'var(--muted)' });
+      ky += 16;
+      kx = gw;
+      items.forEach(([glyph, txt]) => {
+        const w = tw(txt, 12, 400) + 30;
+        if (kx > gw && kx + w > Wd) {
+          kx = gw;
+          ky += 16;
+        }
+        glyph.setAttribute('x', kx);
+        glyph.setAttribute('y', ky - 9);
+        root.appendChild(glyph);
+        T(kx + 24, ky, txt, { fill: 'var(--ink-2)' });
+        kx += w + 8;
+      });
+      ky += 22;
+    });
+    y = Math.max(y, ky) + 8;
+    const cols = { lab: 200, a: 230, b: 240, v: 188, gap: 14 },
+      xa = cols.lab + cols.gap,
+      xb = xa + cols.a + cols.gap,
+      xv = xb + cols.b + cols.gap,
+      sc = sizeScale([...fd.terms.map((t) => t.n), ...fd.regs.map((r) => r.n)]),
+      L2 = fd.sitesU ? foldDomain(fd.regs) : 0;
+    sc.tip =
+      Math.ceil(
+        Math.max(
+          ...[...fd.terms, ...fd.regs].map((r) =>
+            tw(fd.sitesU ? fmtInt(r.n) : `${fmtInt(r.k)} / ${fmtInt(r.n)}`, 12, 600)
+          )
+        )
+      ) + 12;
+    sc.ticks = niceTicks(
+      sc.base,
+      Math.max(2, Math.min(6, Math.floor(((cols.a - sc.tip) * (sc.brk < Infinity ? 0.86 : 1)) / 38)))
+    );
+    sc.max = Math.max(sc.base, sc.ticks.at(-1));
+    const place = (node, x, yy) => {
+      node.setAttribute('x', x);
+      node.setAttribute('y', yy);
+      root.appendChild(node);
+    };
+    T(xa, y + 10, fd.sitesU ? 'Sites' : cap(unitWord(res.unit)), { w: 600, fill: 'var(--ink-2)' });
+    if (fd.tested) T(xb, y + 10, fd.sitesU ? 'Fold, log scale' : 'Share with sites', { w: 600, fill: 'var(--ink-2)' });
+    if (fd.tested) {
+      T(xv, y + 10, fd.sitesU ? 'fold' : 'share', { size: 11, fill: 'var(--muted)' });
+      if (!fd.sitesU) T(xv + 62, y + 10, 'fold', { size: 11, fill: 'var(--muted)' });
+      T(xv + 116, y + 10, 'q', { size: 11, fill: 'var(--muted)' });
+    }
+    y += 14;
+    place(axisSize(sc, cols.a, false), xa, y);
+    if (fd.tested) place(fd.sitesU ? axisFold(L2, cols.b) : axisShare(fd.base, cols.b), xb, y);
+    y += 22;
+    const row = (rec, isTerm) => {
+      if (isTerm) {
+        root.appendChild(el('rect', { x: 0, y: y + 9, width: 11, height: 11, rx: 3, fill: `var(--ov${rec.i + 1})` }));
+        T(18, y + 19, rec.L, { w: 700 });
+        let nm = rec.name;
+        while (nm.length > 3 && tw(nm, 13, 400) > cols.lab - 38) nm = nm.slice(0, -2);
+        T(32, y + 19, nm === rec.name ? nm : nm + '…', { size: 13 });
+      } else {
+        place(dotsSvg(rec.m, nT), 0, y + 5);
+        T(12 + (nT - 1) * 16 + 10, y + 19, regLabel(rec.m, nT), { fill: 'var(--ink-2)' });
+      }
+      place(sizeCell({ ...rec, sitesOnly: fd.sitesU }, sc, cols.a, false), xa, y);
+      if (fd.tested)
+        place(fd.sitesU ? foldCell(rec, L2, cols.b, false) : shareCell(rec, fd.base, cols.b, false), xb, y);
+      if (fd.tested) {
+        if (isTested(rec)) {
+          T(xv + 48, y + 19, fd.sitesU ? foldFmt(rec.or ?? rec.fold) : pct(rec.k / rec.n), { w: 650, anchor: 'end' });
+          if (!fd.sitesU)
+            T(xv + 110, y + 19, foldFmt(rec.k / rec.n / fd.base, rec.k), { fill: 'var(--ink-2)', anchor: 'end' });
+          T(xv + 116, y + 19, 'q ' + fqf(rec.q), { fill: 'var(--muted)' });
+        } else
+          T(xv, y + 19, `${fd.sitesU ? '' : `${rec.k} of `}${rec.n} · not tested (n < ${MIN_N})`, {
+            fill: 'var(--muted)',
+          });
+      }
+      y += 30;
+    };
+    const grp = (a, b) => {
+      T(0, y + 14, a.toUpperCase(), { size: 10.5, fill: 'var(--muted)' });
+      T(tw(a.toUpperCase(), 10.5, 400) + 8, y + 14, b, { size: 11, fill: 'var(--muted)' });
+      root.appendChild(el('line', { x1: 0, x2: Wd, y1: y + 20, y2: y + 20, stroke: 'var(--line)', 'stroke-width': 1 }));
+      y += 24;
+    };
+    grp('Terms', '· every protein of each term');
+    fd.terms.forEach((t) => row({ ...t, term: true }, true));
+    grp('Regions', `· ${unitWord(res.unit)} in exactly these terms, largest first`);
+    fd.regs.forEach((r) => row(r, false));
+    const str = new XMLSerializer()
+      .serializeToString(root)
+      .replace(/ xmlns="[^"]*"/g, '')
+      .replace(/var\(--([a-z0-9-]+)\)/g, (m, n) => TOK[n] ?? m);
+    return {
+      svg: str,
+      h: Math.ceil(y) + 4,
+      notes: footNotes(res, fd, sc, sc.brk < Infinity),
+      bigs: fd.regs.filter(broad).map((r) => regLabel(r.m, nT)),
+    };
+  }
 
   // ---- the page ---------------------------------------------------------------------------------------------------------------
   const trail = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <b>Overlap</b></p>`;
@@ -632,14 +1833,6 @@
     );
   }
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-  function legendHtml(res) {
-    return `<ul class="ov-legend">${res.ts
-      .map(
-        (t, i) =>
-          `<li>${SWATCH(i)}<b>${LETTERS[i]}</b> ${esc(t.label)} <span class="muted">${int(t.n)} proteins</span></li>`
-      )
-      .join('')}</ul>`;
-  }
   // a region's list
   function regionHtml(res) {
     const k = +S.or;
@@ -735,19 +1928,7 @@
       C.units.length > 1
         ? `<div class="ov-unit" role="group" aria-label="What is overlapped">${C.units.map((x) => `<button type="button" class="btn small${S.ou === x ? ' on' : ''}" aria-pressed="${S.ou === x}" data-ov-unit="${x}">${UNITS[x]}</button>`).join('')}</div>`
         : '';
-    const v =
-      res && res.nT >= 2
-        ? `<div class="ov-unit" role="group" aria-label="Display">${[
-            ['venn', 'Diagram'],
-            ['upset', 'Bars'],
-          ]
-            .map(
-              ([k, t]) =>
-                `<button type="button" class="btn small${(useVenn(res) ? 'venn' : 'upset') === k ? ' on' : ''}" aria-pressed="${(useVenn(res) ? 'venn' : 'upset') === k}" data-ov-view="${k}"${k === 'venn' && res.nT > 3 ? ' disabled' : ''}>${t}</button>`
-            )
-            .join('')}</div>`
-        : '';
-    return `<div class="ov-ctl">${u}${v}</div>`;
+    return `<div class="ov-ctl">${u}</div>`;
   }
   let loadedFor = '';
   function view() {
@@ -787,29 +1968,12 @@
     const res = RES.res;
     if (res.ts.length < 2)
       return head + pickerHtml() + '<p>A chosen term is not in this dataset; remove it and choose another.</p>';
-    const d = draw(res, PAGE);
-    const note =
-      (res.partial
-        ? '<p class="gl-note">Only the proteins with sites are known for these terms here, so no test is made.</p>'
-        : '') +
-      (res.unit === 'sites' && !res.test
-        ? `<p class="gl-note">No test: ${res.partial ? 'the sets of every protein are not in this copy' : 'a term is a property of sites, and the comparison residues are not known for several features at once'}. Counts only.</p>`
-        : '') +
-      (res.unit === 'sites' && res.test ? `<p class="gl-note">${esc(TESTS.sites)}</p>` : '') +
-      (res.unit !== 'sites' && res.test
-        ? `<p class="gl-note">${esc(TESTS.proteins)} ${int(res.M)} of ${int(res.N)} reviewed proteins (${((100 * res.M) / res.N).toFixed(1)}%) have sites.${res.unit !== 'proteins' ? ` The ${unitWord(res.unit)} are those of the site’s own definitions; the test is still against all reviewed proteins.` : ''}</p>`
-        : '') +
-      (useVenn(res) && res.nT === 3
-        ? '<p class="muted">Circle areas are proportional to the sizes; the triple overlap is approximate. The table has the exact counts.</p>'
-        : '');
     return (
       head +
       pickerHtml() +
       controls(res) +
-      legendHtml(res) +
-      `<figure class="ov-fig"><div class="ov-svg" id="ov-fig"><svg viewBox="0 0 ${d.w} ${d.h}" width="100%" role="img" aria-label="${esc(`Overlap of ${res.ts.map((t) => t.label).join(', ')}; the table below has the counts`)}" font-family="inherit">${d.svg}</svg></div></figure>` +
+      `<div id="ov-fig" class="ov-figwrap"></div>` +
       `<div class="exp-row">${K.expBar(['svg', 'png', 'tsv'], 'ovexp', 'the overlap figure', '')}</div>` +
-      note +
       regionHtml(res) +
       '<h3>Table</h3>' +
       tableHtml(res)
@@ -825,41 +1989,72 @@
   // ---- export ----------------------------------------------------------------------------------------------------------------
   function figure() {
     const res = RES.res,
-      d = draw(res, EXPORT);
-    const sub = `Overlap of ${res.ts.map((t, i) => `${LETTERS[i]} ${t.label} (${int(t.n)} proteins)`).join('; ')}. Unit: ${unitWord(res.unit)}.`;
-    const note =
-      (res.test ? (res.unit === 'sites' ? TESTS.sites : TESTS.proteins) : 'Counts only; no test.') +
-      (citeFor(res.ts.map((t) => t.id)) ? ` ${citeFor(res.ts.map((t) => t.id))}` : '');
+      b = exportBody(res, 900),
+      cite = citeFor(res.ts.map((t) => t.id));
     return K.figureFrame({
       title: `Overlap of ${res.nT} terms`,
-      sub,
-      legend: res.ts.map((t, i) => [EXPORT.c(i), EXPORT.c(i), `${LETTERS[i]} ${t.label}`]),
-      body: d.svg,
-      bodyH: d.h,
-      note,
+      sub: `${res.ts.map((t, i) => `${LETTERS[i]} ${t.label} (${int(t.n)} ${unitWord(res.unit)})`).join('; ')}. Unit: ${unitWord(res.unit)}.`,
+      legend: [],
+      body: b.svg,
+      bodyH: b.h,
+      W: 940,
+      note: [...b.notes, ...(b.bigs.length ? [`${b.bigs.join(', ')}: large set; small effect.`] : []), cite]
+        .filter(Boolean)
+        .join(' '),
       extra: { terms: S.ot, unit: res.unit },
     });
   }
   function tsv(res = RES.res) {
     const sites = res.unit === 'sites',
-      rows = res.rows.filter((r) => r.mask && r.n).sort((a, b) => b.n - a.n);
+      fd = figData(res),
+      rows = fd.regs;
     const head = sites
-      ? ['region', 'terms', 'sites', 'proteins', 'fold', 'p', 'q']
-      : ['region', 'terms', res.unit, 'with_sites', 'share_with_sites', 'fold', 'p', 'q', 'sites'];
+      ? ['region', 'terms', 'sites', 'proteins', 'fold', 'ci95_lo', 'ci95_hi', 'p', 'q', 'tested']
+      : [
+          'region',
+          'terms',
+          res.unit,
+          'with_sites',
+          'share_with_sites',
+          'ci95_lo',
+          'ci95_hi',
+          'fold',
+          'p',
+          'q',
+          'tested',
+          'sites',
+        ];
     const g = (v) => (v == null ? '' : K.g6(v));
-    const line = (r, name, words) =>
-      (sites
-        ? [name, words, r.n, r.proteins ?? '', g(r.fold), g(r.p), g(r.q)]
-        : [name, words, r.n, r.k, r.n ? g(r.k / r.n) : '', g(r.fold), g(r.p), g(r.q), r.sites ?? '']
+    const line = (r, name, words) => {
+      const ci = sites ? (r.a != null ? woolf(r.a, r.b, r.c, r.d) : []) : r.n ? wilson(r.k, r.n) : [],
+        t = isTested(r) ? 1 : 0;
+      return (
+        sites
+          ? [name, words, r.n, r.proteins ?? '', g(r.fold), g(ci[0]), g(ci[1]), g(r.p), g(r.q), t]
+          : [
+              name,
+              words,
+              r.n,
+              r.k,
+              r.n ? g(r.k / r.n) : '',
+              g(ci[0]),
+              g(ci[1]),
+              g(r.fold),
+              g(r.p),
+              g(r.q),
+              t,
+              r.sites ?? '',
+            ]
       ).join('\t');
+    };
     return (
       K.preamble(
         'overlap of terms',
-        `${res.ts.map((t, i) => `${LETTERS[i]} = ${t.label}`).join('; ')}; unit ${res.unit}. ${res.test ? (sites ? TESTS.sites : TESTS.proteins) : 'Counts only; no test.'}${res.N ? ` ${res.M} of ${res.N} reviewed proteins have sites.` : ''}${citeFor(res.ts.map((t) => t.id)) ? ` ${citeFor(res.ts.map((t) => t.id))}` : ''}`
+        `${res.ts.map((t, i) => `${LETTERS[i]} = ${t.label}`).join('; ')}; unit ${res.unit}. ${res.test ? (sites ? TESTS.sites : TESTS.proteins) : 'Counts only; no test.'} Regions under ${MIN_N} are counted, not tested (tested = 0). ci95: Wilson interval of the share with sites${sites ? ' (for sites: Woolf interval of the odds ratio)' : ''}.${res.N ? ` ${res.M} of ${res.N} reviewed proteins have sites.` : ''}${citeFor(res.ts.map((t) => t.id)) ? ` ${citeFor(res.ts.map((t) => t.id))}` : ''}`
       ) +
       head.join('\t') +
       '\n' +
-      rows.map((r) => line(r, regionLetters(r.mask, res.nT), regionWords(res, r.mask))).join('\n') +
+      rows.map((r) => line(r, regionLetters(r.m, res.nT), regionWords(res, r.m))).join('\n') +
       '\n' +
       (!sites ? res.totals.map((r) => line(r, `all of ${LETTERS[r.i]}`, res.ts[r.i].label)).join('\n') + '\n' : '')
     );
@@ -898,7 +2093,6 @@
     ['[data-ov-add]', (el) => add(el.dataset.ovAdd)],
     ['[data-ov-del]', (el) => set({ ot: S.ot.filter((_, i) => i !== +el.dataset.ovDel), or: '' })],
     ['[data-ov-unit]', (el) => set({ ou: el.dataset.ovUnit, or: '' })],
-    ['[data-ov-view]', (el) => set({ ov: el.dataset.ovView })],
     ['[data-ov-reg]', (el) => set({ or: String(S.or) === String(el.dataset.ovReg) ? '' : String(el.dataset.ovReg) })],
     ['[data-ov-close]', () => set({ or: '' })],
     [
@@ -930,7 +2124,7 @@
       '[data-ovexp]',
       (btn) => K.exportFigure(btn.dataset.ovexp, figure, `${D.site.id || 'site'}_overlap`, btn, () => tsv()),
     ],
-    ['[data-ov-compare]', (el) => K.go('overlap', { ot: [el.dataset.ovCompare], ou: 'proteins', or: '', ov: 'auto' })]
+    ['[data-ov-compare]', (el) => K.go('overlap', { ot: [el.dataset.ovCompare], ou: 'proteins', or: '' })]
   );
 
   // a "Compare with…" button on the rows of the protein-set questions
@@ -968,7 +2162,22 @@
   );
   K.overlap = {
     tableHtml,
-    core: { regions, proteinTest, siteTest, bhAll, settle, lens, distance, MIN_N },
+    exportBody,
+    core: {
+      regions,
+      proteinTest,
+      siteTest,
+      bhAll,
+      settle,
+      wilson,
+      woolf,
+      euler,
+      glyphLayout,
+      sizeScale,
+      niceTicks,
+      lens,
+      MIN_N,
+    },
     resolve,
     compute,
     tsv,

@@ -158,11 +158,18 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
       const r2 = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'proteins', 1);
       const r3 = await K.overlap.compute(['s:onto:D1', 's:onto:D2', 's:term:T3'], 'proteins', 1);
       const rx = await K.overlap.compute(['x:proc:G1', 's:onto:D3'], 'proteins', 1);
+      const core = K.overlap.core;
+      const wil = [[0, 5], [3, 3], [7, 26], [89, 133], [3429, 13447], [1, 1]].map(([k, n]) => core.wilson(k, n));
+      const REG = [[2, 158], [1, 129], [4, 26], [5, 3], [3, 1]].map(([m, n]) => ({ m, n }));
+      const eu = core.glyphLayout([133, 159, 29], REG, { w: 300, h: 210 });
+      const eu2 = core.glyphLayout([5, 4], [{ m: 1, n: 3 }, { m: 2, n: 2 }, { m: 3, n: 2 }], { w: 300, h: 210 });
+      const boxes = eu.boxes.map(b => [b.x, b.y, b.x + b.w, b.y + b.h]);
+      const sc = core.sizeScale([13680, 13447, 159, 133, 129, 112, 46, 26, 3, 1]);
       const rs = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'sites', 1);
       const rr = await K.overlap.compute(['s:onto:D1', 'f:readers:Madeup'], 'readers', 1);
       const rd = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'proteins');
       const strip = r => ({ ts: r.ts.map(t => t.id), rows: r.rows, totals: r.totals, N: r.N, M: r.M, test: r.test });
-      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), rd: strip(rd), rx: strip(rx), tables: [r2, rs, rx].map(r => K.overlap.tableHtml(r)), tsvx: K.overlap.tsv(rx), tsv: K.overlap.tsv(r2) }));
+      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), wil, err3: eu.err, err2: eu2.err, boxes, cutBrk: sc.brk, cutMax: sc.max, nLabels: eu.labels.length, rd: strip(rd), rx: strip(rx), tables: [r2, rs, rx].map(r => K.overlap.tableHtml(r)), tsvx: K.overlap.tsv(rx), tsv: K.overlap.tsv(r2) }));
     """
     run = subprocess.run(
         ['node', '-e', head + harness + '(async () => {' + body + '})();'], capture_output=True, text=True
@@ -213,3 +220,15 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
     for html in j['tables']:
         assert 'undefined' not in html and html.count('<tr') >= 3
         assert html.count('<th scope="row">') >= 2
+    # the Wilson whisker equals the Python function; the 3-term glyph is fitted (misfit under 1%) with no overlapping label boxes
+    for lo_hi, (k, n) in zip(j['wil'], [(0, 5), (3, 3), (7, 26), (89, 133), (3429, 13447), (1, 1)]):
+        lo, hi = ptmstats.wilson_interval(k, n)
+        assert lo_hi[0] == pytest.approx(lo, abs=1e-12) and lo_hi[1] == pytest.approx(hi, abs=1e-12)
+    assert j['err3'] < 0.01 and j['nLabels'] == 5
+    bx = j['boxes']
+    assert all(
+        not (a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]) for i, a in enumerate(bx) for b in bx[i + 1 :]
+    )
+    assert j['cutBrk'] == 13447 and j['cutMax'] < 200  # one huge value cuts the axis
+    # the columns the export adds
+    assert 'ci95_lo\tci95_hi' in j['tsv'] and j['tsv'].split('\n')[-3].count('\t') >= 9
