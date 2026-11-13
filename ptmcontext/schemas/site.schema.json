@@ -2382,6 +2382,28 @@
                 }
               }
             },
+            "lead": {
+              "type": "string",
+              "description": "the one line under the heading (default: the first sentence of `about`, which is given in full under \"How this network is made\")"
+            },
+            "controls": {
+              "type": "array",
+              "description": "the controls in the main row; the others are under \"More options\", closed. On a phone all are under it",
+              "items": {
+                "enum": [
+                  "label",
+                  "clusters",
+                  "colour",
+                  "find",
+                  "score",
+                  "top",
+                  "minc",
+                  "sources",
+                  "preset",
+                  "claim"
+                ]
+              }
+            },
             "claim": {
               "type": "string",
               "description": "the exported figure's title, with {n} for the number of clusters (the reader can change it)"

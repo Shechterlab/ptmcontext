@@ -502,7 +502,7 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
         f'{len(edges):,} edges in all ({n2 / 1e6:.1f} MB)'
     )
     shown = [x for x in view['labels'] if x['n'] >= opt['min_cluster']][: opt['max_clusters']]
-    keys = ('title', 'about', 'tile', 'claim')
+    keys = ('title', 'about', 'lead', 'controls', 'tile', 'claim')
     return {
         **{k: cfg[k] for k in keys if cfg.get(k)},
         'files': {'view': 'data/network.json', 'full': 'data/network_full.json'},

@@ -20,7 +20,9 @@
   phone gets its own portrait layout with numbered badges and a list. A Clusters menu asks for a number of clusters. A GO term
   must also annotate at most 1,500 proteins of the proteome to name a cluster. The exports (slide, or paper at 180 mm)
   carry a title that is a claim, one sentence, a key and a short credit; commit, file names and address stay in the file's
-  metadata. Cluster slot 6 is now a brown.
+  metadata. Cluster slot 6 is now a brown. The controls are one row (Clusters, Colour by, Find a gene, the buttons and the
+  downloads) with the others under More options, closed; the summary and the key share one line above the figure, so that
+  the figure starts on the first screen of a laptop.
 
 ## 0.3.1 (2026-11-13)
 

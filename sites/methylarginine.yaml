@@ -2008,6 +2008,8 @@ website:                  # the look and words of the website (ptmc web); layout
     min_cluster: 5
     cluster: louvain
     clusters: {default: auto, min: 4, max: 16}   # the page's Clusters menu: auto (Louvain at its default resolution) or a target number
+    lead: "Methylated proteins joined by physical links and complexes, grouped into clusters named by GO biological process."   # the one line under the heading; the full `about` is under "How this network is made"
+    controls: [clusters, colour, find]   # the main row (others under More options): label, clusters, colour, find, score, top, minc, sources, preset, claim
     claim: "Methylated proteins form {n} functional clusters"   # the exported figure's title
     color_by:
       - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}

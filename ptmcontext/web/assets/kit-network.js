@@ -85,6 +85,7 @@
     preset: 'screen',
     claim: '',
     zc: -1,
+    more: false,
   };
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || '{}');
@@ -466,21 +467,15 @@
           `<circle cx="${9 + n * 26}" cy="11" r="${(Math.min(9, 2.6 + 0.95 * Math.sqrt(s)) * k).toFixed(1)}" fill="none" stroke="var(--muted)"/>`
       )
       .join('')}</svg>`;
-  function keyHtml(M, CL, L) {
+  function keyHtml(M, CL, L, sum) {
     const sp = colourSpec(M),
       sw = (col) => `<i class="nw-sw" style="background:${col}"></i>`,
       phone = L && L.variant === 'phone';
     const bits = [
-      `<span class="nw-kg"><span class="nw-sub">${esc(W.marks)} per protein</span>${sizeKey(phone ? 0.6 : 1)}<span>5 · 20 · 40+</span></span>`,
+      `<span class="nw-kg">${sizeKey(phone ? 0.6 : 1)}<span>${esc(W.marks)}: 5 · 20 · 40+</span></span>`,
       `<span class="nw-kg"><svg width="26" height="10" aria-hidden="true"><line x1="1" y1="5" x2="25" y2="5" stroke="var(--nw-1)" stroke-opacity="0.6"/></svg><span>Link in a cluster</span></span>`,
-      `<span class="nw-kg"><svg width="26" height="12" aria-hidden="true"><line x1="3" y1="6" x2="23" y2="6" stroke="var(--nw-edge-x)" stroke-opacity="0.35" stroke-width="6" stroke-linecap="round"/></svg><span>Links between clusters (width: how many)</span></span>`,
+      `<span class="nw-kg"><svg width="26" height="12" aria-hidden="true"><line x1="3" y1="6" x2="23" y2="6" stroke="var(--nw-edge-x)" stroke-opacity="0.35" stroke-width="6" stroke-linecap="round"/></svg><span>Links between clusters</span></span>`,
     ];
-    SRC.forEach((s, i) => {
-      const on = UI.src.includes(i);
-      bits.push(
-        `<label class="nw-kg nw-src"><input type="checkbox" data-nw-src="${i}"${on ? ' checked' : ''} aria-label="Use ${esc(s.label)}"><span>${esc(s.label)}${s.kind === 'pairs' ? ` (score ${UI.score / 1000} or more)` : ''}</span></label>`
-      );
-    });
     if (sp && sp.kind === 'sequential')
       bits.push(
         `<span class="nw-kg"><span class="nw-sub">${esc(sp.name)}</span><span class="nw-ramp nw-ramp-s" aria-hidden="true"></span><span class="nw-sub">0% to 100%; grey: no value</span></span>`
@@ -491,10 +486,7 @@
         `<span class="nw-kg"><span class="nw-sub">${esc(sp.name)}</span>${cats.map((c, n) => `<span class="nw-kg">${sw(c === 'Other' ? 'var(--nw-other)' : catVar(n))}${esc(c)}</span>`).join('')}<span class="nw-kg">${sw('var(--nw-other)')}No value</span></span>`
       );
     }
-    bits.push(
-      `<span class="nw-kg nw-sub">Clusters: ${UI.colour === 'cluster' ? 'colour and name' : 'region and name'}, named by ${esc(NC.labels[UI.label]?.label || 'the annotation')}</span>`
-    );
-    return `<div class="nw-key" aria-label="Key">${bits.join('')}</div>`;
+    return `<div class="nw-key" aria-label="Key"><span class="nw-sum" role="status">${sum}</span>${bits.join('')}</div>`;
   }
   // a phone names the clusters in a list under the figure: badge, short name, proteins; a tap lights the cluster, a second zooms
   function listHtml(CL) {
@@ -548,6 +540,7 @@
       L = NC.labels[UI.label] || NC.labels[0] || {},
       lab = L.label || '';
     const bits = [
+      ...(NC.about ? [NC.about] : []),
       `Nodes are the proteins with ${W.marks}; the area of a node follows its number of ${W.marks}. By default the ${int(OPT.top)} proteins with the most ${W.marks} are taken (the number can be changed), and proteins left with no link among them are dropped. With a selection, the network is the selected proteins' (the same limit applies).`,
       p
         ? `Two proteins are joined when ${p.label} links them with a score of ${OPT.min_score / 1000} or more${g.length ? `, or when ${g.map((x) => x.label).join(' and ')} puts them in one ${g.length === 1 ? 'group' : 'of its groups'}` : ''}${g.length ? ` (groups of more than ${int(g[0].max_size)} proteins are left out)` : ''}. Each source can be switched off.`
@@ -574,58 +567,80 @@
       .map(([v, t]) => `<option value="${esc(v)}"${String(v) === String(val) ? ' selected' : ''}>${esc(t)}</option>`)
       .join('')}</select></label>`;
   const claimOf = (n) => String(NC.claim || `The proteins with ${W.marks} form {n} clusters`).replace('{n}', n);
+  // every control by id; the site file's `controls` lists the ones in the main row, the rest are under "More options"
+  const CONTROL_ORDER = ['clusters', 'colour', 'find', 'label', 'score', 'top', 'minc', 'sources', 'preset', 'claim'];
   const controls = (CL) => {
     const counts = [];
     for (let v = CR[0]; v <= CR[1]; v += Math.max(1, CR[2])) counts.push([v, v]);
+    const built = {
+      label: () =>
+        NC.labels.length > 1
+          ? sel(
+              'label',
+              'Name clusters by',
+              NC.labels.map((l, i) => [i, l.label]),
+              UI.label
+            )
+          : '',
+      clusters: () => sel('clusters', 'Clusters', [['auto', 'Auto'], ...counts], UI.clusters || 'auto'),
+      colour: () => sel('colour', 'Colour by', [['cluster', 'Cluster'], ...CB.map((c) => [c.id, c.name])], UI.colour),
+      score: () =>
+        SRC.some((s) => s.kind === 'pairs')
+          ? sel(
+              'score',
+              `${SRC.find((s) => s.kind === 'pairs').label}, score`,
+              OPT.steps.map((v) => [v, `${v / 1000} or more`]),
+              UI.score
+            )
+          : '',
+      top: () =>
+        sel(
+          'top',
+          'Proteins (most sites)',
+          [...new Set([100, 150, 200, 300, 500, OPT.top])].sort((a, b) => a - b).map((v) => [v, int(v)]),
+          UI.top
+        ),
+      minc: () =>
+        sel(
+          'minc',
+          'Smallest cluster',
+          [...new Set([3, 5, 8, 10, 15, OPT.min_cluster])].sort((a, b) => a - b).map((v) => [v, v]),
+          UI.minc
+        ),
+      find: () =>
+        `<form class="nw-f nw-find" data-nw-find><span>Find a gene</span><input type="search" name="g" value="${esc(UI.find)}" placeholder="${esc(EG ? 'e.g. ' + EG : 'Gene')}" list="nw-genes" autocomplete="off" aria-label="Gene to highlight"></form>`,
+      sources: () =>
+        `<fieldset class="nw-f nw-srcs"><legend>Links from</legend>${SRC.map(
+          (s, i) =>
+            `<label class="nw-kg nw-src"><input type="checkbox" data-nw-src="${i}"${UI.src.includes(i) ? ' checked' : ''} aria-label="Use ${esc(s.label)}"><span>${esc(s.label)}${s.kind === 'pairs' ? ` (score ${UI.score / 1000} or more)` : ''}</span></label>`
+        ).join('')}</fieldset>`,
+      preset: () =>
+        sel(
+          'preset',
+          'Export size',
+          [
+            ['screen', 'Slide (960 wide)'],
+            ['paper', 'Paper (180 mm, 300 dpi)'],
+          ],
+          UI.preset
+        ),
+      claim: () =>
+        `<label class="nw-f nw-claim"><span>Export title</span><input type="text" data-nw-claim value="${esc(UI.claim)}" placeholder="${esc(claimOf(CL ? CL.nShown : 'N'))}" aria-label="Title of the exported figure"></label>`,
+    };
+    const want = new Set(NC.controls || ['clusters', 'colour', 'find']),
+      phone = phoneNow(),
+      main = phone ? [] : CONTROL_ORDER.filter((id) => want.has(id)),
+      rest = CONTROL_ORDER.filter((id) => !main.includes(id));
+    const html = (ids) => ids.map((id) => built[id]()).join('');
     return (
-      `<div class="nw-bar" role="group" aria-label="Network options">` +
-      (NC.labels.length > 1
-        ? sel(
-            'label',
-            'Name clusters by',
-            NC.labels.map((l, i) => [i, l.label]),
-            UI.label
-          )
-        : '') +
-      sel('clusters', 'Clusters', [['auto', 'Auto'], ...counts], UI.clusters || 'auto') +
-      sel('colour', 'Colour by', [['cluster', 'Cluster'], ...CB.map((c) => [c.id, c.name])], UI.colour) +
-      (SRC.some((s) => s.kind === 'pairs')
-        ? sel(
-            'score',
-            `${SRC.find((s) => s.kind === 'pairs').label}, score`,
-            OPT.steps.map((v) => [v, `${v / 1000} or more`]),
-            UI.score
-          )
-        : '') +
-      sel(
-        'top',
-        'Proteins (most sites)',
-        [...new Set([100, 150, 200, 300, 500, OPT.top])].sort((a, b) => a - b).map((v) => [v, int(v)]),
-        UI.top
-      ) +
-      sel(
-        'minc',
-        'Smallest cluster',
-        [...new Set([3, 5, 8, 10, 15, OPT.min_cluster])].sort((a, b) => a - b).map((v) => [v, v]),
-        UI.minc
-      ) +
-      `<form class="nw-f nw-find" data-nw-find><span>Find a gene</span><input type="search" name="g" value="${esc(UI.find)}" placeholder="${esc(EG ? 'e.g. ' + EG : 'Gene')}" list="nw-genes" autocomplete="off" aria-label="Gene to highlight"></form>` +
+      `<div class="nw-bar nw-row" role="group" aria-label="Network options">${html(main)}` +
       `<div class="nw-btns"><button type="button" class="btn small" data-nw-view="${UI.mode === 'network' ? 'table' : 'network'}">${UI.mode === 'network' ? 'Table view' : 'Network view'}</button>` +
-      (UI.mode === 'network' && !phoneNow()
+      (UI.mode === 'network' && !phone
         ? `<button type="button" class="btn small" data-nw-zoom="-1" aria-label="Zoom out"${UI.zoom <= 1 ? ' disabled' : ''}>−</button><button type="button" class="btn small" data-nw-zoom="1" aria-label="Zoom in"${UI.zoom >= 3 ? ' disabled' : ''}>+</button>`
         : '') +
-      `<button type="button" class="btn small" data-nw-reset>Reset</button></div></div>` +
-      `<div class="nw-bar nw-bar2" role="group" aria-label="Export options">` +
-      sel(
-        'preset',
-        'Export size',
-        [
-          ['screen', 'Slide (960 wide)'],
-          ['paper', 'Paper (180 mm, 300 dpi)'],
-        ],
-        UI.preset
-      ) +
-      `<label class="nw-f nw-claim"><span>Export title</span><input type="text" data-nw-claim value="${esc(UI.claim)}" placeholder="${esc(claimOf(CL ? CL.nShown : 'N'))}" aria-label="Title of the exported figure"></label></div>`
+      `<button type="button" class="btn small" data-nw-reset>Reset</button>` +
+      `${K.expBar(['svg', 'png', 'tsv'], 'nwexp', 'the network')}</div></div>` +
+      `<details class="nw-more"${UI.more ? ' open' : ''}><summary>More options</summary><div class="nw-bar" role="group" aria-label="More network options">${html(rest)}</div></details>`
     );
   };
   let curL = null;
@@ -647,10 +662,9 @@
       `<svg class="nw-svg" data-w="${L.w}" data-h="${L.h}" viewBox="0 0 ${L.w} ${L.h}" style="width:${phoneNow() ? 100 : UI.zoom * 100}%" role="img" aria-label="${esc(finding)}">${s.svg}</svg></div>`
     );
   }
+  const leadOf = () => NC.lead || String(NC.about || '').split(/(?<=[.!?])\s/)[0];
   function view() {
-    const head =
-      `<div class="page-head results-head"><div><h2>${esc(TITLE)}</h2><p class="cx">${esc(NC.about || '')}</p></div>` +
-      `<div class="nw-exp">${K.expBar(['svg', 'png', 'tsv'], 'nwexp', 'the network')}</div></div>`;
+    const head = `<div class="page-head results-head"><div><h2>${esc(TITLE)}</h2><p class="cx">${esc(leadOf())}</p></div></div>`;
     const M = model();
     if (M.error) return `${head}<p class="muted">The network could not be read (${esc(M.error)}).</p>`;
     if (M.wait) return `${head}<p class="muted" role="status">Loading the network…</p>`;
@@ -662,23 +676,15 @@
         M.picked != null && M.nodes.length
           ? `<div class="filter-note">Your selection: ${int(M.picked)} of its proteins have a link in these sources; ${int(M.nodes.length)} are drawn.</div>`
           : '';
-    const count = M.nodes.length
-      ? `<p class="nw-count" role="status">${int(M.nodes.length)} proteins, ${int(M.edges.length)} links, ${int(CL.nShown)} clusters${CL.nOther ? ` and ${int(CL.nOther)} smaller ones in grey` : ''}${sel0 ? ' (your selection)' : ''}. Hover a protein or a cluster name to light what it is joined to; click a protein to open its page.</p>`
-      : '';
+    const sum = `${int(M.nodes.length)} proteins · ${int(M.edges.length)} links · ${int(CL.nShown)} clusters${CL.nOther ? ` (${int(CL.nOther)} smaller, grey)` : ''}${sel0 ? ' · your selection' : ''}`;
     const body = !M.nodes.length
       ? `<p class="muted">${sel0 ? 'No protein of the selection has a link in the chosen sources, so there is nothing to draw. Choose more sources or a lower score, or widen the selection.' : 'No protein has a link in the chosen sources.'}</p>`
       : UI.mode === 'table'
-        ? tableHtml(M, CL)
-        : `<div class="nw-main">${keyHtml(M, CL, { variant: phoneNow() ? 'phone' : 'desktop' })}${figureBox(M, CL)}${phoneNow() ? listHtml(CL) : ''}</div><div class="nw-pin" role="status">${pinHtml(M, CL)}</div>`;
+        ? `<p class="nw-count" role="status">${sum}</p>${tableHtml(M, CL)}`
+        : `<div class="nw-main">${keyHtml(M, CL, { variant: phoneNow() ? 'phone' : 'desktop' }, sum)}${figureBox(M, CL)}${phoneNow() ? listHtml(CL) : ''}</div><div class="nw-pin" role="status">${pinHtml(M, CL)}</div>`;
     const names = `<datalist id="nw-genes">${M.nodes.map((n) => `<option value="${esc(n.gene)}"></option>`).join('')}</datalist>`;
     return (
-      head +
-      controls(CL) +
-      note +
-      count +
-      body +
-      names +
-      K.fold('nw-how', 'How this network is made', '', methodHtml(), false)
+      head + controls(CL) + note + body + names + K.fold('nw-how', 'How this network is made', '', methodHtml(), false)
     );
   }
   // a touch screen: the first tap on a node shows its card, with the link
@@ -1156,6 +1162,13 @@
   (K.afterRender ||= []).push(() => {
     if (S.view === 'network' && UI.zc >= 0) applyZoom(false);
   });
+  document.addEventListener(
+    'toggle',
+    (e) => {
+      if (e.target.classList?.contains('nw-more')) UI.more = e.target.open;
+    },
+    true
+  );
   const mq = matchMedia('(max-width: 760px)');
   mq.addEventListener?.('change', () => S.view === 'network' && K.render());
   K.clicks.push(
