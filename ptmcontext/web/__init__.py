@@ -1950,7 +1950,10 @@ def pages(
         registry.append(
             {
                 'id': site['id'],
-                'label': landing.get('label') or profile.data.get('name') or site['id'],
+                'label': landing.get('label')
+                or web.get('name')
+                or profile.data.get('name')
+                or site['id'],  # the name of the landing card
                 'listed': not landing.get('unlisted'),
                 'in_switcher': bool(landing.get('in_switcher')),
             }
@@ -1998,6 +2001,8 @@ def pages(
         log(f'  {site["id"]} -> {dest}')
     cards += [LP.soon_card(s, cfg) for s in cfg.get('soon') or []]
     # the sites' own header menu reads this list (kit-switch.js)
+    rank = {k: i for i, k in enumerate(str(x) for x in cfg.get('order') or [])}
+    registry.sort(key=lambda r: rank.get(r['id'], len(rank)))  # the menu lists the sites in the landing page's order
     (out / 'sites.json').write_text(json.dumps({'switcher_label': switcher_label, 'sites': registry}, indent=1))
     # the landing page's own logo (landing.yml `logo`: an SVG file, relative to the working directory or the first site's repository)
     logo_href = None
@@ -2018,7 +2023,7 @@ def pages(
     built_with = (
         f'Updated {html.escape(human_date(_now()))}. Built with <a href="{html.escape(kit["url"])}">ptmcontext</a> '
         f'{html.escape(kit["version"])}, {html.escape(_licence_words(kit.get("licence", "MIT")))} license. '
-        "Each site's data are under the license its page states."
+        "Each explorer's data are under the license its page states."
     )
     text = LP.page(
         cards,
