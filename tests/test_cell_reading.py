@@ -78,9 +78,9 @@ def test_two_maps_agreeing_on_groups_of_twenty_color_a_part_with_their_median_fo
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
 def test_a_small_group_or_a_higher_floor_leaves_the_part_gray(tmp_path):
-    assert _run(tmp_path / 'a', {**DEFAULT, 'min_maps': 3})['cyto'][:2] == ['ns', 'fewer than 3 maps']
+    assert _run(tmp_path / 'a', {**DEFAULT, 'min_maps': 3})['cyto'][:2] == ['ns', 'maps disagree']
     out = _run(tmp_path / 'b', DEFAULT, cyto_b=(30, 15))  # map B: 15 selected, 15 others in the part
-    assert out['cyto'][:2] == ['ns', 'fewer than 2 maps']
+    assert out['cyto'][:2] == ['ns', 'maps disagree']
 
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')

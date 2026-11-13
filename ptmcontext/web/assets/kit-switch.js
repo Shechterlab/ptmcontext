@@ -86,11 +86,17 @@
   const mount = (list, parent, bar, word) => {
     const me = list.find((s) => s.id === here),
       uid = bar ? 'site-switch-list-bar' : 'site-switch-list';
+    // the bar is short of room: it drops the words every site's name ends with ("Site Explorer"); the full name stays in the label and the menu
+    const words = list.map((s) => (s.label || '').split(' '));
+    let cut = 0;
+    while (words.every((w) => w.length > cut + 1 && w[w.length - 1 - cut] === words[0][words[0].length - 1 - cut]))
+      cut++;
+    const shown = bar && cut && me?.label ? me.label.split(' ').slice(0, -cut).join(' ') : me?.label || '';
     const wrap = document.createElement('div');
     wrap.className = bar ? 'site-switch in-bar' : 'site-switch';
     wrap.innerHTML =
       `<button type="button" class="site-switch-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="${uid}" aria-label="Switch ${esc(word)} site: ${esc(me?.label || '')}" ` +
-      `title="Open another site"><span>${esc(word)}<span class="sw-colon">:</span></span> <b>${esc(me?.label || '')}</b> <span aria-hidden="true">▾</span></button>` +
+      `title="Open another site"><span>${esc(word)}<span class="sw-colon">:</span></span> <b>${esc(shown)}</b> <span aria-hidden="true">▾</span></button>` +
       `<ul id="${uid}" class="site-switch-list" role="menu" aria-label="Sites" hidden>` +
       list
         .map(
@@ -170,9 +176,20 @@
       a.title = 'Back to the page that lists every site';
       box.prepend(a);
     });
-    if (list.length < 2) return;
-    if (side) mount(list, side, false, word);
-    if (end) mount(list, end, true, word);
+    if (list.length >= 2) {
+      if (side) mount(list, side, false, word);
+      if (end) mount(list, end, true, word);
+    }
+    // in the header, the link and the switcher share one row (the link to the left), so the lab block and the links stay put
+    const first = side?.querySelector('.landing-link');
+    if (first) {
+      const row = document.createElement('div');
+      row.className = 'brand-top';
+      side.prepend(row);
+      row.append(first);
+      const sw = side.querySelector('.site-switch');
+      if (sw) row.append(sw);
+    }
   };
   const start = async () => {
     try {

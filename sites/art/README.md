@@ -20,7 +20,7 @@ The phosphosite drawing (phosphoserine, phosphothreonine and phosphotyrosine: th
 and -CH2-C6H4-O-PO3(2-), in the style of the methylarginine drawing, with the phosphate in cyan) and its icon are drawn for the
 Phosphosite Explorer (`phospho-hero.svg`, `phospho-icon.svg`).
 
-The lysine modification drawing (acetyllysine Kac, and the isopeptide bonds of ubiquitin, Kub, to Gly76 and of SUMO, Ksu, to its
+The lysine modification drawing (acetyllysine Kac, and the isopeptide bonds of ubiquitin, Kub, to Gly76 and of SUMO to its
 C-terminal Gly, drawn as -NH-CO-CH2-NH-Ub and -SUMO, the Gly and the bond in the site's light lime) and its logo (the lens with a
 K, in the site's deep green band) are written by the same tool from the SMILES in `ptm-structures.tsv`
 (`lysine-hero.svg`, `lysine_logo.svg`).

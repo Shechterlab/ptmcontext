@@ -506,13 +506,11 @@
               ? 'not compared'
               : 'not in these maps'
             : tn === 'ns'
-              ? up && down
+              ? (up && down) || ((up || down) && ok.length)
                 ? 'maps disagree'
-                : (up || down) && ok.length
-                  ? `fewer than ${READ.min_maps} maps`
-                  : !ok.length
-                    ? fewWords(cells, scoped)
-                    : 'no difference'
+                : !ok.length
+                  ? fewWords(cells, scoped)
+                  : 'no difference'
               : orText({ l2: med }),
       maps: cells.length ? cells.length + (cells.length === 1 ? ' map' : ' maps') : '',
     };

@@ -10,6 +10,9 @@ What changed for readers:
   Sites choose which opens first (`website.cell.default_view`).
 - Where the fold has too few proteins to compare, the label says which side is short and how many proteins carry a
   mark ("too few without one to compare (97% carry one)").
+- Header: "All sites" sits on the switcher's row, so the lab block and links stay above the structure drawing. The sticky bar shows the short site name.
+- Cell maps: a part where the maps do not agree reads "maps disagree" (was "fewer than N maps").
+- Lysine header drawing: SUMOylation is labelled "SUMO", not "Ksu".
 
 ## 0.4.0 (2026-11-13)
 
