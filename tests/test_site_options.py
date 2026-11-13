@@ -92,6 +92,6 @@ def test_an_unlisted_site_is_built_but_not_on_the_landing_page_and_is_in_the_men
     assert (tmp_path / 'site' / 'toyb' / 'index.html').exists()
     reg = json.loads((tmp_path / 'site' / 'sites.json').read_text())['sites']
     assert reg == [
-        {'id': 'toya', 'label': 'Methylarginine', 'listed': True, 'in_switcher': False},
+        {'id': 'toya', 'label': 'Toy toya', 'listed': True, 'in_switcher': False},
         {'id': 'toyb', 'label': 'Second', 'listed': False, 'in_switcher': True},
     ]

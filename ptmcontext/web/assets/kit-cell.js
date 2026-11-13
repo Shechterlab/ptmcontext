@@ -2083,7 +2083,7 @@
       `<h3>${esc(title)}</h3>${K.detailsLink(ID)}</header>` +
       `<p class="tans cell-ans">${cellAnswer(regs, up, scoped)}</p><div class="cell-pair">${figs}</div>` +
       `<div class="cp-cols">${DRAWINGS.map((d) => partList(d, ps)).join('')}</div>` +
-      `<p class="tkey">Fold against ${esc(alike)}, the median of the maps (${MAPS.length}); colored where at least ${READ.min_maps} agree.</p>${note}<div class="tact">${bar}</div></article>`
+      `<p class="tkey">Fold against ${esc(alike)}, ${mapsUsed(scoped)}; colored where at least ${READ.min_maps} agree.</p>${note}<div class="tact">${bar}</div></article>`
     );
   }
   const toggle = (part) => {
