@@ -2137,6 +2137,336 @@
             }
           }
         },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "edges"
+          ],
+          "description": "the Network view: one network of the proteins with sites (or the selection's), clustered, each cluster named by its most enriched term. Data from tables the site's inputs name, none from a service; a site without it has no view",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "the tab's name (default Network)"
+            },
+            "about": {
+              "type": "string",
+              "description": "one line under the heading"
+            },
+            "edges": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "input"
+                ],
+                "description": "one source of edges: `pairs` (a table of scored pairs of proteins, at most one: STRING physical links) or `groups` (a table of groups with their members; every pair of members of a group is an edge: curated complexes)",
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "pairs",
+                      "groups"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "description": "short id of the source"
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "the source's name in the key and the switches"
+                  },
+                  "input": {
+                    "type": "string",
+                    "description": "a role of the site's inputs: the table"
+                  },
+                  "sep": {
+                    "type": "string",
+                    "description": "the table's separator (default a tab)"
+                  },
+                  "a": {
+                    "type": "string",
+                    "description": "pairs: the first protein's column (default protein_a)"
+                  },
+                  "b": {
+                    "type": "string",
+                    "description": "pairs: the second protein's column (default protein_b)"
+                  },
+                  "score": {
+                    "type": "string",
+                    "description": "pairs: the integer score's column, 0 to 1000 (default combined_score)"
+                  },
+                  "min_score": {
+                    "type": "integer",
+                    "description": "pairs: the score an edge needs by default (default 700)",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "group": {
+                    "type": "string",
+                    "description": "groups: the group's id column (default complex_id)"
+                  },
+                  "protein": {
+                    "type": "string",
+                    "description": "groups: the member's UniProt accession column (default uniprot_accession)"
+                  },
+                  "where": {
+                    "type": "object",
+                    "description": "groups: column: value rows must have (such as curated complexes only)",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "weight": {
+                    "type": "integer",
+                    "description": "groups: the weight of a group edge in the clustering, on the scale of the scores (default 700)",
+                    "minimum": 1
+                  },
+                  "max_size": {
+                    "type": "integer",
+                    "description": "groups: groups of more members are left out (default 40)",
+                    "minimum": 2
+                  },
+                  "cite": {
+                    "type": "string",
+                    "description": "the source's citation, in the Method text and the exports"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "where the source is"
+                  }
+                }
+              }
+            },
+            "label_from": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "input",
+                  "set",
+                  "protein"
+                ],
+                "description": "a table of published terms that name the clusters: a set column and a protein column (Reactome, Gene Ontology biological process, ...). Terms of all sources compete; the smallest p names the cluster",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "short id"
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "the source's name"
+                  },
+                  "input": {
+                    "type": "string",
+                    "description": "a role of the site's inputs: protein to term table"
+                  },
+                  "set": {
+                    "type": "string",
+                    "description": "the term's id column"
+                  },
+                  "protein": {
+                    "type": "string",
+                    "description": "the protein's UniProt accession column"
+                  },
+                  "names": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input",
+                      "set"
+                    ],
+                    "properties": {
+                      "input": {
+                        "type": "string",
+                        "description": "a role: the table with the terms' names"
+                      },
+                      "set": {
+                        "type": "string",
+                        "description": "the term's id column"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "the name column (default the id)"
+                      },
+                      "include": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "column",
+                            "equals"
+                          ],
+                          "properties": {
+                            "column": {
+                              "type": "string"
+                            },
+                            "equals": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "description": "keep only the rows with these column values"
+                      }
+                    }
+                  },
+                  "min_term": {
+                    "type": "integer",
+                    "description": "the fewest proteins of the network a term must annotate (default 5)",
+                    "minimum": 1
+                  },
+                  "cite": {
+                    "type": "string",
+                    "description": "citation"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "where the annotation is"
+                  }
+                }
+              }
+            },
+            "color_by": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name",
+                  "kind",
+                  "column"
+                ],
+                "description": "a way to colour the proteins besides the cluster, from a column of the run's marks.tsv: `sequential` is the share of the protein's sites whose value is one of `values` (all sites with a value when none is listed); `categorical` is the value most of the protein's sites hold (the commonest `max_values`, the rest Other)",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "the name in the Colour by menu and the key"
+                  },
+                  "kind": {
+                    "enum": [
+                      "sequential",
+                      "categorical"
+                    ]
+                  },
+                  "column": {
+                    "type": "string",
+                    "description": "a column of marks.tsv"
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "separator": {
+                    "type": "string",
+                    "description": "separates several values in a cell (default ;)"
+                  },
+                  "max_values": {
+                    "type": "integer",
+                    "description": "categorical: values named before Other (default 8, at most 8)",
+                    "minimum": 1,
+                    "maximum": 8
+                  }
+                }
+              }
+            },
+            "top": {
+              "type": "integer",
+              "description": "proteins taken, the most sites first, before isolated ones are dropped (default 300)",
+              "minimum": 10
+            },
+            "min_cluster": {
+              "type": "integer",
+              "description": "a cluster with fewer proteins is grey Other (default 5)",
+              "minimum": 2
+            },
+            "max_clusters": {
+              "type": "integer",
+              "description": "clusters coloured, the largest first (default 8, the palette's size)",
+              "minimum": 1,
+              "maximum": 8
+            },
+            "resolution": {
+              "type": "number",
+              "description": "Louvain resolution (default 1)",
+              "exclusiveMinimum": 0
+            },
+            "cluster": {
+              "enum": [
+                "louvain"
+              ],
+              "description": "the clustering method (louvain)"
+            },
+            "min_score": {
+              "type": "integer",
+              "description": "the scored source's default threshold when the source does not say (default 700)",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "floor": {
+              "type": "integer",
+              "description": "the lowest threshold the page offers (default the same)",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "max_q": {
+              "type": "number",
+              "description": "a cluster's term must have q at most this (default 0.05)"
+            },
+            "min_overlap": {
+              "type": "integer",
+              "description": "proteins of the cluster a term must have (default 3)",
+              "minimum": 1
+            },
+            "min_term": {
+              "type": "integer",
+              "description": "proteins of the network a term must annotate (default 5)",
+              "minimum": 1
+            },
+            "max_fraction": {
+              "type": "number",
+              "description": "terms annotating more than this share of the network's proteins are too broad and are left out (default 0.2)",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "exclude_terms": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "term ids or names never used as a label"
+            },
+            "tile": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "section"
+              ],
+              "description": "the Overview's tile",
+              "properties": {
+                "section": {
+                  "type": "string",
+                  "description": "the name of an Overview section the tile goes in"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
         "partners": {
           "type": "object",
           "additionalProperties": false,

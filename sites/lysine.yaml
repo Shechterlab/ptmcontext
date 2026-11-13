@@ -17,6 +17,7 @@ inputs:                # role the layers read: manifest input that fills it
   domains: interpro_domains
   reactome: reactome_protein_pathways
   reactome_names: reactome_pathways
+  string_partners: string_physical_v12_5         # the network view's STRING links
   hpa: hpa_locations
   abundance: paxdb_abundance
   panther_classes: panther_protein_classes
@@ -1400,6 +1401,27 @@ website:                  # the look and words of the website (ptmc web); layout
     method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
     help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
+  network:                 # the Network view (kit-network.js): the proteins with sites as one network, clustered, each cluster named by its most enriched term
+    title: Network
+    about: "Proteins with modified lysines as one network: STRING physical links and curated complexes join them, communities are the clusters, and each cluster is named by its most enriched Reactome pathway. Node size is the number of sites."
+    edges:
+      - {id: string_physical, kind: pairs, label: STRING physical, input: string_partners, min_score: 700, cite: "STRING v12.5: Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113", url: "https://string-db.org"}
+      - {id: complex_portal, kind: groups, label: Complex Portal complexes, input: complexes, where: {curation: curated}, max_size: 40, weight: 700, cite: "Complex Portal (curated complexes, CC0): Meldal et al., Nucleic Acids Res 50:D578 (2022), doi:10.1093/nar/gkab991", url: "https://www.ebi.ac.uk/complexportal"}
+    label_from:
+      - label: Reactome
+        input: reactome
+        set: pathway_id
+        protein: canonical_UniProtAC
+        names: {input: reactome_names, set: pathway_id, name: name}
+        cite: "Reactome release 97: Ragueneau et al., Nucleic Acids Res 54:D673 (2026), doi:10.1093/nar/gkaf1223"
+        url: "https://reactome.org"
+    top: 300
+    min_cluster: 5
+    cluster: louvain
+    color_by:
+      - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}
+      - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}
+    tile: {section: "Interactions", title: Protein network, text: "The proteins with modified lysines with most sites as one network of physical links and complexes, in clusters named by Reactome pathway."}
   compare: {min_proteins: 10, min_marks: 30}
   tables:                  # tables the protein pages show (no test reads them), each in a format of CONTRACTS.md
     string:                # STRING v12.5 physical links, each pair listed once and read both ways, at score 0.7 or more

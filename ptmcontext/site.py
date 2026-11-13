@@ -496,6 +496,36 @@ def presence_only_problems(site: dict) -> list[str]:
     return out
 
 
+def network_problems(site: dict) -> list[str]:
+    """What website.network names that the site file does not have: an input role it reads, a second scored source, a
+    tile in an Overview section that does not exist, a repeated colour-by id."""
+    cfg = (site.get('website') or {}).get('network')
+    if not cfg:
+        return []
+    out, roles = [], site.get('inputs') or {}
+
+    def role(x, where):
+        if x not in roles:
+            out.append(f'website.network {where}: no input role {x!r}')
+
+    for e in cfg.get('edges', []):
+        role(e.get('input'), f'edges {e.get("id", e.get("kind"))!r}')
+    if sum(e.get('kind') == 'pairs' for e in cfg.get('edges', [])) > 1:
+        out.append('website.network: edges has more than one scored `pairs` source (at most one)')
+    for lab in cfg.get('label_from', []):
+        role(lab.get('input'), f'label_from {lab.get("label")!r}')
+        if lab.get('names'):
+            role(lab['names'].get('input'), f'label_from {lab.get("label")!r} names')
+    ids = [c.get('id') for c in cfg.get('color_by', [])]
+    if len(ids) != len(set(ids)) or 'cluster' in ids:
+        out.append('website.network: color_by ids must be distinct and not "cluster"')
+    sec = (cfg.get('tile') or {}).get('section')
+    names = {x.get('name') for x in ((site.get('website') or {}).get('overview') or {}).get('sections', [])}
+    if sec and sec not in names:
+        out.append(f'website.network tile: no Overview section {sec!r}')
+    return out
+
+
 def website_problems(site: dict) -> list[str]:
     """What the website block names that the site file does not have: a tile, filter or example naming an analysis
     or a mark attribute that is not defined, or an attribute's colors for values it does not list. The schema checks
@@ -506,7 +536,7 @@ def website_problems(site: dict) -> list[str]:
     counts = web.get('counts') or {}
     out = count_problems(site) + presence_only_problems(site)
     questions = ids | set(counts)  # what a card, a header tile or an old link may open
-    out += cell_problems(site) + set_view_problems(site) + table_view_problems(site)
+    out += cell_problems(site) + set_view_problems(site) + table_view_problems(site) + network_problems(site)
     if (web.get('cell') or {}).get('id'):
         ids = ids | {web['cell']['id']}  # the maps of the cell are one question of the website's own
         questions = questions | {web['cell']['id']}

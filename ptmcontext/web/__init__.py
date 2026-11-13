@@ -91,6 +91,8 @@ MODULES = (
     'kit-pix.js',
     'kit-genelist.js',
     'kit-pathway.js',
+    'kit-netcore.js',
+    'kit-network.js',
     'kit-tile.js',
     'kit-figures.js',
     'kit.js',
@@ -1572,6 +1574,12 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             pw = PW.build(site, run, kept, listing, fasta, out, log)
             if pw:
                 data['front']['pathways'] = pw
+        # the network view (website.network): its two files are read when the view is opened, not with the page
+        from . import network as NW
+
+        nw = NW.build(site, run, listing, folder, out, log)
+        if nw:
+            data['network'] = nw
     # the site's pages (website.pages) and the whole tables they read, one file each, read when a page first needs one
     data['page_tables'], inline_page_tables = (
         page_tables(site, web.get('tables') or {}, run, listing, out, log) if listing else ({}, '')
@@ -1611,6 +1619,8 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     one_file_data = page_data
     if page_data.get('front', {}).get('pathways'):  # the pathway files are read one at a time: not in the one-file copy
         one_file_data = {**page_data, 'front': {k: v for k, v in page_data['front'].items() if k != 'pathways'}}
+    if page_data.get('network'):  # its files are read when the view is opened: the one-file copy has no network view
+        one_file_data = {k: v for k, v in one_file_data.items() if k != 'network'}
     if late:
         (out / 'data').mkdir(parents=True, exist_ok=True)
         (out / 'data' / 'site.json').write_text(

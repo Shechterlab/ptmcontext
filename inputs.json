@@ -73,6 +73,23 @@
       "role": "input",
       "note": "Staged by PTM_Pipeline scripts/48; this repository checks the bytes."
     },
+    "string_physical_v12_5": {
+      "file": "inputs/interactions/string_v12.5_human_physical_links_score400.tsv",
+      "md5": "ef4f1cb4b52c9e9a74c75757950a2ee9",
+      "source": "https://stringdb-downloads.org/download/protein.physical.links.v12.5/9606.protein.physical.links.v12.5.txt.gz",
+      "version": "v12.5, downloaded 2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Each pair once (protein_a < protein_b), physical links of combined score 400 or more between reviewed entries; the site reads it both ways, at score 700 or more."
+    },
+    "complex_portal_complexes": {
+      "file": "inputs/interactions/complex_portal_human_complexes_2026-10-16.tsv",
+      "md5": "c0e9e392f0ba6d15a746af345ebe06ca",
+      "source": "https://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/9606.tsv and 9606_predicted.tsv (Complex Portal, curated; hu.MAP 3.0, predicted)",
+      "version": "current release, downloaded 2026-10-16",
+      "licence": "CC0",
+      "role": "input"
+    },
     "reactome_pathways": {
       "file": "inputs/layers/reactome_human_pathways.tsv",
       "md5": "e9d0af98aae6cd9558e021160ae9aaf6",

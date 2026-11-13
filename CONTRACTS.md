@@ -960,6 +960,44 @@ lists. Genes of other proteins come from the snapshot's FASTA. The hierarchy tab
 the members table a set id and a UniProt accession per row. Nothing is asked of the source's service; the page links to it.
 The one-file copy has no pathway files and so no button. A site without `pathways` has none.
 
+### The network view
+
+`website.network` adds a **Network** tab: one network of the proteins with sites (or of the selection), clustered, each
+cluster named by its most enriched published term. A site without the block has no tab, tile or files. All data come from
+tables the site's `inputs:` roles name; nothing is asked of a service.
+
+| Key | Meaning |
+|---|---|
+| `title`, `about` | the tab's name (default Network) and one line under its heading |
+| `edges[]` | the sources of edges, each with `input` (a role), `label`, `id`, `cite`, `url` and a `kind`. `pairs` (at most one): a table of scored pairs (`a`, `b`, `score`: integers 0 to 1000; default columns `protein_a`, `protein_b`, `combined_score`; `min_score`, default 700). `groups`: a table of groups and their members (`group`, `protein`, optional `where: {column: value}`); every pair of members of a group is an edge, groups over `max_size` members (default 40) are left out, and `weight` (default 700) is the edge's weight in the clustering |
+| `label_from[]` | published term tables: `input`, `set` (term id column), `protein` (UniProt accession column), `names: {input, set, name, include}`, `min_term`, `label`, `cite`, `url`. Terms of all tables compete |
+| `color_by[]` | further ways to colour, from a column of the run's `marks.tsv`: `{id, name, kind, column, values, separator, max_values}`. `sequential`: the share of the protein's sites whose value is in `values` (any value when none is listed); `categorical`: the value most of its sites hold, the commonest `max_values` (at most 8) named and the rest Other |
+| `top`, `min_cluster`, `max_clusters`, `resolution`, `cluster` | proteins taken (most sites first; 300), the smallest cluster not grey (5), clusters coloured (8, the palette), Louvain resolution (1), method (`louvain`) |
+| `min_score`, `floor` | the scored source's default threshold, and the lowest the page offers (the thresholds offered are 0.4, 0.7 and 0.9 from `floor` up) |
+| `max_q`, `min_overlap`, `min_term`, `max_fraction`, `exclude_terms` | a label needs q at most `max_q` (0.05), at least `min_overlap` proteins of the cluster (3); a term must annotate `min_term` or more of the network's proteins (5) and at most `max_fraction` of them (0.2: broad terms are left out); `exclude_terms` lists ids or names never used |
+| `tile` | `{section, title, text}`: the Overview tile, in the named Overview section |
+
+The network: the nodes are the proteins with sites (by canonical accession; node size is the sites), the candidates the
+top `top` by site count (the selection's proteins, when there is a selection), the edges those among them that an enabled
+source gives (a scored pair at or above the threshold, or a shared group), proteins without an edge dropped. Clusters are
+Louvain communities (Blondel et al. 2008) on the edges weighted by score (a group edge by its `weight`; the larger when
+both hold): nodes are visited in order, a node moves to the neighbouring community of the largest gain and stays unless a
+move gains more than 1e-12, ties go to the lower community, communities are numbered by size and then by lowest node.
+A cluster is named by the term of the smallest one-sided hypergeometric p (`ptmstats.hypergeom_sf`) among the terms it
+has `min_overlap` or more proteins in, against all the proteins of the network; q is Benjamini-Hochberg over the terms
+tested in that cluster; ties in p (1e-9 relative) go to the term with fewer proteins, then the name. A cluster below
+`min_cluster`, or past the eighth, is grey Other.
+
+`ptmc web` writes two files, read when the view is opened and never in the first-view payload:
+`data/network.json` (the default view: `nodes` accessions, `gene`, `sites`, `edges` [a, b, flags, score] by position in
+`nodes`, `comm`, `labels`: per cluster `{n, term, id, source, p, q, k, M, N}`) and `data/network_full.json` (`sources`,
+`acc`, `gene`, `sites`, flat `edges` in fours [a, b, flags, score] with a bit per source in `flags`, `terms` [name, source, id] (terms with fewer than `min_term` or more than half of the file's proteins are not written),
+`ann` (a list of term indexes per node), `color`). The page needs the second for a selection or any option other than the
+default, and clusters again in the browser (`kit-netcore.js`, the twin of `ptmcontext/web/network.py`: same steps, same
+integers; `tests/test_network.py` runs both). `site.network_problems` (`ptmc check`) reports an unknown role, a second
+`pairs` source, a repeated colour id and a tile in an Overview section that does not exist. The one-file copy has no
+network view.
+
 ### The gene-list test
 
 `#list?q=<names>` (kit-genelist.js) tests a pasted list of genes or proteins against every set of the protein-set questions

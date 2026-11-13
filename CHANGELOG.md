@@ -1,5 +1,14 @@
 # Changes
 
+## Unreleased
+
+- New Network tab (all four sites): the proteins with sites as one network, with STRING physical links and curated
+  Complex Portal complexes as edges, grouped into Louvain clusters, each named by its most enriched Reactome pathway
+  (q on hover). Colour by cluster or by the share of sites in disordered regions, the domain class, and (phosphosites) the
+  kinase and reader motif classes. A selection is clustered again in the browser. Table view, SVG, PNG and TSV exports, a
+  tile on the Overview. For the code: `website.network` (schema, CONTRACTS.md, `ptmcontext/web/network.py`,
+  `kit-netcore.js`, `kit-network.js`).
+
 ## 0.3.1 (2026-11-13)
 
 What changed for readers:
