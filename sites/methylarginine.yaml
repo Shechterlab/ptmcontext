@@ -1166,8 +1166,9 @@ controls:
   # UniProt (curated literature), IEDB (HLA-presented epitopes from other studies) and ProMetheusDB (a compilation of the
   # Bonaldi laboratory's SILAC and heavy-methyl SILAC runs). Studies of one laboratory count once: Larsen 2016 and
   # Sylvestersen 2014 (Nielsen laboratory, HEK293 cells); Lu 2024 and Lu 2025 (one laboratory, HeLa cells; STUDIES.md);
-  # Musiani 2019 and Fong 2019 (Bonaldi laboratory's mass spectrometry, MaxQuant); Guo 2014, Fedoriw 2019 and Lim 2020
-  # (Cell Signaling Technology's PTMScan workflow: its antibodies, SEQUEST at 2.5% FDR, ModScore > 13).
+  # Musiani 2019 and Fong 2019 (Musiani, Massignani and Bonaldi are authors of both). Guo 2014 (Cell Signaling
+  # Technology), Fedoriw 2019 (GSK) and Lim 2020 (an academic group) share Cell Signaling Technology's antibodies, not a
+  # laboratory or samples, and count as three studies.
   - id: hc
     label: high-confidence sites
     note: "Only the sites at least two independent studies report (a laboratory's studies counted once; PhosphoSitePlus, UniProt, IEDB and ProMetheusDB not counted); the other sites are counted on neither side"
@@ -1180,7 +1181,6 @@ controls:
         Nielsen laboratory: [Larsen2016, Sylvestersen2014]
         Lu laboratory: [Lu2024, Lu2025]
         Bonaldi laboratory: [Musiani2019, Fong2019]
-        Cell Signaling Technology PTMScan: [Guo2014, Fedoriw2019, Lim2020]
     marks_outside: left_out
   # Sites found without a methylarginine antibody: the antibodies were raised against RG and RGG peptides, so a motif
   # result could be the antibody's own preference. Lu 2025 enriched with the SMN Tudor domain, UniProt's annotations are
