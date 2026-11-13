@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: 5fadf74c9bef80f543fd8fe55382e151caa53ef0  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: 4557062eb02bd39ab423722b0f84aa7a44ebb012  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference
@@ -42,6 +42,8 @@ jobs:
             inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv
             inputs/annotation/interpro_108.0_domain_intervals.tsv
             inputs/annotation/interpro_108.0_all_entry_intervals.tsv
+            inputs/annotation/go_bp_human_2026-11-04.tsv
+            inputs/annotation/go_bp_terms_2026-11-04.tsv
             inputs/layers/reactome_human_protein_pathways.tsv
             inputs/layers/reactome_human_pathways.tsv
             inputs/layers/hpa_subcellular_locations.tsv
@@ -158,7 +160,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: 5fadf74c9bef80f543fd8fe55382e151caa53ef0  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: 4557062eb02bd39ab423722b0f84aa7a44ebb012  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference
@@ -171,6 +173,8 @@ jobs:
             inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv
             inputs/annotation/interpro_108.0_domain_intervals.tsv
             inputs/annotation/interpro_108.0_all_entry_intervals.tsv
+            inputs/annotation/go_bp_human_2026-11-04.tsv
+            inputs/annotation/go_bp_terms_2026-11-04.tsv
             inputs/layers/reactome_human_protein_pathways.tsv
             inputs/layers/reactome_human_pathways.tsv
             inputs/layers/hpa_subcellular_locations.tsv
@@ -308,7 +312,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: 5fadf74c9bef80f543fd8fe55382e151caa53ef0  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: 4557062eb02bd39ab423722b0f84aa7a44ebb012  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference
@@ -321,6 +325,8 @@ jobs:
             inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv
             inputs/annotation/interpro_108.0_domain_intervals.tsv
             inputs/annotation/interpro_108.0_all_entry_intervals.tsv
+            inputs/annotation/go_bp_human_2026-11-04.tsv
+            inputs/annotation/go_bp_terms_2026-11-04.tsv
             inputs/layers/reactome_human_protein_pathways.tsv
             inputs/layers/reactome_human_pathways.tsv
             inputs/layers/hpa_subcellular_locations.tsv

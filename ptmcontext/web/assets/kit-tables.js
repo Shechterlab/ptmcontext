@@ -500,7 +500,7 @@
       const body = `${
         lk?.citation ? esc(lk.citation) + '. ' : ''
       }${int(n)} ${esc(n === 1 ? W.mark : W.marks)} reported, ${int(only)} by it alone.${
-        lk?.licence ? ` Licence: ${esc(lk.licence)}.` : ''
+        lk?.licence ? ` License: ${esc(lk.licence)}.` : ''
       }`;
       return card(
         cfg.eyebrow || sp.label,

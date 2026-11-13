@@ -187,7 +187,7 @@
             kind: 'light',
             text: x[1] || x[0],
             label: x[1] || x[0],
-            sub: `${x[0]} · no ${W.mark} on this site`,
+            sub: `${x[0]} · no ${W.mark} in this explorer`,
             n: 'page',
             acc: x[0],
           })
@@ -502,7 +502,7 @@
       out.push(
         `<b>${esc(g)} ${aa}${pos}${to}</b> is searched as ` +
           `the site <b>${esc(g)} ${aa}${pos}</b>; the change to ${esc(to === '*' ? 'a stop' : to)} is not matched, ` +
-          `and the site’s card lists its variants first.`
+          `and the card of the site lists its variants first.`
       )
     );
     (q.positions || []).forEach(([aa, pos, to]) =>
@@ -651,7 +651,7 @@
     if (Object.keys(D.protein_aliases || {}).length)
       parts.push(
         `A protein is found by gene, accession, entry name ` +
-          `or any other name in the site's tables (synonyms, source symbols), with or without hyphens, spaces and ` +
+          `or any other name in the tables of this explorer (synonyms, source symbols), with or without hyphens, spaces and ` +
           `dots. A name in two words is read as one.`
       );
     if ((D.protein_view?.numbering || []).length)

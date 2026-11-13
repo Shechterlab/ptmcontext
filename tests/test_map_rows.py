@@ -235,3 +235,12 @@ def test_map_rows_say_what_they_lack(tmp_path):
             {'id': 'x'},
             ('acc', 'pos'),
         )
+
+
+def test_a_colour_mode_from_an_analysis_names_an_analysis_the_site_has(tmp_path):
+    root = _toy(tmp_path)
+    site = S.load_site(root / 'sites' / 'toy.yaml')
+    site['website']['protein']['map']['colour_by'].append({'id': 'm', 'label': 'Motif', 'analysis': 'motif'})
+    assert not any("no analysis 'motif'" in x for x in S.website_problems(site))
+    site['website']['protein']['map']['colour_by'][-1]['analysis'] = 'nothing'
+    assert any("no analysis 'nothing'" in x for x in S.website_problems(site))

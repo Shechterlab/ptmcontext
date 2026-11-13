@@ -90,6 +90,7 @@ MODULES = (
     'kit-pfolds.js',
     'kit-pix.js',
     'kit-genelist.js',
+    'kit-overlap.js',
     'kit-pathway.js',
     'kit-tile.js',
     'kit-figures.js',
@@ -444,6 +445,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                     **({'checked_against': ref_tables[a['id']]['input']} if a['id'] in ref_tables else {}),
                     **({'unit': (a['identifiers'].get('nouns') or 'identifiers')} if a.get('identifiers') else {}),
                     **({'filter': a['filter']} if a.get('filter') else {}),  # the words of its filter control
+                    **({'partition': True} if is_partition(a['sets']) else {}),
                     **(
                         {'scores': {k: a['scores'][k] for k in ('label', 'help', 'levels', 'max') if k in a['scores']}}
                         if a.get('scores')
@@ -593,6 +595,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'selection_cards': web.get('selection_cards') or {},
         'protein_view': web.get('protein'),
         'compare': web.get('compare'),
+        **({'reading': web['reading']} if web.get('reading') else {}),
         'legacy_links': web.get('legacy_links') or {},
         'legacy_routes': web.get('legacy_routes') or {},
         'tabs': web.get('tabs') or {},
@@ -657,6 +660,12 @@ def site_data(site: dict, folder: Path, profile) -> dict:
             (web.get('front') or {}).get('row_labels'),
             section_analyses(web, (web.get('landing') or {}).get('from_section')),
             section_locations(web, (web.get('landing') or {}).get('from_section')),
+            web.get('reading'),
+            web.get('cell') if section_locations(web, (web.get('landing') or {}).get('from_section')) else None,
+            set().union(
+                *(section_analyses(web, sec.get('name')) for sec in (web.get('overview') or {}).get('sections') or [])
+            )
+            or None,
         ),
         'citation': site_citation(site),
         'kit': {**kit_citation(), 'version': __version__, 'commit': run.get('code_commit') or code_commit()},
@@ -828,6 +837,13 @@ def shard_count(nbytes: int) -> int:
 
 # the fields of a row of the protein list (data.proteins), in order
 PROTEIN_COLUMNS = ('accession', 'gene', 'name', 'length', 'marks', 'candidates', 'entry')
+
+
+def is_partition(sets: dict) -> bool:
+    """Rules that put every row of the source in one set (the last rule has no conditions): a marked protein the source
+    lacks is in none of the sets, so the sets' counts fall short of the marked proteins."""
+    rules = sets.get('rules') or []
+    return bool(rules) and sets.get('exclusive', True) and any(not r.get('when') for r in rules)
 
 
 def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list, list, list], dict]:
@@ -1117,8 +1133,11 @@ def selection_data(
                 'skip': sorted(pidx[a] for a in (used.get('proteins') or {}).get('not_counted', []) if a in pidx),
                 'alone': used.get('marks_alone') == 'count',
             }
-    for aid in analyses:  # a flags question that leaves marks out says which (marks.tsv in.<analysis>): by index
-        if f'in.{aid}' in marks.columns:
+    for aid in analyses:  # a flags question that counts some marks only (only_in, marks_where): which it leaves out,
+        used = (run.get('analyses') or {}).get(
+            aid
+        ) or {}  # by index (marks.tsv in.<analysis>), as no flag is not outside
+        if f'in.{aid}' in marks.columns and (used.get('only_in') or used.get('marks_where')):
             counted.setdefault(aid, {'skip': [], 'alone': False})['out'] = [
                 i for i, x in enumerate(marks[f'in.{aid}']) if not x
             ]
@@ -1150,16 +1169,30 @@ def selection_data(
             continue
         g = counts[counts['analysis'] == aid]
         total = g.drop_duplicates('accession').set_index('accession')['others_total'].astype(int)
-        outside: dict = {}
-        # a flags question says which marks it counts (in.<analysis>): no flag is not outside
-        held = marks[f'in.{aid}'] if f'in.{aid}' in marks.columns else marks[aid]
-        for acc, pos, cls in zip(marks['accession'], marks['position'], held):
-            if not cls:
-                outside.setdefault(pidx[acc], []).append(int(pos))
+        # the same for every class, and the marks it does not count are those with no class in it: written once, as
+        # 'all' with outside 'unclassed' (the browser leaves out a mark with no class), not a list of positions per class;
+        # a flags question, where no flag is not outside, names them instead ('listed': counted.out, by index)
         by_test[aid] = {
-            str(ci): {str(pidx[a]): [int(n), outside.get(pidx[a], [])] for a, n in total.items() if a in pidx}
-            for ci in range(len(classes[aid]))
+            'all': {str(pidx[a]): [int(n), []] for a, n in total.items() if a in pidx},
+            'outside': 'listed' if 'out' in counted.get(aid, {}) else 'unclassed',
         }
+    # flags tested among some residues only (a motif family's `among`): each flag's letters, and per letters each
+    # protein's other candidates among them (among_counts.tsv); with each mark's residue, a retest counts the same residues
+    among, among_others = {}, {}
+    if (folder / 'among_counts.tsv').exists():
+        ac = pd.read_csv(
+            folder / 'among_counts.tsv', sep='\t', dtype={'analysis': str, 'residues': str, 'accession': str}
+        )
+        for aid in analyses:
+            letters = ((run.get('analyses') or {}).get(aid) or {}).get('among') or {}
+            if not letters:
+                continue
+            among[aid] = {str(codes[aid][f]): v for f, v in letters.items() if f in codes[aid]}
+            g = ac[ac['analysis'] == aid]
+            among_others[aid] = {
+                r: {str(pidx[a]): int(n) for a, n in zip(x['accession'], x['others']) if a in pidx}
+                for r, x in g.groupby('residues')
+            }
     # protein-set questions: each tested set's size in the background and its marked proteins (protein_sets.json)
     sets = {}
     if (folder / 'protein_sets.json').exists():
@@ -1239,6 +1272,7 @@ def selection_data(
         'others_total': others_total,
         'counted': counted,
         'by_test': by_test,
+        **({'among': among, 'among_others': among_others, 'residues': ''.join(marks['residue'])} if among else {}),
         'protein_sets': sets,
     }
 
@@ -1609,6 +1643,13 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             pw = PW.build(site, run, kept, listing, fasta, out, log)
             if pw:
                 data['front']['pathways'] = pw
+        # the Overlap page's files (website.overlap), read when a reader opens the page
+        if web.get('overlap'):
+            from . import overlap as OV
+
+            ov = OV.build(site, run, folder, listing, fasta, out, log)
+            if ov:
+                data['overlap'] = ov
     # the site's pages (website.pages) and the whole tables they read, one file each, read when a page first needs one
     data['page_tables'], inline_page_tables = (
         page_tables(site, web.get('tables') or {}, run, listing, out, log) if listing else ({}, '')
@@ -1962,6 +2003,10 @@ def pages(
     (out / '.nojekyll').write_text('')
     cfg = LP.load_config(landing_config, site_paths[0] if site_paths else None)
     cards, lab, registry, first_built, root_last = [], None, [], None, Path('.')
+    found: dict[
+        str, list
+    ] = {}  # accession -> [gene, name, indexes of the listed sites that have it], for the landing search
+    listed_ids: list[dict] = []
     switcher_label = (cfg.get('switcher') or {}).get('label')
     for sp in site_paths:
         site = load_site(sp)
@@ -1987,7 +2032,10 @@ def pages(
         registry.append(
             {
                 'id': site['id'],
-                'label': landing.get('label') or profile.data.get('name') or site['id'],
+                'label': landing.get('label')
+                or web.get('name')
+                or profile.data.get('name')
+                or site['id'],  # the name of the landing card
                 'listed': not landing.get('unlisted'),
                 'in_switcher': bool(landing.get('in_switcher')),
             }
@@ -1995,6 +2043,20 @@ def pages(
         if landing.get('unlisted'):  # its folder is published; its card is not on the landing page
             log(f'  {site["id"]} -> {dest} (unlisted)')
             continue
+
+        # the landing search: the proteins this site has marks on (a site's own protein list, its proteins.tsv)
+        plist = src.parent / 'proteins.tsv'
+        if plist.exists():
+            import pandas as pd
+
+            k = len(listed_ids)
+            listed_ids.append(
+                {'id': site['id'], 'label': landing.get('label') or profile.data.get('name') or site['id']}
+            )
+            ptab = pd.read_csv(plist, sep='\t', dtype=str, keep_default_na=False, usecols=['accession', 'gene', 'name'])
+            for acc, gene, name in zip(ptab['accession'], ptab['gene'], ptab['name']):
+                row = found.setdefault(acc, [gene, name, []])
+                row[2].append(k)
 
         # the numbers and the striking result are the site's own build; a build without them gives a card without them
         def _read(name):
@@ -2035,6 +2097,8 @@ def pages(
         log(f'  {site["id"]} -> {dest}')
     cards += [LP.soon_card(s, cfg) for s in cfg.get('soon') or []]
     # the sites' own header menu reads this list (kit-switch.js)
+    rank = {k: i for i, k in enumerate(str(x) for x in cfg.get('order') or [])}
+    registry.sort(key=lambda r: rank.get(r['id'], len(rank)))  # the menu lists the sites in the landing page's order
     (out / 'sites.json').write_text(json.dumps({'switcher_label': switcher_label, 'sites': registry}, indent=1))
     # the landing page's own logo (landing.yml `logo`: an SVG file, relative to the working directory or the first site's repository)
     logo_href = None
@@ -2043,6 +2107,9 @@ def pages(
         if lf:
             (out / 'logo.svg').write_text(lf.read_text())
             logo_href = 'logo.svg'
+    if found:  # read by the landing page's search box when it is first used (assets/land-search.js)
+        rows = [[acc, *v] for acc, v in sorted(found.items())]
+        (out / 'proteins.json').write_text(json.dumps({'sites': listed_ids, 'p': rows}, separators=(',', ':')))
     kit = kit_citation()
     lab_html = (
         (
@@ -2055,7 +2122,7 @@ def pages(
     built_with = (
         f'Updated {html.escape(human_date(_now()))}. Built with <a href="{html.escape(kit["url"])}">ptmcontext</a> '
         f'{html.escape(kit["version"])}, {html.escape(_licence_words(kit.get("licence", "MIT")))} license. '
-        "Each site's data are under the license its page states."
+        "Each explorer's data are under the license its page states."
     )
     text = LP.page(
         cards,
@@ -2065,6 +2132,7 @@ def pages(
         fonts_css=FONTS['stylesheet'],
         built_with=built_with,
         logo=logo_href,
+        search=bool(found),
     )
     (out / 'index.html').write_text(text)
     log(f'  -> {out / "index.html"}')

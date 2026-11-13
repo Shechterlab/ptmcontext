@@ -9,4 +9,4 @@ statistics    the one table every test writes into
 inputs        the manifest every input file is checked against
 """
 
-__version__ = '0.3.1'
+__version__ = '0.4.0'

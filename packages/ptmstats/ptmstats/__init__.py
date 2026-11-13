@@ -269,6 +269,15 @@ def hypergeom_sf(k: int, N: int, M: int, n: int) -> float:
     return float(hypergeom.sf(k - 1, N, M, n))
 
 
+def wilson_interval(k: int, n: int, z: float = 1.959963984540054) -> tuple[float, float]:
+    """The 95% Wilson score interval of the share k/n (the Overlap page's whisker; kit-overlap.js `wilson` is the same)."""
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return max(0.0, c - h), min(1.0, c + h)
+
+
 def gene_list_test(questions) -> list:
     """The gene-list test: a list of proteins (or genes) the reader names, against the sets of each protein-set question.
 

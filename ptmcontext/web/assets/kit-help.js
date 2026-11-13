@@ -108,7 +108,7 @@
       (`<p class="sp-what">${esc(whatText())} <span class="muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins.</span>` +
         `</p>`) +
       startButtons('sp-starts') +
-      (`<p class="sp-foot"><a href="${esc(K.link('help'))}">How to use this site</a><span aria-hidden="true"> · ` +
+      (`<p class="sp-foot"><a href="${esc(K.link('help'))}">How to use this explorer</a><span aria-hidden="true"> · ` +
         `</span><span class="sp-keys">Press <kbd>/</kbd> to search, <kbd>?</kbd> for every shortcut</span></p>` +
         `</section>`)
     );
@@ -173,7 +173,7 @@
     '</tbody></table>';
   const terms = EX.filter(isTerm);
   const SECTIONS = [
-    ['h-what', 'What this site is'],
+    ['h-what', 'What this explorer is'],
     ['h-start', 'Where to start'],
     ['h-search', 'Searching'],
     ['h-filters', 'Filters'],
@@ -193,7 +193,7 @@
     const mlink = (arg, text) => `<a href="${esc(K.link('method', arg))}">${text}</a>`;
     const min = K.sel?.MIN;
     return (
-      `<div class="page-head"><h2>How to use this site</h2></div><div class="doc help-doc">` +
+      `<div class="page-head"><h2>How to use this explorer</h2></div><div class="doc help-doc">` +
       sec(
         'h-what',
         `<p>${esc(whatText('on the Overview'))}</p><p>It holds ${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins and ${int(D.analyses.length)} questions. ${mlink('', 'Method')} gives the ` +
@@ -259,11 +259,13 @@
       ) +
       sec(
         'h-read',
-        `<p>Each tile is a question and each row a class. The dot is the effect on a log scale with ` +
-          `its 95% confidence interval, and 1× is no difference.</p>` +
-          (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and at least 1.1×</li><li><i ` +
+        `<p>Each tile is a question and each row a class. The dot and the number are the fold on a log scale: ` +
+          `the share of ${esc(W.marks)} in the class over the share of the comparison in it (1× is no difference). ` +
+          `Beneath it are the test's odds ratio with its 95% confidence interval and q; the hover gives the counts.</p>` +
+          (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and a fold of at least 1.1×</li><li><i ` +
             `class="kd less"></i> less often</li><li><i class="kd same"></i> about the same: significant, but ` +
-            `within 1.1×</li><li><i class="kd ns"></i> no difference: q > 0.05</li></ul>`) +
+            `within 1.1×</li><li><i class="kd ns"></i> no difference: q > 0.05</li><li><i class="kd ns"></i> not ` +
+            `tested: too few on a side</li></ul>`) +
           (`<p>Within each protein compares each protein's ${esc(W.marks)} with the other ${esc(W.residues)} of the same ` +
             `protein. Across all proteins puts all the ${esc(W.residues)} together. The first separates where ${esc(W.marks)} lie from ` +
             `which proteins were found ${esc(W.marked)}. ${
@@ -312,7 +314,7 @@
       if (arg) document.getElementById(arg)?.scrollIntoView({ block: 'start' });
     },
   };
-  K.sections.help = () => [['view', 'How to use this site', 1], ...SECTIONS.map(([id, t]) => [id, t, 1])];
+  K.sections.help = () => [['view', 'How to use this explorer', 1], ...SECTIONS.map(([id, t]) => [id, t, 1])];
   (K.tabsEnd ||= []).push(() => ['help', 'Help', null]);
 
   // ---- keyboard shortcuts and their overlay --------------------------------------------------------------------------
@@ -325,7 +327,7 @@
           `class="keys-head"><h2 id="keys-title">Keyboard shortcuts</h2>` +
           (`<button type="button" class="sp-close" data-keys-close aria-label="Close">×</button></div><div ` +
             `class="keys-body"></div>`) +
-          `<p class="muted small">More in <a href="#help" data-keys-close>How to use this site</a>.</p></dialog>`
+          `<p class="muted small">More in <a href="#help" data-keys-close>How to use this explorer</a>.</p></dialog>`
       );
       dlg = document.querySelector('.keys-dlg');
       dlg.addEventListener('click', (e) => {

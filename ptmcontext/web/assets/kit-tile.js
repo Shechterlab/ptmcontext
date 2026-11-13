@@ -116,11 +116,19 @@
       (x2 == null ? '' : `<circle class="dot ${dir}${x.desc ? ' desc' : ''}" cx="${x2}%" cy="50%" r="4.5"/>`) +
       '</svg>';
     const val = x.absent ? '–' : K.fxn(v) + '×';
+    // the counts behind the value join the row's hover (after the click's own words), the test beneath it
+    const tipped = x.tip
+      ? / title="/.test(attrs)
+        ? attrs.replace(/ title="([^"]*)"/, (m, t) => ` title="${esc(x.tip)}. ${t}"`)
+        : `${attrs} title="${esc(x.tip)}"`
+      : attrs;
     return (
-      `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${cls ? ' ' + cls : ''}"${attrs}><span class="fr-lab">` +
+      `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${x.sub ? ' has-sub' : ''}${cls ? ' ' + cls : ''}"${tipped}><span class="fr-lab">` +
       `<span>${esc(x.label)}</span>${x.badge ? `<span class="vh">, ${esc(x.badge)}</span>` : ''}</span>${track}` +
       (`<span class="fr-val">${esc(val)}<i class="fr-q ${dir}${x.desc ? ' desc' : ''}" aria-hidden="true"></i>` +
-        `</span><span class="fr-n">${x.n != null ? int(x.n) : ''}</span></div>`)
+        `</span><span class="fr-n">${x.n != null ? int(x.n) : ''}</span>` +
+        (x.sub ? `<span class="fr-sub">${esc(x.sub)}</span>` : '') +
+        `</div>`)
     );
   }
   const valsOf = (rows) =>

@@ -47,6 +47,7 @@ const sets = {{
   map_b: {{ N: 8, in_background: P(8), sets: [['nuclear', 3, ['P1', 'P2', 'P3']]] }},
 }};
 const K = {{ D, W: D.words, A, S: {{ q: '', f: {{ ['w:' + D.cell.id]: ['nucleoplasm'] }} }}, esc: s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'), int: n => String(n), cap: s => s[0].toUpperCase() + s.slice(1),
+  READ: {{ min_maps: 1, min_group: 1 }}, // one small toy map: the thresholds of website.reading are tests/test_cell_reading.py's
   fx: x => x.toFixed(2) + '×', fxn: x => x.toFixed(2), fq: q => q.toExponential(1), PADJ: 0.05, MIN_EFFECT: 1.1, LESS: 1 / 1.1, MIN: {{}}, link: (...a) => '#' + a.join('/'), render: noop, writeHash: noop,
   selOn: () => true, vsOn: () => false, questions: {{}}, methods: [], clicks: [], tips: [], afterRender: [], expBar: () => '', figureFrame: noop, preamble: () => '', exportFigure: noop, tw: s => 6 * s.length, wrap: s => [s], fit: s => s, detailsLink: () => '',
   sel: {{ data: () => ({{ protein_sets: sets }}), testable: () => true, setHas: () => false, compute: () => ({{ proteins: new Set(['P1', 'P2', 'P3', 'P4']) }}), namesProteins: () => false,
@@ -75,4 +76,4 @@ def test_only_the_selected_part_is_left_out_and_the_answer_names_it(tmp_path):
 def test_the_answer_says_so_when_nothing_else_differs(tmp_path):
     out = _run(tmp_path, ['P1', 'P2', 'P5', 'P6', 'P7'])
     assert out['cyto'][0] == 'ns'
-    assert out['answer'].startswith('Apart from nucleus, about as often in each region as ')
+    assert out['answer'].startswith('Apart from nucleus, no part differs from ')

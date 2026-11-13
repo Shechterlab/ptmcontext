@@ -77,20 +77,39 @@
   const fq = (q) => (q == null ? '–' : q === 0 ? '< 1e-300' : q < 1e-3 ? q.toExponential(1) : q.toFixed(3));
   const PADJ = 0.05,
     MIN_EFFECT = 1.1;
-  const dir = (r) =>
-    r.eff == null || r.q == null || r.q > PADJ
-      ? 'ns'
-      : r.eff >= MIN_EFFECT
-        ? 'more'
-        : r.eff <= 1 / MIN_EFFECT
-          ? 'less'
-          : 'same';
+  // what a row shows: the fold (share among the marks over share among the comparison) where it has one, else its
+  // test's effect. The 1.1× rule judges the number shown; the test's own effect must point the same way
+  const valOf = (r) => r.shown ?? r.eff;
+  const dir = (r) => {
+    const v = valOf(r),
+      t = r.adj ? r.adj.eff : r.eff,
+      q = r.adj ? r.adj.q : r.q;
+    if (v == null || q == null || q > PADJ) return 'ns';
+    // the fold and the test point different ways (the pooled counts against a test within proteins or within abundance
+    // deciles): no reading either way
+    if (t != null && v >= 1 !== t >= 1) return 'ns';
+    return v >= MIN_EFFECT ? 'more' : v <= 1 / MIN_EFFECT ? 'less' : 'same';
+  };
+  const split = (r) => {
+    const v = valOf(r),
+      t = r.adj ? r.adj.eff : r.eff;
+    return v != null && t != null && v >= 1 !== t >= 1;
+  };
   const DIR_WORDS = {
     more: 'more often',
     less: 'less often',
     same: 'about the same (within 1.1×)',
     ns: 'no difference (q > 0.05)',
   };
+  // a row's reading in words: one with no estimate was not tested (too few on a side), one shown but not tested says so
+  const dirWord = (r) =>
+    r.descriptive
+      ? 'shown, not tested'
+      : r.eff == null || r.p == null
+        ? 'not tested (too few)'
+        : split(r) && (r.adj ? r.adj.q : r.q) <= PADJ
+          ? 'the fold and the test point different ways'
+          : DIR_WORDS[r.dir];
   // the color key of a figure in the page's own words (DIR_WORDS), as the legend entries K.figureFrame draws: one wording and one
   // set of colors for the key under a chart and for the key in every export of it
   const REF_WORDS = 'the whole dataset (bars: your selection)';
@@ -108,7 +127,7 @@
   const METHOD_PHRASE = {
     mantel_haenszel: 'compared within each protein (Mantel–Haenszel)',
     fisher: 'across all proteins (Fisher’s exact test)',
-    study: 'compared among sites reported by the same sources (Mantel–Haenszel)',
+    study: 'compared among sites reported by the same studies or databases (Mantel–Haenszel)',
   };
   const A = Object.fromEntries(D.analyses.map((a) => [a.id, a]));
   // the Overview's switch: its words, and what each compares
@@ -119,13 +138,13 @@
         `similar abundance for protein-level questions.`,
     ],
     fisher: ['across all proteins', `Pools all candidate ${W.residues} of all proteins (Fisher’s exact test, crude).`],
-    study: ['within studies', `Compare ${W.marks} only with ` + `those reported by the same sources.`],
+    study: ['within studies', `Compare ${W.marks} only with ` + `those reported by the same studies or databases.`],
   };
   // plain words for the terms of the tests, shown on hover (an abbr) and in one line on the Help page
   const GLOSS = {
     fold: 'How many times more often than in the comparison group. 1× means no difference.',
     'odds ratio': 'How many times higher the odds are inside the class than outside it. 2× means twice the odds.',
-    q: 'The p value corrected for the many tests made on this site. A difference counts at q ≤ 0.05 and at least 1.1×.',
+    q: 'The p value corrected for the many tests made in this explorer. A difference counts at q ≤ 0.05 and at least 1.1×.',
     'within each protein':
       `Each ${W.mark} is compared only with the other ${W.residues} of the same protein, so a ` +
       `protein with many sites does not dominate.`,
@@ -175,9 +194,15 @@
   const setUnit = (a) => A[a]?.unit || 'proteins';
   const markedUnits = (a) => (A[a]?.unit ? `${A[a].unit} of ${W.marked} proteins` : `${W.marked} proteins`);
   // a row of a test, ready to draw: its effect, labels and reading (the site's own rows, and a selection's)
+  const FOLD_METHODS = new Set(['fisher', 'mantel_haenszel', 'study']);
   const decorate = (rows) => {
     rows.forEach((r) => {
       r.eff = r.or ?? r.fold;
+      // a residue row's fold: the share of the marks in the class over the share of the comparison residues in it
+      // (pooled counts; the odds ratio and its test stay beside it)
+      if (!SETS(r.analysis) && FOLD_METHODS.has(r.method) && r.a != null && r.a + r.b > 0 && r.c + r.d > 0 && r.c > 0)
+        r.shown = r.a / (r.a + r.b) / (r.c / (r.c + r.d));
+      else if (SETS(r.analysis) && r.fold != null) r.shown = r.fold;
       r.label = label(r);
       r.help = (A[r.analysis]?.help || {})[r.category] || '';
       // the site file's short label (website.front.row_labels) names the class everywhere, as on the tile; the full name goes into its subtitle
@@ -229,6 +254,15 @@
   const STRAT = {};
   D.rows.forEach((r) => {
     if (SETS(r.analysis) && r.method === 'mantel_haenszel') STRAT[r.analysis + '\u0000' + r.category] = r;
+  });
+  // where a set was also tested within abundance deciles, that test is the row's reading (its q and direction); the
+  // number shown stays the fold
+  D.rows.forEach((r) => {
+    const st = SETS(r.analysis) && r.method === 'enricher' && STRAT[r.analysis + '\u0000' + r.category];
+    if (st && st.eff != null) {
+      r.adj = st;
+      r.dir = dir(r);
+    }
   });
   // does a protein set's enrichment (or depletion) hold within abundance deciles? 'holds' (the same reading there),
   // 'weaker' (the same direction by 1.1× or more, but not at q ≤ 0.05: underpowered, not contradicted), 'lost' (under
@@ -1057,18 +1091,21 @@
         ? [up ? 'More often: ' + one(up) : '', dn ? 'Less often: ' + one(dn) : ''].filter(Boolean).join('. ')
         : `None differs from ${esc(vsName())} (q ≤ 0.05 ` + `and at least 1.1×)`;
     }
+    rows = rows.filter(rankable);
     const top = rows.filter((r) => r.dir === 'more').sort(byOrder(card))[0],
-      low = rows.filter((r) => r.dir === 'less').sort(card.order === 'q' ? byOrder(card) : (x, y) => x.eff - y.eff)[0];
+      low = rows
+        .filter((r) => r.dir === 'less')
+        .sort(card.order === 'q' ? byOrder(card) : (x, y) => valOf(x) - valOf(y))[0];
     if (tmpl && top)
       return esc(tmpl)
         .replace('{top}', `<b>${esc(top.label)}</b>`)
-        .replace('{fold}', fx(top.eff));
+        .replace('{fold}', fx(valOf(top)));
     if (top)
       return (
-        `More often: <b>${esc(top.label)}</b> (${fx(top.eff)})` +
-        (low ? `. Less often: <b>${esc(low.label)}</b> (${fx(low.eff)})` : '')
+        `More often: <b>${esc(top.label)}</b> (${fx(valOf(top))})` +
+        (low ? `. Less often: <b>${esc(low.label)}</b> (${fx(valOf(low))})` : '')
       );
-    if (low) return `Least often: <b>${esc(low.label)}</b> (${fx(low.eff)})`;
+    if (low) return `Least often: <b>${esc(low.label)}</b> (${fx(valOf(low))})`;
     return 'None differs (q ≤ 0.05 and at least 1.1×)';
   }
   const EXCL = /^(no |not |unknown|unassigned|other\b)/i;
@@ -1125,6 +1162,7 @@
   // the comparison is pooled, and the page says so
   const noWithin = () => vsOn() && (K.sel.contrastGroups()?.mixed ?? 0) < K.sel.MIN.proteins;
   const vsMethod = (m) => (m === 'mantel_haenszel' && noWithin() ? 'fisher' : m);
+  K.vsMethod = vsMethod;
   const rowsOf = (a, m) =>
     vsOn()
       ? K.sel.contrast(a.id, a.kind === 'protein_sets' ? 'enricher' : vsMethod(m)) || []
@@ -1170,6 +1208,34 @@
         }">${sharePair(r)}</span>`
       : '';
   K.sharePair = sharePair;
+  // the interval drawn around a row's value: its test's, only where the value shown is that test's effect
+  const ciOf = (r) => (r.lo != null && r.hi != null && valOf(r) === r.eff ? [r.lo, r.hi] : null);
+  // beneath a row's fold: the test it rests on (the odds ratio, its interval and q; for a set tested within abundance
+  // deciles, that test)
+  const testLine = (r) => {
+    const t = r.adj || r;
+    if (r.descriptive) return 'shown, not tested';
+    if (t.eff == null || t.p === null) return 'not tested (too few)';
+    const ci = t.lo != null && t.hi != null ? ` (${fxn(t.lo)}–${fxn(t.hi)})` : '';
+    const or = valOf(r) !== t.eff || r.adj ? `OR ${fxn(t.eff)}${ci} · ` : '';
+    return `${r.adj ? 'within abundance deciles: ' : ''}${or}q ${fq(t.q)}`;
+  };
+  // the counts behind a row's fold, for its hover
+  const countLine = (r) => {
+    if (r.a == null || !(r.a + r.b > 0)) return '';
+    if (SETS(r.analysis) && r.method === 'enricher')
+      return (
+        `${int(r.a)} of ${int(r.a + r.b)} ${W.marked} ${setUnit(r.analysis)} (${pcD(share1(r))}) vs ${int(r.a + r.c)} ` +
+        `of ${int(r.a + r.b + r.c + r.d)} in the background (${pcD((r.a + r.c) / (r.a + r.b + r.c + r.d))})`
+      );
+    return (
+      `${int(r.a)} of ${int(r.a + r.b)} ${W.marks} (${pcD(share1(r))}) vs ${int(r.c)} of ${int(r.c + r.d)} ` +
+      `${r.vs ? vsName() : 'other ' + W.residues} (${pcD(share2(r))})`
+    );
+  };
+  K.testLine = testLine;
+  K.countLine = countLine;
+  K.valOf = valOf;
   const strength = (r) =>
     r.dir === 'more' ? Math.log(r.lo ?? r.eff) : r.dir === 'less' ? -Math.log(r.hi ?? r.eff) : 0;
   const enough = (r) => r.a + r.c >= 10;
@@ -1192,7 +1258,7 @@
       : S.m === 'fisher'
         ? `tested against all other ${W.residues}`
         : S.m === 'study'
-          ? `tested against ${W.marks} from the same sources`
+          ? `tested against ${W.marks} from the same studies or databases`
           : `tested against other ${W.residues} of the same proteins`);
   const selTestable = () => !selOn() || (K.sel.data() && K.sel.testable() && K.sel.nMarks() > 0);
   // which rows a tile shows: up to 7, the classes that differ most first (a few of those less often, if any), then
@@ -1201,26 +1267,47 @@
   // a card's order: by effect (the default) or by evidence (order: q), for sets where a small set reaches the largest
   // fold when every member is marked
   const cardOf = (aid) => allCards().find((c) => c.analysis === aid) || {};
+  // a row's evidence: its reading's q (a set's test within abundance deciles where it has one)
+  const qOf = (r) => (r.adj ? r.adj.q : r.q) ?? 1;
   const byOrder = (card) =>
-    card.order === 'q' ? (x, y) => (x.q ?? 1) - (y.q ?? 1) || y.eff - x.eff : (x, y) => y.eff - x.eff;
+    card.order === 'q'
+      ? (x, y) => qOf(x) - qOf(y) || valOf(y) - valOf(x)
+      : (x, y) => valOf(y) - valOf(x) || qOf(x) - qOf(y); // equal folds: the stronger evidence first
+  // website.reading: what is ranked. A protein set under min_set proteins, or one whose every member is marked (its fold
+  // is then at the ceiling, N over the marked, and ties every other such set), is shown on its question's page but not
+  // ranked on a tile
+  const READ = { min_maps: 2, min_group: 20, min_set: 30, ...(D.reading || {}) };
+  K.READ = READ;
+  const rankable = (r) =>
+    !SETS(r.analysis) || r.method !== 'enricher' || r.vs || (r.a + r.c >= READ.min_set && r.c > 0);
+  K.rankable = rankable;
   function pick(rows, max, card = {}) {
     const vs = rows.some((r) => r.vs);
     // against other marks: the classes with most evidence first (the CI bound nearer 1), with at least 10 marks
-    const c = rows.filter((r) => r.eff != null && !EXCL.test(r.label) && (!vs || enough(r)));
+    const c = rows.filter((r) => r.eff != null && !EXCL.test(r.label) && (!vs || enough(r)) && rankable(r));
     const up = c.filter((r) => r.dir === 'more').sort(vs ? (x, y) => strength(y) - strength(x) : byOrder(card)),
       dn = c
         .filter((r) => r.dir === 'less')
-        .sort(vs ? (x, y) => strength(y) - strength(x) : card.order === 'q' ? byOrder(card) : (x, y) => x.eff - y.eff);
+        .sort(
+          vs
+            ? (x, y) => strength(y) - strength(x)
+            : card.order === 'q'
+              ? byOrder(card)
+              : (x, y) => valOf(x) - valOf(y) || qOf(x) - qOf(y)
+        );
     const same = c
       .filter((r) => r.dir === 'same')
-      .sort((x, y) => Math.abs(Math.log(y.eff)) - Math.abs(Math.log(x.eff)));
+      .sort((x, y) => Math.abs(Math.log(valOf(y))) - Math.abs(Math.log(valOf(x))));
     const nUp = Math.min(up.length, dn.length ? max - 2 : max),
       nDn = Math.min(dn.length, max - nUp, up.length ? 2 : max);
     const shown = [...up.slice(0, nUp), ...dn.slice(0, nDn)];
-    if (card.order === 'q') shown.sort((x, y) => y.eff - x.eff); // chosen by evidence, drawn like the other tiles: the largest value first
+    if (card.order === 'q') shown.sort((x, y) => valOf(y) - valOf(x)); // chosen by evidence, drawn like the other tiles: the largest value first
     shown.push(...same.slice(0, Math.max(0, max - shown.length)));
-    // the classes that differ but are not shown: "+N more", which the question outlines when opened from it
-    const left = [...up, ...dn, ...same].filter((r) => !shown.includes(r)).map((r) => r.category);
+    // the classes that differ but are not shown (and those not ranked): "+N more", which the question outlines when opened from it
+    const unranked = rows.filter(
+      (r) => r.eff != null && !rankable(r) && (r.dir === 'more' || r.dir === 'less') && !EXCL.test(r.label)
+    );
+    const left = [...up, ...dn, ...same, ...unranked].filter((r) => !shown.includes(r)).map((r) => r.category);
     return { shown, more: left.length, left };
   }
   // a class row selects its marks (or the marks on its proteins), the same as the search term of its class: the
@@ -1260,7 +1347,9 @@
   // whole dataset's value (the tile's SVG export draws the same, tileSvg)
   function tileScale(rows) {
     const l2 = (v) => Math.log2(Math.max(v, 1e-3));
-    const vals = rows.flatMap((r) => [r.eff, r.lo, r.hi, r.ref?.eff].filter((v) => v != null && v > 0));
+    const vals = rows.flatMap((r) =>
+      [valOf(r), ...(ciOf(r) || []), r.ref ? valOf(r.ref) : null].filter((v) => v != null && v > 0)
+    );
     const lo = Math.min(-1, Math.max(-4, Math.floor(Math.min(...vals.map(l2))))),
       hi = Math.max(1, Math.min(6, Math.ceil(Math.max(...vals.map(l2)))));
     const grid = [];
@@ -1285,12 +1374,10 @@
           (r) =>
             `<div class="trow pick" data-r="${reg(r)}"${pickAttrs(r)}><span class="lab">${esc(r.label)}</span><svg ` +
             `aria-hidden="true">${grid.join('')}` +
-            (r.lo != null && r.hi != null
-              ? `<line class="whisker ${r.dir}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" ` + `y2="50%"/>`
-              : '') +
-            `<circle class="dot ${r.dir}" cx="${X(r.eff)}" cy="50%" r="4.6"/>${
-              r.ref ? `<line class="ref" x1="${X(r.ref.eff)}" x2="${X(r.ref.eff)}" y1="15%" ` + `y2="85%"/>` : ''
-            }</svg><span class="val ${r.dir}">${fx(r.eff)}${shareSpan(r)}</span></div>`
+            (ciOf(r) ? `<line class="whisker ${r.dir}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" ` + `y2="50%"/>` : '') +
+            `<circle class="dot ${r.dir}" cx="${X(valOf(r))}" cy="50%" r="4.6"/>${
+              r.ref ? `<line class="ref" x1="${X(valOf(r.ref))}" x2="${X(valOf(r.ref))}" y1="15%" ` + `y2="85%"/>` : ''
+            }</svg><span class="val ${r.dir}">${fx(valOf(r))}${shareSpan(r)}</span></div>`
         )
         .join('') +
       `<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div>` +
@@ -1370,7 +1457,11 @@
       (OV.statistic_label !== false && !vsOn() && rows.some((r) => r.eff != null)
         ? ownSel && fr
           ? `<p class="tstat">${otherRows(a, made)}</p>`
-          : `<p class="tstat">${gloss('fold', 'Fold')} ${esc(baseline(a, vsMethod(S.m)))}</p>`
+          : `<p class="tstat">${
+              shown.every((r) => r.absent || r.shown != null)
+                ? gloss('fold', 'Fold')
+                : gloss('odds ratio', 'Odds ratio')
+            } ${esc(baseline(a, vsMethod(S.m)))}</p>`
         : '') +
       (shown.length
         ? `<div class="trows${fr ? ' fr-rows' : ''}">${
@@ -1441,7 +1532,7 @@
         if (!r || r.eff == null) return '';
         return (
           `<p class="tbeside"><a href="${esc(link('overview', other.id))}">${esc(b.label)}</a>: ` +
-          `<span class="nw">${esc(fx(r.eff))}, q ${esc(fq(r.q))}</span></p>`
+          `<span class="nw">${esc(fx(valOf(r)))}, q ${esc(fq(r.adj ? r.adj.q : r.q))}</span></p>`
         );
       })
       .join('');
@@ -1449,12 +1540,14 @@
   // a tile row as the cards' rows read it: the short row label (website.front.row_labels), the interval, q, n and the whole dataset's ring
   const frModel = (a, r) => ({
     label: FR.row_labels?.[a.id]?.[r.category] || r.label,
-    v: r.absent ? null : r.eff,
-    lo: r.lo != null && r.hi != null ? [r.lo, r.hi] : null,
-    q: r.q,
+    v: r.absent ? null : valOf(r),
+    lo: ciOf(r),
+    sub: r.absent ? '' : testLine(r),
+    tip: r.absent ? '' : countLine(r),
+    q: r.adj ? r.adj.q : r.q,
     dir: r.absent ? 'ns' : r.dir,
     n: r.absent ? null : r.a,
-    wv: r.ref ? r.ref.eff : null,
+    wv: r.ref ? valOf(r.ref) : null,
     desc: !!r.descriptive,
     absent: !!r.absent,
   });
@@ -1519,10 +1612,10 @@
   const againstHtml = () =>
     `<p class="against"><span class="flabel">Compared with</span><span class="seg" ` +
     `role="group" aria-label="Compared with">` +
-    (`<button type="button" data-vs="residues" aria-pressed="${S.vs === 'residues'}" title="The site’s own tests: ` +
+    (`<button type="button" data-vs="residues" aria-pressed="${S.vs === 'residues'}" title="This explorer’s own tests: ` +
       `the selected ${esc(W.marks)} against the other ${esc(W.residues)} of their proteins">other ${esc(W.residues)}</button>`) +
     (`<button type="button" data-vs="marks" aria-pressed="${S.vs === 'marks'}" title="What sets the selection ` +
-      `apart: its ${esc(W.marks)} against the site’s other ${esc(W.marks)}">other ${esc(W.marks)}</button>`) +
+      `apart: its ${esc(W.marks)} against the other ${esc(W.marks)} of this explorer">other ${esc(W.marks)}</button>`) +
     (S.vs === 'cmp' ? `<button type="button" data-vs="cmp" aria-pressed="true">${esc(cmpName())}</button>` : '') +
     (K.views.compare
       ? `<button type="button" class="linkish" data-go-compare title="Compare with a saved ` +
@@ -1543,15 +1636,15 @@
       `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">How to read</button></p>`;
     const howP = S.how
       ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a ` +
-        `log scale (the solid line is no difference). For questions about where ${esc(W.marks)} lie, × is an odds ` +
-        `ratio: the odds that a ${esc(W.mark)} is in the class over the odds for another ${esc(W.residue)}. It is not ` +
-        `the ratio of the two shares, which is closer to 1. The hover gives both shares${
+        `log scale (the solid line is no difference). The number is the fold: for questions about where ${esc(W.marks)} ` +
+        `lie, the share of ${esc(W.marks)} in the class over the share of the other ${esc(W.residues)} in it${
           D.analyses.some((a) => a.kind === 'protein_sets')
-            ? '. For questions about protein classes, × is the fold enrichment: the share of ' +
+            ? '; for questions about protein classes, the share of ' +
               esc(W.marked) +
               ' proteins in the set over the share of all proteins'
             : ''
-        }. Within ` +
+        }. Beneath it is the test: the odds ratio with its 95% interval, and q. The hover gives the counts. A row ` +
+        `differs when q ≤ ${PADJ}, the fold is at least 1.1× either way and the test points the same way. Within ` +
         `each protein, each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein ` +
         `(Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} lie from which proteins were found ${esc(W.marked)}. Across ` +
         `all proteins puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact ` +
@@ -1561,7 +1654,7 @@
               `fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). `
             : ''
         }Red: more ` +
-        `often (q ≤ 0.05 and at least 1.1×). Slate: less often. Grey: significant but within 1.1×. Hollow: no ` +
+        `often (q ≤ 0.05 and at least 1.1×). Slate: less often. Gray: significant but within 1.1×. Hollow: no ` +
         `significant difference. A tile shows the classes that differ most and opens to every class. Hover a row ` +
         `for its counts.</p>`
       : '';
@@ -1626,8 +1719,18 @@
     // the comparison choice and the legend share one row
     const row = `<div class="ctl-row">${against}${keyP}</div>${howP}`;
     if (vsOn()) return head + row + vsLead();
+    // chosen by a feature of the residue: the other residues were not, so the baseline restates the choice for that
+    // feature and any that goes with it
+    const feats = K.sel.residueFeatures ? K.sel.residueFeatures() : [];
+    const circ = feats.length
+      ? `<p class="note sel-circ">Chosen by a feature of the residue (${esc(feats.join('; '))}). The other ` +
+        `${esc(W.residues)} it is compared with were not chosen that way, so questions about the same or a related ` +
+        `feature partly restate the choice. <button class="linkish" type="button" data-go-apart>Compare with the other ` +
+        `${esc(W.marks)}</button> to ask what else sets these apart.</p>`
+      : '';
     return (
       head +
+      circ +
       (K.sel.testable()
         ? row
         : against +
@@ -1736,13 +1839,12 @@
             }`
           : `the other <b>${int(G.g2.length)}</b>`
       }, ${esc(METHOD_PHRASE[vsMethod(S.m)] || '')}.` +
-      (S.m === 'mantel_haenszel' && noWithin()
+      (noWithin()
         ? ` <span class="muted">Not within each protein: ${
             G.mixed ? `only ${int(G.mixed)} protein${G.mixed === 1 ? ' has' : 's have'}` : 'no protein has'
           } ${esc(W.marks)} on both ` +
-          `sides (your selection takes whole proteins), so ${
-            G.mixed ? 'that test says little' : 'that test cannot be made'
-          }.</span>`
+          `sides (your selection takes whole proteins). Pooled, each ${esc(W.mark)} of a protein would count as an ` +
+          `independent observation, so the shares are shown without a test; the protein-level questions are tested.</span>`
         : '') +
       `</p>`;
     if (!K.sel.testable()) {
@@ -1813,11 +1915,11 @@
               `class="muted">(${esc(inText(A[r.analysis].title))})</span>: ${pcS(share1(r))} of these vs ${pcS(share2(r))} of the others`
           )
           .join('; ')}. Differences ` +
-        `above may reflect which sources report these ${esc(W.marks)}${
+        `above may reflect which studies or databases report these ${esc(W.marks)}${
           K.sel.STUDY && S.m !== 'study'
             ? `: <button ` +
               `type="button" class="linkish" data-m="study">compare within studies</button>, where each ${esc(W.mark)} is compared ` +
-              `only with ${esc(W.marks)} reported by the same sources.`
+              `only with ${esc(W.marks)} reported by the same studies or databases.`
             : S.m === 'study'
               ? '; the comparison above is within studies, so they do not explain it.'
               : '.'
@@ -2299,7 +2401,7 @@
     ];
     return (
       `<section id="m-privacy"><h3>Licenses and privacy</h3>` +
-      (`<p>Licences: the code (ptmcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} license${
+      (`<p>Licenses: the code (ptmcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} license${
         D.kit.url ? ` (<a href="${esc(D.kit.url)}">source</a>)` : ''
       }. This site’s ` +
         `data and figures are under ${esc(hlicence(CIT.licence || 'their sources’ terms'))}, and each source ` +
@@ -2323,8 +2425,8 @@
       ['m-g2', 'The data', 0],
       ['m-data', 'Data', 1],
       ['m-sources', 'Sources', 1],
-      ['m-g3', 'The site', 0],
-      ['m-made', 'How this site is made', 1],
+      ['m-g3', 'The explorer', 0],
+      ['m-made', 'How this explorer is made', 1],
       ['m-cite', 'How to cite', 1],
       ['m-download', 'Download the data', 1],
       ['m-search', 'Search terms', 1],
@@ -2536,7 +2638,7 @@
               r.lo != null ? ` <span class="muted">(${fxn(r.lo)} to ${fxn(r.hi)})</span>` : ''
             }</td><td ` +
               `class="num">${esc(K.l2fmt(r))}</td><td class="num">${fq(r.q)}</td>`) +
-            `<td><span class="dir ${r.dir}">${DIR_WORDS[r.dir]}</span></td><td class="num">${r.strata != null ? int(r.strata) : ''}</td></tr>`
+            `<td><span class="dir ${r.dir}">${esc(dirWord(r))}</span></td><td class="num">${r.strata != null ? int(r.strata) : ''}</td></tr>`
         )
         .join('') +
       `</tbody></table></div>` +
@@ -2662,7 +2764,7 @@
       searchSection() +
       privacySection() +
       sourcesSection() +
-      (`<section id="m-made"><h3>How this site is made</h3><p>One file, <span class="mono">${esc(D.site.config)}</span>, ` +
+      (`<section id="m-made"><h3>How this explorer is made</h3><p>One file, <span class="mono">${esc(D.site.config)}</span>, ` +
         `sets the modification, the sequences and regions, the questions, the colors and the pictures. ptmcontext ${esc(D.kit.version)} (commit ` +
         `<span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(RUN.written))}. The citation,` +
         ` version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>`) +
@@ -2820,7 +2922,7 @@
     if (!x) return '';
     return x.test === 'protein_sets'
       ? `protein-set ` + `test of the ${x.sets} input`
-      : `layer ${x.layer} (${x.origin})${x.with ? ', made from the site file’s parameters' : ''}`;
+      : `layer ${x.layer} (${x.origin})${x.with ? ', made with the parameters of its definition' : ''}`;
   };
   function creditLines() {
     const RUN = D.run,
@@ -2947,7 +3049,7 @@
               g6(st.lo),
               g6(st.hi),
               g6(st.q),
-              DIR_WORDS[r.dir],
+              dirWord(r),
               SET_TEST,
               ...tail(),
             ].join('\t');
@@ -3005,7 +3107,7 @@
             g6(share1(r)),
             g6(share2(r)),
             r.strata ?? '',
-            DIR_WORDS[r.dir],
+            dirWord(r),
             ...tail(),
           ].join('\t')
         )
@@ -3421,7 +3523,7 @@
     let y = 0;
     shown.forEach((r) => {
       const lab = wrap(r.label, LW, 11).slice(0, 2),
-        h = Math.max(sharePair(r) && !vs ? 30 : 22, lab.length * 13 + 8),
+        h = Math.max(!vs ? 32 : 22, lab.length * 13 + 8),
         yc = y + h / 2;
       lab.forEach((t, k) => T(P, yc + 4 - (lab.length - 1) * 6.5 + k * 13, t));
       if (r.absent) {
@@ -3442,26 +3544,26 @@
             `<line x1="${X(2 ** k).toFixed(1)}" x2="${X(2 ** k).toFixed(1)}" y1="${y}" y2="${y + h}" stroke="${k === 0 ? PAL.ink : PAL.one}" stroke-width="1"${k === 0 ? '' : ' stroke-dasharray="2 3"'}/>`
           )
         );
-        if (r.lo != null && r.hi != null)
+        if (ciOf(r))
           parts.push(
             `<line x1="${X(r.lo).toFixed(1)}" x2="${X(r.hi).toFixed(1)}" y1="${yc}" y2="${yc}" stroke="${col}" stroke-width="1.6" ` +
               `stroke-linecap="round"/>`
           );
         parts.push(
-          `<circle cx="${X(r.eff).toFixed(1)}" cy="${yc}" r="4.6" fill="${r.dir === 'ns' ? PAL.bg : col}" stroke="${r.dir === 'ns' ? PAL.muted : PAL.bg}" stroke-width="1.5"/>`
+          `<circle cx="${X(valOf(r)).toFixed(1)}" cy="${yc}" r="4.6" fill="${r.dir === 'ns' ? PAL.bg : col}" stroke="${r.dir === 'ns' ? PAL.muted : PAL.bg}" stroke-width="1.5"/>`
         );
         if (r.ref)
           parts.push(
-            `<circle cx="${X(r.ref.eff).toFixed(1)}" cy="${yc}" r="7" fill="none" stroke="${PAL.ink}" stroke-width="1.2" stroke-dasharray="2 2"/>`
+            `<circle cx="${X(valOf(r.ref)).toFixed(1)}" cy="${yc}" r="7" fill="none" stroke="${PAL.ink}" stroke-width="1.2" stroke-dasharray="2 2"/>`
           );
       }
       const strong = !vs && (r.dir === 'more' || r.dir === 'less');
-      T(VX, yc + (sharePair(r) && !vs ? -2 : 4), vs ? `${pcS(share1(r))} · ${pcS(share2(r))}` : fx(r.eff), {
+      T(VX, yc + (!vs ? -2 : 4), vs ? `${pcS(share1(r))} · ${pcS(share2(r))}` : fx(valOf(r)), {
         anchor: 'end',
         weight: strong ? 'bold' : null,
         fill: strong ? PAL[r.dir] : PAL.muted,
       });
-      if (sharePair(r) && !vs) T(VX, yc + 11, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted });
+      if (!vs) T(VX, yc + 11, testLine(r), { size: 9.5, anchor: 'end', fill: PAL.muted });
       y += h;
     });
     if (shown.length) {
@@ -4122,6 +4224,7 @@
         : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`; // the page first: "FUS R216 · <site>"
     document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg) && D.header?.compact !== false); // the header band in full on the Overview only (website.header.compact)
     document.body.classList.remove('bar-hidden');
+    document.querySelector('.toolbar')?.removeAttribute('inert');
     if (mod?.after) mod.after(S.arg);
     if (S.view === 'method') foldMethod();
     if (S.view === 'method' && S.arg) document.getElementById('m-' + S.arg)?.scrollIntoView({ block: 'start' });
@@ -4270,7 +4373,7 @@
                 set ? 'across all proteins' : METHOD[r.method] || esc(r.method)
               }${
                 r.strata
-                  ? `, ${int(r.strata)} informative ${r.method === 'study' ? 'groups of sources' : 'proteins'}`
+                  ? `, ${int(r.strata)} informative ${r.method === 'study' ? 'groups of studies or databases' : 'proteins'}`
                   : ''
               }`
         }, q ${fq(r.q)}` +
@@ -4593,8 +4696,50 @@
           ? `<img src="${esc(a.querySelector('img').getAttribute('src'))}" alt="" ` + `width="28" height="28">`
           : ''
       }<span>${esc(a.textContent.trim())}</span></a>` +
-      `<span class="dock-stats">${stats}</span><span class="dock-end"><span class="dock-cite">${cite}</span></span></div>`;
+      `<span class="dock-stats">${stats}</span>` +
+      // the compact bar (website.header.bar): while the toolbar is slid away on the way down, the bar carries the pages, a search
+      // and the selection; each is shown only then (CSS body.bar-hidden), so nothing is doubled while the toolbar is in view
+      `<span class="dock-x dock-tabs" aria-label="Pages"></span>` +
+      `<span class="dock-end"><span class="dock-cite">${cite}</span>` +
+      `<span class="dock-x dock-search"><input id="dock-q" type="search" autocomplete="off" spellcheck="false" ` +
+      `placeholder="Search" aria-label="Search proteins and sites, or filter"><button type="button" class="dock-ico" ` +
+      `data-dock-search aria-label="Search" title="Search and pages">⌕</button></span>` +
+      `<button type="button" class="dock-x dock-sel" data-rail-open="filters" aria-label="Selection and filters"></button>` +
+      `</span></div>`;
+    d.dataset.bar = (HDR.bar || BAR_ITEMS).join(' ');
   }
+  const BAR_ITEMS = ['home', 'switch', 'search', 'tabs', 'summary'],
+    HDR = D.header || {};
+  // the compact bar's parts that follow the page: the tabs, the search text and the selection's counts
+  function dockSync() {
+    const d = document.getElementById('dock');
+    if (!d) return;
+    const tabs = d.querySelector('.dock-tabs'),
+      src = document.getElementById('tabs');
+    if (tabs && src) {
+      tabs.innerHTML = [...src.querySelectorAll('a.tab')]
+        .map((a) => {
+          const c = a.cloneNode(true);
+          c.removeAttribute('id');
+          return c.outerHTML;
+        })
+        .join('');
+    }
+    const q = d.querySelector('#dock-q'),
+      main = document.getElementById('q');
+    if (q && main && document.activeElement !== q) q.value = main.value;
+    const sel = d.querySelector('.dock-sel');
+    if (sel && K.sel?.nMarks) {
+      const on = K.sel.active?.();
+      sel.innerHTML =
+        `<span aria-hidden="true">⏚</span> <b>${int(K.sel.nMarks())}</b><span class="dock-sel-w"> ${esc(W.marks)}</span><span class="dock-sel-p"> · <b>${int(
+          K.sel.nProteins()
+        )}</b> proteins</span>` + (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '');
+      sel.title = on ? 'A selection is on: open the filters' : 'Open the filters';
+    }
+  }
+  K.dockSync = dockSync;
+  (K.afterRender ||= []).push(dockSync);
   K.dock = dock;
   const dockOn = () => {
     const t = document.querySelector('.toolbar'),
@@ -4614,17 +4759,30 @@
     barH = h;
     document.documentElement.style.setProperty('--toolbar-h', `${h}px`);
   };
-  // a phone: the search, selection line and tabs slide away on the way down and come back on the way up (a transform: no shift)
+  // the search, selection line and tabs slide away on the way down and come back on the way up (a transform: nothing in the page
+  // moves); the compact bar above keeps the site, the way home, the switcher, a search, the pages and the selection
+  // (website.header.scroll_bar: false keeps the toolbar in view on a large screen; a phone always slides it)
   {
     let lastY = scrollY;
+    const tbEl = () => document.querySelector('.toolbar'),
+      hide = (on) => {
+        document.body.classList.toggle('bar-hidden', on);
+        const tb = tbEl();
+        if (tb) tb.inert = on; // not in the tab order while it is away: the bar has the same things
+      };
+    K.showToolbar = (focusQ) => {
+      hide(false);
+      lastY = scrollY + 1000; // not slid away again by the scroll that follows
+      if (focusQ) document.getElementById('q')?.focus();
+    };
     addEventListener(
       'scroll',
       () => {
         const y = scrollY,
           dy = y - lastY,
-          tb = document.querySelector('.toolbar');
-        if (innerWidth > 700 || !tb) {
-          document.body.classList.remove('bar-hidden');
+          tb = tbEl();
+        if (!tb || (innerWidth > 700 && HDR.scroll_bar === false)) {
+          if (document.body.classList.contains('bar-hidden')) hide(false);
           lastY = y;
           return;
         }
@@ -4632,10 +4790,24 @@
         lastY = y;
         const busy =
           tb.contains(document.activeElement) && /input|textarea|select/i.test(document.activeElement.tagName);
-        document.body.classList.toggle('bar-hidden', dy > 0 && y > tb.offsetHeight && !busy);
+        hide(dy > 0 && document.body.classList.contains('dock-on') && !busy);
       },
       { passive: true }
     );
+    K.clicks.push(['[data-dock-search]', () => K.showToolbar(true)]);
+    document.addEventListener('input', (e) => {
+      if (e.target.id !== 'dock-q') return;
+      const q = document.getElementById('q');
+      if (q) {
+        q.value = e.target.value;
+        q.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.target.id !== 'dock-q' || e.key !== 'Enter') return;
+      const q = document.getElementById('q');
+      if (q) q.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    });
   }
   try {
     new ResizeObserver(toolbarH).observe(document.querySelector('.toolbar'));

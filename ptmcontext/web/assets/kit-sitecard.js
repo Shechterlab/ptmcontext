@@ -800,10 +800,7 @@
     const rs = at(c.tb, RC.table, c.pos),
       cols = TH[RC.table].columns.filter((x) => x !== 'position');
     return (
-      K.preamble(
-        `interaction records at ${c.gene} ${c.label}`,
-        `every record at the site (${D.tables[RC.table] ? RC.table : ''}), one row each`
-      ) +
+      K.preamble(`interaction records at ${c.gene} ${c.label}`, `every record at the site, one row each`) +
       ['site', ...cols].join('\t') +
       '\n' +
       rs

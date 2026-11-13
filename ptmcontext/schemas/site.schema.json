@@ -2258,6 +2258,17 @@
               "type": "boolean",
               "default": true,
               "description": "false keeps the full band on every page"
+            },
+            "scroll_bar": {
+              "type": "boolean",
+              "default": true,
+              "description": "on the way down the search, selection line and tabs slide away and one thin bar stays (a phone always does); false keeps the toolbar in view on a large screen"
+            },
+            "bar": {
+              "type": "array",
+              "description": "the parts of that thin bar after the site name, in the kit's order (default: all)",
+              "items": {"enum": ["home", "switch", "search", "tabs", "summary"]},
+              "uniqueItems": true
             }
           }
         },
@@ -4605,6 +4616,28 @@
             }
           }
         },
+        "reading": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "what the website ranks and colors (the Overview's tiles, the cell maps, the landing card's finding); without it, the defaults hold",
+          "properties": {
+            "min_maps": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "a part of the cell is colored and ranked only when at least this many maps find a difference the same way and none the other way (default 2)"
+            },
+            "min_group": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "a map speaks for a part only when the part holds at least this many marked proteins and this many others (default 20)"
+            },
+            "min_set": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "a protein set of fewer proteins is shown on its question's page but not ranked on a tile or chosen as a finding; nor is a set whose every member is marked, its fold at the ceiling (default 30)"
+            }
+          }
+        },
         "compare": {
           "type": "object",
           "additionalProperties": false,
@@ -5322,6 +5355,242 @@
               },
               "variant": {
                 "type": "string"
+              }
+            }
+          }
+        },
+        "overlap": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the Overlap page (CONTRACTS.md, 'The Overlap page'): the reader picks 2 to 4 terms and sees how their proteins (or sites, enzymes, readers) overlap, with enrichment for each region",
+          "properties": {
+            "term_sources": {
+              "type": "array",
+              "description": "more terms from a table of (term, protein) pairs, offered in the picker for the proteins unit (a term source): the members are written to data/overlap/sources/<id>/ in a few files, read when a term is chosen; the names to a terms file read when the page opens",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "members"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "the group the terms are listed under"
+                  },
+                  "members": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input",
+                      "protein",
+                      "set"
+                    ],
+                    "properties": {
+                      "input": {
+                        "type": "string",
+                        "description": "a role of the site's inputs"
+                      },
+                      "protein": {
+                        "type": "string"
+                      },
+                      "set": {
+                        "type": "string"
+                      },
+                      "sep": {
+                        "type": "string",
+                        "default": "\t"
+                      },
+                      "include": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        },
+                        "description": "rows kept (column with equals, in or contains), as the protein-set tables' include; an annotation table with an evidence flag keeps the rows without computational-only evidence by default"
+                      },
+                      "exclude": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  },
+                  "names": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input",
+                      "id",
+                      "name"
+                    ],
+                    "properties": {
+                      "input": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "sep": {
+                        "type": "string",
+                        "default": "\t"
+                      }
+                    },
+                    "description": "the table of term names; a term without a name here is left out"
+                  },
+                  "min_size": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "fewest proteins of the reviewed proteome (after include) a term needs to be offered"
+                  },
+                  "max_size": {
+                    "type": "integer",
+                    "description": "most proteins a term may have to be offered"
+                  },
+                  "shards": {
+                    "type": "integer",
+                    "default": 16,
+                    "description": "files the members are spread over"
+                  },
+                  "cite": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "citations, shown in the Methods and with an export that uses one of the terms"
+                  }
+                }
+              }
+            },
+            "leave_out": {
+              "type": "object",
+              "description": "sets of a question that are not offered as terms and whose members are not written (a question's set id: [ids])",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "notes": {
+              "type": "object",
+              "description": "a question id: a short note shown under its terms in the picker (what a set means)",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "terms_from": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "the questions whose sets or classes are terms: a protein-set question gives every protein of its sets (the run writes overlap_members.json); another question gives its classes (proteins with a site in the class). The current selection, saved selections, a pasted gene list, readers and enzymes are terms too"
+            },
+            "max_terms": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 4,
+              "default": 4,
+              "description": "the most terms a reader can overlap"
+            },
+            "units": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "proteins",
+                  "sites",
+                  "enzymes",
+                  "readers"
+                ]
+              },
+              "description": "what is overlapped (default: proteins, sites); enzymes and readers are hidden where the site has none"
+            },
+            "enzymes": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "enzymes: the classes of website.search.partners with one of these roles, resolved by gene name",
+              "properties": {
+                "roles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "default": [
+                    "writer",
+                    "eraser"
+                  ]
+                }
+              }
+            },
+            "readers": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "families"
+              ],
+              "description": "readers: a protein is a reader when it carries any Pfam or InterPro entry of a family",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "description": "a role of the site's inputs: the table of InterPro entry intervals"
+                },
+                "columns": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "accession": {
+                      "type": "string",
+                      "default": "canonical_UniProtAC"
+                    },
+                    "ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "default": [
+                        "interpro_accession",
+                        "member_database_accessions"
+                      ],
+                      "description": "the columns an entry id is looked up in"
+                    }
+                  }
+                },
+                "families": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "ids"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "ids": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Pfam (PF) and InterPro (IPR) accessions, each checked against InterPro"
+                      },
+                      "note": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
               }
             }
           }
@@ -8149,7 +8418,7 @@
           "type": "object",
           "additionalProperties": false,
           "required": ["attribute", "at_least"],
-          "description": "the site's own marks on the protein map by a number attribute: drawn at first only where it is at least at_least (a mark without a number is hidden too), the row's label a link to show every mark (kept in the browser). Absent where the attribute is (an optional one a run lacks)",
+          "description": "the site's own marks on the protein map by a number attribute: an option: every mark is drawn at first, the row's label a link that keeps only marks where it is at least at_least (a mark without a number is hidden then; kept in the browser). Absent where the attribute is (an optional one a run lacks)",
           "properties": {
             "attribute": {"type": "string", "description": "a marks attribute of kind number"},
             "at_least": {"type": "number"},
@@ -8163,6 +8432,27 @@
             "oneOf": [
               {
                 "type": "string"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "label",
+                  "analysis"
+                ],
+                "description": "a mode that colors each mark by the class (or classes: the first listed wins) its question assigns it, with the question's own labels",
+                "properties": {
+                  "id": {"type": "string"},
+                  "label": {"type": "string"},
+                  "help": {"type": "string"},
+                  "analysis": {"type": "string", "description": "an analysis id whose classes are on the marks (a motif-family question)"},
+                  "colours": {
+                    "type": "object",
+                    "description": "class code -> color (#rrggbb); the others take the palette in the question's order",
+                    "additionalProperties": {"type": "string"}
+                  }
+                }
               },
               {
                 "type": "object",

@@ -60,7 +60,8 @@
       control: () =>
         fctl(
           spacingLabel,
-          SP.help || `Keeps the ${W.marks} with another ${W.mark} of the site (any ` + `study) within so many residues`,
+          SP.help ||
+            `Keeps the ${W.marks} with another ${W.mark} in this explorer (any ` + `study) within so many residues`,
           `<select data-fsel="d:marks"><option value="">Any spacing</option>${SP.within
             .map(
               (v) =>
