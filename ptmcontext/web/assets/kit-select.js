@@ -798,6 +798,14 @@
   }
 
   // ---- the tests again, on the selection -------------------------------------------------------------------------
+  const exclusiveOf = {};
+  const exclusive = (aid) => {
+    if (!(aid in exclusiveOf)) {
+      const ai = AN().indexOf(aid);
+      exclusiveOf[aid] = ai >= 0 && SD.marks.every((m) => m[2][ai].length <= 1);
+    }
+    return exclusiveOf[aid];
+  };
   function residueRows(aid, method) {
     const ai = AN().indexOf(aid);
     if (ai < 0) return [];
@@ -809,13 +817,19 @@
     // candidates, and the positions of the marks it does not count); every_candidate counts proteins without others too
     const own = SD.by_test?.[aid],
       every = (D.analyses.find((x) => x.id === aid) || {}).counting === 'every_candidate';
+    // a flag tested among some residues only (a motif family's among: SD.among[aid][class] its letters): only the marks
+    // of those residues count, against the protein's other candidates among them (SD.among_others[aid][letters][protein])
+    const amongOf = SD.among?.[aid] || {},
+      amongN = SD.among_others?.[aid] || {};
     const byProt = {},
-      posOf = {};
+      posOf = {},
+      resOf = {};
     compute().marks.forEach((i) => {
       const m = SD.marks[i];
       if (!skip.has(m[0]) && (own || SD.others_total[m[0]] > 0 || cnt?.alone)) {
         (byProt[m[0]] ||= []).push(m[2][ai]);
         (posOf[m[0]] ||= []).push(m[1]);
+        if (SD.residues) (resOf[m[0]] ||= []).push(SD.residues[i]);
       }
     });
     const rows = codes
@@ -825,15 +839,22 @@
           b = 0,
           c = 0,
           d = 0;
+        const letters = amongOf[ci];
         for (const [p, all] of Object.entries(byProt)) {
           const t = own ? (own[ci] || {})[p] : null;
           if (own && !t) continue;
-          const ms = t ? all.filter((x, k) => !t[1].includes(posOf[p][k])) : all;
-          const ot = t ? t[0] : SD.others_total[p],
+          const ms = t
+            ? all.filter((x, k) => !t[1].includes(posOf[p][k]))
+            : letters
+              ? all.filter((x, k) => letters.includes(resOf[p][k]))
+              : all;
+          const ot = t ? t[0] : letters ? (amongN[letters] || {})[p] || 0 : SD.others_total[p],
             oin = (others[p] || {})[ci] || 0,
             ain = ms.filter((x) => x.includes(ci)).length;
+          // a protein this class's test leaves without marks or without other candidates: no stratum; the pooled test
+          // still counts its other candidates (c, d), the within-protein test only the proteins with both, as the run does
           if (t && !every && (!ot || !ms.length)) {
-            if (ot) {
+            if (ot && method === 'fisher') {
               c += oin;
               d += ot - oin;
             }
@@ -874,9 +895,12 @@
       .filter(Boolean);
     // shown, not tested: a selection made with a question reading the same inputs, or one class holding every selected mark
     const n = Object.values(byProt).reduce((x, ms) => x + ms.length, 0);
+    // a question whose classes exclude each other (no mark in two): a selection holding some of its classes fixes the
+    // others too (none of its marks can be in them), so none is tested
     const held = ownSets(aid),
       isOwn = (r) => held.sets.has(r.category),
-      circ = held.all || rows.some((r) => !r.absent && r.a === n && !isOwn(r));
+      circ =
+        held.all || (held.sets.size > 0 && exclusive(aid)) || rows.some((r) => !r.absent && r.a === n && !isOwn(r));
     const tested = rows.filter((r) => !isOwn(r)),
       q = ST.bh(tested.map((r) => r.p));
     rows.forEach((r) => {

@@ -101,7 +101,12 @@ def residue_test(
     background = annotated[~is_marked & ~is_left]
     if keep is not None:  # for the per-protein outputs: every candidate residue, annotated, and which are marks
         keep.update(
-            annotated=annotated, is_marked=is_marked, is_left=is_left, columns=columns, restricted=bool(only_in)
+            annotated=annotated,
+            is_marked=is_marked,
+            is_left=is_left,
+            columns=columns,
+            restricted=bool(only_in),
+            among=dict(layer.among) if columns is not None and layer.among else {},
         )
     if alone not in ('drop', 'count'):
         raise ValueError(f"{analysis}: alone must be 'drop' or 'count', not {alone!r}")

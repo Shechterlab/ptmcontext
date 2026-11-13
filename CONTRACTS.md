@@ -552,7 +552,8 @@ expression the whole cell matches), `at_least`, `at_most` (numbers; a cell that 
 
 `run.json` keeps, for each residue question, its layer, origin (`ptmcontext`, or a plugin's package and version), its
 parameters (`with`) and its words (`shape, title, describe, labels, help, question, sub, section, needs, ordered,
-groups`), so the website needs no layer code.
+groups`), so the website needs no layer code; a flags layer whose families name `among` also keeps `among` (flag:
+letters).
 
 A question's classes, as its chart and tiles show them:
 
@@ -578,6 +579,7 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 |---|---|---|
 | `marks.tsv` | one per counted mark | `accession, position, residue, window_15`, one column per residue question (its class; motifs `;`-joined), then `a.<attribute>` (and `a.<attribute>.link`) |
 | `protein_counts.tsv` | (protein, analysis, class) | `accession, analysis, category, marks_in, others_in, marks_total, others_total` |
+| `among_counts.tsv` | (flags question with a family's `among`, letters, protein) | `analysis, residues, accession, marks, others`: the protein's marks and other candidate residues among those letters (left-out residues on neither side), so a selection's retest counts each flag among its own residues. Header only where no family names `among` |
 | `proteins.tsv` | one per protein with a mark | `accession, gene, name, entry, length, sequence_md5, marks, candidates` |
 | `units.tsv` | one per drawn unit | `accession, kind, start, end, label, source, class, ref` |
 | `tracks.json` | per kind of drawn unit | `{kind, title, style, help, roles, analysis, colours?, values?}`: `style` is `domains` (boxes on the backbone), `disorder` (the backbone's wave) or `segments` (a row of boxes); `analysis` names the question whose classes color it; `values`, for a kind whose units carry numbers (a layer's `Track.values`), is `{table, columns: [{name, label, help}]}` |
@@ -594,7 +596,9 @@ units as `[kind, start, end, label, source index, class, ref]`) and `data/select
 `attributes` (the distinct values, which the rows code by index), `attribute_names` (their order), `attribute_links`,
 `marks` (`[protein index, position, [class codes per analysis], [attribute codes per attribute], window]`), `others`
 (per analysis, protein and class: the other candidate residues), `others_total` (per protein: candidates − marks),
-`counted` (per residue question that counts only some proteins or every mark, from `run.json`: `skip`, the indices of
+`among`, `among_others` and `residues` (only where a family names `among`: per question, each flag's letters by class
+code; per question and letters, each protein's other candidates among them, from `among_counts.tsv`; and each mark's
+residue, one letter per mark in `marks` order), `counted` (per residue question that counts only some proteins or every mark, from `run.json`: `skip`, the indices of
 the marked proteins it leaves out, and `alone`, whether it counts the marks of a protein with no other candidate) and
 `protein_sets` (from `protein_sets.json`; for sets of another identifier, members are coded by index into its `ids`,
 with `of`, each marked protein's identifiers, and `unit`, their name in the plural, so a selection is tested on its

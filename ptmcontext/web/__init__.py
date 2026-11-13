@@ -1124,6 +1124,23 @@ def selection_data(
             str(ci): {str(pidx[a]): [int(n), outside.get(pidx[a], [])] for a, n in total.items() if a in pidx}
             for ci in range(len(classes[aid]))
         }
+    # flags tested among some residues only (a motif family's `among`): each flag's letters, and per letters each
+    # protein's other candidates among them (among_counts.tsv); with each mark's residue, a retest counts the same residues
+    among, among_others = {}, {}
+    if (folder / 'among_counts.tsv').exists():
+        ac = pd.read_csv(
+            folder / 'among_counts.tsv', sep='\t', dtype={'analysis': str, 'residues': str, 'accession': str}
+        )
+        for aid in analyses:
+            letters = ((run.get('analyses') or {}).get(aid) or {}).get('among') or {}
+            if not letters:
+                continue
+            among[aid] = {str(codes[aid][f]): v for f, v in letters.items() if f in codes[aid]}
+            g = ac[ac['analysis'] == aid]
+            among_others[aid] = {
+                r: {str(pidx[a]): int(n) for a, n in zip(x['accession'], x['others']) if a in pidx}
+                for r, x in g.groupby('residues')
+            }
     # protein-set questions: each tested set's size in the background and its marked proteins (protein_sets.json)
     sets = {}
     if (folder / 'protein_sets.json').exists():
@@ -1203,6 +1220,7 @@ def selection_data(
         'others_total': others_total,
         'counted': counted,
         'by_test': by_test,
+        **({'among': among, 'among_others': among_others, 'residues': ''.join(marks['residue'])} if among else {}),
         'protein_sets': sets,
     }
 

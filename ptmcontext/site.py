@@ -1581,6 +1581,39 @@ def class_counts(m: pd.DataFrame, kept: dict) -> list[pd.DataFrame]:
     return counts
 
 
+def among_counts(kept: dict) -> pd.DataFrame:
+    """For each flags question whose flags are tested among some residues only (a motif family's `among`), each
+    protein's marks and other candidate residues among each set of letters (among_counts.tsv: analysis, residues,
+    accession, marks, others), so the browser can test a selection again against the same residues."""
+    cols = ['analysis', 'residues', 'accession', 'marks', 'others']
+    out = []
+    for aid, k in kept.items():
+        if not k.get('among'):
+            continue
+        ann, is_m, is_l = k['annotated'], k['is_marked'], k['is_left']
+        sub = ann.loc[~is_l, ['accession', 'residue']].assign(marked=is_m[~is_l])
+        for letters in sorted(set(k['among'].values())):
+            t = (
+                sub[sub['residue'].isin(set(letters))]
+                .groupby(['accession', 'marked'])
+                .size()
+                .unstack(fill_value=0)
+                .reindex(columns=[True, False], fill_value=0)
+            )
+            out.append(
+                pd.DataFrame(
+                    {
+                        'analysis': aid,
+                        'residues': letters,
+                        'accession': t.index,
+                        'marks': t[True].to_numpy(dtype=int),
+                        'others': t[False].to_numpy(dtype=int),
+                    }
+                )
+            )
+    return pd.concat(out, ignore_index=True)[cols] if out else pd.DataFrame(columns=cols)
+
+
 def protein_outputs(
     snap: Snapshot,
     profile,
@@ -1626,6 +1659,7 @@ def protein_outputs(
     out = {
         'marks.tsv': m.sort_values(['accession', 'position']),
         'protein_counts.tsv': pd.concat(counts, ignore_index=True) if counts else pd.DataFrame(columns=count_cols),
+        'among_counts.tsv': among_counts(kept),
         'proteins.tsv': proteins,
         'units.tsv': units,
         'tracks.json': tracks,
@@ -1997,6 +2031,8 @@ def run(
             layers_used[analysis['id']]['marks_alone'] = analysis['marks_alone']
         if analysis.get('only_in'):
             layers_used[analysis['id']]['only_in'] = analysis['only_in']
+        if getattr(layer, 'among', None):  # flags tested among some residues only: the browser's retests need them
+            layers_used[analysis['id']]['among'] = dict(layer.among)
         parts.append(
             RT.residue_test(
                 ctx,
