@@ -447,7 +447,6 @@ def test_an_only_in_question_gets_its_own_counts_for_a_selection(tmp_path):
     bt = sel['by_test']['sticker_in_idrs']
     marks = pd.read_csv(root / 'out' / 'toy' / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
     prots = pd.read_csv(root / 'out' / 'toy' / 'proteins.tsv', sep='\t', dtype=str)['accession'].tolist()
-    per = {prots.index(a): g for a, g in marks.groupby('accession')}
     # one table for every class, and the marks outside the IDRs (which no class counts) are those with no class: the
     # browser leaves them out, so no positions are written
     assert bt['outside'] == 'unclassed' and set(bt) == {'all', 'outside'}
