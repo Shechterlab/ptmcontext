@@ -9626,3 +9626,29 @@ html[data-density] .sites-tbl .cv {
     font-size: 0.75rem;
   }
 }
+
+/* the counts of the full bar make room for the compact bar's selection and pages */
+@media screen {
+  body.bar-hidden .dock-stats {
+    display: none;
+  }
+}
+@media screen and (max-width: 639px) {
+  .dock-sel-w {
+    display: none;
+  }
+}
+
+@media screen {
+  body.bar-hidden .dock-cite {
+    display: none;
+  }
+  .dock-search input {
+    width: 9rem;
+  }
+}
+@media screen and (max-width: 1599px) {
+  .dock-sel-p {
+    display: none;
+  }
+}

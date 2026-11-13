@@ -4465,7 +4465,7 @@
     if (sel && K.sel?.nMarks) {
       const on = K.sel.active?.();
       sel.innerHTML =
-        `<span aria-hidden="true">⏚</span> <b>${int(K.sel.nMarks())}</b> ${esc(W.marks)}<span class="dock-sel-p"> · <b>${int(
+        `<span aria-hidden="true">⏚</span> <b>${int(K.sel.nMarks())}</b><span class="dock-sel-w"> ${esc(W.marks)}</span><span class="dock-sel-p"> · <b>${int(
           K.sel.nProteins()
         )}</b> proteins</span>` + (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '');
       sel.title = on ? 'A selection is on: open the filters' : 'Open the filters';
