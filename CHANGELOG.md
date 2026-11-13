@@ -1,5 +1,30 @@
 # Changes
 
+## 0.3.1 (2026-11-13)
+
+What changed for readers:
+
+- All sites read PTM_Pipeline v1.5.0 at commit 5fadf74, whose SUMOylation and ubiquitination tables add two proteome-wide
+  mass-spectrometry studies as sources of their own: Hendriks et al. 2017 (SUMO-2 sites in HeLa and U2OS cells; 48,593
+  SUMOylation rows instead of 39,633) and Akimov et al. 2018 (UbiSite, Hep2 and Jurkat cells; 125,771 ubiquitination rows
+  instead of 123,932). The "near SUMOylation" and "near ubiquitination" questions of the methylarginine, methyllysine and
+  phosphosite sites change with them; their citations name both studies.
+- Lysine site: Hendriks 2017 and Akimov 2018 are in the Databases filter, with their cell lines (filters) and localization
+  probabilities (on the site card), so SUMO or ubiquitin sites can be seen without CPLM 4.0. The same-lysine pairs are
+  also asked with the SUMOylation sites of Hendriks 2017 and the ubiquitination sites of Akimov 2018 alone, shown as a
+  second line under each pair's tile. The header counts sources, five now.
+- The line under a pair tile reads like the tile itself: "Among lysines with another modification: 2.5×, q 1.8e-261".
+- The Overview opens with its question, color key and test switch, then the sections in the sidebar's order; on the lysine
+  site the same-lysine pairs follow the cell directly. The lysine Overview shows each question once, for all types
+  together; the per-type versions (chromatin, histones, protein classes, disorder and the rest) stay on each question's page,
+  which links to them, in All tests and in the downloads.
+- An address with a leading slash, such as `#/protein/P68431` or `#/protein/H3C1`, opens the protein page.
+
+For the code: an Overview card's `beside` may be a list of lines; a question's page links to the other questions of its
+`family`; `tools/audit/links.js --budget MINUTES` stops starting pages after that time and lists the rest, `--verbose`
+prints each break as found, and a SIGTERM writes the report so far; the tests workflow's link audit sets workers and a
+budget per site (two workers for the lysine site).
+
 ## 0.3.0 (2026-11-12)
 
 What changed for readers:

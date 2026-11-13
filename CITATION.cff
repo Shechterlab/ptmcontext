@@ -3,8 +3,8 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "ptmcontext: where modifications fall in proteins, tested pooled and within protein"
-version: "0.3.0"
-date-released: "2026-11-12"
+version: "0.3.1"
+date-released: "2026-11-13"
 license: MIT
 repository-code: "https://github.com/Shechterlab/ptmcontext"
 authors:
