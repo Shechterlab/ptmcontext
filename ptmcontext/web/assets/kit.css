@@ -9461,3 +9461,206 @@ html[data-density] .stbl .src-tags a {
 html[data-density] .sites-tbl .cv {
   max-width: 13rem;
 }
+
+/* the site card's rows in folds: the most used open, the rest closed */
+.sc-group {
+  border-top: 1px solid var(--line);
+  padding: 0.3rem 0 0.45rem;
+}
+.sc-group:first-of-type {
+  border-top: 0;
+}
+.sc-group > summary {
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--ink-2);
+  padding: 0.2rem 0;
+}
+.sc-group > .sc-kv {
+  margin-top: 0.3rem;
+}
+
+/* the way back to the landing page (kit-switch.js): beside the switcher, in the header and in the sticky bar */
+.landing-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: #fff;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.landing-link:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+.landing-link.in-bar {
+  color: inherit;
+  font-size: 0.8125rem;
+  margin-right: 0.6rem;
+}
+
+/* a phone: the protein map's folds give their padding to the drawing (tracks at least 200 px wide at 390 px) */
+@media (max-width: 560px) {
+  .pfold-body {
+    padding-inline: 0.3rem;
+  }
+  .pgroup {
+    padding-left: 0.25rem;
+  }
+}
+
+/* ---- The compact bar (website.header.bar): with the toolbar slid away on the way down, the fixed bar above carries the site,
+   the way home, the switcher, a search, the pages and the selection, in one row (44 px; 390 px wide holds the logo, the way home,
+   the switcher, a search button and the selection). Each part is shown only then, so nothing is doubled while the toolbar is in view. */
+.dock-x {
+  display: none;
+}
+@media screen {
+  body.bar-hidden .dock-x {
+    display: inline-flex;
+  }
+  .dock-tabs {
+    align-items: center;
+    gap: 0.15rem;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .dock-tabs .tab {
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    padding: 0.3rem 0.55rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    border: 0;
+    background: transparent;
+  }
+  .dock-tabs .tab:hover,
+  .dock-tabs .tab[aria-current='page'] {
+    background: rgba(255, 255, 255, 0.18);
+  }
+  .dock-tabs .tab .count,
+  .dock-tabs .tab .tab-ico,
+  .dock-tabs .rail-btn {
+    display: none;
+  }
+  .dock-search input {
+    width: 11rem;
+    min-height: 30px;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font: inherit;
+    font-size: 0.8125rem;
+    padding: 0 0.8rem;
+  }
+  .dock-search input::placeholder {
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .dock-search input:focus-visible,
+  .dock-ico:focus-visible,
+  .dock-sel:focus-visible,
+  .dock-tabs .tab:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 2px;
+  }
+  .dock-ico {
+    display: none;
+    min-height: 32px;
+    min-width: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 999px;
+    background: transparent;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .dock-sel {
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 32px;
+    padding: 0 0.7rem;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 999px;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .dock-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ffd166;
+  }
+  .landing-link.in-bar {
+    flex: none;
+  }
+  /* the site file's list of parts (website.header.bar) */
+  #dock:not([data-bar~='home']) .landing-link,
+  #dock:not([data-bar~='switch']) .site-switch,
+  #dock:not([data-bar~='search']) .dock-search,
+  #dock:not([data-bar~='tabs']) .dock-tabs,
+  #dock:not([data-bar~='summary']) .dock-sel {
+    display: none !important;
+  }
+}
+@media screen and (max-width: 1099px) {
+  .dock-tabs {
+    display: none !important;
+  }
+}
+@media screen and (max-width: 639px) {
+  .dock-search input,
+  .dock-sel-p {
+    display: none;
+  }
+  body.bar-hidden .dock-ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dock-end {
+    gap: 0.4rem;
+  }
+  .dock .wrap {
+    gap: 0.5rem;
+  }
+  .landing-link.in-bar {
+    margin-right: 0;
+    font-size: 0.75rem;
+  }
+}
+
+/* the counts of the full bar make room for the compact bar's selection and pages */
+@media screen {
+  body.bar-hidden .dock-stats {
+    display: none;
+  }
+}
+@media screen and (max-width: 639px) {
+  .dock-sel-w {
+    display: none;
+  }
+}
+
+@media screen {
+  body.bar-hidden .dock-cite {
+    display: none;
+  }
+  .dock-search input {
+    width: 9rem;
+  }
+}
+@media screen and (max-width: 1599px) {
+  .dock-sel-p {
+    display: none;
+  }
+}

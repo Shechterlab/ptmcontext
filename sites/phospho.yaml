@@ -1364,10 +1364,14 @@ website:                  # the look and words of the website (ptmc web); layout
     open_partners: true
     map:
       combined_marks: {default: folded}   # one "All modifications" block (a thin lane for each modification, the site's own first); the rows of the context marks fold behind it
+      colour_by:            # the residue first (the default), then by the kinase motif class of the site (the question's own classes)
+        - residue
+        - {id: kinase_motif, label: Kinase motif class, analysis: kinase_motifs,
+           help: "Each site by the kinase motif class it fits (proline-directed, basophilic, acidophilic); a site in more than one takes the first listed, one in none is gray"}
       default_off: [ptm]                  # the grey live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
       hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
         site: [name, chips, nearby, click]
         chips: [sources, {attribute: pmids, count: PMIDs}, functional_score]
         context: [mark, residue, detail, source, click]
-      marks_view: {attribute: functional_score, at_least: 0.5, label: score ≥ 0.5}   # at first only the sites Ochoa 2020 scores 0.5 or more (sites without a score are hidden too); a click on the row label shows all
+      marks_view: {attribute: functional_score, at_least: 0.5, label: score ≥ 0.5}   # every site at first; a click on the row label keeps the sites Ochoa 2020 scores 0.5 or more
       hide_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row would repeat the phosphosites: one source for them

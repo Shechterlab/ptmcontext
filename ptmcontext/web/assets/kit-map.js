@@ -235,7 +235,7 @@
           label: CFG.marks_view.label || `${SPECS[CFG.marks_view.attribute].label} ≥ ${CFG.marks_view.at_least}`,
         }
       : null;
-  const MV_ALL = { on: !!store.get('ptmc-map-marks-all', false) };
+  const MV_ALL = { on: !!store.get('ptmc-map-marks-all', true) }; // every mark at first; the score cut is the reader's option
   const MV_PASS = (m) => {
     if (!MV || MV_ALL.on) return true;
     const v = m[3]?.[attrIdx(MV.attribute)];
@@ -462,6 +462,26 @@
           out.push({ id: m, label: SPECS[m].label, attr: m });
           seen.add(m);
         }
+      } else if (m?.analysis && m.id && !seen.has(m.id)) {
+        // colored by the classes a question assigns each mark (a mark in several takes the first listed): the question's own
+        // labels, the site file's colors or the palette in the question's order
+        const col = (D.mark_columns || []).indexOf(m.analysis),
+          lab = K.A?.[m.analysis]?.labels || {};
+        if (col < 0) return;
+        out.push({
+          ...m,
+          own: true,
+          classes: Object.keys(lab).map((code, k) => ({
+            label: lab[code],
+            colour: (m.colours || {})[code] || PALETTE[k % PALETTE.length],
+            test: (mark) =>
+              String(mark[2]?.[col] ?? '')
+                .split(';')
+                .includes(code),
+          })),
+          otherwise: { label: 'None of these', colour: TOK.light.none, colour_dark: TOK.dark.none },
+        });
+        seen.add(m.id);
       } else if (m?.id && !seen.has(m.id)) {
         out.push({ ...m, own: true });
         seen.add(m.id);
@@ -524,7 +544,9 @@
       md = mode(),
       hat = hatched(mark);
     if (md.own) {
-      const k = (md.classes || []).findIndex((cl) => (cl.when || []).every((c) => holds(mark, c))),
+      const k = (md.classes || []).findIndex((cl) =>
+          cl.test ? cl.test(mark) : (cl.when || []).every((c) => holds(mark, c))
+        ),
         cl = k >= 0 ? md.classes[k] : md.otherwise || { label: '', colour: P.none };
       return {
         c: cfgColour(cl, 'colour', P, P.none),
@@ -928,7 +950,7 @@
     const ex = !!o.ex,
       Wd = o.Wd || 1000,
       narrow = Wd < 700;
-    const ML = narrow ? Math.min(128, Math.round(Wd * 0.35)) : 168,
+    const ML = narrow ? Math.min(Wd < 460 ? 100 : 128, Math.round(Wd * (Wd < 460 ? 0.29 : 0.35))) : 168, // a phone: the tracks get the width
       MR = narrow ? 14 : 18,
       X0 = ML,
       X1 = Wd - MR;
@@ -1384,7 +1406,9 @@
     if (marks.length || (MV && rec.marks.length)) {
       c.rowToggle = !!MV;
       rowLabel(
-        MV ? `${cap(W.marks)}: ${MV_ALL.on ? 'all' : MV.label}` : cap(W.marks),
+        MV
+          ? `${cap(W.marks)}: ${MV_ALL.on ? 'all' : `${MV.label} (${marks.length} of ${rec.marks.length})`}`
+          : cap(W.marks),
         top + 8 + (nLev - 1) * 5.5,
         MV
           ? `the ${W.marks} of this site${MV_ALL.on ? '' : ` with ${MV.label}`}, colored as chosen above (${marks.length} of ${rec.marks.length} here)`
@@ -3372,7 +3396,12 @@
       !document.getElementById('pmap')
     )
       return;
-    if (M.pin) {
+    if (M.rowsMenu) {
+      M.rowsMenu = false;
+      e.preventDefault();
+      redraw();
+      document.querySelector('[data-map-rows]')?.focus(); // the menu's button gets the focus back
+    } else if (M.pin) {
       closePin(true);
       e.stopPropagation();
     } else if (M.zoom) {

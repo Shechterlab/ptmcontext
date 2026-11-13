@@ -483,12 +483,17 @@ section instead. A row may instead be found in each protein's sequence (`sequenc
 `min` matches of a regular expression, each within `gap` residues of the one before). A row whose data a protein lacks is
 not drawn on it, and a site without rows has none.
 
-**The site's own marks by a score.** `website.protein.map.marks_view: {attribute, at_least, label?}` draws the site's own marks
-on the protein map at first only where the number attribute (`kind: number`) is at least `at_least`; a mark without a
-number is hidden too. The label of the marks row ("<marks>: <label>") is a link that shows every mark (and back); the
-reader's choice is kept in the browser. The attribute is usually `optional` (a score merged into the table later): where
-the run lacks it the whole row of marks is drawn as before. It is the map-row `swap` of the context marks for the marks
-the site itself counts; no statistic, count or filter changes.
+**The site's own marks by a score.** `website.protein.map.marks_view: {attribute, at_least, label?}` offers the site's own marks
+on the protein map by the number attribute (`kind: number`) as an option: every mark is drawn at first, and the label of the
+marks row ("<marks>: all") is a link that keeps only the marks whose number is at least `at_least` (a mark without a
+number is hidden then), and shows "n of m" beside the label. The reader's choice is kept in the browser. The attribute is
+usually `optional` (a score merged into the table later): where the run lacks it the row is drawn as before. No statistic,
+count or filter changes.
+
+**Colors from a question's classes.** A `website.protein.map.colour_by` entry `{id, label, analysis, help?, colours?}` colors each mark of the
+protein map by the classes `analysis` (a motif-family question) assigns it, with the question's own labels: a mark in several
+classes takes the first listed, one in none is gray. `colours` maps a class code to a color; the others take the palette in the
+question's order. The sites table and filters are unchanged.
 
 **The "All modifications" block.** `website.protein.map.combined_marks: {default?, label?, order?, min_marks?, split?}` (or `false`)
 draws, at the top of the rows, one compact block for the site's own modification and every context mark: a thin lane
@@ -919,7 +924,7 @@ question keeps its own page and rows in the downloads. A question's page links t
 same question for each type, say), so that variants left off the Overview stay one click away.
 `website.overview.random_maps: {n: 3, title?, min_marks?, open?, enabled?}` (kit-random.js) is a closed fold, "Example proteins", at the end of the Overview: `n` proteins drawn at random, each end to end as one row in the protein map's style, with a small "Draw three others" link; absent or `enabled: false`, nothing is drawn.
 
-**Header, folds and the footer.** `website.header.compact` (default true): the full header band (title, counts, citation line) shows on the Overview at the top only; every other page, and a question opened from the Overview, has a 56 px band with the site name (a link to the Overview), and only the search, the selection line and the tabs stay in view (on a phone they slide away on the way down and back on the way up, and are not animated under reduced motion); false keeps the full band everywhere. `website.overview.draw_first` (default 2) is how many Overview sections are drawn in full; `website.overview.cell_first: false` keeps the section whose card draws the cell (`drawing: true`) where the site file lists it, under its heading, instead of opening the Overview with it; later ones are a heading and a line, drawn when opened or scrolled to (a selection draws all). Examples start closed: `website.overview.starting_points.open`, `random_maps.open`, `website.pages[].groups[].open` and `groups[].sections[].open` (a `place: top` section) are false unless true. Folds are open or closed for one visit; a saved selection ("Save") stores the open folds with it and restores them when opened, and the address does not carry them. The footer shows "updated <date>" (the `ptmc web` time, `data.built`) with the kit version and short commit.
+**Header, folds and the footer.** `website.header.compact` (default true): the full header band (title, counts, citation line) shows on the Overview at the top only; every other page, and a question opened from the Overview, has a 56 px band with the site name (a link to the Overview), and only the search, the selection line and the tabs stay in view (on a phone they slide away on the way down and back on the way up, and are not animated under reduced motion); false keeps the full band everywhere. `website.header.scroll_bar` (default true): on the way down the toolbar slides away and one fixed 44 px bar stays, with the site name (a link to the Overview), then `website.header.bar` (default all of `home` the link to the landing page, `switch` the site switcher, `search` a search box (an icon on a phone that brings the toolbar back), `tabs` the pages (1100 px and wider) and `summary` the selection's counts with a dot while a filter is on, opening the filter drawer); on the way up, or at the top, the full header and toolbar return. The toolbar is out of the tab order while it is away, and nothing is animated under reduced motion. `scroll_bar: false` keeps the toolbar in view on a large screen. `website.overview.draw_first` (default 2) is how many Overview sections are drawn in full; `website.overview.cell_first: false` keeps the section whose card draws the cell (`drawing: true`) where the site file lists it, under its heading, instead of opening the Overview with it; later ones are a heading and a line, drawn when opened or scrolled to (a selection draws all). Examples start closed: `website.overview.starting_points.open`, `random_maps.open`, `website.pages[].groups[].open` and `groups[].sections[].open` (a `place: top` section) are false unless true. Folds are open or closed for one visit; a saved selection ("Save") stores the open folds with it and restores them when opened, and the address does not carry them. The footer shows "updated <date>" (the `ptmc web` time, `data.built`) with the kit version and short commit.
 
 A filter group of `website.filters` places these filters by key (`keys: ["d:marks", "o:other_ptms", "m:at", "b:class", "b:gene",
 "b:score"]`); a module may add kinds of its own (`K.filterKinds[kind]`: `valid`, `test`, and optionally `control`, `label`,

@@ -1,5 +1,3 @@
-# Changes
-
 ## 0.4.0 (2026-11-13)
 
 What changed for readers:
@@ -31,6 +29,23 @@ What changed for readers:
   labelled R-K-S/T, the rule it applies; the IDR charge and predicted-interface questions say that their row against
   all residues partly restates disorder; the lysine histone question says that a very large fold on a type found on
   few proteins shows where that type has been looked for.
+
+- Protein map: every phosphosite is drawn at first (FUS showed "Phosphosites (0)" while 27 sites were listed); the functional
+  score cut (0.5 or more) is an option, and its label says how many of the sites it keeps.
+- Site switcher: the protein page that is open goes with you when the other site has that protein; otherwise you land on its
+  Overview. The menu's links are real addresses (they open in a new tab).
+- Every site's header and sticky bar link back to the landing page; the landing page has a search for a gene or UniProt
+  accession that lists the sites with that protein and links to each protein page.
+- The gene-list chip no longer shows double commas; Escape closes the Rows menu and returns the focus to its button.
+- AlphaFold DB complexes are asked for at once only where the site's tables name a predicted partner, else on request (the
+  lookup answers 404 for most proteins); an Ensembl homology request the service refuses reads as "no ortholog".
+- The site card's rows are in folds: the site, its questions and its sources open; more questions and other attributes closed.
+- The histone question's filter says how many marked proteins are in none of its sets (no entry in the source table).
+- Phosphosite protein map: "Color phosphosites by" offers the kinase motif class.
+- Phone protein map: more width for the tracks.
+- On the way down every page slides the search, selection line and tabs away and keeps one thin bar: the site name, the way home, the
+  switcher, a search, the pages (wide screens) and the selection's counts with a filter dot. They return on the way up.
+  `website.header.scroll_bar` and `website.header.bar` set it.
 
 For the code: `website.reading: {min_maps, min_group, min_set}` (defaults 2, 20, 30); `among_counts.tsv` and
 selection.json `among`, `among_others`, `residues` carry a motif family's `among` to the browser; run.json keeps a flags
