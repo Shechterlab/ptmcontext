@@ -2041,32 +2041,30 @@
       )
       .join('');
   K.controlFails = controlFails;
-  let CTL_SCROLL = false;
+  // the page is drawn again (and may load its data first): the Controls table is brought into view, and focused, once it is there
+  function toControls(tries = 40) {
+    const t = document.getElementById('q-controls');
+    if (t && tries < 38 && t.getBoundingClientRect().top < innerHeight * 0.6) return t.focus({ preventScroll: true });
+    if (t) t.scrollIntoView({ block: 'start' }); // and again until the page stops moving under it
+    if (tries) setTimeout(() => toControls(tries - 1), 100);
+  }
   K.clicks.push([
     '[data-ctl-go]',
     (el) => {
-      CTL_SCROLL = true;
-      if (S.view === 'overview' && S.arg === el.dataset.ctlGo) document.getElementById('q-controls')?.scrollIntoView();
-      else go('overview', { arg: el.dataset.ctlGo });
+      if (!(S.view === 'overview' && S.arg === el.dataset.ctlGo)) go('overview', { arg: el.dataset.ctlGo });
+      setTimeout(() => toControls(), 0);
     },
   ]);
-  (K.afterRender ||= []).push(() => {
-    if (!CTL_SCROLL) return;
-    CTL_SCROLL = false;
-    const t = document.getElementById('q-controls');
-    if (t) {
-      t.scrollIntoView({ block: 'start' });
-      t.focus?.({ preventScroll: true });
-    }
-  });
   // a question's page names, under its heading, the controls its classes fail (one badge per control, its classes in the tooltip)
   function pageFails(a) {
     if (a.kind === 'module' || vsOn()) return '';
     const by = {};
     rowsFor(a, ctlMethod(a)).forEach((r) =>
-      controlFails(a, r.category).forEach((f) =>
-        (by[f.id] ||= { ...f, tips: [] }).tips.push(`${r.label}: ${failTip(f)}`)
-      )
+      controlFails(a, r.category).forEach((f) => {
+        const g = (by[f.id] ||= { ...f, tips: [], cats: [] });
+        g.tips.push(`${r.label}: ${failTip(f)}`);
+        g.cats.push(r.label);
+      })
     );
     const fs = Object.values(by);
     return fs.length
@@ -2074,7 +2072,7 @@
           .map(
             (f) =>
               `<button type="button" class="ctl-badge" data-ctl-go="${esc(a.id)}" title="${esc(f.tips.join('\n'))}">` +
-              `${esc(failText(f))}</button>`
+              `${esc(f.cats.length <= 2 ? f.cats.join(', ') + ' ' : '')}${esc(failText(f))}</button>`
           )
           .join('')}</span>`
       : '';
