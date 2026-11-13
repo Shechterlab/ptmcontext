@@ -9469,3 +9469,23 @@ html[data-density] .sites-tbl .cv {
 .sc-group > .sc-kv {
   margin-top: 0.3rem;
 }
+
+/* the way back to the landing page (kit-switch.js): beside the switcher, in the header and in the sticky bar */
+.landing-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: #fff;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.landing-link:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+.landing-link.in-bar {
+  color: inherit;
+  font-size: 0.8125rem;
+  margin-right: 0.6rem;
+}

@@ -154,9 +154,19 @@
   };
   const build = (list, word) => {
     const side = document.querySelector('.brand-side');
+    // the way back to the landing page, which sits beside the sites' folders (where sites.json is): in the header and in the sticky bar
+    const end = document.querySelector('#dock .dock-end');
+    [side, end].forEach((box, k) => {
+      if (!box || box.querySelector('.landing-link')) return;
+      const a = document.createElement('a');
+      a.className = 'landing-link' + (k ? ' in-bar' : '');
+      a.href = '../';
+      a.textContent = 'All sites';
+      a.title = 'Back to the page that lists every site';
+      box.prepend(a);
+    });
     if (list.length < 2) return;
     if (side) mount(list, side, false, word);
-    const end = document.querySelector('#dock .dock-end');
     if (end) mount(list, end, true, word);
   };
   const start = async () => {
