@@ -564,6 +564,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'selection_cards': web.get('selection_cards') or {},
         'protein_view': web.get('protein'),
         'compare': web.get('compare'),
+        **({'reading': web['reading']} if web.get('reading') else {}),
         'legacy_links': web.get('legacy_links') or {},
         'legacy_routes': web.get('legacy_routes') or {},
         'tabs': web.get('tabs') or {},
@@ -628,6 +629,12 @@ def site_data(site: dict, folder: Path, profile) -> dict:
             (web.get('front') or {}).get('row_labels'),
             section_analyses(web, (web.get('landing') or {}).get('from_section')),
             section_locations(web, (web.get('landing') or {}).get('from_section')),
+            web.get('reading'),
+            web.get('cell') if section_locations(web, (web.get('landing') or {}).get('from_section')) else None,
+            set().union(
+                *(section_analyses(web, sec.get('name')) for sec in (web.get('overview') or {}).get('sections') or [])
+            )
+            or None,
         ),
         'citation': site_citation(site),
         'kit': {**kit_citation(), 'version': __version__, 'commit': run.get('code_commit') or code_commit()},
@@ -1122,6 +1129,23 @@ def selection_data(
             'all': {str(pidx[a]): [int(n), []] for a, n in total.items() if a in pidx},
             'outside': 'unclassed',
         }
+    # flags tested among some residues only (a motif family's `among`): each flag's letters, and per letters each
+    # protein's other candidates among them (among_counts.tsv); with each mark's residue, a retest counts the same residues
+    among, among_others = {}, {}
+    if (folder / 'among_counts.tsv').exists():
+        ac = pd.read_csv(
+            folder / 'among_counts.tsv', sep='\t', dtype={'analysis': str, 'residues': str, 'accession': str}
+        )
+        for aid in analyses:
+            letters = ((run.get('analyses') or {}).get(aid) or {}).get('among') or {}
+            if not letters:
+                continue
+            among[aid] = {str(codes[aid][f]): v for f, v in letters.items() if f in codes[aid]}
+            g = ac[ac['analysis'] == aid]
+            among_others[aid] = {
+                r: {str(pidx[a]): int(n) for a, n in zip(x['accession'], x['others']) if a in pidx}
+                for r, x in g.groupby('residues')
+            }
     # protein-set questions: each tested set's size in the background and its marked proteins (protein_sets.json)
     sets = {}
     if (folder / 'protein_sets.json').exists():
@@ -1201,6 +1225,7 @@ def selection_data(
         'others_total': others_total,
         'counted': counted,
         'by_test': by_test,
+        **({'among': among, 'among_others': among_others, 'residues': ''.join(marks['residue'])} if among else {}),
         'protein_sets': sets,
     }
 

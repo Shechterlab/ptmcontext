@@ -6,7 +6,7 @@ description: "One website for each protein modification. Each tests where modifi
 lede: Which proteins have each modification, and in which regions of those proteins it occurs.
 intro:
   - "Each modification has its own site. All are built the same way from the human reference proteome."
-  - "Each test compares a modified residue with the other residues of the same protein, and is repeated across all proteins. A long or disordered protein alone does not drive a result. Choose a modification."
+  - "Questions about where in a protein a modification lies compare each modified residue with the other residues of the same protein, so a long or disordered protein alone does not drive a result. Questions about which proteins are modified compare the modified proteins with other proteins, within abundance deciles where abundance data exist. Choose a modification."
 logo: sites/art/ptmcontext_logo.svg
 switcher: {label: PTM}
 cta: "Explore {marks} →"

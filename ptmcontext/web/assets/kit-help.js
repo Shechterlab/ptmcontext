@@ -259,11 +259,13 @@
       ) +
       sec(
         'h-read',
-        `<p>Each tile is a question and each row a class. The dot is the effect on a log scale with ` +
-          `its 95% confidence interval, and 1× is no difference.</p>` +
-          (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and at least 1.1×</li><li><i ` +
+        `<p>Each tile is a question and each row a class. The dot and the number are the fold on a log scale: ` +
+          `the share of ${esc(W.marks)} in the class over the share of the comparison in it (1× is no difference). ` +
+          `Beneath it are the test's odds ratio with its 95% confidence interval and q; the hover gives the counts.</p>` +
+          (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and a fold of at least 1.1×</li><li><i ` +
             `class="kd less"></i> less often</li><li><i class="kd same"></i> about the same: significant, but ` +
-            `within 1.1×</li><li><i class="kd ns"></i> no difference: q > 0.05</li></ul>`) +
+            `within 1.1×</li><li><i class="kd ns"></i> no difference: q > 0.05</li><li><i class="kd ns"></i> not ` +
+            `tested: too few on a side</li></ul>`) +
           (`<p>Within each protein compares each protein's ${esc(W.marks)} with the other ${esc(W.residues)} of the same ` +
             `protein. Across all proteins puts all the ${esc(W.residues)} together. The first separates where ${esc(W.marks)} lie from ` +
             `which proteins were found ${esc(W.marked)}. ${

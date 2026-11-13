@@ -127,8 +127,9 @@ def test_the_entry_pictures_come_from_the_statistics_or_the_site_file():
     ]
     g = glance(analyses, rows, 100, None)
     assert [(p['label'], p['n']) for p in g['share']['parts']] == [('inside', 60), ('outside', 30), ('edge', 10)]
-    # one finding per question, by the usual test, ranked by effect, on at least 20 marks (s2 has 5)
-    assert [(f['analysis'], f['class']) for f in g['findings']] == [('sets', 's1'), ('where', 'in')]
+    # one finding per question, by the usual test, ranked by effect, on at least 20 marks (s2 has 5); s1 is read by its
+    # test within abundance deciles (q 0.4), so it is not a finding (website.reading, tests/test_reading.py)
+    assert [(f['analysis'], f['class']) for f in g['findings']] == [('where', 'in')]
     named = glance(
         analyses,
         rows,
@@ -142,7 +143,7 @@ def test_the_entry_pictures_come_from_the_statistics_or_the_site_file():
     # only the questions of one section (website.landing.from_section) are chosen from
     only = glance(analyses, rows, 100, None, None, None, {'where'})
     assert [(f['analysis'], f['class']) for f in only['landing_findings']] == [('where', 'in')]
-    assert [f['analysis'] for f in only['findings']] == ['sets', 'where']  # the start panel's are unchanged
+    assert [f['analysis'] for f in only['findings']] == ['where']  # the start panel's are its own
     from ptmcontext.web import section_analyses
 
     web = {

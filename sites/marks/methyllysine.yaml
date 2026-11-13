@@ -22,7 +22,7 @@ enzymes:
 motifs:            # read in the 15-residue window centered on the lysine (window_flank 7); patterns of the sequence around it, not curated rules
   window_flank: 7
   families:
-    - {name: ARKS, label: "[AR]-K-[ST]", help: "Arg at −1 and Ser or Thr at +1 (the histone H3 K9 and K27 sequence, ARKS)", all: [{at: -1, in: R}, {at: 1, in: ST}]}
+    - {name: ARKS, label: "R-K-S/T", help: "Arg at −1 and Ser or Thr at +1 (as in the A-R-K-S of histone H3 K9 and K27)", all: [{at: -1, in: R}, {at: 1, in: ST}]}
     - {name: R_before, label: "Arg at −1", help: "Arg right before the lysine", all: [{at: -1, in: R}]}
     - {name: ST_after, label: "Ser or Thr at +1", help: "Ser or Thr right after the lysine", all: [{at: 1, in: ST}]}
     - {name: G_before, label: "Gly at −1", help: "Gly right before the lysine", all: [{at: -1, in: G}]}

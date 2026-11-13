@@ -212,7 +212,7 @@ references:   # the data sources: cited with every export
     end: D653
     year: 2022
     doi: "10.1093/nar/gkab1006"
-  # Kinase and reader motifs (the questions "Which kinases?" and "Is it functional?")
+  # Kinase and reader motifs (the questions "Which kinases?" and "Reader motifs and functional scores")
   - type: article
     authors: [{family-names: Johnson, given-names: JL}, {family-names: Yaron, given-names: TM}, {family-names: Huntsman, given-names: EM}, {name: "et al."}]
     title: "An atlas of substrate specificities for the human serine/threonine kinome"

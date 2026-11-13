@@ -185,14 +185,27 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   granules, pbodies, centrosome; `nucleus` has nucleoplasm, chromatin, periphery, perinucleolar, nucleolus, speckles,
   paraspeckles, pml, cajal, bodies, envelope, pores). A part no row colors is drawn outlined and not labeled; what a
   part is called on a page is the row's name, never the kit's.
-- A part (and a region, on the tile) takes the median log2 odds ratio of the maps that have it; it is colored when at
-  least half of them differ that way (q ≤ 0.05 and 1.1× or more), gray otherwise.
+- Each map's value for a part is the fold: the share of the marked proteins it places there over the share of all the
+  proteins it places there; the map's test (within abundance strata where it has them) gives its q, and its odds ratio
+  is said beside. A map whose part holds fewer than `website.reading.min_group` (default 20) marked proteins, or as few
+  other proteins, is gray there. A part (and a region, on the tile) takes the median fold of the maps that can speak for
+  it; it is colored and ranked only when at least `website.reading.min_maps` (default 2) of them differ the same way
+  (q ≤ 0.05 and a fold of 1.1× or more, the test pointing the same way) and none the other way, gray otherwise.
 - `title, question, intro, note`: words.
 
 The kit draws the cell for other pages too: `K.cell.list()` (the drawings, their parts and phone crop, the crop from
 `config/cell_drawings.json`), `K.cell.parts(scoped?)` (every part a `website.cell` row colors: its row, tone, direction
-`more`/`less`/`ns`/`na`, the median log2 odds ratio and each map's own) and `K.cell.draw(el, drawing, {scoped, crop, labels, onPart})`
+`more`/`less`/`ns`/`na`, the median log2 fold and each map's own) and `K.cell.draw(el, drawing, {scoped, crop, labels, onPart})`
 (the drawing as the cell page draws it; `onPart` takes a click on a part).
+
+**`website.reading`**: what the website ranks and colors, the same for every site unless a site file says otherwise.
+`{min_maps: 2, min_group: 20, min_set: 30}` are the defaults: `min_maps` and `min_group` as above for the maps of the
+cell; `min_set`, the fewest proteins a protein set needs to be ranked on an Overview tile or chosen as a finding (a set
+whose every member is marked is not ranked either: its fold is at the ceiling, the background over the marked, and ties
+every other such set). Such a set stays on its question's page. A tile row's number is the fold (the share of the marks
+in the class over the share of the comparison residues, from the pooled counts; a set's fold enrichment), with its test
+beneath (the odds ratio, its interval and q; a set tested within abundance deciles is read by that test) and the counts
+on hover; a row differs when q ≤ 0.05, the fold is at least 1.1× (or at most 1/1.1) and the test points the same way.
 
 **`website.set_views`** (kit-values.js): a protein-set question drawn with its proteins' numbers. Each `{analysis,
 meter?, meter_words?, population?, intro?, box?: {value, title?, sub?, axis?}, caveat?, chips?: [{title, note?, value? |
@@ -552,7 +565,8 @@ expression the whole cell matches), `at_least`, `at_most` (numbers; a cell that 
 
 `run.json` keeps, for each residue question, its layer, origin (`ptmcontext`, or a plugin's package and version), its
 parameters (`with`) and its words (`shape, title, describe, labels, help, question, sub, section, needs, ordered,
-groups`), so the website needs no layer code.
+groups`), so the website needs no layer code; a flags layer whose families name `among` also keeps `among` (flag:
+letters).
 
 A question's classes, as its chart and tiles show them:
 
@@ -578,6 +592,7 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 |---|---|---|
 | `marks.tsv` | one per counted mark | `accession, position, residue, window_15`, one column per residue question (its class; motifs `;`-joined), then `a.<attribute>` (and `a.<attribute>.link`) |
 | `protein_counts.tsv` | (protein, analysis, class) | `accession, analysis, category, marks_in, others_in, marks_total, others_total` |
+| `among_counts.tsv` | (flags question with a family's `among`, letters, protein) | `analysis, residues, accession, marks, others`: the protein's marks and other candidate residues among those letters (left-out residues on neither side), so a selection's retest counts each flag among its own residues. Header only where no family names `among` |
 | `proteins.tsv` | one per protein with a mark | `accession, gene, name, entry, length, sequence_md5, marks, candidates` |
 | `units.tsv` | one per drawn unit | `accession, kind, start, end, label, source, class, ref` |
 | `tracks.json` | per kind of drawn unit | `{kind, title, style, help, roles, analysis, colours?, values?}`: `style` is `domains` (boxes on the backbone), `disorder` (the backbone's wave) or `segments` (a row of boxes); `analysis` names the question whose classes color it; `values`, for a kind whose units carry numbers (a layer's `Track.values`), is `{table, columns: [{name, label, help}]}` |
@@ -594,7 +609,9 @@ units as `[kind, start, end, label, source index, class, ref]`) and `data/select
 `attributes` (the distinct values, which the rows code by index), `attribute_names` (their order), `attribute_links`,
 `marks` (`[protein index, position, [class codes per analysis], [attribute codes per attribute], window]`), `others`
 (per analysis, protein and class: the other candidate residues), `others_total` (per protein: candidates − marks),
-`counted` (per residue question that counts only some proteins or every mark, from `run.json`: `skip`, the indices of
+`among`, `among_others` and `residues` (only where a family names `among`: per question, each flag's letters by class
+code; per question and letters, each protein's other candidates among them, from `among_counts.tsv`; and each mark's
+residue, one letter per mark in `marks` order), `counted` (per residue question that counts only some proteins or every mark, from `run.json`: `skip`, the indices of
 the marked proteins it leaves out, and `alone`, whether it counts the marks of a protein with no other candidate) and
 `protein_sets` (from `protein_sets.json`; for sets of another identifier, members are coded by index into its `ids`,
 with `of`, each marked protein's identifiers, and `unit`, their name in the plural, so a selection is tested on its
@@ -1123,8 +1140,9 @@ Every block offers PDF, SVG, PNG (figures) and TSV (its rows), each with the pro
 `landing.question` (what a reader can ask), `landing.cta` (the button; else the config's `cta`, `{marks}` being the profile's
 plural word), `website.stats` (a list attribute adds a third number: how many studies or databases). From the site's build
 (`run.json`, `web/glance.json`): the marks and proteins counted and the strongest finding; a build without them gives a
-card without those lines. The strongest result is chosen from the build (the largest effect among the significant rows, one
-per question, on at least 20 marks) unless `website.landing.findings` names one. A site whose outputs are missing is left out with a warning under `--skip-missing`, else the build stops.
+card without those lines. The strongest result is chosen from the build (the largest fold among the significant rows, one
+per question, on at least 20 marks, read as the Overview reads them: `website.reading.min_set` and a set's test within
+abundance deciles apply) unless `website.landing.findings` names one. A site whose outputs are missing is left out with a warning under `--skip-missing`, else the build stops.
 
 The page's own words are a landing config (`ptmc pages --landing FILE`, else `landing.yml` beside the first site file):
 `title`, `description`, `lede`, `logo` (an SVG file for the page's header and favicon), `switcher: {label}` (the word of the sites' header and sticky-bar switcher, "PTM"; else a site file's `website.switcher.label`; written to `sites.json`), `intro` (paragraphs), `cta`, `order` (card ids), `groups` (`[{id, title, note, compact}]`:
