@@ -456,8 +456,15 @@ def test_an_only_in_question_gets_its_own_counts_for_a_selection(tmp_path):
     assert any(positions for _, positions in bt['0'].values()) and len(bt['0']) < len(
         prots
     )  # and a protein with no residue inside is left out
-    # a flags layer cannot say which marks are outside
-    site['analyses'].append({'id': 'bad', 'layer': 'motif', 'only_in': 'idr'})
+    # a flags layer takes only_in too: no flag is not outside, so the run lists the marks outside (in.<question>)
+    site['analyses'].append({'id': 'flags_in_idrs', 'layer': 'motif', 'only_in': 'idr', 'new': True})
+    (root / 'sites' / 'toy.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
+    assert S.roles_missing(S.load_site(root / 'sites' / 'toy.yaml')) == []
+    S.run(root / 'sites' / 'toy.yaml', root=root / 'data', log=lambda *_: None)
+    marks = pd.read_csv(root / 'out' / 'toy' / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
+    assert list(marks['in.flags_in_idrs'] == '') == list(marks['sticker_in_idrs'] == '')
+    # a question of several tests cannot
+    site['analyses'].append({'id': 'bad', 'tests': [{'category': 'x', 'inside': 'disorder'}], 'only_in': 'idr'})
     (root / 'sites' / 'bad.yaml').write_text(yaml.safe_dump({**site, 'id': 'bad'}, sort_keys=False))
     assert any('only_in' in p for p in S.roles_missing(S.load_site(root / 'sites' / 'bad.yaml')))
 
