@@ -102,6 +102,12 @@ def expand_subsets(site: dict) -> dict:
     return {**site, 'analyses': out}
 
 
+def beside_lines(card: dict) -> list[dict]:
+    """An Overview card's `beside`: one {analysis, label} or a list of them, as a list (none: empty)."""
+    b = card.get('beside')
+    return [] if not b else list(b) if isinstance(b, list) else [b]
+
+
 def presence_only(site: dict) -> set[str]:
     """The values of mark attributes (marks.attributes.<name>.presence_only) whose peptides, fragments and extents may not
     be published: the build keeps the per-mark flag with its label and never a start, an end or a sequence for them."""
@@ -512,8 +518,9 @@ def website_problems(site: dict) -> list[str]:
                 out.append(f'website.overview, section {sec.get("name")!r}: no analysis {aid!r}')
             if isinstance(c, dict):
                 out += view_problems(c, sets, f'website.overview card {aid!r}')
-            if isinstance(c, dict) and c.get('beside') and c['beside']['analysis'] not in ids:
-                out.append(f'website.overview card {aid!r}: beside reads no analysis {c["beside"]["analysis"]!r}')
+            for b in beside_lines(c) if isinstance(c, dict) else []:
+                if b['analysis'] not in ids:
+                    out.append(f'website.overview card {aid!r}: beside reads no analysis {b["analysis"]!r}')
     for g in web.get('filters') or []:
         out += [
             f'website.filters, group {g.get("name")!r}: no analysis {a!r}'

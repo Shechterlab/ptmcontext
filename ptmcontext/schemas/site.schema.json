@@ -2271,22 +2271,49 @@
                               "description": "spans two columns where the page has room"
                             },
                             "beside": {
-                              "type": "object",
-                              "required": [
-                                "analysis",
-                                "label"
-                              ],
-                              "additionalProperties": false,
-                              "description": "another question's result for the tile's first class, on a line under the tile's rows ('<label>: OR x, q y', the method the tile shows): the same question asked another way, a control",
-                              "properties": {
-                                "analysis": {
-                                  "type": "string",
-                                  "description": "a residue question with the same classes"
+                              "description": "one line, or a list of lines in order, each another question's result for the tile's first class",
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "required": [
+                                    "analysis",
+                                    "label"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "another question's result for the tile's first class, on a line under the tile's rows ('<label>: 2.5×, q y', the statistic and method the tile shows): the same question asked another way, a control",
+                                  "properties": {
+                                    "analysis": {
+                                      "type": "string",
+                                      "description": "a residue question with the same classes"
+                                    },
+                                    "label": {
+                                      "type": "string"
+                                    }
+                                  }
                                 },
-                                "label": {
-                                  "type": "string"
+                                {
+                                  "type": "array",
+                                  "minItems": 1,
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "analysis",
+                                      "label"
+                                    ],
+                                    "additionalProperties": false,
+                                    "description": "another question's result for the tile's first class, on a line under the tile's rows ('<label>: 2.5×, q y', the statistic and method the tile shows): the same question asked another way, a control",
+                                    "properties": {
+                                      "analysis": {
+                                        "type": "string",
+                                        "description": "a residue question with the same classes"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
                                 }
-                              }
+                              ]
                             },
                             "drawing": {
                               "type": [

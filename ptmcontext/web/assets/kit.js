@@ -335,8 +335,12 @@
   K.paramsOut = [];
   // a question's title in running text, as the site file writes it (lower-casing would break PRMT, DNA, Reactome)
   const inText = (t) => String(t || '');
+  // the address's path and query: '#/protein/P68431' (a leading slash, as many sites write their routes) reads as
+  // '#protein/P68431', and is written back in this site's own form
+  const hashPath = (h) => String(h || '').replace(/^#\/*/, '');
   function readHash() {
-    const [path, qs] = location.hash.replace(/^#/, '').split('?');
+    const [path, qs] = hashPath(location.hash).split('?');
+    const slashed = /^#\/+/.test(location.hash);
     const p = new URLSearchParams(qs || '');
     const [view, ...rest] = (path || '').split('/');
     S.view = BUILT_IN_VIEWS.includes(view) || K.views[view] ? view : 'overview';
@@ -392,7 +396,7 @@
     }
     const ov = !!old || (S.view === 'overview' && /^ov-/.test(S.arg));
     if (ov && !old) S.arg = S.arg.slice(3);
-    S.legacy = ov || routed || (S.view !== view && !!view); // written back as this site's own link (replaceState)
+    S.legacy = ov || routed || slashed || (S.view !== view && !!view); // written back as this site's own link (replaceState)
     if (S.view === 'overview' && S.arg && !A[S.arg]) S.arg = '';
     S.q = p.get('q') || '';
     S.m = p.get('m') || 'mantel_haenszel';
@@ -1414,20 +1418,26 @@
       }</div></article>`
     );
   }
-  // an Overview card's beside: {analysis, label}: another question's result for the tile's first class (not a 'Not ...'
-  // one), on one line (a
-  // control asked another way), in the method the tile shows, retested on a selection as every question is
+  // an Overview card's beside: {analysis, label}, or a list of them: another question's result for the tile's first class
+  // (not a 'Not ...' one), a line each (a control asked another way, or the same pair from one source), in the
+  // statistic and method the tile shows, retested on a selection as every question is
   function besideLine(card, shown) {
-    const b = card.beside,
-      other = b && A[b.analysis];
+    const bs = !card.beside ? [] : Array.isArray(card.beside) ? card.beside : [card.beside];
     const first = shown.find((x) => !EXCL.test(x.label || '')) || shown[0];
-    if (!other || !first || first.absent) return '';
-    const r = (rowsOf(other, S.m) || []).find((x) => x.category === first.category);
-    if (!r || r.or == null) return '';
-    return (
-      `<p class="tbeside"><a href="${esc(link('overview', other.id))}">${esc(b.label)}</a>: ` +
-      `<span class="nw">OR ${esc(fxn(r.or))}, q ${esc(fq(r.q))}</span></p>`
-    );
+    if (!first || first.absent) return '';
+    return bs
+      .map((b) => {
+        const other = A[b.analysis];
+        if (!other) return '';
+        const r = (rowsOf(other, S.m) || []).find((x) => x.category === first.category);
+        // the same statistic, in the same form, as the tile's own rows (r.eff: "2.5×"), and q as the site prints it
+        if (!r || r.eff == null) return '';
+        return (
+          `<p class="tbeside"><a href="${esc(link('overview', other.id))}">${esc(b.label)}</a>: ` +
+          `<span class="nw">${esc(fx(r.eff))}, q ${esc(fq(r.q))}</span></p>`
+        );
+      })
+      .join('');
   }
   // a tile row as the cards' rows read it: the short row label (website.front.row_labels), the interval, q, n and the whole dataset's ring
   const frModel = (a, r) => ({
@@ -1931,28 +1941,47 @@
         '</section>'
       );
     };
-    const secs = secList().map((x, i) => [x, sectionHtml(x, i)]),
-      cellTop = secs
-        .filter(([x]) => x.cell)
-        .map((y) => y[1])
-        .join(''),
-      restSecs = secs
-        .filter(([x]) => !x.cell)
-        .map((y) => y[1])
-        .join('');
-    // the cell and the nucleus come before the question's own heading (with a selection, after what the selection says)
+    // the question's heading, its color key and the test switch first, as the head of every section below; then the
+    // sections in the order the site lists them (the sidebar's), the cell's among them, each under its own heading
+    const secs = secList()
+      .map((x, i) => sectionHtml(x, i))
+      .join('');
     return (
       (S.arg ? '' : (K.overviewTop || []).map((f) => f()).join('')) +
-      (selOn() ? '' : cellTop) +
       lead() +
       banner +
       (selOn() && !vsOn() && !small ? selBlocks(K.selLead) : '') +
-      (selOn() ? cellTop : '') +
-      restSecs +
+      secs +
       (selOn() ? '' : (K.overviewBlocks || []).map((f) => f()).join(''))
     ); // the modules' own blocks (Starting points)
   }
   // the tiles of questions that hold for any selection (a module's counts), for a selection too small to test
+  // the other questions of a question's family (analyses[].family: the same question for each type, from one source, ...),
+  // as links on its page, so that the variants the Overview leaves out stay one click away
+  function familyLine(a) {
+    if (!a.family || vsOn()) return '';
+    const vs = D.analyses.filter((x) => A[x.id]?.family === a.family);
+    if (vs.length < 2) return '';
+    const name = (x) => {
+      const f = A[x.id].family,
+        t = A[x.id].title || x.id;
+      return (
+        A[x.id].family_label ||
+        (t.startsWith(f)
+          ? t
+              .slice(f.length)
+              .replace(/^[\s,:;\u2013\u2014-]+/, '')
+              .trim()
+          : t) ||
+        'All'
+      );
+    };
+    return `<p class="page-note fam-line"><span class="muted">The same question:</span> ${vs
+      .map((x) =>
+        x.id === a.id ? `<b>${esc(name(x))}</b>` : `<a href="${esc(link('overview', x.id))}">` + `${esc(name(x))}</a>`
+      )
+      .join(' · ')}</p>`;
+  }
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
   function focus(aid) {
     // a question that is one of a card's views (website.overview cards: views) opens that card
@@ -2032,6 +2061,7 @@
             )
             .join('')}</p>`
         : '') +
+      familyLine(a) +
       `<section class="pcard">${
         (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
         (K.questionBody && K.questionBody(a, rows, card)) ??
@@ -3613,6 +3643,7 @@
       );
     else done(false);
   }
+  const SOURCES_SHOWN = 200;
   function sourcesSection() {
     const SP = D.attribute_specs || {},
       SD = K.sel?.data();
@@ -3639,6 +3670,7 @@
           (`<div class="tbl-card"><table class="tbl"><thead><tr><th>${esc(s.label)}</th><th class="num">${esc(cap(W.marks))}</th><th>` +
             `Reference</th></tr></thead><tbody>`) +
           rows
+            .slice(0, SOURCES_SHOWN)
             .map(
               ([v, k]) =>
                 `<tr><td>${esc((s.values || {})[v] || v)}</td><td class="num">${int(k)}</td><td>${
@@ -3646,7 +3678,15 @@
                 }</td></tr>`
             )
             .join('') +
-          '</tbody></table></div></section>'
+          '</tbody></table></div>' +
+          // a list of tens of thousands (every paper a site's records cite) would draw a page of hundreds of thousands
+          // of elements: the most frequent are listed, every one is in the Sites download
+          (rows.length > SOURCES_SHOWN
+            ? `<p class="muted small">The ${int(SOURCES_SHOWN)} that report the most ${esc(W.marks)} are listed; all ${int(
+                rows.length
+              )} are in the Sites download (column ${esc(name)}).</p>`
+            : '') +
+          '</section>'
         );
       })
       .join('');
@@ -4473,7 +4513,7 @@
   (() => {
     const sp = new URLSearchParams(location.search);
     if (!['q', 'f'].some((k) => sp.has(k))) return;
-    const [path, qs] = location.hash.replace(/^#/, '').split('?'),
+    const [path, qs] = hashPath(location.hash).split('?'),
       hp = new Query(qs || '');
     ['q', 'f'].forEach((k) => {
       if (sp.has(k) && !hp.has(k)) hp.set(k, k === 'f' ? K.sel.fRaw(location.search) : sp.get(k));
