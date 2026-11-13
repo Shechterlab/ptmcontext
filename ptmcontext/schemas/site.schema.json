@@ -2270,6 +2270,32 @@
               "type": "string",
               "description": "the page's heading"
             },
+            "control_badges": {
+              "description": "a tile row (and its question's page) whose result fails a control (controls:) shows a badge naming the control, linked to the Controls table, with both results in its tooltip and its accessible name; false shows none",
+              "oneOf": [
+                {
+                  "const": false
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "verdicts": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "enum": [
+                          "lost",
+                          "reversed",
+                          "weaker"
+                        ]
+                      },
+                      "description": "which readings of a control count as a failure (default: lost and reversed)"
+                    }
+                  }
+                }
+              ]
+            },
             "cell_first": {
               "type": "boolean",
               "default": true,

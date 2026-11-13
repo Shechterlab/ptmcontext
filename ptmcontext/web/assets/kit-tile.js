@@ -118,7 +118,7 @@
     const val = x.absent ? '–' : K.fxn(v) + '×';
     return (
       `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${cls ? ' ' + cls : ''}"${attrs}><span class="fr-lab">` +
-      `<span>${esc(x.label)}</span></span>${track}` +
+      `<span>${esc(x.label)}</span>${x.badge ? `<span class="vh">, ${esc(x.badge)}</span>` : ''}</span>${track}` +
       (`<span class="fr-val">${esc(val)}<i class="fr-q ${dir}${x.desc ? ' desc' : ''}" aria-hidden="true"></i>` +
         `</span><span class="fr-n">${x.n != null ? int(x.n) : ''}</span></div>`)
     );

@@ -184,3 +184,49 @@ def test_the_browser_retests_a_flags_control_as_the_run(tmp_path):
         want = {r.category: [r.a, r.b, r.c, r.d] for r in py.itertuples() if r.a + r.c}
         got = {c: v for c, *v in out[key]}
         assert got and {c: got[c] for c in want if c in got} == {c: want[c] for c in want if c in got}, (m, got, want)
+
+
+ASSETS = S.Path(S.__file__).parent / 'web' / 'assets'
+
+
+@pytest.mark.skipif(not __import__('shutil').which('node'), reason='needs Node')
+def test_a_control_verdict_names_lost_reversed_and_weaker():
+    import re
+    import subprocess
+
+    js = (ASSETS / 'kit.js').read_text()
+    fn = re.search(r'  function ctlVerdict\(r, c\) \{.*?\n  \}\n', js, re.S).group(0)
+    prog = (
+        'const MIN_EFFECT = 1.1;'
+        + fn
+        + """
+const R = (dir, eff) => ({ dir, eff });
+console.log(JSON.stringify([
+  ctlVerdict(R('more', 3), R('more', 2)), ctlVerdict(R('more', 3), R('less', 0.4)), ctlVerdict(R('more', 3), R('ns', 1.5)),
+  ctlVerdict(R('more', 3), R('ns', 1.01)), ctlVerdict(R('less', 0.5), R('more', 2)), ctlVerdict(R('ns', 1), R('more', 2)),
+  ctlVerdict(R('more', 3), undefined)]));"""
+    )
+    out = json.loads(subprocess.run(['node', '-e', prog], capture_output=True, text=True, check=True).stdout)
+    assert out == ['holds', 'reversed', 'weaker', 'lost', 'reversed', 'new', 'not tested']
+
+
+def test_a_failed_control_keeps_its_row_with_a_badge_in_the_kit():
+    js = (ASSETS / 'kit.js').read_text()
+    # by default lost and reversed count; the site file may add weaker or switch the badges off
+    assert "OV.control_badges?.verdicts || ['lost', 'reversed']" in js and 'OV.control_badges === false' in js
+    # the badge sits after the tile row (not inside its button), opens the Controls table, and the row's name says it
+    assert 'class="ctl-fail"' in js and 'data-ctl-go=' in js and 'id="q-controls"' in js
+    assert 'fails control: ${f.label}' in js and 'badge: fails.map(failText)' in js
+    assert '<span class="vh">, ${esc(x.badge)}</span>' in (ASSETS / 'kit-tile.js').read_text()
+    css = (ASSETS / 'kit.css').read_text()
+    badge = css[css.index('.ctl-badge {') :]
+    badge = badge[: badge.index('}')]
+    assert 'var(--muted)' in badge and '--more' not in badge  # muted, not the alarm colour
+    schema = json.loads((S.Path(S.__file__).parent / 'schemas' / 'site.schema.json').read_text())
+    import jsonschema
+
+    ov = schema['properties']['website']['properties']['overview']
+    jsonschema.validate({'control_badges': {'verdicts': ['lost', 'weaker']}}, ov)
+    jsonschema.validate({'control_badges': False}, ov)
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate({'control_badges': {'verdicts': ['holds']}}, ov)

@@ -9464,3 +9464,35 @@ html[data-density] .sites-tbl .cv {
 .pcard.controls .ctl-not-tested {
   color: var(--muted, #6b7280);
 }
+/* a class that fails a control (kit.js controlFails): a muted outlined badge under its tile row and its page heading */
+.ctl-fail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: -2px 0 4px;
+  padding-left: 2px;
+}
+.ctl-fail.head {
+  margin: 4px 0 0;
+  flex-basis: 100%;
+  order: 3;
+}
+.ctl-badge {
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+.ctl-badge:hover {
+  color: var(--ink, #111827);
+  border-color: var(--muted);
+}
+.ctl-badge:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

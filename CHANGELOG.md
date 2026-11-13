@@ -6,7 +6,9 @@
   controls beside its result (holds, weaker or lost), not as Overview tiles. The changes: a part of the marks
   counted by independent groups (`distinct_at_least`, with one laboratory's studies counted once and databases not at
   all), the other marks on neither side (`marks_outside: left_out`); proteins set aside (`without_proteins`); only the
-  residues in a detectable tryptic peptide (`only_in: {digest}`). The Method page lists them.
+  residues in a detectable tryptic peptide (`only_in: {digest}`). The Method page lists them. A result that fails a
+  control (lost or reversed; `website.overview.control_badges`) keeps its tile row, with a muted badge naming the control
+  that opens its Controls table.
 - Methylarginine site: motif, disorder, IDR charge and aromatic-neighbour questions on the high-confidence sites (at
   least two independent studies) and the motif and disorder questions on the sites found without methylarginine
   antibodies; the near-modification and IDR charge questions inside IDRs. The release's rows are unchanged.

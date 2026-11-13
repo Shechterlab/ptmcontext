@@ -92,9 +92,14 @@ Conventions:
   question's title, or its layer's, unless it has one; `family_label` the label, after the question's own name in a family
   it already had). The question's page shows its controls beside its result: for each class with a reading in either,
   the odds ratio (fold enrichment for sets) and q in the question and in each control, and whether the reading holds
-  there (the same reading at q ≤ 0.05), is weaker (the same direction by at least 1.1×, not at q ≤ 0.05) or is lost.
-  The Method page lists the controls, and for a `distinct_at_least` condition its groups and the items not counted. A
-  control is not an Overview tile. A model (`conditional_logit`) is not repeated; `only_in` is for a residue question of
+  there (the same reading at q ≤ 0.05), is weaker (the same direction by at least 1.1×, not at q ≤ 0.05), reversed (the
+  other way at q ≤ 0.05) or lost (under 1.1× in the same direction, or the other way without q ≤ 0.05). A class whose
+  result fails a control keeps its place on the Overview with a muted badge under its tile row, and one under its
+  question's heading: "fails control: <label>", a button that opens the question at its Controls table, with both
+  results (odds ratio or fold, q) in its tooltip and the badge's words in the row's accessible name.
+  `website.overview.control_badges: {verdicts: [lost, reversed, weaker]}` says which readings count (default lost and
+  reversed); `false` shows no badge. No badge is shown for a selection. The Method page lists the controls, and for a
+  `distinct_at_least` condition its groups and the items not counted. A control is not an Overview tile. A model (`conditional_logit`) is not repeated; `only_in` is for a residue question of
   one layer without its own.
 - Questions that are variants of one base (the same test at other window sizes, or inside IDRs) may share a
   `family:` (any text, the entry's name). The website's Sections sidebar then lists them as one entry with a caret
