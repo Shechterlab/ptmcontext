@@ -2,11 +2,11 @@
 # the cards of sites not built yet. Each built site's card comes from its site file (website.name, band, accent, art,
 # landing.tagline / question / cta, stats) and its build (the numbers, the strongest result). CONTRACTS.md, "The landing page".
 title: Human protein modification sites
-description: "One website for each protein modification. Each tests where modified sites lie in human proteins and which proteins have them."
-lede: Which proteins have each modification, and in which regions of those proteins it occurs.
+description: "Explore where human proteins carry each modification, and what sets those places apart."
+lede: Where human proteins are modified, and what sets those places apart.
 intro:
-  - "Each modification has its own explorer. All are built the same way from the human reference proteome."
-  - "Questions about where in a protein a modification lies compare each modified residue with the other residues of the same protein, so a long or disordered protein alone does not drive a result. Questions about which proteins are modified compare the modified proteins with other proteins, within abundance deciles where abundance data exist. Choose a modification."
+  - "Pick a modification: arginine methylation, lysine methylation, other lysine modifications (acetylation, ubiquitination, SUMOylation and more) or phosphorylation. Each explorer gathers sites from published studies and databases and places them on the same human reference proteome, so they can be compared side by side."
+  - "When we ask where in a protein a modification sits, we compare modified residues with the unmodified ones in the same protein, so a long or disordered protein can't produce a result by itself. When we ask which proteins carry it, we compare them with other proteins of similar abundance, where abundance data exist."
 logo: sites/art/ptmcontext_logo.svg
 switcher: {label: PTM}
 cta: "Explore {marks} →"
