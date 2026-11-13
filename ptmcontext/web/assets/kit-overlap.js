@@ -1653,7 +1653,6 @@
     'fig-more': '#b42318',
     'fig-less': '#334155',
     'fig-ns': '#5f6f78',
-    'fig-select-edge': '#c2410c',
     'fig-c1': LIGHT[0],
     'fig-c2': LIGHT[1],
     'fig-c3': LIGHT[2],
