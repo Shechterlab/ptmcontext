@@ -93,7 +93,7 @@
   });
   K.paramsOut.push((p) => {
     if (S.view !== 'overlap') return;
-    if (S.ot.length) p.set('t', S.ot.map(encodeURIComponent).join(','));
+    if (S.ot.length) p.set('t', S.ot.map((x) => x.replace(/%/g, '%25').replace(/,/g, '%2C')).join(','));
     if (S.ou !== 'proteins') p.set('ou', S.ou);
     if (S.ov !== 'auto') p.set('ov', S.ov);
     if (S.or) p.set('or', S.or);
@@ -426,7 +426,7 @@
   function drawVenn(res, st) {
     const { rad, pos } = circles(res),
       Wd = 340,
-      pad = 8;
+      pad = 20;
     const xs = pos.flatMap(([x], i) => [x - rad[i], x + rad[i]]),
       ys = pos.flatMap(([, y], i) => [y - rad[i], y + rad[i]]),
       x0 = Math.min(...xs),
