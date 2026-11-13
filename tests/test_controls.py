@@ -141,3 +141,46 @@ def test_controls_repeat_a_question_with_one_change_and_name_it(tmp_path):
 
 
 P_ARGS = sum(s.count('R') for s in ('MRGGRAAAAARAAAAAAAAAARAAAAAAAAARGGAAAAAAAAR', 'MRAAARAAARAAAAAAAAAAAAAARAAAR'))
+
+
+@pytest.mark.skipif(not __import__('shutil').which('node'), reason='needs Node')
+def test_the_browser_retests_a_flags_control_as_the_run(tmp_path):
+    """A motif (flags) question on a part of the marks, the others on neither side: a selection of every mark, tested
+    again in the browser, counts what the run counted (the marks it leaves out are listed, not read from no flag)."""
+    from node_harness import _run
+    from test_search import _toy
+
+    from ptmcontext import web
+
+    root = _toy(tmp_path, with_search=False)
+    p = root / 'sites' / 'toy.yaml'
+    site = yaml.safe_load(p.read_text())
+    site['website']['front'] = {'mode': 'classic'}
+    site['website']['compare'] = {'min_proteins': 1, 'min_marks': 1}
+    site['controls'] = [
+        {
+            'id': 'x',
+            'label': 'kind x',
+            'analyses': ['motif'],
+            'marks_where': {'column': 'kind', 'equals': 'x'},
+            'marks_outside': 'left_out',
+        }
+    ]
+    p.write_text(yaml.safe_dump(site, sort_keys=False))
+    run = S.run(p, root=root / 'data', log=lambda *_: None)
+    index = web.build(p, log=lambda *_: None)
+    out = _run(
+        tmp_path,
+        index,
+        """
+      await K.sel.ready; K.sel.data(); await K.sel.ready;
+      K.S.q = 'ONE TWO'; K.sel.select && K.sel.select('ONE TWO');
+      const rows = (m) => (K.sel.rows('motif_x', m) || []).map(r => [r.category, r.a, r.b, r.c, r.d]);
+      console.log(JSON.stringify({ mh: rows('mantel_haenszel'), fi: rows('fisher'), ctl: D.analyses.find(a => a.id === 'motif_x').control_of }));""",
+    )
+    assert out['ctl'] == 'motif'
+    for m, key in (('mantel_haenszel', 'mh'), ('fisher', 'fi')):
+        py = run.rows[(run.rows['analysis'] == 'motif_x') & (run.rows['method'] == m)]
+        want = {r.category: [r.a, r.b, r.c, r.d] for r in py.itertuples() if r.a + r.c}
+        got = {c: v for c, *v in out[key]}
+        assert got and {c: got[c] for c in want if c in got} == {c: want[c] for c in want if c in got}, (m, got, want)
