@@ -1524,7 +1524,7 @@
     lo: ciOf(r),
     sub: r.absent ? '' : testLine(r),
     tip: r.absent ? '' : countLine(r),
-    q: r.q,
+    q: r.adj ? r.adj.q : r.q,
     dir: r.absent ? 'ns' : r.dir,
     n: r.absent ? null : r.a,
     wv: r.ref ? valOf(r.ref) : null,
