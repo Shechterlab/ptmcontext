@@ -5,7 +5,7 @@ title: Human protein modification sites
 description: "One website for each protein modification. Each tests where modified sites lie in human proteins and which proteins have them."
 lede: Which proteins have each modification, and in which regions of those proteins it occurs.
 intro:
-  - "Each modification has its own site. All are built the same way from the human reference proteome."
+  - "Each modification has its own explorer. All are built the same way from the human reference proteome."
   - "Each test compares a modified residue with the other residues of the same protein, and is repeated across all proteins. A long or disordered protein alone does not drive a result. Choose a modification."
 logo: sites/art/ptmcontext_logo.svg
 switcher: {label: PTM}
