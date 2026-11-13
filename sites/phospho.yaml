@@ -206,31 +206,31 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       noun: reader motif
       title: Reader motifs
       question: "Are phosphosites in the motifs that phosphopeptide-binding domains recognize more often than other residues of the same type in their proteins?"
-      sub: "Phosphosites against the other residues of their own type (serines and threonines, threonines, serines or tyrosines, as the motif has it) in the same proteins, by the sequence a reader domain binds when the site is phosphorylated: 14-3-3, polo-box, the beta-TrCP phosphodegron, SH2, FHA and BRCT. Pin1 binds Sph/Tph-P, the proline-directed class of the kinase motifs, so it has no row of its own. A motif is a candidate binding site, not shown to bind"
+      sub: "Phosphosites against the other residues of their own type (serines and threonines, threonines, serines or tyrosines, as the motif has it) in the same proteins, by the sequence a reader domain binds when the site is phosphorylated (pS, pT and pY mark the phosphorylated residue in a motif): 14-3-3, polo-box, the beta-TrCP phosphodegron, SH2, FHA and BRCT. Pin1 binds pS/pT-P, the proline-directed class of the kinase motifs, so it has no row of its own. A motif is a candidate binding site, not shown to bind"
       section: Reader motifs and functional scores
       families:
-        - {name: ytt_mode1, label: "14-3-3 mode 1 (R-S-x-Sph-x-P)", pattern: "RS.[ST].P", start: -3, among: ST,
+        - {name: ytt_mode1, label: "14-3-3 mode 1 (R-S-x-pS-x-P)", pattern: "RS.[ST].P", start: -3, among: ST,
            help: "Arg at -3, Ser at -2 and Pro at +2: the first 14-3-3 binding mode (Muslin et al. 1996; Yaffe et al. 1997)"}
-        - {name: ytt_mode1_relaxed, label: "14-3-3, relaxed (R-x-x-Sph-x-P)", pattern: "R..[ST].P", start: -3, among: ST,
+        - {name: ytt_mode1_relaxed, label: "14-3-3, relaxed (R-x-x-pS-x-P)", pattern: "R..[ST].P", start: -3, among: ST,
            help: "Arg at -3 and Pro at +2, with any residue at -2: the relaxed form of mode 1"}
-        - {name: ytt_mode2, label: "14-3-3 mode 2 (R-x-Y/F-x-Sph-x-P)", pattern: "R.[FY].[ST].P", start: -4, among: ST,
+        - {name: ytt_mode2, label: "14-3-3 mode 2 (R-x-Y/F-x-pS-x-P)", pattern: "R.[FY].[ST].P", start: -4, among: ST,
            help: "Arg at -4, Tyr or Phe at -2 and Pro at +2: the second 14-3-3 binding mode (Yaffe et al. 1997)"}
-        - {name: polo_box, label: "Polo-box (S-Sph/Tph-P)", pattern: "S[ST]P", start: -1, among: ST,
+        - {name: polo_box, label: "Polo-box (S-pS/pT-P)", pattern: "S[ST]P", start: -1, among: ST,
            help: "Ser at -1 and Pro at +1: the motif the polo-box domain of PLK1 binds (Elia et al. 2003)"}
         - name: phosphodegron_btrcp
-          label: "beta-TrCP phosphodegron (D-Sph-G-x-x-Sph)"
+          label: "beta-TrCP phosphodegron (D-pS-G-x-x-pS)"
           among: S
           patterns: [{pattern: "DSG..S", start: -1}, {pattern: "DSG..S", start: -5}]
           help: "Either serine of D-S-G-x-x-S, the degron beta-TrCP binds once both serines are phosphorylated (Wu et al. 2003)"
-        - {name: sh2_hydrophobic, label: "SH2 (Yph-x-x-I/L/V/M)", pattern: "Y..[ILVM]", start: 0, among: Y,
-           help: "Tyr with a hydrophobic residue at +3: the SH2 preference of Src-family kinases (Yph-E-E-I) (Songyang et al. 1993)"}
-        - {name: sh2_grb2, label: "SH2 Grb2 (Yph-x-N)", pattern: "Y.N", start: 0, among: Y,
+        - {name: sh2_hydrophobic, label: "SH2 (pY-x-x-I/L/V/M)", pattern: "Y..[ILVM]", start: 0, among: Y,
+           help: "Tyr with a hydrophobic residue at +3: the SH2 preference of Src-family kinases (pY-E-E-I) (Songyang et al. 1993)"}
+        - {name: sh2_grb2, label: "SH2 Grb2 (pY-x-N)", pattern: "Y.N", start: 0, among: Y,
            help: "Tyr with Asn at +2: the Grb2 SH2 preference (Songyang et al. 1993)"}
-        - {name: sh2_pi3k, label: "SH2 PI3K (Yph-M/V-x-M)", pattern: "Y[MV].M", start: 0, among: Y,
+        - {name: sh2_pi3k, label: "SH2 PI3K (pY-M/V-x-M)", pattern: "Y[MV].M", start: 0, among: Y,
            help: "Tyr, then Met or Val, then any residue and Met: the PI3K p85 SH2 preference (Songyang et al. 1993)"}
-        - {name: fha, label: "FHA (Tph-x-x-D)", pattern: "T..D", start: 0, among: T,
+        - {name: fha, label: "FHA (pT-x-x-D)", pattern: "T..D", start: 0, among: T,
            help: "Thr with Asp at +3: the preference of FHA domains such as Rad53's (Durocher et al. 2000)"}
-        - {name: brct, label: "BRCT (Sph-x-x-F)", pattern: "S..F", start: 0, among: S,
+        - {name: brct, label: "BRCT (pS-x-x-F)", pattern: "S..F", start: 0, among: S,
            help: "Ser with Phe at +3: the preference of the BRCT repeats of BRCA1 (Manke et al. 2003)"}
   # Crosstalk: are phosphosites more often within 10 residues of another modification than the other serines,
   # threonines and tyrosines of their protein? Context marks (context_marks below), not part of any release's analyses
@@ -240,7 +240,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methylarginines (±10 residues)
     question: "Are phosphosites more often near a methylarginine than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methylarginine (the methylarginine site's release v1.4.3) is within 10 residues on either side. Both modifications are best studied on abundant, much-studied proteins, so the within-protein comparison is the fairer one"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methylarginine (the methylarginine explorer's release v1.4.3) is within 10 residues on either side. Both modifications are best studied on abundant, much-studied proteins, so the within-protein comparison is the fairer one"
     section: Other modifications
   - id: near_methyllysine
     layer: near_marks
@@ -248,7 +248,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methyllysines (±10 residues)
     question: "Are phosphosites more often near a methyllysine than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methyllysine (the methyllysine site's release v1.5.0, by-similarity records left out) is within 10 residues on either side"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methyllysine (the methyllysine explorer's release v1.5.0, by-similarity records left out) is within 10 residues on either side"
     section: Other modifications
   - id: near_acetylation
     layer: near_marks
@@ -928,7 +928,7 @@ context_marks:
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: other_acylation
     label: Other acylations
-    short: "Kacyl"
+    short: "Acyl"
     noun: non-acetyl acylation site
     plural: Other acylation sites
     input: context_lysine_acylation_sites_v1_5_0
@@ -938,7 +938,7 @@ context_marks:
     colour_dark: "#ddd06a"     # 10.3:1 on the dark surface
     citation:
       short: CPLM, UniProt and iPTMnet
-      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactoyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl, phosphoglyceryl, biotinyl, lipoyl) of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl, phosphoglyceryl, biotinyl, lipoyl) of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
       licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
     sources:
       CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
@@ -965,7 +965,7 @@ context_marks:
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: sumoylation
     label: SUMOylation
-    short: "Ksu"
+    short: "SUMO"
     noun: SUMOylation site
     plural: SUMOylation sites
     input: context_sumoylation_sites_v1_5_0
@@ -1009,7 +1009,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
-  examples: [TP53, "AKT1 MAPK1 EGFR", "kinase_motifs:proline_directed", "TP53 S15", "AKT1 S473"]   # the first three are the chips under the search box
+  examples: [TP53, "AKT1 MAPK1 EGFR", "motif:[ST]P", "TP53 S15", "AKT1 S473"]   # the first three are the chips under the search box
   placeholders: {highlight: "TP53 S15, AKT1 S473, EGFR Y1068", partners: "AKT1, CDK1, YWHAZ", motif: "SPXK, RXXS, DSGXXS", motif_either: "SP,TP"}
   default_background: other reviewed human proteins   # examples inside the Highlight and partner boxes
   start:                   # the Overview's start panel for a first visit, and the Help page's starts (kit-help.js)
@@ -1018,7 +1018,7 @@ website:                  # the look and words of the website (ptmc web); layout
     examples:
       - {label: A tumor suppressor, query: TP53, help: "p53's phosphosites, with its kinase motifs and readers."}
       - {label: A list of genes, query: AKT1 MAPK1 EGFR, help: "Every question is tested again on their phosphosites."}
-      - {label: One site in its structure, query: TP53 S15, help: "Its protein's domain and disorder map, the evidence for the site, and its structures."}
+      - {label: One phosphosite in its structure, query: TP53 S15, help: "Its protein's domain and disorder map, the evidence for the residue, and its structures."}
   stats: [marks, proteins, {attribute: sources, label: databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
@@ -1111,7 +1111,7 @@ website:                  # the look and words of the website (ptmc web); layout
     title: Where in the cell
     question: "Where do phosphorylated proteins localize in the cell?"
     intro: "Five maps from four studies locate proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
-    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
+    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map. The nuclear position of the genes of RNAs bound by proteins with eCLIP data (APEX-seq, TSA-seq, Hi-C subcompartments) is not shown."
     maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
       - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
          how: "antibody staining in many cell lines; locations of Approved or better reliability with 20 or more proteins",
@@ -1217,7 +1217,7 @@ website:                  # the look and words of the website (ptmc web); layout
     provenance:
       kind: values
       attribute: sources
-      title: Data sources
+      title: Databases
       question: "Which databases report the phosphosites?"
       sub: "Phosphosites reported by each database"
       unit: [database, databases]
@@ -1247,8 +1247,8 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome]}
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency]}
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
-    - {name: Data sources, attributes: [sources, iptmnet_sources]}
-  dataset: {label: PTM_Pipeline data release, version: v1.5.0 at 5fadf74, date: "2026-11-13", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5fadf74c9bef80f543fd8fe55382e151caa53ef0/releases/v1.5.0"}
+    - {name: Databases, attributes: [sources, iptmnet_sources]}
+  dataset: {label: PTM_Pipeline data release, version: v1.5.0, date: "2026-11-13", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5fadf74c9bef80f543fd8fe55382e151caa53ef0/releases/v1.5.0"}
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). The phosphosites and functional scores of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3 (rows whose databases name Ochoa 2020) come from an article that is not open access, and its supplementary table has no license: they are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. The methyllysine rows shown beside the phosphosites include CPLM 4.0 (Zhang et al., Nucleic Acids Res 50:D451, 2022), which states no license. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5fadf74c9bef80f543fd8fe55382e151caa53ef0/releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class, sources, Ochoa 2020 functional score and mass-spectrometry evidence (Ochoa 2020 rows included, not open access)"}
@@ -1302,7 +1302,7 @@ website:                  # the look and words of the website (ptmc web); layout
         reader_1433:
           label: a 14-3-3 protein (reader)
           role: reader
-          reads: Sph or Tph in R-S-x-Sph-x-P and R-x-Y/F-x-Sph-x-P
+          reads: pS or pT in R-S-x-pS-x-P and R-x-Y/F-x-pS-x-P
           interpro: [IPR000308]
           help: "14-3-3 protein family (IPR000308, InterPro 108.0): the seven human 14-3-3 isoforms"
         reader_sh2:
@@ -1314,25 +1314,25 @@ website:                  # the look and words of the website (ptmc web); layout
         reader_fha:
           label: an FHA-domain protein (reader)
           role: reader
-          reads: Tph (Tph-x-x-D)
+          reads: pT (pT-x-x-D)
           interpro: [IPR000253]
           help: "Forkhead-associated domain (IPR000253, InterPro 108.0)"
         reader_ww:
           label: a WW-domain protein (reader)
           role: reader
-          reads: some bind Sph-Pro or Tph-Pro (Pin1)
+          reads: some bind pS-Pro or pT-Pro (Pin1)
           interpro: [IPR001202]
-          help: "WW domain (IPR001202, InterPro 108.0). Most WW domains bind proline-rich peptides without phosphate; Pin1's reads Sph/Tph-P"
+          help: "WW domain (IPR001202, InterPro 108.0). Most WW domains bind proline-rich peptides without phosphate; Pin1's reads pS/pT-P"
         reader_brct:
           label: a BRCT-domain protein (reader)
           role: reader
-          reads: Sph (Sph-x-x-F) in some
+          reads: pS (pS-x-x-F) in some
           interpro: [IPR001357]
           help: "BRCT domain (IPR001357, InterPro 108.0). Some BRCT repeats bind phosphopeptides, others DNA or protein"
         reader_polo:
           label: a polo-box protein (reader)
           role: reader
-          reads: Sph or Tph (S-Sph/Tph-P)
+          reads: pS or pT (S-pS/pT-P)
           interpro: [IPR000959]
           help: "POLO box domain (IPR000959, InterPro 108.0): PLK1, PLK2, PLK3, PLK4 and PLK5"
       marked: another phosphorylated protein

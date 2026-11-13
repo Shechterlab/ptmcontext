@@ -47,6 +47,15 @@ What changed for readers:
   switcher, a search, the pages (wide screens) and the selection's counts with a filter dot. They return on the way up.
   `website.header.scroll_bar` and `website.header.bar` set it.
 
+- Sources are called "Studies and databases" on the methylarginine, methyllysine and lysine websites (header, card title, filter group, "reported by 2 or more studies or databases"); phosphosite sources are "Databases".
+- The cell tile says how many maps its odds ratios rest on (one to five), not always five.
+- "Site" for the website is now "website" or "explorer"; "site" means a modification site only.
+- Internal words removed from reader text: the data release commit, "read live", file names, the `kinase_motifs:` example chip, CPLM's Exp./Dat. codes.
+- TSA-seq and Hi-C are described as the position of the genes of bound RNAs, not of the RNAs.
+- Lactylation, not lactoylation. Phosphorylated residues in motifs are written pS, pT and pY. SUMO is written SUMO, not Ksu, which read like Ksucc. "Kacyl" is "Acyl".
+- The website menu lists the same names, in the same order, as the landing page.
+- US spelling (gray, license, neighborhood, centered).
+
 For the code: `website.reading: {min_maps, min_group, min_set}` (defaults 2, 20, 30); `among_counts.tsv` and
 selection.json `among`, `among_others`, `residues` carry a motif family's `among` to the browser; run.json keeps a flags
 layer's `among`.

@@ -108,7 +108,7 @@
       (`<p class="sp-what">${esc(whatText())} <span class="muted">${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins.</span>` +
         `</p>`) +
       startButtons('sp-starts') +
-      (`<p class="sp-foot"><a href="${esc(K.link('help'))}">How to use this site</a><span aria-hidden="true"> · ` +
+      (`<p class="sp-foot"><a href="${esc(K.link('help'))}">How to use this explorer</a><span aria-hidden="true"> · ` +
         `</span><span class="sp-keys">Press <kbd>/</kbd> to search, <kbd>?</kbd> for every shortcut</span></p>` +
         `</section>`)
     );
@@ -173,7 +173,7 @@
     '</tbody></table>';
   const terms = EX.filter(isTerm);
   const SECTIONS = [
-    ['h-what', 'What this site is'],
+    ['h-what', 'What this explorer is'],
     ['h-start', 'Where to start'],
     ['h-search', 'Searching'],
     ['h-filters', 'Filters'],
@@ -193,7 +193,7 @@
     const mlink = (arg, text) => `<a href="${esc(K.link('method', arg))}">${text}</a>`;
     const min = K.sel?.MIN;
     return (
-      `<div class="page-head"><h2>How to use this site</h2></div><div class="doc help-doc">` +
+      `<div class="page-head"><h2>How to use this explorer</h2></div><div class="doc help-doc">` +
       sec(
         'h-what',
         `<p>${esc(whatText('on the Overview'))}</p><p>It holds ${int(D.counts.marks)} ${esc(W.marks)} on ${int(D.counts.proteins)} proteins and ${int(D.analyses.length)} questions. ${mlink('', 'Method')} gives the ` +
@@ -314,7 +314,7 @@
       if (arg) document.getElementById(arg)?.scrollIntoView({ block: 'start' });
     },
   };
-  K.sections.help = () => [['view', 'How to use this site', 1], ...SECTIONS.map(([id, t]) => [id, t, 1])];
+  K.sections.help = () => [['view', 'How to use this explorer', 1], ...SECTIONS.map(([id, t]) => [id, t, 1])];
   (K.tabsEnd ||= []).push(() => ['help', 'Help', null]);
 
   // ---- keyboard shortcuts and their overlay --------------------------------------------------------------------------
@@ -327,7 +327,7 @@
           `class="keys-head"><h2 id="keys-title">Keyboard shortcuts</h2>` +
           (`<button type="button" class="sp-close" data-keys-close aria-label="Close">×</button></div><div ` +
             `class="keys-body"></div>`) +
-          `<p class="muted small">More in <a href="#help" data-keys-close>How to use this site</a>.</p></dialog>`
+          `<p class="muted small">More in <a href="#help" data-keys-close>How to use this explorer</a>.</p></dialog>`
       );
       dlg = document.querySelector('.keys-dlg');
       dlg.addEventListener('click', (e) => {

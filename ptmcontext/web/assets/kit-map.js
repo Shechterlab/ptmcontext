@@ -293,14 +293,19 @@
   const trackHelp = (t) => `${t.help || t.title}${tracksVersion(t) ? ` (${tracksVersion(t)})` : ''}`;
   const PDB_ON = CFG.pdb_contacts !== false;
   const BUILT = [
-    ['uni_dom', 'UniProt domains', 'live', 'Domains, repeats and zinc fingers of the UniProt entry, read live'],
+    [
+      'uni_dom',
+      'UniProt domains',
+      'live',
+      'Domains, repeats and zinc fingers of the UniProt entry, retrieved when the page opens',
+    ],
     [
       'regions',
       'Regions',
       'live',
-      'Regions and motifs (outlined) of the UniProt entry (its “Disordered” regions are left out), read live',
+      'Regions and motifs (outlined) of the UniProt entry (its “Disordered” regions are left out), retrieved when the page opens',
     ],
-    ['composition', 'Composition', 'live', 'Compositional bias of the UniProt entry, read live'],
+    ['composition', 'Composition', 'live', 'Compositional bias of the UniProt entry, retrieved when the page opens'],
     ...TRACKS.filter((t) => t.style === 'segments').map((t) => [trackRow(t), t.title, 'site', trackHelp(t)]),
     [
       'charge',
@@ -338,26 +343,27 @@
       `${cap(W.marks)} in UniProt`,
       'live',
       `The ${W.marks} as UniProt reports them (Modified residue ` +
-        `features named in the modification’s profile), inked where this site has the ${W.mark} too`,
+        `features named in the modification’s profile), inked where this explorer has the ${W.mark} too`,
     ],
     [
       'variants',
       'Variants',
       'live',
-      `Natural variants of the UniProt entry, read live; inked and labeled where ` + `they change a ${W.mark}`,
+      `Natural variants of the UniProt entry, retrieved when the page opens; inked and labeled where ` +
+        `they change a ${W.mark}`,
     ],
     [
       'mutagen',
       'Mutagenesis',
       'live',
-      `Mutagenesis features of the UniProt entry (diamonds), read live; inked and ` +
+      `Mutagenesis features of the UniProt entry (diamonds), retrieved when the page opens; inked and ` +
         `labeled where they change a ${W.mark}`,
     ],
     [
       'ptm',
       'Other PTMs',
       'live',
-      'Modified residues, cross-links, glycosylation and lipidation of the UniProt entry, read live, one row per kind',
+      'Modified residues, cross-links, glycosylation and lipidation of the UniProt entry, retrieved when the page opens, one row per kind',
     ],
     ...(PDB_ON
       ? [
@@ -366,7 +372,7 @@
             'Contacts in PDB structures',
             'live',
             'Residues at an interface with RNA, DNA, another protein or another copy in ' +
-              'experimental structures (PDBe-KB, read live). Click for the PDB entries',
+              'experimental structures (PDBe-KB, retrieved when opened). Click for the PDB entries',
           ],
         ]
       : []),
@@ -374,7 +380,7 @@
       'plddt',
       'AlphaFold',
       'live',
-      'The AlphaFold DB model’s confidence (pLDDT) per residue, read live; drawn only ' +
+      'The AlphaFold DB model’s confidence (pLDDT) per residue, retrieved when the page opens; drawn only ' +
         'where the model’s sequence is this one',
     ],
   ];
@@ -708,7 +714,7 @@
     const entry = full
       ? `<a href="https://www.uniprot.org/uniprotkb/${esc(acc)}/entry">UniProt ${esc(acc)}</a>`
       : `UniProt ${esc(acc)}`;
-    return `<br><span class="muted">${entry} (read live${
+    return `<br><span class="muted">${entry} (retrieved when opened${
       ctxUni() ? ', entry version ' + esc(ctxUni()) : ''
     }) · ${esc(f.type)}${ev ? ' · ' + esc(ev) : ''}${
       pm.length
@@ -1411,8 +1417,8 @@
           : cap(W.marks),
         top + 8 + (nLev - 1) * 5.5,
         MV
-          ? `the ${W.marks} of this site${MV_ALL.on ? '' : ` with ${MV.label}`}, colored as chosen above (${marks.length} of ${rec.marks.length} here)`
-          : `the ${W.marks} of this site, colored as ` + `chosen above; click one for its card`,
+          ? `the ${W.marks} in this explorer${MV_ALL.on ? '' : ` with ${MV.label}`}, colored as chosen above (${marks.length} of ${rec.marks.length} here)`
+          : `the ${W.marks} in this explorer, colored as ` + `chosen above; click one for its card`,
         true
       );
       c.rowToggle = false;
@@ -1435,7 +1441,7 @@
     });
     if (shownHere.length) {
       if (!marks.length)
-        rowLabel(cap(W.marks), yB - 9, `the ${W.marks} of this site; hatched: shown, not counted`, true);
+        rowLabel(cap(W.marks), yB - 9, `the ${W.marks} in this explorer; hatched: shown, not counted`, true);
       key(SW.htick(P.muted), K.shown?.row ? K.shown.row() : 'Shown, not counted');
     }
   }
@@ -1717,7 +1723,7 @@
           label: cap(W.marks),
           short: D.profile_short || cap(W.marks),
           col: P.accent,
-          help: `the ${W.marks} of this site`,
+          help: `the ${W.marks} in this explorer`,
           pts: marksIn.map((m) => ({ pos: m[0], own: true })),
         },
       };
@@ -2079,7 +2085,7 @@
                 ? `<a href="https://www.ebi.ac.uk/pdbe/pdbe-kb/proteins/${esc(p.acc)}" target="_blank" ` +
                   `rel="noopener">PDBe-KB ${esc(p.acc)}</a>`
                 : 'PDBe-KB'
-            } interface residues, read live</span>`;
+            } interface residues, retrieved when the page opens</span>`;
           const kk = it({ tip: tip(false), card: () => tip(true), a: run.a, b: run.b });
           parts.push(MK.box(XA(run.a), mid - 5, XB(run.b) - XA(run.a), 10, col, 0.85, ` data-mi="${kk}"`));
         });
@@ -2358,14 +2364,16 @@
             at = atMark.has(s);
           const tip = (full) =>
             `<b>${esc(f.description || f.type)}</b> ${esc(resName(s))}${
-              at ? ` · also a ${esc(W.mark)} of this site` : ` · <b>not</b>` + ` among this site’s ${esc(W.marks)}`
+              at
+                ? ` · also a ${esc(W.mark)} in this explorer`
+                : ` · <b>not</b>` + ` among the ${esc(W.marks)} of this explorer`
             }` + featureProv(p.acc, f, full);
           const k = it({ tip: tip(false), card: tip(true), a: s, b: s });
           parts.push(MK.tick(X(s), mid, 11, at ? P.ink : P.own, ` data-mi="${k}"`, 2.4));
         });
         rowLabel(row[1], mid, row[3]);
         c.y += 18;
-        key(SW.tick(P.ink), `In UniProt and this site`);
+        key(SW.tick(P.ink), `In UniProt and this explorer`);
         key(SW.tick(P.own), `In UniProt only`);
       } else if (id === 'ptm') {
         if (!uni) {
@@ -2457,7 +2465,7 @@
             (off > 0 ? '+' : '−') +
             Math.abs(off) +
             ')'
-        : 'Residue positions on the sequence of this site’s snapshot',
+        : 'Residue positions on the sequence of this explorer’s snapshot',
       true
     );
     c.y += 22;
@@ -3046,8 +3054,10 @@
           ].filter(Boolean)
         ),
       ],
-      `UniProt ${p.acc}, read live`,
-      ...(PDB_ON && isOn('pdb') && PDBK[p.acc]?.state === 'ok' ? ['PDB interfaces: PDBe-KB, read live'] : []),
+      `UniProt ${p.acc}, retrieved when the page was opened`,
+      ...(PDB_ON && isOn('pdb') && PDBK[p.acc]?.state === 'ok'
+        ? ['PDB interfaces: PDBe-KB, retrieved when the page was opened']
+        : []),
       ...(ctx.af ? [`AlphaFold ` + `DB model v${ctx.af.version}`] : []),
     ];
     y += 6;

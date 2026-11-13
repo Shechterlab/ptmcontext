@@ -139,9 +139,9 @@
       () => {
         VERR =
           location.protocol === 'file:'
-            ? 'This copy of the site cannot read its data files from disk. Open the hosted ' +
+            ? 'This copy of the website cannot read its data files from disk. Open the hosted ' +
               'site, or index.html through a local web server.'
-            : 'The IDRs could not be read (data/units.json).';
+            : 'The IDRs could not be read.';
         K.render();
       }
     );

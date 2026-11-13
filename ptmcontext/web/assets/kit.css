@@ -4378,9 +4378,7 @@ html.pdf-export .map-ctl {
 }
 .ptbl2 .pname {
   max-width: 15rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
   color: var(--ink-2);
   font-size: 0.82rem;
 }
@@ -8096,7 +8094,7 @@ a.pchip:hover {
 }
 .fp-row {
   display: grid;
-  grid-template-columns: 3.4rem minmax(0, 1fr);
+  grid-template-columns: 4.6rem minmax(0, 1fr);
   align-items: center;
   gap: 0.4rem;
   line-height: 1;
@@ -8188,7 +8186,7 @@ a.pchip:hover {
 }
 .fp-m {
   display: grid;
-  grid-template-columns: 4.4rem minmax(0, 1fr) 3.2rem;
+  grid-template-columns: 5.8rem minmax(0, 1fr) 3.2rem;
   align-items: center;
   gap: 0.4rem;
   line-height: 1.1;

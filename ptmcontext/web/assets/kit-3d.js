@@ -2055,7 +2055,7 @@
         K.link('protein', T.acc + '/' + pos)
       )}">its card</a></p>${contacts}${boundHtml}` +
       (!rows.length && !bound.length && (SD.contacts || SD.bound)
-        ? `<p class="muted small">The site’s tables list ` + `no contact for ${esc(rl(pos))} in the PDB.</p>`
+        ? `<p class="muted small">The tables of this explorer list ` + `no contact for ${esc(rl(pos))} in the PDB.</p>`
         : '') +
       (rows.length || bound.length ? `<p class="src">${esc(tableWords('contacts') || tableWords('bound'))}</p>` : '') +
       '</div>'
@@ -2180,7 +2180,7 @@
                   ` <span class="muted">· pLDDT ${Math.round(x.b)}</span>${
                     table.has(x.pos) && (x.d == null || x.d > 5)
                       ? `<br><span ` +
-                        `class="muted small">The site’s table puts ${esc(rl(x.pos))} at the interface; this model does ` +
+                        `class="muted small">The table of this explorer puts ${esc(rl(x.pos))} at the interface; this model does ` +
                         `not.</span>`
                       : ''
                   }</li>`
@@ -2677,7 +2677,7 @@
     if (!box) return;
     if (!T.homList) {
       box.innerHTML = T.started
-        ? '<p class="muted">Searching the PDB for related proteins (RCSB, live)…</p>'
+        ? '<p class="muted">Searching the PDB for related proteins (RCSB)…</p>'
         : '<p class="muted">The search starts when the structure opens.</p>';
       subSum('s3d-hom', T.started ? 'searching…' : '');
       return;
@@ -2899,8 +2899,8 @@
                 T.predAll ? 'Show the top 12' : `Show all ${int(pv.length)} partners`
               }</button></p>`
             : '') +
-          (`<p class="src">${esc(tableWords('predicted'))}; models ` + `read live.</p>`)
-        : `<p class="muted">The site’s tables name no predicted complex with a ${esc(NOUN)} at the interface.</p>`;
+          (`<p class="src">${esc(tableWords('predicted'))}; models ` + `retrieved from AlphaFold DB.</p>`)
+        : `<p class="muted">The tables of this explorer name no predicted complex with a ${esc(NOUN)} at the interface.</p>`;
     // AlphaFold DB answers 404 for a protein with no predicted complex, and the browser logs that as an error: it is asked
     // at once only where the site's tables name a predicted partner (or it was asked before), else on the reader's request
     const askNow = pv.length > 0 || !!cache.cx[base];
@@ -2979,7 +2979,7 @@
             )
             .join('') +
           ('</tbody></table></div><p class="src">AlphaFold DB predicted complexes (CC BY ' +
-            '4.0), read live. EMBL-EBI’s guidance: ipTM above 0.8 is a confident prediction, ' +
+            '4.0), retrieved from AlphaFold DB. EMBL-EBI’s guidance: ipTM above 0.8 is a confident prediction, ' +
             'below 0.6 likely a failed one; low pLDDT in disordered regions can lower ipTM ' +
             'even when the complex is right.</p>');
       });
@@ -3149,7 +3149,7 @@
       const s = new Set(c.map((x) => x[0]));
       parts.push(`${int(s.size)} ${s.size === 1 ? NOUN : NOUNS} at a PDB interface`);
     }
-    return parts.join(' · ') || 'AlphaFold DB, PDBe and RCSB, live';
+    return parts.join(' · ') || 'AlphaFold DB, PDBe and RCSB';
   }
   function paintSummary() {
     const el = document.querySelector('#p-struct > summary .fsum');
@@ -3197,10 +3197,10 @@
         placed_by:
           src.kind === 'pdb'
             ? mol.pdb.homolog
-              ? 'RCSB sequence alignment (MMseqs2) and PDBe observed residues, read live'
+              ? 'RCSB sequence alignment (MMseqs2) and PDBe observed residues, retrieved when the page opens'
               : mol.pdb.guessed
                 ? 'author numbering (no PDBe mapping for this entry)'
-                : 'PDBe SIFTS mapping and observed residues, read live'
+                : 'PDBe SIFTS mapping and observed residues, retrieved when the page opens'
             : 'UniProt numbering of the model',
         viewer: LIB_CITE,
       },
@@ -3218,19 +3218,19 @@
     const pr = provenance(),
       tables = Object.entries(pr.site_tables);
     return (
-      `Structure: ${pr.structure.shown}, read live from ${pr.structure.read_live
+      `Structure: ${pr.structure.shown}, retrieved from ${pr.structure.read_live
         .split(', ')
         .slice(1)
         .join(', ')} on ${pr.structure.read_live.split(', ')[0]}; residues ` +
       `mapped by ${pr.structure.placed_by}. ` +
       (tables.length
-        ? `From the site’s tables: ${tables
+        ? `From the tables of this explorer: ${tables
             .map(
               ([k, xs]) =>
                 `${k} (${xs.map((x) => `${dateWords(x.version) || x.input}, MD5 ${x.md5.slice(0, 8)}…`).join('; ')})`
             )
             .join('; ')}. `
-        : 'Nothing in this view comes from the site’s own tables except the modified sites. ') +
+        : 'Nothing in this view comes from the tables of this explorer except the modified sites. ') +
       `Drawn with ${LIB_CITE}.`
     );
   }
@@ -4008,7 +4008,7 @@
       `<p class="src">Live, by accession: AlphaFold DB, PDBe, RCSB${SD.predicted ? ', ProtVar' : ''}; drawn with ${esc(LIB_CITE)}.${
         hasTables
           ? ` What the ${esc(NOUNS)} touch: the ` +
-            `site’s tables (${esc([...new Set(Object.keys(SD.inputs).map(tableWords))].join('; '))}).`
+            `tables of this explorer (${esc([...new Set(Object.keys(SD.inputs).map(tableWords))].join('; '))}).`
           : ''
       }</p></div>`
     );
@@ -4505,7 +4505,7 @@
   const methodSection = () =>
     `<section id="m-structure"><h3>3D structures</h3><p>A protein page shows the ` +
     `experimental chain that models most of the protein, any PDB entry and chain from its menu, or the AlphaFold ` +
-    `DB model. It is read live by UniProt accession when the section opens and drawn with ${esc(LIB_CITE)}. ` +
+    `DB model. It is retrieved by UniProt accession when the section opens and drawn with ${esc(LIB_CITE)}. ` +
     (`The experimental chain comes from PDBe’s SIFTS best structures: among chains whose mapping spans most of the ` +
       `protein, the one PDBe says observes most residues. Each ${esc(NOUN)} is mapped through its SIFTS segment ` +
       `and PDBe’s observed residues, so only ${esc(NOUNS)} in the deposited model are drawn. A homologous ` +
@@ -4515,13 +4515,13 @@
       (SD.components || []).map((c) => c.code + ' ' + c.label).join(', ') || 'none named in the profile'
     )}) are found ` +
       `with RCSB’s search.</p>`) +
-    (`<p>The chain is colored by the site’s regions as on the protein map, by the residue evidence the site file ` +
-      `names, or by model confidence, chain, position, secondary structure, charge or Kyte–Doolittle hydropathy. ` +
+    (`<p>The chain is colored by the regions of this explorer as on the protein map, by residue evidence ` +
+      `class, or by model confidence, chain, position, secondary structure, charge or Kyte–Doolittle hydropathy. ` +
       `The ${esc(NOUNS)} take the map’s color. Contacts are side-chain heavy atoms within 4 Å of another chain, ` +
       `RNA or DNA, computed in the browser on the coordinates shown.</p>`) +
     (Object.keys(SD.inputs || {}).length
-      ? `<p>What the ${esc(NOUNS)} touch, entry by entry, comes from the site’s ` +
-        `tables: ${Object.entries(SD.inputs)
+      ? `<p>What the ${esc(NOUNS)} touch, entry by entry, comes from the tables of this explorer` +
+        `: ${Object.entries(SD.inputs)
           .map(
             ([k, ns]) =>
               `${esc(k)}: ${esc(
@@ -4535,7 +4535,7 @@
               )}`
           )
           .join('; ')}. Each export ` +
-        `says which parts came live and which from these tables.</p>`
+        `says which parts were retrieved online and which come from these tables.</p>`
       : '') +
     ('<p>Downloads: the view as a figure (PDF, SVG, or PNG at three times screen ' +
       'resolution) with its key, citation and sources; a TSV of the modified sites in the ' +
@@ -4656,6 +4656,6 @@
 `;
   document.head.appendChild(css);
 
-  K.s3d = { html, after, summary: () => 'AlphaFold DB, PDBe and RCSB, live', show: show3d };
+  K.s3d = { html, after, summary: () => 'AlphaFold DB, PDBe and RCSB', show: show3d };
   K.show3d = show3d;
 });

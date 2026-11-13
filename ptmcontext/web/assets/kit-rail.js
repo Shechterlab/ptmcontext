@@ -152,7 +152,7 @@
             .join(', ')}</span>`
         : '') +
       (absent.length
-        ? `<span class="sel-miss" title="Not a gene, accession or entry name of a protein with a ${esc(W.mark)} on this site">No ${esc(W.marked)} protein: ${absent
+        ? `<span class="sel-miss" title="Not a gene, accession or entry name of a protein with a ${esc(W.mark)} in this explorer">No ${esc(W.marked)} protein: ${absent
             .map((x) => `<b>${esc(x)}</b>`)
             .join(', ')}</span>`
         : '') +
