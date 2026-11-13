@@ -826,12 +826,22 @@
               const p = P[it.k],
                 v = p.selected ? '' : p.value,
                 m = p.maps && !p.selected ? '\u00A0·\u00A0' + p.maps : '';
-              if (!v || K.tw(v + m, 13, 700) * 1.2 <= room) return [it, null];
-              const ls = K.wrap(v, room / 1.2, 13, 700);
-              return [it, ls.length > 2 ? [ls[0], K.fit(ls.slice(1).join(' '), room, 13, 700, 1.2)] : ls];
+              const wt = p.view === 'percent' ? 700 : 400;
+              if (!v || K.tw(v + m, 13, wt) * 1.2 <= room) return [it, null];
+              const ls = K.wrap(v, room / 1.2, 13, wt);
+              return [it, ls.length > 2 ? [ls[0], K.fit(ls.slice(1).join(' '), room, 13, wt, 1.2)] : ls];
             })
           ),
-          gap = (list.some((it) => lines.get(it).length > 1) ? 66 : 52) + (list.some((it) => vals.get(it)) ? 14 : 0),
+          wide = list.some((it) => vals.get(it)),
+          // labels of two-line values still fit between the top and the bottom of the drawing
+          gap = wide
+            ? Math.min(
+                (list.some((it) => lines.get(it).length > 1) ? 66 : 52) + 14,
+                (H - 56) / Math.max(1, list.length - 1)
+              )
+            : list.some((it) => lines.get(it).length > 1)
+              ? 66
+              : 52,
           top = 30,
           bot = H - 26,
           ys = list.map((it) => it.y);
@@ -864,7 +874,7 @@
                     .get(it)
                     .map(
                       (t, i, a) =>
-                        `<tspan font-weight="700" x="${tx}"${i ? ' dy="14"' : ''}>${esc(t + (i < a.length - 1 ? ' ' : ''))}</tspan>`
+                        `<tspan${p.view === 'percent' ? ' font-weight="700"' : ' class="m"'} x="${tx}"${i ? ' dy="14"' : ''}>${esc(t + (i < a.length - 1 ? ' ' : ''))}</tspan>`
                     )
                     .join('')
                 : p.selected
