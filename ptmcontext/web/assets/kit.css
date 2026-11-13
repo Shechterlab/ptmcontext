@@ -9449,3 +9449,23 @@ html[data-density] .stbl .src-tags a {
 html[data-density] .sites-tbl .cv {
   max-width: 13rem;
 }
+
+/* the site card's rows in folds: the most used open, the rest closed */
+.sc-group {
+  border-top: 1px solid var(--line);
+  padding: 0.3rem 0 0.45rem;
+}
+.sc-group:first-of-type {
+  border-top: 0;
+}
+.sc-group > summary {
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--ink-2);
+  padding: 0.2rem 0;
+}
+.sc-group > .sc-kv {
+  margin-top: 0.3rem;
+}

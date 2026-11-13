@@ -601,6 +601,15 @@
       }, ms)
     );
   }
+  const SC_OPEN = new Map(); // a group of the site card the reader opened or closed, kept as the card is redrawn
+  document.addEventListener(
+    'toggle',
+    (e) => {
+      const g = e.target?.dataset?.scGroup;
+      if (g) SC_OPEN.set(g, e.target.open);
+    },
+    true
+  );
   function siteCard(p, rec) {
     const sm = !rec.marks.some((x) => x[0] === PV.site) && K.shown?.on ? shownAt(rec, PV.site) : null;
     if (sm) return shownCard(p, rec, sm);
@@ -724,9 +733,15 @@
             'AlphaFold DB: the model’s confidence at this residue and the mean AlphaMissense score of its substitutions'
           )
         : '';
+    // the card's rows in groups, each a fold: the site itself, the questions it answers, and the rest (the less used closed)
+    const group = (id, title, rows, open) =>
+      rows
+        ? `<details class="sc-group" data-sc-group="${id}"${
+            (SC_OPEN.has(id) ? SC_OPEN.get(id) : open) ? ' open' : ''
+          }><summary>${esc(title)}</summary><dl class="sc-kv">${rows}</dl></details>`
+        : '';
     const siteRows =
       kv('Sequence (±7 residues)', `<span class="mono">${winHtml(m[1])}</span>`) +
-      qrows.join('') +
       afRow +
       ((CC.states || []).length ? kv(esc(CL_WORDS.states), ready ? K.card.states(c) : wait) : '') +
       (near != null
@@ -749,7 +764,12 @@
     const restRows =
       rest.map((n) => kv(esc(SPECS[n].label), attrHtml(m, n, true), SPECS[n].help)).join('') +
       (K.shown?.on && K.shown.counted(m) ? kv(esc(cap(K.shown.label())), esc(K.shown.tip(m, false))) : '');
-    const siteHtml = `<dl class="sc-kv">${siteRows}${qmore.join('')}${restRows}${uniRow}${citeRow}</dl>`;
+    const siteHtml =
+      group('site', 'Site', siteRows, true) +
+      group('questions', 'Questions', qrows.join(''), true) +
+      group('records', 'UniProt and sources', uniRow + citeRow, true) +
+      group('more-questions', `More questions (${qmore.length})`, qmore.join(''), false) +
+      group('attributes', `Other attributes (${rest.length})`, restRows, false);
     const ev = ready ? K.card.evidenceBlock(c) : '',
       recs = ready ? K.card.recordsBlock(c) : '',
       wr = ready ? K.card.writerBlock(c) : '';

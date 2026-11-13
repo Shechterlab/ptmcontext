@@ -477,7 +477,16 @@
               }>${esc(lab(s))} (${int(shownN(s))})</option>`
           )
           .join('') +
-        '</select></div>'
+        '</select>' +
+        (() => {
+          // sets that split every row of their source in two or more: a protein the source lacks is in none, so the parts
+          // fall short of the whole; say by how many (shown with no filter on, when the counts are of every marked protein)
+          const rest = A[id].partition && !fc ? D.counts.proteins - names.reduce((n, x) => n + (cnt(key, x) || 0), 0) : 0;
+          return rest > 0
+            ? `<p class="muted small">${int(rest)} ${esc(W.marked)} protein${rest === 1 ? ' is' : 's are'} in none of these (not in the source table).</p>`
+            : '';
+        })() +
+        '</div>'
       );
     }
     if (kind === 's') {
