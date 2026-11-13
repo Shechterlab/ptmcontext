@@ -2007,7 +2007,7 @@
     return (
       `<section class="pcard controls"><h3>Controls</h3><p class="page-note">The same test again with one ` +
       `change each (${esc(METHOD[m] || 'proteins, hypergeometric')}). Holds: the same reading at q ≤ 0.05; weaker: the ` +
-      `same direction, not at q ≤ 0.05; lost: under 1.1× or the other way.</p><div class="tbl-card"><table class="tbl">` +
+      `same direction, not at q ≤ 0.05; lost: under 1.1× or the other way; new: a reading the question itself does not have.</p><div class="tbl-card"><table class="tbl">` +
       `<thead><tr><th>Class</th><th>This question</th>${ctl
         .map((x) => `<th><a href="${esc(link('overview', x.id))}">${esc(A[x.id].control_label)}</a></th>`)
         .join('')}</tr></thead><tbody>` +
