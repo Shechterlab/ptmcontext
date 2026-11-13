@@ -16,6 +16,8 @@ inputs:                # role the layers read: manifest input that fills it
   disorder: mobidb_disorder
   domains: interpro_domains
   interpro_entries: interpro_all_entries         # the readers' families, by InterPro and Pfam entry
+  go_bp_annotations: go_bp_annotations         # the Overlap page's GO biological process terms
+  go_bp_terms: go_bp_terms
   reactome: reactome_protein_pathways
   reactome_names: reactome_pathways
   hpa: hpa_locations
@@ -1405,6 +1407,14 @@ website:                  # the look and words of the website (ptmc web); layout
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, histone, complex, condensate_proteome]
     max_terms: 4
+    term_sources:      # GO biological process, propagated over is_a and part_of, 5 to 5,000 proteins; the evidence include below keeps annotations that are not computational-only (remove it to keep every annotation)
+      - id: go_bp
+        title: GO biological process
+        members: {input: go_bp_annotations, protein: uniprot_accession, set: go_id, include: [{column: non_iea, equals: "true"}]}
+        names: {input: go_bp_terms, id: go_id, name: go_name}
+        min_size: 5
+        max_size: 5000
+        cite: ["Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031", "Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556"]
     notes: {cell_hcm_compartment: one main location per protein, cell_hcm_domain: one main location per protein, cell_organelle_ip: one main location per protein}
     units: [proteins, sites, readers]
     readers:           # a protein is a reader when it carries any listed Pfam or InterPro entry (each id checked on InterPro)

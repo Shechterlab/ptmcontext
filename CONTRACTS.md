@@ -975,6 +975,14 @@ website:
     max_terms: 4
     leave_out: {some_question: [set_id]}             # sets not offered and not written (data that is not public)
     notes: {some_question: one main location per protein}   # shown under its terms in the picker
+    term_sources:                                    # more terms, from a table of (term, protein) pairs
+      - id: go_bp
+        title: GO biological process
+        members: {input: go_bp_annotations, protein: uniprot_accession, set: go_id, include: [{column: non_iea, equals: "true"}]}   # the evidence option: drop `include` to keep every annotation
+        names: {input: go_bp_terms, id: go_id, name: go_name}
+        min_size: 5
+        max_size: 5000
+        cite: ["Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031", "Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556"]
     units: [proteins, sites, enzymes, readers]       # default [proteins, sites]; a unit with nothing to show is hidden
     enzymes: {roles: [writer, eraser]}               # classes of website.search.partners with these roles, by gene or genes_file
     readers:                                         # a protein is a reader when it carries any listed entry
@@ -988,6 +996,8 @@ Data. `ptmc run` writes `overlap_members.json` (above) for the questions in `ter
 (`{acc}`), `data/overlap/sets/<question>.json` (`{set: [index]}`) and `data/overlap/families.json` (`{readers: [{id, name, ids, note, m}],
 enzymes: [{id, name, role, m}]}`, `m` indices into the universe), each read when the page first needs it, and gives the page `D.overlap`. A site run
 before this key existed shows only the proteins with sites (no test). The page reads `selection.json` only through one accessor (`DATA.sd`).
+
+A term source's members are read from the run's recorded inputs at `ptmc web` (it needs a run made with the inputs in the manifest), kept for the proteins of the reviewed proteome with `min_size` to `max_size` of them, and written to `data/overlap/sources/<id>/terms.json` (`{terms: [[id, name, proteins]]}`, read when the page opens, for the picker) and `<NN>.json` (`{term: [index]}`; a term's file is the sum of its id's character codes modulo `shards`, default 16; read when the term is chosen). The term is `x:<source>:<id>` in the address. The picker shows the term's id and size and finds it by either. An export that uses one of its terms carries the source's `cite` lines.
 
 Regions. A region holds the elements (proteins, sites, or the proteins of the readers or enzymes) in exactly its terms. Proteins, enzymes and readers:
 n in the region, k of them with sites, M of the N reviewed proteins with sites; fold = (k/n)/(M/N); p = P(X >= k), X hypergeometric(N, M, n)

@@ -3,6 +3,8 @@
     data/overlap/universe.json   {acc: [every reviewed protein of the snapshot]}
     data/overlap/sets/<aid>.json {set id: [index into acc]}   (one file per protein-set question in terms_from)
     data/overlap/families.json   {readers: [{id, name, ids, note, m: [index]}], enzymes: [{id, name, role, m: [index]}]}
+    data/overlap/sources/<id>/terms.json  {terms: [[term id, name, proteins]]}   (website.overlap.term_sources)
+    data/overlap/sources/<id>/<NN>.json   {term id: [index into acc]}            (a term's file: the sum of its id's character codes, modulo shards)
 
 The sets come from the run's overlap_members.json (every protein of each tested set, the ones without a mark too);
 reader families from the site's domain annotation (a protein is a reader when it carries any listed Pfam or InterPro
@@ -16,6 +18,7 @@ import shutil
 from pathlib import Path
 
 DIR = 'data/overlap'
+SHARDS = 16
 ROLES = ('writer', 'eraser')
 
 
@@ -64,6 +67,35 @@ def enzyme_members(classes: dict, roles, genes: dict[str, str], root: Path | Non
         names = {str(g).upper() for g in c.get('genes') or []} | members_file(root, c)
         mem = {a for n in names for a in by_gene.get(n, ())} | {a for a in genes if a.upper() in names}
         out.append({'id': code, 'name': c['label'], 'role': c['role'], 'members': mem})
+    return out
+
+
+def shard_name(term_id: str, shards: int = SHARDS) -> str:
+    """The file of a term: the sum of its id's character codes, modulo the number of shards, in two digits (kit-overlap.js
+    does the same)."""
+    return f'{sum(map(ord, str(term_id))) % shards:02d}.json'
+
+
+def source_terms(src: dict, members, names, ix: dict) -> dict[str, list]:
+    """term id -> the universe indices of its proteins, for a term source: `members` the (set, protein) table, `names` the
+    table of term names; terms of min_size to max_size proteins of the universe only. Isoform suffixes are dropped."""
+    from ..set_tests import _select
+
+    m = src['members']
+    frame = _select(members, m)
+    pairs = zip(
+        frame[m['set']].astype(str).str.strip(), frame[m['protein']].astype(str).str.split('-').str[0].str.strip()
+    )
+    held: dict[str, set] = {}
+    for t, a in pairs:
+        if a in ix:
+            held.setdefault(t, set()).add(ix[a])
+    lo, hi = int(src.get('min_size', 1)), int(src.get('max_size', 10**9))
+    out = {t: sorted(v) for t, v in held.items() if lo <= len(v) <= hi}
+    if names is not None:
+        nm = src['names']
+        have = set(names[nm['id']].astype(str))
+        out = {t: v for t, v in out.items() if t in have}
     return out
 
 
@@ -141,6 +173,56 @@ def build(site: dict, run: dict, folder: Path, listing: list, fasta: Path, out: 
             {'id': r['id'], 'name': r['name'], 'role': r['role'], 'm': sorted(ix[a] for a in r['members'] if a in ix)}
             for r in rows
         ]
+    page['sources'] = []
+    for src in cfg.get('term_sources') or []:
+        if not uni:
+            log(f'  overlap: term source {src["id"]}: run again (ptmc run) first; left out')
+            continue
+        files = {}
+        for key in ('members', 'names'):
+            spec = src.get(key)
+            if spec is None:
+                continue
+            name = (site.get('inputs') or {}).get(spec['input'], spec['input'])
+            path = paths.get(name) if isinstance(name, str) else None
+            if path is None:
+                log(
+                    f'  overlap: term source {src["id"]}: {spec["input"]} is missing or changed since the run; left out'
+                )
+                break
+            files[key] = pd.read_csv(
+                path, sep=spec.get('sep', '\t'), dtype=str, keep_default_na=False, low_memory=False
+            )
+        else:
+            terms = source_terms(src, files['members'], files.get('names'), ix)
+            nm = src.get('names')
+            title = dict(zip(files['names'][nm['id']].astype(str), files['names'][nm['name']])) if nm else {}
+            shards = int(src.get('shards', SHARDS))
+            base = target / 'sources' / src['id']
+            _write(
+                base / 'terms.json',
+                {
+                    'terms': sorted(
+                        ([t, title.get(t, t), len(v)] for t, v in terms.items()), key=lambda x: (x[1].lower(), x[0])
+                    )
+                },
+            )
+            by_file: dict[str, dict] = {}
+            for t, v in terms.items():
+                by_file.setdefault(shard_name(t, shards), {})[t] = v
+            size = sum(_write(base / f, d) for f, d in by_file.items())
+            log(
+                f'  overlap: term source {src["id"]}: {len(terms):,} terms in {len(by_file)} files, {size / 1e6:.1f} MB'
+            )
+            page['sources'].append(
+                {
+                    'id': src['id'],
+                    'title': src.get('title', src['id']),
+                    'n': len(terms),
+                    'shards': shards,
+                    'cite': list(src.get('cite') or []),
+                }
+            )
     fams = {k: v for k, v in fams.items() if any(f['m'] for f in v)}
     if fams:
         _write(target / 'families.json', fams)

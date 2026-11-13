@@ -5222,6 +5222,111 @@
           "additionalProperties": false,
           "description": "the Overlap page (CONTRACTS.md, 'The Overlap page'): the reader picks 2 to 4 terms and sees how their proteins (or sites, enzymes, readers) overlap, with enrichment for each region",
           "properties": {
+            "term_sources": {
+              "type": "array",
+              "description": "more terms from a table of (term, protein) pairs, offered in the picker for the proteins unit (a term source): the members are written to data/overlap/sources/<id>/ in a few files, read when a term is chosen; the names to a terms file read when the page opens",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "members"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "the group the terms are listed under"
+                  },
+                  "members": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input",
+                      "protein",
+                      "set"
+                    ],
+                    "properties": {
+                      "input": {
+                        "type": "string",
+                        "description": "a role of the site's inputs"
+                      },
+                      "protein": {
+                        "type": "string"
+                      },
+                      "set": {
+                        "type": "string"
+                      },
+                      "sep": {
+                        "type": "string",
+                        "default": "\t"
+                      },
+                      "include": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        },
+                        "description": "rows kept (column with equals, in or contains), as the protein-set tables' include; an annotation table with an evidence flag keeps the rows without computational-only evidence by default"
+                      },
+                      "exclude": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  },
+                  "names": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input",
+                      "id",
+                      "name"
+                    ],
+                    "properties": {
+                      "input": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "sep": {
+                        "type": "string",
+                        "default": "\t"
+                      }
+                    },
+                    "description": "the table of term names; a term without a name here is left out"
+                  },
+                  "min_size": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "fewest proteins of the reviewed proteome (after include) a term needs to be offered"
+                  },
+                  "max_size": {
+                    "type": "integer",
+                    "description": "most proteins a term may have to be offered"
+                  },
+                  "shards": {
+                    "type": "integer",
+                    "default": 16,
+                    "description": "files the members are spread over"
+                  },
+                  "cite": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "citations, shown in the Methods and with an export that uses one of the terms"
+                  }
+                }
+              }
+            },
             "leave_out": {
               "type": "object",
               "description": "sets of a question that are not offered as terms and whose members are not written (a question's set id: [ids])",

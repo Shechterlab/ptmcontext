@@ -126,6 +126,20 @@
   const savedList = () => (K.sel.savedList ? K.sel.savedList() : []);
   // every term the picker can offer, built when first asked
   let pool = null;
+  const srcTerms = {}; // term source id -> [[term id, name, proteins]], read when the page opens
+  let srcLoading = null;
+  function loadSources() {
+    return (srcLoading ||= Promise.all(
+      (C.sources || []).map((src) =>
+        DATA.get(`sources/${src.id}/terms.json`).then((d) => {
+          srcTerms[src.id] = d?.terms || [];
+        })
+      )
+    ).then(() => {
+      pool = null;
+      if (S.view === 'overlap') K.render();
+    }));
+  }
   function termPool() {
     if (pool) return pool;
     pool = [];
@@ -143,6 +157,18 @@
     );
     classQs.forEach((aid) =>
       uniq(rowsOf(aid)).forEach((r) => pool.push({ id: `c:${aid}:${r.id}`, label: r.label, group: short(aid) }))
+    );
+    (C.sources || []).forEach((src) =>
+      (srcTerms[src.id] || []).forEach(([id, name, n]) =>
+        pool.push({
+          id: `x:${src.id}:${id}`,
+          label: name,
+          ref: id,
+          size: n,
+          group: src.title,
+          broad: C.n && n > 0.25 * C.n,
+        })
+      )
     );
     (C.families?.readers || []).forEach((f) =>
       pool.push({ id: `f:readers:${f.id}`, label: `${f.name} (reader)`, group: 'Readers' })
@@ -168,6 +194,7 @@
     if (t) return t.label;
     if (id === 'sel') return 'The current selection';
     if (id.startsWith('g:')) return 'Gene list';
+    if (id.startsWith('x:')) return id.split(':').slice(2).join(':');
     return id.replace(/^[a-z]+:/, '');
   };
 
@@ -207,6 +234,9 @@
     return a;
   };
   const count = (a) => a.reduce((s, x) => s + x, 0);
+  // a term's file: the sum of its id's character codes, modulo the number of files (web/overlap.py shard_name)
+  const shardName = (id, n = 16) =>
+    String([...id].reduce((s, c) => s + c.charCodeAt(0), 0) % n).padStart(2, '0') + '.json';
   const cache = {};
   async function resolve(id) {
     if (cache[id] !== undefined) return cache[id];
@@ -226,6 +256,11 @@
         if (row) prot = fromProteins(new Set(row[2]));
       }
       if (set && prot) t = { prot };
+    } else if (kind === 'x') {
+      await loadSources();
+      const src = (C.sources || []).find((x) => x.id === a1),
+        file = src && (await DATA.get(`sources/${a1}/${shardName(rest, src.shards)}`));
+      if (file?.[rest]) t = { prot: fromIdx(file[rest]) };
     } else if (kind === 'f') {
       const fam = (await DATA.families())?.[a1]?.find((x) => x.id === rest);
       if (fam) t = { prot: fromIdx(fam.m) };
@@ -676,7 +711,12 @@
     const all = [...specials(), ...termPool()].filter((t) => !S.ot.includes(t.id));
     const hit = (
       w
-        ? all.filter((t) => t.label.toLowerCase().includes(w) || t.group.toLowerCase().includes(w))
+        ? all.filter(
+            (t) =>
+              t.label.toLowerCase().includes(w) ||
+              t.group.toLowerCase().includes(w) ||
+              (t.ref || '').toLowerCase().includes(w)
+          )
         : all.filter((t) => t.group === 'Selections' || t.group === 'Readers' || t.group === 'Enzymes')
     ).slice(0, 40);
     if (!hit.length) return `<p class="muted">${w ? 'No term matches.' : 'Type to search.'}</p>`;
@@ -684,7 +724,7 @@
     return hit
       .map((t) => {
         const head = t.group !== g ? `<p class="ov-grp">${esc((g = t.group))}</p>` : '';
-        const more = [t.size ? `${int(t.size)} proteins` : '', t.broad ? 'very broad' : '', t.note]
+        const more = [t.ref || '', t.size ? `${int(t.size)} proteins` : '', t.broad ? 'very broad' : '', t.note]
           .filter(Boolean)
           .join(' · ');
         return `${head}<button type="button" class="ov-opt" role="option" data-ov-add="${esc(t.id)}">${esc(t.label)}${more ? ` <span class="muted ov-more">${esc(more)}</span>` : ''}</button>`;
@@ -712,6 +752,7 @@
   }
   let loadedFor = '';
   function view() {
+    loadSources();
     const key = JSON.stringify([S.ot, S.ou, !!K.sel.peek()]);
     const head =
       trail +
@@ -776,12 +817,20 @@
     );
   }
 
+  // the citations of the term sources a figure or file uses
+  const citeFor = (ids) =>
+    (C.sources || [])
+      .filter((src) => ids.some((id) => id.startsWith(`x:${src.id}:`)) && src.cite?.length)
+      .map((src) => `${src.title}: ${src.cite.join('; ')}.`)
+      .join(' ');
   // ---- export ----------------------------------------------------------------------------------------------------------------
   function figure() {
     const res = RES.res,
       d = draw(res, EXPORT);
     const sub = `Overlap of ${res.ts.map((t, i) => `${LETTERS[i]} ${t.label} (${int(t.n)} proteins)`).join('; ')}. Unit: ${unitWord(res.unit)}.`;
-    const note = res.test ? (res.unit === 'sites' ? TESTS.sites : TESTS.proteins) : 'Counts only; no test.';
+    const note =
+      (res.test ? (res.unit === 'sites' ? TESTS.sites : TESTS.proteins) : 'Counts only; no test.') +
+      (citeFor(res.ts.map((t) => t.id)) ? ` ${citeFor(res.ts.map((t) => t.id))}` : '');
     return K.figureFrame({
       title: `Overlap of ${res.nT} terms`,
       sub,
@@ -807,7 +856,7 @@
     return (
       K.preamble(
         'overlap of terms',
-        `${res.ts.map((t, i) => `${LETTERS[i]} = ${t.label}`).join('; ')}; unit ${res.unit}. ${res.test ? (sites ? TESTS.sites : TESTS.proteins) : 'Counts only; no test.'}${res.N ? ` ${res.M} of ${res.N} reviewed proteins have sites.` : ''}`
+        `${res.ts.map((t, i) => `${LETTERS[i]} = ${t.label}`).join('; ')}; unit ${res.unit}. ${res.test ? (sites ? TESTS.sites : TESTS.proteins) : 'Counts only; no test.'}${res.N ? ` ${res.M} of ${res.N} reviewed proteins have sites.` : ''}${citeFor(res.ts.map((t) => t.id)) ? ` ${citeFor(res.ts.map((t) => t.id))}` : ''}`
       ) +
       head.join('\t') +
       '\n' +
@@ -916,7 +965,7 @@
       `when every term describes proteins. Computed in your browser. Reader families: ${
         (C.families?.readers || []).map((f) => `${esc(f.name)} (${(f.ids || []).map(esc).join(', ')})`).join('; ') ||
         'none'
-      }; a protein is a reader when it carries any of a family’s Pfam or InterPro entries.</p></section>`
+      }; a protein is a reader when it carries any of a family’s Pfam or InterPro entries.${(C.sources || []).map((src) => ` ${esc(src.title)}: ${src.n.toLocaleString('en')} terms; ${src.cite?.length ? 'cite ' + src.cite.map(esc).join('; ') : ''}.`).join('')}</p></section>`
   );
   K.overlap = {
     core: { regions, proteinTest, siteTest, bhAll, settle, lens, distance, MIN_N },

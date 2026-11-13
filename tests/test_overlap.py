@@ -35,6 +35,16 @@ def _build(tmp_path):
             'member_database_accessions': ['PF00001', 'PTHR1', 'PF99999', 'PF00001', 'PF00003'],
         }
     ).to_csv(data / 'entries.tsv', sep='\t', index=False)
+    pd.DataFrame(
+        {
+            'prot': ['P1', 'P2', 'P3', 'P1', 'P5', 'P7', 'P2-2', 'P8'],
+            'term': ['G1', 'G1', 'G1', 'G2', 'G2', 'G3', 'G2', 'G2'],
+            'curated': ['yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'no'],
+        }
+    ).to_csv(data / 'terms_table.tsv', sep='\t', index=False)
+    pd.DataFrame({'term': ['G1', 'G2', 'G3'], 'label': ['first process', 'second process', 'third process']}).to_csv(
+        data / 'term_names.tsv', sep='\t', index=False
+    )
     mp = root / 'sites' / 'toy.inputs.json'
     man = json.loads(mp.read_text())
     man['inputs']['entries'] = {
@@ -44,10 +54,12 @@ def _build(tmp_path):
         'version': 'test 1',
         'licence': 'CC0 1.0',
     }
+    for k, f in (('src_members', 'terms_table.tsv'), ('src_names', 'term_names.tsv')):
+        man['inputs'][k] = {**man['inputs']['entries'], 'file': f, 'md5': md5_file(data / f)}
     mp.write_text(json.dumps(man, indent=1))
     p = root / 'sites' / 'toy.yaml'
     site = yaml.safe_load(p.read_text())
-    site['inputs']['interpro_entries'] = 'entries'
+    site['inputs'].update({'interpro_entries': 'entries', 'src_members': 'src_members', 'src_names': 'src_names'})
     for a in site['analyses']:
         if a['id'] == 'onto':
             a['whole_universe'] = True  # every reviewed protein is the background: the overlap page's own universe
@@ -57,6 +69,22 @@ def _build(tmp_path):
         'leave_out': {'term': ['T4']},
         'notes': {'onto': 'a note'},
         'units': ['proteins', 'sites', 'readers'],
+        'term_sources': [
+            {
+                'id': 'proc',
+                'title': 'Made-up processes',
+                'members': {
+                    'input': 'src_members',
+                    'protein': 'prot',
+                    'set': 'term',
+                    'include': [{'column': 'curated', 'equals': 'yes'}],
+                },
+                'names': {'input': 'src_names', 'id': 'term', 'name': 'label'},
+                'min_size': 2,
+                'max_size': 5,
+                'cite': ['A. Author, Journal 1 (2026), doi:10.0000/made-up'],
+            }
+        ],
         'readers': {'source': 'interpro_entries', 'families': [FAMILY]},
     }
     p.write_text(yaml.safe_dump(site, sort_keys=False))
@@ -97,6 +125,13 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
     assert (ov / 'universe.json').exists() and (ov / 'sets' / 'onto.json').exists()
     term_sets = json.loads((ov / 'sets' / 'term.json').read_text())
     assert 'T3' in term_sets and 'T4' not in term_sets  # a set left out is not written
+    src = ov / 'sources' / 'proc'
+    assert json.loads((src / 'terms.json').read_text())['terms'] == [
+        ['G1', 'first process', 3],
+        ['G2', 'second process', 3],
+    ]  # G3 has one protein; the uncurated row and the isoform suffix
+    shard = OV.shard_name('G2')
+    assert json.loads((src / shard).read_text())['G2'] == sorted([raw['universe'].index(a) for a in ('P1', 'P2', 'P5')])
     fams = json.loads((ov / 'families.json').read_text())
     assert [(f['name'], f['m']) for f in fams['readers']] == [('Madeup', [0, 3])]  # P1 by IPR, P4 by Pfam
     page = _page_data(index)
@@ -122,11 +157,12 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
       K.sel.data(); await K.sel.ready;
       const r2 = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'proteins', 1);
       const r3 = await K.overlap.compute(['s:onto:D1', 's:onto:D2', 's:term:T3'], 'proteins', 1);
+      const rx = await K.overlap.compute(['x:proc:G1', 's:onto:D3'], 'proteins', 1);
       const rs = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'sites', 1);
       const rr = await K.overlap.compute(['s:onto:D1', 'f:readers:Madeup'], 'readers', 1);
       const rd = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'proteins');
       const strip = r => ({ ts: r.ts.map(t => t.id), rows: r.rows, totals: r.totals, N: r.N, M: r.M, test: r.test });
-      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), rd: strip(rd), tsv: K.overlap.tsv(r2) }));
+      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), rd: strip(rd), rx: strip(rx), tsvx: K.overlap.tsv(rx), tsv: K.overlap.tsv(r2) }));
     """
     run = subprocess.run(
         ['node', '-e', head + harness + '(async () => {' + body + '})();'], capture_output=True, text=True
@@ -168,3 +204,8 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
         if r['mask'] and r['n']
     )
     assert all(t['few'] for t in j['rd']['totals'])  # D2 and D3 hold 3 proteins each
+    # a term source's terms are terms like the others: G1 is P1-P3, D3 is P5-P7; the citation goes into the file
+    assert j['rx']['ts'] == ['x:proc:G1', 's:onto:D3']
+    rx = {x['mask']: x for x in j['rx']['rows']}
+    assert (rx[1]['n'], rx[1]['k'], rx[2]['n'], rx[2]['k']) == (3, 3, 3, 1)
+    assert 'doi:10.0000/made-up' in j['tsvx'] and 'doi:10.0000/made-up' not in j['tsv']

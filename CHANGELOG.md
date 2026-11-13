@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Overlap page (`website.overlap`): two to four terms (protein sets, classes, reader families, enzymes, the selection, a gene list) as a proportional diagram or a bar chart of intersections, with proteins, proteins with sites, fold, a hypergeometric test against all reviewed proteins and Benjamini-Hochberg q for each region; also for sites, enzymes and readers. A "Compare with..." button on the rows of protein-set questions. Reader families (Tudor; chromodomain, PHD, MBT, PWWP; 14-3-3, SH2, BRCT; bromodomain, YEATS) are listed in the site files with their Pfam and InterPro ids.
+- Overlap terms from GO biological process (propagated annotations without computational-only evidence, 5 to 5,000 proteins), listed by name, GO id and size; one generic `term_sources` entry in the site file (data from PTM_Pipeline's staged GO tables; cite Gene Ontology Consortium 2023 and Ashburner et al. 2000).
 - `ptmc run` writes `overlap_members.json` (every protein of each set) for the questions an Overlap block names; the statistics are unchanged.
 
 ## 0.3.1 (2026-11-13)

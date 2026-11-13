@@ -38,6 +38,8 @@ inputs:                # role the layers read: manifest input that fills it
   density_windows: density_windows_v1_4_3
   lower_confidence_sites: methylarginine_lower_confidence_sites_v1_4_3
   interpro_entries: interpro_all_entries
+  go_bp_annotations: go_bp_annotations         # the Overlap page's GO biological process terms
+  go_bp_terms: go_bp_terms
   # interactions and binding (scripts/37_export_interaction_data.py of the release): each role one kind of evidence
   uniprot_disorder: uniprot_disordered_regions
   uniprot_domains: uniprot_domain_regions
@@ -1978,6 +1980,14 @@ website:                  # the look and words of the website (ptmc web); layout
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, go_binding, binding_protein]
     max_terms: 4
+    term_sources:      # GO biological process, propagated over is_a and part_of, 5 to 5,000 proteins; the evidence include below keeps annotations that are not computational-only (remove it to keep every annotation)
+      - id: go_bp
+        title: GO biological process
+        members: {input: go_bp_annotations, protein: uniprot_accession, set: go_id, include: [{column: non_iea, equals: "true"}]}
+        names: {input: go_bp_terms, id: go_id, name: go_name}
+        min_size: 5
+        max_size: 5000
+        cite: ["Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031", "Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556"]
     leave_out: {binding_protein: [rna_rbdmap, rna_pclap]}   # unpublished peptide data: not offered, not written
     notes: {cell_hcm_compartment: one main location per protein, cell_hcm_domain: one main location per protein, cell_organelle_ip: one main location per protein}
     units: [proteins, sites, readers, enzymes]
