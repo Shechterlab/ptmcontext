@@ -20,6 +20,7 @@
     SRC = NC.sources,
     CB = NC.color_by || [];
   const TITLE = NC.title || 'Network';
+  const EG = String(D.site?.placeholders?.highlight || '').split(/[,\s]+/)[0];
   const NCOL = 8;
   // categorical slots (the data-viz palette, validated for colour-vision deficiency in both modes; every colour is also
   // named in the key and the table, which is the non-visual equivalent) and the grey of "Other"
@@ -573,7 +574,7 @@
       [...new Set([3, 5, 8, 10, 15, OPT.min_cluster])].sort((a, b) => a - b).map((v) => [v, v]),
       UI.minc
     ) +
-    `<form class="nw-f nw-find" data-nw-find><span>Find a gene</span><input type="search" name="g" value="${esc(UI.find)}" placeholder="e.g. FUS" list="nw-genes" autocomplete="off" aria-label="Gene to highlight"></form>` +
+    `<form class="nw-f nw-find" data-nw-find><span>Find a gene</span><input type="search" name="g" value="${esc(UI.find)}" placeholder="${esc(EG ? 'e.g. ' + EG : 'Gene')}" list="nw-genes" autocomplete="off" aria-label="Gene to highlight"></form>` +
     `<div class="nw-btns"><button type="button" class="btn small" data-nw-view="${UI.mode === 'network' ? 'table' : 'network'}">${UI.mode === 'network' ? 'Table view' : 'Network view'}</button>` +
     (UI.mode === 'network'
       ? `<button type="button" class="btn small" data-nw-zoom="-1" aria-label="Zoom out"${UI.zoom <= 1 ? ' disabled' : ''}>−</button><button type="button" class="btn small" data-nw-zoom="1" aria-label="Zoom in"${UI.zoom >= 3 ? ' disabled' : ''}>+</button>`
@@ -677,7 +678,7 @@
     const sc = SRC.find((x) => x.kind === 'pairs');
     return K.figureFrame({
       title: `${TITLE}: ${int(M.nodes.length)} proteins in ${int(CL.list.filter((x) => !x.other).length)} clusters`,
-      sub: `${D.site.name}. ${K.sel?.active() ? 'The selected proteins. ' : `The ${int(UI.top)} proteins with the most ${W.marks}. `}Edges: ${UI.src.map((i) => SRC[i].label).join(', ')}${sc && UI.src.includes(SRC.indexOf(sc)) ? ` (score ${UI.score / 1000} or more)` : ''}.`,
+      sub: `${D.site.name}. ${K.sel?.active() ? 'The selected proteins. ' : `The ${int(UI.top)} proteins with the most ${W.marks}. `}Edges: ${UI.src.map((i) => SRC[i].label + (SRC[i].kind === 'pairs' ? ` (score ${UI.score / 1000} or more)` : '')).join(', ')}.`,
       legend,
       body: `<rect width="${VW}" height="${s.h}" fill="#ffffff" stroke="#e3e8ea"/>${s.svg}`,
       bodyH: s.h,
