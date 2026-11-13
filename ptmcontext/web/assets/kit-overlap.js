@@ -1666,7 +1666,7 @@
     const fd = figData(res),
       nT = res.nT,
       two = Wd < 760,
-      root = el('g', {}),
+      root = el('g', { transform: 'translate(20,0)' }), // the frame's margin
       T = (x, y, s, o = {}) =>
         root.appendChild(
           el(
