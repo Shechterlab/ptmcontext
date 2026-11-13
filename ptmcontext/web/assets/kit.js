@@ -85,8 +85,15 @@
       t = r.adj ? r.adj.eff : r.eff,
       q = r.adj ? r.adj.q : r.q;
     if (v == null || q == null || q > PADJ) return 'ns';
-    const agrees = t == null || v >= 1 === t >= 1;
-    return v >= MIN_EFFECT && agrees ? 'more' : v <= 1 / MIN_EFFECT && agrees ? 'less' : 'same';
+    // the fold and the test point different ways (the pooled counts against a test within proteins or within abundance
+    // deciles): no reading either way
+    if (t != null && v >= 1 !== t >= 1) return 'ns';
+    return v >= MIN_EFFECT ? 'more' : v <= 1 / MIN_EFFECT ? 'less' : 'same';
+  };
+  const split = (r) => {
+    const v = valOf(r),
+      t = r.adj ? r.adj.eff : r.eff;
+    return v != null && t != null && v >= 1 !== t >= 1;
   };
   const DIR_WORDS = {
     more: 'more often',
@@ -96,7 +103,13 @@
   };
   // a row's reading in words: one with no estimate was not tested (too few on a side), one shown but not tested says so
   const dirWord = (r) =>
-    r.descriptive ? 'shown, not tested' : r.eff == null || r.p == null ? 'not tested (too few)' : DIR_WORDS[r.dir];
+    r.descriptive
+      ? 'shown, not tested'
+      : r.eff == null || r.p == null
+        ? 'not tested (too few)'
+        : split(r) && (r.adj ? r.adj.q : r.q) <= PADJ
+          ? 'the fold and the test point different ways'
+          : DIR_WORDS[r.dir];
   // the color key of a figure in the page's own words (DIR_WORDS), as the legend entries K.figureFrame draws: one wording and one
   // set of colors for the key under a chart and for the key in every export of it
   const REF_WORDS = 'the whole dataset (bars: your selection)';
