@@ -331,3 +331,11 @@ def test_check_names_what_a_card_gets_wrong(tmp_path, card, problem):
     site = S.load_site(root / 'sites' / 'toy.yaml')
     site['website']['overview'] = {'sections': [{'name': 'Kinds', 'cards': [card]}]}
     assert any(problem in p for p in S.website_problems(site)), S.website_problems(site)
+
+
+def test_rules_that_split_every_row_are_a_partition():
+    rules = [{'set': 'a', 'when': [{'column': 'x', 'in': ['1']}]}, {'set': 'b'}]
+    assert web.is_partition({'rules': rules})
+    assert not web.is_partition({'rules': rules, 'exclusive': False})  # a row may be in several sets
+    assert not web.is_partition({'rules': rules[:1]})  # no rule takes the rest
+    assert not web.is_partition({'set': 'term'})

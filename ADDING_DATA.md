@@ -279,7 +279,9 @@ marks:
               provenance: true}   # how a mark was found, not what it is: a caveat when marks are compared, and the
                                   # within-study strata (website.compare.stratify names another)
                                   # website.compare: {min_proteins: 10, min_marks: 30} is the smallest selection that is tested (these are the defaults);
-                                  # a smaller one gets counts and shares only, with no p, q or "enriched"
+                                  # a smaller one gets counts and shares only, with no p, q or "enriched";
+                                  # website.reading: {min_maps: 2, min_group: 20, min_set: 30} is what is ranked and colored
+                                  # (the defaults): cell parts agreed by 2 maps of 20+ proteins a side, sets of 30+ proteins
     changed: {column: <changes column>, present: true, label: Changed in tumors, kind: category,
               values: {"yes": Changed, "no": Not changed}, filter: true}           # a yes/no filter over a column of changes
     response: {column: <perturbations>, pair_with: <their calls>, label: Responses, kind: list, control: select,

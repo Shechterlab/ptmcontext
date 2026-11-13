@@ -596,20 +596,20 @@
   "go_bp_annotations": {
    "file": "inputs/annotation/go_bp_human_2026-11-04.tsv",
    "md5": "e3e19d5e62b8a8e5cdf01fa427e22ae2",
-   "source": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/goa_human.gaf.gz; https://current.geneontology.org/ontology/go-basic.obo",
-   "version": "GOA human GAF 2.2 generated 2026-11-04 15:05 (checked against GO 2026-10-23); go-basic 2026-07-26; downloaded 2026-11-13",
+   "source": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/goa_human.gaf.gz and https://current.geneontology.org/ontology/go-basic.obo",
+   "version": "GOA human GAF 2.2 generated 2026-11-04 (checked against GO 2026-10-23); go-basic 2026-07-26",
    "licence": "CC BY 4.0",
    "role": "input",
-   "note": "GO biological process terms of reviewed human proteins, direct and propagated (is_a, part_of) with evidence codes; non_iea is false for rows that rest on IEA alone. Citation: Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556"
+   "note": "GO biological process terms of the reviewed human proteins, one row per protein and term, direct or propagated over is_a and part_of, with evidence codes and a non_iea flag. Staged by PTM_Pipeline scripts/63_stage_go_bp.py. Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556. Read for the Overlap page."
   },
   "go_bp_terms": {
    "file": "inputs/annotation/go_bp_terms_2026-11-04.tsv",
    "md5": "168b11be0686f4ae458ef35ca3b4f4c8",
-   "source": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/goa_human.gaf.gz; https://current.geneontology.org/ontology/go-basic.obo",
-   "version": "GOA human GAF 2.2 generated 2026-11-04 15:05 (checked against GO 2026-10-23); go-basic 2026-07-26; downloaded 2026-11-13",
+   "source": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/goa_human.gaf.gz and https://current.geneontology.org/ontology/go-basic.obo",
+   "version": "GOA human GAF 2.2 generated 2026-11-04 (checked against GO 2026-10-23); go-basic 2026-07-26",
    "licence": "CC BY 4.0",
    "role": "input",
-   "note": "Names and depths of the terms in go_bp_annotations."
+   "note": "The GO biological process terms with at least one reviewed human protein: name, depth, protein counts, parents. Staged by PTM_Pipeline scripts/63_stage_go_bp.py. Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556. Read for the Overlap page."
   }
  }
 }

@@ -89,6 +89,171 @@
   color-scheme: dark;
 }
 
+/* ---- Figure tokens (--fig-*): one set for every ptmcontext figure. Proposed for kit.css, after the :root block at the top.
+   See GUIDE.md for what each token is for. Chrome tokens alias the kit's own (they already switch with the theme); the
+   data tokens carry their own light and dark hex. Exports never read these: they use the light column as literal hex
+   (K.FIG_EXPORT in GUIDE.md section 13), so a figure exported from a dark page is still the light figure on white.
+   Validator output for every data colour: validator_output.txt. ---- */
+:root {
+  /* type */
+  --fig-font: var(--font-body);
+  --fig-font-export: Arial, 'Helvetica Neue', Helvetica, Arimo, 'Liberation Sans', sans-serif;
+  --fig-fs-title: 1.0625rem; /* 17px: the card title (--fs-card) */
+  --fig-fs-label: 0.86rem; /* 13.76px: row and category labels */
+  --fig-fs-value: 0.8125rem; /* 13px, weight 700, tabular: printed values */
+  --fig-fs-direct: 0.78rem; /* 12.5px, weight 650: direct labels on marks (cluster names, region counts) */
+  --fig-fs-minor: 0.656rem; /* 10.5px: optional labels the tooltip and table repeat (gene labels). Nothing else this small */
+  --fig-fs-tick: 0.75rem; /* 12px, tabular: tick labels and axis titles */
+  --fig-fs-key: 0.78rem; /* 12.5px: key entries */
+  --fig-fs-cap: 0.75rem; /* 12px: captions, footnotes, the q column */
+
+  /* chrome: aliases of the kit's tokens */
+  --fig-surface: var(--surface);
+  --fig-halo: var(--surface); /* paint-order stroke behind text that sits on marks */
+  --fig-ink: var(--ink);
+  --fig-ink-2: var(--ink-2);
+  --fig-muted: var(--muted);
+  --fig-grid: var(--line); /* hairline gridlines at the ticks */
+  --fig-axis: var(--line-strong); /* the origin: 1x on a ratio axis, 0 on a count axis */
+  --fig-ref: var(--ink-2); /* a reference value that is data (whole dataset, baseline share) */
+  --fig-hover: var(--wash);
+  --fig-select: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  --fig-select-edge: var(--accent);
+  --fig-focus: var(--focus-ring);
+
+  /* direction of a tested difference: the site's tokens, never forked */
+  --fig-more: var(--more); /* q <= 0.05 and at least 1.1x, higher */
+  --fig-less: var(--less); /* q <= 0.05 and at least 1.1x, lower */
+  --fig-same: var(--same); /* q <= 0.05 but within 1.1x */
+  --fig-ns: var(--muted); /* stroke of a hollow mark: q > 0.05 */
+
+  /* categorical slots, in this order (identity: terms, clusters, map classes) */
+  --fig-c1: #2a78d6; /* blue */
+  --fig-c2: #eb6834; /* orange */
+  --fig-c3: #1baf7a; /* aqua */
+  --fig-c4: #eda100; /* yellow */
+  --fig-c5: #e87ba4; /* magenta */
+  --fig-c6: #b5651d; /* brown: the guide's green sat too close to the aqua of slot 3 in a network */
+  --fig-c7: #6250d6; /* violet */
+  --fig-c8: #e34948; /* red */
+  --fig-c-other: #9aa3a8; /* "Other" / smaller groups: never a slot */
+  --fig-on-c: #ffffff; /* text inside a slot fill; #0b0b0b on --fig-c4 */
+
+  /* sequential (one hue, low = near the surface): step 1 is the lightest that still clears 2:1 */
+  --fig-seq-1: #86b6ef;
+  --fig-seq-2: #5598e7;
+  --fig-seq-3: #2a78d6;
+  --fig-seq-4: #1c5cab;
+  --fig-seq-5: #104281;
+
+  /* diverging (fold or OR on a map): up = more, down = less, mid = no difference. Step 0 is an area fill only: it is
+     below 2:1 by design and needs the part's outline */
+  --fig-div-up-0: #f6d0cd;
+  --fig-div-up-1: #ef9a94;
+  --fig-div-up-2: #e34948;
+  --fig-div-up-3: #a8302f;
+  --fig-div-dn-0: #e6ecef;
+  --fig-div-dn-1: #bac8cf;
+  --fig-div-dn-2: #91a5b1;
+  --fig-div-dn-3: #6a808d;
+  --fig-div-mid: #f0efec;
+
+  /* a count split in two (with marks / without): one hue, two steps */
+  --fig-count-k: #155e75;
+  --fig-count-n: #94bac6;
+
+  /* node-link and set figures */
+  --fig-hull-op: 0.085; /* hull wash: fill-opacity of the slot colour, no outline */
+  --fig-edge-in-op: 0.32; /* an edge inside a cluster, in the slot colour */
+  --fig-edge-x: #52606a; /* bundles and hover edges between clusters */
+  --fig-edge-x-op: 0.16;
+  --fig-euler-op: 0.16; /* Euler circle wash */
+
+  /* marks */
+  --fig-row: 28px; /* row pitch of a row chart (30px when a row holds two bars) */
+  --fig-bar: 10px; /* an effect bar */
+  --fig-bar-count: 12px; /* a count bar */
+  --fig-bar-r: 2px; /* data-end radius of a 10px bar (3px on a 12px bar); the baseline end is square */
+  --fig-seg-gap: 2px; /* surface gap between stacked segments */
+  --fig-hair: 1px; /* gridlines */
+  --fig-origin-w: 1.5px; /* the origin line (1x, 0) */
+  --fig-ref-w: 2px; /* a reference-value tick */
+  --fig-whisker: 1.25px; /* interval line and caps; cap length = bar thickness - 4px */
+  --fig-dot: 4.5px; /* radius of an estimate dot */
+  --fig-ring: 1.2px; /* surface ring around a filled dot or node */
+  --fig-hollow: 1.5px; /* stroke of a hollow (q > 0.05) dot; 1.25px on a hollow bar */
+  --fig-halo-w: 3px;
+  --fig-tip-w: 330px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --fig-c1: #3987e5;
+    --fig-c2: #d95926;
+    --fig-c3: #199e70;
+    --fig-c4: #c98500;
+    --fig-c5: #d55181;
+    --fig-c6: #b87a3d;
+    --fig-c7: #9085e9;
+    --fig-c8: #e66767;
+    --fig-c-other: #7d8c97;
+    --fig-on-c: #ffffff;
+    --fig-seq-1: #184f95;
+    --fig-seq-2: #256abf;
+    --fig-seq-3: #3987e5;
+    --fig-seq-4: #6da7ec;
+    --fig-seq-5: #9ec5f4;
+    --fig-div-up-0: #5a2523;
+    --fig-div-up-1: #8e3330;
+    --fig-div-up-2: #d2524f;
+    --fig-div-up-3: #f09a95;
+    --fig-div-dn-0: #26343b;
+    --fig-div-dn-1: #3d5260;
+    --fig-div-dn-2: #6c8592;
+    --fig-div-dn-3: #a9bdc7;
+    --fig-div-mid: #1a2d35;
+    --fig-count-k: #6cbcd1;
+    --fig-count-n: #2f6474;
+    --fig-hull-op: 0.11;
+    --fig-edge-in-op: 0.4;
+    --fig-edge-x: #a9bcc4;
+    --fig-edge-x-op: 0.2;
+    --fig-euler-op: 0.22;
+  }
+}
+:root[data-theme='dark'] {
+  --fig-c1: #3987e5;
+  --fig-c2: #d95926;
+  --fig-c3: #199e70;
+  --fig-c4: #c98500;
+  --fig-c5: #d55181;
+  --fig-c6: #b87a3d;
+  --fig-c7: #9085e9;
+  --fig-c8: #e66767;
+  --fig-c-other: #7d8c97;
+  --fig-on-c: #ffffff;
+  --fig-seq-1: #184f95;
+  --fig-seq-2: #256abf;
+  --fig-seq-3: #3987e5;
+  --fig-seq-4: #6da7ec;
+  --fig-seq-5: #9ec5f4;
+  --fig-div-up-0: #5a2523;
+  --fig-div-up-1: #8e3330;
+  --fig-div-up-2: #d2524f;
+  --fig-div-up-3: #f09a95;
+  --fig-div-dn-0: #26343b;
+  --fig-div-dn-1: #3d5260;
+  --fig-div-dn-2: #6c8592;
+  --fig-div-dn-3: #a9bdc7;
+  --fig-div-mid: #1a2d35;
+  --fig-count-k: #6cbcd1;
+  --fig-count-n: #2f6474;
+  --fig-hull-op: 0.11;
+  --fig-edge-in-op: 0.4;
+  --fig-edge-x: #a9bcc4;
+  --fig-edge-x-op: 0.2;
+  --fig-euler-op: 0.22;
+}
+
 *,
 *::before,
 *::after {
@@ -4378,9 +4543,7 @@ html.pdf-export .map-ctl {
 }
 .ptbl2 .pname {
   max-width: 15rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
   color: var(--ink-2);
   font-size: 0.82rem;
 }
@@ -7511,6 +7674,18 @@ button.tab,
   font-size: 0.7rem;
   color: var(--muted);
 }
+.fr-sub {
+  grid-column: 1 / -1;
+  margin-top: -0.4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.72rem;
+  line-height: 1.15;
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 .fr-cnote {
   margin: 0.35rem 0 0;
   font-size: 0.78rem;
@@ -8084,7 +8259,7 @@ a.pchip:hover {
 }
 .fp-row {
   display: grid;
-  grid-template-columns: 3.4rem minmax(0, 1fr);
+  grid-template-columns: 4.6rem minmax(0, 1fr);
   align-items: center;
   gap: 0.4rem;
   line-height: 1;
@@ -8176,7 +8351,7 @@ a.pchip:hover {
 }
 .fp-m {
   display: grid;
-  grid-template-columns: 4.4rem minmax(0, 1fr) 3.2rem;
+  grid-template-columns: 5.8rem minmax(0, 1fr) 3.2rem;
   align-items: center;
   gap: 0.4rem;
   line-height: 1.1;
@@ -9449,172 +9624,6 @@ html[data-density] .stbl .src-tags a {
 html[data-density] .sites-tbl .cv {
   max-width: 13rem;
 }
-
-/* ---- Figure tokens (--fig-*): one set for every ptmcontext figure. Proposed for kit.css, after the :root block at the top.
-   See GUIDE.md for what each token is for. Chrome tokens alias the kit's own (they already switch with the theme); the
-   data tokens carry their own light and dark hex. Exports never read these: they use the light column as literal hex
-   (K.FIG_EXPORT in GUIDE.md section 13), so a figure exported from a dark page is still the light figure on white.
-   Validator output for every data colour: validator_output.txt. ---- */
-:root {
-  /* type */
-  --fig-font: var(--font-body);
-  --fig-font-export: Arial, 'Helvetica Neue', Helvetica, Arimo, 'Liberation Sans', sans-serif;
-  --fig-fs-title: 1.0625rem; /* 17px: the card title (--fs-card) */
-  --fig-fs-label: 0.86rem; /* 13.76px: row and category labels */
-  --fig-fs-value: 0.8125rem; /* 13px, weight 700, tabular: printed values */
-  --fig-fs-direct: 0.78rem; /* 12.5px, weight 650: direct labels on marks (cluster names, region counts) */
-  --fig-fs-minor: 0.656rem; /* 10.5px: optional labels the tooltip and table repeat (gene labels). Nothing else this small */
-  --fig-fs-tick: 0.75rem; /* 12px, tabular: tick labels and axis titles */
-  --fig-fs-key: 0.78rem; /* 12.5px: key entries */
-  --fig-fs-cap: 0.75rem; /* 12px: captions, footnotes, the q column */
-
-  /* chrome: aliases of the kit's tokens */
-  --fig-surface: var(--surface);
-  --fig-halo: var(--surface); /* paint-order stroke behind text that sits on marks */
-  --fig-ink: var(--ink);
-  --fig-ink-2: var(--ink-2);
-  --fig-muted: var(--muted);
-  --fig-grid: var(--line); /* hairline gridlines at the ticks */
-  --fig-axis: var(--line-strong); /* the origin: 1x on a ratio axis, 0 on a count axis */
-  --fig-ref: var(--ink-2); /* a reference value that is data (whole dataset, baseline share) */
-  --fig-hover: var(--wash);
-  --fig-select: color-mix(in srgb, var(--accent) 11%, var(--surface));
-  --fig-select-edge: var(--accent);
-  --fig-focus: var(--focus-ring);
-
-  /* direction of a tested difference: the site's tokens, never forked */
-  --fig-more: var(--more); /* q <= 0.05 and at least 1.1x, higher */
-  --fig-less: var(--less); /* q <= 0.05 and at least 1.1x, lower */
-  --fig-same: var(--same); /* q <= 0.05 but within 1.1x */
-  --fig-ns: var(--muted); /* stroke of a hollow mark: q > 0.05 */
-
-  /* categorical slots, in this order (identity: terms, clusters, map classes) */
-  --fig-c1: #2a78d6; /* blue */
-  --fig-c2: #eb6834; /* orange */
-  --fig-c3: #1baf7a; /* aqua */
-  --fig-c4: #eda100; /* yellow */
-  --fig-c5: #e87ba4; /* magenta */
-  --fig-c6: #008300; /* green */
-  --fig-c7: #6250d6; /* violet */
-  --fig-c8: #e34948; /* red */
-  --fig-c-other: #9aa3a8; /* "Other" / smaller groups: never a slot */
-  --fig-on-c: #ffffff; /* text inside a slot fill; #0b0b0b on --fig-c4 */
-
-  /* sequential (one hue, low = near the surface): step 1 is the lightest that still clears 2:1 */
-  --fig-seq-1: #86b6ef;
-  --fig-seq-2: #5598e7;
-  --fig-seq-3: #2a78d6;
-  --fig-seq-4: #1c5cab;
-  --fig-seq-5: #104281;
-
-  /* diverging (fold or OR on a map): up = more, down = less, mid = no difference. Step 0 is an area fill only: it is
-     below 2:1 by design and needs the part's outline */
-  --fig-div-up-0: #f6d0cd;
-  --fig-div-up-1: #ef9a94;
-  --fig-div-up-2: #e34948;
-  --fig-div-up-3: #a8302f;
-  --fig-div-dn-0: #e6ecef;
-  --fig-div-dn-1: #bac8cf;
-  --fig-div-dn-2: #91a5b1;
-  --fig-div-dn-3: #6a808d;
-  --fig-div-mid: #f0efec;
-
-  /* a count split in two (with marks / without): one hue, two steps */
-  --fig-count-k: #155e75;
-  --fig-count-n: #94bac6;
-
-  /* node-link and set figures */
-  --fig-hull-op: 0.085; /* hull wash: fill-opacity of the slot colour, no outline */
-  --fig-edge-in-op: 0.32; /* an edge inside a cluster, in the slot colour */
-  --fig-edge-x: #52606a; /* bundles and hover edges between clusters */
-  --fig-edge-x-op: 0.16;
-  --fig-euler-op: 0.16; /* Euler circle wash */
-
-  /* marks */
-  --fig-row: 28px; /* row pitch of a row chart (30px when a row holds two bars) */
-  --fig-bar: 10px; /* an effect bar */
-  --fig-bar-count: 12px; /* a count bar */
-  --fig-bar-r: 2px; /* data-end radius of a 10px bar (3px on a 12px bar); the baseline end is square */
-  --fig-seg-gap: 2px; /* surface gap between stacked segments */
-  --fig-hair: 1px; /* gridlines */
-  --fig-origin-w: 1.5px; /* the origin line (1x, 0) */
-  --fig-ref-w: 2px; /* a reference-value tick */
-  --fig-whisker: 1.25px; /* interval line and caps; cap length = bar thickness - 4px */
-  --fig-dot: 4.5px; /* radius of an estimate dot */
-  --fig-ring: 1.2px; /* surface ring around a filled dot or node */
-  --fig-hollow: 1.5px; /* stroke of a hollow (q > 0.05) dot; 1.25px on a hollow bar */
-  --fig-halo-w: 3px;
-  --fig-tip-w: 330px;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --fig-c1: #3987e5;
-    --fig-c2: #d95926;
-    --fig-c3: #199e70;
-    --fig-c4: #c98500;
-    --fig-c5: #d55181;
-    --fig-c6: #008300;
-    --fig-c7: #9085e9;
-    --fig-c8: #e66767;
-    --fig-c-other: #7d8c97;
-    --fig-on-c: #ffffff;
-    --fig-seq-1: #184f95;
-    --fig-seq-2: #256abf;
-    --fig-seq-3: #3987e5;
-    --fig-seq-4: #6da7ec;
-    --fig-seq-5: #9ec5f4;
-    --fig-div-up-0: #5a2523;
-    --fig-div-up-1: #8e3330;
-    --fig-div-up-2: #d2524f;
-    --fig-div-up-3: #f09a95;
-    --fig-div-dn-0: #26343b;
-    --fig-div-dn-1: #3d5260;
-    --fig-div-dn-2: #6c8592;
-    --fig-div-dn-3: #a9bdc7;
-    --fig-div-mid: #1a2d35;
-    --fig-count-k: #6cbcd1;
-    --fig-count-n: #2f6474;
-    --fig-hull-op: 0.11;
-    --fig-edge-in-op: 0.4;
-    --fig-edge-x: #a9bcc4;
-    --fig-edge-x-op: 0.2;
-    --fig-euler-op: 0.22;
-  }
-}
-:root[data-theme='dark'] {
-  --fig-c1: #3987e5;
-  --fig-c2: #d95926;
-  --fig-c3: #199e70;
-  --fig-c4: #c98500;
-  --fig-c5: #d55181;
-  --fig-c6: #008300;
-  --fig-c7: #9085e9;
-  --fig-c8: #e66767;
-  --fig-c-other: #7d8c97;
-  --fig-on-c: #ffffff;
-  --fig-seq-1: #184f95;
-  --fig-seq-2: #256abf;
-  --fig-seq-3: #3987e5;
-  --fig-seq-4: #6da7ec;
-  --fig-seq-5: #9ec5f4;
-  --fig-div-up-0: #5a2523;
-  --fig-div-up-1: #8e3330;
-  --fig-div-up-2: #d2524f;
-  --fig-div-up-3: #f09a95;
-  --fig-div-dn-0: #26343b;
-  --fig-div-dn-1: #3d5260;
-  --fig-div-dn-2: #6c8592;
-  --fig-div-dn-3: #a9bdc7;
-  --fig-div-mid: #1a2d35;
-  --fig-count-k: #6cbcd1;
-  --fig-count-n: #2f6474;
-  --fig-hull-op: 0.11;
-  --fig-edge-in-op: 0.4;
-  --fig-edge-x: #a9bcc4;
-  --fig-edge-x-op: 0.2;
-  --fig-euler-op: 0.22;
-}
-
 /* The network view (kit-network.js). Clusters take the figure tokens' categorical slots; slot 6 is a brown (the style guide's
    green sat too close to the aqua of slot 3 in a network); the packing keeps confusable slots apart. */
 :root {
@@ -9623,7 +9632,7 @@ html[data-density] .sites-tbl .cv {
   --nw-3: var(--fig-c3);
   --nw-4: var(--fig-c4);
   --nw-5: var(--fig-c5);
-  --nw-6: #b5651d;
+  --nw-6: var(--fig-c6);
   --nw-7: var(--fig-c7);
   --nw-8: var(--fig-c8);
   --nw-other: var(--fig-c-other);
@@ -9643,14 +9652,12 @@ html[data-density] .sites-tbl .cv {
   --nw-hi: #0d366b;
 }
 :root[data-theme='dark'] {
-  --nw-6: #c9894d;
   --nw-on-4: #ffffff;
   --nw-lo: #184f95;
   --nw-hi: #b7d3f6;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --nw-6: #c9894d;
     --nw-on-4: #ffffff;
     --nw-lo: #184f95;
     --nw-hi: #b7d3f6;
@@ -9954,5 +9961,728 @@ html[data-density] .sites-tbl .cv {
 @media (prefers-reduced-motion: reduce) {
   .nw-stale {
     transition: none;
+  }
+}
+/* a question's controls beside its result (kit.js controlsBlock) */
+.pcard.controls h3 {
+  margin: 0 0 4px;
+}
+.pcard.controls b[class^='ctl-'] {
+  font-weight: 600;
+  font-size: 0.85em;
+}
+.pcard.controls .ctl-lost {
+  color: var(--more);
+}
+.pcard.controls .ctl-weaker,
+.pcard.controls .ctl-not-tested {
+  color: var(--muted, #6b7280);
+}
+/* a class that fails a control (kit.js controlFails): a muted outlined badge under its tile row and its page heading */
+.ctl-fail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: -2px 0 4px;
+  padding-left: 2px;
+}
+.ctl-fail.head {
+  margin: 4px 0 0;
+  flex-basis: 100%;
+  order: 3;
+}
+.ctl-badge {
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+.ctl-badge:hover {
+  color: var(--ink, #111827);
+  border-color: var(--muted);
+}
+.ctl-badge:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* the site card's rows in folds: the most used open, the rest closed */
+.sc-group {
+  border-top: 1px solid var(--line);
+  padding: 0.3rem 0 0.45rem;
+}
+.sc-group:first-of-type {
+  border-top: 0;
+}
+.sc-group > summary {
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--ink-2);
+  padding: 0.2rem 0;
+}
+.sc-group > .sc-kv {
+  margin-top: 0.3rem;
+}
+
+/* the way back to the landing page (kit-switch.js): beside the switcher, in the header and in the sticky bar */
+.landing-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: #fff;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.landing-link:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+.landing-link.in-bar {
+  color: inherit;
+  font-size: 0.8125rem;
+  margin-right: 0.6rem;
+}
+
+/* a phone: the protein map's folds give their padding to the drawing (tracks at least 200 px wide at 390 px) */
+@media (max-width: 560px) {
+  .pfold-body {
+    padding-inline: 0.3rem;
+  }
+  .pgroup {
+    padding-left: 0.25rem;
+  }
+}
+
+/* ---- The compact bar (website.header.bar): with the toolbar slid away on the way down, the fixed bar above carries the site,
+   the way home, the switcher, a search, the pages and the selection, in one row (44 px; 390 px wide holds the logo, the way home,
+   the switcher, a search button and the selection). Each part is shown only then, so nothing is doubled while the toolbar is in view. */
+.dock-x {
+  display: none;
+}
+@media screen {
+  body.bar-hidden .dock-x {
+    display: inline-flex;
+  }
+  .dock-tabs {
+    align-items: center;
+    gap: 0.15rem;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .dock-tabs .tab {
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    padding: 0.3rem 0.55rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    border: 0;
+    background: transparent;
+  }
+  .dock-tabs .tab:hover,
+  .dock-tabs .tab[aria-current='page'] {
+    background: rgba(255, 255, 255, 0.18);
+  }
+  .dock-tabs .tab .count,
+  .dock-tabs .tab .tab-ico,
+  .dock-tabs .rail-btn {
+    display: none;
+  }
+  .dock-search input {
+    width: 11rem;
+    min-height: 30px;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font: inherit;
+    font-size: 0.8125rem;
+    padding: 0 0.8rem;
+  }
+  .dock-search input::placeholder {
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .dock-search input:focus-visible,
+  .dock-ico:focus-visible,
+  .dock-sel:focus-visible,
+  .dock-tabs .tab:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 2px;
+  }
+  .dock-ico {
+    display: none;
+    min-height: 32px;
+    min-width: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 999px;
+    background: transparent;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .dock-sel {
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 32px;
+    padding: 0 0.7rem;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 999px;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .dock-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ffd166;
+  }
+  .landing-link.in-bar {
+    flex: none;
+  }
+  /* the site file's list of parts (website.header.bar) */
+  #dock:not([data-bar~='home']) .landing-link,
+  #dock:not([data-bar~='switch']) .site-switch,
+  #dock:not([data-bar~='search']) .dock-search,
+  #dock:not([data-bar~='tabs']) .dock-tabs,
+  #dock:not([data-bar~='summary']) .dock-sel {
+    display: none !important;
+  }
+}
+@media screen and (max-width: 1099px) {
+  .dock-tabs {
+    display: none !important;
+  }
+}
+@media screen and (max-width: 639px) {
+  .dock-search input,
+  .dock-sel-p {
+    display: none;
+  }
+  body.bar-hidden .dock-ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dock-end {
+    gap: 0.4rem;
+  }
+  .dock .wrap {
+    gap: 0.5rem;
+  }
+  .landing-link.in-bar {
+    margin-right: 0;
+    font-size: 0.75rem;
+  }
+}
+
+/* the counts of the full bar make room for the compact bar's selection and pages */
+@media screen {
+  body.bar-hidden .dock-stats {
+    display: none;
+  }
+}
+@media screen and (max-width: 639px) {
+  .dock-sel-w {
+    display: none;
+  }
+}
+
+@media screen {
+  body.bar-hidden .dock-cite {
+    display: none;
+  }
+  .dock-search input {
+    width: 9rem;
+  }
+}
+@media screen and (max-width: 1599px) {
+  .dock-sel-p {
+    display: none;
+  }
+}
+
+/* The Overlap page (kit-overlap.js): the figure uses the --fig-* tokens above */
+.ov-pick {
+  display: grid;
+  gap: 8px;
+  max-width: 640px;
+  margin: 0 0 16px;
+}
+.ov-pick input[type='search'] {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.ov-pick textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.ov-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ov-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--surface);
+  max-width: 100%;
+}
+.ov-sw {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex: none;
+}
+.ov-res {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px;
+  background: var(--surface);
+}
+.ov-grp {
+  margin: 6px 4px 2px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ov-opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 8px 8px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ov-opt:hover,
+.ov-opt:focus-visible {
+  background: var(--surface-2);
+}
+.ov-ctl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 8px 0;
+}
+.ov-unit {
+  display: inline-flex;
+  gap: 4px;
+}
+.ov-unit .btn.on {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.ov-region {
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 12px 0;
+  background: var(--surface);
+}
+.ov-list {
+  columns: 3 120px;
+  list-style: none;
+  padding: 0;
+  margin: 6px 0;
+  max-height: 260px;
+  overflow: auto;
+}
+.ov-tbl tr.ov-on th,
+.ov-tbl tr.ov-on td {
+  background: var(--surface-2);
+}
+.ov-tbl .ov-totals td,
+.ov-tbl .ov-totals th {
+  color: var(--muted);
+}
+.ov-cmp {
+  margin-left: 6px;
+}
+
+/* The Overlap figure: one row grammar for every number of terms (membership dots, a split size bar, the share against the baseline) */
+.ov-figwrap {
+  margin: 8px 0;
+}
+.ovx {
+  container-type: inline-size;
+  position: relative;
+  background: var(--fig-surface);
+  border: 1px solid var(--fig-grid);
+  border-radius: 14px;
+  padding: 16px 18px 10px;
+  color: var(--fig-ink);
+}
+.ovx-top {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.ovx-glyph {
+  flex: none;
+}
+.ovx-glyph svg {
+  display: block;
+  overflow: visible;
+  cursor: pointer;
+}
+.ovx-key {
+  display: grid;
+  gap: 6px;
+  font-size: var(--fig-fs-key);
+  color: var(--fig-ink-2);
+  align-content: start;
+  padding-top: 2px;
+}
+.ovx-key .kline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: center;
+}
+.ovx-key .kh {
+  color: var(--fig-muted);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  width: 100%;
+  margin-top: 2px;
+}
+.ovx-key .k {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.ovx-key svg {
+  display: block;
+}
+.ovx-note {
+  font-size: var(--fig-fs-cap);
+  color: var(--fig-muted);
+  margin: 4px 0 0;
+  max-width: 62ch;
+}
+.ovx-grid {
+  display: grid;
+  grid-template-columns: minmax(176px, 220px) minmax(0, 1fr) minmax(0, 1.3fr) 196px;
+  column-gap: 14px;
+}
+.ovx-grid > .r {
+  display: contents;
+}
+.ovx-grid .c {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 30px;
+}
+.ovx-grid .c svg {
+  display: block;
+  overflow: visible;
+}
+.ovx-grid .r.head .c {
+  height: auto;
+  align-items: flex-end;
+  padding-bottom: 2px;
+}
+.colh {
+  font-size: var(--fig-fs-tick);
+  color: var(--fig-ink-2);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+}
+.colh .muted {
+  color: var(--fig-muted);
+  font-weight: 400;
+}
+.ovx .grp {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--fig-muted);
+  padding: 10px 0 2px;
+  border-bottom: 1px solid var(--fig-grid);
+  margin-bottom: 2px;
+}
+.ovx .grp i {
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ovx .r.data {
+  cursor: pointer;
+}
+.ovx .r.data > .c,
+.ovx .r.term-r > .c {
+  position: relative;
+}
+.ovx .r.data > .c::before {
+  content: '';
+  position: absolute;
+  inset: 0 -7px;
+  z-index: 0;
+}
+.ovx .r.data > .c > * {
+  position: relative;
+  z-index: 1;
+}
+.ovx .r.data.hover > .c::before {
+  background: var(--fig-hover);
+}
+.ovx .r.data.sel > .c::before {
+  background: var(--fig-select);
+}
+.ovx .r.data > .c.lab::before {
+  left: -18px;
+}
+.ovx .r.data.sel > .c.lab::before {
+  box-shadow: inset 3px 0 0 var(--fig-select-edge);
+}
+.ovx .r.data > .c.vals::before {
+  right: -18px;
+}
+.ovx .r.data > .c.lab:focus-visible {
+  outline: 2px solid var(--fig-select-edge);
+  outline-offset: 2px;
+}
+.ovx .term {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  min-width: 0;
+}
+.ovx .term .sw {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex: none;
+}
+.ovx .term b {
+  font-weight: 700;
+}
+.ovx .term .nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ovx .reg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--fig-ink-2);
+  white-space: nowrap;
+}
+.ovx .vals {
+  font-size: var(--fig-fs-value);
+  gap: 8px;
+  justify-content: flex-start;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ovx .vals .sh {
+  font-weight: 700;
+  color: var(--fig-ink);
+  width: 54px;
+  flex: none;
+  text-align: right;
+}
+.ovx .vals.vh {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--fig-muted);
+}
+.ovx .vals.vh .sh,
+.ovx .vals.vh .fo {
+  font-weight: 400;
+  color: var(--fig-muted);
+}
+.ovx .vals .fo {
+  color: var(--fig-ink-2);
+  width: 48px;
+  flex: none;
+  text-align: right;
+}
+.ovx .vals .q,
+.ovx .vals .nt {
+  font-size: var(--fig-fs-cap);
+  color: var(--fig-muted);
+}
+.ovx svg text {
+  font-variant-numeric: tabular-nums;
+}
+.ovx .foot {
+  font-size: var(--fig-fs-cap);
+  color: var(--fig-muted);
+  margin: 10px 0 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--fig-grid);
+}
+.ovx .foot b {
+  color: var(--fig-ink-2);
+  font-weight: 600;
+}
+.ovx .phline {
+  display: none;
+}
+.ovx .tip {
+  position: absolute;
+  z-index: 5;
+  width: var(--fig-tip-w);
+  background: var(--fig-surface);
+  border: 1px solid var(--fig-axis);
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+  padding: 9px 12px 10px;
+  font-size: 12.5px;
+  color: var(--fig-ink-2);
+  pointer-events: none;
+}
+.ovx .tip .t1 {
+  color: var(--fig-muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.ovx .tip .t1 b {
+  color: var(--fig-ink);
+}
+.ovx .tip .big {
+  color: var(--fig-ink);
+  font-weight: 650;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.ovx .tip .ln {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+.ovx .tip .key {
+  width: 14px;
+  height: 0;
+  border-top: 2px solid;
+  flex: none;
+  transform: translateY(-3px);
+}
+.ovx .tip .hint {
+  color: var(--fig-muted);
+  font-size: 11.5px;
+  margin-top: 5px;
+}
+@container (max-width: 560px) {
+  .ovx-top {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .ovx-key {
+    width: 100%;
+  }
+  .ovx-grid {
+    grid-template-columns: var(--dotsw, 70px) minmax(0, 1fr) minmax(0, 1.25fr);
+    column-gap: 10px;
+  }
+  .ovx-grid .c {
+    height: 22px;
+  }
+  .ovx-grid .c.vals,
+  .ovx-grid .r.head .c.vals {
+    display: none;
+  }
+  .ovx .r.term-r > .c.lab .nm,
+  .ovx .r.term-r > .c.lab b {
+    display: none;
+  }
+  .ovx .phline {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    font-size: 11.5px;
+    color: var(--fig-ink-2);
+    font-variant-numeric: tabular-nums;
+    margin: -2px 0 6px;
+  }
+  .ovx .phline .nm1 {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--fig-ink);
+    margin: 2px 0 0;
+  }
+  .ovx .phline .nm1 b {
+    font-weight: 700;
+  }
+  .ovx .phline .a {
+    grid-column: 2;
+  }
+  .ovx .phline .b {
+    grid-column: 3;
+    white-space: nowrap;
+  }
+  .ovx .phline .b .sh {
+    font-weight: 650;
+    color: var(--fig-ink);
+  }
+  .ovx .phline .b .q,
+  .ovx .phline .nt {
+    color: var(--fig-muted);
+  }
+  .ovx .phline.top {
+    margin: 4px 0 -2px;
+  }
+  .ovx .reg .rl {
+    display: none;
+  }
+  .ovx .r.head .c.lab {
+    visibility: hidden;
+  }
+  .colh .muted {
+    display: none;
+  }
+  .ovx .tip {
+    width: 260px;
   }
 }

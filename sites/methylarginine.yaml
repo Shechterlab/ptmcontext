@@ -42,6 +42,8 @@ inputs:                # role the layers read: manifest input that fills it
   density_windows: density_windows_v1_4_3
   lower_confidence_sites: methylarginine_lower_confidence_sites_v1_4_3
   interpro_entries: interpro_all_entries
+  go_bp_annotations: go_bp_annotations         # the Overlap page's GO biological process terms
+  go_bp_terms: go_bp_terms
   # interactions and binding (scripts/37_export_interaction_data.py of the release): each role one kind of evidence
   uniprot_disorder: uniprot_disordered_regions
   uniprot_domains: uniprot_domain_regions
@@ -837,9 +839,9 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein APEX-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   - id: eclip_gene_tsaseq
     test: protein_sets
-    title: Bound RNAs by TSA-seq
-    question: "Do the RNAs that methylated proteins bind come from genes near nuclear speckles?"
-    sub: "Proteins with eCLIP data whose bound RNAs come from genes near nuclear speckles by TSA-seq (K562; Chen et al. 2018), methylated against the others (one-sided hypergeometric test)"
+    title: Genes of bound RNAs by TSA-seq
+    question: "Are the RNAs that methylated proteins bind transcribed from genes near nuclear speckles?"
+    sub: "Proteins with eCLIP data whose bound RNAs are transcribed from genes near nuclear speckles by TSA-seq (K562; Chen et al. 2018). TSA-seq measures the position of the genes in the nucleus, not of the RNAs, methylated against the others (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: tsaseq}],
            member_when: [{column: gathers, equals: "true"}]}
@@ -850,9 +852,9 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein TSA-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   - id: eclip_gene_hic
     test: protein_sets
-    title: Bound RNAs by Hi-C subcompartment
-    question: "Do the RNAs that methylated proteins bind come from one Hi-C subcompartment?"
-    sub: "Proteins with eCLIP data whose bound RNAs come from genes of a Hi-C subcompartment (GM12878; Rao et al. 2014), methylated against the others (one-sided hypergeometric test)"
+    title: Genes of bound RNAs by Hi-C subcompartment
+    question: "Are the RNAs that methylated proteins bind transcribed from genes in one Hi-C subcompartment?"
+    sub: "Proteins with eCLIP data whose bound RNAs are transcribed from genes of a Hi-C subcompartment (GM12878; Rao et al. 2014). Hi-C measures contacts between genomic regions, not the position of the RNAs, methylated against the others (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: hic}],
            member_when: [{column: gathers, equals: "true"}]}
@@ -1058,7 +1060,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: predicted_interface
     title: Predicted interfaces
     question: "Are methylarginines at predicted protein interfaces?"
-    sub: "Methylarginines against the other arginines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt)"
+    sub: "Methylarginines against the other arginines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt). Predicted interfaces lie mostly in ordered regions, so the row of all residues partly restates disorder; the ordered and disordered rows compare like with like"
     section: Interactions and binding
     counting: every_candidate
     candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
@@ -1162,6 +1164,50 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: binding_region_disordered, inside: intact_binding_regions, proteins_with: intact_binding_regions, covered_by: uniprot_disorder,
          background: other arginines of the same proteins with an IntAct binding region, label: "Binding region, disordered residues"}
 
+# Controls (CONTRACTS.md, Controls): questions repeated with one change each, shown on each question's page beside its
+# result. None changes a row of the release's questions.
+controls:
+  # High-confidence sites: reported by at least two independent studies. Compilations and databases are not independent
+  # evidence and count for nothing: PhosphoSitePlus (it also holds Cell Signaling Technology's own discovery runs),
+  # UniProt (curated literature), IEDB (HLA-presented epitopes from other studies) and ProMetheusDB (a compilation of the
+  # Bonaldi laboratory's SILAC and heavy-methyl SILAC runs). Studies of one laboratory count once: Larsen 2016 and
+  # Sylvestersen 2014 (Nielsen laboratory, HEK293 cells); Lu 2024 and Lu 2025 (one laboratory, HeLa cells; STUDIES.md);
+  # Musiani 2019 and Fong 2019 (Musiani, Massignani and Bonaldi are authors of both). Guo 2014 (Cell Signaling
+  # Technology), Fedoriw 2019 (GSK) and Lim 2020 (an academic group) share Cell Signaling Technology's antibodies, not a
+  # laboratory or samples, and count as three studies.
+  - id: hc
+    label: high-confidence sites
+    note: "Only the sites at least two independent studies report (a laboratory's studies counted once; PhosphoSitePlus, UniProt, IEDB and ProMetheusDB not counted); the other sites are counted on neither side"
+    analyses: [motif, disorder, idr_charge, sticker_context_3, sticker_context_3_idr]
+    marks_where:
+      column: studies
+      distinct_at_least: 2
+      not_counted: [PSP, UniProt, IEDB, ProMetheusDB]
+      groups:
+        Nielsen laboratory: [Larsen2016, Sylvestersen2014]
+        Lu laboratory: [Lu2024, Lu2025]
+        Bonaldi laboratory: [Musiani2019, Fong2019]
+    marks_outside: left_out
+  # Sites found without a methylarginine antibody: the antibodies were raised against RG and RGG peptides, so a motif
+  # result could be the antibody's own preference. Lu 2025 enriched with the SMN Tudor domain, UniProt's annotations are
+  # curated from the literature and IEDB's are HLA-presented peptides; every other study enriched with antibodies, and
+  # PhosphoSitePlus and ProMetheusDB hold antibody runs too.
+  - id: noab
+    label: found without antibodies
+    note: "Only the sites a source that did not enrich with methylarginine antibodies reports (Lu 2025, SMN Tudor domain; UniProt; IEDB); the other sites are counted on neither side"
+    analyses: [motif, disorder]
+    marks_where:
+      column: studies
+      distinct_at_least: 1
+      not_counted: [PSP, ProMetheusDB, Larsen2016, Sylvestersen2014, Maron2021, Guo2014, Musiani2019, Fong2019, Li2021, Fedoriw2019, Lim2020, Wei2020, Hartel2019, Geoghegan2015, Ma2023, Lu2024]
+    marks_outside: left_out
+
+  - id: inidr
+    label: inside IDRs
+    note: "Only the arginines inside intrinsically disordered regions (MobiDB) count, methylarginines and other arginines alike, so the result is not a matter of disorder"
+    analyses: [near_phospho, near_phospho_high, near_methyllysine, near_acetylation, near_other_acylation, near_ubiquitination, near_sumoylation, idr_charge]
+    only_in: idr
+
 reference:
   statistics: methylarginine_statistics_v1_4_3
   # the residue questions' denominators: each protein's other arginines, in all and per class or motif
@@ -1263,7 +1309,7 @@ variants:                # the same questions on other marks; ptmc run --variant
 context_marks:
   - id: phospho
     label: Phosphosite
-    short: "Sph/Tph/Yph"
+    short: "pS/pT/pY"
     input: context_phosphorylation_sites_v1_5_0
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources, score: functional_score}
     subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # shown at first: the sites Ochoa 2020 scores 0.5 or more (about 10,900); a click on the row label shows all. Sites with no score (UniProt or iPTMnet only) are hidden at first too
@@ -1314,7 +1360,7 @@ context_marks:
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: other_acylation
     label: Other acylations
-    short: "Kacyl"
+    short: "Acyl"
     noun: non-acetyl acylation site
     plural: Other acylation sites
     input: context_lysine_acylation_sites_v1_5_0
@@ -1324,7 +1370,7 @@ context_marks:
     colour_dark: "#ddd06a"     # 10.3:1 on the dark surface
     citation:
       short: CPLM, UniProt and iPTMnet
-      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactoyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl, phosphoglyceryl, biotinyl, lipoyl) of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl, phosphoglyceryl, biotinyl, lipoyl) of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
       licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
     sources:
       CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
@@ -1351,7 +1397,7 @@ context_marks:
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: sumoylation
     label: SUMOylation
-    short: "Ksu"
+    short: "SUMO"
     noun: SUMOylation site
     plural: SUMOylation sites
     input: context_sumoylation_sites_v1_5_0
@@ -1377,10 +1423,10 @@ citation: sites/methylarginine.citation.cff   # the citation, data sources, vers
 website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Methylarginine Site Explorer
-  tagline: "Human arginine methylation sites from published studies."
+  tagline: "Human arginine methylation sites from published studies and databases."
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
-    tagline: "Human arginine methylation sites from published studies."
+    tagline: "Human arginine methylation sites from published studies and databases."
     question: "Which proteins have methylarginine, where in the protein is it, and which other modifications are nearby?"
   band: ["#155e75", "#0f3b47"]      # the header gradient: teal
   accent: "#c2410c"                 # the orange rule, active tab and links; shared by the lab's sites
@@ -1484,8 +1530,8 @@ website:                  # the look and words of the website (ptmc web); layout
       cell_organelle_ip: "Organelle IP"
       cell_chromatin: "Chromatin probability"
       eclip_rna_apexseq: "Bound RNAs (APEX-seq)"
-      eclip_gene_tsaseq: "Bound RNAs (TSA-seq)"
-      eclip_gene_hic: "Bound RNAs (Hi-C)"
+      eclip_gene_tsaseq: "Genes of bound RNAs (TSA-seq)"
+      eclip_gene_hic: "Genes of bound RNAs (Hi-C)"
       depmap_dependency: "Cancer cell dependency"
       cancer_change: "Tumor and cell-line changes"
       motif: "Sequence motifs"
@@ -1547,8 +1593,8 @@ website:                  # the look and words of the website (ptmc web); layout
     text: "Human arginine methylation sites from published studies and databases: their positions, proteins and disease links. Each tile is one question, comparing the methylarginines with the other arginines of the same proteins. Search a protein, a gene list or a disease to test your own selection."
     examples:
       - {label: A list of genes, query: TAF15 EWSR1 FUS, help: "Every question is tested again on their methylarginines."}
-      - {label: A disease, query: "disease_family:ALS", help: "Methylarginines on proteins linked to a disease family, and how they differ from other sites."}
-      - {label: One site in its structure, query: FUS R216, help: "Its protein's domain and disorder map, the evidence for the site, and its structures."}
+      - {label: A disease, query: "disease_family:ALS", help: "Methylarginines on proteins linked to a disease family, and how they differ from the other arginines of their proteins."}
+      - {label: One methylarginine in its structure, query: FUS R216, help: "Its protein's domain and disorder map, the evidence for the residue, and its structures."}
   stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
@@ -1564,7 +1610,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - {title: Densest clusters, by: dense_q, order: asc, where: {attribute: dense_q, max: 0.05}, show: "{dense_sites}/{dense_window} aa", n: 6,
            help: "Most significant clustering of methylarginines (permutation test): sites in the window"}
       quick:
-        - {label: sites reported by 2 or more sources, query: "f=n:n_studies~2", view: sites}
+        - {label: sites reported by 2 or more studies or databases, query: "f=n:n_studies~2", view: sites}
         - {label: sites measured with PRMT inhibitors (Maron 2021), query: "f=t:gsk591~decreased|increased|mixed|no_significant_change", view: sites}
         - {label: proteins in condensates, query: "f=p:condensate_proteome~*", view: proteins}
         - {label: proteins with dense clusters, query: "f=r:dense_q~0.05", view: proteins}
@@ -1657,7 +1703,7 @@ website:                  # the look and words of the website (ptmc web); layout
         #  counted, not tested (website.counts)
         cards: [provenance]
       - name: More questions
-        about: "Further protein classes, pathways, cell maps and RNA-contact maps, one question each."
+        about: "Further protein classes, pathways, cell maps and maps of bound RNAs, one question each."
         cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)},
                 {analysis: hpa_location, title: Human Protein Atlas locations}, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin,
                 eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, disorder, domain_context]
@@ -1666,7 +1712,7 @@ website:                  # the look and words of the website (ptmc web); layout
     title: Where in the cell
     question: "Where do methylated proteins localize in the cell?"
     intro: "Five maps from four studies locate proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
-    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq, TSA-seq, Hi-C subcompartments) is under In more detail."
+    note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq), and where the genes of those RNAs lie in the nucleus (TSA-seq, Hi-C subcompartments), is under More questions."
     maps:                  # each a protein-set question whose sets are compartments: the grids' columns, in order
       - {analysis: hpa_location, regions: cell_region_hpa, name: Human Protein Atlas, short: Protein Atlas, method: Imaging, cells: many cell lines,
          how: "antibody staining in many cell lines; locations of Approved or better reliability with 20 or more proteins",
@@ -1749,22 +1795,22 @@ website:                  # the look and words of the website (ptmc web); layout
       top: 8
       bins: 4
       note: "A class describes the protein's physical partners. STRING associations are to the whole protein, so a count does not show that a partner writes or reads that arginine. Methyllysine readers are in the uncurated Tudor class."
-      method: "The site file lists the partner classes (website.search.partners.classes) by gene and InterPro id, each with the paper that shows its role. A protein is in a class when one of its STRING physical partners is."
+      method: "The partner classes are listed by gene and InterPro id, each with the paper that shows its role. A protein is in a class when one of its STRING physical partners is."
     provenance:
       kind: values
       attribute: studies
       number: n_studies
-      title: Data sources
+      title: Studies and databases
       question: "Which studies and databases report the methylarginines?"
       sub: "Methylarginines reported by each study or database"
       distribution: "Studies or databases reporting each {mark}"
-      unit: [source, sources]
+      unit: [study or database, studies and databases]
       noun: studies and databases
       two_or_more: reported by two or more
       top: 5
       bins: 5
-      note: "Databases such as PhosphoSitePlus compile published studies, so two sources can rest on the same measurement."
-      method: "Each methylarginine lists the studies and databases that report it (the release's studies column) and their number (n_studies). A study's count is the methylarginines it reports. Only counts those no other source reports. PhosphoSitePlus and ProMetheusDB compile published studies, so a site they share with a study may rest on one measurement."
+      note: "Databases such as PhosphoSitePlus compile published studies, so two studies or databases can rest on the same measurement."
+      method: "Each methylarginine lists the studies and databases that report it (the release's studies column) and their number (n_studies). A study's count is the methylarginines it reports. Only counts those no other study or database reports. PhosphoSitePlus and ProMetheusDB compile published studies, so a site they share with a study may rest on one measurement."
     perturbations:
       kind: responses
       title: PRMT inhibitors, knockouts and knockdowns
@@ -1802,7 +1848,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Clustering and crosstalk, keys: ["d:marks", "o:other_ptms"], proteins: [dense_q, architecture]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
-    - {name: Data sources, attributes: [studies, n_studies, localised_by]}
+    - {name: Studies and databases, attributes: [studies, n_studies, localised_by]}
   dataset: {label: data release, version: v1.4.3, date: "2026-10-31", doi: "10.5281/zenodo.22696798", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3"}
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
@@ -2017,6 +2063,26 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}
       - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}
     tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites as one network of physical links and complexes, in clusters named by GO biological process."}
+  # The Overlap page: 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
+  overlap:
+    terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, go_binding, binding_protein]
+    max_terms: 4
+    term_sources:      # GO biological process, propagated over is_a and part_of, 5 to 5,000 proteins; the evidence include below keeps annotations that are not computational-only (remove it to keep every annotation)
+      - id: go_bp
+        title: GO biological process
+        members: {input: go_bp_annotations, protein: uniprot_accession, set: go_id, include: [{column: non_iea, equals: "true"}]}
+        names: {input: go_bp_terms, id: go_id, name: go_name}
+        min_size: 5
+        max_size: 5000
+        cite: ["Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031", "Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556"]
+    leave_out: {binding_protein: [rna_rbdmap, rna_pclap]}   # unpublished peptide data: not offered, not written
+    notes: {cell_hcm_compartment: one main location per protein, cell_hcm_domain: one main location per protein, cell_organelle_ip: one main location per protein}
+    units: [proteins, sites, readers, enzymes]
+    enzymes: {roles: [writer, eraser]}
+    readers:           # a protein is a reader when it carries any listed Pfam or InterPro entry (each id checked on InterPro)
+      source: interpro_entries
+      families:
+      - {name: Tudor, ids: [IPR002999, PF00567, IPR010304], note: "Tudor domains, including the SMN and SPF30 (SMNDC1) type; some read methylarginine, others methyllysine"}
   compare: {stratify: studies, min_proteins: 10, min_marks: 30}      # "compared with other methylarginines, within studies": the same reporting sources
   proteins:                # the Proteins page (kit-tables.js): its table's columns after the protein and its sites, in the Columns
                            # menu (default: true shows at first), and its download's columns; the explorer's
@@ -2481,7 +2547,7 @@ website:                  # the look and words of the website (ptmc web); layout
               - {id: dna, label: DNA-crosslinked residue, colour: dna, where: [{column: kind, equals: "dna_crosslink; at_residue"}]}
               - {id: rna_bound, label: "RNA-bound peptide or region (CAPRI, RBR-ID)", colour: rna_pale,
                  where: [{column: kind, in: ["capri_xl_peptide; in_peptide", "capri_adj_peptide; in_fragment", "rbrid_residue; in_region", "rbrid_region; in_region"]}]}
-              - {id: dna_bound, label: "DNA crosslink candidate, crosslinked peptide or DNA-binding region", colour: dna_pale,
+              - {id: dna_bound, label: "DNA-bound peptide or region (crosslink, DNA-binding)", colour: dna_pale,
                  where: [{column: kind, in: ["dna_crosslink; candidate_residue", "dna_crosslink; in_peptide", "dna_binding_region; in_region"]}]}
           - id: interfaces
             label: Interfaces in the PDB (PDBe-KB)

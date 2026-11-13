@@ -150,11 +150,24 @@
   });
   const stratified = (aid) => !!A[aid]?.stratified;
   const allStrat = MAPS.every((m) => stratified(m.analysis));
-  // the comparison a map's row makes: within the strata (Mantel–Haenszel), or of the whole map (fold enrichment)
+  // website.reading: a part is colored and ranked only when at least min_maps maps agree on it, each comparing groups of
+  // at least min_group proteins (the part's marked proteins, and its other proteins)
+  const READ = K.READ || { min_maps: 2, min_group: 20 };
+  const smallOf = (k, M) => k < READ.min_group || M - k < READ.min_group;
+  // the comparison a map's row makes: the fold (the share of the marked proteins placed here over the share of all the
+  // proteins the map places), read by the map's test: within the strata (Mantel–Haenszel; its odds ratio beside) or of
+  // the whole map (hypergeometric)
   const adj = (aid, t) =>
     stratified(aid) && t.or !== undefined
-      ? { l2: L2(t.or), lo: t.lo ? Math.log2(t.lo) : null, hi: t.hi ? Math.log2(t.hi) : null, q: t.q }
-      : { l2: L2(t.fold), lo: null, hi: null, q: t.fq };
+      ? {
+          l2: L2(t.fold),
+          lo: null,
+          hi: null,
+          q: t.q,
+          test: { l2: L2(t.or), lo: t.lo ? Math.log2(t.lo) : null, hi: t.hi ? Math.log2(t.hi) : null },
+          small: smallOf(t.k, t.M),
+        }
+      : { l2: L2(t.fold), lo: null, hi: null, q: t.fq, small: smallOf(t.k, t.M) };
   // each map, as the grids and the footnote name it: its words, and how many proteins it places and how many are marked
   const DS = (aid) => {
     const m = MAP[aid] || {},
@@ -184,7 +197,7 @@
         ? 'found only here'
         : a.l2 === -Infinity
           ? 'never found here'
-          : 'odds ratio ' + fxv(2 ** a.l2);
+          : 'fold ' + fxv(2 ** a.l2);
   const fq = K.fq;
   const toneOf = (k) => (TONES.light.find((x) => x[0] === k) || [])[1];
   const and = (xs) => (xs.length > 1 ? xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1] : xs[0] || '');
@@ -199,6 +212,8 @@
   function tone(a) {
     if (!a || a.l2 == null) return 'na';
     if (a.q == null || a.q > PADJ || (Number.isFinite(a.l2) && Math.abs(a.l2) < MINL2)) return 'ns';
+    // too few proteins on a side, or a test that points the other way from the fold: not colored
+    if (a.small || (a.test && a.test.l2 != null && Math.sign(a.test.l2) !== Math.sign(a.l2))) return 'ns';
     const m = Math.abs(a.l2),
       s = m >= 2 ? 3 : m >= 1.2 ? 2 : m >= 0.5 ? 1 : 0;
     return (a.l2 > 0 ? 'u' : 'd') + s;
@@ -270,6 +285,7 @@
           const Ms = counts.sets[s],
             m = ST.mh(kS.map((ki, i) => [ki, nS[i] - ki, Ms[i] - ki, counts.N[i] - nS[i] - Ms[i] + ki]));
           x.a = {
+            mh: true,
             l2: L2(m.or === Infinity ? 1e300 : m.or),
             lo: m.lo ? Math.log2(m.lo) : null,
             hi: m.hi ? Math.log2(m.hi) : null,
@@ -301,8 +317,17 @@
           `places); ${abundText(x.a)}`;
   function abundText(a) {
     if (!a || a.l2 == null) return 'not compared';
-    const ci = a.lo != null && a.hi != null ? ` (95% CI ${fxv(2 ** a.lo)}–${fxv(2 ** a.hi)})` : '';
-    return `${orWords(a)}${ci}, q ${fq(a.q)}${tone(a) === 'ns' ? ' (no difference)' : ''}`;
+    const t = a.test,
+      ci = t && t.lo != null && t.hi != null ? ` (95% CI ${fxv(2 ** t.lo)}–${fxv(2 ** t.hi)})` : '',
+      within = t && t.l2 != null ? `; within abundance deciles, odds ratio ${fxv(2 ** t.l2)}${ci}` : '';
+    return (
+      `${orWords(a)}${within}, q ${fq(a.q)}` +
+      (a.small
+        ? ` (fewer than ${READ.min_group} proteins on a side: not colored)`
+        : tone(a) === 'ns'
+          ? ' (no difference)'
+          : '')
+    );
   }
 
   // ---- the two layers: regions (each map's regions question) and compartments (each map's own sets) ----------------
@@ -344,7 +369,17 @@
     if (scoped) {
       const x = selTests(aid)?.res.get(cat);
       if (!x) return null;
-      const a = x.circular ? { l2: null, q: null } : x.a;
+      const a = x.circular
+        ? { l2: null, q: null }
+        : {
+            l2: x.n && x.M ? L2(x.k / x.n / (x.M / x.N)) : null,
+            lo: null,
+            hi: null,
+            q: x.a.q,
+            p: x.a.p,
+            test: x.a.mh ? x.a : null,
+            small: smallOf(x.k, x.M),
+          };
       return {
         a,
         k: x.k,
@@ -378,17 +413,24 @@
   }
   function rowSummary(L, row, scoped) {
     const all = L.cols.map((aid) => [aid, gridCell(aid, row.map[aid], scoped)]).filter(([, c]) => c),
-      cells = all.filter(([, c]) => !c.circular);
-    const vals = cells
-        .map(([, c]) => c.a.l2)
-        .filter((v) => v != null && Number.isFinite(v))
-        .sort((x, y) => x - y),
-      h = vals.length / 2;
-    const med = vals.length ? (vals.length % 2 ? vals[Math.floor(h)] : (vals[h - 1] + vals[h]) / 2) : null;
-    const agree =
-      cells.length && cells.filter(([, c]) => c.tone[0] === (med > 0 ? 'u' : 'd')).length * 2 >= cells.length;
-    const up = cells.some(([, c]) => c.tone[0] === 'u'),
-      down = cells.some(([, c]) => c.tone[0] === 'd');
+      cells = all.filter(([, c]) => !c.circular),
+      // the maps that can speak for the part: each compares at least min_group proteins on either side
+      ok = cells.filter(([, c]) => !c.a.small && c.a.l2 != null);
+    const median = (xs) => {
+      const v = xs
+          .map(([, c]) => c.a.l2)
+          .filter((x) => x != null && Number.isFinite(x))
+          .sort((x, y) => x - y),
+        h = v.length / 2;
+      return v.length ? (v.length % 2 ? v[Math.floor(h)] : (v[h - 1] + v[h]) / 2) : null;
+    };
+    const med = median(ok) ?? median(cells);
+    const nUp = ok.filter(([, c]) => c.tone[0] === 'u').length,
+      nDn = ok.filter(([, c]) => c.tone[0] === 'd').length;
+    // colored only when at least min_maps of those maps find the difference the same way, and none the other way
+    const agree = med != null && (med > 0 ? nUp >= READ.min_maps && !nDn : nDn >= READ.min_maps && !nUp);
+    const up = nUp > 0,
+      down = nDn > 0;
     const mine = !!all.length && all.every(([, c]) => c.selected),
       tn = mine ? 'sel' : med == null ? 'na' : tone({ l2: med, q: agree ? 0 : 1 });
     return {
@@ -408,7 +450,11 @@
             : tn === 'ns'
               ? up && down
                 ? 'maps disagree'
-                : 'no difference'
+                : (up || down) && ok.length
+                  ? `fewer than ${READ.min_maps} maps`
+                  : !ok.length
+                    ? 'too few proteins'
+                    : 'no difference'
               : orText({ l2: med }),
       maps: cells.length ? cells.length + (cells.length === 1 ? ' map' : ' maps') : '',
     };
@@ -573,12 +619,12 @@
         );
       const only =
         p.cells.length === 1 && p.cells[0][1] && p.cells[0][1].M != null ? ', ' + p.cells[0][1].M + ' proteins' : '';
-      const nm = `${name || rowName(p.row)}, ${sig(p) ? 'odds ratio ' : ''}${p.value}${sig(p) && p.maps ? ', ' + p.maps : ''}${only}`;
+      const nm = `${name || rowName(p.row)}, ${sig(p) ? 'fold ' : ''}${p.value}${sig(p) && p.maps ? ', ' + p.maps : ''}${only}`;
       return (
         ` data-cell-part="${esc(k)}"` +
         (dup ? ' aria-hidden="true"' : ` role="button" tabindex="0" ` + `aria-label="${esc(nm)}"`) +
         tipAttr(
-          `<b>${esc(name || rowName(p.row))}</b>: ${sig(p) ? 'odds ratio ' : ''}${esc(p.value)}${
+          `<b>${esc(name || rowName(p.row))}</b>: ${sig(p) ? 'fold ' : ''}${esc(p.value)}${
             sig(p) ? (p.maps === '1 map' ? ' (1 map)' : ', median of ' + esc(p.maps)) : ''
           }<br>` +
             p.cells
@@ -1046,7 +1092,7 @@
         H,
         200
       );
-      return { g, W: Wd, H, aria: `The cell, each compartment colored by the odds ratio of ${who(scoped)}` };
+      return { g, W: Wd, H, aria: `The cell, each compartment colored by the fold of ${who(scoped)}` };
     },
     nucleus(scoped) {
       const Dr = draw(scoped),
@@ -1191,7 +1237,7 @@
         H,
         200
       );
-      return { g, W: Wd, H, aria: `The nucleus, each part colored by the odds ratio of ${who(scoped)}` };
+      return { g, W: Wd, H, aria: `The nucleus, each part colored by the fold of ${who(scoped)}` };
     },
   };
 
@@ -1246,9 +1292,7 @@
       g,
       W: Wd,
       H: y,
-      aria:
-        `${L.key === 'region' ? 'Regions' : 'Compartments'} against maps: the odds ` +
-        `ratio of ${who(scoped)} in each`,
+      aria: `${L.key === 'region' ? 'Regions' : 'Compartments'} against maps: the fold ` + `of ${who(scoped)} in each`,
     };
   }
   const v6 = (u) => (u == null ? '' : Number.isFinite(u) ? String(+u.toFixed(4)) : u > 0 ? 'Inf' : '-Inf');
@@ -1264,7 +1308,8 @@
             const t = T[aid][row.map[aid]],
               name = DS(aid).name;
             if (!scoped) {
-              const a = stratified(aid) ? adj(aid, t) : { l2: null, lo: null, hi: null, q: null };
+              const at = stratified(aid) ? adj(aid, t) : null,
+                a = at && at.test ? { ...at.test, q: at.q } : { l2: null, lo: null, hi: null, q: null };
               return [
                 group,
                 row.label,
@@ -1538,26 +1583,29 @@
   }
   const keyWords = () =>
     `Red: ${who(scopedNow())} are more likely to be found there than ${alike}. Slate: less ` +
-    `likely, deeper for larger odds ratios. Grey: no difference, or the maps disagree. Dashed outline: no map ` +
-    `measures it.`;
+    `likely, deeper for larger folds. Gray: no difference, the maps disagree, fewer than ${READ.min_maps} maps ` +
+    `agree, or too few proteins. Dashed outline: no map measures it.`;
   const testWords = () =>
-    allStrat
-      ? `In each map, ${who(scopedNow())} against ${alike}: Mantel–Haenszel odds ` +
-        `ratio across the abundance strata, continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg ` +
-        `within the map, colored at q ≤ ${PADJ} and 1.1× or more. A part of a drawing takes the median odds ratio of ` +
-        `the maps that place proteins there, colored when at least half of them find a difference that way.`
-      : `In each map, ${who(scopedNow())} against the other proteins the map places (fold enrichment, one-sided ` +
-        `hypergeometric test, Benjamini–Hochberg within the map). A part takes the median of the maps that have it.`;
+    (allStrat
+      ? `In each map, the fold: the share of ${who(scopedNow())} placed in the part over the share of all the ` +
+        `proteins the map places; tested against ${alike} (Mantel–Haenszel across the abundance strata, ` +
+        `continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} ` +
+        `and a fold of 1.1× or more.`
+      : `In each map, the fold against the other proteins the map places (one-sided hypergeometric test, ` +
+        `Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} and 1.1× or more.`) +
+    ` A map with fewer than ${READ.min_group} ${W.marked} or other proteins in a part is not colored there. A part takes ` +
+    `the median fold of the maps that have it, colored only when at least ${READ.min_maps} of them find a difference ` +
+    `the same way and none the other way.`;
   const FIGS = {
     regions: {
       title: () => `${C.title || 'Where in the cell'}: regions against maps`,
-      sub: () => `The odds ratio of ${who(scopedNow())} against ${alike}, for each ` + `region in each map.`,
+      sub: () => `The fold of ${who(scopedNow())} against ${alike}, for each ` + `region in each map.`,
       make: () => gridSvg(LAYERS.region, scopedNow()),
       tsv: () => gridTsv(LAYERS.region, scopedNow()),
     },
     grid: {
       title: () => `${C.title || 'Where in the cell'}: compartments against maps`,
-      sub: () => `The odds ratio of ${who(scopedNow())} against ${alike}, for each ` + `compartment in each map.`,
+      sub: () => `The fold of ${who(scopedNow())} against ${alike}, for each ` + `compartment in each map.`,
       make: () => gridSvg(LAYERS.part, scopedNow()),
       tsv: () => gridTsv(LAYERS.part, scopedNow()),
     },
@@ -1579,8 +1627,7 @@
   DRAWINGS.forEach((d) => {
     FIGS[d.drawing] = {
       title: () => `${C.title || 'Where in the cell'}${d.title ? ': ' + d.title.replace(/^The /, 'the ') : ''}`,
-      sub: () =>
-        `Odds ratio of ${who(scopedNow())} against ${alike}, as the ` + `median of the maps that have each part.`,
+      sub: () => `Fold of ${who(scopedNow())} against ${alike}, as the ` + `median of the maps that have each part.`,
       make: () => DRAW[d.drawing](scopedNow()),
       tsv: () => gridTsv(LAYERS.part, scopedNow()),
       zoom: d.drawing,
@@ -1814,7 +1861,8 @@
       more = rest.filter((p) => p.tone[0] === 'u').sort((a, b) => b.a.l2 - a.a.l2),
       less = rest.filter((p) => p.tone[0] === 'd').sort((a, b) => a.a.l2 - b.a.l2);
     const top = (xs) => and(xs.slice(0, 3).map(it));
-    if (!more.length && !less.length) return `Apart from ${name}, about as often in each region as ${esc(alike)}.`;
+    if (!more.length && !less.length)
+      return `Apart from ${name}, no part differs from ${esc(alike)} in at least ${READ.min_maps} maps.`;
     return (
       `Proteins at ${name} are also ` +
       [more.length ? 'more often in ' + top(more) : '', less.length ? 'less often in ' + top(less) : '']
@@ -1823,6 +1871,14 @@
       '.'
     );
   }
+  // no region differs: tested and none found in enough maps, or nothing compared at all (a selection that names its
+  // proteins, or one made with these maps), which says nothing about where they are
+  const noneWords = (regs, scoped) =>
+    regs.every((x) => x.tone === 'na' || x.tone === 'sel')
+      ? scoped
+        ? 'Not compared: your selection names its proteins or was made with these maps.'
+        : 'Not compared.'
+      : `No region differs from ${esc(alike)} in at least ${READ.min_maps} maps.`;
   function lead(regs, up, scoped, short) {
     const sl = selLead(scoped, short);
     if (sl) return sl;
@@ -1842,7 +1898,7 @@
           ) + '.'
         );
       return regs.length
-        ? `About as often in each region as ${esc(alike)}.`
+        ? noneWords(regs, scoped)
         : up.length
           ? `Most of all in ${and(up.slice(0, 3).map(onePart))}.`
           : none;
@@ -1855,7 +1911,7 @@
             regs.some((x) => x.cells.length > 1) ? ' (the median of the maps)' : ''
           }`
         : regs.length
-          ? `${cap(who(scoped))} are found in each region about as often as ${esc(alike)}`
+          ? noneWords(regs, scoped).replace(/\.$/, '')
           : '';
     const most = up.slice(0, 3).map(onePart);
     if (most.length)
@@ -1934,7 +1990,7 @@
     return t
       ? t + '.'
       : regs.length
-        ? `About as often in each region as ${esc(alike)}.`
+        ? noneWords(regs, scoped)
         : `${cap(who(scoped))} are not ` + `enriched in any part of the cell.`;
   }
   function partList(d, ps) {
@@ -1961,7 +2017,7 @@
         .map(
           (p) =>
             `<li><button type="button" class="cp-row${on.has(p.part) ? ' on' : ''}" data-cell-sel="${esc(p.part)}" aria-pressed="${on.has(p.part)}" title="Select ` +
-            `the ${esc(W.marks)} of ${esc(pname(p))}: odds ratio ${esc(fxv(p.or))}, the median of ${p.maps} map${p.maps === 1 ? '' : 's'}">` +
+            `the ${esc(W.marks)} of ${esc(pname(p))}: fold ${esc(fxv(p.or))}, the median of ${p.maps} map${p.maps === 1 ? '' : 's'}">` +
             (`<i class="kd ${p.direction === 'more' ? 'more' : p.direction === 'less' ? 'less' : 'ns'}"></i><span ` +
               `class="cp-n">${esc(pname(p))}</span>${
                 p.direction === 'ns'
@@ -1972,6 +2028,16 @@
         .join('') +
       '</ul></section>'
     );
+  }
+  // the maps behind each odds ratio of the tile: a region or part takes the median of the maps that have it
+  function mapsUsed(scoped) {
+    const ns = Object.values(parts(scoped).P)
+      .map((p) => p.maps)
+      .filter((n) => n > 0);
+    if (!ns.length) return 'median of the maps';
+    const lo = Math.min(...ns),
+      hi = Math.max(...ns);
+    return lo === hi ? `median of ${lo} map${lo === 1 ? '' : 's'}` : `median of ${lo} to ${hi} maps`;
   }
   function bigTile(card) {
     TIPS = [];
@@ -2017,7 +2083,7 @@
       `<h3>${esc(title)}</h3>${K.detailsLink(ID)}</header>` +
       `<p class="tans cell-ans">${cellAnswer(regs, up, scoped)}</p><div class="cell-pair">${figs}</div>` +
       `<div class="cp-cols">${DRAWINGS.map((d) => partList(d, ps)).join('')}</div>` +
-      `<p class="tkey">Odds ratio against ${esc(alike)}, median of ${MAPS.length} maps.</p>${note}<div class="tact">${bar}</div></article>`
+      `<p class="tkey">Fold against ${esc(alike)}, ${mapsUsed(scoped)}; colored where at least ${READ.min_maps} agree.</p>${note}<div class="tact">${bar}</div></article>`
     );
   }
   const toggle = (part) => {
@@ -2582,7 +2648,7 @@
     return (
       `<div class="card-body cell-page"><p class="cell-lead">${lead(regs, up, scoped, false)}</p>` +
       (`<p class="small">${esc(C.intro || '')} Red: ${esc(who(scoped))} are more likely to be found there than ${esc(alike)}. Slate: ` +
-        `less likely. Grey: no difference.${selNote}</p>`) +
+        `less likely. Gray: no difference.${selNote}</p>`) +
       colourKey() +
       regionsBlock +
       drawings +
@@ -2636,7 +2702,7 @@
             ).join(', ')}`
           : ''
       }. ${esc(testWords())}</p>` +
-      (`<p>The site file (website.cell) maps each grid row to a compartment of each map and to the part of the ` +
+      (`<p>Each grid row is mapped to a compartment of each map and to the part of the ` +
         `drawings it colors. A selection is tested again in the browser, map by map, the same way${
           allStrat ? ', over the abundance strata of each map’s proteins' : ''
         }. It is not ` +

@@ -36,7 +36,7 @@
   // the figure and in the table, which is the non-visual equivalent) and the grey of the small clusters
   const CAT = {
     light: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#b5651d', '#6250d6', '#e34948'],
-    dark: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#c9894d', '#9085e9', '#e66767'],
+    dark: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#b87a3d', '#9085e9', '#e66767'],
   };
   const OTHER = { light: '#9aa3a8', dark: '#7d8c97' };
   const EX = { light: { edge: '#52606a', bundle: 0.16, wash: 0.085, intra: 0.32, ink: '#111827', muted: '#5f6f78' } };

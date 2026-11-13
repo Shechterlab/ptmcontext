@@ -304,6 +304,10 @@ def problems(site: dict) -> list[str]:
             if m not in attrs:
                 out.append(f'website.protein.map.colour_by: no attribute {m!r} in marks.attributes')
             continue
+        if m.get('analysis'):  # colored by the classes an analysis assigns each mark
+            if m['analysis'] not in {a.get('id') for a in site.get('analyses') or []}:
+                out.append(f'website.protein.map.colour_by {m.get("id")!r}: no analysis {m["analysis"]!r}')
+            continue
         for k, c in enumerate(list(m.get('classes') or [])):
             for cond in c.get('when') or []:
                 if cond.get('attribute') not in attrs:

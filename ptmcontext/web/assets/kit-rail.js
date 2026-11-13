@@ -67,7 +67,7 @@
     const c = compute(),
       bad = new Set((c.unresolved || []).map((x) => x.toLowerCase())),
       words = plainOf(S.q)
-        .split(' ')
+        .split(/[\s,;]+/) // a list typed "TP53, MYC" has no commas of its own in the chip: they are the joiner
         .filter((t) => t && !bad.has(t.toLowerCase()));
     if (!words.length) return null;
     const list = c.q.genes.length > 0 && !c.q.sites.length,
@@ -152,7 +152,7 @@
             .join(', ')}</span>`
         : '') +
       (absent.length
-        ? `<span class="sel-miss" title="Not a gene, accession or entry name of a protein with a ${esc(W.mark)} on this site">No ${esc(W.marked)} protein: ${absent
+        ? `<span class="sel-miss" title="Not a gene, accession or entry name of a protein with a ${esc(W.mark)} in this explorer">No ${esc(W.marked)} protein: ${absent
             .map((x) => `<b>${esc(x)}</b>`)
             .join(', ')}</span>`
         : '') +
@@ -477,7 +477,17 @@
               }>${esc(lab(s))} (${int(shownN(s))})</option>`
           )
           .join('') +
-        '</select></div>'
+        '</select>' +
+        (() => {
+          // sets that split every row of their source in two or more: a protein the source lacks is in none, so the parts
+          // fall short of the whole; say by how many (shown with no filter on, when the counts are of every marked protein)
+          const rest =
+            A[id].partition && !fc ? D.counts.proteins - names.reduce((n, x) => n + (cnt(key, x) || 0), 0) : 0;
+          return rest > 0
+            ? `<p class="muted small">${int(rest)} ${esc(W.marked)} protein${rest === 1 ? ' is' : 's are'} in none of these (not in the source table).</p>`
+            : '';
+        })() +
+        '</div>'
       );
     }
     if (kind === 's') {

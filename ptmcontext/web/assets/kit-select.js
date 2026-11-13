@@ -797,7 +797,28 @@
     return out;
   }
 
+  // what of the residue itself the selection was chosen by (a residue question's class, a motif, other marks or sites
+  // nearby): the other residues it is tested against were not chosen that way, so a question reading the same or a
+  // related feature partly restates the choice. Their names, for the page's caveat
+  function residueFeatures() {
+    if (!active()) return [];
+    const names = compute()
+      .cons.filter(([k]) => {
+        const [kind, id] = k.split(':');
+        return (kind === 'a' && A[id] && A[id].kind !== 'protein_sets') || ['m', 'o', 'd'].includes(kind);
+      })
+      .map(([k]) => keyName(k));
+    return [...new Set(names)];
+  }
   // ---- the tests again, on the selection -------------------------------------------------------------------------
+  const exclusiveOf = {};
+  const exclusive = (aid) => {
+    if (!(aid in exclusiveOf)) {
+      const ai = AN().indexOf(aid);
+      exclusiveOf[aid] = ai >= 0 && SD.marks.every((m) => m[2][ai].length <= 1);
+    }
+    return exclusiveOf[aid];
+  };
   function residueRows(aid, method) {
     const ai = AN().indexOf(aid);
     if (ai < 0) return [];
@@ -809,13 +830,22 @@
     // candidates, and the positions of the marks it does not count); every_candidate counts proteins without others too
     const own = SD.by_test?.[aid],
       every = (D.analyses.find((x) => x.id === aid) || {}).counting === 'every_candidate';
+    // a flag tested among some residues only (a motif family's among: SD.among[aid][class] its letters): only the marks
+    // of those residues count, against the protein's other candidates among them (SD.among_others[aid][letters][protein])
+    const amongOf = SD.among?.[aid] || {},
+      amongN = SD.among_others?.[aid] || {};
     const byProt = {},
-      posOf = {};
+      posOf = {},
+      idxOf = {},
+      resOf = {},
+      listed = own?.outside === 'listed' ? new Set(cnt?.out || []) : null;
     compute().marks.forEach((i) => {
       const m = SD.marks[i];
       if (!skip.has(m[0]) && (own || SD.others_total[m[0]] > 0 || cnt?.alone)) {
         (byProt[m[0]] ||= []).push(m[2][ai]);
         (posOf[m[0]] ||= []).push(m[1]);
+        (idxOf[m[0]] ||= []).push(i);
+        if (SD.residues) (resOf[m[0]] ||= []).push(SD.residues[i]);
       }
     });
     const rows = codes
@@ -825,15 +855,28 @@
           b = 0,
           c = 0,
           d = 0;
+        const letters = amongOf[ci];
         for (const [p, all] of Object.entries(byProt)) {
-          const t = own ? (own[ci] || {})[p] : null;
+          // a question counting some marks only (only_in, marks_where) gives one table for every class (own.all), and
+          // the marks it does not count are those with no class in it
+          const t = own ? (own[ci] || own.all || {})[p] : null;
           if (own && !t) continue;
-          const ms = t ? all.filter((x, k) => !t[1].includes(posOf[p][k])) : all;
-          const ot = t ? t[0] : SD.others_total[p],
+          const ms = !t
+            ? letters
+              ? all.filter((x, k) => letters.includes(resOf[p][k]))
+              : all
+            : own.outside === 'unclassed'
+              ? all.filter((x) => x.length)
+              : listed // a flags question: the marks it leaves out are listed (counted.out), as no flag is not outside
+                ? all.filter((x, k) => !listed.has(idxOf[p][k]))
+                : all.filter((x, k) => !t[1].includes(posOf[p][k]));
+          const ot = t ? t[0] : letters ? (amongN[letters] || {})[p] || 0 : SD.others_total[p],
             oin = (others[p] || {})[ci] || 0,
             ain = ms.filter((x) => x.includes(ci)).length;
+          // a protein this class's test leaves without marks or without other candidates: no stratum; the pooled test
+          // still counts its other candidates (c, d), the within-protein test only the proteins with both, as the run does
           if (t && !every && (!ot || !ms.length)) {
-            if (ot) {
+            if (ot && method === 'fisher') {
               c += oin;
               d += ot - oin;
             }
@@ -874,9 +917,12 @@
       .filter(Boolean);
     // shown, not tested: a selection made with a question reading the same inputs, or one class holding every selected mark
     const n = Object.values(byProt).reduce((x, ms) => x + ms.length, 0);
+    // a question whose classes exclude each other (no mark in two): a selection holding some of its classes fixes the
+    // others too (none of its marks can be in them), so none is tested
     const held = ownSets(aid),
       isOwn = (r) => held.sets.has(r.category),
-      circ = held.all || rows.some((r) => !r.absent && r.a === n && !isOwn(r));
+      circ =
+        held.all || (held.sets.size > 0 && exclusive(aid)) || rows.some((r) => !r.absent && r.a === n && !isOwn(r));
     const tested = rows.filter((r) => !isOwn(r)),
       q = ST.bh(tested.map((r) => r.p));
     rows.forEach((r) => {
@@ -1063,9 +1109,11 @@
   function contrastResidue(qid, method, G) {
     // marks the question counts: not on a protein it leaves out, and, for a question that counts only the residues inside
     // some regions (only_in) or a part of the marks (subset), only the marks inside them (those with a class)
+    // (a flags question lists the marks it leaves out: counted.out, by index, as no flag is not outside)
     const skip = new Set(SD.counted?.[qid]?.skip || []),
-      ri = A[qid]?.only_in || A[qid]?.subset ? AN().indexOf(qid) : -1;
-    const kept = (i) => !skip.has(SD.marks[i][0]) && (ri < 0 || SD.marks[i][2][ri].length > 0);
+      out = SD.counted?.[qid]?.out ? new Set(SD.counted[qid].out) : null,
+      ri = !out && (A[qid]?.only_in || A[qid]?.subset) ? AN().indexOf(qid) : -1;
+    const kept = (i) => !skip.has(SD.marks[i][0]) && (out ? !out.has(i) : ri < 0 || SD.marks[i][2][ri].length > 0);
     G = { ...G, g1: G.g1.filter(kept), g2: G.g2.filter(kept) };
     const m1 = G.g1.map((i) => SD.marks[i]),
       m2 = G.g2.map((i) => SD.marks[i]),
@@ -1209,20 +1257,67 @@
     });
     return rows;
   }
+  // every question compared at once, for one test: the questions of the site and the marks' attributes. q is
+  // Benjamini–Hochberg across all of them (the family the page shows), not question by question
+  const contrastIds = () => [
+    ...AN().filter((id) => A[id]),
+    ...Object.keys(SD.protein_sets || {}).filter((id) => A[id]?.kind === 'protein_sets'),
+    ...Object.entries(SPECS)
+      .filter(([n, sp]) => ['category', 'list', 'number'].includes(sp.kind) && AT().includes(n))
+      .map(([n]) => '@' + n),
+  ];
+  function contrastFamily(method, G) {
+    const c = compute(),
+      key = `fam|${S.vs}|${S.cmp || ''}|${method}`;
+    if (c.retests[key]) return c.retests[key];
+    // a selection of whole proteins (a gene list, a set) has no protein with marks on both sides: a pooled or
+    // within-study comparison then sets proteins against proteins, counting each mark of a protein as if it were
+    // independent, so it is shown (the shares) and not tested
+    const between = (G.mixed ?? 0) < SEL_MIN.proteins;
+    const fam = {};
+    for (const id of [...new Set(contrastIds())]) {
+      const out =
+        A[id]?.kind === 'protein_sets'
+          ? contrastSets(id, G)
+          : contrastResidue(id, method === 'enricher' ? 'fisher' : method, G);
+      out.forEach((r) => {
+        // a selection under the minimum (SEL_MIN) is described, not tested: counts and shares stay, no p, q, interval or direction
+        if (!testable() || (between && method !== 'mantel_haenszel' && r.method !== 'enricher')) {
+          r.p = null;
+          r.q = null;
+          r.lo = null;
+          r.hi = null;
+          r.descriptive = true;
+          if (testable()) r.between = true;
+        }
+      });
+      fam[id] = out;
+    }
+    const tested = Object.values(fam).flatMap((rs) => rs.filter((r) => !r.descriptive && r.p != null)),
+      q = ST.bh(tested.map((r) => r.p));
+    tested.forEach((r, k) => {
+      r.q = q[k];
+    });
+    Object.values(fam).forEach((rs) => K.decorate(rs));
+    return (c.retests[key] = fam);
+  }
   // a question's rows against the other marks (or the other selection), shaped as the site's own; null when the
   // groups are too small (fewer than 10 marks either side)
   function contrast(qid, method) {
     const c = compute();
     if (!SD || !c.active) return null;
-    const key = `vs|${S.vs}|${S.cmp || ''}|${qid}|${method}`;
-    if (c.retests[key] !== undefined) return c.retests[key];
     const G = (c.retests['groups|' + S.vs + '|' + (S.cmp || '')] ||= contrastPair());
-    if (!G || G.g1.length < MIN_SIDE || G.g2.length < MIN_SIDE) return (c.retests[key] = null);
+    if (!G || G.g1.length < MIN_SIDE || G.g2.length < MIN_SIDE) return null;
+    // a protein-set question is one test whatever the page's method: it joins the family of the method shown
+    const m = method === 'enricher' ? (K.vsMethod ? K.vsMethod(S.m) : S.m) : method;
+    const fam = contrastFamily(m, G);
+    if (fam[qid]) return fam[qid];
+    const key = `vs|${S.vs}|${S.cmp || ''}|${qid}|${method}`; // a question outside the family: on its own
+    if (c.retests[key] !== undefined) return c.retests[key];
     const out =
       A[qid]?.kind === 'protein_sets'
         ? contrastSets(qid, G)
         : contrastResidue(qid, method === 'enricher' ? 'fisher' : method, G);
-    // a selection under the minimum (SEL_MIN) is described, not tested: counts and shares stay, no p, q, interval or direction
     if (!testable())
       out.forEach((r) => {
         r.p = null;
@@ -1539,6 +1634,7 @@
         return !!(q.genes.length || q.sites.length);
       },
       state: S,
+      residueFeatures,
       subscribe,
       retest: rows,
       members: () => setMembers,

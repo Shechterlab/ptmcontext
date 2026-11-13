@@ -250,7 +250,7 @@
       `pasted in the search can be tested against the sets of the ${int(QS.length)} protein-set questions the ` +
       `Overview shows (${QS.map((a) => esc(short(a))).join(', ')}). ` +
       (`For each set, the list’s ${esc(W.marked)} proteins are compared with the ${esc(W.marked)} proteins that the ` +
-        `set’s source annotates: that source’s own background, as in the site’s other tests (genes, not proteins, ` +
+        `set’s source annotates: that source’s own background, as in the other tests of this explorer (genes, not proteins, ` +
         `for a gene-based source). `) +
       (`With n of the list in the background, N in the background, M of those in the set and k of the list in the set,` +
         ` p is the chance of k or more by a one-sided hypergeometric test, fold is (k/n)/(M/N), and q is ` +

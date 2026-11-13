@@ -43,15 +43,45 @@
     box.querySelector('button').addEventListener('click', () => box.remove());
     document.querySelector('.toolbar')?.before(box);
   };
-  const target = (site, name) => {
+  // the protein open now (its accession), and whether another site has it: its per-protein file is read once
+  const acc = () => (S.view === 'protein' && S.arg ? String(S.arg).split('/')[0] : '');
+  const has = {};
+  const hasProtein = (site, a) =>
+    (has[site + '/' + a] ||= (async () => {
+      try {
+        const n = 64, // the kit's shard count (kit-proteins.js: D.shards || 64)
+          k = String([...a].reduce((t, c) => t + c.charCodeAt(0), 0) % n).padStart(2, '0'),
+          r = await fetch(`../${encodeURIComponent(site)}/data/p/${k}.json`);
+        return r.ok && a in (await r.json());
+      } catch (e) {
+        return false;
+      }
+    })());
+  // the address on another site: the protein open now when that site has it, the statistics or method page when open, else the Overview
+  const target = (site, name, withProtein) => {
     const p = [];
     if (S.q) p.push('q=' + encodeURIComponent(S.q));
     if (S.hl) p.push('hl=' + encodeURIComponent(S.hl));
     const f = K.sel?.encode?.();
     if (f) p.push('f=' + f.replace(/[&#+\s]/g, (c) => encodeURIComponent(c)));
     if (f) p.push('sw=' + encodeURIComponent(name));
-    return `../${encodeURIComponent(site)}/#overview` + (p.length ? '?' + p.join('&') : '');
+    const a = acc(),
+      path =
+        a && withProtein
+          ? '/protein/' + encodeURIComponent(a)
+          : ['statistics', 'method'].includes(S.view)
+            ? S.view
+            : 'overview';
+    return `../${encodeURIComponent(site)}/#${path}` + (p.length ? '?' + p.join('&') : '');
   };
+  // each link of a menu is a real address (so it opens in a new tab); it is the Overview's until the other site is known to have the protein
+  const refresh = (items) =>
+    items.forEach((a) => {
+      const site = a.dataset.site;
+      if (site === here) return;
+      a.href = target(site, D.site.name, false);
+      if (acc()) hasProtein(site, acc()).then((ok) => ok && (a.href = target(site, D.site.name, true)));
+    });
   // one switcher in `parent`: the header's side (first) or the sticky bar's end (`bar`); each has its own ids
   const mount = (list, parent, bar, word) => {
     const me = list.find((s) => s.id === here),
@@ -76,6 +106,7 @@
       menu = wrap.querySelector('ul'),
       items = [...menu.querySelectorAll('a')];
     const open = (at) => {
+      refresh(items);
       menu.hidden = false;
       btn.setAttribute('aria-expanded', 'true');
       (items[at] || items.find((a) => a.getAttribute('aria-current')) || items[0]).focus();
@@ -114,9 +145,13 @@
     menu.addEventListener('click', (e) => {
       const a = e.target.closest('a[data-site]');
       if (!a) return;
+      if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return; // the browser opens the real address
       e.preventDefault();
       if (a.dataset.site === here) return close(true);
-      location.href = target(a.dataset.site, D.site.name);
+      const site = a.dataset.site,
+        go = (ok) => (location.href = target(site, D.site.name, ok));
+      if (acc()) hasProtein(site, acc()).then(go);
+      else go(false);
     });
     document.addEventListener('click', (e) => {
       if (!menu.hidden && !wrap.contains(e.target)) close(false);
@@ -124,9 +159,19 @@
   };
   const build = (list, word) => {
     const side = document.querySelector('.brand-side');
+    // the way back to the landing page, which sits beside the sites' folders (where sites.json is): in the header and in the sticky bar
+    const end = document.querySelector('#dock .dock-end');
+    [side, end].forEach((box, k) => {
+      if (!box || box.querySelector('.landing-link')) return;
+      const a = document.createElement('a');
+      a.className = 'landing-link' + (k ? ' in-bar' : '');
+      a.href = '../';
+      a.textContent = 'All sites';
+      a.title = 'Back to the page that lists every site';
+      box.prepend(a);
+    });
     if (list.length < 2) return;
     if (side) mount(list, side, false, word);
-    const end = document.querySelector('#dock .dock-end');
     if (end) mount(list, end, true, word);
   };
   const start = async () => {
@@ -138,7 +183,7 @@
         mine = all.find((s) => s.id === here),
         // unlisted sites are in the menu of an unlisted site, and where their own file says so
         list = all.filter((s) => s.listed || s.in_switcher || s.id === here || (mine && !mine.listed));
-      build(list, reg.switcher_label || 'Site');
+      build(list, reg.switcher_label || 'Explorer');
     } catch (e) {
       /* served alone: no list of sites, no menu */
     }

@@ -173,7 +173,7 @@
           () => {
             TERR[name] =
               location.protocol === 'file:'
-                ? 'This copy of the site cannot read its data files from disk: open the hosted site.'
+                ? 'This copy of the website cannot read its data files from disk: open the hosted website.'
                 : `The table ${name} could not be read.`;
             K.render();
           }
@@ -1148,7 +1148,7 @@
             : 'within each protein, Mantel–Haenszel'
         }), and below ` +
         `it how many have both. Red: more often, slate: less often (q ≤ 0.05 over the matrix and at least 1.1×); ` +
-        `pale: not significant. Descriptive: evidence and features come from the same sources for some ${esc(W.marks)}.</p>`)
+        `pale: not significant. Descriptive: evidence and features come from the same studies or databases for some ${esc(W.marks)}.</p>`)
     );
   }
   const matrixTsv = (b, m) => {
@@ -1228,7 +1228,7 @@
       if (i == null)
         return (
           `<div class="ix-card"><b>${esc(gene(p))} ${esc(residueLetter())}${int(pos)}</b> <span ` +
-          `class="muted">is not a ${esc(W.mark)} of this site.</span></div>`
+          `class="muted">is not a ${esc(W.mark)} in this explorer.</span></div>`
         );
       const m = sd.marks[i],
         attrs = b.attributes
@@ -2585,8 +2585,7 @@
           .map((s) => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)}</a>`)
           .join(', ')}.</p>` +
         (Object.keys(TB).length
-          ? `<p><b>Its tables</b> (the site file’s website.tables, in the formats of ` +
-            `CONTRACTS.md):</p><ul class="qm-reads">${Object.entries(TB)
+          ? `<p><b>Its tables</b>:</p><ul class="qm-reads">${Object.entries(TB)
               .map(
                 ([n, t]) =>
                   `<li><span class="mono">${esc(n)}</span>: ${int(t.n)} rows, keyed by ${esc(t.key)}; ${esc(

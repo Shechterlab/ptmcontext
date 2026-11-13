@@ -31,7 +31,7 @@ def test_a_question_without_a_family_has_none(tmp_path):
 def test_the_variants_of_a_question_share_a_family_in_the_site_files():
     for name, aid in (('methylarginine', 'sticker_context'), ('yeast_phospho', 'sticker_context')):
         site = S.load_site(SITES / f'{name}.yaml')
-        v = [a for a in site['analyses'] if a['id'].startswith(aid)]
+        v = [a for a in site['analyses'] if a['id'].startswith(aid) and not a.get('control_of')]  # controls join too
         assert len(v) == 4 and {a.get('family') for a in v} == {'Next to aromatic residues'}, name
     # every family has two or more questions, and the family key is in the schema
     import json

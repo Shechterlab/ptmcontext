@@ -124,7 +124,7 @@ def idr_charge_units(ctx: Context, accessions: set, min_length: int = IDR_MIN_LE
     labels=LABELS,
     help=HELP,
     question='Do {marks} sit in IDRs of a particular charge, against the other {residues} of the same proteins?',
-    sub='{Marks} against the other {residues} of the same proteins, by the charge class of the IDR they sit in (Das–Pappu diagram of states)',
+    sub='{Marks} against the other {residues} of the same proteins, by the charge class of the IDR they sit in (Das–Pappu diagram of states). The other residues include those outside IDRs, so each IDR class partly restates whether {marks} favor disorder; compare the classes with each other',
     tracks=(
         lambda values: Track(
             'idr',

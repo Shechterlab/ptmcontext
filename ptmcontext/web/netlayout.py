@@ -23,7 +23,7 @@ COLOURS = (
 )
 # pairs of colour slots (1-based) that fail the all-pairs colour-vision and normal-vision floors in the light or the dark
 # palette (checked with the data-viz validator, two colours at a time): such clusters are not packed side by side
-CONFUSABLE = {(1, 7), (2, 4), (2, 5), (2, 6), (2, 8), (3, 5), (3, 6), (4, 6), (4, 8), (5, 8), (6, 8)}
+CONFUSABLE = {(1, 7), (2, 4), (2, 5), (2, 6), (2, 8), (3, 5), (4, 6), (4, 8), (5, 8), (6, 8)}
 GOLD = 2.399963
 # cos and sin of GOLD as numbers: the seed spiral turns by repeated multiplication, which gives the same figure in Python and
 # in JavaScript (the two do not agree on the last digit of cos and sin, and a force layout amplifies that)

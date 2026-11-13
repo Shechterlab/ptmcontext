@@ -468,5 +468,5 @@ def test_only_in_marks_names_known_marks_and_a_card_s_beside_reads_a_question():
         validate({**site, 'analyses': [{**ctl, 'only_in': {'marks': []}}]}, 'site')
     js = (ASSETS / 'kit.js').read_text()
     assert 'card.beside' in js and 'tbeside' in js
-    # the control reads as the tile's own rows do ("2.5×, q 1.8e-261"): the same statistic and form, not "OR 2.5"
-    assert 'class="nw">OR ' not in js and '${esc(fx(r.eff))}, q ${esc(fq(r.q))}' in js
+    # the control reads as the tile's own rows do ("2.5×, q 1.8e-261"): the same statistic (the fold) and form, not "OR 2.5"
+    assert 'class="nw">OR ' not in js and '${esc(fx(valOf(r)))}, q ${esc(fq(r.adj ? r.adj.q : r.q))}' in js
