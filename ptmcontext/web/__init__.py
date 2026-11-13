@@ -417,14 +417,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                     **({'checked_against': ref_tables[a['id']]['input']} if a['id'] in ref_tables else {}),
                     **({'unit': (a['identifiers'].get('nouns') or 'identifiers')} if a.get('identifiers') else {}),
                     **({'filter': a['filter']} if a.get('filter') else {}),  # the words of its filter control
-                    # rules that split every row of the source in two or more sets: a marked protein the source lacks is in none
-                    **(
-                        {'partition': True}
-                        if (a['sets'].get('rules') or [])
-                        and a['sets'].get('exclusive', True)
-                        and any(not r.get('when') for r in a['sets']['rules'])
-                        else {}
-                    ),
+                    **({'partition': True} if is_partition(a['sets']) else {}),
                     **(
                         {'scores': {k: a['scores'][k] for k in ('label', 'help', 'levels', 'max') if k in a['scores']}}
                         if a.get('scores')
@@ -807,6 +800,13 @@ def shard_count(nbytes: int) -> int:
 
 # the fields of a row of the protein list (data.proteins), in order
 PROTEIN_COLUMNS = ('accession', 'gene', 'name', 'length', 'marks', 'candidates', 'entry')
+
+
+def is_partition(sets: dict) -> bool:
+    """Rules that put every row of the source in one set (the last rule has no conditions): a marked protein the source
+    lacks is in none of the sets, so the sets' counts fall short of the marked proteins."""
+    rules = sets.get('rules') or []
+    return bool(rules) and sets.get('exclusive', True) and any(not r.get('when') for r in rules)
 
 
 def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list, list, list], dict]:
