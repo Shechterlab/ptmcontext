@@ -462,6 +462,23 @@
           out.push({ id: m, label: SPECS[m].label, attr: m });
           seen.add(m);
         }
+      } else if (m?.analysis && m.id && !seen.has(m.id)) {
+        // colored by the classes a question assigns each mark (a mark in several takes the first listed): the question's own
+        // labels, the site file's colors or the palette in the question's order
+        const col = (D.mark_columns || []).indexOf(m.analysis),
+          lab = K.A?.[m.analysis]?.labels || {};
+        if (col < 0) return;
+        out.push({
+          ...m,
+          own: true,
+          classes: Object.keys(lab).map((code, k) => ({
+            label: lab[code],
+            colour: (m.colours || {})[code] || PALETTE[k % PALETTE.length],
+            test: (mark) => String(mark[2]?.[col] ?? '').split(';').includes(code),
+          })),
+          otherwise: { label: 'None of these', colour: TOK.light.none, colour_dark: TOK.dark.none },
+        });
+        seen.add(m.id);
       } else if (m?.id && !seen.has(m.id)) {
         out.push({ ...m, own: true });
         seen.add(m.id);
@@ -524,7 +541,7 @@
       md = mode(),
       hat = hatched(mark);
     if (md.own) {
-      const k = (md.classes || []).findIndex((cl) => (cl.when || []).every((c) => holds(mark, c))),
+      const k = (md.classes || []).findIndex((cl) => (cl.test ? cl.test(mark) : (cl.when || []).every((c) => holds(mark, c)))),
         cl = k >= 0 ? md.classes[k] : md.otherwise || { label: '', colour: P.none };
       return {
         c: cfgColour(cl, 'colour', P, P.none),

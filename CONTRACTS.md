@@ -477,6 +477,11 @@ number is hidden then), and shows "n of m" beside the label. The reader's choice
 usually `optional` (a score merged into the table later): where the run lacks it the row is drawn as before. No statistic,
 count or filter changes.
 
+**Colors from a question's classes.** A `website.protein.map.colour_by` entry `{id, label, analysis, help?, colours?}` colors each mark of the
+protein map by the classes `analysis` (a motif-family question) assigns it, with the question's own labels: a mark in several
+classes takes the first listed, one in none is gray. `colours` maps a class code to a color; the others take the palette in the
+question's order. The sites table and filters are unchanged.
+
 **The "All modifications" block.** `website.protein.map.combined_marks: {default?, label?, order?, min_marks?, split?}` (or `false`)
 draws, at the top of the rows, one compact block for the site's own modification and every context mark: a thin lane
 (9 px) for each modification, its short name on the left (`Kme`, `Rme`, `Sph/Tph/Yph`, `Kac`, `Kacyl`, `Kub`, `Ksu`) and a

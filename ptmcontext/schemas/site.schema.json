@@ -7966,6 +7966,27 @@
                 "required": [
                   "id",
                   "label",
+                  "analysis"
+                ],
+                "description": "a mode that colors each mark by the class (or classes: the first listed wins) its question assigns it, with the question's own labels",
+                "properties": {
+                  "id": {"type": "string"},
+                  "label": {"type": "string"},
+                  "help": {"type": "string"},
+                  "analysis": {"type": "string", "description": "an analysis id whose classes are on the marks (a motif-family question)"},
+                  "colours": {
+                    "type": "object",
+                    "description": "class code -> color (#rrggbb); the others take the palette in the question's order",
+                    "additionalProperties": {"type": "string"}
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "label",
                   "classes"
                 ],
                 "properties": {
