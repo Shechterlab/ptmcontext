@@ -45,7 +45,11 @@ Conventions:
 - Both count the same marks: those on a protein with at least one other candidate residue, unless the analysis counts
   them all (`marks_alone: count`: a protein with marks only adds to `a` and `b` of both, and nothing to the
   within-protein odds ratio or test, its table not being informative). An analysis may count only the marks and
-  candidate residues of the proteins a table lists (`proteins:`; its `label` is added to the pooled rows' background).
+  candidate residues of the proteins a table lists (`proteins:`; its `label` is added to the pooled rows' background), or
+  set the proteins a table lists aside (`without_proteins: {input, column, include, exclude, label}`, the same reading:
+  the histones, say): neither their marks nor their other residues count, and in a protein-set question they are neither
+  marked proteins nor in the universe. run.json records `without_proteins: {input, column, listed, marked_proteins,
+  marks}`, and the website skips their marks as a question's unlisted proteins'.
 - Rows are in the order the analysis gives (`order:`, a list of categories), else: pooled residue rows by odds ratio,
   within-protein rows by category, protein-set rows by p.
 - A residue question may count only the residues inside the IDRs (`only_in: idr`) or inside the regions of an interval
@@ -54,8 +58,13 @@ Conventions:
   of residues, and `residues` alone for one residue type), or only the residues some marks are reported on
   (`only_in: {marks: [ids]}`: `site` for the site's own counted marks, every one whatever the question's `marks_where`, a
   context mark's id or a part of the marks, `marks.parts`; a question asked again among the residues a method finds
-  modified at all, as a control for how detectable each residue is): the marks and candidate residues outside are counted
-  on neither side (and a class layer is needed, so that the website can tell the marks outside). A residue question's
+  modified at all, as a control for how detectable each residue is), or only the residues in a peptide of a detectable
+  length (`only_in: {digest: {after: KR, not_before: P, min_length: 7, max_length: 35}}`: each protein cut in silico after
+  each residue of `after` unless the next is one of `not_before`, the residue itself left uncut as a modified one would
+  be, and the residue counted when its peptide's length is within the bounds): the marks and candidate residues outside
+  are counted on neither side. With a flags layer the run lists the marks a question leaves out (marks.tsv
+  `in.<question>`, empty for a mark outside), as no flag would not tell them; a question of several tests takes neither
+  `only_in` nor `marks_where`. A residue question's
   `background` (and `background_within`, default `<background>, <within protein>`) replaces the words of its rows'
   background column. The `neighbours` layer (`with: {window, residues,
   many, noun}`) places a residue in `none`, `one` or `two_plus` (`many` or more) according to how many residues of a
@@ -64,12 +73,29 @@ Conventions:
   (`marks_where`: a condition, or `all_of` conditions, on the marks table's columns, as `marks.exclude` reads them):
   the marks with a kept row that meets it, e.g. the lysines with a row whose `state` is `me3`; a mark may meet several
   subsets. The marks outside are other residues in a residue question (the website shows them as not counted in it, as
-  marks outside `only_in`), and not marked proteins in a protein-set question; a residue question needs a class layer
-  for this. run.json's `analyses.<id>.marks_where` records `{where, marks, proteins}`. Rather than copy each question
+  marks outside `only_in`), and not marked proteins in a protein-set question. With `marks_outside: left_out` the marks
+  the condition leaves out are counted on neither side of a residue question instead (run.json's `marks_where` then has
+  `outside: left_out`). run.json's `analyses.<id>.marks_where` records `{where, marks, proteins}`. Rather than copy each question
   by hand, a site lists `marks_subsets: [{id, label, where, analyses: [question ids], note?}]`: at load, each listed
   question gets a copy `<id>_<subset id>` with `marks_where` set, its title followed by `, <label>`, `note` added to
   its `sub`, and the base question's `family` (its title, unless it has one) with `family_label: <label>`, so that the
   sidebar lists a question and its subsets as one entry. A question without a title or family cannot be repeated.
+- A condition on the marks table (`marks_where`, `marks.include`, ...) may count the items of a list column:
+  `{column, distinct_at_least: N, separator: "; ", groups: {name: [items]}, not_counted: [items]}` holds for a row whose
+  cell names at least N distinct groups, where an item in `not_counted` counts for nothing, an item in one of `groups`
+  counts as that group, and any other item as its own (the studies behind a site, with one laboratory's studies counted
+  once and databases not at all). An item in two groups, or in a group and `not_counted`, is an error.
+- Controls (`controls: [{id, label, note?, analyses: [question ids], marks_where?, marks_outside?, without_proteins?,
+  only_in?}]`, each with at least one change): at load, each listed question gets a copy `<id>_<control id>` with the
+  change (a `marks_where` joins the question's own: both must hold), `new: true`, `control_of: <question>` and
+  `control_label: <label>`, its title followed by `, <label>`, `note` added to its `sub`, in its question's family (the
+  question's title, or its layer's, unless it has one; `family_label` the label, after the question's own name in a family
+  it already had). The question's page shows its controls beside its result: for each class with a reading in either,
+  the odds ratio (fold enrichment for sets) and q in the question and in each control, and whether the reading holds
+  there (the same reading at q ≤ 0.05), is weaker (the same direction by at least 1.1×, not at q ≤ 0.05) or is lost.
+  The Method page lists the controls, and for a `distinct_at_least` condition its groups and the items not counted. A
+  control is not an Overview tile. A model (`conditional_logit`) is not repeated; `only_in` is for a residue question of
+  one layer without its own.
 - Questions that are variants of one base (the same test at other window sizes, or inside IDRs) may share a
   `family:` (any text, the entry's name). The website's Sections sidebar then lists them as one entry with a caret
   that reveals the variants, each named by what differs: its title less the family's name (and any leading

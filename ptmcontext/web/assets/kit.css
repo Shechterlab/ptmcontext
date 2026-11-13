@@ -9449,3 +9449,18 @@ html[data-density] .stbl .src-tags a {
 html[data-density] .sites-tbl .cv {
   max-width: 13rem;
 }
+/* a question's controls beside its result (kit.js controlsBlock) */
+.pcard.controls h3 {
+  margin: 0 0 4px;
+}
+.pcard.controls b[class^='ctl-'] {
+  font-weight: 600;
+  font-size: 0.85em;
+}
+.pcard.controls .ctl-lost {
+  color: var(--more);
+}
+.pcard.controls .ctl-weaker,
+.pcard.controls .ctl-not-tested {
+  color: var(--muted, #6b7280);
+}

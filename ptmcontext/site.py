@@ -54,7 +54,7 @@ def load_site(path: str | Path) -> dict:
     site = read_config(path)
     validate(site, 'site')
     site['__root__'] = str(Path(path).resolve().parent.parent)
-    return CM.expand(expand_subsets(site))
+    return CM.expand(expand_controls(expand_subsets(site)))
 
 
 def expand_subsets(site: dict) -> dict:
@@ -100,6 +100,93 @@ def expand_subsets(site: dict) -> dict:
         out.append(a)
         out += extra.get(a['id'], [])
     return {**site, 'analyses': out}
+
+
+CONTROL_KEYS = ('marks_where', 'marks_outside', 'without_proteins', 'only_in')
+
+
+def expand_controls(site: dict) -> dict:
+    """controls: for each control and each question it lists, a copy of the question with the control's change (a part
+    of the marks, marks_where; proteins set aside, without_proteins; only the residues of some regions, only_in), id
+    '<question>_<control id>', `control_of` the question and `control_label` the control's label, so that the question's
+    page shows the control beside its result. The copy is new (outside any reference) and joins its question's family.
+    The base question is unchanged (it gains the family). A site without controls is returned as it is."""
+    controls = site.get('controls') or []
+    if not controls:
+        return site
+    by_id = {a['id']: a for a in site['analyses']}
+    extra: dict[str, list] = {}
+    for ctl in controls:
+        change = {k: ctl[k] for k in CONTROL_KEYS if k in ctl}
+        if not set(change) - {'marks_outside'}:
+            raise ValueError(f'controls {ctl["id"]}: names no change (marks_where, without_proteins or only_in)')
+        if 'marks_outside' in change and 'marks_where' not in change:
+            raise ValueError(f'controls {ctl["id"]}: marks_outside needs marks_where')
+        for aid in ctl['analyses']:
+            base = by_id.get(aid)
+            where = f'controls {ctl["id"]}: question {aid!r}'
+            if base is None:
+                raise ValueError(f'{where} is not among the analyses')
+            if base.get('test') == 'conditional_logit':
+                raise ValueError(f'{where} is a model: a control repeats a test')
+            if 'only_in' in change and (base.get('only_in') or base.get('tests') or base.get('test')):
+                raise ValueError(f'{where}: only_in is for a residue question of one layer without its own only_in')
+            if 'marks_outside' in change and base.get('tests'):
+                raise ValueError(
+                    f'{where}: marks_outside is for a residue question of one layer or a protein-set question'
+                )
+            title = base.get('title') or _layer_title(base)
+            family = base.get('family') or title
+            if not family:
+                raise ValueError(f'{where} needs a title or a family, to name its entry in the sidebar')
+            new_id = f'{aid}_{ctl["id"]}'
+            if new_id in by_id:
+                raise ValueError(f'{where}: {new_id!r} is already a question')
+            v = copy.deepcopy(base)
+            v.pop('note', None)  # a note on the base question's result is not said of its control
+            v.pop('note_filters', None)
+            v.update(change)
+            if base.get('marks_where') and 'marks_where' in change:  # both conditions hold
+                v['marks_where'] = {'all_of': [base['marks_where'], change['marks_where']]}
+            own = (
+                base.get('family_label')
+                or (  # the base's own name in a family it already had
+                    title[len(base['family']) :].strip(' ,:;–—-')
+                    if base.get('family') and title.startswith(base['family'])
+                    else ''
+                )
+            )
+            v.update(
+                id=new_id,
+                new=True,
+                family=family,
+                family_label=f'{own}, {ctl["label"]}' if own else ctl['label'],
+                control_of=aid,
+                control_label=ctl['label'],
+            )
+            if title:
+                v['title'] = f'{title}, {ctl["label"]}'
+            if ctl.get('note'):
+                v['sub'] = f'{base["sub"]}. {ctl["note"]}' if base.get('sub') else ctl['note']
+            by_id[new_id] = v
+            extra.setdefault(aid, []).append(v)
+    out = []
+    for a in site['analyses']:
+        if a['id'] in extra and not a.get('family'):
+            a = {**a, 'family': extra[a['id']][0]['family']}
+        out.append(a)
+        out += extra.get(a['id'], [])
+    return {**site, 'analyses': out}
+
+
+def _layer_title(a: dict) -> str:
+    """The title a built-in or configured layer gives a question that has none of its own (empty if none)."""
+    if a.get('test') or a.get('tests') or not a.get('layer'):
+        return ''
+    try:
+        return L.get(a['layer'], None, a.get('with'), a['id']).title or ''
+    except Exception:  # noqa: BLE001  (a plugin, or a layer that needs the context)
+        return ''
 
 
 def beside_lines(card: dict) -> list[dict]:
@@ -251,13 +338,10 @@ def roles_missing(site: dict) -> list[str]:
         for a in site.get('analyses', [])
         if a.get('proteins') and a['proteins']['input'] not in roles
     ]
-    words = _analysis_words(site)
-    out += [
-        f'{a["id"]}: only_in and marks_where need a layer of classes (a flags layer cannot say which marks lie outside the regions or the subset)'
+    out += [  # a flags layer's marks outside are listed by the run (marks.tsv in.<analysis>); not a tests question's
+        f'{a["id"]}: only_in and marks_where are for a layer, not a question of several tests'
         for a in site.get('analyses', [])
-        if (a.get('only_in') or a.get('marks_where'))
-        and a.get('test') != 'conditional_logit'
-        and (words.get(a['id']) or {}).get('shape') == 'flags'
+        if (a.get('only_in') or a.get('marks_where')) and a.get('tests')
     ]
     known = {'site'} | {c['id'] for c in site.get('context_marks') or []}
     known |= {q['id'] for q in (site.get('marks') or {}).get('parts') or []}
@@ -1188,11 +1272,50 @@ def _holds(frame: pd.DataFrame, cond: dict) -> pd.Series:
             out |= _holds(frame, part)
         return out
     col = frame[cond['column']].astype(str)
+    if 'distinct_at_least' in cond:
+        return _distinct_at_least(col, cond)
     if 'equals' in cond:
         return col == cond['equals']
     if 'in' in cond:
         return col.isin(set(cond['in']))
     return col.str.contains(cond['contains'], regex=False)
+
+
+def without_record(analysis: dict, set_aside: set, marks: pd.DataFrame) -> dict:
+    """What a question's without_proteins set aside, for run.json: the table read, how many proteins it lists, and the
+    marked proteins among them."""
+    w = analysis['without_proteins']
+    return {
+        'input': w['input'],
+        'column': w['column'],
+        'listed': len(set_aside),
+        'marked_proteins': int(len(set(marks['accession']) & set_aside)),
+        'marks': int(marks['accession'].isin(set_aside).sum()),
+    }
+
+
+def _distinct_at_least(col: pd.Series, cond: dict) -> pd.Series:
+    """Whether a list cell (items split on `separator`) names at least `distinct_at_least` distinct groups: an item in
+    `not_counted` counts for nothing, an item listed in one of `groups` counts as that group, and any other item as its
+    own group (the studies behind a site, with a laboratory's studies counted once and databases not at all)."""
+    sep = cond.get('separator', '; ')
+    skip = set(cond.get('not_counted') or [])
+    group_of: dict = {}
+    for name, items in (cond.get('groups') or {}).items():
+        for it in items:
+            if it in group_of:
+                raise ValueError(f'distinct_at_least: {it!r} is in groups {group_of[it]!r} and {name!r}')
+            group_of[it] = name
+    clash = sorted(skip & set(group_of))
+    if clash:
+        raise ValueError(f'distinct_at_least: {clash} are both in a group and not counted')
+    n = int(cond['distinct_at_least'])
+
+    def count(cell: str) -> int:
+        items = [x.strip() for x in cell.split(sep)] if cell else []
+        return len({group_of.get(x, x) for x in items if x and x not in skip})
+
+    return col.map(count) >= n
 
 
 def listed_proteins(spec: dict, ctx: L.Context) -> set:
@@ -1550,6 +1673,9 @@ def class_counts(m: pd.DataFrame, kept: dict) -> list[pd.DataFrame]:
                 ';'.join(f for f in flags if bool(have[f].get((a, p), False)))
                 for a, p in zip(m['accession'], m['position'])
             ]
+            counted = set(mk.index)
+            if len(counted) < len(m):  # a flags question that leaves marks out (only_in, marks_where, proteins): which
+                m[f'in.{aid}'] = ['1' if (a, p) in counted else '' for a, p in zip(m['accession'], m['position'])]
             sub = ann[~is_l].assign(marked=is_m[~is_l])
             g = (
                 sub.groupby(['accession', 'marked'])[flags]
@@ -1864,10 +1990,20 @@ def run(
         site = {**site, 'analyses': [a for a in site['analyses'] if not a.get('new')]}
     marks_all = marked
     ctx.own_marks = marks_all  # only_in: {marks: [site, ...]} reads every counted mark
+    pending_all = pending
     for analysis in site['analyses']:
         marked = marks_all  # the questions that count a part of the marks (marks_where) read their own
+        pending = pending_all
         if analysis.get('marks_where'):
             marked = subset_marks(spec, table, marks_all, analysis['marks_where'])
+            if analysis.get('marks_outside') == 'left_out':  # the other marks are counted on neither side
+                outside = marks_all.merge(marked[['accession', 'position']], how='left', indicator=True)
+                outside = outside.loc[outside['_merge'] == 'left_only', ['accession', 'position']]
+                pending = pd.concat([pending_all[['accession', 'position']], outside], ignore_index=True)
+        set_aside = None
+        if analysis.get('without_proteins'):  # proteins a table lists, set aside: neither their marks nor residues
+            set_aside = listed_proteins(analysis['without_proteins'], ctx)
+            marked = marked[~marked['accession'].isin(set_aside)].reset_index(drop=True)
         if analysis.get('test') == 'protein_sets':
             from .set_tests import families_file, protein_set_test, roles_of
 
@@ -1890,7 +2026,7 @@ def run(
                 analysis,
                 ctx.inputs,
                 set(marked['accession']),
-                set(snap.sequences),
+                set(snap.sequences) - (set_aside or set()),
                 keep=set_keep[analysis['id']],
                 root=root_of(site),
                 formats=ctx.formats,
@@ -1927,6 +2063,8 @@ def run(
                     'noun': analysis['identifiers'].get('noun', 'identifier'),
                     'map': [s['input'] for s in analysis['identifiers']['map']],
                 }
+            if set_aside is not None:
+                layers_used[analysis['id']]['without_proteins'] = without_record(analysis, set_aside, marks_all)
             if analysis.get('hierarchy'):  # the sets' parents, for the website's ontology views
                 layers_used[analysis['id']]['hierarchy'] = analysis['hierarchy']['input']
             for k in ('where', 'history'):  # the tables that keep its rows, and bring its members to entries
@@ -1971,6 +2109,11 @@ def run(
                 **({'left_out': q.left_out_tests} if q.left_out_tests else {}),
                 **layer_words(layer),
             }
+            if set_aside is not None:
+                layers_used[analysis['id']]['without_proteins'] = without_record(analysis, set_aside, marks_all)
+                layers_used[analysis['id']]['proteins'] = {
+                    'not_counted': sorted(set(marks_all['accession']) & set_aside)
+                }
             for lt in q.left_out_tests:
                 log(f'  {analysis["id"]}: test {lt["code"]} left out (reads {", ".join(lt["roles"])}, not present)')
             log(f'  {analysis["id"]:18s} {len(parts[-1]):3d} rows')
@@ -1992,6 +2135,13 @@ def run(
                 'column': analysis['proteins']['column'],
                 'listed': len(only),
                 'not_counted': sorted(set(marked['accession']) - only),
+            }
+        if set_aside is not None:  # the browser skips their marks, as a question's unlisted proteins'
+            layers_used[analysis['id']]['without_proteins'] = without_record(analysis, set_aside, marks_all)
+            prev = layers_used[analysis['id']].get('proteins') or {}
+            layers_used[analysis['id']]['proteins'] = {
+                **prev,
+                'not_counted': sorted(set(prev.get('not_counted', [])) | (set(marks_all['accession']) & set_aside)),
             }
         if analysis.get('marks_alone'):
             layers_used[analysis['id']]['marks_alone'] = analysis['marks_alone']
@@ -2018,7 +2168,7 @@ def run(
             within = analysis.get('background_within', f'{bg}, {profile.within_protein}')
             rows_['background'] = [within if m == 'mantel_haenszel' else bg for m in rows_['method']]
         log(f'  {analysis["id"]:18s} {len(parts[-1]):3d} rows')
-    marked = marks_all
+    marked, pending = marks_all, pending_all
     for analysis in site['analyses']:  # what each subset question counted, for the website
         if analysis.get('marks_where'):
             part = subset_marks(spec, table, marks_all, analysis['marks_where'])
@@ -2026,7 +2176,10 @@ def run(
                 'where': analysis['marks_where'],
                 'marks': int(len(part)),
                 'proteins': int(part['accession'].nunique()),
+                **({'outside': 'left_out'} if analysis.get('marks_outside') == 'left_out' else {}),
             }
+        if analysis.get('control_of'):  # a control of another question: its page shows it beside that result
+            layers_used[analysis['id']]['control_of'] = analysis['control_of']
     rows = pd.concat(parts, ignore_index=True)
     record = {
         'tool': 'ptmcontext',

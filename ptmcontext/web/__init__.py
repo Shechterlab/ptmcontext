@@ -109,6 +109,33 @@ def _with_families(analyses: list, site: dict) -> list:
     return [{**a, **keep[a['id']]} if a['id'] in keep else a for a in analyses]
 
 
+def controls_data(site: dict) -> list[dict]:
+    """The site's controls (controls:) for the Method page: each one's label, note, questions, and, for a condition that
+    counts groups of a list (distinct_at_least), the groups, the items not counted and the number needed."""
+    out = []
+    ids = {a['id'] for a in site.get('analyses', [])}
+    for c in site.get('controls') or []:
+        rec = {
+            'id': c['id'],
+            'label': c['label'],
+            'note': c.get('note', ''),
+            'questions': [f'{a}_{c["id"]}' for a in c['analyses'] if f'{a}_{c["id"]}' in ids],
+        }
+        w = c.get('marks_where') or {}
+        if 'distinct_at_least' in w:
+            rec['count'] = {k: w[k] for k in ('column', 'distinct_at_least', 'groups', 'not_counted') if k in w}
+        out.append(rec)
+    return out
+
+
+def _control(a: dict) -> dict:
+    """A control of another question (controls: in the site file): the question it controls and its short name, for
+    that question's page, which shows the control beside its result."""
+    return (
+        {'control_of': a['control_of'], 'control_label': a.get('control_label', a['id'])} if a.get('control_of') else {}
+    )
+
+
 def _asset(name: str) -> Path:
     if name == 'assets/kit-stats.js':  # the statistics are the package ptmstats' ptmstats.js
         return Path(ptmstats.js_path())
@@ -432,6 +459,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                     'help': dict(a.get('help') or {}),
                     'set_note': a.get('set_note', ''),
                     'new': bool(a.get('new')),
+                    **_control(a),
                     **_class_order(a, {}),
                 }
             )
@@ -457,6 +485,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                 'new': bool(a.get('new')),
                 **({'only_in': True} if a.get('only_in') else {}),
                 **({'subset': True} if a.get('marks_where') else {}),
+                **_control(a),
                 **(
                     {'note': note_text(a['note'], stats)} if a.get('note') else {}
                 ),  # a note under the question, with its one-click filters
@@ -827,7 +856,7 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
     analyses = [
         c
         for c in marks.columns
-        if c not in ('accession', 'position', 'residue', 'window_15') and not c.startswith(('a.', 'n.'))
+        if c not in ('accession', 'position', 'residue', 'window_15') and not c.startswith(('a.', 'n.', 'in.'))
     ]
     attrs = [
         c for c in marks.columns if c.startswith('a.')
@@ -1088,6 +1117,11 @@ def selection_data(
                 'skip': sorted(pidx[a] for a in (used.get('proteins') or {}).get('not_counted', []) if a in pidx),
                 'alone': used.get('marks_alone') == 'count',
             }
+    for aid in analyses:  # a flags question that leaves marks out says which (marks.tsv in.<analysis>): by index
+        if f'in.{aid}' in marks.columns:
+            counted.setdefault(aid, {'skip': [], 'alone': False})['out'] = [
+                i for i, x in enumerate(marks[f'in.{aid}']) if not x
+            ]
     # a question of several tests: each test (class) counts its own candidates. Per class, per protein it counts:
     # [its other candidates, the positions of the protein's marks it does not count]; a protein it does not count is
     # absent. the browser reads it as by_test.
@@ -1117,7 +1151,9 @@ def selection_data(
         g = counts[counts['analysis'] == aid]
         total = g.drop_duplicates('accession').set_index('accession')['others_total'].astype(int)
         outside: dict = {}
-        for acc, pos, cls in zip(marks['accession'], marks['position'], marks[aid]):
+        # a flags question says which marks it counts (in.<analysis>): no flag is not outside
+        held = marks[f'in.{aid}'] if f'in.{aid}' in marks.columns else marks[aid]
+        for acc, pos, cls in zip(marks['accession'], marks['position'], held):
             if not cls:
                 outside.setdefault(pidx[acc], []).append(int(pos))
         by_test[aid] = {
@@ -1474,6 +1510,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             if f'a.{a}' in mk.columns
         }
     data['attribute_specs'] = site['marks'].get('attributes', {})
+    data['controls'] = controls_data(site)
     data['reporters'] = reporters(site, folder)
     # questions answered by counting the marks (website.counts): the whole dataset's counts in the page, each
     # experiment's marks in selection.json

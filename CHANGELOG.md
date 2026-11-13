@@ -1,5 +1,20 @@
 # Changes
 
+## Unreleased
+
+- Controls: a site file can repeat questions with one change each (`controls:`), and each question's page shows its
+  controls beside its result (holds, weaker or lost), not as Overview tiles. The changes: a part of the marks
+  counted by independent groups (`distinct_at_least`, with one laboratory's studies counted once and databases not at
+  all), the other marks on neither side (`marks_outside: left_out`); proteins set aside (`without_proteins`); only the
+  residues in a detectable tryptic peptide (`only_in: {digest}`). The Method page lists them.
+- Methylarginine site: motif, disorder, IDR charge and aromatic-neighbour questions on the high-confidence sites (at
+  least two independent studies) and the motif and disorder questions on the sites found without methylarginine
+  antibodies; the near-modification and IDR charge questions inside IDRs. The release's rows are unchanged.
+- Lysine and methyllysine sites: the same-lysine pairs and chromatin probability with the histones set aside; the
+  near-modification and IDR charge questions inside IDRs. Lysine and phosphosite sites: disorder, structure, domain
+  class and IDR charge counted only in detectable tryptic peptides.
+- A flags question (motifs) may count a part of the marks or only some regions: the run lists the marks it leaves out.
+
 ## 0.3.1 (2026-11-13)
 
 What changed for readers:

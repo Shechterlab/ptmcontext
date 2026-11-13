@@ -1982,6 +1982,51 @@
       )
       .join(' · ')}</p>`;
   }
+  // the controls of a question (analyses[].control_of: the same test on high-confidence marks, without some proteins, inside
+  // IDRs, ...), beside its result: each class's reading in the question and in each control, and whether it holds there
+  // ('holds': the same reading; 'weaker': the same direction by 1.1x or more, not at q <= 0.05; 'lost': otherwise)
+  function controlsBlock(a, m) {
+    if (vsOn() || selOn()) return '';
+    const ctl = D.analyses.filter((x) => A[x.id]?.control_of === a.id);
+    if (!ctl.length) return '';
+    const main = rowsFor(a, m),
+      of = (x) => new Map(rowsFor(A[x.id], m).map((r) => [r.category, r])),
+      by = ctl.map(of);
+    const cats = main.filter(
+      (r) => r.dir === 'more' || r.dir === 'less' || by.some((b) => b.get(r.category)?.q <= PADJ)
+    );
+    if (!cats.length) return '';
+    const cell = (r) => (r ? `${esc(fx(r.eff))} <span class="muted">q ${esc(fq(r.q))}</span>` : '–');
+    const verdict = (r, c) => {
+      if (r.dir !== 'more' && r.dir !== 'less') return c && (c.dir === 'more' || c.dir === 'less') ? 'new' : '';
+      if (!c) return 'not tested';
+      if (c.dir === r.dir) return 'holds';
+      const same = c.eff != null && (r.dir === 'more' ? c.eff >= MIN_EFFECT : c.eff <= 1 / MIN_EFFECT);
+      return same ? 'weaker' : 'lost';
+    };
+    return (
+      `<section class="pcard controls"><h3>Controls</h3><p class="page-note">The same test again with one ` +
+      `change each (${esc(METHOD[m] || 'proteins, hypergeometric')}). Holds: the same reading at q ≤ 0.05; weaker: the ` +
+      `same direction, not at q ≤ 0.05; lost: under 1.1× or the other way.</p><div class="tbl-card"><table class="tbl">` +
+      `<thead><tr><th>Class</th><th>This question</th>${ctl
+        .map((x) => `<th><a href="${esc(link('overview', x.id))}">${esc(A[x.id].control_label)}</a></th>`)
+        .join('')}</tr></thead><tbody>` +
+      cats
+        .slice(0, 16)
+        .map(
+          (r) =>
+            `<tr><td>${esc(r.label)}</td><td>${cell(r)}</td>${by
+              .map((b) => {
+                const c = b.get(r.category),
+                  v = verdict(r, c);
+                return `<td>${cell(c)}${v ? ` <b class="ctl-${v.replace(' ', '-')}">${esc(v)}</b>` : ''}</td>`;
+              })
+              .join('')}</tr>`
+        )
+        .join('') +
+      `</tbody></table></div></section>`
+    );
+  }
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
   function focus(aid) {
     // a question that is one of a card's views (website.overview cards: views) opens that card
@@ -2070,7 +2115,8 @@
         selOn() && !vsOn() && !mod
           ? `<p class="twhole">` + `<span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>`
           : ''
-      }</section>`
+      }</section>` +
+      (mod ? '' : controlsBlock(a, a.kind === 'protein_sets' ? 'enricher' : S.m))
     );
   }
   // what the site keeps, what it asks other services for, and under which licenses everything is
@@ -2519,6 +2565,7 @@
         )
         .join('') +
       `</tbody></table></div></section>` +
+      controlsMethod() +
       D.analyses.map(questionMethod).join('') +
       (K.methodParts || []).map((f) => f()).join('') +
       K.methods.map((x) => x.html()).join('') +
@@ -2539,6 +2586,38 @@
     );
   }
 
+  // the site's controls (D.controls): what each changes, the questions it repeats, and, for a count of independent
+  // groups (distinct_at_least), which items count once together and which not at all
+  function controlsMethod() {
+    const cs = D.controls || [];
+    if (!cs.length) return '';
+    const one = (c) => {
+      const n = c.count,
+        groups = Object.entries(n?.groups || {}),
+        spec = Object.values(D.attribute_specs || {}).find((x) => n && x.column === n.column),
+        nm = (v) => esc(spec?.values?.[v] || v);
+      return (
+        `<h4>${esc(cap(c.label))}</h4>${c.note ? `<p>${esc(c.note)}.</p>` : ''}` +
+        (n
+          ? `<p>A ${esc(W.mark)} counts when at least ${int(n.distinct_at_least)} independent sources report it.` +
+            (groups.length
+              ? ` Sources counted once together: ${groups
+                  .map(([g, xs]) => `${esc(g)} (${xs.map(nm).join(', ')})`)
+                  .join('; ')}.`
+              : '') +
+            ((n.not_counted || []).length ? ` Not counted: ${n.not_counted.map(nm).join(', ')}.` : '') +
+            `</p>`
+          : '') +
+        `<p class="muted">Repeats: ${c.questions
+          .map((q) => `<a href="${esc(link('overview', q))}">${esc(A[q]?.title || q)}</a>`)
+          .join(', ')}.</p>`
+      );
+    };
+    return (
+      `<section id="m-controls"><h3>Controls</h3><p>Some questions are repeated with one change each, and each ` +
+      `question's page shows its controls beside its result.</p>${cs.map(one).join('')}</section>`
+    );
+  }
   // a question's own Method section (#method/q-<id>): what it asks, what it is compared with and its classes
   function questionMethod(a) {
     const RUN = D.run,
