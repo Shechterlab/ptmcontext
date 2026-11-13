@@ -15,6 +15,7 @@ snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}   # quoted: unquote
 inputs:                # role the layers read: manifest input that fills it
   disorder: mobidb_disorder
   domains: interpro_domains
+  interpro_entries: interpro_all_entries         # the readers' families, by InterPro and Pfam entry
   reactome: reactome_protein_pathways
   reactome_names: reactome_pathways
   hpa: hpa_locations
@@ -1400,6 +1401,16 @@ website:                  # the look and words of the website (ptmc web); layout
     method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
     help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
+  # The Overlap page: 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
+  overlap:
+    terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, histone, complex, condensate_proteome]
+    max_terms: 4
+    units: [proteins, sites, readers]
+    readers:           # a protein is a reader when it carries any listed Pfam or InterPro entry (each id checked on InterPro)
+      source: interpro_entries
+      families:
+      - {name: Bromodomain, ids: [IPR001487, PF00439]}
+      - {name: YEATS, ids: [IPR005033, IPR055129, PF03366]}
   compare: {min_proteins: 10, min_marks: 30}
   tables:                  # tables the protein pages show (no test reads them), each in a format of CONTRACTS.md
     string:                # STRING v12.5 physical links, each pair listed once and read both ways, at score 0.7 or more

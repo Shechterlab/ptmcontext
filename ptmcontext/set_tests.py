@@ -904,6 +904,19 @@ def each_set_test(
     return out, {it['set']: it['name'] for it in spec['sets']['each'] if it.get('name')}
 
 
+def all_members(pairs: pd.DataFrame, tested, proteins: set, id_of: dict | None = None) -> dict[str, list]:
+    """Each tested set's proteins among `proteins` (the snapshot's), sorted. With id_of (protein -> its identifiers) a
+    protein is in a set of identifiers when any one of its identifiers is."""
+    held = pairs[pairs['set'].isin(tested)].groupby('set')['protein'].agg(set)
+    if id_of is None:
+        return {s: sorted(g & proteins) for s, g in held.items()}
+    by_id: dict[str, set] = {}
+    for p in proteins:
+        for u in id_of.get(p, ()):
+            by_id.setdefault(u, set()).add(p)
+    return {s: sorted(set().union(*(by_id[u] for u in g if u in by_id))) for s, g in held.items()}
+
+
 def protein_set_test(
     spec: dict,
     paths: dict,
@@ -915,6 +928,7 @@ def protein_set_test(
     ctx=None,
     left_out: list | None = None,
     site: dict | None = None,
+    with_members: bool = False,
 ) -> tuple[pd.DataFrame, dict]:
     """Statistics rows of one protein-set analysis of a site, and the names of its sets. keep, if given, receives what
     a website needs to test a selection of the marked proteins again: the background's size, which marked proteins (or
@@ -922,7 +936,9 @@ def protein_set_test(
     marked protein's identifiers; and, for its filters, the marked proteins (identifiers) in any of the source's sets
     and, with a scores table, each set's marked members' scores. root: the site's repository, which a families rules
     file is relative to; formats: path -> its manifest entry's columns (a file's separator). ctx: the site's layer
-    context, for sets made from units (sets.each); left_out receives the sets.each items whose inputs are absent."""
+    context, for sets made from units (sets.each); left_out receives the sets.each items whose inputs are absent.
+    with_members: also put in keep['members'] each tested set's every protein of the snapshot (marked or not; a gene-based
+    set holds the proteins with one of its genes), for the website's Overlap page; not for sets.each."""
     if spec['sets'].get('each'):
         if ctx is None:
             raise ValueError(f"{spec['id']}: sets.each reads units: it needs the site's context")
@@ -968,6 +984,8 @@ def protein_set_test(
                 'sets': {s: {'M': len(g), 'marked': sorted(g & targets)} for s, g in size_ok.items()},
             }
         )
+        if with_members:
+            keep['members'] = all_members(pairs, set(keep['sets']), snapshot_proteins, id_of)
         if spec.get('hierarchy'):  # each tested set's parents, for the website's ontology views
             keep['parents'] = set_parents(spec, paths, set(keep['sets']), formats)
             root_set = spec['hierarchy'].get('root')
