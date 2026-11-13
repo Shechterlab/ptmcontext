@@ -107,8 +107,10 @@ def _number(n) -> str:
 
 
 def _result(gl: dict) -> str:
-    """The site's strongest finding as a sentence with a small bar (the odds ratio on a log axis, centred on 1×)."""
-    fs = (gl or {}).get('landing_findings') or (gl or {}).get('findings') or []
+    """The site's strongest finding as a sentence with a small bar (the fold on a log axis, centred on 1×). A card whose
+    section (website.landing.from_section) holds no finding says nothing, rather than borrow one from elsewhere."""
+    gl = gl or {}
+    fs = gl['landing_findings'] if 'landing_findings' in gl else gl.get('findings') or []
     if not fs:
         return ''
     f = fs[0]

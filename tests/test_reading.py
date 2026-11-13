@@ -115,3 +115,17 @@ def test_the_landing_card_reads_the_cell_as_the_cell_card_does():
     folds = sorted(r['fold'] for r in rows[3:])
     assert abs(got[0]['eff'] - (folds[0] * folds[1]) ** 0.5) < 1e-9  # the median of two: their geometric mean
     assert [f['label'] for f in cell_findings(rows, cell, {'min_maps': 1, 'min_group': 5})][:1] == ['Tiny']
+
+
+def test_a_landing_card_whose_section_has_no_finding_borrows_none_and_findings_come_from_the_overview():
+    from ptmcontext.web.glance import glance
+    from ptmcontext.web.landing import _result
+
+    f = {'label': 'Histones', 'eff': 300.0, 'dir': 'more'}
+    assert _result({'landing_findings': [], 'findings': [f]}) == ''
+    assert 'Histones' in _result({'findings': [f]})
+    rows = [_set('big', 200, 800, 300, 8700)]
+    other = [{**rows[0], 'analysis': 'sets_type'}]
+    an = SETS + [{**SETS[0], 'id': 'sets_type'}]
+    g = glance(an, rows + other, 1000, None, shown={'sets'})
+    assert [x['analysis'] for x in g['findings']] == ['sets']

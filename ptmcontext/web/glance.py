@@ -233,15 +233,22 @@ def glance(
     locations: dict | None = None,
     reading: dict | None = None,
     cell: dict | None = None,
+    shown: set | None = None,
 ) -> dict:
     """What the entry pages draw. The landing page's own choices (website.landing) win over the start panel's. cell:
     the site's cell maps when the landing card's section holds them: its parts are read as the cell card reads them,
-    not map by map."""
+    not map by map. shown: the questions the Overview shows; a computed finding is one of them (a type's own version of
+    a question, on that question's page only, is not chosen)."""
     start, landing = start or {}, landing or {}
     out = {
         'share': share(analyses, rows, counted, landing.get('share') or start.get('share')),
         'findings': findings(
-            analyses, rows, landing.get('findings') or start.get('findings'), row_labels=row_labels, reading=reading
+            analyses,
+            rows,
+            landing.get('findings') or start.get('findings'),
+            row_labels=row_labels,
+            reading=reading,
+            only=shown,
         ),
     }
     if only is not None and not landing.get('findings'):  # the landing card's own, from one Overview section
