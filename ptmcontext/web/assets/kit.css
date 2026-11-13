@@ -89,6 +89,171 @@
   color-scheme: dark;
 }
 
+/* ---- Figure tokens (--fig-*): one set for every ptmcontext figure. Proposed for kit.css, after the :root block at the top.
+   See GUIDE.md for what each token is for. Chrome tokens alias the kit's own (they already switch with the theme); the
+   data tokens carry their own light and dark hex. Exports never read these: they use the light column as literal hex
+   (K.FIG_EXPORT in GUIDE.md section 13), so a figure exported from a dark page is still the light figure on white.
+   Validator output for every data colour: validator_output.txt. ---- */
+:root {
+  /* type */
+  --fig-font: var(--font-body);
+  --fig-font-export: Arial, 'Helvetica Neue', Helvetica, Arimo, 'Liberation Sans', sans-serif;
+  --fig-fs-title: 1.0625rem; /* 17px: the card title (--fs-card) */
+  --fig-fs-label: 0.86rem; /* 13.76px: row and category labels */
+  --fig-fs-value: 0.8125rem; /* 13px, weight 700, tabular: printed values */
+  --fig-fs-direct: 0.78rem; /* 12.5px, weight 650: direct labels on marks (cluster names, region counts) */
+  --fig-fs-minor: 0.656rem; /* 10.5px: optional labels the tooltip and table repeat (gene labels). Nothing else this small */
+  --fig-fs-tick: 0.75rem; /* 12px, tabular: tick labels and axis titles */
+  --fig-fs-key: 0.78rem; /* 12.5px: key entries */
+  --fig-fs-cap: 0.75rem; /* 12px: captions, footnotes, the q column */
+
+  /* chrome: aliases of the kit's tokens */
+  --fig-surface: var(--surface);
+  --fig-halo: var(--surface); /* paint-order stroke behind text that sits on marks */
+  --fig-ink: var(--ink);
+  --fig-ink-2: var(--ink-2);
+  --fig-muted: var(--muted);
+  --fig-grid: var(--line); /* hairline gridlines at the ticks */
+  --fig-axis: var(--line-strong); /* the origin: 1x on a ratio axis, 0 on a count axis */
+  --fig-ref: var(--ink-2); /* a reference value that is data (whole dataset, baseline share) */
+  --fig-hover: var(--wash);
+  --fig-select: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  --fig-select-edge: var(--accent);
+  --fig-focus: var(--focus-ring);
+
+  /* direction of a tested difference: the site's tokens, never forked */
+  --fig-more: var(--more); /* q <= 0.05 and at least 1.1x, higher */
+  --fig-less: var(--less); /* q <= 0.05 and at least 1.1x, lower */
+  --fig-same: var(--same); /* q <= 0.05 but within 1.1x */
+  --fig-ns: var(--muted); /* stroke of a hollow mark: q > 0.05 */
+
+  /* categorical slots, in this order (identity: terms, clusters, map classes) */
+  --fig-c1: #2a78d6; /* blue */
+  --fig-c2: #eb6834; /* orange */
+  --fig-c3: #1baf7a; /* aqua */
+  --fig-c4: #eda100; /* yellow */
+  --fig-c5: #e87ba4; /* magenta */
+  --fig-c6: #008300; /* green */
+  --fig-c7: #6250d6; /* violet */
+  --fig-c8: #e34948; /* red */
+  --fig-c-other: #9aa3a8; /* "Other" / smaller groups: never a slot */
+  --fig-on-c: #ffffff; /* text inside a slot fill; #0b0b0b on --fig-c4 */
+
+  /* sequential (one hue, low = near the surface): step 1 is the lightest that still clears 2:1 */
+  --fig-seq-1: #86b6ef;
+  --fig-seq-2: #5598e7;
+  --fig-seq-3: #2a78d6;
+  --fig-seq-4: #1c5cab;
+  --fig-seq-5: #104281;
+
+  /* diverging (fold or OR on a map): up = more, down = less, mid = no difference. Step 0 is an area fill only: it is
+     below 2:1 by design and needs the part's outline */
+  --fig-div-up-0: #f6d0cd;
+  --fig-div-up-1: #ef9a94;
+  --fig-div-up-2: #e34948;
+  --fig-div-up-3: #a8302f;
+  --fig-div-dn-0: #e6ecef;
+  --fig-div-dn-1: #bac8cf;
+  --fig-div-dn-2: #91a5b1;
+  --fig-div-dn-3: #6a808d;
+  --fig-div-mid: #f0efec;
+
+  /* a count split in two (with marks / without): one hue, two steps */
+  --fig-count-k: #155e75;
+  --fig-count-n: #94bac6;
+
+  /* node-link and set figures */
+  --fig-hull-op: 0.085; /* hull wash: fill-opacity of the slot colour, no outline */
+  --fig-edge-in-op: 0.32; /* an edge inside a cluster, in the slot colour */
+  --fig-edge-x: #52606a; /* bundles and hover edges between clusters */
+  --fig-edge-x-op: 0.16;
+  --fig-euler-op: 0.16; /* Euler circle wash */
+
+  /* marks */
+  --fig-row: 28px; /* row pitch of a row chart (30px when a row holds two bars) */
+  --fig-bar: 10px; /* an effect bar */
+  --fig-bar-count: 12px; /* a count bar */
+  --fig-bar-r: 2px; /* data-end radius of a 10px bar (3px on a 12px bar); the baseline end is square */
+  --fig-seg-gap: 2px; /* surface gap between stacked segments */
+  --fig-hair: 1px; /* gridlines */
+  --fig-origin-w: 1.5px; /* the origin line (1x, 0) */
+  --fig-ref-w: 2px; /* a reference-value tick */
+  --fig-whisker: 1.25px; /* interval line and caps; cap length = bar thickness - 4px */
+  --fig-dot: 4.5px; /* radius of an estimate dot */
+  --fig-ring: 1.2px; /* surface ring around a filled dot or node */
+  --fig-hollow: 1.5px; /* stroke of a hollow (q > 0.05) dot; 1.25px on a hollow bar */
+  --fig-halo-w: 3px;
+  --fig-tip-w: 330px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --fig-c1: #3987e5;
+    --fig-c2: #d95926;
+    --fig-c3: #199e70;
+    --fig-c4: #c98500;
+    --fig-c5: #d55181;
+    --fig-c6: #008300;
+    --fig-c7: #9085e9;
+    --fig-c8: #e66767;
+    --fig-c-other: #7d8c97;
+    --fig-on-c: #ffffff;
+    --fig-seq-1: #184f95;
+    --fig-seq-2: #256abf;
+    --fig-seq-3: #3987e5;
+    --fig-seq-4: #6da7ec;
+    --fig-seq-5: #9ec5f4;
+    --fig-div-up-0: #5a2523;
+    --fig-div-up-1: #8e3330;
+    --fig-div-up-2: #d2524f;
+    --fig-div-up-3: #f09a95;
+    --fig-div-dn-0: #26343b;
+    --fig-div-dn-1: #3d5260;
+    --fig-div-dn-2: #6c8592;
+    --fig-div-dn-3: #a9bdc7;
+    --fig-div-mid: #1a2d35;
+    --fig-count-k: #6cbcd1;
+    --fig-count-n: #2f6474;
+    --fig-hull-op: 0.11;
+    --fig-edge-in-op: 0.4;
+    --fig-edge-x: #a9bcc4;
+    --fig-edge-x-op: 0.2;
+    --fig-euler-op: 0.22;
+  }
+}
+:root[data-theme='dark'] {
+  --fig-c1: #3987e5;
+  --fig-c2: #d95926;
+  --fig-c3: #199e70;
+  --fig-c4: #c98500;
+  --fig-c5: #d55181;
+  --fig-c6: #008300;
+  --fig-c7: #9085e9;
+  --fig-c8: #e66767;
+  --fig-c-other: #7d8c97;
+  --fig-on-c: #ffffff;
+  --fig-seq-1: #184f95;
+  --fig-seq-2: #256abf;
+  --fig-seq-3: #3987e5;
+  --fig-seq-4: #6da7ec;
+  --fig-seq-5: #9ec5f4;
+  --fig-div-up-0: #5a2523;
+  --fig-div-up-1: #8e3330;
+  --fig-div-up-2: #d2524f;
+  --fig-div-up-3: #f09a95;
+  --fig-div-dn-0: #26343b;
+  --fig-div-dn-1: #3d5260;
+  --fig-div-dn-2: #6c8592;
+  --fig-div-dn-3: #a9bdc7;
+  --fig-div-mid: #1a2d35;
+  --fig-count-k: #6cbcd1;
+  --fig-count-n: #2f6474;
+  --fig-hull-op: 0.11;
+  --fig-edge-in-op: 0.4;
+  --fig-edge-x: #a9bcc4;
+  --fig-edge-x-op: 0.2;
+  --fig-euler-op: 0.22;
+}
+
 *,
 *::before,
 *::after {
@@ -9450,39 +9615,7 @@ html[data-density] .sites-tbl .cv {
   max-width: 13rem;
 }
 
-/* The Overlap page (kit-overlap.js): four categorical slots, validated with the data-viz palette checker in light and dark */
-:root {
-  --ov1: #2a78d6;
-  --ov2: #eb6834;
-  --ov3: #1baf7a;
-  --ov4: #eda100;
-  --ov-k: #155e75;
-  --ov-n: #94bac6;
-  --ov-ref: #374151;
-  --ov-fill: 0.16;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --ov1: #3987e5;
-    --ov2: #d95926;
-    --ov3: #199e70;
-    --ov4: #c98500;
-    --ov-k: #6cbcd1;
-    --ov-n: #2f6474;
-    --ov-ref: #c8d6db;
-    --ov-fill: 0.22;
-  }
-}
-:root[data-theme='dark'] {
-  --ov1: #3987e5;
-  --ov2: #d95926;
-  --ov3: #199e70;
-  --ov4: #c98500;
-  --ov-k: #6cbcd1;
-  --ov-n: #2f6474;
-  --ov-ref: #c8d6db;
-  --ov-fill: 0.22;
-}
+/* The Overlap page (kit-overlap.js): the figure uses the --fig-* tokens above */
 .ov-pick {
   display: grid;
   gap: 8px;
@@ -9610,11 +9743,11 @@ html[data-density] .sites-tbl .cv {
 .ovx {
   container-type: inline-size;
   position: relative;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--fig-surface);
+  border: 1px solid var(--fig-grid);
   border-radius: 14px;
   padding: 16px 18px 10px;
-  color: var(--ink);
+  color: var(--fig-ink);
 }
 .ovx-top {
   display: flex;
@@ -9633,8 +9766,8 @@ html[data-density] .sites-tbl .cv {
 .ovx-key {
   display: grid;
   gap: 6px;
-  font-size: 12.5px;
-  color: var(--ink-2);
+  font-size: var(--fig-fs-key);
+  color: var(--fig-ink-2);
   align-content: start;
   padding-top: 2px;
 }
@@ -9645,7 +9778,7 @@ html[data-density] .sites-tbl .cv {
   align-items: center;
 }
 .ovx-key .kh {
-  color: var(--muted);
+  color: var(--fig-muted);
   font-size: 11px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -9662,8 +9795,8 @@ html[data-density] .sites-tbl .cv {
   display: block;
 }
 .ovx-note {
-  font-size: 12px;
-  color: var(--muted);
+  font-size: var(--fig-fs-cap);
+  color: var(--fig-muted);
   margin: 4px 0 0;
   max-width: 62ch;
 }
@@ -9691,14 +9824,14 @@ html[data-density] .sites-tbl .cv {
   padding-bottom: 2px;
 }
 .colh {
-  font-size: 12px;
-  color: var(--ink-2);
+  font-size: var(--fig-fs-tick);
+  color: var(--fig-ink-2);
   font-weight: 600;
   display: block;
   margin-bottom: 2px;
 }
 .colh .muted {
-  color: var(--muted);
+  color: var(--fig-muted);
   font-weight: 400;
 }
 .ovx .grp {
@@ -9706,9 +9839,9 @@ html[data-density] .sites-tbl .cv {
   font-size: 11px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--fig-muted);
   padding: 10px 0 2px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--fig-grid);
   margin-bottom: 2px;
 }
 .ovx .grp i {
@@ -9734,22 +9867,22 @@ html[data-density] .sites-tbl .cv {
   z-index: 1;
 }
 .ovx .r.data.hover > .c::before {
-  background: var(--wash);
+  background: var(--fig-hover);
 }
 .ovx .r.data.sel > .c::before {
-  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  background: var(--fig-select);
 }
 .ovx .r.data > .c.lab::before {
   left: -18px;
 }
 .ovx .r.data.sel > .c.lab::before {
-  box-shadow: inset 3px 0 0 var(--accent);
+  box-shadow: inset 3px 0 0 var(--fig-select-edge);
 }
 .ovx .r.data > .c.vals::before {
   right: -18px;
 }
 .ovx .r.data > .c.lab:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fig-select-edge);
   outline-offset: 2px;
 }
 .ovx .term {
@@ -9778,19 +9911,19 @@ html[data-density] .sites-tbl .cv {
   align-items: center;
   gap: 10px;
   font-size: 12.5px;
-  color: var(--ink-2);
+  color: var(--fig-ink-2);
   white-space: nowrap;
 }
 .ovx .vals {
-  font-size: 12.5px;
+  font-size: var(--fig-fs-value);
   gap: 8px;
   justify-content: flex-start;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .ovx .vals .sh {
-  font-weight: 650;
-  color: var(--ink);
+  font-weight: 700;
+  color: var(--fig-ink);
   width: 54px;
   flex: none;
   text-align: right;
@@ -9799,35 +9932,36 @@ html[data-density] .sites-tbl .cv {
   display: flex;
   gap: 8px;
   font-size: 11px;
-  color: var(--muted);
+  color: var(--fig-muted);
 }
 .ovx .vals.vh .sh,
 .ovx .vals.vh .fo {
   font-weight: 400;
-  color: var(--muted);
+  color: var(--fig-muted);
 }
 .ovx .vals .fo {
-  color: var(--ink-2);
+  color: var(--fig-ink-2);
   width: 48px;
   flex: none;
   text-align: right;
 }
 .ovx .vals .q,
 .ovx .vals .nt {
-  color: var(--muted);
+  font-size: var(--fig-fs-cap);
+  color: var(--fig-muted);
 }
 .ovx svg text {
   font-variant-numeric: tabular-nums;
 }
 .ovx .foot {
-  font-size: 12px;
-  color: var(--muted);
+  font-size: var(--fig-fs-cap);
+  color: var(--fig-muted);
   margin: 10px 0 2px;
   padding-top: 8px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--fig-grid);
 }
 .ovx .foot b {
-  color: var(--ink-2);
+  color: var(--fig-ink-2);
   font-weight: 600;
 }
 .ovx .phline {
@@ -9836,26 +9970,26 @@ html[data-density] .sites-tbl .cv {
 .ovx .tip {
   position: absolute;
   z-index: 5;
-  width: 330px;
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
+  width: var(--fig-tip-w);
+  background: var(--fig-surface);
+  border: 1px solid var(--fig-axis);
   border-radius: 9px;
   box-shadow: var(--shadow);
   padding: 9px 12px 10px;
   font-size: 12.5px;
-  color: var(--ink-2);
+  color: var(--fig-ink-2);
   pointer-events: none;
 }
 .ovx .tip .t1 {
-  color: var(--muted);
+  color: var(--fig-muted);
   font-size: 12px;
   margin-bottom: 4px;
 }
 .ovx .tip .t1 b {
-  color: var(--ink);
+  color: var(--fig-ink);
 }
 .ovx .tip .big {
-  color: var(--ink);
+  color: var(--fig-ink);
   font-weight: 650;
   font-size: 15px;
   font-variant-numeric: tabular-nums;
@@ -9874,7 +10008,7 @@ html[data-density] .sites-tbl .cv {
   transform: translateY(-3px);
 }
 .ovx .tip .hint {
-  color: var(--muted);
+  color: var(--fig-muted);
   font-size: 11.5px;
   margin-top: 5px;
 }
@@ -9907,7 +10041,7 @@ html[data-density] .sites-tbl .cv {
     grid-column: 1 / -1;
     grid-template-columns: subgrid;
     font-size: 11.5px;
-    color: var(--ink-2);
+    color: var(--fig-ink-2);
     font-variant-numeric: tabular-nums;
     margin: -2px 0 6px;
   }
@@ -9916,7 +10050,7 @@ html[data-density] .sites-tbl .cv {
     display: flex;
     gap: 6px;
     font-size: 12.5px;
-    color: var(--ink);
+    color: var(--fig-ink);
     margin: 2px 0 0;
   }
   .ovx .phline .nm1 b {
@@ -9931,11 +10065,11 @@ html[data-density] .sites-tbl .cv {
   }
   .ovx .phline .b .sh {
     font-weight: 650;
-    color: var(--ink);
+    color: var(--fig-ink);
   }
   .ovx .phline .b .q,
   .ovx .phline .nt {
-    color: var(--muted);
+    color: var(--fig-muted);
   }
   .ovx .phline.top {
     margin: 4px 0 -2px;

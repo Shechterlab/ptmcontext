@@ -430,7 +430,8 @@
   const unitWord = (u) => ({ proteins: 'proteins', sites: 'sites', enzymes: 'enzymes', readers: 'readers' })[u];
   // ---- the figure: a region matrix with size and share bars, and an area-proportional glyph for two or three terms -------------
   const NS = 'http://www.w3.org/2000/svg';
-  const QCUT = 0.05;
+  const PADJ = K.PADJ ?? 0.05,
+    MIN_EFF = K.MIN_EFFECT ?? 1.1; // the site's significance rule: q <= PADJ and at least MIN_EFF
   const fmtInt = (v) => Number(v).toLocaleString('en-US');
   const pct = (v) => (v * 100 >= 99.95 ? '100' : (v * 100).toFixed(1)) + '%';
   const fqf = (v) => (v == null ? '–' : K.fq(v));
@@ -814,15 +815,15 @@
           cx: k.x,
           cy: k.y,
           r: k.r,
-          fill: `var(--ov${i + 1})`,
-          'fill-opacity': 'var(--ov-fill)',
-          style: 'fill-opacity:var(--ov-fill)',
+          fill: `var(--fig-c${i + 1})`,
+          'fill-opacity': 'var(--fig-euler-op)',
+          style: 'fill-opacity:var(--fig-euler-op)',
         })
       )
     );
     [
-      ['hover', 'var(--ink)', 0.06],
-      ['sel', 'var(--accent)', 0.14],
+      ['hover', 'var(--fig-ink)', 0.06],
+      ['sel', 'var(--fig-select-edge)', 0.14],
     ].forEach(([key, col, op]) => {
       const m = st[key];
       if (!m) return;
@@ -863,13 +864,22 @@
     });
     C_.forEach((k, i) =>
       S_.appendChild(
-        el('circle', { cx: k.x, cy: k.y, r: k.r, fill: 'none', stroke: `var(--ov${i + 1})`, 'stroke-width': 1.5 })
+        el('circle', { cx: k.x, cy: k.y, r: k.r, fill: 'none', stroke: `var(--fig-c${i + 1})`, 'stroke-width': 1.5 })
       )
     );
     L.leaders.forEach((l) => {
-      S_.appendChild(el('line', { x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2, stroke: 'var(--ink-2)', 'stroke-width': 1 }));
       S_.appendChild(
-        el('circle', { cx: l.x1, cy: l.y1, r: 2, fill: 'var(--ink-2)', stroke: 'var(--surface)', 'stroke-width': 1 })
+        el('line', { x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2, stroke: 'var(--fig-ink-2)', 'stroke-width': 1 })
+      );
+      S_.appendChild(
+        el('circle', {
+          cx: l.x1,
+          cy: l.y1,
+          r: 2,
+          fill: 'var(--fig-ink-2)',
+          stroke: 'var(--fig-surface)',
+          'stroke-width': 1,
+        })
       );
     });
     L.labels.forEach((l) =>
@@ -882,8 +892,8 @@
             'text-anchor': 'middle',
             'font-size': 12,
             'font-weight': 650,
-            fill: 'var(--ink)',
-            stroke: 'var(--surface)',
+            fill: 'var(--fig-ink)',
+            stroke: 'var(--fig-surface)',
             'stroke-width': 3,
             'paint-order': 'stroke',
             'stroke-linejoin': 'round',
@@ -896,7 +906,14 @@
       S_.appendChild(
         el(
           'text',
-          { x: l.x, y: l.y + 4.5, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 700, fill: 'var(--ink-2)' },
+          {
+            x: l.x,
+            y: l.y + 4.5,
+            'text-anchor': 'middle',
+            'font-size': 13,
+            'font-weight': 700,
+            fill: 'var(--fig-ink-2)',
+          },
           [LETTERS[l.i]]
         )
       )
@@ -934,10 +951,12 @@
     return { base, regs, terms, sitesU, tested: !!res.test };
   }
   const isTested = (r) => !r.few && r.q != null;
+  // a bar is filled when q <= PADJ and the effect is at least MIN_EFFECT (up: more, down: less); hollow otherwise
   const dirOf = (r, base, sitesU) => {
     if (!isTested(r)) return 'nt';
-    if (r.q >= QCUT) return 'ns';
-    return sitesU ? ((r.or ?? r.fold) > 1 ? 'more' : 'less') : r.k / r.n > base ? 'more' : 'less';
+    const e = sitesU ? (r.or ?? r.fold) : r.k / r.n / base;
+    if (r.q > PADJ || !(e >= MIN_EFF || e <= 1 / MIN_EFF)) return 'ns';
+    return e > 1 ? 'more' : 'less';
   };
   const regLabel = (m, nT) => {
     const l = [...Array(nT).keys()].filter((i) => m & (1 << i)).map((i) => LETTERS[i]);
@@ -952,25 +971,25 @@
       plotW = w - tip,
       X = (v) => (v / sc.max) * plotW * (sc.brk < Infinity ? 0.86 : 1),
       kids = sc.ticks.map((t) =>
-        el('line', { x1: X(t) + 0.5, x2: X(t) + 0.5, y1: 0, y2: H, stroke: 'var(--line)', 'stroke-width': 1 })
+        el('line', { x1: X(t) + 0.5, x2: X(t) + 0.5, y1: 0, y2: H, stroke: 'var(--fig-grid)', 'stroke-width': 1 })
       ),
       broken = r.n >= sc.brk,
       end = broken ? plotW : X(r.n),
       kx = broken ? end * (r.k / r.n) : X(r.k);
-    kids.push(el('line', { x1: 0.5, x2: 0.5, y1: 0, y2: H, stroke: 'var(--line-strong)', 'stroke-width': 1 }));
+    kids.push(el('line', { x1: 0.5, x2: 0.5, y1: 0, y2: H, stroke: 'var(--fig-axis)', 'stroke-width': 1 }));
     if (r.n) {
       if (r.k > 0)
         kids.push(
           el('path', {
             d: r.k === r.n ? barPath(0, Math.max(end, 2), yc, 12, 3) : `M0,${yc - 6}H${kx}V${yc + 6}H0Z`,
-            fill: 'var(--ov-k)',
+            fill: 'var(--fig-count-k)',
           })
         );
       if (r.k < r.n)
         kids.push(
           el('path', {
             d: barPath(r.k ? Math.min(kx + 2, end - 1) : 0, Math.max(end, 2), yc, 12, 3),
-            fill: 'var(--ov-n)',
+            fill: 'var(--fig-count-n)',
           })
         );
       if (broken) {
@@ -978,7 +997,7 @@
         kids.push(
           el('path', {
             d: `M${bx - 3},${yc + 9}L${bx + 1},${yc - 9}M${bx + 3},${yc + 9}L${bx + 7},${yc - 9}`,
-            stroke: 'var(--surface)',
+            stroke: 'var(--fig-surface)',
             'stroke-width': 3,
             fill: 'none',
           })
@@ -986,7 +1005,7 @@
         kids.push(
           el('path', {
             d: `M${bx - 4.5},${yc + 9}L${bx - 0.5},${yc - 9}M${bx + 4.5},${yc + 9}L${bx + 8.5},${yc - 9}`,
-            stroke: 'var(--muted)',
+            stroke: 'var(--fig-muted)',
             'stroke-width': 1,
             fill: 'none',
           })
@@ -994,11 +1013,11 @@
       }
     }
     if (!phone) {
-      const t = el('text', { x: end + 6, y: yc + 4, 'font-size': 12, fill: 'var(--ink-2)' });
-      if (r.sitesOnly) t.appendChild(el('tspan', { fill: 'var(--ink)', 'font-weight': 600 }, [fmtInt(r.n)]));
+      const t = el('text', { x: end + 6, y: yc + 4, 'font-size': 12, fill: 'var(--fig-ink-2)' });
+      if (r.sitesOnly) t.appendChild(el('tspan', { fill: 'var(--fig-ink)', 'font-weight': 600 }, [fmtInt(r.n)]));
       else {
         t.appendChild(el('tspan', {}, [fmtInt(r.k) + ' / ']));
-        t.appendChild(el('tspan', { fill: 'var(--ink)', 'font-weight': 600 }, [fmtInt(r.n)]));
+        t.appendChild(el('tspan', { fill: 'var(--fig-ink)', 'font-weight': 600 }, [fmtInt(r.n)]));
       }
       kids.push(t);
     }
@@ -1011,9 +1030,11 @@
       d = dirOf(r, base),
       kids = [];
     [0, 0.25, 0.5, 0.75, 1].forEach((t) =>
-      kids.push(el('line', { x1: X(t) + 0.5, x2: X(t) + 0.5, y1: 0, y2: H, stroke: 'var(--line)', 'stroke-width': 1 }))
+      kids.push(
+        el('line', { x1: X(t) + 0.5, x2: X(t) + 0.5, y1: 0, y2: H, stroke: 'var(--fig-grid)', 'stroke-width': 1 })
+      )
     );
-    kids.push(el('line', { x1: X(base), x2: X(base), y1: 0, y2: H, stroke: 'var(--ov-ref)', 'stroke-width': 1.5 }));
+    kids.push(el('line', { x1: X(base), x2: X(base), y1: 0, y2: H, stroke: 'var(--fig-ref)', 'stroke-width': 1.5 }));
     if (isTested(r)) {
       const s = r.k / r.n,
         [lo, hi] = wilson(r.k, r.n),
@@ -1021,15 +1042,15 @@
         x1 = X(s),
         p = el('path', { d: barPath(x0, Math.abs(x1 - x0) < 1.5 ? x0 + (x1 >= x0 ? 1.5 : -1.5) : x1, yc, 10, 3) });
       if (d === 'ns') {
-        p.setAttribute('fill', 'var(--surface)');
-        p.setAttribute('stroke', 'var(--muted)');
+        p.setAttribute('fill', 'var(--fig-surface)');
+        p.setAttribute('stroke', 'var(--fig-muted)');
         p.setAttribute('stroke-width', 1.25);
-      } else p.setAttribute('fill', `var(--${d})`);
+      } else p.setAttribute('fill', `var(--fig-${d})`);
       kids.push(p);
       kids.push(
         el('path', {
           d: `M${X(lo)},${yc}H${X(hi)}M${X(lo)},${yc - 4}V${yc + 4}M${X(hi)},${yc - 4}V${yc + 4}`,
-          stroke: 'var(--ink-2)',
+          stroke: 'var(--fig-ink-2)',
           'stroke-width': 1.25,
           fill: 'none',
         })
@@ -1054,9 +1075,16 @@
       kids = [];
     for (let t = -L2; t <= L2; t++)
       kids.push(
-        el('line', { x1: X(2 ** t) + 0.5, x2: X(2 ** t) + 0.5, y1: 0, y2: H, stroke: 'var(--line)', 'stroke-width': 1 })
+        el('line', {
+          x1: X(2 ** t) + 0.5,
+          x2: X(2 ** t) + 0.5,
+          y1: 0,
+          y2: H,
+          stroke: 'var(--fig-grid)',
+          'stroke-width': 1,
+        })
       );
-    kids.push(el('line', { x1: X(1), x2: X(1), y1: 0, y2: H, stroke: 'var(--ov-ref)', 'stroke-width': 1.5 }));
+    kids.push(el('line', { x1: X(1), x2: X(1), y1: 0, y2: H, stroke: 'var(--fig-ref)', 'stroke-width': 1.5 }));
     if (isTested(r)) {
       const f = r.or ?? r.fold,
         [lo, hi] = woolf(r.a, r.b, r.c, r.d),
@@ -1065,15 +1093,15 @@
         x1 = X(f),
         p = el('path', { d: barPath(x0, Math.abs(x1 - x0) < 1.5 ? x0 + 1.5 : x1, yc, 10, 3) });
       if (d === 'ns') {
-        p.setAttribute('fill', 'var(--surface)');
-        p.setAttribute('stroke', 'var(--muted)');
+        p.setAttribute('fill', 'var(--fig-surface)');
+        p.setAttribute('stroke', 'var(--fig-muted)');
         p.setAttribute('stroke-width', 1.25);
-      } else p.setAttribute('fill', `var(--${d})`);
+      } else p.setAttribute('fill', `var(--fig-${d})`);
       kids.push(p);
       kids.push(
         el('path', {
           d: `M${X(lo)},${yc}H${X(hi)}M${X(lo)},${yc - 4}V${yc + 4}M${X(hi)},${yc - 4}V${yc + 4}`,
-          stroke: 'var(--ink-2)',
+          stroke: 'var(--fig-ink-2)',
           'stroke-width': 1.25,
           fill: 'none',
         })
@@ -1086,10 +1114,10 @@
       'text',
       {
         x,
-        y: 11,
+        y: 12,
         'text-anchor': anchor,
-        'font-size': 11,
-        fill: ref ? 'var(--ink)' : 'var(--muted)',
+        'font-size': 12,
+        fill: ref ? 'var(--fig-ink)' : 'var(--fig-muted)',
         ...(ref ? { 'font-weight': 650 } : {}),
       },
       [s]
@@ -1101,15 +1129,15 @@
       kids = [];
     sc.ticks.forEach((t, i) => {
       const s = t >= 10000 ? t / 1000 + 'K' : fmtInt(t),
-        hw = tw(s, 11, 400) / 2;
+        hw = tw(s, 12, 400) / 2;
       kids.push(tick(X(t), i === 0 ? 'start' : X(t) + hw > w ? 'end' : 'middle', s));
     });
-    return svgEl(w, 15, kids);
+    return svgEl(w, 17, kids);
   }
   function axisShare(base, w) {
     const X = (v) => v * (w - 6),
       kids = [],
-      rw = tw(pct(base), 11, 650),
+      rw = tw(pct(base), 12, 650),
       rx0 = X(base) - rw / 2 - 5,
       rx1 = X(base) + rw / 2 + 5;
     [
@@ -1117,14 +1145,14 @@
       [0.5, '50%'],
       [1, '100%'],
     ].forEach(([v, s], i) => {
-      const w0 = tw(s, 11, 400),
+      const w0 = tw(s, 12, 400),
         a = i === 0 ? X(v) : i === 2 ? X(v) - w0 : X(v) - w0 / 2;
       if (a < rx1 && a + w0 > rx0) return;
       kids.push(tick(X(v), i === 0 ? 'start' : i === 2 ? 'end' : 'middle', s));
     });
     kids.push(tick(X(base), 'middle', pct(base), true));
-    kids.push(el('line', { x1: X(base), x2: X(base), y1: 14, y2: 18, stroke: 'var(--ov-ref)', 'stroke-width': 1.5 }));
-    return svgEl(w, 18, kids);
+    kids.push(el('line', { x1: X(base), x2: X(base), y1: 16, y2: 20, stroke: 'var(--fig-ref)', 'stroke-width': 1.5 }));
+    return svgEl(w, 20, kids);
   }
   function axisFold(L2, w) {
     const X = (v) => ((Math.log2(v) + L2) / (2 * L2)) * (w - 6),
@@ -1135,8 +1163,8 @@
         s = t === 0 ? '1×' : t > 0 ? `${v}×` : `1/${2 ** -t}`;
       kids.push(tick(X(v), t === -L2 ? 'start' : t === L2 ? 'end' : 'middle', s, t === 0));
     }
-    kids.push(el('line', { x1: X(1), x2: X(1), y1: 14, y2: 18, stroke: 'var(--ov-ref)', 'stroke-width': 1.5 }));
-    return svgEl(w, 18, kids);
+    kids.push(el('line', { x1: X(1), x2: X(1), y1: 16, y2: 20, stroke: 'var(--fig-ref)', 'stroke-width': 1.5 }));
+    return svgEl(w, 20, kids);
   }
   function dotsSvg(m, nT) {
     const sp = 16,
@@ -1149,7 +1177,7 @@
           x2: 6 + on.at(-1) * sp,
           y1: 10,
           y2: 10,
-          stroke: 'var(--ink-2)',
+          stroke: 'var(--fig-ink-2)',
           'stroke-width': 1.5,
         })
       );
@@ -1160,16 +1188,16 @@
               cx: 6 + i * sp,
               cy: 10,
               r: 5,
-              fill: `var(--ov${i + 1})`,
-              stroke: 'var(--surface)',
+              fill: `var(--fig-c${i + 1})`,
+              stroke: 'var(--fig-surface)',
               'stroke-width': 1.5,
             })
           : el('circle', {
               cx: 6 + i * sp,
               cy: 10,
               r: 3,
-              fill: 'var(--surface)',
-              stroke: 'var(--line-strong)',
+              fill: 'var(--fig-surface)',
+              stroke: 'var(--fig-axis)',
               'stroke-width': 1.25,
             })
       );
@@ -1189,19 +1217,19 @@
     ]);
   const whisker = () =>
     svgEl(18, 10, [
-      el('path', { d: 'M2,5H16M2,1V9M16,1V9', stroke: 'var(--ink-2)', 'stroke-width': 1.25, fill: 'none' }),
+      el('path', { d: 'M2,5H16M2,1V9M16,1V9', stroke: 'var(--fig-ink-2)', 'stroke-width': 1.25, fill: 'none' }),
     ]);
   // the key: its items (a function of what the figure shows)
   function keyItems(fd, res) {
     const sitesU = fd.sitesU,
       g1 = sitesU
-        ? [['Sites in the region', [[keyBar('var(--ov-k)'), 'sites']]]]
+        ? [['Sites in the region', [[keyBar('var(--fig-count-k)'), 'sites']]]]
         : [
             [
               'Proteins in the region',
               [
-                [keyBar('var(--ov-k)'), 'with sites'],
-                [keyBar('var(--ov-n)'), 'without'],
+                [keyBar('var(--fig-count-k)'), 'with sites'],
+                [keyBar('var(--fig-count-n)'), 'without'],
               ],
             ],
           ],
@@ -1210,18 +1238,18 @@
         : [
             [
               sitesU
-                ? 'Fold, sites against the other residues (log scale)'
+                ? 'Odds ratio (Fisher), sites against the other residues, log scale'
                 : 'Share with sites, against all reviewed proteins',
               [
-                [keyBar('var(--more)'), 'more (q < 0.05)'],
-                [keyBar('var(--less)'), 'fewer (q < 0.05)'],
-                [keyBar('var(--surface)', 'var(--muted)'), 'no difference'],
+                [keyBar('var(--fig-more)'), 'more (q ≤ 0.05, ≥ 1.1×)'],
+                [keyBar('var(--fig-less)'), 'fewer (q ≤ 0.05, ≥ 1.1×)'],
+                [keyBar('var(--fig-surface)', 'var(--fig-muted)'), 'q > 0.05 or under 1.1×'],
                 [whisker(), '95% interval'],
                 [
                   svgEl(6, 14, [
-                    el('line', { x1: 3, x2: 3, y1: 0, y2: 14, stroke: 'var(--ov-ref)', 'stroke-width': 1.5 }),
+                    el('line', { x1: 3, x2: 3, y1: 0, y2: 14, stroke: 'var(--fig-ref)', 'stroke-width': 1.5 }),
                   ]),
-                  sitesU ? 'no difference (1×)' : `all reviewed proteins, ${pct(fd.base)}`,
+                  sitesU ? 'no difference (OR 1)' : `all reviewed proteins, ${pct(fd.base)}`,
                 ],
               ],
             ],
@@ -1364,10 +1392,12 @@
       return s;
     };
     h2.appendChild(ch(fd.sitesU ? 'Sites' : cap(unitWord(res.unit)), fd.sitesU ? '' : 'with sites / all'));
-    h3.appendChild(ch(!fd.tested ? 'Not tested here' : fd.sitesU ? 'Fold, log scale' : 'Share with sites', ''));
+    h3.appendChild(
+      ch(!fd.tested ? 'Not tested here' : fd.sitesU ? 'Odds ratio, log scale (Fisher)' : 'Share with sites', '')
+    );
     if (fd.tested) {
       const hv = html('span', 'vals vh');
-      hv.appendChild(html('span', 'sh', fd.sitesU ? 'fold' : 'share'));
+      hv.appendChild(html('span', 'sh', fd.sitesU ? 'OR' : 'share'));
       hv.appendChild(html('span', 'fo', fd.sitesU ? '' : 'fold'));
       hv.appendChild(html('span', 'q', 'q'));
       h4.appendChild(hv);
@@ -1412,7 +1442,7 @@
         tm = html('span', 'term'),
         sw = html('span', 'sw'),
         nm = html('span', 'nm', t.name);
-      sw.style.background = `var(--ov${i + 1})`;
+      sw.style.background = `var(--fig-c${i + 1})`;
       tm.appendChild(sw);
       tm.appendChild(html('b', '', t.L));
       nm.title = t.name;
@@ -1504,20 +1534,20 @@
       l.appendChild(html('span', '', rest));
       tip.appendChild(l);
     };
-    if (fd.sitesU) ln('var(--ov-k)', fmtInt(rec.n), `sites on ${fmtInt(rec.proteins ?? 0)} proteins`);
-    else ln('var(--ov-k)', `${fmtInt(rec.k)} / ${fmtInt(rec.n)}`, `${unitWord(res.unit)} with sites`);
+    if (fd.sitesU) ln('var(--fig-count-k)', fmtInt(rec.n), `sites on ${fmtInt(rec.proteins ?? 0)} proteins`);
+    else ln('var(--fig-count-k)', `${fmtInt(rec.k)} / ${fmtInt(rec.n)}`, `${unitWord(res.unit)} with sites`);
     if (isTested(rec)) {
       if (fd.sitesU) {
         const [lo, hi] = woolf(rec.a, rec.b, rec.c, rec.d);
         ln(
-          `var(--${dirOf(rec, 0, true) === 'ns' ? 'muted' : dirOf(rec, 0, true)})`,
+          `var(--fig-${dirOf(rec, 0, true) === 'ns' ? 'ns' : dirOf(rec, 0, true)})`,
           foldFmt(rec.or ?? rec.fold),
           `odds ratio · 95% interval ${lo.toFixed(2)}–${hi.toFixed(2)}`
         );
       } else {
         const [lo, hi] = wilson(rec.k, rec.n);
         ln(
-          `var(--${dirOf(rec, fd.base) === 'ns' ? 'muted' : dirOf(rec, fd.base)})`,
+          `var(--fig-${dirOf(rec, fd.base) === 'ns' ? 'ns' : dirOf(rec, fd.base)})`,
           pct(rec.k / rec.n),
           `with sites · 95% interval ${Math.round(lo * 100)}–${Math.round(hi * 100)}%`
         );
@@ -1611,28 +1641,32 @@
   (K.afterRender ||= []).push(drawFigure);
 
   // -- the export: the same rows as one SVG at a fixed width, no hover or selection
+  // the literal light values an export draws with (the figure style guide's FIG_EXPORT): never the dark page's
   const TOK = {
-    surface: '#ffffff',
-    ink: '#111827',
-    'ink-2': '#374151',
-    muted: '#5f6f78',
-    line: '#e0e8eb',
-    'line-strong': '#c7d4d9',
-    accent: '#c2410c',
-    more: '#b42318',
-    less: '#334155',
-    ov1: LIGHT[0],
-    ov2: LIGHT[1],
-    ov3: LIGHT[2],
-    ov4: LIGHT[3],
-    'ov-k': '#155e75',
-    'ov-n': '#94bac6',
-    'ov-ref': '#374151',
-    'ov-fill': '.16',
+    'fig-surface': '#ffffff',
+    'fig-ink': '#111827',
+    'fig-ink-2': '#374151',
+    'fig-muted': '#5f6f78',
+    'fig-grid': '#e0e8eb',
+    'fig-axis': '#c7d4d9',
+    'fig-ref': '#374151',
+    'fig-more': '#b42318',
+    'fig-less': '#334155',
+    'fig-ns': '#5f6f78',
+    'fig-select-edge': '#c2410c',
+    'fig-c1': LIGHT[0],
+    'fig-c2': LIGHT[1],
+    'fig-c3': LIGHT[2],
+    'fig-c4': LIGHT[3],
+    'fig-count-k': '#155e75',
+    'fig-count-n': '#94bac6',
+    'fig-euler-op': '.16',
   };
-  function exportBody(res, Wd = 900) {
+  // the figure as one SVG at a preset's width: screen (a wide grid with a values column) or paper (the values go on a second line)
+  function exportBody(res, Wd = 920) {
     const fd = figData(res),
       nT = res.nT,
+      two = Wd < 760,
       root = el('g', {}),
       T = (x, y, s, o = {}) =>
         root.appendChild(
@@ -1642,13 +1676,18 @@
               x,
               y,
               'font-size': o.size || 12,
-              fill: o.fill || 'var(--ink)',
+              fill: o.fill || 'var(--fig-ink)',
               ...(o.w ? { 'font-weight': o.w } : {}),
               ...(o.anchor ? { 'text-anchor': o.anchor } : {}),
             },
             [s]
           )
-        );
+        ),
+      place = (node, x, yy) => {
+        node.setAttribute('x', x);
+        node.setAttribute('y', yy);
+        root.appendChild(node);
+      };
     let y = 0,
       gw = 0;
     const sizes = fd.terms.map((t) => t.n);
@@ -1659,37 +1698,33 @@
           { w: 300, h: 210 }
         ),
         g = glyphSvg(L, nT, {});
-      g.setAttribute('x', 0);
-      g.setAttribute('y', 0);
-      root.appendChild(g);
-      gw = L.vw + 28;
+      place(g, 0, 0);
+      gw = L.vw + 24;
       y = L.vh;
     }
-    let ky = 12,
-      kx = gw;
+    let ky = 12;
     keyItems(fd, res).forEach(([head, items]) => {
-      T(gw, ky, head.toUpperCase(), { size: 10, fill: 'var(--muted)' });
+      T(gw, ky, head.toUpperCase(), { size: 10, fill: 'var(--fig-muted)' });
       ky += 16;
-      kx = gw;
+      let kx = gw;
       items.forEach(([glyph, txt]) => {
-        const w = tw(txt, 12, 400) + 30;
+        const w = tw(txt, 12.5, 400) + 30;
         if (kx > gw && kx + w > Wd) {
           kx = gw;
-          ky += 16;
+          ky += 17;
         }
-        glyph.setAttribute('x', kx);
-        glyph.setAttribute('y', ky - 9);
-        root.appendChild(glyph);
-        T(kx + 24, ky, txt, { fill: 'var(--ink-2)' });
+        place(glyph, kx, ky - 9);
+        T(kx + 24, ky, txt, { size: 12.5, fill: 'var(--fig-ink-2)' });
         kx += w + 8;
       });
       ky += 22;
     });
     y = Math.max(y, ky) + 8;
-    const cols = { lab: 200, a: 230, b: 240, v: 188, gap: 14 },
+    const cols = two ? { lab: 128, a: 220, b: 252, v: 0, gap: 12 } : { lab: 200, a: 230, b: 240, v: 188, gap: 14 },
       xa = cols.lab + cols.gap,
       xb = xa + cols.a + cols.gap,
       xv = xb + cols.b + cols.gap,
+      pitch = two ? 46 : 30,
       sc = sizeScale([...fd.terms.map((t) => t.n), ...fd.regs.map((r) => r.n)]),
       L2 = fd.sitesU ? foldDomain(fd.regs) : 0;
     sc.tip =
@@ -1705,54 +1740,79 @@
       Math.max(2, Math.min(6, Math.floor(((cols.a - sc.tip) * (sc.brk < Infinity ? 0.86 : 1)) / 38)))
     );
     sc.max = Math.max(sc.base, sc.ticks.at(-1));
-    const place = (node, x, yy) => {
-      node.setAttribute('x', x);
-      node.setAttribute('y', yy);
-      root.appendChild(node);
-    };
-    T(xa, y + 10, fd.sitesU ? 'Sites' : cap(unitWord(res.unit)), { w: 600, fill: 'var(--ink-2)' });
-    if (fd.tested) T(xb, y + 10, fd.sitesU ? 'Fold, log scale' : 'Share with sites', { w: 600, fill: 'var(--ink-2)' });
-    if (fd.tested) {
-      T(xv, y + 10, fd.sitesU ? 'fold' : 'share', { size: 11, fill: 'var(--muted)' });
-      if (!fd.sitesU) T(xv + 62, y + 10, 'fold', { size: 11, fill: 'var(--muted)' });
-      T(xv + 116, y + 10, 'q', { size: 11, fill: 'var(--muted)' });
+    T(xa, y + 11, fd.sitesU ? 'Sites' : cap(unitWord(res.unit)), { w: 600, fill: 'var(--fig-ink-2)' });
+    if (fd.tested)
+      T(xb, y + 11, fd.sitesU ? 'Odds ratio, log scale (Fisher)' : 'Share with sites', {
+        w: 600,
+        fill: 'var(--fig-ink-2)',
+      });
+    if (fd.tested && !two) {
+      T(xv, y + 11, fd.sitesU ? 'OR' : 'share', { size: 12, fill: 'var(--fig-muted)' });
+      if (!fd.sitesU) T(xv + 62, y + 11, 'fold', { size: 12, fill: 'var(--fig-muted)' });
+      T(xv + 116, y + 11, 'q', { size: 12, fill: 'var(--fig-muted)' });
     }
-    y += 14;
+    y += 16;
     place(axisSize(sc, cols.a, false), xa, y);
     if (fd.tested) place(fd.sitesU ? axisFold(L2, cols.b) : axisShare(fd.base, cols.b), xb, y);
-    y += 22;
+    y += 24;
+    const valueText = (rec) =>
+      isTested(rec)
+        ? [
+            fd.sitesU ? foldFmt(rec.or ?? rec.fold) : pct(rec.k / rec.n),
+            fd.sitesU ? '' : foldFmt(rec.k / rec.n / fd.base, rec.k),
+            'q ' + fqf(rec.q),
+          ]
+        : null;
     const row = (rec, isTerm) => {
       if (isTerm) {
-        root.appendChild(el('rect', { x: 0, y: y + 9, width: 11, height: 11, rx: 3, fill: `var(--ov${rec.i + 1})` }));
-        T(18, y + 19, rec.L, { w: 700 });
+        root.appendChild(
+          el('rect', { x: 0, y: y + 9, width: 11, height: 11, rx: 3, fill: `var(--fig-c${rec.i + 1})` })
+        );
+        T(18, y + 19, rec.L, { w: 700, size: 13 });
         let nm = rec.name;
         while (nm.length > 3 && tw(nm, 13, 400) > cols.lab - 38) nm = nm.slice(0, -2);
         T(32, y + 19, nm === rec.name ? nm : nm + '…', { size: 13 });
       } else {
         place(dotsSvg(rec.m, nT), 0, y + 5);
-        T(12 + (nT - 1) * 16 + 10, y + 19, regLabel(rec.m, nT), { fill: 'var(--ink-2)' });
+        T(12 + (nT - 1) * 16 + 10, y + 19, regLabel(rec.m, nT), { size: 12.5, fill: 'var(--fig-ink-2)' });
       }
       place(sizeCell({ ...rec, sitesOnly: fd.sitesU }, sc, cols.a, false), xa, y);
       if (fd.tested)
         place(fd.sitesU ? foldCell(rec, L2, cols.b, false) : shareCell(rec, fd.base, cols.b, false), xb, y);
       if (fd.tested) {
-        if (isTested(rec)) {
-          T(xv + 48, y + 19, fd.sitesU ? foldFmt(rec.or ?? rec.fold) : pct(rec.k / rec.n), { w: 650, anchor: 'end' });
-          if (!fd.sitesU)
-            T(xv + 110, y + 19, foldFmt(rec.k / rec.n / fd.base, rec.k), { fill: 'var(--ink-2)', anchor: 'end' });
-          T(xv + 116, y + 19, 'q ' + fqf(rec.q), { fill: 'var(--muted)' });
+        const v = valueText(rec);
+        if (two) {
+          // the values under the bars, as on a phone
+          if (v) {
+            T(xb, y + 41, v[0], { size: 13, w: 700 });
+            T(xb + tw(v[0], 13, 700) + 8, y + 41, [v[1], v[2]].filter(Boolean).join(' · '), {
+              size: 12,
+              fill: 'var(--fig-muted)',
+            });
+          } else
+            T(xb, y + 41, `${fd.sitesU ? '' : `${rec.k} of `}${rec.n} · not tested (n < ${MIN_N})`, {
+              size: 12,
+              fill: 'var(--fig-muted)',
+            });
+        } else if (v) {
+          T(xv + 48, y + 19, v[0], { w: 700, size: 13, anchor: 'end' });
+          if (v[1]) T(xv + 110, y + 19, v[1], { size: 13, fill: 'var(--fig-ink-2)', anchor: 'end' });
+          T(xv + 116, y + 19, v[2], { size: 12, fill: 'var(--fig-muted)' });
         } else
           T(xv, y + 19, `${fd.sitesU ? '' : `${rec.k} of `}${rec.n} · not tested (n < ${MIN_N})`, {
-            fill: 'var(--muted)',
+            size: 12,
+            fill: 'var(--fig-muted)',
           });
       }
-      y += 30;
+      y += pitch;
     };
     const grp = (a, b) => {
-      T(0, y + 14, a.toUpperCase(), { size: 10.5, fill: 'var(--muted)' });
-      T(tw(a.toUpperCase(), 10.5, 400) + 8, y + 14, b, { size: 11, fill: 'var(--muted)' });
-      root.appendChild(el('line', { x1: 0, x2: Wd, y1: y + 20, y2: y + 20, stroke: 'var(--line)', 'stroke-width': 1 }));
-      y += 24;
+      T(0, y + 14, a.toUpperCase(), { size: 10.5, fill: 'var(--fig-muted)' });
+      T(tw(a.toUpperCase(), 10.5, 400) + 8, y + 14, b, { size: 11, fill: 'var(--fig-muted)' });
+      root.appendChild(
+        el('line', { x1: 0, x2: Wd, y1: y + 20, y2: y + 20, stroke: 'var(--fig-grid)', 'stroke-width': 1 })
+      );
+      y += 26;
     };
     grp('Terms', '· every protein of each term');
     fd.terms.forEach((t) => row({ ...t, term: true }, true));
@@ -1773,12 +1833,12 @@
   // ---- the page ---------------------------------------------------------------------------------------------------------------
   const trail = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <b>Overlap</b></p>`;
   const fn = (v) => (v == null ? '–' : K.fx(v));
-  const SWATCH = (i) => `<span class="ov-sw" style="background:var(--ov${i + 1})" aria-hidden="true"></span>`;
+  const SWATCH = (i) => `<span class="ov-sw" style="background:var(--fig-c${i + 1})" aria-hidden="true"></span>`;
   const TESTS = {
     proteins:
       'One-sided hypergeometric test (as the protein-set questions): the region’s proteins with sites against all reviewed proteins; fold = share with sites in the region / share with sites among all reviewed proteins; q is Benjamini–Hochberg across the regions shown.',
     sites:
-      'Fisher’s exact test (pooled, as the residue questions’ “across all proteins” rows) of the residues of the proteins with sites: the share that are sites in the region against outside it; q is Benjamini–Hochberg across the regions shown.',
+      'Fisher’s exact test (pooled, as the residue questions’ “across all proteins” rows) of the residues of the proteins with sites: the odds ratio (OR) of being a site in the region against outside it (Haldane–Anscombe, Woolf interval); q is Benjamini–Hochberg across the regions shown.',
   };
   // fold, p and q of a row: too few to test; 0x when none has sites; a note where a huge set gives a tiny p at a small fold
   const foldCells = (r) =>
@@ -1793,7 +1853,7 @@
     const head = sites
       ? `<th scope="col">Region</th><th scope="col" class="num">Sites</th><th scope="col" class="num">Proteins</th>` +
         (t
-          ? `<th scope="col" class="num" title="${esc(TESTS.sites)}">Fold</th><th scope="col" class="num" title="${esc(TESTS.sites)}">p</th><th scope="col" class="num">q</th>`
+          ? `<th scope="col" class="num" title="${esc(TESTS.sites)}">OR</th><th scope="col" class="num" title="${esc(TESTS.sites)}">p</th><th scope="col" class="num">q</th>`
           : '')
       : `<th scope="col">Region</th><th scope="col" class="num">${esc(cap(unitWord(res.unit)))}</th><th scope="col" class="num">With sites</th>` +
         `<th scope="col" class="num">Share with sites</th>` +
@@ -1973,7 +2033,7 @@
       pickerHtml() +
       controls(res) +
       `<div id="ov-fig" class="ov-figwrap"></div>` +
-      `<div class="exp-row">${K.expBar(['svg', 'png', 'tsv'], 'ovexp', 'the overlap figure', '')}</div>` +
+      `<div class="exp-row">${K.expBar(['svg', 'png', 'tsv'], 'ovexp', 'the overlap figure', '').replace(/<\/div>$/, '<button type="button" class="exp-btn" data-ovexp="png-paper" title="PNG for a journal column: 180 mm wide at 300 dpi">PNG, 180 mm</button><button type="button" class="exp-btn" data-ovexp="svg-paper" title="SVG for a journal column: 180 mm wide">SVG, 180 mm</button></div>')}</div>` +
       regionHtml(res) +
       '<h3>Table</h3>' +
       tableHtml(res)
@@ -1987,29 +2047,41 @@
       .map((src) => `${src.title}: ${src.cite.join('; ')}.`)
       .join(' ');
   // ---- export ----------------------------------------------------------------------------------------------------------------
-  function figure() {
-    const res = RES.res,
-      b = exportBody(res, 900),
+  // preset: screen (960 units wide) or paper (680 units = 180 mm, 300 dpi)
+  function figure(preset = 'screen') {
+    const paper = preset === 'paper',
+      W_ = paper ? 680 : 960,
+      res = RES.res,
+      b = exportBody(res, W_ - 40),
       cite = citeFor(res.ts.map((t) => t.id));
-    return K.figureFrame({
+    const f = K.figureFrame({
       title: `Overlap of ${res.nT} terms`,
       sub: `${res.ts.map((t, i) => `${LETTERS[i]} ${t.label} (${int(t.n)} ${unitWord(res.unit)})`).join('; ')}. Unit: ${unitWord(res.unit)}.`,
       legend: [],
       body: b.svg,
       bodyH: b.h,
-      W: 940,
+      W: W_,
       note: [...b.notes, ...(b.bigs.length ? [`${b.bigs.join(', ')}: large set; small effect.`] : []), cite]
         .filter(Boolean)
         .join(' '),
       extra: { terms: S.ot, unit: res.unit },
     });
+    if (paper) {
+      f.mm = 180;
+      f.dpi = 300;
+      f.svg = f.svg.replace(
+        `width="${W_}" height="${f.H}"`,
+        `width="180mm" height="${((f.H / W_) * 180).toFixed(1)}mm"`
+      );
+    }
+    return f;
   }
   function tsv(res = RES.res) {
     const sites = res.unit === 'sites',
       fd = figData(res),
       rows = fd.regs;
     const head = sites
-      ? ['region', 'terms', 'sites', 'proteins', 'fold', 'ci95_lo', 'ci95_hi', 'p', 'q', 'tested']
+      ? ['region', 'terms', 'sites', 'proteins', 'odds_ratio', 'ci95_lo', 'ci95_hi', 'p', 'q', 'tested']
       : [
           'region',
           'terms',
@@ -2122,7 +2194,17 @@
     ],
     [
       '[data-ovexp]',
-      (btn) => K.exportFigure(btn.dataset.ovexp, figure, `${D.site.id || 'site'}_overlap`, btn, () => tsv()),
+      (btn) => {
+        const k = btn.dataset.ovexp,
+          paper = k.endsWith('-paper');
+        K.exportFigure(
+          paper ? k.replace('-paper', '') : k,
+          () => figure(paper ? 'paper' : 'screen'),
+          `${D.site.id || 'site'}_overlap${paper ? '_paper' : ''}`,
+          btn,
+          () => tsv()
+        );
+      },
     ],
     ['[data-ov-compare]', (el) => K.go('overlap', { ot: [el.dataset.ovCompare], ou: 'proteins', or: '' })]
   );
