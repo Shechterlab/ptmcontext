@@ -192,6 +192,16 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   it; it is colored and ranked only when at least `website.reading.min_maps` (default 2) of them differ the same way
   (q ≤ 0.05 and a fold of 1.1× or more, the test pointing the same way) and none the other way, gray otherwise.
 - `title, question, intro, note`: words.
+- `default_view`: `percent` or `fold` (default `fold`), what the cell and nucleus maps color by when the page opens. Every
+  map has a switch, "Percent with sites | Fold vs other proteins". Percent colors each part by the share of its proteins
+  that carry at least one mark, from the sequential ramp: the proteins are the reviewed proteins each map places in the part,
+  and the median of the maps that have it is drawn (each map's value on hover). The legend's tick is the share among all the
+  proteins the maps place. With a selection, the share of the part's proteins that are in it, the whole site's share on
+  hover. Use it for a mark that covers most proteins, where the fold has little to compare against. The counts are made when
+  the site is built (`cell_pct` in the site data: for each map `{N, n, sets: {set: [proteins, with a mark]}}`, from
+  protein_sets.json), so the view needs no new input. Exports and the table carry the active view; the percent table has
+  the columns `compartment, map, n_proteins, n_with_sites, percent` (with a selection `n_in_selection` replaces
+  `n_with_sites`, and `n_with_sites, percent_with_sites` follow).
 
 The kit draws the cell for other pages too: `K.cell.list()` (the drawings, their parts and phone crop, the crop from
 `config/cell_drawings.json`), `K.cell.parts(scoped?)` (every part a `website.cell` row colors: its row, tone, direction

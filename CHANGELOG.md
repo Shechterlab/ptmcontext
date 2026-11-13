@@ -1,3 +1,16 @@
+## Unreleased
+
+What changed for readers:
+
+- The cell and nucleus maps have a switch, "Percent with sites | Fold vs other proteins", on the Overview card, the
+  cell page and the enlarged map. Percent colors each compartment by the share of its proteins that carry at least one
+  mark, labelled with the count ("Chromatin 97% · 412 proteins"), with the share among all proteins as a tick in the key.
+  With several maps, the median is drawn and each map's value is on hover. With a selection, it shows the share of the
+  compartment's proteins in the selection, the whole site's share on hover. Exports and the table carry the active view.
+  Sites choose which opens first (`website.cell.default_view`).
+- Where the fold has too few proteins to compare, the label says which side is short and how many proteins carry a
+  mark ("too few without one to compare (97% carry one)").
+
 ## 0.4.0 (2026-11-13)
 
 What changed for readers:
