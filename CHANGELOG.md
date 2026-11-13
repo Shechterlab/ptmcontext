@@ -17,6 +17,9 @@ What changed for readers:
 - The histone question's filter says how many marked proteins are in none of its sets (no entry in the source table).
 - Phosphosite protein map: "Color phosphosites by" offers the kinase motif class.
 - Phone protein map: more width for the tracks.
+- On the way down every page slides the search, selection line and tabs away and keeps one thin bar: the site name, the way home, the
+  switcher, a search, the pages (wide screens) and the selection's counts with a filter dot. They return on the way up.
+  `website.header.scroll_bar` and `website.header.bar` set it.
 
 ## 0.3.1 (2026-11-13)
 

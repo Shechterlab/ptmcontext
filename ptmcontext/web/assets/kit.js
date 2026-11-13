@@ -3957,6 +3957,7 @@
         : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`; // the page first: "FUS R216 · <site>"
     document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg) && D.header?.compact !== false); // the header band in full on the Overview only (website.header.compact)
     document.body.classList.remove('bar-hidden');
+    document.querySelector('.toolbar')?.removeAttribute('inert');
     if (mod?.after) mod.after(S.arg);
     if (S.view === 'method') foldMethod();
     if (S.view === 'method' && S.arg) document.getElementById('m-' + S.arg)?.scrollIntoView({ block: 'start' });
@@ -4428,8 +4429,50 @@
           ? `<img src="${esc(a.querySelector('img').getAttribute('src'))}" alt="" ` + `width="28" height="28">`
           : ''
       }<span>${esc(a.textContent.trim())}</span></a>` +
-      `<span class="dock-stats">${stats}</span><span class="dock-end"><span class="dock-cite">${cite}</span></span></div>`;
+      `<span class="dock-stats">${stats}</span>` +
+      // the compact bar (website.header.bar): while the toolbar is slid away on the way down, the bar carries the pages, a search
+      // and the selection; each is shown only then (CSS body.bar-hidden), so nothing is doubled while the toolbar is in view
+      `<span class="dock-x dock-tabs" aria-label="Pages"></span>` +
+      `<span class="dock-end"><span class="dock-cite">${cite}</span>` +
+      `<span class="dock-x dock-search"><input id="dock-q" type="search" autocomplete="off" spellcheck="false" ` +
+      `placeholder="Search" aria-label="Search proteins and sites, or filter"><button type="button" class="dock-ico" ` +
+      `data-dock-search aria-label="Search" title="Search and pages">⌕</button></span>` +
+      `<button type="button" class="dock-x dock-sel" data-rail-open="filters" aria-label="Selection and filters"></button>` +
+      `</span></div>`;
+    d.dataset.bar = (HDR.bar || BAR_ITEMS).join(' ');
   }
+  const BAR_ITEMS = ['home', 'switch', 'search', 'tabs', 'summary'],
+    HDR = D.header || {};
+  // the compact bar's parts that follow the page: the tabs, the search text and the selection's counts
+  function dockSync() {
+    const d = document.getElementById('dock');
+    if (!d) return;
+    const tabs = d.querySelector('.dock-tabs'),
+      src = document.getElementById('tabs');
+    if (tabs && src) {
+      tabs.innerHTML = [...src.querySelectorAll('a.tab')]
+        .map((a) => {
+          const c = a.cloneNode(true);
+          c.removeAttribute('id');
+          return c.outerHTML;
+        })
+        .join('');
+    }
+    const q = d.querySelector('#dock-q'),
+      main = document.getElementById('q');
+    if (q && main && document.activeElement !== q) q.value = main.value;
+    const sel = d.querySelector('.dock-sel');
+    if (sel && K.sel?.nMarks) {
+      const on = K.sel.active?.();
+      sel.innerHTML =
+        `<span aria-hidden="true">⏚</span> <b>${int(K.sel.nMarks())}</b> ${esc(W.marks)}<span class="dock-sel-p"> · <b>${int(
+          K.sel.nProteins()
+        )}</b> proteins</span>` + (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '');
+      sel.title = on ? 'A selection is on: open the filters' : 'Open the filters';
+    }
+  }
+  K.dockSync = dockSync;
+  (K.afterRender ||= []).push(dockSync);
   K.dock = dock;
   const dockOn = () => {
     const t = document.querySelector('.toolbar'),
@@ -4449,17 +4492,30 @@
     barH = h;
     document.documentElement.style.setProperty('--toolbar-h', `${h}px`);
   };
-  // a phone: the search, selection line and tabs slide away on the way down and come back on the way up (a transform: no shift)
+  // the search, selection line and tabs slide away on the way down and come back on the way up (a transform: nothing in the page
+  // moves); the compact bar above keeps the site, the way home, the switcher, a search, the pages and the selection
+  // (website.header.scroll_bar: false keeps the toolbar in view on a large screen; a phone always slides it)
   {
     let lastY = scrollY;
+    const tbEl = () => document.querySelector('.toolbar'),
+      hide = (on) => {
+        document.body.classList.toggle('bar-hidden', on);
+        const tb = tbEl();
+        if (tb) tb.inert = on; // not in the tab order while it is away: the bar has the same things
+      };
+    K.showToolbar = (focusQ) => {
+      hide(false);
+      lastY = scrollY + 1000; // not slid away again by the scroll that follows
+      if (focusQ) document.getElementById('q')?.focus();
+    };
     addEventListener(
       'scroll',
       () => {
         const y = scrollY,
           dy = y - lastY,
-          tb = document.querySelector('.toolbar');
-        if (innerWidth > 700 || !tb) {
-          document.body.classList.remove('bar-hidden');
+          tb = tbEl();
+        if (!tb || (innerWidth > 700 && HDR.scroll_bar === false)) {
+          if (document.body.classList.contains('bar-hidden')) hide(false);
           lastY = y;
           return;
         }
@@ -4467,10 +4523,24 @@
         lastY = y;
         const busy =
           tb.contains(document.activeElement) && /input|textarea|select/i.test(document.activeElement.tagName);
-        document.body.classList.toggle('bar-hidden', dy > 0 && y > tb.offsetHeight && !busy);
+        hide(dy > 0 && document.body.classList.contains('dock-on') && !busy);
       },
       { passive: true }
     );
+    K.clicks.push(['[data-dock-search]', () => K.showToolbar(true)]);
+    document.addEventListener('input', (e) => {
+      if (e.target.id !== 'dock-q') return;
+      const q = document.getElementById('q');
+      if (q) {
+        q.value = e.target.value;
+        q.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.target.id !== 'dock-q' || e.key !== 'Enter') return;
+      const q = document.getElementById('q');
+      if (q) q.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    });
   }
   try {
     new ResizeObserver(toolbarH).observe(document.querySelector('.toolbar'));

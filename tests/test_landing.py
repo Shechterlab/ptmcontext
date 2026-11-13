@@ -181,3 +181,26 @@ def test_the_landing_search_index_lists_each_protein_with_its_sites(tmp_path):
     assert acc and sites == [0]
     # the box, its results and the script are on the page
     assert 'id="land-q"' in land and 'id="land-hits"' in land and "fetch('proteins.json')" in land
+
+
+def test_the_compact_bar_options_reach_the_page_and_are_checked(tmp_path):
+    import json
+
+    import pytest
+
+    root, a = _built(tmp_path)
+    spec = yaml.safe_load(a.read_text())
+    spec['website']['header'] = {'scroll_bar': True, 'bar': ['home', 'search', 'summary']}
+    a.write_text(yaml.safe_dump(spec, sort_keys=False, allow_unicode=True))
+    assert S.website_problems(S.load_site(a)) == []
+    S.run(a, root=root / 'data', log=lambda *_: None)
+    page = web.build(a, log=lambda *_: None).read_text()
+    data = json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', page, re.S).group(1))
+    assert data['header']['bar'] == ['home', 'search', 'summary'] and data['header']['scroll_bar'] is True
+    # the kit draws the bar's parts from that list
+    kit = (Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets' / 'kit.js').read_text()
+    assert 'dock-search' in kit and 'dock-sel' in kit and 'HDR.bar' in kit
+    spec['website']['header']['bar'] = ['nothing']
+    a.write_text(yaml.safe_dump(spec, sort_keys=False, allow_unicode=True))
+    with pytest.raises(Exception):
+        S.load_site(a)

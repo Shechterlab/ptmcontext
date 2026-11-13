@@ -2175,6 +2175,17 @@
               "type": "boolean",
               "default": true,
               "description": "false keeps the full band on every page"
+            },
+            "scroll_bar": {
+              "type": "boolean",
+              "default": true,
+              "description": "on the way down the search, selection line and tabs slide away and one thin bar stays (a phone always does); false keeps the toolbar in view on a large screen"
+            },
+            "bar": {
+              "type": "array",
+              "description": "the parts of that thin bar after the site name, in the kit's order (default: all)",
+              "items": {"enum": ["home", "switch", "search", "tabs", "summary"]},
+              "uniqueItems": true
             }
           }
         },
