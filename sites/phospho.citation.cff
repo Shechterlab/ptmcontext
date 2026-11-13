@@ -3,7 +3,7 @@
 cff-version: 1.2.0
 message: "Please cite the data sources: there is no paper for this site yet."
 title: "Human phosphosites (ptmcontext site, release v1.5.0 of PTM_Pipeline)"
-version: "0.3.1"
+version: "0.4.0"
 date-released: "2026-11-13"
 url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5fadf74c9bef80f543fd8fe55382e151caa53ef0/releases/v1.5.0"
 license: "CC-BY-NC-SA-4.0"
