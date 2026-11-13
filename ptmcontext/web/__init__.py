@@ -1933,6 +1933,8 @@ def pages(
     (out / '.nojekyll').write_text('')
     cfg = LP.load_config(landing_config, site_paths[0] if site_paths else None)
     cards, lab, registry, first_built, root_last = [], None, [], None, Path('.')
+    found: dict[str, list] = {}  # accession -> [gene, name, indexes of the listed sites that have it], for the landing search
+    listed_ids: list[dict] = []
     switcher_label = (cfg.get('switcher') or {}).get('label')
     for sp in site_paths:
         site = load_site(sp)
@@ -1966,6 +1968,18 @@ def pages(
         if landing.get('unlisted'):  # its folder is published; its card is not on the landing page
             log(f'  {site["id"]} -> {dest} (unlisted)')
             continue
+
+        # the landing search: the proteins this site has marks on (a site's own protein list, its proteins.tsv)
+        plist = src.parent / 'proteins.tsv'
+        if plist.exists():
+            import pandas as pd
+
+            k = len(listed_ids)
+            listed_ids.append({'id': site['id'], 'label': landing.get('label') or profile.data.get('name') or site['id']})
+            ptab = pd.read_csv(plist, sep='\t', dtype=str, keep_default_na=False, usecols=['accession', 'gene', 'name'])
+            for acc, gene, name in zip(ptab['accession'], ptab['gene'], ptab['name']):
+                row = found.setdefault(acc, [gene, name, []])
+                row[2].append(k)
 
         # the numbers and the striking result are the site's own build; a build without them gives a card without them
         def _read(name):
@@ -2014,6 +2028,9 @@ def pages(
         if lf:
             (out / 'logo.svg').write_text(lf.read_text())
             logo_href = 'logo.svg'
+    if found:  # read by the landing page's search box when it is first used (assets/land-search.js)
+        rows = [[acc, *v] for acc, v in sorted(found.items())]
+        (out / 'proteins.json').write_text(json.dumps({'sites': listed_ids, 'p': rows}, separators=(',', ':')))
     kit = kit_citation()
     lab_html = (
         (
@@ -2036,6 +2053,7 @@ def pages(
         fonts_css=FONTS['stylesheet'],
         built_with=built_with,
         logo=logo_href,
+        search=bool(found),
     )
     (out / 'index.html').write_text(text)
     log(f'  -> {out / "index.html"}')

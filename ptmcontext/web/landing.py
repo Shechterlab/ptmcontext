@@ -18,7 +18,24 @@ import yaml
 
 _COLOUR = re.compile(r'^#[0-9a-fA-F]{3,8}$')
 
+SEARCH_JS = (Path(__file__).parent / 'assets' / 'land-search.js').read_text()
+SEARCH_HTML = (
+    '<section class="land-search" role="search" aria-label="Find a protein">'
+    '<label for="land-q">Find a protein</label>'
+    '<input id="land-q" type="search" autocomplete="off" spellcheck="false" placeholder="Gene name or UniProt accession, e.g. FUS or P35637" '
+    'aria-controls="land-hits">'
+    '<p class="say" id="land-say" role="status"></p><ul id="land-hits" aria-label="Proteins found"></ul></section>'
+)
+
 CSS = """
+.land-search { max-width: 46rem; padding-block: 1rem 0; display: grid; gap: 0.4rem; }
+.land-search label { font-weight: 600; }
+.land-search input { font: inherit; padding: 0.55rem 0.8rem; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); width: 100%; box-sizing: border-box; }
+.land-search .say { margin: 0; color: var(--muted); font-size: 0.88rem; min-height: 1.2em; }
+.land-search ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+.land-search li { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; justify-content: space-between; padding: 0.45rem 0.7rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.land-search .hit-sites { display: inline-flex; flex-wrap: wrap; gap: 0.2rem 0.7rem; }
+.land-search .muted { color: var(--muted); }
 .land-intro { max-width: 46rem; padding-block: 1.5rem 0.25rem; display: grid; gap: 0.5rem; color: var(--ink-2); font-size: 1.02rem; line-height: 1.55; }
 .land-intro p { margin: 0; }
 .land-intro p:first-child { color: var(--ink); font-size: 1.15rem; }
@@ -194,6 +211,7 @@ def page(
     fonts_css: str,
     built_with: str,
     logo: str | None = None,
+    search: bool = False,
 ) -> str:
     title = html.escape(cfg.get('title') or 'ptmcontext')
     desc = html.escape(cfg.get('description') or '')
@@ -238,9 +256,10 @@ def page(
 {f'<div class="lede"><p class="lede-what">{lede}</p></div>' if lede else ''}</div></header>
 <main class="wrap" id="sites">
 {f'<section class="land-intro" aria-label="About">{intro}</section>' if intro else ''}
+{SEARCH_HTML if search else ''}
 <h2 class="vh">The sites</h2>
 {sections}</main>
 <footer class="wrap land-foot">{f'<ul aria-label="Citation and code">{links}</ul>' if links else ''}{f'<p>{html.escape(note)}</p>' if note else ''}
 <p>{built_with}</p>
-<p>No cookies, no tracking: every test runs in your browser, and nothing you search or select leaves it.</p></footer></body></html>
+<p>No cookies, no tracking: every test runs in your browser, and nothing you search or select leaves it.</p></footer>{f'<script>{SEARCH_JS}</script>' if search else ''}</body></html>
 """
