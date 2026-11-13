@@ -291,7 +291,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Histones and other proteins
     question: "Are proteins with modified lysines more often histones than other proteins?"
-    sub: "Proteins with modified lysines against the reviewed human proteome, by whether PANTHER places the protein in a histone family (H1, H2A, H2B, H3 or H4) or not (one-sided hypergeometric test)"
+    sub: "Proteins with modified lysines against the reviewed human proteome, by whether PANTHER places the protein in a histone family (H1, H2A, H2B, H3 or H4) or not (one-sided hypergeometric test). A type reported on few proteins, almost all of them histones, gets a very large fold: it shows where that type has been looked for, not that it is absent elsewhere"
     section: Histones, protein classes and pathways
     sets:
       input: panther_classes
