@@ -34,7 +34,11 @@
           ? 0
           : acc.startsWith(t) || genes.some((g) => g.startsWith(t))
             ? 1
-            : t.length >= 3 && (gene.includes(t) || String(row[2] || '').toUpperCase().includes(t))
+            : t.length >= 3 &&
+                (gene.includes(t) ||
+                  String(row[2] || '')
+                    .toUpperCase()
+                    .includes(t))
               ? 2
               : 9;
       if (rank < 9) hits.push([rank, row]);

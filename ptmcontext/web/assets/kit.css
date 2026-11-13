@@ -9489,3 +9489,10 @@ html[data-density] .sites-tbl .cv {
   font-size: 0.8125rem;
   margin-right: 0.6rem;
 }
+
+/* a phone: the protein map's folds give their padding to the drawing (tracks at least 200 px wide at 390 px) */
+@media (max-width: 560px) {
+  .pfold-body {
+    padding-inline: 0.5rem;
+  }
+}

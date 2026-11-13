@@ -144,7 +144,9 @@
           .join(','),
       () =>
         timed(
-          getJson(orthoUrl(ensg)).catch((e) => (/^(400|404)$/.test(String(e.message)) ? { data: [] } : Promise.reject(e))),
+          getJson(orthoUrl(ensg)).catch((e) =>
+            /^(400|404)$/.test(String(e.message)) ? { data: [] } : Promise.reject(e)
+          ),
           60000
         ).then((d) => {
           const best = new Map();

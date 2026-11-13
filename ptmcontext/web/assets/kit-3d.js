@@ -2914,74 +2914,74 @@
     T.predList = pv;
     const ask = () =>
       (cache.cx[base] ||= getJson(`https://alphafold.ebi.ac.uk/api/complex/${encodeURIComponent(base)}`).then(
-      (d) =>
-        (Array.isArray(d) ? d : [])
-          .filter((x) => x.isComplex !== false && (x.uniprotAccession || []).includes(base))
-          .sort((a, b) => (b.complexPredictionAccuracy_ipTM || 0) - (a.complexPredictionAccuracy_ipTM || 0)),
-      (e) => (String(e.message) === '404' ? [] : (delete cache.cx[base], null))
-    )).then((list) => {
-      const hold = document.getElementById('s3d-afcx');
-      if (!hold || T.acc !== acc) return;
-      subSum(
-        's3d-pred',
-        [
-          SD.predicted ? `${int(pv.length)} partner${pv.length === 1 ? '' : 's'} at a site` : '',
-          list?.length
-            ? `${int(list.length)} AlphaFold ` + `DB complex${list.length === 1 ? '' : 'es'}`
-            : list
-              ? '' // a 404: AlphaFold DB has none for this protein, which is not worth a line
-              : 'AlphaFold DB did not answer',
-        ]
-          .filter(Boolean)
-          .join(' · ')
-      );
-      if (list === null) {
-        hold.innerHTML = '<p class="muted">AlphaFold DB did not answer. Nothing else on this page depends on it.</p>';
-        return;
-      }
-      if (!list.length) {
-        hold.innerHTML = askNow ? '' : '<p class="muted">AlphaFold DB has no predicted complex for this protein.</p>'; // none (the API's 404)
-        return;
-      }
-      T.afcx = list;
-      const num = (v) => (v == null ? '–' : Number(v).toFixed(2));
-      const partners = (x) => {
-        const orgs = x.organismScientificName || [],
-          mine = orgs[(x.uniprotAccession || []).indexOf(base)] || orgs[0];
-        const o = (x.uniprotAccession || []).map((a, k) => [a, k]).filter(([a]) => a !== base);
-        return o.length
-          ? o
-              .map(
-                ([a, k]) =>
-                  `${
-                    byAcc[a]
-                      ? `<a href="${esc(K.link('protein', a))}"><b>${esc((x.gene || [])[k] || a)}</b></a>`
-                      : `<b>${esc((x.gene || [])[k] || a)}</b>`
-                  } <span class="muted ` +
-                  `mono">${esc(a)}</span>${orgs[k] && orgs[k] !== mine ? ` <i class="muted">${esc(orgs[k])}</i>` : ''}`
-              )
-              .join(', ')
-          : `<b>${esc(T.p.gene || base)}</b> ${kindTag('self', 'homodimer')}`;
-      };
-      hold.innerHTML =
-        '<p class="flabel">AlphaFold DB complexes</p><div class="tbl-card"><table ' +
-        'class="tbl s3d-tbl"><thead><tr><th>Partner</th><th class="num">ipTM</th><th ' +
-        'class="num">pDockQ</th><th class="num">Mean pLDDT</th><th><span ' +
-        'class="sr-only">View</span></th></tr></thead><tbody>' +
-        list
-          .map(
-            (x, k) =>
-              `<tr><td>${partners(x)}</td><td class="num">${num(x.complexPredictionAccuracy_ipTM)}</td><td ` +
-              `class="num">${num(x.complexPredictionAccuracy_pDockQ)}</td><td class="num">${
-                x.globalMetricValue != null ? Number(x.globalMetricValue).toFixed(1) : '–'
-              }</td><td>` +
-              `<button type="button" class="btn small" data-s3d-afcx="${k}">View</button></td></tr>`
-          )
-          .join('') +
-        ('</tbody></table></div><p class="src">AlphaFold DB predicted complexes (CC BY ' +
-          '4.0), read live. EMBL-EBI’s guidance: ipTM above 0.8 is a confident prediction, ' +
-          'below 0.6 likely a failed one; low pLDDT in disordered regions can lower ipTM ' +
-          'even when the complex is right.</p>');
+        (d) =>
+          (Array.isArray(d) ? d : [])
+            .filter((x) => x.isComplex !== false && (x.uniprotAccession || []).includes(base))
+            .sort((a, b) => (b.complexPredictionAccuracy_ipTM || 0) - (a.complexPredictionAccuracy_ipTM || 0)),
+        (e) => (String(e.message) === '404' ? [] : (delete cache.cx[base], null))
+      )).then((list) => {
+        const hold = document.getElementById('s3d-afcx');
+        if (!hold || T.acc !== acc) return;
+        subSum(
+          's3d-pred',
+          [
+            SD.predicted ? `${int(pv.length)} partner${pv.length === 1 ? '' : 's'} at a site` : '',
+            list?.length
+              ? `${int(list.length)} AlphaFold ` + `DB complex${list.length === 1 ? '' : 'es'}`
+              : list
+                ? '' // a 404: AlphaFold DB has none for this protein, which is not worth a line
+                : 'AlphaFold DB did not answer',
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        );
+        if (list === null) {
+          hold.innerHTML = '<p class="muted">AlphaFold DB did not answer. Nothing else on this page depends on it.</p>';
+          return;
+        }
+        if (!list.length) {
+          hold.innerHTML = askNow ? '' : '<p class="muted">AlphaFold DB has no predicted complex for this protein.</p>'; // none (the API's 404)
+          return;
+        }
+        T.afcx = list;
+        const num = (v) => (v == null ? '–' : Number(v).toFixed(2));
+        const partners = (x) => {
+          const orgs = x.organismScientificName || [],
+            mine = orgs[(x.uniprotAccession || []).indexOf(base)] || orgs[0];
+          const o = (x.uniprotAccession || []).map((a, k) => [a, k]).filter(([a]) => a !== base);
+          return o.length
+            ? o
+                .map(
+                  ([a, k]) =>
+                    `${
+                      byAcc[a]
+                        ? `<a href="${esc(K.link('protein', a))}"><b>${esc((x.gene || [])[k] || a)}</b></a>`
+                        : `<b>${esc((x.gene || [])[k] || a)}</b>`
+                    } <span class="muted ` +
+                    `mono">${esc(a)}</span>${orgs[k] && orgs[k] !== mine ? ` <i class="muted">${esc(orgs[k])}</i>` : ''}`
+                )
+                .join(', ')
+            : `<b>${esc(T.p.gene || base)}</b> ${kindTag('self', 'homodimer')}`;
+        };
+        hold.innerHTML =
+          '<p class="flabel">AlphaFold DB complexes</p><div class="tbl-card"><table ' +
+          'class="tbl s3d-tbl"><thead><tr><th>Partner</th><th class="num">ipTM</th><th ' +
+          'class="num">pDockQ</th><th class="num">Mean pLDDT</th><th><span ' +
+          'class="sr-only">View</span></th></tr></thead><tbody>' +
+          list
+            .map(
+              (x, k) =>
+                `<tr><td>${partners(x)}</td><td class="num">${num(x.complexPredictionAccuracy_ipTM)}</td><td ` +
+                `class="num">${num(x.complexPredictionAccuracy_pDockQ)}</td><td class="num">${
+                  x.globalMetricValue != null ? Number(x.globalMetricValue).toFixed(1) : '–'
+                }</td><td>` +
+                `<button type="button" class="btn small" data-s3d-afcx="${k}">View</button></td></tr>`
+            )
+            .join('') +
+          ('</tbody></table></div><p class="src">AlphaFold DB predicted complexes (CC BY ' +
+            '4.0), read live. EMBL-EBI’s guidance: ipTM above 0.8 is a confident prediction, ' +
+            'below 0.6 likely a failed one; low pLDDT in disordered regions can lower ipTM ' +
+            'even when the complex is right.</p>');
       });
     T.askAf = ask;
     if (askNow) ask();

@@ -1933,7 +1933,9 @@ def pages(
     (out / '.nojekyll').write_text('')
     cfg = LP.load_config(landing_config, site_paths[0] if site_paths else None)
     cards, lab, registry, first_built, root_last = [], None, [], None, Path('.')
-    found: dict[str, list] = {}  # accession -> [gene, name, indexes of the listed sites that have it], for the landing search
+    found: dict[
+        str, list
+    ] = {}  # accession -> [gene, name, indexes of the listed sites that have it], for the landing search
     listed_ids: list[dict] = []
     switcher_label = (cfg.get('switcher') or {}).get('label')
     for sp in site_paths:
@@ -1975,7 +1977,9 @@ def pages(
             import pandas as pd
 
             k = len(listed_ids)
-            listed_ids.append({'id': site['id'], 'label': landing.get('label') or profile.data.get('name') or site['id']})
+            listed_ids.append(
+                {'id': site['id'], 'label': landing.get('label') or profile.data.get('name') or site['id']}
+            )
             ptab = pd.read_csv(plist, sep='\t', dtype=str, keep_default_na=False, usecols=['accession', 'gene', 'name'])
             for acc, gene, name in zip(ptab['accession'], ptab['gene'], ptab['name']):
                 row = found.setdefault(acc, [gene, name, []])

@@ -66,7 +66,12 @@
     if (f) p.push('f=' + f.replace(/[&#+\s]/g, (c) => encodeURIComponent(c)));
     if (f) p.push('sw=' + encodeURIComponent(name));
     const a = acc(),
-      path = a && withProtein ? '/protein/' + encodeURIComponent(a) : ['statistics', 'method'].includes(S.view) ? S.view : 'overview';
+      path =
+        a && withProtein
+          ? '/protein/' + encodeURIComponent(a)
+          : ['statistics', 'method'].includes(S.view)
+            ? S.view
+            : 'overview';
     return `../${encodeURIComponent(site)}/#${path}` + (p.length ? '?' + p.join('&') : '');
   };
   // each link of a menu is a real address (so it opens in a new tab); it is the Overview's until the other site is known to have the protein
