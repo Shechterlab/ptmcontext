@@ -139,7 +139,7 @@ jobs:
   link-audit:
     name: link-audit (${{ matrix.site }})
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
@@ -246,6 +246,9 @@ jobs:
             releases/v1.4.3/supporting/arginine_background_v1.4.3.tsv
             releases/v1.4.3/supporting/htr_selex_v1.4.3.tsv
             releases/v1.4.3/supporting/rna_bind_n_seq_v1.4.3.tsv
+            releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv
+            inputs/interactions/string_v12.5_human_physical_links_score400.tsv
+            inputs/interactions/complex_portal_human_complexes_2026-10-16.tsv
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v6
         with:
@@ -274,7 +277,7 @@ jobs:
   # per site, in parallel, on every push; the Pages deploy (pages.yml) does not wait for them.
   export-audits:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
@@ -409,7 +412,7 @@ jobs:
           ptmc run sites/${{ matrix.site }}.yaml --root reference
           ptmc web sites/${{ matrix.site }}.yaml
       - name: Export audits (text overlap, legends)
-        timeout-minutes: 60
+        timeout-minutes: 110
         env:
           PROTEINS: ${{ matrix.proteins }}
           SELECTION: ${{ matrix.selection }}
