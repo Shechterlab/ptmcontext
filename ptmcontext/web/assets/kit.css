@@ -7512,8 +7512,11 @@ button.tab,
   color: var(--muted);
 }
 .fr-sub {
-  grid-column: 2 / -1;
-  margin-top: -0.35rem;
+  grid-column: 1 / -1;
+  margin-top: -0.4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 0.72rem;
   line-height: 1.15;
   color: var(--muted);
