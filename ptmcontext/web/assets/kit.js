@@ -77,20 +77,26 @@
   const fq = (q) => (q == null ? '–' : q === 0 ? '< 1e-300' : q < 1e-3 ? q.toExponential(1) : q.toFixed(3));
   const PADJ = 0.05,
     MIN_EFFECT = 1.1;
-  const dir = (r) =>
-    r.eff == null || r.q == null || r.q > PADJ
-      ? 'ns'
-      : r.eff >= MIN_EFFECT
-        ? 'more'
-        : r.eff <= 1 / MIN_EFFECT
-          ? 'less'
-          : 'same';
+  // what a row shows: the fold (share among the marks over share among the comparison) where it has one, else its
+  // test's effect. The 1.1× rule judges the number shown; the test's own effect must point the same way
+  const valOf = (r) => r.shown ?? r.eff;
+  const dir = (r) => {
+    const v = valOf(r),
+      t = r.adj ? r.adj.eff : r.eff,
+      q = r.adj ? r.adj.q : r.q;
+    if (v == null || q == null || q > PADJ) return 'ns';
+    const agrees = t == null || v >= 1 === t >= 1;
+    return v >= MIN_EFFECT && agrees ? 'more' : v <= 1 / MIN_EFFECT && agrees ? 'less' : 'same';
+  };
   const DIR_WORDS = {
     more: 'more often',
     less: 'less often',
     same: 'about the same (within 1.1×)',
     ns: 'no difference (q > 0.05)',
   };
+  // a row's reading in words: one with no estimate was not tested (too few on a side), one shown but not tested says so
+  const dirWord = (r) =>
+    r.descriptive ? 'shown, not tested' : r.eff == null || r.p == null ? 'not tested (too few)' : DIR_WORDS[r.dir];
   // the color key of a figure in the page's own words (DIR_WORDS), as the legend entries K.figureFrame draws: one wording and one
   // set of colors for the key under a chart and for the key in every export of it
   const REF_WORDS = 'the whole dataset (bars: your selection)';
@@ -175,9 +181,15 @@
   const setUnit = (a) => A[a]?.unit || 'proteins';
   const markedUnits = (a) => (A[a]?.unit ? `${A[a].unit} of ${W.marked} proteins` : `${W.marked} proteins`);
   // a row of a test, ready to draw: its effect, labels and reading (the site's own rows, and a selection's)
+  const FOLD_METHODS = new Set(['fisher', 'mantel_haenszel', 'study']);
   const decorate = (rows) => {
     rows.forEach((r) => {
       r.eff = r.or ?? r.fold;
+      // a residue row's fold: the share of the marks in the class over the share of the comparison residues in it
+      // (pooled counts; the odds ratio and its test stay beside it)
+      if (!SETS(r.analysis) && FOLD_METHODS.has(r.method) && r.a != null && r.a + r.b > 0 && r.c + r.d > 0 && r.c > 0)
+        r.shown = r.a / (r.a + r.b) / (r.c / (r.c + r.d));
+      else if (SETS(r.analysis) && r.fold != null) r.shown = r.fold;
       r.label = label(r);
       r.help = (A[r.analysis]?.help || {})[r.category] || '';
       // the site file's short label (website.front.row_labels) names the class everywhere, as on the tile; the full name goes into its subtitle
@@ -229,6 +241,15 @@
   const STRAT = {};
   D.rows.forEach((r) => {
     if (SETS(r.analysis) && r.method === 'mantel_haenszel') STRAT[r.analysis + '\u0000' + r.category] = r;
+  });
+  // where a set was also tested within abundance deciles, that test is the row's reading (its q and direction); the
+  // number shown stays the fold
+  D.rows.forEach((r) => {
+    const st = SETS(r.analysis) && r.method === 'enricher' && STRAT[r.analysis + '\u0000' + r.category];
+    if (st && st.eff != null) {
+      r.adj = st;
+      r.dir = dir(r);
+    }
   });
   // does a protein set's enrichment (or depletion) hold within abundance deciles? 'holds' (the same reading there),
   // 'weaker' (the same direction by 1.1× or more, but not at q ≤ 0.05: underpowered, not contradicted), 'lost' (under
@@ -1057,18 +1078,21 @@
         ? [up ? 'More often: ' + one(up) : '', dn ? 'Less often: ' + one(dn) : ''].filter(Boolean).join('. ')
         : `None differs from ${esc(vsName())} (q ≤ 0.05 ` + `and at least 1.1×)`;
     }
+    rows = rows.filter(rankable);
     const top = rows.filter((r) => r.dir === 'more').sort(byOrder(card))[0],
-      low = rows.filter((r) => r.dir === 'less').sort(card.order === 'q' ? byOrder(card) : (x, y) => x.eff - y.eff)[0];
+      low = rows
+        .filter((r) => r.dir === 'less')
+        .sort(card.order === 'q' ? byOrder(card) : (x, y) => valOf(x) - valOf(y))[0];
     if (tmpl && top)
       return esc(tmpl)
         .replace('{top}', `<b>${esc(top.label)}</b>`)
-        .replace('{fold}', fx(top.eff));
+        .replace('{fold}', fx(valOf(top)));
     if (top)
       return (
-        `More often: <b>${esc(top.label)}</b> (${fx(top.eff)})` +
-        (low ? `. Less often: <b>${esc(low.label)}</b> (${fx(low.eff)})` : '')
+        `More often: <b>${esc(top.label)}</b> (${fx(valOf(top))})` +
+        (low ? `. Less often: <b>${esc(low.label)}</b> (${fx(valOf(low))})` : '')
       );
-    if (low) return `Least often: <b>${esc(low.label)}</b> (${fx(low.eff)})`;
+    if (low) return `Least often: <b>${esc(low.label)}</b> (${fx(valOf(low))})`;
     return 'None differs (q ≤ 0.05 and at least 1.1×)';
   }
   const EXCL = /^(no |not |unknown|unassigned|other\b)/i;
@@ -1171,6 +1195,34 @@
         }">${sharePair(r)}</span>`
       : '';
   K.sharePair = sharePair;
+  // the interval drawn around a row's value: its test's, only where the value shown is that test's effect
+  const ciOf = (r) => (r.lo != null && r.hi != null && valOf(r) === r.eff ? [r.lo, r.hi] : null);
+  // beneath a row's fold: the test it rests on (the odds ratio, its interval and q; for a set tested within abundance
+  // deciles, that test)
+  const testLine = (r) => {
+    const t = r.adj || r;
+    if (r.descriptive) return 'shown, not tested';
+    if (t.eff == null || t.p === null) return 'not tested (too few)';
+    const ci = t.lo != null && t.hi != null ? ` (${fxn(t.lo)}–${fxn(t.hi)})` : '';
+    const or = valOf(r) !== t.eff || r.adj ? `OR ${fxn(t.eff)}${ci} · ` : '';
+    return `${r.adj ? 'within abundance deciles: ' : ''}${or}q ${fq(t.q)}`;
+  };
+  // the counts behind a row's fold, for its hover
+  const countLine = (r) => {
+    if (r.a == null || !(r.a + r.b > 0)) return '';
+    if (SETS(r.analysis) && r.method === 'enricher')
+      return (
+        `${int(r.a)} of ${int(r.a + r.b)} ${W.marked} ${setUnit(r.analysis)} (${pcD(share1(r))}) vs ${int(r.a + r.c)} ` +
+        `of ${int(r.a + r.b + r.c + r.d)} in the background (${pcD((r.a + r.c) / (r.a + r.b + r.c + r.d))})`
+      );
+    return (
+      `${int(r.a)} of ${int(r.a + r.b)} ${W.marks} (${pcD(share1(r))}) vs ${int(r.c)} of ${int(r.c + r.d)} ` +
+      `${r.vs ? vsName() : 'other ' + W.residues} (${pcD(share2(r))})`
+    );
+  };
+  K.testLine = testLine;
+  K.countLine = countLine;
+  K.valOf = valOf;
   const strength = (r) =>
     r.dir === 'more' ? Math.log(r.lo ?? r.eff) : r.dir === 'less' ? -Math.log(r.hi ?? r.eff) : 0;
   const enough = (r) => r.a + r.c >= 10;
@@ -1202,26 +1254,47 @@
   // a card's order: by effect (the default) or by evidence (order: q), for sets where a small set reaches the largest
   // fold when every member is marked
   const cardOf = (aid) => allCards().find((c) => c.analysis === aid) || {};
+  // a row's evidence: its reading's q (a set's test within abundance deciles where it has one)
+  const qOf = (r) => (r.adj ? r.adj.q : r.q) ?? 1;
   const byOrder = (card) =>
-    card.order === 'q' ? (x, y) => (x.q ?? 1) - (y.q ?? 1) || y.eff - x.eff : (x, y) => y.eff - x.eff;
+    card.order === 'q'
+      ? (x, y) => qOf(x) - qOf(y) || valOf(y) - valOf(x)
+      : (x, y) => valOf(y) - valOf(x) || qOf(x) - qOf(y); // equal folds: the stronger evidence first
+  // website.reading: what is ranked. A protein set under min_set proteins, or one whose every member is marked (its fold
+  // is then at the ceiling, N over the marked, and ties every other such set), is shown on its question's page but not
+  // ranked on a tile
+  const READ = { min_maps: 2, min_group: 20, min_set: 30, ...(D.reading || {}) };
+  K.READ = READ;
+  const rankable = (r) =>
+    !SETS(r.analysis) || r.method !== 'enricher' || r.vs || (r.a + r.c >= READ.min_set && r.c > 0);
+  K.rankable = rankable;
   function pick(rows, max, card = {}) {
     const vs = rows.some((r) => r.vs);
     // against other marks: the classes with most evidence first (the CI bound nearer 1), with at least 10 marks
-    const c = rows.filter((r) => r.eff != null && !EXCL.test(r.label) && (!vs || enough(r)));
+    const c = rows.filter((r) => r.eff != null && !EXCL.test(r.label) && (!vs || enough(r)) && rankable(r));
     const up = c.filter((r) => r.dir === 'more').sort(vs ? (x, y) => strength(y) - strength(x) : byOrder(card)),
       dn = c
         .filter((r) => r.dir === 'less')
-        .sort(vs ? (x, y) => strength(y) - strength(x) : card.order === 'q' ? byOrder(card) : (x, y) => x.eff - y.eff);
+        .sort(
+          vs
+            ? (x, y) => strength(y) - strength(x)
+            : card.order === 'q'
+              ? byOrder(card)
+              : (x, y) => valOf(x) - valOf(y) || qOf(x) - qOf(y)
+        );
     const same = c
       .filter((r) => r.dir === 'same')
-      .sort((x, y) => Math.abs(Math.log(y.eff)) - Math.abs(Math.log(x.eff)));
+      .sort((x, y) => Math.abs(Math.log(valOf(y))) - Math.abs(Math.log(valOf(x))));
     const nUp = Math.min(up.length, dn.length ? max - 2 : max),
       nDn = Math.min(dn.length, max - nUp, up.length ? 2 : max);
     const shown = [...up.slice(0, nUp), ...dn.slice(0, nDn)];
-    if (card.order === 'q') shown.sort((x, y) => y.eff - x.eff); // chosen by evidence, drawn like the other tiles: the largest value first
+    if (card.order === 'q') shown.sort((x, y) => valOf(y) - valOf(x)); // chosen by evidence, drawn like the other tiles: the largest value first
     shown.push(...same.slice(0, Math.max(0, max - shown.length)));
-    // the classes that differ but are not shown: "+N more", which the question outlines when opened from it
-    const left = [...up, ...dn, ...same].filter((r) => !shown.includes(r)).map((r) => r.category);
+    // the classes that differ but are not shown (and those not ranked): "+N more", which the question outlines when opened from it
+    const unranked = rows.filter(
+      (r) => r.eff != null && !rankable(r) && (r.dir === 'more' || r.dir === 'less') && !EXCL.test(r.label)
+    );
+    const left = [...up, ...dn, ...same, ...unranked].filter((r) => !shown.includes(r)).map((r) => r.category);
     return { shown, more: left.length, left };
   }
   // a class row selects its marks (or the marks on its proteins), the same as the search term of its class: the
@@ -1261,7 +1334,9 @@
   // whole dataset's value (the tile's SVG export draws the same, tileSvg)
   function tileScale(rows) {
     const l2 = (v) => Math.log2(Math.max(v, 1e-3));
-    const vals = rows.flatMap((r) => [r.eff, r.lo, r.hi, r.ref?.eff].filter((v) => v != null && v > 0));
+    const vals = rows.flatMap((r) =>
+      [valOf(r), ...(ciOf(r) || []), r.ref ? valOf(r.ref) : null].filter((v) => v != null && v > 0)
+    );
     const lo = Math.min(-1, Math.max(-4, Math.floor(Math.min(...vals.map(l2))))),
       hi = Math.max(1, Math.min(6, Math.ceil(Math.max(...vals.map(l2)))));
     const grid = [];
@@ -1286,12 +1361,10 @@
           (r) =>
             `<div class="trow pick" data-r="${reg(r)}"${pickAttrs(r)}><span class="lab">${esc(r.label)}</span><svg ` +
             `aria-hidden="true">${grid.join('')}` +
-            (r.lo != null && r.hi != null
-              ? `<line class="whisker ${r.dir}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" ` + `y2="50%"/>`
-              : '') +
-            `<circle class="dot ${r.dir}" cx="${X(r.eff)}" cy="50%" r="4.6"/>${
-              r.ref ? `<line class="ref" x1="${X(r.ref.eff)}" x2="${X(r.ref.eff)}" y1="15%" ` + `y2="85%"/>` : ''
-            }</svg><span class="val ${r.dir}">${fx(r.eff)}${shareSpan(r)}</span></div>`
+            (ciOf(r) ? `<line class="whisker ${r.dir}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" ` + `y2="50%"/>` : '') +
+            `<circle class="dot ${r.dir}" cx="${X(valOf(r))}" cy="50%" r="4.6"/>${
+              r.ref ? `<line class="ref" x1="${X(valOf(r.ref))}" x2="${X(valOf(r.ref))}" y1="15%" ` + `y2="85%"/>` : ''
+            }</svg><span class="val ${r.dir}">${fx(valOf(r))}${shareSpan(r)}</span></div>`
         )
         .join('') +
       `<div class="taxis"><span></span><span class="one-lab" style="--x:${X(1)}">1×</span><span></span></div>` +
@@ -1365,7 +1438,11 @@
       (OV.statistic_label !== false && !vsOn() && rows.some((r) => r.eff != null)
         ? ownSel && fr
           ? `<p class="tstat">${otherRows(a, made)}</p>`
-          : `<p class="tstat">${gloss('fold', 'Fold')} ${esc(baseline(a, vsMethod(S.m)))}</p>`
+          : `<p class="tstat">${
+              shown.every((r) => r.absent || r.shown != null)
+                ? gloss('fold', 'Fold')
+                : gloss('odds ratio', 'Odds ratio')
+            } ${esc(baseline(a, vsMethod(S.m)))}</p>`
         : '') +
       (shown.length
         ? `<div class="trows${fr ? ' fr-rows' : ''}">${
@@ -1435,7 +1512,7 @@
         if (!r || r.eff == null) return '';
         return (
           `<p class="tbeside"><a href="${esc(link('overview', other.id))}">${esc(b.label)}</a>: ` +
-          `<span class="nw">${esc(fx(r.eff))}, q ${esc(fq(r.q))}</span></p>`
+          `<span class="nw">${esc(fx(valOf(r)))}, q ${esc(fq(r.adj ? r.adj.q : r.q))}</span></p>`
         );
       })
       .join('');
@@ -1443,12 +1520,14 @@
   // a tile row as the cards' rows read it: the short row label (website.front.row_labels), the interval, q, n and the whole dataset's ring
   const frModel = (a, r) => ({
     label: FR.row_labels?.[a.id]?.[r.category] || r.label,
-    v: r.absent ? null : r.eff,
-    lo: r.lo != null && r.hi != null ? [r.lo, r.hi] : null,
+    v: r.absent ? null : valOf(r),
+    lo: ciOf(r),
+    sub: r.absent ? '' : testLine(r),
+    tip: r.absent ? '' : countLine(r),
     q: r.q,
     dir: r.absent ? 'ns' : r.dir,
     n: r.absent ? null : r.a,
-    wv: r.ref ? r.ref.eff : null,
+    wv: r.ref ? valOf(r.ref) : null,
     desc: !!r.descriptive,
     absent: !!r.absent,
   });
@@ -1537,15 +1616,15 @@
       `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">How to read</button></p>`;
     const howP = S.how
       ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a ` +
-        `log scale (the solid line is no difference). For questions about where ${esc(W.marks)} lie, × is an odds ` +
-        `ratio: the odds that a ${esc(W.mark)} is in the class over the odds for another ${esc(W.residue)}. It is not ` +
-        `the ratio of the two shares, which is closer to 1. The hover gives both shares${
+        `log scale (the solid line is no difference). The number is the fold: for questions about where ${esc(W.marks)} ` +
+        `lie, the share of ${esc(W.marks)} in the class over the share of the other ${esc(W.residues)} in it${
           D.analyses.some((a) => a.kind === 'protein_sets')
-            ? '. For questions about protein classes, × is the fold enrichment: the share of ' +
+            ? '; for questions about protein classes, the share of ' +
               esc(W.marked) +
               ' proteins in the set over the share of all proteins'
             : ''
-        }. Within ` +
+        }. Beneath it is the test: the odds ratio with its 95% interval, and q. The hover gives the counts. A row ` +
+        `differs when q ≤ ${PADJ}, the fold is at least 1.1× either way and the test points the same way. Within ` +
         `each protein, each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein ` +
         `(Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} lie from which proteins were found ${esc(W.marked)}. Across ` +
         `all proteins puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact ` +
@@ -2414,7 +2493,7 @@
               r.lo != null ? ` <span class="muted">(${fxn(r.lo)} to ${fxn(r.hi)})</span>` : ''
             }</td><td ` +
               `class="num">${esc(K.l2fmt(r))}</td><td class="num">${fq(r.q)}</td>`) +
-            `<td><span class="dir ${r.dir}">${DIR_WORDS[r.dir]}</span></td><td class="num">${r.strata != null ? int(r.strata) : ''}</td></tr>`
+            `<td><span class="dir ${r.dir}">${esc(dirWord(r))}</span></td><td class="num">${r.strata != null ? int(r.strata) : ''}</td></tr>`
         )
         .join('') +
       `</tbody></table></div>` +
@@ -2792,7 +2871,7 @@
               g6(st.lo),
               g6(st.hi),
               g6(st.q),
-              DIR_WORDS[r.dir],
+              dirWord(r),
               SET_TEST,
               ...tail(),
             ].join('\t');
@@ -2850,7 +2929,7 @@
             g6(share1(r)),
             g6(share2(r)),
             r.strata ?? '',
-            DIR_WORDS[r.dir],
+            dirWord(r),
             ...tail(),
           ].join('\t')
         )
@@ -3266,7 +3345,7 @@
     let y = 0;
     shown.forEach((r) => {
       const lab = wrap(r.label, LW, 11).slice(0, 2),
-        h = Math.max(sharePair(r) && !vs ? 30 : 22, lab.length * 13 + 8),
+        h = Math.max(!vs ? 32 : 22, lab.length * 13 + 8),
         yc = y + h / 2;
       lab.forEach((t, k) => T(P, yc + 4 - (lab.length - 1) * 6.5 + k * 13, t));
       if (r.absent) {
@@ -3287,26 +3366,26 @@
             `<line x1="${X(2 ** k).toFixed(1)}" x2="${X(2 ** k).toFixed(1)}" y1="${y}" y2="${y + h}" stroke="${k === 0 ? PAL.ink : PAL.one}" stroke-width="1"${k === 0 ? '' : ' stroke-dasharray="2 3"'}/>`
           )
         );
-        if (r.lo != null && r.hi != null)
+        if (ciOf(r))
           parts.push(
             `<line x1="${X(r.lo).toFixed(1)}" x2="${X(r.hi).toFixed(1)}" y1="${yc}" y2="${yc}" stroke="${col}" stroke-width="1.6" ` +
               `stroke-linecap="round"/>`
           );
         parts.push(
-          `<circle cx="${X(r.eff).toFixed(1)}" cy="${yc}" r="4.6" fill="${r.dir === 'ns' ? PAL.bg : col}" stroke="${r.dir === 'ns' ? PAL.muted : PAL.bg}" stroke-width="1.5"/>`
+          `<circle cx="${X(valOf(r)).toFixed(1)}" cy="${yc}" r="4.6" fill="${r.dir === 'ns' ? PAL.bg : col}" stroke="${r.dir === 'ns' ? PAL.muted : PAL.bg}" stroke-width="1.5"/>`
         );
         if (r.ref)
           parts.push(
-            `<circle cx="${X(r.ref.eff).toFixed(1)}" cy="${yc}" r="7" fill="none" stroke="${PAL.ink}" stroke-width="1.2" stroke-dasharray="2 2"/>`
+            `<circle cx="${X(valOf(r.ref)).toFixed(1)}" cy="${yc}" r="7" fill="none" stroke="${PAL.ink}" stroke-width="1.2" stroke-dasharray="2 2"/>`
           );
       }
       const strong = !vs && (r.dir === 'more' || r.dir === 'less');
-      T(VX, yc + (sharePair(r) && !vs ? -2 : 4), vs ? `${pcS(share1(r))} · ${pcS(share2(r))}` : fx(r.eff), {
+      T(VX, yc + (!vs ? -2 : 4), vs ? `${pcS(share1(r))} · ${pcS(share2(r))}` : fx(valOf(r)), {
         anchor: 'end',
         weight: strong ? 'bold' : null,
         fill: strong ? PAL[r.dir] : PAL.muted,
       });
-      if (sharePair(r) && !vs) T(VX, yc + 11, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted });
+      if (!vs) T(VX, yc + 11, testLine(r), { size: 9.5, anchor: 'end', fill: PAL.muted });
       y += h;
     });
     if (shown.length) {

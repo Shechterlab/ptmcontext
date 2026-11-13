@@ -7511,6 +7511,15 @@ button.tab,
   font-size: 0.7rem;
   color: var(--muted);
 }
+.fr-sub {
+  grid-column: 2 / -1;
+  margin-top: -0.35rem;
+  font-size: 0.72rem;
+  line-height: 1.15;
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 .fr-cnote {
   margin: 0.35rem 0 0;
   font-size: 0.78rem;

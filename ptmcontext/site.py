@@ -548,6 +548,10 @@ def website_problems(site: dict) -> list[str]:
         v = (web.get('compare') or {}).get(k)
         if v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 1):
             out.append(f'website.compare.{k}: {v!r} is not a whole number of at least 1')
+    for k in ('min_maps', 'min_group', 'min_set'):
+        v = (web.get('reading') or {}).get(k)
+        if v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 1):
+            out.append(f'website.reading.{k}: {v!r} is not a whole number of at least 1')
     words = _analysis_words(site)
     for a in (web.get('sites') or {}).get('columns', []):
         if a not in ids:

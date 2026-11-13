@@ -20,6 +20,21 @@ def _eff(r: dict):
     return e if e is not None and 0 < e < BIG else None
 
 
+READING = {'min_set': 30}  # website.reading's defaults that bear on a finding (the kit holds the rest)
+FOLD_METHODS = ('fisher', 'mantel_haenszel', 'study')
+
+
+def fold_of(r: dict):
+    """The fold a row shows: a protein set's fold enrichment, or a residue row's share of the marks in the class over
+    the share of the comparison residues in it (pooled counts). None when there is none."""
+    if r.get('fold') is not None:
+        return r['fold'] if 0 < r['fold'] < BIG else None
+    a, b, c, d = (r.get(k) for k in 'abcd')
+    if r.get('method') not in FOLD_METHODS or None in (a, b, c, d) or not (a + b and c + d and c):
+        return None
+    return (a / (a + b)) / (c / (c + d))
+
+
 def _preferred(a: dict) -> str:
     return 'enricher' if a.get('kind') == 'protein_sets' else 'mantel_haenszel'
 
@@ -75,15 +90,22 @@ def findings(
     row_labels: dict | None = None,
     only: set | None = None,
     locations: dict | None = None,
+    reading: dict | None = None,
 ) -> list:
-    """The strongest results, one per question: named by the site (analysis and class), else the largest effects at
-    q <= 0.05 that rest on at least MIN_N marks, by the question's usual test. `only`: the questions to choose from.
+    """The strongest results, one per question: named by the site (analysis and class), else the largest folds at
+    q <= 0.05 that rest on at least MIN_N marks, by the question's usual test, in the direction its test agrees with.
+    A protein set tested within abundance deciles is read by that test; a set of fewer than reading.min_set proteins,
+    or one whose every member is marked (its fold at the ceiling), is not chosen. `only`: the questions to choose from.
     locations: for a map question, the classes that are locations (a compartment); its other classes (a domain, a
     cluster) are not chosen."""
+    rd = {**READING, **(reading or {})}
     by_id = {a['id']: a for a in analyses}
     methods: dict[str, set] = {}
+    strat = {}
     for r in rows:
         methods.setdefault(r['analysis'], set()).add(r['method'])
+        if r['method'] == 'mantel_haenszel' and (by_id.get(r['analysis']) or {}).get('kind') == 'protein_sets':
+            strat[(r['analysis'], r['category'])] = r
     pool = []
     for r in rows:
         a = by_id.get(r['analysis'])
@@ -94,10 +116,26 @@ def findings(
             or (locations and a['id'] in locations and r['category'] not in locations[a['id']])
         ):
             continue
-        e = _eff(r)
-        if e is None or r['q'] is None or r['q'] > PADJ or not (e >= MIN_EFFECT or e <= 1 / MIN_EFFECT):
+        e, t, q = fold_of(r), _eff(r), r['q']
+        sets = a.get('kind') == 'protein_sets'
+        if sets and r['method'] == 'enricher':
+            st = strat.get((a['id'], r['category']))
+            if st is not None:  # the test within abundance deciles reads the set
+                t, q = _eff(st), st['q']
+            small = (r.get('a', 0) + r.get('c', 0)) < rd['min_set'] or not r.get('c')
+        else:
+            small = False
+        if e is None:
+            e = t
+        if (
+            e is None
+            or q is None
+            or q > PADJ
+            or not (e >= MIN_EFFECT or e <= 1 / MIN_EFFECT)
+            or (t is not None and (e >= 1) != (t >= 1))
+        ):
             continue
-        pool.append((a, r, e))
+        pool.append((a, r, e, small))
 
     def item(a, r, e):
         # the label the question's own page gives the row (website.front.row_labels), else the class's label
@@ -118,7 +156,7 @@ def findings(
     for s in spec or []:
         hit = [
             (a, r, e)
-            for a, r, e in pool
+            for a, r, e, _ in pool
             if a['id'] == s['analysis'] and r['category'] == s.get('class', s.get('category'))
         ]
         if hit:
@@ -126,7 +164,8 @@ def findings(
     if spec:
         return out[:n]
     seen = set()
-    for a, r, e in sorted((x for x in pool if x[1]['a'] >= MIN_N), key=lambda x: -abs(math.log(x[2]))):
+    ranked = [(a, r, e) for a, r, e, small in pool if r['a'] >= MIN_N and not small]
+    for a, r, e in sorted(ranked, key=lambda x: -abs(math.log(x[2]))):
         if a['id'] not in seen:
             seen.add(a['id'])
             out.append(item(a, r, e))
@@ -142,13 +181,18 @@ def glance(
     row_labels: dict | None = None,
     only: set | None = None,
     locations: dict | None = None,
+    reading: dict | None = None,
 ) -> dict:
     """What the entry pages draw. The landing page's own choices (website.landing) win over the start panel's."""
     start, landing = start or {}, landing or {}
     out = {
         'share': share(analyses, rows, counted, landing.get('share') or start.get('share')),
-        'findings': findings(analyses, rows, landing.get('findings') or start.get('findings'), row_labels=row_labels),
+        'findings': findings(
+            analyses, rows, landing.get('findings') or start.get('findings'), row_labels=row_labels, reading=reading
+        ),
     }
     if only is not None and not landing.get('findings'):  # the landing card's own, from one Overview section
-        out['landing_findings'] = findings(analyses, rows, None, row_labels=row_labels, only=only, locations=locations)
+        out['landing_findings'] = findings(
+            analyses, rows, None, row_labels=row_labels, only=only, locations=locations, reading=reading
+        )
     return out

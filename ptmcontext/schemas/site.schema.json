@@ -4496,6 +4496,28 @@
             }
           }
         },
+        "reading": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "what the website ranks and colors (the Overview's tiles, the cell maps, the landing card's finding); without it, the defaults hold",
+          "properties": {
+            "min_maps": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "a part of the cell is colored and ranked only when at least this many maps find a difference the same way and none the other way (default 2)"
+            },
+            "min_group": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "a map speaks for a part only when the part holds at least this many marked proteins and this many others (default 20)"
+            },
+            "min_set": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "a protein set of fewer proteins is shown on its question's page but not ranked on a tile or chosen as a finding; nor is a set whose every member is marked, its fold at the ceiling (default 30)"
+            }
+          }
+        },
         "compare": {
           "type": "object",
           "additionalProperties": false,
