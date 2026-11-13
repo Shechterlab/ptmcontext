@@ -1,3 +1,9 @@
+## Unreleased
+
+- Header: "All sites" sits on the switcher's row, so the lab block and links stay above the structure drawing. The sticky bar shows the short site name.
+- Cell maps: a part where the maps do not agree reads "maps disagree" (was "fewer than N maps").
+- Lysine header drawing: SUMOylation is labelled "SUMO", not "Ksu".
+
 ## 0.4.0 (2026-11-13)
 
 What changed for readers:

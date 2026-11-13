@@ -8510,6 +8510,7 @@ a.pchip:hover {
     padding: 0 0.7rem;
     font-size: 0.8125rem;
     white-space: nowrap;
+    flex: none;
   }
   .dock .site-switch-list {
     right: 0;
@@ -9490,6 +9491,13 @@ html[data-density] .sites-tbl .cv {
   text-decoration: underline;
   white-space: nowrap;
 }
+.brand-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
 .landing-link:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 2px;
@@ -9525,6 +9533,10 @@ html[data-density] .sites-tbl .cv {
     gap: 0.15rem;
     min-width: 0;
     overflow: hidden;
+    /* a page that does not fit whole wraps out of sight, instead of being cut in half */
+    flex-wrap: wrap;
+    align-content: flex-start;
+    max-height: 2rem;
   }
   .dock-tabs .tab {
     color: #fff;
