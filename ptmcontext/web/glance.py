@@ -177,7 +177,7 @@ def cell_findings(rows: list, cell: dict, reading: dict | None = None) -> list:
     its fold read by its test (within abundance strata where it has them), a map speaking for the part only with at
     least min_group marked proteins and as many others there; a part differs when at least min_maps of those maps
     differ the same way (q <= 0.05, a fold of 1.1x or more, the test pointing the same way) and none the other way, by
-    their median fold. Largest first."""
+    their median fold. The parts more often first, largest first; then those less often."""
     rd = {**READING, **(reading or {})}
     by = {}
     for r in rows:
@@ -218,7 +218,8 @@ def cell_findings(rows: list, cell: dict, reading: dict | None = None) -> list:
                         'maps': up + down,
                     }
                 )
-    return sorted(out, key=lambda f: -abs(math.log(f['eff'])))
+    # as the cell card's answer reads: the parts where most of all first, then the strongest less often
+    return sorted(out, key=lambda f: (f['dir'] != 'more', -abs(math.log(f['eff']))))
 
 
 def glance(
@@ -254,5 +255,5 @@ def glance(
             analyses, rows, None, row_labels=row_labels, only=only - maps, locations=locations, reading=reading
         )
         parts = cell_findings(rows, cell, reading) if cell else []
-        out['landing_findings'] = sorted(parts[:1] + rest, key=lambda f: -abs(math.log(f['eff'])))[:N_FINDINGS]
+        out['landing_findings'] = (parts[:1] + rest)[:N_FINDINGS]  # the cell card leads its section
     return out
