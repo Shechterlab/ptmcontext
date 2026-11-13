@@ -1123,10 +1123,10 @@ citation: sites/lysine.citation.cff   # the citation, data sources, version and 
 website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Lysine Modification Explorer
-  tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from public databases."
+  tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from public databases and studies."
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
-    tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from public databases."
+    tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from public databases and studies."
     question: "Which proteins have modified lysines, and how do modified lysines differ from the other lysines of their protein?"
     in_switcher: true
   band: ["#14532d", "#052e16"]      # the header gradient: deep green
@@ -1361,7 +1361,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [source, sources]
       noun: sources
       top: 3
-      note: "iPTMnet contains a copy of UniProt, so both databases agreeing is not always two measurements. CPLM 4.0 compiles records from other databases too (its Dat. label), so a lysine that CPLM and another database both report may rest on one original record. CPLM 4.0 states no license; its sites are included and cited. In the main view of the pinned release, CPLM reports 189,852 of the 191,372 lysine-and-type records (99%), alone or with another database: ubiquitination and SUMOylation 99.9% each, acetylation 99.6%, crotonylation 100%. The other 1,520 are from UniProt or iPTMnet alone, among them most glutaryl, lactoyl, benzoyl, methacryl and isonicotinyl records."
+      note: "iPTMnet contains a copy of UniProt, so both databases agreeing is not always two measurements. CPLM 4.0 compiles records from other databases too (its Dat. label), so a lysine that CPLM and another database both report may rest on one original record. CPLM 4.0 states no license; its sites are included and cited. In the main view of the pinned release, CPLM reports 216,708 of the 229,038 lysine-and-type records (95%), alone or with another source: acetylation 99.6%, crotonylation 100%, ubiquitination 98% and SUMOylation 81%. Two proteome-wide studies are sources of their own: Akimov et al. 2018 reports 62,871 ubiquitination sites (1,839 that no database reports) and Hendriks et al. 2017 39,858 SUMOylation sites (8,960 that no database reports). The other 1,531 come from UniProt or iPTMnet without CPLM, among them most glutaryl, lactoyl, benzoyl, methacryl and isonicotinyl records."
       method: "Each lysine lists the databases that report it (the release's sources column). A database's count is the lysines it reports."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Data sources, attributes: [sources, cplm_evidence, evidence_class, hendriks_cell_lines, akimov_cell_lines, iptmnet_score, iptmnet_sources]}

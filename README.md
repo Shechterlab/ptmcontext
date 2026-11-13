@@ -30,7 +30,7 @@ describes its inputs, tests and caveats.
 Every input is in a manifest with its source, release and MD5. Staging is the only step that uses the network.
 The sites read releases of [PTM_Pipeline](https://github.com/Shechterlab/PTM_Pipeline) pinned by commit: v1.4.3 for
 methylarginine, and v1.5.0 for methyllysine, phosphorylation, acetylation and other acylations, ubiquitination and
-SUMOylation. The v1.5.0 tables come from UniProt, iPTMnet, CPLM 4.0, Berryhill et al. 2023 and Ochoa et al. 2020. CPLM
+SUMOylation. The v1.5.0 tables come from UniProt, iPTMnet, CPLM 4.0, Berryhill et al. 2023, Ochoa et al. 2020, Hendriks et al. 2017 (SUMO-2) and Akimov et al. 2018 (ubiquitination). CPLM
 4.0 states no license. Its human lysine methylation, acetylation, other acylation, ubiquitination and SUMOylation sites
 are included and cited.
 
