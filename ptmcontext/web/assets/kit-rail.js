@@ -127,7 +127,7 @@
       parts = [...(pc ? [`${pc.cat} · ${pc.tip}`] : []), ...c.cons.map(([k, v]) => `${catOf(k)} · ${valsOf(k, v)}`)];
     return (
       `${parts.join('; ')}; ${int(c.marks.length)} of ${int(D.counts.marks)} ${W.marks} on ${int(np)} protein${np === 1 ? '' : 's'}` +
-      (K.selEffect ? `; ${K.selEffect().replace(/^All tabs show only these · /, '')}` : '')
+      (K.selEffect ? `; ${K.selEffect().replace(/^Pages that follow the selection show only these · /, '')}` : '')
     );
   }
   function bar() {

@@ -169,12 +169,14 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
       const rr = await K.overlap.compute(['s:onto:D1', 'f:readers:Madeup'], 'readers', 1);
       const rd = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'proteins');
       const strip = r => ({ ts: r.ts.map(t => t.id), rows: r.rows, totals: r.totals, N: r.N, M: r.M, test: r.test });
+      const rmiss = await K.overlap.compute(['s:onto:D2', 'sv:nope'], 'proteins');
+      const rcirc = await K.overlap.compute(['s:onto:D1', 'g:GP1 GP2'], 'proteins');
       S0.oq = 'b';
       const tsvb = K.overlap.tsv(r2), tsvx = K.overlap.tsv(rx), tables = [r2, rs, rx].map(r => K.overlap.tableHtml(r));
       S0.oq = 'a';
       const tsvpairs = K.overlap.tsv(r2);
       const answers = [r2, r3, rd].map(r => K.overlap.answerText(r, 'a')).concat([r2, r3].map(r => K.overlap.answerText(r, 'b')));
-      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), wil, err3: eu.err, err2: eu2.err, boxes, cutBrk: sc.brk, cutMax: sc.max, nLabels: eu.labels.length, rd: strip(rd), rx: strip(rx), tables, tsvx, tsv: tsvb, tsvpairs, pairs: { r2: r2.pairs, r3: r3.pairs }, answers, ptable: K.overlap.pairTableHtml(r3) }));
+      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), wil, err3: eu.err, err2: eu2.err, boxes, cutBrk: sc.brk, cutMax: sc.max, nLabels: eu.labels.length, rd: strip(rd), rx: strip(rx), tables, tsvx, tsv: tsvb, tsvpairs, pairs: { r2: r2.pairs, r3: r3.pairs }, answers, ptable: K.overlap.pairTableHtml(r3), missing: rmiss.missing, circ: { names: rcirc.circ, test: rcirc.test ?? null, pairs: rcirc.pairs.all.length, ans: K.overlap.answerText(rcirc, 'b') }, sitesOR: rs.rows.filter((r) => r.mask && r.n).map((r) => String(r.or)) }));
     """
     run = subprocess.run(
         ['node', '-e', head + harness + '(async () => {' + body + '})();'], capture_output=True, text=True
@@ -261,3 +263,11 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
     assert 'Overlap of each pair' in j['ptable'] and 'undefined' not in j['ptable']
     assert all(a and 'undefined' not in a and 'NaN' not in a for a in j['answers'])
     assert 'in both' in j['answers'][0] and 'of 3 pairs' in j['answers'][1]
+    # a saved selection a link cannot carry is reported, and the others keep their letters
+    assert j['missing'] == ['sv:nope']
+    # a set defined by having sites is not tested for having sites; the pairs are still tested
+    assert (
+        j['circ']['names'] and j['circ']['test'] is None and j['circ']['pairs'] == 1 and 'circular' in j['circ']['ans']
+    )
+    # the sites unit shows one odds ratio, in the chart's number and the table's
+    assert j['sitesOR'] and all(v in j['tables'][1] for v in j['sitesOR'])

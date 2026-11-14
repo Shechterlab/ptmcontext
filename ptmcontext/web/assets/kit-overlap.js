@@ -130,6 +130,8 @@
   const clean = () => ({ ot: [], ou: 'proteins', ov: 'auto', or: '', oq: 'auto' });
   Object.assign(S, clean());
   K.paramsIn.push((p) => {
+    S.qn = p.get('qn') ? { q: p.get('q') || '', name: p.get('qn') } : null; // a selection this page made and named
+    if (!['t', 'ou', 'oq', 'or'].some((k) => p.has(k))) return; // another page's address: the page keeps what was chosen
     S.ot = (p.get('t') || '')
       .split(',')
       .filter(Boolean)
@@ -147,6 +149,7 @@
     S.oq = ['a', 'b'].includes(p.get('oq')) ? p.get('oq') : 'auto';
   });
   K.paramsOut.push((p) => {
+    if (S.qn && S.qn.q === S.q && S.q) p.set('qn', S.qn.name);
     if (S.view !== 'overlap') return;
     if (S.ot.length) p.set('t', S.ot.map((x) => x.replace(/%/g, '%25').replace(/,/g, '%2C')).join(','));
     if (S.ou !== 'proteins') p.set('ou', S.ou);
@@ -213,7 +216,7 @@
           id: `s:${aid}:${r.id}`,
           label: r.label,
           group: groupName(aid, short(aid)),
-          from: short(aid),
+          from: A[aid]?.title || short(aid),
           size: r.size,
           broad: C.n && r.size > 0.25 * C.n,
           note: C.notes?.[aid] || '',
@@ -222,7 +225,12 @@
     );
     classQs.forEach((aid) =>
       uniq(rowsOf(aid)).forEach((r) =>
-        pool.push({ id: `c:${aid}:${r.id}`, label: r.label, group: groupName(aid, short(aid)), from: short(aid) })
+        pool.push({
+          id: `c:${aid}:${r.id}`,
+          label: r.label,
+          group: groupName(aid, short(aid)),
+          from: A[aid]?.title || short(aid),
+        })
       )
     );
     (C.sources || []).forEach((src) =>
@@ -266,6 +274,7 @@
           pool.push({ id: `a:${name}:${v}`, label: `${(sp.values || {})[v] || v}`, group: sp.label || name })
         );
     });
+    pool = [...new Map(pool.map((t) => [t.id, t])).values()];
     return pool;
   }
   const specials = () => [
@@ -277,6 +286,7 @@
     if (t) return t.label;
     if (id === 'sel') return 'The current selection';
     if (id.startsWith('g:')) return 'Gene list';
+    if (id.startsWith('sv:')) return `Saved: ${id.slice(3)}`;
     if (id.startsWith('x:')) return id.split(':').slice(2).join(':');
     return id.replace(/^[a-z]+:/, '');
   };
@@ -299,7 +309,17 @@
           }
           return j ?? -1;
         });
-      U = { acc, ix, n: acc.length, partial: !u, marked, pu, weight, nMarked: marked.reduce((s, x) => s + x, 0) };
+      U = {
+        acc,
+        gene: u?.gene,
+        ix,
+        n: acc.length,
+        partial: !u,
+        marked,
+        pu,
+        weight,
+        nMarked: marked.reduce((s, x) => s + x, 0),
+      };
       return U;
     }));
   }
@@ -390,6 +410,7 @@
       t.id = id;
       t.label = kind === 'g' ? `Gene list (${count(t.prot)})` : termLabel(id);
       t.tag = termTag(id);
+      t.markedOnly = ['c', 'sel', 'sv', 'g', 'a'].includes(kind); // its members all have sites, by definition
       t.n = count(t.prot);
     }
     return (cache[id] = t);
@@ -399,10 +420,14 @@
   let RES = null;
   async function compute(ids, unit, minN = MIN_N) {
     await loadUniverse();
-    const ts = (await Promise.all(ids.map(resolve))).filter(Boolean),
+    const got = await Promise.all(ids.map(resolve)),
+      ts = got.filter(Boolean),
       nT = ts.length;
+    if (ts.length < ids.length)
+      return { ts, unit, nT: ids.length, missing: ids.filter((_, i) => !got[i]), rows: [], totals: [], pairs: {} };
     const fams = await DATA.families();
-    const res = { ts, unit, nT, partial: U.partial, rows: [], totals: [], note: '' };
+    const circ = ts.filter((t) => t.markedOnly).map((t) => t.label),
+      res = { ts, unit, nT, partial: U.partial, circ, rows: [], totals: [], note: '' };
     if (nT < 2) return res;
     const SD = ts.some((t) => t.mark) || unit === 'sites' ? (await DATA.sdReady(), DATA.sd()) : null;
     let mask, marked, weight, elems;
@@ -472,12 +497,12 @@
         M = U.nMarked;
       res.rows = reg.map((r, k) => ({
         mask: k,
-        ...(U.partial ? { k: r.k, n: r.n } : proteinTest(r.k, r.n, M, N)),
+        ...(U.partial || circ.length ? { k: r.k, n: r.n } : proteinTest(r.k, r.n, M, N)),
         sites: r.w,
       }));
       res.N = N;
       res.M = M;
-      if (!U.partial) {
+      if (!U.partial && !circ.length) {
         settle(
           res.rows.filter((r) => r.mask && r.n),
           minN
@@ -1479,9 +1504,11 @@
           );
         else
           o.push(
-            res.partial
-              ? 'Not tested here: only the proteins with sites are known for these sets.'
-              : 'No test: a set describes sites, and the comparison residues are not known for several features at once. Counts only.'
+            res.circ?.length
+              ? `Not tested: ${joinNames(res.circ)} ${res.circ.length === 1 ? 'is' : 'are'} defined by having sites, so testing it for having sites would be circular. Counts only; the first question has no such problem.`
+              : res.partial
+                ? 'Not tested here: only the proteins with sites are known for these sets.'
+                : 'No test: a set describes sites, and the comparison residues are not known for several features at once. Counts only.'
           );
         if (sc.brk < Infinity) o.push('Bars marked // are cut: they are longer than the axis.');
         const bigs = fd.regs.filter(broad);
@@ -1702,6 +1729,16 @@
     const key = html('div', 'ovx-key');
     top.appendChild(key);
     spec.keyLines.forEach((k) => key.appendChild(keyLineDom(k)));
+    if (!UI.layout)
+      key.appendChild(
+        html(
+          'p',
+          'ovx-note',
+          nT > 3
+            ? 'No diagram for four sets: four circles cannot all show true overlaps. The rows give the counts.'
+            : `No diagram: a set has no ${unitWord(res.unit)} here, so there is nothing to draw. The rows give the counts.`
+        )
+      );
     const grid = html('div', 'ovx-grid');
     fig.appendChild(grid);
     const sc = sizeScale(spec.scaleValues);
@@ -2101,8 +2138,11 @@
   const foldCells = (r) =>
     r.few
       ? `<td class="num">—</td><td class="num" colspan="2">too few to test</td>`
-      : `<td class="num">${r.k === 0 ? '0×' : fn(r.fold)}</td><td class="num">${r.p == null ? '–' : K.fq(r.p)}</td><td class="num">${r.q == null ? '–' : K.fq(r.q)}</td>`;
-  const broad = (r) => !r.few && r.fold != null && r.fold > 0.8 && r.fold < 1.25 && r.q != null && r.q < 1e-3;
+      : `<td class="num">${r.k === 0 ? '0×' : fn(r.or ?? r.fold)}</td><td class="num">${r.p == null ? '–' : K.fq(r.p)}</td><td class="num">${r.q == null ? '–' : K.fq(r.q)}</td>`;
+  const broad = (r) => {
+    const e = r.or ?? r.fold;
+    return !r.few && e != null && e > 0.8 && e < 1.25 && r.q != null && r.q < 1e-3;
+  };
   function tableHtml(res) {
     const sites = res.unit === 'sites',
       rows = res.rows.filter((r) => r.mask && r.n).sort((a, b) => b.n - a.n);
@@ -2133,7 +2173,7 @@
       .map((r) =>
         body(
           r,
-          `<button type="button" class="linkish" data-ov-reg="${r.mask}" title="${esc(regionWords(res, r.mask))}">${esc(regionLetters(r.mask, res.nT))}</button>`,
+          `<button type="button" class="linkish" data-ov-reg="${r.mask}" title="${esc(regionWords(res, r.mask))}">${esc(regLabel(r.mask, res.nT))}</button>`,
           String(S.or) === String(r.mask) ? ' class="ov-on"' : ''
         )
       )
@@ -2191,7 +2231,7 @@
           head: `In ${joinNames(idx.map((i) => LETTERS[i]))}`,
           words: `in ${joinNames(idx.map((i) => res.ts[i].label))}`,
         }
-      : { head: regionLetters(m, res.nT), words: regionWords(res, m) };
+      : { head: regLabel(m, res.nT), words: regionWords(res, m) };
   };
   function regionHtml(res) {
     const k = S.or,
@@ -2204,16 +2244,17 @@
     const li = (x) =>
       x.pi != null
         ? `<li><a href="${esc(K.link('protein', x.acc))}"><b>${esc(K.sel.nameOf(K.sel.byAcc[x.acc]) || x.acc)}</b></a>${x.pos ? ` <span class="muted">${esc(x.pos)}</span>` : ''}</li>`
-        : `<li><a href="https://www.uniprot.org/uniprotkb/${esc(x.acc)}">${esc(x.acc)}</a></li>`;
-    const sel = [...new Set(withSites.map((x) => x.acc))];
+        : `<li><a href="https://www.uniprot.org/uniprotkb/${esc(x.acc)}" title="${esc(x.acc)}, no ${esc(W.mark)} here">${x.gene ? `<b>${esc(x.gene)}</b> <span class="muted">${esc(x.acc)}</span>` : esc(x.acc)}</a></li>`;
+    const sel = [...new Set(withSites.map((x) => x.acc))],
+      unitNoun = sites ? 'sites' : unitWord(res.unit);
     return (
       `<section class="ov-region" id="ov-region" aria-live="polite"><h3>${esc(orTitle(res, k).head)}: ${esc(orTitle(res, k).words)}</h3>` +
-      `<p class="muted">${int(items.length)} ${sites ? 'sites' : unitWord(res.unit)}${sites ? '' : `, ${int(withSites.length)} with sites (linked)`}.</p>` +
+      `<p class="muted">${int(items.length)} ${unitNoun}${sites ? `, on ${int(sel.length)} proteins` : `; ${int(withSites.length)} have ${esc(W.marks)} (linked to their pages), ${int(items.length - withSites.length)} have none`}.</p>` +
       `<p class="actions"><button type="button" class="btn small" data-ov-use${sel.length && sel.length <= SELMAX ? '' : ' disabled'} title="${
         sel.length > SELMAX
           ? `Over ${SELMAX} proteins: too many for a link`
-          : 'Make these proteins with sites the selection of the whole site'
-      }">Use as selection</button> <button type="button" class="btn small" data-ov-list>TSV</button> <button type="button" class="linkish" data-ov-close>Close</button></p>` +
+          : `The selection holds the ${sel.length} protein${sel.length === 1 ? '' : 's'} with ${W.marks}; the ${sites ? '' : `${int(items.length - withSites.length)} without `}cannot be selected`
+      }">Use the ${int(sel.length)}${sites ? '' : ` of ${int(items.length)}`} with ${esc(W.marks)} as the selection</button> <button type="button" class="btn small" data-ov-list>TSV</button> <button type="button" class="linkish" data-ov-close>Close</button></p>` +
       `<ul class="ov-list">${shown.map(li).join('')}</ul>` +
       (items.length > shown.length
         ? `<p class="muted">The first ${shown.length} of ${int(items.length)}; the TSV has all.</p>`
@@ -2239,7 +2280,7 @@
     res.mask.forEach((mk, e) => {
       if (!hit(mk)) return;
       const acc = U.acc[res.elems[e]];
-      out.push({ acc, pi: byAcc[acc] ? byAcc[acc].i : null });
+      out.push({ acc, pi: byAcc[acc] ? byAcc[acc].i : null, gene: U.gene?.[res.elems[e]] || '' });
     });
     return out.sort((a, b) => (b.pi != null) - (a.pi != null) || a.acc.localeCompare(b.acc));
   }
@@ -2257,7 +2298,8 @@
       lab = id.startsWith('g:') ? `Gene list: ${id.slice(2, 40)}` : termLabel(id),
       tag = termTag(id);
     return (
-      `<span class="ov-chip">${SWATCH(i)}<b>${LETTERS[i]}</b> ${esc(lab)}` +
+      `<span class="ov-chip${RES?.res?.missing?.includes(id) ? ' bad' : ''}">${SWATCH(i)}<b>${LETTERS[i]}</b> ${esc(lab)}` +
+      `${t?.from && t.from !== t.group ? ` <span class="muted">${esc(t.from)}</span>` : ''}` +
       `${tag ? ` <span class="ov-tag">${esc(tag)}</span>` : ''}${t?.size ? ` <span class="muted">${int(t.size)}</span>` : ''} ` +
       `<button type="button" class="linkish" data-ov-del="${i}" aria-label="Remove ${esc(lab)}">×</button></span>`
     );
@@ -2274,7 +2316,7 @@
         .join('');
     return (
       `<div class="ov-pick"><div class="ov-chips">${S.ot.map(chipHtml).join(' ') || '<span class="muted">No set chosen yet.</span>'}</div>` +
-      `<label class="flabel" for="ov-q">Add a set (${int(pool0.length)} to choose from)</label>` +
+      `<label class="flabel" for="ov-q">${full ? `${MAXT} of ${MAXT} sets chosen` : `Add a set (${int(pool0.length)} to choose from)`}</label>` +
       `<div class="ov-gchips" role="group" aria-label="Where the sets come from">${chips}</div>` +
       `<input id="ov-q" type="search" autocomplete="off" value="${esc(UIP.q)}" placeholder="${full ? `At most ${MAXT} sets` : 'Search by name or GO id: a pathway, a location, a disease, a protein family…'}"${full ? ' disabled' : ''}>` +
       `<div id="ov-res" class="ov-res" role="listbox" aria-label="Matching sets">${resultsHtml(UIP.q)}</div>` +
@@ -2282,6 +2324,8 @@
     );
   }
   function resultsHtml(q) {
+    if (S.ot.length >= MAXT)
+      return `<p class="muted">${MAXT} sets are chosen, the most that can be compared. Remove one to add another.</p>`;
     const w = q.trim().toLowerCase(),
       g = UIP.group,
       all = [...specials(), ...termPool()].filter((t) => !S.ot.includes(t.id) && (!g || t.group === g));
@@ -2297,11 +2341,13 @@
         .map((t, i) => [
           t,
           i,
-          t.label.toLowerCase().startsWith(w) || (t.ref || '').toLowerCase() === w
+          t.label.toLowerCase() === w || (t.ref || '').toLowerCase() === w
             ? 0
-            : t.label.toLowerCase().includes(w)
+            : t.label.toLowerCase().startsWith(w)
               ? 1
-              : 2,
+              : t.label.toLowerCase().includes(w)
+                ? 2
+                : 3,
         ])
         .sort((x, y) => x[2] - y[2] || x[1] - y[1])
         .map((x) => x[0]);
@@ -2318,7 +2364,7 @@
             t.ref || '',
             t.size ? `${int(t.size)} ${unitWord('proteins')}` : '',
             t.broad ? 'very broad' : '',
-            !g && t.from && t.from !== t.group ? t.from : '',
+            t.from && (t.from !== t.group || !g) ? t.from : '',
             t.note,
           ]
             .filter(Boolean)
@@ -2429,7 +2475,7 @@
     const fd = figData(res),
       full = (1 << res.nT) - 1;
     if (!res.test)
-      return `${pre}${res.partial ? 'only the proteins with sites are known for these sets, so no test is made.' : 'the regions can only be counted here, not tested.'}`;
+      return `${pre}${res.circ?.length ? `${joinNames(res.circ)} ${res.circ.length === 1 ? 'is' : 'are'} defined by having sites, so the regions are not tested for it (that would be circular). The first question can still be asked.` : res.partial ? 'only the proteins with sites are known for these sets, so no test is made.' : 'the regions can only be counted here, not tested.'}`;
     const pick =
       fd.regs.find((r) => r.m === full && isTested(r)) || fd.regs.filter(isTested).sort((x, y) => x.q - y.q)[0];
     if (!pick) return `${pre}no region has enough ${uw} to test.`;
@@ -2479,8 +2525,12 @@
       );
     }
     const res = RES.res;
-    if (res.ts.length < 2)
-      return head + pickerHtml() + '<p>A chosen set is not in this dataset; remove it and choose another.</p>';
+    if (res.missing?.length)
+      return (
+        head +
+        pickerHtml() +
+        `<p class="ov-warn" role="alert">Not available here: ${esc(res.missing.map((id) => termLabel(id)).join('; '))}. ${res.missing.some((id) => id.startsWith('sv:')) ? 'A saved selection stays in the browser that saved it, so a link cannot carry it. ' : 'It is not in this dataset. '}Remove it to compare the others; the letters of the other sets stay as they are.</p>`
+      );
     const q = question(res);
     return (
       head +
@@ -2591,7 +2641,7 @@
         t = isTested(r) ? 1 : 0;
       return (
         sites
-          ? [name, words, r.n, r.proteins ?? '', g(r.fold), g(ci[0]), g(ci[1]), g(r.p), g(r.q), t]
+          ? [name, words, r.n, r.proteins ?? '', g(r.or ?? r.fold), g(ci[0]), g(ci[1]), g(r.p), g(r.q), t]
           : [
               name,
               words,
@@ -2623,9 +2673,16 @@
   function listTsv(res, k) {
     return (
       K.preamble('overlap region', `${orTitle(res, k).words}; unit ${res.unit}`) +
-      'accession\tgene\tposition\n' +
+      `accession\tgene\t${res.unit === 'sites' ? 'position\t' : ''}has_sites\n` +
       regionItems(res, k)
-        .map((x) => [x.acc, x.pi != null ? D.proteins[x.pi][1] || '' : '', x.pos ?? ''].join('\t'))
+        .map((x) =>
+          [
+            x.acc,
+            x.pi != null ? D.proteins[x.pi][1] || '' : x.gene || '',
+            ...(res.unit === 'sites' ? [x.pos ?? ''] : []),
+            x.pi != null ? 'yes' : 'no',
+          ].join('\t')
+        )
         .join('\n') +
       '\n'
     );
@@ -2676,14 +2733,26 @@
     [
       '[data-ov-use]',
       () => {
-        const accs = [
-          ...new Set(
-            regionItems(RES.res, S.or)
-              .filter((x) => x.pi != null)
-              .map((x) => x.acc)
-          ),
-        ];
-        if (accs.length && accs.length <= SELMAX) K.go('overview', { q: accs.join(' '), f: {} });
+        const res = RES.res,
+          accs = [
+            ...new Set(
+              regionItems(res, S.or)
+                .filter((x) => x.pi != null)
+                .map((x) => x.acc)
+            ),
+          ];
+        if (!accs.length || accs.length > SELMAX) return;
+        const t = orTitle(res, S.or),
+          q = accs.join(' ');
+        // the pill is named after the region; the address keeps the sets and the region (t, or), so Back returns to them
+        K.go('overview', {
+          q,
+          f: {},
+          qn: {
+            q,
+            name: `${cap(res.unit === 'sites' ? W.marks : unitWord(res.unit))} ${t.words.startsWith('in ') ? t.words : `in ${t.words}`}`,
+          },
+        });
       },
     ],
     [
@@ -2728,7 +2797,12 @@
       });
   }
   (K.afterRender ||= []).push(rowButtons);
-  K.views.overlap = { render: view, title: () => 'Overlap' };
+  K.views.overlap = {
+    render: view,
+    title: () => 'Overlap',
+    offNote:
+      'Not filtered by your selection: this page compares the sets chosen on it. Add “The current selection” as a set to compare it.',
+  };
   K.tabs.push(() => ['overlap', 'Overlap', null]);
   (K.methodParts ||= []).push(
     () =>

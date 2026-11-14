@@ -651,7 +651,7 @@
     const v = S.view;
     if (v === 'protein' && K.sel.protSelected(String(S.arg).split('/')[0])) return ''; // a protein of the selection: its page fades the sites outside it, and says so
     if (follows(v)) return ''; // the bar above says what is selected and how many; its Clear all removes it
-    return `<p class="sel-line off" role="status">Not filtered by your selection.</p>`;
+    return `<p class="sel-line off" role="status">${esc(K.views[v]?.offNote || 'Not filtered by your selection.')}</p>`;
   }
   function tabs() {
     const sel = K.sel?.active();
@@ -1252,7 +1252,7 @@
   };
   // what the selection does, in one clause (the bar, a figure's subtitle, Copy link): follows the Test and Compared with settings
   K.selEffect = () =>
-    'All tabs show only these · ' +
+    'Pages that follow the selection show only these · ' +
     (vsOn()
       ? `compared with ${S.vs === 'cmp' ? 'the sites of ' + cmpName() : 'the other ' + W.marks}`
       : S.m === 'fisher'
