@@ -433,8 +433,8 @@ protein-page section keys (`p-dom`) to the folds that hold them now.
 **A subset by score.** An entry with `columns.score` and `subset: {id: high, at_least: 0.5}` adds, where the table has a
 score column holding numbers: the attribute `ctx_near_<id>_<subset id>` ("has a <noun> (<subset>) within ±N", yes/no, with
 its filter, under the entry's other filters); and a second protein-map row, `ctx_<id>_<subset id>`, with each tick's
-score in its hover, drawn before the row of all the entry's marks. The subset row is shown at first and the row of all
-marks is off (`subset.default: all` reverses them); the label of the row shown is a link that switches to the other
+score in its hover, drawn before the row of all the entry's marks. Every mark is drawn at first and the subset row is off
+(`subset.default: subset` reverses them); the label of the row shown is a link that switches to the other
 (map row `swap`), and the reader's choice is kept in the browser. Where the table lacks the column (a release before the
 scores were merged into it), `ptmc run` writes none of this, and `ptmc web` drops the row, the attribute and its filter
 and shows every mark at first, so one site file serves the table before and after. The score never enters a statistic by itself. A `near_marks` question may name the subset as its marks

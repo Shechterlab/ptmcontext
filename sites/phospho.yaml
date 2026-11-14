@@ -669,7 +669,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: the other proteins organelle IP classifies (HEK293T)
-    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granules (cell map),
+    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granules (organelle IP),
              p-body: P-body, actin_cytoskeleton: Actin cytoskeleton, centrosome: Centrosome, proteasome: Proteasome,
              14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
              early_endosome: Early endosome, recycling_endosome: Recycling endosome, lysosome: Lysosome,

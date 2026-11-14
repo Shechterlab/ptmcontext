@@ -7824,7 +7824,7 @@
                 "id"
               ],
               "additionalProperties": false,
-              "description": "a subset of the marks by their score (columns.score): at_least and/or at_most. Active only where the table has the score column: then the protein map row of the entry shows the subset at first (or all marks, with default: all) and the row's label switches to the other, and a filter 'has a mark of the subset within the window' is added",
+              "description": "a subset of the marks by their score (columns.score): at_least and/or at_most. Active only where the table has the score column: then the protein map row of the entry shows all marks at first (or the subset, with default: subset) and the row's label switches to the other, and a filter 'has a mark of the subset within the window' is added",
               "properties": {
                 "id": {
                   "type": "string",
@@ -7845,7 +7845,7 @@
                     "subset",
                     "all"
                   ],
-                  "description": "what the map row shows at first (default subset)"
+                  "description": "what the map row shows at first (default all)"
                 }
               }
             },
