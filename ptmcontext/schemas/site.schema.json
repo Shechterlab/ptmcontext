@@ -1215,6 +1215,10 @@
             "type": "string",
             "description": "the id of the question this one is a control of: that question's page shows this one's result beside its own. Written by controls"
           },
+          "control_when": {
+            "type": "string",
+            "description": "the control's when, for its badge. Written by controls"
+          },
           "control_label": {
             "type": "string",
             "description": "the control's short name on its question's page. Written by controls"
@@ -2783,14 +2787,38 @@
                         },
                         {
                           "type": "object",
-                          "required": [
-                            "analysis"
+                          "anyOf": [
+                            {
+                              "required": [
+                                "analysis"
+                              ]
+                            },
+                            {
+                              "required": [
+                                "rows_from"
+                              ]
+                            }
                           ],
                           "additionalProperties": false,
                           "properties": {
                             "analysis": {
                               "type": "string",
                               "description": "an analysis id, or a count question (website.counts)"
+                            },
+                            "rows_from": {
+                              "type": "array",
+                              "minItems": 2,
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "one tile for several questions, in place of `analysis`: the first row of each question, one row per question, named by its short title (or `labels`), on one axis. A row opens its question; a failed control shows as the row's badge. Use `title`"
+                            },
+                            "labels": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "with rows_from: the row's name by question id (default: the question's short title)"
                             },
                             "title": {
                               "type": "string"
@@ -5908,6 +5936,36 @@
                 }
               }
             },
+            "groups": {
+              "type": "array",
+              "description": "the headings the picker lists terms under, in this order: each names the questions and term sources (ids) whose terms it holds; a question in none is listed under its own name",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "from"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "from": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "names": {
+              "type": "object",
+              "description": "a reader family's or an enzyme class's name as shown (id: name), where the site's own label is not a plain plural name",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
             "leave_out": {
               "type": "object",
               "description": "sets of a question that are not offered as terms and whose members are not written (a question's set id: [ids])",
@@ -7982,6 +8040,10 @@
           "label": {
             "type": "string",
             "description": "the control's short name: added to each copy's title after a comma, its name in the family and on the question's page"
+          },
+          "when": {
+            "type": "string",
+            "description": "what the control does, as the end of a sentence: the badge of a result that fails it reads \"This result disappears when <when> (fold → fold).\" (default: the test is repeated with <label>)"
           },
           "note": {
             "type": "string",

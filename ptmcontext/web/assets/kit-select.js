@@ -1622,15 +1622,18 @@
       .replace(/\s+/g, ' ')
       .trim();
   }
+  // a selection a page made and named (S.qn = {q, name}, while the search is still that q) is described by its name
   const describe = () =>
-    [
-      S.q,
-      ...compute()
-        .cons.filter((x) => !x[2])
-        .map(([k, v]) => flagPhrase(k, v) || `${keyName(k)}: ${v.map((x) => valueName(k, x)).join(' or ')}`),
-    ]
-      .filter(Boolean)
-      .join('; ');
+    S.qn && S.qn.q === S.q && !Object.keys(S.f).length
+      ? S.qn.name
+      : [
+          S.q,
+          ...compute()
+            .cons.filter((x) => !x[2])
+            .map(([k, v]) => flagPhrase(k, v) || `${keyName(k)}: ${v.map((x) => valueName(k, x)).join(' or ')}`),
+        ]
+          .filter(Boolean)
+          .join('; ');
   // ---- the retests ahead of a page draw, in slices -------------------------------------------------------------------
   // A large selection makes every question's retest at once, which can hold the page for many seconds. prewarm runs the
   // same retests (they are cached in compute()'s retests, so the draw that follows reads them) one question at a time,

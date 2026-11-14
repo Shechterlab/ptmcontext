@@ -153,17 +153,13 @@
       1
     )}%"></i></span>` +
       `<span class="cm-v">${esc(text)}</span></div>`);
-  // a tile: its downloads on hover (the question's figure and table, as on its page), its meters, its line
+  // a tile: its meters, its line, and its downloads in the footer's menu (the question's figure and table, as on every tile)
   const shell = (id, card, body, foot, whole) =>
     `<article class="tile cnt-tile${card.wide ? ' wide' : ''}" id="tile-${esc(id)}" data-tile="${esc(id)}" data-count="${esc(id)}" tabindex="0">` +
-    `<header><h3>${esc(card.title || C[id].title)}</h3>${K.expBar(
-      ['pdf', 'svg', 'png', 'tsv'],
-      'cexp',
-      C[id].title,
-      id
-    ).replace('class="exp"', 'class="exp texp"')}${K.detailsLink(id)}</header>${body}` +
+    `<header><h3>${esc(card.title || C[id].title)}</h3>${K.detailsLink(id)}</header>${body}` +
     (foot ? `<p class="tfoot">${foot}</p>` : '') +
     (whole ? `<p class="twhole"><span>Whole dataset</span> ${whole}</p>` : '') +
+    `<div class="tact">${K.tilekit.dlMenu(card.title || C[id].title, ['pdf', 'svg', 'png', 'tsv'], 'cexp', id)}</div>` +
     '</article>';
   const loading = () => `<p class="muted tnone">Counting your selection…</p>`;
   function valuesHead(id, v, shown, mine) {

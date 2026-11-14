@@ -38,8 +38,10 @@ def test_a_question_page_links_to_its_family():
 
 def test_beside_takes_one_line_or_a_list(tmp_path):
     site = S.load_site(ROOT / 'sites' / 'lysine.yaml')
-    cards = [c for s in site['website']['overview']['sections'] for c in s['cards'] if isinstance(c, dict)]
-    card = next(c for c in cards if c['analysis'] == 'same_ub_su')
+    card = {
+        'analysis': 'same_ub_su',
+        'beside': [{'analysis': 'same_ub_su_modified', 'label': 'A'}, {'analysis': 'same_ub_su_studies', 'label': 'B'}],
+    }
     assert [b['analysis'] for b in S.beside_lines(card)] == ['same_ub_su_modified', 'same_ub_su_studies']
     assert S.beside_lines({'beside': {'analysis': 'x', 'label': 'X'}}) == [{'analysis': 'x', 'label': 'X'}]
     assert S.beside_lines({}) == []
@@ -88,3 +90,46 @@ def test_the_methods_page_lists_at_most_200_sources():
     i = KIT.index('  function sourcesSection() {')
     body = KIT[i : KIT.index('\n  function citeSection', i)]
     assert 'const SOURCES_SHOWN = 200;' in KIT and '.slice(0, SOURCES_SHOWN)' in body
+
+
+def test_rows_from_makes_one_tile_of_several_questions():
+    """A card with `rows_from` (in place of `analysis`) is one tile with a row per question; the site is checked as a
+    card of one question is, and the schema asks for one of the two."""
+    site = S.load_site(ROOT / 'sites' / 'lysine.yaml')
+    sec = next(
+        x for x in site['website']['overview']['sections'] if x['name'] == 'Same lysine, different modifications'
+    )
+    (card,) = sec['cards']
+    assert card['rows_from'][:2] == ['same_ac_ub', 'same_ac_su'] and 'analysis' not in card
+    assert S.card_questions(card) == card['rows_from'] and S.card_questions('x') == ['x']
+    assert S.card_questions({'analysis': 'y'}) == ['y']
+    assert not [p for p in S.website_problems(site) if 'rows_from' in p or 'no analysis' in p]
+    toy = json.loads(json.dumps(site))
+    toy['website']['overview']['sections'][1]['cards'] = [{'rows_from': ['same_ac_ub', 'nope'], 'title': 'T'}]
+    assert any("no analysis 'nope'" in p for p in S.website_problems(toy))
+    toy['website']['overview']['sections'][1]['cards'] = [{'title': 'T'}]
+    with pytest.raises(Exception):
+        validate(toy, 'site')
+    assert any('rows_from, not both' in p for p in _both(toy))
+    assert 'groupState(card)' in KIT and "card.rows_from ? '' : detailsLink" in KIT
+
+
+def _both(toy):
+    toy['website']['overview']['sections'][1]['cards'] = [{'analysis': 'same_ac_ub', 'rows_from': ['same_ac_ub']}]
+    return S.website_problems(toy)
+
+
+def test_a_tile_row_opens_a_popover_and_has_no_buttons_or_text_lines():
+    """The tile is a small forest plot: no per-row buttons, test line, count column or Select cue; a row opens a popover
+    (Show these..., Overlap with..., Open question) from a click or Enter, and Escape closes it."""
+    tile = (ROOT / 'ptmcontext' / 'web' / 'assets' / 'kit-tile.js').read_text()
+    css = (ROOT / 'ptmcontext' / 'web' / 'assets' / 'kit.css').read_text()
+    assert 'fr-sub' not in tile and 'fr-n"' not in tile and 'data-pop=' in tile
+    assert (
+        'ov-cmp' not in KIT
+        and 'pwbtn-home' not in (ROOT / 'ptmcontext' / 'web' / 'assets' / 'kit-pathway.js').read_text()
+    )
+    for word in ("'Open question'", "'Overlap with…'", 'Show these ${esc(d.noun)}', "e.key === 'Escape' && POP"):
+        assert word in KIT
+    assert '.tile .fr-row.pick::after' in css and '.rowpop' in css
+    assert 'OV.rows || 5' in KIT

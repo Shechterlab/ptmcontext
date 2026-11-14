@@ -80,6 +80,14 @@
         .split(/[\s,;]+/) // a list typed "TP53, MYC" has no commas of its own in the chip: they are the joiner
         .filter((t) => t && !bad.has(t.toLowerCase()));
     if (!words.length) return null;
+    if (S.qn && S.qn.q === S.q)
+      // a selection a page made and named: its name, the members on hover
+      return {
+        cat: S.qn.cat || 'Selection',
+        val: S.qn.name,
+        tip: `${S.qn.name}: ${words.join(', ')}`,
+        btn: `<button type="button" data-sel-clear-q aria-label="Remove the selection">×</button>`,
+      };
     const list = c.q.genes.length > 0 && !c.q.sites.length,
       shown = words.length > 4 ? words.slice(0, 3).join(', ') + ` +${words.length - 3}` : words.join(list ? ', ' : ' ');
     return {
@@ -138,7 +146,7 @@
       ];
     return (
       `${parts.join('; ')}; ${int(c.marks.length)} of ${int(D.counts.marks)} ${W.marks} on ${int(np)} protein${np === 1 ? '' : 's'}` +
-      (K.selEffect ? `; ${K.selEffect().replace(/^All tabs show only these · /, '')}` : '')
+      (K.selEffect ? `; ${K.selEffect().replace(/^Pages that follow the selection show only these · /, '')}` : '')
     );
   }
   function bar() {
@@ -677,7 +685,7 @@
       }</div>`
     );
   }
-  // every page, as the tab bar lists them, with the current page's own sections under it, in their groups (as the
+  // every page, as the tab bar lists them, with the Overview's sections under it (no other page lists its own), in their groups (as the
   // original explorer's sidebar): [id, label, level, href?] from K.sections; level 0 is a group heading; a section with
   // an href is a link (another view), one without is a jump to the element with that id
   // which group and family disclosures the reader opened or closed (session state, not the address)
@@ -771,14 +779,18 @@
       cur: a.getAttribute('aria-current') === 'page',
     }));
     pages.forEach((pg) => pg.name.querySelectorAll('.count, .selmark, svg').forEach((x) => x.remove()));
-    if (!pages.length) return '<nav class="toc flat">' + entries.map(item).join('') + '</nav>';
+    // one rule for every page: only the Overview lists its sections under its name; the other pages are a single entry
+    if (!pages.length)
+      return '<nav class="toc flat">' + (S.view === 'overview' ? entries.map(item).join('') : '') + '</nav>';
     return (
       '<nav class="toc flat">' +
       pages
         .map(
           (pg) =>
             `<a class="toc-p${pg.cur ? ' on' : ''}" href="${esc(pg.href)}"${pg.cur ? ' aria-current="page"' : ''}>${esc(pg.name.textContent.trim())}</a>` +
-            (pg.cur && raw.length ? `<div class="toc-secs">${entries.map(item).join('')}</div>` : '')
+            (pg.cur && S.view === 'overview' && raw.length
+              ? `<div class="toc-secs">${entries.map(item).join('')}</div>`
+              : '')
         )
         .join('') +
       '</nav>'
