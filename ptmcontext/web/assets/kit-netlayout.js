@@ -516,11 +516,11 @@
       for (const c of shown.slice().sort((a, b) => size[b] - size[a] || a - b)) {
         const ci = posC.get(c),
           full = labels[c].term || null,
-          term = shortName(full) || `Cluster ${c + 1}`;
+          term = shortName(full) || (labels[c].genes || []).join(', ') || `Cluster ${c + 1}`;
         let lines, cnt, w, h;
         if (!phone) {
           lines = wrap2(term, 22);
-          cnt = `${size[c]} proteins`;
+          cnt = full && labels[c].k != null ? `${labels[c].k} of ${size[c]} proteins` : `${size[c]} proteins`;
           w = Math.max(Math.max(...lines.map((s) => textW(s, fs, 600))) + 14, textW(cnt, fs - 1.5) + 14);
           h = fs * 1.25 * lines.length + (fs - 1.5) * 1.3;
         } else {
@@ -589,6 +589,7 @@
           box,
           leader: [hp[0], hp[1], nx, ny],
           short: shortName(full),
+          name: term,
           full,
           q: labels[c].q == null ? null : labels[c].q,
         });
