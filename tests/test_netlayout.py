@@ -376,3 +376,68 @@ console.log(JSON.stringify(out));
     assert 'See in network' in got[0] and 'data-nw-prev="P35637"' in got[0]
     assert got[1] == ''  # protein_link: false
     assert 'See in network' in got[2] and 'data-nw-prev' not in got[2]  # protein_preview: false
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
+def test_a_pinned_page_keeps_every_setting_in_the_address_and_offers_one_export_function():
+    prog = _harness(
+        """
+const el=()=>({addEventListener(){}});
+global.matchMedia=()=>({matches:false,addEventListener(){}});
+global.document=el();global.document.querySelectorAll=()=>[];
+global.localStorage={getItem(){return null},setItem(){}};
+global.fetch=()=>Promise.reject(new Error('no network here'));
+window.PTMC_MODULES.length=0;
+eval(fs.readFileSync(IN.net,'utf8'));
+const K2={D:{site:{id:'x'},counts:{proteins:100},network:{options:{steps:[400,700],min_score:700,top:300,min_cluster:5,cluster_range:[4,16,1],max_shown:8},
+ sources:[{kind:'pairs',label:'L'},{kind:'groups',label:'G'}],labels:[{label:'GO'},{label:'R'}],color_by:[{id:'disordered',name:'D',kind:'sequential'}],files:{view:'v.json',full:'f.json'}}},
+ W:{marks:'sites',mark:'site'},esc:(s)=>String(s),int:(n)=>String(n),S:{view:'network'},netcore:K.netcore,netlayout:K.netlayout,
+ views:{},tabs:[],clicks:[],tips:[],sections:{},methods:[],afterRender:[],paramsIn:[],paramsOut:[],sel:{active:()=>false},
+ render:()=>{},writeHash:()=>{},link:(v,a,e)=>'#'+v};
+window.PTMC_MODULES.forEach(m=>m(K2));
+const into=(q)=>{K2.paramsIn.forEach(f=>f(new URLSearchParams(q)));const o=new URLSearchParams();K2.paramsOut.forEach(f=>f(o));const none=new URLSearchParams();K2.nwWriting=false;K2.paramsOut.forEach(f=>f(none));K2.nwWriting=true;return none.toString()+'|'+o.toString();};
+K2.nwWriting=true;
+console.log(JSON.stringify([into('p=P35637,Q92804,BAD&nk=8&nc=disordered&ns=400&nx=1&nv=table&nt=500'),into('p=P35637'),typeof K2.netcore.exportFrame,typeof K2.network.exportFrame]));
+"""
+    )
+    got = _node(prog, {'net': str(ASSETS / 'kit-network.js')})
+    assert got[0].startswith(
+        '|'
+    )  # a link followed from the page does not carry the settings: only the page's own address does
+    q = dict(x.split('=') for x in got[0][1:].split('&'))
+    # every setting that differs from the defaults is written; a bad accession is dropped; the pins come out comma-separated
+    assert q['p'] == 'P35637%2CQ92804' and q['nk'] == '8' and q['nc'] == 'disordered' and q['ns'] == '400'
+    assert q['nx'] == '1' and q['nv'] == 'table' and q['nt'] == '500'
+    # an address with a pin and no settings leaves the settings as they were
+    assert got[1].startswith('|p=P35637') and 'nk=8' in got[1]
+    assert got[2] == 'function' and got[3] == 'function'
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
+def test_the_partners_of_a_protein_and_the_genes_of_a_pasted_list_are_counted_once_each():
+    full = _full()
+    gi = 3
+    acc = full['nodes'][gi][0]
+    prog = _harness(
+        'console.log(JSON.stringify({p:K.netcore.partnersOf(IN.F,IN.gi,700,null),'
+        'plan:K.netcore.focusPlan(IN.F,IN.opt,IN.acc,null),'
+        'g:(()=>{const g=K.netcore.findGenes(IN.text,IN.nodes);return {n:g.n,m:g.m,missing:g.missing}})()}));'
+    )
+    nodes = [{'gene': full['nodes'][gi][1], 'acc': acc}, {'gene': 'OTHER', 'acc': 'Q00000'}]
+    got = _node(
+        prog,
+        {
+            'F': full,
+            'gi': gi,
+            'acc': acc,
+            'opt': {**OPT, 'steps': [400, 700, 900]},
+            'text': f'{full["nodes"][gi][1]} {acc} NOPE',
+            'nodes': nodes,
+        },
+    )
+    want = sorted({b if a == gi else a for a, b, fl, sc in full['edges'] if gi in (a, b) and (sc >= 700 or fl & 2)})
+    assert sorted(got['p']) == want
+    assert got['plan']['rank'] >= 0 and got['plan']['partners']  # the rank is what "outside the N drawn" is read from
+    assert (
+        got['g']['n'] == 1 and got['g']['m'] == 2 and got['g']['missing'] == ['NOPE']
+    )  # a symbol and its accession are one protein

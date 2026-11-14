@@ -1,5 +1,16 @@
 ## 0.5.0 (unreleased)
 
+- Network: a click on a protein pins it (its partners and their clusters stay lit, a panel holds its card: cluster, sites,
+  partners in and out of the cluster, the term with k of n and q, the domain class), a second click opens its page,
+  Shift-click pins up to five, Escape unpins. The downloads (SVG, PNG, PDF; slide or paper) make a figure of the pinned view,
+  cropped to the neighbourhood, with the cards beside or under it. Every setting is kept in the address. A selection of
+  one to three proteins is drawn with their partners. The status line says how many of the top N proteins are drawn, with
+  the number of proteins beside it; a number of clusters that cannot be reached says what the closest is.
+- Network cluster names: a term names a cluster only if it holds for a quarter of it (`min_coverage`), no term names two
+  clusters, and a cluster no term fits is named by its three busiest proteins; the key says how many proteins hold the
+  term. "See in network" gives the real reason when a protein is not drawn and is not shown for a protein with no
+  partners; Find genes counts distinct proteins; the figure on a phone has zoom buttons and larger touch targets.
+
 - Yes/no attributes (true/false, yes/no, 1/0) read as plain terms: the attribute's label is the chip and its `query` word (default: its name; `als_ftd` for the ALS/FTD gene attribute) the search text, with no value. `als_ftd_gene:true` still works in older links and is never shown.
 - Landing cards without the "Strongest result" block and the italic question line; `card: {result, question}` in the landing config brings them back (default false).
 - A small brand line (the landing config's `title`) above each explorer's name links to the landing page; the header's "All sites" link is gone, the sticky bar keeps it.
