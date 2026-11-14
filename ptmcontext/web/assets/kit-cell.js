@@ -516,7 +516,7 @@
   }
   // each map's word on the protein: its compartments, or that it places it in none, or does not place it
   function oneMaps(p) {
-    const sd = K.sel.data();
+    const sd = K.sel.pdata(p.i);
     if (!sd) return null;
     return MAPS.map((m) => {
       const aid = m.analysis,
@@ -546,7 +546,7 @@
       .join('\n') +
     '\n';
   function oneDrawings(p) {
-    if (!K.sel.data() || !DRAWINGS.length) return '';
+    if (!K.sel.pdata(p.i) || !DRAWINGS.length) return '';
     TIPS = [];
     if (DRAWINGS.length > 1) {
       FIGS['p-both'] = bothOf('p-');

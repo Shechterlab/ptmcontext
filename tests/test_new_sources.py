@@ -18,6 +18,7 @@ from ptmcontext import layers as L
 from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
+from sel_parts import selection_of
 
 MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
@@ -160,7 +161,7 @@ def test_new_tables_become_questions_without_code(tmp_path):
     assert {t['kind'] for t in data['tracks']} == {'condensate', 'confidence'}
     assert data['inputs']['toy_condensates']['record'] == 'https://example.org/regions/{acc}'
     assert data['sites_view'] == {'columns': ['condensates']}
-    sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
+    sel = selection_of(index.parent)
     assert sel['analyses'] == ['condensates', 'confidence']
     assert S.website_problems(S.load_site(root / 'sites' / 'toy.yaml')) == []
 
@@ -546,7 +547,7 @@ def test_marks_left_out_are_shown_and_counted_nowhere(tmp_path):
     assert [m[0] for m in shard('P1')['shown']] == [22] and 22 not in [m[0] for m in shard('P1')['marks']]
     assert shard('P3')['marks'] == [] and shard('P3')['shown_only'] and [m[0] for m in shard('P3')['shown']] == [5]
     assert 'shown' not in shard('P2')
-    sel = json.loads((var.parent / 'data' / 'selection.json').read_text())
+    sel = selection_of(var.parent)
     assert len(sel['marks']) == more.record['marks']['counted'] and 'shown' not in json.dumps(sel)
     # the site file's words are checked against the attributes it names
     site['website']['shown_marks']['tests'] = {'attributes': ['nothing']}

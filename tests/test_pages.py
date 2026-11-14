@@ -15,6 +15,7 @@ import yaml
 from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
+from sel_parts import selection_of
 
 MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
@@ -334,7 +335,7 @@ def test_a_page_reads_its_tables_in_the_contracts_columns(tmp_path):
     assert p['rows'][0][-2:] == [1, ['reader']]
     assert 'kit-interactions.js' in page and 'id="page-table-data"' in (index.parent / 'toy.html').read_text()
     # the selection data carries what a question of several tests needs to test a selection again
-    sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
+    sel = selection_of(index.parent)
     assert 'xl' in sel['by_test'] and 'near' in sel['by_test']
 
 

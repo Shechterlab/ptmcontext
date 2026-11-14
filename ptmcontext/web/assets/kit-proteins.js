@@ -1049,7 +1049,7 @@
           big = `${int(k)} of ${int(n)}`;
           lab = fill(f.label);
         } else if (A[f.analysis]?.kind === 'protein_sets') {
-          const sd = K.sel?.data(),
+          const sd = K.sel?.pdata(p.i),
             ps = sd?.protein_sets?.[f.analysis];
           if (!ps) return '';
           const names = ps.sets.map(([s]) => s).filter((s) => K.sel.setHas(f.analysis, s, p.i));
@@ -1863,7 +1863,7 @@
   };
   const RANK = { more: 0, less: 1, same: 2, ns: 3 };
   function kindsHtml(p) {
-    const sd = K.sel?.data();
+    const sd = K.sel?.pdata(p.i);
     if (!sd) return `<p class="muted">Loading the sets…</p>`;
     let cov = null;
     const blocks = D.analyses

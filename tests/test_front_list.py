@@ -18,6 +18,7 @@ from test_set_views import _site
 import ptmstats
 from ptmcontext import site as S
 from ptmcontext import web
+from sel_parts import selection_of
 
 
 def _build(tmp_path):
@@ -47,7 +48,7 @@ def test_list_page_rows_equal_the_python_reference(tmp_path):
     (tmp_path / 'd.json').write_text(json.dumps(_page_data(index)))
     head = (
         f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, DATA = {json.dumps(str(tmp_path / "d.json"))}, '
-        f'SEL = {json.dumps(str(index.parent / "data" / "selection.json"))};'
+        f'SEL = {json.dumps(str(index.parent / "data" / "sel"))};'
     )
     harness = HARNESS.replace(
         'window.PTMC_MODULES.forEach',
@@ -71,7 +72,7 @@ def test_list_page_rows_equal_the_python_reference(tmp_path):
         'GP4',
         'FOOBAR',
     ]  # P4 has no mark: not found, said
-    sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
+    sel = selection_of(index.parent)
     acc = [p[0] for p in _page_data(index)['proteins']]
     listed = [acc.index('P1'), acc.index('P2')]
     ref = ptmstats.gene_list_test(

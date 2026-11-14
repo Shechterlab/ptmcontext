@@ -17,7 +17,8 @@
     CC = D.protein_view?.card || {};
   const T = { sort: SV.sort?.by || 'protein', desc: !!SV.sort?.desc, n: 100, key: null, shown: true }; // website.sites.sort: the site's first order
   const SD = () => K.sel.data();
-  const AN = () => SD().analyses;
+  const META = () => K.sel.meta(); // without the marks: the core until they are all in
+  const AN = () => META().analyses;
   const pr = (i) => K.tables.P[i];
   const vals = (m, n) => K.tables.vals(m, n);
   K.density.defaults.sites = 'comfortable'; // wrapped rows, as the explorer's table; a reader's choice wins
@@ -94,8 +95,9 @@
   // the nearest other mark of the protein
   const nearest = (m) => {
     let b = null;
-    K.tables.byProt()[m[0]].forEach((i) => {
-      const q = SD().marks[i][1];
+    const mine = K.sel.peek() ? K.tables.byProt()[m[0]].map((i) => SD().marks[i]) : K.seld.marksOf([m[0]]) || [];
+    mine.forEach((x) => {
+      const q = x[1];
       if (q !== m[1] && (b == null || Math.abs(q - m[1]) < b)) b = Math.abs(q - m[1]);
     });
     return b;
@@ -326,7 +328,7 @@
       if (s.kind === 'list') {
         // the original's chips: two at most, one per line, then "+n" (all on hover)
         const xs = v.filter(Boolean),
-          links = SD().attribute_links?.[c.attribute] || {},
+          links = META().attribute_links?.[c.attribute] || {},
           shown = xs.slice(0, 2);
         return xs.length
           ? `<div class="tags src-tags">${shown
@@ -586,27 +588,31 @@
   }
 
   // ---- quick filters: the attributes the site colors by, with their counts in the selection ----------------------
-  function quick() {
-    const c = K.sel.compute(),
-      idx = c.active ? c.marks : SD().marks.map((_, i) => i),
-      AT = SD().attribute_names || Object.keys(SD().attributes);
+  function quick(lazy) {
+    // before the marks are all in (the first page), the counts over every mark come with the core
+    const c = lazy ? null : K.sel.compute(),
+      idx = lazy ? null : c.active ? c.marks : SD().marks.map((_, i) => i),
+      nAll = lazy ? K.seld.core().parts.n_marks : idx.length,
+      AT = META().attribute_names || Object.keys(META().attributes);
     return quickAttrs()
       .map((n) => {
         const ti = AT.indexOf(n),
           counts = {};
-        idx.forEach((i) =>
-          SD().marks[i][3][ti].forEach((k) => {
-            counts[k] = (counts[k] || 0) + 1;
-          })
-        );
+        if (lazy) (K.seld.attrCounts(n) || []).forEach((k, v) => (counts[v] = k));
+        else
+          idx.forEach((i) =>
+            SD().marks[i][3][ti].forEach((k) => {
+              counts[k] = (counts[k] || 0) + 1;
+            })
+          );
         const on = new Set(S.f['t:' + n] || []),
           order = Object.keys(SPECS[n].values || {});
-        const vs = SD()
+        const vs = META()
           .attributes[n].map((v, k) => [v, counts[k] || 0])
           .sort((x, y) => (order.indexOf(x[0]) + 1 || 99) - (order.indexOf(y[0]) + 1 || 99));
         return (
           `<div class="quick"><span class="flabel">${esc(SPECS[n].label)}</span><button type="button" ` +
-          `class="fchip" data-f-all="t:${esc(n)}" aria-pressed="${!on.size}">All <span class="muted">${int(idx.length)}</span></button>` +
+          `class="fchip" data-f-all="t:${esc(n)}" aria-pressed="${!on.size}">All <span class="muted">${int(nAll)}</span></button>` +
           vs
             .map(
               ([v, k]) =>
@@ -623,19 +629,65 @@
   }
 
   // ---- the page ---------------------------------------------------------------------------------------------------
+  // ---- the first page, before the marks are all in ----------------------------------------------------------------------
+  // With no selection and the table in its first order (by protein), the first page is the marks of its first proteins,
+  // from the files that hold them (kit-seldata.js); the whole selection is read when the table is sorted another way,
+  // filtered, downloaded or cited.
+  const lazyAsked = () =>
+    !K.sel.peek() && !K.seld.inline && !K.sel.active() && T.sort === 'protein' && !T.desc && !lcOn() && !K.hl?.any();
+  let LZ = null;
+  const lazyOrder = () =>
+    (LZ ||= K.tables.P.map((p, i) => i)
+      .filter((i) => K.seld.shardOf(i) >= 0)
+      .sort((a, b) => {
+        const x = K.tables.pLabel(pr(a)).toLowerCase(),
+          y = K.tables.pLabel(pr(b)).toLowerCase();
+        return x.localeCompare(y) || String(pr(a).gene || '').localeCompare(String(pr(b).gene || '')) || a - b;
+      }));
+  function lazyRows() {
+    const ord = lazyOrder();
+    let n = 0,
+      k = 0;
+    while (k < ord.length && n < T.n) n += pr(ord[k++]).marks || 1;
+    for (;;) {
+      const got = K.seld.marksOf(ord.slice(0, k));
+      if (!got) return null;
+      if (got.length >= T.n || k >= ord.length) {
+        const by = new Map(ord.slice(0, k).map((p, j) => [p, j]));
+        return got.sort((a, b) => by.get(a[0]) - by.get(b[0]) || a[1] - b[1]).slice(0, T.n);
+      }
+      k = Math.min(ord.length, k + 10);
+    }
+  }
+  const loadingView = () =>
+    `<div class="page-head"><h2>Sites</h2></div><p class="muted">Loading the ${esc(W.marks)}…</p>`;
   function view() {
-    if (!SD()) return `<div class="page-head"><h2>Sites</h2></div><p class="muted">Loading the ${esc(W.marks)}…</p>`;
     if (T.key !== K.tables.selKey()) {
       T.key = K.tables.selKey();
       T.n = 100;
     }
-    const { opt, defaults, shown: cols } = allCols(),
-      rs = rows(cols),
-      shown = rs.slice(0, T.n),
-      counted = rs.filter((m) => !m.lc),
+    const lz = lazyAsked();
+    let rs, shown, counted, total, np;
+    if (lz) {
+      const core = K.seld.core();
+      if (!core) return loadingView();
+      shown = rs = lazyRows();
+      if (!rs) return loadingView();
+      total = core.parts.n_marks;
+      np = core.parts.n_proteins;
+    } else {
+      if (!SD()) return loadingView();
+    }
+    const { opt, defaults, shown: cols } = allCols();
+    if (!lz) {
+      rs = rows(cols);
+      shown = rs.slice(0, T.n);
+      counted = rs.filter((m) => !m.lc);
+      total = rs.length;
       np = new Set(counted.map((m) => m[0])).size;
+    }
     const head =
-      `<div class="page-head results-head"><div><h2>Sites</h2><p class="cx">${int(counted.length)} of ${int(SD().marks.length)} ${esc(W.marks)} on ${int(np)} protein${np === 1 ? '' : 's'}</p>${lcLine()}</div>` +
+      `<div class="page-head results-head"><div><h2>Sites</h2><p class="cx">${int(lz ? total : counted.length)} of ${int(lz ? total : SD().marks.length)} ${esc(W.marks)} on ${int(np)} protein${np === 1 ? '' : 's'}</p>${lcLine()}</div>` +
       `<div class="actions">${K.tables.figuresBtn()}${K.expBar(
         ['pdf', 'svg', 'png', 'tsv'],
         'sites-exp',
@@ -643,8 +695,8 @@
         'data'
       )}</div></div>`;
     const sorted = (id) => (T.sort === id ? ` aria-sort="${T.desc ? 'descending' : 'ascending'}"` : '');
-    const q = quick();
-    if (!rs.length)
+    const q = quick(lz);
+    if (!total)
       return head + K.tables.selectionCard() + (q ? `<div id="sites-quick">${q}</div>` : '') + K.tables.emptyState();
     return (
       head +
@@ -677,13 +729,15 @@
         )
         .join('') +
       '</tbody></table></div>' +
-      `<div class="tbl-foot"><span>Showing ${int(shown.length)} of ${int(rs.length)}</span>${
-        rs.length > T.n ? `<button class="btn ` + `small" type="button" data-smore>Show 100 more</button>` : ''
+      `<div class="tbl-foot"><span>Showing ${int(shown.length)} of ${int(total)}</span>${
+        total > T.n ? `<button class="btn ` + `small" type="button" data-smore>Show 100 more</button>` : ''
       }</div></div>` +
-      K.tables.citeBox(
-        counted,
-        K.sel.active() ? `these ${int(rs.length)} ${rs.length === 1 ? W.mark : W.marks}` : `the ${W.marks} of this site`
-      )
+      (lz
+        ? `<div id="t-cite"><p class="muted small"><button class="btn small" type="button" data-sites-all>Load every ${esc(W.mark)} to cite them</button></p></div>`
+        : K.tables.citeBox(
+            counted,
+            K.sel.active() ? `these ${int(total)} ${total === 1 ? W.mark : W.marks}` : `the ${W.marks} of this site`
+          ))
     );
   }
 
@@ -857,7 +911,7 @@
     if (c.attribute) {
       const vs = vals(m, c.attribute).filter((v) => v !== '');
       if (c.links) {
-        const l = SD().attribute_links?.[c.attribute] || {};
+        const l = META().attribute_links?.[c.attribute] || {};
         return vs.map((v) => l[v] || '').join(';');
       }
       if (c.lookup) {
@@ -931,6 +985,10 @@
     );
   }
   async function download(el) {
+    if (!K.sel.peek()) {
+      K.busy('Loading the data', K.sel.ready);
+      await K.sel.ready;
+    }
     const rs = rows(allCols().shown),
       name = K.tables.fileName('sites');
     if (el?.dataset?.sitesExp && el.dataset.sitesExp !== 'tsv')
@@ -1012,6 +1070,7 @@
       },
     ],
     ['[data-sites-exp]', (el) => download(el)],
+    ['[data-sites-all]', () => K.sel.data()],
     [
       '[data-sites-3d]',
       (el) => {

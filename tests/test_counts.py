@@ -20,6 +20,7 @@ from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
 from ptmcontext.web.counts import counts_data
+from sel_parts import selection_of
 
 REPO = Path(__file__).resolve().parents[1]
 #                 1        10        20        30        40
@@ -213,7 +214,7 @@ def test_count_questions_from_a_toy_site(tmp_path):
     assert (r['ko']['n'], r['ko']['down'], r['ko']['up']) == (3, 2, 0) and r['ko']['filter'] == ['t:exp', 'ko:down']
     assert r['never']['n'] == 0
     assert d['legacy_links'] == {'old-key': 'responses'}
-    sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
+    sel = selection_of(index.parent)
     marks = pd.read_csv(root / 'out' / 'toy' / 'marks.tsv', sep='\t', dtype=str)
     idx = {(a, int(p)): i for i, (a, p) in enumerate(zip(marks['accession'], marks['position']))}
     tx = sel['count_questions']['responses'][0]
@@ -229,7 +230,7 @@ def test_a_site_without_counts_has_none(tmp_path):
     assert not list((root / 'out' / 'toy').glob('marks_*.tsv'))
     index = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None)
     assert _page_data(index)['count_questions'] == {}
-    assert 'count_questions' not in json.loads((index.parent / 'data' / 'selection.json').read_text())
+    assert 'count_questions' not in selection_of(index.parent)
 
 
 def test_count_questions_are_checked(tmp_path):

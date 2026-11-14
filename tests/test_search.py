@@ -21,6 +21,7 @@ import yaml
 from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
+from sel_parts import selection_of, selection_text
 
 MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
@@ -184,7 +185,7 @@ def test_the_search_data_reach_the_page_in_their_formats(tmp_path):
     index = _build(root)
     data = _page_data(index)
     assert data['search']['shorthand'] == {'U1': 'P1'} and set(data['search']['nearby']) == {'others'}
-    sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
+    sel = selection_of(index.parent)
     acc = [p[0] for p in data['proteins']]
     marks = [(acc[m[0]], m[1]) for m in sel['marks']]
     w = dict(zip(marks, sel['wide']['w']))
@@ -294,7 +295,7 @@ def test_a_site_without_a_search_block_has_none_of_it(tmp_path):
     assert any("'b:class': needs website.search.partners" in p for p in problems)
     assert any("'motif:GXRG'" not in p and "'binds:writer' names no search key" in p for p in problems)
     index = _build(root)
-    sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
+    sel = selection_of(index.parent)
     assert 'wide' not in sel and 'nearby' not in sel and not (index.parent / 'data' / 'partners.json').exists()
     assert not _page_data(index).get('search')
 
@@ -325,7 +326,7 @@ def test_the_selection_module_reads_names_sites_patterns_and_neighbours(tmp_path
         data['protein_attributes']['values'].update(
             json.loads((index.parent / data['late']['file']).read_text())['protein_attributes']
         )
-    sel = (index.parent / 'data' / 'selection.json').read_text()
+    sel = selection_text(index.parent)
     partners = (index.parent / 'data' / 'partners.json').read_text()
     queries = {
         'name': ['UNO-1', {}],
@@ -354,7 +355,7 @@ const inline = {{ 'selection-data': {json.dumps(sel)}, 'partners-data': {json.du
 global.document = {{ getElementById: id => (inline[id] ? {{ textContent: inline[id] }} : null), addEventListener: noop, querySelector: () => null,
   querySelectorAll: () => [], documentElement: {{ style: {{ setProperty: noop }} }}, body: {{ classList: {{ toggle: noop, contains: () => false }} }} }};
 const fs = require('fs');
-for (const f of ['kit-select.js', 'kit-near.js']) eval(fs.readFileSync({json.dumps(str(ASSETS))} + '/' + f, 'utf8'));
+for (const f of ['kit-seldata.js', 'kit-select.js', 'kit-near.js']) eval(fs.readFileSync({json.dumps(str(ASSETS))} + '/' + f, 'utf8'));
 const D = {json.dumps(data)}, esc = s => String(s ?? ''), A = Object.fromEntries(D.analyses.map(a => [a.id, a]));
 const K = {{ D, W: D.words, A, S: {{ q: '', f: {{}}, vs: 'residues' }}, esc, int: n => String(n), cap: t => t, clicks: [], render: noop, writeHash: noop,
   link: v => '#' + v, decorate: r => r, sections: {{}}, views: {{}}, tabs: [] }};
@@ -402,7 +403,7 @@ def test_a_selections_retest_counts_equal_the_per_feature_counts(tmp_path):
     root = _toy(tmp_path)
     index = _build(root)
     data = _page_data(index)
-    sel = (index.parent / 'data' / 'selection.json').read_text()
+    sel = selection_text(index.parent)
     script = f"""
 const noop = () => {{}};
 global.window = global; global.addEventListener = noop; global.innerWidth = 1400; global.requestAnimationFrame = f => 0;
@@ -411,7 +412,7 @@ const inline = {{ 'selection-data': {json.dumps(sel)} }};
 global.document = {{ getElementById: id => (inline[id] ? {{ textContent: inline[id] }} : null), addEventListener: noop, querySelector: () => null,
   querySelectorAll: () => [], documentElement: {{ style: {{ setProperty: noop }} }}, body: {{ classList: {{ toggle: noop, contains: () => false }} }} }};
 const fs = require('fs');
-for (const f of ['kit-select.js']) eval(fs.readFileSync({json.dumps(str(ASSETS))} + '/' + f, 'utf8'));
+for (const f of ['kit-seldata.js', 'kit-select.js']) eval(fs.readFileSync({json.dumps(str(ASSETS))} + '/' + f, 'utf8'));
 const D = {json.dumps(data)}, esc = s => String(s ?? ''), A = Object.fromEntries(D.analyses.map(a => [a.id, a]));
 const K = {{ D, W: D.words, A, S: {{ q: '', f: {{}}, vs: 'residues' }}, esc, int: n => String(n), cap: t => t, clicks: [], render: noop, writeHash: noop,
   link: v => '#' + v, decorate: r => r, sections: {{}}, views: {{}}, tabs: [] }};

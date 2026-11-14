@@ -32,6 +32,7 @@ from ..profile import site_profile
 from ..site import code_commit, load_site, manifest_of, presence_only, root_of
 from .counts import counts_data
 from .glance import glance
+from . import seldata as SEL
 from . import structure as S3D
 from . import nucleic as NUC
 
@@ -53,6 +54,7 @@ MODULES = (
     'kit-cols.js',
     'kit-late.js',
     'kit-stats.js',
+    'kit-seldata.js',
     'kit-select.js',
     'kit-rail.js',
     'kit-search.js',
@@ -99,6 +101,8 @@ MODULES = (
     'kit-figures.js',
     'kit.js',
 )
+# scripts a module starts in a worker: copied beside the others, never put in the page
+WORKERS = ('kit-seldata-worker.js',)
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#4b5563', '#9ca3af'
 
 
@@ -1630,10 +1634,8 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
 
         data['search'] = SR.data(site, run, sel, listing, fasta, out, log)
         (out / 'data').mkdir(parents=True, exist_ok=True)
-        (out / 'data' / 'selection.json').write_text(json.dumps(sel, separators=(',', ':')))
-        log(
-            f'  selection data: {len(sel["marks"]):,} marks, {(out / "data" / "selection.json").stat().st_size / 1e6:.1f} MB'
-        )
+        (out / 'data' / 'selection.json').unlink(missing_ok=True)  # the whole selection was one file once
+        SEL.write(sel, listing, out, log)
         # the pathway view's files (website.front.pathways), read one at a time when a reader opens a pathway
         if data.get('front'):
             from . import pathways as PW
@@ -1668,11 +1670,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     inline_proteins = json.dumps({f'{k:02d}': v for k, v in shards.items()}, separators=(',', ':')).replace(
         '</', '<\\/'
     )
-    inline_selection = (
-        (out / 'data' / 'selection.json').read_text().replace('</', '<\\/')
-        if (out / 'data' / 'selection.json').exists()
-        else ''
-    )
+    inline_selection = json.dumps(sel, separators=(',', ':')).replace('</', '<\\/') if listing else ''
     inline_partners = (
         (out / 'data' / 'partners.json').read_text().replace('</', '<\\/')
         if (out / 'data' / 'partners.json').exists()
@@ -1807,7 +1805,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             text = text.replace(key, value)
         return text
 
-    for name in ('kit.css', *MODULES):
+    for name in ('kit.css', *MODULES, *WORKERS):
         shutil.copyfile(_asset(f'assets/{name}'), out / 'assets' / name)
     (out / 'assets' / 'logo.svg').write_text(icon)
     if logo:

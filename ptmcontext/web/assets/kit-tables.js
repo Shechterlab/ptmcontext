@@ -25,15 +25,16 @@
     entry: entry || '',
   }));
   const SD = () => K.sel?.data();
-  const AN = () => SD().analyses,
-    AT = () => SD().attribute_names || Object.keys(SD().attributes);
+  const META = () => K.sel?.meta(); // the questions, classes and attribute values: from the core until the marks are in
+  const AN = () => META().analyses,
+    AT = () => META().attribute_names || Object.keys(META().attributes);
   const colourAttr = Object.keys(SPECS).find((n) => SPECS[n].colour && SPECS[n].kind === 'category') || null;
   const MINUS = '−';
 
   // ---- small helpers -------------------------------------------------------------------------------------------------
   const vals = (m, name) => {
     const ti = AT().indexOf(name);
-    return ti < 0 ? [] : m[3][ti].map((c) => SD().attributes[name][c]);
+    return ti < 0 ? [] : m[3][ti].map((c) => META().attributes[name][c]);
   };
   const attrStr = (m, name) =>
     vals(m, name)
@@ -41,7 +42,7 @@
       .join(SPECS[name]?.separator || '; ');
   const classes = (m, aid) => {
     const k = AN().indexOf(aid);
-    return k < 0 ? [] : m[2][k].map((c) => SD().classes[aid][c]);
+    return k < 0 ? [] : m[2][k].map((c) => META().classes[aid][c]);
   };
   const pLabel = (p) => p.gene || p.acc;
   const fmtNum = (v, f) => {

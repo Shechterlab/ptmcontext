@@ -46,8 +46,8 @@
     return undefined;
   }
   const sets = (aid) => {
-    const sd = K.sel.data(),
-      ps = sd?.protein_sets?.[aid];
+    const sd = K.sel.meta(),
+      ps = sd?.protein_sets?.[aid] || sd?.protein_sets_meta?.[aid];
     return ps ? new Set(ps.sets.map((x) => x[0])) : null;
   };
   const attrVal = (m, name) => K.cols.markAttr(m, name) ?? '';
@@ -213,7 +213,7 @@
       .join('')}</tbody></table>` +
       `</div>`);
   function mapsHtml(p) {
-    if (!K.cell || !K.sel.data()) return '';
+    if (!K.cell || !K.sel.pdata(p.i)) return '';
     const ms = K.cell.maps(p);
     if (!ms) return '';
     return mapsTable(p, ms) + K.cell.drawings(p);
@@ -221,7 +221,7 @@
   // the classic page's own fold right after the protein map: the cell and its nucleus, drawn for this protein, the maps' table folded under them
   const CELLFOLD = !!PC.location?.maps;
   function cellBuild(p) {
-    if (!K.cell || !K.sel.data()) return { html: '<p class="muted small">Loading…</p>', wait: true };
+    if (!K.cell || !K.sel.pdata(p.i)) return { html: '<p class="muted small">Loading…</p>', wait: true };
     const ms = K.cell.maps(p),
       nar = matchMedia('(max-width: 700px)').matches,
       dr = ms ? (nar ? K.cell.drawingsNarrow(p) : K.cell.drawings(p)) : '';
@@ -266,7 +266,7 @@
   }
   // where the RNAs the protein binds gather: for each map of the bound RNAs (protein-set questions), the compartments of the protein's own sets, each with the dataset's test of it
   function rnaMapsHtml(cfg, p) {
-    const sd = K.sel.data(),
+    const sd = K.sel.pdata(p.i),
       out = [];
     for (const aid of cfg.rna_maps) {
       const a = (D.analyses || []).find((x) => x.id === aid),
@@ -381,7 +381,7 @@
       sum.push(h.sum.length ? sumList(h.sum, 2) : '');
     }
     if (cfg.maps && !CELLFOLD) html += mapsHtml(p);
-    if (cfg.rna_maps?.length && K.sel.data()) html += rnaMapsHtml(cfg, p);
+    if (cfg.rna_maps?.length && K.sel.pdata(p.i)) html += rnaMapsHtml(cfg, p);
     if (cfg.condensates) {
       const c = condensatesHtml(cfg, p, rec, tb);
       html += c.html;
@@ -402,7 +402,7 @@
     return {
       html,
       sum: bits.join(' · '),
-      wait: !!((cfg.maps || cfg.rna_maps?.length) && !K.sel.data()),
+      wait: !!((cfg.maps || cfg.rna_maps?.length) && !K.sel.pdata(p.i)),
       pic:
         K.pfolds && (nLoc || nCond)
           ? K.pfolds.bigN([
@@ -857,7 +857,7 @@
   // ---- the live parts of the Disease card: UniProt's diseases, Open Targets' scores -----------------------------------
   const famNames = (c, p) => {
     const aid = c.term_groups?.families?.[0],
-      sd = K.sel.data(),
+      sd = K.sel.pdata(p.i),
       ps = sd?.protein_sets?.[aid];
     return ps ? ps.sets.map((x) => x[0]).filter((s) => K.sel.setHas(aid, s, p.i)) : [];
   };
@@ -961,14 +961,14 @@
                 )
               : 'none curated in UniProt'
             : '',
-          K.sel.data() ? (fam.length ? 'families: ' + sumList(fam, 2) : 'in no disease family') : '',
+          K.sel.pdata(p.i) ? (fam.length ? 'families: ' + sumList(fam, 2) : 'in no disease family') : '',
         ]
           .filter(Boolean)
           .join(' · ') ||
         c.summary ||
         '';
     const fold0 = el.closest('details');
-    if (fold0?.id && K.sel.data())
+    if (fold0?.id && K.sel.pdata(p.i))
       K.pfolds?.set(
         fold0.id,
         fam.length ? K.pfolds.bigN([[int(fam.length), fam.length === 1 ? 'disease family' : 'disease families']]) : ''
@@ -1051,7 +1051,7 @@
         el.innerHTML = '<p class="muted small">Loading…</p>';
         return;
       }
-      if (kind !== 'live' && !K.sel.data() && kind === 'location' && PC.location.maps) {
+      if (kind !== 'live' && !K.sel.pdata(p.i) && kind === 'location' && PC.location.maps) {
         el.innerHTML = '<p class="muted small">Loading…</p>';
         return;
       }
