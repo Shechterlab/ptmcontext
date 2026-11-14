@@ -29,7 +29,7 @@ from ..front import resolve as front_resolve
 from ..inputs import load as load_manifest
 from ..inputs import role_inputs, site_input_names
 from ..profile import site_profile
-from ..site import code_commit, load_site, manifest_of, presence_only, root_of
+from ..site import card_questions, code_commit, load_site, manifest_of, presence_only, root_of
 from .cellpct import cell_percent, cell_proteome
 from .counts import counts_data
 from .glance import glance
@@ -721,8 +721,8 @@ def section_analyses(web: dict, name: str | None) -> set | None:
         if sec.get('name') != name:
             continue
         for c in sec.get('cards') or []:
-            a = c if isinstance(c, str) else c.get('analysis')
-            ids.add(a)
+            a = card_questions(c)[0]
+            ids.update(card_questions(c))
             if a == cell.get('id'):
                 ids |= {m.get('analysis') for m in cell.get('maps') or []}
     return ids

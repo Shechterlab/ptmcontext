@@ -1189,7 +1189,7 @@ website:                  # the look and words of the website (ptmc web); layout
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
     question: "Which proteins have modified lysines?"
-    rows: 7
+    rows: 5
     random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end
     sections:
       - name: Where in the cell
@@ -1200,13 +1200,9 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: cell_chromatin, title: Chromatin probability}
       - name: Same lysine, different modifications
         about: "Whether a lysine with one modification is also reported with another more often than the other lysines of its protein: acetylation, ubiquitination, SUMOylation and methylation. Mass spectrometry finds some lysines far more often than others, so each tile also gives the result among lysines with another modification."
-        cards:                                  # beside each pair: the same question among the lysines reported modified at all
-          - {analysis: same_ac_ub, beside: [{analysis: same_ac_ub_modified, label: Among lysines with another modification}, {analysis: same_ac_ub_akimov, label: Ubiquitination from Akimov 2018 only}]}
-          - {analysis: same_ac_su, beside: [{analysis: same_ac_su_modified, label: Among lysines with another modification}, {analysis: same_ac_su_hendriks, label: SUMOylation from Hendriks 2017 only}]}
-          - {analysis: same_ub_su, beside: [{analysis: same_ub_su_modified, label: Among lysines with another modification}, {analysis: same_ub_su_studies, label: Akimov 2018 and Hendriks 2017 only}]}
-          - {analysis: same_ac_methyl, beside: {analysis: same_ac_methyl_modified, label: Among lysines with another modification}}
-          - {analysis: same_ub_methyl, beside: [{analysis: same_ub_methyl_modified, label: Among lysines with another modification}, {analysis: same_ub_methyl_akimov, label: Ubiquitination from Akimov 2018 only}]}
-          - {analysis: same_su_methyl, beside: [{analysis: same_su_methyl_modified, label: Among lysines with another modification}, {analysis: same_su_methyl_hendriks, label: SUMOylation from Hendriks 2017 only}]}
+        cards:                                  # one tile, a row per pair; each question's page shows its controls beside its result
+          - rows_from: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl]
+            title: Same lysine, different modifications
       - name: Which proteins
         about: "Histones, protein classes, pathways and condensates of the proteins with modified lysines, for all types together. Each question's page links to the same question for each type with at least 200 lysines."
         cards:
@@ -1477,6 +1473,16 @@ website:                  # the look and words of the website (ptmc web); layout
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, histone, complex, condensate_proteome]
     max_terms: 4
+    groups:            # the headings the picker lists terms under
+      - {name: GO, from: [go_bp, go_binding]}
+      - {name: Cell compartment, from: [hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
+      - {name: Disease, from: [disease_family, disease_ontology, disease_term]}
+      - {name: Pathway, from: [reactome_top_level, reactome_pathway]}
+      - {name: Protein class, from: [panther_group, panther_class, panther_subclass]}
+      - {name: Condensate, from: [condensate, condensate_role, condensate_proteome]}
+      - {name: RNA and DNA binding, from: [eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, binding_protein]}
+      - {name: Complex or histone, from: [complex, histone]}
+      - {name: Cancer dependency, from: [depmap_dependency]}
     term_sources:      # GO biological process, propagated over is_a and part_of, 5 to 5,000 proteins; the evidence include below keeps annotations that are not computational-only (remove it to keep every annotation)
       - id: go_bp
         title: GO biological process

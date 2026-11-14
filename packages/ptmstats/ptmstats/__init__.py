@@ -278,6 +278,52 @@ def wilson_interval(k: int, n: int, z: float = 1.959963984540054) -> tuple[float
     return max(0.0, c - h), min(1.0, c + h)
 
 
+def pair_overlap(sets, universe, marked=None) -> list:
+    """The overlap of sets of proteins (or sites) against chance: for every pair of the sets, is the overlap larger than two
+    random sets of the same sizes would have in the universe?
+
+    ``sets`` is a list of ``(name, members)``; ``universe`` the elements counted (all reviewed proteins, say); ``marked``,
+    if given, a second universe: the elements of ``universe`` with a mark. Every set is cut to the universe first. For a
+    pair, n and m are the sizes, a the shared elements, N the universe; expected = n*m/N; fold = a/expected; p = P(X >= a),
+    X hypergeometric (N, m, n) (``hypergeom_sf``: one-sided, more than chance; p = 1 for a = 0); q = Benjamini-Hochberg over
+    the pairs of one universe. Returns one dict per pair and universe ('all', or 'marked'), in pair order, with
+    universe, i, j, n, m, a, N, expected, fold, p and q. ptmstats.js has no twin: kit-overlap.js `overlapPairs` is the same
+    arithmetic and tests/test_overlap.py checks that the two agree."""
+    out = []
+    for label, base in (
+        ('all', set(universe)),
+        *([('marked', set(universe) & set(marked))] if marked is not None else []),
+    ):
+        cut = [(nm, set(mem) & base) for nm, mem in sets]
+        rows = []
+        for i in range(len(cut)):
+            for j in range(i + 1, len(cut)):
+                n, m, a, N = len(cut[i][1]), len(cut[j][1]), len(cut[i][1] & cut[j][1]), len(base)
+                exp = n * m / N if N else float('nan')
+                rows.append(
+                    {
+                        'universe': label,
+                        'i': i,
+                        'j': j,
+                        'n': n,
+                        'm': m,
+                        'a': a,
+                        'N': N,
+                        'expected': exp,
+                        'fold': a / exp if exp else None,
+                        'p': (hypergeom_sf(a, N, m, n) if a else 1.0) if n and m else None,
+                    }
+                )
+        tested = [r for r in rows if r['p'] is not None]
+        q = benjamini_hochberg([r['p'] for r in tested]) if tested else []
+        for r in rows:
+            r['q'] = None
+        for r, v in zip(tested, q):
+            r['q'] = float(v)
+        out += rows
+    return out
+
+
 def gene_list_test(questions) -> list:
     """The gene-list test: a list of proteins (or genes) the reader names, against the sets of each protein-set question.
 

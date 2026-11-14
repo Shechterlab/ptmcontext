@@ -653,7 +653,7 @@
     const v = S.view;
     if (v === 'protein' && K.sel.protSelected(String(S.arg).split('/')[0])) return ''; // a protein of the selection: its page fades the sites outside it, and says so
     if (follows(v)) return ''; // the bar above says what is selected and how many; its Clear all removes it
-    return `<p class="sel-line off" role="status">Not filtered by your selection.</p>`;
+    return `<p class="sel-line off" role="status">${esc(K.views[v]?.offNote || 'Not filtered by your selection.')}</p>`;
   }
   function tabs() {
     const sel = K.sel?.active();
@@ -1121,7 +1121,9 @@
         about: x.about,
         show: x.show,
         more: x.more,
-        cards: x.cards.map((c) => (typeof c === 'string' ? { analysis: c } : c)).filter((c) => A[c.analysis]),
+        cards: x.cards
+          .map((c) => (typeof c === 'string' ? { analysis: c } : c.rows_from ? { ...c, analysis: c.rows_from[0] } : c))
+          .filter((c) => A[c.analysis]),
       }));
     else {
       out = [];
@@ -1254,7 +1256,7 @@
   };
   // what the selection does, in one clause (the bar, a figure's subtitle, Copy link): follows the Test and Compared with settings
   K.selEffect = () =>
-    'All tabs show only these · ' +
+    'Pages that follow the selection show only these · ' +
     (vsOn()
       ? `compared with ${S.vs === 'cmp' ? 'the sites of ' + cmpName() : 'the other ' + W.marks}`
       : S.m === 'fisher'
@@ -1268,6 +1270,9 @@
 
   // a card's order: by effect (the default) or by evidence (order: q), for sets where a small set reaches the largest
   // fold when every member is marked
+  // a card holds a question as its own, as one row of its rows_from, or as one of its views
+  const cardHas = (c, aid) =>
+    c.analysis === aid || (c.rows_from || []).includes(aid) || (c.views || []).some((v) => v.analysis === aid);
   const cardOf = (aid) => allCards().find((c) => c.analysis === aid) || {};
   // a row's evidence: its reading's q (a set's test within abundance deciles where it has one)
   const qOf = (r) => (r.adj ? r.adj.q : r.q) ?? 1;
@@ -1389,9 +1394,27 @@
   // what a tile shows, for the tile and its exports
   // a selection loaded but too small to test: the tiles read the whole dataset
   const smallSel = () => selOn() && !vsOn() && !!K.sel.data() && !(K.sel.testable() && K.sel.nMarks() > 0);
+  // a card of rows_from: the first row of each of its questions, one row per question, named by the question
+  function groupState(card) {
+    const parts = card.rows_from.filter((id) => A[id]).map((id) => ({ id, st: tileState({ analysis: id, rows: 1 }) }));
+    const shown = parts
+      .filter((p) => p.st.shown.length)
+      .map((p) => ({ ...p.st.shown[0], glabel: card.labels?.[p.id] || FR.short?.[p.id] || A[p.id].title }));
+    return {
+      a: A[card.analysis],
+      rows: parts.flatMap((p) => p.st.rows),
+      shown,
+      more: 0,
+      left: [],
+      whole: null,
+      made: false,
+      foot: '',
+    };
+  }
   function tileState(card) {
+    if (card.rows_from) return groupState(card);
     const a = A[card.analysis],
-      max = card.rows || OV.rows || 7;
+      max = card.rows || OV.rows || 5;
     const rows = collapseSimilar(a, smallSel() ? rowsFor(a, S.m) : withRef(a, rowsOf(a, S.m), S.m));
     let { shown, more, left } = pick(rows, max, card);
     const whole = selOn() && !vsOn() && !smallSel() ? rowsFor(a, S.m) : null;
@@ -1440,59 +1463,68 @@
           .replace(/data-texp="(\w+)"/g, `data-texp="$1" ` + `data-aid="${esc(a.id)}"`);
     const fr = K.tilekit && !shown.some((r) => r.vs) && shown.length;
     const ownSel = ownClasses(a),
-      ms = fr
+      // a single-row tile with controls draws them as rows of one small table on the row's axis; its sentence and row
+      // label would only repeat the title
+      side = fr && !made && shown.length === 1 && !shown[0].absent ? besideOf(card, shown) : [],
+      ms0 = fr
         ? shown.map((r) => {
-            const mine = !!ownSel?.has(r.category),
-              fails = mine || r.absent ? [] : controlFails(a, r.category);
-            return { ...frModel(a, r), mine, fails, badge: fails.map(failText).join('; ') };
+            const grp = card.rows_from ? A[r.analysis] : null,
+              mine = !grp && !!ownSel?.has(r.category),
+              fails = mine || r.absent ? [] : controlFails(grp || a, r.category);
+            // a row of a rows_from card opens its own question
+            return {
+              ...frModel(grp || a, r),
+              mine,
+              fails,
+              badge: fails.map(failText).join('; '),
+              ...(grp ? { go: grp.id } : {}),
+            };
           })
         : [],
+      ms = side.length
+        ? [
+            { ...ms0[0], label: selOn() ? 'Selection' : 'All data', lead: true },
+            ...side.map(({ b, other, r }) => ({
+              ...frModel(other, r),
+              label: b.label,
+              n: null,
+              go: other.id,
+              fails: [],
+              badge: '',
+            })),
+          ]
+        : ms0,
       ax = fr ? K.tilekit.axisOf(K.tilekit.valsOf(ms)) : null;
-    const ans = fr && !made ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
+    const ans = fr && !made && !card.rows_from && shown.length > 1 ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
     return (
-      `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(title)}${
+      `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}"${card.rows_from ? ' data-group' : ' tabindex="0"'}><header><h3>${esc(title)}${
         a.new && D.run.parity
           ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>'
           : ''
-      }</h3>${detailsLink(a.id)}</header>` +
+      }</h3>${card.rows_from ? '' : detailsLink(a.id)}</header>` +
       (ans ? `<p class="tans">${ans}</p>` : '') +
-      (OV.statistic_label !== false && !vsOn() && rows.some((r) => r.eff != null)
-        ? ownSel && fr
-          ? `<p class="tstat">${otherRows(a, made)}</p>`
-          : `<p class="tstat">${
-              shown.every((r) => r.absent || r.shown != null)
-                ? gloss('fold', 'Fold')
-                : gloss('odds ratio', 'Odds ratio')
-            } ${esc(baseline(a, vsMethod(S.m)))}</p>`
-        : '') +
       (shown.length
         ? `<div class="trows${fr ? ' fr-rows' : ''}">${
             fr
-              ? K.tilekit.axisHtml(
-                  ax,
-                  ms.some((x) => x.n != null && !x.cellRow)
-                    ? ms.find((x) => x.n != null)?.measure === 'fold'
-                      ? 'proteins'
-                      : W.marks
-                    : ''
-                ) +
-                ms
+              ? ms
                   .map(
                     (x, i) =>
                       K.tilekit.rowHtml(
                         x,
                         ax,
-                        x.absent
-                          ? ` title="${esc(x.label)}: none in ` + `this selection"`
-                          : x.mine
-                            ? ` data-r="${reg(shown[i])}"${pickAttrs(shown[i]).replace(
-                                / title="[^"]*"/,
-                                ` title="Click ` + `to take ${esc(x.label)} out of the selection"`
-                              )}`
-                            : ` data-r="${reg(shown[i])}"${pickAttrs(shown[i])}`
+                        x.go
+                          ? ' role="button" tabindex="0" aria-haspopup="dialog"'
+                          : x.absent
+                            ? ` title="${esc(x.label)}: none in ` + `this selection"`
+                            : x.mine
+                              ? ` data-r="${reg(shown[i])}"${pickAttrs(shown[i]).replace(
+                                  / title="[^"]*"/,
+                                  ` title="Click ` + `to take ${esc(x.label)} out of the selection"`
+                                )}`
+                              : ` data-r="${reg(shown[i])}"${pickAttrs(shown[i]).replace(/ title="[^"]*"/, '')} aria-haspopup="dialog"`
                       ) + (x.fails.length ? `<div class="ctl-fail">${failBadges(a.id, x.fails)}</div>` : '')
                   )
-                  .join('')
+                  .join('') + K.tilekit.axisHtml(ax)
               : tileRows(shown)
           }</div>`
         : made
@@ -1501,12 +1533,23 @@
             `tnone">${
               rows.some((r) => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'
             }</p>`) +
+      (OV.statistic_label !== false && !vsOn() && shown.length && rows.some((r) => r.eff != null)
+        ? ownSel && fr
+          ? `<p class="tstat">${otherRows(a, made)}</p>`
+          : `<p class="tstat">${
+              shown.every((r) => r.absent || r.shown != null)
+                ? gloss('fold', 'Fold')
+                : gloss('odds ratio', 'Odds ratio')
+            } ${esc(baseline(a, vsMethod(S.m)))}${
+              shown.some((r) => r.adj) ? '. Dots: the test within abundance deciles' : ''
+            }</p>`
+        : '') +
       (fr && ms.some((x) => x.wv != null) ? '<p class="tkey">Dashed ring: the whole dataset.</p>' : '') +
-      besideLine(card, shown) +
+      (side.length ? '' : besideLine(card, shown)) +
       (made
         ? `<p class="tfoot"><b>Whole dataset.</b> ${foot}</p>`
-        : fr
-          ? ''
+        : fr || (!shown.length && !vsOn())
+          ? '' // a tile with no row says so once ("None differs"), not again as its summary
           : foot
             ? `<p class="tfoot">${foot}</p>`
             : '') +
@@ -1521,31 +1564,51 @@
   // an Overview card's beside: {analysis, label}, or a list of them: another question's result for the tile's first class
   // (not a 'Not ...' one), a line each (a control asked another way, or the same pair from one source), in the
   // statistic and method the tile shows, retested on a selection as every question is
-  function besideLine(card, shown) {
+  // the controls of a tile's first class: [{ b, other, r }], the other question's row for the same class
+  function besideOf(card, shown) {
     const bs = !card.beside ? [] : Array.isArray(card.beside) ? card.beside : [card.beside];
     const first = shown.find((x) => !EXCL.test(x.label || '')) || shown[0];
-    if (!first || first.absent) return '';
+    if (!first || first.absent) return [];
     return bs
       .map((b) => {
         const other = A[b.analysis];
-        if (!other) return '';
-        const r = (rowsOf(other, S.m) || []).find((x) => x.category === first.category);
-        // the same statistic, in the same form, as the tile's own rows (r.eff: "2.5×"), and q as the site prints it
-        if (!r || r.eff == null) return '';
-        return (
-          `<p class="tbeside"><a href="${esc(link('overview', other.id))}">${esc(b.label)}</a>: ` +
-          `<span class="nw">${esc(fx(valOf(r)))}, q ${esc(fq(r.adj ? r.adj.q : r.q))}</span></p>`
-        );
+        const r = other && (rowsOf(other, S.m) || []).find((x) => x.category === first.category);
+        return r && r.eff != null ? { b, other, r } : null;
       })
+      .filter(Boolean);
+  }
+  // a line each, for a tile with several rows (a single-row tile draws them as rows: see tile()); the value only, its
+  // q in the hover
+  function besideLine(card, shown) {
+    return besideOf(card, shown)
+      .map(
+        ({ b, other, r }) =>
+          `<p class="tbeside"><a href="${esc(link('overview', other.id))}">${esc(b.label)}</a>: ` +
+          `<span class="nw" title="${esc(testLine(r))}">${esc(fx(valOf(r)))}</span></p>`
+      )
       .join('');
   }
   // a tile row as the cards' rows read it: the short row label (website.front.row_labels), the interval, q, n and the whole dataset's ring
+  // what a row's popover says: the name, the fold, each test in full, the counts, and what its actions open
+  const popOf = (a, r) => ({
+    name: r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
+    fold: fx(valOf(r)),
+    tests: r.adj ? [`Proteins, hypergeometric: q ${fq(r.q)}`, testLine(r)] : [testLine(r)],
+    counts: countLine(r),
+    n: r.a != null ? int(r.a) : '',
+    aid: a.id,
+    cat: r.category,
+    f: A[r.analysis || a.id] ? fkeyOf(a) : '',
+    noun: SETS(a.id) ? 'proteins' : W.marks,
+    ov: SETS(a.id) && K.overlapHas?.(a.id) ? `s:${a.id}:${r.category}` : '',
+  });
   const frModel = (a, r) => ({
-    label: FR.row_labels?.[a.id]?.[r.category] || r.label,
+    label: r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
     v: r.absent ? null : valOf(r),
     lo: ciOf(r),
     sub: r.absent ? '' : testLine(r),
-    tip: r.absent ? '' : countLine(r),
+    tip: r.absent ? '' : [countLine(r), testLine(r)].filter(Boolean).join('. '),
+    pop: r.absent ? null : popOf(a, r),
     q: r.adj ? r.adj.q : r.q,
     dir: r.absent ? 'ns' : r.dir,
     n: r.absent ? null : r.a,
@@ -1592,6 +1655,95 @@
     }
     return MORE.cats;
   }
+  // ---- a tile row's popover: a click (Enter, a tap) on a row says what it is in full and offers its actions; Escape closes it ----
+  let POP = null;
+  const closePop = (focus) => {
+    if (!POP) return;
+    const { el, row } = POP;
+    POP = null;
+    el.remove();
+    row.setAttribute('aria-expanded', 'false');
+    if (focus) row.focus({ preventScroll: true });
+  };
+  function openPop(row) {
+    let d;
+    try {
+      d = JSON.parse(row.dataset.pop);
+    } catch (err) {
+      return;
+    }
+    closePop();
+    const el = document.createElement('div');
+    el.className = 'rowpop';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-label', d.name);
+    el.tabIndex = -1;
+    const btn = (k, t) => `<button type="button" class="btn small" data-rp="${k}">${t}</button>`;
+    el.innerHTML =
+      `<button type="button" class="rp-x" data-rp="close" aria-label="Close">×</button><h4>${esc(d.name)}</h4>` +
+      `<div><span class="rp-fold">${esc(d.fold)}</span>${
+        d.n ? `<span class="rp-n">n = ${esc(d.n)} ${esc(d.noun)}</span>` : ''
+      }</div>` +
+      (d.counts ? `<p>${esc(d.counts)}</p>` : '') +
+      d.tests.map((t) => `<p>${esc(t)}</p>`).join('') +
+      `<div class="rp-acts">${d.f ? btn('sel', `Show these ${esc(d.noun)}`) : ''}${
+        d.ov ? btn('ov', 'Overlap with…') : ''
+      }${btn('open', 'Open question')}</div>`;
+    document.body.append(el);
+    const r = row.getBoundingClientRect(),
+      h = el.offsetHeight,
+      w = el.offsetWidth;
+    el.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + 'px';
+    el.style.top = (r.bottom + h + 12 < innerHeight ? r.bottom + 6 : Math.max(8, r.top - h - 6)) + 'px';
+    row.setAttribute('aria-expanded', 'true');
+    POP = { el, row, d };
+    el.querySelector('[data-rp]:not([data-rp="close"])')?.focus({ preventScroll: true });
+  }
+  document.addEventListener(
+    'click',
+    (e) => {
+      const act = e.target.closest?.('[data-rp]');
+      if (act && POP) {
+        e.preventDefault();
+        e.stopPropagation();
+        const { d } = POP,
+          k = act.dataset.rp;
+        closePop(k === 'close');
+        if (k === 'sel') {
+          const b = document.createElement('button');
+          b.hidden = true;
+          b.dataset.f = d.f;
+          b.dataset.v = d.cat;
+          document.body.append(b);
+          K.rememberScroll?.();
+          b.click();
+          b.remove();
+          scrollTo(0, 0);
+        } else if (k === 'ov') K.go('overlap', { ot: [d.ov], ou: 'proteins', or: '' });
+        else if (k === 'open') {
+          MORE = { aid: d.aid, cats: new Set([d.cat]), until: Date.now() + 6000, scroll: true };
+          go('overview', { arg: d.aid });
+        }
+        return;
+      }
+      const row = e.target.closest?.('.tile-row[data-pop]');
+      if (row && !e.target.closest('a, button, .rowpop')) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (POP && POP.row === row) closePop(true);
+        else openPop(row);
+      } else if (POP && !e.target.closest('.rowpop')) closePop();
+    },
+    true
+  );
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && POP) {
+      e.stopPropagation();
+      closePop(true);
+    }
+  });
+  addEventListener('scroll', () => closePop(false), { passive: true });
+  (K.afterRender ||= []).push(() => closePop(false));
   // a tile's downloads: the tile drawn as a figure (PDF, SVG, PNG), and its question's rows (TSV)
   K.clicks.push([
     '[data-texp]',
@@ -2281,7 +2433,7 @@
     // a question that is one of a card's views (website.overview cards: views) opens that card
     const cards = allCards(),
       own = cards.findIndex((c) => c.analysis === aid),
-      i = own >= 0 ? own : cards.findIndex((c) => (c.views || []).some((v) => v.analysis === aid)),
+      i = own >= 0 ? own : cards.findIndex((c) => cardHas(c, aid)),
       a = A[aid];
     const prev = cards[i - 1],
       next = cards[i + 1],
@@ -2526,7 +2678,7 @@
               ];
       // an opened question: its own section lists the questions, the others are one line that opens their first (the list stays short)
       if (S.arg) {
-        const mine = x.cards.some((c) => c.analysis === S.arg || (c.views || []).some((v) => v.analysis === S.arg));
+        const mine = x.cards.some((c) => cardHas(c, S.arg));
         return mine
           ? [[sid, x.name, 0], ...x.cards.map(tileOf)]
           : [[sid, x.name, 1, link('overview', x.cards[0]?.analysis || '')]];
@@ -4339,7 +4491,7 @@
   };
   function linkPass() {
     const root = document.body;
-    root.querySelectorAll('.tile[data-tile]').forEach((t) => {
+    root.querySelectorAll('.tile[data-tile]:not([data-group])').forEach((t) => {
       const h = link('overview', t.dataset.tile);
       if (t.dataset.href === h) return;
       t.dataset.href = h;
@@ -4509,7 +4661,7 @@
         return;
       }
     }
-    const tl = e.target.closest('.tile[data-tile]');
+    const tl = e.target.closest('.tile[data-tile]:not([data-group])');
     if (tl && !e.target.closest('a,button')) {
       go('overview', { arg: tl.dataset.tile });
       return;
@@ -4592,7 +4744,7 @@
     true
   );
   document.addEventListener('keydown', (e) => {
-    const tl = e.target.closest?.('.tile[data-tile]');
+    const tl = e.target.closest?.('.tile[data-tile]:not([data-group])');
     if (tl && e.target === tl && e.key === 'Enter') go('overview', { arg: tl.dataset.tile });
   });
   // a sortable header sorts from the keyboard too

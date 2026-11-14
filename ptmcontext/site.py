@@ -190,6 +190,13 @@ def _layer_title(a: dict) -> str:
         return ''
 
 
+def card_questions(card) -> list[str]:
+    """The questions an Overview card shows: a card's `rows_from` (one row each, in one tile), else its `analysis`."""
+    if isinstance(card, str):
+        return [card]
+    return list(card.get('rows_from') or [card['analysis']])
+
+
 def beside_lines(card: dict) -> list[dict]:
     """An Overview card's `beside`: one {analysis, label} or a list of them, as a list (none: empty)."""
     b = card.get('beside')
@@ -628,9 +635,13 @@ def website_problems(site: dict) -> list[str]:
     sets = {a['id']: a for a in site.get('analyses', []) if a.get('test') == 'protein_sets'}
     for sec in (web.get('overview') or {}).get('sections', []):
         for c in sec.get('cards', []):
-            aid = c if isinstance(c, str) else c.get('analysis')
-            if aid not in questions:
-                out.append(f'website.overview, section {sec.get("name")!r}: no analysis {aid!r}')
+            if isinstance(c, dict) and bool(c.get('analysis')) == bool(c.get('rows_from')):
+                out.append(f'website.overview, section {sec.get("name")!r}: a card has analysis or rows_from, not both')
+                continue
+            for aid in card_questions(c):
+                if aid not in questions:
+                    out.append(f'website.overview, section {sec.get("name")!r}: no analysis {aid!r}')
+            aid = card_questions(c)[0]
             if isinstance(c, dict):
                 out += view_problems(c, sets, f'website.overview card {aid!r}')
             for b in beside_lines(c) if isinstance(c, dict) else []:
