@@ -1,5 +1,6 @@
 ## 0.5.0 (unreleased)
 
+- Overlap page: two named questions with one switch. *Do these sets share more proteins than chance?* tests the overlap of the sets themselves, pair by pair, among every protein and among the proteins with sites (expected overlap, fold, hypergeometric test, Benjamini-Hochberg across the pairs); *Are the proteins in each region modified more often?* is the earlier region test. A sentence above the figure states the result. Full set names, picker grouped by source with sizes, a one-line statement of what is counted, and a Methods link.
 - Yes/no attributes (true/false, yes/no, 1/0) read as plain terms: the attribute's label is the chip and its `query` word (default: its name; `als_ftd` for the ALS/FTD gene attribute) the search text, with no value. `als_ftd_gene:true` still works in older links and is never shown.
 - Landing cards without the "Strongest result" block and the italic question line; `card: {result, question}` in the landing config brings them back (default false).
 - A small brand line (the landing config's `title`) above each explorer's name links to the landing page; the header's "All sites" link is gone, the sticky bar keeps it.
