@@ -137,3 +137,30 @@ def test_an_attribute_with_very_many_values_keeps_them_in_its_own_file(tmp_path,
     ti = {n: i for i, n in enumerate(whole['attribute_names'])}
     assert all(core['parts']['attr_counts'][ti[n]] is None for n in big)  # no counts to show before the marks are in
     assert selection_of(index.parent) == whole
+
+
+def test_published_pages_keep_the_statistics_and_labels_in_files(tmp_path):
+    """`ptmc pages` moves the statistics table and the classes' labels out of index.html (kit.js reads them first);
+    ptmc web leaves them in, as the one-file copy has them."""
+    from ptmcontext import web
+
+    _, index = _build(tmp_path)
+    page = index.read_text()
+    inline = json.loads(
+        re.search(r'<script id="site-data" type="application/json">(.*?)</script>', page, re.S).group(1)
+    )
+    assert 'statistics_tsv' in inline and 'statistics_file' not in inline
+    web.lazy_site_data(index.parent)
+    page = index.read_text()
+    data = json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', page, re.S).group(1))
+    assert 'statistics_tsv' not in data and data['statistics_file'] == 'data/statistics.tsv'
+    assert (index.parent / 'data' / 'statistics.tsv').read_text() == inline['statistics_tsv']
+    labels = json.loads((index.parent / 'data' / 'labels.json').read_text())
+    assert labels == {a['id']: a['labels'] for a in inline['analyses'] if a.get('labels')}
+    assert all('labels' not in a for a in data['analyses'])
+    assert (
+        page.count('rel="preload" href="data/statistics.tsv"') == 1
+        and inline['statistics_tsv'].splitlines()[1] not in page
+    )
+    web.lazy_site_data(index.parent)  # again: nothing more to move
+    assert index.read_text() == page
