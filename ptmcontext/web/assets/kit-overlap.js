@@ -1722,7 +1722,7 @@
       UI.layout = glyphLayout(
         sizes,
         res.rows.filter((r) => r.mask).map((r) => ({ m: r.mask, n: r.n })),
-        { w: phone ? 300 : 380, h: phone ? 210 : 270 }
+        { w: phone ? 300 : 460, h: phone ? 210 : 340 }
       );
       const gw = html('div', 'ovx-glyph');
       gw.title = `Circle and overlap areas are proportional to the counts${UI.layout.err > 0.01 ? ` (largest misfit ${(UI.layout.err * 100).toFixed(1)}% of the total)` : ''}.`;
@@ -2032,7 +2032,7 @@
       const L = glyphLayout(
           sizes,
           res.rows.filter((r) => r.mask).map((r) => ({ m: r.mask, n: r.n })),
-          { w: two ? 300 : 360, h: two ? 210 : 250 }
+          { w: two ? 300 : 400, h: two ? 210 : 290 }
         ),
         g = glyphSvg(L, nT, {});
       place(g, 0, 0);
