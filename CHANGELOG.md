@@ -1,5 +1,19 @@
 ## 0.5.0 (unreleased)
 
+- Network: a click on a protein pins it (its partners and their clusters stay lit, a panel holds its card: cluster, sites,
+  partners in and out of the cluster, the term with k of n and q, the domain class), a second click opens its page,
+  Shift-click pins up to five, Escape unpins. The downloads (SVG, PNG, PDF; slide or paper) make a figure of the pinned view,
+  cropped to the neighbourhood, with the cards beside or under it. Every setting is kept in the address. A selection of
+  one to three proteins is drawn with their partners. The status line says how many of the top N proteins are drawn, with
+  the number of proteins beside it; a number of clusters that cannot be reached says what the closest is.
+- Network view: zoom and pan (the buttons − + Fit pinned Reset, Ctrl or Cmd with the wheel, drag, pinch), kept in the address.
+  An export frames the pinned proteins, their partners and every cluster they touch whole, with a margin (Fit pinned), what
+  is on screen, or the whole network; a dashed frame shows it for two seconds when it differs from the view.
+- Network cluster names: a term names a cluster only if it holds for a quarter of it (`min_coverage`), no term names two
+  clusters, and a cluster no term fits is named by its three busiest proteins; the key says how many proteins hold the
+  term. "See in network" gives the real reason when a protein is not drawn and is not shown for a protein with no
+  partners; Find genes counts distinct proteins; the figure on a phone has zoom buttons and larger touch targets.
+
 - Overlap page: two named questions with one switch. *Do these sets share more proteins than chance?* tests the overlap of the sets themselves, pair by pair, among every protein and among the proteins with sites (expected overlap, fold, hypergeometric test, Benjamini-Hochberg across the pairs); *Are the proteins in each region modified more often?* is the earlier region test. A sentence above the figure states the result. Full set names, picker grouped by source with sizes, a one-line statement of what is counted, and a Methods link.
 - Yes/no attributes (true/false, yes/no, 1/0) read as plain terms: the attribute's label is the chip and its `query` word (default: its name; `als_ftd` for the ALS/FTD gene attribute) the search text, with no value. `als_ftd_gene:true` still works in older links and is never shown.
 - Landing cards without the "Strongest result" block and the italic question line; `card: {result, question}` in the landing config brings them back (default false).

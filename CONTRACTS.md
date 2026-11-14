@@ -1066,10 +1066,11 @@ tables the site's `inputs:` roles name; nothing is asked of a service.
 | `min_score`, `floor` | the scored source's default threshold, and the lowest the page offers (the thresholds offered are 0.4, 0.7 and 0.9 from `floor` up) |
 | `max_q`, `min_overlap`, `min_term`, `max_fraction`, `exclude_terms` | a label needs q at most `max_q` (0.05), at least `min_overlap` proteins of the cluster (3); a term must annotate `min_term` or more of the network's proteins (5) and at most `max_fraction` of them (0.2: broad terms are left out); `exclude_terms` lists ids or names never used. A cluster is named by the term of its smallest q; terms of equal q (to 1e-9 relative) go to the deeper (`names.depth`), then the smaller p, the term with fewer proteins, the name |
 | `clusters` | `{default, min, max, step}`: the page's Clusters menu. `default` is `auto` (Louvain at `resolution`) or a number; the menu offers `auto` and `min` to `max`. A number is reached by trying 24 resolutions (0.25, then steps of 15%, made by repeated multiplication) and taking the partition whose number of clusters (communities of `min_cluster` or more proteins) is closest, then the resolution nearest the default one, then the lower. Python and the browser do the same |
+| `min_coverage` | a term names a cluster only if it holds for this share of the cluster's proteins (default 0.25). The best term that does is taken (the next best when the first is too thin); a cluster none holds for is named by its three busiest proteins, and the key says how many of its proteins hold the term ("RNA splicing · 23 of 49"). No term names two clusters: the larger cluster chooses first |
 | `claim` | the exported figure's title, with `{n}` for the number of clusters |
 | `protein_preview` | `true` (default, with `protein_link`): under the button a small drawing, in the figure's own style, of the protein with its partners in its cluster (15 at most, most sites first) and the links among them, the cluster's name beside it in its colour; clicking it opens the network as the button does. It is made when it scrolls into view from `data/network.json` (read once, about 40 KB), so a protein the default view does not draw has a line saying so instead. The link carries the selection and filters in the address (`f=`, `q=`) with `p=`, so the network shows that selection |
 | Find genes | the box takes a pasted list (commas, spaces, semicolons or line breaks; symbols or accessions): every gene in the network is ringed and named, a line says "n of m found" and lists those the network does not hold, and a button makes the list the selection (`K.netcore.findGenes`) |
-| `lead`, `controls` | the one line under the heading (default: the first sentence of `about`; the whole of it is under "Method"), and the controls of the main row (`label`, `clusters`, `colour`, `find`, `score`, `top`, `minc`, `sources`, `preset`, `claim`; default `clusters`, `colour`, `find`); the rest are under More options, closed, all of them on a phone |
+| `lead`, `controls` | the one line under the heading (default: the first sentence of `about`; the whole of it is under "Method"), and the controls of the main row (`label`, `clusters`, `colour`, `find`, `score`, `minc`, `sources`, `preset`, `claim`; default `clusters`, `colour`, `find`; the number of proteins is always beside the status line); the rest are under More options, closed, all of them on a phone |
 | `protein_link` | `true` (default): a **See in network** button on every protein page opens `#network?p=<accession>`: the cluster of the protein is lit, its card pinned and the drawing zoomed to it. A protein outside the default view makes the page draw more proteins (the smallest of 100, 150, 200, 300, 500, 600 that holds it and its best-placed partner) with a button back; one with no link at the score gets a note and a button to lower the score, and one with no link at all, or not in the network, a note. `K.netcore.focusPlan` decides which |
 | `label_from[].max_size`, `names.size` | terms that annotate more than `max_size` proteins of the whole proteome (the `size` column) are not used |
 | `tile` | `{section, title, text}`: the Overview tile, in the named Overview section |
@@ -1345,6 +1346,27 @@ site's folder with `ptmc pages` but leaves its card off the landing page. `ptmc 
 `landing.in_switcher` is true, and opens the chosen site with the reader's search (`q=`), highlight (`hl=`) and filters (`f=`); the
 filters the target does not have are dropped, and the target says how many in a short notice. A site served alone has no
 `sites.json` and no menu.
+
+Pins and the address. A click on a protein pins it (the neighbourhood stays lit, the other nodes fade, its links to other clusters
+are drawn, and a panel beside the figure (under it on a phone) holds its card: cluster, sites, partners in and out of the
+cluster, the cluster's term with k of n and q, and the site's colour-by facts such as the domain class); a second click
+opens the protein's page, Shift-click pins up to five, Escape unpins. The address keeps every setting, so that a link
+reproduces the figure: `p` the pins (comma-separated), `nk` clusters, `nc` colour, `ns` score, `nt` proteins, `nx` sources,
+`nl` name source, `nm` smallest cluster, `nv=table`, and `nf` the genes to find; only what differs from the site's
+defaults is written. A selection of one to three proteins is drawn with their partners.
+
+View. Zoom and pan are a window on the drawing: the buttons − + Fit pinned Reset, Ctrl or Cmd with the wheel (a trackpad pinch
+does the same), a drag to move, a pinch on a touch screen; without the modifier the page scrolls as before. The window is in
+the address as `nz=<zoom>,<x>,<y>` (the centre as shares of the width and height, so that it holds on any screen).
+
+Export. `K.netcore.exportFrame({pinned, preset})` (`frame`: `fit`, the default, `view` or `whole`; the page's Export menu sets it) (also `K.network.exportFrame`) returns the document that the Download menu
+wraps (`{svg, W, H, title, desc, meta, mm, dpi}`; SVG, PNG and PDF): with pinned accessions (default the page's pins) the figure of
+the pinned view, cropped to a window that holds the pinned proteins, their partners and every lit cluster whole (outline,
+proteins and name) with a margin of 24 units and shows no other cluster cut (`view`: the window on screen; `whole`: the
+whole network),  the cards as a plain-text panel beside it (slide, 960 units) or under it
+(paper, 680 units at 180 mm), the clusters involved as a key, the method caption and the credit; with none, the whole
+network. Text is `<text>` in the export font, halos are drawn as text of their own (a PDF converter does not read
+`paint-order`), and no hint such as "click to open" is in a card.
 
 The figure (`ptmcontext/web/netlayout.py`, twin `kit-netlayout.js`): each cluster is laid out on its own links (500 steps of
 repulsion, spring, collision and gravity from a spiral seed), the clusters are packed as discs (16 fixed starts; clusters of
