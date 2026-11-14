@@ -285,12 +285,21 @@
     r.method === 'conditional_logit' && r.stratum === 'alone'
       ? 'one factor, within each protein'
       : testName(r.analysis, r.method);
+  // the name of a row's effect, by the test that made it: a protein set's Mantel-Haenszel test is within abundance
+  // deciles, a residue question's within each protein
+  const effName = (r) =>
+    SETS(r.analysis)
+      ? r.method === 'mantel_haenszel'
+        ? 'OR within abundance deciles'
+        : 'OR'
+      : {
+          mantel_haenszel: 'within-protein OR',
+          fisher: 'pooled OR',
+          study: 'within-study OR',
+          conditional_logit: 'OR, all factors together',
+        }[r.method] || 'OR';
   const effText = (r) =>
-    r.eff == null
-      ? '–'
-      : r.method === 'enricher'
-        ? fxn(r.eff) + '×'
-        : (r.method === 'mantel_haenszel' ? 'within-protein OR ' : 'OR ') + fxn(r.eff);
+    r.eff == null ? '–' : r.method === 'enricher' ? fxn(r.eff) + '×' : `${effName(r)} ${fxn(r.eff)}`;
   const rowsFor = (a, m) =>
     D.rows.filter(
       (r) =>
@@ -1789,6 +1798,8 @@
   };
   K.l2fmt = (r) => {
     const v = K.l2(r);
+    // an infinite odds ratio (every member marked) is read as 1e300 and printed '> 1,000': its log2 as '> +9.97'
+    if ((r.eff ?? r.or) >= 1e299) return '> +' + Math.log2(1000).toFixed(2);
     return v == null ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2);
   };
   K.dirArrow = (r) =>
@@ -3109,6 +3120,7 @@
       'class_code',
       'definition',
       'test',
+      'fold',
       'odds_ratio',
       'ci_low',
       'ci_high',
@@ -3127,7 +3139,7 @@
     return (
       preamble(
         `${a.title}, ${METHOD[m]}`,
-        `${a.question} One row per class: ${a.sub}, ${METHOD_PHRASE[m]}${selWords()}. ${testWords(m)}`
+        `${a.question} One row per class: ${a.sub}, ${METHOD_PHRASE[m]}${selWords()}. ${testWords(m)} ${FOLD_WORDS}`
       ) +
       head.join('\t') +
       '\n' +
@@ -3138,6 +3150,7 @@
             r.category,
             r.help,
             METHOD[r.method] || r.method,
+            g6(r.shown),
             g6(r.or),
             g6(r.lo),
             g6(r.hi),
@@ -3158,6 +3171,39 @@
       '\n'
     );
   }
+  // the fold a tile and a question's page show, in every download: for a residue row, the class's share among the marks
+  // over its share among the comparison residues (pooled counts); for a protein set, its fold enrichment
+  const FOLD_WORDS =
+    `fold: the number the page shows, the share of the class among the ${W.marks} over its share among the ` +
+    `comparison (pooled counts); the odds ratio is the test's effect.`;
+  // a protein set's fold, also on its row tested within abundance deciles (the tile shows the fold with that test)
+  const foldOfRow = (r) => {
+    if (r.shown != null) return r.shown;
+    if (SETS(r.analysis) && r.method === 'mantel_haenszel') {
+      const e = D.rows.find((x) => x.analysis === r.analysis && x.category === r.category && x.method === 'enricher');
+      return e?.fold ?? null;
+    }
+    return null;
+  };
+  // what a, b, c and d count, for each kind of test among the rows of a table
+  function countWords(rows) {
+    const kinds = new Set(rows.map((r) => (SETS(r.analysis) ? 'set:' : '') + r.method)),
+      out = [];
+    if ([...kinds].some((k) => !k.startsWith('set:')))
+      out.push(
+        `Residue questions (within each protein, across all proteins, within studies): a and b count the ${W.marks} ` +
+          `in and outside the class; c and d the other ${W.residues} in and outside it (of the same protein, within ` +
+          `each protein; of all ${W.marked} proteins, across all proteins).`
+      );
+    if (kinds.has('set:enricher') || kinds.has('set:mantel_haenszel'))
+      out.push(
+        `Protein sets: a and b count the ${W.marked} proteins in and outside the set; c and d the other proteins of ` +
+          `the background (its column) in and outside it. The fold enrichment row is a one-sided hypergeometric test; ` +
+          `the row "each abundance decile a stratum" is the same counts tested within abundance deciles ` +
+          `(Mantel–Haenszel odds ratio).`
+      );
+    return out.join(' ');
+  }
   function statisticsTsv(rows) {
     const lines = D.statistics_tsv.replace(/\n$/, '').split('\n');
     return (
@@ -3166,12 +3212,13 @@
         `the ${rows.length} tests shown${S.sq ? ' for "' + S.sq + '"' : ''}${
           S.m !== 'both' ? ' (' + METHOD[S.m] + ')' : ''
         }, in the ` +
-          `columns of the release’s statistics table. a and b count the ${W.marks} in and outside the class; c and ` +
-          `d the other ${W.residues} of the same proteins in and outside it. ${testWords('mantel_haenszel')} ${testWords('fisher').split(' Only ')[0]}`
+          `columns of the release’s statistics table, and the fold the page shows. ${countWords(rows)} ` +
+          `${rows.some((r) => !SETS(r.analysis)) ? testWords('mantel_haenszel') + ' ' + testWords('fisher').split(' Only ')[0] : ''} ` +
+          FOLD_WORDS
       ) +
       lines[0] +
-      '\n' +
-      rows.map((r) => lines[r.i + 1]).join('\n') +
+      '\tfold\n' +
+      rows.map((r) => lines[r.i + 1] + '\t' + g6(foldOfRow(r))).join('\n') +
       '\n'
     );
   }
