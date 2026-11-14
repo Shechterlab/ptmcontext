@@ -117,7 +117,7 @@
   // =================================================================================================================
   const UNI = (acc) => `https://rest.uniprot.org/uniprotkb/${acc}.json`; // the address the protein page's own card reads
   const orthoUrl = (ensg) =>
-    `${String(ENS.rest).replace(/\/$/, '')}/homology/id/${encodeURIComponent(ENS.source)}/${encodeURIComponent(ensg)}?type=orthologs&` +
+    `${String(ENS.rest).replace(/\/$/, '')}/homology/id/${encodeURIComponent(ENS.source)}/${encodeURIComponent(ensg)}?type=orthologues&` +
     `aligned=1&sequence=protein&cigar_line=0${ENS.compara ? '&compara=' + encodeURIComponent(ENS.compara) : ''}&` +
     SPECIES()
       .map((s) => 'target_species=' + s.id)
@@ -144,9 +144,7 @@
           .join(','),
       () =>
         timed(
-          getJson(orthoUrl(ensg)).catch((e) =>
-            /^(400|404)$/.test(String(e.message)) ? { data: [] } : Promise.reject(e)
-          ),
+          getJson(orthoUrl(ensg)), // an HTTP error is a failed lookup, not an empty answer
           60000
         ).then((d) => {
           const best = new Map();
@@ -255,7 +253,14 @@
   // ---- the state of each protein's lookup ------------------------------------------------------------------------------
   const ST = {};
   const curAcc = () => (S.view === 'protein' ? String(S.arg || '').split('/')[0] : '');
-  const fail = (e) => (String(e && e.message) === 'timeout' ? 'did not answer in time' : 'could not be reached');
+  const fail = (e) => {
+    const m = String((e && e.message) || '');
+    return m === 'timeout'
+      ? 'did not answer in time'
+      : /^\d{3}$/.test(m)
+        ? `answered with an error (HTTP ${m})`
+        : 'could not be reached';
+  };
   function start(acc, rec, force) {
     let st = ST[acc];
     if (st && !force && st.phase !== 'idle') return;
@@ -299,7 +304,7 @@
     if (!st || st.phase === 'idle' || st.phase === 'ens' || st.phase === 'ortho') return 'looking up the orthologs…';
     if (st.phase === 'no_gene') return `UniProt lists no ${esc(ENS.xref)} gene`;
     if (st.phase === 'none') return 'no ortholog in the species listed';
-    if (st.phase === 'fail') return `${esc(st.who)} did not answer`;
+    if (st.phase === 'fail') return 'ortholog data could not be loaded';
     return st.ck.me == null ? `no ${esc(W.mark)} could be mapped` : esc(say(st.ck));
   };
 
@@ -344,7 +349,7 @@
     if (st.phase === 'fail')
       return (
         head +
-        (`<p class="note">${esc(st.who)} ${esc(st.err)}. Nothing else on this ` +
+        (`<p class="note">Ortholog data could not be loaded (${esc(st.who)} ${esc(st.err)}). Nothing else on this ` +
           `page depends on it. <button class="linkish" type="button" data-cv-retry="${esc(acc)}">Try again</button>` +
           `</p>`)
       );

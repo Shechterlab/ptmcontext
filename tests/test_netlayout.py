@@ -315,6 +315,19 @@ def test_a_pasted_list_of_genes_is_split_matched_and_counted():
 
 
 @pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
+def test_a_name_that_is_no_node_is_read_through_the_main_searchs_other_names():
+    nodes = [{'gene': 'TARDBP', 'acc': 'Q13148'}, {'gene': 'FUS', 'acc': 'P35637'}]
+    got = _node(
+        _harness(
+            "const al={TDP43:[{acc:'Q13148'}]};const lk=(t)=>al[t.toUpperCase()]?{ps:al[t.toUpperCase()],via:true}:null;"
+            'const g=K.netcore.findGenes(IN.text,IN.nodes,lk);console.log(JSON.stringify({...g,hits:[...g.hits]}));'
+        ),
+        {'text': 'tdp43 FUS NOPE', 'nodes': nodes},
+    )
+    assert sorted(got['hits']) == [0, 1] and got['found'] == ['tdp43', 'FUS'] and got['missing'] == ['NOPE']
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
 def test_the_preview_of_a_protein_is_it_and_the_busiest_partners_of_its_own_cluster():
     view = _view()
     comm = view['comm']

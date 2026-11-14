@@ -223,6 +223,27 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   it; it is colored and ranked only when at least `website.reading.min_maps` (default 2) of them differ the same way
   (q ≤ 0.05 and a fold of 1.1× or more, the test pointing the same way) and none the other way, gray otherwise.
 - `title, question, intro, note`: words.
+- `default_view`: `percent`, `difference` or `fold` (default `fold`), what the cell and nucleus maps color by when the page
+  opens. Every map has a switch, "Percent with sites | Difference from all mapped proteins | Fold vs other proteins".
+  Difference colors each part by its share's difference from the share among all the proteins the maps place, in points
+  ("+4 points", "−7 points" on the map; the percent on hover), on the fold's diverging ramp (red above, slate below, in
+  quarters of the largest difference, gray within half a point); the key states the centre. Percent is described next. Percent colors each part by the share of its proteins
+  that carry at least one mark, from the sequential ramp: the proteins are the reviewed proteins each map places in the part,
+  and the median of the maps that have it is drawn (each map's value on hover). The legend's tick is the share among all the
+  proteins the maps place. With a selection, the share of the part's proteins that are in it, the whole site's share on
+  hover. Use it for a mark that covers most proteins, where the fold has little to compare against. The counts are made when
+  the site is built (`cell_pct` in the site data: for each map `{N, n, sets: {set: [proteins, with a mark]}}`, from
+  protein_sets.json), so the view needs no new input. Exports and the table carry the active view; the percent table has
+  the columns `compartment, map, n_proteins, n_with_sites, percent` (with a selection `n_in_selection` replaces
+  `n_with_sites`, and `n_with_sites, percent_with_sites` follow).
+- `range`: `data` or `full`, the percent view's colour range (the five steps are fifths of it). `full` is 0 to 100%; `data`
+  runs from the lowest share among the compartments as drawn (those of at least `website.reading.min_group` proteins), rounded
+  down to 5%, to 100%, and the key marks the scale as not starting at 0. Without it: `data` where the share among all the
+  proteins the maps place is 80% or more, else `full`. With a selection the steps are fifths of the largest share.
+  The key also gives the share among all the reviewed proteins ("63% of all reviewed proteins · 96% of mapped proteins"),
+  from the run's snapshot entries and marked proteins (`cell_proteome` in the site data; no new input). Where every
+  mapped share is 80% or more, the sentence above the map gives the overall share and the lowest compartments instead of
+  "more than half".
 
 The kit draws the cell for other pages too: `K.cell.list()` (the drawings, their parts and phone crop, the crop from
 `config/cell_drawings.json`), `K.cell.parts(scoped?)` (every part a `website.cell` row colors: its row, tone, direction
@@ -433,8 +454,8 @@ protein-page section keys (`p-dom`) to the folds that hold them now.
 **A subset by score.** An entry with `columns.score` and `subset: {id: high, at_least: 0.5}` adds, where the table has a
 score column holding numbers: the attribute `ctx_near_<id>_<subset id>` ("has a <noun> (<subset>) within ±N", yes/no, with
 its filter, under the entry's other filters); and a second protein-map row, `ctx_<id>_<subset id>`, with each tick's
-score in its hover, drawn before the row of all the entry's marks. The subset row is shown at first and the row of all
-marks is off (`subset.default: all` reverses them); the label of the row shown is a link that switches to the other
+score in its hover, drawn before the row of all the entry's marks. Every mark is drawn at first and the subset row is off
+(`subset.default: subset` reverses them); the label of the row shown is a link that switches to the other
 (map row `swap`), and the reader's choice is kept in the browser. Where the table lacks the column (a release before the
 scores were merged into it), `ptmc run` writes none of this, and `ptmc web` drops the row, the attribute and its filter
 and shows every mark at first, so one site file serves the table before and after. The score never enters a statistic by itself. A `near_marks` question may name the subset as its marks
@@ -975,6 +996,18 @@ selection, a `residue` table keeps the rows of selected marks (and, for a block 
 their proteins), a `protein` table the rows of proteins with a selected mark. `D.page_tables` gives each its key,
 columns and rows; the one-file copy inlines the small ones.
 
+### Yes/no attributes
+
+A category attribute (`marks.attributes`, `proteins.attributes`, a variant's) whose values are only a yes/no pair (`true`/`false`,
+`yes`/`no` or `1`/`0`, in any letter case, empty for none) reads as a plain term, never as `key:true`. The build marks it
+(`flag`, the value that means yes; set it in the site file when the data do not show the pair, or `flag: false` to keep an
+attribute as key:value) and gives it a query word: `query` in the site file (`query: als_ftd`), else the attribute's name.
+The selection line shows the attribute's `label` as the chip, with no value ("Not <label>" for the no value); the search box
+suggests and writes the query word alone (`als_ftd`); the chip's remove button, Clear and the summary use the same words. The
+old form (`als_ftd_gene:true`, `als_ftd:true`) is still read, for links already shared, and is never written. A bare word that
+is also a protein's name is the protein. No site names an attribute in the code: `ptmcontext/web/__init__.py` (`with_flags`)
+and kit-select.js read the spec only. Tested in tests/test_flag_attributes.py.
+
 ## The front block (website.front)
 
 A block of its own, not a regrouping of `website.overview.sections`. The page's data carries `front`, the block as
@@ -1282,15 +1315,15 @@ Every block offers PDF, SVG, PNG (figures) and TSV (its rows), each with the pro
 
 `ptmc pages` writes one card per built site (ptmcontext/web/landing.py), each a single link into its site. From the site file:
 `website.name`, `band`, `accent`, `accent_dark` (the card's colors), `art` (its header picture), `logo` (an SVG file: the mark beside the card's title, and the site's header mark and favicon; `icon` is its older name), `landing.tagline` (the hook),
-`landing.question` (what a reader can ask), `landing.cta` (the button; else the config's `cta`, `{marks}` being the profile's
+`landing.question` (what a reader can ask; shown on the card only when the landing config's `card.question` is true), `landing.cta` (the button; else the config's `cta`, `{marks}` being the profile's
 plural word), `website.stats` (a list attribute adds a third number: how many studies or databases). From the site's build
-(`run.json`, `web/glance.json`): the marks and proteins counted and the strongest finding; a build without them gives a
+(`run.json`, `web/glance.json`): the marks and proteins counted and the strongest finding (the card shows it only when the landing config's `card.result` is true); a build without them gives a
 card without those lines. The strongest result is chosen from the build (the largest fold among the significant rows, one
 per question, on at least 20 marks, read as the Overview reads them: `website.reading.min_set` and a set's test within
 abundance deciles apply) unless `website.landing.findings` names one. A site whose outputs are missing is left out with a warning under `--skip-missing`, else the build stops.
 
 The page's own words are a landing config (`ptmc pages --landing FILE`, else `landing.yml` beside the first site file):
-`title`, `description`, `lede`, `logo` (an SVG file for the page's header and favicon), `switcher: {label}` (the word of the sites' header and sticky-bar switcher, "PTM"; else a site file's `website.switcher.label`; written to `sites.json`), `intro` (paragraphs), `cta`, `order` (card ids), `groups` (`[{id, title, note, compact}]`:
+`title` (also the small brand line, a link to this page, above each explorer's name in its header: written to `sites.json` as `brand`; the sticky bar keeps its "All sites" link), `description`, `lede`, `card: {result, question}` (the card's "Strongest result" block and italic question line; both default false), `logo` (an SVG file for the page's header and favicon), `switcher: {label}` (the word of the sites' header and sticky-bar switcher, "PTM"; else a site file's `website.switcher.label`; written to `sites.json`), `intro` (paragraphs), `cta`, `order` (card ids), `groups` (`[{id, title, note, compact}]`:
 rows of cards, a card going in the group named by its site's `landing.group`, else the first; a `compact` row has smaller cards,
 e.g. other organisms), `footer: {links: [{label, url}], note}`,
 and `soon`: cards without a link for sites not built yet (`id`, `name`, `tagline`, `question`, `band`, `accent`,

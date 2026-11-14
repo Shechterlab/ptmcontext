@@ -199,9 +199,9 @@ def test_with_the_columns_the_attribute_the_subset_and_their_rows_appear(tmp_pat
     assert 'grade' in d['attribute_specs'] and 'a.grade' in marks.columns
     assert 'ctx_near_ctx_high' in d['attribute_specs'] and 'a.ctx_near_ctx_high' in marks.columns
     rows = {r['id']: r for r in d['protein_view']['map']['rows']}
-    assert rows['ctx_ctx_high']['default'] == 'on' and rows['ctx_ctx_high']['swap'] == 'ctx_ctx'
-    assert rows['ctx_ctx']['default'] == 'off' and rows['ctx_ctx']['swap'] == 'ctx_ctx_high'
-    assert list(rows).index('ctx_ctx_high') < list(rows).index('ctx_ctx')  # the subset row first
+    assert rows['ctx_ctx_high']['default'] == 'off' and rows['ctx_ctx_high']['swap'] == 'ctx_ctx'
+    assert rows['ctx_ctx']['default'] == 'on' and rows['ctx_ctx']['swap'] == 'ctx_ctx_high'  # every mark first
+    assert list(rows).index('ctx_ctx_high') < list(rows).index('ctx_ctx')
     assert 'grades' in d['count_questions'] and 'flags' in json.dumps(d['overview'])
     assert [g['name'] for g in d['filters']][:1] == ['Grade']
     items = pd.read_csv(root / 'out' / 'toy' / 'map_items.tsv', sep='\t', dtype=str, keep_default_na=False)
