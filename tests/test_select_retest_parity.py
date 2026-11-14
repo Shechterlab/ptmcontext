@@ -149,7 +149,7 @@ window.PTMC_MODULES.forEach((m) => m(K));
   Object.assign(S0.f, FILTER);
   for (const aid of AIDS)
     for (const m of ['fisher', 'mantel_haenszel'])
-      out[aid + '|' + m] = (K.sel.retest(aid, m) || []).map((r) => ({ category: r.category, a: r.a, b: r.b, c: r.c, d: r.d, or: r.or, p: r.p, q: r.q, descriptive: !!r.descriptive, why: r.why || null, definedBy: r.definedBy ?? null, a: r.a, b: r.b, c: r.c }));
+      out[aid + '|' + m] = (K.sel.retest(aid, m) || []).map((r) => ({ category: r.category, a: r.a, b: r.b, c: r.c, d: r.d, or: r.or, p: r.p, q: r.q, descriptive: !!r.descriptive }));
   console.log(JSON.stringify(out));
 })();
 """
@@ -284,3 +284,38 @@ def test_a_gene_list_against_the_other_marks_yields_rows_on_the_residue_question
         assert rows, aid
         assert all(r['why'] == 'between' for r in rows), rows
         assert all(r['a'] + r['b'] > 0 and r['a'] + r['c'] > 0 for r in rows)
+
+
+DEFINED = r"""
+(async () => {
+  K.sel.data(); await K.sel.ready;
+  const SD = K.sel.peek(), ai = SD.analyses.indexOf('reg');
+  // the marks in the first class of 'reg', named one by one as sites: a selection that is that class, though made with
+  // no filter on the question
+  const ci = SD.classes.reg.findIndex((c, k) => SD.marks.filter((m) => m[2][ai].includes(k)).length >= 12);
+  const ms = SD.marks.filter((m) => m[2][ai].includes(ci));
+  S0.q = ms.map((m) => `${D.proteins[m[0]][1]} ${m[1]}`).join(' ');
+  const rows = K.sel.retest('reg', 'mantel_haenszel') || [];
+  console.log(JSON.stringify({ cls: SD.classes.reg[ci], n: K.sel.nMarks(), rows: rows.map((r) => ({ category: r.category, b: r.b, why: r.why || null, definedBy: r.definedBy ?? null, q: r.q })) }));
+})();
+"""
+
+
+def test_a_selection_defined_by_what_the_question_tests_is_not_tested(tmp_path):
+    # every selected mark is in one class of the question (here: sites named one by one, all inside a region): the test
+    # would be trivial (an odds ratio without bound), so the rows are shown with that reason, not tested
+    root, index, stats = _built(tmp_path)
+    head = (
+        f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, '
+        f'INDEX = {json.dumps(str(index))}, SEL = {json.dumps(str(index.parent / "data" / "selection.json"))}, '
+        f'AIDS = [], FILTER = {{}};'
+    )
+    run = subprocess.run(
+        ['node', '-e', head + RUN.split('(async () => {')[0] + DEFINED], capture_output=True, text=True
+    )
+    assert run.returncode == 0, run.stderr[-1500:]
+    out = json.loads(run.stdout)
+    assert out['n'] >= 12 and out['rows'], out
+    assert all(r['why'] == 'defined' and r['q'] is None for r in out['rows']), out
+    assert {r['definedBy'] for r in out['rows']} == {out['cls']}
+
