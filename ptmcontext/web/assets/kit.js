@@ -4328,7 +4328,56 @@
       d.open = true;
     })
   );
+  // A change of the selection is drawn after a busy note is on screen: the note first, then the retests in slices
+  // (K.sel.prewarm, which gives the browser back between questions), then the page. A draw asked meanwhile waits for it.
+  let drawnSel = null,
+    holding = false;
+  function busy(on, done, total) {
+    let el = document.getElementById('sel-busy');
+    if (!on) {
+      if (el) el.hidden = true;
+      document.body.removeAttribute('aria-busy');
+      return;
+    }
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'sel-busy';
+      el.className = 'sel-busy';
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
+      document.body.appendChild(el);
+    }
+    const n = K.sel.nMarks();
+    el.innerHTML =
+      `<span class="spin" aria-hidden="true"></span>Updating: testing ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} ` +
+      `again${total ? ` (${int(done)} of ${int(total)} questions)` : '…'}`;
+    el.hidden = false;
+    document.body.setAttribute('aria-busy', 'true');
+  }
   function render() {
+    const sk = K.sel?.key?.() || null;
+    if (holding) return; // the update under way draws the page when it is done
+    if (sk && sk !== drawnSel && K.sel.active() && K.sel.prewarm) {
+      holding = true;
+      busy(true);
+      // two frames: the note is painted before any work starts
+      requestAnimationFrame(() =>
+        setTimeout(async () => {
+          try {
+            // the Overview reads every question's retest; another page only what it draws
+            if (S.view === 'overview') await K.sel.prewarm((d, t) => busy(true, d, t), { family: !!K.apartOpen?.() });
+          } catch (e) {
+            console.error(e);
+          }
+          holding = false;
+          drawnSel = sk;
+          busy(false);
+          render();
+        }, 0)
+      );
+      return;
+    }
+    drawnSel = sk;
     tabs();
     if (!qPending) $('#q').value = S.q; // not over letters typed while the page was drawn (data arriving)
     $('#q-clear').hidden = !S.q;

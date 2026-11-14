@@ -1276,6 +1276,20 @@
       .filter(([n, sp]) => ['category', 'list', 'number'].includes(sp.kind) && AT().includes(n))
       .map(([n]) => '@' + n),
   ];
+  const familyPart = (id, method, G) =>
+    A[id]?.kind === 'protein_sets'
+      ? contrastSets(id, G)
+      : contrastResidue(id, method === 'enricher' ? 'fisher' : method, G);
+  // one question of a family, ahead of the family itself (prewarm): kept until contrastFamily reads it
+  function familyStep(id, method) {
+    const c = compute(),
+      key = `fam|${S.vs}|${S.cmp || ''}|${method}`;
+    if (c.retests[key]) return;
+    const G = (c.retests['groups|' + S.vs + '|' + (S.cmp || '')] ||= contrastPair());
+    if (!G || G.g1.length < MIN_SIDE || G.g2.length < MIN_SIDE) return;
+    const parts = (c.retests['parts|' + key] ||= {});
+    if (!parts[id]) parts[id] = familyPart(id, method, G);
+  }
   function contrastFamily(method, G) {
     const c = compute(),
       key = `fam|${S.vs}|${S.cmp || ''}|${method}`;
@@ -1284,12 +1298,10 @@
     // within-study comparison then sets proteins against proteins, counting each mark of a protein as if it were
     // independent, so it is shown (the shares) and not tested
     const between = (G.mixed ?? 0) < SEL_MIN.proteins;
-    const fam = {};
+    const fam = {},
+      parts = c.retests['parts|' + key] || {}; // questions prewarm already compared, in slices
     for (const id of [...new Set(contrastIds())]) {
-      const out =
-        A[id]?.kind === 'protein_sets'
-          ? contrastSets(id, G)
-          : contrastResidue(id, method === 'enricher' ? 'fisher' : method, G);
+      const out = parts[id] || familyPart(id, method, G);
       out.forEach((r) => {
         // a selection under the minimum (SEL_MIN) is described, not tested: counts and shares stay, no p, q, interval or direction
         if (!testable() || (between && method !== 'mantel_haenszel' && r.method !== 'enricher')) {
@@ -1570,6 +1582,47 @@
     ]
       .filter(Boolean)
       .join('; ');
+  // ---- the retests ahead of a page draw, in slices -------------------------------------------------------------------
+  // A large selection makes every question's retest at once, which can hold the page for many seconds. prewarm runs the
+  // same retests (they are cached in compute()'s retests, so the draw that follows reads them) one question at a time,
+  // giving the browser back every ~40 ms so the page can show that it is busy and stay responsive. step(done, total) is
+  // told the progress; it stops early (false) when the selection changes meanwhile. Nothing it computes differs from
+  // what the page draw would have computed itself.
+  const pause = () =>
+    new Promise((res) => (globalThis.scheduler?.yield ? globalThis.scheduler.yield().then(res) : setTimeout(res, 0)));
+  async function prewarm(step, { family = false } = {}) {
+    if (!SD || !active() || !testable()) return true;
+    const key = stateKey(),
+      m = ['mantel_haenszel', 'fisher', 'study'].includes(S.m) ? S.m : 'mantel_haenszel',
+      vsMethod = K.vsMethod ? K.vsMethod(m) : m,
+      // the page's own retests, then (family: when it is open) the comparison with the other marks the selection bar
+      // draws (Fisher, every question), each question one step
+      jobs = [
+        ...(S.vs === 'residues'
+          ? D.analyses.filter((a) => A[a.id]).map((a) => () => rows(a.id, a.kind === 'protein_sets' ? 'enricher' : m))
+          : [...new Set(contrastIds())].map((id) => () => familyStep(id, vsMethod))),
+        ...(family ? [...new Set(contrastIds())] : []).map((id) => () => {
+          const was = S.vs;
+          S.vs = 'marks';
+          try {
+            familyStep(id, 'fisher');
+          } finally {
+            S.vs = was;
+          }
+        }),
+      ];
+    let t0 = performance.now();
+    for (let k = 0; k < jobs.length; k++) {
+      if (stateKey() !== key) return false;
+      jobs[k]();
+      if (performance.now() - t0 > 40) {
+        step?.(k + 1, jobs.length);
+        await pause();
+        t0 = performance.now();
+      }
+    }
+    return stateKey() === key;
+  }
   // ---- who is told when the selection changes ---------------------------------------------------------------------
   // K.sel.subscribe(fn) calls fn(K.sel.state) after a page draw in which the search, the filters or the data in hand changed
   // (every change draws the page again); it returns the function that stops it. K.sel.state is the live {q, f, ...} (K.S).
@@ -1621,6 +1674,8 @@
         return SD;
       },
       peek: () => SD,
+      prewarm,
+      key: () => (SD ? stateKey() : null),
       setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p),
       MIN: SEL_MIN,
       valueLabel,

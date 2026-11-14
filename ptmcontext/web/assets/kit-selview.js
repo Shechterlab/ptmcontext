@@ -173,12 +173,18 @@
     );
   });
   K.apartLine = () => (memo.key === selKey() && memo.rows ? (memo.rows.length ? summaryText(memo) : '') : '');
+  // the comparison with every other mark is long on a large site: it is made when the reader opens it, not on every draw
+  K.apartOpen = () => !!memo.open;
   function fillApart() {
     const el = document.getElementById('sel-apart');
-    if (!el) return;
-    const sum = document.getElementById('apart-sum'),
+    if (!el || !el.open) return;
+    let sum = document.getElementById('apart-sum'),
       body = document.getElementById('apart-body');
     const draw = () => {
+      // the page may have been drawn again while the comparison ran: its current elements
+      sum = document.getElementById('apart-sum');
+      body = document.getElementById('apart-body');
+      if (!sum || !body) return;
       const m = apart();
       if (!m.rows.length) {
         if (m.why === 'few') {
@@ -212,7 +218,21 @@
           `</p></div>`);
     };
     if (memo.key === selKey() && memo.rows) draw();
-    else setTimeout(draw, 30); // after the page is on screen
+    else if (K.sel.prewarm) {
+      // every question against the other marks, one question at a time (the page stays responsive), then drawn
+      const key = selKey();
+      K.sel
+        .prewarm(
+          (d, t) => {
+            const x = document.getElementById('apart-sum');
+            if (x) x.textContent = `Comparing… (${int(d)} of ${int(t)} steps)`;
+          },
+          { family: true }
+        )
+        .then((ok) => {
+          if (ok && key === selKey()) draw();
+        });
+    } else setTimeout(draw, 30); // after the page is on screen
   }
   document.addEventListener(
     'toggle',
@@ -220,6 +240,7 @@
       if (e.target.id === 'sel-apart') {
         memo.open = e.target.open;
         if (!memo.open) e.target.hidden = true;
+        else fillApart();
       }
     },
     true
