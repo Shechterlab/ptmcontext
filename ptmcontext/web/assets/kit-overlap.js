@@ -773,11 +773,20 @@
     regions.forEach((r) => (target[r.m] = r.n));
     const { c, err } = euler(sizes, target),
       PAD = 34,
-      x0 = Math.min(...c.map((k) => k.x - k.r)),
-      x1 = Math.max(...c.map((k) => k.x + k.r)),
-      y0 = Math.min(...c.map((k) => k.y - k.r)),
-      y1 = Math.max(...c.map((k) => k.y + k.r)),
-      sc = Math.min((opt.w - 2 * PAD) / (x1 - x0 || 1), (opt.h - 2 * PAD) / (y1 - y0 || 1)),
+      bounds = () => [
+        Math.min(...c.map((k) => k.x - k.r)),
+        Math.max(...c.map((k) => k.x + k.r)),
+        Math.min(...c.map((k) => k.y - k.r)),
+        Math.max(...c.map((k) => k.y + k.r)),
+      ],
+      fit = (w, h) => Math.min((opt.w - 2 * PAD) / (w || 1), (opt.h - 2 * PAD) / (h || 1));
+    let [x0, x1, y0, y1] = bounds();
+    if (c.length === 3 && fit(y1 - y0, x1 - x0) > fit(x1 - x0, y1 - y0) * 1.05) {
+      // a layout taller than wide is turned, so the circles use the width
+      c.forEach((k) => ([k.x, k.y] = [k.y, k.x]));
+      [x0, x1, y0, y1] = bounds();
+    }
+    const sc = fit(x1 - x0, y1 - y0),
       W_ = Math.ceil((x1 - x0) * sc + 2 * PAD),
       H_ = Math.ceil((y1 - y0) * sc + 2 * PAD),
       C_ = c.map((k) => ({ x: (k.x - x0) * sc + PAD, y: (k.y - y0) * sc + PAD, r: k.r * sc })),
@@ -1497,10 +1506,9 @@
         const o = [];
         if (res.test)
           o.push(
-            (sitesU
-              ? TESTS.sites
-              : `${TESTS.proteins} ${fmtInt(res.M)} of ${fmtInt(res.N)} reviewed proteins (${pct(fd.base)}) have sites.`) +
-              ` Regions under ${MIN_N} are counted, not tested.`
+            sitesU
+              ? `Fisher’s exact test of the residues of proteins with ${W.marks}; q: Benjamini–Hochberg across the regions; regions under ${MIN_N} are counted, not tested.`
+              : `One-sided hypergeometric test against all reviewed proteins (${pct(fd.base)} have sites); q: Benjamini–Hochberg across the regions; regions under ${MIN_N} are counted, not tested.`
           );
         else
           o.push(
@@ -1628,7 +1636,7 @@
       },
       notes: (sc) => {
         const o = [
-          `One-sided hypergeometric test: the chance that two random sets of these sizes, drawn from the ${uw} counted, share this many or more. Fold = shared / expected (n × m / N). q: Benjamini–Hochberg across the pairs of each group.`,
+          'One-sided hypergeometric test of the shared count against two random sets of these sizes; fold = shared / expected; q: Benjamini–Hochberg across the pairs.',
         ];
         if (sc.brk < Infinity) o.push('Bars marked // are cut: they are longer than the axis.');
         return o;
@@ -1722,7 +1730,7 @@
       UI.layout = glyphLayout(
         sizes,
         res.rows.filter((r) => r.mask).map((r) => ({ m: r.mask, n: r.n })),
-        { w: phone ? 300 : 460, h: phone ? 210 : 340 }
+        { w: phone ? 300 : 460, h: phone ? 210 : 360 }
       );
       const gw = html('div', 'ovx-glyph');
       gw.title = `Circle and overlap areas are proportional to the counts${UI.layout.err > 0.01 ? ` (largest misfit ${(UI.layout.err * 100).toFixed(1)}% of the total)` : ''}.`;
@@ -2323,7 +2331,7 @@
       `<label class="flabel" for="ov-q">${full ? `${MAXT} of ${MAXT} sets chosen` : `Add a set (${int(pool0.length)} to choose from)`}</label>` +
       `<div class="ov-gchips" role="group" aria-label="Where the sets come from">${chips}</div>` +
       `<input id="ov-q" type="search" autocomplete="off" value="${esc(UIP.q)}" placeholder="${full ? `At most ${MAXT} sets` : 'Search by name or GO id: a pathway, a location, a disease, a protein family…'}"${full ? ' disabled' : ''}>` +
-      `<div id="ov-res" class="ov-res" role="listbox" aria-label="Matching sets">${resultsHtml(UIP.q)}</div>` +
+      `<div id="ov-res" class="ov-res${UIP.q || UIP.group ? ' open' : ''}" role="listbox" aria-label="Matching sets">${resultsHtml(UIP.q)}</div>` +
       `<details class="ov-genes"><summary>Add a list of genes</summary><textarea id="ov-genes" rows="2" placeholder="Gene names or accessions"></textarea> <button type="button" class="btn small" data-ov-genes${full ? ' disabled' : ''}>Add</button></details></div>`
     );
   }
@@ -2699,7 +2707,11 @@
     K.render();
   };
   const add = (id) => {
-    if (S.ot.length < MAXT && !S.ot.includes(id)) set({ ot: [...S.ot, id], or: '' });
+    if (S.ot.length < MAXT && !S.ot.includes(id)) {
+      UIP.q = '';
+      UIP.group = '';
+      set({ ot: [...S.ot, id], or: '' });
+    }
   };
   document.addEventListener('input', (e) => {
     if (e.target.id !== 'ov-q') return;

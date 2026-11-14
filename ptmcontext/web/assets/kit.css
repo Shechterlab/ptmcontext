@@ -10838,3 +10838,11 @@ html[data-density] .sites-tbl .cv {
 body.slim .brand-line {
   display: none;
 }
+
+.ov-res {
+  display: none;
+}
+.ov-pick:focus-within .ov-res,
+.ov-res.open {
+  display: block;
+}

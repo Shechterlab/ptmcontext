@@ -164,6 +164,8 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
       const eu = core.glyphLayout([133, 159, 29], REG, { w: 300, h: 210 });
       const eu2 = core.glyphLayout([5, 4], [{ m: 1, n: 3 }, { m: 2, n: 2 }, { m: 3, n: 2 }], { w: 300, h: 210 });
       const boxes = eu.boxes.map(b => [b.x, b.y, b.x + b.w, b.y + b.h]);
+      const REG3 = [[4, 1410], [2, 1048], [1, 136], [6, 100], [5, 3], [3, 2]].map(([m, n]) => ({ m, n }));
+      const ph = core.glyphLayout([141, 1150, 1513], REG3, { w: 460, h: 360 });
       const sc = core.sizeScale([13680, 13447, 159, 133, 129, 112, 46, 26, 3, 1]);
       const rs = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'sites', 1);
       const rr = await K.overlap.compute(['s:onto:D1', 'f:readers:Madeup'], 'readers', 1);
@@ -176,7 +178,7 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
       S0.oq = 'a';
       const tsvpairs = K.overlap.tsv(r2);
       const answers = [r2, r3, rd].map(r => K.overlap.answerText(r, 'a')).concat([r2, r3].map(r => K.overlap.answerText(r, 'b')));
-      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), wil, err3: eu.err, err2: eu2.err, boxes, cutBrk: sc.brk, cutMax: sc.max, nLabels: eu.labels.length, rd: strip(rd), rx: strip(rx), tables, tsvx, tsv: tsvb, tsvpairs, pairs: { r2: r2.pairs, r3: r3.pairs }, answers, ptable: K.overlap.pairTableHtml(r3), missing: rmiss.missing, circ: { names: rcirc.circ, test: rcirc.test ?? null, pairs: rcirc.pairs.all.length, ans: K.overlap.answerText(rcirc, 'b') }, sitesOR: rs.rows.filter((r) => r.mask && r.n).map((r) => String(r.or)) }));
+      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), wil, err3: eu.err, err2: eu2.err, boxes, cutBrk: sc.brk, cutMax: sc.max, nLabels: eu.labels.length, phGlyph: { vw: ph.vw, vh: ph.vh, err: ph.err, boxes: ph.boxes.map((b) => [b.x, b.y, b.x + b.w, b.y + b.h]), leaders: ph.leaders }, rd: strip(rd), rx: strip(rx), tables, tsvx, tsv: tsvb, tsvpairs, pairs: { r2: r2.pairs, r3: r3.pairs }, answers, ptable: K.overlap.pairTableHtml(r3), missing: rmiss.missing, circ: { names: rcirc.circ, test: rcirc.test ?? null, pairs: rcirc.pairs.all.length, ans: K.overlap.answerText(rcirc, 'b') }, sitesOR: rs.rows.filter((r) => r.mask && r.n).map((r) => String(r.or)) }));
     """
     run = subprocess.run(
         ['node', '-e', head + harness + '(async () => {' + body + '})();'], capture_output=True, text=True
@@ -271,3 +273,10 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
     )
     # the sites unit shows one odds ratio, in the chart's number and the table's
     assert j['sitesOR'] and all(v in j['tables'][1] for v in j['sitesOR'])
+    # a glyph taller than wide is turned: the three circles of a tall layout use the width, and nothing in it overlaps
+    g = j['phGlyph']
+    assert g['vw'] >= 0.85 * g['vh'] and g['err'] < 0.02
+    bx = g['boxes']
+    assert all(
+        not (a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]) for i, a in enumerate(bx) for b in bx[i + 1 :]
+    )
