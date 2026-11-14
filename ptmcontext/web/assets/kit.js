@@ -212,7 +212,11 @@
         r.label = short;
       }
       r.dir = dir(r);
-      r.title = A[r.analysis]?.title || r.analysis;
+      // a control of another question (control_of) is named as one, so it is not read as the main result
+      const an = A[r.analysis];
+      r.title = an?.control_of
+        ? `${A[an.control_of]?.title || an.control_of}, control: ${an.control_label || an.id}`
+        : an?.title || r.analysis;
     });
     return rows;
   };
@@ -897,14 +901,15 @@
     let axis;
     if (vs) axis = shareAxis(rows);
     else {
-      const e = rows.map((r) => r.eff).filter((v) => v != null && v > 0),
+      // the fold each row shows (valOf), as on the tile; the interval only where the value is the test's own effect
+      const e = rows.map((r) => (r.eff == null ? null : valOf(r))).filter((v) => v != null && v > 0),
         eLo = Math.min(1, ...e) / 4,
         eHi = Math.max(1, ...e) * 4;
       axis = logAxis([
         ...e,
-        ...rows.map((r) => r.ref?.eff),
+        ...rows.map((r) => (r.ref?.eff == null ? null : valOf(r.ref))),
         ...rows
-          .flatMap((r) => [r.lo, r.hi])
+          .flatMap((r) => ciOf(r) || [])
           .filter((v) => v != null && v > 0)
           .map((v) => Math.min(Math.max(v, eLo), eHi)),
       ]);
@@ -933,7 +938,7 @@
                 ...(has('same') ? [['same', 'about the same (within 1.1×)']] : []),
               ]),
           ['ns', descr ? 'shown, not tested' : `no difference (q > ${PADJ})`],
-          ...(rows.some((r) => r.lo != null && r.hi != null) ? [['ci', '95% confidence interval']] : []),
+          ...(rows.some((r) => ciOf(r)) ? [['ci', '95% confidence interval']] : []),
           ...(rows.some((r) => r.ref) ? [['ref', REF_WORDS]] : []),
           ...(rows.some(decile) ? [['dec', 'within abundance deciles: ✓ more · ≈ same · ○ none · ▼ fewer']] : []),
           ...(rows.some((r) => r.eff == null) ? [['none', '— no test within proteins']] : []),
@@ -942,9 +947,13 @@
       ? `share of ${sets ? 'the proteins' : `the ${W.marks}`} in each ${cls}`
       : sets
         ? 'fold enrichment, log scale'
-        : `odds ratio, log scale (${
-            m === 'fisher' ? 'Fisher, across all proteins' : 'Mantel–Haenszel, within each protein'
-          })`;
+        : rows.some((r) => r.shown != null)
+          ? `fold, log scale; beneath each row, the odds ratio of the test (${
+              m === 'fisher' ? 'Fisher, across all proteins' : 'Mantel–Haenszel, within each protein'
+            })`
+          : `odds ratio, log scale (${
+              m === 'fisher' ? 'Fisher, across all proteins' : 'Mantel–Haenszel, within each protein'
+            })`;
     return {
       a,
       m,
@@ -957,12 +966,12 @@
       cls,
       legend,
       axisTitle,
-      valHead: vs ? 'shares' : sets ? 'fold' : 'OR',
+      valHead: vs ? 'shares' : sets || rows.some((r) => r.shown != null) ? 'fold' : 'OR',
     };
   }
   // a class's meaning beside its name only when it is short ("RGG · Gly at +1 and +2"); a longer one is its hover
   const shortHelp = (r) => !!r.help && r.help.length <= 34;
-  const valText = (r) => (r.vs ? `${pcS(share1(r))} · ${pcS(share2(r))}` : r.eff == null ? '—' : fx(r.eff));
+  const valText = (r) => (r.vs ? `${pcS(share1(r))} · ${pcS(share2(r))}` : r.eff == null ? '—' : fx(valOf(r)));
   // on the page: a row of the chart (it keeps .drow: its hover read-out, and a click selects its marks)
   function chartRow(r, M, fkey, mark, own) {
     if (own) return ownRow(r, fkey, mark);
@@ -983,18 +992,20 @@
         `r="4.6"/>`;
     } else if (r.eff != null) {
       const x1 = X(1),
-        x2 = X(r.eff);
+        x2 = X(valOf(r)),
+        ci = ciOf(r);
       marks +=
         `<rect class="bar ${r.dir}" x="${(100 * Math.min(x1, x2)).toFixed(2)}%" width="${Math.max(
           0.4,
           100 * Math.abs(x2 - x1)
         ).toFixed(2)}%" y="5" ` + `height="10" rx="1.5"/>`;
-      if (r.lo != null && r.hi != null)
+      if (ci)
         marks +=
-          `<line class="ci" x1="${pc(r.lo)}" x2="${pc(r.hi)}" y1="10" y2="10"/>` +
-          [r.lo, r.hi].map((v) => `<line class="ci" ` + `x1="${pc(v)}" x2="${pc(v)}" y1="7" y2="13"/>`).join('');
+          `<line class="ci" x1="${pc(ci[0])}" x2="${pc(ci[1])}" y1="10" y2="10"/>` +
+          ci.map((v) => `<line class="ci" ` + `x1="${pc(v)}" x2="${pc(v)}" y1="7" y2="13"/>`).join('');
     }
-    if (r.ref) marks += `<line class="ref" x1="${pc(r.ref.eff)}" x2="${pc(r.ref.eff)}" y1="1" y2="19"/>`;
+    if (r.ref && r.ref.eff != null)
+      marks += `<line class="ref" x1="${pc(valOf(r.ref))}" x2="${pc(valOf(r.ref))}" y1="1" y2="19"/>`;
     return (
       `<div class="drow qrow${fkey ? ' pick' : ''}${mark ? ' more-mark' : ''}" data-r="${reg(r)}" data-cat="${esc(r.category)}"${
         fkey
@@ -1021,7 +1032,7 @@
       `<span class="vh">${
         r.vs
           ? `${pcS(share1(r))} of your selection vs ${pcS(share2(r))} of ${esc(vsName())}`
-          : `${esc(effText(r))}, q ${fq(r.q)}`
+          : `${valOf(r) !== r.eff && r.eff != null ? `fold ${esc(fx(valOf(r)))}; ` : ''}${esc(effText(r))}, q ${fq(r.q)}`
       }${d ? `; within ` + `abundance deciles: ${DECILE[d.dir][1]}` : ''}${
         r.ref ? `; whole dataset ${esc(effText(r.ref))}` : ''
       }</span></div>`
@@ -3471,16 +3482,17 @@
         );
       } else if (r.eff != null) {
         const a1 = X(1),
-          a2 = X(r.eff),
-          ns = r.dir === 'ns';
+          a2 = X(valOf(r)),
+          ns = r.dir === 'ns',
+          ci = ciOf(r);
         rp.push(
           `<rect x="${r1(Math.min(a1, a2))}" y="${yc - 5}" width="${r1(Math.max(1, Math.abs(a2 - a1)))}" height="10" ` +
             `rx="1.5" fill="${ns ? PAL.bg : col}" stroke="${col}" stroke-width="${ns ? 1.2 : 0}"/>`
         );
-        if (r.lo != null && r.hi != null)
+        if (ci)
           rp.push(
-            `<line x1="${r1(X(r.lo))}" x2="${r1(X(r.hi))}" y1="${yc}" y2="${yc}" stroke="${ink2}" stroke-width="1.2"/>` +
-              [r.lo, r.hi]
+            `<line x1="${r1(X(ci[0]))}" x2="${r1(X(ci[1]))}" y1="${yc}" y2="${yc}" stroke="${ink2}" stroke-width="1.2"/>` +
+              ci
                 .map(
                   (v) =>
                     `<line x1="${r1(X(v))}" x2="${r1(X(v))}" y1="${yc - 3}" y2="${yc + 3}" stroke="${ink2}" stroke-width="1.2"/>`
@@ -3488,9 +3500,9 @@
                 .join('')
           );
       }
-      if (r.ref)
+      if (r.ref && r.ref.eff != null)
         rp.push(
-          `<line x1="${r1(X(r.ref.eff))}" x2="${r1(X(r.ref.eff))}" y1="${yc - 9}" y2="${yc + 9}" stroke="${PAL.ink}" stroke-width="2"/>`
+          `<line x1="${r1(X(valOf(r.ref)))}" x2="${r1(X(valOf(r.ref)))}" y1="${yc - 9}" y2="${yc + 9}" stroke="${PAL.ink}" stroke-width="2"/>`
         );
       const strong = !r.vs && (r.dir === 'more' || r.dir === 'less');
       T(
