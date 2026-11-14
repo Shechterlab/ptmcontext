@@ -4777,11 +4777,11 @@
   });
   $('#q').addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
+    e.preventDefault(); // a search box's own Escape empties it: here it never does
     clearTimeout(timer);
     qPending = false;
     typing = false;
     if (e.target.value.trim() === committed && S.q === committed) return;
-    e.preventDefault();
     e.target.value = committed;
     if (S.q !== committed) {
       S.q = committed;

@@ -222,7 +222,12 @@
     if (!btn || pop.hidden) return;
     if (e.target.closest('[data-sel-menu]')) return;
     // Copy link stays open so that its confirmation can be read; it closes with the text's reset
-    if (pop.contains(e.target) && e.target.closest('[data-sel-copy], [data-sel-save], [data-sel-save-form]')) return;
+    // (Save replaces the menu's items with its field, so its own button is no longer in the menu when this runs)
+    if (
+      (pop.contains(e.target) || !e.target.isConnected) &&
+      e.target.closest('[data-sel-copy], [data-sel-save], [data-sel-save-form]')
+    )
+      return;
     menuSet(false, false);
   });
   document.addEventListener('keydown', (e) => {
