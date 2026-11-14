@@ -1727,7 +1727,7 @@
       Wd = 760,
       H = 400,
       ML = 56,
-      MR = 24,
+      MR = 96,
       MT = 16,
       MB = 46;
     if (!rows.length) return { g: '', W: Wd, H: 60, aria: 'No compartments' };
@@ -1764,9 +1764,9 @@
       `<polyline class="cf-l95" points="${curve(1.96, 1)}"/><polyline class="cf-l95" points="${curve(1.96, -1)}"/>` +
       `<polyline class="cf-l998" points="${curve(3.09, 1)}"/><polyline class="cf-l998" points="${curve(3.09, -1)}"/>` +
       `<line class="cf-ref" x1="${ML}" x2="${Wd - MR}" y1="${Y(pa).toFixed(1)}" y2="${Y(pa).toFixed(1)}"/>` +
-      `<text class="cf-ax" x="${Wd - MR}" y="${(Y(pa) - 5).toFixed(1)}" text-anchor="end">${esc(pctText(pa))} of all mapped proteins</text>` +
-      `<text class="cf-ax" x="${Wd - MR - 2}" y="${(Y(clampY(pa + 1.96 * se(nmax))) - 4).toFixed(1)}" text-anchor="end">95%</text>` +
-      `<text class="cf-ax" x="${Wd - MR - 2}" y="${(Y(clampY(pa + 3.09 * se(nmax))) - 4).toFixed(1)}" text-anchor="end">99.8%</text>`;
+      `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(pa) + 4).toFixed(1)}">overall ${esc(pctText(pa))}</text>` +
+      `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 1.96 * se(nmax))) + 4).toFixed(1)}">95% limit</text>` +
+      `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 3.09 * se(nmax))) + 4).toFixed(1)}">99.8% limit</text>`;
     // points, the most different first, each named where there is room
     const placed = [],
       hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h,
@@ -1786,7 +1786,8 @@
           ];
         for (const c of cand) {
           const box = { x: c.x, y: c.y, w, h: 13 };
-          if (box.x < ML - 30 || box.x + w > Wd - 2 || placed.some((o, i) => i >= pts.length && hit(box, o))) continue;
+          if (box.x < ML - 30 || box.x + w > Wd - MR + 4 || placed.some((o, i) => i >= pts.length && hit(box, o)))
+            continue;
           if (placed.slice(0, pts.length).some((o) => hit(box, o) && Math.hypot(o.x + 6 - q.x, o.y + 6 - q.y) > 1))
             continue;
           placed.push(box);
