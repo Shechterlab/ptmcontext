@@ -50,7 +50,7 @@
   only the protein and its partners, or says why it is not there), and under the button a small drawing of the protein among
   its cluster. The button carries the selection and filters. Find genes takes a pasted list and counts and lists what it
   found. The section under the figure is called Method and is four sentences and the citations.
-- The cell and nucleus maps have a switch, "Percent with sites | Above or below the average (z) | Fold vs other proteins", on the Overview card, the
+- The cell and nucleus maps have a switch, "Percent with sites | Above or below the average | Fold vs other proteins", on the Overview card, the
   cell page and the enlarged map. Percent colors each compartment by the share of its proteins that carry at least one
   mark, labelled with the count ("Chromatin 97% · 412 proteins"), with the share among all proteins as a tick in the key.
   With several maps, the median is drawn and each map's value is on hover. With a selection, it shows the share of the
@@ -58,8 +58,10 @@
   Sites choose which opens first (`website.cell.default_view`). Where the mark is on 80% or more of the mapped proteins,
   the color range runs from the lowest compartment (rounded down to 5%) to 100%, and the key says it does not start at
   0 (`website.cell.range`: `data` or `full`). The key also gives the share among all reviewed proteins.
-  The z view gives each compartment the z of its share against the share among all mapped proteins ("z +8.9"), colored
-  where q ≤ 0.05 across the compartments shown (Benjamini–Hochberg) and |z| ≥ 2.
+  The average view colors each compartment by the effect size (Cohen's h) of its share against the share among all
+  mapped proteins and fills it only where q ≤ 0.05 across the compartments shown (hatched otherwise); the cell page adds
+  a funnel plot. `website.cell.dispersion` (default on) widens the standard errors by the overdispersion across a map's
+  compartments; `website.cell.abundance` tests within abundance deciles.
 - Where the fold has too few proteins to compare, the label says which side is short and how many proteins carry a
   mark ("too few without one to compare (97% carry one)").
 - Header: "All sites" sits on the switcher's row, so the lab block and links stay above the structure drawing. The sticky bar shows the short site name.

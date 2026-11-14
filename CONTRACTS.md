@@ -223,15 +223,21 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   it; it is colored and ranked only when at least `website.reading.min_maps` (default 2) of them differ the same way
   (q ≤ 0.05 and a fold of 1.1× or more, the test pointing the same way) and none the other way, gray otherwise.
 - `title, question, intro, note`: words.
-- `default_view`: `percent`, `zscore` or `fold` (default `fold`), what the cell and nucleus maps color by when the page
-  opens. Every map has a switch, "Percent with sites | Above or below the average (z) | Fold vs other proteins".
-  The z view gives each part the binomial z of its share against the share among all the proteins the maps place,
-  z = (p − p_all) / √(p_all (1 − p_all) / n), where n is the proteins the map places in the part and p_all is that map's
-  share; a part takes the median z of the maps that have it ("z +8.9" on the map; percent, percentage-point difference,
-  n, z and q on hover). Each z has a two-sided normal p, and Benjamini–Hochberg across the parts shown gives q; a part is
-  colored only when q ≤ 0.05 and |z| ≥ 2 (the fold's diverging ramp, red above and slate below, in quarters of |z| = 10),
-  gray otherwise. With a selection, the selection's share in each part is tested against its overall share the same way.
-  The table has `z` and `q_bh` (across the cells of that table). Percent: Percent colors each part by the share of its proteins
+- `default_view`: `percent`, `average` or `fold` (default `fold`), what the cell and nucleus maps color by when the page
+  opens. Every map has a switch, "Percent with sites | Above or below the average | Fold vs other proteins". The average
+  view sets each part's share against the share among all the proteins the maps place (that map's, the median over the
+  maps that have the part). **Color is the effect size**, Cohen's h = 2 asin √p − 2 asin √p_all (steps at |h| 0.2, 0.5 and
+  0.8; red above, slate below), which does not grow with the part's size; the label reads "96% · h +1.1". **A fill is
+  evidence**: Benjamini–Hochberg q ≤ 0.05 across the parts shown; a part that is not significant is hatched. The test of a
+  map's compartment is the binomial z of its share, with the standard error widened by √φ where the map has 5 or more
+  compartments and φ > 1 (`dispersion`, default true; φ is the Pearson χ² of the Winsorised z, 10% per tail, of the
+  map's compartments, Spiegelhalter, Stat Med 2005;24:1185); with `dispersion: false`, Fisher's exact test of the part's
+  proteins against the other mapped proteins; with `abundance: true`, the test within abundance deciles
+  (Mantel–Haenszel) for the maps that have it. A part takes the median p of its maps. Hover: percent, percentage-point
+  difference, h, odds ratio and its interval, z, φ, q and n. The cell page adds a funnel plot of one map (the share of
+  each compartment against its size, the overall share, 95% and 99.8% limits, widened by √φ when on) with its table. With
+  a selection, the selection's share in each part is set against its overall share the same way. The table has `h`,
+  `odds_ratio`, `or_ci_low`, `or_ci_high`, `z`, `phi`, `p` and `q_bh` (across the cells of that table). Percent colors each part by the share of its proteins
   that carry at least one mark, from the sequential ramp: the proteins are the reviewed proteins each map places in the part,
   and the median of the maps that have it is drawn (each map's value on hover). The legend's tick is the share among all the
   proteins the maps place. With a selection, the share of the part's proteins that are in it, the whole site's share on

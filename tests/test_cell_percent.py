@@ -170,8 +170,8 @@ Z = {
 }
 
 
-def _z(k, n, p_all):
-    return (k / n - p_all) / math.sqrt(p_all * (1 - p_all) / n)
+def _h(p, q):
+    return 2 * math.asin(math.sqrt(p)) - 2 * math.asin(math.sqrt(q))
 
 
 def _median(xs):
@@ -180,43 +180,114 @@ def _median(xs):
     return xs[h] if len(xs) % 2 else (xs[h - 1] + xs[h]) / 2
 
 
-@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
-def test_the_z_view_gives_each_part_the_binomial_z_of_its_share_with_a_bh_q_across_the_parts(tmp_path):
-    out = _run(tmp_path, _build(tmp_path / 'b', 'zscore'), [], patch=f'D.cell_pct = {json.dumps(Z)};')
-    by = out['by']
-    # hand computation: z = (p - p_all) / sqrt(p_all (1 - p_all) / n) in each map, the median over the maps of the part
-    z = {
-        'nucleoplasm': _median([_z(80, 100, 0.44), _z(40, 50, 0.44)]),
-        'cytosol': _median([_z(90, 200, 0.44), _z(45, 100, 0.44)]),
-        'pm': _z(30, 100, 0.44),  # one map
+def _fisher(a, b, c, d):
+    """Two-sided Fisher exact p, by summing the hypergeometric probabilities no larger than the observed one."""
+    n1, m1, N = a + b, a + c, a + b + c + d
+
+    def pmf(x):
+        return math.comb(n1, x) * math.comb(N - n1, m1 - x) / math.comb(N, m1)
+
+    obs = pmf(a)
+    return sum(pmf(x) for x in range(max(0, m1 - (N - n1)), min(m1, n1) + 1) if pmf(x) <= obs * (1 + 1e-7))
+
+
+def _bh(p):
+    order = sorted(range(len(p)), key=lambda i: p[i])
+    q, floor = [0.0] * len(p), 1.0
+    for rank in range(len(p), 0, -1):
+        i = order[rank - 1]
+        floor = min(floor, p[i] * len(p) / rank)
+        q[i] = floor
+    return q
+
+
+def _cells(data):
+    """(share, M, k, N, n_marked) of each map's set, by the part it draws."""
+    parts = {
+        'nucleoplasm': [('map_a', 'nucleus'), ('map_b', 'nuclear')],
+        'cytosol': [('map_a', 'cytosol'), ('map_b', 'cyto')],
+        'pm': [('map_a', 'membrane')],
     }
-    for part, v in z.items():
-        assert by[part]['z'] == pytest.approx(v)
-    assert by['nucleoplasm']['value'] == 'z +6.2' and by['pm']['value'] == 'z −2.8'
-    # two-sided normal p, then Benjamini-Hochberg across the three parts
-    p = {k: math.erfc(abs(v) / math.sqrt(2)) for k, v in z.items()}
-    order = sorted(p, key=p.get)
-    q, floor = {}, 1.0
-    for rank in range(len(order), 0, -1):
-        k = order[rank - 1]
-        floor = min(floor, p[k] * len(order) / rank)
-        q[k] = floor
-    for part in z:
-        assert by[part]['q'] == pytest.approx(q[part], rel=1e-6)
-    # colored only where q <= 0.05 and |z| >= 2: quarters of |z| = 10 on the diverging ramp, gray otherwise
-    assert [by[k]['tone'] for k in ('nucleoplasm', 'cytosol', 'pm')] == ['m2', 'ns', 'f1']
-    assert out['answer'] == (
-        '44% of mapped proteins carry a methylarginine; nucleus (z +6.2) stands out most above that, '
-        'membrane (z −2.8) most below.'
-    )
+    return {
+        part: [
+            (data[a]['sets'][s][1] / data[a]['sets'][s][0], *data[a]['sets'][s], data[a]['N'], data[a]['n'])
+            for a, s in sets
+        ]
+        for part, sets in parts.items()
+    }
 
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
-def test_with_a_selection_the_z_compares_the_selection_in_a_part_with_its_overall_share(tmp_path):
-    # P1, P2 and P5 are selected: of the 5 marked proteins map A places, 3 are in the selection (the share among all: 3/10)
-    out = _run(tmp_path, _build(tmp_path / 'b', 'zscore'), ['P1', 'P2', 'P5'])
+def test_the_average_view_colors_by_cohens_h_and_fills_where_the_fisher_q_across_the_parts_holds(tmp_path):
+    out = _run(
+        tmp_path,
+        _build(tmp_path / 'b', 'average'),
+        [],
+        patch=f'D.cell_pct = {json.dumps(Z)}; D.cell.dispersion = false;',
+    )
     by = out['by']
-    # map A's nucleus: 2 of its 4 proteins are in the selection; the selection is 3 of the map's 10 placed proteins
-    za = _z(2, 4, 3 / 10)
-    zb = _z(2, 3, 3 / 8)  # map B's nuclear set: 2 of 3; 3 of the map's 8 placed proteins
-    assert by['nucleoplasm']['z'] == pytest.approx((za + zb) / 2)
+    p, h = {}, {}
+    for part, cells in _cells(Z).items():
+        hs, ps = [], []
+        for share, M, k, N, nm in cells:
+            hs.append(_h(share, nm / N))
+            ps.append(
+                _fisher(k, M - k, nm - k, N - M - (nm - k))
+            )  # the part's proteins against the other mapped proteins
+        h[part], p[part] = _median(hs), _median(ps)
+        assert by[part]['h'] == pytest.approx(h[part]) and by[part]['p'] == pytest.approx(p[part], rel=1e-5)
+    q = dict(zip(p, _bh(list(p.values()))))
+    for part in p:
+        assert by[part]['q'] == pytest.approx(q[part], rel=1e-5)
+    # filled where q <= 0.05, stepped by |h| at 0.2, 0.5, 0.8; hatched where not
+    want = {
+        k: ('hx' if q[k] > 0.05 else ('m' if h[k] > 0 else 'f') + str(sum(abs(h[k]) >= b for b in (0.2, 0.5, 0.8))))
+        for k in p
+    }
+    assert {k: by[k]['tone'] for k in p} == want
+    assert by['nucleoplasm']['value'] == f'80% · h +{h["nucleoplasm"]:.1f}'
+    assert out['answer'].startswith('44% of mapped proteins carry a methylarginine; nucleus (h +')
+
+
+PHI = {
+    'map_a': {
+        'N': 1000,
+        'n': 440,
+        'sets': {
+            'nucleus': [100, 80],
+            'cytosol': [200, 90],
+            'membrane': [100, 30],
+            'a4': [150, 66],
+            'a5': [120, 70],
+            'a6': [130, 50],
+        },
+    },
+    'map_b': {'N': 500, 'n': 220, 'sets': {'nuclear': [50, 40], 'cyto': [100, 45]}},
+}
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_the_dispersion_factor_widens_the_standard_error_of_a_map_with_many_compartments(tmp_path):
+    out = _run(tmp_path, _build(tmp_path / 'b', 'average'), [], patch=f'D.cell_pct = {json.dumps(PHI)};')
+    a = PHI['map_a']
+    zs = sorted((k / n - 0.44) / math.sqrt(0.44 * 0.56 / n) for n, k in a['sets'].values())
+    cut = int(0.1 * len(zs))  # Winsorised at 10% in each tail (here nothing is cut: six compartments)
+    zw = [min(zs[-1 - cut], max(zs[cut], z)) for z in zs]
+    phi = max(1.0, sum(z * z for z in zw) / len(zw))
+    assert phi > 1
+    by = out['by']
+    assert by['pm']['phi'] == pytest.approx(phi)  # the membrane is in map A only
+    # its evidence: the z of 30 of 100 against 44%, its standard error widened by the square root of phi
+    z = (0.30 - 0.44) / math.sqrt(0.44 * 0.56 / 100)
+    assert by['pm']['p'] == pytest.approx(math.erfc(abs(z) / math.sqrt(phi) / math.sqrt(2)), rel=1e-5)
+    # map B has two compartments, too few to estimate phi: its z is not widened
+    assert by['nucleoplasm']['phi'] == pytest.approx((phi + 1) / 2)
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_with_a_selection_h_compares_the_selection_in_a_part_with_its_overall_share(tmp_path):
+    # P1, P2 and P5 are selected: of the 5 marked proteins map A places, 3 are in the selection (3 of its 10 placed proteins)
+    out = _run(tmp_path, _build(tmp_path / 'b', 'average'), ['P1', 'P2', 'P5'])
+    ha = _h(2 / 4, 3 / 10)  # map A's nucleus: 2 of its 4 proteins are in the selection
+    hb = _h(2 / 3, 3 / 8)  # map B's nuclear set: 2 of 3; 3 of the map's 8 placed proteins
+    assert out['by']['nucleoplasm']['h'] == pytest.approx((ha + hb) / 2)
