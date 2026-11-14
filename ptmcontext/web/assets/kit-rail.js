@@ -70,6 +70,14 @@
         .split(/[\s,;]+/) // a list typed "TP53, MYC" has no commas of its own in the chip: they are the joiner
         .filter((t) => t && !bad.has(t.toLowerCase()));
     if (!words.length) return null;
+    if (S.qn && S.qn.q === S.q)
+      // a selection a page made and named: its name, the members on hover
+      return {
+        cat: S.qn.cat || 'Selection',
+        val: S.qn.name,
+        tip: `${S.qn.name}: ${words.join(', ')}`,
+        btn: `<button type="button" data-sel-clear-q aria-label="Remove the selection">×</button>`,
+      };
     const list = c.q.genes.length > 0 && !c.q.sites.length,
       shown = words.length > 4 ? words.slice(0, 3).join(', ') + ` +${words.length - 3}` : words.join(list ? ', ' : ' ');
     return {

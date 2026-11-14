@@ -1528,6 +1528,10 @@
           ...r,
           u,
           pair: true,
+          nA: r.n, // the sizes of the two sets; the bar is the shared count
+          nB: r.m,
+          m: r.mask, // the pair's mask (for the glyph and the rows)
+          n: r.a,
           k: r.a,
           or: r.fold,
           noci: true,
@@ -1613,7 +1617,7 @@
         const out = { lines: [], extra: [] };
         out.lines.push(['var(--fig-count-k)', fmtInt(rec.a), `${uw} in both`]);
         out.extra.push(
-          `${expText(rec.expected)} expected by chance, from ${fmtInt(rec.n)} and ${fmtInt(rec.m)} of ${fmtInt(rec.N)} ${universeLabel(res, rec.u).toLowerCase()}`
+          `${expText(rec.expected)} expected by chance, from ${fmtInt(rec.nA)} and ${fmtInt(rec.nB)} of ${fmtInt(rec.N)} ${universeLabel(res, rec.u).toLowerCase()}`
         );
         if (rec.q != null)
           out.extra.push(
@@ -2456,7 +2460,7 @@
         sentence = (r, where) =>
           (r.a === 0
             ? `No ${uw.replace(/s$/, '')} is in both ${L(r.i)} and ${L(r.j)}${where}`
-            : `${int(r.a)} ${uw} ${r.a === 1 ? 'is' : 'are'} in both ${L(r.i)} and ${L(r.j)}${where}`) +
+            : `${int(r.a)} ${r.a === 1 ? uw.replace(/s$/, '') : uw} ${r.a === 1 ? 'is' : 'are'} in both ${L(r.i)} and ${L(r.j)}${where}`) +
           (r.expected != null && !Number.isNaN(r.expected) && r.a > 0
             ? sigUp(r)
               ? `, ${f1(r.fold)} more than the ${r.expected < 10 ? r.expected.toFixed(1) : int(Math.round(r.expected))} expected by chance (q ${fq1(r.q)})`
@@ -2750,6 +2754,7 @@
           f: {},
           qn: {
             q,
+            cat: 'Overlap',
             name: `${cap(res.unit === 'sites' ? W.marks : unitWord(res.unit))} ${t.words.startsWith('in ') ? t.words : `in ${t.words}`}`,
           },
         });
