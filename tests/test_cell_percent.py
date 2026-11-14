@@ -6,6 +6,7 @@ here names a source or a mark."""
 from __future__ import annotations
 
 import json
+import math
 import re
 import shutil
 import subprocess
@@ -19,6 +20,7 @@ from ptmcontext import site as S
 from ptmcontext import web
 
 ASSETS = Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets'
+STATS = Path(__file__).resolve().parents[1] / 'packages' / 'ptmstats' / 'ptmstats' / 'ptmstats.js'
 
 # The toy: P1-P5 carry a mark. Map A places P1-P10: nucleus P1-P4, cytosol P5-P7, membrane P8-P10. Map B places P1-P8:
 # nuclear P1-P3, cyto P4-P8. Regions of map A: inside P1-P4, outside P5-P10. Counted by hand:
@@ -90,12 +92,12 @@ const K = {{ D, W: D.words, A, S: {{ q: '', f: {{}} }}, esc: s => String(s ?? ''
   selOn: () => sel.length > 0, vsOn: () => false, questions: {{}}, methods: [], clicks: [], tips: [], afterRender: [], expBar: () => '', figureFrame: noop, preamble: () => '', exportFigure: noop, tw: s => 6 * s.length, wrap: s => [s], fit: s => s, detailsLink: () => '',
   sel: {{ data: () => ({{ protein_sets: sets }}), testable: () => true, setHas: () => false, compute: () => ({{ proteins: new Set(sel) }}), namesProteins: () => false,
     ownSets: () => ({{ all: false, sets: new Set() }}), MIN: {{ proteins: 1, marks: 1 }} }} }};
-global.PTMC_STATS = {{ mh: () => ({{}}), bh: ps => ps, hyperSF: () => 0.001 }};
+eval(require('fs').readFileSync({json.dumps(str(STATS))}, 'utf8'));
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-cell.js'))}, 'utf8'));
 window.PTMC_MODULES.forEach(m => m(K));
 const by = Object.fromEntries(K.cell.percent().map(p => [p.part, p]));
 const fold = Object.fromEntries(K.cell.parts().map(p => [p.part, p.value]));
-console.log(JSON.stringify({{ by, fold, answer: K.cell.answer(undefined, 'percent'), range: K.cell.percentRange(), difference: K.cell.differenceRange() }}));"""
+console.log(JSON.stringify({{ by, fold, answer: K.cell.answer(undefined, 'percent'), range: K.cell.percentRange(), z: K.cell.zRange() }}));"""
     run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
     return json.loads(run.stdout)
@@ -162,13 +164,59 @@ def test_the_range_option_overrides_the_default_and_a_low_share_keeps_the_full_r
     assert out['range'] == {'lo': 0, 'hi': 1}
 
 
+Z = {
+    'map_a': {'N': 1000, 'n': 440, 'sets': {'nucleus': [100, 80], 'cytosol': [200, 90], 'membrane': [100, 30]}},
+    'map_b': {'N': 500, 'n': 220, 'sets': {'nuclear': [50, 40], 'cyto': [100, 45]}},
+}
+
+
+def _z(k, n, p_all):
+    return (k / n - p_all) / math.sqrt(p_all * (1 - p_all) / n)
+
+
+def _median(xs):
+    xs = sorted(xs)
+    h = len(xs) // 2
+    return xs[h] if len(xs) % 2 else (xs[h - 1] + xs[h]) / 2
+
+
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
-def test_the_difference_view_colors_each_part_by_its_points_from_the_share_among_all_mapped_proteins(tmp_path):
-    out = _run(tmp_path, _build(tmp_path / 'b', 'difference'), [], patch=f'D.cell_pct = {json.dumps(HIGH)};')
-    ref = (96 / 100 + 77 / 80) / 2  # the median of the two maps' shares among the proteins they place
+def test_the_z_view_gives_each_part_the_binomial_z_of_its_share_with_a_bh_q_across_the_parts(tmp_path):
+    out = _run(tmp_path, _build(tmp_path / 'b', 'zscore'), [], patch=f'D.cell_pct = {json.dumps(Z)};')
     by = out['by']
-    # nucleus: 95% (map A) and 29/30 (map B) give a median just under the share among all mapped proteins
-    assert by['nucleoplasm']['value'] == '−0.3 points' and by['nucleoplasm']['tone'] == 'f2'
-    assert by['pm']['value'] == '+0.5 points' and by['pm']['tone'] == 'm3'  # 29 of 30, one map: the largest difference
-    assert out['difference'] == {'max': pytest.approx(29 / 30 - ref)}
-    assert out['answer'].startswith('96% of mapped proteins carry a methylarginine; membrane (+0.5 points) and ')
+    # hand computation: z = (p - p_all) / sqrt(p_all (1 - p_all) / n) in each map, the median over the maps of the part
+    z = {
+        'nucleoplasm': _median([_z(80, 100, 0.44), _z(40, 50, 0.44)]),
+        'cytosol': _median([_z(90, 200, 0.44), _z(45, 100, 0.44)]),
+        'pm': _z(30, 100, 0.44),  # one map
+    }
+    for part, v in z.items():
+        assert by[part]['z'] == pytest.approx(v)
+    assert by['nucleoplasm']['value'] == 'z +6.2' and by['pm']['value'] == 'z −2.8'
+    # two-sided normal p, then Benjamini-Hochberg across the three parts
+    p = {k: math.erfc(abs(v) / math.sqrt(2)) for k, v in z.items()}
+    order = sorted(p, key=p.get)
+    q, floor = {}, 1.0
+    for rank in range(len(order), 0, -1):
+        k = order[rank - 1]
+        floor = min(floor, p[k] * len(order) / rank)
+        q[k] = floor
+    for part in z:
+        assert by[part]['q'] == pytest.approx(q[part], rel=1e-6)
+    # colored only where q <= 0.05 and |z| >= 2: quarters of |z| = 10 on the diverging ramp, gray otherwise
+    assert [by[k]['tone'] for k in ('nucleoplasm', 'cytosol', 'pm')] == ['m2', 'ns', 'f1']
+    assert out['answer'] == (
+        '44% of mapped proteins carry a methylarginine; nucleus (z +6.2) stands out most above that, '
+        'membrane (z −2.8) most below.'
+    )
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_with_a_selection_the_z_compares_the_selection_in_a_part_with_its_overall_share(tmp_path):
+    # P1, P2 and P5 are selected: of the 5 marked proteins map A places, 3 are in the selection (the share among all: 3/10)
+    out = _run(tmp_path, _build(tmp_path / 'b', 'zscore'), ['P1', 'P2', 'P5'])
+    by = out['by']
+    # map A's nucleus: 2 of its 4 proteins are in the selection; the selection is 3 of the map's 10 placed proteins
+    za = _z(2, 4, 3 / 10)
+    zb = _z(2, 3, 3 / 8)  # map B's nuclear set: 2 of 3; 3 of the map's 8 placed proteins
+    assert by['nucleoplasm']['z'] == pytest.approx((za + zb) / 2)
