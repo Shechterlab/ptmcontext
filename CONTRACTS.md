@@ -1064,7 +1064,9 @@ network view.
 `#overlap?t=<terms>` (kit-overlap.js; `website.overlap`, schema in site.schema.json) compares two to `max_terms` (at most 4) terms. The address keeps the
 terms (`t`, comma-separated, each percent-encoded: `s:<question>:<set>` a set of a protein-set question, `c:<question>:<class>` a class of another
 question, `f:readers:<family>` and `f:enzymes:<class>`, `a:<attribute>:<value>` a protein attribute, `sel` the current selection, `sv:<name>` a
-selection saved in this browser, `g:<names>` a pasted list), the unit (`ou`) and the open region (`or`); an old link's `ov` is read and ignored.
+selection saved in this browser, `g:<names>` a pasted list), the unit (`ou`), the question (`oq`: `a` or `b`; without it, `a` for two terms and `b` for more) and the open region (`or`: `5` is the region of exactly the terms of mask 5, `a5` every element in those terms); an old link's `ov` is read and ignored.
+
+Two questions, one switch. (a) *Do these sets share more proteins than chance?* is the overlap of the terms themselves, for each pair, among every element counted and among those with sites (a count of sites has one group): n and m the sizes, a the elements in both, N the group; expected = n·m/N, fold = a/expected, p = P(X >= a) for X hypergeometric (N, m, n) (one-sided, `ptmstats.hypergeom_sf`; p = 1 for a = 0), q = Benjamini-Hochberg over the pairs of one group. `ptmstats.pair_overlap` is the same arithmetic in Python and `tests/test_overlap.py` checks the browser's rows equal it. (b) *Are the proteins in each region modified more often?* is the region test below. For two terms the page opens on (a), because the pair is the whole question; for three or four on (b), because each region then has its own answer. A sentence above the figure states the result from the terms and the numbers.
 
 ```yaml
 website:
@@ -1073,6 +1075,9 @@ website:
     max_terms: 4
     leave_out: {some_question: [set_id]}             # sets not offered and not written (data that is not public)
     notes: {some_question: one main location per protein}   # shown under its terms in the picker
+    groups:                                          # the headings the picker lists terms under, in order
+      - {name: GO, from: [go_bp, go_binding]}        # question ids and term-source ids; a question in none is listed under its own name
+    names: {writer_prmt: PRMT methyltransferases}    # a reader family's or enzyme class's name as shown (the role becomes a small tag)
     term_sources:                                    # more terms, from a table of (term, protein) pairs
       - id: go_bp
         title: GO biological process
