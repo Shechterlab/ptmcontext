@@ -5386,9 +5386,10 @@
             "default_view": {
               "enum": [
                 "percent",
+                "difference",
                 "fold"
               ],
-              "description": "what the cell and nucleus maps color by when the page opens: percent (the share of each compartment's proteins that carry at least one mark; for a mark that covers most proteins, where the fold has little to compare against) or fold (the default: the fold against the other proteins). The switch on each map changes it for the visitor"
+              "description": "what the cell and nucleus maps color by when the page opens: percent (the share of each compartment's proteins that carry at least one mark), difference (that share's difference from the share among all the proteins the maps place, in points, on a diverging ramp; both for a mark that covers most proteins, where the fold has little to compare against) or fold (the default: the fold against the other proteins). The switch on each map changes it for the visitor"
             },
             "range": {
               "enum": [

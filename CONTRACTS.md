@@ -223,8 +223,11 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   it; it is colored and ranked only when at least `website.reading.min_maps` (default 2) of them differ the same way
   (q ≤ 0.05 and a fold of 1.1× or more, the test pointing the same way) and none the other way, gray otherwise.
 - `title, question, intro, note`: words.
-- `default_view`: `percent` or `fold` (default `fold`), what the cell and nucleus maps color by when the page opens. Every
-  map has a switch, "Percent with sites | Fold vs other proteins". Percent colors each part by the share of its proteins
+- `default_view`: `percent`, `difference` or `fold` (default `fold`), what the cell and nucleus maps color by when the page
+  opens. Every map has a switch, "Percent with sites | Difference from all mapped proteins | Fold vs other proteins".
+  Difference colors each part by its share's difference from the share among all the proteins the maps place, in points
+  ("+4 points", "−7 points" on the map; the percent on hover), on the fold's diverging ramp (red above, slate below, in
+  quarters of the largest difference, gray within half a point); the key states the centre. Percent is described next. Percent colors each part by the share of its proteins
   that carry at least one mark, from the sequential ramp: the proteins are the reviewed proteins each map places in the part,
   and the median of the maps that have it is drawn (each map's value on hover). The legend's tick is the share among all the
   proteins the maps place. With a selection, the share of the part's proteins that are in it, the whole site's share on

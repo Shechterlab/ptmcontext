@@ -95,7 +95,7 @@ eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-cell.js'))}, 'utf8
 window.PTMC_MODULES.forEach(m => m(K));
 const by = Object.fromEntries(K.cell.percent().map(p => [p.part, p]));
 const fold = Object.fromEntries(K.cell.parts().map(p => [p.part, p.value]));
-console.log(JSON.stringify({{ by, fold, answer: K.cell.answer(undefined, 'percent'), range: K.cell.percentRange() }}));"""
+console.log(JSON.stringify({{ by, fold, answer: K.cell.answer(undefined, 'percent'), range: K.cell.percentRange(), difference: K.cell.differenceRange() }}));"""
     run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
     return json.loads(run.stdout)
@@ -160,3 +160,15 @@ def test_the_range_option_overrides_the_default_and_a_low_share_keeps_the_full_r
         tmp_path / 'c', _build(tmp_path / 'd'), [], patch=f"D.cell_pct = {json.dumps(HIGH)}; D.cell.range = 'full';"
     )
     assert out['range'] == {'lo': 0, 'hi': 1}
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_the_difference_view_colors_each_part_by_its_points_from_the_share_among_all_mapped_proteins(tmp_path):
+    out = _run(tmp_path, _build(tmp_path / 'b', 'difference'), [], patch=f'D.cell_pct = {json.dumps(HIGH)};')
+    ref = (96 / 100 + 77 / 80) / 2  # the median of the two maps' shares among the proteins they place
+    by = out['by']
+    # nucleus: 95% (map A) and 29/30 (map B) give a median just under the share among all mapped proteins
+    assert by['nucleoplasm']['value'] == '−0.3 points' and by['nucleoplasm']['tone'] == 'f2'
+    assert by['pm']['value'] == '+0.5 points' and by['pm']['tone'] == 'm3'  # 29 of 30, one map: the largest difference
+    assert out['difference'] == {'max': pytest.approx(29 / 30 - ref)}
+    assert out['answer'].startswith('96% of mapped proteins carry a methylarginine; membrane (+0.5 points) and ')

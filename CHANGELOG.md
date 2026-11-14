@@ -45,7 +45,7 @@
   only the protein and its partners, or says why it is not there), and under the button a small drawing of the protein among
   its cluster. The button carries the selection and filters. Find genes takes a pasted list and counts and lists what it
   found. The section under the figure is called Method and is four sentences and the citations.
-- The cell and nucleus maps have a switch, "Percent with sites | Fold vs other proteins", on the Overview card, the
+- The cell and nucleus maps have a switch, "Percent with sites | Difference from all mapped proteins | Fold vs other proteins", on the Overview card, the
   cell page and the enlarged map. Percent colors each compartment by the share of its proteins that carry at least one
   mark, labelled with the count ("Chromatin 97% · 412 proteins"), with the share among all proteins as a tick in the key.
   With several maps, the median is drawn and each map's value is on hover. With a selection, it shows the share of the
