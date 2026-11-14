@@ -1207,6 +1207,10 @@
             "type": "string",
             "description": "the id of the question this one is a control of: that question's page shows this one's result beside its own. Written by controls"
           },
+          "control_when": {
+            "type": "string",
+            "description": "the control's when, for its badge. Written by controls"
+          },
           "control_label": {
             "type": "string",
             "description": "the control's short name on its question's page. Written by controls"
@@ -7974,6 +7978,10 @@
           "label": {
             "type": "string",
             "description": "the control's short name: added to each copy's title after a comma, its name in the family and on the question's page"
+          },
+          "when": {
+            "type": "string",
+            "description": "what the control does, as the end of a sentence: the badge of a result that fails it reads \"This result disappears when <when> (fold → fold).\" (default: the test is repeated with <label>)"
           },
           "note": {
             "type": "string",

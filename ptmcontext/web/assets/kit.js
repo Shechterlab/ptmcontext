@@ -2097,15 +2097,31 @@
   // 'lost': otherwise; 'new': a reading only the control has
   const controlsOf = (a) => D.analyses.filter((x) => A[x.id]?.control_of === a.id);
   const ctlMethod = (a) => (a.kind === 'protein_sets' ? 'enricher' : vsMethod(S.m));
+  // a control is read on the measure its tiles show: the fold (valOf), with the test's odds ratio and q (the adjusted test
+  // where there is one). Verdicts, as the Controls table's key says them:
+  //   holds     the same reading as the question (at least 1.1x the same way, q <= 0.05)
+  //   weaker    at least 1.1x the same way, without q <= 0.05
+  //   reversed  on the other side of 1x, at q <= 0.05 (the fold and the test pointing the same way)
+  //   lost      otherwise: under 1.1x the same way, or the other side without q <= 0.05
+  //   new       a reading the question itself does not have
+  const ctlTest = (r) => r.adj || r;
   function ctlVerdict(r, c) {
-    if (r.dir !== 'more' && r.dir !== 'less') return c && (c.dir === 'more' || c.dir === 'less') ? 'new' : '';
+    const up = (x) => x.dir === 'more',
+      reads = (x) => x.dir === 'more' || x.dir === 'less';
+    if (!reads(r)) return c && reads(c) ? 'new' : '';
     if (!c) return 'not tested';
     if (c.dir === r.dir) return 'holds';
-    if ((c.dir === 'more' || c.dir === 'less') && c.dir !== r.dir) return 'reversed';
     const v = valOf(c),
-      same = v != null && (r.dir === 'more' ? v >= MIN_EFFECT : v <= 1 / MIN_EFFECT);
-    return same ? 'weaker' : 'lost';
+      t = ctlTest(c);
+    if (v == null) return 'lost';
+    const sig = t.q != null && t.q <= PADJ && (t.eff == null || v >= 1 === t.eff >= 1);
+    if (sig && v !== 1 && v > 1 !== up(r)) return 'reversed';
+    return (up(r) ? v >= MIN_EFFECT : v <= 1 / MIN_EFFECT) ? 'weaker' : 'lost';
   }
+  const CTL_KEY =
+    'Holds: the same reading as the question (at least 1.1× the same way, q ≤ 0.05); weaker: at least 1.1× the same ' +
+    'way, without q ≤ 0.05; reversed: the other side of 1×, at q ≤ 0.05; lost: under 1.1× the same way, or the other ' +
+    'side without q ≤ 0.05; new: a reading the question itself does not have.';
   // the controls a class of a question fails (website.overview.control_badges: which verdicts count, by default lost and
   // reversed), for the badge on its tile row and its page: [{ id, label, verdict, main, ctl }]; none for a selection
   const BADGE = new Set(OV.control_badges?.verdicts || ['lost', 'reversed']);
@@ -2123,18 +2139,33 @@
           const c = cr.get(cat),
             v = ctlVerdict(r, c);
           if (BADGE.has(v))
-            (out[cat] ||= []).push({ id: x.id, label: A[x.id].control_label, verdict: v, main: r, ctl: c });
+            (out[cat] ||= []).push({
+              id: x.id,
+              label: A[x.id].control_label,
+              when: A[x.id].control_when,
+              verdict: v,
+              main: r,
+              ctl: c,
+            });
         });
       });
       FAILS[key] = out;
     }
     return FAILS[key][category] || [];
   }
-  // a result as its row reads (the fold, then the test), so the badge says what its verdict was read from
-  const ctlNum = (r) => (r ? `${fx(valOf(r))}, ${testLine(r)}` : 'not tested');
+  // the test behind a fold, in words: "OR 0.78 (0.74–0.82), q 8.2e-7" (a fold of a protein-set test is its own measure)
+  const ctlDetail = (r) => {
+    if (!r) return 'not tested';
+    const t = ctlTest(r),
+      ci = t.lo != null && t.hi != null ? ` (${fxn(t.lo)}–${fxn(t.hi)})` : '',
+      or = r.method !== 'enricher' && t.eff != null ? `OR ${fxn(t.eff)}${ci}, ` : '';
+    return `${or}q ${fq(t.q)}`;
+  };
   const failText = (f) => `fails control: ${f.label}`;
+  // one plain sentence: what happens to the result under the control, fold to fold; the numbers are in the Controls table
   const failTip = (f) =>
-    `${f.verdict} under ${f.label}: ${ctlNum(f.main)} in the question, ${ctlNum(f.ctl)} in the control`;
+    `This result ${f.verdict === 'reversed' ? 'reverses' : 'disappears'} when ` +
+    `${f.when || 'the test is repeated with ' + f.label} (${fx(valOf(f.main))} → ${f.ctl ? fx(valOf(f.ctl)) : 'not tested'}).`;
   // a badge per failed control: a button that opens the question at its Controls table
   const failBadges = (aid, fails) =>
     fails
@@ -2145,6 +2176,7 @@
       )
       .join('');
   K.controlFails = controlFails;
+  K.ctlVerdict = ctlVerdict;
   // the page is drawn again (and may load its data first): the Controls table is brought into view, and focused, once it is there
   function toControls(tries = 40) {
     const t = document.getElementById('q-controls');
@@ -2152,13 +2184,22 @@
     if (t) t.scrollIntoView({ block: 'start' }); // and again until the page stops moving under it
     if (tries) setTimeout(() => toControls(tries - 1), 100);
   }
-  K.clicks.push([
-    '[data-ctl-go]',
-    (el) => {
+  K.toControls = toControls;
+  // a badge opens its question at the Controls table and does nothing else: the click goes no further (not to the tile,
+  // whose own click opens the question, nor to the row beside it, whose click would select its class)
+  document.addEventListener(
+    'click',
+    (e) => {
+      const el = e.target.closest?.('[data-ctl-go]');
+      if (!el) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       if (!(S.view === 'overview' && S.arg === el.dataset.ctlGo)) go('overview', { arg: el.dataset.ctlGo });
       setTimeout(() => toControls(), 0);
     },
-  ]);
+    true
+  );
   // a question's page names, under its heading, the controls its classes fail (one badge per control, its classes in the tooltip)
   function pageFails(a) {
     if (a.kind === 'module' || vsOn()) return '';
@@ -2181,23 +2222,37 @@
           .join('')}</span>`
       : '';
   }
+  // the Controls table: each class's fold in the question and in each control, its test (odds ratio, interval, q) in the
+  // cell's tooltip and accessible name. The controls describe the whole site: with a selection on they are shown so labelled
   function controlsBlock(a, m) {
-    if (vsOn() || selOn()) return '';
     const ctl = controlsOf(a);
     if (!ctl.length) return '';
     const main = rowsFor(a, m),
       of = (x) => new Map(rowsFor(A[x.id], m).map((r) => [r.category, r])),
       by = ctl.map(of);
     const cats = main.filter(
-      (r) => r.dir === 'more' || r.dir === 'less' || by.some((b) => b.get(r.category)?.q <= PADJ)
+      (r) => r.dir === 'more' || r.dir === 'less' || by.some((b) => ctlTest(b.get(r.category) || {}).q <= PADJ)
     );
     if (!cats.length) return '';
-    const cell = (r) => (r ? `${esc(fx(r.eff))} <span class="muted">q ${esc(fq(r.q))}</span>` : '–');
+    const cell = (r, v) => {
+      if (!r) return v ? `– <b class="ctl-${v.replace(' ', '-')}">${esc(v)}</b>` : '–';
+      const d = ctlDetail(r);
+      return (
+        `<span title="${esc(d)}" aria-label="${esc(`${fx(valOf(r))}, ${d}${v ? ', ' + v : ''}`)}">` +
+        `${esc(fx(valOf(r)))} <span class="muted" aria-hidden="true">q ${esc(fq(ctlTest(r).q))}</span>` +
+        (v ? ` <b class="ctl-${v.replace(' ', '-')}" aria-hidden="true">${esc(v)}</b>` : '') +
+        `</span>`
+      );
+    };
+    const whole = selOn() || vsOn();
     return (
-      `<section class="pcard controls" id="q-controls" tabindex="-1"><h3>Controls</h3><p class="page-note">The same ` +
-      `test again with one change each (${esc(METHOD[m] || 'proteins, hypergeometric')}). Holds: the same reading at ` +
-      `q ≤ 0.05; weaker: the same direction, not at q ≤ 0.05; reversed: the other way at q ≤ 0.05; lost: under 1.1× ` +
-      `in the same direction, or the other way without q ≤ 0.05; new: a reading the question itself does not have.</p><div class="tbl-card"><table class="tbl">` +
+      `<section class="pcard controls" id="q-controls" tabindex="-1"><h3>Controls${
+        whole ? ' <span class="muted">(whole dataset)</span>' : ''
+      }</h3><p class="page-note">${
+        whole ? 'These describe the whole dataset; your selection is not tested again here. ' : ''
+      }The same test again with one change each (${esc(METHOD[m] || 'proteins, hypergeometric')}), read on the fold the ` +
+      `tiles show; each cell's odds ratio, interval and q are in its tooltip. ${CTL_KEY}</p>` +
+      `<div class="tbl-card"><table class="tbl">` +
       `<thead><tr><th>Class</th><th>This question</th>${ctl
         .map((x) => `<th><a href="${esc(link('overview', x.id))}">${esc(A[x.id].control_label)}</a></th>`)
         .join('')}</tr></thead><tbody>` +
@@ -2207,9 +2262,8 @@
           (r) =>
             `<tr><td>${esc(r.label)}</td><td>${cell(r)}</td>${by
               .map((b) => {
-                const c = b.get(r.category),
-                  v = ctlVerdict(r, c);
-                return `<td>${cell(c)}${v ? ` <b class="ctl-${v.replace(' ', '-')}">${esc(v)}</b>` : ''}</td>`;
+                const c = b.get(r.category);
+                return `<td>${cell(c, ctlVerdict(r, c))}</td>`;
               })
               .join('')}</tr>`
         )
@@ -2306,7 +2360,9 @@
           ? `<p class="twhole">` + `<span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>`
           : ''
       }</section>` +
-      (mod ? '' : controlsBlock(a, a.kind === 'protein_sets' ? 'enricher' : S.m))
+      (mod
+        ? ''
+        : controlsBlock(a, a.kind === 'protein_sets' ? 'enricher' : S.m === 'fisher' ? 'fisher' : 'mantel_haenszel'))
     );
   }
   // what the site keeps, what it asks other services for, and under which licenses everything is

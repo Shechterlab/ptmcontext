@@ -58,6 +58,11 @@
 - Header: "All sites" sits on the switcher's row, so the lab block and links stay above the structure drawing. The sticky bar shows the short site name.
 - Cell maps: a part where the maps do not agree reads "maps disagree" (was "fewer than N maps").
 - Lysine header drawing: SUMOylation is labelled "SUMO", not "Ksu".
+- Controls: a badge's click opens its question at the Controls table and no longer also selects the row's class; the
+  table shows the fold the tiles show (the odds ratio, interval and q in each cell's tooltip), is drawn with a selection
+  on (as the whole dataset's), and its verdicts follow its key (a control on the other side of 1× at q ≤ 0.05 is
+  reversed). A badge's tooltip is one sentence (`controls[].when`): "This result disappears when only arginines inside
+  disordered regions are compared (1.5× → 0.95×)."
 
 ## 0.4.0 (2026-11-13)
 

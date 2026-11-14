@@ -85,22 +85,27 @@ Conventions:
   cell names at least N distinct groups, where an item in `not_counted` counts for nothing, an item in one of `groups`
   counts as that group, and any other item as its own (the studies behind a site, with one laboratory's studies counted
   once and databases not at all). An item in two groups, or in a group and `not_counted`, is an error.
-- Controls (`controls: [{id, label, note?, analyses: [question ids], marks_where?, marks_outside?, without_proteins?,
-  only_in?}]`, each with at least one change): at load, each listed question gets a copy `<id>_<control id>` with the
-  change (a `marks_where` joins the question's own: both must hold), `new: true`, `control_of: <question>` and
-  `control_label: <label>`, its title followed by `, <label>`, `note` added to its `sub`, in its question's family (the
-  question's title, or its layer's, unless it has one; `family_label` the label, after the question's own name in a family
-  it already had). The question's page shows its controls beside its result: for each class with a reading in either,
-  the odds ratio (fold enrichment for sets) and q in the question and in each control, and whether the reading holds
-  there (the same reading at q ≤ 0.05), is weaker (the same direction by at least 1.1×, not at q ≤ 0.05), reversed (the
-  other way at q ≤ 0.05) or lost (under 1.1× in the same direction, or the other way without q ≤ 0.05). A class whose
-  result fails a control keeps its place on the Overview with a muted badge under its tile row, and one under its
-  question's heading: "fails control: <label>", a button that opens the question at its Controls table, with both
-  results (odds ratio or fold, q) in its tooltip and the badge's words in the row's accessible name.
-  `website.overview.control_badges: {verdicts: [lost, reversed, weaker]}` says which readings count (default lost and
-  reversed); `false` shows no badge. No badge is shown for a selection. The Method page lists the controls, and for a
-  `distinct_at_least` condition its groups and the items not counted. A control is not an Overview tile. A model (`conditional_logit`) is not repeated; `only_in` is for a residue question of
-  one layer without its own.
+- Controls (`controls: [{id, label, when?, note?, analyses: [question ids], marks_where?, marks_outside?,
+  without_proteins?, only_in?}]`, each with at least one change): at load, each listed question gets a copy
+  `<id>_<control id>` with the change (a `marks_where` joins the question's own: both must hold), `new: true`,
+  `control_of: <question>`, `control_label: <label>` and `control_when: <when>`, its title followed by `, <label>`,
+  `note` added to its `sub`, in its question's family (the question's title, or its layer's, unless it has one;
+  `family_label` the label, after the question's own name in a family it already had). The question's page shows its
+  controls beside its result (the Controls table, `#q-controls`): for each class with a reading in either, the measure
+  its tiles show (the fold) and q in the question and in each control, the test's odds ratio, interval and q in each
+  cell's tooltip and accessible name, and a verdict read on that same fold with the test's q: holds (the same reading as
+  the question: at least 1.1× the same way, q ≤ 0.05), weaker (at least 1.1× the same way, without q ≤ 0.05), reversed
+  (the other side of 1×, at q ≤ 0.05, the fold and the test pointing the same way), lost (under 1.1× the same way, or the
+  other side without q ≤ 0.05) or new (a reading only the control has). The table's key says the same. With a selection
+  on, the table is still drawn and labelled as the whole dataset's. A class whose result fails a control keeps its place
+  on the Overview with a muted badge under its tile row, and one under its question's heading: "fails control:
+  <label>", a button that opens the question at its Controls table (focused, in view) and does nothing else (the click
+  reaches neither the tile nor its row's filter). Its tooltip is one sentence, "This result disappears (or reverses)
+  when <when> (fold → fold).", `when` defaulting to "the test is repeated with <label>"; the badge's words join the row's
+  accessible name. `website.overview.control_badges: {verdicts: [lost, reversed, weaker]}` says which readings count
+  (default lost and reversed); `false` shows no badge. No badge is shown for a selection. The Method page lists the
+  controls, and for a `distinct_at_least` condition its groups and the items not counted. A control is not an Overview
+  tile. A model (`conditional_logit`) is not repeated; `only_in` is for a residue question of one layer without its own.
 - Questions that are variants of one base (the same test at other window sizes, or inside IDRs) may share a
   `family:` (any text, the entry's name). The website's Sections sidebar then lists them as one entry with a caret
   that reveals the variants, each named by what differs: its title less the family's name (and any leading

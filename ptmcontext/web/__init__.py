@@ -137,7 +137,13 @@ def _control(a: dict) -> dict:
     """A control of another question (controls: in the site file): the question it controls and its short name, for
     that question's page, which shows the control beside its result."""
     return (
-        {'control_of': a['control_of'], 'control_label': a.get('control_label', a['id'])} if a.get('control_of') else {}
+        {
+            'control_of': a['control_of'],
+            'control_label': a.get('control_label', a['id']),
+            **({'control_when': a['control_when']} if a.get('control_when') else {}),
+        }
+        if a.get('control_of')
+        else {}
     )
 
 

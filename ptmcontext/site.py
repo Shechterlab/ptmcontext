@@ -163,6 +163,7 @@ def expand_controls(site: dict) -> dict:
                 family_label=f'{own}, {ctl["label"]}' if own else ctl['label'],
                 control_of=aid,
                 control_label=ctl['label'],
+                **({'control_when': ctl['when']} if ctl.get('when') else {}),
             )
             if title:
                 v['title'] = f'{title}, {ctl["label"]}'

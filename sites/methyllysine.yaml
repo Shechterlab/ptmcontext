@@ -869,6 +869,7 @@ marks_subsets:           # the key questions again on the lysines of one methyla
 controls:
   - id: nohist
     label: histones set aside
+    when: "the histones are set aside"
     note: "Histones set aside (PANTHER families HISTONE H1, H2A, H2B, H3 and H4, as the question Histones and other proteins defines them): neither their methyllysines nor their other residues count"
     analyses: [same_acetylation, same_ubiquitination, cell_chromatin]
     without_proteins:
@@ -878,6 +879,7 @@ controls:
       label: histones
   - id: inidr
     label: inside IDRs
+    when: "only lysines inside disordered regions are compared"
     note: "Only the lysines inside intrinsically disordered regions (MobiDB) count, methyllysines and other lysines alike, so the result is not a matter of disorder"
     analyses: [near_phospho, near_phospho_high, near_methylarginine, near_acetylation, near_other_acylation, near_ubiquitination, near_sumoylation, idr_charge]
     only_in: idr
