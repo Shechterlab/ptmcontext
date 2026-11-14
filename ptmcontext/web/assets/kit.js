@@ -4931,5 +4931,10 @@
   if (S.legacy) writeHash(false);
   hero();
   dock();
+  // a protein page opened from the address waits briefly for the protein's sets (its own small file), so it is drawn once
+  if (S.view === 'protein' && D.analyses.some((a) => a.kind === 'protein_sets')) {
+    const at = String(S.arg).split('/');
+    await K.seld?.warm(PI[at[1]] ?? PI[at[0]]);
+  }
   render();
 })();

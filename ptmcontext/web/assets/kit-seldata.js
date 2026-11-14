@@ -110,6 +110,16 @@
     if (!d) file(f).then(redraw, () => 0);
     return d;
   }
+  // the core and one protein's sets file, asked for together and waited for at most 3 s: a protein page opened from the
+  // address is then drawn once, with them
+  function warm(pi) {
+    if (inlineEl || pi == null) return Promise.resolve();
+    const get = loadCore(true).then((c) => {
+      const k = c.parts.shard_of[pi];
+      return k >= 0 && c.parts.sets ? file(c.parts.sets[k]) : null;
+    });
+    return Promise.race([get, new Promise((r) => setTimeout(r, 3000))]).catch(() => 0);
+  }
   // the marks of these proteins, each protein's rows in order: an array, or null while its file comes
   function marksOf(pis) {
     const c = coreNow();
@@ -237,6 +247,7 @@
     shardOf,
     sets,
     setsOf,
+    warm,
     vocab,
     marksOf,
     full,
