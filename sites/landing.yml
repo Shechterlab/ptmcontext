@@ -1,11 +1,9 @@
 # The landing page of `ptmc pages` (read from beside the first site file, or --landing FILE): the page's own words and
 # the cards of sites not built yet. Each built site's card comes from its site file (website.name, band, accent, art,
 # landing.tagline / question / cta, stats) and its build (the numbers, the strongest result). CONTRACTS.md, "The landing page".
-title: Analysis tools for protein post-translational modifications
-description: "Analysis tools for protein post-translational modifications: where human proteins carry each modification, and what sets those sites apart."
-intro:
-  - "Choose a modification: arginine methylation, lysine methylation, other lysine modifications (acetylation, ubiquitination, SUMOylation and more) or phosphorylation. Each explorer gathers sites from published studies and databases and maps them onto the same human reference proteome, so they can be compared side by side."
-  - "Where a modification sits within a protein is judged against the unmodified residues of the same protein, so a long or disordered protein cannot produce a result on its own. Which proteins carry it is judged against other proteins of similar abundance, where abundance data exist."
+title: PTMContext
+lede: Analysis tools for protein post-translational modifications
+description: "PTMContext: analysis tools for protein post-translational modifications."
 logo: sites/art/ptmcontext_logo.svg
 switcher: {label: PTM}
 cta: "Explore {marks} →"
