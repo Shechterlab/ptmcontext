@@ -716,7 +716,7 @@
     return `<div class="filter-note nw-fnote" role="status"><b>${int(g.found.length)} of ${int(g.tokens.length)}</b> found${g.missing.length ? `; not in this network: ${list}` : ''}. <button type="button" class="btn small" data-nw-mksel>Make these the selection</button> <button type="button" class="btn small" data-nw-findclear>Clear</button></div>`;
   }
   function view() {
-    const head = `<div class="page-head results-head"><div><h2>${esc(TITLE)}</h2><p class="cx">${esc(leadOf())}</p></div></div>`;
+    const head = `<div class="page-head results-head"><div><h2>${esc(TITLE)}</h2><p class="cx">${esc(leadOf())} <a href="${esc(location.hash)}" data-jump="nw-how">Method</a></p></div></div>`;
     let M = model();
     if (M.error) return `${head}<p class="muted">The network could not be read (${esc(M.error)}).</p>`;
     if (M.wait) return `${head}<p class="muted" role="status">Loading the network…</p>`;
@@ -1530,10 +1530,7 @@
     '<svg class="tab-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" ' +
     'stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="7" r="2"/><circle cx="12" cy="17" r="2"/><circle cx="19" cy="6" r="2"/>' +
     '<circle cx="19" cy="17" r="1.6"/><path d="M6.7 8.2l4 7M7 7l10-.7M13.8 16.5l3.8.3M18.6 8l.2 7.4"/></svg>';
-  K.sections.network = () => [
-    ['view', TITLE, 1, K.link('network')],
-    ['nw-how', 'Method', 1],
-  ];
+  K.sections.network = () => [['view', TITLE, 1, K.link('network')]];
   (K.methods ||= []).push({
     id: 'network',
     title: TITLE,
