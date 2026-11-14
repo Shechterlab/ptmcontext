@@ -115,6 +115,11 @@
     const open = (at) => {
       refresh(items);
       menu.hidden = false;
+      // keep the open menu inside the window: a bar short of room can put the button near the edge
+      menu.style.right = '';
+      const r = menu.getBoundingClientRect(),
+        over = r.right - (document.documentElement.clientWidth - 8);
+      if (over > 0) menu.style.right = `${over}px`;
       btn.setAttribute('aria-expanded', 'true');
       (items[at] || items.find((a) => a.getAttribute('aria-current')) || items[0]).focus();
     };
