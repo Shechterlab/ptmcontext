@@ -2759,6 +2759,13 @@ body.has-selection .tabs {
 }
 
 /* protein page: kinds of protein, regions, sequence */
+.kinds-head {
+  margin: 0.9rem 0 0.2rem;
+  font-size: 1rem;
+}
+.kinds-note {
+  margin: 0 0 0.6rem;
+}
 .kinds {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
