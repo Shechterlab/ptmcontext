@@ -669,7 +669,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: the other proteins organelle IP classifies (HEK293T)
-    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granules (cell map),
+    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granules (organelle IP),
              p-body: P-body, actin_cytoskeleton: Actin cytoskeleton, centrosome: Centrosome, proteasome: Proteasome,
              14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
              early_endosome: Early endosome, recycling_endosome: Recycling endosome, lysosome: Lysosome,
@@ -1127,6 +1127,7 @@ website:                  # the look and words of the website (ptmc web); layout
                 domain_context]
   cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
     id: where_in_the_cell
+    default_view: difference        # what the maps color by on opening: percent (share of proteins with a mark), difference (from the share among all mapped proteins) or fold
     title: Where in the cell
     question: "Where do phosphorylated proteins localize in the cell?"
     intro: "Five maps from four studies locate proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."

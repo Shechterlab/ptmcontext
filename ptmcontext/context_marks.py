@@ -249,7 +249,7 @@ def map_row(entry: dict, after: str) -> dict:
 
 def subset_row(entry: dict, after: str) -> dict:
     """The map row of the entry's subset (the marks whose score passes): drawn first, with the row of all the entry's
-    marks a click away (map row `swap`), or the other way round when the subset says `default: all`. Where the table has
+    marks a click away (map row `swap`) when the subset says `default: subset`; every mark is drawn at first otherwise. Where the table has
     no score column the row has no items (the source is `optional`), and the web build drops it (`register`)."""
     cols, sub = entry['columns'], entry['subset']
     row = map_row(entry, after)
@@ -263,7 +263,7 @@ def subset_row(entry: dict, after: str) -> dict:
         title=f'{entry["label"]}: {subset_label(entry)}',
         help=f"{entry['label']} positions with {subset_label(entry)} (the site's {entry['input']} input); "
         f'click the row label to show every {noun(entry)}',
-        default='off' if sub.get('default') == 'all' else 'on',
+        default='on' if sub.get('default') == 'subset' else 'off',
         swap='ctx_' + entry['id'],
     )
     return row
@@ -358,7 +358,7 @@ def expand(site: dict) -> dict:
         inputs[role(e)] = e['input']
         row = map_row(e, after)
         if subset(e):  # the subset row first, the row of all marks a click away
-            if e['subset'].get('default') != 'all':
+            if e['subset'].get('default', 'all') != 'all':  # every mark at first; the score cut is the reader's option
                 row['default'] = 'off'
             row['swap'] = 'ctx_' + subset_id(e)
             rows.append(subset_row(e, after))

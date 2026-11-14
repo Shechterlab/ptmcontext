@@ -334,7 +334,7 @@
   };
   // the box to paste genes or sites into: added to the highlight, nothing is filtered
   const control = (after = '') =>
-    `<form class="hl-form" data-hl-form><label class="flabel hl-lab" for="hl-in">` +
+    `<form class="hl-form" data-hl-form><label class="flabel hl-form-lab" for="hl-in">` +
     `Highlight genes or sites</label><input id="hl-in" name="hl" type="search" autocomplete="off" ` +
     `spellcheck="false" placeholder="Highlight genes or sites…" title="Genes or sites to mark in the figures and ` +
     `tables${
@@ -883,7 +883,7 @@
 .hl-pop .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .hl-chip-nf { color: var(--muted); text-decoration: line-through; border-style: dashed; }
 .hl-chip-nf .hl-x { text-decoration: none; }
-.hl-lab { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; ` +
+.hl-form-lab { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; ` +
     `}
 .hl-menu { position: relative; }
 .hl-pop:not([hidden]) { display: flex; flex-direction: column; gap: 0.4rem; position: absolute; z-index: 40; left: ` +

@@ -58,9 +58,11 @@
   // the search keys: questions, attributes of the marks and proteins, the site's own words, older keys, the modules'
   function keys() {
     const out = [];
-    const add = (key, label, help) => {
-      if (key && !out.some((x) => x.key === key)) out.push({ key, label, help });
+    // flag: a yes/no attribute, written as its query word alone (als), never as key:true
+    const add = (key, label, help, flag) => {
+      if (key && !out.some((x) => x.key === key)) out.push({ key, label, help, flag: !!flag });
     };
+    const attr = (k, s, help) => (s.flag ? add(s.query || k, s.label || k, help, true) : add(k, s.label || k, help));
     Object.entries(SRCH.terms || {}).forEach(([k, t]) => add(k, t.label || k, t.help || ''));
     if (SRCH.patterns?.at)
       add(
@@ -85,8 +87,8 @@
     D.analyses.forEach((a) => add(a.id, a.title, a.question || ''));
     Object.entries(SPECS)
       .filter(([, s]) => s.filter)
-      .forEach(([k, s]) => add(k, s.label || k, s.help || ''));
-    Object.entries(PSPEC).forEach(([k, s]) => add(k, s.label || k, `${s.help || ''} (proteins)`.trim()));
+      .forEach(([k, s]) => attr(k, s, s.help || ''));
+    Object.entries(PSPEC).forEach(([k, s]) => attr(k, s, `${s.help || ''} (proteins)`.trim()));
     return out;
   }
   // a key's values: [value as typed in a term, its label, a count when known]
@@ -234,7 +236,7 @@
     Object.entries(SPECS)
       .filter(([, s]) => s.filter)
       .forEach(([k, s]) =>
-        Object.entries(s.values || {})
+        Object.entries(s.flag ? {} : s.values || {})
           .filter(([v, l]) => has(l) || has(v))
           .slice(0, 2)
           .forEach(([v, l]) =>
@@ -246,6 +248,13 @@
               replace: true,
             })
           )
+      );
+    // a yes/no attribute whose label holds the words: its query word alone
+    [...Object.entries(SPECS), ...Object.entries(PSPEC)]
+      .filter(([k, s]) => s.flag && (has(s.label || k) || has(s.query || k)))
+      .slice(0, 2)
+      .forEach(([k, s]) =>
+        out.push({ kind: 'term', text: s.query || k, label: s.query || k, sub: s.label || k, replace: true })
       );
     const seen = new Set();
     return out.filter((x) => !seen.has(x.text) && seen.add(x.text)).slice(0, 6);
@@ -305,9 +314,9 @@
         .slice(0, 4)
         .forEach((k) =>
           out.push({
-            kind: 'key',
-            text: k.key + ':',
-            label: k.key + ':',
+            kind: k.flag ? 'term' : 'key',
+            text: k.flag ? k.key : k.key + ':',
+            label: k.flag ? k.key : k.key + ':',
             sub: [k.label, k.help].filter(Boolean).join(' · '),
           })
         );
@@ -316,7 +325,8 @@
     // plain words naming no protein: the filters they may mean
     const plain = toks.filter((t) => !/^[a-z_][\w]*:/i.test(t)).join(' ');
     if (out.length < 3 && plain === toks.join(' ')) out.push(...conceptRows(plain));
-    return out.slice(0, 10);
+    const seen = new Set();
+    return out.filter((x) => !seen.has(x.kind + x.text) && seen.add(x.kind + x.text)).slice(0, 10);
   }
 
   // ---- the list -----------------------------------------------------------------------------------------------------
@@ -409,7 +419,11 @@
       if (!K.openLight?.(x.text)) K.go('protein', { arg: x.acc });
       return;
     }
-    const before = x.replace ? toks.filter((t) => /^[a-z_][\w]*:/i.test(t)) : keepEnd ? toks : toks.slice(0, -1);
+    const before = x.replace
+      ? toks.filter((t) => /^[a-z_][\w]*:/i.test(t) || K.sel.FLAGQ?.[t.toLowerCase()])
+      : keepEnd
+        ? toks
+        : toks.slice(0, -1);
     const text = [...before, x.text].join(' ');
     if (x.kind === 'key') {
       input.value = text;
