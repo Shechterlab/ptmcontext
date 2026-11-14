@@ -3,6 +3,7 @@
    ({sites: [{id, label, listed, in_switcher}]}); a site served alone has none, and no menu is drawn. A site that is not
    listed on the landing page appears only in the menu of an unlisted site, or where its own file says in_switcher.
    A filter the target site does not have is dropped by it (decode), and the target says how many in a short notice.
+   `brand` (the landing config's `title`) is the small line above the site's name, a link to the landing page.
    Nothing here names a site. A module of the site kit. */
 (window.PTMC_MODULES ||= []).push((K) => {
   'use strict';
@@ -163,32 +164,42 @@
       if (!menu.hidden && !wrap.contains(e.target)) close(false);
     });
   };
-  const build = (list, word) => {
+  const build = (list, word, brand) => {
     const side = document.querySelector('.brand-side');
-    // the way back to the landing page, which sits beside the sites' folders (where sites.json is): in the header and in the sticky bar
+    // the way back to the landing page, which sits beside the sites' folders (where sites.json is): the brand line above the
+    // site's name in the header (the landing config's title), and "All sites" in the sticky bar
+    const h1 = document.querySelector('.hero .brand h1');
+    if (brand && h1 && !document.querySelector('.brand-line')) {
+      const a = document.createElement('a'),
+        box = document.createElement('div');
+      a.className = 'brand-line';
+      a.href = '../';
+      a.textContent = brand;
+      a.title = `${brand}: all sites`;
+      box.className = 'brand-name';
+      h1.before(box);
+      box.append(a, h1);
+    }
     const end = document.querySelector('#dock .dock-end');
-    [side, end].forEach((box, k) => {
-      if (!box || box.querySelector('.landing-link')) return;
+    if (end && !end.querySelector('.landing-link')) {
       const a = document.createElement('a');
-      a.className = 'landing-link' + (k ? ' in-bar' : '');
+      a.className = 'landing-link in-bar';
       a.href = '../';
       a.textContent = 'All sites';
       a.title = 'Back to the page that lists every site';
-      box.prepend(a);
-    });
+      end.prepend(a);
+    }
     if (list.length >= 2) {
       if (side) mount(list, side, false, word);
       if (end) mount(list, end, true, word);
     }
-    // in the header, the link and the switcher share one row (the link to the left), so the lab block and the links stay put
-    const first = side?.querySelector('.landing-link');
-    if (first) {
+    // in the header, the switcher sits on its own row, so the lab block and the links stay put
+    const sw = side?.querySelector('.site-switch');
+    if (sw) {
       const row = document.createElement('div');
       row.className = 'brand-top';
       side.prepend(row);
-      row.append(first);
-      const sw = side.querySelector('.site-switch');
-      if (sw) row.append(sw);
+      row.append(sw);
     }
   };
   const start = async () => {
@@ -200,7 +211,7 @@
         mine = all.find((s) => s.id === here),
         // unlisted sites are in the menu of an unlisted site, and where their own file says so
         list = all.filter((s) => s.listed || s.in_switcher || s.id === here || (mine && !mine.listed));
-      build(list, reg.switcher_label || 'Explorer');
+      build(list, reg.switcher_label || 'Explorer', reg.brand || '');
     } catch (e) {
       /* served alone: no list of sites, no menu */
     }

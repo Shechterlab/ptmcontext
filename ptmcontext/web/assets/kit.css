@@ -10698,3 +10698,36 @@ html[data-density] .sites-tbl .cv {
     width: 260px;
   }
 }
+
+/* the brand line (kit-switch.js): the landing page's title, small, above the site's name; a link to the landing page */
+.brand-name {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.brand-line {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  opacity: 0.92;
+}
+.brand-line:hover {
+  opacity: 1;
+  text-decoration-thickness: 2px;
+}
+.brand-line:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+body.slim .brand-line {
+  display: none;
+}

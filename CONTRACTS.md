@@ -975,6 +975,18 @@ selection, a `residue` table keeps the rows of selected marks (and, for a block 
 their proteins), a `protein` table the rows of proteins with a selected mark. `D.page_tables` gives each its key,
 columns and rows; the one-file copy inlines the small ones.
 
+### Yes/no attributes
+
+A category attribute (`marks.attributes`, `proteins.attributes`, a variant's) whose values are only a yes/no pair (`true`/`false`,
+`yes`/`no` or `1`/`0`, in any letter case, empty for none) reads as a plain term, never as `key:true`. The build marks it
+(`flag`, the value that means yes; set it in the site file when the data do not show the pair, or `flag: false` to keep an
+attribute as key:value) and gives it a query word: `query` in the site file (`query: als_ftd`), else the attribute's name.
+The selection line shows the attribute's `label` as the chip, with no value ("Not <label>" for the no value); the search box
+suggests and writes the query word alone (`als_ftd`); the chip's remove button, Clear and the summary use the same words. The
+old form (`als_ftd_gene:true`, `als_ftd:true`) is still read, for links already shared, and is never written. A bare word that
+is also a protein's name is the protein. No site names an attribute in the code: `ptmcontext/web/__init__.py` (`with_flags`)
+and kit-select.js read the spec only. Tested in tests/test_flag_attributes.py.
+
 ## The front block (website.front)
 
 A block of its own, not a regrouping of `website.overview.sections`. The page's data carries `front`, the block as
@@ -1277,15 +1289,15 @@ Every block offers PDF, SVG, PNG (figures) and TSV (its rows), each with the pro
 
 `ptmc pages` writes one card per built site (ptmcontext/web/landing.py), each a single link into its site. From the site file:
 `website.name`, `band`, `accent`, `accent_dark` (the card's colors), `art` (its header picture), `logo` (an SVG file: the mark beside the card's title, and the site's header mark and favicon; `icon` is its older name), `landing.tagline` (the hook),
-`landing.question` (what a reader can ask), `landing.cta` (the button; else the config's `cta`, `{marks}` being the profile's
+`landing.question` (what a reader can ask; shown on the card only when the landing config's `card.question` is true), `landing.cta` (the button; else the config's `cta`, `{marks}` being the profile's
 plural word), `website.stats` (a list attribute adds a third number: how many studies or databases). From the site's build
-(`run.json`, `web/glance.json`): the marks and proteins counted and the strongest finding; a build without them gives a
+(`run.json`, `web/glance.json`): the marks and proteins counted and the strongest finding (the card shows it only when the landing config's `card.result` is true); a build without them gives a
 card without those lines. The strongest result is chosen from the build (the largest fold among the significant rows, one
 per question, on at least 20 marks, read as the Overview reads them: `website.reading.min_set` and a set's test within
 abundance deciles apply) unless `website.landing.findings` names one. A site whose outputs are missing is left out with a warning under `--skip-missing`, else the build stops.
 
 The page's own words are a landing config (`ptmc pages --landing FILE`, else `landing.yml` beside the first site file):
-`title`, `description`, `lede`, `logo` (an SVG file for the page's header and favicon), `switcher: {label}` (the word of the sites' header and sticky-bar switcher, "PTM"; else a site file's `website.switcher.label`; written to `sites.json`), `intro` (paragraphs), `cta`, `order` (card ids), `groups` (`[{id, title, note, compact}]`:
+`title` (also the small brand line, a link to this page, above each explorer's name in its header: written to `sites.json` as `brand`; the sticky bar keeps its "All sites" link), `description`, `lede`, `card: {result, question}` (the card's "Strongest result" block and italic question line; both default false), `logo` (an SVG file for the page's header and favicon), `switcher: {label}` (the word of the sites' header and sticky-bar switcher, "PTM"; else a site file's `website.switcher.label`; written to `sites.json`), `intro` (paragraphs), `cta`, `order` (card ids), `groups` (`[{id, title, note, compact}]`:
 rows of cards, a card going in the group named by its site's `landing.group`, else the first; a `compact` row has smaller cards,
 e.g. other organisms), `footer: {links: [{label, url}], note}`,
 and `soon`: cards without a link for sites not built yet (`id`, `name`, `tagline`, `question`, `band`, `accent`,

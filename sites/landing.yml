@@ -6,6 +6,7 @@ lede: Analysis tools for protein post-translational modifications
 description: "PTMContext: analysis tools for protein post-translational modifications."
 logo: sites/art/ptmcontext_logo.svg
 switcher: {label: PTM}
+card: {result: false, question: false}    # the card's "Strongest result" block and italic question line (both default off)
 cta: "Explore {marks} →"
 soon_label: Coming soon
 soon_cta: In preparation
