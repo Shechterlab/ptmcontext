@@ -10089,6 +10089,8 @@ html[data-density] .sites-tbl .cv {
   .dock-tabs {
     align-items: center;
     gap: 0.15rem;
+    /* the tabs give way first, so the search, the selection and the switcher stay on screen */
+    flex: 1 1 0;
     min-width: 0;
     overflow: hidden;
     /* a page that does not fit whole wraps out of sight, instead of being cut in half */
