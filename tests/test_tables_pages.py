@@ -121,7 +121,7 @@ const K = {{ D, W: D.words, A, S, esc, int: n => String(n), cap: t => String(t)[
   expBar: (k, a) => `<span data-${{a}}></span>`, exportFigure: (kind, make, name, el, tsv) => {{ got = {{ name, tsv: tsv() }}; }}, proteinAttr: (acc, n) => D.protein_attributes.values[n][D.proteins.findIndex(p => p[0] === acc)],
   PADJ: 0.05, fxn: v => String(v), fq: v => String(v), pct: () => '', fx: v => String(v),
   seld: {{ inline: true }},
-  sel: {{ data: () => SD, peek: () => SD, meta: () => SD, active: () => false, compute: () => ({{ active: false }}), nMarks: () => SD.marks.length, valueLabel: (n, v) => (D.attribute_specs[n]?.values || {{}})[v] ?? v,
+  sel: {{ data: () => SD, peek: () => SD, meta: () => SD, vocab: n => SD.attributes[n], active: () => false, compute: () => ({{ active: false }}), nMarks: () => SD.marks.length, valueLabel: (n, v) => (D.attribute_specs[n]?.values || {{}})[v] ?? v,
     classLabel: (a, c) => c, listHtml: (n, vs) => vs.join(', '), selectedCountByProtein: () => ({{}}), contrastGroups: () => null, MIN_SIDE: 10 }} }};
 window.PTMC_MODULES.forEach(f => f(K));
 const click = sel => K.clicks.find(([s]) => s === sel)[1];

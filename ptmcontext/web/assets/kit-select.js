@@ -1628,7 +1628,9 @@
       pdata: (pi) => (SD ? SD : protData(pi)),
       // the questions, classes and attribute values without the marks: the whole selection if it is in, else the core
       meta: () => SD || K.seld.core(),
-      setHas: (aid, s, p) => (SD ? !!setMembers[aid]?.[s]?.has(p) : !!K.seld.sets(p)?.[aid]?.n?.includes(s)),
+      // the values of an attribute (a mark holds their places): the whole selection's, else the core's or its own file's
+      vocab: (name) => (SD ? SD.attributes[name] : K.seld.vocab(name)),
+      setHas: (aid, s, p) => (SD ? !!setMembers[aid]?.[s]?.has(p) : K.seld.setsOf(p, aid).includes(s)),
       MIN: SEL_MIN,
       valueLabel,
       classLabel,

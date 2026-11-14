@@ -33,8 +33,9 @@
 
   // ---- small helpers -------------------------------------------------------------------------------------------------
   const vals = (m, name) => {
-    const ti = AT().indexOf(name);
-    return ti < 0 ? [] : m[3][ti].map((c) => META().attributes[name][c]);
+    const ti = AT().indexOf(name),
+      vc = ti < 0 ? null : K.sel.vocab(name);
+    return vc ? m[3][ti].map((c) => vc[c]) : [];
   };
   const attrStr = (m, name) =>
     vals(m, name)

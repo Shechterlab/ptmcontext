@@ -77,6 +77,22 @@
     }
     return d[pi] || null; // {question: {n: set names, b: in the background, c: covariate, sc: scores, a, v}}
   }
+  // the names of the sets a protein is in for one question (the file holds their places in the question's list)
+  function setsOf(pi, aid) {
+    const r = sets(pi)?.[aid]?.n,
+      m = core?.protein_sets_meta?.[aid];
+    return r && m ? r.map((i) => (i < m.sets.length ? m.sets[i][0] : m.more[i - m.sets.length])) : [];
+  }
+  // the values of an attribute: in the core, or in a file of their own (null until it is in: ask again after the next render)
+  function vocab(name) {
+    const c = coreNow();
+    if (!c) return null;
+    const f = c.parts.vocab?.[name];
+    if (!f) return c.attributes[name] || null;
+    const d = peekFile(f);
+    if (!d) file(f).then(redraw, () => 0);
+    return d;
+  }
   // the marks of these proteins, each protein's rows in order: an array, or null while its file comes
   function marksOf(pis) {
     const c = coreNow();
@@ -161,6 +177,10 @@
             SD[rest.find(([, g]) => g === f)[0]] = d;
           }
         );
+        await fromWorker(Object.values(parts.vocab || {}), (f, d) => {
+          const name = Object.keys(parts.vocab).find((n) => parts.vocab[n] === f);
+          SD.attributes = { ...SD.attributes, [name]: d };
+        });
         SD.marks = new Array(parts.n_marks);
         const w = SD.wide?.w;
         await fromWorker(parts.marks, (f, s) => {
@@ -188,13 +208,15 @@
     coreReady: () => (inlineEl ? Promise.resolve(null) : loadCore()),
     shardOf,
     sets,
+    setsOf,
+    vocab,
     marksOf,
     full,
     // counts of the marks per value of each attribute, over every mark (the Sites page's quick filters before the marks are in)
     attrCounts: (name) => {
       const c = core;
       const ti = c ? (c.attribute_names || Object.keys(c.attributes)).indexOf(name) : -1;
-      return ti < 0 ? null : c.parts.attr_counts[ti];
+      return ti < 0 ? null : c.parts.attr_counts[ti]; // null for an attribute with very many values
     },
   };
 });

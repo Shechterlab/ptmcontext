@@ -116,3 +116,24 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     assert out['first'] is None and not out['loadedWhole']  # the first ask starts the file and says "not yet"
     assert out['slice'] and out['slice'] == out['whole']
     assert any(v[0] for v in out['slice'].values())  # the toy has proteins in sets
+
+
+def test_an_attribute_with_very_many_values_keeps_them_in_its_own_file(tmp_path, monkeypatch):
+    from ptmcontext.web import seldata
+
+    monkeypatch.setattr(seldata, 'VOCAB_MAX', 1)  # every attribute with two values or more
+    from test_search import _build as build_search
+    from test_search import _toy
+
+    index = build_search(_toy(tmp_path))
+    d = index.parent / 'data' / 'sel'
+    core = json.loads((d / 'core.json').read_text())
+    big = core['parts']['vocab']
+    whole = _inline(index)
+    assert big and all(
+        core['attributes'][n] == [] and json.loads((d / f).read_text()) == whole['attributes'][n]
+        for n, f in big.items()
+    )
+    ti = {n: i for i, n in enumerate(whole['attribute_names'])}
+    assert all(core['parts']['attr_counts'][ti[n]] is None for n in big)  # no counts to show before the marks are in
+    assert selection_of(index.parent) == whole
