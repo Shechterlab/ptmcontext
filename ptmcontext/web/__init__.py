@@ -43,6 +43,10 @@ FONTS = {
     'stylesheet': 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:wght@500;600;700'
     '&family=Inter:wght@400;500;600;700&display=swap',
 }
+# the same fonts as files of the kit (SIL Open Font License, assets/fonts/OFL.txt): the built folder uses them, the one-file
+# copy (which has no assets) the stylesheet above; a site that names its own stylesheet keeps it
+LOCAL_FONTS = 'assets/fonts/fonts.css'
+PRELOAD_FONT = 'assets/fonts/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2'  # Inter, latin
 # neutral greys for a site file that sets no colors of its own (website.band, accent, accent_dark): a site is meant to set them
 DEFAULT_BAND = ['#374151', '#111827']
 # The kit's modules, in the order the page loads them: THE ORDER MATTERS. A module reads what an earlier one put on K (kit-select.js
@@ -1823,7 +1827,10 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             '{{BODYCLASS}}': ('' if (web.get('header') or {}).get('compact', True) else 'full-header'),
             '{{VERSION}}': version,
             '{{FONTS}}': (
-                f'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+                f'<link rel="preload" href="{PRELOAD_FONT}" as="font" type="font/woff2" crossorigin>'
+                f'<link rel="stylesheet" href="{LOCAL_FONTS}">'
+                if fonts.get('stylesheet') == FONTS['stylesheet'] and not inline
+                else f'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
                 f'<link rel="stylesheet" href="{html.escape(fonts["stylesheet"])}">'
             )
             if fonts.get('stylesheet')
@@ -1839,6 +1846,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
 
     for name in ('kit.css', *MODULES, *WORKERS):
         shutil.copyfile(_asset(f'assets/{name}'), out / 'assets' / name)
+    shutil.copytree(_asset('assets/fonts'), out / 'assets' / 'fonts', dirs_exist_ok=True)
     (out / 'assets' / 'logo.svg').write_text(icon)
     if logo:
         (out / 'assets' / 'lab.svg').write_text(logo)
@@ -2171,7 +2179,7 @@ def pages(
         cfg,
         kit_css=f'{first_built}/assets/kit.css' if first_built else None,
         lab_html=lab_html,
-        fonts_css=FONTS['stylesheet'],
+        fonts_css=f'{first_built}/{LOCAL_FONTS}' if first_built else FONTS['stylesheet'],
         built_with=built_with,
         logo=logo_href,
         search=bool(found),

@@ -249,7 +249,7 @@ def page(
 <title>{title}</title>
 <meta name="description" content="{desc}">
 {f'<link rel="icon" href="{html.escape(logo)}">' if logo else ''}
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+{'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' if fonts_css.startswith('http') else ''}
 <link rel="stylesheet" href="{html.escape(fonts_css)}">
 {f'<link rel="stylesheet" href="{html.escape(kit_css)}">' if kit_css else ''}
 <style>{CSS}</style></head>
