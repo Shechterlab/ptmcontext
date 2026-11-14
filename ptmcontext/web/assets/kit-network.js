@@ -294,7 +294,14 @@
     return (hold[key] = K.netlayout.layout(view, variant, UI.minc, maxShown()));
   }
   // ---- the figure ---------------------------------------------------------------------------------------------------------------
-  const hit = (M) => (UI.find.trim() ? K.netcore.findGenes(UI.find, M.nodes).hits : new Set());
+  // the genes to find, with the main search's other names (aliases, entry names) read as the proteins they name
+  const findIn = (text, nodes) => K.netcore.findGenes(text, nodes, K.sel?.lookup);
+  // the find box is kept in the address (nf=), so a highlight can be shared and Back restores it
+  const setFind = (v) => {
+    UI.find = v;
+    S.nf = String(v).trim().split(/\s+/).filter(Boolean).join(' ');
+  };
+  const hit = (M) => (UI.find.trim() ? findIn(UI.find, M.nodes).hits : new Set());
   const gbit = SRC.map((s, i) => (s.kind === 'groups' ? 1 << i : 0)).reduce((a, b) => a | b, 0);
   // the neighbours of a protein, and what a cluster is joined to: the nodes and the clusters to light
   const lightNode = (M, i) => {
@@ -709,13 +716,23 @@
   // what a pasted list found: n of m, the ones the network does not hold, and a way to make them the selection
   function findNote(M) {
     if (!UI.find.trim()) return '';
-    const g = K.netcore.findGenes(UI.find, M.nodes);
+    const g = findIn(UI.find, M.nodes);
     if (g.tokens.length < 2 && !g.missing.length) return '';
-    const list =
-      g.missing.slice(0, 30).map(esc).join(', ') + (g.missing.length > 30 ? ` and ${g.missing.length - 30} more` : '');
-    return `<div class="filter-note nw-fnote" role="status"><b>${int(g.found.length)} of ${int(g.tokens.length)}</b> found${g.missing.length ? `; not in this network: ${list}` : ''}. <button type="button" class="btn small" data-nw-mksel>Make these the selection</button> <button type="button" class="btn small" data-nw-findclear>Clear</button></div>`;
+    const f = M.full || FILE.full || (g.missing.length ? load('full') : null),
+      fullNodes = f && !f.error ? f.acc.map((a, i) => ({ acc: a, gene: f.gene[i] })) : null,
+      out = fullNodes ? g.missing.filter((t) => findIn(t, fullNodes).hits.size) : [],
+      none = g.missing.filter((t) => !out.includes(t)),
+      names = (l) => l.slice(0, 30).map(esc).join(', ') + (l.length > 30 ? ` and ${l.length - 30} more` : '');
+    const why = [
+      out.length
+        ? `in the network but not among the ${int(M.nodes.length)} drawn (raise the number of proteins): ${names(out)}`
+        : '',
+      none.length ? `not in this network: ${names(none)}` : '',
+    ].filter(Boolean);
+    return `<div class="filter-note nw-fnote" role="status"><b>${int(g.found.length)} of ${int(g.tokens.length)}</b> found${why.length ? '; ' + why.join('; ') : ''}. <button type="button" class="btn small" data-nw-mksel>Make these the selection</button> <button type="button" class="btn small" data-nw-findclear>Clear</button></div>`;
   }
   function view() {
+    if ((S.nf || '') !== UI.find.trim().split(/\s+/).filter(Boolean).join(' ')) UI.find = S.nf || ''; // an address names the genes
     const head = `<div class="page-head results-head"><div><h2>${esc(TITLE)}</h2><p class="cx">${esc(leadOf())}</p></div></div>`;
     let M = model();
     if (M.error) return `${head}<p class="muted">The network could not be read (${esc(M.error)}).</p>`;
@@ -1180,7 +1197,8 @@
   // genes to find: applied when the box loses focus, on Enter (a line break with Shift) and after a paste
   const applyFind = (el) => {
     if (el.value === UI.find) return;
-    UI.find = el.value;
+    setFind(el.value);
+    K.writeHash(true);
     K.render();
   };
   document.addEventListener('focusout', (e) => e.target.closest?.('[data-nw-find] textarea') && applyFind(e.target));
@@ -1417,8 +1435,8 @@
     [
       '[data-nw-mksel]',
       () => {
-        const g = K.netcore.findGenes(UI.find, cache.M?.nodes || []);
-        UI.find = '';
+        const g = findIn(UI.find, cache.M?.nodes || []);
+        setFind('');
         S.q = g.tokens.join(' ');
         K.writeHash(true);
         K.render();
@@ -1427,7 +1445,8 @@
     [
       '[data-nw-findclear]',
       () => {
-        UI.find = '';
+        setFind('');
+        K.writeHash(true);
         K.render();
       },
     ],
@@ -1480,7 +1499,9 @@
     [
       '[data-nw-reset]',
       () => {
-        Object.assign(UI, { ...DEF, src: DEF.src.slice(), hi: -1, find: '', zoom: 1, pin: null, zc: -1 });
+        Object.assign(UI, { ...DEF, src: DEF.src.slice(), hi: -1, zoom: 1, pin: null, zc: -1 });
+        setFind('');
+        K.writeHash(false);
         again();
       },
     ],

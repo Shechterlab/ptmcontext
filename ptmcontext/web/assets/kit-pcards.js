@@ -783,12 +783,18 @@
   }
 
   // ---- Other PTMs ------------------------------------------------------------------------------------------------------
+  // the modifications of the protein: the map's own marks (its legend counts) where the site has any, else the site's table
   function ptmsBuild(p, rec, tb) {
     const cfg = PC.other_ptms,
-      rs = rows(tb, cfg.table),
-      kinds = cfg.kinds || {},
       near = cfg.near || 0,
-      marks = rec.marks.map((m) => m[0]);
+      marks = rec.marks.map((m) => m[0]),
+      ctx = K.map?.ctxIds?.().length ? K.map.contextMarks(p.acc) : undefined;
+    if (ctx === null) {
+      setTimeout(paintAll, 300);
+      return { html: '<p class="muted small">Loading…</p>', wait: true };
+    }
+    const kinds = ctx ? Object.fromEntries(ctx.map((c) => [c.id, c.label])) : cfg.kinds || {},
+      rs = ctx ? ctx.flatMap((c) => c.pos.map((a) => ({ kind: c.id, start: a }))) : rows(tb, cfg.table);
     if (!rs.length)
       return {
         html: `<p class="muted">No other modification is recorded on ${esc(gene(p))}.</p>`,

@@ -470,3 +470,13 @@ def test_only_in_marks_names_known_marks_and_a_card_s_beside_reads_a_question():
     assert 'card.beside' in js and 'tbeside' in js
     # the control reads as the tile's own rows do ("2.5×, q 1.8e-261"): the same statistic (the fold) and form, not "OR 2.5"
     assert 'class="nw">OR ' not in js and '${esc(fx(valOf(r)))}, q ${esc(fq(r.adj ? r.adj.q : r.q))}' in js
+
+
+def test_a_score_subset_shows_every_mark_at_first_and_the_cut_is_the_readers_option():
+    entry = {**ENTRY, 'columns': {**ENTRY['columns'], 'score': 'sc'}, 'subset': {'id': 'high', 'at_least': 0.5}}
+    rows = {r['id']: r for r in CM.expand(_site({'context_marks': [entry]}))['website']['protein']['map']['rows']}
+    assert rows['ctx_phos']['default'] == 'on' and rows['ctx_phos_high']['default'] == 'off'  # all marks drawn
+    assert rows['ctx_phos']['swap'] == 'ctx_phos_high' and rows['ctx_phos_high']['swap'] == 'ctx_phos'
+    cut = {**entry, 'subset': {**entry['subset'], 'default': 'subset'}}
+    rows = {r['id']: r for r in CM.expand(_site({'context_marks': [cut]}))['website']['protein']['map']['rows']}
+    assert rows['ctx_phos']['default'] == 'off' and rows['ctx_phos_high']['default'] == 'on'
