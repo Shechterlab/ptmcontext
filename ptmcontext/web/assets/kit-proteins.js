@@ -858,15 +858,19 @@
   let resIdx = null;
   const residueOf = (p, pos) => {
     if (!p) return '';
-    const sd = K.sel?.data();
+    const sd = K.sel?.peek(),
+      mid = (m) => (m[4] || '')[Math.floor((m[4] || '').length / 2)] || '';
     if (sd && !resIdx) {
       resIdx = {};
       sd.marks.forEach((m) => {
-        resIdx[m[0] + ':' + m[1]] = (m[4] || '')[Math.floor((m[4] || '').length / 2)] || '';
+        resIdx[m[0] + ':' + m[1]] = mid(m);
       });
     }
+    // before the whole selection is in, the protein's own marks (the file that holds them), never the whole for a link
+    const own = !sd && p.i != null && K.seld ? (K.seld.marksOf([p.i]) || []).find((m) => m[1] === pos) : null;
     return (
       (resIdx && p.i != null && resIdx[p.i + ':' + pos]) ||
+      (own && mid(own)) ||
       (PV.acc === p.acc && PV.rec?.seq?.[pos - 1]) ||
       (D.residues?.length === 1 ? D.residues[0] : '')
     );
@@ -1854,11 +1858,14 @@
   // ---- kinds of protein: the sets of each protein-set question this protein is in, with the site's result for each,
   // and its abundance as the test placed it (data/selection.json) --------------------------------------------------
   const SETROW = {};
+  let setRowsIn = false;
   const setRow = (aid, s, m) => {
-    if (!Object.keys(SETROW).length)
+    if (!setRowsIn) {
+      setRowsIn = true; // once: a protein in hundreds of sets asks hundreds of times
       D.rows.forEach((r) => {
         if (K.SETS(r.analysis)) SETROW[r.analysis + '\u0000' + r.category + '\u0000' + r.method] = r;
       });
+    }
     return SETROW[aid + '\u0000' + s + '\u0000' + m];
   };
   const RANK = { more: 0, less: 1, same: 2, ns: 3 };

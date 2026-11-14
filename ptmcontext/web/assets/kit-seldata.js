@@ -50,10 +50,11 @@
     return have === undefined || have instanceof Promise ? null : have;
   };
 
-  function loadCore() {
+  // silent: the caller asks for a file of its own next and draws when that is in, so the core's arrival draws nothing
+  function loadCore(silent) {
     return (coreP ||= getJSON('core.json').then((c) => {
       core = c;
-      redraw();
+      if (!silent) redraw();
       return c;
     }));
   }
@@ -65,8 +66,15 @@
   // the files that hold a protein's marks and its sets (the same proteins in both)
   const shardOf = (pi) => core?.parts.shard_of[pi] ?? -1;
   function sets(pi) {
-    const c = coreNow();
-    if (!c) return undefined;
+    const c = core;
+    if (!c) {
+      if (!inlineEl)
+        loadCore(true).then(
+          () => sets(pi),
+          () => 0
+        );
+      return undefined;
+    }
     const k = shardOf(pi);
     if (k < 0 || !c.parts.sets) return null;
     const f = c.parts.sets[k],
@@ -78,10 +86,19 @@
     return d[pi] || null; // {question: {n: set names, b: in the background, c: covariate, sc: scores, a, v}}
   }
   // the names of the sets a protein is in for one question (the file holds their places in the question's list)
+  let lastSets = { pi: -1, aid: '', names: new Set() };
   function setsOf(pi, aid) {
     const r = sets(pi)?.[aid]?.n,
       m = core?.protein_sets_meta?.[aid];
-    return r && m ? r.map((i) => (i < m.sets.length ? m.sets[i][0] : m.more[i - m.sets.length])) : [];
+    if (!r || !m) return new Set();
+    if (lastSets.pi !== pi || lastSets.aid !== aid)
+      // a protein in hundreds of sets is asked hundreds of times
+      lastSets = {
+        pi,
+        aid,
+        names: new Set(r.map((i) => (i < m.sets.length ? m.sets[i][0] : m.more[i - m.sets.length]))),
+      };
+    return lastSets.names;
   }
   // the values of an attribute: in the core, or in a file of their own (null until it is in: ask again after the next render)
   function vocab(name) {
@@ -103,15 +120,25 @@
       Promise.all(miss.map((k) => file(c.parts.marks[k]))).then(redraw, () => 0);
       return null;
     }
-    const by = {};
-    ks.forEach((k) => {
-      const s = peekFile(c.parts.marks[k]);
+    return pis.flatMap((p) => byProtein(shardOf(p))?.get(p) || []);
+  }
+  // a file's rows by protein, made once (with each row's index in the whole list)
+  const byShard = new Map();
+  function byProtein(k) {
+    if (k < 0) return null;
+    const f = core.parts.marks[k];
+    let m = byShard.get(f);
+    if (!m) {
+      const s = peekFile(f);
+      m = new Map();
       s.rows.forEach((r, j) => {
         r.ix = s.ix[j];
-        (by[r[0]] ||= []).push(r);
+        if (!m.has(r[0])) m.set(r[0], []);
+        m.get(r[0]).push(r);
       });
-    });
-    return pis.flatMap((p) => by[p] || []);
+      byShard.set(f, m);
+    }
+    return m;
   }
 
   // ---- the whole selection ------------------------------------------------------------------------------------------
@@ -197,6 +224,7 @@
         worker = null;
         // the files' own copies are not kept: the whole selection is the one copy
         files.clear();
+        byShard.clear();
         return SD;
       })
     ));
