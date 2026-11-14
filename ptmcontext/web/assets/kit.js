@@ -1501,7 +1501,7 @@
           : ''
       }</h3>${card.rows_from ? '' : detailsLink(a.id)}</header>` +
       (ans ? `<p class="tans">${ans}</p>` : '') +
-      (OV.statistic_label !== false && !vsOn() && rows.some((r) => r.eff != null)
+      (OV.statistic_label !== false && !vsOn() && shown.length && rows.some((r) => r.eff != null)
         ? ownSel && fr
           ? `<p class="tstat">${otherRows(a, made)}</p>`
           : `<p class="tstat">${
@@ -1554,8 +1554,8 @@
       (side.length ? '' : besideLine(card, shown)) +
       (made
         ? `<p class="tfoot"><b>Whole dataset.</b> ${foot}</p>`
-        : fr
-          ? ''
+        : fr || (!shown.length && !vsOn())
+          ? '' // a tile with no row says so once ("None differs"), not again as its summary
           : foot
             ? `<p class="tfoot">${foot}</p>`
             : '') +
