@@ -144,6 +144,38 @@ def _control(a: dict) -> dict:
     )
 
 
+def lazy_site_data(site_dir: Path) -> None:
+    """Move the statistics table and the classes' labels (about half of an explorer's first page) out of its index.html
+    into data/statistics.tsv and data/labels.json, which kit.js reads, preloaded, before it draws. Done to the folders
+    that are published (`ptmc pages`); a folder from `ptmc web` has them inline, as the one-file copy does."""
+    page = site_dir / 'index.html'
+    text = page.read_text()
+    m = re.search(r'(<script id="site-data" type="application/json">)(.*?)(</script>)', text, re.S)
+    if not m:
+        return
+    data = json.loads(m.group(2).replace('<\\/', '</'))
+    if 'statistics_tsv' not in data:
+        return
+    (site_dir / 'data').mkdir(exist_ok=True)
+    (site_dir / 'data' / 'statistics.tsv').write_text(data.pop('statistics_tsv'))
+    labels = {a['id']: a.pop('labels') for a in data['analyses'] if a.get('labels')}
+    (site_dir / 'data' / 'labels.json').write_text(json.dumps(labels, separators=(',', ':')))
+    data['statistics_file'], data['labels_file'] = 'data/statistics.tsv', 'data/labels.json'
+    body = json.dumps(data, separators=(',', ':'), allow_nan=False).replace('</', '<\\/')
+    preload = (
+        '<link rel="preload" href="data/statistics.tsv" as="fetch" crossorigin>'
+        '<link rel="preload" href="data/labels.json" as="fetch" crossorigin>'
+    )
+    text = text[: m.start(2)] + body + text[m.end(2) :]
+    page.write_text(
+        text.replace(
+            '<link rel="stylesheet" href="assets/kit.css">',
+            preload + '<link rel="stylesheet" href="assets/kit.css">',
+            1,
+        )
+    )
+
+
 def _asset(name: str) -> Path:
     if name == 'assets/kit-stats.js':  # the statistics are the package ptmstats' ptmstats.js
         return Path(ptmstats.js_path())
@@ -2031,6 +2063,7 @@ def pages(
             shutil.rmtree(dest)
         # the one-file copy (<id>.html, up to 84 MB) is for offline use: it stays in the build folder, not in the published site
         shutil.copytree(src, dest, ignore=lambda d, names: [f'{site["id"]}.html'] if Path(d) == src else [])
+        lazy_site_data(dest)
         first_built = first_built or site['id']
         root_last = root_of(site)
         profile = site_profile(site)
