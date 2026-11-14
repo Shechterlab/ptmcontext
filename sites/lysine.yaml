@@ -15,8 +15,14 @@ snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}   # quoted: unquote
 inputs:                # role the layers read: manifest input that fills it
   disorder: mobidb_disorder
   domains: interpro_domains
+  interpro_entries: interpro_all_entries         # the readers' families, by InterPro and Pfam entry
+  go_bp_annotations: go_bp_annotations         # the Overlap page's GO biological process terms
+  go_bp_terms: go_bp_terms
   reactome: reactome_protein_pathways
   reactome_names: reactome_pathways
+  go_bp: go_bp_annotations                       # the network view's cluster names
+  go_terms: go_bp_terms
+  string_partners: string_physical_v12_5         # the network view's STRING links
   hpa: hpa_locations
   abundance: paxdb_abundance
   panther_classes: panther_protein_classes
@@ -1056,6 +1062,30 @@ marks_subsets:           # the key questions again on the lysines of one type (a
     note: "Only the lysines with a butyrylation (Kbu) record are counted as modified"
     analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
 
+# Controls (CONTRACTS.md, Controls): questions repeated with one change each, shown on each question's page beside its
+# result (not as Overview tiles)
+controls:
+  - id: nohist
+    label: histones set aside
+    note: "Histones set aside (PANTHER families HISTONE H1, H2A, H2B, H3 and H4, as the question Histones and other proteins defines them): neither their modified lysines nor their other residues count"
+    analyses: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl, cell_chromatin]
+    without_proteins:
+      input: panther_classes
+      column: uniprot_accession
+      include: [{column: family_name, in: [HISTONE H1, HISTONE H2A, HISTONE H2B, HISTONE H3, HISTONE H4]}]
+      label: histones
+  - id: inidr
+    label: inside IDRs
+    note: "Only the lysines inside intrinsically disordered regions (MobiDB) count, modified lysines and other lysines alike, so the result is not a matter of disorder"
+    analyses: [near_phospho, near_phospho_high, near_methylarginine, near_methyllysine, idr_charge]
+    only_in: idr
+  - id: detect
+    label: in detectable peptides
+    note: "Only the lysines that lie in a tryptic peptide of 7 to 35 residues count, modified lysines and other lysines alike: the protein cut in silico after K and R (not before P), the residue itself left uncut as a modified one would be. Within each protein, protein abundance is already the same on both sides; this sets aside the residues a peptide-based study could hardly have reported"
+    analyses: [disorder, structure_context, domain_class, idr_charge]
+    only_in:
+      digest: {after: KR, not_before: P, min_length: 7, max_length: 35}
+
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites
@@ -1401,6 +1431,64 @@ website:                  # the look and words of the website (ptmc web); layout
     method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
     help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
+  network:                 # the Network view (kit-network.js): the proteins with sites as one network, clustered, each cluster named by its most enriched term
+    title: Network
+    about: "Proteins with modified lysines as one network: STRING physical links and curated complexes join them, communities are the clusters, and each cluster is named by its most enriched GO biological process (or Reactome pathway). Node size is the number of sites."
+    edges:
+      - {id: string_physical, kind: pairs, label: STRING physical, input: string_partners, min_score: 700, cite: "STRING v12.5: Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113", url: "https://string-db.org"}
+      - {id: complex_portal, kind: groups, label: Complex Portal complexes, input: complexes, where: {curation: curated}, max_size: 40, weight: 700, cite: "Complex Portal (curated complexes, CC0): Meldal et al., Nucleic Acids Res 50:D578 (2022), doi:10.1093/nar/gkab991", url: "https://www.ebi.ac.uk/complexportal"}
+    label_from:             # the first source names the clusters; the others are in the Label by menu
+      - id: go_bp
+        label: GO biological process
+        input: go_bp
+        set: go_id
+        protein: uniprot_accession
+        names: {input: go_terms, set: go_id, name: go_name, depth: depth_min, size: n_proteins}
+        min_depth: 3            # a term must lie at least three steps below the root
+        max_size: 1500          # and annotate at most this many proteins of the whole proteome
+        non_iea: true           # count only annotations with evidence other than IEA (false: all)
+        cite: "Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556; GOA human annotations of 2026-11-04"
+        url: "https://geneontology.org"
+      - id: reactome
+        label: Reactome
+        input: reactome
+        set: pathway_id
+        protein: canonical_UniProtAC
+        names: {input: reactome_names, set: pathway_id, name: name, depth: depth}
+        cite: "Reactome release 97: Ragueneau et al., Nucleic Acids Res 54:D673 (2026), doi:10.1093/nar/gkaf1223"
+        url: "https://reactome.org"
+    top: 300
+    min_cluster: 5
+    cluster: louvain
+    clusters: {default: auto, min: 4, max: 16}   # the page's Clusters menu: auto (Louvain at its default resolution) or a target number
+    lead: "Proteins with modified lysines joined by physical links and complexes, grouped into clusters named by GO biological process."   # the one line under the heading; the section Method has the rest
+    controls: [clusters, colour, find]   # the main row (others under More options): label, clusters, colour, find, score, top, minc, sources, preset, claim
+    protein_link: true   # a See in network button on every protein page (#network?p=<accession>)
+    protein_preview: true   # and a small drawing of it among its cluster under the button
+    claim: "Proteins with modified lysines form {n} functional clusters"   # the exported figure's title
+    color_by:
+      - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}
+      - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}
+    tile: {section: "Interactions", title: Protein network, text: "The proteins with modified lysines with most sites as one network of physical links and complexes, in clusters named by GO biological process."}
+  # The Overlap page: 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
+  overlap:
+    terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, histone, complex, condensate_proteome]
+    max_terms: 4
+    term_sources:      # GO biological process, propagated over is_a and part_of, 5 to 5,000 proteins; the evidence include below keeps annotations that are not computational-only (remove it to keep every annotation)
+      - id: go_bp
+        title: GO biological process
+        members: {input: go_bp_annotations, protein: uniprot_accession, set: go_id, include: [{column: non_iea, equals: "true"}]}
+        names: {input: go_bp_terms, id: go_id, name: go_name}
+        min_size: 5
+        max_size: 5000
+        cite: ["Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031", "Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556"]
+    notes: {cell_hcm_compartment: one main location per protein, cell_hcm_domain: one main location per protein, cell_organelle_ip: one main location per protein}
+    units: [proteins, sites, readers]
+    readers:           # a protein is a reader when it carries any listed Pfam or InterPro entry (each id checked on InterPro)
+      source: interpro_entries
+      families:
+      - {name: Bromodomain, ids: [IPR001487, PF00439]}
+      - {name: YEATS, ids: [IPR005033, IPR055129, PF03366]}
   compare: {min_proteins: 10, min_marks: 30}
   tables:                  # tables the protein pages show (no test reads them), each in a format of CONTRACTS.md
     string:                # STRING v12.5 physical links, each pair listed once and read both ways, at score 0.7 or more

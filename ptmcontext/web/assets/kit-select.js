@@ -836,12 +836,15 @@
       amongN = SD.among_others?.[aid] || {};
     const byProt = {},
       posOf = {},
-      resOf = {};
+      idxOf = {},
+      resOf = {},
+      listed = own?.outside === 'listed' ? new Set(cnt?.out || []) : null;
     compute().marks.forEach((i) => {
       const m = SD.marks[i];
       if (!skip.has(m[0]) && (own || SD.others_total[m[0]] > 0 || cnt?.alone)) {
         (byProt[m[0]] ||= []).push(m[2][ai]);
         (posOf[m[0]] ||= []).push(m[1]);
+        (idxOf[m[0]] ||= []).push(i);
         if (SD.residues) (resOf[m[0]] ||= []).push(SD.residues[i]);
       }
     });
@@ -864,7 +867,9 @@
               : all
             : own.outside === 'unclassed'
               ? all.filter((x) => x.length)
-              : all.filter((x, k) => !t[1].includes(posOf[p][k]));
+              : listed // a flags question: the marks it leaves out are listed (counted.out), as no flag is not outside
+                ? all.filter((x, k) => !listed.has(idxOf[p][k]))
+                : all.filter((x, k) => !t[1].includes(posOf[p][k]));
           const ot = t ? t[0] : letters ? (amongN[letters] || {})[p] || 0 : SD.others_total[p],
             oin = (others[p] || {})[ci] || 0,
             ain = ms.filter((x) => x.includes(ci)).length;
@@ -1104,9 +1109,11 @@
   function contrastResidue(qid, method, G) {
     // marks the question counts: not on a protein it leaves out, and, for a question that counts only the residues inside
     // some regions (only_in) or a part of the marks (subset), only the marks inside them (those with a class)
+    // (a flags question lists the marks it leaves out: counted.out, by index, as no flag is not outside)
     const skip = new Set(SD.counted?.[qid]?.skip || []),
-      ri = A[qid]?.only_in || A[qid]?.subset ? AN().indexOf(qid) : -1;
-    const kept = (i) => !skip.has(SD.marks[i][0]) && (ri < 0 || SD.marks[i][2][ri].length > 0);
+      out = SD.counted?.[qid]?.out ? new Set(SD.counted[qid].out) : null,
+      ri = !out && (A[qid]?.only_in || A[qid]?.subset) ? AN().indexOf(qid) : -1;
+    const kept = (i) => !skip.has(SD.marks[i][0]) && (out ? !out.has(i) : ri < 0 || SD.marks[i][2][ri].length > 0);
     G = { ...G, g1: G.g1.filter(kept), g2: G.g2.filter(kept) };
     const m1 = G.g1.map((i) => SD.marks[i]),
       m2 = G.g2.map((i) => SD.marks[i]),

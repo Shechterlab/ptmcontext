@@ -1163,6 +1163,54 @@
             "type": "string",
             "description": "with a family: the entry's name under the family's caret, where the title less the family's name reads badly; the full title stays on the page, in tables and exports, and is the entry's tooltip"
           },
+          "without_proteins": {
+            "type": "object",
+            "required": [
+              "input",
+              "column"
+            ],
+            "additionalProperties": false,
+            "description": "set these proteins aside: neither their marks nor their other residues (in a protein-set question, neither marked proteins nor the universe) count; the accessions in a column of a role's table, on the rows its conditions keep (the histones, say)",
+            "properties": {
+              "input": {
+                "type": "string",
+                "description": "a role of the site's inputs"
+              },
+              "column": {
+                "type": "string"
+              },
+              "include": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "exclude": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "label": {
+                "type": "string",
+                "description": "what the proteins set aside are, in words (the histones)"
+              }
+            }
+          },
+          "marks_outside": {
+            "enum": [
+              "left_out"
+            ],
+            "description": "with marks_where: the marks the condition leaves out are counted on neither side (not as other residues); for a residue question"
+          },
+          "control_of": {
+            "type": "string",
+            "description": "the id of the question this one is a control of: that question's page shows this one's result beside its own. Written by controls"
+          },
+          "control_label": {
+            "type": "string",
+            "description": "the control's short name on its question's page. Written by controls"
+          },
           "marks_where": {
             "$ref": "#/$defs/row_condition",
             "description": "count only the marks (for a protein-set question, the marked proteins) with a row of the marks table that meets this condition, e.g. the marks with a row whose state is one value; the marks outside are other residues in a residue question, and the rest of the universe in a protein-set question. Not for conditional_logit. Usually written once, as marks_subsets, which makes the variants"
@@ -1172,6 +1220,41 @@
             "oneOf": [
               {
                 "const": "idr"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "digest"
+                ],
+                "additionalProperties": false,
+                "description": "only the residues in a peptide of a detectable length when the protein is digested in silico, the residue itself left uncut (a modified residue is not cut): a detectability control",
+                "properties": {
+                  "digest": {
+                    "type": "object",
+                    "required": [
+                      "after"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "after": {
+                        "type": "string",
+                        "description": "the residues the enzyme cuts after (trypsin: KR)"
+                      },
+                      "not_before": {
+                        "type": "string",
+                        "description": "no cut when the next residue is one of these (trypsin: P)"
+                      },
+                      "min_length": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "max_length": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    }
+                  }
+                }
               },
               {
                 "type": "object",
@@ -2137,6 +2220,422 @@
             }
           }
         },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "edges"
+          ],
+          "description": "the Network view: one network of the proteins with sites (or the selection's), clustered, each cluster named by its most enriched term. Data from tables the site's inputs name, none from a service; a site without it has no view",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "the tab's name (default Network)"
+            },
+            "about": {
+              "type": "string",
+              "description": "one line under the heading"
+            },
+            "edges": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "input"
+                ],
+                "description": "one source of edges: `pairs` (a table of scored pairs of proteins, at most one: STRING physical links) or `groups` (a table of groups with their members; every pair of members of a group is an edge: curated complexes)",
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "pairs",
+                      "groups"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "description": "short id of the source"
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "the source's name in the key and the switches"
+                  },
+                  "input": {
+                    "type": "string",
+                    "description": "a role of the site's inputs: the table"
+                  },
+                  "sep": {
+                    "type": "string",
+                    "description": "the table's separator (default a tab)"
+                  },
+                  "a": {
+                    "type": "string",
+                    "description": "pairs: the first protein's column (default protein_a)"
+                  },
+                  "b": {
+                    "type": "string",
+                    "description": "pairs: the second protein's column (default protein_b)"
+                  },
+                  "score": {
+                    "type": "string",
+                    "description": "pairs: the integer score's column, 0 to 1000 (default combined_score)"
+                  },
+                  "min_score": {
+                    "type": "integer",
+                    "description": "pairs: the score an edge needs by default (default 700)",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "group": {
+                    "type": "string",
+                    "description": "groups: the group's id column (default complex_id)"
+                  },
+                  "protein": {
+                    "type": "string",
+                    "description": "groups: the member's UniProt accession column (default uniprot_accession)"
+                  },
+                  "where": {
+                    "type": "object",
+                    "description": "groups: column: value rows must have (such as curated complexes only)",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "weight": {
+                    "type": "integer",
+                    "description": "groups: the weight of a group edge in the clustering, on the scale of the scores (default 700)",
+                    "minimum": 1
+                  },
+                  "max_size": {
+                    "type": "integer",
+                    "description": "groups: groups of more members are left out (default 40)",
+                    "minimum": 2
+                  },
+                  "cite": {
+                    "type": "string",
+                    "description": "the source's citation, in the Method text and the exports"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "where the source is"
+                  }
+                }
+              }
+            },
+            "label_from": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "input",
+                  "set",
+                  "protein"
+                ],
+                "description": "a table of published terms that name the clusters: a set column and a protein column (Reactome, Gene Ontology biological process, ...). The first source names the clusters by default; the page offers the others in its Label by menu. A cluster is named by the term of smallest q, ties to the deeper term",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "short id"
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "the source's name"
+                  },
+                  "input": {
+                    "type": "string",
+                    "description": "a role of the site's inputs: protein to term table"
+                  },
+                  "set": {
+                    "type": "string",
+                    "description": "the term's id column"
+                  },
+                  "protein": {
+                    "type": "string",
+                    "description": "the protein's UniProt accession column"
+                  },
+                  "names": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input",
+                      "set"
+                    ],
+                    "properties": {
+                      "input": {
+                        "type": "string",
+                        "description": "a role: the table with the terms' names"
+                      },
+                      "set": {
+                        "type": "string",
+                        "description": "the term's id column"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "the name column (default the id)"
+                      },
+                      "size": {
+                        "type": "string",
+                        "description": "the column with the number of proteins in the whole proteome that hold the term (for `max_size`)"
+                      },
+                      "depth": {
+                        "type": "string",
+                        "description": "the column with the term's depth below the root (a tie between terms of one q goes to the deeper; default 0)"
+                      },
+                      "include": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "column",
+                            "equals"
+                          ],
+                          "properties": {
+                            "column": {
+                              "type": "string"
+                            },
+                            "equals": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "description": "keep only the rows with these column values"
+                      }
+                    }
+                  },
+                  "min_term": {
+                    "type": "integer",
+                    "description": "the fewest proteins of the network a term must annotate (default 5)",
+                    "minimum": 1
+                  },
+                  "min_depth": {
+                    "type": "integer",
+                    "description": "terms with a smaller `names.depth` are not used (default: all)",
+                    "minimum": 0
+                  },
+                  "max_size": {
+                    "type": "integer",
+                    "description": "terms that annotate more than this many proteins of the whole proteome (`names.size`) are not used: too general to say what a cluster is about (default: no limit)",
+                    "minimum": 1
+                  },
+                  "non_iea": {
+                    "type": "boolean",
+                    "description": "true (default): when the table has a `non_iea` column, count only its rows where it is `true`; false counts every row"
+                  },
+                  "cite": {
+                    "type": "string",
+                    "description": "citation"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "where the annotation is"
+                  }
+                }
+              }
+            },
+            "clusters": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the page's Clusters menu: `default` is `auto` (Louvain at `resolution`) or a number of clusters; `min`, `max` and `step` give the numbers the menu offers. A chosen number is reached by trying 24 resolutions (from 0.25, 15% apart) and taking the partition whose number of clusters (communities of `min_cluster` or more proteins) is closest",
+              "properties": {
+                "default": {
+                  "anyOf": [
+                    {
+                      "const": "auto"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 2
+                    }
+                  ]
+                },
+                "min": {
+                  "type": "integer",
+                  "minimum": 2
+                },
+                "max": {
+                  "type": "integer",
+                  "minimum": 2
+                },
+                "step": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "lead": {
+              "type": "string",
+              "description": "the one line under the heading (default: the first sentence of `about`, which is given in full under \"Method\")"
+            },
+            "controls": {
+              "type": "array",
+              "description": "the controls in the main row; the others are under \"More options\", closed. On a phone all are under it",
+              "items": {
+                "enum": [
+                  "label",
+                  "clusters",
+                  "colour",
+                  "find",
+                  "score",
+                  "top",
+                  "minc",
+                  "sources",
+                  "preset",
+                  "claim"
+                ]
+              }
+            },
+            "protein_link": {
+              "type": "boolean",
+              "description": "true (default): every protein's page has a \"See in network\" button that opens the Network view with that protein shown (address: #network?p=<accession>): its cluster lit, its card pinned, the figure zoomed to it. When the protein is not in the network shown, the page raises the number of proteins (to 600 at most) or says why it is not there and offers a lower score"
+            },
+            "protein_preview": {
+              "type": "boolean",
+              "description": "true (default, with `protein_link`): under the button, a small drawing of the protein among its partners of its own cluster (15 at most, most sites first), with the cluster's name in its colour, read from data/network.json when it scrolls into view. A protein that the default view does not draw gets a line saying so"
+            },
+            "claim": {
+              "type": "string",
+              "description": "the exported figure's title, with {n} for the number of clusters (the reader can change it)"
+            },
+            "color_by": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name",
+                  "kind",
+                  "column"
+                ],
+                "description": "a way to colour the proteins besides the cluster, from a column of the run's marks.tsv: `sequential` is the share of the protein's sites whose value is one of `values` (all sites with a value when none is listed); `categorical` is the value most of the protein's sites hold (the commonest `max_values`, the rest Other)",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "the name in the Colour by menu and the key"
+                  },
+                  "kind": {
+                    "enum": [
+                      "sequential",
+                      "categorical"
+                    ]
+                  },
+                  "column": {
+                    "type": "string",
+                    "description": "a column of marks.tsv"
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "separator": {
+                    "type": "string",
+                    "description": "separates several values in a cell (default ;)"
+                  },
+                  "max_values": {
+                    "type": "integer",
+                    "description": "categorical: values named before Other (default 8, at most 8)",
+                    "minimum": 1,
+                    "maximum": 8
+                  }
+                }
+              }
+            },
+            "top": {
+              "type": "integer",
+              "description": "proteins taken, the most sites first, before isolated ones are dropped (default 300)",
+              "minimum": 10
+            },
+            "min_cluster": {
+              "type": "integer",
+              "description": "a cluster with fewer proteins is grey Other (default 5)",
+              "minimum": 2
+            },
+            "max_clusters": {
+              "type": "integer",
+              "description": "clusters coloured, the largest first (default 8, the palette's size)",
+              "minimum": 1,
+              "maximum": 8
+            },
+            "resolution": {
+              "type": "number",
+              "description": "Louvain resolution (default 1)",
+              "exclusiveMinimum": 0
+            },
+            "cluster": {
+              "enum": [
+                "louvain"
+              ],
+              "description": "the clustering method (louvain)"
+            },
+            "min_score": {
+              "type": "integer",
+              "description": "the scored source's default threshold when the source does not say (default 700)",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "floor": {
+              "type": "integer",
+              "description": "the lowest threshold the page offers (default the same)",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "max_q": {
+              "type": "number",
+              "description": "a cluster's term must have q at most this (default 0.05)"
+            },
+            "min_overlap": {
+              "type": "integer",
+              "description": "proteins of the cluster a term must have (default 3)",
+              "minimum": 1
+            },
+            "min_term": {
+              "type": "integer",
+              "description": "proteins of the network a term must annotate (default 5)",
+              "minimum": 1
+            },
+            "max_fraction": {
+              "type": "number",
+              "description": "terms annotating more than this share of the network's proteins are too broad and are left out (default 0.2)",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "exclude_terms": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "term ids or names never used as a label"
+            },
+            "tile": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "section"
+              ],
+              "description": "the Overview's tile",
+              "properties": {
+                "section": {
+                  "type": "string",
+                  "description": "the name of an Overview section the tile goes in"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
         "partners": {
           "type": "object",
           "additionalProperties": false,
@@ -2197,6 +2696,32 @@
             "question": {
               "type": "string",
               "description": "the page's heading"
+            },
+            "control_badges": {
+              "description": "a tile row (and its question's page) whose result fails a control (controls:) shows a badge naming the control, linked to the Controls table, with both results in its tooltip and its accessible name; false shows none",
+              "oneOf": [
+                {
+                  "const": false
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "verdicts": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "enum": [
+                          "lost",
+                          "reversed",
+                          "weaker"
+                        ]
+                      },
+                      "description": "which readings of a control count as a failure (default: lost and reversed)"
+                    }
+                  }
+                }
+              ]
             },
             "cell_first": {
               "type": "boolean",
@@ -5257,6 +5782,242 @@
             }
           }
         },
+        "overlap": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the Overlap page (CONTRACTS.md, 'The Overlap page'): the reader picks 2 to 4 terms and sees how their proteins (or sites, enzymes, readers) overlap, with enrichment for each region",
+          "properties": {
+            "term_sources": {
+              "type": "array",
+              "description": "more terms from a table of (term, protein) pairs, offered in the picker for the proteins unit (a term source): the members are written to data/overlap/sources/<id>/ in a few files, read when a term is chosen; the names to a terms file read when the page opens",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "members"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "the group the terms are listed under"
+                  },
+                  "members": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input",
+                      "protein",
+                      "set"
+                    ],
+                    "properties": {
+                      "input": {
+                        "type": "string",
+                        "description": "a role of the site's inputs"
+                      },
+                      "protein": {
+                        "type": "string"
+                      },
+                      "set": {
+                        "type": "string"
+                      },
+                      "sep": {
+                        "type": "string",
+                        "default": "\t"
+                      },
+                      "include": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        },
+                        "description": "rows kept (column with equals, in or contains), as the protein-set tables' include; an annotation table with an evidence flag keeps the rows without computational-only evidence by default"
+                      },
+                      "exclude": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  },
+                  "names": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input",
+                      "id",
+                      "name"
+                    ],
+                    "properties": {
+                      "input": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "sep": {
+                        "type": "string",
+                        "default": "\t"
+                      }
+                    },
+                    "description": "the table of term names; a term without a name here is left out"
+                  },
+                  "min_size": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "fewest proteins of the reviewed proteome (after include) a term needs to be offered"
+                  },
+                  "max_size": {
+                    "type": "integer",
+                    "description": "most proteins a term may have to be offered"
+                  },
+                  "shards": {
+                    "type": "integer",
+                    "default": 16,
+                    "description": "files the members are spread over"
+                  },
+                  "cite": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "citations, shown in the Methods and with an export that uses one of the terms"
+                  }
+                }
+              }
+            },
+            "leave_out": {
+              "type": "object",
+              "description": "sets of a question that are not offered as terms and whose members are not written (a question's set id: [ids])",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "notes": {
+              "type": "object",
+              "description": "a question id: a short note shown under its terms in the picker (what a set means)",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "terms_from": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "the questions whose sets or classes are terms: a protein-set question gives every protein of its sets (the run writes overlap_members.json); another question gives its classes (proteins with a site in the class). The current selection, saved selections, a pasted gene list, readers and enzymes are terms too"
+            },
+            "max_terms": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 4,
+              "default": 4,
+              "description": "the most terms a reader can overlap"
+            },
+            "units": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "proteins",
+                  "sites",
+                  "enzymes",
+                  "readers"
+                ]
+              },
+              "description": "what is overlapped (default: proteins, sites); enzymes and readers are hidden where the site has none"
+            },
+            "enzymes": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "enzymes: the classes of website.search.partners with one of these roles, resolved by gene name",
+              "properties": {
+                "roles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "default": [
+                    "writer",
+                    "eraser"
+                  ]
+                }
+              }
+            },
+            "readers": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "families"
+              ],
+              "description": "readers: a protein is a reader when it carries any Pfam or InterPro entry of a family",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "description": "a role of the site's inputs: the table of InterPro entry intervals"
+                },
+                "columns": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "accession": {
+                      "type": "string",
+                      "default": "canonical_UniProtAC"
+                    },
+                    "ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "default": [
+                        "interpro_accession",
+                        "member_database_accessions"
+                      ],
+                      "description": "the columns an entry id is looked up in"
+                    }
+                  }
+                },
+                "families": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "ids"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "ids": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Pfam (PF) and InterPro (IPR) accessions, each checked against InterPro"
+                      },
+                      "note": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "front": {
           "type": "object",
           "additionalProperties": false,
@@ -7185,6 +7946,58 @@
           }
         }
       },
+    "controls": {
+      "type": "array",
+      "description": "controls of some questions, at the same run: each control adds, for every question it lists, a copy with the control's change, id '<question>_<control id>', new, in its question's family, and shown on that question's page beside its result (control_of)",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "analyses"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*$",
+            "description": "added to each question's id after an underscore"
+          },
+          "label": {
+            "type": "string",
+            "description": "the control's short name: added to each copy's title after a comma, its name in the family and on the question's page"
+          },
+          "note": {
+            "type": "string",
+            "description": "a sentence added to each copy's sub-title: what the control changes"
+          },
+          "analyses": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "description": "the ids of the questions to repeat; each needs a title or a family"
+          },
+          "marks_where": {
+            "$ref": "#/$defs/row_condition",
+            "description": "count only the marks with a row that meets this condition (with the question's own marks_where, both must hold)"
+          },
+          "marks_outside": {
+            "enum": [
+              "left_out"
+            ],
+            "description": "with marks_where: the other marks are counted on neither side"
+          },
+          "without_proteins": {
+            "$ref": "#/properties/analyses/items/properties/without_proteins"
+          },
+          "only_in": {
+            "$ref": "#/properties/analyses/items/properties/only_in"
+          }
+        }
+      }
+    },
     "marks_subsets": {
       "type": "array",
       "description": "the same questions on a part of the marks, at the same run (one state of the mark, say): each subset adds, for every question it lists, a variant with marks_where set, id '<question>_<subset id>', named by the subset's label and grouped with its base question in the sidebar (family)",
@@ -7725,6 +8538,9 @@
           "$ref": "#/$defs/condition"
         },
         {
+          "$ref": "#/$defs/count_condition"
+        },
+        {
           "type": "object",
           "required": [
             "all_of"
@@ -7757,6 +8573,46 @@
           }
         }
       ]
+    },
+    "count_condition": {
+      "type": "object",
+      "required": [
+        "column",
+        "distinct_at_least"
+      ],
+      "additionalProperties": false,
+      "description": "holds for a row whose list cell (items split on separator) names at least distinct_at_least distinct groups: an item in not_counted counts for nothing, an item in one of groups counts as that group, any other item as its own (studies from one laboratory counted once, compilations not at all)",
+      "properties": {
+        "column": {
+          "type": "string"
+        },
+        "separator": {
+          "type": "string",
+          "description": "default '; '"
+        },
+        "distinct_at_least": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "groups": {
+          "type": "object",
+          "description": "group name: the items that count once together",
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "not_counted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "items that count for nothing (databases and compilations)"
+        }
+      }
     },
     "condition": {
       "type": "object",

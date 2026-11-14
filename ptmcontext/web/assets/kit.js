@@ -1438,7 +1438,13 @@
           .replace(/data-texp="(\w+)"/g, `data-texp="$1" ` + `data-aid="${esc(a.id)}"`);
     const fr = K.tilekit && !shown.some((r) => r.vs) && shown.length;
     const ownSel = ownClasses(a),
-      ms = fr ? shown.map((r) => ({ ...frModel(a, r), mine: !!ownSel?.has(r.category) })) : [],
+      ms = fr
+        ? shown.map((r) => {
+            const mine = !!ownSel?.has(r.category),
+              fails = mine || r.absent ? [] : controlFails(a, r.category);
+            return { ...frModel(a, r), mine, fails, badge: fails.map(failText).join('; ') };
+          })
+        : [],
       ax = fr ? K.tilekit.axisOf(K.tilekit.valsOf(ms)) : null;
     const ans = fr && !made ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
     return (
@@ -1469,19 +1475,20 @@
                     : ''
                 ) +
                 ms
-                  .map((x, i) =>
-                    K.tilekit.rowHtml(
-                      x,
-                      ax,
-                      x.absent
-                        ? ` title="${esc(x.label)}: none in ` + `this selection"`
-                        : x.mine
-                          ? ` data-r="${reg(shown[i])}"${pickAttrs(shown[i]).replace(
-                              / title="[^"]*"/,
-                              ` title="Click ` + `to take ${esc(x.label)} out of the selection"`
-                            )}`
-                          : ` data-r="${reg(shown[i])}"${pickAttrs(shown[i])}`
-                    )
+                  .map(
+                    (x, i) =>
+                      K.tilekit.rowHtml(
+                        x,
+                        ax,
+                        x.absent
+                          ? ` title="${esc(x.label)}: none in ` + `this selection"`
+                          : x.mine
+                            ? ` data-r="${reg(shown[i])}"${pickAttrs(shown[i]).replace(
+                                / title="[^"]*"/,
+                                ` title="Click ` + `to take ${esc(x.label)} out of the selection"`
+                              )}`
+                            : ` data-r="${reg(shown[i])}"${pickAttrs(shown[i])}`
+                      ) + (x.fails.length ? `<div class="ctl-fail">${failBadges(a.id, x.fails)}</div>` : '')
                   )
                   .join('')
               : tileRows(shown)
@@ -2084,6 +2091,132 @@
       )
       .join(' · ')}</p>`;
   }
+  // the controls of a question (analyses[].control_of: the same test on high-confidence marks, without some proteins, inside
+  // IDRs, ...): each class's reading in the question and in each control, and whether it holds there. 'holds': the same
+  // reading; 'weaker': the same direction by 1.1x or more, not at q <= 0.05; 'reversed': the other way at q <= 0.05;
+  // 'lost': otherwise; 'new': a reading only the control has
+  const controlsOf = (a) => D.analyses.filter((x) => A[x.id]?.control_of === a.id);
+  const ctlMethod = (a) => (a.kind === 'protein_sets' ? 'enricher' : vsMethod(S.m));
+  function ctlVerdict(r, c) {
+    if (r.dir !== 'more' && r.dir !== 'less') return c && (c.dir === 'more' || c.dir === 'less') ? 'new' : '';
+    if (!c) return 'not tested';
+    if (c.dir === r.dir) return 'holds';
+    if ((c.dir === 'more' || c.dir === 'less') && c.dir !== r.dir) return 'reversed';
+    const v = valOf(c),
+      same = v != null && (r.dir === 'more' ? v >= MIN_EFFECT : v <= 1 / MIN_EFFECT);
+    return same ? 'weaker' : 'lost';
+  }
+  // the controls a class of a question fails (website.overview.control_badges: which verdicts count, by default lost and
+  // reversed), for the badge on its tile row and its page: [{ id, label, verdict, main, ctl }]; none for a selection
+  const BADGE = new Set(OV.control_badges?.verdicts || ['lost', 'reversed']);
+  const FAILS = {};
+  function controlFails(a, category) {
+    if (OV.control_badges === false || selOn()) return [];
+    const m = ctlMethod(a),
+      key = a.id + '\u0000' + m;
+    if (!FAILS[key]) {
+      const main = new Map(rowsFor(a, m).map((r) => [r.category, r])),
+        out = {};
+      controlsOf(a).forEach((x) => {
+        const cr = new Map(rowsFor(A[x.id], m).map((r) => [r.category, r]));
+        main.forEach((r, cat) => {
+          const c = cr.get(cat),
+            v = ctlVerdict(r, c);
+          if (BADGE.has(v))
+            (out[cat] ||= []).push({ id: x.id, label: A[x.id].control_label, verdict: v, main: r, ctl: c });
+        });
+      });
+      FAILS[key] = out;
+    }
+    return FAILS[key][category] || [];
+  }
+  // a result as its row reads (the fold, then the test), so the badge says what its verdict was read from
+  const ctlNum = (r) => (r ? `${fx(valOf(r))}, ${testLine(r)}` : 'not tested');
+  const failText = (f) => `fails control: ${f.label}`;
+  const failTip = (f) =>
+    `${f.verdict} under ${f.label}: ${ctlNum(f.main)} in the question, ${ctlNum(f.ctl)} in the control`;
+  // a badge per failed control: a button that opens the question at its Controls table
+  const failBadges = (aid, fails) =>
+    fails
+      .map(
+        (f) =>
+          `<button type="button" class="ctl-badge" data-ctl-go="${esc(aid)}" title="${esc(failTip(f))}">` +
+          `${esc(failText(f))}</button>`
+      )
+      .join('');
+  K.controlFails = controlFails;
+  // the page is drawn again (and may load its data first): the Controls table is brought into view, and focused, once it is there
+  function toControls(tries = 40) {
+    const t = document.getElementById('q-controls');
+    if (t && tries < 38 && t.getBoundingClientRect().top < innerHeight * 0.6) return t.focus({ preventScroll: true });
+    if (t) t.scrollIntoView({ block: 'start' }); // and again until the page stops moving under it
+    if (tries) setTimeout(() => toControls(tries - 1), 100);
+  }
+  K.clicks.push([
+    '[data-ctl-go]',
+    (el) => {
+      if (!(S.view === 'overview' && S.arg === el.dataset.ctlGo)) go('overview', { arg: el.dataset.ctlGo });
+      setTimeout(() => toControls(), 0);
+    },
+  ]);
+  // a question's page names, under its heading, the controls its classes fail (one badge per control, its classes in the tooltip)
+  function pageFails(a) {
+    if (a.kind === 'module' || vsOn()) return '';
+    const by = {};
+    rowsFor(a, ctlMethod(a)).forEach((r) =>
+      controlFails(a, r.category).forEach((f) => {
+        const g = (by[f.id] ||= { ...f, tips: [], cats: [] });
+        g.tips.push(`${r.label}: ${failTip(f)}`);
+        g.cats.push(r.label);
+      })
+    );
+    const fs = Object.values(by);
+    return fs.length
+      ? `<span class="ctl-fail head">${fs
+          .map(
+            (f) =>
+              `<button type="button" class="ctl-badge" data-ctl-go="${esc(a.id)}" title="${esc(f.tips.join('\n'))}">` +
+              `${esc(f.cats.length <= 2 ? f.cats.join(', ') + ' ' : '')}${esc(failText(f))}</button>`
+          )
+          .join('')}</span>`
+      : '';
+  }
+  function controlsBlock(a, m) {
+    if (vsOn() || selOn()) return '';
+    const ctl = controlsOf(a);
+    if (!ctl.length) return '';
+    const main = rowsFor(a, m),
+      of = (x) => new Map(rowsFor(A[x.id], m).map((r) => [r.category, r])),
+      by = ctl.map(of);
+    const cats = main.filter(
+      (r) => r.dir === 'more' || r.dir === 'less' || by.some((b) => b.get(r.category)?.q <= PADJ)
+    );
+    if (!cats.length) return '';
+    const cell = (r) => (r ? `${esc(fx(r.eff))} <span class="muted">q ${esc(fq(r.q))}</span>` : '–');
+    return (
+      `<section class="pcard controls" id="q-controls" tabindex="-1"><h3>Controls</h3><p class="page-note">The same ` +
+      `test again with one change each (${esc(METHOD[m] || 'proteins, hypergeometric')}). Holds: the same reading at ` +
+      `q ≤ 0.05; weaker: the same direction, not at q ≤ 0.05; reversed: the other way at q ≤ 0.05; lost: under 1.1× ` +
+      `in the same direction, or the other way without q ≤ 0.05; new: a reading the question itself does not have.</p><div class="tbl-card"><table class="tbl">` +
+      `<thead><tr><th>Class</th><th>This question</th>${ctl
+        .map((x) => `<th><a href="${esc(link('overview', x.id))}">${esc(A[x.id].control_label)}</a></th>`)
+        .join('')}</tr></thead><tbody>` +
+      cats
+        .slice(0, 16)
+        .map(
+          (r) =>
+            `<tr><td>${esc(r.label)}</td><td>${cell(r)}</td>${by
+              .map((b) => {
+                const c = b.get(r.category),
+                  v = ctlVerdict(r, c);
+                return `<td>${cell(c)}${v ? ` <b class="ctl-${v.replace(' ', '-')}">${esc(v)}</b>` : ''}</td>`;
+              })
+              .join('')}</tr>`
+        )
+        .join('') +
+      `</tbody></table></div></section>`
+    );
+  }
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
   function focus(aid) {
     // a question that is one of a card's views (website.overview cards: views) opens that card
@@ -2117,7 +2250,7 @@
     const rows = mod ? [] : chartRows(a, S.m, card);
     return (
       bar +
-      `<div class="page-head"><h2>${esc(card.title || a.title)}</h2><span class="tools">${
+      `<div class="page-head"><h2>${esc(card.title || a.title)}</h2>${pageFails(a)}<span class="tools">${
         a.kind === 'protein_sets' || mod
           ? ''
           : `<span class="flabel">Test:</span> <span class="seg" ` +
@@ -2172,7 +2305,8 @@
         selOn() && !vsOn() && !mod
           ? `<p class="twhole">` + `<span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>`
           : ''
-      }</section>`
+      }</section>` +
+      (mod ? '' : controlsBlock(a, a.kind === 'protein_sets' ? 'enricher' : S.m))
     );
   }
   // what the site keeps, what it asks other services for, and under which licenses everything is
@@ -2621,6 +2755,7 @@
         )
         .join('') +
       `</tbody></table></div></section>` +
+      controlsMethod() +
       D.analyses.map(questionMethod).join('') +
       (K.methodParts || []).map((f) => f()).join('') +
       K.methods.map((x) => x.html()).join('') +
@@ -2641,6 +2776,38 @@
     );
   }
 
+  // the site's controls (D.controls): what each changes, the questions it repeats, and, for a count of independent
+  // groups (distinct_at_least), which items count once together and which not at all
+  function controlsMethod() {
+    const cs = D.controls || [];
+    if (!cs.length) return '';
+    const one = (c) => {
+      const n = c.count,
+        groups = Object.entries(n?.groups || {}),
+        spec = Object.values(D.attribute_specs || {}).find((x) => n && x.column === n.column),
+        nm = (v) => esc(spec?.values?.[v] || v);
+      return (
+        `<h4>${esc(cap(c.label))}</h4>${c.note ? `<p>${esc(c.note)}.</p>` : ''}` +
+        (n
+          ? `<p>A ${esc(W.mark)} counts when at least ${int(n.distinct_at_least)} independent sources report it.` +
+            (groups.length
+              ? ` Sources counted once together: ${groups
+                  .map(([g, xs]) => `${esc(g)} (${xs.map(nm).join(', ')})`)
+                  .join('; ')}.`
+              : '') +
+            ((n.not_counted || []).length ? ` Not counted: ${n.not_counted.map(nm).join(', ')}.` : '') +
+            `</p>`
+          : '') +
+        `<p class="muted">Repeats: ${c.questions
+          .map((q) => `<a href="${esc(link('overview', q))}">${esc(A[q]?.title || q)}</a>`)
+          .join(', ')}.</p>`
+      );
+    };
+    return (
+      `<section id="m-controls"><h3>Controls</h3><p>Some questions are repeated with one change each, and each ` +
+      `question's page shows its controls beside its result.</p>${cs.map(one).join('')}</section>`
+    );
+  }
   // a question's own Method section (#method/q-<id>): what it asks, what it is compared with and its classes
   function questionMethod(a) {
     const RUN = D.run,

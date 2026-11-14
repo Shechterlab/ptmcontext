@@ -91,7 +91,11 @@ MODULES = (
     'kit-pfolds.js',
     'kit-pix.js',
     'kit-genelist.js',
+    'kit-overlap.js',
     'kit-pathway.js',
+    'kit-netcore.js',
+    'kit-netlayout.js',
+    'kit-network.js',
     'kit-tile.js',
     'kit-figures.js',
     'kit.js',
@@ -108,6 +112,33 @@ def _with_families(analyses: list, site: dict) -> list:
         if a.get('family')
     }
     return [{**a, **keep[a['id']]} if a['id'] in keep else a for a in analyses]
+
+
+def controls_data(site: dict) -> list[dict]:
+    """The site's controls (controls:) for the Method page: each one's label, note, questions, and, for a condition that
+    counts groups of a list (distinct_at_least), the groups, the items not counted and the number needed."""
+    out = []
+    ids = {a['id'] for a in site.get('analyses', [])}
+    for c in site.get('controls') or []:
+        rec = {
+            'id': c['id'],
+            'label': c['label'],
+            'note': c.get('note', ''),
+            'questions': [f'{a}_{c["id"]}' for a in c['analyses'] if f'{a}_{c["id"]}' in ids],
+        }
+        w = c.get('marks_where') or {}
+        if 'distinct_at_least' in w:
+            rec['count'] = {k: w[k] for k in ('column', 'distinct_at_least', 'groups', 'not_counted') if k in w}
+        out.append(rec)
+    return out
+
+
+def _control(a: dict) -> dict:
+    """A control of another question (controls: in the site file): the question it controls and its short name, for
+    that question's page, which shows the control beside its result."""
+    return (
+        {'control_of': a['control_of'], 'control_label': a.get('control_label', a['id'])} if a.get('control_of') else {}
+    )
 
 
 def _asset(name: str) -> Path:
@@ -434,6 +465,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                     'help': dict(a.get('help') or {}),
                     'set_note': a.get('set_note', ''),
                     'new': bool(a.get('new')),
+                    **_control(a),
                     **_class_order(a, {}),
                 }
             )
@@ -459,6 +491,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                 'new': bool(a.get('new')),
                 **({'only_in': True} if a.get('only_in') else {}),
                 **({'subset': True} if a.get('marks_where') else {}),
+                **_control(a),
                 **(
                     {'note': note_text(a['note'], stats)} if a.get('note') else {}
                 ),  # a note under the question, with its one-click filters
@@ -845,7 +878,7 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
     analyses = [
         c
         for c in marks.columns
-        if c not in ('accession', 'position', 'residue', 'window_15') and not c.startswith(('a.', 'n.'))
+        if c not in ('accession', 'position', 'residue', 'window_15') and not c.startswith(('a.', 'n.', 'in.'))
     ]
     attrs = [
         c for c in marks.columns if c.startswith('a.')
@@ -1106,6 +1139,14 @@ def selection_data(
                 'skip': sorted(pidx[a] for a in (used.get('proteins') or {}).get('not_counted', []) if a in pidx),
                 'alone': used.get('marks_alone') == 'count',
             }
+    for aid in analyses:  # a flags question that counts some marks only (only_in, marks_where): which it leaves out,
+        used = (run.get('analyses') or {}).get(
+            aid
+        ) or {}  # by index (marks.tsv in.<analysis>), as no flag is not outside
+        if f'in.{aid}' in marks.columns and (used.get('only_in') or used.get('marks_where')):
+            counted.setdefault(aid, {'skip': [], 'alone': False})['out'] = [
+                i for i, x in enumerate(marks[f'in.{aid}']) if not x
+            ]
     # a question of several tests: each test (class) counts its own candidates. Per class, per protein it counts:
     # [its other candidates, the positions of the protein's marks it does not count]; a protein it does not count is
     # absent. the browser reads it as by_test.
@@ -1135,10 +1176,11 @@ def selection_data(
         g = counts[counts['analysis'] == aid]
         total = g.drop_duplicates('accession').set_index('accession')['others_total'].astype(int)
         # the same for every class, and the marks it does not count are those with no class in it: written once, as
-        # 'all' with outside 'unclassed' (the browser leaves out a mark with no class), not a list of positions per class
+        # 'all' with outside 'unclassed' (the browser leaves out a mark with no class), not a list of positions per class;
+        # a flags question, where no flag is not outside, names them instead ('listed': counted.out, by index)
         by_test[aid] = {
             'all': {str(pidx[a]): [int(n), []] for a, n in total.items() if a in pidx},
-            'outside': 'unclassed',
+            'outside': 'listed' if 'out' in counted.get(aid, {}) else 'unclassed',
         }
     # flags tested among some residues only (a motif family's `among`): each flag's letters, and per letters each
     # protein's other candidates among them (among_counts.tsv); with each mark's residue, a retest counts the same residues
@@ -1508,6 +1550,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             if f'a.{a}' in mk.columns
         }
     data['attribute_specs'] = site['marks'].get('attributes', {})
+    data['controls'] = controls_data(site)
     data['reporters'] = reporters(site, folder)
     # questions answered by counting the marks (website.counts): the whole dataset's counts in the page, each
     # experiment's marks in selection.json
@@ -1606,6 +1649,19 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             pw = PW.build(site, run, kept, listing, fasta, out, log)
             if pw:
                 data['front']['pathways'] = pw
+        # the network view (website.network): its two files are read when the view is opened, not with the page
+        from . import network as NW
+
+        nw = NW.build(site, run, listing, folder, out, log)
+        if nw:
+            data['network'] = nw
+        # the Overlap page's files (website.overlap), read when a reader opens the page
+        if web.get('overlap'):
+            from . import overlap as OV
+
+            ov = OV.build(site, run, folder, listing, fasta, out, log)
+            if ov:
+                data['overlap'] = ov
     # the site's pages (website.pages) and the whole tables they read, one file each, read when a page first needs one
     data['page_tables'], inline_page_tables = (
         page_tables(site, web.get('tables') or {}, run, listing, out, log) if listing else ({}, '')
@@ -1645,6 +1701,8 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     one_file_data = page_data
     if page_data.get('front', {}).get('pathways'):  # the pathway files are read one at a time: not in the one-file copy
         one_file_data = {**page_data, 'front': {k: v for k, v in page_data['front'].items() if k != 'pathways'}}
+    if page_data.get('network'):  # its files are read when the view is opened: the one-file copy has no network view
+        one_file_data = {k: v for k, v in one_file_data.items() if k != 'network'}
     if late:
         (out / 'data').mkdir(parents=True, exist_ok=True)
         (out / 'data' / 'site.json').write_text(

@@ -195,6 +195,43 @@ def among_marks(ctx: L.Context, cand: pd.DataFrame, ids) -> np.ndarray:
     return _keys(cand).isin(keys).to_numpy()
 
 
+def digest_lengths(seq: str, positions: np.ndarray, after: str, not_before: str = '') -> np.ndarray:
+    """The length of the peptide that holds each position (1-based) when the protein is cut after each residue of
+    `after` that is not followed by one of `not_before`, and not at the position itself (a modified residue is not cut:
+    the peptide that would carry the residue modified)."""
+    n = len(seq)
+    cuts = np.array(
+        [i + 1 for i in range(n - 1) if seq[i] in after and seq[i + 1] not in not_before], dtype=np.int64
+    )  # a cut after residue i (1-based): between i and i + 1
+    pos = np.asarray(positions, dtype=np.int64)
+    k = np.searchsorted(cuts, pos, side='left')  # cuts before the position: cuts[:k] < pos
+    start = np.where(k > 0, cuts[np.maximum(k - 1, 0)] + 1 if len(cuts) else 1, 1)
+    j = np.searchsorted(cuts, pos, side='right')  # the first cut after the position (a cut at it is skipped)
+    end = np.where(j < len(cuts), cuts[np.minimum(j, len(cuts) - 1)] if len(cuts) else n, n)
+    return end - start + 1
+
+
+def in_digest_peptide(ctx: L.Context, cand: pd.DataFrame, rule: dict) -> np.ndarray:
+    """Whether each candidate residue lies in a peptide of a length mass spectrometry detects (min_length to max_length,
+    inclusive) when its protein is digested in silico: cut after each residue of `after` unless the next is one of
+    `not_before` (trypsin: after K and R, not before P), the residue itself left uncut. A detectability control: the
+    residues a peptide-based method could have reported."""
+    unknown = sorted(set(rule) - {'after', 'not_before', 'min_length', 'max_length'})
+    if unknown or 'after' not in rule:
+        raise ValueError(f'only_in: digest needs after (and takes not_before, min_length, max_length), not {unknown}')
+    lo, hi = int(rule.get('min_length', 1)), int(rule.get('max_length', 10**9))
+    out = np.zeros(len(cand), dtype=bool)
+    acc = cand['accession'].to_numpy()
+    pos = cand['position'].to_numpy(dtype=np.int64)
+    order = np.argsort(acc, kind='stable')
+    bounds = np.flatnonzero(np.r_[True, acc[order][1:] != acc[order][:-1], True])
+    for s, e in zip(bounds[:-1], bounds[1:]):
+        idx = order[s:e]
+        L_ = digest_lengths(ctx.snapshot.sequences[acc[idx[0]]], pos[idx], rule['after'], rule.get('not_before', ''))
+        out[idx] = (L_ >= lo) & (L_ <= hi)
+    return out
+
+
 def inside_regions(ctx: L.Context, cand: pd.DataFrame, only_in) -> np.ndarray:
     """Whether each candidate residue is inside a region of 'idr' (the IDRs) or of {role, kind} (an interval table), is
     of some letters or a motif ({residues, motif}), or is one of some marks ({marks: [ids]})."""
@@ -207,6 +244,11 @@ def inside_regions(ctx: L.Context, cand: pd.DataFrame, only_in) -> np.ndarray:
         return among_marks(ctx, cand, only_in['marks'])
     if isinstance(only_in, dict) and ({'residues', 'motif'} & set(only_in)) and 'role' not in only_in:
         return residues_matching(ctx, cand, only_in)
+    if isinstance(only_in, dict) and 'digest' in only_in:
+        unknown = sorted(set(only_in) - {'digest'})
+        if unknown:
+            raise ValueError(f'only_in: unknown keys {unknown} beside digest')
+        return in_digest_peptide(ctx, cand, only_in['digest'])
     if only_in == 'idr':
         from .layers.context import idr_units
 

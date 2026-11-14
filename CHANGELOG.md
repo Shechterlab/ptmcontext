@@ -1,7 +1,50 @@
-## Unreleased
+## 0.5.0 (unreleased)
 
-What changed for readers:
+- Overlap page (`website.overlap`): two to four terms (protein sets, classes, reader families, enzymes, the selection, a gene list) as rows of regions (a membership matrix, a split size bar, the share with sites against all reviewed proteins with its 95% interval) and, for two or three terms, an area-proportional diagram, with proteins, proteins with sites, fold, a hypergeometric test against all reviewed proteins and Benjamini-Hochberg q for each region; also for sites, enzymes and readers. A "Compare with..." button on the rows of protein-set questions. Reader families (Tudor; chromodomain, PHD, MBT, PWWP; 14-3-3, SH2, BRCT; bromodomain, YEATS) are listed in the site files with their Pfam and InterPro ids.
+- Overlap terms from GO biological process (propagated annotations without computational-only evidence, 5 to 5,000 proteins), listed by name, GO id and size; one generic `term_sources` entry in the site file (data from PTM_Pipeline's staged GO tables; cite Gene Ontology Consortium 2023 and Ashburner et al. 2000).
+- `ptmc run` writes `overlap_members.json` (every protein of each set) for the questions an Overlap block names; the statistics are unchanged.
+- Controls: a site file can repeat questions with one change each (`controls:`), and each question's page shows its
+  controls beside its result (holds, weaker or lost), not as Overview tiles. The changes: a part of the marks
+  counted by independent groups (`distinct_at_least`, with one laboratory's studies counted once and databases not at
+  all), the other marks on neither side (`marks_outside: left_out`); proteins set aside (`without_proteins`); only the
+  residues in a detectable tryptic peptide (`only_in: {digest}`). The Method page lists them. A result that fails a
+  control (lost or reversed; `website.overview.control_badges`) keeps its tile row, with a muted badge naming the control
+  that opens its Controls table.
+- Methylarginine site: motif, disorder, IDR charge and aromatic-neighbour questions on the high-confidence sites (at
+  least two independent studies) and the motif and disorder questions on the sites found without methylarginine
+  antibodies; the near-modification and IDR charge questions inside IDRs. The release's rows are unchanged.
+- Lysine and methyllysine sites: the same-lysine pairs and chromatin probability with the histones set aside; the
+  near-modification and IDR charge questions inside IDRs. Lysine and phosphosite sites: disorder, structure, domain
+  class and IDR charge counted only in detectable tryptic peptides.
+- A flags question (motifs) may count a part of the marks or only some regions: the run lists the marks it leaves out.
+- New Network tab (all four sites): the proteins with sites as one network, with STRING physical links and curated
+  Complex Portal complexes as edges, grouped into Louvain clusters, each named by its most enriched GO biological process
+  (q on hover; a menu names them by Reactome pathway instead). A GO term counts only if it lies at least three steps below
+  the root, annotates 5 or more and at most 20% of the network's proteins, and rests on evidence other than IEA; the
+  smallest q wins, and equal q goes to the deeper term. Long names are shortened in the figure only.
+  Colour by cluster or by the share of sites in disordered regions, the domain class, and (phosphosites) the kinase and
+  reader motif classes. A selection is clustered again in the browser. Table view, SVG, PNG and TSV exports, a
+  tile on the Overview. For the code: `website.network` (schema, CONTRACTS.md, `ptmcontext/web/network.py`,
+  `kit-netcore.js`, `kit-network.js`). The sites read PTM_Pipeline at commit 4557062 (the merge of its pull request 24), which stages
+  the GO biological process tables (`inputs/annotation/go_bp_human_2026-11-04.tsv` and `go_bp_terms_2026-11-04.tsv`; GO
+  Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000),
+  doi:10.1038/75556; CC BY 4.0); the CI and Pages checkouts are pinned to it.
+- The Network figure is laid out in groups: every cluster has a region of its own, clusters of look-alike colours are
+  kept apart, links between clusters are drawn as one band per pair, names sit beside the regions in a short form, and
+  hovering a protein or a cluster lights what it is joined to. The default figure is laid out when the site is built; a
+  phone gets its own portrait layout with numbered badges and a list. A Clusters menu asks for a number of clusters. A GO term
+  must also annotate at most 1,500 proteins of the proteome to name a cluster. The exports (slide, or paper at 180 mm)
+  carry a title that is a claim, one sentence, a key and a short credit; commit, file names and address stay in the file's
+  metadata. Cluster slot 6 is now a brown. The controls are one row (Clusters, Colour by, Find a gene, the buttons and the
+  downloads) with the others under More options, closed; the summary and the key share one line above the figure, so that
+  the figure starts on the first screen of a laptop.
 
+- Network: the Colour by menu offers the share of sites in disordered regions (five steps of the style guide's blue), a **See in
+  network** button on every protein page opens the network with that protein shown, its cluster lit and the drawing zoomed
+  to it (the address is `#network?p=<accession>`; a protein outside the default view makes the page draw more proteins or
+  only the protein and its partners, or says why it is not there), and under the button a small drawing of the protein among
+  its cluster. The button carries the selection and filters. Find genes takes a pasted list and counts and lists what it
+  found. The section under the figure is called Method and is four sentences and the citations.
 - The cell and nucleus maps have a switch, "Percent with sites | Fold vs other proteins", on the Overview card, the
   cell page and the enlarged map. Percent colors each compartment by the share of its proteins that carry at least one
   mark, labelled with the count ("Chromatin 97% · 412 proteins"), with the share among all proteins as a tick in the key.

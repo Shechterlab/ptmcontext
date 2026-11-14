@@ -12,6 +12,10 @@ inputs:                # role the layers read: manifest input that fills it
   domains: interpro_domains
   reactome: reactome_protein_pathways
   reactome_names: reactome_pathways
+  go_bp: go_bp_annotations                       # the network view's cluster names
+  go_terms: go_bp_terms
+  string_partners: string_physical_v12_5         # the network view's STRING links
+  complexes: complex_portal_complexes            # and its curated complexes
   hpa: hpa_locations
   abundance: paxdb_abundance
   eclip_maps: release_eclip_rna_compartments    # where the RNAs of proteins with eCLIP data gather, per map
@@ -38,6 +42,8 @@ inputs:                # role the layers read: manifest input that fills it
   density_windows: density_windows_v1_4_3
   lower_confidence_sites: methylarginine_lower_confidence_sites_v1_4_3
   interpro_entries: interpro_all_entries
+  go_bp_annotations: go_bp_annotations         # the Overlap page's GO biological process terms
+  go_bp_terms: go_bp_terms
   # interactions and binding (scripts/37_export_interaction_data.py of the release): each role one kind of evidence
   uniprot_disorder: uniprot_disordered_regions
   uniprot_domains: uniprot_domain_regions
@@ -1158,6 +1164,50 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: binding_region_disordered, inside: intact_binding_regions, proteins_with: intact_binding_regions, covered_by: uniprot_disorder,
          background: other arginines of the same proteins with an IntAct binding region, label: "Binding region, disordered residues"}
 
+# Controls (CONTRACTS.md, Controls): questions repeated with one change each, shown on each question's page beside its
+# result. None changes a row of the release's questions.
+controls:
+  # High-confidence sites: reported by at least two independent studies. Compilations and databases are not independent
+  # evidence and count for nothing: PhosphoSitePlus (it also holds Cell Signaling Technology's own discovery runs),
+  # UniProt (curated literature), IEDB (HLA-presented epitopes from other studies) and ProMetheusDB (a compilation of the
+  # Bonaldi laboratory's SILAC and heavy-methyl SILAC runs). Studies of one laboratory count once: Larsen 2016 and
+  # Sylvestersen 2014 (Nielsen laboratory, HEK293 cells); Lu 2024 and Lu 2025 (one laboratory, HeLa cells; STUDIES.md);
+  # Musiani 2019 and Fong 2019 (Musiani, Massignani and Bonaldi are authors of both). Guo 2014 (Cell Signaling
+  # Technology), Fedoriw 2019 (GSK) and Lim 2020 (an academic group) share Cell Signaling Technology's antibodies, not a
+  # laboratory or samples, and count as three studies.
+  - id: hc
+    label: high-confidence sites
+    note: "Only the sites at least two independent studies report (a laboratory's studies counted once; PhosphoSitePlus, UniProt, IEDB and ProMetheusDB not counted); the other sites are counted on neither side"
+    analyses: [motif, disorder, idr_charge, sticker_context_3, sticker_context_3_idr]
+    marks_where:
+      column: studies
+      distinct_at_least: 2
+      not_counted: [PSP, UniProt, IEDB, ProMetheusDB]
+      groups:
+        Nielsen laboratory: [Larsen2016, Sylvestersen2014]
+        Lu laboratory: [Lu2024, Lu2025]
+        Bonaldi laboratory: [Musiani2019, Fong2019]
+    marks_outside: left_out
+  # Sites found without a methylarginine antibody: the antibodies were raised against RG and RGG peptides, so a motif
+  # result could be the antibody's own preference. Lu 2025 enriched with the SMN Tudor domain, UniProt's annotations are
+  # curated from the literature and IEDB's are HLA-presented peptides; every other study enriched with antibodies, and
+  # PhosphoSitePlus and ProMetheusDB hold antibody runs too.
+  - id: noab
+    label: found without antibodies
+    note: "Only the sites a source that did not enrich with methylarginine antibodies reports (Lu 2025, SMN Tudor domain; UniProt; IEDB); the other sites are counted on neither side"
+    analyses: [motif, disorder]
+    marks_where:
+      column: studies
+      distinct_at_least: 1
+      not_counted: [PSP, ProMetheusDB, Larsen2016, Sylvestersen2014, Maron2021, Guo2014, Musiani2019, Fong2019, Li2021, Fedoriw2019, Lim2020, Wei2020, Hartel2019, Geoghegan2015, Ma2023, Lu2024]
+    marks_outside: left_out
+
+  - id: inidr
+    label: inside IDRs
+    note: "Only the arginines inside intrinsically disordered regions (MobiDB) count, methylarginines and other arginines alike, so the result is not a matter of disorder"
+    analyses: [near_phospho, near_phospho_high, near_methyllysine, near_acetylation, near_other_acylation, near_ubiquitination, near_sumoylation, idr_charge]
+    only_in: idr
+
 reference:
   statistics: methylarginine_statistics_v1_4_3
   # the residue questions' denominators: each protein's other arginines, in all and per class or motif
@@ -1975,6 +2025,65 @@ website:                  # the look and words of the website (ptmc web); layout
     sel-enriched: "?vs=marks"
     ov-ix: "#interactions"            # the explorer's Interactions and binding question: the Interactions page
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
+  network:                 # the Network view (kit-network.js): the proteins with sites as one network, clustered, each cluster named by its most enriched term
+    title: Network
+    about: "Methylated proteins as one network: STRING physical links and curated complexes join them, communities are the clusters, and each cluster is named by its most enriched GO biological process (or Reactome pathway). Node size is the number of sites."
+    edges:
+      - {id: string_physical, kind: pairs, label: STRING physical, input: string_partners, min_score: 700, cite: "STRING v12.5: Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113", url: "https://string-db.org"}
+      - {id: complex_portal, kind: groups, label: Complex Portal complexes, input: complexes, where: {curation: curated}, max_size: 40, weight: 700, cite: "Complex Portal (curated complexes, CC0): Meldal et al., Nucleic Acids Res 50:D578 (2022), doi:10.1093/nar/gkab991", url: "https://www.ebi.ac.uk/complexportal"}
+    label_from:             # the first source names the clusters; the others are in the Label by menu
+      - id: go_bp
+        label: GO biological process
+        input: go_bp
+        set: go_id
+        protein: uniprot_accession
+        names: {input: go_terms, set: go_id, name: go_name, depth: depth_min, size: n_proteins}
+        min_depth: 3            # a term must lie at least three steps below the root
+        max_size: 1500          # and annotate at most this many proteins of the whole proteome
+        non_iea: true           # count only annotations with evidence other than IEA (false: all)
+        cite: "Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556; GOA human annotations of 2026-11-04"
+        url: "https://geneontology.org"
+      - id: reactome
+        label: Reactome
+        input: reactome
+        set: pathway_id
+        protein: canonical_UniProtAC
+        names: {input: reactome_names, set: pathway_id, name: name, depth: depth}
+        cite: "Reactome release 97: Ragueneau et al., Nucleic Acids Res 54:D673 (2026), doi:10.1093/nar/gkaf1223"
+        url: "https://reactome.org"
+    top: 300
+    min_cluster: 5
+    cluster: louvain
+    clusters: {default: auto, min: 4, max: 16}   # the page's Clusters menu: auto (Louvain at its default resolution) or a target number
+    lead: "Methylated proteins joined by physical links and complexes, grouped into clusters named by GO biological process."   # the one line under the heading; the section Method has the rest
+    controls: [clusters, colour, find]   # the main row (others under More options): label, clusters, colour, find, score, top, minc, sources, preset, claim
+    protein_link: true   # a See in network button on every protein page (#network?p=<accession>)
+    protein_preview: true   # and a small drawing of it among its cluster under the button
+    claim: "Methylated proteins form {n} functional clusters"   # the exported figure's title
+    color_by:
+      - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}
+      - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}
+    tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites as one network of physical links and complexes, in clusters named by GO biological process."}
+  # The Overlap page: 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
+  overlap:
+    terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, go_binding, binding_protein]
+    max_terms: 4
+    term_sources:      # GO biological process, propagated over is_a and part_of, 5 to 5,000 proteins; the evidence include below keeps annotations that are not computational-only (remove it to keep every annotation)
+      - id: go_bp
+        title: GO biological process
+        members: {input: go_bp_annotations, protein: uniprot_accession, set: go_id, include: [{column: non_iea, equals: "true"}]}
+        names: {input: go_bp_terms, id: go_id, name: go_name}
+        min_size: 5
+        max_size: 5000
+        cite: ["Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031", "Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556"]
+    leave_out: {binding_protein: [rna_rbdmap, rna_pclap]}   # unpublished peptide data: not offered, not written
+    notes: {cell_hcm_compartment: one main location per protein, cell_hcm_domain: one main location per protein, cell_organelle_ip: one main location per protein}
+    units: [proteins, sites, readers, enzymes]
+    enzymes: {roles: [writer, eraser]}
+    readers:           # a protein is a reader when it carries any listed Pfam or InterPro entry (each id checked on InterPro)
+      source: interpro_entries
+      families:
+      - {name: Tudor, ids: [IPR002999, PF00567, IPR010304], note: "Tudor domains, including the SMN and SPF30 (SMNDC1) type; some read methylarginine, others methyllysine"}
   compare: {stratify: studies, min_proteins: 10, min_marks: 30}      # "compared with other methylarginines, within studies": the same reporting sources
   proteins:                # the Proteins page (kit-tables.js): its table's columns after the protein and its sites, in the Columns
                            # menu (default: true shows at first), and its download's columns; the explorer's

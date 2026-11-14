@@ -453,8 +453,21 @@ def test_an_only_in_question_gets_its_own_counts_for_a_selection(tmp_path):
     assert all(positions == [] for _, positions in bt['all'].values())
     assert (marks['sticker_in_idrs'] == '').any()  # there are marks outside
     assert len(bt['all']) < len(prots)  # and a protein with no residue inside is left out
-    # a flags layer cannot say which marks are outside
-    site['analyses'].append({'id': 'bad', 'layer': 'motif', 'only_in': 'idr'})
+    # a flags layer takes only_in too: no flag is not outside, so the run lists the marks outside (in.<question>) and
+    # the page names them by index (outside 'listed', counted.out), not by position
+    site['analyses'].append({'id': 'flags_in_idrs', 'layer': 'motif', 'only_in': 'idr', 'new': True})
+    (root / 'sites' / 'toy.yaml').write_text(yaml.safe_dump(site, sort_keys=False))
+    assert S.roles_missing(S.load_site(root / 'sites' / 'toy.yaml')) == []
+    S.run(root / 'sites' / 'toy.yaml', root=root / 'data', log=lambda *_: None)
+    index = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None)
+    marks = pd.read_csv(root / 'out' / 'toy' / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
+    assert list(marks['in.flags_in_idrs'] == '') == list(marks['sticker_in_idrs'] == '')
+    sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
+    assert sel['by_test']['flags_in_idrs']['outside'] == 'listed'
+    assert sel['counted']['flags_in_idrs']['out'] == [i for i, x in enumerate(marks['in.flags_in_idrs']) if not x]
+    assert 'out' not in sel['counted'].get('sticker_in_idrs', {})  # a class layer needs no list
+    # a question of several tests cannot
+    site['analyses'].append({'id': 'bad', 'tests': [{'category': 'x', 'inside': 'disorder'}], 'only_in': 'idr'})
     (root / 'sites' / 'bad.yaml').write_text(yaml.safe_dump({**site, 'id': 'bad'}, sort_keys=False))
     assert any('only_in' in p for p in S.roles_missing(S.load_site(root / 'sites' / 'bad.yaml')))
 

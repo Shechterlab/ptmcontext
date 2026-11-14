@@ -137,6 +137,7 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 | `kit-pfolds.js` | the protein page's folds: a picture in each header, and the This protein / Dataset context switch |
 | `kit-pix.js` | the protein page's Interactions view, site first |
 | `kit-genelist.js` | the gene-list test (`#list`) |
+| `kit-overlap.js` | the Overlap page (`#overlap`; `website.overlap`; data from `web/overlap.py`) |
 | `kit-pathway.js` | the pathway view (`website.front.pathways`) |
 | `kit-tile.js` | the Overview tiles' rows, axis, answer line and download menu (`K.tilekit`) |
 | `kit-figures.js` | the figure panels page ("Make figures") |
