@@ -237,7 +237,7 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   the columns `compartment, map, n_proteins, n_with_sites, percent` (with a selection `n_in_selection` replaces
   `n_with_sites`, and `n_with_sites, percent_with_sites` follow).
 - `range`: `data` or `full`, the percent view's colour range (the five steps are fifths of it). `full` is 0 to 100%; `data`
-  runs from the lowest share among the compartments (those of at least `website.reading.min_group` proteins), rounded
+  runs from the lowest share among the compartments as drawn (those of at least `website.reading.min_group` proteins), rounded
   down to 5%, to 100%, and the key marks the scale as not starting at 0. Without it: `data` where the share among all the
   proteins the maps place is 80% or more, else `full`. With a selection the steps are fifths of the largest share.
   The key also gives the share among all the reviewed proteins ("63% of all reviewed proteins · 96% of mapped proteins"),

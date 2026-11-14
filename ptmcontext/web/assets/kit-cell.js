@@ -608,15 +608,14 @@
     const ref = pctRef(false),
       mode = C.range || (ref != null && ref >= 0.8 ? 'data' : 'full');
     if (mode !== 'data') return 0;
+    // the parts as drawn: each row's median over its maps, among rows of at least min_group proteins
     const v = [];
     for (const L of [LAYERS.part, LAYERS.region])
       L.groups.forEach(([, rows]) =>
-        rows.forEach((row) =>
-          L.cols.forEach((aid) => {
-            const c = pctCell(aid, row.map[aid], false);
-            if (c && c.M >= READ.min_group) v.push(c.share);
-          })
-        )
+        rows.forEach((row) => {
+          const cs = L.cols.map((aid) => pctCell(aid, row.map[aid], false)).filter(Boolean);
+          if (cs.length && medOf(cs.map((c) => c.M)) >= READ.min_group) v.push(medOf(cs.map((c) => c.share)));
+        })
       );
     return v.length ? Math.min(0.95, Math.floor(Math.min(...v) * 20 + 1e-9) / 20) : 0;
   }
