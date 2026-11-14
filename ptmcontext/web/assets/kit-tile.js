@@ -152,8 +152,16 @@
             .slice(0, 1);
     const nm = (r) => `${esc(r.label)} (${K.fxn(r.v)}×)`;
     if (!ok.length) return rows.length && rows.every((r) => r.absent) ? 'None of these is in this selection.' : '';
-    if (!more.length && !less.length)
-      return `No row here differs from the other ${fold ? 'proteins' : esc(W.residues)}.`;
+    if (!more.length && !less.length) {
+      // the same rule as the colors: a row significant by its test but under 1.1x is said, not hidden (its hover says why)
+      const near = ok.filter((r) => r.q != null && r.q <= K.PADJ && r.dir === 'same').length;
+      return (
+        `No row here differs by 1.1× or more from the other ${fold ? 'proteins' : esc(W.residues)}` +
+        (near
+          ? `; ${near === 1 ? 'one is' : `${near} are`} significant but under 1.1× in fold (hover a row for why).`
+          : '.')
+      );
+    }
     return [
       more.length ? `More often: ${more.map(nm).join(', ')}.` : '',
       less.length ? `Less often: ${less.map(nm).join(', ')}.` : '',

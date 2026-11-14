@@ -1019,9 +1019,9 @@
         shortHelp(r) ? `<span class="lh">` + `<span class="sep">&nbsp;·&nbsp;</span>${esc(r.help)}</span>` : ''
       }</span>` +
       `<span class="cnt">${kfmt(r.a)} / ${kfmt(r.a + r.b)}</span><span class="cnt o">${kfmt(r.c)} / ${kfmt(r.c + r.d)}</span>` +
-      `<svg aria-hidden="true">${marks}</svg><span class="val ${r.dir}">${
-        r.vs ? `${pcS(share1(r))} <span class="muted">` + `· ${pcS(share2(r))}</span>` : valText(r) + shareSpan(r)
-      }${
+      `<svg aria-hidden="true">${marks}</svg><span class="val ${r.dir}"${
+        !r.vs && sameWhy(r) ? ` title="${esc(sameWhy(r))}"` : ''
+      }>${r.vs ? `${pcS(share1(r))} <span class="muted">` + `· ${pcS(share2(r))}</span>` : valText(r) + shareSpan(r)}${
         d
           ? `<i class="dm ${d.dir}" title="Within ` +
             `protein abundance deciles: ${DECILE[d.dir][1]} (OR ${fxn(d.eff)}, q ${fq(d.q)})">${DECILE[d.dir][0]}</i>`
@@ -1033,7 +1033,7 @@
         r.vs
           ? `${pcS(share1(r))} of your selection vs ${pcS(share2(r))} of ${esc(vsName())}`
           : `${valOf(r) !== r.eff && r.eff != null ? `fold ${esc(fx(valOf(r)))}; ` : ''}${esc(effText(r))}, q ${fq(r.q)}`
-      }${d ? `; within ` + `abundance deciles: ${DECILE[d.dir][1]}` : ''}${
+      }${d ? `; within ` + `abundance deciles: ${DECILE[d.dir][1]}` : ''}${r.vs ? '' : sameWhy(r) ? `. ${esc(sameWhy(r))}` : ''}${
         r.ref ? `; whole dataset ${esc(effText(r.ref))}` : ''
       }</span></div>`
     );
@@ -1600,12 +1600,33 @@
       .join('');
   }
   // a tile row as the cards' rows read it: the short row label (website.front.row_labels), the interval, q, n and the whole dataset's ring
+  // a row significant by its test but under 1.1x in the fold the page reads ('same'): why the two disagree, for its hover
+  const sameWhy = (r) => {
+    const t = r.adj || r,
+      q = t.q;
+    if (r.dir !== 'same' || q == null || q > PADJ || t.eff == null) return '';
+    const big = t.eff >= MIN_EFFECT || t.eff <= 1 / MIN_EFFECT;
+    if (!big) return '';
+    const head = `${effName(t)} ${fxn(t.eff)} at q ${fq(q)}, but the fold is ${fx(valOf(r))}, under the 1.1× a difference needs`;
+    if (SETS(r.analysis) && r.a != null && r.a + r.b + r.c + r.d > 0) {
+      const n = r.a + r.b,
+        N = n + r.c + r.d;
+      return (
+        `${head}: the fold is against the whole background, and ${int(n)} of its ${int(N)} proteins ` +
+        `(${pcD(n / N)}) are ${W.marked}, so it stays near 1×; the odds ratio compares with the other proteins only`
+      );
+    }
+    return sharePair(r)
+      ? `${head}: the shares (${sharePair(r)}) are close, and the odds ratio is large where a class is common in both groups`
+      : head;
+  };
+  K.sameWhy = sameWhy;
   const frModel = (a, r) => ({
     label: FR.row_labels?.[a.id]?.[r.category] || r.label,
     v: r.absent ? null : valOf(r),
     lo: ciOf(r),
     sub: r.absent ? '' : testLine(r),
-    tip: r.absent ? '' : countLine(r),
+    tip: r.absent ? '' : [countLine(r), sameWhy(r)].filter(Boolean).join('. '),
     q: r.adj ? r.adj.q : r.q,
     dir: r.absent ? 'ns' : r.dir,
     n: r.absent ? null : r.a,
