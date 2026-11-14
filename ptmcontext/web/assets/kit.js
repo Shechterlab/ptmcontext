@@ -2180,11 +2180,14 @@
   K.controlFails = controlFails;
   K.ctlVerdict = ctlVerdict;
   // the page is drawn again (and may load its data first): the Controls table is brought into view, and focused, once it is there
-  function toControls(tries = 40) {
-    const t = document.getElementById('q-controls');
-    if (t && tries < 38 && t.getBoundingClientRect().top < innerHeight * 0.6) return t.focus({ preventScroll: true });
-    if (t) t.scrollIntoView({ block: 'start' }); // and again until the page stops moving under it
-    if (tries) setTimeout(() => toControls(tries - 1), 100);
+  function toControls(tries = 120, still = 0) {
+    // (the page may draw itself again as its data comes, as the IDRs section does: the table is in view three checks
+    // running before it is focused, and brought back each time the page moves it)
+    const t = document.getElementById('q-controls'),
+      seen = t && t.getBoundingClientRect().top < innerHeight * 0.6 && t.getBoundingClientRect().bottom > 0;
+    if (seen && still >= 2) return t.focus({ preventScroll: true });
+    if (t && !seen) t.scrollIntoView({ block: 'start' });
+    if (tries) setTimeout(() => toControls(tries - 1, seen ? still + 1 : 0), 100);
   }
   K.toControls = toControls;
   // a badge opens its question at the Controls table and does nothing else: the click goes no further (not to the tile,
