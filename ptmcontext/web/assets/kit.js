@@ -1134,7 +1134,9 @@
         about: x.about,
         show: x.show,
         more: x.more,
-        cards: x.cards.map((c) => (typeof c === 'string' ? { analysis: c } : c)).filter((c) => A[c.analysis]),
+        cards: x.cards
+          .map((c) => (typeof c === 'string' ? { analysis: c } : c.rows_from ? { ...c, analysis: c.rows_from[0] } : c))
+          .filter((c) => A[c.analysis]),
       }));
     else {
       out = [];
@@ -1281,6 +1283,9 @@
 
   // a card's order: by effect (the default) or by evidence (order: q), for sets where a small set reaches the largest
   // fold when every member is marked
+  // a card holds a question as its own, as one row of its rows_from, or as one of its views
+  const cardHas = (c, aid) =>
+    c.analysis === aid || (c.rows_from || []).includes(aid) || (c.views || []).some((v) => v.analysis === aid);
   const cardOf = (aid) => allCards().find((c) => c.analysis === aid) || {};
   // a row's evidence: its reading's q (a set's test within abundance deciles where it has one)
   const qOf = (r) => (r.adj ? r.adj.q : r.q) ?? 1;
@@ -1402,9 +1407,27 @@
   // what a tile shows, for the tile and its exports
   // a selection loaded but too small to test: the tiles read the whole dataset
   const smallSel = () => selOn() && !vsOn() && !!K.sel.data() && !(K.sel.testable() && K.sel.nMarks() > 0);
+  // a card of rows_from: the first row of each of its questions, one row per question, named by the question
+  function groupState(card) {
+    const parts = card.rows_from.filter((id) => A[id]).map((id) => ({ id, st: tileState({ analysis: id, rows: 1 }) }));
+    const shown = parts
+      .filter((p) => p.st.shown.length)
+      .map((p) => ({ ...p.st.shown[0], glabel: card.labels?.[p.id] || FR.short?.[p.id] || A[p.id].title }));
+    return {
+      a: A[card.analysis],
+      rows: parts.flatMap((p) => p.st.rows),
+      shown,
+      more: 0,
+      left: [],
+      whole: null,
+      made: false,
+      foot: '',
+    };
+  }
   function tileState(card) {
+    if (card.rows_from) return groupState(card);
     const a = A[card.analysis],
-      max = card.rows || OV.rows || 7;
+      max = card.rows || OV.rows || 5;
     const rows = collapseSimilar(a, smallSel() ? rowsFor(a, S.m) : withRef(a, rowsOf(a, S.m), S.m));
     let { shown, more, left } = pick(rows, max, card);
     const whole = selOn() && !vsOn() && !smallSel() ? rowsFor(a, S.m) : null;
@@ -1453,59 +1476,68 @@
           .replace(/data-texp="(\w+)"/g, `data-texp="$1" ` + `data-aid="${esc(a.id)}"`);
     const fr = K.tilekit && !shown.some((r) => r.vs) && shown.length;
     const ownSel = ownClasses(a),
-      ms = fr
+      // a single-row tile with controls draws them as rows of one small table on the row's axis; its sentence and row
+      // label would only repeat the title
+      side = fr && !made && shown.length === 1 && !shown[0].absent ? besideOf(card, shown) : [],
+      ms0 = fr
         ? shown.map((r) => {
-            const mine = !!ownSel?.has(r.category),
-              fails = mine || r.absent ? [] : controlFails(a, r.category);
-            return { ...frModel(a, r), mine, fails, badge: fails.map(failText).join('; ') };
+            const grp = card.rows_from ? A[r.analysis] : null,
+              mine = !grp && !!ownSel?.has(r.category),
+              fails = mine || r.absent ? [] : controlFails(grp || a, r.category);
+            // a row of a rows_from card opens its own question
+            return {
+              ...frModel(grp || a, r),
+              mine,
+              fails,
+              badge: fails.map(failText).join('; '),
+              ...(grp ? { go: grp.id } : {}),
+            };
           })
         : [],
+      ms = side.length
+        ? [
+            { ...ms0[0], label: selOn() ? 'Selection' : 'All data', lead: true },
+            ...side.map(({ b, other, r }) => ({
+              ...frModel(other, r),
+              label: b.label,
+              n: null,
+              go: other.id,
+              fails: [],
+              badge: '',
+            })),
+          ]
+        : ms0,
       ax = fr ? K.tilekit.axisOf(K.tilekit.valsOf(ms)) : null;
-    const ans = fr && !made ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
+    const ans = fr && !made && !card.rows_from && shown.length > 1 ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
     return (
-      `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}" tabindex="0"><header><h3>${esc(title)}${
+      `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}"${card.rows_from ? ' data-group' : ' tabindex="0"'}><header><h3>${esc(title)}${
         a.new && D.run.parity
           ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>'
           : ''
-      }</h3>${detailsLink(a.id)}</header>` +
+      }</h3>${card.rows_from ? '' : detailsLink(a.id)}</header>` +
       (ans ? `<p class="tans">${ans}</p>` : '') +
-      (OV.statistic_label !== false && !vsOn() && rows.some((r) => r.eff != null)
-        ? ownSel && fr
-          ? `<p class="tstat">${otherRows(a, made)}</p>`
-          : `<p class="tstat">${
-              shown.every((r) => r.absent || r.shown != null)
-                ? gloss('fold', 'Fold')
-                : gloss('odds ratio', 'Odds ratio')
-            } ${esc(baseline(a, vsMethod(S.m)))}</p>`
-        : '') +
       (shown.length
         ? `<div class="trows${fr ? ' fr-rows' : ''}">${
             fr
-              ? K.tilekit.axisHtml(
-                  ax,
-                  ms.some((x) => x.n != null && !x.cellRow)
-                    ? ms.find((x) => x.n != null)?.measure === 'fold'
-                      ? 'proteins'
-                      : W.marks
-                    : ''
-                ) +
-                ms
+              ? ms
                   .map(
                     (x, i) =>
                       K.tilekit.rowHtml(
                         x,
                         ax,
-                        x.absent
-                          ? ` title="${esc(x.label)}: none in ` + `this selection"`
-                          : x.mine
-                            ? ` data-r="${reg(shown[i])}"${pickAttrs(shown[i]).replace(
-                                / title="[^"]*"/,
-                                ` title="Click ` + `to take ${esc(x.label)} out of the selection"`
-                              )}`
-                            : ` data-r="${reg(shown[i])}"${pickAttrs(shown[i])}`
+                        x.go
+                          ? ' role="button" tabindex="0" aria-haspopup="dialog"'
+                          : x.absent
+                            ? ` title="${esc(x.label)}: none in ` + `this selection"`
+                            : x.mine
+                              ? ` data-r="${reg(shown[i])}"${pickAttrs(shown[i]).replace(
+                                  / title="[^"]*"/,
+                                  ` title="Click ` + `to take ${esc(x.label)} out of the selection"`
+                                )}`
+                              : ` data-r="${reg(shown[i])}"${pickAttrs(shown[i]).replace(/ title="[^"]*"/, '')} aria-haspopup="dialog"`
                       ) + (x.fails.length ? `<div class="ctl-fail">${failBadges(a.id, x.fails)}</div>` : '')
                   )
-                  .join('')
+                  .join('') + K.tilekit.axisHtml(ax)
               : tileRows(shown)
           }</div>`
         : made
@@ -1514,12 +1546,23 @@
             `tnone">${
               rows.some((r) => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'
             }</p>`) +
+      (OV.statistic_label !== false && !vsOn() && shown.length && rows.some((r) => r.eff != null)
+        ? ownSel && fr
+          ? `<p class="tstat">${otherRows(a, made)}</p>`
+          : `<p class="tstat">${
+              shown.every((r) => r.absent || r.shown != null)
+                ? gloss('fold', 'Fold')
+                : gloss('odds ratio', 'Odds ratio')
+            } ${esc(baseline(a, vsMethod(S.m)))}${
+              shown.some((r) => r.adj) ? '. Dots: the test within abundance deciles' : ''
+            }</p>`
+        : '') +
       (fr && ms.some((x) => x.wv != null) ? '<p class="tkey">Dashed ring: the whole dataset.</p>' : '') +
-      besideLine(card, shown) +
+      (side.length ? '' : besideLine(card, shown)) +
       (made
         ? `<p class="tfoot"><b>Whole dataset.</b> ${foot}</p>`
-        : fr
-          ? ''
+        : fr || (!shown.length && !vsOn())
+          ? '' // a tile with no row says so once ("None differs"), not again as its summary
           : foot
             ? `<p class="tfoot">${foot}</p>`
             : '') +
@@ -1534,31 +1577,51 @@
   // an Overview card's beside: {analysis, label}, or a list of them: another question's result for the tile's first class
   // (not a 'Not ...' one), a line each (a control asked another way, or the same pair from one source), in the
   // statistic and method the tile shows, retested on a selection as every question is
-  function besideLine(card, shown) {
+  // the controls of a tile's first class: [{ b, other, r }], the other question's row for the same class
+  function besideOf(card, shown) {
     const bs = !card.beside ? [] : Array.isArray(card.beside) ? card.beside : [card.beside];
     const first = shown.find((x) => !EXCL.test(x.label || '')) || shown[0];
-    if (!first || first.absent) return '';
+    if (!first || first.absent) return [];
     return bs
       .map((b) => {
         const other = A[b.analysis];
-        if (!other) return '';
-        const r = (rowsOf(other, S.m) || []).find((x) => x.category === first.category);
-        // the same statistic, in the same form, as the tile's own rows (r.eff: "2.5×"), and q as the site prints it
-        if (!r || r.eff == null) return '';
-        return (
-          `<p class="tbeside"><a href="${esc(link('overview', other.id))}">${esc(b.label)}</a>: ` +
-          `<span class="nw">${esc(fx(valOf(r)))}, q ${esc(fq(r.adj ? r.adj.q : r.q))}</span></p>`
-        );
+        const r = other && (rowsOf(other, S.m) || []).find((x) => x.category === first.category);
+        return r && r.eff != null ? { b, other, r } : null;
       })
+      .filter(Boolean);
+  }
+  // a line each, for a tile with several rows (a single-row tile draws them as rows: see tile()); the value only, its
+  // q in the hover
+  function besideLine(card, shown) {
+    return besideOf(card, shown)
+      .map(
+        ({ b, other, r }) =>
+          `<p class="tbeside"><a href="${esc(link('overview', other.id))}">${esc(b.label)}</a>: ` +
+          `<span class="nw" title="${esc(testLine(r))}">${esc(fx(valOf(r)))}</span></p>`
+      )
       .join('');
   }
   // a tile row as the cards' rows read it: the short row label (website.front.row_labels), the interval, q, n and the whole dataset's ring
+  // what a row's popover says: the name, the fold, each test in full, the counts, and what its actions open
+  const popOf = (a, r) => ({
+    name: r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
+    fold: fx(valOf(r)),
+    tests: r.adj ? [`Proteins, hypergeometric: q ${fq(r.q)}`, testLine(r)] : [testLine(r)],
+    counts: countLine(r),
+    n: r.a != null ? int(r.a) : '',
+    aid: a.id,
+    cat: r.category,
+    f: A[r.analysis || a.id] ? fkeyOf(a) : '',
+    noun: SETS(a.id) ? 'proteins' : W.marks,
+    ov: SETS(a.id) && K.overlapHas?.(a.id) ? `s:${a.id}:${r.category}` : '',
+  });
   const frModel = (a, r) => ({
-    label: FR.row_labels?.[a.id]?.[r.category] || r.label,
+    label: r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
     v: r.absent ? null : valOf(r),
     lo: ciOf(r),
     sub: r.absent ? '' : testLine(r),
-    tip: r.absent ? '' : countLine(r),
+    tip: r.absent ? '' : [countLine(r), testLine(r)].filter(Boolean).join('. '),
+    pop: r.absent ? null : popOf(a, r),
     q: r.adj ? r.adj.q : r.q,
     dir: r.absent ? 'ns' : r.dir,
     n: r.absent ? null : r.a,
@@ -1605,6 +1668,95 @@
     }
     return MORE.cats;
   }
+  // ---- a tile row's popover: a click (Enter, a tap) on a row says what it is in full and offers its actions; Escape closes it ----
+  let POP = null;
+  const closePop = (focus) => {
+    if (!POP) return;
+    const { el, row } = POP;
+    POP = null;
+    el.remove();
+    row.setAttribute('aria-expanded', 'false');
+    if (focus) row.focus({ preventScroll: true });
+  };
+  function openPop(row) {
+    let d;
+    try {
+      d = JSON.parse(row.dataset.pop);
+    } catch (err) {
+      return;
+    }
+    closePop();
+    const el = document.createElement('div');
+    el.className = 'rowpop';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-label', d.name);
+    el.tabIndex = -1;
+    const btn = (k, t) => `<button type="button" class="btn small" data-rp="${k}">${t}</button>`;
+    el.innerHTML =
+      `<button type="button" class="rp-x" data-rp="close" aria-label="Close">×</button><h4>${esc(d.name)}</h4>` +
+      `<div><span class="rp-fold">${esc(d.fold)}</span>${
+        d.n ? `<span class="rp-n">n = ${esc(d.n)} ${esc(d.noun)}</span>` : ''
+      }</div>` +
+      (d.counts ? `<p>${esc(d.counts)}</p>` : '') +
+      d.tests.map((t) => `<p>${esc(t)}</p>`).join('') +
+      `<div class="rp-acts">${d.f ? btn('sel', `Show these ${esc(d.noun)}`) : ''}${
+        d.ov ? btn('ov', 'Overlap with…') : ''
+      }${btn('open', 'Open question')}</div>`;
+    document.body.append(el);
+    const r = row.getBoundingClientRect(),
+      h = el.offsetHeight,
+      w = el.offsetWidth;
+    el.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + 'px';
+    el.style.top = (r.bottom + h + 12 < innerHeight ? r.bottom + 6 : Math.max(8, r.top - h - 6)) + 'px';
+    row.setAttribute('aria-expanded', 'true');
+    POP = { el, row, d };
+    el.querySelector('[data-rp]:not([data-rp="close"])')?.focus({ preventScroll: true });
+  }
+  document.addEventListener(
+    'click',
+    (e) => {
+      const act = e.target.closest?.('[data-rp]');
+      if (act && POP) {
+        e.preventDefault();
+        e.stopPropagation();
+        const { d } = POP,
+          k = act.dataset.rp;
+        closePop(k === 'close');
+        if (k === 'sel') {
+          const b = document.createElement('button');
+          b.hidden = true;
+          b.dataset.f = d.f;
+          b.dataset.v = d.cat;
+          document.body.append(b);
+          K.rememberScroll?.();
+          b.click();
+          b.remove();
+          scrollTo(0, 0);
+        } else if (k === 'ov') K.go('overlap', { ot: [d.ov], ou: 'proteins', or: '' });
+        else if (k === 'open') {
+          MORE = { aid: d.aid, cats: new Set([d.cat]), until: Date.now() + 6000, scroll: true };
+          go('overview', { arg: d.aid });
+        }
+        return;
+      }
+      const row = e.target.closest?.('.tile-row[data-pop]');
+      if (row && !e.target.closest('a, button, .rowpop')) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (POP && POP.row === row) closePop(true);
+        else openPop(row);
+      } else if (POP && !e.target.closest('.rowpop')) closePop();
+    },
+    true
+  );
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && POP) {
+      e.stopPropagation();
+      closePop(true);
+    }
+  });
+  addEventListener('scroll', () => closePop(false), { passive: true });
+  (K.afterRender ||= []).push(() => closePop(false));
   // a tile's downloads: the tile drawn as a figure (PDF, SVG, PNG), and its question's rows (TSV)
   K.clicks.push([
     '[data-texp]',
@@ -2112,15 +2264,31 @@
   // 'lost': otherwise; 'new': a reading only the control has
   const controlsOf = (a) => D.analyses.filter((x) => A[x.id]?.control_of === a.id);
   const ctlMethod = (a) => (a.kind === 'protein_sets' ? 'enricher' : vsMethod(S.m));
+  // a control is read on the measure its tiles show: the fold (valOf), with the test's odds ratio and q (the adjusted test
+  // where there is one). Verdicts, as the Controls table's key says them:
+  //   holds     the same reading as the question (at least 1.1x the same way, q <= 0.05)
+  //   weaker    at least 1.1x the same way, without q <= 0.05
+  //   reversed  on the other side of 1x, at q <= 0.05 (the fold and the test pointing the same way)
+  //   lost      otherwise: under 1.1x the same way, or the other side without q <= 0.05
+  //   new       a reading the question itself does not have
+  const ctlTest = (r) => r.adj || r;
   function ctlVerdict(r, c) {
-    if (r.dir !== 'more' && r.dir !== 'less') return c && (c.dir === 'more' || c.dir === 'less') ? 'new' : '';
+    const up = (x) => x.dir === 'more',
+      reads = (x) => x.dir === 'more' || x.dir === 'less';
+    if (!reads(r)) return c && reads(c) ? 'new' : '';
     if (!c) return 'not tested';
     if (c.dir === r.dir) return 'holds';
-    if ((c.dir === 'more' || c.dir === 'less') && c.dir !== r.dir) return 'reversed';
     const v = valOf(c),
-      same = v != null && (r.dir === 'more' ? v >= MIN_EFFECT : v <= 1 / MIN_EFFECT);
-    return same ? 'weaker' : 'lost';
+      t = ctlTest(c);
+    if (v == null) return 'lost';
+    const sig = t.q != null && t.q <= PADJ && (t.eff == null || v >= 1 === t.eff >= 1);
+    if (sig && v !== 1 && v > 1 !== up(r)) return 'reversed';
+    return (up(r) ? v >= MIN_EFFECT : v <= 1 / MIN_EFFECT) ? 'weaker' : 'lost';
   }
+  const CTL_KEY =
+    'Holds: the same reading as the question (at least 1.1× the same way, q ≤ 0.05); weaker: at least 1.1× the same ' +
+    'way, without q ≤ 0.05; reversed: the other side of 1×, at q ≤ 0.05; lost: under 1.1× the same way, or the other ' +
+    'side without q ≤ 0.05; new: a reading the question itself does not have.';
   // the controls a class of a question fails (website.overview.control_badges: which verdicts count, by default lost and
   // reversed), for the badge on its tile row and its page: [{ id, label, verdict, main, ctl }]; none for a selection
   const BADGE = new Set(OV.control_badges?.verdicts || ['lost', 'reversed']);
@@ -2138,18 +2306,33 @@
           const c = cr.get(cat),
             v = ctlVerdict(r, c);
           if (BADGE.has(v))
-            (out[cat] ||= []).push({ id: x.id, label: A[x.id].control_label, verdict: v, main: r, ctl: c });
+            (out[cat] ||= []).push({
+              id: x.id,
+              label: A[x.id].control_label,
+              when: A[x.id].control_when,
+              verdict: v,
+              main: r,
+              ctl: c,
+            });
         });
       });
       FAILS[key] = out;
     }
     return FAILS[key][category] || [];
   }
-  // a result as its row reads (the fold, then the test), so the badge says what its verdict was read from
-  const ctlNum = (r) => (r ? `${fx(valOf(r))}, ${testLine(r)}` : 'not tested');
+  // the test behind a fold, in words: "OR 0.78 (0.74–0.82), q 8.2e-7" (a fold of a protein-set test is its own measure)
+  const ctlDetail = (r) => {
+    if (!r) return 'not tested';
+    const t = ctlTest(r),
+      ci = t.lo != null && t.hi != null ? ` (${fxn(t.lo)}–${fxn(t.hi)})` : '',
+      or = r.method !== 'enricher' && t.eff != null ? `OR ${fxn(t.eff)}${ci}, ` : '';
+    return `${or}q ${fq(t.q)}`;
+  };
   const failText = (f) => `fails control: ${f.label}`;
+  // one plain sentence: what happens to the result under the control, fold to fold; the numbers are in the Controls table
   const failTip = (f) =>
-    `${f.verdict} under ${f.label}: ${ctlNum(f.main)} in the question, ${ctlNum(f.ctl)} in the control`;
+    `This result ${f.verdict === 'reversed' ? 'reverses' : 'disappears'} when ` +
+    `${f.when || 'the test is repeated with ' + f.label} (${fx(valOf(f.main))} → ${f.ctl ? fx(valOf(f.ctl)) : 'not tested'}).`;
   // a badge per failed control: a button that opens the question at its Controls table
   const failBadges = (aid, fails) =>
     fails
@@ -2160,20 +2343,33 @@
       )
       .join('');
   K.controlFails = controlFails;
+  K.ctlVerdict = ctlVerdict;
   // the page is drawn again (and may load its data first): the Controls table is brought into view, and focused, once it is there
-  function toControls(tries = 40) {
-    const t = document.getElementById('q-controls');
-    if (t && tries < 38 && t.getBoundingClientRect().top < innerHeight * 0.6) return t.focus({ preventScroll: true });
-    if (t) t.scrollIntoView({ block: 'start' }); // and again until the page stops moving under it
-    if (tries) setTimeout(() => toControls(tries - 1), 100);
+  function toControls(tries = 120, still = 0) {
+    // (the page may draw itself again as its data comes, as the IDRs section does: the table is in view three checks
+    // running before it is focused, and brought back each time the page moves it)
+    const t = document.getElementById('q-controls'),
+      seen = t && t.getBoundingClientRect().top < innerHeight * 0.6 && t.getBoundingClientRect().bottom > 0;
+    if (seen && still >= 2) return t.focus({ preventScroll: true });
+    if (t && !seen) t.scrollIntoView({ block: 'start' });
+    if (tries) setTimeout(() => toControls(tries - 1, seen ? still + 1 : 0), 100);
   }
-  K.clicks.push([
-    '[data-ctl-go]',
-    (el) => {
+  K.toControls = toControls;
+  // a badge opens its question at the Controls table and does nothing else: the click goes no further (not to the tile,
+  // whose own click opens the question, nor to the row beside it, whose click would select its class)
+  document.addEventListener(
+    'click',
+    (e) => {
+      const el = e.target.closest?.('[data-ctl-go]');
+      if (!el) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       if (!(S.view === 'overview' && S.arg === el.dataset.ctlGo)) go('overview', { arg: el.dataset.ctlGo });
       setTimeout(() => toControls(), 0);
     },
-  ]);
+    true
+  );
   // a question's page names, under its heading, the controls its classes fail (one badge per control, its classes in the tooltip)
   function pageFails(a) {
     if (a.kind === 'module' || vsOn()) return '';
@@ -2196,23 +2392,37 @@
           .join('')}</span>`
       : '';
   }
+  // the Controls table: each class's fold in the question and in each control, its test (odds ratio, interval, q) in the
+  // cell's tooltip and accessible name. The controls describe the whole site: with a selection on they are shown so labelled
   function controlsBlock(a, m) {
-    if (vsOn() || selOn()) return '';
     const ctl = controlsOf(a);
     if (!ctl.length) return '';
     const main = rowsFor(a, m),
       of = (x) => new Map(rowsFor(A[x.id], m).map((r) => [r.category, r])),
       by = ctl.map(of);
     const cats = main.filter(
-      (r) => r.dir === 'more' || r.dir === 'less' || by.some((b) => b.get(r.category)?.q <= PADJ)
+      (r) => r.dir === 'more' || r.dir === 'less' || by.some((b) => ctlTest(b.get(r.category) || {}).q <= PADJ)
     );
     if (!cats.length) return '';
-    const cell = (r) => (r ? `${esc(fx(r.eff))} <span class="muted">q ${esc(fq(r.q))}</span>` : '–');
+    const cell = (r, v) => {
+      if (!r) return v ? `– <b class="ctl-${v.replace(' ', '-')}">${esc(v)}</b>` : '–';
+      const d = ctlDetail(r);
+      return (
+        `<span title="${esc(d)}" aria-label="${esc(`${fx(valOf(r))}, ${d}${v ? ', ' + v : ''}`)}">` +
+        `${esc(fx(valOf(r)))} <span class="muted" aria-hidden="true">q ${esc(fq(ctlTest(r).q))}</span>` +
+        (v ? ` <b class="ctl-${v.replace(' ', '-')}" aria-hidden="true">${esc(v)}</b>` : '') +
+        `</span>`
+      );
+    };
+    const whole = selOn() || vsOn();
     return (
-      `<section class="pcard controls" id="q-controls" tabindex="-1"><h3>Controls</h3><p class="page-note">The same ` +
-      `test again with one change each (${esc(METHOD[m] || 'proteins, hypergeometric')}). Holds: the same reading at ` +
-      `q ≤ 0.05; weaker: the same direction, not at q ≤ 0.05; reversed: the other way at q ≤ 0.05; lost: under 1.1× ` +
-      `in the same direction, or the other way without q ≤ 0.05; new: a reading the question itself does not have.</p><div class="tbl-card"><table class="tbl">` +
+      `<section class="pcard controls" id="q-controls" tabindex="-1"><h3>Controls${
+        whole ? ' <span class="muted">(whole dataset)</span>' : ''
+      }</h3><p class="page-note">${
+        whole ? 'These describe the whole dataset; your selection is not tested again here. ' : ''
+      }The same test again with one change each (${esc(METHOD[m] || 'proteins, hypergeometric')}), read on the fold the ` +
+      `tiles show; each cell's odds ratio, interval and q are in its tooltip. ${CTL_KEY}</p>` +
+      `<div class="tbl-card"><table class="tbl">` +
       `<thead><tr><th>Class</th><th>This question</th>${ctl
         .map((x) => `<th><a href="${esc(link('overview', x.id))}">${esc(A[x.id].control_label)}</a></th>`)
         .join('')}</tr></thead><tbody>` +
@@ -2222,9 +2432,8 @@
           (r) =>
             `<tr><td>${esc(r.label)}</td><td>${cell(r)}</td>${by
               .map((b) => {
-                const c = b.get(r.category),
-                  v = ctlVerdict(r, c);
-                return `<td>${cell(c)}${v ? ` <b class="ctl-${v.replace(' ', '-')}">${esc(v)}</b>` : ''}</td>`;
+                const c = b.get(r.category);
+                return `<td>${cell(c, ctlVerdict(r, c))}</td>`;
               })
               .join('')}</tr>`
         )
@@ -2237,7 +2446,7 @@
     // a question that is one of a card's views (website.overview cards: views) opens that card
     const cards = allCards(),
       own = cards.findIndex((c) => c.analysis === aid),
-      i = own >= 0 ? own : cards.findIndex((c) => (c.views || []).some((v) => v.analysis === aid)),
+      i = own >= 0 ? own : cards.findIndex((c) => cardHas(c, aid)),
       a = A[aid];
     const prev = cards[i - 1],
       next = cards[i + 1],
@@ -2321,7 +2530,9 @@
           ? `<p class="twhole">` + `<span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>`
           : ''
       }</section>` +
-      (mod ? '' : controlsBlock(a, a.kind === 'protein_sets' ? 'enricher' : S.m))
+      (mod
+        ? ''
+        : controlsBlock(a, a.kind === 'protein_sets' ? 'enricher' : S.m === 'fisher' ? 'fisher' : 'mantel_haenszel'))
     );
   }
   // what the site keeps, what it asks other services for, and under which licenses everything is
@@ -2480,7 +2691,7 @@
               ];
       // an opened question: its own section lists the questions, the others are one line that opens their first (the list stays short)
       if (S.arg) {
-        const mine = x.cards.some((c) => c.analysis === S.arg || (c.views || []).some((v) => v.analysis === S.arg));
+        const mine = x.cards.some((c) => cardHas(c, S.arg));
         return mine
           ? [[sid, x.name, 0], ...x.cards.map(tileOf)]
           : [[sid, x.name, 1, link('overview', x.cards[0]?.analysis || '')]];
@@ -4293,7 +4504,7 @@
   };
   function linkPass() {
     const root = document.body;
-    root.querySelectorAll('.tile[data-tile]').forEach((t) => {
+    root.querySelectorAll('.tile[data-tile]:not([data-group])').forEach((t) => {
       const h = link('overview', t.dataset.tile);
       if (t.dataset.href === h) return;
       t.dataset.href = h;
@@ -4463,7 +4674,7 @@
         return;
       }
     }
-    const tl = e.target.closest('.tile[data-tile]');
+    const tl = e.target.closest('.tile[data-tile]:not([data-group])');
     if (tl && !e.target.closest('a,button')) {
       go('overview', { arg: tl.dataset.tile });
       return;
@@ -4546,7 +4757,7 @@
     true
   );
   document.addEventListener('keydown', (e) => {
-    const tl = e.target.closest?.('.tile[data-tile]');
+    const tl = e.target.closest?.('.tile[data-tile]:not([data-group])');
     if (tl && e.target === tl && e.key === 'Enter') go('overview', { arg: tl.dataset.tile });
   });
   // a sortable header sorts from the keyboard too

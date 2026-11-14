@@ -3,6 +3,20 @@
 - Speed: the selection data is written in parts (`data/sel/`: a core, marks by protein in the Sites page's order, each protein's sets, and the parts only a test needs; CONTRACTS.md, "Selection data in parts"). A protein page reads only its own file; the Sites page with no selection reads its first page from the first files; everything else reads the whole in a worker, with a busy bar, a file at a time. The statistics are unchanged.
 - Speed: `ptmc pages` moves the statistics table and the classes' labels out of each index.html into `data/statistics.tsv` and `data/labels.json`, which the page preloads.
 - Speed: the fonts (Inter, IBM Plex Mono and Serif, SIL Open Font License) are files of the kit, not a request to Google Fonts; a site's own `website.fonts.stylesheet` still wins.
+- Network: a click on a protein pins it (its partners and their clusters stay lit, a panel holds its card: cluster, sites,
+  partners in and out of the cluster, the term with k of n and q, the domain class), a second click opens its page,
+  Shift-click pins up to five, Escape unpins. The downloads (SVG, PNG, PDF; slide or paper) make a figure of the pinned view,
+  cropped to the neighbourhood, with the cards beside or under it. Every setting is kept in the address. A selection of
+  one to three proteins is drawn with their partners. The status line says how many of the top N proteins are drawn, with
+  the number of proteins beside it; a number of clusters that cannot be reached says what the closest is.
+- Network view: zoom and pan (the buttons − + Fit pinned Reset, Ctrl or Cmd with the wheel, drag, pinch), kept in the address.
+  An export frames the pinned proteins, their partners and every cluster they touch whole, with a margin (Fit pinned), what
+  is on screen, or the whole network; a dashed frame shows it for two seconds when it differs from the view.
+- Network cluster names: a term names a cluster only if it holds for a quarter of it (`min_coverage`), no term names two
+  clusters, and a cluster no term fits is named by its three busiest proteins; the key says how many proteins hold the
+  term. "See in network" gives the real reason when a protein is not drawn and is not shown for a protein with no
+  partners; Find genes counts distinct proteins; the figure on a phone has zoom buttons and larger touch targets.
+
 - Overlap page: two named questions with one switch. *Do these sets share more proteins than chance?* tests the overlap of the sets themselves, pair by pair, among every protein and among the proteins with sites (expected overlap, fold, hypergeometric test, Benjamini-Hochberg across the pairs); *Are the proteins in each region modified more often?* is the earlier region test. A sentence above the figure states the result. Full set names, picker grouped by source with sizes, a one-line statement of what is counted, and a Methods link.
 - Yes/no attributes (true/false, yes/no, 1/0) read as plain terms: the attribute's label is the chip and its `query` word (default: its name; `als_ftd` for the ALS/FTD gene attribute) the search text, with no value. `als_ftd_gene:true` still works in older links and is never shown.
 - Landing cards without the "Strongest result" block and the italic question line; `card: {result, question}` in the landing config brings them back (default false).
@@ -67,6 +81,23 @@
 - Header: "All sites" sits on the switcher's row, so the lab block and links stay above the structure drawing. The sticky bar shows the short site name.
 - Cell maps: a part where the maps do not agree reads "maps disagree" (was "fewer than N maps").
 - Lysine header drawing: SUMOylation is labelled "SUMO", not "Ksu".
+- Controls: a badge's click opens its question at the Controls table and no longer also selects the row's class; the
+  table shows the fold the tiles show (the odds ratio, interval and q in each cell's tooltip), is drawn with a selection
+  on (as the whole dataset's), and its verdicts follow its key (a control on the other side of 1× at q ≤ 0.05 is
+  reversed). A badge's tooltip is one sentence (`controls[].when`): "This result disappears when only arginines inside
+  disordered regions are compared (1.5× → 0.95×)."
+- Overview tiles are calmer: a row shows the name, the mark, the fold and n (and a failed-control badge). The test behind
+  it (odds ratio, interval, q; for a protein set, the test within abundance deciles) is in the row's hover text and its
+  spoken name, in full. Where that test drives the dots, the tile's subtitle says so once. The tile rows no longer carry
+  "Compare with…" or "Proteins" buttons: a row opens its question at that class, and the buttons are on the question's rows.
+  The Sections sidebar expands only the Overview's sections; the Network page links its Method beside its lead.
+- Overview tiles are one small forest plot each: rows aligned on the tile's log axis (shown once under the rows, with the
+  comparison note beneath it), a dot in the direction colors, filled where q ≤ 0.05, the row lightly shaded by direction,
+  the fold at the end, and at most 5 rows by default (`website.overview.rows`, a card's `rows`). A click, Enter or tap on a
+  row opens a popover: the full name, fold, n, each test in full (odds ratio, interval, q; the test within abundance
+  deciles), and the actions "Show these proteins", "Overlap with…" and "Open question". The count column and the
+  "Select" cue are gone.
+- CI: the lint job fails on a commit message with a "Co-Authored-By: Claude" or "Claude-Session:" line (`tools/check_commit_messages.sh`).
 
 ## 0.4.0 (2026-11-13)
 

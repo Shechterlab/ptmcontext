@@ -655,7 +655,7 @@
       }</div>`
     );
   }
-  // every page, as the tab bar lists them, with the current page's own sections under it, in their groups (as the
+  // every page, as the tab bar lists them, with the Overview's sections under it (no other page lists its own), in their groups (as the
   // original explorer's sidebar): [id, label, level, href?] from K.sections; level 0 is a group heading; a section with
   // an href is a link (another view), one without is a jump to the element with that id
   // which group and family disclosures the reader opened or closed (session state, not the address)
@@ -749,14 +749,18 @@
       cur: a.getAttribute('aria-current') === 'page',
     }));
     pages.forEach((pg) => pg.name.querySelectorAll('.count, .selmark, svg').forEach((x) => x.remove()));
-    if (!pages.length) return '<nav class="toc flat">' + entries.map(item).join('') + '</nav>';
+    // one rule for every page: only the Overview lists its sections under its name; the other pages are a single entry
+    if (!pages.length)
+      return '<nav class="toc flat">' + (S.view === 'overview' ? entries.map(item).join('') : '') + '</nav>';
     return (
       '<nav class="toc flat">' +
       pages
         .map(
           (pg) =>
             `<a class="toc-p${pg.cur ? ' on' : ''}" href="${esc(pg.href)}"${pg.cur ? ' aria-current="page"' : ''}>${esc(pg.name.textContent.trim())}</a>` +
-            (pg.cur && raw.length ? `<div class="toc-secs">${entries.map(item).join('')}</div>` : '')
+            (pg.cur && S.view === 'overview' && raw.length
+              ? `<div class="toc-secs">${entries.map(item).join('')}</div>`
+              : '')
         )
         .join('') +
       '</nav>'

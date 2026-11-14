@@ -2794,16 +2794,10 @@
     ['[data-ov-compare]', (el) => K.go('overlap', { ot: [el.dataset.ovCompare], ou: 'proteins', or: '' })]
   );
 
-  // a "Compare with…" button on the rows of the protein-set questions
+  // a "Compare with…" button on the rows of a protein-set question's page (the Overview's tiles have none: a row opens the page)
   function rowButtons() {
     const mk = (aid, cat, name) =>
       `<button type="button" class="btn small ov-cmp" data-ov-compare="${esc(`s:${aid}:${cat}`)}" aria-label="Compare ${esc(name)} with other terms">Compare with…</button>`;
-    if (S.view === 'overview' && !S.arg)
-      document.querySelectorAll('#view .fr-row[data-f][data-v]').forEach((r) => {
-        const aid = String(r.dataset.f).split(':')[1];
-        if (!sets.includes(aid) || r.nextElementSibling?.matches?.('.ov-cmp')) return;
-        r.insertAdjacentHTML('afterend', mk(aid, r.dataset.v, r.querySelector('.fr-lab')?.textContent || r.dataset.v));
-      });
     if (S.view === 'overview' && S.arg && sets.includes(S.arg))
       document.querySelectorAll('#view .drow[data-cat]').forEach((r) => {
         if (r.querySelector('.ov-cmp')) return;
@@ -2841,6 +2835,7 @@
         'none'
       }; a protein is a reader when it carries any of a family’s Pfam or InterPro entries.${(C.sources || []).map((src) => ` ${esc(src.title)}: ${src.n.toLocaleString('en')} sets; ${src.cite?.length ? 'cite ' + src.cite.map(esc).join('; ') : ''}.`).join('')}</p></section>`
   );
+  K.overlapHas = (aid) => sets.includes(aid); // a protein-set question whose classes the Overlap page takes as terms
   K.overlap = {
     tableHtml,
     pairTableHtml,

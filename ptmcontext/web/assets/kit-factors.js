@@ -67,10 +67,7 @@
           ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>'
           : ''
       }</h3>` +
-      `${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'fexp', a.title, id).replace(
-        'class="exp"',
-        'class="exp texp"'
-      )}${K.detailsLink(id)}</header>` +
+      `${K.detailsLink(id)}</header>` +
       `<p class="tstat">Odds ratio, taking all factors together</p>` +
       `<div class="fm-rows">${fs
         .map(
@@ -88,6 +85,7 @@
         ? `<p class="twhole"><span>Whole dataset</span> the model is fitted once, on every ${esc(W.mark)}; it is not ` +
           `refitted for your selection</p>`
         : '') +
+      `<div class="tact">${K.tilekit.dlMenu(card.title || a.title, ['pdf', 'svg', 'png', 'tsv'], 'fexp', id)}</div>` +
       '</article>'
     );
   }

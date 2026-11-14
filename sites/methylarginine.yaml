@@ -1179,6 +1179,7 @@ controls:
   # laboratory or samples, and count as three studies.
   - id: hc
     label: high-confidence sites
+    when: "only the sites at least two independent studies report are compared"
     note: "Only the sites at least two independent studies report (a laboratory's studies counted once; PhosphoSitePlus, UniProt, IEDB and ProMetheusDB not counted); the other sites are counted on neither side"
     analyses: [motif, disorder, idr_charge, sticker_context_3, sticker_context_3_idr]
     marks_where:
@@ -1196,6 +1197,7 @@ controls:
   # PhosphoSitePlus and ProMetheusDB hold antibody runs too.
   - id: noab
     label: found without antibodies
+    when: "only the sites found without methylarginine antibodies are compared"
     note: "Only the sites a source that did not enrich with methylarginine antibodies reports (Lu 2025, SMN Tudor domain; UniProt; IEDB); the other sites are counted on neither side"
     analyses: [motif, disorder]
     marks_where:
@@ -1206,6 +1208,7 @@ controls:
 
   - id: inidr
     label: inside IDRs
+    when: "only arginines inside disordered regions are compared"
     note: "Only the arginines inside intrinsically disordered regions (MobiDB) count, methylarginines and other arginines alike, so the result is not a matter of disorder"
     analyses: [near_phospho, near_phospho_high, near_methyllysine, near_acetylation, near_other_acylation, near_ubiquitination, near_sumoylation, idr_charge]
     only_in: idr
@@ -1601,7 +1604,7 @@ website:                  # the look and words of the website (ptmc web); layout
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
     question: "Which proteins are arginine methylated?"
-    rows: 7
+    rows: 5
     random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end (open: true opens it; enabled: false leaves it out)
     starting_points:       # under the sections: proteins to start from, and ready-made selections (the explorer's)
       open: true
@@ -2056,9 +2059,10 @@ website:                  # the look and words of the website (ptmc web); layout
     top: 300
     min_cluster: 5
     cluster: louvain
+    min_coverage: 0.25   # a term names a cluster only if it holds for this share of the cluster; else its three busiest proteins do
     clusters: {default: auto, min: 4, max: 16}   # the page's Clusters menu: auto (Louvain at its default resolution) or a target number
     lead: "Methylated proteins joined by physical links and complexes, grouped into clusters named by GO biological process."   # the one line under the heading; the section Method has the rest
-    controls: [clusters, colour, find]   # the main row (others under More options): label, clusters, colour, find, score, top, minc, sources, preset, claim
+    controls: [clusters, colour, find]   # the main row (others under More options): label, clusters, colour, find, score, minc, sources, preset, claim
     protein_link: true   # a See in network button on every protein page (#network?p=<accession>)
     protein_preview: true   # and a small drawing of it among its cluster under the button
     claim: "Methylated proteins form {n} functional clusters"   # the exported figure's title

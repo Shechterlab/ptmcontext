@@ -1215,6 +1215,10 @@
             "type": "string",
             "description": "the id of the question this one is a control of: that question's page shows this one's result beside its own. Written by controls"
           },
+          "control_when": {
+            "type": "string",
+            "description": "the control's when, for its badge. Written by controls"
+          },
           "control_label": {
             "type": "string",
             "description": "the control's short name on its question's page. Written by controls"
@@ -2487,7 +2491,6 @@
                   "colour",
                   "find",
                   "score",
-                  "top",
                   "minc",
                   "sources",
                   "preset",
@@ -2502,6 +2505,12 @@
             "protein_preview": {
               "type": "boolean",
               "description": "true (default, with `protein_link`): under the button, a small drawing of the protein among its partners of its own cluster (15 at most, most sites first), with the cluster's name in its colour, read from data/network.json when it scrolls into view. A protein that the default view does not draw gets a line saying so"
+            },
+            "min_coverage": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "a term names a cluster only if it holds for this share of the cluster's proteins or more (default 0.25); the best term that does is taken, and a cluster none holds for is named by its three busiest proteins. No term names two clusters"
             },
             "claim": {
               "type": "string",
@@ -2783,14 +2792,38 @@
                         },
                         {
                           "type": "object",
-                          "required": [
-                            "analysis"
+                          "anyOf": [
+                            {
+                              "required": [
+                                "analysis"
+                              ]
+                            },
+                            {
+                              "required": [
+                                "rows_from"
+                              ]
+                            }
                           ],
                           "additionalProperties": false,
                           "properties": {
                             "analysis": {
                               "type": "string",
                               "description": "an analysis id, or a count question (website.counts)"
+                            },
+                            "rows_from": {
+                              "type": "array",
+                              "minItems": 2,
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "one tile for several questions, in place of `analysis`: the first row of each question, one row per question, named by its short title (or `labels`), on one axis. A row opens its question; a failed control shows as the row's badge. Use `title`"
+                            },
+                            "labels": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "with rows_from: the row's name by question id (default: the question's short title)"
                             },
                             "title": {
                               "type": "string"
@@ -8012,6 +8045,10 @@
           "label": {
             "type": "string",
             "description": "the control's short name: added to each copy's title after a comma, its name in the family and on the question's page"
+          },
+          "when": {
+            "type": "string",
+            "description": "what the control does, as the end of a sentence: the badge of a result that fails it reads \"This result disappears when <when> (fold → fold).\" (default: the test is repeated with <label>)"
           },
           "note": {
             "type": "string",
