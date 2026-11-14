@@ -19,7 +19,11 @@
   it; the search's x, the chip's x and Clear all offer Undo. The chip leaves out names not in the dataset and opens the
   Filters; Save takes its name in the menu, not a browser prompt. In Compare mode the cell card says it shows all sites.
 - A change of selection shows "Updating: testing N sites again" at once, and on the Overview the retests run one
-  question at a time, giving the browser back between them.
+  question at a time, giving the browser back between them; How does it differ is compared only when opened, also in
+  slices. On the lysine site a source filter held the page for about 38 s; it now shows the note within 0.1 s and no
+  task runs longer than about 0.7 s.
+- A link whose search names a protein attribute read on demand is resolved again when that attribute arrives, instead
+  of showing an unmatched term until the next navigation.
 - Overlap page (`website.overlap`): two to four terms (protein sets, classes, reader families, enzymes, the selection, a gene list) as rows of regions (a membership matrix, a split size bar, the share with sites against all reviewed proteins with its 95% interval) and, for two or three terms, an area-proportional diagram, with proteins, proteins with sites, fold, a hypergeometric test against all reviewed proteins and Benjamini-Hochberg q for each region; also for sites, enzymes and readers. A "Compare with..." button on the rows of protein-set questions. Reader families (Tudor; chromodomain, PHD, MBT, PWWP; 14-3-3, SH2, BRCT; bromodomain, YEATS) are listed in the site files with their Pfam and InterPro ids.
 - Overlap terms from GO biological process (propagated annotations without computational-only evidence, 5 to 5,000 proteins), listed by name, GO id and size; one generic `term_sources` entry in the site file (data from PTM_Pipeline's staged GO tables; cite Gene Ontology Consortium 2023 and Ashburner et al. 2000).
 - `ptmc run` writes `overlap_members.json` (every protein of each set) for the questions an Overlap block names; the statistics are unchanged.
