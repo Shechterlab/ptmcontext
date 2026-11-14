@@ -231,12 +231,21 @@ def build(site: dict, run: dict, folder: Path, listing: list, fasta: Path, out: 
         page['partial'] = True  # no sets of every protein: only the proteins with a mark
     page['families'] = {
         k: [
-            {'id': f['id'], 'name': f['name'], 'n': len(f['m']), **({'ids': f['ids']} if 'ids' in f else {})} for f in v
+            {
+                'id': f['id'],
+                'name': f['name'],
+                'n': len(f['m']),
+                **({'ids': f['ids']} if 'ids' in f else {}),
+                **({'role': f['role']} if 'role' in f else {}),
+            }
+            for f in v
         ]
         for k, v in fams.items()
     }
     page['notes'] = dict(cfg.get('notes') or {})  # a question's note under its terms
     page['leave_out'] = dict(cfg.get('leave_out') or {})
+    page['groups'] = list(cfg.get('groups') or [])  # the headings the picker lists terms under
+    page['names'] = dict(cfg.get('names') or {})  # a family's or class's name as shown
     page['n'] = len(uni)
     page['family_notes'] = {f['id']: f['note'] for f in fams.get('readers', []) if f.get('note')}
     return page

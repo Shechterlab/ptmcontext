@@ -5885,6 +5885,36 @@
                 }
               }
             },
+            "groups": {
+              "type": "array",
+              "description": "the headings the picker lists terms under, in this order: each names the questions and term sources (ids) whose terms it holds; a question in none is listed under its own name",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "from"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "from": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "names": {
+              "type": "object",
+              "description": "a reader family's or an enzyme class's name as shown (id: name), where the site's own label is not a plain plural name",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
             "leave_out": {
               "type": "object",
               "description": "sets of a question that are not offered as terms and whose members are not written (a question's set id: [ids])",

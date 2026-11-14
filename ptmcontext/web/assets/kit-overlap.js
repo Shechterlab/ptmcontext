@@ -46,6 +46,52 @@
       s2 = c + d ? c / (c + d) : null;
     return { a, b, c, d, or: f.or, p: f.p, fold: s1 != null && s2 ? s1 / s2 : null };
   }
+  // the overlap of the terms against chance: for each pair, n and m elements, a shared, N in the universe; expected = n*m/N,
+  // fold = a/expected, p = P(X >= a) for X hypergeometric (N, m, n), q = BH over the pairs of one universe. Two universes: every element,
+  // and the elements with sites (marked; none for a count of sites). ptmstats.pair_overlap is the same arithmetic.
+  function overlapPairs(nT, mask, marked) {
+    const fam = (only) => {
+      const cnt = new Array(nT).fill(0),
+        both = {};
+      let N = 0;
+      for (let e = 0; e < mask.length; e++) {
+        if (only && !only[e]) continue;
+        N++;
+        const m = mask[e];
+        for (let i = 0; i < nT; i++)
+          if (m & (1 << i)) {
+            cnt[i]++;
+            for (let j = i + 1; j < nT; j++) if (m & (1 << j)) both[i * 8 + j] = (both[i * 8 + j] || 0) + 1;
+          }
+      }
+      const rows = [];
+      for (let i = 0; i < nT; i++)
+        for (let j = i + 1; j < nT; j++) {
+          const n = cnt[i],
+            m = cnt[j],
+            a = both[i * 8 + j] || 0,
+            exp = N ? (n * m) / N : NaN;
+          rows.push({
+            i,
+            j,
+            n,
+            m,
+            a,
+            N,
+            expected: exp,
+            fold: exp ? a / exp : null,
+            p: n && m ? (a ? ST.hyperSF(a, N, m, n) : 1) : null,
+            mask: (1 << i) | (1 << j),
+          });
+        }
+      const t = rows.filter((r) => r.p != null),
+        q = ST.bh(t.map((r) => r.p));
+      rows.forEach((r) => (r.q = null));
+      t.forEach((r, k) => (r.q = q[k]));
+      return rows;
+    };
+    return { all: fam(null), marked: marked ? fam(marked) : null };
+  }
   const MIN_N = 5; // a region of fewer elements is counted, not tested
   // a region too small to test has no fold, p or q, and is left out of the Benjamini-Hochberg family
   const settle = (rows, minN) => {
@@ -81,7 +127,7 @@
   };
 
   // ---- state in the address -----------------------------------------------------------------------------------------------
-  const clean = () => ({ ot: [], ou: 'proteins', ov: 'auto', or: '' });
+  const clean = () => ({ ot: [], ou: 'proteins', ov: 'auto', or: '', oq: 'auto' });
   Object.assign(S, clean());
   K.paramsIn.push((p) => {
     S.ot = (p.get('t') || '')
@@ -97,13 +143,15 @@
       .slice(0, MAXT);
     S.ou = C.units.includes(p.get('ou')) ? p.get('ou') : 'proteins';
     S.ov = 'auto'; // an old link's display choice is read and ignored
-    S.or = /^\d+$/.test(p.get('or') || '') ? p.get('or') : '';
+    S.or = /^a?\d+$/.test(p.get('or') || '') ? p.get('or') : ''; // a region (its mask), or a pair's overlap (a + the mask)
+    S.oq = ['a', 'b'].includes(p.get('oq')) ? p.get('oq') : 'auto';
   });
   K.paramsOut.push((p) => {
     if (S.view !== 'overlap') return;
     if (S.ot.length) p.set('t', S.ot.map((x) => x.replace(/%/g, '%25').replace(/,/g, '%2C')).join(','));
     if (S.ou !== 'proteins') p.set('ou', S.ou);
     if (S.or) p.set('or', S.or);
+    if (S.oq !== 'auto') p.set('oq', S.oq);
   });
 
   // ---- terms --------------------------------------------------------------------------------------------------------------
@@ -120,6 +168,23 @@
         label: F.row_labels?.[aid]?.[r.category] || r.label || r.category,
         size: (r.a ?? 0) + (r.c ?? 0),
       })));
+  // a term's name as shown: no leading article, a capital first letter; a trailing "(writer)" and the like becomes a tag
+  const ROLE_TAG = /\s*\((writer|eraser|reader|cofactor|anti-reader)\)\s*$/i;
+  function plainName(label) {
+    let s0 = String(label ?? ''),
+      tag = '';
+    const m = ROLE_TAG.exec(s0);
+    if (m) {
+      tag = m[1].toLowerCase();
+      s0 = s0.replace(ROLE_TAG, '');
+    }
+    s0 = s0.replace(/^(an?|the)\s+/i, '');
+    return { name: s0.charAt(0).toUpperCase() + s0.slice(1), tag };
+  }
+  // the heading a question's or a source's terms are listed under (website.overlap.groups), else the question's own name
+  const GROUP_OF = {};
+  (C.groups || []).forEach((g) => g.from.forEach((id) => (GROUP_OF[id] ||= g.name)));
+  const groupName = (id, fallback) => GROUP_OF[id] || fallback;
   const uniq = (rows) => [...new Map(rows.map((r) => [r.id, r])).values()];
   const short = (aid) => F.short?.[aid] || A[aid]?.title || aid;
   const savedList = () => (K.sel.savedList ? K.sel.savedList() : []);
@@ -147,7 +212,8 @@
         pool.push({
           id: `s:${aid}:${r.id}`,
           label: r.label,
-          group: short(aid),
+          group: groupName(aid, short(aid)),
+          from: short(aid),
           size: r.size,
           broad: C.n && r.size > 0.25 * C.n,
           note: C.notes?.[aid] || '',
@@ -155,7 +221,9 @@
       )
     );
     classQs.forEach((aid) =>
-      uniq(rowsOf(aid)).forEach((r) => pool.push({ id: `c:${aid}:${r.id}`, label: r.label, group: short(aid) }))
+      uniq(rowsOf(aid)).forEach((r) =>
+        pool.push({ id: `c:${aid}:${r.id}`, label: r.label, group: groupName(aid, short(aid)), from: short(aid) })
+      )
     );
     (C.sources || []).forEach((src) =>
       (srcTerms[src.id] || []).forEach(([id, name, n]) =>
@@ -164,15 +232,31 @@
           label: name,
           ref: id,
           size: n,
-          group: src.title,
+          group: groupName(src.id, src.title),
+          from: src.title,
           broad: C.n && n > 0.25 * C.n,
         })
       )
     );
     (C.families?.readers || []).forEach((f) =>
-      pool.push({ id: `f:readers:${f.id}`, label: `${f.name} (reader)`, group: 'Readers' })
+      pool.push({
+        id: `f:readers:${f.id}`,
+        label: C.names?.[f.id] || f.name,
+        tag: 'reader',
+        size: f.n,
+        group: 'Readers',
+      })
     );
-    (C.families?.enzymes || []).forEach((f) => pool.push({ id: `f:enzymes:${f.id}`, label: f.name, group: 'Enzymes' }));
+    (C.families?.enzymes || []).forEach((f) => {
+      const pn = plainName(f.name);
+      pool.push({
+        id: `f:enzymes:${f.id}`,
+        label: C.names?.[f.id] || pn.name,
+        tag: f.role || pn.tag,
+        size: f.n,
+        group: 'Enzymes',
+      });
+    });
     const pa = D.protein_attributes;
     Object.entries(pa?.specs || {}).forEach(([name, sp]) => {
       if (sp.kind === 'number' || sp.kind === 'list' || !pa.values?.[name]) return;
@@ -185,8 +269,8 @@
     return pool;
   }
   const specials = () => [
-    ...(K.sel.active() ? [{ id: 'sel', label: 'The current selection', group: 'Selections' }] : []),
-    ...savedList().map((x) => ({ id: `sv:${x.name}`, label: `Saved: ${x.name}`, group: 'Selections' })),
+    ...(K.sel.active() ? [{ id: 'sel', label: 'The current selection', group: 'Selection' }] : []),
+    ...savedList().map((x) => ({ id: `sv:${x.name}`, label: `Saved: ${x.name}`, group: 'Selection' })),
   ];
   const termLabel = (id) => {
     const t = [...termPool(), ...specials()].find((x) => x.id === id);
@@ -196,6 +280,7 @@
     if (id.startsWith('x:')) return id.split(':').slice(2).join(':');
     return id.replace(/^[a-z]+:/, '');
   };
+  const termTag = (id) => [...termPool(), ...specials()].find((x) => x.id === id)?.tag || '';
 
   // ---- universe, marks and terms as arrays ------------------------------------------------------------------------------
   let U = null; // {acc, n, partial, marked: Uint8Array, pu: [universe index of each protein with sites], weight}
@@ -304,6 +389,7 @@
     if (t) {
       t.id = id;
       t.label = kind === 'g' ? `Gene list (${count(t.prot)})` : termLabel(id);
+      t.tag = termTag(id);
       t.n = count(t.prot);
     }
     return (cache[id] = t);
@@ -413,6 +499,8 @@
         settle(res.totals, minN);
       }
     }
+    res.pairs = overlapPairs(nT, mask, marked);
+    if (U.partial && unit !== 'sites') res.pairs = { all: null, marked: res.pairs.all }; // only the proteins with sites are known
     res.rows[0].outside = true; // the proteins in none of the terms: counted, not shown as a region
     res.mask = mask;
     res.elems = elems;
@@ -749,6 +837,20 @@
         letters.push({ i, x: best.lx, y: best.ly });
       }
     });
+    // a leader must not cross another leader or pass through a label
+    const ccw = (a, b, c) => (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x),
+      segX = (p1, p2, p3, p4) => ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4),
+      segBox = (a, b, bx) => {
+        const inside = (p) => p.x > bx.x && p.x < bx.x + bx.w && p.y > bx.y && p.y < bx.y + bx.h,
+          c = [
+            { x: bx.x, y: bx.y },
+            { x: bx.x + bx.w, y: bx.y },
+            { x: bx.x + bx.w, y: bx.y + bx.h },
+            { x: bx.x, y: bx.y + bx.h },
+          ];
+        return inside(a) || inside(b) || c.some((p, i) => segX(a, b, p, c[(i + 1) % 4]));
+      };
+    outside.sort((x, y) => x.r.n - y.r.n);
     outside.forEach((o) => {
       const P =
         o.P ||
@@ -772,11 +874,20 @@
           const bx = P.x + Math.cos(a) * rho,
             by = P.y + Math.sin(a) * rho,
             b = { x: bx - o.w / 2 - 2, y: by - o.h / 2 - 2, w: o.w + 4, h: o.h + 4 };
-          if (clearOf(b, 0)) {
-            const score = rho + Math.ceil(s / 2) * 6;
-            if (!best || score < best.score) best = { score, bx, by, b };
-            break;
-          }
+          if (!clearOf(b, 0)) continue;
+          const end = {
+              x: Math.max(b.x + 2, Math.min(P.x, b.x + b.w - 2)),
+              y: Math.max(b.y + 2, Math.min(P.y, b.y + b.h - 2)),
+            },
+            from = { x: P.x, y: P.y };
+          if (
+            leaders.some((L) => segX(from, end, { x: L.x1, y: L.y1 }, { x: L.x2, y: L.y2 })) ||
+            boxes.some((o2) => segBox(from, end, o2))
+          )
+            continue;
+          const score = rho + Math.ceil(s / 2) * 6;
+          if (!best || score < best.score) best = { score, bx, by, b };
+          break;
         }
       }
       if (!best) return;
@@ -977,6 +1088,16 @@
       end = broken ? plotW : X(r.n),
       kx = broken ? end * (r.k / r.n) : X(r.k);
     kids.push(el('line', { x1: 0.5, x2: 0.5, y1: 0, y2: H, stroke: 'var(--fig-axis)', 'stroke-width': 1 }));
+    if (r.noBar) {
+      kids.length = 0; // a set listed by its size only
+      kids.push(el('text', { x: 2, y: yc + 4, 'font-size': 12, fill: 'var(--fig-ink-2)' }, [r.tipText]));
+      return svgEl(w, H, kids);
+    }
+    if (r.expected != null) {
+      // where chance would put the bar: a tick across the row
+      const ex = X(Math.min(r.expected, sc.max));
+      kids.push(el('line', { x1: ex, x2: ex, y1: yc - 10, y2: yc + 10, stroke: 'var(--fig-ink)', 'stroke-width': 2 }));
+    }
     if (r.n) {
       if (r.k > 0)
         kids.push(
@@ -1013,8 +1134,14 @@
       }
     }
     if (!phone) {
-      const t = el('text', { x: end + 6, y: yc + 4, 'font-size': 12, fill: 'var(--fig-ink-2)' });
-      if (r.sitesOnly) t.appendChild(el('tspan', { fill: 'var(--fig-ink)', 'font-weight': 600 }, [fmtInt(r.n)]));
+      const t = el('text', {
+        x: Math.max(end, r.expected != null ? X(Math.min(r.expected, sc.max)) : 0) + 6,
+        y: yc + 4,
+        'font-size': 12,
+        fill: 'var(--fig-ink-2)',
+      });
+      if (r.tipText) t.appendChild(el('tspan', { fill: 'var(--fig-ink)', 'font-weight': 600 }, [r.tipText]));
+      else if (r.sitesOnly) t.appendChild(el('tspan', { fill: 'var(--fig-ink)', 'font-weight': 600 }, [fmtInt(r.n)]));
       else {
         t.appendChild(el('tspan', {}, [fmtInt(r.k) + ' / ']));
         t.appendChild(el('tspan', { fill: 'var(--fig-ink)', 'font-weight': 600 }, [fmtInt(r.n)]));
@@ -1063,8 +1190,10 @@
     let m = 1;
     rows.forEach((r) => {
       if (!isTested(r)) return;
-      const [lo, hi] = woolf(r.a, r.b, r.c, r.d);
-      m = Math.max(m, Math.abs(Math.log2(lo)), Math.abs(Math.log2(hi)), Math.abs(Math.log2(r.or ?? 1)));
+      const [lo, hi] = r.noci ? [r.or, r.or] : woolf(r.a, r.b, r.c, r.d);
+      [lo, hi, r.or].forEach((v) => {
+        if (v > 0 && Number.isFinite(v)) m = Math.max(m, Math.abs(Math.log2(v)));
+      });
     });
     return Math.min(8, Math.max(2, Math.ceil(m)));
   }
@@ -1087,7 +1216,7 @@
     kids.push(el('line', { x1: X(1), x2: X(1), y1: 0, y2: H, stroke: 'var(--fig-ref)', 'stroke-width': 1.5 }));
     if (isTested(r)) {
       const f = r.or ?? r.fold,
-        [lo, hi] = woolf(r.a, r.b, r.c, r.d),
+        [lo, hi] = r.noci ? [f, f] : woolf(r.a, r.b, r.c, r.d),
         d = dirOf(r, 0, true),
         x0 = X(1),
         x1 = X(f),
@@ -1098,14 +1227,15 @@
         p.setAttribute('stroke-width', 1.25);
       } else p.setAttribute('fill', `var(--fig-${d})`);
       kids.push(p);
-      kids.push(
-        el('path', {
-          d: `M${X(lo)},${yc}H${X(hi)}M${X(lo)},${yc - 4}V${yc + 4}M${X(hi)},${yc - 4}V${yc + 4}`,
-          stroke: 'var(--fig-ink-2)',
-          'stroke-width': 1.25,
-          fill: 'none',
-        })
-      );
+      if (!r.noci)
+        kids.push(
+          el('path', {
+            d: `M${X(lo)},${yc}H${X(hi)}M${X(lo)},${yc - 4}V${yc + 4}M${X(hi)},${yc - 4}V${yc + 4}`,
+            stroke: 'var(--fig-ink-2)',
+            'stroke-width': 1.25,
+            fill: 'none',
+          })
+        );
     }
     return svgEl(w, H, kids);
   }
@@ -1220,162 +1350,361 @@
       el('path', { d: 'M2,5H16M2,1V9M16,1V9', stroke: 'var(--fig-ink-2)', 'stroke-width': 1.25, fill: 'none' }),
     ]);
   // the key: its items (a function of what the figure shows)
-  function keyItems(fd, res) {
-    const sitesU = fd.sitesU,
-      g1 = sitesU
-        ? [['Sites in the region', [[keyBar('var(--fig-count-k)'), 'sites']]]]
-        : [
-            [
-              'Proteins in the region',
-              [
-                [keyBar('var(--fig-count-k)'), 'with sites'],
-                [keyBar('var(--fig-count-n)'), 'without'],
-              ],
-            ],
-          ],
-      g2 = !fd.tested
-        ? []
-        : [
-            [
-              sitesU
-                ? 'Odds ratio (Fisher), sites against the other residues, log scale'
-                : 'Share with sites, against all reviewed proteins',
-              [
-                [keyBar('var(--fig-more)'), 'more (q ≤ 0.05, ≥ 1.1×)'],
-                [keyBar('var(--fig-less)'), 'fewer (q ≤ 0.05, ≥ 1.1×)'],
-                [keyBar('var(--fig-surface)', 'var(--fig-muted)'), 'q > 0.05 or under 1.1×'],
-                [whisker(), '95% interval'],
-                [
-                  svgEl(6, 14, [
-                    el('line', { x1: 3, x2: 3, y1: 0, y2: 14, stroke: 'var(--fig-ref)', 'stroke-width': 1.5 }),
-                  ]),
-                  sitesU ? 'no difference (OR 1)' : `all reviewed proteins, ${pct(fd.base)}`,
-                ],
-              ],
-            ],
-          ];
-    return [...g1, ...g2];
-  }
-  // the footnote's sentences
-  function footNotes(res, fd, sc, cut) {
-    const out = [];
-    if (res.test)
-      out.push(
-        (fd.sitesU
-          ? TESTS.sites
-          : `${TESTS.proteins} ${fmtInt(res.M)} of ${fmtInt(res.N)} reviewed proteins (${pct(fd.base)}) have sites.`) +
-          ` Regions under ${MIN_N} are counted, not tested.`
-      );
-    else
-      out.push(
-        res.partial
-          ? 'Not tested here: only the proteins with sites are known for these terms.'
-          : 'No test: a term describes sites, and the comparison residues are not known for several features at once. Counts only.'
-      );
-    if (cut) out.push('Bars marked // are cut: they are longer than the axis.');
-    return out;
-  }
-  // -- the figure on the page: built as DOM from a result, redrawn when its width changes
-  const UI = { hover: 0, sel: 0, layout: null, rows: [], fig: null, res: null, fd: null, glyphHost: null, tip: null };
+  const expTick = () =>
+    svgEl(6, 14, [el('line', { x1: 3, x2: 3, y1: 0, y2: 14, stroke: 'var(--fig-ink)', 'stroke-width': 2 })]);
+  const refTick = () =>
+    svgEl(6, 14, [el('line', { x1: 3, x2: 3, y1: 0, y2: 14, stroke: 'var(--fig-ref)', 'stroke-width': 1.5 })]);
   const regionWords = (res, m) => regWords(res, m);
   function regWords(res, m) {
     const inn = res.ts.filter((_, i) => m & (1 << i)).map((t) => t.label),
       out = res.ts.filter((_, i) => !(m & (1 << i))).map((t) => t.label);
     return inn.join(' and ') + (out.length ? `, not ${out.join(', not ')}` : '');
   }
-  const regAria = (res, fd, r) =>
-    `${regLabel(r.m, res.nT)}: ${fmtInt(r.n)} ${unitWord(res.unit)}` +
-    (isTested(r) && !fd.sitesU
-      ? `, ${fmtInt(r.k)} with sites, ${pct(r.k / r.n)}, ${foldFmt(r.k / r.n / fd.base, r.k).replace('×', ' times')} all reviewed proteins, q ${fqf(r.q)}`
-      : '') +
-    '. Open this region.';
-  function valuesCell(r, fd) {
-    const c = html('div', 'c vals');
-    if (!fd.tested) return c;
-    if (!isTested(r)) {
-      c.appendChild(
-        html('span', 'nt', r.few ? `${fd.sitesU ? '' : `${r.k} of `}${r.n} · not tested (n < ${MIN_N})` : '–')
-      );
-      return c;
-    }
-    if (fd.sitesU) {
-      c.appendChild(html('span', 'sh', foldFmt(r.or ?? r.fold)));
-      c.appendChild(html('span', 'fo', ''));
-    } else {
-      c.appendChild(html('span', 'sh', pct(r.k / r.n)));
-      c.appendChild(html('span', 'fo', foldFmt(r.k / r.n / fd.base, r.k)));
-    }
-    c.appendChild(html('span', 'q', 'q ' + fqf(r.q)));
+  const expText = (v) => (v == null || Number.isNaN(v) ? '–' : v < 10 ? v.toFixed(1) : fmtInt(Math.round(v)));
+
+  // -- the two questions as figure specs: what the key says, the columns, the rows and how each cell is drawn
+  function specB(res, fd) {
+    const sitesU = fd.sitesU,
+      nT = res.nT,
+      uw = unitWord(res.unit),
+      L2 = sitesU ? foldDomain(fd.regs) : 0,
+      pairTip = null;
+    const valsOf = (r) => {
+      if (!fd.tested) return null;
+      if (r.few) return { msg: `${sitesU ? '' : `${r.k} of `}${r.n} · not tested (n < ${MIN_N})` };
+      if (!isTested(r)) return { msg: '–' };
+      return {
+        parts: [
+          ['sh', sitesU ? foldFmt(r.or ?? r.fold) : pct(r.k / r.n)],
+          ['fo', sitesU ? '' : foldFmt(r.k / r.n / fd.base, r.k)],
+          ['q', 'q ' + fqf(r.q)],
+        ],
+      };
+    };
+    const text = (r) => (sitesU ? fmtInt(r.n) : `${fmtInt(r.k)} / ${fmtInt(r.n)}`);
+    const regs = fd.regs.map((r) => ({
+      ...r,
+      sel: String(r.m),
+      hl: { m: r.m },
+      dm: r.m,
+      text: regLabel(r.m, nT),
+      sitesOnly: sitesU,
+      tipText: undefined,
+    }));
+    return {
+      q: 'b',
+      keyLines: [
+        sitesU
+          ? ['Bar length', [[keyBar('var(--fig-count-k)'), 'sites']]]
+          : [
+              'Bar length',
+              [
+                [keyBar('var(--fig-count-k)'), 'with sites'],
+                [keyBar('var(--fig-count-n)'), 'without'],
+              ],
+            ],
+        ...(fd.tested
+          ? [
+              [
+                sitesU ? 'Odds ratio' : `Share ${W.marked}`,
+                [
+                  [keyBar('var(--fig-more)'), 'more'],
+                  [keyBar('var(--fig-less)'), 'fewer'],
+                  [keyBar('var(--fig-surface)', 'var(--fig-muted)'), 'no clear difference'],
+                  [whisker(), '95% interval'],
+                  [refTick(), sitesU ? 'OR 1' : `all reviewed proteins, ${pct(fd.base)}`],
+                ],
+              ],
+            ]
+          : []),
+      ],
+      heads: {
+        size: [sitesU ? cap(uw) : cap(uw), sitesU ? '' : 'with sites / all'],
+        mid: !fd.tested ? 'Not tested here' : sitesU ? 'Odds ratio, log scale (Fisher)' : `Share ${W.marked}`,
+        vals: !fd.tested ? null : sitesU ? ['OR', '', 'q'] : ['share', 'fold', 'q'],
+      },
+      sections: [
+        {
+          title: 'Sets',
+          sub: `· every ${sitesU ? W.mark : 'protein'} of each set`,
+          rows: fd.terms.map((t) => ({ ...t, term: true, sitesOnly: sitesU, dm: t.m })),
+        },
+        { title: 'Regions', sub: `· ${uw} in exactly these sets, largest first`, rows: regs },
+      ],
+      scaleValues: [...fd.terms.map((t) => t.n), ...fd.regs.map((r) => r.n)],
+      tipTexts: [...fd.terms, ...fd.regs].map(text),
+      sizeCell,
+      midCell: fd.tested
+        ? (r, w, phone) => (sitesU ? foldCell(r, L2, w, phone) : shareCell(r, fd.base, w, phone))
+        : null,
+      midAxis: fd.tested ? (w) => (sitesU ? axisFold(L2, w) : axisShare(fd.base, w)) : null,
+      vals: valsOf,
+      phoneA: text,
+      pairTip,
+      tip(rec) {
+        const out = { lines: [], extra: [] };
+        if (sitesU)
+          out.lines.push(['var(--fig-count-k)', fmtInt(rec.n), `${W.marks} on ${fmtInt(rec.proteins ?? 0)} proteins`]);
+        else out.lines.push(['var(--fig-count-k)', `${fmtInt(rec.k)} / ${fmtInt(rec.n)}`, `${uw} with sites`]);
+        if (isTested(rec)) {
+          if (sitesU) {
+            const [lo, hi] = woolf(rec.a, rec.b, rec.c, rec.d);
+            out.lines.push([
+              `var(--fig-${dirOf(rec, 0, true)})`,
+              foldFmt(rec.or ?? rec.fold),
+              `odds ratio · 95% interval ${lo.toFixed(2)}–${hi.toFixed(2)}`,
+            ]);
+          } else {
+            const [lo, hi] = wilson(rec.k, rec.n);
+            out.lines.push([
+              `var(--fig-${dirOf(rec, fd.base)})`,
+              pct(rec.k / rec.n),
+              `${W.marked} · 95% interval ${Math.round(lo * 100)}–${Math.round(hi * 100)}%`,
+            ]);
+            out.extra.push(`${foldFmt(rec.k / rec.n / fd.base, rec.k)} all reviewed proteins (${pct(fd.base)})`);
+          }
+          out.extra.push(`p ${fqf(rec.p)} · q ${fqf(rec.q)}`);
+        }
+        out.hint = `${fmtInt(rec.sites ?? rec.n)} ${W.marks} · click to list the ${uw}`;
+        return out;
+      },
+      notes: (sc) => {
+        const o = [];
+        if (res.test)
+          o.push(
+            (sitesU
+              ? TESTS.sites
+              : `${TESTS.proteins} ${fmtInt(res.M)} of ${fmtInt(res.N)} reviewed proteins (${pct(fd.base)}) have sites.`) +
+              ` Regions under ${MIN_N} are counted, not tested.`
+          );
+        else
+          o.push(
+            res.partial
+              ? 'Not tested here: only the proteins with sites are known for these sets.'
+              : 'No test: a set describes sites, and the comparison residues are not known for several features at once. Counts only.'
+          );
+        if (sc.brk < Infinity) o.push('Bars marked // are cut: they are longer than the axis.');
+        const bigs = fd.regs.filter(broad);
+        if (bigs.length)
+          o.push(
+            `${bigs.map((r) => regLabel(r.m, nT)).join(', ')}: a very large set, so a tiny p at a small fold (large set; small effect).`
+          );
+        return o;
+      },
+    };
+  }
+  function specA(res) {
+    const uw = unitWord(res.unit),
+      groups = ['all', 'marked'].filter((u) => res.pairs?.[u]?.length),
+      recs = (u) =>
+        res.pairs[u].map((r) => ({
+          ...r,
+          u,
+          pair: true,
+          k: r.a,
+          or: r.fold,
+          noci: true,
+          sel: `a${r.mask}`,
+          hl: { m: r.mask, sup: true },
+          dm: r.mask,
+          text: `${LETTERS[r.i]} and ${LETTERS[r.j]}`,
+          tipText: `${fmtInt(r.a)} · ${expText(r.expected)} expected`,
+          sitesOnly: true,
+          unit: u,
+        })),
+      all = groups.flatMap(recs),
+      L2 = foldDomain(all.map((r) => ({ ...r, q: r.q }))),
+      tested = all.some((r) => r.q != null);
+    const terms = res.ts.map((t, i) => {
+      const n = res.rows.filter((r) => r.mask & (1 << i)).reduce((s, r) => s + r.n, 0);
+      return {
+        L: LETTERS[i],
+        name: t.label,
+        tag: t.tag,
+        i,
+        m: 1 << i,
+        n,
+        k: n,
+        term: true,
+        noBar: true,
+        tipText: `${fmtInt(n)} ${uw}`,
+        dm: 1 << i,
+      };
+    });
+    return {
+      q: 'a',
+      keyLines: [
+        [
+          'Bar length',
+          [
+            [keyBar('var(--fig-count-k)'), 'shared'],
+            [expTick(), 'expected by chance'],
+          ],
+        ],
+        [
+          'Times the expected overlap',
+          [
+            [keyBar('var(--fig-more)'), 'more than chance'],
+            [keyBar('var(--fig-surface)', 'var(--fig-muted)'), 'not clearly more'],
+            [refTick(), '1× (as expected)'],
+          ],
+        ],
+      ],
+      heads: {
+        size: ['Shared', `${uw} in both`],
+        mid: 'Times the expected overlap, log scale',
+        vals: ['fold', '', 'q'],
+      },
+      sections: [
+        { title: 'Sets', sub: `· ${uw} in each set`, rows: terms },
+        ...groups.map((u) => ({
+          title: `Among ${universeLabel(res, u)
+            .toLowerCase()
+            .replace(/^(\w)/, (c) => c)}`,
+          sub: `· ${fmtInt(res.pairs[u][0].N)} counted`,
+          rows: recs(u),
+        })),
+      ],
+      scaleValues: all.flatMap((r) => [r.a, Number.isNaN(r.expected) ? 0 : r.expected]),
+      tipTexts: all.map((r) => r.tipText),
+      sizeCell,
+      midCell: (r, w, phone) => (r.term ? svgEl(w, phone ? 22 : 30, []) : foldCell(r, L2, w, phone)),
+      midAxis: (w) => axisFold(L2, w),
+      vals: (r) => {
+        if (r.term) return { msg: '' };
+        if (r.q == null) return { msg: 'not tested' };
+        return {
+          parts: [
+            ['sh', r.a === 0 ? '0×' : foldFmt(r.fold, r.a)],
+            ['fo', ''],
+            ['q', 'q ' + fqf(r.q)],
+          ],
+        };
+      },
+      phoneA: (r) => r.tipText,
+      tip(rec) {
+        const out = { lines: [], extra: [] };
+        out.lines.push(['var(--fig-count-k)', fmtInt(rec.a), `${uw} in both`]);
+        out.extra.push(
+          `${expText(rec.expected)} expected by chance, from ${fmtInt(rec.n)} and ${fmtInt(rec.m)} of ${fmtInt(rec.N)} ${universeLabel(res, rec.u).toLowerCase()}`
+        );
+        if (rec.q != null)
+          out.extra.push(
+            `${rec.a === 0 ? '0×' : foldFmt(rec.fold, rec.a)} the expected overlap · p ${fqf(rec.p)} · q ${fqf(rec.q)}`
+          );
+        out.hint = `click to list the ${uw} in both`;
+        return out;
+      },
+      notes: (sc) => {
+        const o = [
+          `One-sided hypergeometric test: the chance that two random sets of these sizes, drawn from the ${uw} counted, share this many or more. Fold = shared / expected (n × m / N). q: Benjamini–Hochberg across the pairs of each group.`,
+        ];
+        if (sc.brk < Infinity) o.push('Bars marked // are cut: they are longer than the axis.');
+        return o;
+      },
+      tested,
+    };
+  }
+  const specOf = (res) => {
+    const fd = figData(res);
+    return { fd, spec: question(res) === 'a' ? specA(res) : specB(res, fd) };
+  };
+
+  // -- the figure on the page: built as DOM from a result and a spec, redrawn when its width changes
+  const UI = {
+    hover: '',
+    sel: '',
+    layout: null,
+    rows: [],
+    fig: null,
+    res: null,
+    fd: null,
+    spec: null,
+    glyphHost: null,
+    tip: null,
+  };
+  const glyphState = (key) => {
+    if (!key) return 0;
+    const o = parseOr(key);
+    return { m: o.m, sup: o.sup };
+  };
+  const regAria = (res, spec, r) => {
+    const v = spec.vals(r);
+    return `${r.text}: ${
+      v?.parts
+        ? v.parts
+            .map((p) => p[1])
+            .filter(Boolean)
+            .join(', ')
+        : v?.msg || ''
+    }. Open this ${r.pair ? 'overlap' : 'region'}.`;
+  };
+  function valuesCell(r, spec) {
+    const c = html('div', 'c vals'),
+      v = spec.vals(r);
+    if (!v) return c;
+    if (v.msg != null) c.appendChild(html('span', 'nt', v.msg));
+    else v.parts.forEach(([cls, t]) => c.appendChild(html('span', cls, t)));
     return c;
   }
-  function phoneLine(r, fd) {
+  function phoneLine(r, spec) {
     const pl = html('div', 'phline'),
-      a = html('span', 'a', fd.sitesU ? fmtInt(r.n) : `${fmtInt(r.k)} / ${fmtInt(r.n)}`),
-      b = html('span', 'b');
-    if (fd.tested) {
-      if (isTested(r)) {
-        b.appendChild(html('span', 'sh', fd.sitesU ? foldFmt(r.or ?? r.fold) : pct(r.k / r.n)));
-        b.appendChild(document.createTextNode(fd.sitesU ? ' · ' : ` · ${foldFmt(r.k / r.n / fd.base, r.k)} · `));
-        b.appendChild(html('span', 'q', 'q ' + fqf(r.q)));
-      } else b.appendChild(html('span', 'nt', `not tested (n < ${MIN_N})`));
+      a = html('span', 'a', spec.phoneA(r)),
+      b = html('span', 'b'),
+      v = spec.vals(r);
+    if (v?.msg != null) b.appendChild(html('span', 'nt', v.msg));
+    else if (v) {
+      b.appendChild(html('span', 'sh', v.parts[0][1]));
+      b.appendChild(document.createTextNode(` · ${[v.parts[1][1], v.parts[2][1]].filter(Boolean).join(' · ')}`));
     }
     pl.appendChild(a);
     pl.appendChild(b);
     return pl;
   }
+  const keyLineDom = ([lead, items]) => {
+    const line = html('div', 'kline');
+    line.appendChild(html('span', 'kh', lead));
+    items.forEach(([glyph, txt]) => {
+      const s = html('span', 'k');
+      s.appendChild(glyph);
+      s.appendChild(document.createTextNode(txt));
+      line.appendChild(s);
+    });
+    return line;
+  };
   function buildFigure(host, res) {
     host.textContent = '';
-    const fd = figData(res),
+    const { fd, spec } = specOf(res),
       nT = res.nT,
       fig = html('figure', 'ovx');
     fig.style.margin = 0;
     host.appendChild(fig);
     const phone = fig.clientWidth <= 560;
     fig.style.setProperty('--dotsw', `${12 + (nT - 1) * 16 + 4}px`);
-    Object.assign(UI, { fig, res, fd, rows: [], tip: null, glyphHost: null, layout: null });
-    UI.hover = 0;
-    UI.sel = +S.or || 0;
+    Object.assign(UI, { fig, res, fd, spec, rows: [], tip: null, glyphHost: null, layout: null });
+    UI.hover = '';
+    UI.sel = String(S.or || '');
     const top = html('div', 'ovx-top');
     fig.appendChild(top);
-    let err = 0;
-    const sizes = fd.terms.map((t) => t.n);
+    const sizes = res.ts.map((t, i) => res.rows.filter((r) => r.mask & (1 << i)).reduce((s, r) => s + r.n, 0));
     if (nT <= 3 && sizes.every((n) => n > 0)) {
       UI.layout = glyphLayout(
         sizes,
         res.rows.filter((r) => r.mask).map((r) => ({ m: r.mask, n: r.n })),
-        { w: 300, h: phone ? 200 : 210 }
+        { w: phone ? 300 : 380, h: phone ? 210 : 270 }
       );
-      err = UI.layout.err;
       const gw = html('div', 'ovx-glyph');
-      gw.appendChild(glyphSvg(UI.layout, nT, { sel: UI.sel }));
+      gw.title = `Circle and overlap areas are proportional to the counts${UI.layout.err > 0.01 ? ` (largest misfit ${(UI.layout.err * 100).toFixed(1)}% of the total)` : ''}.`;
+      gw.appendChild(glyphSvg(UI.layout, nT, { sel: glyphState(UI.sel) }));
       top.appendChild(gw);
       UI.glyphHost = gw;
     }
     const key = html('div', 'ovx-key');
     top.appendChild(key);
-    keyItems(fd, res).forEach(([head, items]) => {
-      const line = html('div', 'kline');
-      line.appendChild(html('span', 'kh', head));
-      items.forEach(([glyph, txt]) => {
-        const s = html('span', 'k');
-        s.appendChild(glyph);
-        s.appendChild(document.createTextNode(txt));
-        line.appendChild(s);
-      });
-      key.appendChild(line);
-    });
-    if (UI.layout)
-      key.appendChild(
-        html(
-          'p',
-          'ovx-note',
-          `Circle and overlap areas are proportional to the counts${err > 0.01 ? ` (largest misfit ${(err * 100).toFixed(1)}% of the total)` : ''}. Small regions are labelled outside, on a leader.`
-        )
-      );
+    spec.keyLines.forEach((k) => key.appendChild(keyLineDom(k)));
     const grid = html('div', 'ovx-grid');
     fig.appendChild(grid);
-    const sc = sizeScale([...fd.terms.map((t) => t.n), ...fd.regs.map((r) => r.n)]),
-      L2 = fd.sitesU ? foldDomain(fd.regs) : 0;
+    const sc = sizeScale(spec.scaleValues);
     const head = html('div', 'r head'),
       h1 = html('div', 'c lab'),
       h2 = html('div', 'c'),
@@ -1391,36 +1720,47 @@
       }
       return s;
     };
-    h2.appendChild(ch(fd.sitesU ? 'Sites' : cap(unitWord(res.unit)), fd.sitesU ? '' : 'with sites / all'));
-    h3.appendChild(
-      ch(!fd.tested ? 'Not tested here' : fd.sitesU ? 'Odds ratio, log scale (Fisher)' : 'Share with sites', '')
-    );
-    if (fd.tested) {
+    h2.appendChild(ch(...spec.heads.size));
+    h3.appendChild(ch(spec.heads.mid, ''));
+    if (spec.heads.vals) {
       const hv = html('span', 'vals vh');
-      hv.appendChild(html('span', 'sh', fd.sitesU ? 'OR' : 'share'));
-      hv.appendChild(html('span', 'fo', fd.sitesU ? '' : 'fold'));
-      hv.appendChild(html('span', 'q', 'q'));
+      ['sh', 'fo', 'q'].forEach((c, i) => hv.appendChild(html('span', c, spec.heads.vals[i])));
       h4.appendChild(hv);
     }
     [h1, h2, h3, h4].forEach((c) => head.appendChild(c));
     grid.appendChild(head);
     const rows = [];
-    const group = (txt, sub) => {
-      const g = html('div', 'grp', txt + ' ');
-      g.appendChild(html('i', '', sub));
-      grid.appendChild(g);
-    };
-    const addRow = (rec, lab, isTerm) => {
-      const r = html('div', `r ${isTerm ? 'term-r' : 'data'}`),
+    const addRow = (rec) => {
+      const isTerm = !!rec.term,
+        r = html('div', `r ${isTerm ? 'term-r' : 'data'}`),
         c2 = html('div', 'c sz'),
         c3 = html('div', 'c sh'),
-        c4 = valuesCell(rec, fd);
-      if (!isTerm) {
-        r.dataset.ovReg = String(rec.m);
-        lab.tabIndex = rec.m === (UI.sel || fd.regs[0]?.m) ? 0 : -1;
+        c4 = valuesCell(rec, spec),
+        lab = html('div', 'c lab');
+      if (isTerm) {
+        const tm = html('span', 'term'),
+          sw = html('span', 'sw'),
+          nm = html('span', 'nm', rec.name);
+        sw.style.background = `var(--fig-c${rec.i + 1})`;
+        tm.appendChild(sw);
+        tm.appendChild(html('b', '', rec.L));
+        tm.appendChild(nm);
+        if (rec.tag) tm.appendChild(html('span', 'ov-tag', rec.tag));
+        lab.appendChild(tm);
+        if (phone) {
+          lab.textContent = '';
+          lab.appendChild(dotsSvg(rec.dm, nT));
+        }
+      } else {
+        const rg = html('span', 'reg');
+        rg.appendChild(dotsSvg(rec.dm, nT));
+        rg.appendChild(html('span', 'rl', rec.text));
+        lab.appendChild(rg);
+        r.dataset.ovReg = rec.sel;
+        lab.tabIndex = -1;
         lab.setAttribute('role', 'button');
-        lab.setAttribute('aria-label', regAria(res, fd, rec));
-        if (rec.m === UI.sel) r.classList.add('sel');
+        lab.setAttribute('aria-label', regAria(res, spec, rec));
+        if (rec.sel === UI.sel) r.classList.add('sel');
       }
       [lab, c2, c3, c4].forEach((c) => r.appendChild(c));
       if (isTerm) {
@@ -1428,49 +1768,32 @@
           n1 = html('span', 'nm1');
         n1.appendChild(html('b', '', rec.L));
         n1.appendChild(document.createTextNode(rec.name));
+        if (rec.tag) n1.appendChild(html('span', 'ov-tag', rec.tag));
+        t.appendChild(n1);
+        grid.appendChild(t);
+      } else if (rec.pair) {
+        const t = html('div', 'phline top'),
+          n1 = html('span', 'nm1');
+        n1.appendChild(document.createTextNode(rec.text));
         t.appendChild(n1);
         grid.appendChild(t);
       }
       grid.appendChild(r);
-      grid.appendChild(phoneLine(rec, fd));
+      grid.appendChild(phoneLine(rec, spec));
       rows.push({ rec, c2, c3, r, lab });
-      return r;
     };
-    group('Terms', '· every protein of each term');
-    fd.terms.forEach((t, i) => {
-      const lab = html('div', 'c lab'),
-        tm = html('span', 'term'),
-        sw = html('span', 'sw'),
-        nm = html('span', 'nm', t.name);
-      sw.style.background = `var(--fig-c${i + 1})`;
-      tm.appendChild(sw);
-      tm.appendChild(html('b', '', t.L));
-      nm.title = t.name;
-      tm.appendChild(nm);
-      lab.appendChild(tm);
-      if (phone) {
-        lab.textContent = '';
-        lab.appendChild(HTMLSvg(dotsSvg(t.m, nT)));
-      }
-      addRow({ ...t, sitesOnly: fd.sitesU }, lab, true);
+    spec.sections.forEach((sec) => {
+      const g = html('div', 'grp', sec.title + ' ');
+      g.appendChild(html('i', '', sec.sub));
+      grid.appendChild(g);
+      sec.rows.forEach(addRow);
     });
-    group('Regions', `· ${unitWord(res.unit)} in exactly these terms, largest first`);
-    fd.regs.forEach((r) => {
-      const lab = html('div', 'c lab'),
-        rg = html('span', 'reg');
-      rg.appendChild(HTMLSvg(dotsSvg(r.m, nT)));
-      rg.appendChild(html('span', 'rl', regLabel(r.m, nT)));
-      lab.appendChild(rg);
-      addRow({ ...r, sitesOnly: fd.sitesU }, lab, false);
-    });
+    const first = rows.find((x) => !x.rec.term);
+    (rows.find((x) => x.rec.sel === UI.sel && !x.rec.term) || first)?.lab &&
+      ((rows.find((x) => x.rec.sel === UI.sel && !x.rec.term) || first).lab.tabIndex = 0);
     const w2 = rows[0].c2.clientWidth,
       w3 = rows[0].c3.clientWidth;
-    sc.tip =
-      Math.ceil(
-        Math.max(
-          ...rows.map(({ rec }) => tw(fd.sitesU ? fmtInt(rec.n) : `${fmtInt(rec.k)} / ${fmtInt(rec.n)}`, 12, 600))
-        )
-      ) + 12;
+    sc.tip = Math.ceil(Math.max(...spec.tipTexts.map((t) => tw(t, 12, 600)))) + 12;
     {
       const pw = (phone ? w2 : w2 - sc.tip) * (sc.brk < Infinity ? 0.86 : 1),
         want = Math.max(2, Math.min(6, Math.floor(pw / 38)));
@@ -1478,54 +1801,43 @@
       sc.max = Math.max(sc.base, sc.ticks.at(-1));
     }
     h2.appendChild(axisSize(sc, w2, phone));
-    if (fd.tested) h3.appendChild(fd.sitesU ? axisFold(L2, w3) : axisShare(fd.base, w3));
+    if (spec.midAxis) h3.appendChild(spec.midAxis(w3));
     rows.forEach(({ rec, c2, c3 }) => {
-      c2.appendChild(sizeCell(rec, sc, w2, phone));
-      if (fd.tested) c3.appendChild(fd.sitesU ? foldCell(rec, L2, w3, phone) : shareCell(rec, fd.base, w3, phone));
+      c2.appendChild(spec.sizeCell(rec, sc, w2, phone));
+      if (spec.midCell) c3.appendChild(spec.midCell(rec, w3, phone));
     });
     const f = html('div', 'foot');
-    footNotes(res, fd, sc, sc.brk < Infinity).forEach((t, i) => {
-      if (i) f.appendChild(document.createTextNode(' '));
-      f.appendChild(document.createTextNode(t));
-    });
-    const bigs = fd.regs.filter(broad);
-    if (bigs.length) {
-      f.appendChild(document.createTextNode(' '));
-      f.appendChild(
-        html(
-          'b',
-          '',
-          `${bigs.map((r) => regLabel(r.m, nT)).join(', ')}: a very large set, so a tiny p at a small fold (large set; small effect).`
-        )
-      );
-    }
+    f.textContent = spec.notes(sc).join(' ');
     fig.appendChild(f);
     UI.rows = rows;
     UI.sc = sc;
     UI.phone = phone;
   }
-  // an HTML wrapper for an SVG element (so a cell can hold it)
-  const HTMLSvg = (s) => s;
   // hover: a row's wash, its region outlined in the glyph, and a tooltip with the values first
-  function setHover(m, row) {
-    if (!UI.fig || UI.hover === m) return;
-    UI.hover = m;
-    UI.rows.forEach((x) => x.r.classList.toggle('hover', !x.rec.term && x.rec.m === m));
+  function setHover(key, row) {
+    if (!UI.fig || UI.hover === key) return;
+    UI.hover = key;
+    UI.rows.forEach((x) => x.r.classList.toggle('hover', !x.rec.term && x.rec.sel === key));
     if (UI.layout && UI.glyphHost) {
       UI.glyphHost.textContent = '';
-      UI.glyphHost.appendChild(glyphSvg(UI.layout, UI.res.nT, { hover: m, sel: UI.sel }));
+      UI.glyphHost.appendChild(glyphSvg(UI.layout, UI.res.nT, { hover: glyphState(key), sel: glyphState(UI.sel) }));
     }
     UI.tip?.remove();
     UI.tip = null;
-    if (!m || !row || matchMedia?.('(hover: none)').matches) return;
-    const { res, fd } = UI,
+    if (!key || !row || matchMedia?.('(hover: none)').matches) return;
+    const { res, spec } = UI,
       rec = row.rec,
       tip = html('div', 'tip'),
       t1 = html('div', 't1');
-    t1.appendChild(html('b', '', regLabel(rec.m, res.nT)));
-    t1.appendChild(document.createTextNode(' · ' + regWords(res, rec.m)));
+    t1.appendChild(html('b', '', rec.text));
+    t1.appendChild(
+      document.createTextNode(
+        ' · ' + (rec.pair ? `in ${res.ts[rec.i].label} and ${res.ts[rec.j].label}` : regWords(res, rec.m))
+      )
+    );
     tip.appendChild(t1);
-    const ln = (keyCol, big, rest) => {
+    const t = spec.tip(rec);
+    t.lines.forEach(([keyCol, big, rest]) => {
       const l = html('div', 'ln'),
         kk = html('span', 'key');
       kk.style.borderColor = keyCol;
@@ -1533,33 +1845,9 @@
       l.appendChild(html('span', 'big', big));
       l.appendChild(html('span', '', rest));
       tip.appendChild(l);
-    };
-    if (fd.sitesU) ln('var(--fig-count-k)', fmtInt(rec.n), `sites on ${fmtInt(rec.proteins ?? 0)} proteins`);
-    else ln('var(--fig-count-k)', `${fmtInt(rec.k)} / ${fmtInt(rec.n)}`, `${unitWord(res.unit)} with sites`);
-    if (isTested(rec)) {
-      if (fd.sitesU) {
-        const [lo, hi] = woolf(rec.a, rec.b, rec.c, rec.d);
-        ln(
-          `var(--fig-${dirOf(rec, 0, true) === 'ns' ? 'ns' : dirOf(rec, 0, true)})`,
-          foldFmt(rec.or ?? rec.fold),
-          `odds ratio · 95% interval ${lo.toFixed(2)}–${hi.toFixed(2)}`
-        );
-      } else {
-        const [lo, hi] = wilson(rec.k, rec.n);
-        ln(
-          `var(--fig-${dirOf(rec, fd.base) === 'ns' ? 'ns' : dirOf(rec, fd.base)})`,
-          pct(rec.k / rec.n),
-          `with sites · 95% interval ${Math.round(lo * 100)}–${Math.round(hi * 100)}%`
-        );
-        tip.appendChild(
-          html('div', 'ln', `${foldFmt(rec.k / rec.n / fd.base, rec.k)} all reviewed proteins (${pct(fd.base)})`)
-        );
-      }
-      tip.appendChild(html('div', 'ln', `p ${fqf(rec.p)} · q ${fqf(rec.q)}`));
-    }
-    tip.appendChild(
-      html('div', 'hint', `${fmtInt(rec.sites ?? rec.n)} sites · click to list the ${unitWord(res.unit)}`)
-    );
+    });
+    t.extra.forEach((x) => tip.appendChild(html('div', 'ln', x)));
+    tip.appendChild(html('div', 'hint', t.hint));
     UI.fig.appendChild(tip);
     UI.tip = tip;
     const fr = UI.fig.getBoundingClientRect(),
@@ -1574,17 +1862,17 @@
   document.addEventListener('mouseover', (e) => {
     if (!UI.fig) return;
     const row = rowOf(e.target);
-    setHover(row ? row.rec.m : 0, row);
+    setHover(row ? row.rec.sel : '', row);
   });
   document.addEventListener('focusin', (e) => {
     if (!UI.fig) return;
     const row = rowOf(e.target);
-    if (row) setHover(row.rec.m, row);
+    if (row) setHover(row.rec.sel, row);
   });
   document.addEventListener('focusout', (e) => {
-    if (UI.fig && rowOf(e.target)) setHover(0, null);
+    if (UI.fig && rowOf(e.target)) setHover('', null);
   });
-  // the glyph's regions are targets too
+  // the glyph's regions are targets too: the row of that region (or the first pair that holds it)
   const glyphMask = (e) => {
     const svg = e.target.closest?.('.ovx-glyph svg');
     if (!svg || !UI.layout) return 0;
@@ -1592,17 +1880,17 @@
       L = UI.layout;
     return L.at(((e.clientX - b.left) / b.width) * L.vw + L.vx, ((e.clientY - b.top) / b.height) * L.vh + L.vy);
   };
+  const rowForMask = (m) =>
+    m ? UI.rows.find((x) => !x.rec.term && (x.rec.pair ? (m & x.rec.m) === x.rec.m : x.rec.m === m)) : null;
   document.addEventListener('mousemove', (e) => {
     if (!UI.fig || !e.target.closest?.('.ovx-glyph')) return;
-    const m = glyphMask(e),
-      row = UI.rows.find((x) => !x.rec.term && x.rec.m === m);
-    setHover(row ? m : 0, row || null);
+    const row = rowForMask(glyphMask(e));
+    setHover(row ? row.rec.sel : '', row || null);
   });
   document.addEventListener('click', (e) => {
     if (!UI.fig || S.view !== 'overlap') return;
-    const m = glyphMask(e);
-    if (m && UI.rows.some((x) => !x.rec.term && x.rec.m === m))
-      set({ or: String(S.or) === String(m) ? '' : String(m) });
+    const row = rowForMask(glyphMask(e));
+    if (row) set({ or: String(S.or) === row.rec.sel ? '' : row.rec.sel });
   });
   // arrows move between rows, Escape clears the selection
   document.addEventListener('keydown', (e) => {
@@ -1640,8 +1928,7 @@
   }
   (K.afterRender ||= []).push(drawFigure);
 
-  // -- the export: the same rows as one SVG at a fixed width, no hover or selection
-  // the literal light values an export draws with (the figure style guide's FIG_EXPORT): never the dark page's
+  // -- the export: the same rows as one SVG at a preset's width, no hover or selection
   const TOK = {
     'fig-surface': '#ffffff',
     'fig-ink': '#111827',
@@ -1661,9 +1948,19 @@
     'fig-count-n': '#94bac6',
     'fig-euler-op': '.16',
   };
-  // the figure as one SVG at a preset's width: screen (a wide grid with a values column) or paper (the values go on a second line)
+  const wrapText = (s, maxW, size, w = 400, maxLines = 3) => {
+    const words = String(s).split(/\s+/),
+      lines = [''];
+    words.forEach((word) => {
+      const cur = lines.at(-1),
+        next = cur ? `${cur} ${word}` : word;
+      if (cur && tw(next, size, w) > maxW && lines.length < maxLines) lines.push(word);
+      else lines[lines.length - 1] = next;
+    });
+    return lines;
+  };
   function exportBody(res, Wd = 920) {
-    const fd = figData(res),
+    const { spec } = specOf(res),
       nT = res.nT,
       two = Wd < 760,
       root = el('g', { transform: 'translate(20,0)' }), // the frame's margin
@@ -1689,26 +1986,25 @@
       };
     let y = 0,
       gw = 0;
-    const sizes = fd.terms.map((t) => t.n);
+    const sizes = res.ts.map((t, i) => res.rows.filter((r) => r.mask & (1 << i)).reduce((s, r) => s + r.n, 0));
     if (nT <= 3 && sizes.every((n) => n > 0)) {
       const L = glyphLayout(
           sizes,
           res.rows.filter((r) => r.mask).map((r) => ({ m: r.mask, n: r.n })),
-          { w: 300, h: 210 }
+          { w: two ? 300 : 360, h: two ? 210 : 250 }
         ),
         g = glyphSvg(L, nT, {});
       place(g, 0, 0);
       gw = L.vw + 24;
       y = L.vh;
     }
-    let ky = 12;
-    keyItems(fd, res).forEach(([head, items]) => {
-      T(gw, ky, head.toUpperCase(), { size: 10, fill: 'var(--fig-muted)' });
-      ky += 16;
-      let kx = gw;
+    let ky = 14;
+    spec.keyLines.forEach(([lead, items]) => {
+      T(gw, ky, lead, { size: 12.5, fill: 'var(--fig-muted)' });
+      let kx = gw + tw(lead, 12.5, 400) + 12;
       items.forEach(([glyph, txt]) => {
         const w = tw(txt, 12.5, 400) + 30;
-        if (kx > gw && kx + w > Wd) {
+        if (kx > gw + 40 && kx + w > Wd) {
           kx = gw;
           ky += 17;
         }
@@ -1719,114 +2015,76 @@
       ky += 22;
     });
     y = Math.max(y, ky) + 8;
-    const cols = two ? { lab: 128, a: 220, b: 252, v: 0, gap: 12 } : { lab: 200, a: 230, b: 240, v: 188, gap: 14 },
+    const cols = two ? { lab: 128, a: 220, b: 252, gap: 12 } : { lab: 220, a: 220, b: 230, gap: 14 },
       xa = cols.lab + cols.gap,
       xb = xa + cols.a + cols.gap,
       xv = xb + cols.b + cols.gap,
-      pitch = two ? 46 : 30,
-      sc = sizeScale([...fd.terms.map((t) => t.n), ...fd.regs.map((r) => r.n)]),
-      L2 = fd.sitesU ? foldDomain(fd.regs) : 0;
-    sc.tip =
-      Math.ceil(
-        Math.max(
-          ...[...fd.terms, ...fd.regs].map((r) =>
-            tw(fd.sitesU ? fmtInt(r.n) : `${fmtInt(r.k)} / ${fmtInt(r.n)}`, 12, 600)
-          )
-        )
-      ) + 12;
+      sc = sizeScale(spec.scaleValues);
+    sc.tip = Math.ceil(Math.max(...spec.tipTexts.map((t) => tw(t, 12, 600)))) + 12;
     sc.ticks = niceTicks(
       sc.base,
       Math.max(2, Math.min(6, Math.floor(((cols.a - sc.tip) * (sc.brk < Infinity ? 0.86 : 1)) / 38)))
     );
     sc.max = Math.max(sc.base, sc.ticks.at(-1));
-    T(xa, y + 11, fd.sitesU ? 'Sites' : cap(unitWord(res.unit)), { w: 600, fill: 'var(--fig-ink-2)' });
-    if (fd.tested)
-      T(xb, y + 11, fd.sitesU ? 'Odds ratio, log scale (Fisher)' : 'Share with sites', {
-        w: 600,
-        fill: 'var(--fig-ink-2)',
-      });
-    if (fd.tested && !two) {
-      T(xv, y + 11, fd.sitesU ? 'OR' : 'share', { size: 12, fill: 'var(--fig-muted)' });
-      if (!fd.sitesU) T(xv + 62, y + 11, 'fold', { size: 12, fill: 'var(--fig-muted)' });
-      T(xv + 116, y + 11, 'q', { size: 12, fill: 'var(--fig-muted)' });
+    T(xa, y + 11, spec.heads.size[0], { w: 600, fill: 'var(--fig-ink-2)' });
+    if (spec.heads.mid) T(xb, y + 11, spec.heads.mid, { w: 600, fill: 'var(--fig-ink-2)' });
+    if (spec.heads.vals && !two) {
+      T(xv, y + 11, spec.heads.vals[0], { size: 12, fill: 'var(--fig-muted)' });
+      if (spec.heads.vals[1]) T(xv + 62, y + 11, spec.heads.vals[1], { size: 12, fill: 'var(--fig-muted)' });
+      T(xv + 116, y + 11, spec.heads.vals[2], { size: 12, fill: 'var(--fig-muted)' });
     }
     y += 16;
     place(axisSize(sc, cols.a, false), xa, y);
-    if (fd.tested) place(fd.sitesU ? axisFold(L2, cols.b) : axisShare(fd.base, cols.b), xb, y);
+    if (spec.midAxis) place(spec.midAxis(cols.b), xb, y);
     y += 24;
-    const valueText = (rec) =>
-      isTested(rec)
-        ? [
-            fd.sitesU ? foldFmt(rec.or ?? rec.fold) : pct(rec.k / rec.n),
-            fd.sitesU ? '' : foldFmt(rec.k / rec.n / fd.base, rec.k),
-            'q ' + fqf(rec.q),
-          ]
-        : null;
-    const row = (rec, isTerm) => {
-      if (isTerm) {
+    const pitch = two ? 46 : 30;
+    const row = (rec) => {
+      let h = pitch;
+      if (rec.term) {
+        const lines = wrapText(rec.name + (rec.tag ? ` · ${rec.tag}` : ''), cols.lab - 36, 13);
+        h = Math.max(pitch, lines.length * 16 + 14);
         root.appendChild(
           el('rect', { x: 0, y: y + 9, width: 11, height: 11, rx: 3, fill: `var(--fig-c${rec.i + 1})` })
         );
         T(18, y + 19, rec.L, { w: 700, size: 13 });
-        let nm = rec.name;
-        while (nm.length > 3 && tw(nm, 13, 400) > cols.lab - 38) nm = nm.slice(0, -2);
-        T(32, y + 19, nm === rec.name ? nm : nm + '…', { size: 13 });
+        lines.forEach((ln, i) => T(32, y + 19 + i * 16, ln, { size: 13 }));
       } else {
-        place(dotsSvg(rec.m, nT), 0, y + 5);
-        T(12 + (nT - 1) * 16 + 10, y + 19, regLabel(rec.m, nT), { size: 12.5, fill: 'var(--fig-ink-2)' });
+        place(dotsSvg(rec.dm, nT), 0, y + 5);
+        T(12 + (nT - 1) * 16 + 10, y + 19, rec.text, { size: 12.5, fill: 'var(--fig-ink-2)' });
       }
-      place(sizeCell({ ...rec, sitesOnly: fd.sitesU }, sc, cols.a, false), xa, y);
-      if (fd.tested)
-        place(fd.sitesU ? foldCell(rec, L2, cols.b, false) : shareCell(rec, fd.base, cols.b, false), xb, y);
-      if (fd.tested) {
-        const v = valueText(rec);
-        if (two) {
-          // the values under the bars, as on a phone
-          if (v) {
-            T(xb, y + 41, v[0], { size: 13, w: 700 });
-            T(xb + tw(v[0], 13, 700) + 8, y + 41, [v[1], v[2]].filter(Boolean).join(' · '), {
-              size: 12,
-              fill: 'var(--fig-muted)',
-            });
-          } else
-            T(xb, y + 41, `${fd.sitesU ? '' : `${rec.k} of `}${rec.n} · not tested (n < ${MIN_N})`, {
-              size: 12,
-              fill: 'var(--fig-muted)',
-            });
-        } else if (v) {
-          T(xv + 48, y + 19, v[0], { w: 700, size: 13, anchor: 'end' });
-          if (v[1]) T(xv + 110, y + 19, v[1], { size: 13, fill: 'var(--fig-ink-2)', anchor: 'end' });
-          T(xv + 116, y + 19, v[2], { size: 12, fill: 'var(--fig-muted)' });
-        } else
-          T(xv, y + 19, `${fd.sitesU ? '' : `${rec.k} of `}${rec.n} · not tested (n < ${MIN_N})`, {
+      place(spec.sizeCell(rec, sc, cols.a, false), xa, y);
+      if (spec.midCell) place(spec.midCell(rec, cols.b, false), xb, y);
+      const v = spec.vals(rec);
+      if (v) {
+        if (v.msg != null) T(two ? xb : xv, y + (two ? 41 : 19), v.msg, { size: 12, fill: 'var(--fig-muted)' });
+        else if (two) {
+          T(xb, y + 41, v.parts[0][1], { size: 13, w: 700 });
+          T(xb + tw(v.parts[0][1], 13, 700) + 8, y + 41, [v.parts[1][1], v.parts[2][1]].filter(Boolean).join(' · '), {
             size: 12,
             fill: 'var(--fig-muted)',
           });
+        } else {
+          T(xv + 48, y + 19, v.parts[0][1], { w: 700, size: 13, anchor: 'end' });
+          if (v.parts[1][1]) T(xv + 110, y + 19, v.parts[1][1], { size: 13, fill: 'var(--fig-ink-2)', anchor: 'end' });
+          T(xv + 116, y + 19, v.parts[2][1], { size: 12, fill: 'var(--fig-muted)' });
+        }
       }
-      y += pitch;
+      y += h;
     };
-    const grp = (a, b) => {
-      T(0, y + 14, a.toUpperCase(), { size: 10.5, fill: 'var(--fig-muted)' });
-      T(tw(a.toUpperCase(), 10.5, 400) + 8, y + 14, b, { size: 11, fill: 'var(--fig-muted)' });
+    spec.sections.forEach((sec) => {
+      T(0, y + 14, sec.title.toUpperCase(), { size: 10.5, fill: 'var(--fig-muted)' });
+      T(tw(sec.title.toUpperCase(), 10.5, 400) + 8, y + 14, sec.sub, { size: 11, fill: 'var(--fig-muted)' });
       root.appendChild(
         el('line', { x1: 0, x2: Wd, y1: y + 20, y2: y + 20, stroke: 'var(--fig-grid)', 'stroke-width': 1 })
       );
       y += 26;
-    };
-    grp('Terms', '· every protein of each term');
-    fd.terms.forEach((t) => row({ ...t, term: true }, true));
-    grp('Regions', `· ${unitWord(res.unit)} in exactly these terms, largest first`);
-    fd.regs.forEach((r) => row(r, false));
+      sec.rows.forEach(row);
+    });
     const str = new XMLSerializer()
       .serializeToString(root)
       .replace(/ xmlns="[^"]*"/g, '')
       .replace(/var\(--([a-z0-9-]+)\)/g, (m, n) => TOK[n] ?? m);
-    return {
-      svg: str,
-      h: Math.ceil(y) + 4,
-      notes: footNotes(res, fd, sc, sc.brk < Infinity),
-      bigs: fd.regs.filter(broad).map((r) => regLabel(r.m, nT)),
-    };
+    return { svg: str, h: Math.ceil(y) + 4, notes: spec.notes(sc), bigs: [] };
   }
 
   // ---- the page ---------------------------------------------------------------------------------------------------------------
@@ -1892,10 +2150,53 @@
     );
   }
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  // what a universe is called, per unit
+  const universeLabel = (res, u) =>
+    u === 'marked'
+      ? `${cap(W.marked)} proteins`
+      : {
+          proteins: 'All reviewed proteins',
+          sites: `All ${W.marks}`,
+          readers: 'All reader proteins',
+          enzymes: 'All enzyme proteins',
+        }[res.unit];
+  const pairName = (res, r) => `${LETTERS[r.i]} and ${LETTERS[r.j]}`;
+  // the overlap test as a table: one row per pair and universe
+  function pairTableHtml(res) {
+    const body = ['all', 'marked']
+      .flatMap((u) => (res.pairs?.[u] || []).map((r) => ({ ...r, u })))
+      .map(
+        (r) =>
+          `<tr${String(S.or) === 'a' + r.mask ? ' class="ov-on"' : ''}><th scope="row"><button type="button" class="linkish" data-ov-reg="a${r.mask}" title="${esc(`${res.ts[r.i].label} and ${res.ts[r.j].label}`)}">${esc(pairName(res, r))}</button></th>` +
+          `<td>${esc(universeLabel(res, r.u))}</td><td class="num">${int(r.n)}</td><td class="num">${int(r.m)}</td><td class="num">${int(r.a)}</td>` +
+          `<td class="num">${Number.isNaN(r.expected) ? '–' : r.expected < 10 ? r.expected.toFixed(1) : int(Math.round(r.expected))}</td>` +
+          `<td class="num">${r.fold == null ? '–' : r.a === 0 ? '0×' : foldFmt(r.fold, r.a)}</td><td class="num">${fqf(r.p)}</td><td class="num">${fqf(r.q)}</td></tr>`
+      )
+      .join('');
+    return (
+      `<div class="tbl-card"><table class="tbl ov-tbl"><caption class="vh">Overlap of each pair of sets against chance</caption><thead><tr><th scope="col">Pair</th><th scope="col">Among</th>` +
+      `<th scope="col" class="num">In first</th><th scope="col" class="num">In second</th><th scope="col" class="num">In both</th><th scope="col" class="num" title="first × second / all counted">Expected</th>` +
+      `<th scope="col" class="num" title="in both / expected">Fold</th><th scope="col" class="num" title="one-sided hypergeometric: the chance of this many or more in both">p</th><th scope="col" class="num">q</th></tr></thead>` +
+      `<tbody>${body || '<tr><td colspan="9">Nothing to test.</td></tr>'}</tbody></table></div>`
+    );
+  }
   // a region's list
+  // S.or: "5" is the region of exactly the terms of mask 5; "a5" is every element in those terms (and maybe more)
+  const parseOr = (v) => ({ m: +String(v).replace('a', '') || 0, sup: String(v).startsWith('a') });
+  const orTitle = (res, v) => {
+    const { m, sup } = parseOr(v),
+      idx = [...Array(res.nT).keys()].filter((i) => m & (1 << i));
+    return sup
+      ? {
+          head: `In ${joinNames(idx.map((i) => LETTERS[i]))}`,
+          words: `in ${joinNames(idx.map((i) => res.ts[i].label))}`,
+        }
+      : { head: regionLetters(m, res.nT), words: regionWords(res, m) };
+  };
   function regionHtml(res) {
-    const k = +S.or;
-    if (!S.or || !res.rows[k] || !k) return '';
+    const k = S.or,
+      o = parseOr(k);
+    if (!S.or || !o.m || o.m >= 1 << res.nT) return '';
     const sites = res.unit === 'sites',
       items = regionItems(res, k);
     const withSites = items.filter((x) => x.pi != null);
@@ -1906,7 +2207,7 @@
         : `<li><a href="https://www.uniprot.org/uniprotkb/${esc(x.acc)}">${esc(x.acc)}</a></li>`;
     const sel = [...new Set(withSites.map((x) => x.acc))];
     return (
-      `<section class="ov-region" id="ov-region" aria-live="polite"><h3>${esc(regionLetters(k, res.nT))}: ${esc(regionWords(res, k))}</h3>` +
+      `<section class="ov-region" id="ov-region" aria-live="polite"><h3>${esc(orTitle(res, k).head)}: ${esc(orTitle(res, k).words)}</h3>` +
       `<p class="muted">${int(items.length)} ${sites ? 'sites' : unitWord(res.unit)}${sites ? '' : `, ${int(withSites.length)} with sites (linked)`}.</p>` +
       `<p class="actions"><button type="button" class="btn small" data-ov-use${sel.length && sel.length <= SELMAX ? '' : ' disabled'} title="${
         sel.length > SELMAX
@@ -1921,11 +2222,13 @@
     );
   }
   function regionItems(res, k) {
-    const out = [];
+    const out = [],
+      { m: want, sup } = parseOr(k),
+      hit = (mk) => (sup ? (mk & want) === want : mk === want);
     if (res.unit === 'sites') {
       const SD = DATA.sd();
       res.mask.forEach((mk, e) => {
-        if (mk !== k) return;
+        if (!hit(mk)) return;
         const m = SD.marks[e],
           acc = D.proteins[m[0]][0];
         out.push({ acc, pi: m[0], pos: m[1] });
@@ -1934,74 +2237,211 @@
     }
     const byAcc = K.sel.byAcc;
     res.mask.forEach((mk, e) => {
-      if (mk !== k) return;
+      if (!hit(mk)) return;
       const acc = U.acc[res.elems[e]];
       out.push({ acc, pi: byAcc[acc] ? byAcc[acc].i : null });
     });
     return out.sort((a, b) => (b.pi != null) - (a.pi != null) || a.acc.localeCompare(b.acc));
   }
-  function pickerHtml() {
-    const chips = S.ot
-      .map(
-        (id, i) =>
-          `<span class="ov-chip">${SWATCH(i)}<b>${LETTERS[i]}</b> ${esc(termLabel(id).replace(/^Gene list.*/, id.startsWith('g:') ? `Gene list: ${id.slice(2, 40)}` : 'Gene list'))} ` +
-          `<button type="button" class="linkish" data-ov-del="${i}" aria-label="Remove ${esc(termLabel(id))}">×</button></span>`
-      )
-      .join(' ');
-    const full = S.ot.length >= MAXT;
+  // ---- the picker, the question, the answer ------------------------------------------------------------------------------
+  const UIP = { group: '', q: '' };
+  const groupOrder = () => {
+    const have = [...new Set(termPool().map((t) => t.group))],
+      first = (C.groups || []).map((g) => g.name).filter((n) => have.includes(n)),
+      last = ['Readers', 'Enzymes'].filter((n) => have.includes(n));
+    return [...first, ...have.filter((n) => !first.includes(n) && !last.includes(n)), ...last];
+  };
+  const termOf = (id) => [...termPool(), ...specials()].find((x) => x.id === id);
+  function chipHtml(id, i) {
+    const t = termOf(id),
+      lab = id.startsWith('g:') ? `Gene list: ${id.slice(2, 40)}` : termLabel(id),
+      tag = termTag(id);
     return (
-      `<div class="ov-pick"><div class="ov-chips">${chips || '<span class="muted">No term chosen.</span>'}</div>` +
-      `<label class="flabel" for="ov-q">Add a term (${int(termPool().length)} to choose from)</label>` +
-      `<input id="ov-q" type="search" autocomplete="off" placeholder="${full ? `At most ${MAXT} terms` : 'Search: a pathway, a location, a disease, a family…'}"${full ? ' disabled' : ''}>` +
-      `<div id="ov-res" class="ov-res" role="listbox" aria-label="Matching terms">${resultsHtml('')}</div>` +
+      `<span class="ov-chip">${SWATCH(i)}<b>${LETTERS[i]}</b> ${esc(lab)}` +
+      `${tag ? ` <span class="ov-tag">${esc(tag)}</span>` : ''}${t?.size ? ` <span class="muted">${int(t.size)}</span>` : ''} ` +
+      `<button type="button" class="linkish" data-ov-del="${i}" aria-label="Remove ${esc(lab)}">×</button></span>`
+    );
+  }
+  function pickerHtml() {
+    const full = S.ot.length >= MAXT,
+      groups = groupOrder(),
+      pool0 = termPool(),
+      chips = [['', 'All', pool0.length], ...groups.map((g) => [g, g, pool0.filter((t) => t.group === g).length])]
+        .map(
+          ([g, label, n]) =>
+            `<button type="button" class="ov-gchip${UIP.group === g ? ' on' : ''}" aria-pressed="${UIP.group === g}" data-ov-group="${esc(g)}">${esc(label)} <span class="muted">${int(n)}</span></button>`
+        )
+        .join('');
+    return (
+      `<div class="ov-pick"><div class="ov-chips">${S.ot.map(chipHtml).join(' ') || '<span class="muted">No set chosen yet.</span>'}</div>` +
+      `<label class="flabel" for="ov-q">Add a set (${int(pool0.length)} to choose from)</label>` +
+      `<div class="ov-gchips" role="group" aria-label="Where the sets come from">${chips}</div>` +
+      `<input id="ov-q" type="search" autocomplete="off" value="${esc(UIP.q)}" placeholder="${full ? `At most ${MAXT} sets` : 'Search by name or GO id: a pathway, a location, a disease, a protein family…'}"${full ? ' disabled' : ''}>` +
+      `<div id="ov-res" class="ov-res" role="listbox" aria-label="Matching sets">${resultsHtml(UIP.q)}</div>` +
       `<details class="ov-genes"><summary>Add a list of genes</summary><textarea id="ov-genes" rows="2" placeholder="Gene names or accessions"></textarea> <button type="button" class="btn small" data-ov-genes${full ? ' disabled' : ''}>Add</button></details></div>`
     );
   }
   function resultsHtml(q) {
-    const w = q.trim().toLowerCase();
-    const all = [...specials(), ...termPool()].filter((t) => !S.ot.includes(t.id));
-    const hit = (
-      w
-        ? all.filter(
-            (t) =>
-              t.label.toLowerCase().includes(w) ||
-              t.group.toLowerCase().includes(w) ||
-              (t.ref || '').toLowerCase().includes(w)
-          )
-        : all.filter((t) => t.group === 'Selections' || t.group === 'Readers' || t.group === 'Enzymes')
-    )
-      .map((t, i) => [
-        t,
-        i,
-        w
-          ? t.label.toLowerCase().startsWith(w) || (t.ref || '').toLowerCase() === w
+    const w = q.trim().toLowerCase(),
+      g = UIP.group,
+      all = [...specials(), ...termPool()].filter((t) => !S.ot.includes(t.id) && (!g || t.group === g));
+    let hit;
+    if (w)
+      hit = all
+        .filter(
+          (t) =>
+            t.label.toLowerCase().includes(w) ||
+            (t.ref || '').toLowerCase().includes(w) ||
+            (!g && t.group.toLowerCase().includes(w))
+        )
+        .map((t, i) => [
+          t,
+          i,
+          t.label.toLowerCase().startsWith(w) || (t.ref || '').toLowerCase() === w
             ? 0
             : t.label.toLowerCase().includes(w)
               ? 1
-              : 2
-          : 0,
-      ])
-      .sort((x, y) => x[2] - y[2] || x[1] - y[1])
-      .map((x) => x[0])
-      .slice(0, 40);
-    if (!hit.length) return `<p class="muted">${w ? 'No term matches.' : 'Type to search.'}</p>`;
-    let g = '';
-    return hit
-      .map((t) => {
-        const head = t.group !== g ? `<p class="ov-grp">${esc((g = t.group))}</p>` : '';
-        const more = [t.ref || '', t.size ? `${int(t.size)} proteins` : '', t.broad ? 'very broad' : '', t.note]
-          .filter(Boolean)
-          .join(' · ');
-        return `${head}<button type="button" class="ov-opt" role="option" data-ov-add="${esc(t.id)}">${esc(t.label)}${more ? ` <span class="muted ov-more">${esc(more)}</span>` : ''}</button>`;
-      })
-      .join('');
+              : 2,
+        ])
+        .sort((x, y) => x[2] - y[2] || x[1] - y[1])
+        .map((x) => x[0]);
+    else if (g) hit = all.slice().sort((x, y) => (y.size || 0) - (x.size || 0));
+    else hit = all.filter((t) => ['Selection', 'Readers', 'Enzymes'].includes(t.group));
+    if (!hit.length) return `<p class="muted">${w ? 'No set matches.' : 'Pick a source above, or type to search.'}</p>`;
+    const shown = hit.slice(0, 40);
+    let head0 = '';
+    return (
+      shown
+        .map((t) => {
+          const head = t.group !== head0 ? `<p class="ov-grp">${esc((head0 = t.group))}</p>` : '';
+          const more = [
+            t.ref || '',
+            t.size ? `${int(t.size)} ${unitWord('proteins')}` : '',
+            t.broad ? 'very broad' : '',
+            !g && t.from && t.from !== t.group ? t.from : '',
+            t.note,
+          ]
+            .filter(Boolean)
+            .join(' · ');
+          return `${head}<button type="button" class="ov-opt" role="option" data-ov-add="${esc(t.id)}">${esc(t.label)}${t.tag ? ` <span class="ov-tag">${esc(t.tag)}</span>` : ''}${more ? ` <span class="muted ov-more">${esc(more)}</span>` : ''}</button>`;
+        })
+        .join('') +
+      (hit.length > shown.length ? `<p class="muted">${int(hit.length - shown.length)} more: type to narrow.</p>` : '')
+    );
   }
+  // what is counted, in words
+  const unitNote = (u) =>
+    ({
+      proteins: `Counts reviewed proteins. A protein is in a set when it is one of the set’s members; the ${W.marked} proteins are those with a ${W.mark}.`,
+      sites: `Counts ${W.marks}. A ${W.mark} is in a set when its protein is (or, for a selection, when the ${W.mark} itself is).`,
+      readers: 'Counts only reader proteins: those that carry a reader domain family of this site.',
+      enzymes: 'Counts only enzyme proteins: those of the site’s writer and eraser classes.',
+    })[u];
+  // which question is asked: the one the reader chose; else the overlap of two sets (a), or the regions of more (b)
+  const question = (res) => (S.oq === 'a' || S.oq === 'b' ? S.oq : res && res.nT === 2 ? 'a' : 'b');
+  const questionTitle = (res) => {
+    const uw = unitWord(res.unit);
+    return question(res) === 'a'
+      ? `Do these sets share more ${uw} than chance?`
+      : res.unit === 'sites'
+        ? `Do the ${uw} in each region stand out?`
+        : `Are the ${uw} in each region ${W.marked} more often?`;
+  };
   function controls(res) {
     const u =
-      C.units.length > 1
-        ? `<div class="ov-unit" role="group" aria-label="What is overlapped">${C.units.map((x) => `<button type="button" class="btn small${S.ou === x ? ' on' : ''}" aria-pressed="${S.ou === x}" data-ov-unit="${x}">${UNITS[x]}</button>`).join('')}</div>`
-        : '';
-    return `<div class="ov-ctl">${u}</div>`;
+        C.units.length > 1
+          ? `<div class="ov-unit" role="group" aria-label="What is counted">${C.units.map((x) => `<button type="button" class="btn small${S.ou === x ? ' on' : ''}" aria-pressed="${S.ou === x}" data-ov-unit="${x}">${UNITS[x]}</button>`).join('')}</div>` +
+            `<p class="ov-unitnote muted">${esc(unitNote(S.ou))}</p>`
+          : '',
+      q = question(res),
+      uw = unitWord(S.ou),
+      qs =
+        S.ou === 'sites'
+          ? [
+              ['a', `Do these sets share more ${uw} than chance?`, `Overlap of the sets themselves, pair by pair.`],
+              [
+                'b',
+                `Do the ${uw} in each region stand out?`,
+                `Each region’s ${uw} against the other residues of the proteins with ${W.marks}.`,
+              ],
+            ]
+          : [
+              ['a', `Do these sets share more ${uw} than chance?`, `Overlap of the sets themselves, pair by pair.`],
+              [
+                'b',
+                `Are the ${uw} in each region ${W.marked} more often?`,
+                `Each region’s ${W.marked} share against all reviewed proteins.`,
+              ],
+            ];
+    return (
+      `<div class="ov-ctl">${u}</div>` +
+      `<div class="ov-qs" role="radiogroup" aria-label="Question">${qs
+        .map(
+          ([k, t, sub]) =>
+            `<button type="button" class="ov-qbtn${q === k ? ' on' : ''}" role="radio" aria-checked="${q === k}" data-ov-q="${k}"><b>${esc(t)}</b><span>${esc(sub)}</span></button>`
+        )
+        .join('')}</div>`
+    );
+  }
+  // the answer in a sentence, from the terms and the result
+  const joinNames = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a.at(-1)}`);
+  // "Proteins in both sets", "Proteins only in B", "Proteins in A and B but not C"
+  const regionPhrase = (res, m, noun) => {
+    const inn = res.ts.filter((_, i) => m & (1 << i)).map((t) => t.label),
+      out = res.ts.filter((_, i) => !(m & (1 << i))).map((t) => t.label);
+    if (inn.length === res.nT) return `${noun} in ${res.nT === 2 ? 'both sets' : `all ${res.nT} sets`}`;
+    return inn.length === 1 ? `${noun} only in ${inn[0]}` : `${noun} in ${joinNames(inn)} but not ${joinNames(out)}`;
+  };
+  const sigUp = (r) => r.q != null && r.q <= PADJ && r.fold != null && r.fold >= MIN_EFF;
+  function answerText(res, q, bare = false) {
+    const uw = unitWord(res.unit),
+      names = joinNames(res.ts.map((t) => t.label)),
+      pre = bare ? '' : `${names}: `,
+      L = (i) => LETTERS[i],
+      fq1 = (v) => (v == null ? '' : K.fq(v)),
+      f1 = (v) => (v >= 10 ? Math.round(v) : v.toFixed(1)) + '×';
+    if (q === 'a') {
+      const fam = res.pairs?.all || res.pairs?.marked;
+      if (!fam || !fam.length) return `${pre}no pair can be tested.`;
+      const tested = fam.filter((r) => r.q != null),
+        best = (tested.length ? tested : fam).slice().sort((x, y) => (x.q ?? 1) - (y.q ?? 1) || y.a - x.a)[0],
+        up = fam.filter(sigUp).length,
+        pairName = `${L(best.i)} and ${L(best.j)}`,
+        sentence = (r, where) =>
+          (r.a === 0
+            ? `No ${uw.replace(/s$/, '')} is in both ${L(r.i)} and ${L(r.j)}${where}`
+            : `${int(r.a)} ${uw} ${r.a === 1 ? 'is' : 'are'} in both ${L(r.i)} and ${L(r.j)}${where}`) +
+          (r.expected != null && !Number.isNaN(r.expected) && r.a > 0
+            ? sigUp(r)
+              ? `, ${f1(r.fold)} more than the ${r.expected < 10 ? r.expected.toFixed(1) : int(Math.round(r.expected))} expected by chance (q ${fq1(r.q)})`
+              : `; ${r.expected < 10 ? r.expected.toFixed(1) : int(Math.round(r.expected))} would be expected by chance, so this is not more than chance (q ${fq1(r.q)})`
+            : '');
+      let out = pre;
+      if (res.nT > 2) out += `${up} of ${fam.length} pairs share more ${uw} than chance. The clearest, ${pairName}: `;
+      out += sentence(best, '') + '.';
+      const m =
+        res.pairs?.all && res.pairs?.marked ? res.pairs.marked.find((r) => r.i === best.i && r.j === best.j) : null;
+      if (m && res.unit !== 'sites' && m.a > 0)
+        out += ` Among the ${W.marked} proteins alone: ${int(m.a)} shared, ${m.fold != null ? f1(m.fold) : '–'} the expected overlap (q ${fq1(m.q)}).`;
+      return out;
+    }
+    // question b
+    const fd = figData(res),
+      full = (1 << res.nT) - 1;
+    if (!res.test)
+      return `${pre}${res.partial ? 'only the proteins with sites are known for these sets, so no test is made.' : 'the regions can only be counted here, not tested.'}`;
+    const pick =
+      fd.regs.find((r) => r.m === full && isTested(r)) || fd.regs.filter(isTested).sort((x, y) => x.q - y.q)[0];
+    if (!pick) return `${pre}no region has enough ${uw} to test.`;
+    const d = dirOf(pick, fd.base, fd.sitesU),
+      noun = res.unit === 'sites' ? cap(W.marks) : cap(uw),
+      lead = regionPhrase(res, pick.m, noun);
+    if (fd.sitesU) {
+      const or = pick.or ?? pick.fold;
+      return `${pre}${lead} ${d === 'ns' ? 'do not clearly differ from the other residues' : `stand out from the other residues: ${d === 'more' ? 'higher' : 'lower'} odds`} (OR ${or >= 10 ? Math.round(or) : or.toFixed(1)}, q ${fq1(pick.q)}).`;
+    }
+    const sh = (v) => `${Math.round(v * 100)}%`;
+    return `${pre}${lead} are ${W.marked} ${d === 'more' ? 'more often than' : d === 'less' ? 'less often than' : 'about as often as'} proteins in general (${sh(pick.k / pick.n)} vs ${sh(fd.base)}${d === 'ns' ? `; not a clear difference, q ${fq1(pick.q)}` : `; q ${fq1(pick.q)}`}).`;
   }
   let loadedFor = '';
   function view() {
@@ -2009,10 +2449,10 @@
     const key = JSON.stringify([S.ot, S.ou, !!K.sel.peek()]);
     const head =
       trail +
-      `<div class="page-head"><h2>Overlap</h2></div><p class="page-sub">Choose 2 to ${MAXT} terms. See which ${unitWord(S.ou)} they share, and whether the ${S.ou === 'sites' ? 'sites' : `${W.marked} proteins`} in each region are more or fewer than expected.</p>`;
+      `<div class="page-head"><h2>Overlap</h2></div><p class="page-sub">Compare 2 to ${MAXT} sets of proteins: how many they share, and whether the shared proteins are ${W.marked} more often. <a href="${esc(K.link('method', 'overlap'))}">Methods</a></p>`;
     if (S.ot.length < 2) {
       RES = null;
-      return head + pickerHtml() + (S.ot.length ? '' : '');
+      return head + pickerHtml();
     }
     if (RES?.key !== key || !RES.res) {
       if (loadedFor !== key) {
@@ -2035,21 +2475,23 @@
         pickerHtml() +
         (RES?.err
           ? `<p role="alert">The data could not be read.</p>`
-          : '<p class="muted" role="status">Reading the terms…</p>')
+          : '<p class="muted" role="status">Reading the sets…</p>')
       );
     }
     const res = RES.res;
     if (res.ts.length < 2)
-      return head + pickerHtml() + '<p>A chosen term is not in this dataset; remove it and choose another.</p>';
+      return head + pickerHtml() + '<p>A chosen set is not in this dataset; remove it and choose another.</p>';
+    const q = question(res);
     return (
       head +
       pickerHtml() +
       controls(res) +
+      `<p class="ov-answer" role="status">${esc(answerText(res, q))}</p>` +
       `<div id="ov-fig" class="ov-figwrap"></div>` +
       `<div class="exp-row">${K.expBar(['svg', 'png', 'tsv'], 'ovexp', 'the overlap figure', '').replace(/<\/div>$/, '<button type="button" class="exp-btn" data-ovexp="png-paper" title="PNG for a journal column: 180 mm wide at 300 dpi">PNG, 180 mm</button><button type="button" class="exp-btn" data-ovexp="svg-paper" title="SVG for a journal column: 180 mm wide">SVG, 180 mm</button></div>')}</div>` +
       regionHtml(res) +
       '<h3>Table</h3>' +
-      tableHtml(res)
+      (q === 'a' ? pairTableHtml(res) : tableHtml(res))
     );
   }
 
@@ -2068,8 +2510,8 @@
       b = exportBody(res, W_ - 40),
       cite = citeFor(res.ts.map((t) => t.id));
     const f = K.figureFrame({
-      title: `Overlap of ${res.nT} terms`,
-      sub: `${res.ts.map((t, i) => `${LETTERS[i]} ${t.label} (${int(t.n)} ${unitWord(res.unit)})`).join('; ')}. Unit: ${unitWord(res.unit)}.`,
+      title: questionTitle(res),
+      sub: `${res.ts.map((t, i) => `${LETTERS[i]} ${t.label}`).join('; ')}. ${answerText(res, question(res), true)}`,
       legend: [],
       body: b.svg,
       bodyH: b.h,
@@ -2089,7 +2531,41 @@
     }
     return f;
   }
+  // the overlap test as a table: one row per pair and universe
+  function tsvPairs(res) {
+    const g = (v) => (v == null || Number.isNaN(v) ? '' : K.g6(v));
+    const rows = ['all', 'marked'].flatMap((u) =>
+      (res.pairs?.[u] || []).map((r) =>
+        [
+          `${LETTERS[r.i]} and ${LETTERS[r.j]}`,
+          `${res.ts[r.i].label}; ${res.ts[r.j].label}`,
+          universeLabel(res, u),
+          r.n,
+          r.m,
+          r.a,
+          r.N,
+          g(r.expected),
+          g(r.fold),
+          g(r.p),
+          g(r.q),
+        ].join('\t')
+      )
+    );
+    return (
+      K.preamble(
+        'overlap of sets against chance',
+        `${res.ts.map((t, i) => `${LETTERS[i]} = ${t.label}`).join('; ')}; unit ${res.unit}. For each pair: one-sided hypergeometric test of the shared ${unitWord(res.unit)} against two random sets of the same sizes drawn from those counted (expected = n × m / N; fold = shared / expected; q: Benjamini–Hochberg across the pairs of each group).${citeFor(res.ts.map((t) => t.id)) ? ` ${citeFor(res.ts.map((t) => t.id))}` : ''}`
+      ) +
+      ['pair', 'sets', 'among', 'in_first', 'in_second', 'in_both', 'counted', 'expected', 'fold', 'p', 'q'].join(
+        '\t'
+      ) +
+      '\n' +
+      rows.join('\n') +
+      '\n'
+    );
+  }
   function tsv(res = RES.res) {
+    if (question(res) === 'a') return tsvPairs(res);
     const sites = res.unit === 'sites',
       fd = figData(res),
       rows = fd.regs;
@@ -2146,7 +2622,7 @@
   }
   function listTsv(res, k) {
     return (
-      K.preamble('overlap region', `${regionWords(res, k)}; unit ${res.unit}`) +
+      K.preamble('overlap region', `${orTitle(res, k).words}; unit ${res.unit}`) +
       'accession\tgene\tposition\n' +
       regionItems(res, k)
         .map((x) => [x.acc, x.pi != null ? D.proteins[x.pi][1] || '' : '', x.pos ?? ''].join('\t'))
@@ -2165,7 +2641,9 @@
     if (S.ot.length < MAXT && !S.ot.includes(id)) set({ ot: [...S.ot, id], or: '' });
   };
   document.addEventListener('input', (e) => {
-    if (e.target.id === 'ov-q') document.getElementById('ov-res').innerHTML = resultsHtml(e.target.value);
+    if (e.target.id !== 'ov-q') return;
+    UIP.q = e.target.value;
+    document.getElementById('ov-res').innerHTML = resultsHtml(UIP.q);
   });
   document.addEventListener('keydown', (e) => {
     const g = e.target.closest?.('[data-ov-reg]');
@@ -2178,6 +2656,14 @@
     ['[data-ov-add]', (el) => add(el.dataset.ovAdd)],
     ['[data-ov-del]', (el) => set({ ot: S.ot.filter((_, i) => i !== +el.dataset.ovDel), or: '' })],
     ['[data-ov-unit]', (el) => set({ ou: el.dataset.ovUnit, or: '' })],
+    ['[data-ov-q]', (el) => set({ oq: el.dataset.ovQ, or: '' })],
+    [
+      '[data-ov-group]',
+      (el) => {
+        UIP.group = el.dataset.ovGroup;
+        K.render();
+      },
+    ],
     ['[data-ov-reg]', (el) => set({ or: String(S.or) === String(el.dataset.ovReg) ? '' : String(el.dataset.ovReg) })],
     ['[data-ov-close]', () => set({ or: '' })],
     [
@@ -2192,7 +2678,7 @@
       () => {
         const accs = [
           ...new Set(
-            regionItems(RES.res, +S.or)
+            regionItems(RES.res, S.or)
               .filter((x) => x.pi != null)
               .map((x) => x.acc)
           ),
@@ -2203,7 +2689,7 @@
     [
       '[data-ov-list]',
       () =>
-        K.download(`${D.site.id || 'site'}_overlap_region.tsv`, listTsv(RES.res, +S.or), 'text/tab-separated-values'),
+        K.download(`${D.site.id || 'site'}_overlap_region.tsv`, listTsv(RES.res, S.or), 'text/tab-separated-values'),
     ],
     [
       '[data-ovexp]',
@@ -2246,19 +2732,31 @@
   K.tabs.push(() => ['overlap', 'Overlap', null]);
   (K.methodParts ||= []).push(
     () =>
-      `<section id="m-overlap"><h3>Overlap</h3><p>The Overlap page compares two to four terms: the sets of the protein-set questions, reader families, enzymes, ` +
-      `the selection or a list of genes. Each region is the proteins in exactly those terms. For proteins, a one-sided hypergeometric test compares the ` +
-      `region’s proteins with sites against all reviewed proteins, as the protein-set questions do (fold = share with sites in the region / share among all ` +
-      `reviewed proteins; q is Benjamini–Hochberg across the regions shown). For sites, a pooled Fisher’s exact test of the residues of proteins with sites, ` +
-      `when every term describes proteins. Computed in your browser. Reader families: ${
+      `<section id="m-overlap"><h3>Overlap</h3><p>The Overlap page compares two to four sets: the sets of the protein-set questions, reader families, enzymes, ` +
+      `the selection or a list of genes. It answers two questions, and the reader chooses which.</p>` +
+      `<p><b>Do these sets share more proteins than chance?</b> For each pair of sets, the proteins in both are counted and compared with the number ` +
+      `two random sets of the same sizes would share: expected = n × m / N, where n and m are the sizes of the two sets and N the proteins counted; ` +
+      `fold = shared / expected. The p value is one-sided: the chance of this many or more in both, from the hypergeometric distribution ` +
+      `(the test of the protein-set questions, applied to the sets themselves); q is Benjamini–Hochberg across the pairs of one comparison group. ` +
+      `There are two comparison groups: every reviewed protein (N = ${(C.n || 0).toLocaleString('en')}), and the ${esc(W.marked)} proteins alone (the proteins with a ${esc(W.mark)}). ` +
+      `For ${esc(W.marks)}, the group is all ${esc(W.marks)}; for readers or enzymes, the group is those proteins.</p>` +
+      `<p><b>Are the proteins in each region ${esc(W.marked)} more often?</b> A region holds the proteins in exactly one combination of sets. ` +
+      `A one-sided hypergeometric test compares the region’s ${esc(W.marked)} proteins with all reviewed proteins, as the protein-set questions do ` +
+      `(fold = share ${esc(W.marked)} in the region / share among all reviewed proteins; q is Benjamini–Hochberg across the regions shown; ` +
+      `a region of fewer than 5 is counted, not tested). A bar is filled when q ≤ 0.05 and the effect is at least 1.1×. ` +
+      `For ${esc(W.marks)}, a pooled Fisher’s exact test of the residues of proteins with ${esc(W.marks)} compares the ${esc(W.marks)} in a region with the other residues, ` +
+      `when every set describes proteins. Computed in your browser. Reader families: ${
         (C.families?.readers || []).map((f) => `${esc(f.name)} (${(f.ids || []).map(esc).join(', ')})`).join('; ') ||
         'none'
-      }; a protein is a reader when it carries any of a family’s Pfam or InterPro entries.${(C.sources || []).map((src) => ` ${esc(src.title)}: ${src.n.toLocaleString('en')} terms; ${src.cite?.length ? 'cite ' + src.cite.map(esc).join('; ') : ''}.`).join('')}</p></section>`
+      }; a protein is a reader when it carries any of a family’s Pfam or InterPro entries.${(C.sources || []).map((src) => ` ${esc(src.title)}: ${src.n.toLocaleString('en')} sets; ${src.cite?.length ? 'cite ' + src.cite.map(esc).join('; ') : ''}.`).join('')}</p></section>`
   );
   K.overlap = {
     tableHtml,
+    pairTableHtml,
+    answerText,
     exportBody,
     core: {
+      overlapPairs,
       regions,
       proteinTest,
       siteTest,

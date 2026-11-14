@@ -1473,6 +1473,16 @@ website:                  # the look and words of the website (ptmc web); layout
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, histone, complex, condensate_proteome]
     max_terms: 4
+    groups:            # the headings the picker lists terms under
+      - {name: GO, from: [go_bp, go_binding]}
+      - {name: Cell compartment, from: [hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
+      - {name: Disease, from: [disease_family, disease_ontology, disease_term]}
+      - {name: Pathway, from: [reactome_top_level, reactome_pathway]}
+      - {name: Protein class, from: [panther_group, panther_class, panther_subclass]}
+      - {name: Condensate, from: [condensate, condensate_role, condensate_proteome]}
+      - {name: RNA and DNA binding, from: [eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, binding_protein]}
+      - {name: Complex or histone, from: [complex, histone]}
+      - {name: Cancer dependency, from: [depmap_dependency]}
     term_sources:      # GO biological process, propagated over is_a and part_of, 5 to 5,000 proteins; the evidence include below keeps annotations that are not computational-only (remove it to keep every annotation)
       - id: go_bp
         title: GO biological process
