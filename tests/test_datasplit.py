@@ -82,3 +82,21 @@ setTimeout(() => {{ out.after = [v.go, fetched, drawn, K.late.done(), Object.key
     out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
     assert out['before'] == [[1, 2], ['n'], False] and out['first'] is None and out['again'] is None
     assert out['after'] == [['x', 'y'], 1, 1, True, ['go', 'n']]
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_a_late_attribute_arriving_recomputes_the_selection():
+    # a link whose search names a late attribute (q=<attribute>:<value>) matched nothing on first load: when the values
+    # arrive, the selection is resolved and computed again (K.sel.refresh), not only the page drawn
+    script = f"""
+global.window = global;
+let refreshed = 0, drawn = 0;
+global.fetch = u => Promise.resolve({{ ok: true, json: () => Promise.resolve({{ protein_attributes: {{ go: ['x', 'y'] }} }}) }});
+const D = {{ late: {{ file: 'data/site.json', protein_attributes: ['go'] }}, protein_attributes: {{ specs: {{ go: {{}} }}, values: {{}} }} }};
+const K = {{ D, render: () => {{ drawn++; }}, sel: {{ refresh: () => {{ refreshed++; }} }} }};
+eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-late.js'))}, 'utf8'));
+window.PTMC_MODULES.forEach(m => m(K));
+void D.protein_attributes.values.go;
+setTimeout(() => console.log(JSON.stringify({{ refreshed, drawn }})), 20);"""
+    out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
+    assert out == {'refreshed': 1, 'drawn': 0}
