@@ -68,6 +68,12 @@
   spoken name, in full. Where that test drives the dots, the tile's subtitle says so once. The tile rows no longer carry
   "Compare with…" or "Proteins" buttons: a row opens its question at that class, and the buttons are on the question's rows.
   The Sections sidebar expands only the Overview's sections; the Network page links its Method beside its lead.
+- Overview tiles are one small forest plot each: rows aligned on the tile's log axis (shown once under the rows, with the
+  comparison note beneath it), a dot in the direction colors, filled where q ≤ 0.05, the row lightly shaded by direction,
+  the fold at the end, and at most 5 rows by default (`website.overview.rows`, a card's `rows`). A click, Enter or tap on a
+  row opens a popover: the full name, fold, n, each test in full (odds ratio, interval, q; the test within abundance
+  deciles), and the actions "Show these proteins", "Overlap with…" and "Open question". The count column and the
+  "Select" cue are gone.
 - CI: the lint job fails on a commit message with a "Co-Authored-By: Claude" or "Claude-Session:" line (`tools/check_commit_messages.sh`).
 
 ## 0.4.0 (2026-11-13)

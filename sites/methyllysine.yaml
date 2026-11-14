@@ -1042,7 +1042,7 @@ website:                  # the look and words of the website (ptmc web); layout
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
     question: "Which proteins are lysine methylated?"
-    rows: 7
+    rows: 5
     random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end
     sections:
       - name: Where in the cell

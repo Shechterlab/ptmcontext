@@ -77,11 +77,11 @@
     return { L, ticks: ticks.sort((p, q) => p - q), lo, hi };
   }
   const PX = (f) => (3 + 94 * f).toFixed(1); // the track keeps 3% at each end, so a dot at the end is whole
-  // nlab: what the number at the end of each row counts ("proteins", or the marks), said above it
-  const axisHtml = (ax, nlab) =>
+  // the tile's one axis, under its rows
+  const axisHtml = (ax) =>
     `<div class="fr-ax" aria-hidden="true"><span class="tk">${ax.ticks
       .map((t) => `<i${t === 1 ? ' class="one"' : ''} style="left:${PX(ax.L(t))}%">${fmtT(t)}×</i>`)
-      .join('')}</span>${nlab ? `<span class="fr-nh">${esc(nlab)}</span>` : ''}</div>`;
+      .join('')}</span></div>`;
   const fin = (v) => (v != null && Number.isFinite(v) ? Math.min(v, 1e3) : null);
   // x: { label, v, lo: [low, high] | null, q, dir, n, wv, desc, absent, measure }; attrs: the row's own attributes (its click, its hover)
   function rowHtml(x, ax, attrs = '', cls = '') {
@@ -122,13 +122,14 @@
         ? attrs.replace(/ title="([^"]*)"/, (m, t) => ` title="${esc(x.tip)}. ${t}"`)
         : `${attrs} title="${esc(x.tip)}"`
       : attrs;
+    const pop = x.pop && !x.mine ? ` data-pop="${esc(JSON.stringify(x.pop))}"` : '';
     return (
-      `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${x.lead ? ' lead' : ''}${x.go ? ' go' : ''}${cls ? ' ' + cls : ''}"${tipped}><span class="fr-lab">` +
+      `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${x.lead ? ' lead' : ''}${x.go ? ' go' : ''}${cls ? ' ' + cls : ''}"${tipped}${pop}><span class="fr-lab">` +
       `<span>${esc(x.label)}</span>${x.badge ? `<span class="vh">, ${esc(x.badge)}</span>` : ''}${
         x.sub ? `<span class="vh">, ${esc(x.sub)}</span>` : ''
-      }</span>${track}` +
+      }${x.n != null ? `<span class="vh">, n ${int(x.n)}</span>` : ''}</span>${track}` +
       (`<span class="fr-val">${esc(val)}<i class="fr-q ${dir}${x.desc ? ' desc' : ''}" aria-hidden="true"></i>` +
-        `</span><span class="fr-n">${x.n != null ? int(x.n) : ''}</span></div>`)
+        `</span></div>`)
     );
   }
   const valsOf = (rows) =>

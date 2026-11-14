@@ -2249,6 +2249,7 @@
         'none'
       }; a protein is a reader when it carries any of a family’s Pfam or InterPro entries.${(C.sources || []).map((src) => ` ${esc(src.title)}: ${src.n.toLocaleString('en')} terms; ${src.cite?.length ? 'cite ' + src.cite.map(esc).join('; ') : ''}.`).join('')}</p></section>`
   );
+  K.overlapHas = (aid) => sets.includes(aid); // a protein-set question whose classes the Overlap page takes as terms
   K.overlap = {
     tableHtml,
     exportBody,
