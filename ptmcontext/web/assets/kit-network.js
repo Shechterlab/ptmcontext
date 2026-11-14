@@ -358,7 +358,7 @@
   // what a pin adds to the drawing: its links to other clusters in ink (dashed when only a group source holds them) and a
   // ring round it; the same in the page, in an export and (with hover) when the pointer leaves
   let OVL = { x: '', top: '' };
-  function pinOverlay(M, L, pinSet, ex, mini, ink) {
+  function pinOverlay(M, L, pinSet, ex, mini, ink, rs = 1) {
     if (mini || !pinSet.size) return { x: '', top: '' };
     const f1 = (v) => v.toFixed(1),
       k = L.k,
@@ -372,7 +372,7 @@
       );
     });
     pinSet.forEach((i) => {
-      const rr = Math.min(9, 2.6 + 0.95 * Math.sqrt(M.nodes[i].sites)) * k;
+      const rr = Math.min(9, 2.6 + 0.95 * Math.sqrt(M.nodes[i].sites)) * k * rs;
       top.push(
         `<circle cx="${f1(L.pos[i][0])}" cy="${f1(L.pos[i][1])}" r="${f1(rr + 2.5)}" fill="none" stroke="${ink}" stroke-width="1.5"/>`
       );
@@ -383,7 +383,8 @@
   // mini: the small drawing on a protein's page ({ focus: node index }): no links, no hover state, no search or highlight
   // pins: the nodes that are pinned (the page's, or an export's own)
   // crop: { x, y, w, h } of an export that shows only part of the drawing: names that do not fit in it are left out
-  function svgOf(M, CL, L, ex, mini = null, pins = null, crop = null) {
+  // rs: nodes drawn this much larger than the layout's radius (an export at a small scale keeps its nodes legible)
+  function svgOf(M, CL, L, ex, mini = null, pins = null, crop = null, rs = 1) {
     const phone = L.variant === 'phone',
       k = L.k,
       pinSet = mini ? new Set(mini.focus >= 0 ? [mini.focus] : []) : pins || PIN,
@@ -394,7 +395,7 @@
       muted = ex ? EX.light.muted : 'var(--muted)',
       bg = ex ? '#ffffff' : 'var(--surface)',
       edgeX = ex ? EX.light.edge : 'var(--nw-edge-x)';
-    const r = (i) => Math.min(9, 2.6 + 0.95 * Math.sqrt(M.nodes[i].sites)) * k;
+    const r = (i) => Math.min(9, 2.6 + 0.95 * Math.sqrt(M.nodes[i].sites)) * k * rs;
     const P = L.pos,
       f1 = (v) => v.toFixed(1);
     const out = [];
@@ -454,7 +455,7 @@
           '/>'
       );
     });
-    const ovl = pinOverlay(M, L, pinSet, ex, mini, ink, bg);
+    const ovl = pinOverlay(M, L, pinSet, ex, mini, ink, rs);
     if (!ex && !mini) OVL = ovl;
     out.push(`</g><g class="nw-x">${ovl.x}</g><g class="nw-nodes">`);
     P.forEach((p, i) => {
@@ -597,7 +598,7 @@
         const ax = ok[2] === 'end' ? ok[0] + w : ok[2] === 'start' ? ok[0] : ok[0] + w / 2;
         out.push(text(ax, ok[1] + h - gfs * 0.25, gfs, 650, ink, M.nodes[i].gene, `text-anchor="${ok[2]}"`, 3));
       });
-    if (L.shelf)
+    if (L.shelf && !crop)
       out.push(
         text(
           L.shelf[0],
@@ -1280,7 +1281,7 @@
       panelW = paper || !pinIdx.length ? 0 : 270,
       gap = panelW ? 14 : 0,
       Fw = Wd - 2 * P - panelW - gap,
-      maxH = paper ? 360 : 560;
+      maxH = paper ? 520 : 580;
     const pos = K.netlayout.positions(view, 'desktop', UI.minc, maxShown());
     const comm = M.nodes.map((n) => n.c),
       sites = M.nodes.map((n) => n.sites);
@@ -1290,7 +1291,13 @@
         const vb = curBox();
         return { x: vb[0] + L.pos[0][0] - curL.pos[0][0], y: vb[1] + L.pos[0][1] - curL.pos[0][1], w: vb[2], h: vb[3] };
       }
-      return K.netlayout.litBox(L, comm, sites, lit.nodes, lit.clusters, 24 / s);
+      const b = K.netlayout.litBox(L, comm, sites, lit.nodes, lit.clusters, 24 / s);
+      // a window up to 4:3: a wide one gets height, which shows more of the clusters beside it (only those lying wholly in it)
+      if (b.w / b.h > 4 / 3) {
+        const h = (b.w * 3) / 4;
+        return { x: b.x, y: b.y - (h - b.h) / 2, w: b.w, h };
+      }
+      return b;
     };
     let L = K.netlayout.finish(view, pos, 'desktop'),
       crop = cropOf(L, 1),
@@ -1303,7 +1310,7 @@
     s = Math.min(Fw / crop.w, maxH / crop.h, 2.6);
     const figW = Math.min(Fw, crop.w * s),
       figH = crop.h * s,
-      fig = svgOf(M, CL, L, true, null, set, mode === 'fit' ? crop : null),
+      fig = svgOf(M, CL, L, true, null, set, mode === 'fit' ? crop : null, Math.min(2, Math.max(1, 0.9 / s))),
       parts = [],
       wrapW = (w, t, size, weight) => K.wrap(t, w / WSL, size, weight, K.FF),
       T = (x, y, t, size, o = {}) =>
