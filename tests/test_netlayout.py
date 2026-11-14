@@ -397,7 +397,7 @@ const K2={D:{site:{id:'x'},counts:{proteins:100},network:{options:{steps:[400,70
 window.PTMC_MODULES.forEach(m=>m(K2));
 const into=(q)=>{K2.paramsIn.forEach(f=>f(new URLSearchParams(q)));const o=new URLSearchParams();K2.paramsOut.forEach(f=>f(o));const none=new URLSearchParams();K2.nwWriting=false;K2.paramsOut.forEach(f=>f(none));K2.nwWriting=true;return none.toString()+'|'+o.toString();};
 K2.nwWriting=true;
-console.log(JSON.stringify([into('p=P35637,Q92804,BAD&nk=8&nc=disordered&ns=400&nx=1&nv=table&nt=500'),into('p=P35637'),typeof K2.netcore.exportFrame,typeof K2.network.exportFrame]));
+console.log(JSON.stringify([into('p=P35637,Q92804,BAD&nk=8&nc=disordered&ns=400&nx=1&nv=table&nt=500'),into('p=P35637&nz=2.5,0.4,0.6'),typeof K2.netcore.exportFrame,typeof K2.network.exportFrame]));
 """
     )
     got = _node(prog, {'net': str(ASSETS / 'kit-network.js')})
@@ -410,6 +410,7 @@ console.log(JSON.stringify([into('p=P35637,Q92804,BAD&nk=8&nc=disordered&ns=400&
     assert q['nx'] == '1' and q['nv'] == 'table' and q['nt'] == '500'
     # an address with a pin and no settings leaves the settings as they were
     assert got[1].startswith('|p=P35637') and 'nk=8' in got[1]
+    assert 'nz=2.5%2C0.4%2C0.6' in got[1]  # the zoom and its centre are in the address
     assert got[2] == 'function' and got[3] == 'function'
 
 
@@ -441,3 +442,38 @@ def test_the_partners_of_a_protein_and_the_genes_of_a_pasted_list_are_counted_on
     assert (
         got['g']['n'] == 1 and got['g']['m'] == 2 and got['g']['missing'] == ['NOPE']
     )  # a symbol and its accession are one protein
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
+def test_the_frame_of_a_pinned_view_holds_every_lit_cluster_whole_with_its_margin():
+    view = _view()
+    prog = _harness(
+        'const L=K.netlayout.layout(IN.view,"desktop",5,8);'
+        'const B=K.netlayout.litBox(L,IN.view.comm,IN.view.sites,new Set(IN.nodes),new Set(IN.clusters),IN.margin);'
+        'console.log(JSON.stringify({L:{pos:L.pos,k:L.k,shown:L.shown,hulls:L.hulls,clabels:L.clabels.map(l=>({c:l.c,box:l.box}))},B}));'
+    )
+    comm = view['comm']
+    got = _node(prog, {'view': view, 'nodes': [0], 'clusters': [comm[0], comm[25]], 'margin': 24})
+    L, B = got['L'], got['B']
+    lit = {comm[0], comm[25]}
+
+    def inside(x, y, m=0):
+        return (
+            B['x'] + m - 1e-6 <= x <= B['x'] + B['w'] - m + 1e-6
+            and B['y'] + m - 1e-6 <= y <= B['y'] + B['h'] - m + 1e-6
+        )
+
+    # every protein of a lit cluster, with its circle and the margin; every point of its outline; its name
+    for i, c in enumerate(comm):
+        if c in lit:
+            r = NL.radius(view['sites'][i], L['k'])
+            assert inside(L['pos'][i][0] - r, L['pos'][i][1] - r, 24) and inside(
+                L['pos'][i][0] + r, L['pos'][i][1] + r, 24
+            )
+    for c in lit:
+        ci = L['shown'].index(c)
+        assert all(inside(x, y, 24) for x, y in L['hulls'][ci])
+        box = next(lb['box'] for lb in L['clabels'] if lb['c'] == c)
+        assert inside(box[0], box[1], 24) and inside(box[2], box[3], 24)
+    # and the window is no larger than it has to be: one of the margins touches the extreme
+    assert B['w'] > 48 and B['h'] > 48

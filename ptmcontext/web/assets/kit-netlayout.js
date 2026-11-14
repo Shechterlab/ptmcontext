@@ -680,9 +680,36 @@
         shelf: other.length ? T(pos.x0 + 4, yTop) : null,
       };
     }
+    // the smallest window that holds every protein in nodeSet, every protein and the whole outline of each cluster in
+    // clusterSet, and those clusters' names, with `margin` on every side: { x, y, w, h } in the figure's units
+    function litBox(L, comm, sites, nodeSet, clusterSet, margin) {
+      let x0 = Infinity,
+        y0 = Infinity,
+        x1 = -Infinity,
+        y1 = -Infinity;
+      const add = (ax, ay, bx, by) => {
+          x0 = Math.min(x0, ax);
+          y0 = Math.min(y0, ay);
+          x1 = Math.max(x1, bx);
+          y1 = Math.max(y1, by);
+        },
+        node = (i) => {
+          const r = radius(sites[i], L.k);
+          add(L.pos[i][0] - r, L.pos[i][1] - r, L.pos[i][0] + r, L.pos[i][1] + r);
+        };
+      nodeSet.forEach(node);
+      comm.forEach((c, i) => clusterSet.has(c) && node(i));
+      clusterSet.forEach((c) => {
+        const ci = L.shown.indexOf(c);
+        if (ci >= 0) L.hulls[ci].forEach((p) => add(p[0], p[1], p[0], p[1]));
+      });
+      L.clabels.forEach((l) => clusterSet.has(l.c) && add(l.box[0], l.box[1], l.box[2], l.box[3]));
+      if (!Number.isFinite(x0)) return { x: 0, y: 0, w: L.w, h: L.h };
+      return { x: x0 - margin, y: y0 - margin, w: x1 - x0 + 2 * margin, h: y1 - y0 + 2 * margin };
+    }
     const layout = (view, variant = 'desktop', minCluster = 5, maxShown = 8) =>
       finish(view, positions(view, variant, minCluster, maxShown), variant);
-    return { layout, positions, finish, shortName, wrap2, settings, radius };
+    return { layout, positions, finish, shortName, wrap2, settings, radius, litBox };
   }
   const NL = netLayoutFactory();
   const src = netLayoutFactory.toString();

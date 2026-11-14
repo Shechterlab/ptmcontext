@@ -9699,8 +9699,10 @@ html[data-density] .sites-tbl .cv {
 }
 .nw-btns {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-left: auto;
+  max-width: 100%;
 }
 .nw-count {
   font-size: 13px;
@@ -9723,6 +9725,18 @@ html[data-density] .sites-tbl .cv {
   border-radius: 8px;
   overflow: auto;
 }
+.nw-fig.nw-zoomed {
+  touch-action: none;
+  cursor: grab;
+}
+.nw-zb {
+  display: inline-flex;
+  gap: 4px;
+}
+.nw-xf select {
+  font: inherit;
+  font-size: 12.5px;
+}
 .nw-fig:focus-visible {
   outline: 2px solid var(--fig-focus);
   outline-offset: 2px;
@@ -9732,6 +9746,7 @@ html[data-density] .sites-tbl .cv {
 }
 .nw-svg {
   display: block;
+  width: 100%;
   height: auto;
   min-width: 100%;
   font-family: var(--fig-font);
@@ -10018,9 +10033,6 @@ html[data-density] .sites-tbl .cv {
 @media (max-width: 760px) {
   .nw-fig {
     overflow: visible;
-  }
-  .nw-fig.nw-z {
-    overflow: auto;
   }
   .nw-row2 {
     flex-direction: column;

@@ -65,6 +65,8 @@
     mode: 'network',
     hi: -1,
     find: '',
+    vz: null, // the window on the drawing: { k, fx, fy } (zoom, centre as shares of the width and height), null for all of it
+    xf: 'fit', // what an export frames: fit (the pinned proteins), view (what is on screen), whole
     pins: [], // the accessions pinned (the address's p=, up to five)
     nbWhy: '',
     refocus: '', // a selector to give focus back to after the page is drawn again
@@ -396,9 +398,24 @@
     const P = L.pos,
       f1 = (v) => v.toFixed(1);
     const out = [];
+    const cbox = new Map();
+    if (crop) {
+      const grow = (c, ax, ay, bx, by) => {
+        const o = cbox.get(c) || [Infinity, Infinity, -Infinity, -Infinity];
+        cbox.set(c, [Math.min(o[0], ax), Math.min(o[1], ay), Math.max(o[2], bx), Math.max(o[3], by)]);
+      };
+      M.nodes.forEach((nd, i) => grow(nd.c, P[i][0] - r(i), P[i][1] - r(i), P[i][0] + r(i), P[i][1] + r(i)));
+      L.shown.forEach((c, ci) => L.hulls[ci].forEach((q) => grow(c, q[0], q[1], q[0], q[1])));
+    }
+    const vis = (c) => {
+      if (!crop || !lit || lit.clusters.has(c)) return true;
+      const b = cbox.get(c);
+      return !b || (b[0] >= crop.x && b[1] >= crop.y && b[2] <= crop.x + crop.w && b[3] <= crop.y + crop.h);
+    };
     // bundles: one curve per pair of clusters with many links
     out.push('<g class="nw-bundles">');
     L.bundles.forEach((b) => {
+      if (!vis(b.a) || !vis(b.b)) return;
       const [pa, q, pb] = b.p,
         w = Math.min(9, 1.2 + 0.95 * Math.sqrt(b.n)) * (phone ? 0.6 : 1);
       out.push(
@@ -411,6 +428,7 @@
     out.push('</g><g class="nw-hulls">');
     // outlines: a flat wash in the cluster's colour, no stroke
     L.shown.forEach((c, ci) => {
+      if (!vis(c)) return;
       const x = CL.list[c],
         d = 'M' + L.hulls[ci].map((p) => f1(p[0]) + ' ' + f1(p[1])).join('L') + 'Z';
       out.push(
@@ -423,7 +441,7 @@
     // links inside a cluster, in its colour (the small clusters' in grey)
     M.edges.forEach(([a, b], e) => {
       const ca = M.nodes[a].c;
-      if (ca !== M.nodes[b].c) return;
+      if (ca !== M.nodes[b].c || !vis(ca)) return;
       const x = CL.list[ca],
         o = dim(a) || dim(b);
       out.push(
@@ -440,6 +458,7 @@
     if (!ex && !mini) OVL = ovl;
     out.push(`</g><g class="nw-x">${ovl.x}</g><g class="nw-nodes">`);
     P.forEach((p, i) => {
+      if (!vis(M.nodes[i].c)) return;
       const nd = M.nodes[i],
         ring =
           found.has(i) || pinSet.has(i)
@@ -465,7 +484,7 @@
     const inCrop = (b) =>
       !crop || (b[0] >= crop.x && b[1] >= crop.y && b[2] <= crop.x + crop.w && b[3] <= crop.y + crop.h);
     L.clabels.forEach((l) => {
-      if (!inCrop(l.box)) return;
+      if (!inCrop(l.box) || !vis(l.c)) return;
       const x = CL.list[l.c],
         [x0, y0, x1, y1] = l.box,
         [ax, ay, bx, by] = l.leader,
@@ -495,7 +514,7 @@
     });
     const named = new Set(L.glabels.map((g) => g.i));
     L.glabels.forEach((g) => {
-      if (!inCrop(g.box)) return;
+      if (!inCrop(g.box) || !vis(M.nodes[g.i].c)) return;
       const [x0, , x1, y1] = g.box;
       out.push(
         text(
@@ -773,11 +792,13 @@
       `<div class="nw-bar nw-row" role="group" aria-label="Network options">${html(main)}` +
       `<div class="nw-btns"><button type="button" class="btn small" data-nw-view="${UI.mode === 'network' ? 'table' : 'network'}">${UI.mode === 'network' ? 'Table view' : 'Network view'}</button>` +
       (UI.mode === 'network'
-        ? `<button type="button" class="btn small" data-nw-zoom="-1" aria-label="Zoom out"${UI.zoom <= 1 ? ' disabled' : ''}>−</button><button type="button" class="btn small" data-nw-zoom="1" aria-label="Zoom in"${UI.zoom >= 3 ? ' disabled' : ''}>+</button>`
+        ? `<span class="nw-zb" role="group" aria-label="Zoom"><button type="button" class="btn small" data-nw-zoom="-1" aria-label="Zoom out" title="Zoom out (Ctrl or Cmd and the wheel; pinch on a touch screen; drag to move)">−</button><button type="button" class="btn small" data-nw-zoom="1" aria-label="Zoom in" title="Zoom in (Ctrl or Cmd and the wheel; pinch on a touch screen; drag to move)">+</button>` +
+          `<button type="button" class="btn small" data-nw-fitpin title="Zoom to the pinned proteins and the clusters they touch">Fit pinned</button>` +
+          `<button type="button" class="btn small" data-nw-vreset title="Show the whole drawing">Reset</button></span>`
         : '') +
-      `<button type="button" class="btn small" data-nw-reset>Reset</button>` +
+      `<label class="nw-inl nw-xf"><span>Export</span><select data-nw="xf" aria-label="What the download frames"><option value="fit"${UI.xf === 'fit' ? ' selected' : ''}>Fit pinned</option><option value="view"${UI.xf === 'view' ? ' selected' : ''}>What you see</option><option value="whole"${UI.xf === 'whole' ? ' selected' : ''}>Whole network</option></select></label>` +
       `${K.expBar(['svg', 'png', 'pdf', 'tsv'], 'nwexp', 'the network')}</div></div>` +
-      `<details class="nw-more"${UI.more ? ' open' : ''}><summary>More options</summary><div class="nw-bar" role="group" aria-label="More network options">${html(rest)}</div></details>`
+      `<details class="nw-more"${UI.more ? ' open' : ''}><summary>More options</summary><div class="nw-bar" role="group" aria-label="More network options">${html(rest)}<button type="button" class="btn small" data-nw-reset>Reset all settings</button></div></details>`
     );
   };
   let curL = null;
@@ -796,8 +817,10 @@
       .join(', ')}. The table view lists them.`;
     lastFig = `<svg class="nw-svg" viewBox="0 0 ${L.w} ${L.h}" role="group" aria-label="${esc(finding)}">${s.svg}</svg>`;
     return (
-      `<div class="nw-fig${UI.zoom > 1 ? ' nw-z' : ''}" tabindex="0" role="group" aria-label="Network figure: arrow keys move between proteins and clusters, Enter pins a protein or lights a cluster, Escape clears">` +
-      `<svg class="nw-svg" data-w="${L.w}" data-h="${L.h}" viewBox="0 0 ${L.w} ${L.h}" style="width:${UI.zoom * 100}%" role="group" aria-label="${esc(finding)}">${s.svg}</svg></div>`
+      `<div class="nw-fig${UI.vz ? ' nw-zoomed' : ''}" tabindex="0" role="group" aria-label="Network figure: arrow keys move between proteins and clusters, Enter pins a protein or lights a cluster, Escape clears">` +
+      `<svg class="nw-svg" data-w="${L.w}" data-h="${L.h}" viewBox="${boxOfVz(L, UI.vz)
+        .map((v) => +v.toFixed(2))
+        .join(' ')}" role="group" aria-label="${esc(finding)}">${s.svg}</svg></div>`
     );
   }
   const leadOf = () => NC.lead || String(NC.about || '').split(/(?<=[.!?])\s/)[0];
@@ -1242,7 +1265,9 @@
   }
   // the figure of what is pinned: the pinned proteins with their partners, cropped from the network, the cards as a panel
   // beside it (slide) or under it (paper), the clusters involved as a key, the caption and the credit
-  function pinFrame(M, pinIdx) {
+  // mode 'fit': the window holds every pinned protein, its partners and each lit cluster whole (outline, proteins, name), with
+  // 24 units of margin, and shows no other cluster cut; mode 'view': the window on screen, as it is
+  function pinFrame(M, pinIdx, mode = 'fit') {
     const CL = clusters(M),
       Z = SIZES[UI.preset] || SIZES.screen,
       paper = UI.preset === 'paper',
@@ -1251,41 +1276,34 @@
       WSL = 1.18,
       view = viewOf(M),
       set = new Set(pinIdx),
-      lit = lightPins(M, set),
-      panelW = paper ? 0 : 270,
-      gap = paper ? 0 : 14,
+      lit = pinIdx.length ? lightPins(M, set) : { nodes: new Set(), clusters: new Set() },
+      panelW = paper || !pinIdx.length ? 0 : 270,
+      gap = panelW ? 14 : 0,
       Fw = Wd - 2 * P - panelW - gap,
       maxH = paper ? 360 : 560;
     const pos = K.netlayout.positions(view, 'desktop', UI.minc, maxShown());
-    const radius = (i) => Math.min(9, 2.6 + 0.95 * Math.sqrt(M.nodes[i].sites));
-    // the crop: the lit proteins with room for their names
-    const cropOf = (L) => {
-      let x0 = Infinity,
-        y0 = Infinity,
-        x1 = -Infinity,
-        y1 = -Infinity;
-      lit.nodes.forEach((i) => {
-        const r = radius(i);
-        x0 = Math.min(x0, L.pos[i][0] - r);
-        x1 = Math.max(x1, L.pos[i][0] + r);
-        y0 = Math.min(y0, L.pos[i][1] - r);
-        y1 = Math.max(y1, L.pos[i][1] + r);
-      });
-      const pad = 30;
-      return { x: x0 - pad, y: y0 - pad, w: x1 - x0 + 2 * pad, h: y1 - y0 + 2 * pad };
+    const comm = M.nodes.map((n) => n.c),
+      sites = M.nodes.map((n) => n.sites);
+    const cropOf = (L, s) => {
+      if (mode === 'view' && curL && L.pos[0] && curL.pos[0]) {
+        // the window on screen, moved by what the new layout shifted (every protein by the same amount)
+        const vb = curBox();
+        return { x: vb[0] + L.pos[0][0] - curL.pos[0][0], y: vb[1] + L.pos[0][1] - curL.pos[0][1], w: vb[2], h: vb[3] };
+      }
+      return K.netlayout.litBox(L, comm, sites, lit.nodes, lit.clusters, 24 / s);
     };
     let L = K.netlayout.finish(view, pos, 'desktop'),
-      crop = cropOf(L),
+      crop = cropOf(L, 1),
       s = 1;
     for (let n = 0; n < 4; n++) {
       s = Math.min(Fw / crop.w, maxH / crop.h, 2.6);
       L = K.netlayout.finish(view, pos, 'desktop', Math.max(Z.direct / s, Z.gene / s + 1.5), Z.gene / s);
-      crop = cropOf(L);
+      crop = cropOf(L, s);
     }
     s = Math.min(Fw / crop.w, maxH / crop.h, 2.6);
     const figW = Math.min(Fw, crop.w * s),
       figH = crop.h * s,
-      fig = svgOf(M, CL, L, true, null, set, crop),
+      fig = svgOf(M, CL, L, true, null, set, mode === 'fit' ? crop : null),
       parts = [],
       wrapW = (w, t, size, weight) => K.wrap(t, w / WSL, size, weight, K.FF),
       T = (x, y, t, size, o = {}) =>
@@ -1298,9 +1316,11 @@
     pinIdx.forEach((i) => partners.delete(i));
     const title =
       (UI.claim || '').trim() ||
-      (pinIdx.length === 1
-        ? `${genes[0]} and its ${int(partners.size)} ${plural(partners.size, 'partner', 'partners')} in the ${W.mark} network`
-        : `${genes.join(', ')}: partners in the ${W.mark} network`);
+      (!pinIdx.length
+        ? claimOf(CL.nShown)
+        : pinIdx.length === 1
+          ? `${genes[0]} and its ${int(partners.size)} ${plural(partners.size, 'partner', 'partners')} in the ${W.mark} network`
+          : `${genes.join(', ')}: partners in the ${W.mark} network`);
     let y = P;
     wrapW(Wd - 2 * P, title, Z.title, 'bold')
       .slice(0, 2)
@@ -1310,7 +1330,9 @@
       });
     const p = SRC.find((x) => x.kind === 'pairs'),
       g = SRC.filter((x) => x.kind === 'groups'),
-      sub = `The pinned ${plural(pinIdx.length, 'protein', 'proteins')}, the proteins joined to ${pinIdx.length === 1 ? 'it' : 'them'} by ${p ? `${p.label} (score ${UI.score / 1000} or more)` : sourceNames()}${g.length ? ` or ${g.map((x) => x.label).join(' or ')}` : ''}, and the clusters they belong to; the area of a node follows its number of ${W.marks}.`;
+      sub = !pinIdx.length
+        ? `${K.sel?.active() ? 'The selected proteins' : `The ${int(UI.top)} proteins with the most ${W.marks}`}, joined by ${p ? `${p.label} (score ${UI.score / 1000} or more)` : sourceNames()}${g.length ? ` and ${g.map((x) => x.label).join(' and ')}` : ''}, as shown on screen; the area of a node follows its number of ${W.marks}.`
+        : `The pinned ${plural(pinIdx.length, 'protein', 'proteins')}, the proteins joined to ${pinIdx.length === 1 ? 'it' : 'them'} by ${p ? `${p.label} (score ${UI.score / 1000} or more)` : sourceNames()}${g.length ? ` or ${g.map((x) => x.label).join(' or ')}` : ''}, and the clusters they belong to; the area of a node follows its number of ${W.marks}.`;
     y += 4;
     wrapW(Wd - 2 * P, sub, Z.sub, 400).forEach((l) => {
       y += Z.sub * 1.3;
@@ -1320,7 +1342,9 @@
     y += Z.key * 1.5;
     let kx = P;
     const kw = (l) => K.tw(l, Z.key) * WSL,
-      clus = [...lit.clusters].filter((c) => CL.list[c]).sort((a, b) => CL.list[b].n - CL.list[a].n);
+      clus = (pinIdx.length ? [...lit.clusters] : CL.shown)
+        .filter((c) => CL.list[c])
+        .sort((a, b) => CL.list[b].n - CL.list[a].n);
     const keyItem = (w, draw, label) => {
       if (kx > P && kx + w + 6 + kw(label) > Wd - P) {
         kx = P;
@@ -1338,11 +1362,12 @@
         `${x.other ? 'Smaller cluster' : x.label} · ${x.l.q != null ? `${int(x.l.k)} of ${int(x.n)}` : int(x.n)} proteins`
       );
     });
-    keyItem(
-      22,
-      `<line x1="3" x2="19" y1="0" y2="0" stroke="${EX.light.ink}" stroke-opacity="0.55" stroke-width="1"/>`,
-      'Link of a pinned protein to another cluster'
-    );
+    if (pinIdx.length)
+      keyItem(
+        22,
+        `<line x1="3" x2="19" y1="0" y2="0" stroke="${EX.light.ink}" stroke-opacity="0.55" stroke-width="1"/>`,
+        'Link of a pinned protein to another cluster'
+      );
     y += 10;
     const bodyY = y,
       figX = P + (Fw - figW) / 2;
@@ -1397,8 +1422,46 @@
     if (M.wait || M.error) throw new Error('The network is not ready.');
     if (opts.preset) UI.preset = opts.preset;
     const accs = opts.pinned || UI.pins,
-      idx = [...new Set(accs.map((a) => M.nodes.findIndex((n) => sameAcc(n.acc, a))).filter((i) => i >= 0))];
-    return idx.length ? pinFrame(M, idx) : wholeFrame();
+      idx = [...new Set(accs.map((a) => M.nodes.findIndex((n) => sameAcc(n.acc, a))).filter((i) => i >= 0))],
+      mode = opts.frame || UI.xf;
+    if (mode === 'whole' || (mode === 'fit' && !idx.length)) return wholeFrame();
+    return pinFrame(M, idx, mode === 'view' && curL ? 'view' : 'fit');
+  }
+  // the rectangle an export will frame, on the figure, for two seconds, when it is not what is on screen
+  let xfTimer = 0;
+  function showExportFrame() {
+    const svg = svgEl(),
+      M = cache.M;
+    if (!svg || !curL || !M || M.wait) return;
+    const vb = curBox();
+    let b;
+    if (UI.xf === 'whole' || (UI.xf === 'fit' && !PIN.size)) b = [0, 0, curL.w, curL.h];
+    else if (UI.xf === 'view') b = vb;
+    else {
+      const lit = lightPins(M, PIN),
+        l = K.netlayout.litBox(
+          curL,
+          M.nodes.map((n) => n.c),
+          M.nodes.map((n) => n.sites),
+          lit.nodes,
+          lit.clusters,
+          24
+        );
+      b = [l.x, l.y, l.w, l.h];
+    }
+    svg.querySelectorAll('.nw-xfr').forEach((n) => n.remove());
+    if (b.every((v, i) => Math.abs(v - vb[i]) < 1)) return;
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    g.setAttribute('class', 'nw-xfr');
+    ['x', 'y', 'width', 'height'].forEach((k, i) => g.setAttribute(k, b[i].toFixed(1)));
+    g.setAttribute('fill', 'none');
+    g.setAttribute('stroke', 'var(--ink)');
+    g.setAttribute('stroke-width', String(Math.max(1.5, vb[2] / 500)));
+    g.setAttribute('stroke-dasharray', '8 5');
+    g.setAttribute('pointer-events', 'none');
+    svg.appendChild(g);
+    clearTimeout(xfTimer);
+    xfTimer = setTimeout(() => svg.querySelectorAll('.nw-xfr').forEach((n) => n.remove()), 2000);
   }
   K.netcore.exportFrame = exportFrame;
   K.network = { exportFrame };
@@ -1602,7 +1665,10 @@
     if (k === 'colour') UI.colour = t.value;
     else if (k === 'label') UI.label = +t.value;
     else if (k === 'clusters') UI.clusters = t.value === 'auto' ? null : +t.value;
-    else if (k === 'preset') {
+    else if (k === 'xf') {
+      UI.xf = t.value;
+      return showExportFrame();
+    } else if (k === 'preset') {
       UI.preset = t.value;
       return K.render();
     } else if (k === 'minc') {
@@ -1645,6 +1711,174 @@
     const el = e.target.closest?.('[data-nw-find] textarea');
     if (el) setTimeout(() => applyFind(el), 0);
   });
+  // ---- the view: zoom and pan are a window onto the drawing (the svg's viewBox), kept in the address as nz=k,fx,fy -------------
+  const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
+  const MAXZ = 8;
+  const boxOfVz = (L, vz) => {
+    const k = vz ? vz.k : 1,
+      w = L.w / k,
+      h = L.h / k,
+      cx = vz ? vz.fx * L.w : L.w / 2,
+      cy = vz ? vz.fy * L.h : L.h / 2;
+    return [clampN(cx - w / 2, 0, L.w - w), clampN(cy - h / 2, 0, L.h - h), w, h];
+  };
+  // a window of the figure's own proportions that holds a box
+  const windowOf = (L, bx, by, bw, bh) => {
+    let w = bw,
+      h = bh;
+    if (w / h < L.w / L.h) w = h * (L.w / L.h);
+    else h = w / (L.w / L.h);
+    return [
+      clampN(bx + bw / 2 - w / 2, 0, Math.max(0, L.w - w)),
+      clampN(by + bh / 2 - h / 2, 0, Math.max(0, L.h - h)),
+      Math.min(w, L.w),
+      Math.min(h, L.h),
+    ];
+  };
+  const vzOfBox = (L, b) =>
+    b[2] >= L.w - 0.5
+      ? null
+      : { k: clampN(L.w / b[2], 1, MAXZ), fx: (b[0] + b[2] / 2) / L.w, fy: (b[1] + b[3] / 2) / L.h };
+  const curBox = () => boxOfVz(curL, UI.vz);
+  function applyView() {
+    const svg = svgEl();
+    if (!svg || !curL) return;
+    svg.setAttribute(
+      'viewBox',
+      curBox()
+        .map((v) => +v.toFixed(2))
+        .join(' ')
+    );
+    svg.closest('.nw-fig')?.classList.toggle('nw-zoomed', !!UI.vz);
+  }
+  let vzTimer = 0;
+  // set the window (live while a gesture runs; the address follows when it settles)
+  function setVz(vz, settle = true) {
+    UI.vz = vz && vz.k > 1.001 ? { k: +vz.k.toFixed(3), fx: +vz.fx.toFixed(4), fy: +vz.fy.toFixed(4) } : null;
+    applyView();
+    clearTimeout(vzTimer);
+    vzTimer = setTimeout(() => settle && K.writeHash(false), 250);
+  }
+  // the window that holds what the pins light (or everything, with none)
+  function fitPinnedBox() {
+    const M = cache.M;
+    if (!M || !curL || !PIN.size) return [0, 0, curL ? curL.w : 1, curL ? curL.h : 1];
+    const lit = lightPins(M, PIN),
+      b = K.netlayout.litBox(
+        curL,
+        M.nodes.map((n) => n.c),
+        M.nodes.map((n) => n.sites),
+        lit.nodes,
+        lit.clusters,
+        14
+      );
+    return windowOf(curL, b.x, b.y, b.w, b.h);
+  }
+  function zoomBy(f, ax = 0.5, ay = 0.5) {
+    if (!curL) return;
+    const b = curBox(),
+      k = clampN((UI.vz ? UI.vz.k : 1) * f, 1, MAXZ),
+      w = curL.w / k,
+      h = curL.h / k,
+      px = b[0] + b[2] * ax,
+      py = b[1] + b[3] * ay;
+    setVz(vzOfBox(curL, windowOf(curL, px - w * ax, py - h * ay, w, h)));
+  }
+  const pointers = new Map();
+  let drag = null,
+    dragged = false;
+  document.addEventListener('pointerdown', (e) => {
+    const fig = e.target.closest?.('.nw-fig');
+    if (S.view !== 'network' || !fig || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const pts = [...pointers.values()];
+    drag = {
+      vz: UI.vz,
+      box: curBox(),
+      x: e.clientX,
+      y: e.clientY,
+      d: pts.length > 1 ? Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) : 0,
+      mx: pts.length > 1 ? (pts[0].x + pts[1].x) / 2 : e.clientX,
+      my: pts.length > 1 ? (pts[0].y + pts[1].y) / 2 : e.clientY,
+      moved: false,
+    };
+    dragged = false;
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (!drag || !pointers.has(e.pointerId) || !curL) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const svg = svgEl(),
+      rect = svg?.getBoundingClientRect();
+    if (!rect || !rect.width) return;
+    const pts = [...pointers.values()],
+      b0 = drag.box,
+      upp = b0[2] / rect.width;
+    if (pts.length > 1 && drag.d) {
+      // pinch: the zoom follows the fingers' distance, about the point between them
+      const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+        mx = (pts[0].x + pts[1].x) / 2,
+        my = (pts[0].y + pts[1].y) / 2,
+        k0 = drag.vz ? drag.vz.k : 1,
+        k = clampN(k0 * (d / drag.d), 1, MAXZ),
+        w = curL.w / k,
+        h = curL.h / k,
+        ax = (drag.mx - rect.left) / rect.width,
+        ay = (drag.my - rect.top) / rect.height,
+        px = b0[0] + b0[2] * ax - (mx - drag.mx) * upp * (b0[2] / b0[2]),
+        py = b0[1] + b0[3] * ay - (my - drag.my) * upp;
+      drag.moved = dragged = true;
+      return setVz(vzOfBox(curL, windowOf(curL, px - w * ax, py - h * ay, w, h)), false);
+    }
+    if (
+      pts.length === 1 &&
+      (UI.vz || drag.moved) &&
+      (drag.moved || Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 4)
+    ) {
+      drag.moved = dragged = true;
+      const nb = [b0[0] - (e.clientX - drag.x) * upp, b0[1] - (e.clientY - drag.y) * upp, b0[2], b0[3]];
+      setVz(vzOfBox(curL, windowOf(curL, ...nb)), false);
+    }
+  });
+  const endPointer = (e) => {
+    pointers.delete(e.pointerId);
+    if (!pointers.size && drag) {
+      if (drag.moved) setVz(UI.vz, true);
+      drag = null;
+    } else if (drag) {
+      drag.box = curBox();
+      drag.vz = UI.vz;
+      const pts = [...pointers.values()];
+      drag.x = pts[0].x;
+      drag.y = pts[0].y;
+      drag.d = 0;
+    }
+  };
+  document.addEventListener('pointerup', endPointer);
+  document.addEventListener('pointercancel', endPointer);
+  // the click that ends a drag is not a click on what lay under the pointer
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (dragged) {
+        e.stopPropagation();
+        e.preventDefault();
+        dragged = false;
+      }
+    },
+    true
+  );
+  // a wheel or a trackpad pinch zooms about the pointer, with Ctrl or Cmd held; without it the page scrolls as ever
+  document.addEventListener(
+    'wheel',
+    (e) => {
+      const fig = e.target.closest?.('.nw-fig');
+      if (S.view !== 'network' || !fig || !(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      const rect = svgEl().getBoundingClientRect();
+      zoomBy(Math.exp(-e.deltaY * 0.0025), (e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height);
+    },
+    { passive: false }
+  );
   // a phone's drawing zooms to one cluster: the viewBox runs to its outline over 250 ms (at once under reduced motion)
   function zoomBox(c) {
     const L = curL,
@@ -1684,6 +1918,7 @@
         })
         .join('');
     }
+    UI.vz = vzOfBox(curL, target);
     const from = (svg.getAttribute('viewBox') || '').split(/\s+/).map(Number);
     const set = (v) => svg.setAttribute('viewBox', v.map((x) => +x.toFixed(2)).join(' '));
     if (!animate || matchMedia('(prefers-reduced-motion: reduce)').matches || from.length !== 4) return set(target);
@@ -1712,6 +1947,12 @@
       UI.pins = pins;
       UI.fapply = pins.length === 1;
     }
+    // the window on the drawing: zoom, then the centre as shares of the width and height (they hold on any screen)
+    const nz = (p.get('nz') || '').split(',').map(Number);
+    UI.vz =
+      nz.length === 3 && nz.every(Number.isFinite) && nz[0] > 1 && nz[0] <= MAXZ
+        ? { k: nz[0], fx: clampN(nz[1], 0, 1), fy: clampN(nz[2], 0, 1) }
+        : null;
     if (PARAMS.some((k) => p.has(k))) {
       const g = (k) => p.get(k),
         n = (k, d) => (p.has(k) && Number.isFinite(+g(k)) ? +g(k) : d),
@@ -1751,6 +1992,7 @@
     if (UI.label !== DEF.label) p.set('nl', UI.label);
     if (UI.minc !== DEF.minc) p.set('nm', UI.minc);
     if (UI.mode === 'table') p.set('nv', 'table');
+    if (UI.vz) p.set('nz', `${UI.vz.k},${UI.vz.fx},${UI.vz.fy}`);
   });
   const writeHashOf = K.writeHash;
   K.writeHash = (push) => {
@@ -1806,7 +2048,9 @@
       c = L.pos[FOC],
       x = Math.max(0, Math.min(L.w - w, c[0] - w / 2)),
       y = Math.max(0, Math.min(L.h - h, c[1] - h / 2));
-    svg.setAttribute('viewBox', [x, y, w, h].map((v) => +v.toFixed(1)).join(' '));
+    UI.vz = vzOfBox(L, [x, y, w, h]);
+    UI.fz = false;
+    applyView();
     if (UI.ffocus) {
       UI.ffocus = false;
       const a = svg.querySelector(`.nw-n[data-nn="${FOC}"]`);
@@ -1821,6 +2065,7 @@
     if (S.view !== 'network') return;
     if (UI.zc >= 0) applyZoom(false);
     else if (UI.fz && FOC >= 0) focusBox();
+    else applyView();
     if (UI.refocus) {
       document.querySelector(UI.refocus)?.focus({ preventScroll: true });
       UI.refocus = '';
@@ -2018,11 +2263,20 @@
         K.render();
       },
     ],
+    ['[data-nw-zoom]', (el) => zoomBy(+el.dataset.nwZoom > 0 ? 1.6 : 1 / 1.6)],
     [
-      '[data-nw-zoom]',
-      (el) => {
-        UI.zoom = Math.max(1, Math.min(3, UI.zoom + 0.5 * +el.dataset.nwZoom));
-        K.render();
+      '[data-nw-fitpin]',
+      () => {
+        if (!curL) return;
+        const b = fitPinnedBox();
+        setVz(vzOfBox(curL, b));
+      },
+    ],
+    [
+      '[data-nw-vreset]',
+      () => {
+        UI.zc = -1;
+        setVz(null);
       },
     ],
     [
@@ -2032,7 +2286,8 @@
           ...DEF,
           src: DEF.src.slice(),
           hi: -1,
-          zoom: 1,
+          vz: null,
+          xf: 'fit',
           pins: [],
           fz: false,
           zc: -1,
@@ -2068,14 +2323,16 @@
     ],
     [
       '[data-nwexp]',
-      (btn) =>
-        K.exportFigure(
+      (btn) => {
+        if (btn.dataset.nwexp !== 'tsv') showExportFrame();
+        return K.exportFigure(
           btn.dataset.nwexp,
           exportFrame,
           `${D.site.id}_network${UI.pins.length ? '_pinned' : K.sel?.active() ? '_selection' : ''}${UI.preset === 'paper' ? '_paper' : ''}`,
           btn,
           tsv
-        ),
+        );
+      },
     ]
   );
   K.tips.push(

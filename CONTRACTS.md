@@ -1347,9 +1347,15 @@ reproduces the figure: `p` the pins (comma-separated), `nk` clusters, `nc` colou
 `nl` name source, `nm` smallest cluster, `nv=table`, and `nf` the genes to find; only what differs from the site's
 defaults is written. A selection of one to three proteins is drawn with their partners.
 
-Export. `K.netcore.exportFrame({pinned, preset})` (also `K.network.exportFrame`) returns the document that the Download menu
+View. Zoom and pan are a window on the drawing: the buttons − + Fit pinned Reset, Ctrl or Cmd with the wheel (a trackpad pinch
+does the same), a drag to move, a pinch on a touch screen; without the modifier the page scrolls as before. The window is in
+the address as `nz=<zoom>,<x>,<y>` (the centre as shares of the width and height, so that it holds on any screen).
+
+Export. `K.netcore.exportFrame({pinned, preset})` (`frame`: `fit`, the default, `view` or `whole`; the page's Export menu sets it) (also `K.network.exportFrame`) returns the document that the Download menu
 wraps (`{svg, W, H, title, desc, meta, mm, dpi}`; SVG, PNG and PDF): with pinned accessions (default the page's pins) the figure of
-the pinned view, cropped to the proteins they light, the cards as a plain-text panel beside it (slide, 960 units) or under it
+the pinned view, cropped to a window that holds the pinned proteins, their partners and every lit cluster whole (outline,
+proteins and name) with a margin of 24 units and shows no other cluster cut (`view`: the window on screen; `whole`: the
+whole network),  the cards as a plain-text panel beside it (slide, 960 units) or under it
 (paper, 680 units at 180 mm), the clusters involved as a key, the method caption and the credit; with none, the whole
 network. Text is `<text>` in the export font, halos are drawn as text of their own (a PDF converter does not read
 `paint-order`), and no hint such as "click to open" is in a card.
