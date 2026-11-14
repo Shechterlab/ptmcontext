@@ -35,10 +35,11 @@
   const AN = () => M.AN();
   // ---- the selection bar -----------------------------------------------------------------------------------------
   // the search's plain words are one chip; each of its terms a chip of its own, readable, removed alone
+  // (a yes/no attribute's query word alone is a term too, unless it names a protein)
+  const isTermTok = (t) =>
+    (/^[a-z_][\w]*:.+$/i.test(t) && isTermKey(t.split(':')[0])) || (!!M.FLAGQ[t.toLowerCase()] && !M.lookup(t));
   const plainOf = (q) =>
-    (String(q || '').match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || [])
-      .filter((t) => !/^[a-z_][\w]*:.+$/i.test(t) || !isTermKey(t.split(':')[0]))
-      .join(' ');
+    (String(q || '').match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || []).filter((t) => !isTermTok(t)).join(' ');
   // A filter is shown as its category (a muted word: the site's chip word for the card that holds the question) and its value, not as a
   // sentence; the source and the rule are in the chip's hover. The search's gene list is one chip too.
   const catOf = (k) => {
@@ -47,12 +48,17 @@
     return card?.chip || keyName(k);
   };
   const valsOf = (k, v) => v.map((x) => valueName(k, x)).join(' or ');
+  // a yes/no attribute is its label alone ("Not ..." for the no value): [category, value] of a chip, value '' for none
+  const catVal = (k, v) => {
+    const f = M.flagPhrase(k, v);
+    return f ? [f, ''] : [catOf(k), valsOf(k, v)];
+  };
   function tipOf(k, v) {
     const [kind, id] = k.split(':'),
       hook = K.filterKinds?.[kind]?.tip?.(id, v),
       src = A[id]?.title && A[id].title !== keyName(k) ? A[id].title : '';
     return [
-      `${keyName(k)}: ${valsOf(k, v)}`,
+      M.flagPhrase(k, v) || `${keyName(k)}: ${valsOf(k, v)}`,
       hook || (A[id]?.sub ? K.shortSub?.(A[id].sub) : ''),
       src && `Source: ${src}`,
     ]
@@ -60,8 +66,9 @@
       .join('. ');
   }
   const chip = (cat, val, tip, btn, cls = '') =>
-    `<span class="sel-chip${cls}" title="${esc(tip)}"><span class="sel-cat">${esc(cat)}</span> · <span ` +
-    `class="sel-val">${esc(val)}</span>${btn}</span>`;
+    `<span class="sel-chip${cls}" title="${esc(tip)}"><span class="sel-cat">${esc(cat)}</span>${
+      val ? ` · <span class="sel-val">${esc(val)}</span>` : ''
+    }${btn}</span>`;
   // the search's plain words: a gene list is "Genes", other words "Search"; the first three, the rest on hover
   function plainChip() {
     const c = compute(),
@@ -89,8 +96,7 @@
       .forEach(([k, v, , raw]) =>
         out.push(
           chip(
-            catOf(k),
-            valsOf(k, v),
+            ...catVal(k, v),
             tipOf(k, v),
             `<button type="button" data-sel-drop-term="${esc(raw)}" aria-label="Remove ${esc(raw)}">×</button>`
           )
@@ -109,8 +115,7 @@
       .forEach(([k, v]) =>
         out.push(
           chip(
-            catOf(k),
-            valsOf(k, v),
+            ...catVal(k, v),
             tipOf(k, v),
             `<button type="button" data-sel-clear="${esc(k)}" aria-label="Remove ${esc(catOf(k))}">×</button>`
           )
@@ -124,7 +129,10 @@
     const c = compute(),
       np = c.proteins.size,
       pc = plainChip(),
-      parts = [...(pc ? [`${pc.cat} · ${pc.tip}`] : []), ...c.cons.map(([k, v]) => `${catOf(k)} · ${valsOf(k, v)}`)];
+      parts = [
+        ...(pc ? [`${pc.cat} · ${pc.tip}`] : []),
+        ...c.cons.map(([k, v]) => catVal(k, v).filter(Boolean).join(' · ')),
+      ];
     return (
       `${parts.join('; ')}; ${int(c.marks.length)} of ${int(D.counts.marks)} ${W.marks} on ${int(np)} protein${np === 1 ? '' : 's'}` +
       (K.selEffect ? `; ${K.selEffect().replace(/^All tabs show only these · /, '')}` : '')
@@ -1004,9 +1012,7 @@
     [
       '[data-sel-clear-q]',
       () => {
-        S.q = (String(S.q).match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || [])
-          .filter((t) => /^[a-z_][\w]*:.+$/i.test(t) && isTermKey(t.split(':')[0]))
-          .join(' ');
+        S.q = (String(S.q).match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || []).filter(isTermTok).join(' ');
         K.writeHash(true);
         K.render();
       },

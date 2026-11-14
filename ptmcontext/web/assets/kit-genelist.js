@@ -129,7 +129,7 @@
         : '',
       L.terms.length
         ? `<p class="gl-note">Filters in the search (${L.terms
-            .map(([k, v]) => esc(k + ':' + v))
+            .map(([k, v, bare]) => esc(bare ? k : k + ':' + v))
             .join(', ')}) are not ` + `part of the list test.</p>`
         : '',
     ].join('');
