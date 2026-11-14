@@ -180,6 +180,7 @@ marks:
       separator: "; "
       help: "Somatic missense and stop changes of the arginine in TCGA tumors (MC3 public calls from the GDC: 33 projects, 10,294 tumor samples), most tumors first; * is a stop"
     tcga_any:
+      query: tcga_mutated
       column: tcga_changes
       present: true
       label: Mutated in tumors (TCGA)
@@ -196,6 +197,7 @@ marks:
       separator: "; "
       help: "Missense and stop changes of the arginine in DepMap 24Q4 cell lines (OmicsSomaticMutations, on the canonical UniProt isoform), most lines first"
     depmap_any:
+      query: depmap_changed
       column: depmap_changes
       present: true
       label: Changed in DepMap cell lines
@@ -1253,7 +1255,7 @@ proteins:                  # the release's protein table: facts of each methylat
     dense_end: {column: best_window_end, label: End of the densest window, kind: number}
     disease_families: {column: disease_families, label: Disease families (DisGeNET), kind: list}
     disease_family_terms: {column: disease_family_terms, label: DisGeNET terms per disease family, kind: list}
-    als_ftd_gene: {column: als_ftd_family_gene, label: Audited ALS/FTD gene, kind: category}
+    als_ftd_gene: {column: als_ftd_family_gene, label: ALS/FTD gene, kind: category, query: als_ftd, help: "A gene on the audited ALS/FTD list"}
     panther_group: {column: panther_group, label: PANTHER group, kind: category}
     panther_class: {column: panther_class, label: PANTHER class, kind: category}
 variants:                # the same questions on other marks; ptmc run --variant <name>

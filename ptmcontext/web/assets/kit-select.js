@@ -255,6 +255,46 @@
     id === 'marks'
       ? { label: `Minimum ${W.marks} per protein`, kind: 'number', levels: [2, 3, 5, 10, 20], direction: 'min' }
       : PSPEC[id];
+  // a yes/no attribute (its spec has `flag`, the value that means yes: proteins.attributes or marks.attributes) reads as a plain
+  // term: its label is the chip and its query word (spec.query, else its name) the search text, with no value. key:true, as
+  // older links and the search wrote it, is still read, never shown. FLAGQ: query word (lower case) -> its attribute.
+  const FLAGQ = {};
+  [
+    ['t', SPECS],
+    ['r', PSPEC],
+  ].forEach(([kind, specs]) =>
+    Object.entries(specs).forEach(([id, sp]) => {
+      if (sp?.flag)
+        FLAGQ[String(sp.query || id).toLowerCase()] ||= {
+          id,
+          key: `${kind}:${id}`,
+          yes: String(sp.flag),
+          query: String(sp.query || id),
+        };
+    })
+  );
+  // a search as typed or linked, with each old-form flag term (als_ftd_gene:true) as its query word (als_ftd)
+  const canonQ = (q) =>
+    Object.keys(FLAGQ).length
+      ? String(q || '')
+          .split(/(\s+)/)
+          .map((t) => {
+            const m = /^([a-z_][\w]*):"?([^"]*)"?$/i.exec(t),
+              id = m && (FLAGQ[m[1].toLowerCase()] || Object.values(FLAGQ).find((f) => f.id === m[1].toLowerCase()));
+            return id && m[2].toLowerCase() === id.yes.toLowerCase() ? id.query : t;
+          })
+          .join('')
+      : String(q || '');
+  const flagOf = (key) => {
+    const [kind, id] = String(key).split(':'),
+      sp = kind === 'r' ? PSPEC[id] : kind === 't' ? SPECS[id] : null;
+    return sp?.flag ? { label: sp.label || id, yes: String(sp.flag), query: sp.query || id } : null;
+  };
+  // a filter on a yes/no attribute in words: its label ("Not ..." for the no value); null for any other filter
+  const flagPhrase = (key, vals) => {
+    const f = flagOf(key);
+    return f && vals.length === 1 ? (vals[0] === f.yes ? f.label : `Not ${f.label}`) : null;
+  };
   const protVal = (id, pi) => (id === 'marks' ? D.proteins[pi]?.[4] : D.protein_attributes?.values?.[id]?.[pi]);
   const rHolds = (id, pi, v) => {
     const sp = RSPEC(id) || {},
@@ -347,6 +387,7 @@
       SPECS[key] ||
       PSPEC[key] ||
       ALIAS[key] ||
+      FLAGQ[key] ||
       (SRCH.terms || {})[key] ||
       (SRCH.patterns && (SRCH.patterns.at === key || SRCH.patterns.near === key)) ||
       K.searchTerms?.[key]
@@ -407,6 +448,11 @@
       }
       if (m) {
         out.terms.push([m[1].toLowerCase(), m[2].replace(/^"|"$/g, '')]);
+        continue;
+      }
+      const fq = FLAGQ[t.toLowerCase()]; // a yes/no attribute's query word alone (als), unless it names a protein
+      if (fq && !lookup(t)) {
+        out.terms.push([t.toLowerCase(), fq.yes, true]);
         continue;
       }
       out.nWords++;
@@ -545,7 +591,7 @@
   };
   const TERMS = SRCH.terms || {};
   function termFilter([key0, val]) {
-    const key = ALIAS[key0] || key0;
+    const key = FLAGQ[key0]?.id || ALIAS[key0] || key0;
     const vals = val
         .split(/[|,]/)
         .map((v) => v.trim())
@@ -615,6 +661,8 @@
     }
     return null;
   }
+  // a term as typed: key:value, or the query word alone for a yes/no attribute
+  const rawOf = (t) => (t[2] ? t[0] : `${t[0]}:${t[1]}`);
   // every constraint of a search and filters: [key, values, from the search?]; terms that match nothing are kept
   // aside, to be reported (unresolved), with what was wrong when it can say (errors)
   function constraintsOf(qText, f) {
@@ -626,9 +674,9 @@
     if (SD)
       parse(qText).terms.forEach((t) => {
         const r = termFilter(t);
-        if (r && !r.error && r[1].length) out.push([r[0], r[1], true, t.join(':')]);
+        if (r && !r.error && r[1].length) out.push([r[0], r[1], true, rawOf(t)]);
         else {
-          unresolved.push(t.join(':'));
+          unresolved.push(rawOf(t));
           if (r?.error) errors.push(r.error);
         }
       });
@@ -1404,7 +1452,7 @@
   function stateOfHash(h) {
     const qs = String(h || '').split('?')[1] || '',
       p = new URLSearchParams(qs);
-    return { q: p.get('q') || '', f: decodeF(fRaw(qs)) };
+    return { q: canonQ(p.get('q') || ''), f: decodeF(fRaw(qs)) };
   }
   function setFilter(key, vals) {
     if (vals && vals.length) S.f[key] = vals;
@@ -1422,7 +1470,8 @@
     const toks = String(S.q).match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || [];
     S.q = toks
       .map((t) => {
-        const m = /^([a-z_][\w]*):(.+)$/i.exec(t);
+        const m =
+          /^([a-z_][\w]*):(.+)$/i.exec(t) || (FLAGQ[t.toLowerCase()] ? [t, t, FLAGQ[t.toLowerCase()].yes] : null);
         if (!m || !isTermKey(m[1])) return t;
         const k0 = m[1].toLowerCase(),
           val = m[2].replace(/^"|"$/g, ''),
@@ -1432,7 +1481,7 @@
           const f = termFilter([k0, x]);
           return !(f && !f.error && f[1].includes(v));
         });
-        return left.length ? `${m[1]}:${left.join(',')}` : '';
+        return left.length ? (m[0] === m[1] ? t : `${m[1]}:${left.join(',')}`) : '';
       })
       .filter(Boolean)
       .join(' ');
@@ -1540,7 +1589,7 @@
       val = v.join(':'),
       esc_ = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     S.q = S.q
-      .replace(new RegExp(`(^|\\s)${esc_(k)}:"?${esc_(val)}"?(?=\\s|$)`, 'i'), ' ')
+      .replace(new RegExp(`(^|\\s)${esc_(k)}${v.length ? `:"?${esc_(val)}"?` : ''}(?=\\s|$)`, 'i'), ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -1549,7 +1598,7 @@
       S.q,
       ...compute()
         .cons.filter((x) => !x[2])
-        .map(([k, v]) => `${keyName(k)}: ${v.map((x) => valueName(k, x)).join(' or ')}`),
+        .map(([k, v]) => flagPhrase(k, v) || `${keyName(k)}: ${v.map((x) => valueName(k, x)).join(' or ')}`),
     ]
       .filter(Boolean)
       .join('; ');
@@ -1645,6 +1694,10 @@
       clearAll,
       keyName,
       valueName,
+      flagOf,
+      canonQ,
+      flagPhrase,
+      FLAGQ,
       matcher,
       scoreText,
       setFilter,

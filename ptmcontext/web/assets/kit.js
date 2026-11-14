@@ -432,7 +432,7 @@
     if (ov && !old) S.arg = S.arg.slice(3);
     S.legacy = ov || routed || slashed || (S.view !== view && !!view); // written back as this site's own link (replaceState)
     if (S.view === 'overview' && S.arg && !A[S.arg]) S.arg = '';
-    S.q = p.get('q') || '';
+    S.q = K.sel?.canonQ ? K.sel.canonQ(p.get('q') || '') : p.get('q') || '';
     S.m = p.get('m') || 'mantel_haenszel';
     S.a = p.get('a') || '';
     S.sq = p.get('sq') || '';
@@ -4465,7 +4465,7 @@
       const [v, ...rest] = t.dataset.go.split('/');
       go(v, { arg: rest.join('/') });
     } else if (t.dataset.try) {
-      S.q = t.dataset.try;
+      S.q = K.sel?.canonQ ? K.sel.canonQ(t.dataset.try) : t.dataset.try;
       if (!openIfOne()) {
         writeHash(true);
         render();

@@ -732,6 +732,35 @@ def section_locations(web: dict, name: str | None) -> dict | None:
     return out or None
 
 
+_YES_NO = (('true', 'false'), ('yes', 'no'), ('1', '0'))
+
+
+def flag_value(spec: dict, values) -> str | None:
+    """The raw value that means "yes" when a category attribute holds only a yes/no pair ("true"/"false", "yes"/"no", "1"/"0",
+    in any letter case; empty is "no value") - such an attribute reads as a plain term, never as key:true. An attribute's own
+    `flag` names the value (false: not a flag); otherwise it is read from the data. None for anything else."""
+    if spec.get('kind', 'category') != 'category' or spec.get('flag') is False:
+        return None
+    if spec.get('flag'):
+        return str(spec['flag'])
+    seen = {str(v) for v in values if v not in (None, '')}
+    low = {v.lower() for v in seen}
+    for yes, no in _YES_NO:
+        if low and low <= {yes, no}:
+            return next((v for v in seen if v.lower() == yes), yes)
+    return None
+
+
+def with_flags(specs: dict, values: dict) -> dict:
+    """`specs` (attribute -> spec) with `flag` set on every yes/no attribute (see flag_value), and its `query` word: the
+    spec's own, else the attribute's name. `values`: attribute -> its values in the data."""
+    out = {}
+    for name, sp in specs.items():
+        yes = flag_value(sp, values.get(name, ()))
+        out[name] = {**sp, 'flag': yes, 'query': sp.get('query') or name} if yes else sp
+    return out
+
+
 def first_screen_attributes(web: dict) -> set[str]:
     """The protein attributes the Overview's first screen lists (its starting points: what they rank by, filter on and
     show); the other attributes' values are read from data/site.json when a filter, a search or a page asks for them."""
@@ -1499,6 +1528,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             'accession'
         )
         specs = site['proteins']['attributes']
+        specs = with_flags(specs, {n: pa[f'p.{n}'] for n in specs if f'p.{n}' in pa.columns})
 
         def val(name, v):
             if specs[name].get('kind') == 'number':
@@ -1546,7 +1576,10 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             for a, s in site['marks'].get('attributes', {}).items()
             if f'a.{a}' in mk.columns
         }
-    data['attribute_specs'] = site['marks'].get('attributes', {})
+    mark_specs = site['marks'].get('attributes', {})
+    if listing:
+        mark_specs = with_flags(mark_specs, {a: mk[f'a.{a}'] for a in mark_specs if f'a.{a}' in mk.columns})
+    data['attribute_specs'] = mark_specs
     data['controls'] = controls_data(site)
     data['reporters'] = reporters(site, folder)
     # questions answered by counting the marks (website.counts): the whole dataset's counts in the page, each
@@ -2110,7 +2143,9 @@ def pages(
     # the sites' own header menu reads this list (kit-switch.js)
     rank = {k: i for i, k in enumerate(str(x) for x in cfg.get('order') or [])}
     registry.sort(key=lambda r: rank.get(r['id'], len(rank)))  # the menu lists the sites in the landing page's order
-    (out / 'sites.json').write_text(json.dumps({'switcher_label': switcher_label, 'sites': registry}, indent=1))
+    (out / 'sites.json').write_text(
+        json.dumps({'switcher_label': switcher_label, 'brand': cfg.get('title') or '', 'sites': registry}, indent=1)
+    )
     # the landing page's own logo (landing.yml `logo`: an SVG file, relative to the working directory or the first site's repository)
     logo_href = None
     if cfg.get('logo'):
