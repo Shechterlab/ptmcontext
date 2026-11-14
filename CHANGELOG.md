@@ -47,6 +47,16 @@
   only the protein and its partners, or says why it is not there), and under the button a small drawing of the protein among
   its cluster. The button carries the selection and filters. Find genes takes a pasted list and counts and lists what it
   found. The section under the figure is called Method and is four sentences and the citations.
+- The cell and nucleus maps have a switch, "Percent with sites | Difference from all mapped proteins | Fold vs other proteins", on the Overview card, the
+  cell page and the enlarged map. Percent colors each compartment by the share of its proteins that carry at least one
+  mark, labelled with the count ("Chromatin 97% · 412 proteins"), with the share among all proteins as a tick in the key.
+  With several maps, the median is drawn and each map's value is on hover. With a selection, it shows the share of the
+  compartment's proteins in the selection, the whole site's share on hover. Exports and the table carry the active view.
+  Sites choose which opens first (`website.cell.default_view`). Where the mark is on 80% or more of the mapped proteins,
+  the color range runs from the lowest compartment (rounded down to 5%) to 100%, and the key says it does not start at
+  0 (`website.cell.range`: `data` or `full`). The key also gives the share among all reviewed proteins.
+- Where the fold has too few proteins to compare, the label says which side is short and how many proteins carry a
+  mark ("too few without one to compare (97% carry one)").
 - Header: "All sites" sits on the switcher's row, so the lab block and links stay above the structure drawing. The sticky bar shows the short site name.
 - Cell maps: a part where the maps do not agree reads "maps disagree" (was "fewer than N maps").
 - Lysine header drawing: SUMOylation is labelled "SUMO", not "Ksu".
