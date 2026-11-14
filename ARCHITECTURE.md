@@ -101,6 +101,7 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 | `kit-cols.js` | values by name (`K.cols`): a mark record's classes and attributes by column name, whatever a site has |
 | `kit-late.js` | data read when first asked for (`D.late`: the protein attributes' values in `data/site.json`) |
 | `kit-stats.js` | the tests in the browser; this is `ptmstats.js` of packages/ptmstats, copied under that name |
+| `kit-seldata.js`, `kit-seldata-worker.js` | the one reader of the selection data's parts (`data/sel/`): the core, a protein's sets, the marks of some proteins, and the whole, fetched and parsed in a worker (CONTRACTS.md, "Selection data in parts") |
 | `kit-select.js` | the selection model, `K.sel`: search, filters, selections and their tests; no page of its own, no document needed |
 | `kit-rail.js` | the sidebar (Sections, Filters), the selection line and saved selections; a row that selects goes to the page top |
 | `kit-search.js` | the search box's suggestions and the line under it that says what it read |
