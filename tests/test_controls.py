@@ -190,24 +190,72 @@ ASSETS = S.Path(S.__file__).parent / 'web' / 'assets'
 
 
 @pytest.mark.skipif(not __import__('shutil').which('node'), reason='needs Node')
-def test_a_control_verdict_names_lost_reversed_and_weaker():
+def test_a_control_verdict_follows_its_key_on_the_tiles_fold():
+    """The verdict is read on the fold the tiles show (with the test's q and side), as the Controls table's key says:
+    the cases of the review (Janus IDR inside IDRs: 1.5x then 0.95x at OR 0.78, q 8.2e-7; a phosphosite class at 0.99x,
+    OR 0.82, q 0.010) are reversed, not lost."""
     import re
     import subprocess
 
     js = (ASSETS / 'kit.js').read_text()
     fn = re.search(r'  function ctlVerdict\(r, c\) \{.*?\n  \}\n', js, re.S).group(0)
     prog = (
-        'const MIN_EFFECT = 1.1; const valOf = (r) => r.shown ?? r.eff;'
+        'const MIN_EFFECT = 1.1, PADJ = 0.05; const valOf = (r) => r.shown ?? r.eff; const ctlTest = (r) => r.adj || r;'
         + fn
         + """
-const R = (dir, eff) => ({ dir, eff });
+// dir as the kit reads it from the fold; shown: the fold, eff: the test's odds ratio
+const R = (dir, shown, eff, q) => ({ dir, shown, eff: eff ?? shown, q: q ?? (dir === 'ns' ? 0.5 : 1e-9) });
 console.log(JSON.stringify([
-  ctlVerdict(R('more', 3), R('more', 2)), ctlVerdict(R('more', 3), R('less', 0.4)), ctlVerdict(R('more', 3), R('ns', 1.5)),
-  ctlVerdict(R('more', 3), R('ns', 1.01)), ctlVerdict(R('less', 0.5), R('more', 2)), ctlVerdict(R('ns', 1), R('more', 2)),
-  ctlVerdict(R('more', 3), undefined)]));"""
+  ctlVerdict(R('more', 3), R('more', 2)),
+  ctlVerdict(R('more', 3), R('less', 0.4)),
+  ctlVerdict(R('more', 3), R('ns', 1.5)),
+  ctlVerdict(R('more', 3), R('ns', 1.01)),
+  ctlVerdict(R('less', 0.5), R('more', 2)),
+  ctlVerdict(R('ns', 1), R('more', 2)),
+  ctlVerdict(R('more', 3), undefined),
+  ctlVerdict(R('more', 1.5, 1.4, 3.2e-19), R('same', 0.95, 0.78, 8.2e-7)),
+  ctlVerdict(R('more', 2.5, 2.1, 2.2e-34), R('same', 0.99, 0.82, 0.01)),
+  ctlVerdict(R('more', 2), R('same', 0.95, 0.78, 0.2)),
+  ctlVerdict(R('more', 2), R('same', 0.95, 1.2, 1e-6)),
+  ctlVerdict(R('more', 2), R('same', 1.05, 1.04, 1e-6))]));"""
     )
     out = json.loads(subprocess.run(['node', '-e', prog], capture_output=True, text=True, check=True).stdout)
-    assert out == ['holds', 'reversed', 'weaker', 'lost', 'reversed', 'new', 'not tested']
+    assert out == [
+        'holds',
+        'reversed',
+        'weaker',
+        'lost',
+        'reversed',
+        'new',
+        'not tested',
+        'reversed',  # Janus IDR inside IDRs
+        'reversed',  # the phosphosite class
+        'lost',  # the other side without q <= 0.05
+        'lost',  # the fold and the test pointing different ways: no reading
+        'lost',  # under 1.1x the same way
+    ]
+    # the key printed above the table says the same
+    key = re.search(r'const CTL_KEY =(.*?);\n', js, re.S).group(1)
+    for words in (
+        'reversed: the other side of 1×, at q ≤ 0.05',
+        'lost: under 1.1× the same way',
+        'weaker: at least 1.1×',
+    ):
+        assert words in key.replace("' +\n    '", '').replace("'", ''), words
+
+
+def test_the_controls_table_shows_the_fold_and_the_badge_says_one_sentence():
+    js = (ASSETS / 'kit.js').read_text()
+    block = js[js.index('  function controlsBlock(a, m) {') :]
+    block = block[: block.index('\n  }\n')]
+    # the fold the tiles show, the odds ratio and q in the tooltip and the accessible name
+    assert 'fx(valOf(r))' in block and 'title="${esc(d)}"' in block and 'aria-label=' in block
+    assert 'fx(r.eff)' not in block
+    # drawn with a selection on too, labelled as the whole dataset's
+    assert 'if (vsOn() || selOn()) return' not in block and '(whole dataset)' in block
+    tip = js[js.index('  const failTip = (f) =>') :]
+    tip = tip[: tip.index(';\n')]
+    assert 'This result' in tip and 'f.when' in tip and 'OR' not in tip and ' q ' not in tip
 
 
 def test_a_failed_control_keeps_its_row_with_a_badge_in_the_kit():
@@ -230,3 +278,110 @@ def test_a_failed_control_keeps_its_row_with_a_badge_in_the_kit():
     jsonschema.validate({'control_badges': False}, ov)
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate({'control_badges': {'verdicts': ['holds']}}, ov)
+
+
+def _playwright():
+    import shutil
+    import subprocess
+
+    if not shutil.which('node') or not shutil.which('npm'):
+        return None
+    root = subprocess.run(['npm', 'root', '-g'], capture_output=True, text=True).stdout.strip()
+    ok = subprocess.run(['node', '-e', "require('playwright')"], env={**__import__('os').environ, 'NODE_PATH': root})
+    return root if ok.returncode == 0 else None
+
+
+CLICK = r"""
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch(), p = await b.newPage({ viewport: { width: 1280, height: 900 } }), errs = [];
+  p.on('pageerror', (e) => errs.push(e.message));
+  await p.goto(process.argv[2] + '/index.html#overview');
+  await p.waitForSelector('.ctl-fail .ctl-badge', { timeout: 20000 });
+  const tip = await p.getAttribute('.ctl-fail .ctl-badge', 'title');
+  await p.click('.ctl-fail .ctl-badge');
+  await p.waitForFunction(() => document.activeElement && document.activeElement.id === 'q-controls', null, { timeout: 15000 });
+  const out = await p.evaluate(() => ({
+    hash: location.hash,
+    focused: document.activeElement.id,
+    top: Math.round(document.getElementById('q-controls').getBoundingClientRect().top),
+    h: innerHeight,
+    cells: [...document.querySelectorAll('#q-controls tbody td span[title]')].map((x) => [x.textContent, x.title]),
+  }));
+  console.log(JSON.stringify({ ...out, tip, errs }));
+  await b.close();
+})();
+"""
+
+
+def test_a_badge_click_opens_the_question_at_its_controls_table(tmp_path):
+    """In a browser: a tile row whose result a control reverses has a badge; a click on it opens the question at its
+    Controls table (focused, in view) and selects nothing (the row's own click would filter its class)."""
+    import functools
+    import http.server
+    import subprocess
+    import threading
+
+    node_root = _playwright()
+    if not node_root:
+        pytest.skip('needs Node and Playwright')
+    root = _toy_site(tmp_path)
+    data = root / 'data'
+    # one protein with 100 RGG and 100 RA arginines: 60 RGG and 20 RA marks make RGG more often; the control keeps only
+    # the RA marks, and RGG is then less often (reversed)
+    seq = 'M' + 'RGGA' * 100 + 'RAAA' * 100
+    (data / 'toy.fasta').write_text(f'>sp|P1|ONE_TOY One protein OS=Toy OX=1 GN=ONE PE=1 SV=1\n{seq}\n')
+    rgg = [2 + 4 * i for i in range(60)]
+    ra = [402 + 4 * i for i in range(20)]
+    pd.DataFrame({'acc': ['P1'] * 80, 'pos': rgg + ra, 'kind': ['g'] * 60 + ['a'] * 20}).to_csv(
+        data / 'marks.tsv', sep='\t', index=False
+    )
+    man = json.loads((root / 'sites' / 'toy.inputs.json').read_text())
+    for k in ('toy_fasta', 'toy_marks'):
+        man['inputs'][k]['md5'] = md5_file(data / man['inputs'][k]['file'])
+    (root / 'sites' / 'toy.inputs.json').write_text(json.dumps(man, indent=1))
+    site = yaml.safe_load((root / 'sites' / 'toy.yaml').read_text())
+    site['analyses'] = [{'id': 'motif', 'layer': 'motif', 'title': 'Sequence motifs'}]
+    site['controls'] = [
+        {
+            'id': 'ra',
+            'label': 'RA sites only',
+            'when': 'only the RA sites are compared',
+            'analyses': ['motif'],
+            'marks_where': {'column': 'kind', 'equals': 'a'},
+            'marks_outside': 'left_out',
+        }
+    ]
+    site['website'] = {
+        'name': 'Toy Explorer',
+        'overview': {'sections': [{'name': 'Where', 'cards': [{'analysis': 'motif', 'title': 'Sequence motifs'}]}]},
+    }
+    path = root / 'sites' / 'toy.yaml'
+    path.write_text(yaml.safe_dump(site, sort_keys=False))
+    S.run(path, root=data, log=lambda *_: None)
+    from ptmcontext import web
+
+    index = web.build(path, log=lambda *_: None)
+    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(index.parent))
+    httpd = http.server.ThreadingHTTPServer(('127.0.0.1', 0), handler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        script = tmp_path / 'click.js'
+        script.write_text(CLICK)
+        run = subprocess.run(
+            ['node', str(script), f'http://127.0.0.1:{httpd.server_address[1]}'],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            env={**__import__('os').environ, 'NODE_PATH': node_root},
+        )
+    finally:
+        httpd.shutdown()
+    assert run.returncode == 0, run.stderr[-1500:]
+    out = json.loads(run.stdout.strip().splitlines()[-1])
+    assert out['errs'] == []
+    assert out['hash'] == '#overview/motif'  # the question, and no filter of the row (?f=...)
+    assert out['focused'] == 'q-controls' and 0 <= out['top'] < out['h']
+    assert out['tip'].startswith('This result reverses when only the RA sites are compared (')
+    # each cell shows the fold, its test in the tooltip
+    assert out['cells'] and all('× q ' in c[0] and c[1].startswith('OR ') and ', q ' in c[1] for c in out['cells'])

@@ -85,22 +85,27 @@ Conventions:
   cell names at least N distinct groups, where an item in `not_counted` counts for nothing, an item in one of `groups`
   counts as that group, and any other item as its own (the studies behind a site, with one laboratory's studies counted
   once and databases not at all). An item in two groups, or in a group and `not_counted`, is an error.
-- Controls (`controls: [{id, label, note?, analyses: [question ids], marks_where?, marks_outside?, without_proteins?,
-  only_in?}]`, each with at least one change): at load, each listed question gets a copy `<id>_<control id>` with the
-  change (a `marks_where` joins the question's own: both must hold), `new: true`, `control_of: <question>` and
-  `control_label: <label>`, its title followed by `, <label>`, `note` added to its `sub`, in its question's family (the
-  question's title, or its layer's, unless it has one; `family_label` the label, after the question's own name in a family
-  it already had). The question's page shows its controls beside its result: for each class with a reading in either,
-  the odds ratio (fold enrichment for sets) and q in the question and in each control, and whether the reading holds
-  there (the same reading at q ≤ 0.05), is weaker (the same direction by at least 1.1×, not at q ≤ 0.05), reversed (the
-  other way at q ≤ 0.05) or lost (under 1.1× in the same direction, or the other way without q ≤ 0.05). A class whose
-  result fails a control keeps its place on the Overview with a muted badge under its tile row, and one under its
-  question's heading: "fails control: <label>", a button that opens the question at its Controls table, with both
-  results (odds ratio or fold, q) in its tooltip and the badge's words in the row's accessible name.
-  `website.overview.control_badges: {verdicts: [lost, reversed, weaker]}` says which readings count (default lost and
-  reversed); `false` shows no badge. No badge is shown for a selection. The Method page lists the controls, and for a
-  `distinct_at_least` condition its groups and the items not counted. A control is not an Overview tile. A model (`conditional_logit`) is not repeated; `only_in` is for a residue question of
-  one layer without its own.
+- Controls (`controls: [{id, label, when?, note?, analyses: [question ids], marks_where?, marks_outside?,
+  without_proteins?, only_in?}]`, each with at least one change): at load, each listed question gets a copy
+  `<id>_<control id>` with the change (a `marks_where` joins the question's own: both must hold), `new: true`,
+  `control_of: <question>`, `control_label: <label>` and `control_when: <when>`, its title followed by `, <label>`,
+  `note` added to its `sub`, in its question's family (the question's title, or its layer's, unless it has one;
+  `family_label` the label, after the question's own name in a family it already had). The question's page shows its
+  controls beside its result (the Controls table, `#q-controls`): for each class with a reading in either, the measure
+  its tiles show (the fold) and q in the question and in each control, the test's odds ratio, interval and q in each
+  cell's tooltip and accessible name, and a verdict read on that same fold with the test's q: holds (the same reading as
+  the question: at least 1.1× the same way, q ≤ 0.05), weaker (at least 1.1× the same way, without q ≤ 0.05), reversed
+  (the other side of 1×, at q ≤ 0.05, the fold and the test pointing the same way), lost (under 1.1× the same way, or the
+  other side without q ≤ 0.05) or new (a reading only the control has). The table's key says the same. With a selection
+  on, the table is still drawn and labelled as the whole dataset's. A class whose result fails a control keeps its place
+  on the Overview with a muted badge under its tile row, and one under its question's heading: "fails control:
+  <label>", a button that opens the question at its Controls table (focused, in view) and does nothing else (the click
+  reaches neither the tile nor its row's filter). Its tooltip is one sentence, "This result disappears (or reverses)
+  when <when> (fold → fold).", `when` defaulting to "the test is repeated with <label>"; the badge's words join the row's
+  accessible name. `website.overview.control_badges: {verdicts: [lost, reversed, weaker]}` says which readings count
+  (default lost and reversed); `false` shows no badge. No badge is shown for a selection. The Method page lists the
+  controls, and for a `distinct_at_least` condition its groups and the items not counted. A control is not an Overview
+  tile. A model (`conditional_logit`) is not repeated; `only_in` is for a residue question of one layer without its own.
 - Questions that are variants of one base (the same test at other window sizes, or inside IDRs) may share a
   `family:` (any text, the entry's name). The website's Sections sidebar then lists them as one entry with a caret
   that reveals the variants, each named by what differs: its title less the family's name (and any leading
@@ -970,11 +975,9 @@ classes in `except`; when classes are given this way the table's `classes` colum
 PMID. `attribute` adds a list attribute to the marks (the classes of the partners of a mark's protein, written into the run's `marks.tsv` as `a.<id>` when the
 website is built), which a `kind: values` count question can tile. Site-file defaults the kit keeps off when absent: `website.sites.sort: {by: <column id>, desc?}`,
 `website.protein.open_partners`, `website.protein.conservation.logo_mode: freq | bits`, `website.overview.statistic_label`.
-An Overview card's `beside: {analysis, label}` adds a line under the tile's rows with another question's result for the tile's
-first class, "<label>: 2.5×, q y" in the statistic and method the tile shows (the same question asked another way: a control,
-such as `only_in: {marks: [...]}`, or the same pair from one source); a list of them adds a line each, in order. The other
-question keeps its own page and rows in the downloads. A question's page links to the other questions of its `family` (the
-same question for each type, say), so that variants left off the Overview stay one click away.
+An Overview card's `beside: {analysis, label}` adds the result of another question for the tile's first class: on a tile of one row, as small rows under the headline fold ("All data", then each label) on the same axis, each opening its question; on a tile of several rows, a line each ("<label>: 2.5×"). A list adds one each, in order. The statistic and method are the tile's; the odds ratio, interval and q are in the row's hover text and spoken name, never on the tile. The other question keeps its own page and rows in the downloads. A question's page links to the other questions of its `family` (the same question for each type, say), so that variants left off the Overview stay one click away.
+An Overview card may give `rows_from: [q1, q2, ...]` (two or more question ids) in place of `analysis`, and `title`, to make one tile of several single-class questions: the first row of each question, one row each, named by the question's short title (or `labels: {<id>: <name>}`), on one axis with its fold and n. A row opens its question's page (its controls are shown there, and a failed control shows as the row's badge on the tile); the tile has no "details" link of its own. Each question stays a question of the site (its page, rows and statistics), and the card counts as the first question's tile in the sidebar. `analysis` and `rows_from` are not both given.
+**Tile rows.** A row of a tile shows the name, the mark (dot or interval), the fold and n, and a failed-control badge. The row's test (odds ratio, interval, q; for a protein set, the test within abundance deciles, which drives the dot where it exists and which the tile's subtitle then names once) is in its hover text and spoken name, in full. A tile is one small forest plot: its rows share one log axis (drawn once under them, with the comparison note beneath), each a dot in the direction colors (filled where q ≤ 0.05) on a row lightly shaded by direction, and at most `website.overview.rows` (default 5) rows. A click, Enter or tap on a row opens a popover with the full name, fold, n and tests, and the actions "Show these proteins" (selects the class), "Overlap with…" (a protein-set question of the Overlap page) and "Open question"; Escape closes it. The buttons "Compare with…" and "Proteins" are on the rows of the question's page, not on the tiles; the tile's footer has Download and "+n more" only. In the Sections sidebar only the Overview lists its sections under its name.
 `website.overview.random_maps: {n: 3, title?, min_marks?, open?, enabled?}` (kit-random.js) is a closed fold, "Example proteins", at the end of the Overview: `n` proteins drawn at random, each end to end as one row in the protein map's style, with a small "Draw three others" link; absent or `enabled: false`, nothing is drawn.
 
 **Header, folds and the footer.** `website.header.compact` (default true): the full header band (title, counts, citation line) shows on the Overview at the top only; every other page, and a question opened from the Overview, has a 56 px band with the site name (a link to the Overview), and only the search, the selection line and the tabs stay in view (on a phone they slide away on the way down and back on the way up, and are not animated under reduced motion); false keeps the full band everywhere. `website.header.scroll_bar` (default true): on the way down the toolbar slides away and one fixed 44 px bar stays, with the site name (a link to the Overview), then `website.header.bar` (default all of `home` the link to the landing page, `switch` the site switcher, `search` a search box (an icon on a phone that brings the toolbar back), `tabs` the pages (1100 px and wider) and `summary` the selection's counts with a dot while a filter is on, opening the filter drawer); on the way up, or at the top, the full header and toolbar return. The toolbar is out of the tab order while it is away, and nothing is animated under reduced motion. `scroll_bar: false` keeps the toolbar in view on a large screen. `website.overview.draw_first` (default 2) is how many Overview sections are drawn in full; `website.overview.cell_first: false` keeps the section whose card draws the cell (`drawing: true`) where the site file lists it, under its heading, instead of opening the Overview with it; later ones are a heading and a line, drawn when opened or scrolled to (a selection draws all). Examples start closed: `website.overview.starting_points.open`, `random_maps.open`, `website.pages[].groups[].open` and `groups[].sections[].open` (a `place: top` section) are false unless true. Folds are open or closed for one visit; a saved selection ("Save") stores the open folds with it and restores them when opened, and the address does not carry them. The footer shows "updated <date>" (the `ptmc web` time, `data.built`) with the kit version and short commit.
@@ -1098,7 +1101,9 @@ network view.
 `#overlap?t=<terms>` (kit-overlap.js; `website.overlap`, schema in site.schema.json) compares two to `max_terms` (at most 4) terms. The address keeps the
 terms (`t`, comma-separated, each percent-encoded: `s:<question>:<set>` a set of a protein-set question, `c:<question>:<class>` a class of another
 question, `f:readers:<family>` and `f:enzymes:<class>`, `a:<attribute>:<value>` a protein attribute, `sel` the current selection, `sv:<name>` a
-selection saved in this browser, `g:<names>` a pasted list), the unit (`ou`) and the open region (`or`); an old link's `ov` is read and ignored.
+selection saved in this browser, `g:<names>` a pasted list), the unit (`ou`), the question (`oq`: `a` or `b`; without it, `a` for two terms and `b` for more) and the open region (`or`: `5` is the region of exactly the terms of mask 5, `a5` every element in those terms); an old link's `ov` is read and ignored.
+
+Two questions, one switch. (a) *Do these sets share more proteins than chance?* is the overlap of the terms themselves, for each pair, among every element counted and among those with sites (a count of sites has one group): n and m the sizes, a the elements in both, N the group; expected = n·m/N, fold = a/expected, p = P(X >= a) for X hypergeometric (N, m, n) (one-sided, `ptmstats.hypergeom_sf`; p = 1 for a = 0), q = Benjamini-Hochberg over the pairs of one group. `ptmstats.pair_overlap` is the same arithmetic in Python and `tests/test_overlap.py` checks the browser's rows equal it. (b) *Are the proteins in each region modified more often?* is the region test below. For two terms the page opens on (a), because the pair is the whole question; for three or four on (b), because each region then has its own answer. A sentence above the figure states the result from the terms and the numbers.
 
 ```yaml
 website:
@@ -1107,6 +1112,9 @@ website:
     max_terms: 4
     leave_out: {some_question: [set_id]}             # sets not offered and not written (data that is not public)
     notes: {some_question: one main location per protein}   # shown under its terms in the picker
+    groups:                                          # the headings the picker lists terms under, in order
+      - {name: GO, from: [go_bp, go_binding]}        # question ids and term-source ids; a question in none is listed under its own name
+    names: {writer_prmt: PRMT methyltransferases}    # a reader family's or enzyme class's name as shown (the role becomes a small tag)
     term_sources:                                    # more terms, from a table of (term, protein) pairs
       - id: go_bp
         title: GO biological process

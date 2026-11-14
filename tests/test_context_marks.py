@@ -462,14 +462,33 @@ def test_only_in_marks_names_known_marks_and_a_card_s_beside_reads_a_question():
     bad = {**site, 'analyses': [{**ctl, 'only_in': {'marks': ['site', 'acylation']}}]}
     assert any("only_in reads mark 'acylation'" in p for p in S.roles_missing(bad))
     cards = [c for s in site['website']['overview']['sections'] for c in s['cards'] if isinstance(c, dict)]
-    beside = {c['analysis']: S.beside_lines(c)[0]['analysis'] for c in cards if c.get('beside')}
-    assert beside['same_ac_ub'] == 'same_ac_ub_modified' and len(beside) == 6
+    # the pair tile is one card of six questions; each keeps its control, shown on its question's page
+    (pairs,) = [c for c in cards if c.get('rows_from')]
+    assert len(pairs['rows_from']) == 6 and 'same_ac_ub' in pairs['rows_from']
+    toy = {
+        **site,
+        'website': {
+            **site['website'],
+            'overview': {
+                **site['website']['overview'],
+                'sections': [
+                    {
+                        'name': site['website']['overview']['sections'][0]['name'],
+                        'cards': [
+                            {'analysis': 'same_ac_ub', 'beside': [{'analysis': 'same_ac_ub_modified', 'label': 'x'}]}
+                        ],
+                    }
+                ],
+            },
+        },
+    }
+    assert S.beside_lines(toy['website']['overview']['sections'][0]['cards'][0])[0]['analysis'] == 'same_ac_ub_modified'
     with pytest.raises(Exception):
         validate({**site, 'analyses': [{**ctl, 'only_in': {'marks': []}}]}, 'site')
     js = (ASSETS / 'kit.js').read_text()
     assert 'card.beside' in js and 'tbeside' in js
     # the control reads as the tile's own rows do ("2.5×, q 1.8e-261"): the same statistic (the fold) and form, not "OR 2.5"
-    assert 'class="nw">OR ' not in js and '${esc(fx(valOf(r)))}, q ${esc(fq(r.adj ? r.adj.q : r.q))}' in js
+    assert 'class="nw">OR ' not in js and '${esc(fx(valOf(r)))}</span>' in js and 'title="${esc(testLine(r))}"' in js
 
 
 def test_a_score_subset_shows_every_mark_at_first_and_the_cut_is_the_readers_option():
