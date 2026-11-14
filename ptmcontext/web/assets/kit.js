@@ -1074,12 +1074,36 @@
       (rows.some((r) => r.q != null && r.q <= PADJ) ? 'none differs by 1.1× or more' : 'none differs at q ≤ 0.05')
     );
   }
-  // why a selection's rows are shown and not tested
-  const whyShown = (a) =>
-    a.kind === 'protein_sets' && K.sel?.namesProteins() && !K.sel.madeWith(a.id)
-      ? 'Your selection names its proteins, so it is shown against the sets, not tested: ' +
+  // why a selection's rows are shown and not tested: the reason the retest gave its rows (r.why), the most specific first
+  const WHY_ORDER = ['defined', 'between', 'named', 'made', 'own', 'small'];
+  const whyOf = (rows) => WHY_ORDER.find((w) => (rows || []).some((r) => r.descriptive && r.why === w)) || null;
+  const whyShown = (a, rows) => {
+    const w = whyOf(rows),
+      sets = a.kind === 'protein_sets';
+    if (w === 'defined') {
+      const r = rows.find((x) => x.why === 'defined'),
+        cls = label({ analysis: a.id, category: r.definedBy ?? r.category });
+      return (
+        `Not testable for this selection: every selected ${sets ? 'protein' : W.mark} this question counts is in ` +
+        `“${cls}”, so the selection is defined by what the question tests. Shown, not tested.`
+      );
+    }
+    if (w === 'between')
+      return (
+        `Your selection takes whole proteins, so no protein has ${W.marks} on both sides. Pooled, each ${W.mark} of a ` +
+        `protein would count as an independent observation, so the shares are shown, not tested. For a test, compare ` +
+        `with other ${W.residues}.`
+      );
+    if (w === 'named' || (!w && sets && K.sel?.namesProteins() && !K.sel.madeWith(a.id)))
+      return (
+        'Your selection names its proteins, so it is shown against the sets, not tested: ' +
         'the test would be of the choice of genes.'
-      : 'Your selection was made with this question (or one reading the same data), so it is shown, not tested.';
+      );
+    if (w === 'own') return 'Your selection holds classes of this question, so it is shown, not tested.';
+    if (w === 'small') return 'Your selection is too small to test, so it is shown, not tested.';
+    return 'Your selection was made with this question (or one reading the same data), so it is shown, not tested.';
+  };
+  K.whyShown = whyShown;
   function summaryLine(rows, tmpl, card = {}) {
     rows = rows.filter((r) => !EXCL.test(r.label));
     if (rows.some((r) => r.vs)) {
@@ -1298,6 +1322,16 @@
     const same = c
       .filter((r) => r.dir === 'same')
       .sort((x, y) => Math.abs(Math.log(valOf(y))) - Math.abs(Math.log(valOf(x))));
+    // a selection of whole proteins against the other marks is shown, not tested: the classes whose shares differ most
+    if (vs && c.length && c.every((r) => r.why === 'between')) {
+      const gap = (r) => Math.abs(Math.log((share1(r) + 1e-3) / (share2(r) + 1e-3)));
+      const shown = c.slice().sort((x, y) => gap(y) - gap(x));
+      return {
+        shown: shown.slice(0, max),
+        more: Math.max(0, shown.length - max),
+        left: shown.slice(max).map((r) => r.category),
+      };
+    }
     const nUp = Math.min(up.length, dn.length ? max - 2 : max),
       nDn = Math.min(dn.length, max - nUp, up.length ? 2 : max);
     const shown = [...up.slice(0, nUp), ...dn.slice(0, nDn)];
@@ -1393,7 +1427,9 @@
     const rows = collapseSimilar(a, smallSel() ? rowsFor(a, S.m) : withRef(a, rowsOf(a, S.m), S.m));
     let { shown, more, left } = pick(rows, max, card);
     const whole = selOn() && !vsOn() && !smallSel() ? rowsFor(a, S.m) : null;
-    const made = selOn() && rows.some((r) => r.descriptive);
+    // shown, not tested: the whole dataset's rows stand in, except for a selection of whole proteins against the other
+    // marks, whose shares are drawn (the retest ran; it is only not tested)
+    const made = selOn() && rows.some((r) => r.descriptive && r.why !== 'between');
     // a selection keeps the rows the tile has without one: the same classes, each tested again (the whole dataset's value
     // a ring); a class the selection does not hold is a faint row without a value; a selection made with this question is
     // not tested again, so its tile shows the whole dataset's rows
@@ -1416,7 +1452,12 @@
       more = base.more;
       left = base.left;
     }
-    const foot = made ? whyShown(a) : shown.length || !vsOn() ? summaryLine(rows, card.summary, card) : '';
+    const foot =
+      made || rows.some((r) => r.why === 'between')
+        ? whyShown(a, rows)
+        : shown.length || !vsOn()
+          ? summaryLine(rows, card.summary, card)
+          : '';
     return { a, rows, shown, more, left, whole, made, foot };
   }
   const detailsLink = (id) =>
@@ -2280,7 +2321,7 @@
           ? ` <b>Your ` +
             `selection</b>${
               rows.some((r) => r.descriptive)
-                ? ': ' + whyShown(a).replace(/^Your selection /, '')
+                ? ': ' + whyShown(a, rows).replace(/^Your selection /, '')
                 : vsOn()
                   ? ''
                   : ', tested in your browser (exploratory).'

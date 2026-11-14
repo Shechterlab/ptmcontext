@@ -919,16 +919,20 @@
     const n = Object.values(byProt).reduce((x, ms) => x + ms.length, 0);
     // a question whose classes exclude each other (no mark in two): a selection holding some of its classes fixes the
     // others too (none of its marks can be in them), so none is tested
+    // a class holding every selected mark the question counts (b = 0: a selection defined by what the question tests,
+    // such as a filter whose every mark carries the mark a same-residue question asks about) makes the test trivial
     const held = ownSets(aid),
       isOwn = (r) => held.sets.has(r.category),
-      circ =
-        held.all || (held.sets.size > 0 && exclusive(aid)) || rows.some((r) => !r.absent && r.a === n && !isOwn(r));
+      full = rows.find((r) => !r.absent && r.a > 0 && (r.a === n || r.b === 0) && !isOwn(r)),
+      why = held.all ? 'made' : held.sets.size > 0 && exclusive(aid) ? 'own' : full ? 'defined' : null;
     const tested = rows.filter((r) => !isOwn(r)),
       q = ST.bh(tested.map((r) => r.p));
     rows.forEach((r) => {
       const k = tested.indexOf(r);
-      r.q = circ || k < 0 ? null : q[k];
-      r.descriptive = circ || k < 0;
+      r.q = why || k < 0 ? null : q[k];
+      r.descriptive = !!why || k < 0;
+      if (why) Object.assign(r, { why, ...(why === 'defined' ? { definedBy: full.category } : {}) });
+      else if (k < 0) r.why = 'own';
     });
     return rows.filter((r) => !r.absent);
   }
@@ -967,9 +971,10 @@
       q = ST.bh(tested.map((r) => r.p));
     rows.forEach((r) => {
       const k = tested.indexOf(r),
-        circ = held.all || r.a === n || !!named || k < 0;
-      r.q = circ ? null : q[k];
-      r.descriptive = circ;
+        why = held.all ? 'made' : k < 0 ? 'own' : named ? 'named' : r.a === n ? 'defined' : null;
+      r.q = why ? null : q[k];
+      r.descriptive = !!why;
+      if (why) Object.assign(r, { why, ...(why === 'defined' ? { definedBy: r.category } : {}) });
     });
     return rows;
   }
@@ -1183,11 +1188,15 @@
         };
       })
       .filter(Boolean);
-    const circ = circularFor(qid, G.cons);
+    // circular: a question the selection was made with; defined: one class holds every mark of group 1 (b = 0), so the
+    // selection is defined by what the question tests
+    const full = rows.find((r) => r.a > 0 && r.b === 0),
+      why = circularFor(qid, G.cons) ? 'made' : full ? 'defined' : null;
     const q = ST.bh(rows.map((r) => r.p));
     rows.forEach((r, k) => {
-      r.q = circ ? null : q[k];
-      r.descriptive = circ;
+      r.q = why ? null : q[k];
+      r.descriptive = !!why;
+      if (why) Object.assign(r, { why, ...(why === 'defined' ? { definedBy: full.category } : {}) });
     });
     return rows;
   }
@@ -1249,11 +1258,12 @@
       })
       .filter(Boolean);
     const named = compute().q.genes.length || compute().q.sites.length;
-    const circ = circularFor(aid, G.cons) || !!named;
+    const why = circularFor(aid, G.cons) ? 'made' : named ? 'named' : null;
     const q = ST.bh(rows.map((r) => r.p));
     rows.forEach((r, k) => {
-      r.q = circ ? null : q[k];
-      r.descriptive = circ;
+      r.q = why ? null : q[k];
+      r.descriptive = !!why;
+      if (why) r.why = why;
     });
     return rows;
   }
@@ -1288,7 +1298,11 @@
           r.lo = null;
           r.hi = null;
           r.descriptive = true;
-          if (testable()) r.between = true;
+          if (!testable()) r.why = 'small';
+          else if (!r.why) {
+            r.between = true;
+            r.why = 'between';
+          }
         }
       });
       fam[id] = out;

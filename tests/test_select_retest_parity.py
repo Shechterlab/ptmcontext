@@ -149,7 +149,7 @@ window.PTMC_MODULES.forEach((m) => m(K));
   Object.assign(S0.f, FILTER);
   for (const aid of AIDS)
     for (const m of ['fisher', 'mantel_haenszel'])
-      out[aid + '|' + m] = (K.sel.retest(aid, m) || []).map((r) => ({ category: r.category, a: r.a, b: r.b, c: r.c, d: r.d, or: r.or, p: r.p, q: r.q, descriptive: !!r.descriptive }));
+      out[aid + '|' + m] = (K.sel.retest(aid, m) || []).map((r) => ({ category: r.category, a: r.a, b: r.b, c: r.c, d: r.d, or: r.or, p: r.p, q: r.q, descriptive: !!r.descriptive, why: r.why || null, definedBy: r.definedBy ?? null, a: r.a, b: r.b, c: r.c }));
   console.log(JSON.stringify(out));
 })();
 """
@@ -234,7 +234,7 @@ VS = r"""
   K.sel.data(); await K.sel.ready;
   Object.assign(S0, STATE);
   const fam = {};
-  for (const id of AIDS) fam[id] = (K.sel.contrast(id, METHOD) || []).map((r) => ({ category: r.category, p: r.p, q: r.q, descriptive: !!r.descriptive }));
+  for (const id of AIDS) fam[id] = (K.sel.contrast(id, METHOD) || []).map((r) => ({ category: r.category, p: r.p, q: r.q, descriptive: !!r.descriptive, why: r.why || null, definedBy: r.definedBy ?? null, a: r.a, b: r.b, c: r.c }));
   console.log(JSON.stringify({ fam, features: K.sel.residueFeatures(), mixed: K.sel.contrastGroups().mixed }));
 })();
 """
@@ -272,3 +272,15 @@ def test_a_selection_of_whole_proteins_is_not_tested_pooled_against_the_other_ma
     assert out['mixed'] == 0 and out['features'] == []
     rows = [r for a in ('reg', 'fams') for r in out['fam'][a]]
     assert rows and all(r['descriptive'] and r['p'] is None for r in rows)
+
+
+def test_a_gene_list_against_the_other_marks_yields_rows_on_the_residue_questions(tmp_path):
+    # a gene list is made with no question: every residue question is compared (its shares drawn), and the reason it is
+    # not tested is that it takes whole proteins, never that it was made with the question
+    root, index, stats = _built(tmp_path)
+    out = _vs(index, {'vs': 'marks', 'q': 'GP00 GP01 GP03 GP04 GP06'}, 'fisher', ['reg', 'fams'])
+    for aid in ('reg', 'fams'):
+        rows = out['fam'][aid]
+        assert rows, aid
+        assert all(r['why'] == 'between' for r in rows), rows
+        assert all(r['a'] + r['b'] > 0 and r['a'] + r['c'] > 0 for r in rows)
