@@ -124,7 +124,7 @@
       : attrs;
     const pop = x.pop && !x.mine ? ` data-pop="${esc(JSON.stringify(x.pop))}"` : '';
     return (
-      `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${x.lead ? ' lead' : ''}${x.go ? ' go' : ''}${cls ? ' ' + cls : ''}"${tipped}${pop}><span class="fr-lab">` +
+      `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${x.lead ? ' lead' : ''}${x.go ? ' qlink' : ''}${cls ? ' ' + cls : ''}"${tipped}${pop}><span class="fr-lab">` +
       `<span>${esc(x.label)}</span>${x.badge ? `<span class="vh">, ${esc(x.badge)}</span>` : ''}${
         x.sub ? `<span class="vh">, ${esc(x.sub)}</span>` : ''
       }${x.n != null ? `<span class="vh">, n ${int(x.n)}</span>` : ''}</span>${track}` +

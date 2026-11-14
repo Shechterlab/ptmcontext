@@ -8736,11 +8736,11 @@ a.pchip:hover {
 .tile .fr-row.lead .fr-lab {
   color: var(--ink-2);
 }
-.tile .fr-row.go {
+.tile .fr-row.qlink {
   font-size: 0.8rem;
   color: var(--ink-2);
 }
-.tile .fr-row.go .fr-val {
+.tile .fr-row.qlink .fr-val {
   font-size: 0.82rem;
   font-weight: 600;
 }
@@ -9209,7 +9209,7 @@ a.btn:hover {
 .drow.pick.mine::after {
   content: 'Unselect \203A';
 }
-.fr-row.pick.go::after {
+.fr-row.pick.qlink::after {
   content: 'Open \203A';
 }
 @media (prefers-reduced-motion: reduce) {
