@@ -29,3 +29,12 @@ def cell_percent(cell: dict, kept: dict) -> dict:
             'sets': {s: [v['M'], len(v['marked'])] for s, v in k['sets'].items() if s in names},
         }
     return out
+
+
+def cell_proteome(run: dict) -> dict | None:
+    """The reviewed proteins that carry a mark over all the reviewed proteins of the snapshot, from what the run wrote
+    (run.json: the snapshot's entries and the marked proteins): the key's proteome-wide share. None where the run does
+    not say."""
+    N = (run.get('snapshot') or {}).get('entries')
+    n = (run.get('marks') or {}).get('proteins')
+    return {'N': N, 'n': n} if N and n is not None else None

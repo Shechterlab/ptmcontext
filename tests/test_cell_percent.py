@@ -47,6 +47,7 @@ def _build(tmp_path, view=None):
 def test_the_counts_are_made_at_build_time_and_equal_a_hand_count(tmp_path):
     data = _build(tmp_path)
     assert data['cell_pct'] == HAND
+    assert data['cell_proteome'] == {'N': 12, 'n': 5}  # 5 of the toy's 12 reviewed proteins carry a mark
 
 
 def test_a_site_file_may_only_name_the_two_views(tmp_path):
@@ -59,7 +60,8 @@ def test_a_site_file_may_only_name_the_two_views(tmp_path):
         S.load_site(path)
 
 
-def _run(tmp_path, data, selected, min_group=2):
+def _run(tmp_path, data, selected, min_group=2, patch=''):
+    tmp_path.mkdir(parents=True, exist_ok=True)
     dfile = tmp_path / 'd.json'
     dfile.write_text(json.dumps(data))
     sel = json.dumps(selected)
@@ -76,6 +78,7 @@ D.rows = lines.map(l => {{ const x = l.split(TAB), g = c => x[col[c]];
   return {{ analysis: g('analysis'), category: g('category'), method: g('method'), a: +g('a'), b: +g('b'), c: +g('c'), d: +g('d'), or: num(g('odds_ratio')), fold: num(g('fold_enrichment')),
     lo: num(g('odds_ratio_ci_low')), hi: num(g('odds_ratio_ci_high')), p: num(g('p')), q: num(g('q')), strata: g('n_strata') ? +g('n_strata') : null }}; }});
 const P = (a, b) => Array.from({{ length: b - a + 1 }}, (_, i) => 'P' + (a + i));
+{patch}
 const sets = {{
   map_a: {{ N: 10, in_background: P(1, 5), sets: [['nucleus', 4, P(1, 4)], ['cytosol', 3, ['P5']], ['membrane', 3, []]] }},
   map_b: {{ N: 8, in_background: P(1, 5), sets: [['nuclear', 3, P(1, 3)], ['cyto', 5, ['P4', 'P5']]] }},
@@ -92,7 +95,7 @@ eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-cell.js'))}, 'utf8
 window.PTMC_MODULES.forEach(m => m(K));
 const by = Object.fromEntries(K.cell.percent().map(p => [p.part, p]));
 const fold = Object.fromEntries(K.cell.parts().map(p => [p.part, p.value]));
-console.log(JSON.stringify({{ by, fold, answer: K.cell.answer(undefined, 'percent') }}));"""
+console.log(JSON.stringify({{ by, fold, answer: K.cell.answer(undefined, 'percent'), range: K.cell.percentRange() }}));"""
     run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
     return json.loads(run.stdout)
@@ -131,3 +134,29 @@ def test_the_fold_view_is_kept_and_says_how_many_proteins_carry_a_mark_where_it_
     out = _run(tmp_path, _build(tmp_path / 'b'), [], min_group=20)
     # fewer than 20 unmarked proteins in the part: the coverage beside, the median of the two maps (1 of 3, 2 of 5)
     assert out['fold']['cytosol'] == 'too few without one to compare (37% carry one)'
+
+
+HIGH = {
+    'map_a': {'N': 100, 'n': 96, 'sets': {'nucleus': [40, 38], 'cytosol': [30, 29], 'membrane': [30, 29]}},
+    'map_b': {'N': 80, 'n': 77, 'sets': {'nuclear': [30, 29], 'cyto': [50, 48]}},
+}
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_where_nearly_every_protein_has_a_mark_the_ramp_is_fitted_to_the_data_and_the_sentence_says_so(tmp_path):
+    out = _run(tmp_path, _build(tmp_path / 'b'), [], patch=f'D.cell_pct = {json.dumps(HIGH)};')
+    # the overall share is 96%: the ramp runs from the lowest share (38 of 40 = 95%) to 100%
+    assert out['range'] == {'lo': 0.95, 'hi': 1}
+    assert out['by']['nucleoplasm']['tone'] == 'p0'  # 95% and 97% of 40 and 30: the lowest step
+    assert out['answer'] == (
+        'Nearly every mapped protein carries a methylarginine (96%); nucleus (96%) and cytosol (96%) the fewest.'
+    )
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_the_range_option_overrides_the_default_and_a_low_share_keeps_the_full_range(tmp_path):
+    assert _run(tmp_path / 'a', _build(tmp_path / 'b'), [])['range'] == {'lo': 0, 'hi': 1}  # 50% overall
+    out = _run(
+        tmp_path / 'c', _build(tmp_path / 'd'), [], patch=f"D.cell_pct = {json.dumps(HIGH)}; D.cell.range = 'full';"
+    )
+    assert out['range'] == {'lo': 0, 'hi': 1}

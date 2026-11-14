@@ -50,7 +50,9 @@
   mark, labelled with the count ("Chromatin 97% · 412 proteins"), with the share among all proteins as a tick in the key.
   With several maps, the median is drawn and each map's value is on hover. With a selection, it shows the share of the
   compartment's proteins in the selection, the whole site's share on hover. Exports and the table carry the active view.
-  Sites choose which opens first (`website.cell.default_view`).
+  Sites choose which opens first (`website.cell.default_view`). Where the mark is on 80% or more of the mapped proteins,
+  the color range runs from the lowest compartment (rounded down to 5%) to 100%, and the key says it does not start at
+  0 (`website.cell.range`: `data` or `full`). The key also gives the share among all reviewed proteins.
 - Where the fold has too few proteins to compare, the label says which side is short and how many proteins carry a
   mark ("too few without one to compare (97% carry one)").
 - Header: "All sites" sits on the switcher's row, so the lab block and links stay above the structure drawing. The sticky bar shows the short site name.

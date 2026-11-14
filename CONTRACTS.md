@@ -233,6 +233,14 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   protein_sets.json), so the view needs no new input. Exports and the table carry the active view; the percent table has
   the columns `compartment, map, n_proteins, n_with_sites, percent` (with a selection `n_in_selection` replaces
   `n_with_sites`, and `n_with_sites, percent_with_sites` follow).
+- `range`: `data` or `full`, the percent view's colour range (the five steps are fifths of it). `full` is 0 to 100%; `data`
+  runs from the lowest share among the compartments (those of at least `website.reading.min_group` proteins), rounded
+  down to 5%, to 100%, and the key marks the scale as not starting at 0. Without it: `data` where the share among all the
+  proteins the maps place is 80% or more, else `full`. With a selection the steps are fifths of the largest share.
+  The key also gives the share among all the reviewed proteins ("63% of all reviewed proteins · 96% of mapped proteins"),
+  from the run's snapshot entries and marked proteins (`cell_proteome` in the site data; no new input). Where every
+  mapped share is 80% or more, the sentence above the map gives the overall share and the lowest compartments instead of
+  "more than half".
 
 The kit draws the cell for other pages too: `K.cell.list()` (the drawings, their parts and phone crop, the crop from
 `config/cell_drawings.json`), `K.cell.parts(scoped?)` (every part a `website.cell` row colors: its row, tone, direction

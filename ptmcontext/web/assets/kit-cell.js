@@ -62,7 +62,9 @@
             : Math.round(100 * s) >= 100 && s < 1
               ? '>99%'
               : Math.round(100 * s) + '%';
-  const pctBin = (s, mx) => (s == null || !(mx > 0) ? 0 : Math.min(4, Math.floor((5 * s) / mx)));
+  // a share's step of the ramp: fifths of the scale {lo, hi}
+  const pctBin = (s, sc) =>
+    s == null || !(sc.hi > sc.lo) ? 0 : Math.max(0, Math.min(4, Math.floor((5 * (s - sc.lo)) / (sc.hi - sc.lo))));
   // the tones of a comparison, light and dark (the explorer's): more likely (up-0 to up-3), less likely, no difference
   const TONES = {
     light: [
@@ -180,6 +182,7 @@
     '.pct-key{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .6rem;font-size:.82rem;color:var(--muted)}',
     '.pk-bar{position:relative;display:inline-flex;width:160px;height:12px;border:1px solid var(--line-strong);border-radius:2px}.pk-bar i{flex:1 1 0;height:100%;margin:0;padding:0;border:0}.pct-key .pk-bar{gap:0}',
     '.pk-bar .p0{background:var(--fig-seq-1)}.pk-bar .p1{background:var(--fig-seq-2)}.pk-bar .p2{background:var(--fig-seq-3)}.pk-bar .p3{background:var(--fig-seq-4)}.pk-bar .p4{background:var(--fig-seq-5)}',
+    '.pk-brk{width:9px;height:14px;margin:0 -.35rem 0 -.3rem;fill:none;stroke:var(--ink-2);stroke-width:1.4}',
     '.pk-ref{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink)}',
     '.pk-tick{display:inline-block;width:2px;height:12px;background:var(--ink);margin-right:.3rem}',
     '@media (max-width:700px){.cell-view button{padding:.3rem .55rem}}',
@@ -565,16 +568,46 @@
         return t && t.N ? t.n / t.N : null;
       })
     );
-  // each part's color step: the share in fifths of 100%; with a selection, in fifths of the largest share among the parts
-  // that are not the selection's own
+  // the ramp's range. website.cell.range: `full` is 0 to 100%; `data` starts at the lowest share among the parts (parts of at
+  // least min_group proteins), rounded down to 5%, so that a mark on nearly every protein still shows the parts apart. Without
+  // the option, `data` where the share among all the proteins the maps place is 80% or more, else `full`. With a selection the
+  // steps are fifths of the largest share among the parts that are not the selection's own.
+  function pctLo() {
+    const ref = pctRef(false),
+      mode = C.range || (ref != null && ref >= 0.8 ? 'data' : 'full');
+    if (mode !== 'data') return 0;
+    const v = [];
+    for (const L of [LAYERS.part, LAYERS.region])
+      L.groups.forEach(([, rows]) =>
+        rows.forEach((row) =>
+          L.cols.forEach((aid) => {
+            const c = pctCell(aid, row.map[aid], false);
+            if (c && c.M >= READ.min_group) v.push(c.share);
+          })
+        )
+      );
+    return v.length ? Math.min(0.95, Math.floor(Math.min(...v) * 20 + 1e-9) / 20) : 0;
+  }
+  const pctRange = (scoped, shares) => (scoped ? { lo: 0, hi: Math.max(0, ...shares) } : { lo: pctLo(), hi: 1 });
   function pctScale(P, within, scoped) {
     const list = Object.values(P),
-      mx = scoped ? Math.max(0, ...list.filter((p) => !p.selected && p.share != null).map((p) => p.share)) : 1;
+      range = pctRange(
+        scoped,
+        list.filter((p) => !p.selected && p.share != null).map((p) => p.share)
+      );
     list.forEach((p) => {
-      p.tone = p.selected ? 'sel' : p.share == null ? 'na' : 'p' + pctBin(p.share, mx);
+      p.tone = p.selected ? 'sel' : p.share == null ? 'na' : 'p' + pctBin(p.share, range);
     });
-    return { P, within, view: 'percent', scale: mx, ref: pctRef(scoped) };
+    return { P, within, view: 'percent', range, ref: pctRef(scoped) };
   }
+  // the share of the reviewed proteins that carry a mark (the snapshot's entries, from the run), where the run says
+  const pctProteome = () => (D.cell_proteome ? D.cell_proteome.n / D.cell_proteome.N : null);
+  const pctRefWords = (scoped, ref) =>
+    scoped
+      ? `${pctText(ref)} of mapped proteins are in the selection`
+      : pctProteome() != null
+        ? `${pctText(pctProteome())} of all reviewed proteins · ${pctText(ref)} of mapped proteins`
+        : `${pctText(ref)} of mapped proteins`;
   const pctBy = (scoped) =>
     scoped
       ? 'the share of each part’s proteins that are in the selection'
@@ -1427,12 +1460,12 @@
 
   // ---- the grids: rows of a layer against its maps ---------------------------------------------------------------------
   // a grid cell in the percent view: the share, its step of the ramp, and its counts on hover
-  function pctGridCell(aid, cat, scoped, mx) {
+  function pctGridCell(aid, cat, scoped, sc) {
     const c = pctCell(aid, cat, scoped);
     if (!c) return null;
     const ds = DS(aid),
       head = `<b>${esc(ds.name)}</b>${ds.method ? ` (${esc(ds.method)}${ds.cells ? ', ' + esc(ds.cells) : ''})` : ''}: ${esc(label(aid, cat))}<br>`,
-      bin = pctBin(c.share, mx);
+      bin = pctBin(c.share, sc);
     return {
       circular: false,
       selected: c.selected,
@@ -1453,21 +1486,20 @@
       RH = 24,
       HH = 46,
       Wd = LW + cols.length * CW + 8;
-    // with a selection, the percent view's steps are fifths of the largest share in the grid
-    const gmx =
-      pctOn() && scoped
-        ? Math.max(
-            0,
-            ...L.groups.flatMap(([, rows]) =>
-              rows.flatMap((row) =>
-                cols
-                  .map((aid) => pctCell(aid, row.map[aid], true))
-                  .filter((c) => c && !c.selected)
-                  .map((c) => c.share)
-              )
+    // the percent view's steps: fifths of its range (with a selection, of the largest share in the grid)
+    const gsc = pctOn()
+      ? pctRange(
+          scoped,
+          L.groups.flatMap(([, rows]) =>
+            rows.flatMap((row) =>
+              cols
+                .map((aid) => pctCell(aid, row.map[aid], true))
+                .filter((c) => c && !c.selected)
+                .map((c) => c.share)
             )
           )
-        : 1;
+        )
+      : null;
     let y = HH + 4,
       g = '';
     cols.forEach((aid, i) => {
@@ -1490,7 +1522,7 @@
           )}"><rect class="cg-hit" ` +
           `x="0" y="${y}" width="${Wd}" height="${RH}"/><text class="cg-r" x="10" y="${y + 16}">${esc(row.label)}</text>`;
         cols.forEach((aid, i) => {
-          const c = pctOn() ? pctGridCell(aid, row.map[aid], scoped, gmx) : gridCell(aid, row.map[aid], scoped),
+          const c = pctOn() ? pctGridCell(aid, row.map[aid], scoped, gsc) : gridCell(aid, row.map[aid], scoped),
             x = LW + i * CW + 4;
           if (!c) {
             g += `<rect class="cg-c na" x="${x}" y="${y + 2}" width="${CW - 8}" height="${RH - 4}" rx="3"/>`;
@@ -1845,7 +1877,10 @@
     pctOn()
       ? `Blue: the share of a part's proteins ${scopedNow() ? 'that are in your selection' : `with at least one ${W.mark}`}, darker for a larger share${
           scopedNow() ? ' (the steps are fifths of the largest share)' : ''
-        }. Tick: the share among all the proteins the maps place. Dashed outline: no map measures it.`
+        }.${(() => {
+          const r = parts(scopedNow(), 'percent').range;
+          return r.lo > 0 ? ` The scale starts at ${pctText(r.lo)}, not 0.` : '';
+        })()} Tick: the share among all the proteins the maps place. Dashed outline: no map measures it.`
       : `Red: ${who(scopedNow())} are more likely to be found there than ${alike}. Slate: less ` +
         `likely, deeper for larger folds. Gray: no difference, the maps disagree, fewer than ${READ.min_maps} maps ` +
         `agree, or too few proteins. Dashed outline: no map measures it.`;
@@ -2094,6 +2129,8 @@
     // the one-line answer as the tile shows it (html)
     // the share of each part's proteins with a mark (in the selection): [{ part, row, tone, share, n, whole, value, maps }]
     percent: pctValues,
+    // the percent view's ramp: { lo, hi } as shares
+    percentRange: (scoped = scopedNow()) => parts(scoped, 'percent').range,
     answer: (scoped = scopedNow(), view = 'fold') => {
       const { regs, up } = summaries(scoped, 'fold');
       return cellAnswer(regs, up, scoped, view);
@@ -2277,6 +2314,14 @@
     }
     if (rows.length === 1)
       return `${cap(inText(rows[0].row))}: ${pctText(rows[0].share)} of its proteins have a ${W.mark}.`;
+
+    // a mark on 80% or more of the mapped proteins: the overall share, and the parts that fall furthest below it
+    const ref = pctRef(false);
+    if (ref != null && ref >= 0.8)
+      return (
+        `${ref >= 0.95 ? 'Nearly every mapped protein carries' : 'Most mapped proteins carry'} ${/^[aeiou]/i.test(W.mark) ? 'an' : 'a'} ` +
+        `${W.mark} (${pctText(ref)}); ${and(rows.slice(-2).reverse().map(it))} the fewest.`
+      );
     const n = rows.length,
       above = rows.filter((p) => p.share > 0.5).length,
       lead =
@@ -2858,13 +2903,11 @@
   // the percent view's key: the five steps of the ramp with their range, the reference tick, and what is not measured
   const pctLegend = () => {
     const scoped = scopedNow(),
-      { scale, ref } = parts(scoped, 'percent'),
-      mx = scoped ? scale : 1;
+      { range, ref } = parts(scoped, 'percent'),
+      at = (i) => pctText(range.lo + (i * (range.hi - range.lo)) / 5);
     return [
-      ...SEQ.light.map((c, i) => [c, c, `${pctText((i * mx) / 5)}–${pctText(((i + 1) * mx) / 5)}`]),
-      ...(ref != null
-        ? [['', '#111827', `${pctText(ref)} of all proteins${scoped ? ' are in the selection' : ''}`, 'tick']]
-        : []),
+      ...SEQ.light.map((c, i) => [c, c, `${at(i)}–${at(i + 1)}`]),
+      ...(ref != null ? [['', '#111827', pctRefWords(scoped, ref), 'tick']] : []),
       ['#ffffff', '#8a96a0', 'not measured'],
       ...(hasSel() ? [['#ffffff', '#111827', 'outlined: your selection']] : []),
     ];
@@ -2887,20 +2930,25 @@
   };
   // the same on the page: a ramp bar with the ends of its scale and a tick at the share among all the proteins the maps place
   function pctKey(scoped) {
-    const { scale, ref } = parts(scoped, 'percent'),
-      mx = scoped ? scale : 1,
-      at = ref != null && mx > 0 ? Math.min(100, (100 * ref) / mx) : null;
+    const { range, ref } = parts(scoped, 'percent'),
+      cut = range.lo > 0,
+      at =
+        ref != null && range.hi > range.lo
+          ? Math.min(100, Math.max(0, (100 * (ref - range.lo)) / (range.hi - range.lo)))
+          : null;
     return (
       `<div class="key cell-keys pct-key" role="group" aria-label="Color key"><span>${
         scoped ? 'Share of a part’s proteins in your selection' : `Share of a part’s proteins with a ${esc(W.mark)}`
-      }</span><span class="pk-lo">0%</span><span class="pk-bar" role="img" aria-label="${
-        scoped ? 'darker is a larger share' : 'from 0% to 100%, darker is a larger share'
+      }</span><span class="pk-lo">${pctText(range.lo)}</span>${
+        cut ? '<svg class="pk-brk" viewBox="0 0 10 14" aria-hidden="true"><path d="M2,0 L8,5 L2,9 L8,14"/></svg>' : ''
+      }<span class="pk-bar" role="img" aria-label="${
+        scoped
+          ? 'darker is a larger share'
+          : `from ${pctText(range.lo)} to ${pctText(range.hi)}, darker is a larger share${cut ? '; the scale does not start at 0' : ''}`
       }">${[0, 1, 2, 3, 4].map((i) => `<i class="p${i}"></i>`).join('')}${
         at != null ? `<b class="pk-ref" style="left:${at.toFixed(1)}%"></b>` : ''
-      }</span><span class="pk-hi">${pctText(mx)}</span>` +
-      (ref != null
-        ? `<span class="cell-key"><i class="pk-tick"></i>${esc(pctText(ref))} of all proteins${scoped ? ' are in the selection' : ''}</span>`
-        : '') +
+      }</span><span class="pk-hi">${pctText(range.hi)}</span>` +
+      (ref != null ? `<span class="cell-key"><i class="pk-tick"></i>${esc(pctRefWords(scoped, ref))}</span>` : '') +
       `<span class="cell-key"><i class="cg-k na"></i> not measured</span>${
         hasSel() ? '<span class="cell-key"><i class="cg-k sel"></i> outlined: your selection</span>' : ''
       }</div>`
