@@ -2046,7 +2046,7 @@
       pickerHtml() +
       controls(res) +
       `<div id="ov-fig" class="ov-figwrap"></div>` +
-      `<div class="exp-row">${K.expBar(['svg', 'png', 'tsv'], 'ovexp', 'the overlap figure', '').replace(/<\/div>$/, '<button type="button" class="exp-btn" data-ovexp="png-paper" title="PNG for a journal column: 180 mm wide at 300 dpi">PNG, 180 mm</button><button type="button" class="exp-btn" data-ovexp="svg-paper" title="SVG for a journal column: 180 mm wide">SVG, 180 mm</button></div>')}</div>` +
+      `<div class="exp-row">${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'ovexp', 'the overlap figure')}</div>` +
       regionHtml(res) +
       '<h3>Table</h3>' +
       tableHtml(res)
@@ -2060,10 +2060,9 @@
       .map((src) => `${src.title}: ${src.cite.join('; ')}.`)
       .join(' ');
   // ---- export ----------------------------------------------------------------------------------------------------------------
-  // preset: screen (960 units wide) or paper (680 units = 180 mm, 300 dpi)
-  function figure(preset = 'screen') {
-    const paper = preset === 'paper',
-      W_ = paper ? 680 : 960,
+  // laid out at the width of the size chosen in the Download menu (K.exp): 960 units at Screen, 680 (180 mm) at Paper
+  function figure() {
+    const W_ = K.exp.width(960),
       res = RES.res,
       b = exportBody(res, W_ - 40),
       cite = citeFor(res.ts.map((t) => t.id));
@@ -2079,14 +2078,6 @@
         .join(' '),
       extra: { terms: S.ot, unit: res.unit },
     });
-    if (paper) {
-      f.mm = 180;
-      f.dpi = 300;
-      f.svg = f.svg.replace(
-        `width="${W_}" height="${f.H}"`,
-        `width="180mm" height="${((f.H / W_) * 180).toFixed(1)}mm"`
-      );
-    }
     return f;
   }
   function tsv(res = RES.res) {
@@ -2207,17 +2198,7 @@
     ],
     [
       '[data-ovexp]',
-      (btn) => {
-        const k = btn.dataset.ovexp,
-          paper = k.endsWith('-paper');
-        K.exportFigure(
-          paper ? k.replace('-paper', '') : k,
-          () => figure(paper ? 'paper' : 'screen'),
-          `${D.site.id || 'site'}_overlap${paper ? '_paper' : ''}`,
-          btn,
-          () => tsv()
-        );
-      },
+      (btn) => K.exportFigure(btn.dataset.ovexp, figure, `${D.site.id || 'site'}_overlap`, btn, () => tsv()),
     ],
     ['[data-ov-compare]', (el) => K.go('overlap', { ot: [el.dataset.ovCompare], ou: 'proteins', or: '' })]
   );

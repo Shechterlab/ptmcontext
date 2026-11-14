@@ -48,6 +48,7 @@ DEFAULT_BAND = ['#374151', '#111827']
 # before the rail, search, selection views and pages that read K.sel; kit-tabfig.js before the pages that export tables; kit-tile.js
 # before kit.js, which draws the tiles), and kit.js, last, runs them all. Add a module after the ones it reads, one per line.
 MODULES = (
+    'kit-export.js',
     'kit-busy.js',
     'kit-papers.js',
     'kit-cols.js',
@@ -602,6 +603,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'legacy_links': web.get('legacy_links') or {},
         'legacy_routes': web.get('legacy_routes') or {},
         'tabs': web.get('tabs') or {},
+        'export': web.get('export') or {},
         'search_aliases': web.get('search_aliases') or {},
         'legacy_params': web.get('legacy_params') or {},
         'dataset': web.get('dataset'),

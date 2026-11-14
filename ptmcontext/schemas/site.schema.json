@@ -2201,6 +2201,103 @@
         "doi": {
           "type": "string"
         },
+        "export": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "the Download menu of every figure and printable page (kit-export.js): which formats it offers, their words, the figure sizes and the page's PDF. Everything is optional; without this block the menu offers PDF, SVG, PNG and TSV at two sizes, Screen and Paper (180 mm)",
+          "properties": {
+            "formats": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "description": "the formats a figure's menu may offer, in this order (a figure offers those of them it can make; csv is the TSV's rows as comma-separated). Default pdf, svg, png, tsv",
+              "items": {
+                "enum": [
+                  "pdf",
+                  "svg",
+                  "png",
+                  "tsv",
+                  "csv"
+                ]
+              }
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the menu's words for a format (default PDF, SVG, PNG, Data (TSV), Data (CSV))",
+              "properties": {
+                "pdf": {
+                  "type": "string"
+                },
+                "svg": {
+                  "type": "string"
+                },
+                "png": {
+                  "type": "string"
+                },
+                "tsv": {
+                  "type": "string"
+                },
+                "csv": {
+                  "type": "string"
+                }
+              }
+            },
+            "presets": {
+              "type": "array",
+              "minItems": 1,
+              "description": "the figure sizes the reader chooses between (replaces the default two). A size with `mm` prints that wide: the SVG and the PDF page are that many millimeters across and the PNG is `dpi` dots per inch; a figure that lays itself out again (the network, the overlap figure, the protein map) does so at `width` units",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "label"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_-]*$"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "mm": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "the printed width in millimeters; without it the size is the screen's"
+                  },
+                  "width": {
+                    "type": "number",
+                    "minimum": 300,
+                    "description": "the width in units a figure lays itself out at (default 960 on screen, 680 for a print size)"
+                  },
+                  "dpi": {
+                    "type": "integer",
+                    "minimum": 72,
+                    "description": "the PNG's resolution at a print size (default 300)"
+                  }
+                }
+              }
+            },
+            "default_preset": {
+              "type": "string",
+              "description": "the id of the size used until the reader chooses (the first one without it)"
+            },
+            "page_pdf": {
+              "type": "boolean",
+              "description": "false leaves out the page menu (PDF of this page, Print this page) of the protein pages, the Overview, the Method page and the pages of website.pages (default true)"
+            },
+            "pages": {
+              "type": "array",
+              "uniqueItems": true,
+              "description": "the views that get the page menu at the top right of the page (default overview, method); a protein page and a website page always have it in their heading",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
         "fonts": {
           "type": "object",
           "additionalProperties": false,
@@ -2482,7 +2579,6 @@
                   "top",
                   "minc",
                   "sources",
-                  "preset",
                   "claim"
                 ]
               }

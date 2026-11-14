@@ -1526,7 +1526,7 @@
       .map(([b, t]) => `<div class="fact"><b>${b}</b><span>${esc(t)}</span></div>`)
       .join('')}</div>`;
   }
-  // the head of a protein's page: its names, function (UniProt, live), links, the PDF and Print buttons
+  // the head of a protein's page: its names, function (UniProt, live), links, and its Download menu (PDF of the page, Print)
   const protHead = (p, light) =>
     `<div class="prot-head"><h2>${esc(p.gene || p.acc)} <small>${esc(p.name)}</small></h2>` +
     (`<p class="aliases" id="aliases">${
@@ -1542,10 +1542,9 @@
       `▾</button><span class="menu" id="more-menu"${PV.more ? '' : ' hidden'}>${LINKS(p.acc)
         .map(([t, u]) => `<a href="${esc(u)}" target="_blank" ` + `rel="noopener">${esc(t)} ↗</a>`)
         .join('')}</span></span>`) +
-    (`${
-      light ? '' : '<button type="button" class="btn small accent" data-page-pdf>Download PDF</button>'
-    }<button type="button" ` +
-      `class="btn small" data-print>Print</button></div></div><div id="drift" class="drift" hidden></div>`);
+    `${
+      light ? '<button type="button" class="btn small" data-xm-page-act="print">Print</button>' : K.exp.pageMenu()
+    }</div></div><div id="drift" class="drift" hidden></div>`;
 
   // ---- a protein with only marks shown and counted nowhere (K.shown): its map, those marks with their tag, its
   // sequence and 3D; nothing of it is counted, so it has no counts, questions or kinds -------------------------------
@@ -2347,6 +2346,10 @@
     render: proteinView,
     after: proteinAfter,
     tab: 'proteins',
+    pdfName: () => {
+      const p = byAcc[PV.acc];
+      return p && { title: `${p.gene || p.acc} (${p.acc})`, file: `${D.site.id}_${p.gene || p.acc}_${p.acc}.pdf` };
+    },
     title: (arg) => {
       const [a, at] = String(arg).split('/'),
         p = byAcc[a] || (PV.lightP?.acc === a ? PV.lightP : null);
@@ -2520,21 +2523,6 @@
       },
     ],
     [
-      '[data-page-pdf]',
-      (el) => {
-        const p = byAcc[PV.acc];
-        document.querySelectorAll('details.pgroup, details.pfold').forEach((d) => {
-          d.open = true;
-        });
-        K.pagePdf?.(
-          document.getElementById('view'),
-          `${p.gene || p.acc} (${p.acc})`,
-          `${D.site.id}_${p.gene || p.acc}_${p.acc}.pdf`,
-          el
-        );
-      },
-    ],
-    [
       '#site-card [data-cexp]',
       (el) => {
         const card = document.getElementById('site-card'),
@@ -2578,23 +2566,6 @@
         document.querySelector('.fn-text')?.classList.toggle('open', PV.fn);
         const b = document.querySelector('[data-fn-more]');
         if (b) b.textContent = PV.fn ? 'Less' : 'More';
-      },
-    ],
-    [
-      '[data-print]',
-      () => {
-        // printed in light colors, every section open, with the page's address and how to cite it at the foot
-        document.querySelectorAll('details.pgroup, details.pfold').forEach((d) => {
-          d.open = true;
-        });
-        const theme = document.documentElement.dataset.theme;
-        document.documentElement.dataset.theme = 'light';
-        document.body.dataset.printFoot = `${D.site.name} · ${location.href} · printed ${K.hdate(new Date().toISOString())}. ${K.creditLines()[0] || ''}`;
-        setTimeout(() => {
-          print();
-          if (theme) document.documentElement.dataset.theme = theme;
-          else delete document.documentElement.dataset.theme;
-        }, 150);
       },
     ],
     [

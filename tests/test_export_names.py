@@ -44,6 +44,11 @@ def test_tables_without_an_export_get_one_and_the_interactions_pdf_downloads():
         (ASSETS / n).read_text() for n in ('kit-tabfig.js', 'kit-interactions.js', 'kit.js', 'kit-conserve.js')
     ]
     assert 'data-tblx' in tf and 'domTsv' in tf and 'svg.minimap' in tf
-    assert 'K.pagePdf(' in ix and '() => print()' not in ix
+    # the page's PDF is the shared page menu's (kit-export.js), which draws it through K.pagePdf
+    assert (
+        'K.exp.pageMenu()' in ix
+        and 'K.pagePdf?.(' in (ASSETS / 'kit-export.js').read_text()
+        and '() => print()' not in ix
+    )
     assert 'K.stem(name)' in kit
     assert "st?.phase === 'ok' ? K.expBar(" in cons

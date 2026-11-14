@@ -66,7 +66,6 @@
     hi: -1,
     find: '',
     pin: null,
-    preset: 'screen',
     claim: '',
     zc: -1,
     more: false,
@@ -560,7 +559,7 @@
       .join('')}</select></label>`;
   const claimOf = (n) => String(NC.claim || `The proteins with ${W.marks} form {n} clusters`).replace('{n}', n);
   // every control by id; the site file's `controls` lists the ones in the main row, the rest are under "More options"
-  const CONTROL_ORDER = ['clusters', 'colour', 'find', 'label', 'score', 'top', 'minc', 'sources', 'preset', 'claim'];
+  const CONTROL_ORDER = ['clusters', 'colour', 'find', 'label', 'score', 'top', 'minc', 'sources', 'claim'];
   const controls = (CL) => {
     const counts = [];
     for (let v = CR[0]; v <= CR[1]; v += Math.max(1, CR[2])) counts.push([v, v]);
@@ -606,16 +605,6 @@
           (s, i) =>
             `<label class="nw-kg nw-src"><input type="checkbox" data-nw-src="${i}"${UI.src.includes(i) ? ' checked' : ''} aria-label="Use ${esc(s.label)}"><span>${esc(s.label)}${s.kind === 'pairs' ? ` (score ${UI.score / 1000} or more)` : ''}</span></label>`
         ).join('')}</fieldset>`,
-      preset: () =>
-        sel(
-          'preset',
-          'Export size',
-          [
-            ['screen', 'Slide (960 wide)'],
-            ['paper', 'Paper (180 mm, 300 dpi)'],
-          ],
-          UI.preset
-        ),
       claim: () =>
         `<label class="nw-f nw-claim"><span>Export title</span><input type="text" data-nw-claim value="${esc(UI.claim)}" placeholder="${esc(claimOf(CL ? CL.nShown : 'N'))}" aria-label="Title of the exported figure"></label>`,
     };
@@ -631,7 +620,7 @@
         ? `<button type="button" class="btn small" data-nw-zoom="-1" aria-label="Zoom out"${UI.zoom <= 1 ? ' disabled' : ''}>−</button><button type="button" class="btn small" data-nw-zoom="1" aria-label="Zoom in"${UI.zoom >= 3 ? ' disabled' : ''}>+</button>`
         : '') +
       `<button type="button" class="btn small" data-nw-reset>Reset</button>` +
-      `${K.expBar(['svg', 'png', 'tsv'], 'nwexp', 'the network')}</div></div>` +
+      `${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'nwexp', 'the network')}</div></div>` +
       `<details class="nw-more"${UI.more ? ' open' : ''}><summary>More options</summary><div class="nw-bar" role="group" aria-label="More network options">${html(rest)}</div></details>`
     );
   };
@@ -810,25 +799,23 @@
     );
   }
   // ---- exports ----------------------------------------------------------------------------------------------------------------
-  // the figure in the style guide's frame: a title that is a claim, one sentence, a key, the drawing, a caption and the credit.
-  // 'screen' is 960 units wide (slides), 'paper' 680 units drawn at 180 mm, where 1 unit is 0.75 pt; the drawing is laid out
-  // again at that width, with type at the guide's sizes, never scaled down. No hash, file name or address in the frame.
-  const FX = { ink: '#111827', ink2: '#374151', muted: '#5f6f78', line: '#e0e8eb' };
+  // the figure in the style guide's frame (K.figureFrame: title, subtitle, key, drawing, caption, credit). The size is the one chosen
+  // in the Download menu (K.exp): 'screen' is 960 units wide (slides), a print size 680 units drawn at its width in mm, where 1 unit
+  // is 0.75 pt at 180 mm; the drawing is laid out again at that width, with type at the guide's sizes, never scaled down.
   const SIZES = {
     screen: { W: 960, P: 24, title: 20, sub: 13, direct: 13, gene: 11, key: 12, cap: 11.5, credit: 10 },
     paper: { W: 680, P: 16, title: 13.33, sub: 10.67, direct: 9.33, gene: 8, key: 8.67, cap: 8.67, credit: 8 },
   };
+  const FX = { muted: '#5f6f78' };
   function figure() {
     const M = model(),
       CL = clusters(M),
-      Z = SIZES[UI.preset] || SIZES.screen,
-      paper = UI.preset === 'paper',
-      Wd = Z.W,
+      Z = K.exp.paper() ? SIZES.paper : SIZES.screen,
+      Wd = K.exp.width(Z.W),
       P = Z.P,
       drawW = Wd - 2 * P,
       sp = colourSpec(M),
       WSL = 1.18,
-      FF = K.FF,
       view = viewOf(M);
     const pos = K.netlayout.positions(view, 'desktop', UI.minc, maxShown());
     let L = K.netlayout.finish(view, pos, 'desktop');
@@ -837,48 +824,26 @@
       L = K.netlayout.finish(view, pos, 'desktop', Math.max(Z.direct / s, Z.gene / s + 1.5), Z.gene / s);
     }
     const s = drawW / L.w,
-      fig = svgOf(M, CL, L, true),
-      parts = [],
-      T = (x, y, t, size, o = {}) =>
-        parts.push(
-          `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${size}"${o.weight ? ` font-weight="${o.weight}"` : ''}${o.anchor ? ` text-anchor="${o.anchor}"` : ''} fill="${o.fill || FX.ink}">${esc(t)}</text>`
-        );
-    const wrapT = (t, size, weight) => K.wrap(t, drawW / WSL, size, weight, FF);
+      fig = svgOf(M, CL, L, true);
     const title = (UI.claim || '').trim() || claimOf(CL.nShown);
-    let y = P;
-    wrapT(title, Z.title, 'bold')
-      .slice(0, 2)
-      .forEach((t) => {
-        y += Z.title * 1.15;
-        T(P, y, t, Z.title, { weight: 'bold' });
-      });
     const top = K.sel?.active() ? 'The selected proteins' : `The ${int(UI.top)} proteins with the most ${W.marks}`,
       p = SRC.find((x) => x.kind === 'pairs'),
       g = SRC.filter((x) => x.kind === 'groups'),
       sub = `${top}, joined by ${p ? `${p.label} (score ${UI.score / 1000} or more)` : sourceNames()}${g.length ? ` and ${g.map((x) => x.label).join(' and ')}` : ''}; the area of a node follows its number of ${W.marks}.`;
-    y += 4;
-    wrapT(sub, Z.sub, 400).forEach((t) => {
-      y += Z.sub * 1.3;
-      T(P, y, t, Z.sub, { fill: FX.muted });
-    });
-    if (K.sel?.active() && K.sel.summary)
-      wrapT(`Selection: ${K.sel.summary()}.`, Z.sub, 400)
-        .slice(0, 2)
-        .forEach((t) => {
-          y += Z.sub * 1.3;
-          T(P, y, t, Z.sub, { fill: FX.muted });
-        });
-    // the key: one row that wraps, with the marks themselves
-    y += Z.key * 1.4;
-    let kx = P;
+    // the key: one row that wraps, with the marks themselves (drawn here, since they are marks, not the frame's circles)
+    const kp = [];
+    let ky = Z.key * 1.4,
+      kx = P;
     const kw = (t) => K.tw(t, Z.key) * WSL;
     const keyItem = (w, draw, label) => {
       if (kx > P && kx + w + 6 + kw(label) > Wd - P) {
         kx = P;
-        y += Z.key * 1.6;
+        ky += Z.key * 1.6;
       }
-      parts.push(`<g transform="translate(${kx.toFixed(1)},${(y - Z.key * 0.35).toFixed(1)})">${draw}</g>`);
-      T(kx + w + 5, y, label, Z.key, { fill: FX.muted });
+      kp.push(
+        `<g transform="translate(${kx.toFixed(1)},${(ky - Z.key * 0.35).toFixed(1)})">${draw}</g>`,
+        `<text x="${(kx + w + 5).toFixed(1)}" y="${ky.toFixed(1)}" font-size="${Z.key}" fill="${FX.muted}">${esc(label)}</text>`
+      );
       kx += w + 5 + kw(label) + 16;
     };
     const rs = [5, 20, 40].map((v) => Math.min(9, 2.6 + 0.95 * Math.sqrt(v)) * s);
@@ -909,63 +874,28 @@
         `${sp.name}: 0% to 100%`
       );
     else if (sp) keyItem(0, '', `${sp.name}: ${(NC.color_by.find((c) => c.id === sp.id)?.cats || []).join(' · ')}`);
-    y += 10;
-    const bodyY = y;
-    parts.push(`<g transform="translate(${P},${bodyY}) scale(${s.toFixed(5)})">${fig.svg}</g>`);
-    y = bodyY + L.h * s + 12;
     // the caption: the method in a sentence, in the reader's words
     const lab = NC.labels[UI.label] || NC.labels[0] || {},
       cap = `${sourceNames()}${p ? `; scores of ${UI.score / 1000} or more` : ''}. Clusters are Louvain communities${UI.clusters ? `, with the resolution chosen to give about ${UI.clusters}` : ''}; each is named by the ${lab.label || 'annotation'} term of smallest q (hypergeometric test, Benjamini–Hochberg q ≤ ${OPT.max_q}), shortened on the figure. ${CL.nOther ? `${int(CL.nOther)} smaller clusters (${int(CL.protsOther)} proteins) are grey at the bottom. ` : ''}${lab.cite ? lab.cite + '. ' : ''}`;
-    wrapT(cap, Z.cap, 400)
-      .slice(0, 5)
-      .forEach((t) => {
-        y += Z.cap * 1.3;
-        T(P, y, t, Z.cap, { fill: FX.ink2 });
-      });
-    // the credit strip, in a group that can be cropped
-    y += 8;
-    const credit = [];
-    const CIT = K.CIT || {};
-    if (CIT.preferred)
-      credit.push(`Cite: ${CIT.preferred.text}${CIT.preferred.doi ? ' doi:' + CIT.preferred.doi : ''}`);
-    if ((CIT.references || []).length)
-      credit.push('Data: ' + CIT.references.map((r) => r.short + (r.doi ? ' doi:' + r.doi : '')).join('; '));
-    credit.push(
-      `${D.site.name}, version ${CIT.version || '–'}${CIT.date ? ' (' + K.hdate(CIT.date) + ')' : ''} · ptmcontext ${D.kit.version}${D.run?.snapshot?.release ? ' · ' + D.run.snapshot.release : ''}`
-    );
-    credit.push(
-      `Exported ${K.hdate(new Date().toISOString())}${CIT.licence ? ' · license ' + K.hlicence(CIT.licence) : ''}`
-    );
-    const cg = [`<line x1="${P}" x2="${Wd - P}" y1="${y}" y2="${y}" stroke="${FX.line}" stroke-width="0.75"/>`];
-    y += 4;
-    credit.forEach((ln) =>
-      K.wrap(ln, drawW / WSL, Z.credit).forEach((t) => {
-        y += Z.credit * 1.3;
-        cg.push(`<text x="${P}" y="${y.toFixed(1)}" font-size="${Z.credit}" fill="${FX.muted}">${esc(t)}</text>`);
-      })
-    );
-    parts.push(`<g id="credit">${cg.join('')}</g>`);
-    const H = Math.ceil(y + P),
-      desc = `${title}. ${sub} ${cap}`.replace(/\s+/g, ' '),
-      meta = JSON.stringify(
-        K.provenance({
-          figure: title,
-          view: 'network',
-          preset: UI.preset,
-          min_score: UI.score / 1000,
-          top: UI.top,
-          clusters: UI.clusters || 'auto',
-          selection: K.sel?.active() ? K.sel.describe() : '',
-        })
-      );
-    const size = paper ? ` width="180mm" height="${((H * 180) / Wd).toFixed(1)}mm"` : ` width="${Wd}" height="${H}"`;
-    const svg =
-      `<svg xmlns="http://www.w3.org/2000/svg"${size} viewBox="0 0 ${Wd} ${H}" font-family="${FF}">` +
-      `<title>${esc(title)}</title><desc>${esc(desc)}</desc><metadata id="ptmcontext-provenance">${esc(meta)}</metadata>` +
-      `<rect width="${Wd}" height="${H}" fill="#ffffff"/>${parts.join('')}</svg>`;
-    return paper
-      ? { svg, W: Wd, H, title, desc, meta, mm: 180, dpi: 300 }
-      : { svg, W: Wd, H, title, desc, meta, dpi: 192 };
+
+    return K.figureFrame({
+      title,
+      sub,
+      keySvg: kp.join(''),
+      keyH: ky + 10,
+      body: `<g transform="translate(${P},0) scale(${s.toFixed(5)})">${fig.svg}</g>`,
+      bodyH: L.h * s - 2,
+      note: cap,
+      W: Wd,
+      type: Z,
+      extra: {
+        view: 'network',
+        min_score: UI.score / 1000,
+        top: UI.top,
+        clusters: UI.clusters || 'auto',
+        selection: K.sel?.active() ? K.sel.describe() : '',
+      },
+    });
   }
   function tsv() {
     const M = model(),
@@ -1157,10 +1087,7 @@
     if (k === 'colour') UI.colour = t.value;
     else if (k === 'label') UI.label = +t.value;
     else if (k === 'clusters') UI.clusters = t.value === 'auto' ? null : +t.value;
-    else if (k === 'preset') {
-      UI.preset = t.value;
-      return K.render();
-    } else if (k === 'minc') {
+    else if (k === 'minc') {
       UI.minc = +t.value;
       UI.zc = -1;
       save();
@@ -1501,7 +1428,7 @@
         K.exportFigure(
           btn.dataset.nwexp,
           figure,
-          `${D.site.id}_network${K.sel?.active() ? '_selection' : ''}${UI.preset === 'paper' ? '_paper' : ''}`,
+          `${D.site.id}_network${K.sel?.active() ? '_selection' : ''}`,
           btn,
           tsv
         ),

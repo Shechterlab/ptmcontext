@@ -552,8 +552,9 @@ grey live UniProt row of other modifications: glycosylation, lipidation, cross-l
 **The order of the map's rows.** The Rows menu lists the rows with a handle: drag it, or focus it and press the up and
 down arrow keys (the arrow buttons do the same); "Reset order" restores the default. The order is kept in the browser and
 in the address as `rows=<id>,<id>,...` (only when it is not the default), so a link keeps it, and the PDF, SVG and PNG
-exports draw the rows in it. The exports' sizes are the screen layout, a single column (85 mm), a double column (180 mm) or
-a custom width in millimeters; the text is laid out to print at no less than 6 pt, with the key and the citation.
+exports draw the rows in it. The exports' sizes are those of the Download menu (`website.export`), or, on the map's own menu, a
+single column (85 mm), a double column (180 mm) or a custom width in millimeters; the text is laid out to print at no less than
+6 pt, with the key and the citation. A size chosen in the Download menu replaces the map's own.
 
 **Map hovers.** `website.protein.map.hover` sets what the hovers of the protein map say; the rest is on the pinned card
 (a click on a context mark) and the site card (a click on a site). `site` lists the fields of a site's hover, in order:
@@ -1033,7 +1034,7 @@ tables the site's `inputs:` roles name; nothing is asked of a service.
 | `claim` | the exported figure's title, with `{n}` for the number of clusters |
 | `protein_preview` | `true` (default, with `protein_link`): under the button a small drawing, in the figure's own style, of the protein with its partners in its cluster (15 at most, most sites first) and the links among them, the cluster's name beside it in its colour; clicking it opens the network as the button does. It is made when it scrolls into view from `data/network.json` (read once, about 40 KB), so a protein the default view does not draw has a line saying so instead. The link carries the selection and filters in the address (`f=`, `q=`) with `p=`, so the network shows that selection |
 | Find genes | the box takes a pasted list (commas, spaces, semicolons or line breaks; symbols or accessions): every gene in the network is ringed and named, a line says "n of m found" and lists those the network does not hold, and a button makes the list the selection (`K.netcore.findGenes`) |
-| `lead`, `controls` | the one line under the heading (default: the first sentence of `about`; the whole of it is under "Method"), and the controls of the main row (`label`, `clusters`, `colour`, `find`, `score`, `top`, `minc`, `sources`, `preset`, `claim`; default `clusters`, `colour`, `find`); the rest are under More options, closed, all of them on a phone |
+| `lead`, `controls` | the one line under the heading (default: the first sentence of `about`; the whole of it is under "Method"), and the controls of the main row (`label`, `clusters`, `colour`, `find`, `score`, `top`, `minc`, `sources`, `claim`; default `clusters`, `colour`, `find`); the rest are under More options, closed, all of them on a phone |
 | `protein_link` | `true` (default): a **See in network** button on every protein page opens `#network?p=<accession>`: the cluster of the protein is lit, its card pinned and the drawing zoomed to it. A protein outside the default view makes the page draw more proteins (the smallest of 100, 150, 200, 300, 500, 600 that holds it and its best-placed partner) with a button back; one with no link at the score gets a note and a button to lower the score, and one with no link at all, or not in the network, a note. `K.netcore.focusPlan` decides which |
 | `label_from[].max_size`, `names.size` | terms that annotate more than `max_size` proteins of the whole proteome (the `size` column) are not used |
 | `tile` | `{section, title, text}`: the Overview tile, in the named Overview section |
@@ -1219,6 +1220,41 @@ carries `column_index` (`mark_columns`, `mark_attributes`, `proteins`: name to p
 (`K.cols.markAttr(m, name)`, `K.cols.markClass(m, name)`, `K.cols.field(p, name)`; kit-cols.js), never by a fixed
 place, so a site with other questions or attributes gets its own values, and a name the site lacks gives nothing.
 
+## The Download menu (website.export)
+
+Every figure and printable page has one **Download ▾** menu (`kit-export.js`, `K.exp`): the figure's formats, and the size the
+figure is made at. Nothing is needed in the site file; each key replaces a default.
+
+```yaml
+website:
+  export:
+    formats: [pdf, svg, png, tsv, csv]     # offered in this order, where the figure can make them (default pdf, svg, png, tsv)
+    labels: {pdf: PDF, tsv: "Data (TSV)"}  # the menu's words for a format
+    presets:                               # the sizes; replaces the default two
+      - {id: screen, label: Screen, width: 960}
+      - {id: paper, label: "Paper (180 mm)", mm: 180, width: 680, dpi: 300}
+    default_preset: screen                 # until the reader chooses; the choice is kept in the browser
+    page_pdf: true                         # false: no "PDF of this page" or "Print this page"
+    pages: [overview, method]              # the views that get the page menu at the top right (protein pages and website pages always have it)
+```
+
+- **Formats.** `pdf`, `svg` and `png` draw the figure; `tsv` and `csv` are its rows (`csv` is the TSV with commas, its `#` lines kept as
+  comments). A figure without a drawing (a table's rows) offers the data formats as plain buttons, not a menu.
+- **Sizes.** A size with `mm` prints that wide: the SVG's `width` is in millimeters, the PDF page is that wide, and the PNG is `dpi` dots
+  per inch (default 300). A figure that lays itself out again (the network, the overlap figure, the protein map) does so at `width` units
+  (default 960 for a size without `mm`, 680 for one with it, where 1 unit is 0.75 pt at 180 mm); every other figure is drawn at its own width and
+  scaled, with the frame's text (title, subtitle, key, note, credit) raised so none prints under 6 pt. A figure's file name gets `_<mm>mm`.
+  The PDF is a vector drawing of the figure's SVG with its text in Arimo (Courier for sequences), made in the browser by jsPDF and
+  svg2pdf.js, loaded only when PDF is chosen.
+- **What is visible and what is in the file.** The credit strip under every export has the citation, the data sources, the site's name,
+  version and date, the kit's version, the sequence release and the export date with the license. The commit, the FASTA MD5 and the
+  page's address are not in it: they are in the SVG's `<metadata id="ptmcontext-provenance">`, the PNG's text chunks, the TSV's `#` lines
+  and the PDF's properties (title, subject with the citation, keywords with the version, commit and address).
+- **Pages.** "PDF of this page" is the page in its print layout drawn into an A4 PDF (`kit-pagepdf.js`: images of the page, cut at the ends of
+  cards, with a running head and page numbers); "Print this page" opens the browser's print dialog on the print stylesheet, which keeps
+  the text as text (Save as PDF there). Both open every fold and print in light colors.
+- A size id is used once and the default is one of them (`ptmc check` says when not).
+
 ## Website pages
 
 A page of sections (`website.pages`, `kit-interactions.js`), each section a list of blocks, every block reading
@@ -1315,5 +1351,5 @@ after a comma dropped; two lines at most) and are placed where they touch nothin
 proteins of each cluster likewise. There is no randomness and the arithmetic is the same in both languages, so the build's
 figure and the browser's agree to within a rounding; the default figure is written into `data/network.json` for a desktop
 and a phone (numbered badges and a list), any other view is laid out in the browser (in a Web Worker when large). An export
-is laid out again at the width of its preset (slide 960 units, paper 680 units drawn at 180 mm) with the type sizes of the
-figure style guide.
+is laid out again at the width of the size chosen in the Download menu (`website.export`, below: Screen 960 units, Paper 680 units
+drawn at 180 mm) with the type sizes of the figure style guide, through the shared export frame (`K.figureFrame`).

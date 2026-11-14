@@ -2253,8 +2253,7 @@
     const top = pg.sections.filter((s) => s.place === 'top'),
       links = pg.sections.filter((s) => s.place === 'link');
     return (
-      `<div class="page-head"><h2>${esc(pg.title)}</h2><span class="tools"><button type="button" class="btn ` +
-      `small" data-ix-print title="Download this page as a PDF">Download PDF</button></span></div>` +
+      `<div class="page-head"><h2>${esc(pg.title)}</h2><span class="tools">${K.exp.pageMenu()}</span></div>` +
       selLine() +
       answerHtml(pg) +
       highlightsHtml(pg) +
@@ -2706,16 +2705,6 @@
         K.render();
         scrollTo(0, 0);
       },
-    ],
-    [
-      '[data-ix-print]',
-      (el) =>
-        K.pagePdf(
-          document.getElementById('view'),
-          document.querySelector('#view .page-head h2')?.textContent || 'Interactions',
-          `${D.site.id}_${S.arg ? 'interactions_' + String(S.arg).split('/').join('_') : 'interactions'}.pdf`,
-          el
-        ),
     ],
     [
       '[data-ixexp]',

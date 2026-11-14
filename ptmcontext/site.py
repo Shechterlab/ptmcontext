@@ -580,6 +580,26 @@ def presence_only_problems(site: dict) -> list[str]:
     return out
 
 
+def export_problems(site: dict) -> list[str]:
+    """What website.export names that does not hold together: a size id used twice, a default size that is not one of
+    the sizes, a size that prints at a width but is not wide enough to hold its own text."""
+    cfg = (site.get('website') or {}).get('export')
+    if not cfg:
+        return []
+    out, ids = [], [p['id'] for p in cfg.get('presets', [])]
+    out += [f'website.export.presets: id {i!r} is used twice' for i in sorted({i for i in ids if ids.count(i) > 1})]
+    if cfg.get('default_preset') and ids and cfg['default_preset'] not in ids:
+        out.append(
+            f'website.export.default_preset: {cfg["default_preset"]!r} is not one of the presets ({", ".join(ids)})'
+        )
+    for p in cfg.get('presets', []):
+        if p.get('dpi') and not p.get('mm'):
+            out.append(
+                f"website.export.presets {p['id']!r}: dpi is the PNG's resolution at a print size, so it needs mm"
+            )
+    return out
+
+
 def network_problems(site: dict) -> list[str]:
     """What website.network names that the site file does not have: an input role it reads, a second scored source, a
     tile in an Overview section that does not exist, a repeated colour-by id."""
@@ -620,7 +640,13 @@ def website_problems(site: dict) -> list[str]:
     counts = web.get('counts') or {}
     out = count_problems(site) + presence_only_problems(site)
     questions = ids | set(counts)  # what a card, a header tile or an old link may open
-    out += cell_problems(site) + set_view_problems(site) + table_view_problems(site) + network_problems(site)
+    out += (
+        cell_problems(site)
+        + set_view_problems(site)
+        + table_view_problems(site)
+        + network_problems(site)
+        + export_problems(site)
+    )
     if (web.get('cell') or {}).get('id'):
         ids = ids | {web['cell']['id']}  # the maps of the cell are one question of the website's own
         questions = questions | {web['cell']['id']}

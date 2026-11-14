@@ -10698,3 +10698,142 @@ html[data-density] .sites-tbl .cv {
     width: 260px;
   }
 }
+
+/* ---- the shared export menu (kit-export.js): "Download ▾" with the formats and the size; the page's own menu; print ---- */
+.exp .xm-wrap {
+  position: relative;
+  display: inline-block;
+}
+.xm-pop {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 11.5rem;
+  padding: 0.35rem;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 0.6rem;
+  box-shadow: var(--shadow-hover);
+}
+.xm-pop[hidden] {
+  display: none;
+}
+.xm-pop.xm-end {
+  left: auto;
+  right: 0;
+}
+.xm-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fr-exp .xm-items {
+  display: contents;
+}
+.xm-pop .exp-btn,
+.fr-exp .xm-items .exp-btn {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  text-align: left;
+  letter-spacing: 0;
+}
+.xm-sz {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.2rem 0.4rem;
+  margin-bottom: 0.2rem;
+  border-bottom: 1px solid var(--line);
+}
+.xm-h {
+  flex: 0 0 100%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.xm-p {
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-2);
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  min-height: 28px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.xm-p[aria-pressed='true'] {
+  background: var(--brand-ink);
+  border-color: var(--brand-ink);
+  color: var(--surface);
+}
+.xm-pagebar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 0.5rem;
+}
+.exp.xm-page,
+.page-head .exp.xm-page {
+  border-top: 0;
+  padding-top: 0;
+}
+@media print {
+  .dock,
+  .rail-scrim,
+  .skip,
+  #tip,
+  .xm-pagebar,
+  .xm-page,
+  [data-xm],
+  .tile-dl,
+  .tabs,
+  .sel-bar,
+  .scope {
+    display: none !important;
+  }
+  .layout {
+    display: block !important;
+  }
+  main#view {
+    max-width: none;
+  }
+  h2,
+  h3,
+  h4,
+  summary {
+    break-after: avoid;
+  }
+  svg,
+  figure,
+  details.mfold > .pfold-body > p,
+  .tile,
+  .tbl-card tr,
+  .qchart,
+  .cell-block,
+  .vm-block,
+  .idr-card,
+  .pcard,
+  .fr-row {
+    break-inside: avoid;
+  }
+  .pgroup + .pgroup,
+  .ov-sec {
+    break-before: page;
+  }
+  .pgroup:first-of-type,
+  .ov-sec:first-of-type {
+    break-before: auto;
+  }
+  @page {
+    margin: 14mm 12mm;
+  }
+}

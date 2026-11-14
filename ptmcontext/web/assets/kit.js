@@ -2531,13 +2531,10 @@
               `chose, so it is not compared.</p>`
             : ''
         }</div>`) +
-      `<div class="exp" role="group" aria-label="Download ${esc(a.title)}">${['pdf', 'svg', 'png', 'tsv']
-        .map(
-          (k) =>
-            `<button type="button" ` +
-            `class="exp-btn" data-exp="${k}" data-aid="${esc(a.id)}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`
-        )
-        .join('')}${methodLink(a.id)}</div></div>` +
+      `${expBar(['pdf', 'svg', 'png', 'tsv'], 'exp', a.title, a.id).replace(
+        /data-exp="(\w+)"/g,
+        `data-exp="$1" data-aid="${esc(a.id)}"`
+      )}</div>` +
       chartHtml(chartModel(a, shown, S.m), fkeyOf(a), mark, own) +
       `${toggle}</div>`
     );
@@ -2927,8 +2924,7 @@
       : `layer ${x.layer} (${x.origin})${x.with ? ', made with the parameters of its definition' : ''}`;
   };
   function creditLines() {
-    const RUN = D.run,
-      sn = RUN.snapshot || {};
+    const sn = D.run.snapshot || {};
     const lines = [];
     if (CIT.preferred) lines.push(`Cite: ${CIT.preferred.text}${doiTxt(CIT.preferred.doi)}`);
     if ((CIT.references || []).length)
@@ -2936,12 +2932,11 @@
     lines.push(
       `${D.site.name}, version ${CIT.version || '–'}${
         CIT.date ? ' (' + hdate(CIT.date) + ')' : ''
-      } · ptmcontext ${D.kit.version} (${shortCommit(D.kit.commit)}) · ${sn.release || ''}, FASTA MD5 ${String(sn.fasta_md5 || '').slice(0, 12)}… · run on ${hdate(RUN.written)}`
+      } · ptmcontext ${D.kit.version}${sn.release ? ' · ' + sn.release : ''}`
     );
     if (selOn() && K.sel.data()) lines.push(`Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks})`);
-    lines.push(
-      `Exported ${htime(stamp())} from ${pageUrl()}${CIT.licence ? ' · license ' + hlicence(CIT.licence) : ''}`
-    );
+    // the commit, the FASTA MD5 and the page's address are not in the strip: they are in the file's metadata (provenance())
+    lines.push(`Exported ${hdate(stamp())}${CIT.licence ? ' · license ' + hlicence(CIT.licence) : ''}`);
     return lines;
   }
   function preamble(title, what) {
@@ -3759,22 +3754,35 @@
   // regular or bold, the font's two cuts); where the vector drawing fails, the figure as a 3x PNG on a page of its size
   async function pdfExport(f, name) {
     await loadScript(JSPDF);
+    // the page is the figure's size: its units at 0.75 pt, or, at a print size (f.mm), that many mm wide with the height following
+    const pw = f.mm ? (f.mm / 25.4) * 72 : f.W * 0.75,
+      ph = (pw * f.H) / f.W;
     const pdf = new window.jspdf.jsPDF({
       unit: 'pt',
-      format: [f.W * 0.75, f.H * 0.75],
-      orientation: f.W >= f.H ? 'l' : 'p',
+      format: [pw, ph],
+      orientation: pw >= ph ? 'l' : 'p',
       compress: true,
     });
+    // the visible strip holds the citation; the rest of the provenance is in the document's properties
+    const P = JSON.parse(f.meta);
     pdf.setProperties({
       title: f.title,
-      subject: f.desc,
+      subject: `${citeText()} ${D.site.name}, version ${CIT.version || '–'}.`.replace(/\s+/g, ' ').trim(),
       author: D.site.lab || D.site.name,
-      keywords: `${D.mark}, ${f.title}, ${CIT.version || ''}`,
+      keywords: [
+        D.mark,
+        `version ${CIT.version || '–'}`,
+        `ptmcontext ${D.kit.version}`,
+        `commit ${D.kit.commit || 'not recorded'}`,
+        P.from,
+      ]
+        .filter(Boolean)
+        .join('; '),
       creator: `ptmcontext ${D.kit.version} (${D.kit.commit || 'commit not recorded'})`,
     });
     const holder = document.createElement('div');
     holder.style.cssText = `position:fixed;left:-100000px;top:0;` + `width:${f.W}px;height:${f.H}px;overflow:hidden`;
-    holder.innerHTML = f.svg.replace(/<metadata[\s\S]*?<\/metadata>/, '');
+    holder.innerHTML = K.exp.px(f).replace(/<metadata[\s\S]*?<\/metadata>/, '');
     document.body.appendChild(holder);
     try {
       await loadScript(SVG2PDF);
@@ -3832,7 +3840,20 @@
       } catch (err) {
         /* offline: the standard Helvetica */
       }
-      await window.svg2pdf.svg2pdf(svgEl, pdf, { x: 0, y: 0, width: f.W * 0.75, height: f.H * 0.75 });
+      // svg2pdf paints a stroke over the fill whatever paint-order says, so a text halo (stroke first, then the fill) would cover its
+      // own text: the halo becomes a copy of its own, stroke only, under the text
+      svgEl.querySelectorAll('[paint-order], [style*="paint-order"]').forEach((n) => {
+        if (!/stroke/.test(n.getAttribute('paint-order') || n.style.paintOrder || '')) return;
+        const halo = n.cloneNode(true);
+        halo.setAttribute('fill', 'none');
+        [halo, n].forEach((x) => {
+          x.removeAttribute('paint-order');
+          x.style?.removeProperty('paint-order');
+        });
+        n.setAttribute('stroke', 'none');
+        n.parentNode.insertBefore(halo, n);
+      });
+      await window.svg2pdf.svg2pdf(svgEl, pdf, { x: 0, y: 0, width: pw, height: ph });
     } catch (err) {
       const svg = await embedFonts(f.svg),
         img = new Image(),
@@ -3850,7 +3871,7 @@
       ctx.fillRect(0, 0, c.width, c.height);
       ctx.drawImage(img, 0, 0, c.width, c.height);
       URL.revokeObjectURL(url);
-      pdf.addImage(c.toDataURL('image/png'), 'PNG', 0, 0, f.W * 0.75, f.H * 0.75);
+      pdf.addImage(c.toDataURL('image/png'), 'PNG', 0, 0, pw, ph);
     } finally {
       holder.remove();
     }
@@ -3875,27 +3896,17 @@
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
-  async function exportCard(kind, aid, btn) {
+  function exportCard(kind, aid, btn) {
     const name = `${D.site.id}_${aid}${
       SETS(aid) ? '' : '_' + (S.m === 'fisher' ? 'pooled' : 'within_protein')
     }${selOn() ? '_selection' : ''}`;
-    const old = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = '…';
-    try {
-      if (kind === 'tsv') download(name + '.tsv', cardTsv(aid, S.m), 'text/tab-separated-values');
-      else {
-        const f = figure(aid, S.m);
-        if (kind === 'svg') download(name + '.svg', f.svg, 'image/svg+xml');
-        else if (kind === 'png') await pngExport(f, name);
-        else await pdfExport(f, name);
-      }
-    } catch (err) {
-      alert((err && err.message) || 'The download failed.');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = old;
-    }
+    return exportFigure(
+      kind,
+      () => figure(aid, S.m),
+      name,
+      btn,
+      () => cardTsv(aid, S.m)
+    );
   }
   function copyText(text, btn) {
     const done = (ok) => {
@@ -4000,100 +4011,127 @@
   }
 
   // ---- a figure frame for modules: title, subtitle, legend, the module's drawing, a note and the credit, as figure() ---
+  // type: sizes of the frame's own text in units (title, sub, key, note, credit) and the margin P, where a figure lays itself out
+  // at a preset's width (the network); keySvg and keyH: a key drawn by the figure (marks, not circles) in place of `legend`.
+  // At a print size (K.exp.preset().mm) no frame text is below 6 pt, whatever the figure's width in units.
   function figureFrame({
     title,
     sub = '',
     lead = '',
     legend = [],
+    keySvg = '',
+    keyH = 0,
     body = '',
     bodyH = 0,
     note = '',
     W: Wd = 760,
+    type = {},
     extra = {},
   }) {
-    const P = 20,
+    const P = type.P ?? 20,
       parts = [];
+    const pr = K.exp?.preset() || {},
+      floor = pr.mm ? 6 / ((pr.mm * 72) / 25.4 / Wd) : 0,
+      sz = (v) => Math.max(v, floor);
+    const zT = type.title ?? 17,
+      zS = sz(type.sub ?? 11.5),
+      zK = sz(type.key ?? 10.5),
+      zN = sz(type.note ?? 10.5),
+      zC = sz(type.credit ?? 9.5);
     const T = (x, y, t, o = {}) =>
       parts.push(
-        `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${o.size || 11.5}"${
+        `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${o.size || zS}"${
           o.weight ? ` font-weight="${o.weight}"` : ''
         }${o.fam ? ` font-family="${o.fam}"` : ''}${
           o.anchor ? ` text-anchor="${o.anchor}"` : ''
         } fill="${o.fill || PAL.ink}">${esc(t)}</text>`
       );
     // a title wider than the figure goes on two lines, never off its edge
-    const tl = wrap(title, (Wd - 2 * P) / WSL, 17, 'bold', FFH).slice(0, 2);
-    tl.forEach((t, i) => T(P, 30 + i * 20, t, { size: 17, weight: 'bold', fam: FFH }));
-    let y = 49 + (tl.length - 1) * 20;
+    const tl = wrap(title, (Wd - 2 * P) / WSL, zT, 'bold', FFH).slice(0, 2),
+      stT = (zT * 20) / 17;
+    tl.forEach((t, i) =>
+      T(P, ('title' in type ? P + zT * 1.15 : 30) + i * stT, t, { size: zT, weight: 'bold', fam: FFH })
+    );
+    let y = ('title' in type ? P + zT * 1.15 : 30) + (stT - 1) + (tl.length - 1) * stT;
     // a selection is stated the same way as in the bar: category · value, the counts, and what it is tested against
     if (selOn() && K.sel.summary) sub = [sub, `Selection: ${K.sel.summary()}.`].filter(Boolean).join(' ');
-    wrap(sub, (Wd - 2 * P) / WSL, 11.5)
+    const stS = (zS * 15) / 11.5;
+    wrap(sub, (Wd - 2 * P) / WSL, zS)
       .slice(0, 5)
       .forEach((t) => {
-        T(P, y, t, { size: 11.5, fill: PAL.muted });
-        y += 15;
+        T(P, y, t, { size: zS, fill: PAL.muted });
+        y += stS;
       });
     // what the card says above its figure on the page (its summary sentence), then its color key: both go with the figure
     if (lead) {
       y += 4;
-      wrap(lead, (Wd - 2 * P) / WSL, 11.5)
+      wrap(lead, (Wd - 2 * P) / WSL, zS)
         .slice(0, 5)
         .forEach((t) => {
-          T(P, y, t, { size: 11.5 });
-          y += 15;
+          T(P, y, t, { size: zS });
+          y += stS;
         });
     }
-    if (legend.length) {
+    if (keySvg) {
+      parts.push(`<g transform="translate(0,${y})">${keySvg}</g>`);
+      y += keyH;
+    } else if (legend.length) {
       let lx = P;
+      const stK = (zK * 15) / 10.5;
       y += 4;
       legend.forEach(([fill, stroke, text, shape]) => {
-        if (lx > P && lx + 14 + tw(text, 10.5) * WSL > Wd - P) {
+        if (lx > P && lx + 14 + tw(text, zK) * WSL > Wd - P) {
           lx = P;
-          y += 15; // the key goes on to a second row rather than off the edge
+          y += stK; // the key goes on to a second row rather than off the edge
         }
         parts.push(
           shape === 'tick' // a tick (the whole dataset's mark in a chart) or a circle
             ? `<line x1="${lx + 5}" x2="${lx + 5}" y1="${y - 10}" y2="${y + 2}" stroke="${stroke || fill}" stroke-width="2"/>`
             : `<circle cx="${lx + 5}" cy="${y - 4}" r="4.5" fill="${fill}" stroke="${stroke || fill}" stroke-width="1.4"/>`
         );
-        T(lx + 14, y, text, { size: 10.5, fill: PAL.muted });
-        lx += 22 + tw(text, 10.5) * WSL;
+        T(lx + 14, y, text, { size: zK, fill: PAL.muted });
+        lx += 22 + tw(text, zK) * WSL;
       });
       y += 10;
     }
     parts.push(`<g transform="translate(0,${y})">${body}</g>`);
     y += bodyH + 14;
     if (note) {
-      wrap(note, (Wd - 2 * P) / WSL, 10.5).forEach((t) => {
-        T(P, y, t, { size: 10.5 });
-        y += 14;
+      wrap(note, (Wd - 2 * P) / WSL, zN).forEach((t) => {
+        T(P, y, t, { size: zN });
+        y += (zN * 14) / 10.5;
       });
       y += 6;
     }
     {
-      const cs = creditStrip(P, y, Wd);
+      const cs = creditStrip(P, y, Wd, zC, zC * 1.316);
       parts.push(cs.svg);
       y = cs.y + 6;
     }
     const H = Math.ceil(y + P - 6),
       desc = `${title}. ${sub}. ${note} ${creditLines().join(' ')}`;
-    const meta = JSON.stringify(provenance({ figure: title, ...extra }));
+    const meta = JSON.stringify(provenance({ figure: title, ...(pr.id ? { size: pr.id } : {}), ...extra }));
     const svg =
       `<svg xmlns="http://www.w3.org/2000/svg" width="${Wd}" height="${H}" viewBox="0 0 ${Wd} ${H}" font-family="${FF}">` +
       `<title>${esc(title)}</title><desc>${esc(desc)}</desc><metadata id="ptmcontext-provenance">${esc(meta)}</metadata>` +
       `<rect width="${Wd}" height="${H}" fill="${PAL.bg}"/>${parts.join('')}</svg>`;
     return { svg, W: Wd, H, title, desc, meta };
   }
+  // one path for every download: the figure made now (at the size K.exp has), then written as SVG, PNG or PDF; or the rows
+  // as TSV or CSV. The busy mark goes on the menu's toggle, which is what the reader sees while the menu is closed.
   async function exportFigure(kind, make, name, btn, tsv) {
-    const old = btn ? btn.textContent : '';
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = '…';
+    const host = btn ? btn.closest('[data-xm]')?.querySelector('[data-xm-toggle]') || btn : null,
+      old = host ? host.textContent : '';
+    if (host) {
+      host.disabled = true;
+      host.textContent = '…';
     }
     try {
       if (kind === 'tsv') download(name + '.tsv', tsv(), 'text/tab-separated-values');
+      else if (kind === 'csv') download(name + '.csv', K.exp.csv(tsv()), 'text/csv');
       else {
-        const f = make();
+        const f = K.exp.apply(make());
+        if (f.mm && !/_(\d+mm|paper)/.test(name)) name += `_${f.mm}mm`;
         if (kind === 'svg') download(name + '.svg', f.svg, 'image/svg+xml');
         else if (kind === 'png') await pngExport(f, name);
         else await pdfExport(f, name);
@@ -4101,9 +4139,9 @@
     } catch (err) {
       alert((err && err.message) || 'The download failed.');
     } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = old;
+      if (host) {
+        host.disabled = false;
+        host.textContent = old;
       }
     }
   }
@@ -4112,14 +4150,9 @@
     `<a class="exp-btn" href="${esc(
       link('method', aid ? 'q-' + aid : sec || '')
     )}" title="How ${aid ? 'this question was' : 'these were'} made and ` + `tested, and from what data">Method</a>`;
-  const expBar = (kinds, attrs, label, method) =>
-    `<div class="exp" role="group" aria-label="Download ${esc(label)}">${kinds
-      .map(
-        (k) =>
-          `<button type="button" ` +
-          `class="exp-btn" data-${attrs}="${k}" title="${EXP_HELP[k]}">${k.toUpperCase()}</button>`
-      )
-      .join('')}${method ? methodLink(A[method] ? method : '', A[method] ? '' : method) : ''}</div>`;
+  // a figure's download menu (kit-export.js): the formats it makes, a button each with data-<attrs>="<format>"
+  const expBar = (kinds, attrs, label, method, o) =>
+    K.exp.menu(kinds, attrs, label, method ? methodLink(A[method] ? method : '', A[method] ? '' : method) : '', o);
   Object.assign(K, {
     SET_TEST,
     selText,

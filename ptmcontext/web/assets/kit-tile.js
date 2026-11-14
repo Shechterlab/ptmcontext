@@ -164,7 +164,7 @@
   // a Download menu that opens on a tap: the formats given, and the question's Method
   const dlMenu = (label, kinds, attrs, method) =>
     `<details class="fr-dl tile-dl"><summary aria-label="Download ${esc(label)}" title="Download ${esc(label)}">Download</summary>` +
-    `${K.expBar(kinds, attrs, label, method).replace('class="exp"', 'class="exp fr-exp"')}</details>`;
+    `${K.expBar(kinds, attrs, label, method, { inline: true })}</details>`;
   K.clicks.push(['details.tile-dl', () => {}]); // a tap on Download opens the menu, not the question
   // one menu open at a time; a tap elsewhere, or a choice, closes it
   document.addEventListener('click', (e) => {

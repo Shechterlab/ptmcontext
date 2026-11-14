@@ -86,13 +86,9 @@
     return null;
   };
   const expButtons = (attr, aid) =>
-    `<div class="exp" role="group" aria-label="Download">${['pdf', 'svg', 'png', 'tsv']
-      .map(
-        (k) =>
-          `<button type="button" ` +
-          `class="exp-btn" data-${attr}="${k}" data-qaid="${esc(aid)}" title="${esc(K.EXP_HELP[k])}">${k.toUpperCase()}</button>`
-      )
-      .join('')}${K.methodLink(aid)}</div>`;
+    K.exp
+      .menu(['pdf', 'svg', 'png', 'tsv'], attr, 'this question', K.methodLink(aid))
+      .replace(new RegExp(`data-${attr}="(\\w+)"`, 'g'), `data-${attr}="$1" data-qaid="${esc(aid)}"`);
   // a chart in the kit's own drawing, of these items in this order: {head} a heading, {r, depth, gloss} a row (a row
   // under another indented; a class's plain gloss beside its name)
   const chart = (a, items) => {

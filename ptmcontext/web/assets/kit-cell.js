@@ -1819,7 +1819,7 @@
     return dual
       ? bar
           .replace(/(data-cell-exp="(?:pdf|svg|png)"[^>]*>)([A-Z]+)</g, (m0, a, t) => `${a}${cap(FIGS[k].zoom)} ${t}<`)
-          .replace(/(<div class="exp"[^>]*>)/, '$1' + bothButtons(both))
+          .replace(/(<div class="xm-items"[^>]*>)/, '$1' + bothButtons(both))
       : bar;
   };
   const block = (k, head, cls) =>
@@ -2062,7 +2062,7 @@
       bar = K.tilekit
         .dlMenu(title, [], 'cell-exp', ID)
         .replace(
-          /(<div class="exp fr-exp"[^>]*>)/,
+          /(<div class="xm-items"[^>]*>)/,
           '$1' +
             (DRAWINGS.length > 1 ? bothButtons('both') : '') +
             DRAWINGS.map((d) =>

@@ -3002,8 +3002,11 @@
     });
     return { svg, h: y - y0 + lh };
   }
+  // the width in mm the exports print at: the size chosen in the Download menu (K.exp), else the map's own column choice
+  const printMm = () => K.exp.mm() || +M.size.mm || 0,
+    printDpi = () => (K.exp.mm() ? K.exp.preset().dpi || 300 : +M.size.dpi);
   function figure(ctx) {
-    const mm = +M.size.mm || 0,
+    const mm = printMm(),
       FW = mm ? panelUnits(mm) : 1000,
       Pd = FW < 500 ? 10 : 20,
       P = pal(true),
@@ -3080,7 +3083,7 @@
         zoom: M.zoom || null,
         colour_by: mode().id,
         rows: m.drawn,
-        ...(mm ? { width_mm: mm, png_dpi: +M.size.dpi } : {}),
+        ...(mm ? { width_mm: mm, png_dpi: printDpi() } : {}),
       })
     );
     const size = mm ? `width="${mm}mm" height="${((H * mm) / FW).toFixed(1)}mm"` : `width="${FW}" height="${H}"`;
@@ -3088,7 +3091,7 @@
       `<svg xmlns="http://www.w3.org/2000/svg" ${size} viewBox="0 0 ${FW} ${H}" font-family="${K.FF.replace(/"/g, "'")}">` +
       `<title>${esc(title)}</title><desc>${esc(desc)}</desc><metadata id="ptmcontext-provenance">${esc(meta)}</metadata>` +
       `<rect width="${FW}" height="${H}" fill="#ffffff"/>${parts.join('')}</svg>`;
-    return { svg, W: FW, H, title, desc, meta, ...(mm ? { mm, dpi: +M.size.dpi } : {}) };
+    return { svg, W: FW, H, title, desc, meta, ...(mm ? { mm, dpi: printDpi() } : {}) };
   }
   // the export's file name: the site, the gene, the zoom, the column width and resolution, and the date
   function fileName(kind) {
@@ -3096,11 +3099,11 @@
       gene = String(p.gene || p.acc || 'protein')
         .split(/[\s;,]+/)[0]
         .replace(/[^\w.-]+/g, '-'),
-      mm = +M.size.mm || 0;
+      mm = printMm();
     return `${D.site.id}_${gene}_map${
       M.zoom ? `_${M.zoom[0]}-${M.zoom[1]}` : ''
     }${mm && kind !== 'tsv' ? `_${mm}mm` : ''}${
-      mm && kind === 'png' ? `_${M.size.dpi}dpi` : ''
+      mm && kind === 'png' ? `_${printDpi()}dpi` : ''
     }_${new Date().toISOString().slice(0, 10)}`;
   }
 
@@ -3561,6 +3564,15 @@
     return { bg, fg: '#ffffff' };
   }
   // what other modules may read: the mark's color in the mode chosen (a 3D view follows it), the modes, the figure
+  // a size chosen in the Download menu replaces the map's own column choice
+  K.exp.onPreset(() => {
+    if (!M.size.mm) return;
+    M.size.mm = '';
+    store.set('ptmc-map-size', M.size);
+    document.querySelectorAll('[data-map-size]').forEach((s) => {
+      s.value = '';
+    });
+  });
   K.map = {
     render,
     exportOpts,

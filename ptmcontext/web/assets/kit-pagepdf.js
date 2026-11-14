@@ -87,14 +87,31 @@
         y = cut;
       }
       const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true });
-      pdf.setProperties({ title, subject: `${D.site.name}: ${title}`, creator: `ptmcontext ${D.kit.version}` });
+      // the visible foot has the site's address without the page's state; the commit, the version and the full address are in the
+      // document's properties
+      const cite = K.CIT?.preferred?.text ? `Cite: ${K.CIT.preferred.text}` : '';
+      pdf.setProperties({
+        title,
+        subject: `${D.site.name}: ${title}. ${cite}`.trim(),
+        author: D.site.lab || D.site.name,
+        keywords: [
+          D.mark,
+          `version ${K.CIT?.version || '-'}`,
+          `ptmcontext ${D.kit.version}`,
+          `commit ${D.kit.commit || 'not recorded'}`,
+          location.href,
+        ]
+          .filter(Boolean)
+          .join('; '),
+        creator: `ptmcontext ${D.kit.version} (${D.kit.commit || 'commit not recorded'})`,
+      });
       const head = latin(`${D.site.name} · ${title}`),
         foot = latin(
           (K.creditLines?.()[0] || '') +
             (D.dataset?.version ? ` · data ${D.dataset.version}` : '') +
             (K.selText ? ` · Selection: ${K.selText()}` : '')
         ),
-        url = latin(location.href.split('?')[0]);
+        url = latin(location.origin === 'null' ? location.href.split(/[?#]/)[0] : location.origin + location.pathname);
       pages.forEach(([a, b], n) => {
         if (n) pdf.addPage();
         const c = document.createElement('canvas');
