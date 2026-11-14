@@ -798,7 +798,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: the other proteins organelle IP classifies (HEK293T)
-    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granules (cell map),
+    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granules (organelle IP),
              p-body: P-body, actin_cytoskeleton: Actin cytoskeleton, centrosome: Centrosome, proteasome: Proteasome,
              14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
              early_endosome: Early endosome, recycling_endosome: Recycling endosome, lysosome: Lysosome,
@@ -1314,7 +1314,7 @@ context_marks:
     short: "pS/pT/pY"
     input: context_phosphorylation_sites_v1_5_0
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources, score: functional_score}
-    subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # shown at first: the sites Ochoa 2020 scores 0.5 or more (about 10,900); a click on the row label shows all. Sites with no score (UniProt or iPTMnet only) are hidden at first too
+    subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # every site is drawn at first; a click on the row label shows only the sites Ochoa 2020 scores 0.5 or more (about 10,900), and sites with no score (UniProt or iPTMnet only) are then hidden too
     replaces_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row leaves its Phospho kind out: one source for phosphosites
     colour: "#0891B2"          # cyan: apart from the red and slate of the data, the motif green and the purples of other sites
     colour_dark: "#1FA2C4"
@@ -1560,8 +1560,8 @@ website:                  # the look and words of the website (ptmc web); layout
       perturbations: "PRMT perturbations"
       provenance: "Studies and databases"
     row_labels:                 # a code is unique only within its question; the two stress-granule sets are told apart by source
-      condensate: {DEE660B4: "Stress granule (CD-CODE)"}
-      condensate_proteome: {DEE660B4: "Stress granule (CD-CODE)"}
+      condensate: {DEE660B4: "Stress granule proteome (CD-CODE list)"}
+      condensate_proteome: {DEE660B4: "Stress granule proteome (CD-CODE list)"}
       panther_group: {"RNA processing and translation": "RNA processing", "Scaffolds, adaptors and chaperones": "Scaffolds", "Transcription, chromatin and DNA": "Transcription", "Protein-modifying enzymes": "Modifying enzymes", "Cytoskeleton, adhesion and matrix": "Cytoskeleton"}
       disorder: {"disordered": "In an IDR", "ordered": "Ordered"}
       crosslink: {"capri_adj_peptide": "Next to RNA (CAPRI)", "rbrid_residue": "RNA contact (RBR-ID)", "rna_crosslink": "RNA crosslink", "dna_binding_region": "DNA-binding region"}
@@ -1711,6 +1711,7 @@ website:                  # the look and words of the website (ptmc web); layout
                 eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, disorder, domain_context]
   cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
     id: where_in_the_cell
+    default_view: fold        # what the maps color by on opening: percent (share of proteins with a mark), difference (from the share among all mapped proteins) or fold
     title: Where in the cell
     question: "Where do methylated proteins localize in the cell?"
     intro: "Five maps from four studies locate proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
@@ -2452,7 +2453,7 @@ website:                  # the look and words of the website (ptmc web); layout
       other_ptms:
         title: Other PTMs
         table: other_ptms
-        sub: "Modifications recorded on this protein other than these (phosphosites and methyllysines, shown on the protein map and the site card)."
+        sub: "The other modifications recorded on this protein: the same marks, with the same counts, as the legend of the protein map."
         kinds: {lys_acyl: Lysine acylation, ub_sumo: Ubiquitin and SUMO}
         near: 10
         note: "Not an exhaustive list: it holds only what the cross-PTM table used here contains (an iPTMnet export of HPRD, literature mining and other curated sources, plus UniProt), so modifications reported elsewhere may be missing."

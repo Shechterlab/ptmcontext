@@ -252,8 +252,9 @@
     return { status: 'ok', need, gi, partners: [...new Set(here)] };
   }
   // the genes of a pasted list (separated by commas, spaces, semicolons or line breaks; symbols or accessions) and which of them
-  // the nodes hold: { tokens, hits: Set of node indexes, found: tokens that are nodes, missing: tokens that are not }
-  function findGenes(text, nodes) {
+  // the nodes hold: { tokens, hits: Set of node indexes, found: tokens that are nodes, missing: tokens that are not }; a token
+  // that is no node's name is read as another name of a protein when `lookup` is given
+  function findGenes(text, nodes, lookup) {
     const tokens = [
         ...new Set(
           String(text || '')
@@ -270,7 +271,18 @@
       found = [],
       missing = [];
     for (const t of tokens) {
-      const i = at.get(t.toUpperCase());
+      let i = at.get(t.toUpperCase());
+      // another name for a protein (the main search's aliases): `lookup(token)` is { ps: [proteins with .acc] } or null
+      if (i == null && lookup) {
+        const r = lookup(t);
+        for (const q of r?.ps || []) {
+          const j = at.get(String(q.acc).toUpperCase());
+          if (j != null) {
+            hits.add(j);
+            i = j;
+          }
+        }
+      }
       if (i == null) missing.push(t);
       else {
         hits.add(i);

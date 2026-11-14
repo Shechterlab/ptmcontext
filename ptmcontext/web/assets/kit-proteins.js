@@ -1929,7 +1929,13 @@
         'within abundance deciles · <span class="nh">◌</span> the same direction within ' +
         'deciles, but not significant there</p>'
       : '';
-    return covLine + `<div class="kinds">${blocks}</div>` + nhKey;
+    // the sets' results are about every ${W.mark} in the set, not about this protein alone: their own heading says so
+    const across =
+      `<h3 class="kinds-head">Across all ${esc(W.marks)}</h3><p class="muted small kinds-note">The sets this protein belongs to, ` +
+      `each with the dataset-wide fold for all ${esc(W.marks)} in that set. These are results for the whole set, not facts about ${esc(
+        p.gene || p.acc
+      )}.</p>`;
+    return covLine + across + `<div class="kinds">${blocks}</div>` + nhKey;
   }
 
   // ---- domains and regions: every region the questions of this explorer read, as a table, with the marks inside each --------
@@ -2194,7 +2200,7 @@
           amUrl: same ? m.amAnnotationsUrl || '' : '',
         };
       },
-      () => ({ failed: true })
+      (e) => (String(e?.message) === '404' ? { none: true } : { failed: true }) // 404: AlphaFold DB has no model
     );
     PV.afReq[acc].then((af) => {
       if (PV.acc !== acc) return;

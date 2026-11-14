@@ -436,6 +436,7 @@
     S.m = p.get('m') || 'mantel_haenszel';
     S.a = p.get('a') || '';
     S.sq = p.get('sq') || '';
+    S.nf = p.get('nf') || '';
     // what a selection is compared with: other residues (the site's own tests), other marks, or another selection
     S.vs = ['marks', 'cmp'].includes(p.get('vs')) ? p.get('vs') : 'residues';
     S.cmp = p.get('cmp') || '';
@@ -526,6 +527,7 @@
       if (S.desc !== (S.sort !== 'q')) p.set('dir', S.desc ? 'desc' : 'asc');
     }
 
+    if (S.view === 'network' && S.nf) p.set('nf', S.nf);
     const h = '#' + S.view + (S.arg ? '/' + pathOf(S.view, S.arg) : '') + (p.toString() ? '?' + p : '');
     if (h !== location.hash) (push ? history.pushState : history.replaceState).call(history, null, '', h);
     shown = location.hash; // the page shows this address: Back to an earlier one draws that one again

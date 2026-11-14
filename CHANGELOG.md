@@ -3,6 +3,8 @@
 - Yes/no attributes (true/false, yes/no, 1/0) read as plain terms: the attribute's label is the chip and its `query` word (default: its name; `als_ftd` for the ALS/FTD gene attribute) the search text, with no value. `als_ftd_gene:true` still works in older links and is never shown.
 - Landing cards without the "Strongest result" block and the italic question line; `card: {result, question}` in the landing config brings them back (default false).
 - A small brand line (the landing config's `title`) above each explorer's name links to the landing page; the header's "All sites" link is gone, the sticky bar keeps it.
+- Protein page fixes. The Other PTMs card is read from the same marks and counts as the map's legend. A context mark with a score subset (phosphosites) draws every mark at first on every site, the score cut an option (`subset.default: subset` keeps the cut first); the legend counts what is drawn. A failed ortholog lookup says "Ortholog data could not be loaded" with a retry (the request used a type Ensembl does not accept, and an HTTP error no longer reads as "no ortholog"); AlphaFold DB's 404 is "no model". The tile captions are visible again (a hidden-label rule shared their class name). The protein's sets sit under an "Across all <marks>" heading, as dataset-wide results; the organelle IP and CD-CODE stress granule sets carry their source in the name. Network "Find genes" reads the main search's other names (TDP43) and keeps the genes in the address (`nf=`).
+
 - Overlap page (`website.overlap`): two to four terms (protein sets, classes, reader families, enzymes, the selection, a gene list) as rows of regions (a membership matrix, a split size bar, the share with sites against all reviewed proteins with its 95% interval) and, for two or three terms, an area-proportional diagram, with proteins, proteins with sites, fold, a hypergeometric test against all reviewed proteins and Benjamini-Hochberg q for each region; also for sites, enzymes and readers. A "Compare with..." button on the rows of protein-set questions. Reader families (Tudor; chromodomain, PHD, MBT, PWWP; 14-3-3, SH2, BRCT; bromodomain, YEATS) are listed in the site files with their Pfam and InterPro ids.
 - Overlap terms from GO biological process (propagated annotations without computational-only evidence, 5 to 5,000 proteins), listed by name, GO id and size; one generic `term_sources` entry in the site file (data from PTM_Pipeline's staged GO tables; cite Gene Ontology Consortium 2023 and Ashburner et al. 2000).
 - `ptmc run` writes `overlap_members.json` (every protein of each set) for the questions an Overlap block names; the statistics are unchanged.
@@ -48,6 +50,16 @@
   only the protein and its partners, or says why it is not there), and under the button a small drawing of the protein among
   its cluster. The button carries the selection and filters. Find genes takes a pasted list and counts and lists what it
   found. The section under the figure is called Method and is four sentences and the citations.
+- The cell and nucleus maps have a switch, "Percent with sites | Difference from all mapped proteins | Fold vs other proteins", on the Overview card, the
+  cell page and the enlarged map. Percent colors each compartment by the share of its proteins that carry at least one
+  mark, labelled with the count ("Chromatin 97% · 412 proteins"), with the share among all proteins as a tick in the key.
+  With several maps, the median is drawn and each map's value is on hover. With a selection, it shows the share of the
+  compartment's proteins in the selection, the whole site's share on hover. Exports and the table carry the active view.
+  Sites choose which opens first (`website.cell.default_view`). Where the mark is on 80% or more of the mapped proteins,
+  the color range runs from the lowest compartment (rounded down to 5%) to 100%, and the key says it does not start at
+  0 (`website.cell.range`: `data` or `full`). The key also gives the share among all reviewed proteins.
+- Where the fold has too few proteins to compare, the label says which side is short and how many proteins carry a
+  mark ("too few without one to compare (97% carry one)").
 - Header: "All sites" sits on the switcher's row, so the lab block and links stay above the structure drawing. The sticky bar shows the short site name.
 - Cell maps: a part where the maps do not agree reads "maps disagree" (was "fewer than N maps").
 - Lysine header drawing: SUMOylation is labelled "SUMO", not "Ksu".

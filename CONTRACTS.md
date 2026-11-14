@@ -223,6 +223,27 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   it; it is colored and ranked only when at least `website.reading.min_maps` (default 2) of them differ the same way
   (q ≤ 0.05 and a fold of 1.1× or more, the test pointing the same way) and none the other way, gray otherwise.
 - `title, question, intro, note`: words.
+- `default_view`: `percent`, `difference` or `fold` (default `fold`), what the cell and nucleus maps color by when the page
+  opens. Every map has a switch, "Percent with sites | Difference from all mapped proteins | Fold vs other proteins".
+  Difference colors each part by its share's difference from the share among all the proteins the maps place, in points
+  ("+4 points", "−7 points" on the map; the percent on hover), on the fold's diverging ramp (red above, slate below, in
+  quarters of the largest difference, gray within half a point); the key states the centre. Percent is described next. Percent colors each part by the share of its proteins
+  that carry at least one mark, from the sequential ramp: the proteins are the reviewed proteins each map places in the part,
+  and the median of the maps that have it is drawn (each map's value on hover). The legend's tick is the share among all the
+  proteins the maps place. With a selection, the share of the part's proteins that are in it, the whole site's share on
+  hover. Use it for a mark that covers most proteins, where the fold has little to compare against. The counts are made when
+  the site is built (`cell_pct` in the site data: for each map `{N, n, sets: {set: [proteins, with a mark]}}`, from
+  protein_sets.json), so the view needs no new input. Exports and the table carry the active view; the percent table has
+  the columns `compartment, map, n_proteins, n_with_sites, percent` (with a selection `n_in_selection` replaces
+  `n_with_sites`, and `n_with_sites, percent_with_sites` follow).
+- `range`: `data` or `full`, the percent view's colour range (the five steps are fifths of it). `full` is 0 to 100%; `data`
+  runs from the lowest share among the compartments as drawn (those of at least `website.reading.min_group` proteins), rounded
+  down to 5%, to 100%, and the key marks the scale as not starting at 0. Without it: `data` where the share among all the
+  proteins the maps place is 80% or more, else `full`. With a selection the steps are fifths of the largest share.
+  The key also gives the share among all the reviewed proteins ("63% of all reviewed proteins · 96% of mapped proteins"),
+  from the run's snapshot entries and marked proteins (`cell_proteome` in the site data; no new input). Where every
+  mapped share is 80% or more, the sentence above the map gives the overall share and the lowest compartments instead of
+  "more than half".
 
 The kit draws the cell for other pages too: `K.cell.list()` (the drawings, their parts and phone crop, the crop from
 `config/cell_drawings.json`), `K.cell.parts(scoped?)` (every part a `website.cell` row colors: its row, tone, direction
@@ -433,8 +454,8 @@ protein-page section keys (`p-dom`) to the folds that hold them now.
 **A subset by score.** An entry with `columns.score` and `subset: {id: high, at_least: 0.5}` adds, where the table has a
 score column holding numbers: the attribute `ctx_near_<id>_<subset id>` ("has a <noun> (<subset>) within ±N", yes/no, with
 its filter, under the entry's other filters); and a second protein-map row, `ctx_<id>_<subset id>`, with each tick's
-score in its hover, drawn before the row of all the entry's marks. The subset row is shown at first and the row of all
-marks is off (`subset.default: all` reverses them); the label of the row shown is a link that switches to the other
+score in its hover, drawn before the row of all the entry's marks. Every mark is drawn at first and the subset row is off
+(`subset.default: subset` reverses them); the label of the row shown is a link that switches to the other
 (map row `swap`), and the reader's choice is kept in the browser. Where the table lacks the column (a release before the
 scores were merged into it), `ptmc run` writes none of this, and `ptmc web` drops the row, the attribute and its filter
 and shows every mark at first, so one site file serves the table before and after. The score never enters a statistic by itself. A `near_marks` question may name the subset as its marks

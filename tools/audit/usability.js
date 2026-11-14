@@ -69,6 +69,31 @@ const { chromium } = require('playwright');
     `the first entry of the map's key counts the site's own marks (${key[0]})`
   );
 
+  // the highlight tiles keep their captions (a caption rule shared with a hidden label once shrank them to 1 px)
+  const caps = await pg.$$eval('.hl-card .hl-lab', (els) => els.map((e) => e.getBoundingClientRect().height));
+  check(
+    caps.every((h) => h >= 8),
+    `every highlight tile shows its caption (${caps.length} tiles)`
+  );
+  // the Other PTMs card counts what the map's legend counts
+  await pg.waitForTimeout(1500);
+  const cardKinds = await pg.$$eval('[data-pc="other_ptms"] .pc-kind', (els) =>
+    els.map((e) => [
+      e.querySelector('b')?.textContent.trim(),
+      +(e.querySelector('.num')?.textContent || '').replace(/,/g, ''),
+    ])
+  );
+  const legend = await pg.$$eval('#pmap svg text', (els) => els.map((e) => e.textContent));
+  const off = cardKinds.filter(([k, n]) => !legend.includes(`${k} (${n})`)),
+    none = await pg
+      .$eval('[data-pc="other_ptms"]', (e) => /^No other modification/.test(e.textContent.trim()))
+      .catch(() => false),
+    drawn = legend.filter((t) => /\([1-9][\d,]*\)$/.test(t || '')).length - 1; // the key's entries but the site's own marks
+  check(
+    off.length === 0 && !(none && drawn > 0),
+    `the Other PTMs card agrees with the map's key (${cardKinds.length} kinds, ${drawn} other marks in the key${off.length ? '; differs: ' + off.map((x) => x.join(' ')).join(', ') : ''})`
+  );
+
   // the Rows menu and Escape
   const rows = await pg.$('[data-map-rows]');
   if (rows) {
