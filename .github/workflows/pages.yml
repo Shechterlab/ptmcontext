@@ -147,7 +147,7 @@ jobs:
           [ "$lower" = no ] || ptmc run sites/${{ matrix.site }}.yaml --root reference --variant with_lower_confidence
           ptmc web sites/${{ matrix.site }}.yaml
           [ "$lower" = no ] || ptmc web sites/${{ matrix.site }}.yaml --variant with_lower_confidence
-      # the website and the run record, which the landing page reads; the one-file copy (out/<site>/web/<site>.html, up to
+      # the website, the run record and the protein list, which the landing page reads (its cards and its search); the one-file copy (out/<site>/web/<site>.html, up to
       # 84 MB) is not published on Pages: kept in its own artifact
       - uses: actions/upload-artifact@v4
         with:
@@ -155,6 +155,7 @@ jobs:
           path: |
             out/${{ matrix.site }}/web
             out/${{ matrix.site }}/run.json
+            out/${{ matrix.site }}/proteins.tsv
             !out/${{ matrix.site }}/web/${{ matrix.site }}.html
           retention-days: 1
           if-no-files-found: error
