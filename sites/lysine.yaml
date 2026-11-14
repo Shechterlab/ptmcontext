@@ -1197,13 +1197,9 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: cell_chromatin, title: Chromatin probability}
       - name: Same lysine, different modifications
         about: "Whether a lysine with one modification is also reported with another more often than the other lysines of its protein: acetylation, ubiquitination, SUMOylation and methylation. Mass spectrometry finds some lysines far more often than others, so each tile also gives the result among lysines with another modification."
-        cards:                                  # beside each pair: the same question among the lysines reported modified at all
-          - {analysis: same_ac_ub, beside: [{analysis: same_ac_ub_modified, label: Among lysines with another modification}, {analysis: same_ac_ub_akimov, label: Ubiquitination from Akimov 2018 only}]}
-          - {analysis: same_ac_su, beside: [{analysis: same_ac_su_modified, label: Among lysines with another modification}, {analysis: same_ac_su_hendriks, label: SUMOylation from Hendriks 2017 only}]}
-          - {analysis: same_ub_su, beside: [{analysis: same_ub_su_modified, label: Among lysines with another modification}, {analysis: same_ub_su_studies, label: Akimov 2018 and Hendriks 2017 only}]}
-          - {analysis: same_ac_methyl, beside: {analysis: same_ac_methyl_modified, label: Among lysines with another modification}}
-          - {analysis: same_ub_methyl, beside: [{analysis: same_ub_methyl_modified, label: Among lysines with another modification}, {analysis: same_ub_methyl_akimov, label: Ubiquitination from Akimov 2018 only}]}
-          - {analysis: same_su_methyl, beside: [{analysis: same_su_methyl_modified, label: Among lysines with another modification}, {analysis: same_su_methyl_hendriks, label: SUMOylation from Hendriks 2017 only}]}
+        cards:                                  # one tile, a row per pair; each question's page shows its controls beside its result
+          - rows_from: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl]
+            title: Same lysine, different modifications
       - name: Which proteins
         about: "Histones, protein classes, pathways and condensates of the proteins with modified lysines, for all types together. Each question's page links to the same question for each type with at least 200 lysines."
         cards:

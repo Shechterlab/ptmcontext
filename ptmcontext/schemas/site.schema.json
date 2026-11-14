@@ -2775,14 +2775,38 @@
                         },
                         {
                           "type": "object",
-                          "required": [
-                            "analysis"
+                          "anyOf": [
+                            {
+                              "required": [
+                                "analysis"
+                              ]
+                            },
+                            {
+                              "required": [
+                                "rows_from"
+                              ]
+                            }
                           ],
                           "additionalProperties": false,
                           "properties": {
                             "analysis": {
                               "type": "string",
                               "description": "an analysis id, or a count question (website.counts)"
+                            },
+                            "rows_from": {
+                              "type": "array",
+                              "minItems": 2,
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "one tile for several questions, in place of `analysis`: the first row of each question, one row per question, named by its short title (or `labels`), on one axis. A row opens its question; a failed control shows as the row's badge. Use `title`"
+                            },
+                            "labels": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "with rows_from: the row's name by question id (default: the question's short title)"
                             },
                             "title": {
                               "type": "string"

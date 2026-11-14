@@ -7674,18 +7674,6 @@ button.tab,
   font-size: 0.7rem;
   color: var(--muted);
 }
-.fr-sub {
-  grid-column: 1 / -1;
-  margin-top: -0.4rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.72rem;
-  line-height: 1.15;
-  color: var(--muted);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
 .fr-cnote {
   margin: 0.35rem 0 0;
   font-size: 0.78rem;
@@ -7865,11 +7853,6 @@ a.pchip:hover {
   margin: 0.5rem 0 0.2rem;
   font-size: 0.92rem;
   color: var(--muted);
-}
-.pwbtn-home {
-  display: block;
-  margin: -0.15rem 0 0.35rem auto;
-  min-height: 2.75rem;
 }
 .print-only {
   display: none;
@@ -8734,9 +8717,25 @@ a.pchip:hover {
   color: var(--ink-2);
 }
 .tile .tbeside {
-  margin: 0.3rem 0 0;
+  margin: 0.2rem 0 0;
   font-size: 0.8rem;
   color: var(--ink-2);
+}
+/* a single-row tile: its fold is the headline, its controls small rows beneath on the same axis */
+.tile .fr-row.lead .fr-val {
+  font-size: 1.3rem;
+  line-height: 1.1;
+}
+.tile .fr-row.lead .fr-lab {
+  color: var(--ink-2);
+}
+.tile .fr-row.go {
+  font-size: 0.8rem;
+  color: var(--ink-2);
+}
+.tile .fr-row.go .fr-val {
+  font-size: 0.82rem;
+  font-weight: 600;
 }
 .tile .tbeside .nw {
   white-space: nowrap;
@@ -8762,11 +8761,19 @@ a.pchip:hover {
   right: auto;
 }
 .tile .tile-dl summary {
-  min-height: 36px;
+  min-height: 28px;
+  padding: 0 0.4rem;
+  border-color: transparent;
+  background: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
 }
-.tile .pwbtn-home {
-  min-height: 1.8rem;
-  margin: -0.1rem 0 0.2rem auto;
+.tile .tile-dl summary:hover,
+.tile .tile-dl[open] summary,
+.tile .tile-dl summary:focus-visible {
+  border-color: var(--line-strong);
+  color: var(--ink-2);
 }
 .tiles .tile.wide.cell-tile {
   flex: 1 1 100%;
@@ -9194,6 +9201,9 @@ a.btn:hover {
 .fr-row.pick.mine::after,
 .drow.pick.mine::after {
   content: 'Unselect \203A';
+}
+.fr-row.pick.go::after {
+  content: 'Open \203A';
 }
 @media (prefers-reduced-motion: reduce) {
   .fr-row.pick::after,
@@ -10002,6 +10012,12 @@ html[data-density] .sites-tbl .cv {
   border-radius: 999px;
   padding: 0 8px;
   cursor: pointer;
+}
+.tile .ctl-badge {
+  border-color: transparent;
+  padding: 0 2px;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
 }
 .ctl-badge:hover {
   color: var(--ink, #111827);

@@ -48,6 +48,12 @@
 - Header: "All sites" sits on the switcher's row, so the lab block and links stay above the structure drawing. The sticky bar shows the short site name.
 - Cell maps: a part where the maps do not agree reads "maps disagree" (was "fewer than N maps").
 - Lysine header drawing: SUMOylation is labelled "SUMO", not "Ksu".
+- Overview tiles are calmer: a row shows the name, the mark, the fold and n (and a failed-control badge). The test behind
+  it (odds ratio, interval, q; for a protein set, the test within abundance deciles) is in the row's hover text and its
+  spoken name, in full. Where that test drives the dots, the tile's subtitle says so once. The tile rows no longer carry
+  "Compare with…" or "Proteins" buttons: a row opens its question at that class, and the buttons are on the question's rows.
+  The Sections sidebar expands only the Overview's sections; the Network page links its Method beside its lead.
+- CI: the lint job fails on a commit message with a "Co-Authored-By: Claude" or "Claude-Session:" line (`tools/check_commit_messages.sh`).
 
 ## 0.4.0 (2026-11-13)
 
