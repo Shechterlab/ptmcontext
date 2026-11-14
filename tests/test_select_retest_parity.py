@@ -318,4 +318,3 @@ def test_a_selection_defined_by_what_the_question_tests_is_not_tested(tmp_path):
     assert out['n'] >= 12 and out['rows'], out
     assert all(r['why'] == 'defined' and r['q'] is None for r in out['rows']), out
     assert {r['definedBy'] for r in out['rows']} == {out['cls']}
-

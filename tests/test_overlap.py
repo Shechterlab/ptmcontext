@@ -258,4 +258,3 @@ def test_a_term_made_of_sites_is_counted_not_tested(tmp_path):
     assert len(ids) == len(set(ids))  # a term is offered once
     labels = [t[1].lower() for t in j['pool']]
     assert all(t[2] == (labels.count(t[1].lower()) > 1) for t in j['pool'])  # a shared label shows its source
-
