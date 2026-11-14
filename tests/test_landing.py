@@ -52,13 +52,41 @@ def test_the_landing_page_is_made_of_the_site_file_and_the_landing_config(tmp_pa
     land = web.pages([a], tmp_path / 'site', out_root=root, log=lambda *_: None, landing_config=cfg).read_text()
     assert '<title>Toy hub</title>' in land and 'Many toys.' in land and 'Tested within each protein.' in land
     assert 'href="https://example.org/cite">Cite it' in land and 'A footer note.' in land
-    # the live card: name, hook, question, numbers, the site's band, the button from the config's format
-    assert 'Toy toya' in land and 'Toy tagline.' in land and 'What can you ask?' in land
+    # the live card: name, hook, numbers, the site's band, the button from the config's format; no question line and
+    # no strongest result unless the config's `card` switches them on
+    assert 'Toy toya' in land and 'Toy tagline.' in land
+    assert 'What can you ask?' not in land and 'Where do stubs fall?' not in land
+    assert 'class="ask"' not in land and 'class="result"' not in land and 'Strongest result' not in land
     assert '--c1:#112233;--c2:#445566' in land and 'Open methylarginines now' in land
     assert '<dl class="nums">' in land and '<dt>proteins</dt>' in land
     # the coming-soon card, from the config: its colors, no link; the config's order puts it first
     assert 'Stub Explorer' in land and '--c1:#1e40af;--c2:#172554;--ac:#0e7490' in land and 'Coming soon' in land
     assert land.index('Stub Explorer') < land.index('Toy toya')
+    # the sites' header reads the title as its brand line (a link to this page), from the registry beside the folders
+    import json
+
+    reg = json.loads((tmp_path / 'site' / 'sites.json').read_text())
+    assert reg['brand'] == 'Toy hub'
+    kit = (Path(web.__file__).parent / 'assets' / 'kit-switch.js').read_text()
+    assert "className = 'brand-line'" in kit and 'reg.brand' in kit and "a.textContent = 'All sites'" in kit
+
+
+def test_the_card_switches_bring_back_the_question_and_the_strongest_result(tmp_path):
+    root, a = _built(tmp_path)
+    cfg = tmp_path / 'landing.yml'
+    cfg.write_text(yaml.safe_dump({**CFG, 'card': {'question': True, 'result': True}}))
+    land = web.pages([a], tmp_path / 'site', out_root=root, log=lambda *_: None, landing_config=cfg).read_text()
+    assert 'What can you ask?' in land and 'Where do stubs fall?' in land and 'class="ask"' in land
+    # the result block itself, as the card draws it from a finding
+    from ptmcontext.web import landing as LP
+
+    c = {
+        'id': 'x',
+        'name': 'X',
+        'cta': 'Go',
+        'result': LP._result({'findings': [{'eff': 4.0, 'dir': 'more', 'label': 'L'}]}),
+    }
+    assert 'Strongest result' not in LP.card(c, {}) and 'Strongest result' in LP.card(c, {'card': {'result': True}})
 
 
 def test_a_card_is_one_link_with_a_label_and_a_soon_card_has_none(tmp_path):

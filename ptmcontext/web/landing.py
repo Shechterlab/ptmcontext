@@ -155,8 +155,10 @@ def _result(gl: dict) -> str:
 
 def card(c: dict, cfg: dict) -> str:
     """One card. `c`: id, name, hook, question, nums [(value, label)], result (html), art (svg text), vars (css), cta,
-    href (None for a site not built yet), badge."""
+    href (None for a site not built yet), badge. `cfg['card']` switches the question line and the strongest result on
+    (both default off)."""
     live = bool(c.get('href'))
+    show = cfg.get('card') or {}  # landing config `card: {result, question}`, both off unless true
     name = html.escape(c['name'])
     sid = html.escape(c['id'])
     title = f'<a href="{html.escape(c["href"])}">{name}</a>' if live else name
@@ -172,9 +174,13 @@ def card(c: dict, cfg: dict) -> str:
         f'<li><article class="land-card {"live" if live else "soon"}" id="{sid}" aria-labelledby="card-{sid}" style="{c.get("vars", "")}">'
         f'<div class="band">{badge}{art}<h2 id="card-{sid}">{logo}{title}</h2></div><div class="body">'
         + (f'<p class="hook">{html.escape(c["hook"])}</p>' if c.get('hook') else '')
-        + (f'<p class="ask">{html.escape(c["question"])}</p>' if c.get('question') else '')
+        + (
+            f'<p class="ask">{html.escape(c["question"])}</p>'
+            if c.get('question') and show.get('question') is True
+            else ''
+        )
         + (f'<dl class="nums">{nums}</dl>' if nums else '')
-        + c.get('result', '')
+        + (c.get('result', '') if show.get('result') is True else '')
         + f'<span class="cta"{off}>{arrow}</span></div></article></li>'
     )
 

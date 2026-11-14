@@ -26,6 +26,67 @@
   });
   const PARTS = D.cell_drawings || {};
   const DRAWINGS = (C.drawings || []).filter((d) => PARTS[d.drawing]);
+  // ---- the percent view: the share of a part's proteins that carry at least one mark, counted when the site was built
+  // (D.cell_pct: for each map the proteins it places and, for each set a row names, its proteins and the marked ones). The
+  // site's default is website.cell.default_view; the switch on every map of the cell changes it for the page.
+  const PCTD = D.cell_pct || {};
+  const HAS_PCT = MAPS.some((m) => PCTD[m.analysis]);
+  // three views: percent (the share), diff (the share's difference from the share among all the proteins the maps place,
+  // in points, on a diverging ramp) and fold; the first two draw from the counts
+  let VIEW = !HAS_PCT
+    ? 'fold'
+    : C.default_view === 'percent'
+      ? 'percent'
+      : C.default_view === 'difference'
+        ? 'diff'
+        : 'fold';
+  const pctOn = () => VIEW !== 'fold';
+  const pv = () => (VIEW === 'diff' ? 'diff' : 'percent');
+  const isPv = (p) => p.view === 'percent' || p.view === 'diff';
+  // a difference in points: +4 points, −7 points
+  const ptsText = (d) => {
+    const a = Math.abs(100 * d),
+      s = a < 0.05 ? '0' : a < 10 ? String(+a.toFixed(1)) : String(Math.round(a));
+    return (d > 0 && s !== '0' ? '+' : d < 0 && s !== '0' ? '−' : '') + s + (s === '1' ? ' point' : ' points');
+  };
+  // its step on the diverging ramp (the fold's reds and slates): quarters of the largest difference; none under half a point
+  const diffStep = (d, mx) => {
+    const a = Math.abs(d);
+    if (!(mx > 0) || a < Math.min(0.005, mx / 20)) return 'ns';
+    return (d > 0 ? 'm' : 'f') + Math.min(3, Math.floor((4 * a) / mx));
+  };
+  // its ramp is the figure style's sequential one (--fig-seq-1 to 5), and the text on each step
+  const SEQ = {
+    light: ['#86b6ef', '#5598e7', '#2a78d6', '#1c5cab', '#104281'],
+    dark: ['#184f95', '#256abf', '#3987e5', '#6da7ec', '#9ec5f4'],
+    on: {
+      light: ['#111827', '#111827', '#ffffff', '#ffffff', '#ffffff'],
+      dark: ['#f1f5f7', '#f1f5f7', '#111827', '#111827', '#111827'],
+    },
+  };
+  const seqVars = (m) =>
+    SEQ[m].map((v, i) => `--fig-seq-${i + 1}:${v};--fig-seq-on-${i + 1}:${SEQ.on[m][i]};`).join('');
+  const medOf = (xs) => {
+    const v = xs.filter((x) => x != null && Number.isFinite(x)).sort((x, y) => x - y),
+      h = v.length / 2;
+    return v.length ? (v.length % 2 ? v[Math.floor(h)] : (v[h - 1] + v[h]) / 2) : null;
+  };
+  // a share as a percent: whole numbers, one decimal under 10%, never 100% unless every protein has one
+  const pctText = (s) =>
+    s == null
+      ? '–'
+      : s === 0
+        ? '0%'
+        : s < 0.001
+          ? '<0.1%'
+          : s < 0.1
+            ? +(100 * s).toFixed(1) + '%'
+            : Math.round(100 * s) >= 100 && s < 1
+              ? '>99%'
+              : Math.round(100 * s) + '%';
+  // a share's step of the ramp: fifths of the scale {lo, hi}
+  const pctBin = (s, sc) =>
+    s == null || !(sc.hi > sc.lo) ? 0 : Math.max(0, Math.min(4, Math.floor((5 * (s - sc.lo)) / (sc.hi - sc.lo))));
   // the tones of a comparison, light and dark (the explorer's): more likely (up-0 to up-3), less likely, no difference
   const TONES = {
     light: [
@@ -135,6 +196,26 @@
       '.btn.small{padding:.15rem .55rem;font-size:.78rem}.cell-page ' +
       '.btn.quiet{border-color:var(--line-strong);color:var(--ink-2)}',
     '.cell-thead{font-size:.75rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:.3rem}',
+    '.cg-c.p0{fill:var(--fig-seq-1)}.cg-c.p1{fill:var(--fig-seq-2)}.cg-c.p2{fill:var(--fig-seq-3)}.cg-c.p3{fill:var(--fig-seq-4)}.cg-c.p4{fill:var(--fig-seq-5)}',
+    '.cg-line.p0{stroke:var(--fig-seq-1)}.cg-line.p1{stroke:var(--fig-seq-2)}.cg-line.p2{stroke:var(--fig-seq-3)}.cg-line.p3{stroke:var(--fig-seq-4)}.cg-line.p4{stroke:var(--fig-seq-5)}',
+    '.cg-t.q0{fill:var(--fig-seq-on-1)}.cg-t.q1{fill:var(--fig-seq-on-2)}.cg-t.q2{fill:var(--fig-seq-on-3)}.cg-t.q3{fill:var(--fig-seq-on-4)}.cg-t.q4{fill:var(--fig-seq-on-5)}',
+    '.cg-c.m0{fill:var(--t-up-0)}.cg-c.m1{fill:var(--t-up-1)}.cg-c.m2{fill:var(--t-up-2)}.cg-c.m3{fill:var(--t-up-3)}',
+    '.cg-c.f0{fill:var(--t-down-0)}.cg-c.f1{fill:var(--t-down-1)}.cg-c.f2{fill:var(--t-down-2)}.cg-c.f3{fill:var(--t-down-3)}',
+    '.cg-line.m0{stroke:var(--t-up-0)}.cg-line.m1{stroke:var(--t-up-1)}.cg-line.m2{stroke:var(--t-up-2)}.cg-line.m3{stroke:var(--t-up-3)}',
+    '.cg-line.f0{stroke:var(--t-down-0)}.cg-line.f1{stroke:var(--t-down-1)}.cg-line.f2{stroke:var(--t-down-2)}.cg-line.f3{stroke:var(--t-down-3)}',
+    '.kd.m0{background:var(--t-up-0)}.kd.m1{background:var(--t-up-1)}.kd.m2{background:var(--t-up-2)}.kd.m3{background:var(--t-up-3)}',
+    '.kd.f0{background:var(--t-down-0)}.kd.f1{background:var(--t-down-1)}.kd.f2{background:var(--t-down-2)}.kd.f3{background:var(--t-down-3)}.kd.ns{background:var(--t-mid)}',
+    '.pk-bar .m0{background:var(--t-up-0)}.pk-bar .m1{background:var(--t-up-1)}.pk-bar .m2{background:var(--t-up-2)}.pk-bar .m3{background:var(--t-up-3)}',
+    '.pk-bar .f0{background:var(--t-down-0)}.pk-bar .f1{background:var(--t-down-1)}.pk-bar .f2{background:var(--t-down-2)}.pk-bar .f3{background:var(--t-down-3)}.pk-bar .ns{background:var(--t-mid)}',
+    '.kd.p0{background:var(--fig-seq-1)}.kd.p1{background:var(--fig-seq-2)}.kd.p2{background:var(--fig-seq-3)}.kd.p3{background:var(--fig-seq-4)}.kd.p4{background:var(--fig-seq-5)}',
+    '.cell-viewbar{margin:.3rem 0 .5rem}.cell-view button{white-space:normal}.cz-bar .cell-view{margin:0 .5rem}',
+    '.pct-key{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .6rem;font-size:.82rem;color:var(--muted)}',
+    '.pk-bar{position:relative;display:inline-flex;width:160px;height:12px;border:1px solid var(--line-strong);border-radius:2px}.pk-bar i{flex:1 1 0;height:100%;margin:0;padding:0;border:0}.pct-key .pk-bar{gap:0}',
+    '.pk-bar .p0{background:var(--fig-seq-1)}.pk-bar .p1{background:var(--fig-seq-2)}.pk-bar .p2{background:var(--fig-seq-3)}.pk-bar .p3{background:var(--fig-seq-4)}.pk-bar .p4{background:var(--fig-seq-5)}',
+    '.pk-brk{width:9px;height:14px;margin:0 -.35rem 0 -.3rem;fill:none;stroke:var(--ink-2);stroke-width:1.4}',
+    '.pk-ref{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink)}',
+    '.pk-tick{display:inline-block;width:2px;height:12px;background:var(--ink);margin-right:.3rem}',
+    '@media (max-width:700px){.cell-view button{padding:.3rem .55rem}}',
   ].join('');
 
   // ---- the site's rows of each map: the enricher row (counts, fold, q) and its repeat within the strata ----------------
@@ -411,6 +492,16 @@
       `<br><b>Against ${esc(stratified(aid) ? alike : 'the other proteins the map places')}</b>: ${esc(abundText(c.a))}`
     );
   }
+  // where the fold has too few proteins on a side, what can be said: how many of the part's proteins carry a mark (the
+  // percent view's number), and which side is short
+  function fewWords(cells, scoped) {
+    const ts = cells.map(([, c]) => c.t).filter((t) => t && t.M),
+      share = scoped ? null : medOf(ts.map((t) => t.k / t.M));
+    if (share == null) return 'too few proteins';
+    const without = ts.every((t) => t.M - t.k < READ.min_group),
+      withMark = ts.every((t) => t.k < READ.min_group);
+    return `too few ${without ? 'without one ' : withMark ? 'with one ' : 'proteins '}to compare (${pctText(share)} carry one)`;
+  }
   function rowSummary(L, row, scoped) {
     const all = L.cols.map((aid) => [aid, gridCell(aid, row.map[aid], scoped)]).filter(([, c]) => c),
       cells = all.filter(([, c]) => !c.circular),
@@ -451,28 +542,167 @@
               ? (up && down) || ((up || down) && ok.length)
                 ? 'maps disagree'
                 : !ok.length
-                  ? 'too few proteins'
+                  ? fewWords(cells, scoped)
                   : 'no difference'
               : orText({ l2: med }),
       maps: cells.length ? cells.length + (cells.length === 1 ? ' map' : ' maps') : '',
     };
   }
   // every part a row colors, with its summary; a part a row colors only when it has no row of its own (also:)
-  function parts(scoped) {
+  // the percent view of a part: the median over the maps that have it of the share of the set's proteins that carry a mark
+  // (with a selection: that are in it, the whole site's share beside)
+  function pctCell(aid, cat, scoped) {
+    const e = cat && PCTD[aid]?.sets?.[cat];
+    if (!e || !e[0]) return null;
+    const c = { M: e[0], k: e[1], share: e[1] / e[0], whole: e[1] / e[0], wk: e[1], ref: PCTD[aid].n / PCTD[aid].N };
+    if (!scoped) return c;
+    const t = selTests(aid),
+      x = t?.res.get(cat);
+    if (!x) return null;
+    return { ...c, k: x.k, share: x.k / e[0], selected: x.selected, nSel: t.n, ref: t.N ? t.n / t.N : null };
+  }
+  function pctRow(L, row, scoped, view = pv()) {
+    const all = L.cols.map((aid) => [aid, pctCell(aid, row.map[aid], scoped)]).filter(([, c]) => c),
+      mine = !!all.length && all.every(([, c]) => c.selected),
+      share = medOf(all.map(([, c]) => c.share)),
+      n = all.length ? Math.round(medOf(all.map(([, c]) => c.M))) : null;
+    return {
+      row,
+      L,
+      cells: all,
+      a: { l2: null },
+      view,
+      share,
+      n,
+      whole: medOf(all.map(([, c]) => c.whole)),
+      selected: mine,
+      tone: 'na',
+      value: mine
+        ? 'your selection'
+        : share == null
+          ? 'not in these maps'
+          : view === 'diff'
+            ? ptsText(share - pctRef(scoped))
+            : scoped
+              ? `${pctText(share)} in selection`
+              : `${pctText(share)} · ${int(n)} proteins`,
+      maps: all.length ? all.length + (all.length === 1 ? ' map' : ' maps') : '',
+    };
+  }
+  // the share of all the proteins the maps place that carry a mark (that are in the selection): the key's reference tick
+  const pctRef = (scoped) =>
+    medOf(
+      MAPS.map((m) => {
+        const d = PCTD[m.analysis];
+        if (!d) return null;
+        if (!scoped) return d.n / d.N;
+        const t = selTests(m.analysis);
+        return t && t.N ? t.n / t.N : null;
+      })
+    );
+  // the ramp's range. website.cell.range: `full` is 0 to 100%; `data` starts at the lowest share among the parts (parts of at
+  // least min_group proteins), rounded down to 5%, so that a mark on nearly every protein still shows the parts apart. Without
+  // the option, `data` where the share among all the proteins the maps place is 80% or more, else `full`. With a selection the
+  // steps are fifths of the largest share among the parts that are not the selection's own.
+  function pctLo() {
+    const ref = pctRef(false),
+      mode = C.range || (ref != null && ref >= 0.8 ? 'data' : 'full');
+    if (mode !== 'data') return 0;
+    // the parts as drawn: each row's median over its maps, among rows of at least min_group proteins
+    const v = [];
+    for (const L of [LAYERS.part, LAYERS.region])
+      L.groups.forEach(([, rows]) =>
+        rows.forEach((row) => {
+          const cs = L.cols.map((aid) => pctCell(aid, row.map[aid], false)).filter(Boolean);
+          if (cs.length && medOf(cs.map((c) => c.M)) >= READ.min_group) v.push(medOf(cs.map((c) => c.share)));
+        })
+      );
+    return v.length ? Math.min(0.95, Math.floor(Math.min(...v) * 20 + 1e-9) / 20) : 0;
+  }
+  const pctRange = (scoped, shares) => (scoped ? { lo: 0, hi: Math.max(0, ...shares) } : { lo: pctLo(), hi: 1 });
+  function pctScale(P, within, scoped, view) {
+    if (view === 'diff') {
+      const ref = pctRef(scoped),
+        list = Object.values(P).filter((p) => !p.selected && p.share != null),
+        mx = Math.max(0, ...list.map((p) => Math.abs(p.share - ref)));
+      Object.values(P).forEach((p) => {
+        p.tone = p.selected ? 'sel' : p.share == null ? 'na' : diffStep(p.share - ref, mx);
+      });
+      return { P, within, view, range: { max: mx }, ref };
+    }
+    const list = Object.values(P),
+      range = pctRange(
+        scoped,
+        list.filter((p) => !p.selected && p.share != null).map((p) => p.share)
+      );
+    list.forEach((p) => {
+      p.tone = p.selected ? 'sel' : p.share == null ? 'na' : 'p' + pctBin(p.share, range);
+    });
+    return { P, within, view, range, ref: pctRef(scoped) };
+  }
+  // the share of the reviewed proteins that carry a mark (the snapshot's entries, from the run), where the run says
+  const pctProteome = () => (D.cell_proteome ? D.cell_proteome.n / D.cell_proteome.N : null);
+  const pctRefWords = (scoped, ref) =>
+    scoped
+      ? `${pctText(ref)} of mapped proteins are in the selection`
+      : pctProteome() != null
+        ? `${pctText(pctProteome())} of all reviewed proteins · ${pctText(ref)} of mapped proteins`
+        : `${pctText(ref)} of mapped proteins`;
+  const pctBy = (scoped) =>
+    VIEW === 'diff'
+      ? `the difference of each part’s share ${scoped ? 'in the selection' : `with a ${W.mark}`} from the share among all the proteins the maps place`
+      : scoped
+        ? 'the share of each part’s proteins that are in the selection'
+        : `the share of each part’s proteins with a ${W.mark}`;
+  // a part's hover in the percent view: the share and its count, each map's own, and the whole site's share beside a selection
+  function pctTip(p, name) {
+    const nm = `<b>${esc(name || rowName(p.row))}</b>`,
+      scoped = p.cells.some(([, c]) => c.nSel != null);
+    if (p.selected) return `${nm}: your selection`;
+    const ref = pctRef(scoped),
+      lead =
+        p.view === 'diff' && p.share != null
+          ? `${esc(ptsText(p.share - ref))} from all mapped proteins (${esc(pctText(ref))}): `
+          : '';
+    const per = p.cells
+      .map(
+        ([aid, c]) =>
+          esc(DS(aid).name) +
+          ': ' +
+          (scoped
+            ? `${pctText(c.share)} (${int(c.k)} of ${int(c.M)} proteins are in your selection; whole site ${pctText(c.whole)})`
+            : `${pctText(c.share)} (${int(c.k)} of ${int(c.M)} proteins)`)
+      )
+      .join('<br>');
+    return (
+      (scoped
+        ? `${nm}: ${lead}${esc(pctText(p.share))} of ${int(p.n)} proteins are in your selection${p.cells.length > 1 ? ', median of ' + esc(p.maps) : ''}` +
+          `<br>Whole site: ${esc(pctText(p.whole))} have at least one ${esc(W.mark)}`
+        : `${nm}: ${lead}${esc(pctText(p.share))} of ${int(p.n)} proteins have at least one ${esc(W.mark)}${
+            p.cells.length > 1 ? ', median of ' + esc(p.maps) : ''
+          }`) + `<br>${per}<br><span class="muted">Click for its numbers and proteins</span>`
+    );
+  }
+  function parts(scoped, view = VIEW) {
     if (ONE) return oneParts();
-    const P = {},
+    const pct = view !== 'fold',
+      P = {},
       within = {};
     for (const L of [LAYERS.part, LAYERS.region]) {
       L.groups.forEach(([, rows], gi) =>
         rows.forEach((row, ri) => {
-          if (row.part) P[row.part] = { ...rowSummary(L, row, scoped), id: rowId(L, gi, ri) };
+          if (row.part)
+            P[row.part] = {
+              ...(pct ? pctRow(L, row, scoped, view) : rowSummary(L, row, scoped)),
+              id: rowId(L, gi, ri),
+            };
           (row.also || []).forEach((k) => {
             within[k] ||= row.part;
           });
         })
       );
     }
-    return { P, within };
+    return pct ? pctScale(P, within, scoped, view) : { P, within };
   }
 
   // ---- one protein (the protein page's card): the same drawings, each part colored when a map places the protein there ----
@@ -595,13 +825,14 @@
   // ---- the page's drawing helpers: a registry of hover texts, the color classes, labels with leader lines -------------
   let TIPS = [];
   const tipAttr = (html) => ` data-cell-tip="${TIPS.push(html) - 1}"`;
-  function draw(scoped) {
-    const { P, within } = parts(scoped);
+  function draw(scoped, view) {
+    const { P, within } = parts(scoped, view);
     const own = (k) => (P[k] ? k : within[k] && P[within[k]] ? within[k] : null);
     const tn = (k) => (own(k) ? P[own(k)].tone : 'na');
     const fill = (k) => 'cg-c ' + tn(k),
       line = (k) => 'cg-line ' + tn(k);
     const sig = (p) => p.tone[0] === 'u' || p.tone[0] === 'd';
+    const by = () => ((view ? view !== 'fold' : pctOn()) ? pctBy(scoped) : `the fold of ${who(scoped)}`);
     // dup: the drawing's label repeats the part's shape; it keeps the click but is hidden from keyboard and screen reader
     const tip = (k0, name, dup) => {
       const k = own(k0);
@@ -614,6 +845,14 @@
               p.found ? 'found here by ' + and(p.cells.map(([aid]) => esc(DS(aid).name))) : esc(p.value.toLowerCase())
             }`
           ) + ` data-cell-zpart="${esc(k)}"`
+        );
+      if (isPv(p))
+        return (
+          ` data-cell-part="${esc(k)}"` +
+          (dup
+            ? ' aria-hidden="true"'
+            : ` role="button" tabindex="0" aria-label="${esc(`${name || rowName(p.row)}, ${p.value}`)}"`) +
+          tipAttr(pctTip(p, name))
         );
       const only =
         p.cells.length === 1 && p.cells[0][1] && p.cells[0][1].M != null ? ', ' + p.cells[0][1].M + ' proteins' : '';
@@ -662,7 +901,29 @@
               return [it, ls.length > 2 ? [ls[0], K.fit(ls.slice(1).join(' '), room, 14, 700, 1.2)] : ls];
             })
           ),
-          gap = list.some((it) => lines.get(it).length > 1) ? 66 : 52,
+          // the value goes on one line, or on two where it is longer than the room (a percent with its count, a coverage)
+          vals = new Map(
+            list.map((it) => {
+              const p = P[it.k],
+                v = p.selected ? '' : p.value,
+                m = p.maps && !p.selected ? '\u00A0·\u00A0' + p.maps : '';
+              const wt = isPv(p) ? 700 : 400;
+              if (!v || K.tw(v + m, 13, wt) * 1.2 <= room) return [it, null];
+              const ls = K.wrap(v, room / 1.2, 13, wt);
+              return [it, ls.length > 3 ? [ls[0], ls[1], K.fit(ls.slice(2).join(' '), room, 13, wt, 1.2)] : ls];
+            })
+          ),
+          wide = list.some((it) => vals.get(it)),
+          // labels of two-line values still fit between the top and the bottom of the drawing
+          gap = wide
+            ? Math.min(
+                (list.some((it) => lines.get(it).length > 1) ? 66 : 52) +
+                  14 * (Math.max(...list.map((it) => vals.get(it)?.length || 1)) - 1),
+                (H - 56) / Math.max(1, list.length - 1)
+              )
+            : list.some((it) => lines.get(it).length > 1)
+              ? 66
+              : 52,
           top = 30,
           bot = H - 26,
           ys = list.map((it) => it.y);
@@ -690,19 +951,27 @@
               )
               .join('')}</text>` +
             `<text class="cd-val" x="${tx}" y="${y + 18}" text-anchor="${anc}">${
-              p.selected
-                ? ''
-                : sig(p)
-                  ? `<tspan font-weight="700">${esc(p.value)}</tspan>`
-                  : `<tspan class="m">${esc(p.value)}</tspan>`
+              vals.get(it)
+                ? vals
+                    .get(it)
+                    .map(
+                      (t, i, a) =>
+                        `<tspan${isPv(p) ? ' font-weight="700"' : ' class="m"'} x="${tx}"${i ? ' dy="14"' : ''}>${esc(t + (i < a.length - 1 ? ' ' : ''))}</tspan>`
+                    )
+                    .join('')
+                : p.selected
+                  ? ''
+                  : sig(p) || isPv(p)
+                    ? `<tspan font-weight="700">${esc(p.value)}</tspan>`
+                    : `<tspan class="m">${esc(p.value)}</tspan>`
             }` +
-            (p.maps && !p.selected ? `<tspan class="m">\u00A0·\u00A0${esc(p.maps)}</tspan>` : '') +
+            (p.maps && !p.selected && !vals.get(it) ? `<tspan class="m">\u00A0·\u00A0${esc(p.maps)}</tspan>` : '') +
             '</text></g>';
         });
       }
       return g;
     };
-    return { P, own, fill, line, tip, labels, has: (k) => !!own(k) };
+    return { P, own, fill, line, tip, labels, by, has: (k) => !!own(k) };
   }
 
   // ---- geometry: smooth closed outlines, arcs, a mitochondrion, chromosome territories and their fibers --------------
@@ -877,8 +1146,8 @@
   // median of the maps' comparisons, gray where they disagree or show no difference, outlined where no map
   // measures it; a measured part is named beside the drawing and opens its numbers --------------------------------------
   const DRAW = {
-    cell(scoped) {
-      const Dr = draw(scoped),
+    cell(scoped, view) {
+      const Dr = draw(scoped, view),
         Wd = 1000,
         H = 500,
         cx = 500,
@@ -1090,10 +1359,10 @@
         H,
         200
       );
-      return { g, W: Wd, H, aria: `The cell, each compartment colored by the fold of ${who(scoped)}` };
+      return { g, W: Wd, H, aria: `The cell, each compartment colored by ${Dr.by()}` };
     },
-    nucleus(scoped) {
-      const Dr = draw(scoped),
+    nucleus(scoped, view) {
+      const Dr = draw(scoped, view),
         Wd = 1000,
         H = 470,
         cx = 500,
@@ -1235,11 +1504,33 @@
         H,
         200
       );
-      return { g, W: Wd, H, aria: `The nucleus, each part colored by the fold of ${who(scoped)}` };
+      return { g, W: Wd, H, aria: `The nucleus, each part colored by ${Dr.by()}` };
     },
   };
 
   // ---- the grids: rows of a layer against its maps ---------------------------------------------------------------------
+  // a grid cell in the percent view: the share, its step of the ramp, and its counts on hover
+  function pctGridCell(aid, cat, scoped, sc) {
+    const c = pctCell(aid, cat, scoped);
+    if (!c) return null;
+    const ds = DS(aid),
+      head = `<b>${esc(ds.name)}</b>${ds.method ? ` (${esc(ds.method)}${ds.cells ? ', ' + esc(ds.cells) : ''})` : ''}: ${esc(label(aid, cat))}<br>`,
+      diff = VIEW === 'diff',
+      bin = diff ? diffStep(c.share - c.ref, sc.max) : 'p' + pctBin(c.share, sc),
+      lead = diff ? `${esc(ptsText(c.share - c.ref))} from all mapped proteins (${esc(pctText(c.ref))}); ` : '';
+    return {
+      circular: false,
+      selected: c.selected,
+      tone: c.selected ? 'sel' : bin,
+      tcls: diff ? 't' + bin.slice(1) : 'q' + bin.slice(1),
+      text: c.selected ? '·' : diff ? ptsText(c.share - c.ref) : pctText(c.share),
+      tip: c.selected
+        ? head + 'Your selection was made with this set'
+        : scoped
+          ? `${head}${lead}${esc(pctText(c.share))}: ${int(c.k)} of the ${int(c.M)} proteins here are in your selection<br><span class="muted">Whole site: ${esc(pctText(c.whole))} (${int(c.wk)} of ${int(c.M)}) have at least one ${esc(W.mark)}</span>`
+          : `${head}${lead}${esc(pctText(c.share))}: ${int(c.k)} of the ${int(c.M)} proteins here have at least one ${esc(W.mark)}`,
+    };
+  }
   function gridSvg(L, scoped) {
     const cols = L.cols,
       LW = L.key === 'region' ? 190 : 300,
@@ -1247,6 +1538,19 @@
       RH = 24,
       HH = 46,
       Wd = LW + cols.length * CW + 8;
+    // the percent view's steps: fifths of its range (with a selection, of the largest share in the grid)
+    const gcells = (sc) =>
+      L.groups.flatMap(([, rows]) =>
+        rows.flatMap((row) => cols.map((aid) => pctCell(aid, row.map[aid], sc)).filter((c) => c && !c.selected))
+      );
+    const gsc = !pctOn()
+      ? null
+      : VIEW === 'diff'
+        ? { max: Math.max(0, ...gcells(scoped).map((c) => Math.abs(c.share - c.ref))) }
+        : pctRange(
+            scoped,
+            gcells(true).map((c) => c.share)
+          );
     let y = HH + 4,
       g = '';
     cols.forEach((aid, i) => {
@@ -1269,7 +1573,7 @@
           )}"><rect class="cg-hit" ` +
           `x="0" y="${y}" width="${Wd}" height="${RH}"/><text class="cg-r" x="10" y="${y + 16}">${esc(row.label)}</text>`;
         cols.forEach((aid, i) => {
-          const c = gridCell(aid, row.map[aid], scoped),
+          const c = pctOn() ? pctGridCell(aid, row.map[aid], scoped, gsc) : gridCell(aid, row.map[aid], scoped),
             x = LW + i * CW + 4;
           if (!c) {
             g += `<rect class="cg-c na" x="${x}" y="${y + 2}" width="${CW - 8}" height="${RH - 4}" rx="3"/>`;
@@ -1277,9 +1581,9 @@
           }
           g +=
             `<g${tipAttr(
-              cellTip(aid, row.map[aid], c, scoped)
+              c.tip || cellTip(aid, row.map[aid], c, scoped)
             )}><rect class="cg-c ${c.tone}" x="${x}" y="${y + 2}" width="${CW - 8}" height="${RH - 4}" rx="3"/>` +
-            `<text class="cg-t t${c.tone.slice(1)}" x="${x + (CW - 8) / 2}" y="${y + 16}" text-anchor="middle">${esc(c.circular ? '·' : orText(c.a))}</text></g>`;
+            `<text class="cg-t ${c.tcls || 't' + c.tone.slice(1)}" x="${x + (CW - 8) / 2}" y="${y + 16}" text-anchor="middle">${esc(c.text ?? (c.circular ? '·' : orText(c.a)))}</text></g>`;
         });
         g += '</g>';
         y += RH;
@@ -1290,11 +1594,51 @@
       g,
       W: Wd,
       H: y,
-      aria: `${L.key === 'region' ? 'Regions' : 'Compartments'} against maps: the fold ` + `of ${who(scoped)} in each`,
+      aria: `${L.key === 'region' ? 'Regions' : 'Compartments'} against maps: ${
+        pctOn() ? pctBy(scoped) : 'the fold of ' + who(scoped)
+      } in each`,
     };
   }
   const v6 = (u) => (u == null ? '' : Number.isFinite(u) ? String(+u.toFixed(4)) : u > 0 ? 'Inf' : '-Inf');
+  // the percent view's table: a row for each compartment and map, as the grid shows it
+  function pctTsv(L, scoped) {
+    const diff = VIEW === 'diff',
+      head =
+        (scoped
+          ? 'compartment\tmap\tn_proteins\tn_in_selection\tpercent\tn_with_sites\tpercent_with_sites'
+          : 'compartment\tmap\tn_proteins\tn_with_sites\tpercent') + (diff ? '\tpoints_from_all_mapped\n' : '\n');
+    const pc2 = (s) => (s == null ? '' : String(+(100 * s).toFixed(2)));
+    const body = L.groups.flatMap(([, rows]) =>
+      rows.flatMap((row) =>
+        L.cols
+          .map((aid) => [aid, pctCell(aid, row.map[aid], scoped)])
+          .filter(([, c]) => c)
+          .map(([aid, c]) =>
+            [
+              ...(scoped
+                ? [row.label, DS(aid).name, c.M, c.k, pc2(c.share), c.wk, pc2(c.whole)]
+                : [row.label, DS(aid).name, c.M, c.k, pc2(c.share)]),
+              ...(diff ? [pc2(c.share - c.ref)] : []),
+            ].join('\t')
+          )
+      )
+    );
+    return (
+      K.preamble(
+        `${C.title || 'Where in the cell'}: ${L.key === 'region' ? 'regions' : 'compartments'}, percent of proteins`,
+        `${pctSub()} n_proteins: the reviewed proteins the map places in the compartment; ${
+          scoped
+            ? 'n_in_selection: of them in your selection; n_with_sites: of them with'
+            : 'n_with_sites: of them with'
+        } at least one ${W.mark}`
+      ) +
+      head +
+      body.join('\n') +
+      '\n'
+    );
+  }
   function gridTsv(L, scoped) {
+    if (pctOn()) return pctTsv(L, scoped);
     const head = scoped
       ? 'group\tcompartment\tmap\tmap_category\tmembers\tselected\tselected_placed\tplaced\tlog2_odds_ratio\tlog2_ci_low\tlog2_ci_high\tp\tq\tnot_compared\n'
       : 'group\tcompartment\tmap\tmap_category\tmembers\tmarked\tlog2_fold_enrichment\tq\tlog2_odds_ratio_within_strata\tlog2_ci_low\tlog2_ci_high\tq_within_strata\n';
@@ -1504,7 +1848,8 @@
     '--ink:#111827;--ink-2:#374151;--muted:#5f6f78;--line:#e0e8eb;--line-strong:#c7d4d9;--surface:#ffffff;--accent:' +
     K.accent() +
     ';--more:#b42318;--less:#334155;' +
-    TONES.light.map(([k, v]) => `--t-${k}:${v};`).join('');
+    TONES.light.map(([k, v]) => `--t-${k}:${v};`).join('') +
+    seqVars('light');
   function inlined(f) {
     const holder = document.createElement('div');
     holder.className = 'cell-x';
@@ -1579,31 +1924,54 @@
       extra: { question: ID },
     });
   }
+  const pctSub = () =>
+    VIEW === 'diff'
+      ? `Difference, in points, between each part's share of proteins ${scopedNow() ? 'in your selection' : `with at least one ${W.mark}`} and the share among all the proteins the maps place; the median of the maps that have the part.`
+      : scopedNow()
+        ? `Percent of each part's proteins that are in your selection, among the reviewed proteins each map places there; the median of the maps that have the part.`
+        : `Percent of each part's proteins with at least one ${W.mark}, among the reviewed proteins each map places there; the median of the maps that have the part.`;
   const keyWords = () =>
-    `Red: ${who(scopedNow())} are more likely to be found there than ${alike}. Slate: less ` +
-    `likely, deeper for larger folds. Gray: no difference, the maps disagree, fewer than ${READ.min_maps} maps ` +
-    `agree, or too few proteins. Dashed outline: no map measures it.`;
-  const testWords = () =>
-    (allStrat
-      ? `In each map, the fold: the share of ${who(scopedNow())} placed in the part over the share of all the ` +
-        `proteins the map places; tested against ${alike} (Mantel–Haenszel across the abundance strata, ` +
-        `continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} ` +
-        `and a fold of 1.1× or more.`
-      : `In each map, the fold against the other proteins the map places (one-sided hypergeometric test, ` +
-        `Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} and 1.1× or more.`) +
-    ` A map with fewer than ${READ.min_group} ${W.marked} or other proteins in a part is not colored there. A part takes ` +
-    `the median fold of the maps that have it, colored only when at least ${READ.min_maps} of them find a difference ` +
-    `the same way and none the other way.`;
+    VIEW === 'diff'
+      ? `Red: the part's share of proteins ${scopedNow() ? 'in your selection' : `with at least one ${W.mark}`} is above the share among all the proteins the maps place (${pctText(
+          pctRef(scopedNow())
+        )}). Slate: below it, deeper for larger differences (the steps are quarters of the largest, ${ptsText(
+          parts(scopedNow(), 'diff').range.max
+        ).replace(/^\+/, '')}). Gray: within half a point. Dashed outline: no map measures it.`
+      : pctOn()
+        ? `Blue: the share of a part's proteins ${scopedNow() ? 'that are in your selection' : `with at least one ${W.mark}`}, darker for a larger share${
+            scopedNow() ? ' (the steps are fifths of the largest share)' : ''
+          }.${(() => {
+            const r = parts(scopedNow(), pv()).range;
+            return r.lo > 0 ? ` The scale starts at ${pctText(r.lo)}, not 0.` : '';
+          })()} Tick: the share among all the proteins the maps place. Dashed outline: no map measures it.`
+        : `Red: ${who(scopedNow())} are more likely to be found there than ${alike}. Slate: less ` +
+          `likely, deeper for larger folds. Gray: no difference, the maps disagree, fewer than ${READ.min_maps} maps ` +
+          `agree, or too few proteins. Dashed outline: no map measures it.`;
+  const testWords = (view = pctOn() ? 'percent' : 'fold') =>
+    view === 'percent'
+      ? `A protein counts as having a ${W.mark} when it has at least one. Each map's proteins are the reviewed proteins it places; a part takes the median of the maps that have it. This view makes no test.`
+      : (allStrat
+          ? `In each map, the fold: the share of ${who(scopedNow())} placed in the part over the share of all the ` +
+            `proteins the map places; tested against ${alike} (Mantel–Haenszel across the abundance strata, ` +
+            `continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} ` +
+            `and a fold of 1.1× or more.`
+          : `In each map, the fold against the other proteins the map places (one-sided hypergeometric test, ` +
+            `Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} and 1.1× or more.`) +
+        ` A map with fewer than ${READ.min_group} ${W.marked} or other proteins in a part is not colored there. A part takes ` +
+        `the median fold of the maps that have it, colored only when at least ${READ.min_maps} of them find a difference ` +
+        `the same way and none the other way.`;
   const FIGS = {
     regions: {
       title: () => `${C.title || 'Where in the cell'}: regions against maps`,
-      sub: () => `The fold of ${who(scopedNow())} against ${alike}, for each ` + `region in each map.`,
+      sub: () =>
+        pctOn() ? pctSub() : `The fold of ${who(scopedNow())} against ${alike}, for each ` + `region in each map.`,
       make: () => gridSvg(LAYERS.region, scopedNow()),
       tsv: () => gridTsv(LAYERS.region, scopedNow()),
     },
     grid: {
       title: () => `${C.title || 'Where in the cell'}: compartments against maps`,
-      sub: () => `The fold of ${who(scopedNow())} against ${alike}, for each ` + `compartment in each map.`,
+      sub: () =>
+        pctOn() ? pctSub() : `The fold of ${who(scopedNow())} against ${alike}, for each ` + `compartment in each map.`,
       make: () => gridSvg(LAYERS.part, scopedNow()),
       tsv: () => gridTsv(LAYERS.part, scopedNow()),
     },
@@ -1625,8 +1993,11 @@
   DRAWINGS.forEach((d) => {
     FIGS[d.drawing] = {
       title: () => `${C.title || 'Where in the cell'}${d.title ? ': ' + d.title.replace(/^The /, 'the ') : ''}`,
-      sub: () => `Fold of ${who(scopedNow())} against ${alike}, as the ` + `median of the maps that have each part.`,
-      make: () => DRAW[d.drawing](scopedNow()),
+      sub: () =>
+        pctOn()
+          ? pctSub()
+          : `Fold of ${who(scopedNow())} against ${alike}, as the ` + `median of the maps that have each part.`,
+      make: (view) => DRAW[d.drawing](scopedNow(), view),
       tsv: () => gridTsv(LAYERS.part, scopedNow()),
       zoom: d.drawing,
       lead: () => {
@@ -1677,8 +2048,24 @@
   // for the last drawing made, so a page draws the cell once at a time.
   const crops = D.cell_crops || {};
   const toneDir = (tn) => (tn[0] === 'u' ? 'more' : tn[0] === 'd' ? 'less' : tn);
+  function pctValues(scoped = scopedNow()) {
+    const { P } = parts(scoped, pv());
+    return Object.entries(P).map(([part, p]) => ({
+      part,
+      drawings: DRAWINGS.filter((d) => PARTS[d.drawing].includes(part)).map((d) => d.drawing),
+      row: rowName(p.row),
+      id: p.id,
+      tone: p.tone,
+      share: p.share,
+      n: p.n,
+      whole: p.whole,
+      value: p.value,
+      selected: !!p.selected,
+      maps: p.cells.length,
+    }));
+  }
   function partValues(scoped = scopedNow()) {
-    const { P } = parts(scoped);
+    const { P } = parts(scoped, 'fold');
     return Object.entries(P).map(([part, p]) => ({
       part,
       drawings: DRAWINGS.filter((d) => PARTS[d.drawing].includes(part)).map((d) => d.drawing),
@@ -1702,7 +2089,7 @@
     if (!el || !d || !DRAW[d.drawing]) return null;
     const scoped = o.scoped ?? scopedNow();
     if (!o.keep) TIPS = [];
-    const f = DRAW[d.drawing](scoped);
+    const f = DRAW[d.drawing](scoped, o.view);
     el.innerHTML = svgOf(f, 'cell-svg cell-' + d.drawing);
     const sv = el.firstElementChild,
       crop = o.crop === true ? crops[d.drawing] : Array.isArray(o.crop) ? o.crop : null;
@@ -1803,9 +2190,14 @@
       })),
     parts: partValues,
     // the one-line answer as the tile shows it (html)
-    answer: (scoped = scopedNow()) => {
-      const { regs, up } = summaries(scoped);
-      return cellAnswer(regs, up, scoped);
+    // the share of each part's proteins with a mark (in the selection): [{ part, row, tone, share, n, whole, value, maps }]
+    percent: pctValues,
+    // the percent view's ramp: { lo, hi } as shares
+    percentRange: (scoped = scopedNow()) => parts(scoped, 'percent').range,
+    differenceRange: (scoped = scopedNow()) => parts(scoped, 'diff').range,
+    answer: (scoped = scopedNow(), view = 'fold') => {
+      const { regs, up } = summaries(scoped, 'fold');
+      return cellAnswer(regs, up, scoped, view);
     },
     draw: drawInto,
   });
@@ -1836,11 +2228,11 @@
     `<div class="cell-scroll">${svgOf(FIGS[k].make(), 'cell-svg cell-' + k)}</div></div>`;
 
   // ---- the tile and the page --------------------------------------------------------------------------------------------
-  function summaries(scoped) {
+  function summaries(scoped, view) {
     const regs = LAYERS.region.groups.length
       ? LAYERS.region.groups[0][1].map((row) => rowSummary(LAYERS.region, row, scoped))
       : [];
-    const { P } = parts(scoped);
+    const { P } = parts(scoped, view === 'fold' ? 'fold' : undefined);
     const up = Object.values(P)
       .filter((p) => p.L === LAYERS.part && p.tone[0] === 'u')
       .sort((a, b) => b.a.l2 - a.a.l2);
@@ -1878,6 +2270,7 @@
         : 'Not compared.'
       : `No region differs from ${esc(alike)} in at least ${READ.min_maps} maps.`;
   function lead(regs, up, scoped, short) {
+    if (pctOn() && !short) return pctAnswer(scoped);
     const sl = selLead(scoped, short);
     if (sl) return sl;
     const num = (x) => (short ? '' : ` (${esc(orText(x.a))})`),
@@ -1967,7 +2360,75 @@
   // A phone gets the drawings without their side labels, cropped to fit, and one list for each ---------------------------------
   const narrow = () => matchMedia('(max-width: 700px)').matches;
   const pname = (x) => (x.part ? partName(x.part) : rowName(x.row));
-  function cellAnswer(regs, up, scoped) {
+  // the percent view's sentence, made from the parts' shares: how many parts have a mark on more than half their proteins,
+  // and the parts at both ends (parts of at least min_group proteins; with a selection, the share of each part in it)
+  function pctAnswer(scoped) {
+    const rows = Object.values(parts(scoped, pv()).P)
+      .filter((p) => p.L === LAYERS.part && !p.selected && p.share != null && p.n >= READ.min_group)
+      .sort((a, b) => b.share - a.share);
+    const it = (p) => `${inText(p.row)} (${pctText(p.share)})`;
+    if (!rows.length) return `No part of the cell holds ${READ.min_group} or more proteins in these maps.`;
+    if (VIEW === 'diff') {
+      const ref = pctRef(scoped),
+        d = (p) => p.share - ref,
+        it2 = (p) => `${inText(p.row)} (${ptsText(d(p))})`,
+        up = rows.filter((p) => d(p) > 0.0005).slice(0, 2),
+        down = rows
+          .filter((p) => d(p) < -0.0005)
+          .slice(-2)
+          .reverse();
+      return (
+        (scoped
+          ? `${pctText(ref)} of mapped proteins are in the selection; `
+          : `${pctText(ref)} of mapped proteins carry ${/^[aeiou]/i.test(W.mark) ? 'an' : 'a'} ${W.mark}; `) +
+        (up.length || down.length
+          ? [
+              up.length ? `${and(up.map(it2))} the furthest above that` : '',
+              down.length ? `${and(down.map(it2))} the furthest below` : '',
+            ]
+              .filter(Boolean)
+              .join(', ') + '.'
+          : 'no part differs from that by half a point or more.')
+      );
+    }
+    if (scoped) {
+      const top = rows.slice(0, 2),
+        last = rows.length > 2 ? rows[rows.length - 1] : null;
+      return (
+        `Of the proteins in each part of the cell, the largest share is in your selection for ${and(top.map(it))}` +
+        (last ? `, the smallest for ${it(last)}.` : '.')
+      );
+    }
+    if (rows.length === 1)
+      return `${cap(inText(rows[0].row))}: ${pctText(rows[0].share)} of its proteins have a ${W.mark}.`;
+
+    // a mark on 80% or more of the mapped proteins: the overall share, and the parts that fall furthest below it
+    const ref = pctRef(false);
+    if (ref != null && ref >= 0.8)
+      return (
+        `${ref >= 0.95 ? 'Nearly every mapped protein carries' : 'Most mapped proteins carry'} ${/^[aeiou]/i.test(W.mark) ? 'an' : 'a'} ` +
+        `${W.mark} (${pctText(ref)}); ${and(rows.slice(-2).reverse().map(it))} the fewest.`
+      );
+    const n = rows.length,
+      above = rows.filter((p) => p.share > 0.5).length,
+      lead =
+        above === n
+          ? 'Every compartment has'
+          : above * 2 > n
+            ? 'Most compartments have'
+            : above === 0
+              ? 'No compartment has'
+              : above * 2 === n
+                ? 'Half of the compartments have'
+                : 'Fewer than half of the compartments have',
+      top = rows.slice(0, 2);
+    return (
+      `${lead} ${W.marks} on more than half ${above === n || above === 0 ? 'its' : 'their'} proteins; ` +
+      `${and(top.map(it))} the most, ${it(rows[n - 1])} the least.`
+    );
+  }
+  function cellAnswer(regs, up, scoped, view = pctOn() ? pv() : 'fold') {
+    if (view !== 'fold') return pctAnswer(scoped);
     const sl = selLead(scoped, false);
     if (sl) return sl;
     const one = (x) => `<b>${esc(inText(x.row))}</b> overall (${esc(orText(x.a))})`,
@@ -1991,7 +2452,38 @@
         ? noneWords(regs, scoped)
         : `${cap(who(scoped))} are not ` + `enriched in any part of the cell.`;
   }
+  // the percent view's list: the parts with the largest shares, each selecting its proteins
+  function partListPct(d, ps) {
+    const ref = pctRef(scopedNow()),
+      on = new Set(S.f['w:' + ID] || []),
+      mine = ps.filter((p) => p.drawings.includes(d.drawing) && p.selected),
+      top = ps
+        .filter((p) => p.drawings.includes(d.drawing) && !p.selected && p.share != null)
+        .sort((x, y) => (VIEW === 'diff' ? Math.abs(y.share - ref) - Math.abs(x.share - ref) : y.share - x.share))
+        .slice(0, 6);
+    return (
+      `<section class="cp-col"><h4>${esc(d.title || cap(d.drawing))}</h4><ul class="cp-list">` +
+      mine
+        .map(
+          (p) =>
+            `<li><button type="button" class="cp-row on" data-cell-sel="${esc(p.part)}" aria-pressed="true" title="Your selection: ` +
+            `the ${esc(W.marks)} of ${esc(pname(p))}. Click to remove it">` +
+            `<i class="kd sel"></i><span class="cp-n">${esc(pname(p))}</span><span class="sel-pill">Your selection</span></button></li>`
+        )
+        .join('') +
+      top
+        .map(
+          (p) =>
+            `<li><button type="button" class="cp-row${on.has(p.part) ? ' on' : ''}" data-cell-sel="${esc(p.part)}" aria-pressed="${on.has(p.part)}" title="Select ` +
+            `the ${esc(W.marks)} of ${esc(pname(p))}: ${esc(p.value)}">` +
+            `<i class="kd ${p.tone}"></i><span class="cp-n">${esc(pname(p))}</span><b>${esc(VIEW === 'diff' ? ptsText(p.share - ref) : pctText(p.share))}</b></button></li>`
+        )
+        .join('') +
+      '</ul></section>'
+    );
+  }
   function partList(d, ps) {
+    if (pctOn()) return partListPct(d, ps);
     const on = new Set(S.f['w:' + ID] || []);
     const mine = ps.filter((p) => p.drawings.includes(d.drawing) && p.selected);
     const rows = ps.filter((p) => p.drawings.includes(d.drawing) && p.or != null && p.direction !== 'na');
@@ -2041,7 +2533,7 @@
     TIPS = [];
     const scoped = scopedNow(),
       { regs, up } = summaries(scoped),
-      ps = partValues(scoped);
+      ps = pctOn() ? pctValues(scoped) : partValues(scoped);
     const title = card.title || C.title || 'Where in the cell';
     const note =
       K.selOn() && !scoped
@@ -2079,11 +2571,26 @@
     return (
       `<article class="tile wide cell-tile" id="tile-${esc(ID)}" data-tile="${esc(ID)}" tabindex="0"><header>` +
       `<h3>${esc(title)}</h3>${K.detailsLink(ID)}</header>` +
+      (HAS_PCT ? `<div class="cell-viewbar">${viewSwitch()}</div>` : '') +
       `<p class="tans cell-ans">${cellAnswer(regs, up, scoped)}</p><div class="cell-pair">${figs}</div>` +
       `<div class="cp-cols">${DRAWINGS.map((d) => partList(d, ps)).join('')}</div>` +
-      `<p class="tkey">Fold against ${esc(alike)}, ${mapsUsed(scoped)}; colored where at least ${READ.min_maps} agree.</p>${note}<div class="tact">${bar}</div></article>`
+      (pctOn()
+        ? pctKey(scoped).replace('class="key', 'class="tkey key')
+        : `<p class="tkey">Fold against ${esc(alike)}, ${mapsUsed(scoped)}; colored where at least ${READ.min_maps} agree.</p>`) +
+      `${note}<div class="tact">${bar}</div></article>`
     );
   }
+  // the switch on every map of the cell: the share of proteins with a mark, or the fold against the other proteins
+  const viewSwitch = () =>
+    HAS_PCT
+      ? `<span class="seg cell-view" role="group" aria-label="What the colors show">${[
+          ['percent', 'Percent with sites'],
+          ['diff', 'Difference from all mapped proteins'],
+          ['fold', 'Fold vs other proteins'],
+        ]
+          .map(([k, w]) => `<button type="button" data-cellview="${k}" aria-pressed="${VIEW === k}">${w}</button>`)
+          .join('')}</span>`
+      : '';
   const toggle = (part) => {
     const t = document.getElementById('tip');
     if (t) t.hidden = true;
@@ -2100,7 +2607,8 @@
     return null;
   };
   let ZD = null,
-    ZS = null;
+    ZS = null,
+    ZV = null;
   const PER = 50;
   function zoomList(part, page = 0) {
     const box = ZD.querySelector('.cz-list'),
@@ -2251,8 +2759,9 @@
     const title = one
       ? `${D.proteins[one.i][1] || D.proteins[one.i][0]}: the ${drawing}`
       : `${d.title || cap(drawing)}${K.sel?.active() ? ', your selection' : ''}`;
+    ZV = { drawing, one };
     ZD.innerHTML =
-      `<div class="cz-bar"><strong>${esc(title)}</strong><span class="cz-btns"><button type="button" ` +
+      `<div class="cz-bar"><strong>${esc(title)}</strong>${one ? '' : viewSwitch()}<span class="cz-btns"><button type="button" ` +
       `class="btn small" data-cz="more" aria-label="Zoom in" title="Zoom in">+</button><button type="button" ` +
       `class="btn small" data-cz="less" aria-label="Zoom out" title="Zoom out">−</button><button type="button" ` +
       `class="btn small" data-cz="reset" title="Back to the whole drawing">Reset</button><button type="button" ` +
@@ -2405,7 +2914,7 @@
     };
     stage.addEventListener('pointerup', up);
     stage.addEventListener('pointercancel', up);
-    ZD.showModal();
+    if (!ZD.open) ZD.showModal();
     try {
       new ResizeObserver(apply).observe(stage);
     } catch (e) {
@@ -2441,7 +2950,7 @@
     if (card.drawing === true && DRAWINGS.length) return bigTile(card);
     TIPS = [];
     const scoped = scopedNow(),
-      { regs, up } = summaries(scoped);
+      { regs, up } = summaries(scoped, 'fold');
     const items = [
       ...regs.map((x) => ({ ...x, name: rowName(x.row), tip: sumTip(x, scoped) })),
       ...(up.length
@@ -2464,7 +2973,7 @@
     const dw = card.drawing ? DRAWINGS.find((d) => d.drawing === card.drawing) || DRAWINGS[0] : null;
     const fig = dw
       ? `<div class="cell-scroll cell-tile-fig">${svgOf(
-          FIGS[dw.drawing].make(),
+          FIGS[dw.drawing].make('fold'),
           'cell-svg cell-' + dw.drawing,
           'img'
         ).replace(/<g [^>]*>/g, (g) =>
@@ -2480,7 +2989,32 @@
   }
   // the color key as the export draws it (the circles of K.figureFrame's legend), in the page's words
   const hasSel = () => scopedNow() && Object.values(parts(true).P || {}).some((p) => p.selected);
+  // the percent view's key: the five steps of the ramp with their range, the reference tick, and what is not measured
+  const pctLegend = () => {
+    const scoped = scopedNow();
+    if (VIEW === 'diff') {
+      const t = Object.fromEntries(TONES.light),
+        { ref } = parts(scoped, 'diff');
+      return [
+        [t['up-2'], t['up-3'], `above the share among all mapped proteins (${pctText(ref)})`],
+        [t['mid'], '#8a96a0', 'within half a point of it'],
+        [t['down-2'], t['down-3'], 'below it'],
+        ...(ref != null ? [['', '#111827', pctRefWords(scoped, ref), 'tick']] : []),
+        ['#ffffff', '#8a96a0', 'not measured'],
+        ...(hasSel() ? [['#ffffff', '#111827', 'outlined: your selection']] : []),
+      ];
+    }
+    const { range, ref } = parts(scoped, 'percent'),
+      at = (i) => pctText(range.lo + (i * (range.hi - range.lo)) / 5);
+    return [
+      ...SEQ.light.map((c, i) => [c, c, `${at(i)}–${at(i + 1)}`]),
+      ...(ref != null ? [['', '#111827', pctRefWords(scoped, ref), 'tick']] : []),
+      ['#ffffff', '#8a96a0', 'not measured'],
+      ...(hasSel() ? [['#ffffff', '#111827', 'outlined: your selection']] : []),
+    ];
+  };
   const colourLegend = () => {
+    if (pctOn()) return pctLegend();
     const t = Object.fromEntries(TONES.light),
       plain = (s) => {
         const b = document.createElement('div');
@@ -2495,15 +3029,60 @@
       ...(hasSel() ? [['#ffffff', '#111827', 'outlined: your selection']] : []),
     ];
   };
-  const colourKey = () =>
-    `<p class="key cell-keys"><span class="cell-key"><i class="cg-k u3"></i><i class="cg-k ` +
-    `u1"></i> more likely than ${esc(alike)}</span><span class="cell-key"><i class="cg-k ns"></i> no ` +
-    `difference</span>` +
-    (`<span class="cell-key"><i class="cg-k d1"></i><i class="cg-k d3"></i> less likely</span><span ` +
-      `class="cell-key"><i class="cg-k na"></i> not measured</span>${
+  // the same on the page: a ramp bar with the ends of its scale and a tick at the share among all the proteins the maps place
+  function pctKey(scoped) {
+    if (VIEW === 'diff') {
+      const { range, ref } = parts(scoped, 'diff'),
+        steps = ['f3', 'f2', 'f1', 'f0', 'ns', 'm0', 'm1', 'm2', 'm3'];
+      return (
+        `<div class="key cell-keys pct-key" role="group" aria-label="Color key"><span>Difference from the share among all mapped proteins${
+          ref != null ? ` (${esc(pctText(ref))})` : ''
+        }</span><span class="pk-lo">${esc(ptsText(-range.max))}</span><span class="pk-bar" role="img" aria-label="from ${esc(
+          ptsText(-range.max)
+        )} to ${esc(ptsText(range.max))}; red above, slate below">${steps.map((s) => `<i class="${s}"></i>`).join('')}<b class="pk-ref" style="left:50%"></b></span><span class="pk-hi">${esc(
+          ptsText(range.max)
+        )}</span>` +
+        (ref != null ? `<span class="cell-key"><i class="pk-tick"></i>${esc(pctRefWords(scoped, ref))}</span>` : '') +
+        `<span class="cell-key"><i class="cg-k na"></i> not measured</span>${
+          hasSel() ? '<span class="cell-key"><i class="cg-k sel"></i> outlined: your selection</span>' : ''
+        }</div>`
+      );
+    }
+    const { range, ref } = parts(scoped, 'percent'),
+      cut = range.lo > 0,
+      at =
+        ref != null && range.hi > range.lo
+          ? Math.min(100, Math.max(0, (100 * (ref - range.lo)) / (range.hi - range.lo)))
+          : null;
+    return (
+      `<div class="key cell-keys pct-key" role="group" aria-label="Color key"><span>${
+        scoped ? 'Share of a part’s proteins in your selection' : `Share of a part’s proteins with a ${esc(W.mark)}`
+      }</span><span class="pk-lo">${pctText(range.lo)}</span>${
+        cut ? '<svg class="pk-brk" viewBox="0 0 10 14" aria-hidden="true"><path d="M2,0 L8,5 L2,9 L8,14"/></svg>' : ''
+      }<span class="pk-bar" role="img" aria-label="${
+        scoped
+          ? 'darker is a larger share'
+          : `from ${pctText(range.lo)} to ${pctText(range.hi)}, darker is a larger share${cut ? '; the scale does not start at 0' : ''}`
+      }">${[0, 1, 2, 3, 4].map((i) => `<i class="p${i}"></i>`).join('')}${
+        at != null ? `<b class="pk-ref" style="left:${at.toFixed(1)}%"></b>` : ''
+      }</span><span class="pk-hi">${pctText(range.hi)}</span>` +
+      (ref != null ? `<span class="cell-key"><i class="pk-tick"></i>${esc(pctRefWords(scoped, ref))}</span>` : '') +
+      `<span class="cell-key"><i class="cg-k na"></i> not measured</span>${
         hasSel() ? '<span class="cell-key"><i class="cg-k sel"></i> outlined: your selection</span>' : ''
-      }<span>numbers: odds ratios (in the drawings, ` +
-      `the median of the maps)</span></p>`);
+      }</div>`
+    );
+  }
+  const colourKey = () =>
+    pctOn()
+      ? pctKey(scopedNow())
+      : `<p class="key cell-keys"><span class="cell-key"><i class="cg-k u3"></i><i class="cg-k ` +
+        `u1"></i> more likely than ${esc(alike)}</span><span class="cell-key"><i class="cg-k ns"></i> no ` +
+        `difference</span>` +
+        (`<span class="cell-key"><i class="cg-k d1"></i><i class="cg-k d3"></i> less likely</span><span ` +
+          `class="cell-key"><i class="cg-k na"></i> not measured</span>${
+            hasSel() ? '<span class="cell-key"><i class="cg-k sel"></i> outlined: your selection</span>' : ''
+          }<span>numbers: odds ratios (in the drawings, ` +
+          `the median of the maps)</span></p>`);
   // the members of a row: the marked proteins (or the selection's) each map places in the row's compartment
   function members(L, row, scoped) {
     const SD = K.sel.data();
@@ -2525,20 +3104,31 @@
   function detail(scoped) {
     const [L, row] = UI.row ? rowOf(UI.row) : [null, null];
     if (!row) return '';
-    const s = rowSummary(L, row, scoped),
+    const pct = pctOn(),
+      s = pct ? pctRow(L, row, scoped) : rowSummary(L, row, scoped),
       wh = who(scoped),
       sig = s.tone[0] === 'u' || s.tone[0] === 'd';
-    const verdict = s.selected
-      ? `This is the part your selection was made with, so it is not compared with itself. The drawings compare the other parts.`
-      : sig
-        ? `${cap(wh)} are <b>${s.tone[0] === 'u' ? 'more' : 'less'} likely</b> to be found here ` +
-          `than ${esc(alike)} (${esc(orWords(s.a))}${s.cells.length > 1 ? ', the median of ' + s.maps : ''}).`
-        : s.tone === 'ns'
-          ? s.value === 'maps disagree'
-            ? `The maps disagree. In some, ${esc(wh)} are more likely ` +
-              `to be found here than ${esc(alike)}, in others less likely.`
-            : `${cap(wh)} are found here about as ` + `often as ${esc(alike)}.`
-          : `No map compares ${esc(wh)} here.`;
+    const verdict = pct
+      ? s.selected
+        ? 'This is the part your selection was made with.'
+        : s.share == null
+          ? 'No map places proteins here.'
+          : scoped
+            ? `${pctText(s.share)} of the ${int(s.n)} proteins here are in your selection (whole site: ${pctText(s.whole)} have at least one ${W.mark}).`
+            : `${pctText(s.share)} of the ${int(s.n)} proteins here have at least one ${W.mark}${
+                s.cells.length > 1 ? ' (the median of ' + s.maps + ')' : ''
+              }; ${pctText(pctRef(false))} of all the proteins the maps place do.`
+      : s.selected
+        ? `This is the part your selection was made with, so it is not compared with itself. The drawings compare the other parts.`
+        : sig
+          ? `${cap(wh)} are <b>${s.tone[0] === 'u' ? 'more' : 'less'} likely</b> to be found here ` +
+            `than ${esc(alike)} (${esc(orWords(s.a))}${s.cells.length > 1 ? ', the median of ' + s.maps : ''}).`
+          : s.tone === 'ns'
+            ? s.value === 'maps disagree'
+              ? `The maps disagree. In some, ${esc(wh)} are more likely ` +
+                `to be found here than ${esc(alike)}, in others less likely.`
+              : `${cap(wh)} are found here about as ` + `often as ${esc(alike)}.`
+            : `No map compares ${esc(wh)} here.`;
     const cols = L.cols.filter((aid) => row.map[aid]);
     const two = (k1, n1, w1, k2, n2, w2) =>
       `${int(k1)} of ${int(n1)} ${esc(w1)} (${pc(k1, n1)}%)<br>${int(k2)} of ${int(n2)} ${esc(w2)} (${pc(k2, n2)}%)`;
@@ -2548,29 +3138,41 @@
         : `<b>${esc(orText(a))}</b>${
             a.lo != null && a.hi != null ? ` <span class="muted">(${K.fx(2 ** a.lo)}–${K.fx(2 ** a.hi)})</span>` : ''
           }, q ${fq(a.q)} · ${esc(MARK[markOf(a)]?.[1] || '')}`;
-    const trs = cols
-      .map((aid) => {
-        const ds = DS(aid),
-          t = T[aid]?.[row.map[aid]],
-          c = gridCell(aid, row.map[aid], scoped);
-        const counts = !t
-          ? '–'
-          : scoped
-            ? c?.x
-              ? two(c.x.k, c.x.n, 'of your selection', c.x.M - c.x.k, c.x.N - c.x.n, 'others')
-              : '–'
-            : two(t.k, t.n, W.marked, t.M - t.k, t.N - t.n, `without a ${W.mark}`);
-        return (
-          `<tr><th scope="row">${
-            ds.url ? `<a href="${esc(ds.url)}" target="_blank" rel="noopener">${esc(ds.name)}</a>` : esc(ds.name)
-          }<br><span ` +
-          `class="muted small">${esc([ds.method, ds.cells].filter(Boolean).join(', '))}</span></th>` +
-          `<td>${esc(label(aid, row.map[aid]))}</td><td>${counts}</td><td>${
-            !c ? '–' : c.selected ? 'your selection' : c.circular ? 'not compared' : cmp(c.a)
-          }</td></tr>`
-        );
-      })
-      .join('');
+    const trs = pct
+      ? cols
+          .map((aid) => {
+            const ds = DS(aid),
+              c = pctCell(aid, row.map[aid], scoped);
+            return `<tr><th scope="row">${esc(ds.name)}<br><span class="muted small">${esc(
+              [ds.method, ds.cells].filter(Boolean).join(', ')
+            )}</span></th><td>${esc(label(aid, row.map[aid]))}</td><td>${
+              c ? `${int(c.k)} of ${int(c.M)}` : '–'
+            }</td><td>${c ? `<b>${esc(pctText(c.share))}</b>${scoped ? ` <span class="muted">(whole site ${esc(pctText(c.whole))})</span>` : ''}` : '–'}</td></tr>`;
+          })
+          .join('')
+      : cols
+          .map((aid) => {
+            const ds = DS(aid),
+              t = T[aid]?.[row.map[aid]],
+              c = gridCell(aid, row.map[aid], scoped);
+            const counts = !t
+              ? '–'
+              : scoped
+                ? c?.x
+                  ? two(c.x.k, c.x.n, 'of your selection', c.x.M - c.x.k, c.x.N - c.x.n, 'others')
+                  : '–'
+                : two(t.k, t.n, W.marked, t.M - t.k, t.N - t.n, `without a ${W.mark}`);
+            return (
+              `<tr><th scope="row">${
+                ds.url ? `<a href="${esc(ds.url)}" target="_blank" rel="noopener">${esc(ds.name)}</a>` : esc(ds.name)
+              }<br><span ` +
+              `class="muted small">${esc([ds.method, ds.cells].filter(Boolean).join(', '))}</span></th>` +
+              `<td>${esc(label(aid, row.map[aid]))}</td><td>${counts}</td><td>${
+                !c ? '–' : c.selected ? 'your selection' : c.circular ? 'not compared' : cmp(c.a)
+              }</td></tr>`
+            );
+          })
+          .join('');
     const mem = members(L, row, scoped),
       shown = mem ? (UI.all ? mem : mem.slice(0, 150)) : [],
       multi = cols.length > 1;
@@ -2578,7 +3180,11 @@
       `<div class="cell-detail" id="cell-detail"><div class="cell-detail-head"><h4>${esc(rowName(row))}</h4><button ` +
       `class="btn quiet small" type="button" data-cell-close aria-label="Close">Close</button></div>` +
       (`<p>${verdict}</p><div class="tbl-wrap"><table class="tbl compact cell-detail-tbl"><thead><tr><th>Map</th>` +
-        `<th>Its compartment</th><th>${esc(cap(here))}</th><th>Against ${esc(alike)}</th></tr></thead><tbody>${trs}</tbody></table>` +
+        `<th>Its compartment</th>${
+          pct
+            ? `<th>${scoped ? 'In your selection' : 'With a ' + esc(W.mark)}</th><th>Share of its proteins</th>`
+            : `<th>${esc(cap(here))}</th><th>Against ${esc(alike)}</th>`
+        }</tr></thead><tbody>${trs}</tbody></table>` +
         `</div>`) +
       `<div class="cell-members"><div class="fig-head"><span class="flabel">${
         scoped ? 'Proteins of your selection found here' : `${esc(cap(W.marked))} proteins ` + `found here`
@@ -2620,16 +3226,19 @@
     const drawings = DRAWINGS.map(
       (d) => block(d.drawing, d.title || d.drawing, 'cell-fig') + (at === d.drawing ? dt() : '')
     ).join('');
-    const selNote = scoped
-      ? ` Your selection is tested map by map: ${int(selTests(MAPS[0].analysis)?.n || 0)} of its proteins ` +
-        `are in ${esc(DS(MAPS[0].analysis).name)}; each map counts its own proteins.`
-      : K.selOn()
-        ? ` <b>Your selection</b> ${
-            K.vsOn()
-              ? 'is compared with other modifications; the maps compare proteins, so this page shows'
-              : 'is too small to test; this page shows'
-          } all ${esc(W.marked)} proteins.`
-        : '';
+    const selNote =
+      scoped && pctOn()
+        ? ` The percent view counts the proteins each map places in a part that are in your selection; the fold view tests them.`
+        : scoped
+          ? ` Your selection is tested map by map: ${int(selTests(MAPS[0].analysis)?.n || 0)} of its proteins ` +
+            `are in ${esc(DS(MAPS[0].analysis).name)}; each map counts its own proteins.`
+          : K.selOn()
+            ? ` <b>Your selection</b> ${
+                K.vsOn()
+                  ? 'is compared with other modifications; the maps compare proteins, so this page shows'
+                  : 'is too small to test; this page shows'
+              } all ${esc(W.marked)} proteins.`
+            : '';
     const maps = MAPS.map((m) => {
       const ds = DS(m.analysis);
       const bits = [
@@ -2645,8 +3254,11 @@
     }).join('; ');
     return (
       `<div class="card-body cell-page"><p class="cell-lead">${lead(regs, up, scoped, false)}</p>` +
-      (`<p class="small">${esc(C.intro || '')} Red: ${esc(who(scoped))} are more likely to be found there than ${esc(alike)}. Slate: ` +
-        `less likely. Gray: no difference.${selNote}</p>`) +
+      (HAS_PCT ? `<div class="cell-viewbar">${viewSwitch()}</div>` : '') +
+      (pctOn()
+        ? `<p class="small">${esc(C.intro || '')} ${esc(keyWords())}${selNote}</p>`
+        : `<p class="small">${esc(C.intro || '')} Red: ${esc(who(scoped))} are more likely to be found there than ${esc(alike)}. Slate: ` +
+          `less likely. Gray: no difference.${selNote}</p>`) +
       colourKey() +
       regionsBlock +
       drawings +
@@ -2665,7 +3277,7 @@
       ) +
       '</div>' +
       `<div class="cell-scroll">${svgOf(FIGS.one.make(), 'cell-svg cell-bars')}</div></div>` +
-      `<p class="note small muted">${esc(testWords())} Maps: ${maps}.${C.note ? ' ' + esc(C.note) : ''}</p></div>`
+      `<p class="note small muted">${pctOn() ? esc(testWords('percent')) + ' ' : ''}${esc(testWords('fold'))} Maps: ${maps}.${C.note ? ' ' + esc(C.note) : ''}</p></div>`
     );
   }
 
@@ -2699,7 +3311,10 @@
               (m) => `<a href="${esc(K.link('method', 'q-' + m.regions))}">${esc(DS(m.regions).name)}</a>`
             ).join(', ')}`
           : ''
-      }. ${esc(testWords())}</p>` +
+      }. ${esc(testWords('fold'))}</p>` +
+      (HAS_PCT
+        ? `<p>The percent view colors each part by the share of its proteins that carry a ${esc(W.mark)}. ${esc(testWords('percent'))}</p>`
+        : '') +
       (`<p>Each grid row is mapped to a compartment of each map and to the part of the ` +
         `drawings it colors. A selection is tested again in the browser, map by map, the same way${
           allStrat ? ', over the abundance strata of each map’s proteins' : ''
@@ -2732,6 +3347,15 @@
   };
   K.clicks.push(
     ['[data-cell-row], [data-cell-part]', (el) => pick(el)],
+    [
+      '[data-cellview]',
+      (el) => {
+        VIEW = ['percent', 'diff'].includes(el.dataset.cellview) && HAS_PCT ? el.dataset.cellview : 'fold';
+        TIPS = [];
+        K.render();
+        if (ZD?.open && ZV) zoomView(ZV.drawing, ZV.one);
+      },
+    ],
     [
       '[data-cellmap]',
       (el) => {
@@ -2875,11 +3499,11 @@
   const st = document.createElement('style');
   st.id = 'kit-cell-css';
   st.textContent =
-    `:root{${TONES.light.map(([k, v]) => `--t-${k}:${v};`).join('')}}` +
+    `:root{${TONES.light.map(([k, v]) => `--t-${k}:${v};`).join('')}${seqVars('light')}}` +
     `@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){${TONES.dark
       .map(([k, v]) => `--t-${k}:${v};`)
-      .join('')}}}` +
-    `:root[data-theme="dark"]{${TONES.dark.map(([k, v]) => `--t-${k}:${v};`).join('')}}` +
+      .join('')}${seqVars('dark')}}}` +
+    `:root[data-theme="dark"]{${TONES.dark.map(([k, v]) => `--t-${k}:${v};`).join('')}${seqVars('dark')}}` +
     CSS;
   document.head.appendChild(st);
   // a click on the drawing itself (not on a part) opens it large

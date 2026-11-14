@@ -164,12 +164,21 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
       const eu = core.glyphLayout([133, 159, 29], REG, { w: 300, h: 210 });
       const eu2 = core.glyphLayout([5, 4], [{ m: 1, n: 3 }, { m: 2, n: 2 }, { m: 3, n: 2 }], { w: 300, h: 210 });
       const boxes = eu.boxes.map(b => [b.x, b.y, b.x + b.w, b.y + b.h]);
+      const REG3 = [[4, 1410], [2, 1048], [1, 136], [6, 100], [5, 3], [3, 2]].map(([m, n]) => ({ m, n }));
+      const ph = core.glyphLayout([141, 1150, 1513], REG3, { w: 460, h: 360 });
       const sc = core.sizeScale([13680, 13447, 159, 133, 129, 112, 46, 26, 3, 1]);
       const rs = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'sites', 1);
       const rr = await K.overlap.compute(['s:onto:D1', 'f:readers:Madeup'], 'readers', 1);
       const rd = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'proteins');
       const strip = r => ({ ts: r.ts.map(t => t.id), rows: r.rows, totals: r.totals, N: r.N, M: r.M, test: r.test });
-      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), wil, err3: eu.err, err2: eu2.err, boxes, cutBrk: sc.brk, cutMax: sc.max, nLabels: eu.labels.length, rd: strip(rd), rx: strip(rx), tables: [r2, rs, rx].map(r => K.overlap.tableHtml(r)), tsvx: K.overlap.tsv(rx), tsv: K.overlap.tsv(r2) }));
+      const rmiss = await K.overlap.compute(['s:onto:D2', 'sv:nope'], 'proteins');
+      const rcirc = await K.overlap.compute(['s:onto:D1', 'g:GP1 GP2'], 'proteins');
+      S0.oq = 'b';
+      const tsvb = K.overlap.tsv(r2), tsvx = K.overlap.tsv(rx), tables = [r2, rs, rx].map(r => K.overlap.tableHtml(r));
+      S0.oq = 'a';
+      const tsvpairs = K.overlap.tsv(r2);
+      const answers = [r2, r3, rd].map(r => K.overlap.answerText(r, 'a')).concat([r2, r3].map(r => K.overlap.answerText(r, 'b')));
+      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), wil, err3: eu.err, err2: eu2.err, boxes, cutBrk: sc.brk, cutMax: sc.max, nLabels: eu.labels.length, phGlyph: { vw: ph.vw, vh: ph.vh, err: ph.err, boxes: ph.boxes.map((b) => [b.x, b.y, b.x + b.w, b.y + b.h]), leaders: ph.leaders }, rd: strip(rd), rx: strip(rx), tables, tsvx, tsv: tsvb, tsvpairs, pairs: { r2: r2.pairs, r3: r3.pairs }, answers, ptable: K.overlap.pairTableHtml(r3), missing: rmiss.missing, circ: { names: rcirc.circ, test: rcirc.test ?? null, pairs: rcirc.pairs.all.length, ans: K.overlap.answerText(rcirc, 'b') }, sitesOR: rs.rows.filter((r) => r.mask && r.n).map((r) => String(r.or)) }));
     """
     run = subprocess.run(
         ['node', '-e', head + harness + '(async () => {' + body + '})();'], capture_output=True, text=True
@@ -232,3 +241,42 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
     assert j['cutBrk'] == 13447 and j['cutMax'] < 200  # one huge value cuts the axis
     # the columns the export adds
     assert 'ci95_lo\tci95_hi' in j['tsv'] and j['tsv'].split('\n')[-3].count('\t') >= 9
+    # the overlap of the sets themselves: the browser's pairs equal ptmstats.pair_overlap (both universes, BH within each)
+    toy = {
+        'D1': ['P1', 'P2', 'P3', 'P4'],
+        'D2': ['P1', 'P2', 'P3'],
+        'D3': ['P5', 'P6', 'P7'],
+        'T3': ['P5', 'P6'],
+    }
+    universe, marked = [f'P{i}' for i in range(1, 9)], ['P1', 'P2', 'P3', 'P5']
+    for key, names in (('r2', ['D2', 'D3']), ('r3', ['D1', 'D2', 'T3'])):
+        ref = ptmstats.pair_overlap([(n, toy[n]) for n in names], universe, marked)
+        got = [r for u in ('all', 'marked') for r in j['pairs'][key][u]]
+        assert len(got) == len(ref) > 0
+        for g, r in zip(got, ref):
+            assert (g['i'], g['j'], g['n'], g['m'], g['a'], g['N']) == (r['i'], r['j'], r['n'], r['m'], r['a'], r['N'])
+            assert g['expected'] == pytest.approx(r['expected'], rel=1e-12)
+            assert g['p'] == pytest.approx(r['p'], rel=1e-9)
+            assert (g['q'] is None) == (r['q'] is None) and (
+                g['q'] is None or g['q'] == pytest.approx(r['q'], rel=1e-9)
+            )
+    # the pair file, the table and the answers in words
+    assert 'pair\tsets\tamong' in j['tsvpairs'] and 'region\tterms' in j['tsv']
+    assert 'Overlap of each pair' in j['ptable'] and 'undefined' not in j['ptable']
+    assert all(a and 'undefined' not in a and 'NaN' not in a for a in j['answers'])
+    assert 'in both' in j['answers'][0] and 'of 3 pairs' in j['answers'][1]
+    # a saved selection a link cannot carry is reported, and the others keep their letters
+    assert j['missing'] == ['sv:nope']
+    # a set defined by having sites is not tested for having sites; the pairs are still tested
+    assert (
+        j['circ']['names'] and j['circ']['test'] is None and j['circ']['pairs'] == 1 and 'circular' in j['circ']['ans']
+    )
+    # the sites unit shows one odds ratio, in the chart's number and the table's
+    assert j['sitesOR'] and all(v in j['tables'][1] for v in j['sitesOR'])
+    # a glyph taller than wide is turned: the three circles of a tall layout use the width, and nothing in it overlaps
+    g = j['phGlyph']
+    assert g['vw'] >= 0.85 * g['vh'] and g['err'] < 0.02
+    bx = g['boxes']
+    assert all(
+        not (a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]) for i, a in enumerate(bx) for b in bx[i + 1 :]
+    )

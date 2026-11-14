@@ -1793,7 +1793,9 @@
         baseLine(yc);
         parts.push(
           `<text x="${X0 - 5}" y="${r1(yc + 2.6)}" text-anchor="end" font-size="7.5" font-weight="600" fill="${P.ink}"${
-            ex ? '' : ` data-rowhelp="${esc(`${d.short}: ${d.label}, ${d.pts.length} in view`)}"`
+            ex
+              ? ''
+              : ` data-rowhelp="${esc(`${d.short}: ${d.label}, ${new Set(d.pts.map((q) => q.pos)).size} in view`)}"`
           }>${esc(d.short)}</text>`
         );
         d.pts.forEach((q) => {
@@ -1838,7 +1840,7 @@
         ly = c.y;
       const gap = 14;
       order.forEach((d) => {
-        const n = d.pts.length,
+        const n = new Set(d.pts.map((q) => q.pos)).size, // marks, not records: two records at one residue are one mark
           off = M.combOff.has(d.id),
           text = `${d.label} (${n})`,
           w = 14 + K.tw(text, 9.5) * SL;
@@ -3481,6 +3483,23 @@
     });
     return out.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist) || a.dist - b.dist);
   }
+  // the protein's context marks, from the same items as the map's legend: [{id, label, short, pos: [positions]}], one
+  // entry for each mark the protein has, or null while the map's items load
+  function contextMarks(acc) {
+    const its = itemsOf(acc);
+    if (!its) return null;
+    return CTX_IDS.map((id) => {
+      const rows = CTX_ROWS.filter((r) => r.context_mark === id),
+        full = rows[rows.length - 1],
+        k = ROW_INDEX.indexOf(full.id);
+      return {
+        id,
+        label: full.title,
+        short: full.short || full.title,
+        pos: [...new Set(its.filter((x) => x[0] === k).map((x) => x[1]))].sort((a, b) => a - b),
+      };
+    }).filter((c) => c.pos.length);
+  }
   // on a touch screen the first tap on a mark shows its hover, a second tap on the same mark opens its detail
   {
     let last = null,
@@ -3566,6 +3585,8 @@
     exportOpts,
     cross: (pos) => M.cross?.(pos),
     nearby,
+    contextMarks,
+    ctxIds: () => CTX_IDS.slice(),
     figure,
     fileName,
     siteColour,

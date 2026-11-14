@@ -445,10 +445,11 @@
     if (ov && !old) S.arg = S.arg.slice(3);
     S.legacy = ov || routed || slashed || (S.view !== view && !!view); // written back as this site's own link (replaceState)
     if (S.view === 'overview' && S.arg && !A[S.arg]) S.arg = '';
-    S.q = p.get('q') || '';
+    S.q = K.sel?.canonQ ? K.sel.canonQ(p.get('q') || '') : p.get('q') || '';
     S.m = p.get('m') || 'mantel_haenszel';
     S.a = p.get('a') || '';
     S.sq = p.get('sq') || '';
+    S.nf = p.get('nf') || '';
     // what a selection is compared with: other residues (the site's own tests), other marks, or another selection
     S.vs = ['marks', 'cmp'].includes(p.get('vs')) ? p.get('vs') : 'residues';
     S.cmp = p.get('cmp') || '';
@@ -539,6 +540,7 @@
       if (S.desc !== (S.sort !== 'q')) p.set('dir', S.desc ? 'desc' : 'asc');
     }
 
+    if (S.view === 'network' && S.nf) p.set('nf', S.nf);
     const h = '#' + S.view + (S.arg ? '/' + pathOf(S.view, S.arg) : '') + (p.toString() ? '?' + p : '');
     if (h !== location.hash) (push ? history.pushState : history.replaceState).call(history, null, '', h);
     shown = location.hash; // the page shows this address: Back to an earlier one draws that one again
@@ -664,7 +666,7 @@
     const v = S.view;
     if (v === 'protein' && K.sel.protSelected(String(S.arg).split('/')[0])) return ''; // a protein of the selection: its page fades the sites outside it, and says so
     if (follows(v)) return ''; // the bar above says what is selected and how many; its Clear all removes it
-    return `<p class="sel-line off" role="status">Not filtered by your selection.</p>`;
+    return `<p class="sel-line off" role="status">${esc(K.views[v]?.offNote || 'Not filtered by your selection.')}</p>`;
   }
   function tabs() {
     const sel = K.sel?.active();
@@ -1265,7 +1267,7 @@
   };
   // what the selection does, in one clause (the bar, a figure's subtitle, Copy link): follows the Test and Compared with settings
   K.selEffect = () =>
-    'All tabs show only these · ' +
+    'Pages that follow the selection show only these · ' +
     (vsOn()
       ? `compared with ${S.vs === 'cmp' ? 'the sites of ' + cmpName() : 'the other ' + W.marks}`
       : S.m === 'fisher'
@@ -4478,7 +4480,7 @@
       const [v, ...rest] = t.dataset.go.split('/');
       go(v, { arg: rest.join('/') });
     } else if (t.dataset.try) {
-      S.q = t.dataset.try;
+      S.q = K.sel?.canonQ ? K.sel.canonQ(t.dataset.try) : t.dataset.try;
       if (!openIfOne()) {
         writeHash(true);
         render();
