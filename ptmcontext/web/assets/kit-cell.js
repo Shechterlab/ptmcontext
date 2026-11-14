@@ -2045,7 +2045,7 @@
     const title = card.title || C.title || 'Where in the cell';
     const note =
       K.selOn() && !scoped
-        ? `<p class="twhole"><span>Whole dataset</span> ${
+        ? `<p class="twhole${K.vsOn() ? ' keep' : ''}"><span>${K.vsOn() ? 'All sites' : 'Whole dataset'}</span> ${
             K.vsOn()
               ? 'the maps compare proteins, not marks: shown for all ' + esc(W.marked) + ' proteins'
               : 'the selection is too small to test'
@@ -2453,7 +2453,7 @@
     ];
     const note =
       K.selOn() && !scoped
-        ? `<p class="twhole"><span>Whole dataset</span> ${
+        ? `<p class="twhole${K.vsOn() ? ' keep' : ''}"><span>${K.vsOn() ? 'All sites' : 'Whole dataset'}</span> ${
             K.vsOn()
               ? 'the maps compare proteins, not marks: shown for all ' + esc(W.marked) + ' proteins'
               : 'the selection is too small to test'

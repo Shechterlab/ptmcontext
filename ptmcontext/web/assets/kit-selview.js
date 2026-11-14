@@ -35,20 +35,22 @@
     const saved = S.vs;
     S.vs = 'marks';
     let rows = [],
-      G = null;
+      all = [],
+      G = null,
+      why = null;
     try {
       G = K.sel.contrastGroups();
       if (K.sel.contrastOK(G)) {
         const qs = Object.values(A).filter((a) => a.kind === 'residue' || (a.kind === 'attribute' && !a.provenance));
-        rows = qs.flatMap((a) =>
-          (K.sel.contrast(a.id, 'fisher') || []).filter(
-            (r) => !r.descriptive && !EXCL.test(r.label || '') && r.a + r.c >= 10
-          )
-        );
-      }
+        all = qs.flatMap((a) => K.sel.contrast(a.id, 'fisher') || []);
+        rows = all.filter((r) => !r.descriptive && !EXCL.test(r.label || '') && r.a + r.c >= 10);
+      } else why = 'few';
     } finally {
       S.vs = saved;
     }
+    // nothing tested although both sides are large enough: the reason the retest gave (a selection of whole proteins,
+    // one made with the questions), never "too few"
+    if (!rows.length && !why) why = K.whyOf?.(all) || (all.length ? 'made' : 'few');
     const diff = rows.filter((r) => r.q != null && r.q <= PADJ() && (r.dir === 'more' || r.dir === 'less'));
     const strength = (r) => (r.dir === 'more' ? Math.log(r.lo ?? r.or) : -Math.log(r.hi ?? r.or));
     const up = diff.filter((r) => r.dir === 'more').sort((x, y) => strength(y) - strength(x)),
@@ -56,7 +58,7 @@
     // repeats count once and a class that restates the list is flagged (kit-select.js featureFamilies); the forest and the line show these
     const fu = K.sel.featureFamilies(up),
       fd = K.sel.featureFamilies(dn);
-    memo = { key: selKey(), rows, diff, up, dn, fu, G, shown: [...fu.slice(0, 8), ...fd.slice(0, 4)] };
+    memo = { key: selKey(), rows, all, why, diff, up, dn, fu, G, shown: [...fu.slice(0, 8), ...fd.slice(0, 4)] };
     return memo;
   }
   const qTitle = (r) => A[r.analysis]?.title || r.analysis;
@@ -179,8 +181,19 @@
     const draw = () => {
       const m = apart();
       if (!m.rows.length) {
-        sum.textContent = `too few ${W.marks} on one side to compare`;
-        body.innerHTML = '';
+        if (m.why === 'few') {
+          sum.textContent = `too few ${W.marks} on one side to compare`;
+          body.innerHTML = '';
+          return;
+        }
+        // compared, not tested: say why, and lead to the comparison's shares
+        const first = m.all.find((r) => r.descriptive) || {};
+        sum.textContent =
+          m.why === 'between' ? 'shown, not tested: your selection takes whole proteins' : 'shown, not tested';
+        body.innerHTML =
+          `<div class="apart-card"><p class="muted small">Your ${int(m.G.g1.length)} ${esc(W.marks)} against the other ` +
+          `${int(m.G.g2.length)}. ${esc(K.whyShown(A[first.analysis] || {}, m.all))}</p>` +
+          `<p><button class="btn small" type="button" data-vs="marks">The shares, question by question ›</button></p></div>`;
         return;
       }
       sum.textContent = summaryText(m);

@@ -383,6 +383,7 @@
   function apply(text, open) {
     input.value = text;
     S.q = text.trim();
+    K.commitQ?.();
     close();
     if (open && K.openIfOne?.()) return;
     K.writeHash(true);
@@ -451,12 +452,10 @@
         e.stopImmediatePropagation();
         choose(active);
       } else if (e.key === 'Escape') {
+        // closes the list; the box's own handler (kit.js) puts back the search as last committed. Never clears it.
         if (items.length) {
           e.preventDefault();
           close();
-        } else if (input.value) {
-          e.preventDefault();
-          apply('', false);
         }
       } else if (e.key === 'Enter') close();
     },

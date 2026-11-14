@@ -5923,6 +5923,59 @@ details.score.small .tq .t,
 .tile:focus-within .twhole {
   opacity: 1;
 }
+/* a short note with one action (Undo), at the foot of the window */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 0.5rem;
+  background: var(--ink);
+  color: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: 0.9rem;
+}
+.toast .btn {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--surface);
+}
+.toast[hidden] {
+  display: none;
+}
+/* a selection chip's words: a button that opens the Filters */
+.sel-chip-open {
+  all: unset;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.sel-chip-open:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.sel-save-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.4rem;
+  min-width: 16rem;
+}
+.sel-save-btns {
+  display: flex;
+  gap: 0.4rem;
+}
+/* a card that compares nothing in Compare mode (all sites shown): the note stays in view */
+.tile .twhole.keep {
+  position: static;
+  opacity: 1;
+  box-shadow: none;
+  margin: 0.4rem 0 0;
+}
 @media (hover: none) {
   .tile .twhole {
     position: static;

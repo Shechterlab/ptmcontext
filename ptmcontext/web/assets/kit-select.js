@@ -1464,12 +1464,15 @@
     setFilter(key, [...cur]);
   }
   function clearAll() {
+    const undo = K.undoable?.('Selection cleared.');
     S.f = {};
     S.q = '';
     Object.assign(S, { view: 'overview', arg: '' });
     K.writeHash(true);
     K.render();
+    K.commitQ?.();
     scrollTo(0, 0);
+    undo?.();
   }
 
   // Features that repeat count once, everywhere enriched features appear (the selection bar, Enriched features, What sets it

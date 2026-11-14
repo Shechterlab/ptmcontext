@@ -1124,6 +1124,7 @@
     return 'Your selection was made with this question (or one reading the same data), so it is shown, not tested.';
   };
   K.whyShown = whyShown;
+  K.whyOf = whyOf;
   function summaryLine(rows, tmpl, card = {}) {
     rows = rows.filter((r) => !EXCL.test(r.label));
     if (rows.some((r) => r.vs)) {
@@ -1999,7 +2000,7 @@
       caveat +
       (`<p class="muted ` +
         `small">Exploratory: ${esc(W.marks)} of one protein are not independent, and nothing is adjusted for the ` +
-        `other selections tried. Each ${esc(W.mark)} row shows the selection’s share (filled) and ${esc(vsName())}’ (hollow).</p>`)
+        `other selections tried. Each ${esc(W.mark)} row shows the selection’s share (filled) and the share of ${esc(vsName())} (hollow).</p>`)
     );
   }
   K.ovOpen = new Set(); // the later Overview sections the reader opened on this visit
@@ -4693,6 +4694,68 @@
   $('#q').addEventListener('blur', () => {
     typing = false;
   });
+  // the search as last committed (on focus, Enter, a chosen suggestion or the ×): Escape returns the box to it, so a
+  // half-typed edit is cancelled, and never clears the selection (the × and Clear all do, with an Undo)
+  let committed = S.q;
+  K.commitQ = () => {
+    committed = S.q;
+  };
+  $('#q').addEventListener('focus', () => {
+    if (!qPending) committed = S.q;
+  });
+  $('#q').addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    clearTimeout(timer);
+    qPending = false;
+    typing = false;
+    if (e.target.value.trim() === committed && S.q === committed) return;
+    e.preventDefault();
+    e.target.value = committed;
+    if (S.q !== committed) {
+      S.q = committed;
+      writeHash(false);
+      render();
+      $('#q').focus();
+    }
+  });
+  // a short note at the foot of the window with one action ("Undo"); it goes after a few seconds or on Escape
+  let toastTimer;
+  function toast(text, action, label = 'Undo') {
+    let el = document.getElementById('ptmc-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'ptmc-toast';
+      el.className = 'toast';
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
+      document.body.appendChild(el);
+    }
+    el.innerHTML =
+      `<span>${esc(text)}</span>` +
+      (action ? `<button type="button" class="btn small" data-toast-act>${esc(label)}</button>` : '');
+    el.hidden = false;
+    el.onclick = (e) => {
+      if (!e.target.closest('[data-toast-act]')) return;
+      el.hidden = true;
+      action();
+    };
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      el.hidden = true;
+    }, 8000);
+  }
+  // the selection as it is now, and a toast that puts it back
+  K.undoable = (text) => {
+    const was = { q: S.q, f: JSON.parse(JSON.stringify(S.f)), view: S.view, arg: S.arg };
+    return () =>
+      toast(text, () => {
+        Object.assign(S, was);
+        committed = S.q;
+        writeHash(true);
+        render();
+      });
+  };
+  K.toast = toast;
   // a search that names one protein (and nothing else) opens it; "GENE <site>" opens the site's card
   function openIfOne() {
     const q = K.sel?.parse(S.q);
@@ -4711,6 +4774,7 @@
       clearTimeout(timer);
       qPending = false;
       S.q = e.target.value.trim();
+      committed = S.q;
       typing = false;
       if (!openIfOne() && !K.openLight?.(S.q) && !K.openList?.()) {
         writeHash(true);
@@ -4719,10 +4783,13 @@
     }
   });
   $('#q-clear').addEventListener('click', () => {
+    const undo = S.q ? K.undoable('Search cleared.') : null;
     S.q = '';
+    committed = '';
     writeHash(true);
     render();
     $('#q').focus();
+    undo?.();
   });
   let byLink = false;
   // where each page was scrolled to, for Back and Forward; a link opens its page at the top
