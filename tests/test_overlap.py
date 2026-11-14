@@ -115,30 +115,9 @@ def test_reader_and_enzyme_members_come_from_the_site_file():
 
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
-def test_overlap_numbers_equal_the_python_engine(tmp_path):
-    root, index = _build(tmp_path)
-    out = root / 'out' / 'toy'
+def _overlap_run(tmp_path, index, page=None):
     ov = index.parent / 'data' / 'overlap'
-    raw = json.loads((out / 'overlap_members.json').read_text())
-    assert raw['universe'] == [f'P{i}' for i in range(1, 9)]  # every reviewed protein, P8 and P4 included
-    assert 'members' not in json.loads((out / 'protein_sets.json').read_text())['onto']
-    assert (ov / 'universe.json').exists() and (ov / 'sets' / 'onto.json').exists()
-    term_sets = json.loads((ov / 'sets' / 'term.json').read_text())
-    assert 'T3' in term_sets and 'T4' not in term_sets  # a set left out is not written
-    src = ov / 'sources' / 'proc'
-    assert json.loads((src / 'terms.json').read_text())['terms'] == [
-        ['G1', 'first process', 3],
-        ['G2', 'second process', 3],
-    ]  # G3 has one protein; the uncurated row and the isoform suffix
-    shard = OV.shard_name('G2')
-    assert json.loads((src / shard).read_text())['G2'] == sorted([raw['universe'].index(a) for a in ('P1', 'P2', 'P5')])
-    fams = json.loads((ov / 'families.json').read_text())
-    assert [(f['name'], f['m']) for f in fams['readers']] == [('Madeup', [0, 3])]  # P1 by IPR, P4 by Pfam
-    page = _page_data(index)
-    assert (
-        page['overlap']['units'] == ['proteins', 'sites', 'readers']
-        and page['overlap']['families']['readers'][0]['ids'] == FAMILY['ids']
-    )
+    page = page or _page_data(index)
     (tmp_path / 'd.json').write_text(json.dumps(page))
     head = (
         f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, DATA = {json.dumps(str(tmp_path / "d.json"))}, '
@@ -168,14 +147,42 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
       const rs = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'sites', 1);
       const rr = await K.overlap.compute(['s:onto:D1', 'f:readers:Madeup'], 'readers', 1);
       const rd = await K.overlap.compute(['s:onto:D2', 's:onto:D3'], 'proteins');
+      const rg = await K.overlap.compute(['g:P1 P4 P6', 's:onto:D2'], 'proteins', 1);
       const strip = r => ({ ts: r.ts.map(t => t.id), rows: r.rows, totals: r.totals, N: r.N, M: r.M, test: r.test });
-      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), wil, err3: eu.err, err2: eu2.err, boxes, cutBrk: sc.brk, cutMax: sc.max, nLabels: eu.labels.length, rd: strip(rd), rx: strip(rx), tables: [r2, rs, rx].map(r => K.overlap.tableHtml(r)), tsvx: K.overlap.tsv(rx), tsv: K.overlap.tsv(r2) }));
+      console.log(JSON.stringify({ pool: K.overlap.termPool().map(t => [t.id, t.label, !!t.clash]), rg: { ...strip(rg), circ: rg.circ, table: K.overlap.tableHtml(rg) }, r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), wil, err3: eu.err, err2: eu2.err, boxes, cutBrk: sc.brk, cutMax: sc.max, nLabels: eu.labels.length, rd: strip(rd), rx: strip(rx), tables: [r2, rs, rx].map(r => K.overlap.tableHtml(r)), tsvx: K.overlap.tsv(rx), tsv: K.overlap.tsv(r2) }));
     """
     run = subprocess.run(
         ['node', '-e', head + harness + '(async () => {' + body + '})();'], capture_output=True, text=True
     )
     assert run.returncode == 0, run.stderr[-1500:]
-    j = json.loads(run.stdout)
+    return json.loads(run.stdout)
+
+
+def test_overlap_numbers_equal_the_python_engine(tmp_path):
+    root, index = _build(tmp_path)
+    out = root / 'out' / 'toy'
+    ov = index.parent / 'data' / 'overlap'
+    raw = json.loads((out / 'overlap_members.json').read_text())
+    assert raw['universe'] == [f'P{i}' for i in range(1, 9)]  # every reviewed protein, P8 and P4 included
+    assert 'members' not in json.loads((out / 'protein_sets.json').read_text())['onto']
+    assert (ov / 'universe.json').exists() and (ov / 'sets' / 'onto.json').exists()
+    term_sets = json.loads((ov / 'sets' / 'term.json').read_text())
+    assert 'T3' in term_sets and 'T4' not in term_sets  # a set left out is not written
+    src = ov / 'sources' / 'proc'
+    assert json.loads((src / 'terms.json').read_text())['terms'] == [
+        ['G1', 'first process', 3],
+        ['G2', 'second process', 3],
+    ]  # G3 has one protein; the uncurated row and the isoform suffix
+    shard = OV.shard_name('G2')
+    assert json.loads((src / shard).read_text())['G2'] == sorted([raw['universe'].index(a) for a in ('P1', 'P2', 'P5')])
+    fams = json.loads((ov / 'families.json').read_text())
+    assert [(f['name'], f['m']) for f in fams['readers']] == [('Madeup', [0, 3])]  # P1 by IPR, P4 by Pfam
+    page = _page_data(index)
+    assert (
+        page['overlap']['units'] == ['proteins', 'sites', 'readers']
+        and page['overlap']['families']['readers'][0]['ids'] == FAMILY['ids']
+    )
+    j = _overlap_run(tmp_path, index, page)
     # the engine's own rows (whole universe: N = 8) for the sets of the question 'onto'
     stats = pd.read_csv(out / 'statistics.tsv', sep='\t')
     eng = stats[(stats['analysis'] == 'onto') & (stats['method'] == 'enricher')].set_index('category')
@@ -232,3 +239,23 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
     assert j['cutBrk'] == 13447 and j['cutMax'] < 200  # one huge value cuts the axis
     # the columns the export adds
     assert 'ci95_lo\tci95_hi' in j['tsv'] and j['tsv'].split('\n')[-3].count('\t') >= 9
+
+
+def test_a_term_made_of_sites_is_counted_not_tested(tmp_path):
+    # a gene list (as the current selection or a saved one) holds only proteins with sites: its regions and its own total
+    # have counts but no p, q or fold, and the other term's regions outside it are still tested
+    root, index = _build(tmp_path)
+    j = _overlap_run(tmp_path, index)
+    rg = j['rg']
+    assert rg['circ'] == 1 and rg['test'] == 'proteins'
+    inside = [r for r in rg['rows'] if r['mask'] & 1 and r['n']]
+    assert inside and all(r.get('circ') and r['p'] is None and r['q'] is None for r in inside)
+    assert rg['totals'][0].get('circ') and rg['totals'][0]['p'] is None
+    outside = [r for r in rg['rows'] if r['mask'] == 2 and r['n']]
+    assert all(not r.get('circ') and r['p'] is not None for r in outside)
+    assert 'made of proteins with sites' in rg['table']
+    ids = [t[0] for t in j['pool']]
+    assert len(ids) == len(set(ids))  # a term is offered once
+    labels = [t[1].lower() for t in j['pool']]
+    assert all(t[2] == (labels.count(t[1].lower()) > 1) for t in j['pool'])  # a shared label shows its source
+

@@ -48,11 +48,14 @@
   }
   const MIN_N = 5; // a region of fewer elements is counted, not tested
   // a region too small to test has no fold, p or q, and is left out of the Benjamini-Hochberg family
-  const settle = (rows, minN) => {
+  // circ: the terms (a bit mask) defined by having sites (the current selection, a saved one, a gene list, a class of
+  // the marks): a region inside one of them has sites by construction, so it is counted, not tested
+  const settle = (rows, minN, circ = 0) => {
     rows.forEach((r) => {
-      if (r.n < minN) Object.assign(r, { few: true, p: null, q: null, fold: null });
+      if (circ && (r.mask ?? 1 << r.i) & circ) Object.assign(r, { circ: true, p: null, q: null, fold: null });
+      else if (r.n < minN) Object.assign(r, { few: true, p: null, q: null, fold: null });
     });
-    return bhAll(rows.filter((r) => !r.few));
+    return bhAll(rows.filter((r) => !r.few && !r.circ));
   };
   const bhAll = (rows) => {
     const q = ST.bh(rows.map((r) => r.p));
@@ -142,8 +145,13 @@
   function termPool() {
     if (pool) return pool;
     pool = [];
+    // a set offered by two questions (the same id, say a question and its control on another background) is one term;
+    // the first question's is kept
+    const seenSet = new Set();
     sets.forEach((aid) =>
-      uniq(rowsOf(aid)).forEach((r) =>
+      uniq(rowsOf(aid)).forEach((r) => {
+        if (seenSet.has(r.id)) return;
+        seenSet.add(r.id);
         pool.push({
           id: `s:${aid}:${r.id}`,
           label: r.label,
@@ -151,8 +159,8 @@
           size: r.size,
           broad: C.n && r.size > 0.25 * C.n,
           note: C.notes?.[aid] || '',
-        })
-      )
+        });
+      })
     );
     classQs.forEach((aid) =>
       uniq(rowsOf(aid)).forEach((r) => pool.push({ id: `c:${aid}:${r.id}`, label: r.label, group: short(aid) }))
@@ -181,6 +189,12 @@
         .forEach((v) =>
           pool.push({ id: `a:${name}:${v}`, label: `${(sp.values || {})[v] || v}`, group: sp.label || name })
         );
+    });
+    // terms that keep one label but differ (another id, another source): each shows its source beside the label
+    const byLabel = {};
+    pool.forEach((t) => (byLabel[t.label.toLowerCase()] ||= []).push(t));
+    Object.values(byLabel).forEach((ts) => {
+      if (ts.length > 1) ts.forEach((t) => (t.clash = true));
     });
     return pool;
   }
@@ -391,10 +405,14 @@
       }));
       res.N = N;
       res.M = M;
+      // a term made of marks has only proteins with sites: its regions are counted, not tested
+      const circ = ts.reduce((m, t, i) => (t.mark ? m | (1 << i) : m), 0);
+      res.circ = circ;
       if (!U.partial) {
         settle(
           res.rows.filter((r) => r.mask && r.n),
-          minN
+          minN,
+          circ
         );
         res.test = 'proteins';
         // each term's every protein (a family of its own for q)
@@ -410,7 +428,7 @@
             }
           return { i, ...proteinTest(k, n, M, N), sites: w };
         });
-        settle(res.totals, minN);
+        settle(res.totals, minN, circ);
       }
     }
     res.rows[0].outside = true; // the proteins in none of the terms: counted, not shown as a region
@@ -943,6 +961,7 @@
           p: tot?.p,
           q: tot?.q,
           few: tot?.few,
+          circ: tot?.circ,
           sites: tot?.sites,
           fold: tot?.fold,
           term: true,
@@ -950,7 +969,11 @@
       });
     return { base, regs, terms, sitesU, tested: !!res.test };
   }
-  const isTested = (r) => !r.few && r.q != null;
+  const isTested = (r) => !r.few && !r.circ && r.q != null;
+  const CIRC_WORDS = 'not tested: made of proteins with sites';
+  // why a region has no test: too few elements, or a term defined by having sites
+  const ntText = (r, fd) =>
+    `${fd.sitesU ? '' : `${r.k} of `}${r.n} · ${r.circ ? CIRC_WORDS : `not tested (n < ${MIN_N})`}`;
   // a bar is filled when q <= PADJ and the effect is at least MIN_EFFECT (up: more, down: less); hollow otherwise
   const dirOf = (r, base, sitesU) => {
     if (!isTested(r)) return 'nt';
@@ -1264,7 +1287,11 @@
         (fd.sitesU
           ? TESTS.sites
           : `${TESTS.proteins} ${fmtInt(res.M)} of ${fmtInt(res.N)} reviewed proteins (${pct(fd.base)}) have sites.`) +
-          ` Regions under ${MIN_N} are counted, not tested.`
+          ` Regions under ${MIN_N} are counted, not tested.` +
+          (res.circ
+            ? ' A term made of sites (a selection, a gene list, a class of sites) holds only proteins with sites, ' +
+              'so its regions are counted, not tested.'
+            : '')
       );
     else
       out.push(
@@ -1293,9 +1320,7 @@
     const c = html('div', 'c vals');
     if (!fd.tested) return c;
     if (!isTested(r)) {
-      c.appendChild(
-        html('span', 'nt', r.few ? `${fd.sitesU ? '' : `${r.k} of `}${r.n} · not tested (n < ${MIN_N})` : '–')
-      );
+      c.appendChild(html('span', 'nt', r.few || r.circ ? ntText(r, fd) : '–'));
       return c;
     }
     if (fd.sitesU) {
@@ -1317,7 +1342,7 @@
         b.appendChild(html('span', 'sh', fd.sitesU ? foldFmt(r.or ?? r.fold) : pct(r.k / r.n)));
         b.appendChild(document.createTextNode(fd.sitesU ? ' · ' : ` · ${foldFmt(r.k / r.n / fd.base, r.k)} · `));
         b.appendChild(html('span', 'q', 'q ' + fqf(r.q)));
-      } else b.appendChild(html('span', 'nt', `not tested (n < ${MIN_N})`));
+      } else b.appendChild(html('span', 'nt', r.circ ? CIRC_WORDS : `not tested (n < ${MIN_N})`));
     }
     pl.appendChild(a);
     pl.appendChild(b);
@@ -1789,7 +1814,7 @@
               fill: 'var(--fig-muted)',
             });
           } else
-            T(xb, y + 41, `${fd.sitesU ? '' : `${rec.k} of `}${rec.n} · not tested (n < ${MIN_N})`, {
+            T(xb, y + 41, ntText(rec, fd), {
               size: 12,
               fill: 'var(--fig-muted)',
             });
@@ -1798,7 +1823,7 @@
           if (v[1]) T(xv + 110, y + 19, v[1], { size: 13, fill: 'var(--fig-ink-2)', anchor: 'end' });
           T(xv + 116, y + 19, v[2], { size: 12, fill: 'var(--fig-muted)' });
         } else
-          T(xv, y + 19, `${fd.sitesU ? '' : `${rec.k} of `}${rec.n} · not tested (n < ${MIN_N})`, {
+          T(xv, y + 19, ntText(rec, fd), {
             size: 12,
             fill: 'var(--fig-muted)',
           });
@@ -1841,9 +1866,11 @@
   };
   // fold, p and q of a row: too few to test; 0x when none has sites; a note where a huge set gives a tiny p at a small fold
   const foldCells = (r) =>
-    r.few
-      ? `<td class="num">—</td><td class="num" colspan="2">too few to test</td>`
-      : `<td class="num">${r.k === 0 ? '0×' : fn(r.fold)}</td><td class="num">${r.p == null ? '–' : K.fq(r.p)}</td><td class="num">${r.q == null ? '–' : K.fq(r.q)}</td>`;
+    r.circ
+      ? `<td class="num">—</td><td class="num" colspan="2">not tested: made of proteins with sites</td>`
+      : r.few
+        ? `<td class="num">—</td><td class="num" colspan="2">too few to test</td>`
+        : `<td class="num">${r.k === 0 ? '0×' : fn(r.fold)}</td><td class="num">${r.p == null ? '–' : K.fq(r.p)}</td><td class="num">${r.q == null ? '–' : K.fq(r.q)}</td>`;
   const broad = (r) => !r.few && r.fold != null && r.fold > 0.8 && r.fold < 1.25 && r.q != null && r.q < 1e-3;
   function tableHtml(res) {
     const sites = res.unit === 'sites',
@@ -1952,7 +1979,8 @@
     return (
       `<div class="ov-pick"><div class="ov-chips">${chips || '<span class="muted">No term chosen.</span>'}</div>` +
       `<label class="flabel" for="ov-q">Add a term (${int(termPool().length)} to choose from)</label>` +
-      `<input id="ov-q" type="search" autocomplete="off" placeholder="${full ? `At most ${MAXT} terms` : 'Search: a pathway, a location, a disease, a family…'}"${full ? ' disabled' : ''}>` +
+      `<input id="ov-q" type="search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" ` +
+      `aria-controls="ov-res" placeholder="${full ? `At most ${MAXT} terms` : 'Search: a pathway, a location, a disease, a family…'}"${full ? ' disabled' : ''}>` +
       `<div id="ov-res" class="ov-res" role="listbox" aria-label="Matching terms">${resultsHtml('')}</div>` +
       `<details class="ov-genes"><summary>Add a list of genes</summary><textarea id="ov-genes" rows="2" placeholder="Gene names or accessions"></textarea> <button type="button" class="btn small" data-ov-genes${full ? ' disabled' : ''}>Add</button></details></div>`
     );
@@ -1984,16 +2012,35 @@
       .sort((x, y) => x[2] - y[2] || x[1] - y[1])
       .map((x) => x[0])
       .slice(0, 40);
-    if (!hit.length) return `<p class="muted">${w ? 'No term matches.' : 'Type to search.'}</p>`;
-    let g = '';
-    return hit
-      .map((t) => {
-        const head = t.group !== g ? `<p class="ov-grp">${esc((g = t.group))}</p>` : '';
-        const more = [t.ref || '', t.size ? `${int(t.size)} proteins` : '', t.broad ? 'very broad' : '', t.note]
-          .filter(Boolean)
-          .join(' · ');
-        return `${head}<button type="button" class="ov-opt" role="option" data-ov-add="${esc(t.id)}">${esc(t.label)}${more ? ` <span class="muted ov-more">${esc(more)}</span>` : ''}</button>`;
-      })
+    if (!hit.length) return `<p class="muted" role="presentation">${w ? 'No term matches.' : 'Type to search.'}</p>`;
+    // the listbox pattern (ARIA 1.2): the options in groups named by their source; the box keeps focus and points at the
+    // active option (aria-activedescendant), so arrow keys move through them and Enter adds one
+    const groups = [];
+    hit.forEach((t) => {
+      if (!groups.length || groups[groups.length - 1].name !== t.group) groups.push({ name: t.group, ts: [] });
+      groups[groups.length - 1].ts.push(t);
+    });
+    let k = 0;
+    return groups
+      .map(
+        (g, gi) =>
+          `<div role="group" aria-labelledby="ov-grp-${gi}"><p class="ov-grp" id="ov-grp-${gi}" role="presentation">${esc(g.name)}</p>` +
+          g.ts
+            .map((t) => {
+              const more = [
+                t.clash ? t.group : '',
+                t.ref || '',
+                t.size ? `${int(t.size)} proteins` : '',
+                t.broad ? 'very broad' : '',
+                t.note,
+              ]
+                .filter(Boolean)
+                .join(' · ');
+              return `<div class="ov-opt" role="option" id="ov-opt-${k++}" aria-selected="false" data-ov-add="${esc(t.id)}">${esc(t.label)}${more ? ` <span class="muted ov-more">${esc(more)}</span>` : ''}</div>`;
+            })
+            .join('') +
+          '</div>'
+      )
       .join('');
   }
   function controls(res) {
@@ -2135,7 +2182,7 @@
     return (
       K.preamble(
         'overlap of terms',
-        `${res.ts.map((t, i) => `${LETTERS[i]} = ${t.label}`).join('; ')}; unit ${res.unit}. ${res.test ? (sites ? TESTS.sites : TESTS.proteins) : 'Counts only; no test.'} Regions under ${MIN_N} are counted, not tested (tested = 0). ci95: Wilson interval of the share with sites${sites ? ' (for sites: Woolf interval of the odds ratio)' : ''}.${res.N ? ` ${res.M} of ${res.N} reviewed proteins have sites.` : ''}${citeFor(res.ts.map((t) => t.id)) ? ` ${citeFor(res.ts.map((t) => t.id))}` : ''}`
+        `${res.ts.map((t, i) => `${LETTERS[i]} = ${t.label}`).join('; ')}; unit ${res.unit}. ${res.test ? (sites ? TESTS.sites : TESTS.proteins) : 'Counts only; no test.'} Regions under ${MIN_N} are counted, not tested (tested = 0)${res.circ ? ', and so are the regions of a term made of sites (a selection, a gene list, a class of sites), whose proteins all have sites' : ''}. ci95: Wilson interval of the share with sites${sites ? ' (for sites: Woolf interval of the odds ratio)' : ''}.${res.N ? ` ${res.M} of ${res.N} reviewed proteins have sites.` : ''}${citeFor(res.ts.map((t) => t.id)) ? ` ${citeFor(res.ts.map((t) => t.id))}` : ''}`
       ) +
       head.join('\t') +
       '\n' +
@@ -2164,8 +2211,64 @@
   const add = (id) => {
     if (S.ot.length < MAXT && !S.ot.includes(id)) set({ ot: [...S.ot, id], or: '' });
   };
+  // the term box: typing lists the matches; ArrowDown and ArrowUp move the active option, Home and End jump, Enter adds
+  // it, Escape closes the list (and a second Escape clears the text)
+  const opts = () => [...document.querySelectorAll('#ov-res [role="option"]')];
+  const setActive = (input, i) => {
+    const os = opts();
+    os.forEach((o, j) => {
+      o.setAttribute('aria-selected', String(j === i));
+      o.classList.toggle('active', j === i);
+    });
+    if (i >= 0 && os[i]) {
+      input.setAttribute('aria-activedescendant', os[i].id);
+      os[i].scrollIntoView({ block: 'nearest' });
+    } else input.removeAttribute('aria-activedescendant');
+  };
+  const setOpen = (input, open) => {
+    const res = document.getElementById('ov-res');
+    if (res) res.hidden = !open;
+    input.setAttribute('aria-expanded', String(open));
+    if (!open) setActive(input, -1);
+  };
   document.addEventListener('input', (e) => {
-    if (e.target.id === 'ov-q') document.getElementById('ov-res').innerHTML = resultsHtml(e.target.value);
+    if (e.target.id !== 'ov-q') return;
+    document.getElementById('ov-res').innerHTML = resultsHtml(e.target.value);
+    setOpen(e.target, true);
+    setActive(e.target, -1);
+  });
+  document.addEventListener('keydown', (e) => {
+    const input = e.target;
+    if (input.id !== 'ov-q') return;
+    const os = opts(),
+      open = input.getAttribute('aria-expanded') === 'true',
+      cur = os.findIndex((o) => o.id === input.getAttribute('aria-activedescendant'));
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) setOpen(input, true);
+      if (!os.length) return;
+      const n = os.length,
+        i = e.key === 'ArrowDown' ? (cur + 1) % n : cur <= 0 ? n - 1 : cur - 1;
+      setActive(input, i);
+    } else if ((e.key === 'Home' || e.key === 'End') && open && cur >= 0) {
+      e.preventDefault();
+      setActive(input, e.key === 'Home' ? 0 : os.length - 1);
+    } else if (e.key === 'Enter') {
+      const o = cur >= 0 ? os[cur] : os.length === 1 ? os[0] : null;
+      if (o) {
+        e.preventDefault();
+        add(o.dataset.ovAdd);
+        setTimeout(() => document.getElementById('ov-q')?.focus(), 0);
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      if (open && os.length) setOpen(input, false);
+      else if (input.value) {
+        input.value = '';
+        document.getElementById('ov-res').innerHTML = resultsHtml('');
+        setOpen(input, true);
+      }
+    }
   });
   document.addEventListener('keydown', (e) => {
     const g = e.target.closest?.('[data-ov-reg]');

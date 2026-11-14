@@ -10344,6 +10344,7 @@ html[data-density] .sites-tbl .cv {
 }
 .ov-opt {
   display: block;
+  box-sizing: border-box;
   width: 100%;
   text-align: left;
   font: inherit;
@@ -10356,6 +10357,7 @@ html[data-density] .sites-tbl .cv {
   cursor: pointer;
 }
 .ov-opt:hover,
+.ov-opt.active,
 .ov-opt:focus-visible {
   background: var(--surface-2);
 }
