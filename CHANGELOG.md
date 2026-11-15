@@ -1,10 +1,48 @@
 ## 0.5.0 (unreleased)
 
+- Network: a click on a protein pins it (its partners and their clusters stay lit, a panel holds its card: cluster, sites,
+  partners in and out of the cluster, the term with k of n and q, the domain class), a second click opens its page,
+  Shift-click pins up to five, Escape unpins. The downloads (SVG, PNG, PDF; slide or paper) make a figure of the pinned view,
+  cropped to the neighbourhood, with the cards beside or under it. Every setting is kept in the address. A selection of
+  one to three proteins is drawn with their partners. The status line says how many of the top N proteins are drawn, with
+  the number of proteins beside it; a number of clusters that cannot be reached says what the closest is.
+- Network view: zoom and pan (the buttons − + Fit pinned Reset, Ctrl or Cmd with the wheel, drag, pinch), kept in the address.
+  An export frames the pinned proteins, their partners and every cluster they touch whole, with a margin (Fit pinned), what
+  is on screen, or the whole network; a dashed frame shows it for two seconds when it differs from the view.
+- Network cluster names: a term names a cluster only if it holds for a quarter of it (`min_coverage`), no term names two
+  clusters, and a cluster no term fits is named by its three busiest proteins; the key says how many proteins hold the
+  term. "See in network" gives the real reason when a protein is not drawn and is not shown for a protein with no
+  partners; Find genes counts distinct proteins; the figure on a phone has zoom buttons and larger touch targets.
+
+- Overlap page: two named questions with one switch. *Do these sets share more proteins than chance?* tests the overlap of the sets themselves, pair by pair, among every protein and among the proteins with sites (expected overlap, fold, hypergeometric test, Benjamini-Hochberg across the pairs); *Are the proteins in each region modified more often?* is the earlier region test. A sentence above the figure states the result. Full set names, picker grouped by source with sizes, a one-line statement of what is counted, and a Methods link.
 - Yes/no attributes (true/false, yes/no, 1/0) read as plain terms: the attribute's label is the chip and its `query` word (default: its name; `als_ftd` for the ALS/FTD gene attribute) the search text, with no value. `als_ftd_gene:true` still works in older links and is never shown.
 - Landing cards without the "Strongest result" block and the italic question line; `card: {result, question}` in the landing config brings them back (default false).
 - A small brand line (the landing config's `title`) above each explorer's name links to the landing page; the header's "All sites" link is gone, the sticky bar keeps it.
 - Protein page fixes. The Other PTMs card is read from the same marks and counts as the map's legend. A context mark with a score subset (phosphosites) draws every mark at first on every site, the score cut an option (`subset.default: subset` keeps the cut first); the legend counts what is drawn. A failed ortholog lookup says "Ortholog data could not be loaded" with a retry (the request used a type Ensembl does not accept, and an HTTP error no longer reads as "no ortholog"); AlphaFold DB's 404 is "no model". The tile captions are visible again (a hidden-label rule shared their class name). The protein's sets sit under an "Across all <marks>" heading, as dataset-wide results; the organelle IP and CD-CODE stress granule sets carry their source in the name. Network "Find genes" reads the main search's other names (TDP43) and keeps the genes in the address (`nf=`).
-
+- Selection retests say why a row is shown and not tested (made with the question, the selection's own classes, a
+  selection of whole proteins against the other marks, named proteins, too small, or a selection defined by the class a
+  question tests, such as a source filter whose every site carries the mark a same-lysine question asks about). A gene
+  list compared with the other marks draws its shares instead of an empty card; How does it differ and Enriched
+  features give that reason instead of "too few" or "0 of 0 features".
+- One measure per result: a question's page and its figure draw the fold, as the tile does, with the test's odds ratio
+  beneath each row; a protein's page quotes the main questions' fold (no control), and All tests names a control's rows
+  as a control. Effects are named by their test (a protein set's odds ratio within abundance deciles is no longer called
+  within-protein); the statistics and question downloads add a fold column and describe a, b, c and d for each kind of
+  row; an infinite odds ratio's log2 prints as a bound.
+- A tile with no row at 1.1x says how many rows are significant but under 1.1x in fold, and their hover says why. The cell
+  card names the parts its lists show as less often when no region differs.
+- Overlap: the term box is a keyboard combobox (ARIA 1.2); a set offered by two questions is listed once, and terms that
+  share a label show their source; a term made of sites (a selection, a gene list, a class of sites) is counted, not
+  tested.
+- Search and selection bar: Escape closes the suggestions and puts back the search as last committed, never clearing
+  it; the search's x, the chip's x and Clear all offer Undo. The chip leaves out names not in the dataset and opens the
+  Filters; Save takes its name in the menu, not a browser prompt. In Compare mode the cell card says it shows all sites.
+- A change of selection shows "Updating: testing N sites again" at once, and on the Overview the retests run one
+  question at a time, giving the browser back between them; How does it differ is compared only when opened, also in
+  slices. On the lysine site a source filter held the page for about 38 s; it now shows the note within 0.1 s and no
+  task runs longer than about 0.7 s.
+- A link whose search names a protein attribute read on demand is resolved again when that attribute arrives, instead
+  of showing an unmatched term until the next navigation.
 - Overlap page (`website.overlap`): two to four terms (protein sets, classes, reader families, enzymes, the selection, a gene list) as rows of regions (a membership matrix, a split size bar, the share with sites against all reviewed proteins with its 95% interval) and, for two or three terms, an area-proportional diagram, with proteins, proteins with sites, fold, a hypergeometric test against all reviewed proteins and Benjamini-Hochberg q for each region; also for sites, enzymes and readers. A "Compare with..." button on the rows of protein-set questions. Reader families (Tudor; chromodomain, PHD, MBT, PWWP; 14-3-3, SH2, BRCT; bromodomain, YEATS) are listed in the site files with their Pfam and InterPro ids.
 - Overlap terms from GO biological process (propagated annotations without computational-only evidence, 5 to 5,000 proteins), listed by name, GO id and size; one generic `term_sources` entry in the site file (data from PTM_Pipeline's staged GO tables; cite Gene Ontology Consortium 2023 and Ashburner et al. 2000).
 - `ptmc run` writes `overlap_members.json` (every protein of each set) for the questions an Overlap block names; the statistics are unchanged.
@@ -67,6 +105,23 @@
 - Header: "All sites" sits on the switcher's row, so the lab block and links stay above the structure drawing. The sticky bar shows the short site name.
 - Cell maps: a part where the maps do not agree reads "maps disagree" (was "fewer than N maps").
 - Lysine header drawing: SUMOylation is labelled "SUMO", not "Ksu".
+- Controls: a badge's click opens its question at the Controls table and no longer also selects the row's class; the
+  table shows the fold the tiles show (the odds ratio, interval and q in each cell's tooltip), is drawn with a selection
+  on (as the whole dataset's), and its verdicts follow its key (a control on the other side of 1× at q ≤ 0.05 is
+  reversed). A badge's tooltip is one sentence (`controls[].when`): "This result disappears when only arginines inside
+  disordered regions are compared (1.5× → 0.95×)."
+- Overview tiles are calmer: a row shows the name, the mark, the fold and n (and a failed-control badge). The test behind
+  it (odds ratio, interval, q; for a protein set, the test within abundance deciles) is in the row's hover text and its
+  spoken name, in full. Where that test drives the dots, the tile's subtitle says so once. The tile rows no longer carry
+  "Compare with…" or "Proteins" buttons: a row opens its question at that class, and the buttons are on the question's rows.
+  The Sections sidebar expands only the Overview's sections; the Network page links its Method beside its lead.
+- Overview tiles are one small forest plot each: rows aligned on the tile's log axis (shown once under the rows, with the
+  comparison note beneath it), a dot in the direction colors, filled where q ≤ 0.05, the row lightly shaded by direction,
+  the fold at the end, and at most 5 rows by default (`website.overview.rows`, a card's `rows`). A click, Enter or tap on a
+  row opens a popover: the full name, fold, n, each test in full (odds ratio, interval, q; the test within abundance
+  deciles), and the actions "Show these proteins", "Overlap with…" and "Open question". The count column and the
+  "Select" cue are gone.
+- CI: the lint job fails on a commit message with a "Co-Authored-By: Claude" or "Claude-Session:" line (`tools/check_commit_messages.sh`).
 
 ## 0.4.0 (2026-11-13)
 

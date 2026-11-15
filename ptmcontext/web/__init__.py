@@ -29,7 +29,7 @@ from ..front import resolve as front_resolve
 from ..inputs import load as load_manifest
 from ..inputs import role_inputs, site_input_names
 from ..profile import site_profile
-from ..site import code_commit, load_site, manifest_of, presence_only, root_of
+from ..site import card_questions, code_commit, load_site, manifest_of, presence_only, root_of
 from .cellpct import cell_percent, cell_proteome
 from .counts import counts_data
 from .glance import glance
@@ -137,7 +137,13 @@ def _control(a: dict) -> dict:
     """A control of another question (controls: in the site file): the question it controls and its short name, for
     that question's page, which shows the control beside its result."""
     return (
-        {'control_of': a['control_of'], 'control_label': a.get('control_label', a['id'])} if a.get('control_of') else {}
+        {
+            'control_of': a['control_of'],
+            'control_label': a.get('control_label', a['id']),
+            **({'control_when': a['control_when']} if a.get('control_when') else {}),
+        }
+        if a.get('control_of')
+        else {}
     )
 
 
@@ -715,8 +721,8 @@ def section_analyses(web: dict, name: str | None) -> set | None:
         if sec.get('name') != name:
             continue
         for c in sec.get('cards') or []:
-            a = c if isinstance(c, str) else c.get('analysis')
-            ids.add(a)
+            a = card_questions(c)[0]
+            ids.update(card_questions(c))
             if a == cell.get('id'):
                 ids |= {m.get('analysis') for m in cell.get('maps') or []}
     return ids

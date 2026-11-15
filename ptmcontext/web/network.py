@@ -15,6 +15,7 @@ same order on the same integers, so that the page's default and this file's agre
 
 from __future__ import annotations
 
+import base64
 import json
 import math
 from collections import Counter, defaultdict
@@ -25,7 +26,7 @@ import pandas as pd
 from ptmstats import benjamini_hochberg, hypergeom_sf
 
 from ..snapshot import md5_file
-from .netlayout import layout
+from .netlayout import layout, short_name
 
 DEFAULTS = {
     'top': 300,
@@ -33,6 +34,7 @@ DEFAULTS = {
     'max_clusters': 8,
     'resolution': 1.0,
     'max_q': 0.05,
+    'min_coverage': 0.25,
     'min_overlap': 3,
     'min_term': 5,
     'max_fraction': 0.2,
@@ -161,8 +163,10 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
     and no more than `max_fraction` of them (broad terms are left out), against all the network's proteins. q is
     Benjamini-Hochberg over the terms tested in that cluster. The label is the term of the smallest q (equal to 1e-9
     relative), a tie going to the deeper term, then the smaller p, then the term with fewer proteins, then the name. A
-    cluster whose best q is above `max_q` has no label. With `opt['label']` set, only the terms of that source (the
-    second number of a term) are used."""
+    cluster whose best q is above `max_q` has no label. A term must also hold for `min_coverage` or more of the
+    cluster's proteins (the best term that does is taken, the next best when the first would be too thin), and no term
+    names two clusters (larger clusters choose first; two terms with one short name count as one). With `opt['label']` set,
+    only the terms of that source (the second number of a term) are used."""
     N = len(comm)
     members = defaultdict(list)
     for i, c in enumerate(comm):
@@ -177,6 +181,8 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
         and not (terms[t][2] in opt.get('exclude', ()) or terms[t][0] in opt.get('exclude', ()))
     }
     out = []
+    used_ids: set = set()
+    used_names: set = set()
     for c in range(len(members)):
         mem = members[c]
         n = len(mem)
@@ -195,25 +201,35 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
                     terms[tested[j]][0],
                 )
 
-            best = 0
-            for j in range(1, len(tested)):
-                a, b = qs[j], qs[best]
-                same = abs(a - b) <= 1e-9 * max(a, b)
-                if (same and key(j) < key(best)) or (not same and a < b):
-                    best = j
-            if qs[best] <= opt['max_q']:
+            remaining = list(range(len(tested)))
+            while remaining:
+                best = remaining[0]
+                for j in remaining[1:]:
+                    a, b = qs[j], qs[best]
+                    same = abs(a - b) <= 1e-9 * max(a, b)
+                    if (same and key(j) < key(best)) or (not same and a < b):
+                        best = j
+                if qs[best] > opt['max_q']:
+                    break
                 t = tested[best]
-                row = {
-                    'n': n,
-                    'term': terms[t][0],
-                    'id': terms[t][2],
-                    'source': terms[t][1],
-                    'p': ps[best],
-                    'q': qs[best],
-                    'k': k_of[t],
-                    'M': count[t],
-                    'N': N,
-                }
+                name = short_name(terms[t][0])
+                # the term must hold for a fair share of the cluster, and no term names two clusters
+                if k_of[t] / n >= opt['min_coverage'] and terms[t][2] not in used_ids and name not in used_names:
+                    used_ids.add(terms[t][2])
+                    used_names.add(name)
+                    row = {
+                        'n': n,
+                        'term': terms[t][0],
+                        'id': terms[t][2],
+                        'source': terms[t][1],
+                        'p': ps[best],
+                        'q': qs[best],
+                        'k': k_of[t],
+                        'M': count[t],
+                        'N': N,
+                    }
+                    break
+                remaining.remove(best)
         out.append(row)
     return out
 
@@ -252,6 +268,13 @@ def make_view(full: dict, opt: dict, select: set | None = None, sources: list | 
     comm = communities(len(live), [(pos[a], pos[b], w) for a, b, _, _, w in edges], opt)
     ann = [full['ann'][g] for g in live]
     labels = label_clusters(comm, ann, full['terms'], opt)
+    # the three proteins with most sites of each cluster: its name when no term names it
+    by_c: dict = defaultdict(list)
+    for i, g in enumerate(live):
+        by_c[comm[i]].append(g)
+    for c, row in enumerate(labels):
+        top = sorted(by_c[c], key=lambda g: (-full['nodes'][g][2], full['nodes'][g][1], full['nodes'][g][0]))[:3]
+        row['genes'] = [full['nodes'][g][1] for g in top]
     return {
         'nodes': live,
         'edges': [[pos[a], pos[b], fl, score] for a, b, fl, score, _ in edges],
@@ -400,6 +423,18 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
     nodes = sorted({x for k in rows for x in k})
     ix = {a: i for i, a in enumerate(nodes)}
     edges = sorted([ix[a], ix[b], v[0], pair_keys.get((a, b), 0)] for (a, b), v in rows.items())
+    # which of the site's proteins have a link at the default score (a bit each, in the order of the protein list): the page
+    # shows no "See in network" button for a protein with none
+    pbit = next((1 << i for i, s in enumerate(srcs) if s['kind'] == 'pairs'), 0)
+    linked = set()
+    for a, b, fl, sc in edges:
+        if (fl & pbit and sc >= opt['min_score']) or fl & ~pbit:
+            linked.add(nodes[a])
+            linked.add(nodes[b])
+    bits = bytearray((len(listing) + 7) // 8)
+    for k, r in enumerate(listing):
+        if base(r[0]) in linked:
+            bits[k >> 3] |= 1 << (k & 7)
     # the terms of the labels: sets annotating at least min_term of the nodes
     terms, ann = [], [[] for _ in nodes]
     labels = []
@@ -507,6 +542,7 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
         **{k: cfg[k] for k in keys if cfg.get(k)},
         'files': {'view': 'data/network.json', 'full': 'data/network_full.json'},
         'protein_link': bool(cfg.get('protein_link', True)),
+        'linked': base64.b64encode(bytes(bits)).decode(),
         'protein_preview': bool(cfg.get('protein_preview', True)),
         'options': {k: opt[k] for k in DEFAULTS if k in opt}
         | {

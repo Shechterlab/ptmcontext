@@ -382,10 +382,12 @@
           .join(', ')}${qs.length > 8 ? ', …' : ''}.</p>`)
     );
   }
-  // the dataset-wide base rate beside the verdict: the most over-represented class of the site's residue questions (pooled test,
-  // q within the cut-off), the figure a single protein is read against
+  // the dataset-wide base rate beside the verdict: the most over-represented class of the site's residue questions (q within
+  // the cut-off), the figure a single protein is read against. A control of another question (control_of) is not the main
+  // result, and the measure is the fold the Overview's tiles and the question's page show
+  const shownOf = (r) => (K.valOf ? K.valOf(r) : r.eff);
   function baseRate() {
-    const ids = new Set(D.analyses.filter((a) => a.kind !== 'protein_sets').map((a) => a.id)),
+    const ids = new Set(D.analyses.filter((a) => a.kind !== 'protein_sets' && !a.control_of).map((a) => a.id)),
       cut = K.PADJ ?? 0.05;
     let best = null;
     // the within-protein test the Overview and the tiles read, else the pooled one
@@ -402,7 +404,7 @@
             r.eff < 1e299 &&
             r.category !== '' &&
             !/^(no |not |unknown|unassigned|other\b|none\b)/i.test(label(r.analysis, r.category)) &&
-            (!best || r.eff > best.eff)
+            (!best || shownOf(r) > shownOf(best))
           )
             best = r;
         });
@@ -411,9 +413,9 @@
   const baseText = () => {
     const b = baseRate();
     return b
-      ? `${K.fxn(b.eff)}× in ${label(b.analysis, b.category)} (${
-          b.method === 'fisher' ? 'across all proteins' : 'within-protein'
-        } OR)`
+      ? `${K.fxn(shownOf(b))}× in ${label(b.analysis, b.category)} (fold; ${
+          b.method === 'fisher' ? 'pooled' : 'within-protein'
+        } OR ${K.fxn(b.eff)})`
       : '';
   };
   const winHtml = (w) => {
@@ -999,7 +1001,7 @@
   const bestRow = (aid, classes) => {
     const want = new Set(classes),
       rows = D.rows.filter((r) => r.analysis === aid && want.has(r.category) && r.dir === 'more');
-    const pick = (m) => rows.filter((r) => r.method === m).sort((a, b) => b.eff - a.eff)[0];
+    const pick = (m) => rows.filter((r) => r.method === m).sort((a, b) => shownOf(b) - shownOf(a))[0];
     return A[aid]?.kind === 'protein_sets' ? pick('enricher') : pick('mantel_haenszel') || pick('fisher');
   };
   // a fact of the protein: a protein attribute (proteins.attributes), or a column of a protein_values table
@@ -1084,23 +1086,24 @@
               others = present
                 .map((cl) => bestRow(f.analysis, [cl]))
                 .filter((r) => r && r !== best)
-                .sort((a, b) => b.eff - a.eff);
+                .sort((a, b) => shownOf(b) - shownOf(a));
             big = `${int(kk)} of ${int(n)}`;
             word = label(f.analysis, best.category);
-            lab = `${fill(f.label, { cls: word })} (dataset-wide OR ${K.fxn(best.eff)}×)`;
+            lab = `${fill(f.label, { cls: word })} (dataset-wide ${K.fxn(shownOf(best))}×)`;
             tip =
               `<b>${esc(word)}</b>${
                 help(f.analysis, best.category) ? ' (' + esc(help(f.analysis, best.category)) + ')' : ''
               }: the class ` +
-              `most enriched at these ${esc(W.marks)}: OR ${esc(K.fxn(best.eff))}× against the other ${esc(W.residues)} of the same ` +
-              `proteins (${best.method === 'fisher' ? 'pooled' : 'within proteins'}; q ${K.fq(best.q)})` +
+              `most enriched at these ${esc(W.marks)}: ${esc(K.fxn(shownOf(best)))}× (fold; OR ${esc(K.fxn(best.eff))}) against ` +
+              `the other ${esc(W.residues)} of the same proteins (${best.method === 'fisher' ? 'pooled' : 'within proteins'}; ` +
+              `q ${K.fq(best.q)})` +
               (others.length
                 ? `<br>Others here: ${others
                     .map(
                       (r) =>
                         `${esc(label(f.analysis, r.category))} ${
                           at.filter((cs) => cs.includes(r.category)).length
-                        } (${esc(K.fxn(r.eff))}×)`
+                        } (${esc(K.fxn(shownOf(r)))}×)`
                     )
                     .join(', ')}`
                 : '');

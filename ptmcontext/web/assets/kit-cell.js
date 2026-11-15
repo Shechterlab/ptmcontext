@@ -2596,6 +2596,11 @@
       .sort((a, b) => b.a.l2 - a.a.l2);
     return { regs, up };
   }
+  // the parts found less often in enough maps: the lists beside the drawing show them, so the line names them too
+  const downParts = (scoped) =>
+    Object.values(parts(scoped).P)
+      .filter((p) => p.L === LAYERS.part && p.tone[0] === 'd' && !p.selected)
+      .sort((a, b) => a.a.l2 - b.a.l2);
   // The one-line answer for a selection made with a part of the drawings: that part is left out, and the rest says where else the
   // selection's proteins are found (significant parts only, the largest first). Null when no part is the selection's.
   function selLead(scoped, short) {
@@ -2646,8 +2651,9 @@
               and(less.map(one))
           ) + '.'
         );
+      const fewest = downParts(scoped).slice(0, 3);
       return regs.length
-        ? noneWords(regs, scoped)
+        ? noneWords(regs, scoped) + (fewest.length ? ` Less often in ${and(fewest.map(onePart))}.` : '')
         : up.length
           ? `Most of all in ${and(up.slice(0, 3).map(onePart))}.`
           : none;
@@ -2665,6 +2671,9 @@
     const most = up.slice(0, 3).map(onePart);
     if (most.length)
       t += t ? `. Most of all in ${and(most)}` : `${cap(who(scoped))} are most ` + `enriched in ${and(most)}`;
+    const fewest = less.length ? [] : downParts(scoped).slice(0, 3).map(onePart);
+    if (fewest.length)
+      t += t ? `. Less often in ${and(fewest)}` : `${cap(who(scoped))} are less often in ${and(fewest)}`;
     return t ? t + '.' : none;
   }
   // a forest of rows on one log2 axis, in the kit's tile look; each row's hover gives its maps
@@ -2795,7 +2804,8 @@
       onePart = (x) => `<b>${esc(inText(x.row))}</b> (${esc(orText(x.a))})`;
     const more = regs.filter((x) => x.tone[0] === 'u').sort((a, b) => b.a.l2 - a.a.l2),
       less = regs.filter((x) => x.tone[0] === 'd').sort((a, b) => a.a.l2 - b.a.l2),
-      most = up.slice(0, 3);
+      most = up.slice(0, 3),
+      fewest = less.length ? [] : downParts(scoped).slice(0, 3);
     const t = [
       more.length || most.length
         ? `${more.length ? 'More often in ' + and(more.map(one)) : ''}${
@@ -2803,11 +2813,15 @@
           }${and(most.map(onePart))}`
         : '',
       less.length ? `${more.length || most.length ? 'Less in ' : 'Less often in '}${and(less.map(one))}` : '',
+      fewest.length ? `${more.length || most.length ? 'Less in ' : 'Less often in '}${and(fewest.map(onePart))}` : '',
     ]
       .filter(Boolean)
       .join('. ');
+    // no region differs while some parts do: both are said, as the lists show them
+    const noRegion =
+      !more.length && !less.length && regs.length && t ? noneWords(regs, scoped).replace(/\.$/, '; ') : '';
     return t
-      ? t + '.'
+      ? noRegion + (noRegion ? t.charAt(0).toLowerCase() + t.slice(1) : t) + '.'
       : regs.length
         ? noneWords(regs, scoped)
         : `${cap(who(scoped))} are not ` + `enriched in any part of the cell.`;
@@ -2896,7 +2910,7 @@
     const title = card.title || C.title || 'Where in the cell';
     const note =
       K.selOn() && !scoped
-        ? `<p class="twhole"><span>Whole dataset</span> ${
+        ? `<p class="twhole${K.vsOn() ? ' keep' : ''}"><span>${K.vsOn() ? 'All sites' : 'Whole dataset'}</span> ${
             K.vsOn()
               ? 'the maps compare proteins, not marks: shown for all ' + esc(W.marked) + ' proteins'
               : 'the selection is too small to test'
@@ -3321,7 +3335,7 @@
     ];
     const note =
       K.selOn() && !scoped
-        ? `<p class="twhole"><span>Whole dataset</span> ${
+        ? `<p class="twhole${K.vsOn() ? ' keep' : ''}"><span>${K.vsOn() ? 'All sites' : 'Whole dataset'}</span> ${
             K.vsOn()
               ? 'the maps compare proteins, not marks: shown for all ' + esc(W.marked) + ' proteins'
               : 'the selection is too small to test'

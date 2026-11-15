@@ -1,4 +1,4 @@
-/* The pathway view (website.front.pathways; the Overview's tiles and question pages): a "Proteins" button on the rows of a pathway question opens
+/* The pathway view (website.front.pathways; the Overview's tiles and question pages): a "Proteins" button on the rows of a pathway question's page opens
    the pathway's sub-pathways as groups of protein chips. A marked protein is filled, with its sites (those of the
    selection, when there is one); a protein of the pathway with none is an outline, muted; the marked come first, and
    each group says "k of n marked in your selection". Chips open the protein's page. The groups follow the filters,
@@ -160,24 +160,9 @@
       });
   }
 
-  // ---- the page: a Proteins button on each row, and the card above the rows ---------------------------------------------------------
+  // ---- the question's page: a Proteins button on each row, and the card above the rows ---------------------------------------------------------
   let shownFor = '';
-  // the home's pathway card: its rows get the same button, which opens the question's page with the pathway
-  function homeButtons() {
-    document.querySelectorAll('#view .fr-row[data-f][data-v]').forEach((r) => {
-      const aid = String(r.dataset.f).split(':')[1];
-      if (!cfgOf(aid)) return;
-      const nx = r.nextElementSibling;
-      if (nx && nx.matches?.('[data-pw-home]')) return;
-      r.insertAdjacentHTML(
-        'afterend',
-        `<button type="button" class="btn small pwbtn pwbtn-home" data-pw-home="${esc(r.dataset.v)}" data-aid="${esc(aid)}" aria-label="Proteins ` +
-          `of ${esc(r.querySelector('.fr-lab')?.textContent || r.dataset.v)}">Proteins</button>`
-      );
-    });
-  }
   function after() {
-    if (S.view === 'overview' && !S.arg) homeButtons(); // the home's rows, and the rows of the classic Overview's tiles
     const cfg = onPage() ? cfgOf(S.arg) : null;
     if (!cfg) return;
     document.querySelectorAll('#view .drow[data-cat]').forEach((r) => {
@@ -210,16 +195,6 @@
   document.addEventListener(
     'click',
     (e) => {
-      const h = e.target.closest?.('[data-pw-home]');
-      if (h) {
-        e.preventDefault();
-        e.stopPropagation();
-        Object.assign(S, { view: 'overview', arg: h.dataset.aid, pw: h.dataset.pwHome });
-        K.writeHash(true);
-        K.render();
-        scrollTo(0, 0);
-        return;
-      }
       const b = e.target.closest?.('[data-pw]'),
         x = e.target.closest?.('[data-pw-close]');
       if (!b && !x) return;
