@@ -4854,6 +4854,7 @@
     document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg) && D.header?.compact !== false); // the header band in full on the Overview only (website.header.compact)
     document.body.classList.remove('bar-hidden');
     document.querySelector('.toolbar')?.removeAttribute('inert');
+    K.barReset?.();
     if (mod?.after) mod.after(S.arg);
     if (S.view === 'method') foldMethod();
     if (S.view === 'method') {
@@ -5563,6 +5564,9 @@
         const tb = tbEl();
         if (tb) tb.inert = on; // not in the tab order while it is away: the bar has the same things
       };
+    K.barReset = () => {
+      lastY = scrollY; // a new page starts from where it is drawn, not from where the last one was left
+    };
     K.showToolbar = (focusQ) => {
       hide(false);
       lastY = scrollY + 1000; // not slid away again by the scroll that follows
@@ -5576,6 +5580,12 @@
           tb = tbEl();
         if (!tb || (innerWidth > 700 && HDR.scroll_bar === false)) {
           if (document.body.classList.contains('bar-hidden')) hide(false);
+          lastY = y;
+          return;
+        }
+        // near the top the bar is always in full, however small the last step was and whichever page is drawn
+        if (y < 8) {
+          if (document.body.classList.contains('bar-hidden') || tb.inert) hide(false);
           lastY = y;
           return;
         }
