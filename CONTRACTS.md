@@ -238,7 +238,8 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   compartments and φ > 1 (`dispersion`, default true, set false in the four sites: compartments are not expected to be alike, so the adjustment answers a different question; φ is the Pearson χ² of the Winsorised z, 10% per tail, of the
   map's compartments, Spiegelhalter, Stat Med 2005;24:1185); with `dispersion: false`, Fisher's exact test of the part's
   proteins against the other mapped proteins; with `abundance: true` (set in the four sites), the test within abundance deciles
-  (Mantel–Haenszel) for the maps that have it, Fisher's exact test for the others. A part takes the median p of its maps. Hover: percent, percentage-point
+  (Mantel–Haenszel) for the maps that have it, Fisher's exact test for the others. A part takes the median p of its maps. `min_h` (default 0.2): a part is filled only when significant and |h| ≥ `min_h`;
+  significant but smaller is outlined ("significant but small"), as in the funnel plot and its table; the sentence names only filled parts. Hover: percent, percentage-point
   difference, h, odds ratio and its interval, z, φ, q and n. The cell page adds a funnel plot of one map (the share of
   each compartment against its size, the overall share, 95% and 99.8% limits, widened by √φ when on) with its table. With
   a selection, the selection's share in each part is set against its overall share the same way. The table has `h`,

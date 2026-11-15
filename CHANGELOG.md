@@ -105,7 +105,8 @@
   0 (`website.cell.range`: `data` or `full`). The key also gives the share among all reviewed proteins.
   The average view colors each compartment by the effect size (Cohen's h) of its share against the share among all
   mapped proteins and fills it only where q ≤ 0.05 across the compartments shown (hatched otherwise); the cell page adds
-  a funnel plot. The sites test each compartment within abundance deciles (`website.cell.abundance`), as the fold view does, with
+  a funnel plot. A compartment is filled only when significant and at least a small effect (|h| ≥ 0.2, `website.cell.min_h`); a significant
+  but smaller one is outlined. The sites test each compartment within abundance deciles (`website.cell.abundance`), as the fold view does, with
   Fisher's exact test where a map has none; `website.cell.dispersion` can widen the standard errors by the
   overdispersion across a map's compartments (off in the sites; φ is on hover and the funnel plot draws both limits).
 - Where the fold has too few proteins to compare, the label says which side is short and how many proteins carry a

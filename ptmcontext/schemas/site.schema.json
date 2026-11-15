@@ -5528,6 +5528,11 @@
               ],
               "description": "what the cell and nucleus maps color by when the page opens: percent (the share of each compartment's proteins that carry at least one mark), average (each compartment's share against the share among all the proteins the maps place, as Cohen's h on a diverging ramp, filled where q ≤ 0.05 across the compartments shown; percent and average suit a mark that covers most proteins, where the fold has little to compare against) or fold (the default: the fold against the other proteins). The switch on each map changes it for the visitor"
             },
+            "min_h": {
+              "type": "number",
+              "minimum": 0,
+              "description": "the average view fills a compartment only when it is significant (q <= 0.05) and its effect size |h| (Cohen's h) is at least this (default 0.2, a small effect); a significant compartment below it is outlined, one that is not significant is hatched"
+            },
             "dispersion": {
               "type": "boolean",
               "description": "the average view widens the standard error of a map's compartments by the square root of the overdispersion factor phi (the Pearson chi-squared of the Winsorised z of its compartments' shares, Spiegelhalter 2005), when the map has 5 or more compartments and phi is above 1; false tests each compartment by Fisher's exact test against the other mapped proteins (default true)"

@@ -1279,6 +1279,7 @@ website:                  # the look and words of the website (ptmc web); layout
     default_view: average        # what the maps color by on opening: percent (share of proteins with a mark), average (each share against the share among all mapped proteins) or fold
     dispersion: false        # the average view: no overdispersion adjustment across compartments (they are not expected to be alike)
     abundance: true          # its test is within abundance deciles (Mantel-Haenszel), Fisher's exact test where a map has none
+    min_h: 0.2               # filled only where the effect is at least small (Cohen's h); significant but smaller is outlined
     title: Where in the cell
     question: "Where do proteins with modified lysines localize in the cell?"
     intro: "Five maps from four studies locate proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."

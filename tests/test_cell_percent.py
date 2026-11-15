@@ -241,7 +241,13 @@ def test_the_average_view_colors_by_cohens_h_and_fills_where_the_fisher_q_across
         assert by[part]['q'] == pytest.approx(q[part], rel=1e-5)
     # filled where q <= 0.05, stepped by |h| at 0.2, 0.5, 0.8; hatched where not
     want = {
-        k: ('hx' if q[k] > 0.05 else ('m' if h[k] > 0 else 'f') + str(sum(abs(h[k]) >= b for b in (0.2, 0.5, 0.8))))
+        k: (
+            'hx'
+            if q[k] > 0.05
+            else 'sm'
+            if abs(h[k]) < 0.2
+            else ('m' if h[k] > 0 else 'f') + str(sum(abs(h[k]) >= b for b in (0.2, 0.5, 0.8)))
+        )
         for k in p
     }
     assert {k: by[k]['tone'] for k in p} == want
@@ -291,3 +297,25 @@ def test_with_a_selection_h_compares_the_selection_in_a_part_with_its_overall_sh
     ha = _h(2 / 4, 3 / 10)  # map A's nucleus: 2 of its 4 proteins are in the selection
     hb = _h(2 / 3, 3 / 8)  # map B's nuclear set: 2 of 3; 3 of the map's 8 placed proteins
     assert out['by']['nucleoplasm']['h'] == pytest.approx((ha + hb) / 2)
+
+
+SMALL = {
+    'map_a': {
+        'N': 100000,
+        'n': 44000,
+        'sets': {'nucleus': [20000, 9400], 'cytosol': [30000, 9000], 'membrane': [20000, 4000]},
+    },
+    'map_b': {'N': 50000, 'n': 22000, 'sets': {'nuclear': [10000, 4700], 'cyto': [15000, 4500]}},
+}
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_a_significant_part_with_a_small_effect_is_outlined_not_filled_until_min_h_is_lowered(tmp_path):
+    patch = f'D.cell_pct = {json.dumps(SMALL)}; D.cell.dispersion = false;'
+    out = _run(tmp_path / 'a', _build(tmp_path / 'b', 'average'), [], patch=patch)
+    nuc = out['by']['nucleoplasm']
+    # 47% against 44%: h about 0.06, with n in the tens of thousands the q is far below 0.05
+    assert abs(nuc['h']) < 0.2 and nuc['q'] < 0.05 and nuc['tone'] == 'sm' and nuc['small'] and not nuc['clear']
+    assert out['by']['pm']['tone'][0] == 'f'  # 20% against 44%: h about -0.5, filled
+    out = _run(tmp_path / 'c', _build(tmp_path / 'd', 'average'), [], patch=patch + ' D.cell.min_h = 0;')
+    assert out['by']['nucleoplasm']['tone'] == 'm0'

@@ -45,7 +45,10 @@
   // φ > 1); without it, Fisher's exact test of the part's proteins against the other mapped proteins; website.cell.abundance
   // takes the test within abundance deciles (Mantel–Haenszel) where the map has it. With a selection, the selection's
   // share in each part against its overall share, the same way.
-  const H_BANDS = [0.2, 0.5, 0.8],
+  // website.cell.min_h (default 0.2): a part is filled only when it is significant and its |h| is at least this (a small effect);
+  // significant but smaller is outlined, not significant is hatched
+  const MIN_H = C.min_h ?? 0.2,
+    H_BANDS = [0.2, 0.5, 0.8],
     Q_MAX = 0.05,
     PHI_MIN_CELLS = 5,
     DISP = C.dispersion !== false,
@@ -70,7 +73,12 @@
     );
   };
   // the tone of a part or cell: the h band's step, filled where the evidence holds, hatched where it does not
-  const hTone = (h, clear) => (h == null ? 'na' : clear ? (h > 0 ? 'm' : 'f') + hStep(h) : 'hx');
+  const hTone = (h, clear, small) => (h == null ? 'na' : clear ? (h > 0 ? 'm' : 'f') + hStep(h) : small ? 'sm' : 'hx');
+  // the evidence of a part or cell: significant at q, and filled when the effect is at least MIN_H
+  const evid = (q, h) => {
+    const sig = q != null && q <= Q_MAX;
+    return { sig, clear: sig && h != null && Math.abs(h) >= MIN_H, small: sig && h != null && Math.abs(h) < MIN_H };
+  };
   const SELC = { c: null, id: 0 };
   const selId = () => {
     const c = K.sel.compute();
@@ -237,6 +245,7 @@
       '.cd-name{text-decoration:underline}',
     'svg .cg-row:hover .cg-hit,svg .cg-row.on .cg-hit,svg .cb-row:hover .cg-hit{fill:var(--accent);fill-opacity:.08}',
     '.cell-svg.cell-funnel{max-width:760px;min-width:560px}.cf-l95{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:4 3}.cf-l998{fill:none;stroke:var(--ink-2);stroke-width:1.2}',
+    '.cg-c.sm{fill:var(--surface);stroke:var(--ink-2);stroke-opacity:.75;stroke-width:1.8}.cg-line.sm{stroke:var(--ink-2)}.cg-k.sm{background:var(--surface);border:1.5px solid var(--ink-2)}.kd.sm{background:var(--surface);border:1.5px solid var(--ink-2);box-sizing:border-box}.cf-dot.cf-sm{fill:var(--surface);stroke:var(--ink-2);stroke-width:1.8}',
     '.cf-w95{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:1 3;opacity:.8}.cf-w998{fill:none;stroke:var(--ink-2);stroke-width:1;stroke-dasharray:1 3;opacity:.8}',
     '.cf-ref{stroke:var(--ink);stroke-width:1.4}.cf-dot{stroke:var(--ink);stroke-width:1}.cf-dot.cf-ns{fill:var(--surface);stroke:var(--muted)}.cf-t{font-size:11px;fill:var(--ink)}.cf-ax{font-size:11px;fill:var(--muted)}',
     '.cb-grid{stroke:var(--line-strong);stroke-dasharray:2 ' +
@@ -772,9 +781,9 @@
       const ref = pctRef(scoped),
         list = Object.values(P).filter((p) => !p.selected && p.h != null),
         qs = bhOf(list.map((p) => p.p));
-      list.forEach((p, i) => Object.assign(p, { q: qs[i], clear: qs[i] != null && qs[i] <= Q_MAX }));
+      list.forEach((p, i) => Object.assign(p, { q: qs[i], ...evid(qs[i], p.h) }));
       Object.values(P).forEach((p) => {
-        p.tone = p.selected ? 'sel' : hTone(p.h, p.clear);
+        p.tone = p.selected ? 'sel' : hTone(p.h, p.clear, p.small);
       });
       return { P, within, view, range: { cap: 1 }, ref, phi: phiMedian(scoped) };
     }
@@ -822,7 +831,7 @@
       `${nm}: ${esc(pctText(p.share))} of ${int(p.n)} proteins ${scoped ? 'are in your selection' : `have at least one ${esc(W.mark)}`}` +
       `${p.cells.length > 1 ? ', median of ' + esc(p.maps) : ''}<br>${esc(ptsText(p.share - ref))} from ${esc(pctText(ref))} among all mapped proteins; ` +
       `<b>${esc(hText(p.h))}</b> (${esc(hBand(p.h))}), OR ${f2(p.or)} (${f2(p.orLo)}–${f2(p.orHi)}), ${esc(zText(p.z))}, ` +
-      `${p.q == null ? '' : `q ${esc(fq(p.q))} (${p.clear ? 'significant' : 'not significant'})`}<br>${per}` +
+      `${p.q == null ? '' : `q ${esc(fq(p.q))} (${p.clear ? 'significant' : p.small ? `significant but small, |h| under ${MIN_H}` : 'not significant'})`}<br>${per}` +
       `<br><span class="muted">Click for its numbers and proteins</span>`
     );
   }
@@ -1686,7 +1695,7 @@
       diff = VIEW === 'z',
       st = diff ? cellStat(aid, cat, scoped) : null,
       zt = diff ? sc.get(aid + '|' + cat) : null,
-      bin = diff ? hTone(st?.h, zt?.clear) : 'p' + pctBin(c.share, sc),
+      bin = diff ? hTone(st?.h, zt?.clear, zt?.small) : 'p' + pctBin(c.share, sc),
       lead =
         diff && st
           ? `${esc(hText(st.h))} (${esc(hBand(st.h))}), ${esc(ptsText(c.share - c.ref))} from ${esc(pctText(c.ref))}; OR ${f2(st.or)} (${f2(st.lo)}–${f2(st.hi)}), ${esc(zText(st.z))}${zt ? `, q ${esc(fq(zt.q))}` : ''}${st.phi > 1 ? `, φ ${f2(st.phi)}` : ''}; `
@@ -1716,7 +1725,7 @@
       )
     );
     const qs = bhOf(cells.map((x) => x.p));
-    return new Map(cells.map((x, i) => [x.key, { ...x, q: qs[i], clear: qs[i] != null && qs[i] <= Q_MAX }]));
+    return new Map(cells.map((x, i) => [x.key, { ...x, q: qs[i], ...evid(qs[i], x.h) }]));
   }
   // ---- the funnel plot: one map's compartments, the share of each against its size, with the overall share and control limits ----
   function funnelRows(aid, scoped) {
@@ -1732,7 +1741,7 @@
     const qs = bhOf(rows.map((r) => r.s.p));
     rows.forEach((r, i) => {
       r.q = qs[i];
-      r.clear = qs[i] != null && qs[i] <= Q_MAX;
+      Object.assign(r, evid(qs[i], r.s.h));
     });
     return rows;
   }
@@ -1820,10 +1829,10 @@
       });
     pts.forEach((q) => {
       const r = q.r,
-        tone = hTone(r.s.h, r.clear);
+        tone = hTone(r.s.h, r.clear, r.small);
       dots += `<g${tipAttr(
         `<b>${esc(r.name)}</b>: ${esc(pctText(r.c.share))} of ${int(r.c.M)} proteins${scoped ? ' are in your selection' : ''}<br>${esc(ptsText(r.c.share - pa))} from ${esc(pctText(pa))}; <b>${esc(hText(r.s.h))}</b>, OR ${f2(r.s.or)} (${f2(r.s.lo)}–${f2(r.s.hi)}), ${esc(zText(r.s.z))}, q ${esc(fq(r.q))}`
-      )}><circle class="cf-dot ${r.clear ? 'cg-c ' + tone : 'cf-ns'}" cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="5"/></g>`;
+      )}><circle class="cf-dot ${r.clear ? 'cg-c ' + tone : r.small ? 'cf-sm' : 'cf-ns'}" cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="5"/></g>`;
     });
     g +=
       dots +
@@ -1881,7 +1890,7 @@
       rows
         .map(
           (r) =>
-            `<tr><th scope="row">${esc(r.name)}</th><td>${int(r.c.M)}</td><td>${int(r.c.k)}</td><td>${esc(pctText(r.c.share))}</td><td>${r.clear ? '<b>' : ''}${esc(hText(r.s.h))}${r.clear ? '</b>' : ''}</td><td>${f2(r.s.or)} (${f2(r.s.lo)}–${f2(r.s.hi)})</td><td>${esc(zText(r.s.z))}</td><td>${esc(fq(r.q))}${r.clear ? '' : ' <span class="muted">n.s.</span>'}</td></tr>`
+            `<tr><th scope="row">${esc(r.name)}</th><td>${int(r.c.M)}</td><td>${int(r.c.k)}</td><td>${esc(pctText(r.c.share))}</td><td>${r.clear ? '<b>' : ''}${esc(hText(r.s.h))}${r.clear ? '</b>' : ''}</td><td>${f2(r.s.or)} (${f2(r.s.lo)}–${f2(r.s.hi)})</td><td>${esc(zText(r.s.z))}</td><td>${esc(fq(r.q))}${r.clear ? '' : r.small ? ' <span class="muted">small</span>' : ' <span class="muted">n.s.</span>'}</td></tr>`
         )
         .join('') +
       '</tbody></table></div>'
@@ -2310,7 +2319,7 @@
     VIEW === 'z'
       ? `h: the effect size (Cohen's h) of a part's share ${scopedNow() ? 'in your selection' : `with a ${W.mark}`} from the share among all mapped proteins (${pctText(
           pctRef(scopedNow())
-        )}); about 0.2 is small, 0.5 medium, 0.8 large. Red: above, slate: below, deeper for larger h. Filled where q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the parts shown), hatched where not. Dashed outline: no map measures it.`
+        )}); about 0.2 is small, 0.5 medium, 0.8 large. Red: above, slate: below, deeper for larger h. Filled where q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the parts shown) and |h| ≥ ${MIN_H}; outlined where significant but smaller (significant but small); hatched where not significant. Dashed outline: no map measures it.`
       : pctOn()
         ? `Blue: the share of a part's proteins ${scopedNow() ? 'that are in your selection' : `with at least one ${W.mark}`}, darker for a larger share${
             scopedNow() ? ' (the steps are fifths of the largest share)' : ''
@@ -2443,6 +2452,7 @@
       p: p.p ?? null,
       q: p.q ?? null,
       clear: !!p.clear,
+      small: !!p.small,
       phi: p.phi ?? null,
       n: p.n,
       whole: p.whole,
@@ -2784,9 +2794,10 @@
         (up.length || down.length
           ? up.length
             ? `${and(up.map(ith))} ${verb(up)} out most above that` +
-              (down.length ? `, ${and(down.map(ith))} most below.` : '.')
-            : `${and(down.map(ith))} ${verb(down)} out most below that.`
-          : `no part stands out from that (q > ${Q_MAX}).`)
+              (down.length ? `, ${and(down.map(ith))} most below` : '')
+            : `${and(down.map(ith))} ${verb(down)} out most below that`
+          : `no part stands out from that`) +
+        ` (among parts with q ≤ ${Q_MAX} and |h| ≥ ${MIN_H}).`
       );
     }
     if (scoped) {
@@ -3400,7 +3411,11 @@
       return [
         [t['up-2'], t['up-3'], `h above 0: share above the share among all mapped proteins (${pctText(ref)})`],
         [t['down-2'], t['down-3'], 'h below 0'],
-        ['#ffffff', '#8a96a0', `hatched or outlined: not significant (q > ${Q_MAX})`],
+        [
+          '#ffffff',
+          '#8a96a0',
+          `outlined: significant but small (|h| < ${MIN_H}); hatched: not significant (q > ${Q_MAX})`,
+        ],
         ...(ref != null ? [['', '#111827', pctRefWords(scoped, ref), 'tick']] : []),
         ...(hasSel() ? [['#ffffff', '#111827', 'outlined: your selection']] : []),
       ];
@@ -3441,7 +3456,7 @@
         }, as Cohen’s effect size (0.2 small, 0.5 medium, 0.8 large)</span><span class="pk-lo">h −1</span><span class="pk-bar" role="img" aria-label="h from −1 to +1; red above, slate below">${steps
           .map((s) => `<i class="${s === 'ns' ? 'f0' : s}"></i>`)
           .join('')}<b class="pk-ref" style="left:50%"></b></span><span class="pk-hi">h +1</span>` +
-        `<span class="cell-key"><i class="cg-k hx"></i>hatched: not significant. Filled where q ≤ ${Q_MAX}, Benjamini–Hochberg across the parts shown (${esc(evidenceWords())})${
+        `<span class="cell-key"><i class="cg-k sm"></i>significant but small (|h| &lt; ${MIN_H}); <i class="cg-k hx"></i>not significant. Filled where q ≤ ${Q_MAX} and |h| ≥ ${MIN_H}, Benjamini–Hochberg across the parts shown (${esc(evidenceWords())})${
           phi > 1 ? `; φ = ${esc(f2(phi))}${DISP ? '' : ' (not applied)'}` : ''
         }</span>` +
         (ref != null ? `<span class="cell-key"><i class="pk-tick"></i>${esc(pctRefWords(scoped, ref))}</span>` : '') +
