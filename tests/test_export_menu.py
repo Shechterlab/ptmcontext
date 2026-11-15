@@ -132,3 +132,19 @@ def test_the_yaml_of_a_bundled_site_loads_with_the_block_added():
     site = yaml.safe_load((ROOT / 'sites' / 'methylarginine.yaml').read_text())
     site['website']['export'] = {'default_preset': 'paper', 'presets': [{'id': 'paper', 'label': 'Paper', 'mm': 180}]}
     assert S.export_problems(site) == []
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_a_print_size_is_listed_after_the_screen_size(tmp_path):
+    cfg = {'presets': [{'id': 'paper', 'label': 'Paper', 'mm': 180}, {'id': 'screen', 'label': 'Screen'}]}
+    assert _run(tmp_path, cfg)['presetButtons'] == ['screen', 'paper']
+
+
+def test_pdf_text_is_set_in_the_sites_own_fonts():
+    kit = (ASSETS / 'kit.js').read_text()
+    # the PDF embeds the site's body and monospace faces, shipped as files (OFL), not Arimo or the standard fonts
+    for name in ('Inter-Regular', 'Inter-Bold', 'IBMPlexMono-Regular', 'IBMPlexMono-Bold'):
+        assert (ASSETS / 'fonts' / 'pdf' / f'{name}.ttf').is_file() and name in kit
+    assert 'Arimo' not in kit and 'DejaVuSans.ttf' not in kit
+    # the file name no longer carries the print width
+    assert 'f.mm}mm' not in kit

@@ -9,19 +9,22 @@
                                                              f.mm and f.dpi (PNG and PDF read them)
      K.exp.csv(tsvText)                                      a TSV as CSV (the # lines stay, as comments)
      K.exp.onPreset(fn)                                      fn(preset) when the size changes
-   The PDF itself (the figure's SVG drawn as vectors, text in Arimo) is K.exportFigure's, in kit.js. */
+   The PDF itself (the figure's SVG drawn as vectors, text in Inter and IBM Plex Mono) is K.exportFigure's, in kit.js. */
 (window.PTMC_MODULES ||= []).push((K) => {
   'use strict';
   const { D, esc } = K;
   const CFG = D.export || {};
   const FORMATS = ['pdf', 'svg', 'png', 'tsv', 'csv'];
   const LABELS = { pdf: 'PDF', svg: 'SVG', png: 'PNG', tsv: 'Data (TSV)', csv: 'Data (CSV)', ...(CFG.labels || {}) };
-  const PRESETS = CFG.presets?.length
-    ? CFG.presets
-    : [
-        { id: 'screen', label: 'Screen', width: 960 },
-        { id: 'paper', label: 'Paper (180 mm)', mm: 180, width: 680, dpi: 300 },
-      ];
+  // the sizes in the site's order, those at a print width (mm) after the one the page draws
+  const PRESETS = (
+    CFG.presets?.length
+      ? CFG.presets
+      : [
+          { id: 'screen', label: 'Screen', width: 960 },
+          { id: 'paper', label: 'Paper (180 mm)', mm: 180, width: 680, dpi: 300 },
+        ]
+  ).sort((p, q) => !!p.mm - !!q.mm);
   const ALLOWED = (CFG.formats?.length ? CFG.formats : ['pdf', 'svg', 'png', 'tsv']).filter((k) => FORMATS.includes(k));
   const PAGE_VIEWS = CFG.pages || ['overview', 'method'];
   const KEY = 'ptmc-export-size';

@@ -1333,7 +1333,7 @@ website:
   per inch (default 300). A figure that lays itself out again (the network, the overlap figure, the protein map) does so at `width` units
   (default 960 for a size without `mm`, 680 for one with it, where 1 unit is 0.75 pt at 180 mm); every other figure is drawn at its own width and
   scaled, with the frame's text (title, subtitle, key, note, credit) raised so none prints under 6 pt. A figure's file name gets `_<mm>mm`.
-  The PDF is a vector drawing of the figure's SVG with its text in Arimo (Courier for sequences), made in the browser by jsPDF and
+  The PDF is a vector drawing of the figure's SVG with its text in Inter (IBM Plex Mono for sequences), both embedded, made in the browser by jsPDF and
   svg2pdf.js, loaded only when PDF is chosen.
 - **What is visible and what is in the file.** The credit strip under every export has the citation, the data sources, the site's name,
   version and date, the kit's version, the sequence release and the export date with the license. The commit, the FASTA MD5 and the

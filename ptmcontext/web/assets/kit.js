@@ -3670,8 +3670,9 @@
   }
 
   // ---- a figure: one SVG for every format, with its credit -----------------------------------------------------------
-  // every output (figure SVG, PNG and PDF, card and page exports, print) is set in an Arial-like face; the website keeps its own
-  const FF = "Arial, 'Helvetica Neue', Helvetica, Arimo, 'Liberation Sans', sans-serif",
+  // every output (figure SVG, PNG and PDF, card and page exports, print) is set in the site's body face (Inter), with an Arial-like
+  // fallback where a viewer lacks it; PNG and PDF carry Inter itself, so the text measured here is the text drawn
+  const FF = "Inter, Arial, 'Helvetica Neue', Helvetica, 'Liberation Sans', sans-serif",
     FFH = FF;
   const PAL = {
     ink: '#111827',
@@ -3848,7 +3849,7 @@
           o.weight ? ` font-weight="${o.weight}"` : ''
         }${o.fam ? ` font-family="${o.fam}"` : ''}${
           o.anchor ? ` text-anchor="${o.anchor}"` : ''
-        }${o.ls ? ` letter-spacing="${o.ls}"` : ''} fill="${o.fill || PAL.ink}">${o.raw || esc(t)}</text>`
+        }${o.ls ? ` letter-spacing="${o.ls}"` : ''} fill="${o.fill || PAL.ink}"${o.halo ? ' stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke"' : ''}>${o.raw || esc(t)}</text>`
       );
     // text cut to a width, with an ellipsis
     const fit = (t, w, size) => {
@@ -3947,7 +3948,8 @@
         { size: 11, anchor: 'end', weight: strong ? 'bold' : null, fill: strong ? PAL[r.dir] : PAL.muted },
         rp
       );
-      if (sharePair(r) && !r.vs) T(VX, yc + 11, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted }, rp);
+      if (sharePair(r) && !r.vs)
+        T(VX, yc + 11, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted, halo: true }, rp);
       if (d)
         T(
           DX,
@@ -4052,7 +4054,7 @@
       parts.push(
         `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${o.size || 11}"${
           o.weight ? ` font-weight="${o.weight}"` : ''
-        }${o.anchor ? ` text-anchor="${o.anchor}"` : ''} fill="${o.fill || PAL.ink}">${esc(t)}</text>`
+        }${o.anchor ? ` text-anchor="${o.anchor}"` : ''} fill="${o.fill || PAL.ink}"${o.halo ? ' stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke"' : ''}>${esc(t)}</text>`
       );
     const vs = shown.some((r) => r.vs),
       sc = vs ? shareAxis(shown) : tileScale(shown),
@@ -4100,7 +4102,7 @@
         weight: strong ? 'bold' : null,
         fill: strong ? PAL[r.dir] : PAL.muted,
       });
-      if (!vs) T(VX, yc + 11, testLine(r), { size: 9.5, anchor: 'end', fill: PAL.muted });
+      if (!vs) T(VX, yc + 11, testLine(r), { size: 9.5, anchor: 'end', fill: PAL.muted, halo: true });
       y += h;
     });
     if (shown.length) {
@@ -4149,14 +4151,21 @@
   }
 
   // ---- PNG at 300 dpi, fonts embedded, with text fields; PDF with fonts and properties --------------------------------
-  // Arimo (Arial's metric twin) for a PNG drawn where Arial is missing, and embedded in every PDF; DejaVu Sans only for
-  // the few characters Arimo lacks (✓ ▸ ◂), fetched only for a figure that has them
+  // Inter and IBM Plex Mono (the site's body and monospace faces, SIL Open Font License, subset TTFs in assets/fonts/pdf/) for a
+  // PNG and every PDF, fetched only when one is made; the same cuts from a CDN where the page has no assets (the one-file copy)
+  const FONT_DIR = 'assets/fonts/pdf/',
+    CDN = 'https://cdn.jsdelivr.net/npm/@expo-google-fonts/';
   const FONT_FILES = {
-    'Arimo|400': 'https://cdn.jsdelivr.net/npm/@expo-google-fonts/arimo@0.4.1/400Regular/Arimo_400Regular.ttf',
-    'Arimo|700': 'https://cdn.jsdelivr.net/npm/@expo-google-fonts/arimo@0.4.1/700Bold/Arimo_700Bold.ttf',
+    'Inter|400': [FONT_DIR + 'Inter-Regular.ttf', CDN + 'inter@0.4.1/400Regular/Inter_400Regular.ttf'],
+    'Inter|700': [FONT_DIR + 'Inter-Bold.ttf', CDN + 'inter@0.4.1/700Bold/Inter_700Bold.ttf'],
+    'IBMPlexMono|400': [
+      FONT_DIR + 'IBMPlexMono-Regular.ttf',
+      CDN + 'ibm-plex-mono@0.4.1/400Regular/IBMPlexMono_400Regular.ttf',
+    ],
+    'IBMPlexMono|700': [FONT_DIR + 'IBMPlexMono-Bold.ttf', CDN + 'ibm-plex-mono@0.4.1/700Bold/IBMPlexMono_700Bold.ttf'],
   };
-  const DEJAVU = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf',
-    NOT_IN_ARIMO = /([\u2713\u25B8\u25C2])/;
+  // marks Inter lacks, drawn with the nearest ones it has
+  const SWAP = { '\u25B8': '\u25B6', '\u25C2': '\u25C0' };
   const JSPDF = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
   const SVG2PDF = 'https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.4/dist/svg2pdf.umd.min.js';
   const fontCache = {};
@@ -4166,9 +4175,19 @@
     for (let i = 0; i < u.length; i += 0x8000) t += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
     return btoa(t);
   };
+  const fetchFirst = async (urls) => {
+    for (const u of urls) {
+      try {
+        const r = await fetch(u);
+        if (r.ok) return r.arrayBuffer();
+      } catch (e) {
+        /* the next source */
+      }
+    }
+    throw new Error('font ' + urls[0]);
+  };
   const fontB64 = (key) =>
-    (fontCache[key] ||= fetch(FONT_FILES[key] || key)
-      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('font ' + key))))
+    (fontCache[key] ||= fetchFirst(FONT_FILES[key])
       .then(b64)
       .catch((e) => {
         delete fontCache[key];
@@ -4180,7 +4199,7 @@
         Object.keys(FONT_FILES).map(async (k) => {
           const [fam, w] = k.split('|');
           return (
-            `@font-face{font-family:'${fam}';font-weight:${w === '700' ? 'bold' : w};src:url(data:font/ttf;` +
+            `@font-face{font-family:'${fam === 'IBMPlexMono' ? 'IBM Plex Mono' : fam}';font-weight:${w === '700' ? 'bold' : w};src:url(data:font/ttf;` +
             `base64,${await fontB64(k)}) format('truetype');}`
           );
         })
@@ -4280,6 +4299,7 @@
       })
     );
   }
+  const walkText = (el) => [...el.childNodes].filter((c) => c.nodeType === 3);
   const loadScript = (src) =>
     new Promise((ok, fail) => {
       if ([...document.scripts].some((s) => s.src === src)) return ok();
@@ -4290,8 +4310,42 @@
       });
       document.head.appendChild(s);
     });
-  // a vector PDF of the figure's SVG, its text in Arimo (monospace in Courier, so residues still line up; weights as
-  // regular or bold, the font's two cuts); where the vector drawing fails, the figure as a 3x PNG on a page of its size
+  // every text of the drawn figure kept inside the page, a margin M all round: one wider than the page is shrunk to fit, one
+  // that runs over an edge is moved in (measured as the browser draws it, in the faces the PDF embeds)
+  function fitToPage(svgEl, W, M = 10) {
+    const box = svgEl.getBoundingClientRect();
+    if (!box.width) return 0;
+    const k = W / box.width,
+      num = /^-?\d+(\.\d+)?$/;
+    let moved = 0;
+    svgEl.querySelectorAll('text').forEach((t) => {
+      const x = t.getAttribute('x');
+      if (!num.test(x || '') || t.closest('[transform*="rotate"], [transform*="matrix"]')) return;
+      const r = t.getBoundingClientRect();
+      if (!r.width) return;
+      let l = (r.left - box.left) * k,
+        rt = (r.right - box.left) * k;
+      const w = rt - l,
+        anc = t.getAttribute('text-anchor') || t.style.textAnchor || 'start',
+        ax = anc === 'end' ? rt : anc === 'middle' ? (l + rt) / 2 : l;
+      if (l >= M - 0.5 && rt <= W - M + 0.5) return;
+      if (w > W - 2 * M) {
+        const f = (W - 2 * M) / w;
+        [t, ...t.querySelectorAll('[font-size]')].forEach((n) => {
+          const fs = parseFloat(n.getAttribute('font-size') || getComputedStyle(n).fontSize);
+          if (fs) n.setAttribute('font-size', (fs * f).toFixed(2));
+        });
+        l = ax - (ax - l) * f;
+        rt = ax + (rt - ax) * f;
+      }
+      const dx = l < M ? M - l : rt > W - M ? W - M - rt : 0;
+      t.setAttribute('x', (parseFloat(x) + dx).toFixed(2));
+      moved++;
+    });
+    return moved;
+  }
+  // a vector PDF of the figure's SVG, its text in Inter (monospace in IBM Plex Mono, so residues still line up; weights as
+  // regular or bold, the two cuts embedded); where the vector drawing fails, the figure as a 3x PNG on a page of its size
   async function pdfExport(f, name) {
     await loadScript(JSPDF);
     // the page is the figure's size: its units at 0.75 pt, or, at a print size (f.mm), that many mm wide with the height following
@@ -4302,6 +4356,7 @@
       format: [pw, ph],
       orientation: pw >= ph ? 'l' : 'p',
       compress: true,
+      putOnlyUsedFonts: true, // not jsPDF's fourteen standard fonts, unembedded, in every file
     });
     // the visible strip holds the citation; the rest of the provenance is in the document's properties
     const P = JSON.parse(f.meta);
@@ -4328,50 +4383,36 @@
       await loadScript(SVG2PDF);
       const svgEl = holder.firstElementChild;
       try {
-        const [regular, bold] = await Promise.all([fontB64('Arimo|400'), fontB64('Arimo|700')]);
-        pdf.addFileToVFS('Arimo-Regular.ttf', regular);
-        pdf.addFont('Arimo-Regular.ttf', 'Arimo', 'normal');
-        pdf.addFileToVFS('Arimo-Bold.ttf', bold);
-        pdf.addFont('Arimo-Bold.ttf', 'Arimo', 'bold');
+        await document.fonts?.ready;
+      } catch (e) {
+        /* measured in whatever face the page has */
+      }
+      svgEl.querySelectorAll('text, tspan').forEach((t) => {
+        for (const w of walkText(t)) w.nodeValue = w.nodeValue.replace(/[\u25B8\u25C2]/g, (c) => SWAP[c]);
+      });
+      fitToPage(svgEl, f.W);
+      try {
+        const keys = Object.keys(FONT_FILES),
+          data = await Promise.all(keys.map(fontB64));
+        keys.forEach((k, i) => {
+          const [fam, w] = k.split('|'),
+            file = `${fam}-${w}.ttf`;
+          pdf.addFileToVFS(file, data[i]);
+          pdf.addFont(file, fam, w === '700' ? 'bold' : 'normal');
+        });
         const mono = (v) => /mono|courier|consolas|menlo/i.test(v || '');
         [svgEl, ...svgEl.querySelectorAll('[font-family], [style], text, tspan')].forEach((n) => {
           const fam = n.getAttribute('font-family') || n.style?.fontFamily,
-            to = mono(fam) ? 'courier' : 'Arimo';
+            to = mono(fam) ? 'IBMPlexMono' : 'Inter';
           if (mono(fam) || n === svgEl || n.hasAttribute('font-family')) n.setAttribute('font-family', to);
           if (n.style?.fontFamily) n.style.fontFamily = to;
         });
         svgEl.querySelectorAll('style').forEach((st) => {
           st.textContent = st.textContent.replace(
             /font-family\s*:([^;}]+)/g,
-            (m0, fam) => 'font-family: ' + (mono(fam) ? 'courier' : 'Arimo')
+            (m0, fam) => 'font-family: ' + (mono(fam) ? 'IBMPlexMono' : 'Inter')
           );
         });
-        const walk = document.createTreeWalker(svgEl, NodeFilter.SHOW_TEXT),
-          lack = [];
-        while (walk.nextNode())
-          if (NOT_IN_ARIMO.test(walk.currentNode.nodeValue) && !walk.currentNode.parentNode.closest('style'))
-            lack.push(walk.currentNode);
-        if (lack.length) {
-          const dejavu = await fontB64(DEJAVU);
-          pdf.addFileToVFS('DejaVuSans.ttf', dejavu);
-          pdf.addFont('DejaVuSans.ttf', 'DejaVu Sans', 'normal');
-          pdf.addFont('DejaVuSans.ttf', 'DejaVu Sans', 'bold');
-          lack.forEach((t) => {
-            const frag = document.createDocumentFragment();
-            t.nodeValue.split(NOT_IN_ARIMO).forEach((part) => {
-              if (!part) return;
-              if (!NOT_IN_ARIMO.test(part)) {
-                frag.appendChild(document.createTextNode(part));
-                return;
-              }
-              const sp = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-              sp.setAttribute('font-family', 'DejaVu Sans');
-              sp.textContent = part;
-              frag.appendChild(sp);
-            });
-            t.parentNode.replaceChild(frag, t);
-          });
-        }
         const wt = (w) => (/bold|[6-9]00/.test(String(w)) ? 'bold' : 'normal');
         svgEl.querySelectorAll('[font-weight], [style]').forEach((n) => {
           if (n.hasAttribute('font-weight')) n.setAttribute('font-weight', wt(n.getAttribute('font-weight')));
@@ -4671,7 +4712,6 @@
       else if (kind === 'csv') download(name + '.csv', K.exp.csv(tsv()), 'text/csv');
       else {
         const f = K.exp.apply(make());
-        if (f.mm && !/_(\d+mm|paper)/.test(name)) name += `_${f.mm}mm`;
         if (kind === 'svg') download(name + '.svg', f.svg, 'image/svg+xml');
         else if (kind === 'png') await pngExport(f, name);
         else await pdfExport(f, name);

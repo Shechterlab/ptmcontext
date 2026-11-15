@@ -37,7 +37,7 @@ def _allowed() -> dict:
 def _found() -> dict:
     out = {}
     for p in sorted(PKG.rglob('*')):
-        if not p.is_file() or '__pycache__' in p.parts or p.suffix in ('.pyc', '.woff2'):
+        if not p.is_file() or '__pycache__' in p.parts or p.suffix in ('.pyc', '.woff2', '.ttf'):
             continue
         text = p.read_text()
         for name, rx in LITERALS.items():

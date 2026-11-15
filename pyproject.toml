@@ -20,7 +20,7 @@ ptmc = "ptmcontext.cli:main"
 packages = ["ptmcontext", "ptmcontext.layers", "ptmcontext.web"]
 
 [tool.setuptools.package-data]
-ptmcontext = ["schemas/*.json", "config/*.json", "web/*.html", "web/assets/*", "web/assets/fonts/*"]
+ptmcontext = ["schemas/*.json", "config/*.json", "web/*.html", "web/assets/*", "web/assets/fonts/*", "web/assets/fonts/pdf/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "packages/ptmstats/tests"]
