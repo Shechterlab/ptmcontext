@@ -621,7 +621,8 @@ def network_problems(site: dict) -> list[str]:
             out.append(f'website.network {where}: no input role {x!r}')
 
     for e in cfg.get('edges', []):
-        role(e.get('input'), f'edges {e.get("id", e.get("kind"))!r}')
+        if not e.get('optional'):  # an optional source is left out when its table is missing
+            role(e.get('input'), f'edges {e.get("id", e.get("kind"))!r}')
     if sum(e.get('kind') == 'pairs' for e in cfg.get('edges', [])) > 1:
         out.append('website.network: edges has more than one scored `pairs` source (at most one)')
     for lab in cfg.get('label_from', []):
@@ -631,6 +632,12 @@ def network_problems(site: dict) -> list[str]:
     ids = [c.get('id') for c in cfg.get('color_by', [])]
     if len(ids) != len(set(ids)) or 'cluster' in ids:
         out.append('website.network: color_by ids must be distinct and not "cluster"')
+    classes = ((((site.get('website') or {}).get('search') or {}).get('partners') or {}).get('classes')) or {}
+    for c in cfg.get('color_by', []):
+        if c.get('kind') == 'role' and not any(isinstance(k, dict) and k.get('role') for k in classes.values()):
+            out.append(
+                f'website.network color_by {c.get("id")!r}: kind role needs website.search.partners.classes with roles'
+            )
     sec = (cfg.get('tile') or {}).get('section')
     names = {x.get('name') for x in ((site.get('website') or {}).get('overview') or {}).get('sections', [])}
     if sec and sec not in names:

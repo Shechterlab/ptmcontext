@@ -2355,12 +2355,13 @@
                   "kind",
                   "input"
                 ],
-                "description": "one source of edges: `pairs` (a table of scored pairs of proteins, at most one: STRING physical links) or `groups` (a table of groups with their members; every pair of members of a group is an edge: curated complexes)",
+                "description": "one source of edges: `pairs` (a table of scored pairs of proteins, at most one: STRING physical links), `groups` (a table of groups with their members; every pair of members of a group is an edge: curated complexes) or `functional` (an optional table of scored pairs of a functional or pathway layer: dashed, faint, off by default)",
                 "properties": {
                   "kind": {
                     "enum": [
                       "pairs",
-                      "groups"
+                      "groups",
+                      "functional"
                     ]
                   },
                   "id": {
@@ -2393,7 +2394,7 @@
                   },
                   "min_score": {
                     "type": "integer",
-                    "description": "pairs: the score an edge needs by default (default 700)",
+                    "description": "pairs: the score an edge needs by default (default 700); functional: the lowest score kept (default 700)",
                     "minimum": 0,
                     "maximum": 1000
                   },
@@ -2429,6 +2430,97 @@
                   "url": {
                     "type": "string",
                     "description": "where the source is"
+                  },
+                  "optional": {
+                    "type": "boolean",
+                    "description": "true: the source is left out, with a line in the log, when its table is missing (the page then has no such link type)"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "description": "false: the link type is off until the reader turns it on (its checkbox in the key)"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "groups: the column with the group's name, shown when the pointer is over a link the group gives"
+                  },
+                  "style": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "how the link type is drawn, as multiples of a link in a cluster: `dash` (true: dashed), `width`, `opacity`, `tint` (true: the cluster's colour darkened) and `rank` (a link that two sources give is drawn as the higher rank)",
+                    "properties": {
+                      "dash": {
+                        "type": "boolean"
+                      },
+                      "width": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "opacity": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "tint": {
+                        "type": "boolean"
+                      },
+                      "rank": {
+                        "type": "integer"
+                      }
+                    }
+                  },
+                  "channels": {
+                    "type": "array",
+                    "description": "pairs: split the links by the scores of the table's channels (STRING: experiments, databases), each a link type of its own, solid and then lighter. A link has the type of every channel whose score is at least `min`. Without the columns in the table the links are not split",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "label",
+                        "column"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "column": {
+                          "type": "string",
+                          "description": "the channel's score column, 0 to 1000"
+                        },
+                        "min": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000,
+                          "description": "the score a link needs in this channel (default 1)"
+                        },
+                        "style": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "description": "how the link type is drawn, as multiples of a link in a cluster: `dash` (true: dashed), `width`, `opacity`, `tint` (true: the cluster's colour darkened) and `rank` (a link that two sources give is drawn as the higher rank)",
+                          "properties": {
+                            "dash": {
+                              "type": "boolean"
+                            },
+                            "width": {
+                              "type": "number",
+                              "exclusiveMinimum": 0
+                            },
+                            "opacity": {
+                              "type": "number",
+                              "exclusiveMinimum": 0
+                            },
+                            "tint": {
+                              "type": "boolean"
+                            },
+                            "rank": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -2624,10 +2716,9 @@
                 "required": [
                   "id",
                   "name",
-                  "kind",
-                  "column"
+                  "kind"
                 ],
-                "description": "a way to colour the proteins besides the cluster, from a column of the run's marks.tsv: `sequential` is the share of the protein's sites whose value is one of `values` (all sites with a value when none is listed); `categorical` is the value most of the protein's sites hold (the commonest `max_values`, the rest Other)",
+                "description": "a way to colour the proteins besides the cluster, from a column of the run's marks.tsv: `sequential` is the share of the protein's sites whose value is one of `values` (all sites with a value when none is listed); `categorical` is the value most of the protein's sites hold (the commonest `max_values`, the rest Other); `role` colours a protein by what it is to the site's mark, from the site's own enzyme and reader classes (writer, eraser, reader; none; several roles is a value of its own)",
                 "properties": {
                   "id": {
                     "type": "string"
@@ -2639,12 +2730,35 @@
                   "kind": {
                     "enum": [
                       "sequential",
-                      "categorical"
+                      "categorical",
+                      "role"
                     ]
+                  },
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "role: the roles shown, in order (default writer, eraser, reader), from the `role` of website.search.partners.classes"
+                  },
+                  "labels": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "role: the name of each role in the key"
+                  },
+                  "none": {
+                    "type": "string",
+                    "description": "role: the key's name for a protein with no role (default No role)"
+                  },
+                  "several": {
+                    "type": "string",
+                    "description": "role: the name for a protein with more than one role (default More than one)"
                   },
                   "column": {
                     "type": "string",
-                    "description": "a column of marks.tsv"
+                    "description": "a column of marks.tsv (not for `role`)"
                   },
                   "values": {
                     "type": "array",

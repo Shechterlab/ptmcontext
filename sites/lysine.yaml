@@ -1436,8 +1436,10 @@ website:                  # the look and words of the website (ptmc web); layout
     title: Network
     about: "Proteins with modified lysines as one network: STRING physical links and curated complexes join them, communities are the clusters, and each cluster is named by its most enriched GO biological process (or Reactome pathway). Node size is the number of sites."
     edges:
-      - {id: string_physical, kind: pairs, label: STRING physical, input: string_partners, min_score: 700, cite: "STRING v12.5: Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113", url: "https://string-db.org"}
-      - {id: complex_portal, kind: groups, label: Complex Portal complexes, input: complexes, where: {curation: curated}, max_size: 40, weight: 700, cite: "Complex Portal (curated complexes, CC0): Meldal et al., Nucleic Acids Res 50:D578 (2022), doi:10.1093/nar/gkab991", url: "https://www.ebi.ac.uk/complexportal"}
+      - {id: string_physical, kind: pairs, label: STRING physical, input: string_partners, min_score: 700, channels: [{id: experiments, label: experiments, column: experiments}, {id: databases, label: curated databases, column: database}], cite: "STRING v12.5: Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113", url: "https://string-db.org"}
+      - {id: complex_portal, kind: groups, label: Complex Portal complexes, input: complexes, name: complex_name, where: {curation: curated}, max_size: 40, weight: 700, cite: "Complex Portal (curated complexes, CC0): Meldal et al., Nucleic Acids Res 50:D578 (2022), doi:10.1093/nar/gkab991", url: "https://www.ebi.ac.uk/complexportal"}
+      # the optional functional layer (STRING functional links, dashed and faint, off until chosen): left out while the release has no such table
+      - {id: string_functional, kind: functional, label: STRING functional, input: string_functional, optional: true, default: false, min_score: 700, weight: 400, cite: "STRING v12.5: Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113", url: "https://string-db.org"}
     label_from:             # the first source names the clusters; the others are in the Label by menu
       - id: go_bp
         label: GO biological process

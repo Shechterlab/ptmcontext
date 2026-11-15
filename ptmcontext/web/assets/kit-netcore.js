@@ -218,14 +218,16 @@
       return { n, term: null };
     });
   }
+  // the sources a view uses until the reader chooses (all but those marked off), and the bits of the scored ones
+  const defaultSources = (cfg) => cfg.map((s, i) => (s.off ? -1 : i)).filter((i) => i >= 0);
+  const pairsBitOf = (cfg) => cfg.reduce((m, s, i) => (s.kind === 'pairs' ? m | (1 << i) : m), 0);
   // the network for the options. full: { sources, nodes: [[acc, gene, sites]], edges: [[a, b, flags, score]], terms, ann };
   // select: a Set of node indexes or null; enabled: the sources' indexes (default all)
   function makeView(full, opt, select, enabled) {
     const cfg = full.sources,
-      en = enabled || cfg.map((_, i) => i),
+      en = enabled || defaultSources(cfg),
       mask = en.reduce((m, i) => m | (1 << i), 0),
-      pairsIx = cfg.findIndex((s) => s.kind === 'pairs'),
-      pairsBit = pairsIx < 0 ? 0 : 1 << pairsIx,
+      pairsBit = pairsBitOf(cfg),
       nodes = full.nodes;
     const cand = nodes.map((_, i) => i).filter((i) => !select || select.has(i));
     cand.sort((a, b) => {
@@ -242,7 +244,7 @@
       if (fl & pairsBit && score >= opt.min_score) w = score;
       else fl &= ~pairsBit;
       cfg.forEach((s, i) => {
-        if (s.kind === 'groups' && fl & (1 << i)) w = Math.max(w, s.weight);
+        if ((s.kind === 'groups' || s.kind === 'functional') && fl & (1 << i)) w = Math.max(w, s.weight);
       });
       if (w) edges.push([a, b, fl, score, w]);
     }
@@ -288,10 +290,9 @@
   // the partners of node gi at a score, in the enabled sources: a scored link at or above the score, or a shared group
   function partnersOf(full, gi, score, enabled) {
     const cfg = full.sources,
-      en = enabled || cfg.map((_, i) => i),
+      en = enabled || defaultSources(cfg),
       mask = en.reduce((m, i) => m | (1 << i), 0),
-      pairsIx = cfg.findIndex((s) => s.kind === 'pairs'),
-      pairsBit = pairsIx < 0 ? 0 : 1 << pairsIx,
+      pairsBit = pairsBitOf(cfg),
       out = [];
     for (const [a, b, f0, sc] of full.edges) {
       if (a !== gi && b !== gi) continue;

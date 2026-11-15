@@ -57,7 +57,9 @@
       }
       return wrapAt(s, width + 6);
     };
-    const radius = (sites, k) => k * Math.min(9, 2.6 + 0.95 * Math.sqrt(sites));
+    const R_PER_SITE = 2.2,
+      R_MAX = 14; // a node's area follows its sites, up to R_MAX (the twin of netlayout.py)
+    const radius = (sites, k) => k * Math.min(R_MAX, R_PER_SITE * Math.sqrt(Math.max(sites, 0)));
     const textW = (t, size, weight = 500) => t.length * size * (weight >= 600 ? 0.56 : 0.53);
     const badPair = (a, b, slots) => {
       const sa = slots[a],
