@@ -22,6 +22,7 @@ def test_links_carry_single_encoding_and_old_double_encoded_links_load(tmp_path)
     script = f"""
 const fs = require('fs');
 global.window = global; global.PTMC_STATS = undefined;
+eval(fs.readFileSync({json.dumps(str(ASSETS / 'kit-seldata.js'))}, 'utf8'));
 eval(fs.readFileSync({json.dumps(str(ASSETS / 'kit-select.js'))}, 'utf8'));
 const D = JSON.parse(fs.readFileSync({json.dumps(str(tmp_path / 'd.json'))}, 'utf8')), A = Object.fromEntries(D.analyses.map(a => [a.id, a]));
 const K = {{ D, W: D.words, A, S: {{ q: '', f: {{}}, vs: 'residues' }}, esc: s => String(s ?? ''), int: n => String(n), cap: t => t, clicks: [], render: () => {{}}, writeHash: () => {{}},

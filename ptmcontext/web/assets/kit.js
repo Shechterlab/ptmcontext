@@ -21,9 +21,22 @@
      SPECS the site file's attribute specs; AT the order of a mark's attribute values; PRO website.protein; CC the protein card
    Each module is a function of K, added to window.PTMC_MODULES; kit.js, the last, runs them in the order listed in
    ptmcontext/web/__init__.py (MODULES). */
-(() => {
+(async () => {
   'use strict';
   const D = JSON.parse(document.getElementById('site-data').textContent);
+  // the folder's page keeps the statistics table and the classes' labels in files (data/statistics.tsv, data/labels.json),
+  // preloaded by the page; the one-file copy has them inline
+  if (D.statistics_file) {
+    const get = (u) => fetch(u).then((r) => (r.ok ? r : Promise.reject(new Error(`${r.status} ${u}`))));
+    const [tsv, labels] = await Promise.all([
+      get(D.statistics_file).then((r) => r.text()),
+      D.labels_file ? get(D.labels_file).then((r) => r.json()) : {},
+    ]);
+    D.statistics_tsv = tsv;
+    D.analyses.forEach((a) => {
+      if (labels[a.id]) a.labels = labels[a.id];
+    });
+  }
   const W = D.words;
   const $ = (s) => document.querySelector(s);
   const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -5370,5 +5383,10 @@
   if (S.legacy) writeHash(false);
   hero();
   dock();
+  // a protein page opened from the address waits briefly for the protein's sets (its own small file), so it is drawn once
+  if (S.view === 'protein' && D.analyses.some((a) => a.kind === 'protein_sets')) {
+    const at = String(S.arg).split('/');
+    await K.seld?.warm(PI[at[1]] ?? PI[at[0]]);
+  }
   render();
 })();

@@ -1,5 +1,8 @@
 ## 0.5.0 (unreleased)
 
+- Speed: the selection data is written in parts (`data/sel/`: a core, marks by protein in the Sites page's order, each protein's sets, and the parts only a test needs; CONTRACTS.md, "Selection data in parts"). A protein page reads only its own file; the Sites page with no selection reads its first page from the first files; everything else reads the whole in a worker, with a busy bar, a file at a time. The statistics are unchanged.
+- Speed: `ptmc pages` moves the statistics table and the classes' labels out of each index.html into `data/statistics.tsv` and `data/labels.json`, which the page preloads.
+- Speed: the fonts (Inter, IBM Plex Mono and Serif, SIL Open Font License) are files of the kit, not a request to Google Fonts; a site's own `website.fonts.stylesheet` still wins.
 - Network: a click on a protein pins it (its partners and their clusters stay lit, a panel holds its card: cluster, sites,
   partners in and out of the cluster, the term with k of n and q, the domain class), a second click opens its page,
   Shift-click pins up to five, Escape unpins. The downloads (SVG, PNG, PDF; slide or paper) make a figure of the pinned view,

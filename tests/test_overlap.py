@@ -142,7 +142,7 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
     (tmp_path / 'd.json').write_text(json.dumps(page))
     head = (
         f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, DATA = {json.dumps(str(tmp_path / "d.json"))}, '
-        f'SEL = {json.dumps(str(index.parent / "data" / "selection.json"))}, OV = {json.dumps(str(ov))};'
+        f'SEL = {json.dumps(str(index.parent / "data" / "sel"))}, OV = {json.dumps(str(ov))};'
     )
     harness = HARNESS.replace(
         'window.PTMC_MODULES.forEach',

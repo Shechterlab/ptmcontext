@@ -706,7 +706,7 @@
     );
   }
   function proteinSetsHtml(c, p) {
-    const sd = K.sel?.data();
+    const sd = K.sel?.pdata(p.i);
     if (!sd) return '<p class="muted">Loading the sets…</p>';
     const gene = p.gene || p.acc;
     const blocks = c.analyses

@@ -65,7 +65,7 @@ flowchart LR
     R["ptmc run<br/>the statistics<br/>(ptmstats, Python)"] --> O["out/&lt;site&gt;/<br/>statistics.tsv, run.json"]
     O --> W["ptmc web<br/>assembles the site"]
   end
-  W --> S["Static site<br/>index.html + assets/kit-*.js<br/>+ data/site.json, selection.json"]
+  W --> S["Static site<br/>index.html + assets/kit-*.js<br/>+ data/site.json, data/sel/"]
   subgraph browser["In the browser: JavaScript"]
     S --> V["Pages, charts, tables, exports<br/>(drawn from the data)"]
     S --> T["Retests on a selection<br/>(ptmstats.js: Fisher, Mantel–Haenszel,<br/>hypergeometric, Benjamini–Hochberg)"]
