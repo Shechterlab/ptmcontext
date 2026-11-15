@@ -2210,7 +2210,12 @@ def pages(
     if cfg.get('logo'):
         lf = next((f for f in (Path(cfg['logo']), root_last / cfg['logo']) if f.is_file()), None)
         if lf:
-            (out / 'logo.svg').write_text(lf.read_text())
+            svg = lf.read_text()
+            if (
+                cfg.get('logo_dots') == 'cards'
+            ):  # the mark's dots in the listed cards' band colours, in the landing order
+                svg = LP.logo_with_dots(svg, [LP.card_colour(c) for c in cards])
+            (out / 'logo.svg').write_text(svg)
             logo_href = 'logo.svg'
     if found:  # read by the landing page's search box when it is first used (assets/land-search.js)
         rows = [[acc, *v] for acc, v in sorted(found.items())]
