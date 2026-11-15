@@ -65,8 +65,13 @@ def wrap2(s, width=22):
     return _wrap(s, width + 6)
 
 
+R_PER_SITE = 2.2  # the radius of a node of one site: the area of a node is this squared times its sites, up to R_MAX
+R_MAX = 14.0  # the largest radius (reached at 41 sites): the key says "or more" for the biggest circle
+
+
 def radius(sites, k=1.0):
-    return k * min(9.0, 2.6 + 0.95 * math.sqrt(sites))
+    """A node's radius: its area follows its number of sites (radius = R_PER_SITE * sqrt(sites)), capped at R_MAX."""
+    return k * min(R_MAX, R_PER_SITE * math.sqrt(max(sites, 0)))
 
 
 def text_w(t, size, weight=500):

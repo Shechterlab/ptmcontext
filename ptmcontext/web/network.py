@@ -45,8 +45,22 @@ DEFAULTS = {
     'complex_weight': 700,
     'complex_max_size': 40,
 }
+GROUPISH = ('groups', 'functional')  # sources whose edges are a presence, not a threshold of the score
+# how a link type is drawn, as multiples of the figure's own link: dashed or not, width, opacity, tint (the colour of the
+# cluster darkened), and `rank` (which type names an edge that several give: the highest). The site may set any of them.
+STYLE = {
+    'pairs': {'dash': False, 'width': 1.0, 'opacity': 1.0, 'tint': False, 'rank': 2},
+    'channel': {'dash': False, 'width': 1.0, 'opacity': 0.6, 'tint': False, 'rank': 1},
+    'groups': {'dash': False, 'width': 2.4, 'opacity': 1.8, 'tint': True, 'rank': 3},
+    'functional': {'dash': True, 'width': 1.0, 'opacity': 0.6, 'tint': False, 'rank': 0},
+}
 STEPS = (400, 700, 900)  # the STRING thresholds the page offers, from the floor up
 EPS = 1e-12
+
+
+def default_sources(cfg: list) -> list[int]:
+    """The sources a view uses until the reader chooses: all but those the site file marks `default: false`."""
+    return [i for i, s in enumerate(cfg) if not s.get('off')]
 
 
 def base(acc: str) -> str:
@@ -274,10 +288,10 @@ def make_view(full: dict, opt: dict, select: set | None = None, sources: list | 
     `top` by site count, the edges among them that the enabled sources and the score threshold keep, isolated nodes dropped,
     Louvain on the rest, a label for each cluster. Nodes keep the order of `full` (by accession)."""
     cfg = full['sources']
-    en = list(range(len(cfg))) if sources is None else sources
+    en = default_sources(cfg) if sources is None else sources
     bit = {i: 1 << i for i in range(len(cfg))}
     mask = sum(bit[i] for i in en)
-    pairs_bit = next((1 << i for i, s in enumerate(cfg) if s['kind'] == 'pairs'), 0)
+    pairs_bit = sum(1 << i for i, s in enumerate(cfg) if s['kind'] == 'pairs')
     nodes = full['nodes']
     cand = [i for i in range(len(nodes)) if select is None or i in select]
     cand.sort(key=lambda i: (-nodes[i][2], nodes[i][1], nodes[i][0]))
@@ -293,7 +307,7 @@ def make_view(full: dict, opt: dict, select: set | None = None, sources: list | 
         else:
             fl &= ~pairs_bit
         for i, s in enumerate(cfg):
-            if s['kind'] == 'groups' and fl & bit[i]:
+            if s['kind'] in GROUPISH and fl & bit[i]:
                 w = max(w, s['weight'])
         if w:
             edges.append((a, b, fl, score, w))
@@ -391,6 +405,49 @@ def color_values(marks: pd.DataFrame, spec: dict, nodes: list) -> dict:
     return out
 
 
+def role_values(site: dict, run: dict, spec: dict, nodes: list, genes: dict) -> dict:
+    """The colour-by entry of a `role` spec: what each node protein is to the site's mark, from the site's own enzyme and
+    reader classes (website.search.partners.classes, each with a `role`): writer, eraser, reader. A protein in classes of
+    several roles is `several`; one in none has the value -1 (no role). `roles` (default writer, eraser, reader) are the
+    categories, in that order, `labels` their names."""
+    from .search import _members, _paths, members_file
+
+    pt = ((site.get('website') or {}).get('search') or {}).get('partners') or {}
+    classes = {k: c for k, c in (pt.get('classes') or {}).items() if isinstance(c, dict) and c.get('role')}
+    roles = list(spec.get('roles') or ['writer', 'eraser', 'reader'])
+    labels = {**{r: r.capitalize() for r in roles}, **(spec.get('labels') or {})}
+    root = Path(site.get('__root__', '.'))
+    by_ipr = _members(pt, run or {}, _paths(run or {}), set(nodes)) if pt else {}
+    by_gene: dict[str, set] = defaultdict(set)
+    for a in nodes:
+        if genes.get(a):
+            by_gene[str(genes[a]).upper()].add(a)
+    held: dict[str, set] = defaultdict(set)
+    for code, c in classes.items():
+        if c['role'] not in roles:
+            continue
+        names = {str(g).upper() for g in c.get('genes') or []} | members_file(root, c)
+        acc = {base(a) for a in by_ipr.get(code, ())} | {a for n in names for a in by_gene.get(n, ())}
+        acc |= {a for a in nodes if a.upper() in names}
+        for a in acc:
+            held[a].add(c['role'])
+    cats = [labels[r] for r in roles]
+    several = any(len(v) > 1 for v in held.values())
+    if several:
+        cats.append(spec.get('several', 'More than one'))
+    v = []
+    for a in nodes:
+        h = held.get(a, set())
+        v.append(-1 if not h else (len(cats) - 1 if len(h) > 1 else roles.index(next(iter(h)))))
+    return {
+        **{k: spec[k] for k in ('id', 'name') if k in spec},
+        'kind': 'categorical',
+        'cats': cats,
+        'none_label': spec.get('none', 'No role'),
+        'v': v,
+    }
+
+
 def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=print) -> dict | None:
     """Write data/network.json and data/network_full.json; return what the page reads (the block's words and options, the
     files), or None when the block is absent or an input is missing."""
@@ -412,57 +469,134 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
         p[2] += int(r[4])
     srcs, rows = [], {}
     pair_keys = {}
-    for si, e in enumerate(cfg['edges']):
+    extra: dict[str, dict] = defaultdict(
+        dict
+    )  # source id -> {(a, b): score} for the sources that have a score of their own
+    members: dict[str, list] = {}  # source id -> [[name, [protein, ...]]]: the groups that give an edge, for its hover
+    if sum(e.get('kind') == 'pairs' for e in cfg['edges']) > 1:
+        log('  network view: more than one scored-pairs source; left out')
+        return None
+
+    def style_of(e, key):
+        return {**STYLE[key], **(e.get('style') or {})}
+
+    for e in cfg['edges']:
+        kind = e['kind']
         f = _path(site, run, e['input'], log)
         if f is None:
+            if e.get('optional'):
+                continue
             return None
         df = _table(f, e.get('sep', '\t'))
         entry = {
-            'id': e.get('id', e['kind']),
-            'label': e.get('label', e.get('id', e['kind'])),
-            'kind': e['kind'],
+            'id': e.get('id', kind),
+            'label': e.get('label', e.get('id', kind)),
+            'kind': kind,
             'cite': e.get('cite', ''),
             'url': e.get('url', ''),
+            'style': style_of(e, kind),
         }
-        if e['kind'] == 'pairs':
-            entry['min_score'] = opt['min_score']
-            sc = pd.to_numeric(df[e.get('score', 'combined_score')], errors='coerce').fillna(0).astype(int)
-            keep = sc >= opt['floor']
-            for a, b, s in zip(df[e.get('a', 'protein_a')][keep], df[e.get('b', 'protein_b')][keep], sc[keep]):
+        if e.get('default') is False:
+            entry['off'] = True
+        if kind in ('pairs', 'functional'):
+            col = e.get('score', 'combined_score')
+            sc = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+            floor = opt['floor'] if kind == 'pairs' else int(e.get('min_score', DEFAULTS['min_score']))
+            keep = sc >= floor
+            a_col, b_col = e.get('a', 'protein_a'), e.get('b', 'protein_b')
+            chans = list(e.get('channels') or [])
+            absent = [c['column'] for c in chans if c['column'] not in df.columns]
+            if absent:
+                log(
+                    f'  network view: {entry["label"]} has no {", ".join(absent)} column; its links are not split by channel'
+                )
+                chans = []
+            if kind == 'pairs':
+                entry['min_score'] = opt['min_score']
+            else:
+                entry['weight'] = int(e.get('weight', 400))
+            if chans:
+                subs = []
+                for k, ch in enumerate(chans):
+                    sub = {
+                        **entry,
+                        'id': f'{entry["id"]}_{ch["id"]}',
+                        'label': f'{entry["label"]}, {ch["label"]}',
+                        'family': entry['label'],
+                        'channel_min': int(ch.get('min', 1)),
+                        'style': {
+                            **STYLE['pairs' if k == 0 else 'channel'],
+                            **(ch.get('style') or e.get('style') or {}),
+                        },
+                    }
+                    subs.append(
+                        (
+                            len(srcs),
+                            sub,
+                            pd.to_numeric(df[ch['column']][keep], errors='coerce').fillna(0).astype(int).tolist(),
+                        )
+                    )
+                    srcs.append(sub)
+            else:
+                subs = [(len(srcs), entry, None)]
+                srcs.append(entry)
+            for r, (a, b, s) in enumerate(zip(df[a_col][keep], df[b_col][keep], sc[keep])):
                 a, b = base(a), base(b)
-                if a in prot and b in prot and a != b:
-                    key = (a, b) if a < b else (b, a)
-                    pair_keys[key] = max(pair_keys.get(key, 0), int(s))
-                    rows.setdefault(key, [0, 0])[0] |= 1 << si
-        else:
-            entry['weight'] = int(e.get('weight', DEFAULTS['complex_weight']))
-            entry['max_size'] = int(e.get('max_size', DEFAULTS['complex_max_size']))
-            df = _where(df, e.get('where'))
-            mem: dict[str, set] = defaultdict(set)
-            for g, p in zip(df[e.get('group', 'complex_id')], df[e.get('protein', 'uniprot_accession')]):
-                mem[g].add(base(p))
-            used = 0
-            for g, ps in mem.items():
-                if len(ps) > entry['max_size']:
+                if not (a in prot and b in prot and a != b):
                     continue
-                inn = sorted(p for p in ps if p in prot)
-                used += 1
-                for a, b in combinations(inn, 2):
-                    rows.setdefault((a, b), [0, 0])[0] |= 1 << si
-            entry['groups_used'] = used
+                key = (a, b) if a < b else (b, a)
+                if kind == 'pairs':
+                    pair_keys[key] = max(pair_keys.get(key, 0), int(s))
+                else:
+                    extra[entry['id']][key] = max(extra[entry['id']].get(key, 0), int(s))
+                row = rows.setdefault(key, [0, 0])
+                for si, sub, series in subs:
+                    if series is None:
+                        row[0] |= 1 << si
+                    else:
+                        v = series[r]
+                        if v >= sub['channel_min']:
+                            row[0] |= 1 << si
+                            extra[sub['id']][key] = v
+            continue
+        si = len(srcs)
+        entry['weight'] = int(e.get('weight', DEFAULTS['complex_weight']))
+        entry['max_size'] = int(e.get('max_size', DEFAULTS['complex_max_size']))
+        df = _where(df, e.get('where'))
+        mem: dict[str, set] = defaultdict(set)
+        title: dict[str, str] = {}
+        gcol, pcol, ncol = e.get('group', 'complex_id'), e.get('protein', 'uniprot_accession'), e.get('name')
+        for k, (g, p) in enumerate(zip(df[gcol], df[pcol])):
+            mem[g].add(base(p))
+            if ncol and ncol in df.columns and g not in title:
+                title[g] = str(df[ncol].iloc[k])
+        used = 0
+        listed = []
+        for g, ps in mem.items():
+            if len(ps) > entry['max_size']:
+                continue
+            inn = sorted(p for p in ps if p in prot)
+            used += 1
+            for a, b in combinations(inn, 2):
+                rows.setdefault((a, b), [0, 0])[0] |= 1 << si
+            if len(inn) >= 2:
+                listed.append([title.get(g, g), inn])
+        entry['groups_used'] = used
+        members[entry['id']] = listed
         srcs.append(entry)
-    if sum(s['kind'] == 'pairs' for s in srcs) > 1:
-        log('  network view: more than one scored-pairs source; left out')
-        return None
     nodes = sorted({x for k in rows for x in k})
     ix = {a: i for i, a in enumerate(nodes)}
-    edges = sorted([ix[a], ix[b], v[0], pair_keys.get((a, b), 0)] for (a, b), v in rows.items())
+    order = sorted([ix[a], ix[b], v[0], pair_keys.get((a, b), 0), (a, b)] for (a, b), v in rows.items())
+    edges = [x[:4] for x in order]
+    extra_out = {sid: [d.get(x[4], 0) for x in order] for sid, d in extra.items() if d}
+    groups_out = {sid: [[n, [ix[p] for p in ps if p in ix]] for n, ps in lst] for sid, lst in members.items() if lst}
     # which of the site's proteins have a link at the default score (a bit each, in the order of the protein list): the page
     # shows no "See in network" button for a protein with none
-    pbit = next((1 << i for i, s in enumerate(srcs) if s['kind'] == 'pairs'), 0)
+    pbit = sum(1 << i for i, s in enumerate(srcs) if s['kind'] == 'pairs')
+    on = sum(1 << i for i in default_sources(srcs))
     linked = set()
     for a, b, fl, sc in edges:
-        if (fl & pbit and sc >= opt['min_score']) or fl & ~pbit:
+        if (fl & pbit & on and sc >= opt['min_score']) or fl & ~pbit & on:
             linked.add(nodes[a])
             linked.add(nodes[b])
     bits = bytearray((len(listing) + 7) // 8)
@@ -525,7 +659,12 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
     cols = _table(folder / 'marks.tsv') if cfg.get('color_by') else None
     if cols is not None:
         cols['base'] = cols['accession'].map(base)
-    color = [color_values(cols, c, nodes) for c in cfg.get('color_by') or [] if c['column'] in cols.columns]
+    color = []
+    for c in cfg.get('color_by') or []:
+        if c.get('kind') == 'role':
+            color.append(role_values(site, run, c, nodes, {a: prot[a][1] for a in nodes}))
+        elif c['column'] in cols.columns:
+            color.append(color_values(cols, c, nodes))
     full = {
         'sources': srcs,
         'nodes': [prot[a] for a in nodes],
@@ -563,6 +702,8 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
             'terms': terms,
             'ann': ann,
             'color': color,
+            **({'extra': extra_out} if extra_out else {}),
+            **({'groups': groups_out} if groups_out else {}),
         },
     )
     log(
@@ -594,5 +735,5 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
             'clusters': len(shown),
             'top_labels': [x['term'] for x in shown if x.get('term')][:3],
         },
-        'color_by': [{k: c[k] for k in ('id', 'name', 'kind', 'cats') if k in c} for c in color],
+        'color_by': [{k: c[k] for k in ('id', 'name', 'kind', 'cats', 'none_label') if k in c} for c in color],
     }

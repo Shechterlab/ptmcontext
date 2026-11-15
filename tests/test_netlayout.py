@@ -390,7 +390,7 @@ global.fetch=()=>Promise.reject(new Error('no network here'));
 window.PTMC_MODULES.length=0;
 eval(fs.readFileSync(IN.net,'utf8'));
 const K2={D:{site:{id:'x'},counts:{proteins:100},network:{options:{steps:[400,700],min_score:700,top:300,min_cluster:5,cluster_range:[4,16,1],max_shown:8},
- sources:[{kind:'pairs',label:'L'},{kind:'groups',label:'G'}],labels:[{label:'GO'},{label:'R'}],color_by:[{id:'disordered',name:'D',kind:'sequential'}],files:{view:'v.json',full:'f.json'}}},
+ sources:[{kind:'pairs',id:'p',label:'L'},{kind:'groups',id:'g',label:'G'}],labels:[{label:'GO'},{label:'R'}],color_by:[{id:'disordered',name:'D',kind:'sequential'}],files:{view:'v.json',full:'f.json'}}},
  W:{marks:'sites',mark:'site'},esc:(s)=>String(s),int:(n)=>String(n),S:{view:'network'},netcore:K.netcore,netlayout:K.netlayout,
  views:{},tabs:[],clicks:[],tips:[],sections:{},methods:[],afterRender:[],paramsIn:[],paramsOut:[],sel:{active:()=>false},
  render:()=>{},writeHash:()=>{},link:(v,a,e)=>'#'+v};
@@ -407,7 +407,7 @@ console.log(JSON.stringify([into('p=P35637,Q92804,BAD&clusters=8&colour=disorder
     q = dict(x.split('=') for x in got[0][1:].split('&'))
     # every setting that differs from the defaults is written; a bad accession is dropped; the pins come out comma-separated
     assert q['p'] == 'P35637%2CQ92804' and q['clusters'] == '8' and q['colour'] == 'disordered' and q['score'] == '400'
-    assert q['sources'] == '1' and q['view'] == 'table' and q['top'] == '500'
+    assert q['sources'] == 'g' and q['view'] == 'table' and q['top'] == '500'
     # an address with a pin and no settings leaves the settings as they were
     assert got[1].startswith('|p=P35637') and 'clusters=8' in got[1]
     assert 'zoom=2.5%2C0.4%2C0.6' in got[1]  # the zoom and its centre are in the address

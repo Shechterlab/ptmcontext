@@ -529,3 +529,241 @@ def test_a_thin_term_names_its_cluster_with_its_share_in_the_figure():
     }
     out = NL.layout(view, 'desktop')
     assert any('20%' in lb['name'] for lb in out['clabels'])
+
+
+# ---- link types, enzyme roles and node size -------------------------------------------------------------------------------
+def _typed_full():
+    """Four sources: scored experiments (bit 0) and databases (bit 1), complexes (bit 2), a functional layer that is off (bit 3)."""
+    full = _full()
+    rnd = random.Random(5)
+    full['sources'] = [
+        {'kind': 'pairs', 'id': 'e', 'family': 'S'},
+        {'kind': 'pairs', 'id': 'd', 'family': 'S'},
+        {'kind': 'groups', 'id': 'g', 'weight': 700},
+        {'kind': 'functional', 'id': 'f', 'weight': 400, 'off': True},
+    ]
+    full['edges'] = [[a, b, rnd.choice([1, 2, 3, 4, 8, 9, 12]), rnd.choice([750, 950])] for a, b, _, _ in full['edges']]
+    return full
+
+
+def test_a_layer_marked_off_is_left_out_until_asked_for_and_two_scored_sources_share_the_threshold():
+    full = _typed_full()
+    v = NW.make_view(full, OPT)  # the default: all but the layer
+    assert all(not f & 8 for _, _, f, _ in v['edges'])
+    both = NW.make_view(full, OPT, sources=[0, 1, 2, 3])
+    assert any(f & 8 for _, _, f, _ in both['edges'])
+    # an edge that only the layer gives joins the network with the layer, with no score threshold
+    assert len(both['edges']) >= len(v['edges'])
+    # a threshold above every score drops the scored types, not the complexes
+    high = NW.make_view(full, {**OPT, 'min_score': 1001}, sources=[0, 1, 2])
+    assert all(f & 4 and not f & 3 for _, _, f, _ in high['edges'])
+    assert NW.default_sources(full['sources']) == [0, 1, 2]
+
+
+def test_the_browser_twin_takes_the_same_default_sources_and_scored_bits():
+    if shutil.which('node') is None:
+        pytest.skip('needs Node.js')
+    full = _typed_full()
+    cases = [
+        (OPT, None),
+        (OPT, [0, 1, 2, 3]),
+        ({**OPT, 'min_score': 900}, [1, 2]),
+        ({**OPT, 'min_score': 1001}, [0, 1, 2]),
+    ]
+    want = [NW.make_view(full, o, None, e) for o, e in cases]
+    prog = (
+        'global.window=global;const fs=require("fs");'
+        f'eval(fs.readFileSync({json.dumps(str(STATS))},"utf8"));eval(fs.readFileSync({json.dumps(str(ASSETS / "kit-netcore.js"))},"utf8"));'
+        'const K={};window.PTMC_MODULES.forEach(m=>m(K));const IN=JSON.parse(fs.readFileSync(0,"utf8"));'
+        'console.log(JSON.stringify(IN.cases.map(c=>K.netcore.makeView(IN.F,c[0],null,c[1]||undefined))));'
+    )
+    run = subprocess.run(
+        ['node', '-e', prog], input=json.dumps({'F': full, 'cases': cases}), capture_output=True, text=True
+    )
+    assert run.returncode == 0, run.stderr[-800:]
+    for a, b in zip(want, json.loads(run.stdout)):
+        assert a['nodes'] == b['nodes'] and a['edges'] == b['edges'] and a['comm'] == b['comm']
+
+
+def _split(tmp_path, channels=True, functional=True, columns=True):
+    root, p = _with_network(tmp_path, _network())
+    data = root / 'data'
+    links = pd.read_csv(data / 'links.tsv', sep='\t')
+    if columns:
+        links['experiments'] = [900, 0, 750, 950, 400, 0]
+        links['database'] = [0, 800, 500, 0, 0, 700]
+    links.to_csv(data / 'links.tsv', sep='\t', index=False)
+    pd.DataFrame(
+        [('P1', 'P6', 800), ('P1', 'P2', 750), ('P2', 'P5', 300)], columns=['protein_a', 'protein_b', 'combined_score']
+    ).to_csv(data / 'fn.tsv', sep='\t', index=False)
+    cx = pd.read_csv(data / 'cplx.tsv', sep='\t')
+    cx['complex_name'] = [f'complex {c}' for c in cx['complex_id']]
+    cx.to_csv(data / 'cplx.tsv', sep='\t', index=False)
+    man = json.loads((root / 'sites' / 'toy.inputs.json').read_text())
+    for name, f in [('links', 'links.tsv'), ('cplx', 'cplx.tsv'), ('fn', 'fn.tsv')]:
+        man['inputs'][name] = {
+            **man['inputs'].get(name, {}),
+            'file': f,
+            'md5': md5_file(data / f),
+            'source': 'synthetic',
+            'version': 't',
+            'licence': 'CC0 1.0',
+        }
+    (root / 'sites' / 'toy.inputs.json').write_text(json.dumps(man, indent=1))
+    site = yaml.safe_load(p.read_text())
+    net = site['website']['network']
+    if channels:
+        net['edges'][0]['channels'] = [
+            {'id': 'exp', 'label': 'experiments', 'column': 'experiments'},
+            {'id': 'db', 'label': 'databases', 'column': 'database', 'min': 500},
+        ]
+    net['edges'][1]['name'] = 'complex_name'
+    site['inputs']['fn'] = 'fn'
+    net['edges'].append(
+        {
+            'id': 'fn',
+            'kind': 'functional',
+            'label': 'Functional',
+            'input': 'fn',
+            'optional': True,
+            'default': False,
+            'min_score': 700,
+        }
+        if functional
+        else {'id': 'fn', 'kind': 'functional', 'label': 'Functional', 'input': 'missing_role', 'optional': True}
+    )
+    p.write_text(yaml.safe_dump(site, sort_keys=False))
+    S.run(p, root=root / 'data', log=lambda *_: None)
+    return root, p, web.build(p, log=lambda *_: None)
+
+
+def test_links_are_split_by_channel_and_name_their_complexes_and_a_functional_layer_is_off_by_default(tmp_path):
+    root, p, index = _split(tmp_path)
+    d = index.parent / 'data'
+    full = json.loads((d / 'network_full.json').read_text())
+    ids = [s['id'] for s in full['sources']]
+    assert ids == ['pairs_exp', 'pairs_db', 'groups', 'fn']
+    exp, db, grp, fn = full['sources']
+    assert exp['family'] == db['family'] == 'Scored links' and exp['label'] == 'Scored links, experiments'
+    assert exp['style']['opacity'] > db['style']['opacity'] and not exp['style']['dash'] and fn['style']['dash']
+    assert grp['style']['width'] > exp['style']['width'] and fn['off'] is True and 'off' not in exp
+    E = full['edges']
+    edges = {(full['acc'][E[i]], full['acc'][E[i + 1]]): (i // 4, E[i + 2]) for i in range(0, len(E), 4)}
+    k, fl = edges[('P1', 'P2')]
+    assert (
+        fl & 1 and not fl & 2 and fl & 8 and full['extra']['pairs_exp'][k] == 900
+    )  # experiments only, and the layer's
+    assert full['extra']['fn'][k] == 750
+    k, fl = edges[('P2', 'P3')]
+    assert fl & 2 and not fl & 1 and full['extra']['pairs_db'][k] == 800
+    k, fl = edges[('P1', 'P3')]
+    assert fl & 1 and fl & 2  # experiments 750 and databases 500 (the minimum)
+    assert not any(f & 2 for (a, b), (_, f) in edges.items() if (a, b) == ('P5', 'P6'))
+    # the complexes that give a link are named for its tooltip
+    names = {n for n, _ in full['groups']['groups']}
+    assert names == {'complex C1'}  # C3 is over max_size 4; C2 is predicted
+    # the first view leaves the layer out: P1-P6 is a layer link only (and P1, P6 are not linked otherwise)
+    view = json.loads((d / 'network.json').read_text())
+    assert all(not f & 8 for _, _, f, _ in view['edges'])
+    cfg = re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1)
+    assert json.loads(cfg)['network']['sources'][3]['off'] is True
+
+
+def test_without_the_channel_columns_links_are_not_split_and_an_optional_source_without_a_table_is_left_out(tmp_path):
+    logs = []
+    root, p = _with_network(tmp_path / 'a', _network())
+    site = yaml.safe_load(p.read_text())
+    site['website']['network']['edges'][0]['channels'] = [
+        {'id': 'exp', 'label': 'experiments', 'column': 'experiments'},
+        {'id': 'db', 'label': 'databases', 'column': 'database'},
+    ]
+    site['website']['network']['edges'].append(
+        {
+            'id': 'fn',
+            'kind': 'functional',
+            'label': 'Functional',
+            'input': 'no_such_role',
+            'optional': True,
+            'default': False,
+        }
+    )
+    p.write_text(yaml.safe_dump(site, sort_keys=False))
+    S.run(p, root=root / 'data', log=lambda *_: None)
+    web.build(p, log=logs.append)
+    assert any('no experiments, database column' in x for x in logs)
+    assert S.network_problems(site) == []  # an optional source needs no role
+    index = web.build(p, log=lambda *_: None)
+    full = json.loads((index.parent / 'data' / 'network_full.json').read_text())
+    assert [s['id'] for s in full['sources']] == ['pairs', 'groups'] and 'extra' not in full
+
+
+def test_every_site_has_the_four_link_types_configured_and_the_roles_where_it_has_enzyme_classes():
+    root = Path(__file__).resolve().parents[1]
+    for name in ('methylarginine', 'methyllysine', 'phospho', 'lysine'):
+        site = yaml.safe_load((root / 'sites' / f'{name}.yaml').read_text())
+        net = site['website']['network']
+        kinds = {e['id']: e for e in net['edges']}
+        assert [c['id'] for c in kinds['string_physical']['channels']] == ['experiments', 'databases'], name
+        assert kinds['complex_portal']['name'] == 'complex_name'
+        fn = kinds['string_functional']
+        assert fn['kind'] == 'functional' and fn['optional'] and fn['default'] is False
+        assert [x for x in S.network_problems(site) if 'tile' not in x] == [], name
+        classes = ((site['website'].get('search') or {}).get('partners') or {}).get('classes') or {}
+        has_roles = any(isinstance(c, dict) and c.get('role') for c in classes.values())
+        assert any(c['kind'] == 'role' for c in net['color_by']) == has_roles, name
+
+
+def test_the_role_colouring_reads_the_site_classes_and_marks_none_and_several():
+    site = {
+        '__root__': '.',
+        'website': {
+            'search': {
+                'partners': {
+                    'classes': {
+                        'w1': {'label': 'a writer', 'role': 'writer', 'genes': ['GA', 'GB']},
+                        'e1': {'label': 'an eraser', 'role': 'eraser', 'genes': ['GB', 'GC']},
+                        'r1': {'label': 'a reader', 'role': 'reader', 'genes': ['gd']},
+                        'x': {'label': 'a cofactor', 'role': 'cofactor', 'genes': ['GE']},
+                    }
+                }
+            }
+        },
+    }
+    nodes = ['A', 'B', 'C', 'D', 'E', 'F']
+    genes = {a: f'G{a}' for a in nodes}
+    out = NW.role_values(site, {}, {'id': 'role', 'name': 'Role', 'kind': 'role'}, nodes, genes)
+    assert out['cats'] == ['Writer', 'Eraser', 'Reader', 'More than one'] and out['kind'] == 'categorical'
+    # A writer, B writer and eraser, C eraser, D reader (symbols match in any case), E (cofactor, not asked) and F none
+    assert out['v'] == [0, 3, 1, 2, -1, -1] and out['none_label'] == 'No role'
+    only = NW.role_values(
+        site, {}, {'id': 'r', 'name': 'R', 'kind': 'role', 'roles': ['writer'], 'none': 'Other'}, nodes, genes
+    )
+    assert only['cats'] == ['Writer'] and only['v'] == [0, 0, -1, -1, -1, -1] and only['none_label'] == 'Other'
+    problems = S.network_problems(
+        {'inputs': {}, 'website': {'network': {'edges': [], 'color_by': [{'id': 'r', 'kind': 'role'}]}}}
+    )
+    assert any('needs website.search.partners.classes' in x for x in problems)
+
+
+def test_node_area_follows_the_sites_up_to_the_cap_in_both_layouts():
+    from ptmcontext.web import netlayout as NL
+
+    assert [round(NL.radius(s) ** 2 / s, 6) for s in (1, 4, 16, 36)] == [round(NL.R_PER_SITE**2, 6)] * 4
+    assert NL.radius(10000) == NL.R_MAX and NL.radius(0) == 0 and NL.radius(5, 2) == 2 * NL.radius(5)
+    js = (ASSETS / 'kit-netlayout.js').read_text()
+    assert f'R_PER_SITE = {NL.R_PER_SITE}' in js and f'R_MAX = {int(NL.R_MAX)}' in js
+
+
+def test_the_page_draws_link_types_a_key_with_switches_and_puts_the_key_in_the_exports():
+    js = (ASSETS / 'kit-network.js').read_text()
+    for needle in (
+        'data-nw-src',  # a checkbox per link type in the key
+        'linkKeyHtml()',
+        'exportLinkKey(keyItem)',  # the whole-network export
+        'exportSizeKey(keyItem, FX,',
+        'exportColourKey(keyItem, FX,',
+        '<title>${esc(whyText(',  # the tooltip that says why a link exists
+        "p.set('sources', UI.src.map((i) => SRC[i].id).join())",  # readable address, defaults omitted
+    ):
+        assert needle in js, needle
+    assert js.count('exportLinkKey(keyItem);') == 2  # the whole network and the pinned frame
