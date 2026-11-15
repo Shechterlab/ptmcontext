@@ -1,6 +1,15 @@
 ## Unreleased
 
 - Overview: a selection too small to test draws where its own proteins are found in the cell and nucleus (the protein page's card, one protein or several, with no statistics), not the whole dataset's tested maps; the "Showing the whole dataset" line no longer counts the cell.
+- Figure PDF and PNG: text is set in the site's own fonts (Inter, IBM Plex Mono for sequences), embedded, loaded only when a file is made; text that would run past the page edge is shrunk or moved in; Screen is listed before Paper, and file names no longer end in the print width.
+- The full header (title, search) shows at the top of every page, not only the Overview, so scrolling back up looks the same everywhere. `website.header.compact: true` restores the slim band off the Overview.
+
+- Overview: the glyph of the "Which factor matters most?" tile (the arrow and its hidden words) is drawn, not shown as markup.
+- Overview: tiles sit in a grid of columns of 320 px or more (three across on a desktop, one on a phone); count and cell tiles take two or all columns.
+- Compare sets: a press on a result no longer moves focus off the search box, so the option is chosen in every browser.
+- Network cluster names: when no term holds for `min_coverage` of a cluster, the significant term of the smallest q names it, written with its share ("chromatin organization · 18%"); a cluster with no significant term keeps its three busiest proteins. New `network.thin_term` (`best` or `genes`).
+- Sticky bar: the toolbar is in full whenever the page is at its top, on every page, and a new page starts its scroll tracking afresh.
+- Network: the address uses readable names (`#network?clusters=12&colour=disorder`; `clusters`, `colour`, `score`, `top`, `sources`, `names`, `minsize`, `view`, `zoom`), earlier short names still open; Download has "Copy link".
 - Protein page: opening a section, or jumping to it from the sidebar, sets the address to it (`#protein/FUS/structure`, `/conservation`, `/interactions`, ...); closing it takes the section off again, and loading such an address opens the page at that section. The older `p-` keys still work.
 - Figure panels: the site alignment and sequence logo draws with no search or filter set (it showed no marks). Conservation across species is on for the methyllysine, lysine and phosphosite sites too (`website.protein.conservation`).
 

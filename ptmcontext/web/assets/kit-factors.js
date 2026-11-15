@@ -79,7 +79,7 @@
           (f) =>
             `<div class="fm-row" data-ftip="${esc(f.name)}" data-fid="${esc(id)}"><span class="lab">${esc(f.label)}</span>${mini(f.adj)}` +
             `<span class="val ${f.adj ? f.adj.dir : ''}">${
-              f.adj && f.adj.or != null ? esc(arrow(f.adj) + K.fx(f.adj.or)) : '–'
+              f.adj && f.adj.or != null ? arrow(f.adj) + esc(K.fx(f.adj.or)) : '–'
             }</span></div>`
         )
         .join('')}</div>` +

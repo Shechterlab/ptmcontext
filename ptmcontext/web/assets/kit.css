@@ -3534,7 +3534,8 @@ a.exp-btn {
 }
 @media (min-width: 72rem) {
   .tiles .tile.wide {
-    flex-basis: 34rem;
+    grid-column: span 2;
+    max-width: 69rem;
   }
 }
 .cmeters {
@@ -5892,17 +5893,24 @@ details.score.small .tq .t,
   font-weight: 600;
 }
 
-/* ---- the tile flow: cards of 17rem and more sit two or three across and grow to fill their row, so a row of one or two
-   cards is not a narrow card beside an empty column; a card never grows past 46rem; a count card (bars, a long axis) starts
-   at twice the width; tiles keep their height, a short chart leaves no void under it ---------------------------------- */
-.tiles,
+/* ---- the tile flow: a grid of cards at least 340px wide (about three across on a desktop, one on a phone); a count
+   card (bars, a long axis) takes two columns where there are three; tiles keep their height ------------------------- */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  align-items: start;
+  gap: 1rem;
+}
 .grid-auto {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 1rem;
 }
-.tiles > *,
+.tiles > * {
+  min-width: 0;
+  max-width: 34rem;
+}
 .grid-auto > * {
   flex: 1 1 min(var(--grid-min, 17rem), 100%);
   max-width: 46rem;
@@ -5910,7 +5918,8 @@ details.score.small .tq .t,
 }
 @media (min-width: 60rem) {
   .tiles > .cnt-card {
-    flex-basis: 34rem;
+    grid-column: span 2;
+    max-width: 69rem;
   }
 }
 .tfoot {
@@ -7414,10 +7423,10 @@ html[data-density='compact'] .tbl th {
   column-gap: 0.35em;
 }
 
-/* ---- The header: the full band on the Overview only; on every other page a compact band of 56 px (the site name, back to
+/* ---- The header: the full band on every page by default; with website.header.compact: true, a compact band of 56 px off the Overview (the site name, back to
    the Overview). Only the search, the selection line and the tabs stay in view (NN/g, Sticky headers). Nothing changes
    size while the page scrolls, so nothing shifts: on a phone the bar slides away on the way down and back on the way up
-   (a transform, which takes no room), and without motion it simply hides and shows. website.header.compact: false keeps
+   (a transform, which takes no room), and without motion it simply hides and shows. The default keeps
    the full band everywhere (body.full-header). */
 body.slim .hero {
   height: 56px;
@@ -8863,7 +8872,7 @@ a.pchip:hover {
   color: var(--ink-2);
 }
 .tiles .tile.wide.cell-tile {
-  flex: 1 1 100%;
+  grid-column: 1 / -1;
   max-width: none;
 }
 .cell-pair {

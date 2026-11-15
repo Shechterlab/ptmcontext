@@ -454,8 +454,12 @@ def test_a_term_names_a_cluster_only_if_it_holds_for_a_fair_share_and_names_one_
     assert lab[0]['term'] == 'alpha, via a long mechanism' and lab[0]['k'] == 6
     # cluster 1: A is taken (a term names one cluster), so the next term that holds for a quarter of it: gamma, 5 of 20
     assert lab[1]['term'] == 'gamma'
-    # cluster 2: zeta holds for 3 of 20 (0.15): no term names it
-    assert lab[2]['term'] is None
+    # cluster 2: zeta holds for 3 of 20 (0.15, under a quarter): it still names the cluster, marked thin (its share is shown)
+    assert lab[2]['term'] == 'zeta' and lab[2]['thin'] and not lab[0].get('thin')
+    # thin_term: genes leaves such a cluster to its busiest proteins
+    assert NW.label_clusters(comm, ann, terms, {**opt, 'thin_term': 'genes'})[2]['term'] is None
+    # no significant term at all: no name from a term, whatever thin_term says
+    assert NW.label_clusters(comm, ann, terms, {**opt, 'max_q': 1e-12})[2]['term'] is None
     # with no coverage asked for, the thin term names cluster 0 and the others follow
     lax = NW.label_clusters(comm, ann, terms, {**opt, 'min_coverage': 0})
     assert lax[0]['term'] == 'beta'
@@ -464,7 +468,8 @@ def test_a_term_names_a_cluster_only_if_it_holds_for_a_fair_share_and_names_one_
 @pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
 def test_the_browser_twin_names_clusters_by_the_same_coverage_and_uniqueness_rule():
     comm, ann, terms, opt = _coverage_case()
-    want = [NW.label_clusters(comm, ann, terms, o) for o in (opt, {**opt, 'min_coverage': 0})]
+    opts = [opt, {**opt, 'min_coverage': 0}, {**opt, 'thin_term': 'genes'}]
+    want = [NW.label_clusters(comm, ann, terms, o) for o in opts]
     prog = (
         'global.window=global;const fs=require("fs");'
         f'eval(fs.readFileSync({json.dumps(str(STATS))},"utf8"));eval(fs.readFileSync({json.dumps(str(ASSETS / "kit-netcore.js"))},"utf8"));'
@@ -473,7 +478,7 @@ def test_the_browser_twin_names_clusters_by_the_same_coverage_and_uniqueness_rul
     )
     run = subprocess.run(
         ['node', '-e', prog],
-        input=json.dumps({'comm': comm, 'ann': ann, 'terms': terms, 'opts': [opt, {**opt, 'min_coverage': 0}]}),
+        input=json.dumps({'comm': comm, 'ann': ann, 'terms': terms, 'opts': opts}),
         capture_output=True,
         text=True,
     )
@@ -481,6 +486,7 @@ def test_the_browser_twin_names_clusters_by_the_same_coverage_and_uniqueness_rul
     got = json.loads(run.stdout)
     for w, g in zip(want, got):
         assert [x.get('term') for x in w] == [x.get('term') for x in g]
+        assert [bool(x.get('thin')) for x in w] == [bool(x.get('thin')) for x in g]
 
 
 def test_every_cluster_has_its_busiest_proteins_for_a_name_and_the_layout_uses_it():
@@ -488,7 +494,7 @@ def test_every_cluster_has_its_busiest_proteins_for_a_name_and_the_layout_uses_i
 
     full = _full()
     v = NW.make_view(
-        full, {**OPT, 'min_coverage': 1.01}
+        full, {**OPT, 'min_coverage': 1.01, 'thin_term': 'genes'}
     )  # no term holds for all of a cluster: every cluster is named by genes
     assert all(x.get('term') is None and len(x['genes']) == 3 for x in v['labels'])
     # the busiest three of cluster 0, most sites first
@@ -505,3 +511,21 @@ def test_every_cluster_has_its_busiest_proteins_for_a_name_and_the_layout_uses_i
     }
     out = NL.layout(view, 'desktop')
     assert all(lb['short'] is None and not lb['name'].startswith('Cluster') for lb in out['clabels'])
+
+
+def test_a_thin_term_names_its_cluster_with_its_share_in_the_figure():
+    from ptmcontext.web import netlayout as NL
+
+    full = _full()
+    v = NW.make_view(full, {**OPT, 'min_coverage': 1.01, 'thin_term': 'genes'})
+    labels = [dict(x) for x in v['labels']]
+    labels[0].update(term='chromatin organization', k=2, thin=True)  # 2 of 10 proteins: 20%
+    view = {
+        'gene': [full['nodes'][g][1] for g in v['nodes']],
+        'sites': [full['nodes'][g][2] for g in v['nodes']],
+        'comm': v['comm'],
+        'edges': v['edges'],
+        'labels': labels,
+    }
+    out = NL.layout(view, 'desktop')
+    assert any('20%' in lb['name'] for lb in out['clabels'])

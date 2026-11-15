@@ -35,6 +35,7 @@ DEFAULTS = {
     'resolution': 1.0,
     'max_q': 0.05,
     'min_coverage': 0.25,
+    'thin_term': 'best',
     'min_overlap': 3,
     'min_term': 5,
     'max_fraction': 0.2,
@@ -164,7 +165,9 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
     Benjamini-Hochberg over the terms tested in that cluster. The label is the term of the smallest q (equal to 1e-9
     relative), a tie going to the deeper term, then the smaller p, then the term with fewer proteins, then the name. A
     cluster whose best q is above `max_q` has no label. A term must also hold for `min_coverage` or more of the
-    cluster's proteins (the best term that does is taken, the next best when the first would be too thin), and no term
+    cluster's proteins (the best term that does is taken, the next best when the first would be too thin). When no term
+    does, `thin_term: best` (default) takes the significant term of the smallest q (a tie going to the larger share of the
+    cluster) and the label carries its share; `thin_term: genes` leaves the cluster to its busiest proteins. No term
     names two clusters (larger clusters choose first; two terms with one short name count as one). With `opt['label']` set,
     only the terms of that source (the second number of a term) are used."""
     N = len(comm)
@@ -230,6 +233,37 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
                     }
                     break
                 remaining.remove(best)
+            if row['term'] is None and opt.get('thin_term', 'best') == 'best':
+                # no term holds for a fair share: the significant term of the smallest q (tie: larger share), shown with its share
+                cand = [
+                    j
+                    for j in range(len(tested))
+                    if qs[j] <= opt['max_q']
+                    and terms[tested[j]][2] not in used_ids
+                    and short_name(terms[tested[j]][0]) not in used_names
+                ]
+                if cand:
+                    j = cand[0]
+                    for x in cand[1:]:
+                        same = abs(qs[x] - qs[j]) <= 1e-9 * max(qs[x], qs[j])
+                        kx, kj = k_of[tested[x]], k_of[tested[j]]
+                        if (same and (kx > kj or (kx == kj and key(x) < key(j)))) or (not same and qs[x] < qs[j]):
+                            j = x
+                    t = tested[j]
+                    used_ids.add(terms[t][2])
+                    used_names.add(short_name(terms[t][0]))
+                    row = {
+                        'n': n,
+                        'term': terms[t][0],
+                        'id': terms[t][2],
+                        'source': terms[t][1],
+                        'p': ps[j],
+                        'q': qs[j],
+                        'k': k_of[t],
+                        'M': count[t],
+                        'N': N,
+                        'thin': True,
+                    }
         out.append(row)
     return out
 

@@ -2606,7 +2606,11 @@
               "type": "number",
               "minimum": 0,
               "maximum": 1,
-              "description": "a term names a cluster only if it holds for this share of the cluster's proteins or more (default 0.25); the best term that does is taken, and a cluster none holds for is named by its three busiest proteins. No term names two clusters"
+              "description": "a term names a cluster only if it holds for this share of the cluster's proteins or more (default 0.25); the best term that does is taken, and when none does, `thin_term` decides. No term names two clusters"
+            },
+            "thin_term": {
+              "enum": ["best", "genes"],
+              "description": "what names a cluster that no term holds for a fair share of (`min_coverage`): \"best\" (default) the significant term of the smallest q, a tie going to the larger share of the cluster, written with that share (\"chromatin organization · 18%\"); \"genes\" its three busiest proteins. A cluster with no significant term is always named by its three busiest proteins"
             },
             "claim": {
               "type": "string",

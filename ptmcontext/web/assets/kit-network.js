@@ -235,6 +235,7 @@
   }
   // clusters as drawn: the colour slot of the shown ones (the communities with the minimum number of proteins or more, in
   // order, as many as the layout takes), or grey on the shelf of small ones
+  const share = (l) => (l.thin ? ` \u00b7 ${Math.round((100 * l.k) / l.n)}%` : '');
   function clusters(M) {
     const shown = M.labels
         .map((l, c) => c)
@@ -253,9 +254,10 @@
         term: l.term,
         short: sn,
         l,
-        // a cluster no term names (or none holds for a fair share of it) is named by its busiest proteins
-        name: l.term || (l.genes || []).join(', ') || `Cluster ${c + 1}`,
-        label: sn || (l.genes || []).join(', ') || `Cluster ${c + 1}`,
+        // a cluster no significant term names is named by its busiest proteins; a term that holds for a small share of it
+        // carries that share
+        name: (l.term ? l.term + share(l) : '') || (l.genes || []).join(', ') || `Cluster ${c + 1}`,
+        label: (sn ? sn + share(l) : '') || (l.genes || []).join(', ') || `Cluster ${c + 1}`,
       };
     });
     return {
@@ -710,7 +712,7 @@
         ? `Links: two proteins are joined when ${p.label} scores them ${OPT.min_score / 1000} or more${g.length ? ` or ${g.map((x) => x.label).join(' and ')} puts them in one group (groups over ${int(g[0].max_size)} proteins are left out)` : ''}.`
         : `Links: two proteins are joined when they share a group in ${sourceNames()}.`,
       `Clusters: Louvain communities (Blondel et al. 2008) of the links; the Clusters menu asks for a number, and communities under ${UI.minc} proteins are grey.`,
-      `Names: the ${lab} term with the smallest q (hypergeometric test against the network, Benjamini–Hochberg) among terms of ${OPT.min_term} proteins or more and at most ${Math.round(OPT.max_fraction * 100)}% of the network${L.min_depth ? `, at least ${L.min_depth} levels below the top` : ''}${L.max_size ? `, with at most ${int(L.max_size)} proteins in the whole proteome` : ''}${L.non_iea ? ', from curated annotations only' : ''}; the figure shows a short form and the hover and table the full name.`,
+      `Names: the ${lab} term with the smallest q (hypergeometric test against the network, Benjamini–Hochberg) among terms of ${OPT.min_term} proteins or more and at most ${Math.round(OPT.max_fraction * 100)}% of the network${L.min_depth ? `, at least ${L.min_depth} levels below the top` : ''}${L.max_size ? `, with at most ${int(L.max_size)} proteins in the whole proteome` : ''}${L.non_iea ? ', from curated annotations only' : ''}; a term names a cluster if it holds for ${Math.round(OPT.min_coverage * 100)}% of it or more; ${OPT.thin_term === 'genes' ? 'otherwise the cluster is named by its three busiest proteins' : 'otherwise the best significant term names it, written with its share of the cluster (for example "chromatin organization · 18%"), and a cluster with no significant term is named by its three busiest proteins'}; the figure shows a short form and the hover and table the full name.`,
     ];
     const cites = [
       ...SRC.map((s) => s.cite).filter(Boolean),
@@ -788,7 +790,10 @@
           `<button type="button" class="btn small" data-nw-vreset title="Show the whole drawing">Reset</button></span>`
         : '') +
       `<label class="nw-inl nw-xf"><span>Export</span><select data-nw="xf" aria-label="What the download frames"><option value="fit"${UI.xf === 'fit' ? ' selected' : ''}>Fit pinned</option><option value="view"${UI.xf === 'view' ? ' selected' : ''}>What you see</option><option value="whole"${UI.xf === 'whole' ? ' selected' : ''}>Whole network</option></select></label>` +
-      `${K.expBar(['svg', 'png', 'pdf', 'tsv'], 'nwexp', 'the network')}</div></div>` +
+      `${K.expBar(['svg', 'png', 'pdf', 'tsv'], 'nwexp', 'the network').replace(
+        '<div class="xm-items" role="menu">',
+        '$&<button type="button" class="exp-btn xm-item" role="menuitem" data-nw-copy title="Copy a link that opens this network with these settings">Copy link</button>'
+      )}</div></div>` +
       `<details class="nw-more"${UI.more ? ' open' : ''}><summary>More options</summary><div class="nw-bar" role="group" aria-label="More network options">${html(rest)}<button type="button" class="btn small" data-nw-reset>Reset all settings</button></div></details>`
     );
   };
@@ -1631,6 +1636,21 @@
     }
   });
   // ---- events -----------------------------------------------------------------------------------------------------------------
+  K.clicks.push([
+    '[data-nw-copy]',
+    (el) => {
+      K.writeHash(false);
+      const done = () => {
+        el.textContent = 'Link copied';
+        setTimeout(() => (el.textContent = 'Copy link'), 1500);
+      };
+      try {
+        navigator.clipboard.writeText(location.href).then(done, () => {});
+      } catch (e) {
+        /* no clipboard */
+      }
+    },
+  ]);
   const again = () => {
     cache = { key: '', M: null };
     save();
@@ -1914,14 +1934,27 @@
     };
     requestAnimationFrame(tick);
   }
-  // the address keeps every setting of the figure, so that a link reproduces it: p= the pinned proteins (comma-separated),
-  // nk= the number of clusters, nc= the colour, ns= the score, nt= the number of proteins, nx= the sources, nl= the name
-  // source, nm= the smallest cluster, nv=table (and nf=, the genes to find, which the page keeps for the main search). Only
-  // what differs from the site's defaults is written, and not while this page draws its own links.
-  const PARAMS = ['nk', 'nc', 'ns', 'nt', 'nx', 'nl', 'nm', 'nv'];
+  // the address keeps every setting of the figure, so that a link reproduces it and is readable: p= the pinned proteins
+  // (comma-separated), clusters= their number, colour=, score=, top= the number of proteins, sources=, names= the name source,
+  // minsize= the smallest cluster, view=table, zoom= (and nf=, the genes to find, which the page keeps for the main
+  // search). Only what differs from the site's defaults is written, and not while this page draws its own links.
+  // The shorter names of earlier links (nk, nc, ns, nt, nx, nl, nm, nv, nz) are still read.
+  const PARAMS = ['clusters', 'colour', 'score', 'top', 'sources', 'names', 'minsize', 'view'];
   const accOk = (a) => /^[A-Z0-9][A-Z0-9-]{3,19}$/.test(a);
+  const LEGACY = {
+    nk: 'clusters',
+    nc: 'colour',
+    ns: 'score',
+    nt: 'top',
+    nx: 'sources',
+    nl: 'names',
+    nm: 'minsize',
+    nv: 'view',
+    nz: 'zoom',
+  };
   K.paramsIn.push((p) => {
     if (S.view !== 'network') return;
+    Object.entries(LEGACY).forEach(([o, n]) => p.has(o) && !p.has(n) && p.set(n, p.get(o)));
     const pins = (p.get('p') || '').split(',').filter(accOk).slice(0, MAXPINS);
     if (pins.join() !== UI.pins.join()) {
       if (UI.topWas) UI.top = UI.topWas;
@@ -1931,7 +1964,7 @@
       UI.fapply = pins.length === 1;
     }
     // the window on the drawing: zoom, then the centre as shares of the width and height (they hold on any screen)
-    const nz = (p.get('nz') || '').split(',').map(Number);
+    const nz = (p.get('zoom') || '').split(',').map(Number);
     UI.vz =
       nz.length === 3 && nz.every(Number.isFinite) && nz[0] > 1 && nz[0] <= MAXZ
         ? { k: nz[0], fx: clampN(nz[1], 0, 1), fy: clampN(nz[2], 0, 1) }
@@ -1940,19 +1973,21 @@
       const g = (k) => p.get(k),
         n = (k, d) => (p.has(k) && Number.isFinite(+g(k)) ? +g(k) : d),
         next = {
-          clusters: p.has('nk') && +g('nk') >= CR[0] && +g('nk') <= CR[1] ? +g('nk') : DEF.clusters,
-          colour: p.has('nc') && CB.some((c) => c.id === g('nc')) ? g('nc') : 'cluster',
-          score: OPT.steps.includes(n('ns', -1)) ? n('ns', DEF.score) : DEF.score,
-          top: n('nt', DEF.top) >= 20 && n('nt', DEF.top) <= 1000 ? n('nt', DEF.top) : DEF.top,
-          src: p.has('nx')
-            ? g('nx')
+          clusters:
+            p.has('clusters') && +g('clusters') >= CR[0] && +g('clusters') <= CR[1] ? +g('clusters') : DEF.clusters,
+          colour: p.has('colour') && CB.some((c) => c.id === g('colour')) ? g('colour') : 'cluster',
+          score: OPT.steps.includes(n('score', -1)) ? n('score', DEF.score) : DEF.score,
+          top: n('top', DEF.top) >= 20 && n('top', DEF.top) <= 1000 ? n('top', DEF.top) : DEF.top,
+          src: p.has('sources')
+            ? g('sources')
                 .split(',')
                 .map(Number)
                 .filter((i) => i >= 0 && i < SRC.length)
             : DEF.src.slice(),
-          label: n('nl', DEF.label) >= 0 && n('nl', DEF.label) < NC.labels.length ? n('nl', DEF.label) : DEF.label,
-          minc: n('nm', DEF.minc) >= 2 ? n('nm', DEF.minc) : DEF.minc,
-          mode: g('nv') === 'table' ? 'table' : 'network',
+          label:
+            n('names', DEF.label) >= 0 && n('names', DEF.label) < NC.labels.length ? n('names', DEF.label) : DEF.label,
+          minc: n('minsize', DEF.minc) >= 2 ? n('minsize', DEF.minc) : DEF.minc,
+          mode: g('view') === 'table' ? 'table' : 'network',
         };
       if (!next.src.length) next.src = DEF.src.slice();
       if (Object.keys(next).some((k) => JSON.stringify(next[k]) !== JSON.stringify(UI[k]))) {
@@ -1966,16 +2001,16 @@
   K.paramsOut.push((p) => {
     if (S.view !== 'network' || !K.nwWriting) return;
     if (UI.pins.length) p.set('p', UI.pins.join());
-    if (UI.clusters !== DEF.clusters && UI.clusters) p.set('nk', UI.clusters);
-    if (UI.colour !== 'cluster') p.set('nc', UI.colour);
-    if (UI.score !== DEF.score) p.set('ns', UI.score);
+    if (UI.clusters !== DEF.clusters && UI.clusters) p.set('clusters', UI.clusters);
+    if (UI.colour !== 'cluster') p.set('colour', UI.colour);
+    if (UI.score !== DEF.score) p.set('score', UI.score);
     const top = UI.topWas ?? UI.top;
-    if (top !== DEF.top) p.set('nt', top);
-    if (UI.src.join() !== DEF.src.join()) p.set('nx', UI.src.join());
-    if (UI.label !== DEF.label) p.set('nl', UI.label);
-    if (UI.minc !== DEF.minc) p.set('nm', UI.minc);
-    if (UI.mode === 'table') p.set('nv', 'table');
-    if (UI.vz) p.set('nz', `${UI.vz.k},${UI.vz.fx},${UI.vz.fy}`);
+    if (top !== DEF.top) p.set('top', top);
+    if (UI.src.join() !== DEF.src.join()) p.set('sources', UI.src.join());
+    if (UI.label !== DEF.label) p.set('names', UI.label);
+    if (UI.minc !== DEF.minc) p.set('minsize', UI.minc);
+    if (UI.mode === 'table') p.set('view', 'table');
+    if (UI.vz) p.set('zoom', `${UI.vz.k},${UI.vz.fx},${UI.vz.fy}`);
   });
   const writeHashOf = K.writeHash;
   K.writeHash = (push) => {

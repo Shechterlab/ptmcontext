@@ -2704,6 +2704,11 @@
       set({ ot: [...S.ot, id], or: '' });
     }
   };
+  // a press on an option must not take focus off the search box: the list is shown while the picker has focus, and a browser
+  // that does not focus a button on a press (Safari, Firefox on a Mac) would hide it before the click arrived
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.closest?.('.ov-res') && !e.target.closest('input,textarea')) e.preventDefault();
+  });
   document.addEventListener('input', (e) => {
     if (e.target.id !== 'ov-q') return;
     UIP.q = e.target.value;
