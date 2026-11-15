@@ -390,7 +390,9 @@
     if (!(el instanceof Element) || /^(BUTTON|A|INPUT|SELECT|TEXTAREA|SUMMARY)$/.test(el.tagName)) return;
     if (el.matches('[role="button"], th[data-sort]')) {
       e.preventDefault();
-      el.click();
+      // a part of a drawing (an SVG group) has no click(): send the event a pointer would
+      if (typeof el.click === 'function') el.click();
+      else el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     }
   });
 

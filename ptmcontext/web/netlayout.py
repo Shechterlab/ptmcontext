@@ -503,10 +503,11 @@ def finish(view, pos, variant='desktop', fs=None, gfs=None):
     for c in sorted(shown, key=lambda c: (-size[c], c)):
         ci = pos_c[c]
         full = labels[c].get('term')
-        term = short_name(full) or f'Cluster {c + 1}'
+        term = short_name(full) or ', '.join(labels[c].get('genes') or []) or f'Cluster {c + 1}'
         if not phone:
             lines = wrap2(term, 22)
-            cnt = f'{size[c]} proteins'
+            k_t = labels[c].get('k') if full else None
+            cnt = f'{k_t} of {size[c]} proteins' if k_t is not None else f'{size[c]} proteins'
             w = max(max(text_w(s, fs, 600) for s in lines) + 14, text_w(cnt, fs - 1.5) + 14)
             h = fs * 1.25 * len(lines) + (fs - 1.5) * 1.3
         else:  # a numbered badge: the list under the figure names the clusters
@@ -556,6 +557,7 @@ def finish(view, pos, variant='desktop', fs=None, gfs=None):
                 'box': list(box),
                 'leader': [hp[0], hp[1], nx, ny],
                 'short': short_name(full),
+                'name': term,
                 'full': full,
                 'q': labels[c].get('q'),
             }

@@ -120,12 +120,13 @@ def build(site: dict, run: dict, folder: Path, listing: list, fasta: Path, out: 
         'units': [],
         'dir': DIR + '/',
     }
+    genes = {a: v.get('gene', '') for a, v in parse_fasta_headers(fasta).items()} if fasta.exists() else {}
     members = folder / 'overlap_members.json'
     uni: list[str] = []
     if members.exists():
         raw = json.loads(members.read_text())
         uni = raw['universe']
-        _write(target / 'universe.json', {'acc': uni})
+        _write(target / 'universe.json', {'acc': uni, 'gene': [genes.get(a, '') for a in uni]})
         leave = cfg.get('leave_out') or {}
         for aid, sets in raw['sets'].items():
             sets = {k: v for k, v in sets.items() if k not in leave.get(aid, ())}
@@ -140,7 +141,6 @@ def build(site: dict, run: dict, folder: Path, listing: list, fasta: Path, out: 
     ix = {a: i for i, a in enumerate(uni)}
     fams: dict[str, list] = {}
     paths = _paths(run)
-    genes = {a: v.get('gene', '') for a, v in parse_fasta_headers(fasta).items()} if fasta.exists() else {}
     rd = cfg.get('readers')
     if rd and 'readers' in units and uni:
         name = (site.get('inputs') or {}).get(rd['source'], rd['source'])
@@ -231,12 +231,21 @@ def build(site: dict, run: dict, folder: Path, listing: list, fasta: Path, out: 
         page['partial'] = True  # no sets of every protein: only the proteins with a mark
     page['families'] = {
         k: [
-            {'id': f['id'], 'name': f['name'], 'n': len(f['m']), **({'ids': f['ids']} if 'ids' in f else {})} for f in v
+            {
+                'id': f['id'],
+                'name': f['name'],
+                'n': len(f['m']),
+                **({'ids': f['ids']} if 'ids' in f else {}),
+                **({'role': f['role']} if 'role' in f else {}),
+            }
+            for f in v
         ]
         for k, v in fams.items()
     }
     page['notes'] = dict(cfg.get('notes') or {})  # a question's note under its terms
     page['leave_out'] = dict(cfg.get('leave_out') or {})
+    page['groups'] = list(cfg.get('groups') or [])  # the headings the picker lists terms under
+    page['names'] = dict(cfg.get('names') or {})  # a family's or class's name as shown
     page['n'] = len(uni)
     page['family_notes'] = {f['id']: f['note'] for f in fams.get('readers', []) if f.get('note')}
     return page

@@ -77,11 +77,11 @@
     return { L, ticks: ticks.sort((p, q) => p - q), lo, hi };
   }
   const PX = (f) => (3 + 94 * f).toFixed(1); // the track keeps 3% at each end, so a dot at the end is whole
-  // nlab: what the number at the end of each row counts ("proteins", or the marks), said above it
-  const axisHtml = (ax, nlab) =>
+  // the tile's one axis, under its rows
+  const axisHtml = (ax) =>
     `<div class="fr-ax" aria-hidden="true"><span class="tk">${ax.ticks
       .map((t) => `<i${t === 1 ? ' class="one"' : ''} style="left:${PX(ax.L(t))}%">${fmtT(t)}×</i>`)
-      .join('')}</span>${nlab ? `<span class="fr-nh">${esc(nlab)}</span>` : ''}</div>`;
+      .join('')}</span></div>`;
   const fin = (v) => (v != null && Number.isFinite(v) ? Math.min(v, 1e3) : null);
   // x: { label, v, lo: [low, high] | null, q, dir, n, wv, desc, absent, measure }; attrs: the row's own attributes (its click, its hover)
   function rowHtml(x, ax, attrs = '', cls = '') {
@@ -116,19 +116,20 @@
       (x2 == null ? '' : `<circle class="dot ${dir}${x.desc ? ' desc' : ''}" cx="${x2}%" cy="50%" r="4.5"/>`) +
       '</svg>';
     const val = x.absent ? '–' : K.fxn(v) + '×';
-    // the counts behind the value join the row's hover (after the click's own words), the test beneath it
+    // the counts behind the value and the row's test (the odds ratio, its interval, q) join the row's hover and its spoken name
     const tipped = x.tip
       ? / title="/.test(attrs)
         ? attrs.replace(/ title="([^"]*)"/, (m, t) => ` title="${esc(x.tip)}. ${t}"`)
         : `${attrs} title="${esc(x.tip)}"`
       : attrs;
+    const pop = x.pop && !x.mine ? ` data-pop="${esc(JSON.stringify(x.pop))}"` : '';
     return (
-      `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${x.sub ? ' has-sub' : ''}${cls ? ' ' + cls : ''}"${tipped}><span class="fr-lab">` +
-      `<span>${esc(x.label)}</span>${x.badge ? `<span class="vh">, ${esc(x.badge)}</span>` : ''}</span>${track}` +
+      `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${x.lead ? ' lead' : ''}${x.go ? ' qlink' : ''}${cls ? ' ' + cls : ''}"${tipped}${pop}><span class="fr-lab">` +
+      `<span>${esc(x.label)}</span>${x.badge ? `<span class="vh">, ${esc(x.badge)}</span>` : ''}${
+        x.sub ? `<span class="vh">, ${esc(x.sub)}</span>` : ''
+      }${x.n != null ? `<span class="vh">, n ${int(x.n)}</span>` : ''}</span>${track}` +
       (`<span class="fr-val">${esc(val)}<i class="fr-q ${dir}${x.desc ? ' desc' : ''}" aria-hidden="true"></i>` +
-        `</span><span class="fr-n">${x.n != null ? int(x.n) : ''}</span>` +
-        (x.sub ? `<span class="fr-sub">${esc(x.sub)}</span>` : '') +
-        `</div>`)
+        `</span></div>`)
     );
   }
   const valsOf = (rows) =>
@@ -152,8 +153,16 @@
             .slice(0, 1);
     const nm = (r) => `${esc(r.label)} (${K.fxn(r.v)}×)`;
     if (!ok.length) return rows.length && rows.every((r) => r.absent) ? 'None of these is in this selection.' : '';
-    if (!more.length && !less.length)
-      return `No row here differs from the other ${fold ? 'proteins' : esc(W.residues)}.`;
+    if (!more.length && !less.length) {
+      // the same rule as the colors: a row significant by its test but under 1.1x is said, not hidden (its hover says why)
+      const near = ok.filter((r) => r.q != null && r.q <= K.PADJ && r.dir === 'same').length;
+      return (
+        `No row here differs by 1.1× or more from the other ${fold ? 'proteins' : esc(W.residues)}` +
+        (near
+          ? `; ${near === 1 ? 'one is' : `${near} are`} significant but under 1.1× in fold (hover a row for why).`
+          : '.')
+      );
+    }
     return [
       more.length ? `More often: ${more.map(nm).join(', ')}.` : '',
       less.length ? `Less often: ${less.map(nm).join(', ')}.` : '',

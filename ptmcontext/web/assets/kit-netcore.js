@@ -107,6 +107,13 @@
   // at most max_fraction of them (one-sided hypergeometric p against all the network's proteins), a tie going to the deeper
   // term, then the smaller p, the term with fewer proteins, the name; no label above max_q. With opt.label set, only the
   // terms of that source (a term's second item)
+  const shortTerm = (t) => {
+    const s = String(t || '')
+      .replace(/\s*\([^)]*\)/g, '')
+      .split(/,?\s+via\s+|,\s+/)[0]
+      .trim();
+    return s || String(t || '');
+  };
   function labelClusters(comm, ann, terms, opt) {
     const N = comm.length,
       members = [];
@@ -125,6 +132,8 @@
       )
         ok.add(t);
     });
+    const usedIds = new Set(),
+      usedNames = new Set();
     return members.map((mem) => {
       const n = mem.length,
         kOf = new Map();
@@ -145,24 +154,35 @@
               : cnt(x) !== cnt(y)
                 ? cnt(x) < cnt(y)
                 : nm(x) < nm(y);
-      let best = 0;
-      for (let j = 1; j < tested.length; j++) {
-        const same = Math.abs(qs[j] - qs[best]) <= 1e-9 * Math.max(qs[j], qs[best]);
-        if (same ? wins(j, best) : qs[j] < qs[best]) best = j;
+      let remaining = tested.map((_, j) => j);
+      while (remaining.length) {
+        let best = remaining[0];
+        for (const j of remaining.slice(1)) {
+          const same = Math.abs(qs[j] - qs[best]) <= 1e-9 * Math.max(qs[j], qs[best]);
+          if (same ? wins(j, best) : qs[j] < qs[best]) best = j;
+        }
+        if (!(qs[best] <= opt.max_q)) break;
+        const t = tested[best],
+          name = shortTerm(terms[t][0]);
+        // the term must hold for a fair share of the cluster, and no term names two clusters
+        if (kOf.get(t) / n >= opt.min_coverage && !usedIds.has(terms[t][2]) && !usedNames.has(name)) {
+          usedIds.add(terms[t][2]);
+          usedNames.add(name);
+          return {
+            n,
+            term: terms[t][0],
+            id: terms[t][2],
+            source: terms[t][1],
+            p: ps[best],
+            q: qs[best],
+            k: kOf.get(t),
+            M: count.get(t),
+            N,
+          };
+        }
+        remaining = remaining.filter((j) => j !== best);
       }
-      if (!(qs[best] <= opt.max_q)) return { n, term: null };
-      const t = tested[best];
-      return {
-        n,
-        term: terms[t][0],
-        id: terms[t][2],
-        source: terms[t][1],
-        p: ps[best],
-        q: qs[best],
-        k: kOf.get(t),
-        M: count.get(t),
-        N,
-      };
+      return { n, term: null };
     });
   }
   // the network for the options. full: { sources, nodes: [[acc, gene, sites]], edges: [[a, b, flags, score]], terms, ann };
@@ -200,7 +220,7 @@
         edges.map((e) => [pos.get(e[0]), pos.get(e[1]), e[4]]),
         opt
       );
-    return {
+    const out = {
       nodes: live,
       edges: edges.map((e) => [pos.get(e[0]), pos.get(e[1]), e[2], e[3]]),
       comm,
@@ -211,29 +231,46 @@
         opt
       ),
     };
+    // the three proteins with most sites of each cluster: its name when no term names it
+    const byC = [];
+    live.forEach((g, i) => (byC[comm[i]] ||= []).push(g));
+    out.labels.forEach((row, c) => {
+      row.genes = (byC[c] || [])
+        .slice()
+        .sort((x, y) => {
+          const p = full.nodes[x],
+            q = full.nodes[y];
+          return q[2] - p[2] || (p[1] < q[1] ? -1 : p[1] > q[1] ? 1 : 0) || (p[0] < q[0] ? -1 : p[0] > q[0] ? 1 : 0);
+        })
+        .slice(0, 3)
+        .map((g) => full.nodes[g][1]);
+    });
+    return out;
   }
   // where a protein is, for a link that opens the network at it: its place in `full` (by accession, isoforms by the base one),
   // and what has to change for the default view to hold it. status: 'unknown' (not a node of the network at all), 'none' (no
   // link in the enabled sources at any score), 'score' (a link only below the score: lowerTo is the highest step that has
   // one), 'ok' (a link at the score: `need` is how many proteins, taken by most sites, the view must hold so that the protein
   // and its best-placed partner are in it; `partners` are its partners at the score)
-  function focusPlan(full, opt, acc, enabled) {
-    const base = (a) => String(a).split('-')[0],
-      gi = full.nodes.findIndex((n) => n[0] === acc || base(n[0]) === base(acc));
-    if (gi < 0) return { status: 'unknown' };
+  // the partners of node gi at a score, in the enabled sources: a scored link at or above the score, or a shared group
+  function partnersOf(full, gi, score, enabled) {
     const cfg = full.sources,
       en = enabled || cfg.map((_, i) => i),
       mask = en.reduce((m, i) => m | (1 << i), 0),
       pairsIx = cfg.findIndex((s) => s.kind === 'pairs'),
-      pairsBit = pairsIx < 0 ? 0 : 1 << pairsIx;
-    const partners = (score) => {
-      const out = [];
-      for (const [a, b, f0, sc] of full.edges) {
-        if (a !== gi && b !== gi) continue;
-        if ((f0 & mask & pairsBit && sc >= score) || f0 & mask & ~pairsBit) out.push(a === gi ? b : a);
-      }
-      return out;
-    };
+      pairsBit = pairsIx < 0 ? 0 : 1 << pairsIx,
+      out = [];
+    for (const [a, b, f0, sc] of full.edges) {
+      if (a !== gi && b !== gi) continue;
+      if ((f0 & mask & pairsBit && sc >= score) || f0 & mask & ~pairsBit) out.push(a === gi ? b : a);
+    }
+    return out;
+  }
+  function focusPlan(full, opt, acc, enabled) {
+    const base = (a) => String(a).split('-')[0],
+      gi = full.nodes.findIndex((n) => n[0] === acc || base(n[0]) === base(acc));
+    if (gi < 0) return { status: 'unknown' };
+    const partners = (score) => partnersOf(full, gi, score, enabled);
     const here = partners(opt.min_score);
     if (!here.length) {
       const lower = (opt.steps || []).filter((s) => s < opt.min_score).sort((x, y) => y - x);
@@ -249,7 +286,7 @@
         }),
       rank = new Map(order.map((g, r) => [g, r]));
     const need = Math.max(rank.get(gi), Math.min(...here.map((g) => rank.get(g)))) + 1;
-    return { status: 'ok', need, gi, partners: [...new Set(here)] };
+    return { status: 'ok', need, gi, rank: rank.get(gi), partners: [...new Set(here)] };
   }
   // the genes of a pasted list (separated by commas, spaces, semicolons or line breaks; symbols or accessions) and which of them
   // the nodes hold: { tokens, hits: Set of node indexes, found: tokens that are nodes, missing: tokens that are not }; a token
@@ -289,7 +326,7 @@
         found.push(t);
       }
     }
-    return { tokens, hits, found, missing };
+    return { tokens, hits, found, missing, n: hits.size, m: hits.size + missing.length };
   }
   // the small neighbourhood a protein page draws: the protein, its partners in its own cluster (at most `max`, those with most
   // sites first) and the links among them; view: { gene, sites, comm, edges }
@@ -314,5 +351,5 @@
     for (const [a, b] of view.edges) if (at.has(a) && at.has(b)) edges.push([at.get(a), at.get(b)]);
     return { nodes, edges, partners: seen.size };
   }
-  K.netcore = { louvain, communities, labelClusters, makeView, focusPlan, findGenes, previewSlice };
+  K.netcore = { louvain, communities, labelClusters, makeView, focusPlan, partnersOf, findGenes, previewSlice };
 });

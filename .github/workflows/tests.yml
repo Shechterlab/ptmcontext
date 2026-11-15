@@ -7,6 +7,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # the commit-message check reads the history
+      # no commit message since 8425cba, or in the pushed range, may carry a Co-Authored-By: Claude or Claude-Session line
+      - name: Commit messages carry no assistant attribution
+        run: tools/check_commit_messages.sh 8425cba "${{ github.event.before }}"
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
