@@ -837,7 +837,7 @@
     if (!missing.length) return null;
     if (UI.pins.length > 1 || K.sel?.active() || M.seeds)
       return {
-        note: `${missing.map((a) => `<b>${esc(geneOf(a, M.full || FILE.full))}</b>`).join(', ')} ${missing.length === 1 ? 'is' : 'are'} not in the network shown (no link in these sources, or outside the ${int(UI.top)} proteins drawn).`,
+        note: `${missing.map((a) => `<b>${esc(geneOf(a, M.full || FILE.full))}</b>`).join(', ')} ${missing.length === 1 ? 'is' : 'are'} not in this network (no link in these sources, or outside the ${int(UI.top)} proteins drawn).`,
       };
     const acc = missing[0],
       f = load('full');
@@ -848,15 +848,15 @@
       links = linkNames();
     if (plan.status === 'unknown')
       return {
-        note: `<b>${gene}</b> is not in the network shown: it has no ${esc(links)} link at the lowest score the network keeps (${OPT.steps[0] / 1000}).`,
+        note: `<b>${gene}</b> is not in this network: it has no ${esc(links)} link at the lowest score the network keeps (${OPT.steps[0] / 1000}).`,
       };
     if (plan.status === 'none')
       return {
-        note: `<b>${gene}</b> is not in the network shown: it has no ${esc(links)} link in the chosen sources.`,
+        note: `<b>${gene}</b> is not in this network: it has no ${esc(links)} link in the chosen sources.`,
       };
     if (plan.status === 'score')
       return {
-        note: `<b>${gene}</b> is not in the network shown: it has no ${esc(links)} link at a score of ${UI.score / 1000} or more. <button type="button" class="btn small" data-nw-score="${plan.lowerTo}">Lower the score to ${plan.lowerTo / 1000}</button>`,
+        note: `<b>${gene}</b> is not in this network: it has no ${esc(links)} link at a score of ${UI.score / 1000} or more. <button type="button" class="btn small" data-nw-score="${plan.lowerTo}">Lower the score to ${plan.lowerTo / 1000}</button>`,
       };
     // it has partners: say why it was not drawn (by the numbers), then draw more, or only it and its partners
     UI.nbWhy =

@@ -151,7 +151,8 @@
             .filter((r) => sig(r) && r.dir === 'less')
             .sort((a, b) => a.v - b.v)
             .slice(0, 1);
-    const nm = (r) => `${esc(r.label)} (${K.fxn(r.v)}×)`;
+    const nm = (r) => `${esc(r.label)} (${K.fxn(r.v)}×)`,
+      list = (x) => (x.length > 1 ? `${x.slice(0, -1).join(', ')} and ${x[x.length - 1]}` : x[0]);
     if (!ok.length) return rows.length && rows.every((r) => r.absent) ? 'None of these is in this selection.' : '';
     if (!more.length && !less.length) {
       // the same rule as the colors: a row significant by its test but under 1.1x is said, not hidden (its hover says why)
@@ -164,8 +165,8 @@
       );
     }
     return [
-      more.length ? `More often: ${more.map(nm).join(', ')}.` : '',
-      less.length ? `Less often: ${less.map(nm).join(', ')}.` : '',
+      more.length ? `More often in ${list(more.map(nm))}.` : '',
+      less.length ? `Less often in ${list(less.map(nm))}.` : '',
     ]
       .filter(Boolean)
       .join(' ');

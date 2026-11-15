@@ -135,7 +135,7 @@ def test_with_a_selection_a_part_shows_the_share_of_its_proteins_that_are_in_it(
 def test_the_fold_view_is_kept_and_says_how_many_proteins_carry_a_mark_where_it_has_too_few(tmp_path):
     out = _run(tmp_path, _build(tmp_path / 'b'), [], min_group=20)
     # fewer than 20 unmarked proteins in the part: the coverage beside, the median of the two maps (1 of 3, 2 of 5)
-    assert out['fold']['cytosol'] == 'too few without one to compare (37% carry one)'
+    assert out['fold']['cytosol'] == 'too few without a methylarginine to compare (37% have one)'
 
 
 HIGH = {

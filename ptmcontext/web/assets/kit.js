@@ -162,9 +162,9 @@
   };
   // plain words for the terms of the tests, shown on hover (an abbr) and in one line on the Help page
   const GLOSS = {
-    fold: 'How many times more often than in the comparison group. 1× means no difference.',
+    fold: 'The share in the class divided by the share in the comparison group. 1× means no difference.',
     'odds ratio': 'How many times higher the odds are inside the class than outside it. 2× means twice the odds.',
-    q: 'The p value corrected for the many tests made in this explorer. A difference counts at q ≤ 0.05 and at least 1.1×.',
+    q: 'The p value adjusted for the many tests run (Benjamini–Hochberg false discovery rate). A difference counts at q ≤ 0.05 and at least 1.1×.',
     'within each protein':
       `Each ${W.mark} is compared only with the other ${W.residues} of the same protein, so a ` +
       `protein with many sites does not dominate.`,
@@ -1201,7 +1201,7 @@
         dn = ok.filter((r) => r.dir === 'less').sort((x, y) => strength(y) - strength(x))[0];
       const one = (r) => `<b>${esc(r.label)}</b> (${pcS(share1(r))} vs ${pcS(share2(r))})`;
       return up || dn
-        ? [up ? 'More often: ' + one(up) : '', dn ? 'Less often: ' + one(dn) : ''].filter(Boolean).join('. ')
+        ? [up ? 'More often in ' + one(up) : '', dn ? 'Less often in ' + one(dn) : ''].filter(Boolean).join('. ')
         : `None differs from ${esc(vsName())} (q ≤ 0.05 ` + `and at least 1.1×)`;
     }
     rows = rows.filter(rankable);
@@ -1215,10 +1215,10 @@
         .replace('{fold}', fx(valOf(top)));
     if (top)
       return (
-        `More often: <b>${esc(top.label)}</b> (${fx(valOf(top))})` +
-        (low ? `. Less often: <b>${esc(low.label)}</b> (${fx(valOf(low))})` : '')
+        `More often in <b>${esc(top.label)}</b> (${fx(valOf(top))})` +
+        (low ? `. Less often in <b>${esc(low.label)}</b> (${fx(valOf(low))})` : '')
       );
-    if (low) return `Least often: <b>${esc(low.label)}</b> (${fx(valOf(low))})`;
+    if (low) return `Least often in <b>${esc(low.label)}</b> (${fx(valOf(low))})`;
     return 'None differs (q ≤ 0.05 and at least 1.1×)';
   }
   const EXCL = /^(no |not |unknown|unassigned|other\b)/i;
@@ -1961,7 +1961,7 @@
             `selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>`
           : ''
       }` +
-      `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">How to read</button></p>`;
+      `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">Details</button></p>`;
     const howP = S.how
       ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a ` +
         `log scale (the solid line is no difference). The number is the fold: for questions about where ${esc(W.marks)} ` +
@@ -2359,10 +2359,13 @@
     if (!pick.length) return '';
     const sentence = ({ a, r, v }) => {
       const label = r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
-        f = `${fxn(v)}×`;
+        f = `${fxn(v)}×`,
+        // "RGG" and "IDR" keep their capitals; "Nucleus" reads "nucleus" after "in"
+        low = (t) => (/^[A-Z][a-z]*(\s|$)/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t),
+        where = /^(in|at|near|next to|within|inside|on)\s/i.test(label) ? low(label) : `in ${low(label)}`;
       return SETS(a.id)
-        ? `Proteins in <b>${esc(label)}</b> are ${esc(W.marked)} ${f} as often as proteins in general.`
-        : `<b>${esc(cap(label))}</b>: ${esc(W.marks)} are ${f} as likely as other ${esc(W.residues)} to be here.`;
+        ? `Proteins in <b>${esc(label)}</b> are ${esc(W.marked)} ${f} as often as other proteins.`
+        : `${esc(cap(W.marks))} are more common <b>${esc(where)}</b> (${f} other ${esc(W.residues)}).`;
     };
     return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Key findings</h3><ol>${pick
       .map(
@@ -2939,9 +2942,9 @@
       ['m-controls', 'Controls', 1],
       ['m-data', 'Data', 1],
       ['m-sources', 'Sources', 1],
-      ['m-g3', 'The explorer', 0],
-      ['m-about', 'What this explorer is', 1],
-      ['m-made', 'How this explorer is made', 1],
+      ['m-g3', 'The site', 0],
+      ['m-about', 'About', 1],
+      ['m-made', 'Software and build', 1],
       ['m-cite', 'How to cite', 1],
       ['m-download', 'Download the data', 1],
       ['m-search', 'Search terms', 1],
@@ -3262,10 +3265,10 @@
       searchSection() +
       privacySection() +
       sourcesSection() +
-      (`<section id="m-made"><h3>How this explorer is made</h3><p>One file, <span class="mono">${esc(D.site.config)}</span>, ` +
-        `sets the modification, the sequences and regions, the questions, the colors and the pictures. ptmcontext ${esc(D.kit.version)} (commit ` +
-        `<span class="mono">${esc(shortCommit(D.kit.commit))}</span>) ran it on ${esc(hdate(RUN.written))}. The citation,` +
-        ` version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>`) +
+      (`<section id="m-made"><h3>Software and build</h3><p>The site file <span class="mono">${esc(D.site.config)}</span> ` +
+        `sets the modification, sequences, regions, questions, colors and pictures. It was built with ptmcontext ${esc(D.kit.version)} (commit ` +
+        `<span class="mono">${esc(shortCommit(D.kit.commit))}</span>) on ${esc(hdate(RUN.written))}. Citation, ` +
+        `version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>`) +
       (`<p>Every download includes its citation, data sources, versions, inputs and export date, printed under each ` +
         `figure and kept in the file (SVG metadata, PNG text fields, PDF properties, TSV # lines).</p></section>` +
         `</div>`)
@@ -3277,7 +3280,7 @@
   function controlsMethod() {
     const cs = D.controls || [];
     if (!cs.length)
-      return `<section id="m-controls"><h3>Controls</h3><p>No question on this explorer is repeated with a control.</p></section>`;
+      return `<section id="m-controls"><h3>Controls</h3><p>No question on this site is repeated with a control.</p></section>`;
     const one = (c) => {
       const n = c.count,
         groups = Object.entries(n?.groups || {}),

@@ -1580,7 +1580,7 @@
     };
     const uniRow = (row, types, fill, stroke, labOf, keyFill, filter = () => true) => {
       if (!uni) {
-        msg(row[1], row[3], ctx.uniFailed ? 'UniProt did not answer' : 'asking UniProt…');
+        msg(row[1], row[3], ctx.uniFailed ? 'UniProt did not answer' : 'Loading from UniProt…');
         return;
       }
       let all = (uni.features || []).filter((f) => types.includes(f.type) && filter(f));
@@ -2279,7 +2279,7 @@
         key(SW.tick(P.rtick), `Other ${W.residue.replace(/^an? /, '')} (not a ${W.mark})`);
       } else if (id === 'variants' || id === 'mutagen') {
         if (!uni) {
-          msg(row[1], row[3], ctx.uniFailed ? 'UniProt did not answer' : 'asking UniProt…');
+          msg(row[1], row[3], ctx.uniFailed ? 'UniProt did not answer' : 'Loading from UniProt…');
           continue;
         }
         const isMut = id === 'mutagen',
@@ -2350,7 +2350,7 @@
           key(isMut ? SW.diamond(P.ink, P.ink) : SW.tick(P.ink), `${isMut ? 'Mutagenesis' : 'Variant'} at a ${W.mark}`);
       } else if (id === 'uni_mark') {
         if (!uni) {
-          msg(row[1], row[3], ctx.uniFailed ? 'UniProt did not answer' : 'asking UniProt…');
+          msg(row[1], row[3], ctx.uniFailed ? 'UniProt did not answer' : 'Loading from UniProt…');
           continue;
         }
         const all = (uni.features || []).filter(ownPtm),
@@ -2379,7 +2379,7 @@
         key(SW.tick(P.own), `In UniProt only`);
       } else if (id === 'ptm') {
         if (!uni) {
-          msg(row[1], row[3], ctx.uniFailed ? 'UniProt did not answer' : 'asking UniProt…');
+          msg(row[1], row[3], ctx.uniFailed ? 'UniProt did not answer' : 'Loading from UniProt…');
           continue;
         }
         const all = (uni.features || []).filter(

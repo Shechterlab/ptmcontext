@@ -1096,7 +1096,7 @@
       K.preamble(
         `STRING partners of ${gene} (${c.acc})`,
         `the proteins STRING associates with ${gene}: ${OPT.net} network, score ${(OPT.conf / 1000).toFixed(1)} or more${c.st.ver ? ', v' + c.st.ver : ''}, retrieved ` +
-          `live on ${today()} (${CITE}; license CC BY 4.0). ` +
+          `on ${today()} (${CITE}; license CC BY 4.0). ` +
           (`Partners are matched to this dataset’s proteins by UniProt accession (isoforms by canonical accession); ${W.marks}_here counts their ${W.marks} in this ` +
             `site. A STRING association is to the whole protein.`)
       ) +
@@ -1704,7 +1704,7 @@
   (K.lightFolds ||= []).push((p, rec, fold) => ixFold(p, rec, fold));
   K.proteinFoldSections = [
     ...(K.proteinFoldSections || []),
-    ...(LN.length ? [['p-cc', 'Interaction evidence at a glance', 1]] : []),
+    ...(LN.length ? [['p-cc', 'Interaction evidence', 1]] : []),
     ...(IXP ? [['p-ix', 'Protein interactions', 1]] : []),
   ];
   (K.afterRender ||= []).push(() => {

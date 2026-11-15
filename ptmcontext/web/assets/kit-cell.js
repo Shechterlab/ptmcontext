@@ -609,7 +609,7 @@
     if (share == null) return 'too few proteins';
     const without = ts.every((t) => t.M - t.k < READ.min_group),
       withMark = ts.every((t) => t.k < READ.min_group);
-    return `too few ${without ? 'without one ' : withMark ? 'with one ' : 'proteins '}to compare (${pctText(share)} carry one)`;
+    return `too few ${without ? `without a ${W.mark} ` : withMark ? `with a ${W.mark} ` : 'proteins '}to compare (${pctText(share)} have one)`;
   }
   function rowSummary(L, row, scoped) {
     const all = L.cols.map((aid) => [aid, gridCell(aid, row.map[aid], scoped)]).filter(([, c]) => c),

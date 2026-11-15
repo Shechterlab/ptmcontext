@@ -926,8 +926,7 @@
     if (!lines.length) return '';
     return `<section class="sc-wr"><h4>${esc(WR.title || 'Writer and reader')}</h4><dl class="sc-kv">${lines.join('')}</dl>${
       WR.note
-        ? `<details ` +
-          `class="sc-note"><summary>How to read this</summary><p class="muted small">${esc(WR.note)}</p></details>`
+        ? `<details ` + `class="sc-note"><summary>Key</summary><p class="muted small">${esc(WR.note)}</p></details>`
         : ''
     }</section>`;
   }

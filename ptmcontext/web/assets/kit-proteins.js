@@ -570,7 +570,7 @@
         typeof K.show3d === 'function' ? '<button type="button" class="btn small" data-site-3d>Show in 3D</button>' : ''
       }<button type="button" ` +
         `class="btn small" data-site-close aria-label="Close">×</button></span></div>`) +
-      (`<p class="note small">Shown only: not one of the ${int(D.counts.marks)} ${esc(W.marks)} this explorer counts, ` +
+      (`<p class="note small">Shown for reference only: not one of the ${int(D.counts.marks)} ${esc(W.marks)} counted here, ` +
         `and in no count, chart or test.</p><dl class="sc-kv">${rows}</dl></section>`)
     );
   }
@@ -757,9 +757,9 @@
             ? uniShow.map(featLine).join('<br>')
             : '<span class="muted">no feature at this residue</span>') +
             (` <span class="muted">` +
-              `· <a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry#ptm_processing">UniProt ${esc(p.acc)}</a>, read ` +
-              `live</span>`)
-        : '<span class="muted">asking UniProt…</span>'
+              `· <a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry#ptm_processing">UniProt ${esc(p.acc)}</a>, when the ` +
+              `page opens</span>`)
+        : '<span class="muted">Loading from UniProt…</span>'
     );
     const citeRow =
       CC.cite?.attribute && SPECS[CC.cite.attribute] ? kv(esc(CL_WORDS.reported), K.card.reportedBy(c)) : '';
@@ -789,7 +789,7 @@
           ? uniVar.length
             ? uniVar.map(featLine).join('<br>')
             : '<span class="muted">none reported at this residue</span>'
-          : '<span class="muted">asking UniProt…</span>'
+          : '<span class="muted">Loading from UniProt…</span>'
       ) +
       ((CC.changes || []).length ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait) : '') +
       '</dl></section>';
@@ -1625,9 +1625,9 @@
     if (L.state === 'look') return `<p class="empty">Looking up ${esc(key)}…</p>`;
     if (L.state === 'none')
       return (
-        `<div class="empty"><p><b>No protein ${esc(key)} in this explorer.</b> Its proteins ` +
-        `are the ${esc(D.run.snapshot?.release || 'reference')} sequences; ${esc(key)} is not one of them, or ` +
-        `names a protein by another name.</p>` +
+        `<div class="empty"><p><b>No protein ${esc(key)} here.</b> Proteins are matched to ` +
+        `${esc(D.run.snapshot?.release || 'the reference')} sequences; ${esc(key)} is not among them, or is a name ` +
+        `that could not be matched.</p>` +
         (`${
           ACC_RE.test(key)
             ? `<p><a class="btn small" href="https://www.uniprot.org/uniprotkb/${esc(key)}/entry" target="_blank" ` +
@@ -1820,7 +1820,7 @@
       ['p-seq', 'Sequence', 1],
       ...(K.s3d
         ? [
-            ['g-live', 'Live sources', 0],
+            ['g-live', 'Loaded when the page opens', 0],
             ['p-struct', '3D structure', 1],
           ]
         : []),
@@ -1887,9 +1887,7 @@
           .filter((x) => x.r)
           .sort((x, y) => RANK[x.r.dir] - RANK[y.r.dir] || x.r.q - y.r.q);
         if (!mine.length)
-          return (
-            `<div class="kind"><h4>${esc(a.title)}</h4><p class="muted">In none of its tested ` + `sets.</p></div>`
-          );
+          return `<div class="kind"><h4>${esc(a.title)}</h4><p class="muted">In none of the sets tested.</p></div>`;
         const shown = PV.open['kinds:' + a.id] ? mine : mine.slice(0, 10);
         return (
           `<div class="kind"><h4>${esc(a.title)} <span class="muted">${int(mine.length)} set${mine.length === 1 ? '' : 's'}</span></h4>` +
@@ -1942,8 +1940,8 @@
       : '';
     // the sets' results are about every ${W.mark} in the set, not about this protein alone: their own heading says so
     const across =
-      `<h3 class="kinds-head">Across all ${esc(W.marks)}</h3><p class="muted small kinds-note">The sets this protein belongs to, ` +
-      `each with the dataset-wide fold for all ${esc(W.marks)} in that set. These are results for the whole set, not facts about ${esc(
+      `<h3 class="kinds-head">Across all ${esc(W.marks)}</h3><p class="muted small kinds-note">Each set this protein is in, ` +
+      `with the fold for all ${esc(W.marks)} in that set. The folds describe the whole set, not ${esc(
         p.gene || p.acc
       )}.</p>`;
     return covLine + across + `<div class="kinds">${blocks}</div>` + nhKey;
@@ -2037,7 +2035,7 @@
   }
   function sequenceHtml(p, rec, sel) {
     const seq = rec.seq || '';
-    if (!seq) return `<p class="muted">No sequence in this copy of the website.</p>`;
+    if (!seq) return `<p class="muted">No sequence is stored for this protein.</p>`;
     const at = new Map(rec.marks.map((m) => [m[0], m]));
     const res = (i) => {
       const m = at.get(i),
@@ -2167,8 +2165,8 @@
         'fn',
         texts.length
           ? `<p class="fn-text${PV.fn ? ' open' : ''}">${texts.map(linkPm).join(' ')}</p><p class="src">` +
-              `Function, from <a href="https://www.uniprot.org/uniprotkb/${esc(acc)}/entry#function">UniProt ${esc(acc)}</a>, read ` +
-              `live · <button type="button" class="linkish" data-fn-more>${PV.fn ? 'Less' : 'More'}</button></p>`
+              `Function, from <a href="https://www.uniprot.org/uniprotkb/${esc(acc)}/entry#function">UniProt ${esc(acc)}</a> when the ` +
+              `page opens · <button type="button" class="linkish" data-fn-more>${PV.fn ? 'Less' : 'More'}</button></p>`
           : '<p class="muted">UniProt gives no function text for this entry.</p>'
       );
       if (first) {

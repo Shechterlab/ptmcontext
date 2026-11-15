@@ -232,14 +232,14 @@
       sec(
         'h-terms',
         `<dl class="gloss-list">` +
-          term('Fold', 'How many times more often than in the comparison group. 1× means no difference.') +
+          term('Fold', 'The share in the class divided by the share in the comparison group. 1× means no difference.') +
           term(
             'OR (odds ratio)',
             'How many times higher the odds are inside the class than outside it. 2× means twice the odds.'
           ) +
           term(
             'q',
-            'The p value corrected for the many tests made on this explorer. A difference counts at q ≤ 0.05 and a fold of at least 1.1×.'
+            'The p value adjusted for the many tests run (Benjamini–Hochberg false discovery rate). A difference counts at q ≤ 0.05 and a fold of at least 1.1×.'
           ) +
           term(
             'h',
@@ -250,6 +250,12 @@
             `Each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein.`
           ) +
           term('Across all proteins', `All the ${esc(W.residues)} of all the proteins are compared as one group.`) +
+          (SETQ
+            ? term(
+                'Abundance deciles',
+                'Proteins sorted by measured abundance into ten equal groups. The test compares proteins only within a group, so abundant proteins do not drive the result.'
+              )
+            : '') +
           term(
             'Fails control',
             'The result disappears or reverses when the question is asked again with one change, such as only high-confidence sites. The badge names the control.'
@@ -258,6 +264,9 @@
             'Controls',
             `The same question repeated with one change each. ${mlink('controls', 'Methods › Controls')} lists them.`
           ) +
+          Object.entries(D.front?.glossary || {})
+            .map(([t, d]) => term(esc(t), esc(cap(d))))
+            .join('') +
           `</dl><p>More: ${mlink('', 'Methods')} · ${mlink('download', 'Download')} · ${mlink('cite', 'Cite')} · ` +
           `<button type="button" class="linkish" data-keys-open>Keyboard shortcuts</button></p>`
       ) +
@@ -268,7 +277,7 @@
   (K.methodParts ||= []).push(() => {
     const min = K.sel?.MIN;
     return (
-      `<section id="m-about"><h3>What this explorer is</h3><p>${esc(whatText('on the Overview'))} It holds ${int(D.counts.marks)} ${esc(W.marks)} on ` +
+      `<section id="m-about"><h3>About</h3><p>${esc(whatText('on the Overview'))} It holds ${int(D.counts.marks)} ${esc(W.marks)} on ` +
       `${int(D.counts.proteins)} proteins and ${int(D.analyses.length)} questions.</p></section>` +
       `<section id="m-selection"><h3>Selections and Compared with</h3><p>A search or filter makes a selection, shown in the bar under ` +
       `the search box, with × on each term, Save (kept in this browser), Copy link and Clear all. Every page then shows the selection, ` +

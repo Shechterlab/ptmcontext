@@ -2624,7 +2624,7 @@
       '7.2M11.3 17l5.2-7.3"/></svg>';
     K.sections[pg.id] = () => [
       ['view', pg.tab, 1, K.link(pg.id)],
-      ...(pg.overview ? [['ixov', pg.overview.title || 'At a glance', 1, K.link(pg.id, 'overview')]] : []),
+      ...(pg.overview ? [['ixov', pg.overview.title || 'Summary', 1, K.link(pg.id, 'overview')]] : []),
       ...pg.groups.flatMap((g) => [
         [`ixg-${g.name}`, g.name, 0],
         ...g.sections.map((s) => [`ix-${s.id}`, s.title, 1, K.link(pg.id, s.id)]),
