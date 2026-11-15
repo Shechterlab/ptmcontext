@@ -235,10 +235,10 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   0.8; red above, slate below), which does not grow with the part's size; the label reads "96% · h +1.1". **A fill is
   evidence**: Benjamini–Hochberg q ≤ 0.05 across the parts shown; a part that is not significant is hatched. The test of a
   map's compartment is the binomial z of its share, with the standard error widened by √φ where the map has 5 or more
-  compartments and φ > 1 (`dispersion`, default true; φ is the Pearson χ² of the Winsorised z, 10% per tail, of the
+  compartments and φ > 1 (`dispersion`, default true, set false in the four sites: compartments are not expected to be alike, so the adjustment answers a different question; φ is the Pearson χ² of the Winsorised z, 10% per tail, of the
   map's compartments, Spiegelhalter, Stat Med 2005;24:1185); with `dispersion: false`, Fisher's exact test of the part's
-  proteins against the other mapped proteins; with `abundance: true`, the test within abundance deciles
-  (Mantel–Haenszel) for the maps that have it. A part takes the median p of its maps. Hover: percent, percentage-point
+  proteins against the other mapped proteins; with `abundance: true` (set in the four sites), the test within abundance deciles
+  (Mantel–Haenszel) for the maps that have it, Fisher's exact test for the others. A part takes the median p of its maps. Hover: percent, percentage-point
   difference, h, odds ratio and its interval, z, φ, q and n. The cell page adds a funnel plot of one map (the share of
   each compartment against its size, the overall share, 95% and 99.8% limits, widened by √φ when on) with its table. With
   a selection, the selection's share in each part is set against its overall share the same way. The table has `h`,

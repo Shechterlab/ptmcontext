@@ -86,7 +86,7 @@
     const key = aid + '|' + (scoped ? selId() : 0);
     if (PHI.has(key)) return PHI.get(key);
     let phi = 1;
-    if (DISP && PCTD[aid]) {
+    if (PCTD[aid]) {
       const zs = [];
       for (const cat of Object.keys(PCTD[aid].sets)) {
         const c = pctCell(aid, cat, scoped);
@@ -237,6 +237,7 @@
       '.cd-name{text-decoration:underline}',
     'svg .cg-row:hover .cg-hit,svg .cg-row.on .cg-hit,svg .cb-row:hover .cg-hit{fill:var(--accent);fill-opacity:.08}',
     '.cell-svg.cell-funnel{max-width:760px;min-width:560px}.cf-l95{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:4 3}.cf-l998{fill:none;stroke:var(--ink-2);stroke-width:1.2}',
+    '.cf-w95{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:1 3;opacity:.8}.cf-w998{fill:none;stroke:var(--ink-2);stroke-width:1;stroke-dasharray:1 3;opacity:.8}',
     '.cf-ref{stroke:var(--ink);stroke-width:1.4}.cf-dot{stroke:var(--ink);stroke-width:1}.cf-dot.cf-ns{fill:var(--surface);stroke:var(--muted)}.cf-t{font-size:11px;fill:var(--ink)}.cf-ax{font-size:11px;fill:var(--muted)}',
     '.cb-grid{stroke:var(--line-strong);stroke-dasharray:2 ' +
       '3}.cb-one{stroke:var(--ink-2)}.cb-bar.more{fill:var(--more)}.cb-bar.less{fill:var(--less)}.cb-bar.ns{fill:var(--muted)}',
@@ -749,10 +750,23 @@
   // what the evidence rests on, in words
   const evidenceWords = () =>
     ABUND
-      ? 'the odds ratio within abundance deciles (Mantel–Haenszel) where a map has it'
+      ? 'the odds ratio within abundance deciles (Mantel–Haenszel), Fisher’s exact test where a map has no abundance strata'
       : DISP
         ? 'the binomial z, its standard error widened by √φ where the compartments of a map vary more than chance (Spiegelhalter 2005)'
         : 'Fisher’s exact test of the part’s proteins against the other mapped proteins';
+  // the choice, in one sentence for the Method section
+  const evidenceChoice = () =>
+    `The average view tests each part against the other mapped proteins ${
+      ABUND
+        ? 'within abundance deciles (Mantel–Haenszel), the test of the fold view, and by Fisher’s exact test where a map has no abundance strata'
+        : DISP
+          ? 'by the binomial z with its standard error widened by √φ'
+          : 'by Fisher’s exact test'
+    }, with Benjamini–Hochberg q across the parts shown; the overdispersion adjustment across compartments (φ, Spiegelhalter 2005) is ${
+      DISP
+        ? 'on'
+        : 'off, because it asks whether a compartment is unusual among compartments that are expected to be alike, which they are not by design, while abundance deciles handle detectability, the confounder that matters; φ is still given on hover'
+    }.`;
   function pctScale(P, within, scoped, view) {
     if (view === 'z') {
       const ref = pctRef(scoped),
@@ -1733,13 +1747,14 @@
     if (!rows.length) return { g: '', W: Wd, H: 60, aria: 'No compartments' };
     const pa = rows[0].c.ref,
       phi = rows[0].s.phi,
-      se = (n) => Math.sqrt((phi * pa * (1 - pa)) / n),
+      se = (n, f = 1) => Math.sqrt((f * pa * (1 - pa)) / n),
+      wide = phi > 1 ? phi : 1,
       ns = rows.map((r) => r.c.M),
       nmin = Math.min(...ns) / 1.3,
       nmax = Math.max(...ns) * 1.3,
       X = (n) => ML + ((Math.log(n) - Math.log(nmin)) / (Math.log(nmax) - Math.log(nmin))) * (Wd - ML - MR),
-      ylo = Math.max(0, Math.min(...rows.map((r) => r.c.share), pa - 3.09 * se(nmin)) - 0.02),
-      yhi = Math.min(1, Math.max(...rows.map((r) => r.c.share), pa + 3.09 * se(nmin)) + 0.02),
+      ylo = Math.max(0, Math.min(...rows.map((r) => r.c.share), pa - 3.09 * se(nmin, wide)) - 0.02),
+      yhi = Math.min(1, Math.max(...rows.map((r) => r.c.share), pa + 3.09 * se(nmin, wide)) + 0.02),
       Y = (v) => MT + ((yhi - v) / (yhi - ylo)) * (H - MT - MB),
       clampY = (v) => Math.min(yhi, Math.max(ylo, v));
     let g = '';
@@ -1752,21 +1767,29 @@
         if (n >= nmin && n <= nmax && (base === 1 || nmax / nmin < 40))
           g += `<line class="cb-grid" x1="${X(n).toFixed(1)}" x2="${X(n).toFixed(1)}" y1="${MT}" y2="${H - MB}"/><text class="cf-ax" x="${X(n).toFixed(1)}" y="${H - MB + 15}" text-anchor="middle">${int(n)}</text>`;
       }
-    const curve = (zz, sign) => {
+    const curve = (zz, sign, f = 1) => {
       const pts = [];
       for (let i = 0; i <= 80; i++) {
         const n = Math.exp(Math.log(nmin) + (i / 80) * (Math.log(nmax) - Math.log(nmin)));
-        pts.push(`${X(n).toFixed(1)},${Y(clampY(pa + sign * zz * se(n))).toFixed(1)}`);
+        pts.push(`${X(n).toFixed(1)},${Y(clampY(pa + sign * zz * se(n, f))).toFixed(1)}`);
       }
       return pts.join(' ');
     };
     g +=
       `<polyline class="cf-l95" points="${curve(1.96, 1)}"/><polyline class="cf-l95" points="${curve(1.96, -1)}"/>` +
       `<polyline class="cf-l998" points="${curve(3.09, 1)}"/><polyline class="cf-l998" points="${curve(3.09, -1)}"/>` +
+      (wide > 1
+        ? `<polyline class="cf-w95" points="${curve(1.96, 1, wide)}"/><polyline class="cf-w95" points="${curve(1.96, -1, wide)}"/>` +
+          `<polyline class="cf-w998" points="${curve(3.09, 1, wide)}"/><polyline class="cf-w998" points="${curve(3.09, -1, wide)}"/>`
+        : '') +
       `<line class="cf-ref" x1="${ML}" x2="${Wd - MR}" y1="${Y(pa).toFixed(1)}" y2="${Y(pa).toFixed(1)}"/>` +
       `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(pa) + 4).toFixed(1)}">overall ${esc(pctText(pa))}</text>` +
       `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 1.96 * se(nmax))) + 4).toFixed(1)}">95% limit</text>` +
-      `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 3.09 * se(nmax))) + 4).toFixed(1)}">99.8% limit</text>`;
+      `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 3.09 * se(nmax))) + 4).toFixed(1)}">99.8% limit</text>` +
+      (wide > 1
+        ? `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 3.09 * se(nmax, wide))) + 4).toFixed(1)}">99.8% × √φ</text>` +
+          `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 1.96 * se(nmax, wide))) + 4).toFixed(1)}">95% × √φ</text>`
+        : '');
     // points, the most different first, each named where there is room
     const placed = [],
       hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h,
@@ -1815,8 +1838,14 @@
     };
   }
   const funnelNote = () =>
-    `Each point is a compartment of the map; the line is the share among all the proteins the map places, and the curves its 95% and 99.8% limits${
-      DISP ? ', widened by √φ (φ ' + f2(phiOf(UI.map, scopedNow())) + ')' : ''
+    `Each point is a compartment of the map; the line is the share among all the proteins the map places, and the solid and dashed curves its 99.8% and 95% limits${
+      phiOf(UI.map, scopedNow()) > 1
+        ? '; the lighter curves are the same limits widened by √φ (φ ' +
+          f2(phiOf(UI.map, scopedNow())) +
+          ', ' +
+          (DISP ? 'applied' : 'not applied') +
+          ' to the fill)'
+        : ''
     }. Filled points differ at q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the compartments), colored by h.`;
   function funnelTsv(aid, scoped) {
     const rows = funnelRows(aid, scoped);
@@ -3413,7 +3442,7 @@
           .map((s) => `<i class="${s === 'ns' ? 'f0' : s}"></i>`)
           .join('')}<b class="pk-ref" style="left:50%"></b></span><span class="pk-hi">h +1</span>` +
         `<span class="cell-key"><i class="cg-k hx"></i>hatched: not significant. Filled where q ≤ ${Q_MAX}, Benjamini–Hochberg across the parts shown (${esc(evidenceWords())})${
-          DISP && phi > 1 ? `; φ = ${esc(f2(phi))}` : ''
+          phi > 1 ? `; φ = ${esc(f2(phi))}${DISP ? '' : ' (not applied)'}` : ''
         }</span>` +
         (ref != null ? `<span class="cell-key"><i class="pk-tick"></i>${esc(pctRefWords(scoped, ref))}</span>` : '') +
         `<span class="cell-key"><i class="cg-k na"></i> not measured</span>${
@@ -3689,7 +3718,7 @@
           : ''
       }. ${esc(testWords('fold'))}</p>` +
       (HAS_PCT
-        ? `<p>The percent view colors each part by the share of its proteins that carry a ${esc(W.mark)}. ${esc(testWords('percent'))}</p>`
+        ? `<p>The percent view colors each part by the share of its proteins that carry a ${esc(W.mark)}. ${esc(testWords('percent'))}</p><p>${esc(evidenceChoice())}</p>`
         : '') +
       (`<p>Each grid row is mapped to a compartment of each map and to the part of the ` +
         `drawings it colors. A selection is tested again in the browser, map by map, the same way${
