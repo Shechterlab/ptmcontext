@@ -121,7 +121,7 @@ def _both(toy):
 
 def test_a_tile_row_opens_a_popover_and_has_no_buttons_or_text_lines():
     """The tile is a small forest plot: no per-row buttons, test line, count column or Select cue; a row opens a popover
-    (Show these..., Overlap with..., Open question) from a click or Enter, and Escape closes it."""
+    (Show these..., Compare sets with..., Open question) from a click or Enter, and Escape closes it."""
     tile = (ROOT / 'ptmcontext' / 'web' / 'assets' / 'kit-tile.js').read_text()
     css = (ROOT / 'ptmcontext' / 'web' / 'assets' / 'kit.css').read_text()
     assert 'fr-sub' not in tile and 'fr-n"' not in tile and 'data-pop=' in tile
@@ -129,7 +129,7 @@ def test_a_tile_row_opens_a_popover_and_has_no_buttons_or_text_lines():
         'ov-cmp' not in KIT
         and 'pwbtn-home' not in (ROOT / 'ptmcontext' / 'web' / 'assets' / 'kit-pathway.js').read_text()
     )
-    for word in ("'Open question'", "'Overlap with…'", 'Show these ${esc(d.noun)}', "e.key === 'Escape' && POP"):
+    for word in ("'Open question'", "'Compare sets with…'", 'Show these ${esc(d.noun)}', "e.key === 'Escape' && POP"):
         assert word in KIT
     assert '.tile .fr-row.pick::after' in css and '.rowpop' in css
     assert 'OV.rows || 5' in KIT

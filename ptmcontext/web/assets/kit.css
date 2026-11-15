@@ -11540,3 +11540,42 @@ html.rail-lock body {
     min-height: 44px;
   }
 }
+
+.dock.tight .dock-sel-p,
+.dock.tight .dock-sel-w {
+  display: none;
+}
+.dock.tight .dock-search input {
+  width: 7rem;
+}
+
+/* the protein page's cell card: one row of controls, one Download; a Method link is small text, not a button */
+.cell-onebar {
+  grid-column: 1 / -1;
+  flex: 1 0 100%;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  margin: 0 0 0.6rem;
+}
+.cell-onebar .exp {
+  margin-left: auto;
+}
+.cell-ds {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+.exp > a.exp-btn {
+  border: 0;
+  background: none;
+  padding: 0 0.3rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: 0;
+}

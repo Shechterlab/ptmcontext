@@ -217,6 +217,7 @@
     '.cg-c.u0{fill:var(--t-up-0)}.cg-c.u1{fill:var(--t-up-1)}.cg-c.u2{fill:var(--t-up-2)}.cg-c.u3{fill:var(--t-up-3)}',
     '.cg-c.d0{fill:var(--t-down-0)}.cg-c.d1{fill:var(--t-down-1)}.cg-c.d2{fill:var(--t-down-2)}.cg-c.d3{fill:var(--t-down-3)}',
     '.cg-c.ns{fill:var(--t-mid)}.cg-c.na{fill:none;stroke:var(--line-strong);stroke-dasharray:2 3}',
+    '.cg-c.mine{stroke:var(--ink);stroke-opacity:1;stroke-width:3.5;stroke-linejoin:round}.cg-line.mine{stroke:var(--ink)}',
     '.cg-c.sel{fill:var(--surface);stroke:var(--ink);stroke-opacity:1;stroke-width:4;stroke-linejoin:round}.cg-line.sel{stroke:var(--ink)}',
     '.cg-k.sel{background:var(--surface);border:3px solid var(--ink)}.cp-row .sel-pill{margin-left:auto}.kd.sel{background:var(--surface);border:2.4px solid var(--ink);box-sizing:border-box}',
     '.cg-line.u0{stroke:var(--t-up-0)}.cg-line.u1{stroke:var(--t-up-1)}.cg-line.u2{stroke:var(--t-up-2)}.cg-line.u3{stroke:var(--t-up-3)}',
@@ -884,14 +885,35 @@
       ONE = null;
     }
   };
+  // the protein page card's choices: one map or all, and the whole dataset shaded with this protein's compartments outlined
+  const ONEUI = { map: 'all', ds: false };
   function oneParts() {
+    const f = oneFound();
+    if (!ONEUI.ds) return f;
+    // the site-wide fold of every compartment (the default view), the protein's compartments outlined on top
+    const keep = ONE;
+    ONE = null;
+    let b;
+    try {
+      b = parts(false, 'fold');
+    } finally {
+      ONE = keep;
+    }
+    Object.entries(b.P).forEach(([k, q]) => {
+      q.ds = true;
+      q.mine = !!f.P[k]?.found;
+    });
+    return b;
+  }
+  function oneFound() {
     const P = {},
       within = {};
     for (const L of [LAYERS.part, LAYERS.region]) {
+      const cols = ONEUI.map === 'all' ? L.cols : L.cols.filter((aid) => aid === ONEUI.map);
       L.groups.forEach(([, rows], gi) =>
         rows.forEach((row, ri) => {
-          const hit = L.cols.filter((aid) => row.map[aid] && K.sel.setHas(aid, row.map[aid], ONE.i)),
-            tested = L.cols.some((aid) => row.map[aid]);
+          const hit = cols.filter((aid) => row.map[aid] && K.sel.setHas(aid, row.map[aid], ONE.i)),
+            tested = cols.some((aid) => row.map[aid]);
           // every compartment is named: found (colored, with the number of studies), not found (gray) or not tested (no map has it)
           if (row.part && !(P[row.part] && P[row.part].found))
             P[row.part] = {
@@ -946,32 +968,67 @@
   function oneDrawings(p) {
     if (!K.sel.pdata(p.i) || !DRAWINGS.length) return '';
     TIPS = [];
+    const who1 = p.gene || p.acc;
     if (DRAWINGS.length > 1) {
       FIGS['p-both'] = bothOf('p-');
-      FIGS['p-both'].title = () => `${p.gene || p.acc}: ${and(DRAWINGS.map((d) => 'the ' + d.drawing))}`;
+      FIGS['p-both'].title = () => `${who1}: ${and(DRAWINGS.map((d) => 'the ' + d.drawing))}`;
     }
     const html = DRAWINGS.map((d) => {
       const k = 'p-' + d.drawing;
       FIGS[k] = {
-        title: () => `${p.gene || p.acc}: the ${d.drawing}`,
+        title: () => `${who1}: the ${d.drawing}`,
         sub: () =>
-          `Every compartment is named: colored where a study found ${p.gene || p.acc}, gray where none did, ` +
-          `outlined where no study tested it.`,
+          ONEUI.ds
+            ? `Every compartment is shaded by the fold across the dataset; the compartments where a study found ${who1} are outlined.`
+            : `Every compartment is named: colored where a study found ${who1}, gray where none did, outlined where no study tested it.`,
         make: () => withOne(p, () => DRAW[d.drawing](false)),
         tsv: oneTsv(p),
         zoom: d.drawing,
         one: { i: p.i },
         note: () =>
-          'Colored: found here, with the number of studies. Gray: not found here. Dashed outline: not tested.',
-        legend: () => [
-          [toneOf('up-2'), toneOf('up-3'), 'found here'],
-          [toneOf('mid'), '#8a96a0', 'not found here'],
-          ['#ffffff', '#8a96a0', 'not tested'],
-        ],
+          ONEUI.ds
+            ? 'Shaded: the fold of the compartment across the dataset. Black outline: found here by at least one study.'
+            : 'Colored: found here, with the number of studies. Gray: not found here. Dashed outline: not tested.',
+        legend: () =>
+          ONEUI.ds
+            ? [...colourLegend(true).slice(0, 4), ['#ffffff', '#111827', `outlined: found in ${who1}`]]
+            : [
+                [toneOf('up-2'), toneOf('up-3'), 'found here'],
+                [toneOf('mid'), '#8a96a0', 'not found here'],
+                ['#ffffff', '#8a96a0', 'not tested'],
+              ],
       };
-      return block(k, `The ${d.drawing}`, 'cell-fig cell-onep');
+      return block(k, `The ${d.drawing}`, 'cell-fig cell-onep', false);
     }).join('');
-    return html;
+    // one row of controls and one Download for the card: the map (all, or one), the dataset's shading, and what a download holds
+    const ms = oneMaps(p) || [],
+      first = DRAWINGS.length > 1 ? 'p-both' : 'p-' + DRAWINGS[0].drawing,
+      inc = DRAWINGS.length > 1 ? [['p-both', 'Both'], ...DRAWINGS.map((d) => ['p-' + d.drawing, cap(d.drawing)])] : [];
+    const menu = K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', `the maps of ${who1}`, ID)
+      .replace(/data-cell-exp="(\w+)"/g, `data-cell-exp="$1" data-cell-fig="${first}"`)
+      .replace(
+        /(<div class="xm-pop"[^>]*>)/,
+        '$1' +
+          (inc.length
+            ? `<div class="xm-sz" role="group" aria-label="Include"><span class="xm-h">Include</span>${inc
+                .map(
+                  ([k, t], i) =>
+                    `<button type="button" class="xm-p" data-cell-inc="${k}" aria-pressed="${i === 0}">${esc(t)}</button>`
+                )
+                .join('')}</div>`
+            : '')
+      );
+    const bar =
+      `<div class="cell-onebar"><span class="flabel">Map</span><span class="seg cell-maps" role="group" aria-label="Map">` +
+      [['all', 'All maps'], ...ms.map((m) => [m.aid, MAPS.find((x) => x.analysis === m.aid)?.short || m.name])]
+        .map(
+          ([k, t]) =>
+            `<button type="button" data-cellone="${esc(k)}" aria-pressed="${k === ONEUI.map}">${esc(t)}</button>`
+        )
+        .join('') +
+      `</span><label class="cell-ds"><input type="checkbox" data-cellone-ds${ONEUI.ds ? ' checked' : ''}> Show the dataset</label>` +
+      `${menu}</div>`;
+    return bar + html;
   }
   // a phone's drawings of one protein: the fit-width drawings without their side labels (the page lists the parts instead)
   const oneNarrowHtml = (p) =>
@@ -997,8 +1054,9 @@
     const { P, within } = parts(scoped, view);
     const own = (k) => (P[k] ? k : within[k] && P[within[k]] ? within[k] : null);
     const tn = (k) => (own(k) ? P[own(k)].tone : 'na');
-    const fill = (k) => 'cg-c ' + tn(k),
-      line = (k) => 'cg-line ' + tn(k);
+    const mine = (k) => (own(k) && P[own(k)].mine ? ' mine' : '');
+    const fill = (k) => 'cg-c ' + tn(k) + mine(k),
+      line = (k) => 'cg-line ' + tn(k) + mine(k);
     const sig = (p) => p.tone[0] === 'u' || p.tone[0] === 'd';
     const by = () => ((view ? view !== 'fold' : pctOn()) ? pctBy(scoped) : `the fold of ${who(scoped)}`);
     // dup: the drawing's label repeats the part's shape; it keeps the click but is hidden from keyboard and screen reader
@@ -1010,7 +1068,11 @@
         return (
           tipAttr(
             `<b>${esc(name || rowName(p.row))}</b>: ${
-              p.found ? 'found here by ' + and(p.cells.map(([aid]) => esc(DS(aid).name))) : esc(p.value.toLowerCase())
+              p.ds
+                ? `${esc(p.value)} across the dataset${p.mine ? '; found here' : ''}`
+                : p.found
+                  ? 'found here by ' + and(p.cells.map(([aid]) => esc(DS(aid).name)))
+                  : esc(p.value.toLowerCase())
             }`
           ) + ` data-cell-zpart="${esc(k)}"`
         );
@@ -2601,7 +2663,7 @@
           .replace(/(<div class="xm-items"[^>]*>)/, '$1' + bothButtons(both))
       : bar;
   };
-  const block = (k, head, cls) =>
+  const block = (k, head, cls, withBar = true) =>
     `<div class="cell-block ${cls}" id="cell-${k}"><div class="fig-head"><span ` +
     `class="flabel">${esc(head)}</span>${
       FIGS[k].zoom
@@ -2611,7 +2673,7 @@
           } title="Open the ${esc(FIGS[k].zoom)} large, to ` +
           `read its labels, zoom and move">Enlarge</button>`
         : ''
-    }${dualBar(K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', head, ID), k)}</div>` +
+    }${withBar ? dualBar(K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', head, ID), k) : ''}</div>` +
     `<div class="cell-scroll">${svgOf(FIGS[k].make(), 'cell-svg cell-' + k)}</div></div>`;
 
   // ---- the tile and the page --------------------------------------------------------------------------------------------
@@ -3414,8 +3476,8 @@
       ...(hasSel() ? [['#ffffff', '#111827', 'outlined: your selection']] : []),
     ];
   };
-  const colourLegend = () => {
-    if (pctOn()) return pctLegend();
+  const colourLegend = (fold) => {
+    if (!fold && pctOn()) return pctLegend();
     const t = Object.fromEntries(TONES.light),
       plain = (s) => {
         const b = document.createElement('div');
@@ -3759,6 +3821,28 @@
         TIPS = [];
         K.render();
         if (ZD?.open && ZV) zoomView(ZV.drawing, ZV.one);
+      },
+    ],
+    [
+      '[data-cellone]',
+      (el) => {
+        ONEUI.map = el.dataset.cellone;
+        K.render();
+      },
+    ],
+    [
+      '[data-cellone-ds]',
+      (el) => {
+        ONEUI.ds = el.checked;
+        K.render();
+      },
+    ],
+    [
+      '[data-cell-inc]',
+      (el) => {
+        const box = el.closest('.exp');
+        box?.querySelectorAll('[data-cell-inc]').forEach((b) => b.setAttribute('aria-pressed', String(b === el)));
+        box?.querySelectorAll('[data-cell-exp]').forEach((b) => (b.dataset.cellFig = el.dataset.cellInc));
       },
     ],
     [

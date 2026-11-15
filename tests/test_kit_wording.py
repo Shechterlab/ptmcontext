@@ -57,7 +57,8 @@ def test_the_test_switch_reads_test_within_each_protein_or_across_all_proteins_w
     kit = (ASSETS / 'kit.js').read_text()
     ix = (ASSETS / 'kit-interactions.js').read_text()
     assert "'within each protein'," in kit and "'across all proteins'," in kit
-    assert 'Compares sites with the other candidate' in kit and '(Mantel–Haenszel), or with proteins of ' in kit
-    assert 'Pools all candidate' in kit and 'Fisher’s exact test, crude' in kit
+    # in plain words: what each does, and which tiles it changes (the ones marked ⇄)
+    assert 'only with the other ${W.residues} of its own protein' in kit and 'Changes the tiles marked ⇄' in kit
+    assert 'Puts all the ${W.residues} of all the proteins in one group' in kit
     assert kit.count('<span class="flabel">Test:</span>') == 2 and ix.count('<span class="flabel">Test:</span>') == 1
     assert "'Within each protein'," not in kit and 'K.BTN[x][1]' in ix

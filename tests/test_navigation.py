@@ -215,3 +215,15 @@ def test_a_toy_site_in_a_browser(tmp_path):
     assert out['privacy'] == 'Cite'
     assert out['compare'] == '#overview'  # the toy has no sets to compare: the address falls back to the Overview
     assert out['help'] == ['Searching', 'Filters', 'Reading a figure', 'Badges and terms']
+
+
+def test_a_card_has_one_download_and_the_protein_page_cell_card_has_one_row_of_controls():
+    cell = (ASSETS / 'kit-cell.js').read_text()
+    # the protein page's card: one Download for the card (what it holds is chosen inside it), not one per drawing
+    assert "block(k, `The ${d.drawing}`, 'cell-fig cell-onep', false)" in cell
+    assert 'data-cell-inc="${k}"' in cell and 'aria-label="Include"' in cell
+    # its controls: the map (all or one) and the dataset's shading with the protein's compartments outlined
+    assert 'data-cellone="${esc(k)}"' in cell and 'data-cellone-ds' in cell and "parts(false, 'fold')" in cell
+    assert '.cg-c.mine{' in cell and "ONEUI.map === 'all'" in cell
+    # no row of format buttons anywhere: every caller goes through the one menu
+    assert 'data-cell-exp="${k}" data-cell-fig="${fig}"' in cell  # the Both entries sit inside the menu's list

@@ -5438,9 +5438,12 @@
     more?.setAttribute('aria-expanded', 'false');
     tabs.forEach((t) => (t.hidden = false));
     if (more) more.hidden = true;
-    d.classList.remove('sw-short');
+    d.classList.remove('sw-short', 'tight');
     const over = () => box.scrollWidth > box.clientWidth + 1;
     if (!over() || !more) return;
+    // first the selection's words and the search box give room, then the switcher gives up its site name
+    d.classList.add('tight');
+    if (!over()) return;
     d.classList.add('sw-short');
     if (!over()) return;
     more.hidden = false;
