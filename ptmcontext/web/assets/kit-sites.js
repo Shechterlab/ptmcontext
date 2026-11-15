@@ -709,7 +709,7 @@
       (`<table class="tbl stackable sites-tbl"><thead><tr>${cols
         .map(
           (c) =>
-            `<th class="${esc(c.cls || '')}${c.hide ? ' hide-' + esc(c.hide) : ''}" data-ssort="${esc(c.id)}" tabindex="0"${sorted(c.id)}${
+            `<th scope="col" class="${esc(c.cls || '')}${c.hide ? ' hide-' + esc(c.hide) : ''}" data-ssort="${esc(c.id)}" tabindex="0"${sorted(c.id)}${
               c.help || (c.attribute && SPECS[c.attribute]?.help)
                 ? ` title="${esc(c.help || SPECS[c.attribute].help)}"`
                 : ''

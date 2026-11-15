@@ -362,13 +362,13 @@ def near_marks(params: dict, aid: str) -> Layer:
     if window == 0:  # the residue itself carries the mark
         labels = {'near': f'Also has a {noun}', 'none': f'No {noun}'}
         helps = {
-            'near': f'The residue itself is also in the {mid} table (context marks)',
-            'none': f'The residue is not in the {mid} table, or the protein has none',
+            'near': f'The residue itself also carries a {noun}',
+            'none': f'The residue carries no {noun}, or the protein has none',
         }
     else:
         labels = {'near': f'A {noun} within ±{window}', 'none': f'No {noun} within ±{window}'}
         helps = {
-            'near': f'At least one {noun} (context marks: {mid}) within {window} residues on either side',
+            'near': f'At least one {noun} within {window} residues on either side',
             'none': f'No {noun} within {window} residues on either side, or the protein has none',
         }
     labels.update(params.get('labels', {}))

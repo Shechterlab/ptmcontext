@@ -147,11 +147,18 @@
   const BTN = {
     mantel_haenszel: [
       'within each protein',
-      `Compares sites with the other candidate ${W.residues} of the same proteins (Mantel–Haenszel), or with proteins of ` +
-        `similar abundance for protein-level questions.`,
+      `Compares each ${W.mark} only with the other ${W.residues} of its own protein, so a protein with many sites does not ` +
+        `decide the result. Changes the tiles marked ⇄ (where ${W.marks} lie); questions about protein classes keep their test.`,
     ],
-    fisher: ['across all proteins', `Pools all candidate ${W.residues} of all proteins (Fisher’s exact test, crude).`],
-    study: ['within studies', `Compare ${W.marks} only with ` + `those reported by the same studies or databases.`],
+    fisher: [
+      'across all proteins',
+      `Puts all the ${W.residues} of all the proteins in one group. Simpler, but a protein with many sites counts for more. ` +
+        `Changes the tiles marked ⇄ (where ${W.marks} lie); questions about protein classes keep their test.`,
+    ],
+    study: [
+      'within studies',
+      `Compares ${W.marks} only with those reported by the same studies or databases. Changes the tiles marked ⇄.`,
+    ],
   };
   // plain words for the terms of the tests, shown on hover (an abbr) and in one line on the Help page
   const GLOSS = {
@@ -367,7 +374,7 @@
     questions: {},
     methods: [],
   });
-  const BUILT_IN_VIEWS = ['overview', 'statistics', 'method'];
+  const BUILT_IN_VIEWS = ['overview', 'method'];
   // the top tabs' words (website.tabs): a page's name, and one line on what it holds, for the tab's hover and under the
   // page's heading. The kit's defaults serve a site that says nothing; the address of a page never changes.
   const TABS = D.tabs || {};
@@ -379,9 +386,10 @@
       proteins: `The proteins with ${W.marks}, and the ${W.marks} on each.`,
       sites: `One row per ${W.mark}, with its evidence.`,
       idrs: `Intrinsically disordered regions of the proteins, and the ${W.marks} in them.`,
-      statistics: 'Every test behind the site, one row per class, with its effect, interval and q value.',
-      method: 'How each question was asked and tested, and the data it came from.',
-      help: 'How to use the site: searching, filters, selections and keys.',
+      method: 'How each question was asked and tested, every test, the controls, the sources and how to cite.',
+      overlap:
+        'Compare two to four sets of proteins: what they share, and whether the shared proteins carry the modification more often.',
+      help: 'Searching, filters, reading a figure, and what the badges and terms mean.',
     }[v] ||
     '';
   // a caption's first sentence: the comparison and its test; the rest of the site file's wording is on the Method page
@@ -402,7 +410,12 @@
     const [path, qs] = hashPath(location.hash).split('?');
     const slashed = /^#\/+/.test(location.hash);
     const p = new URLSearchParams(qs || '');
-    const [view, ...rest] = (path || '').split('/');
+    let [view, ...rest] = (path || '').split('/');
+    // the old addresses: #statistics is the Every test section of Methods, and #compare (with no saved selection after it) is the
+    // Compare sets page, whose own address stays #overlap
+    const aliased = view === 'statistics' || (view === 'compare' && !rest[0]);
+    if (view === 'statistics') [view, rest] = ['method', ['every']];
+    else if (view === 'compare' && !rest[0]) [view, rest] = ['overlap', []];
     S.view = BUILT_IN_VIEWS.includes(view) || K.views[view] ? view : 'overview';
     try {
       S.arg = S.view === view ? decodeURIComponent(rest.join('/')) : '';
@@ -456,7 +469,9 @@
     }
     const ov = !!old || (S.view === 'overview' && /^ov-/.test(S.arg));
     if (ov && !old) S.arg = S.arg.slice(3);
-    S.legacy = ov || routed || slashed || (S.view !== view && !!view); // written back as this site's own link (replaceState)
+    S.legacy = ov || routed || slashed || aliased || (S.view !== view && !!view); // written back as this site's own link (replaceState)
+    // #overview/<section> is a place on the Overview (a shared sidebar entry): the page opens there
+    S.jumpArg = S.view === 'overview' && S.arg && !A[S.arg] ? S.arg : '';
     if (S.view === 'overview' && S.arg && !A[S.arg]) S.arg = '';
     S.q = K.sel?.canonQ ? K.sel.canonQ(p.get('q') || '') : p.get('q') || '';
     S.m = p.get('m') || 'mantel_haenszel';
@@ -546,7 +561,7 @@
   let shown = null; // the address the page is drawn for (onNav skips a change to it)
   function writeHash(push) {
     const p = selParams();
-    if (S.view === 'statistics') {
+    if (S.view === 'method') {
       if (S.a) p.set('a', S.a);
       if (S.sq) p.set('sq', S.sq);
       if (S.sort !== 'q') p.set('sort', S.sort);
@@ -612,10 +627,10 @@
   // ---- header and toolbar --------------------------------------------------------------------------------------------
   function hero() {
     const ALL = {
-      marks: [int(D.counts.marks), W.marks, K.views.sites ? 'sites' : 'statistics'],
-      proteins: [int(D.counts.proteins), 'proteins', K.views.proteins ? 'proteins' : 'statistics'],
+      marks: [int(D.counts.marks), W.marks, K.views.sites ? 'sites' : 'method/every'],
+      proteins: [int(D.counts.proteins), 'proteins', K.views.proteins ? 'proteins' : 'method/every'],
       questions: [int(D.analyses.length), D.analyses.length === 1 ? 'question' : 'questions', 'overview'],
-      tests: [int(D.rows.length), 'tests', 'statistics'],
+      tests: [int(D.rows.length), 'tests', 'method/every'],
     };
     const tiles = (D.stats || ['marks', 'proteins', 'questions', 'tests'])
       .map((t) =>
@@ -681,19 +696,47 @@
     if (follows(v)) return ''; // the bar above says what is selected and how many; its Clear all removes it
     return `<p class="sel-line off" role="status">${esc(K.views[v]?.offNote || 'Not filtered by your selection.')}</p>`;
   }
+  // the tabs, the same on every explorer and in this order. A tab whose data a site lacks is greyed out with its reason on
+  // hover (website.tabs.<page>.empty words it), never hidden; a page of the site's own (website.pages) follows Network
+  const TAB_ORDER = ['overview', 'proteins', 'sites', 'interactions', 'overlap', 'network', 'method', 'help'];
+  const TAB_NAME = {
+    overview: 'Overview',
+    proteins: 'Proteins',
+    sites: 'Sites',
+    interactions: 'Interactions',
+    overlap: 'Compare sets',
+    network: 'Network',
+    method: 'Methods',
+    help: 'Help',
+  };
+  const TAB_EMPTY = {
+    proteins: 'No protein table for this modification yet',
+    sites: 'No site table for this modification yet',
+    interactions: 'No interaction data for this modification yet',
+    overlap: 'No sets to compare for this modification yet',
+    network: 'No network for this modification yet',
+  };
+  K.tabOrder = TAB_ORDER;
+  K.tabEmpty = (v) => TABS[v]?.empty || TAB_EMPTY[v] || 'No data for this modification yet';
   function tabs() {
     const sel = K.sel?.active();
-    // K.tabsEnd: a module's page after Method (kit-help.js: Help)
     // the open protein is a tab of its own after the pages (classic), so the bar says where you are; the Proteins tab is then not the current one
     const here = S.view === 'protein' && S.arg ? K.views.protein?.title?.(S.arg) : '';
-    const t = [
+    const have = new Map();
+    [
       ['overview', 'Overview', sel ? 'selection' : null],
       ...K.tabs.map((f) => f()).filter(Boolean),
-      ...(here ? [['protein', here, null]] : []),
-      ['statistics', 'Statistics', D.rows.length],
-      ['method', 'Method', null],
+      ['method', 'Methods', null],
       ...(K.tabsEnd || []).map((f) => f()).filter(Boolean),
-    ].map(([v, name, n]) => [v, v === 'protein' ? name : tabName(v, name), n]);
+    ].forEach((e) => have.has(e[0]) || have.set(e[0], e));
+    const inOrder = (v) => TAB_ORDER.includes(v);
+    const upTo = TAB_ORDER.indexOf('method');
+    const t = [
+      ...TAB_ORDER.slice(0, upTo).map((v) => have.get(v) || [v, TAB_NAME[v], null, true]),
+      ...[...have.values()].filter((e) => !inOrder(e[0])),
+      ...(here ? [['protein', here, null]] : []),
+      ...TAB_ORDER.slice(upTo).map((v) => have.get(v) || [v, TAB_NAME[v], null, true]),
+    ].map(([v, name, n, off]) => [v, v === 'protein' ? name : tabName(v, name), n, off]);
     const on = (v) =>
       (here ? v === 'protein' : S.view === v || K.views[S.view]?.tab === v) ||
       (v === 'protein' && S.view === 'protein');
@@ -701,23 +744,29 @@
       `<button class="tab rail-btn" type="button" data-rail-open="sections" title="Sections ` +
       `of this page" aria-label="Sections">☰</button>` +
       t
-        .map(
-          ([v, name, n]) =>
-            `<a class="tab" href="${esc(v === 'protein' ? location.hash : link(v))}"${
-              tabHint(v) ? ` title="${esc(tabHint(v))}"` : ''
-            }${on(v) ? ' aria-current="page"' : ''}>${K.tabIcons?.[v] || ''}${name}` +
-            (n != null && n !== 'selection'
-              ? ` <span class="count"${
-                  K.tabCountHint?.[v]?.() ? ` title="${esc(K.tabCountHint[v]())}"` : ''
-                }>${typeof n === 'number' ? int(n) : esc(n)}</span>`
-              : '') +
-            (sel && follows(v)
-              ? ' <span class="selmark" title="Follows your selection" aria-label="follows your selection">●</span>'
-              : '') +
-            '</a>'
+        .map(([v, name, n, off]) =>
+          off
+            ? `<span class="tab off" role="link" aria-disabled="true" tabindex="0" title="${esc(K.tabEmpty(v))}">${esc(name)}</span>`
+            : `<a class="tab" href="${esc(v === 'protein' ? location.hash : link(v))}"${
+                tabHint(v) ? ` title="${esc(tabHint(v))}"` : ''
+              }${on(v) ? ' aria-current="page"' : ''}>${K.tabIcons?.[v] || ''}${esc(name)}` +
+              (n != null && n !== 'selection'
+                ? ` <span class="count"${
+                    K.tabCountHint?.[v]?.() ? ` title="${esc(K.tabCountHint[v]())}"` : ''
+                  }>${typeof n === 'number' ? int(n) : esc(n)}</span>`
+                : '') +
+              (sel && follows(v)
+                ? ' <span class="selmark" title="Follows your selection" aria-label="follows your selection">●</span>'
+                : '') +
+              '</a>'
         )
         .join('') +
       variantSwitch();
+    // on a phone the current tab is brought into view in the scrolling bar
+    const box = $('#tabs'),
+      cur = box.querySelector('[aria-current="page"]');
+    if (cur && box.scrollWidth > box.clientWidth)
+      box.scrollLeft = cur.offsetLeft - (box.clientWidth - cur.offsetWidth) / 2;
   }
   // the site's variants (the same questions on other marks, such as with lower-confidence sites): a switch to each,
   // and in a variant the switch back; the page, its selection and its place are kept
@@ -731,7 +780,10 @@
   }
 
   // ---- Overview: tiles. Each tile is a question with its most telling classes, and opens the question's figure ------
-  const am = (d) => `<span class="am ${d}" aria-hidden="true">${d === 'more' ? '▲' : d === 'less' ? '▼' : '○'}</span>`;
+  // a mark that is a glyph says its meaning in hidden text as well
+  const am = (d) =>
+    `<span class="am ${d}"><span aria-hidden="true">${d === 'more' ? '▲' : d === 'less' ? '▼' : '○'}</span>` +
+    `<span class="vh">${d === 'more' ? 'more often: ' : d === 'less' ? 'less often: ' : 'no difference: '}</span></span>`;
   const SHOWN = 8;
   // the rows behind every dot on the page, for their hover (the site's own rows and a selection's alike)
   let REG = [];
@@ -1039,7 +1091,8 @@
       }>${r.vs ? `${pcS(share1(r))} <span class="muted">` + `· ${pcS(share2(r))}</span>` : valText(r) + shareSpan(r)}${
         d
           ? `<i class="dm ${d.dir}" title="Within ` +
-            `protein abundance deciles: ${DECILE[d.dir][1]} (OR ${fxn(d.eff)}, q ${fq(d.q)})">${DECILE[d.dir][0]}</i>`
+            `protein abundance deciles: ${DECILE[d.dir][1]} (OR ${fxn(d.eff)}, q ${fq(d.q)})"><span aria-hidden="true">${DECILE[d.dir][0]}</span>` +
+            `<span class="vh">Within abundance deciles: ${DECILE[d.dir][1]}</span></i>`
           : r.vs || !M.legend.some((x) => x[0] === 'dec')
             ? ''
             : '<i class="dm"></i>'
@@ -1192,6 +1245,17 @@
         x.cards.push({ analysis: a.id });
       });
     }
+    // one vocabulary and order for every explorer: the shared groups, then the site's own, then the closing ones
+    const G = D.overview_groups || { shared: [], last: [] },
+      rank = (x) => {
+        const i = G.shared.indexOf(x.name),
+          j = G.last.indexOf(x.name);
+        return i >= 0 ? i : j >= 0 ? 2e6 + j : 1e6;
+      };
+    out = out
+      .map((x, i) => [x, i])
+      .sort((u, v) => rank(u[0]) - rank(v[0]) || u[1] - v[1])
+      .map((u) => u[0]);
     // the cell and the nucleus, drawn (a card with drawing: true), open the Overview
     const first = out.filter((x) => x.cards.some((c) => c.drawing === true && c.analysis === D.cell?.id));
     if (D.overview?.cell_first === false) return out; // website.overview.cell_first: false: the section stays where the site file puts it, under its heading
@@ -1519,6 +1583,11 @@
           : '';
     return { a, rows, shown, more, left, whole, made, foot };
   }
+  // a question's title on its tile, and in the sidebar: one name from the site file
+  // the questions the Test switch changes: where the marks lie, not the protein-class questions (one test each)
+  const followsTest = (a) => a.kind !== 'protein_sets' && a.kind !== 'module' && !a.tile && !K.questions[a.id]?.tile;
+  const tileTitle = (c) => c.title || FR.short?.[c.analysis] || A[c.analysis]?.title || '';
+  K.tileTitle = tileTitle;
   const detailsLink = (id) =>
     `<a class="tdetails" href="${esc(link('overview', id))}" title="Open the question: ` +
     `every class, the tests and the downloads">details ›</a>`;
@@ -1529,7 +1598,7 @@
     if (own != null) return own;
     const { a, rows, shown, more, left, made, foot } = tileState(card);
     // its downloads, in a menu that opens on a tap: the tile as a figure (PDF, SVG, PNG), the question's rows (TSV), its Method
-    const title = card.title || FR.short?.[a.id] || a.title;
+    const title = tileTitle(card);
     // kit-tile.js (K.tilekit) draws the tile's rows and downloads; without it the tile has its title and rows' text only
     const exp = !K.tilekit
       ? ''
@@ -1573,6 +1642,10 @@
     const ans = fr && !made && !card.rows_from && shown.length > 1 ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
     return (
       `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}"${card.rows_from ? ' data-group' : ' tabindex="0"'}><header><h3>${esc(title)}${
+        followsTest(a)
+          ? ` <span class="tsw" title="This tile changes with the Test switch"><span aria-hidden="true">⇄</span><span class="vh"> changes with the Test switch</span></span>`
+          : ''
+      }${
         a.new && D.run.parity
           ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>'
           : ''
@@ -1784,8 +1857,11 @@
       }</div>` +
       (d.counts ? `<p>${esc(d.counts)}</p>` : '') +
       d.tests.map((t) => `<p>${esc(t)}</p>`).join('') +
+      (controlsOf(A[d.aid] || {}).length
+        ? `<p class="rp-ctl"><a href="${esc(link('method', 'controls'))}">How this result is checked</a></p>`
+        : '') +
       `<div class="rp-acts">${d.f ? btn('sel', `Show these ${esc(d.noun)}`) : ''}${
-        d.ov ? btn('ov', 'Overlap with…') : ''
+        d.ov ? btn('ov', 'Compare sets with…') : ''
       }${btn('open', 'Open question')}</div>`;
     document.body.append(el);
     const r = row.getBoundingClientRect(),
@@ -2006,9 +2082,9 @@
   };
   K.dirArrow = (r) =>
     r.dir === 'more'
-      ? '<span class="dirarrow more" aria-hidden="true">▲</span> '
+      ? '<span class="dirarrow more"><span aria-hidden="true">▲</span><span class="vh">more often </span></span> '
       : r.dir === 'less'
-        ? '<span class="dirarrow less" aria-hidden="true">▼</span> '
+        ? '<span class="dirarrow less"><span aria-hidden="true">▼</span><span class="vh">less often </span></span> '
         : '';
   K.l2State = {};
   K.l2Table = (id, rows, o = {}) => {
@@ -2198,7 +2274,10 @@
   // and draws it with every section above it, so that nothing drawn later moves the tile while the page scrolls to it
   K.ovDrawThrough = (id) => {
     const all = secList(),
-      i = all.findIndex((x) => x.cards.some((c) => `tile-${c.analysis}` === id));
+      i = all.findIndex(
+        (x) =>
+          `sec-${x.name.replace(/\W+/g, '-').toLowerCase()}` === id || x.cards.some((c) => `tile-${c.analysis}` === id)
+      );
     if (i < 0) return false;
     all.slice(0, i + 1).forEach((x) => K.ovOpen.add(x.name));
     return true;
@@ -2226,6 +2305,74 @@
     );
     els.forEach((el) => io.observe(el));
   });
+  // ---- Key findings: the strongest results that hold their controls, in one plain line each, at the top of the Overview.
+  // Chosen from the tiles' rows by the smallest q among those at or above 1.1× that fail no control, at most one per section
+  // (website.overview.key_findings: count, min_fold, pin and exclude, each a question id or "id/class"; false leaves it out)
+  function keyFindings() {
+    const KF = OV.key_findings;
+    if (KF === false || selOn() || vsOn() || S.arg) return '';
+    const n = KF?.count ?? 3,
+      minFold = KF?.min_fold ?? MIN_EFFECT;
+    const named = (list, a, c) =>
+      (list || []).findIndex((x) =>
+        typeof x === 'string'
+          ? x === a || x === `${a}/${c}`
+          : x.analysis === a && (x.category == null || x.category === c)
+      );
+    const cands = [],
+      pins = [];
+    secList().forEach((x) => {
+      if (x.caveat) return;
+      x.cards.forEach((card) => {
+        const a = A[card.analysis];
+        if (
+          !a ||
+          card.rows_from ||
+          a.tile ||
+          K.questions[a.id]?.tile ||
+          a.control_of ||
+          a.kind === 'attribute' ||
+          a.kind === 'module'
+        )
+          return;
+        (rowsOf(a, S.m) || []).forEach((r) => {
+          if (r.descriptive || r.absent || r.eff == null || r.dir !== 'more') return;
+          const e = { a, r, q: r.adj ? r.adj.q : r.q, v: valOf(r), sec: x.name, card },
+            at = named(KF?.pin, a.id, r.category);
+          if (at >= 0) return pins.push({ ...e, at });
+          if (named(KF?.exclude, a.id, r.category) >= 0 || EXCL.test(r.label || '')) return;
+          if (e.q == null || e.q > PADJ || e.v < minFold || controlFails(a, r.category).length) return;
+          cands.push(e);
+        });
+      });
+    });
+    pins.sort((x, y) => x.at - y.at);
+    cands.sort((x, y) => x.q - y.q || y.v - x.v);
+    const pick = pins.slice(0, n),
+      used = new Set(pick.map((e) => e.sec));
+    for (const e of cands) {
+      if (pick.length >= n) break;
+      if (used.has(e.sec)) continue;
+      used.add(e.sec);
+      pick.push(e);
+    }
+    if (!pick.length) return '';
+    const sentence = ({ a, r, v }) => {
+      const label = r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
+        f = `${fxn(v)}×`;
+      return SETS(a.id)
+        ? `Proteins in <b>${esc(label)}</b> are ${esc(W.marked)} ${f} as often as proteins in general.`
+        : `<b>${esc(cap(label))}</b>: ${esc(W.marks)} are ${f} as likely as other ${esc(W.residues)} to be here.`;
+    };
+    return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Key findings</h3><ol>${pick
+      .map(
+        (e) =>
+          `<li><a href="${esc(link('overview', e.a.id))}" data-jump="tile-${esc(e.a.id)}" title="Go to the tile">${sentence(e)}</a> ` +
+          `<span class="muted">${esc(e.card.title || FR.short?.[e.a.id] || e.a.title)}, q ${esc(fq(e.q))}</span></li>`
+      )
+      .join('')}</ol></section>`;
+  }
+  K.keyFindings = keyFindings;
   function overview() {
     REG = [];
     if (S.arg && A[S.arg]?.page) return focus(S.arg);
@@ -2313,6 +2460,7 @@
       (S.arg ? '' : (K.overviewTop || []).map((f) => f()).join('')) +
       lead() +
       banner +
+      keyFindings() +
       (selOn() && !vsOn() && !small ? selBlocks(K.selLead) : '') +
       secs +
       (selOn() ? '' : (K.overviewBlocks || []).map((f) => f()).join(''))
@@ -2420,13 +2568,13 @@
   const failTip = (f) =>
     `This result ${f.verdict === 'reversed' ? 'reverses' : 'disappears'} when ` +
     `${f.when || 'the test is repeated with ' + f.label} (${fx(valOf(f.main))} → ${f.ctl ? fx(valOf(f.ctl)) : 'not tested'}).`;
-  // a badge per failed control: a button that opens the question at its Controls table
+  // a badge per failed control: a link to Methods > Controls, where each control is described
   const failBadges = (aid, fails) =>
     fails
       .map(
         (f) =>
-          `<button type="button" class="ctl-badge" data-ctl-go="${esc(aid)}" title="${esc(failTip(f))}">` +
-          `${esc(failText(f))}</button>`
+          `<a class="ctl-badge" href="${esc(link('method', 'controls'))}" title="${esc(failTip(f))}">` +
+          `${esc(failText(f))}</a>`
       )
       .join('');
   K.controlFails = controlFails;
@@ -2473,8 +2621,8 @@
       ? `<span class="ctl-fail head">${fs
           .map(
             (f) =>
-              `<button type="button" class="ctl-badge" data-ctl-go="${esc(a.id)}" title="${esc(f.tips.join('\n'))}">` +
-              `${esc(f.cats.length <= 2 ? f.cats.join(', ') + ' ' : '')}${esc(failText(f))}</button>`
+              `<a class="ctl-badge" href="${esc(link('method', 'controls'))}" title="${esc(f.tips.join('\n'))}">` +
+              `${esc(f.cats.length <= 2 ? f.cats.join(', ') + ' ' : '')}${esc(failText(f))}</a>`
           )
           .join('')}</span>`
       : '';
@@ -2728,23 +2876,78 @@
         `are made in the browser.</p></section>`)
     );
   }
+  // Methods has five parts, each with an address of its own (#method/tests, /controls, /sources, /cite, /download); a section
+  // belongs to one of them, and an old address that names a section opens the part that holds it
+  const M_PARTS = [
+    ['tests', 'Tests'],
+    ['controls', 'Controls'],
+    ['sources', 'Sources'],
+    ['cite', 'Cite'],
+    ['download', 'Download'],
+  ];
+  const M_OF = {
+    'm-controls': 'controls',
+    'm-data': 'sources',
+    'm-sources': 'sources',
+    'm-search': 'sources',
+    'm-search-words': 'sources',
+    'm-cite': 'cite',
+    'm-made': 'cite',
+    'm-about': 'cite',
+    'm-share': 'cite',
+    'm-access': 'cite',
+    'm-privacy': 'cite',
+    'm-download': 'download',
+  };
+  const partOf = (id) => M_OF[id] || 'tests';
+  // the part an address names: a part, or a section (by its id, with or without the q- of a question's); Tests when it names none
+  const partOfArg = (a) => {
+    a = String(a || '');
+    return M_PARTS.some(([k]) => k === a) ? a : partOf('m-' + a);
+  };
+  K.methodPart = () => partOfArg(S.arg);
+  K.methodPartOf = partOf;
+  const methodMenu = () =>
+    `<nav class="msub" aria-label="Methods">` +
+    M_PARTS.map(
+      ([k, t]) =>
+        `<a href="${esc(link('method', k))}"${partOfArg(S.arg) === k ? ' aria-current="page"' : ''}>${esc(t)}</a>`
+    ).join('') +
+    `</nav>`;
+  // the sidebar on Methods: the five parts, and under the open one its sections (a question's own are left out: 40 of them)
+  K.methodNav = (all) => [
+    ...M_PARTS.map(([k, t]) => [`mp-${k}`, t, 1, link('method', k)]),
+    ...all.filter(
+      ([id, lab, lev]) =>
+        lev !== 0 &&
+        !/^m-(q|map)-/.test(id) &&
+        partOf(id) === partOfArg(S.arg) &&
+        lab !== M_PARTS.find(([k]) => k === partOfArg(S.arg))[1]
+    ),
+  ];
   K.sections.method = () =>
     [
       ['m-g1', 'The tests', 0],
       ['m-tests', 'How the tests work', 1],
+      ['m-every', 'Every test', 1],
       ['m-questions', 'Questions, and what made each', 1],
       ['m-parity', 'Checked against the release', 1],
       ['m-gq', 'Each question', 0],
       ...D.analyses.map((a) => [`m-q-${a.id}`, a.title, 1]),
       ...K.methods.map((x) => [`m-q-${x.id}`, x.title, 1]),
       ['m-g2', 'The data', 0],
+      ['m-controls', 'Controls', 1],
       ['m-data', 'Data', 1],
       ['m-sources', 'Sources', 1],
       ['m-g3', 'The explorer', 0],
+      ['m-about', 'What this explorer is', 1],
       ['m-made', 'How this explorer is made', 1],
       ['m-cite', 'How to cite', 1],
       ['m-download', 'Download the data', 1],
       ['m-search', 'Search terms', 1],
+      ['m-share', 'Sharing a link and keys', 1],
+      ['m-access', 'Accessibility', 1],
+      ['m-selection', 'Selections and Compared with', 1],
       ['m-privacy', 'Licenses and privacy', 1],
     ].filter(
       ([id]) =>
@@ -2762,7 +2965,7 @@
           S.arg
             ? [
                 `tile-${c.analysis}`,
-                c.title || A[c.analysis].title,
+                tileTitle(c),
                 1,
                 link('overview', c.analysis),
                 A[c.analysis].family,
@@ -2770,11 +2973,13 @@
               ]
             : [
                 `tile-${c.analysis}`,
-                c.title || A[c.analysis].title,
+                tileTitle(c),
                 1,
                 undefined,
                 A[c.analysis].family,
                 A[c.analysis].family_label,
+                // a real address, so the entry can be copied and shared: it opens the question (the jump on a click stays on the page)
+                link('overview', c.analysis),
               ];
       // an opened question: its own section lists the questions, the others are one line that opens their first (the list stays short)
       if (S.arg) {
@@ -2786,33 +2991,11 @@
       // every section lists the tiles that show (not those behind its "More on ..." fold), drawn yet or not: the list
       // comes from the site's questions, so the sidebar is the same on first paint as after scrolling
       return [
-        [sid, x.name, 0],
+        [sid, x.name, 0, undefined, undefined, undefined, link('overview', sid.slice(4))],
         ...(x.show > 0 && !selOn() && x.cards.length > x.show ? x.cards.slice(0, x.show) : x.cards).map(tileOf),
       ];
     }),
     ...(selOn() || S.arg ? [] : (K.overviewSections || []).flatMap((f) => f())),
-  ];
-  // All tests: every question, each opening its own tests
-  K.sections.statistics = () => [
-    ['view', 'All tests', 1, link('statistics')],
-    ...secList()
-      .filter((x) => !x.caveat && x.name !== 'About the sites')
-      .flatMap((x) => {
-        const cs = x.cards.filter((c) => D.analyses.some((a) => a.id === c.analysis));
-        return cs.length
-          ? [
-              [`stat-${x.name}`, x.name, 0],
-              ...cs.map((c) => [
-                `stat-${c.analysis}`,
-                c.title || A[c.analysis].title,
-                1,
-                link('statistics', '', { a: c.analysis }),
-                A[c.analysis].family,
-                A[c.analysis].family_label,
-              ]),
-            ]
-          : [];
-      }),
   ];
   function cardBody(a, rows) {
     // a residue question shows every class, and so does a set question with 12 sets or fewer (a partition)
@@ -2888,13 +3071,14 @@
     });
     return rows;
   }
-  function statistics() {
+  // Methods > Every test: the whole table of tests, with its filters and its download
+  function everyTest() {
     const rows = shownStatistics();
     const opts = [['', 'All questions'], ...D.analyses.map((a) => [a.id, a.title])];
     return (
-      `<div class="page-head"><h2>${esc(tabName('statistics', 'All tests'))}</h2><button class="btn" ` +
-      `type="button" id="dl">Download TSV</button></div>` +
-      `<p class="page-sub">${gloss('q')}: Benjamini–Hochberg within each question.</p>` +
+      `<section id="m-every"><h3>Every test</h3>` +
+      `<p class="page-sub">One row per class and test. ${gloss('q')}: Benjamini–Hochberg within each question. ` +
+      `<button class="btn small" type="button" id="dl">Download TSV</button></p>` +
       `<div class="filters"><label>Question <select id="f-a">${opts
         .map(([v, t]) => `<option value="${esc(v)}"${v === S.a ? ' selected' : ''}>${esc(t)}</option>`)
         .join('')}</select></label>` +
@@ -2958,7 +3142,8 @@
         ? `<p><button class="linkish" type="button" data-stat-more>Show ${int(
             Math.min(200, rows.length - S.nStat)
           )} more of ${int(rows.length)}</button>` + ` <span class="muted">(the download has every row)</span></p>`
-        : '')
+        : '') +
+      `</section>`
     );
   }
 
@@ -3005,7 +3190,7 @@
                   ? ` <span class="muted">` + `(against ${esc(IN[c.reference]?.version || c.reference)})</span>`
                   : ''
               }</td><td>${esc(testName(c.analysis, c.method))}</td><td ` +
-              `class="num">${int(c.rows)}</td><td>${c.equal ? '<span class="ok">✓</span>' : '✗'}</td></tr>`
+              `class="num">${int(c.rows)}</td><td>${c.equal ? '<span class="ok"><span aria-hidden="true">✓</span><span class="vh">identical</span></span>' : '<span aria-hidden="true">✗</span><span class="vh">differs</span>'}</td></tr>`
           )
           .join('') +
         '</tbody></table></div>' +
@@ -3017,7 +3202,7 @@
         '</section>'
       : '';
     return (
-      `<div class="page-head"><h2>${esc(tabName('method', 'Method'))}</h2></div><div class="doc">` +
+      `<div class="page-head"><h2>${esc(tabName('method', 'Methods'))}</h2></div>${methodMenu()}<div class="doc">` +
       (`<span id="m-g1"></span><section id="m-tests"><h3>How the tests work</h3><p>Each question asks whether a ${esc(W.mark)} is more ` +
         `or less likely than another ${esc(W.residue)} of the same protein to lie in a class, such as a ` +
         `disordered region, a domain or a motif. Each class is tested two ways.</p><ul>`) +
@@ -3047,6 +3232,7 @@
           }</p>`
         : '') +
       `</section>` +
+      everyTest() +
       (`<span id="m-g2"></span><section id="m-data"><h3>Data</h3><p>Sequences: ${esc(sn.release)}, ${int(sn.entries)} entries ` +
         `(FASTA MD5 <span class="mono">${esc(sn.fasta_md5)}</span>). `) +
       (`${cap(W.marks)}: ${int(m.counted)} on ${int(m.proteins)} proteins, from ${int(m.selected)} records${
@@ -3090,7 +3276,8 @@
   // groups (distinct_at_least), which items count once together and which not at all
   function controlsMethod() {
     const cs = D.controls || [];
-    if (!cs.length) return '';
+    if (!cs.length)
+      return `<section id="m-controls"><h3>Controls</h3><p>No question on this explorer is repeated with a control.</p></section>`;
     const one = (c) => {
       const n = c.count,
         groups = Object.entries(n?.groups || {}),
@@ -3140,7 +3327,7 @@
         ? `<p>${set ? 'Background: ' : ''}${esc(a.describe)}.</p>`
         : '') +
       classes +
-      (`<p class="qm-links"><a href="${esc(link('overview', a.id))}">Its figure</a> · <a href="${esc(link('statistics', '', { a: a.id }))}">Its tests</a>` +
+      (`<p class="qm-links"><a href="${esc(link('overview', a.id))}">Its figure</a> · <a href="${esc(link('method', 'every', { a: a.id }))}">Its tests</a>` +
         `</p></section>`)
     );
   }
@@ -4574,8 +4761,19 @@
         body = document.createElement('div');
       d.className = 'pfold mfold';
       d.id = sec.id;
+      const mine = partOf(sec.id) === partOfArg(S.arg);
+      d.hidden = !mine; // one of the five parts at a time
       d.open =
-        sec.id === 'm-tests' || sec.id === 'm-' + S.arg || (S.arg && sec.id === 'm-q-' + S.arg.replace(/^q-/, ''));
+        mine &&
+        (sec.id === 'm-' + S.arg ||
+          (S.arg && sec.id === 'm-q-' + S.arg.replace(/^q-/, '')) ||
+          (!S.arg || partOfArg(S.arg) === S.arg
+            ? sec.id ===
+              { tests: 'm-tests', controls: 'm-controls', sources: 'm-data', cite: 'm-cite', download: 'm-download' }[
+                partOf(sec.id)
+              ]
+            : false) ||
+          (sec.id === 'm-every' && !!(S.a || S.sq || S.sort !== 'q')));
       sm.innerHTML = '<span class="pfm" aria-hidden="true"></span>';
       sm.appendChild(h);
       body.className = 'pfold-body';
@@ -4644,13 +4842,7 @@
     $('#q-clear').hidden = !S.q;
     scope();
     const mod = K.views[S.view];
-    const page = mod
-      ? mod.render(S.arg)
-      : S.view === 'statistics'
-        ? statistics()
-        : S.view === 'method'
-          ? method()
-          : overview();
+    const page = mod ? mod.render(S.arg) : S.view === 'method' ? method() : overview();
     $('#view').innerHTML = selLine() + page;
     document.title =
       S.view === 'overview'
@@ -4661,7 +4853,15 @@
     document.querySelector('.toolbar')?.removeAttribute('inert');
     if (mod?.after) mod.after(S.arg);
     if (S.view === 'method') foldMethod();
-    if (S.view === 'method' && S.arg) document.getElementById('m-' + S.arg)?.scrollIntoView({ block: 'start' });
+    if (S.view === 'method') {
+      // a section's address scrolls to it; a part's (#method/cite) stays at the top, under the menu; a change to the table of tests stays at the table
+      const at = S.stay || (S.arg && !M_PARTS.some(([k]) => k === S.arg) ? 'm-' + S.arg : '');
+      S.stay = '';
+      if (at)
+        (document.getElementById(at) || document.getElementById(at.replace(/^m-/, 'm-q-')))?.scrollIntoView({
+          block: 'start',
+        });
+    }
     K.rail?.();
     (K.afterRender || []).forEach((f) => f()); // the modules' own touches after a page is drawn (kit-search.js)
     linkPass();
@@ -4686,6 +4886,19 @@
       setTimeout(() => {
         K.folds[d.id] = d.open;
       }, 0);
+  });
+  (K.afterRender ||= []).push(() => {
+    if (!S.jumpArg) return;
+    const id = `sec-${S.jumpArg}`;
+    S.jumpArg = '';
+    setTimeout(() => {
+      let t = document.getElementById(id);
+      if (!t && K.ovDrawThrough?.(id)) {
+        render();
+        t = document.getElementById(id);
+      }
+      t?.scrollIntoView({ block: 'start' });
+    }, 0);
   });
   (K.afterRender ||= []).push(() => {
     const key = S.view + '/' + (S.arg || '');
@@ -4855,7 +5068,7 @@
       return;
     }
     const sr = e.target.closest('tr[data-i]');
-    if (sr && S.view === 'statistics') {
+    if (sr && S.view === 'method') {
       showTip(e, D.rows[+sr.dataset.i]);
       return;
     }
@@ -4914,6 +5127,7 @@
       render();
     } else if ('statMore' in t.dataset) {
       S.nStat += 200;
+      S.stay = 'm-every';
       render();
     } else if ('skip' in t.dataset) {
       const v = $('#view');
@@ -4924,12 +5138,14 @@
       S.desc = S.sort === 'strength' ? !S.desc : true;
       S.sort = 'strength';
       S.nStat = 200;
+      S.stay = 'm-every';
       writeHash(false);
       render();
     } else if (t.dataset.sort) {
       S.desc = S.sort === t.dataset.sort ? !S.desc : t.dataset.sort !== 'q';
       S.sort = t.dataset.sort;
       S.nStat = 200;
+      S.stay = 'm-every';
       writeHash(false);
       render();
     } else if (t.id === 'dl')
@@ -4980,6 +5196,7 @@
       timer = setTimeout(() => {
         S.sq = e.target.value.trim();
         S.nStat = 200;
+        S.stay = 'm-every';
         writeHash(false);
         render();
         const f = $('#f-sq');
@@ -4998,12 +5215,14 @@
     if (e.target.id === 'f-a') {
       S.a = e.target.value;
       S.nStat = 200;
+      S.stay = 'm-every';
       writeHash(false);
       render();
     }
     if (e.target.id === 'f-m') {
       S.m = e.target.value;
       S.nStat = 200;
+      S.stay = 'm-every';
       writeHash(false);
       render();
     }
@@ -5140,7 +5359,7 @@
     render();
     const samePage = pageOf() === was || (wasProt && S.view === 'protein' && S.arg.split('/')[0] === wasProt);
     if (!byLink && scrolled[shown] != null) scrollTo(0, scrolled[shown]);
-    else if (!samePage && !(S.view === 'method' && S.arg)) scrollTo(0, 0);
+    else if (!samePage && !(S.view === 'method' && S.arg && !M_PARTS.some(([k]) => k === S.arg))) scrollTo(0, 0);
     byLink = false;
   };
   document.addEventListener(
@@ -5176,19 +5395,8 @@
     const d = document.getElementById('dock'),
       a = document.querySelector('.hero h1 a');
     if (!d || !a) return;
-    const stats = [...document.querySelectorAll('#hero-stats .stat')]
-      .map(
-        (s) =>
-          `<a href="${esc(s.getAttribute('href'))}" data-go="${esc(s.dataset.go || '')}"><b>${esc(
-            s.querySelector('b')?.textContent || ''
-          )}</b> ${esc(s.querySelector('span')?.textContent || '')}</a>`
-      )
-      .join('');
-    // only "How to cite" stays in the bar: the version, the lab and its affiliation are in the full header and the footer
-    const cite = [...document.querySelectorAll('.hero .lede a[href="#method/cite"]')]
-      .slice(0, 1)
-      .map((c) => `<a href="${esc(c.getAttribute('href'))}">${esc(c.textContent.trim())}</a>`)
-      .join('');
+    // one bar, one line: the site's name, the PTM switcher, the pages (those that do not fit go under "More"), a search and the
+    // selection. The counts and "How to cite" are not in it (the header, the pages and the footer have them).
     d.innerHTML =
       `<div class="wrap"><a class="dock-name" href="${esc(a.getAttribute('href'))}" title="Back to the ` +
       `overview">${
@@ -5196,11 +5404,10 @@
           ? `<img src="${esc(a.querySelector('img').getAttribute('src'))}" alt="" ` + `width="28" height="28">`
           : ''
       }<span>${esc(a.textContent.trim())}</span></a>` +
-      `<span class="dock-stats">${stats}</span>` +
-      // the compact bar (website.header.bar): while the toolbar is slid away on the way down, the bar carries the pages, a search
-      // and the selection; each is shown only then (CSS body.bar-hidden), so nothing is doubled while the toolbar is in view
-      `<span class="dock-x dock-tabs" aria-label="Pages"></span>` +
-      `<span class="dock-end"><span class="dock-cite">${cite}</span>` +
+      // while the toolbar is slid away on the way down, the bar carries the pages, a search and the selection; each is shown
+      // only then (CSS body.bar-hidden), so nothing is doubled while the toolbar is in view
+      `<span class="dock-x dock-tabs" role="group" aria-label="Pages"></span>` +
+      `<span class="dock-end">` +
       `<span class="dock-x dock-search"><input id="dock-q" type="search" autocomplete="off" spellcheck="false" ` +
       `placeholder="Search" aria-label="Search proteins and sites, or filter"><button type="button" class="dock-ico" ` +
       `data-dock-search aria-label="Search" title="Search and pages">⌕</button></span>` +
@@ -5210,6 +5417,81 @@
   }
   const BAR_ITEMS = ['home', 'switch', 'search', 'tabs', 'summary'],
     HDR = D.header || {};
+  // the bar never wraps: the switcher gives up its site name first ("PTM ▾"), then the last pages go under "More", the open page
+  // never among them
+  function fitDock() {
+    const d = document.getElementById('dock'),
+      box = d?.querySelector('.dock-tabs');
+    if (!box || getComputedStyle(box).display === 'none') return;
+    const tabs = [...box.querySelectorAll(':scope > .tab')],
+      more = box.querySelector('.dock-more');
+    let menu = document.getElementById('dock-more-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'dock-more-menu';
+      menu.className = 'dock-more-menu';
+      menu.hidden = true;
+      d.append(menu);
+    }
+    menu.hidden = true;
+    menu.innerHTML = '';
+    more?.setAttribute('aria-expanded', 'false');
+    tabs.forEach((t) => (t.hidden = false));
+    if (more) more.hidden = true;
+    d.classList.remove('sw-short', 'tight');
+    const over = () => box.scrollWidth > box.clientWidth + 1;
+    if (!over() || !more) return;
+    // first the selection's words and the search box give room, then the switcher gives up its site name
+    d.classList.add('tight');
+    if (!over()) return;
+    d.classList.add('sw-short');
+    if (!over()) return;
+    more.hidden = false;
+    for (let i = tabs.length - 1; i >= 1 && over(); i--) {
+      if (tabs[i].getAttribute('aria-current') === 'page') continue;
+      tabs[i].hidden = true;
+    }
+    menu.innerHTML = tabs
+      .filter((t) => t.hidden)
+      .map((t) => {
+        const c = t.cloneNode(true);
+        c.hidden = false;
+        c.classList.add('more-item');
+        return c.outerHTML;
+      })
+      .join('');
+  }
+  K.fitDock = fitDock;
+  addEventListener('resize', () => fitDock());
+  K.clicks.push([
+    '.dock-more',
+    (el) => {
+      const menu = document.getElementById('dock-more-menu');
+      if (!menu) return;
+      const open = menu.hidden;
+      menu.hidden = !open;
+      el.setAttribute('aria-expanded', String(open));
+      if (open) {
+        const r = el.getBoundingClientRect();
+        menu.style.top = `${Math.round(r.bottom + 4)}px`;
+        menu.style.right = `${Math.max(8, Math.round(innerWidth - r.right))}px`;
+        menu.querySelector('a, .tab')?.focus();
+      }
+    },
+  ]);
+  const closeMore = (back) => {
+    const menu = document.getElementById('dock-more-menu'),
+      b = document.querySelector('.dock-more');
+    if (!menu || menu.hidden) return;
+    menu.hidden = true;
+    b?.setAttribute('aria-expanded', 'false');
+    if (back) b?.focus();
+  };
+  document.addEventListener('keydown', (e) => e.key === 'Escape' && closeMore(true));
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest?.('.dock-more, .dock-more-menu')) closeMore(false);
+    else if (e.target.closest?.('.dock-more-menu a')) closeMore(false);
+  });
   // the compact bar's parts that follow the page: the tabs, the search text and the selection's counts
   function dockSync() {
     const d = document.getElementById('dock');
@@ -5217,13 +5499,16 @@
     const tabs = d.querySelector('.dock-tabs'),
       src = document.getElementById('tabs');
     if (tabs && src) {
-      tabs.innerHTML = [...src.querySelectorAll('a.tab')]
-        .map((a) => {
-          const c = a.cloneNode(true);
-          c.removeAttribute('id');
-          return c.outerHTML;
-        })
-        .join('');
+      tabs.innerHTML =
+        [...src.querySelectorAll('.tab:not(.rail-btn)')]
+          .map((a) => {
+            const c = a.cloneNode(true);
+            c.removeAttribute('id');
+            return c.outerHTML;
+          })
+          .join('') +
+        `<button type="button" class="dock-more" aria-expanded="false" aria-controls="dock-more-menu" hidden>More ▾</button>`;
+      fitDock();
     }
     const q = d.querySelector('#dock-q'),
       main = document.getElementById('q');
@@ -5239,6 +5524,10 @@
     }
   }
   K.dockSync = dockSync;
+  // a table's column heads say they head columns (the row heads of a table that has them say so themselves)
+  (K.afterRender ||= []).push(() =>
+    document.querySelectorAll('#view thead th:not([scope])').forEach((th) => th.setAttribute('scope', 'col'))
+  );
   (K.afterRender ||= []).push(dockSync);
   K.dock = dock;
   const dockOn = () => {
@@ -5267,6 +5556,7 @@
     const tbEl = () => document.querySelector('.toolbar'),
       hide = (on) => {
         document.body.classList.toggle('bar-hidden', on);
+        if (on) fitDock();
         const tb = tbEl();
         if (tb) tb.inert = on; // not in the tab order while it is away: the bar has the same things
       };
@@ -5341,7 +5631,24 @@
         }${D.dataset.doi ? `, <a href="https://doi.org/${esc(D.dataset.doi)}">doi:${esc(D.dataset.doi)}</a>` : ''}`
       : '') +
     ` · code: ${esc(hlicence(D.kit.licence || 'MIT'))}${CIT.licence ? ` · data: ${esc(hlicence(CIT.licence))}` : ''}` +
-    ` · <a href="#method/privacy">no cookies, no tracking; nothing you search leaves your browser</a>`;
+    ` · no cookies, no tracking; nothing you search leaves your browser`;
+  // one footer on every page: Cite · Download · Methods · Keyboard shortcuts · Source code · Data DOI · Privacy, then the theme
+  $('#foot-links').innerHTML = [
+    ['Cite', link('method', 'cite')],
+    (D.downloads || []).length ? ['Download', link('method', 'download')] : null,
+    ['Methods', link('method', '')],
+    ['Keyboard shortcuts', '', 'data-keys-open'],
+    D.kit.url ? ['Source code ↗', D.kit.url] : null,
+    D.dataset?.doi ? ['Data DOI', `https://doi.org/${D.dataset.doi}`, '', `doi:${D.dataset.doi}`] : null,
+    ['Privacy', link('method', 'privacy')],
+  ]
+    .filter(Boolean)
+    .map(([t, h, attr, title]) =>
+      h
+        ? `<a href="${esc(h)}"${title ? ` title="${esc(title)}"` : ''}>${esc(t)}</a>`
+        : `<button type="button" class="linkish" ${attr}>${esc(t)}</button>`
+    )
+    .join('');
   setTheme(document.documentElement.dataset.theme || 'auto');
   themed = true;
   (window.PTMC_MODULES || []).forEach((f) => f(K));

@@ -368,6 +368,13 @@ def reporters(site: dict, folder: Path) -> dict | None:
     }
 
 
+def _overview_groups(overview: dict) -> dict:
+    """The section names in the order the Overview lists them: the kit's shared order (config/overview_groups.json) or the
+    site's website.overview.group_order, then the site's own sections, then the closing ones."""
+    cfg = json.loads((Path(__file__).resolve().parents[1] / 'config' / 'overview_groups.json').read_text())
+    return {'shared': overview.get('group_order') or cfg['shared'], 'last': cfg['last']}
+
+
 def _now() -> str:
     """The time of this `ptmc web` run, in UTC (the footer's "Updated")."""
     import datetime as dt
@@ -639,6 +646,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'header': web.get('header') or {},
         'built': _now(),
         'overview': web.get('overview'),
+        'overview_groups': _overview_groups(web.get('overview') or {}),
         'filters': web.get('filters'),
         'stats': web.get('stats'),
         'sites_view': web.get('sites'),
@@ -2202,7 +2210,12 @@ def pages(
     if cfg.get('logo'):
         lf = next((f for f in (Path(cfg['logo']), root_last / cfg['logo']) if f.is_file()), None)
         if lf:
-            (out / 'logo.svg').write_text(lf.read_text())
+            svg = lf.read_text()
+            if (
+                cfg.get('logo_dots') == 'cards'
+            ):  # the mark's dots in the listed cards' band colours, in the landing order
+                svg = LP.logo_with_dots(svg, [LP.card_colour(c) for c in cards])
+            (out / 'logo.svg').write_text(svg)
             logo_href = 'logo.svg'
     if found:  # read by the landing page's search box when it is first used (assets/land-search.js)
         rows = [[acc, *v] for acc, v in sorted(found.items())]

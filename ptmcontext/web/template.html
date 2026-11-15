@@ -30,7 +30,7 @@
       <div class="hero-stats" id="hero-stats" aria-label="Summary"></div>
     </div>
   </header>
-  <div class="dock" id="dock" aria-label="Site"></div>
+  <div class="dock" id="dock" role="region" aria-label="Site"></div>
 
   <div class="toolbar">
     <div class="wrap">
@@ -54,10 +54,11 @@
 
   <footer class="site">
     <div class="wrap">
-      <span id="credit"></span>
+      <nav class="foot-links" id="foot-links" aria-label="Footer"></nav>
       <span class="theme-switch" role="group" aria-label="Color theme">
         <button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button>
       </span>
+      <p class="foot-credit" id="credit"></p>
     </div>
   </footer>
   <div id="tip" role="tooltip" hidden></div>

@@ -27,6 +27,20 @@ SEARCH_HTML = (
     '<p class="say" id="land-say" role="status"></p><ul id="land-hits" aria-label="Proteins found"></ul></section>'
 )
 
+# the footer's theme switch: the same choice (and the same stored key) as the explorers'
+THEME_JS = """(function () {
+  var bs = document.querySelectorAll('[data-theme-choice]');
+  function mark(c) { bs.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.themeChoice === c)); }); }
+  var cur = document.documentElement.dataset.theme || 'auto';
+  mark(cur);
+  bs.forEach(function (b) { b.addEventListener('click', function () {
+    var c = b.dataset.themeChoice;
+    if (c === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = c;
+    try { if (c === 'auto') localStorage.removeItem('ptmc-theme'); else localStorage.setItem('ptmc-theme', c); } catch (e) {}
+    mark(c);
+  }); });
+})();"""
+
 CSS = """
 .land-search { max-width: 46rem; padding-block: 1rem 0; display: grid; gap: 0.4rem; }
 .land-search label { font-weight: 600; }
@@ -89,6 +103,7 @@ CSS = """
 .land-foot p, .land-foot ul { max-width: 62rem; margin: 0; }
 .land-foot ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; font-size: 0.95rem; }
 .land-foot a { display: inline-block; min-height: 24px; }
+.land-foot .theme-switch { justify-self: start; }
 .hero :focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 """
 
@@ -258,7 +273,8 @@ def page(
 {'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' if fonts_css.startswith('http') else ''}
 <link rel="stylesheet" href="{html.escape(fonts_css)}">
 {f'<link rel="stylesheet" href="{html.escape(kit_css)}">' if kit_css else ''}
-<style>{CSS}</style></head>
+<style>{CSS}</style>
+<script>try {{ var t = localStorage.getItem('ptmc-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; }} catch (e) {{}}</script></head>
 <body><a class="skip" href="#sites">Skip to the explorers</a>
 <header class="hero"><div class="wrap"><div class="brand"><h1{' class="land-title"' if logo else ''}>{f'<img class="site-mark" src="{html.escape(logo)}" alt="" width="52" height="52">' if logo else ''}{title}</h1><div class="brand-side">{lab_html}</div></div>
 {f'<div class="lede"><p class="lede-what">{lede}</p></div>' if lede else ''}</div></header>
@@ -267,7 +283,33 @@ def page(
 {SEARCH_HTML if search else ''}
 <h2 class="vh">The explorers</h2>
 {sections}</main>
-<footer class="wrap land-foot">{f'<ul aria-label="Citation and code">{links}</ul>' if links else ''}{f'<p>{html.escape(note)}</p>' if note else ''}
+<footer class="wrap land-foot"><ul aria-label="Footer">{links}<li><a href="#privacy">Privacy</a></li></ul>
+<span class="theme-switch" role="group" aria-label="Color theme"><button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button></span>
+{f'<p>{html.escape(note)}</p>' if note else ''}
 <p>{built_with}</p>
-<p>No cookies, no tracking: every test runs in your browser, and nothing you search or select leaves it.</p></footer>{f'<script>{SEARCH_JS}</script>' if search else ''}</body></html>
+<p id="privacy">No cookies, no tracking: every test runs in your browser, and nothing you search or select leaves it.</p></footer><script>{THEME_JS}</script>{f'<script>{SEARCH_JS}</script>' if search else ''}</body></html>
 """
+
+
+def logo_with_dots(svg: str, colours: list[str]) -> str:
+    """The landing page's mark with its `<g id="dots">` refilled: one dot per explorer card, each in that card's band
+    colour (landing.yml `logo_dots: cards`), centred across the lens; the template's own dots stay when no card has one."""
+    cs = [c for c in colours if _colour(c, None)][:5]
+    m = re.search(r'(<g id="dots"[^>]*>)(.*?)(</g>)', svg, flags=re.S)
+    if not cs or not m:
+        return svg
+    first = re.search(r'cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"', m.group(2))
+    cy, r = (float(first.group(2)), float(first.group(3))) if first else (29.0, 4.3)
+    xs = [float(x) for x in re.findall(r'cx="([\d.]+)"', m.group(2))] or [29.0]
+    mid, step = (min(xs) + max(xs)) / 2, 2.1 * r * (0.85 if len(cs) > 3 else 1)
+    dots = ''.join(
+        f'<circle cx="{mid + (i - (len(cs) - 1) / 2) * step:.1f}" cy="{cy:g}" r="{r * (0.85 if len(cs) > 3 else 1):.1f}" fill="{c}"/>'
+        for i, c in enumerate(cs)
+    )
+    return svg[: m.start()] + m.group(1) + dots + m.group(3) + svg[m.end() :]
+
+
+def card_colour(card: dict) -> str | None:
+    """A card's first band colour, read from its style variables (the same colour its band starts with)."""
+    m = re.search(r'--c1:(#[0-9a-fA-F]{3,8})', card.get('vars') or '')
+    return m.group(1) if m else None

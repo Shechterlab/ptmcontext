@@ -1,0 +1,15 @@
+{
+ "_about": "The Overview's section names, shared by every explorer and in this order; a site's own sections follow them, then the closing ones. A site can replace the order with website.overview.group_order.",
+ "shared": [
+  "Where in the cell",
+  "Which proteins",
+  "Where in the protein",
+  "Other modifications",
+  "Interactions and enzymes",
+  "Disease and cancer",
+  "Evidence and studies"
+ ],
+ "last": [
+  "More questions"
+ ]
+}

@@ -2137,7 +2137,7 @@
   }
 
   // ---- the page ---------------------------------------------------------------------------------------------------------------
-  const trail = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <b>Overlap</b></p>`;
+  const trail = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <b>${esc(K.tabName('overlap', 'Compare sets'))}</b></p>`;
   const fn = (v) => (v == null ? '–' : K.fx(v));
   const SWATCH = (i) => `<span class="ov-sw" style="background:var(--fig-c${i + 1})" aria-hidden="true"></span>`;
   const TESTS = {
@@ -2507,7 +2507,7 @@
     const key = JSON.stringify([S.ot, S.ou, !!K.sel.peek()]);
     const head =
       trail +
-      `<div class="page-head"><h2>Overlap</h2></div><p class="page-sub">Compare 2 to ${MAXT} sets of proteins: how many they share, and whether the shared proteins are ${W.marked} more often. <a href="${esc(K.link('method', 'overlap'))}">Methods</a></p>`;
+      `<div class="page-head"><h2>${esc(K.tabName('overlap', 'Compare sets'))}</h2></div><p class="page-sub">Compare 2 to ${MAXT} sets of proteins: how many they share, and whether the shared proteins are ${W.marked} more often. <a href="${esc(K.link('method', 'overlap'))}">Methods</a></p>`;
     if (S.ot.length < 2) {
       RES = null;
       return head + pickerHtml();
@@ -2782,6 +2782,15 @@
     if (S.view === 'overview' && S.arg && sets.includes(S.arg))
       document.querySelectorAll('#view .drow[data-cat]').forEach((r) => {
         if (r.querySelector('.ov-cmp')) return;
+        // a button inside a role="button" row is a nested control: the row's name takes the role instead, the row keeps its click
+        const ln = r.querySelector('.ln');
+        if (ln && r.getAttribute('role') === 'button') {
+          ln.setAttribute('role', 'button');
+          ln.tabIndex = 0;
+          ln.setAttribute('aria-label', r.getAttribute('title') || ln.textContent);
+          r.removeAttribute('role');
+          r.removeAttribute('tabindex');
+        }
         r.querySelector('.lab')?.insertAdjacentHTML(
           'beforeend',
           ' ' + mk(S.arg, r.dataset.cat, r.querySelector('.ln')?.textContent || r.dataset.cat)
@@ -2791,14 +2800,14 @@
   (K.afterRender ||= []).push(rowButtons);
   K.views.overlap = {
     render: view,
-    title: () => 'Overlap',
+    title: () => K.tabName('overlap', 'Compare sets'),
     offNote:
       'Not filtered by your selection: this page compares the sets chosen on it. Add “The current selection” as a set to compare it.',
   };
-  K.tabs.push(() => ['overlap', 'Overlap', null]);
+  K.tabs.push(() => ['overlap', 'Compare sets', null]);
   (K.methodParts ||= []).push(
     () =>
-      `<section id="m-overlap"><h3>Overlap</h3><p>The Overlap page compares two to four sets: the sets of the protein-set questions, reader families, enzymes, ` +
+      `<section id="m-overlap"><h3>Compare sets</h3><p>The Compare sets page compares two to four sets: the sets of the protein-set questions, reader families, enzymes, ` +
       `the selection or a list of genes. It answers two questions, and the reader chooses which.</p>` +
       `<p><b>Do these sets share more proteins than chance?</b> For each pair of sets, the proteins in both are counted and compared with the number ` +
       `two random sets of the same sizes would share: expected = n × m / N, where n and m are the sizes of the two sets and N the proteins counted; ` +

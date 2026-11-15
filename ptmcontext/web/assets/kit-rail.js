@@ -709,24 +709,66 @@
     if (m) r = [m[1].trim(), m[2].trim()].filter(Boolean).join(', ');
     return r || lab;
   }
+  // Back with the drawer open closes it: opening it adds a history entry, and a Back (popstate) closes it. A control that closes it
+  // takes the entry off again; a link inside it first goes back, then follows its address, so the stack holds no spare entry.
+  let drawerPushed = false;
+  function drawerHistory(open, wasOpen) {
+    if (open && !wasOpen && !drawerPushed) {
+      history.pushState({ ptmcDrawer: 1 }, '', location.href);
+      drawerPushed = true;
+    } else if (!open && wasOpen && drawerPushed) {
+      drawerPushed = false;
+      history.back();
+    }
+  }
+  addEventListener('popstate', () => {
+    if (!drawerPushed || !R.open) return;
+    drawerPushed = false;
+    R.open = false;
+    rail();
+  });
+  document.addEventListener(
+    'click',
+    (e) => {
+      const a = e.target.closest?.('#rail a[href^="#"]:not([data-jump])');
+      if (!a || !drawerPushed || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const href = a.getAttribute('href');
+      drawerPushed = false;
+      R.open = false;
+      addEventListener(
+        'popstate',
+        () => {
+          rail();
+          location.hash = href;
+        },
+        { once: true }
+      );
+      history.back();
+    },
+    true
+  );
   function sectionsTab() {
-    const raw = (K.sections?.[S.view]?.() || []).filter((x) => x[0] !== 'view');
+    let raw = (K.sections?.[S.view]?.() || []).filter((x) => x[0] !== 'view');
+    if (S.view === 'method' && K.methodNav) raw = K.methodNav(raw); // the five parts of Methods, and the open one's sections
     // a link to another view, or to the same view with a different question (?a=), is current only when both match
-    const aOf = (h) => (h.match(/[?&]a=([^&]*)/) || [])[1] || '',
-      cur = K.link(S.view, S.arg),
-      here = (h) => cur.split('?')[0] === h.split('?')[0] && (S.view !== 'statistics' || (S.a || '') === aOf(h));
+    const cur = K.link(S.view, S.arg),
+      here = (h) =>
+        cur.split('?')[0] === h.split('?')[0] ||
+        (S.view === 'method' && h.split('?')[0] === K.link('method', K.methodPart?.()).split('?')[0]);
     // a section with nothing listed under it (or one question of its own name) is a heading-styled jump
-    const lone = ([id, lab]) =>
-      `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="toc-group toc-lone"><span class="car" aria-hidden="true"></span>${esc(lab)}</a>`;
+    const lone = ([id, lab, , , , , at]) =>
+      `<a href="${esc(at || location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="toc-group toc-lone"><span class="car" aria-hidden="true"></span>${esc(lab)}</a>`;
     const leaf = (x, inFam) => {
-      const [id, lab, lev, href] = x,
+      const [id, lab, lev, href, , , at] = x,
         text = inFam ? famLabel(x) : lab,
         tip = text !== lab ? ` title="${esc(lab)}"` : '';
       return lev === 0 && !href
-        ? lone([id, lab])
+        ? lone(x)
         : href
           ? `<a href="${esc(href)}" class="sub l1${here(href) ? ' on' : ''}"${here(href) ? ' aria-current="page"' : ''}${tip}>${esc(text)}</a>`
-          : `<a href="${esc(location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="sub l1"${tip}>${esc(text)}</a>`;
+          : `<a href="${esc(at || location.hash)}" data-jump="${esc(id)}" data-spy="${esc(id)}" class="sub l1"${tip}>${esc(text)}</a>`;
     };
     // a group heading (a level-0 entry with entries under it) is a disclosure; entries sharing a family (an analysis'
     // `family` in the site file) are one entry with a disclosure of its own. Open: the reader's choice this session,
@@ -788,7 +830,7 @@
         .map(
           (pg) =>
             `<a class="toc-p${pg.cur ? ' on' : ''}" href="${esc(pg.href)}"${pg.cur ? ' aria-current="page"' : ''}>${esc(pg.name.textContent.trim())}</a>` +
-            (pg.cur && S.view === 'overview' && raw.length
+            (pg.cur && (S.view === 'overview' || S.view === 'method') && raw.length
               ? `<div class="toc-secs">${entries.map(item).join('')}</div>`
               : '')
         )
@@ -919,10 +961,13 @@
       el.removeAttribute('role');
       el.removeAttribute('aria-modal');
     }
-    ['#view', '.toolbar', '.hero', 'footer.site'].forEach((sel) => {
+    // nothing behind the drawer takes a Tab, a click or a scroll while it is open (the bar and the Filters button too)
+    ['#view', '.toolbar', '.hero', 'footer.site', '#dock', '.rail-fab', '.skip'].forEach((sel) => {
       const x = document.querySelector(sel);
       if (x) x.inert = open;
     });
+    document.documentElement.classList.toggle('rail-lock', open);
+    drawerHistory(open, wasOpen);
     el.innerHTML =
       `<div class="rail-head"><span class="seg" role="group"><button type="button" ` +
       `data-rail-tab="sections" aria-pressed="${R.tab === 'sections'}">☰ Sections</button>` +
@@ -945,6 +990,12 @@
           )}" aria-valuemin="0" ` +
           `aria-valuemax="${innerWidth}" tabindex="0" data-rail-grip></div>`
         : '');
+    // every filter list is named by the label above it
+    el.querySelectorAll('.fctl select').forEach((sel) => {
+      const lab = sel.closest('.fctl')?.querySelector('.flabel');
+      if (lab && !sel.hasAttribute('aria-label'))
+        sel.setAttribute('aria-label', lab.textContent.replace(/\s+/g, ' ').trim());
+    });
     if (R.tab === 'sections') requestAnimationFrame(watchSections);
     const kept = (open || pinned()) && keep && el.querySelector(keep); // a sidebar being closed gives its focus back to the control that opened it, below
     if (kept) {
