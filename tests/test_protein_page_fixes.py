@@ -28,3 +28,11 @@ def test_an_ortholog_request_that_fails_is_not_reported_as_no_ortholog():
 def test_the_other_ptms_card_reads_the_maps_context_marks():
     cards, mp = _src('kit-pcards.js'), _src('kit-map.js')
     assert 'K.map.contextMarks(' in cards and 'function contextMarks(' in mp
+
+
+def test_a_protein_section_has_a_plain_name_in_the_address_and_the_logo_opens_without_a_selection():
+    js = _src('kit-proteins.js')
+    assert "'p-struct': 'structure'" in js and 'K.markSection = markSection' in js
+    assert 'K.markSection?.(jumpId)' in _src('kit-rail.js')
+    cons = _src('kit-conserve.js')
+    assert '(!c.active || c.marks)' in cons  # marks is null while no search or filter is set

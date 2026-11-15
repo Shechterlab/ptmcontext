@@ -1076,9 +1076,11 @@
     body.innerHTML = logoCard();
   }
   K.logoPanel = () => {
-    const d = SD();
-    // the selection's own result is not ready on a page drawn before its data is: no panel yet
-    return CV.logo && d && d.wide && K.sel.compute()?.marks ? { n: sets().sel.length, html: logoCard } : null;
+    const d = SD(),
+      c = d && K.sel.compute();
+    // no selection: the whole dataset (marks is null then); a selection's own result is not ready on a page drawn
+    // before its data is: no panel yet
+    return CV.logo && d && d.wide && c && (!c.active || c.marks) ? { n: sets().sel.length, html: logoCard } : null;
   };
   (K.afterRender ||= []).push(() => {
     if (S.view === 'protein') {

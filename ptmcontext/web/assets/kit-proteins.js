@@ -123,6 +123,13 @@
     },
     true
   );
+  // a reader opening a section sets the address to it; closing it takes it off again
+  document.addEventListener('click', (e) => {
+    const sum = e.target.closest?.('details.pfold > summary');
+    if (!sum || e.target.closest('a, button, select, input')) return;
+    const d = sum.parentElement;
+    setTimeout(() => K.markSection?.(d.id, d.open));
+  });
   document.addEventListener('click', (e) => {
     if (PV.more && !e.target.closest('.more-links')) {
       PV.more = false;
@@ -933,10 +940,46 @@
     'p-struct',
     'p-cons',
   ];
-  const SECTION = { ...Object.fromEntries(FOLDS.map((f) => [f, f])), ...(D.legacy_routes || {}) };
+  // the plain names a section has in an address (#protein/GENE/structure); any fold without one is named by its id
+  const SECTION_NAMES = {
+    'p-struct': 'structure',
+    'p-cons': 'conservation',
+    'p-ix': 'interactions',
+    'p-seq': 'sequence',
+    'p-regions': 'regions',
+    'p-cond': 'conditions',
+    'p-dis': 'disease',
+    'p-pert': 'perturbations',
+    'p-exp': 'experiments',
+  };
+  const NAME_TO_FOLD = Object.fromEntries(Object.entries(SECTION_NAMES).map(([f, n]) => [n, f]));
+  const SECTION = {
+    ...Object.fromEntries(FOLDS.map((f) => [f, f])),
+    ...NAME_TO_FOLD,
+    ...(D.legacy_routes || {}),
+  };
+  const sectionKey = (at) => {
+    const k = String(at || '').toLowerCase();
+    return SECTION[k] ? k : '';
+  };
+  // the address of a section the reader opened or jumped to: the protein's own, with the section's plain name
+  const markSection = (id, on = true) => {
+    const acc = PV.acc;
+    if (S.view !== 'protein' || !acc || !FOLDS.includes(id) || !byAcc[acc]) return;
+    const now = String(S.arg || '').split('/');
+    if (now[0] !== acc) return;
+    const mine = now[1] && SECTION[now[1].toLowerCase()] === id;
+    if (on) S.arg = `${acc}/${SECTION_NAMES[id] || id}`;
+    else if (mine) S.arg = acc;
+    else return;
+    PV.site = null;
+    K.writeHash(false);
+  };
+  K.markSection = markSection;
   // a site's part of the address, read as the page numbers it: R2 or 2 on a protein numbered without its first residue
   const readAt = (acc, at) => {
     if (!at) return '';
+    if (sectionKey(at)) return '/' + (SECTION_NAMES[SECTION[at.toLowerCase()]] || at.toLowerCase());
     if (/^p-[a-z0-9]+$/i.test(at)) return '/' + at.toLowerCase();
     if (/^\d+-\d+$/.test(at)) return '/' + at;
     const s = /^[A-Za-z]?(\d+)$/.exec(at);
@@ -950,6 +993,8 @@
         p = byAcc[acc] || (PV.lightP?.acc === acc ? PV.lightP : null);
       if (!p) return String(arg);
       const s = at && /^\d+$/.test(at) ? siteOf(p, +at) : at;
+      // a section's address is short: the gene and the section (#protein/GENE/structure), when the gene names the protein
+      if (at && sectionKey(at) && geneTag(p) && nameOf(geneTag(p)) === acc) return `${geneTag(p)}/${s}`;
       return [geneTag(p), acc, s].filter(Boolean).join('/');
     },
     arg: (path) => {
@@ -969,7 +1014,7 @@
       return (
         !!t &&
         (!!accOf(t) || !!nameOf(t) || ACC_RE.test(t)) &&
-        (!at || /^[A-Za-z]?\d+$|^p-[a-z0-9]+$|^\d+-\d+$/i.test(at))
+        (!at || /^[A-Za-z]?\d+$|^p-[a-z0-9]+$|^\d+-\d+$/i.test(at) || !!sectionKey(at))
       );
     },
   };
@@ -1391,13 +1436,14 @@
     // #protein/ACC/216 opens a mark's card; #protein/ACC/120-180 opens the map zoomed to a region (an IDR, from its page);
     // #protein/ACC/p-na opens a section
     const span = /^(\d+)-(\d+)$/.exec(sitePos || ''),
-      sec = /^p-[a-z0-9]+$/.exec(sitePos || '');
+      sec = /^(p-[a-z0-9]+|[a-z][a-z-]*)$/i.exec(sitePos || '');
     load(acc);
+    const secId = sec ? SECTION[sec[0].toLowerCase()] || '' : '';
     PV.site = sitePos && !span && !sec ? +sitePos : null;
     K.site.state.focus = PV.site;
     K.site.state.acc = acc;
     if (sec) {
-      PV.focus = SECTION[sec[0]] || '';
+      PV.focus = secId;
       if (PV.focus) {
         PV.open[PV.focus] = true;
         const g = GROUPS.find((x) => (x.folds || []).includes(PV.focus));
@@ -2535,6 +2581,7 @@
             PV.open[g.id] = true;
           }
           d.scrollIntoView({ block: 'start', behavior: 'smooth' });
+          markSection(d.id);
         }
       },
     ],
