@@ -1,3 +1,12 @@
+## Unreleased
+
+- Overview: the glyph of the "Which factor matters most?" tile (the arrow and its hidden words) is drawn, not shown as markup.
+- Overview: tiles sit in a grid of columns of 320 px or more (three across on a desktop, one on a phone); count and cell tiles take two or all columns.
+- Compare sets: a press on a result no longer moves focus off the search box, so the option is chosen in every browser.
+- Network cluster names: when no term holds for `min_coverage` of a cluster, the significant term of the smallest q names it, written with its share ("chromatin organization · 18%"); a cluster with no significant term keeps its three busiest proteins. New `network.thin_term` (`best` or `genes`).
+- Sticky bar: the toolbar is in full whenever the page is at its top, on every page, and a new page starts its scroll tracking afresh.
+- Network: the address uses readable names (`#network?clusters=12&colour=disorder`; `clusters`, `colour`, `score`, `top`, `sources`, `names`, `minsize`, `view`, `zoom`), earlier short names still open; Download has "Copy link".
+
 ## 0.5.0 (2026-11-15)
 
 - Plain wording: Key findings read as sentences ("Methylarginines are more common in RGG (21× other arginines)"), tile answers read "More often in X (2.1×) and Y (1.8×)", "How to read", "What this explorer is" and "How this explorer is made" became Details, About and Software and build, and "read live" became "when the page opens". Help lists the site's terms and abundance deciles. Ids, keys and search syntax are unchanged.

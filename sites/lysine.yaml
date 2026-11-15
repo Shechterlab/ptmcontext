@@ -1461,7 +1461,8 @@ website:                  # the look and words of the website (ptmc web); layout
     top: 300
     min_cluster: 5
     cluster: louvain
-    min_coverage: 0.25   # a term names a cluster only if it holds for this share of the cluster; else its three busiest proteins do
+    min_coverage: 0.25   # a term names a cluster if it holds for this share of the cluster
+    thin_term: best      # else the best significant term, written with its share ("..." · 18%); genes: its three busiest proteins
     clusters: {default: auto, min: 4, max: 16}   # the page's Clusters menu: auto (Louvain at its default resolution) or a target number
     lead: "Proteins with modified lysines joined by physical links and complexes, grouped into clusters named by GO biological process."   # the one line under the heading; the section Method has the rest
     controls: [clusters, colour, find]   # the main row (others under More options): label, clusters, colour, find, score, minc, sources, claim

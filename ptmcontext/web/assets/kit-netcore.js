@@ -182,6 +182,39 @@
         }
         remaining = remaining.filter((j) => j !== best);
       }
+      if (opt.thin_term !== 'genes') {
+        // no term holds for a fair share: the significant term of the smallest q (tie: larger share), shown with its share
+        const cand = tested
+          .map((_, j) => j)
+          .filter(
+            (j) =>
+              qs[j] <= opt.max_q && !usedIds.has(terms[tested[j]][2]) && !usedNames.has(shortTerm(terms[tested[j]][0]))
+          );
+        if (cand.length) {
+          let j = cand[0];
+          for (const x of cand.slice(1)) {
+            const same = Math.abs(qs[x] - qs[j]) <= 1e-9 * Math.max(qs[x], qs[j]);
+            const k1 = kOf.get(tested[x]),
+              k0 = kOf.get(tested[j]);
+            if (same ? k1 > k0 || (k1 === k0 && wins(x, j)) : qs[x] < qs[j]) j = x;
+          }
+          const t = tested[j];
+          usedIds.add(terms[t][2]);
+          usedNames.add(shortTerm(terms[t][0]));
+          return {
+            n,
+            term: terms[t][0],
+            id: terms[t][2],
+            source: terms[t][1],
+            p: ps[j],
+            q: qs[j],
+            k: kOf.get(t),
+            M: count.get(t),
+            N,
+            thin: true,
+          };
+        }
+      }
       return { n, term: null };
     });
   }
