@@ -309,7 +309,7 @@ def test_a_selection_defined_by_what_the_question_tests_is_not_tested(tmp_path):
     root, index, stats = _built(tmp_path)
     head = (
         f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, '
-        f'INDEX = {json.dumps(str(index))}, SEL = {json.dumps(str(index.parent / "data" / "selection.json"))}, '
+        f'INDEX = {json.dumps(str(index))}, SEL = {json.dumps(str(index.parent / "data" / "sel"))}, '
         f'AIDS = [], FILTER = {{}};'
     )
     run = subprocess.run(
