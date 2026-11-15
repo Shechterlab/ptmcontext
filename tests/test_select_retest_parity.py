@@ -18,6 +18,7 @@ import yaml
 from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
+from sel_parts import selection_of
 
 MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 ASSETS = Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets'
@@ -130,8 +131,9 @@ global.window = global; const noop = () => {};
 const el = () => ({ style: {}, setAttribute: noop, appendChild: noop, addEventListener: noop, querySelectorAll: () => [], classList: { toggle: noop } });
 global.document = { createElement: el, body: el(), addEventListener: noop, getElementById: () => null, querySelectorAll: () => [] };
 global.matchMedia = () => ({ matches: false }); global.addEventListener = noop;
-global.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve(JSON.parse(fs.readFileSync(SEL, 'utf8'))) });
+global.fetch = (u) => { const f = String(u).split('data/sel/')[1]; return Promise.resolve({ ok: !!f, json: () => Promise.resolve(JSON.parse(fs.readFileSync(SEL + '/' + f, 'utf8'))) }); };
 eval(fs.readFileSync(BUILT + '/kit-stats.js', 'utf8'));
+eval(fs.readFileSync(ASSETS + '/kit-seldata.js', 'utf8'));
 eval(fs.readFileSync(ASSETS + '/kit-select.js', 'utf8'));
 const html = fs.readFileSync(INDEX, 'utf8');
 const D = JSON.parse(html.match(/<script id="site-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
@@ -158,7 +160,7 @@ window.PTMC_MODULES.forEach((m) => m(K));
 def _retest(index, aids, filt):
     head = (
         f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, '
-        f'INDEX = {json.dumps(str(index))}, SEL = {json.dumps(str(index.parent / "data" / "selection.json"))}, '
+        f'INDEX = {json.dumps(str(index))}, SEL = {json.dumps(str(index.parent / "data" / "sel"))}, '
         f'AIDS = {json.dumps(aids)}, FILTER = {json.dumps(filt)};'
     )
     run = subprocess.run(['node', '-e', head + RUN], capture_output=True, text=True)
@@ -187,7 +189,7 @@ def test_every_mark_retested_in_the_browser_gives_the_runs_rows(tmp_path):
     root, index, stats = _built(tmp_path)
     aids = ['fams', 'reg', 'multi', 'reg_only']
     got = _retest(index, aids, {'t:kind': ['x']})  # every mark has kind x: the selection holds them all
-    sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
+    sel = selection_of(index.parent)
     assert set(sel['among']['fams'].values()) == {'ST', 'Y'} and len(sel['residues']) == len(sel['marks'])
     checked = 0
     for aid in aids:
@@ -243,7 +245,7 @@ VS = r"""
 def _vs(index, state, method, aids):
     head = (
         f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, '
-        f'INDEX = {json.dumps(str(index))}, SEL = {json.dumps(str(index.parent / "data" / "selection.json"))}, '
+        f'INDEX = {json.dumps(str(index))}, SEL = {json.dumps(str(index.parent / "data" / "sel"))}, '
         f'AIDS = {json.dumps(aids)}, FILTER = {{}}, STATE = {json.dumps(state)}, METHOD = {json.dumps(method)};'
     )
     body = RUN.split('(async () => {')[0] + VS
@@ -307,7 +309,7 @@ def test_a_selection_defined_by_what_the_question_tests_is_not_tested(tmp_path):
     root, index, stats = _built(tmp_path)
     head = (
         f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, '
-        f'INDEX = {json.dumps(str(index))}, SEL = {json.dumps(str(index.parent / "data" / "selection.json"))}, '
+        f'INDEX = {json.dumps(str(index))}, SEL = {json.dumps(str(index.parent / "data" / "sel"))}, '
         f'AIDS = [], FILTER = {{}};'
     )
     run = subprocess.run(

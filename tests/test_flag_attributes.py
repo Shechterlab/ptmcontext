@@ -12,9 +12,10 @@ import subprocess
 import pandas as pd
 import pytest
 import yaml
+from sel_parts import selection_text
+from test_search import ASSETS, _build, _page_data, _toy
 
 from ptmcontext import site as S
-from test_search import ASSETS, _build, _page_data, _toy
 
 
 def _flagged(tmp_path):
@@ -65,7 +66,7 @@ def test_a_flag_reads_as_a_plain_term_and_the_old_form_is_still_read(tmp_path):
         data['protein_attributes']['values'].update(
             json.loads((index.parent / data['late']['file']).read_text())['protein_attributes']
         )
-    sel = (index.parent / 'data' / 'selection.json').read_text()
+    sel = selection_text(index.parent)
     script = f"""
 const noop = () => {{}};
 global.window = global; global.addEventListener = noop; global.innerWidth = 1400; global.requestAnimationFrame = f => 0;

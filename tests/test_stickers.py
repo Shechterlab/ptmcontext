@@ -27,6 +27,7 @@ from ptmcontext.layers.charge import sticker_patterning
 from ptmcontext.layers.configured import sticker_counts
 from ptmcontext.profile import load_profile
 from ptmcontext.snapshot import Snapshot, md5_file
+from sel_parts import selection_of
 
 MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
@@ -403,9 +404,7 @@ def test_a_toy_site_runs_the_sticker_question_and_the_model_and_builds_the_page(
     )  # the page reads its rows from this table
     assert set(tsv.loc[tsv['analysis'] == 'which_factor', 'stratum']) == {'adjusted', 'alone'}
     assert d['stickers']['residues'] == ['Y', 'F', 'W'] and 'kit-factors.js' in index.read_text()
-    assert (
-        'which_factor' not in json.loads((index.parent / 'data' / 'selection.json').read_text())['analyses']
-    )  # not refitted for a selection
+    assert 'which_factor' not in selection_of(index.parent)['analyses']  # not refitted for a selection
 
 
 def test_an_only_in_question_gets_its_own_counts_for_a_selection(tmp_path):
@@ -443,7 +442,7 @@ def test_an_only_in_question_gets_its_own_counts_for_a_selection(tmp_path):
         re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1)
     )
     assert {x['id']: x for x in d['analyses']}['sticker_in_idrs']['only_in'] is True
-    sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
+    sel = selection_of(index.parent)
     bt = sel['by_test']['sticker_in_idrs']
     marks = pd.read_csv(root / 'out' / 'toy' / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
     prots = pd.read_csv(root / 'out' / 'toy' / 'proteins.tsv', sep='\t', dtype=str)['accession'].tolist()
@@ -462,7 +461,7 @@ def test_an_only_in_question_gets_its_own_counts_for_a_selection(tmp_path):
     index = web.build(root / 'sites' / 'toy.yaml', log=lambda *_: None)
     marks = pd.read_csv(root / 'out' / 'toy' / 'marks.tsv', sep='\t', dtype=str, keep_default_na=False)
     assert list(marks['in.flags_in_idrs'] == '') == list(marks['sticker_in_idrs'] == '')
-    sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
+    sel = selection_of(index.parent)
     assert sel['by_test']['flags_in_idrs']['outside'] == 'listed'
     assert sel['counted']['flags_in_idrs']['out'] == [i for i, x in enumerate(marks['in.flags_in_idrs']) if not x]
     assert 'out' not in sel['counted'].get('sticker_in_idrs', {})  # a class layer needs no list

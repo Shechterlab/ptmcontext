@@ -20,8 +20,9 @@ global.window = global; const noop = () => {};
 const el = () => ({ style: {}, setAttribute: noop, appendChild: noop, addEventListener: noop, querySelectorAll: () => [], classList: { toggle: noop } });
 global.document = { createElement: el, body: el(), addEventListener: noop, getElementById: () => null, querySelectorAll: () => [] };
 global.matchMedia = () => ({ matches: false }); global.addEventListener = noop;
-global.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve(JSON.parse(fs.readFileSync(SEL, 'utf8'))) });
+global.fetch = (u) => { const f = String(u).split('data/sel/')[1]; return Promise.resolve({ ok: !!f, json: () => Promise.resolve(JSON.parse(fs.readFileSync(SEL + '/' + f, 'utf8'))) }); };
 eval(fs.readFileSync(BUILT + '/kit-stats.js', 'utf8'));
+eval(fs.readFileSync(ASSETS + '/kit-seldata.js', 'utf8'));
 eval(fs.readFileSync(ASSETS + '/kit-select.js', 'utf8'));
 const D = JSON.parse(fs.readFileSync(DATA, 'utf8')), A = Object.fromEntries(D.analyses.map(a => [a.id, a]));
 const NL = String.fromCharCode(10), TAB = String.fromCharCode(9);
@@ -59,7 +60,7 @@ def toy_build(tmp_path, minimum=None):
 def _run(tmp_path, index, body):
     (tmp_path / 'd.json').write_text(json.dumps(_page_data(index)))
     head = (
-        f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, DATA = {json.dumps(str(tmp_path / "d.json"))}, SEL = {json.dumps(str(index.parent / "data" / "selection.json"))};'
+        f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, DATA = {json.dumps(str(tmp_path / "d.json"))}, SEL = {json.dumps(str(index.parent / "data" / "sel"))};'
         + HARNESS
     )
     run = subprocess.run(['node', '-e', head + '(async () => {' + body + '})();'], capture_output=True, text=True)

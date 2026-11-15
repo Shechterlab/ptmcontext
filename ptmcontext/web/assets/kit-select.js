@@ -151,8 +151,8 @@
     }
     return !!markPos[pi]?.has(pos);
   };
-  // the one-file copy has it inline; the site's folder reads data/selection.json (10 MB) only when a search, a filter or
-  // a page first asks for it (K.sel.data(), a selection in the address, the Filters tab), never to show the first screen
+  // the one-file copy has it inline; the site's folder reads data/sel/ (kit-seldata.js: the whole of it, in a worker) only
+  // when a search, a filter or a page first asks for it (K.sel.data(), a selection in the address, the Filters tab), never to show the first screen
   const inlineSel = typeof document === 'undefined' ? null : document.getElementById('selection-data');
   if (inlineSel) {
     try {
@@ -165,8 +165,8 @@
   const ready = () =>
     (loading ||= SD
       ? Promise.resolve(SD)
-      : fetch('data/selection.json')
-          .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      : K.seld
+          .full()
           .then(
             (d) => {
               SD = d;
@@ -179,6 +179,24 @@
             if (d) K.render();
             return d;
           }));
+  // the protein sets as a protein's page reads them, from the protein's own file: the sets without their members, and the
+  // protein's covariate value in the shape of the whole
+  function protData(pi) {
+    const c = K.seld.core(),
+      sl = c && K.seld.sets(pi);
+    if (!c || sl === undefined) return null;
+    const ps = {};
+    for (const [aid, m] of Object.entries(c.protein_sets_meta || {})) {
+      const r = sl?.[aid] || {};
+      ps[aid] = {
+        ...m,
+        sets: m.sets.map(([s, n]) => [s, n, []]),
+        in_background: r.b ? [pi] : [],
+        covariate: m.covariate && { ...m.covariate, proteins: r.c == null ? {} : { [pi]: r.c } },
+      };
+    }
+    return { protein_sets: ps };
+  }
   const need = () => {
     if (!SD && !loading) ready();
   };
@@ -203,10 +221,11 @@
       anyMembers[aid] = new Set(ps.of ? ps.in_background.flatMap((u) => holders[u] || []) : ps.any || ps.in_background);
     }
     // each mark's longer window, for the motif finder (website.search.patterns), and its index
-    SD.marks.forEach((m, i) => {
-      m.ix = i;
-      if (SD.wide) m.w = SD.wide.w[i];
-    });
+    if (!SD.ixDone)
+      SD.marks.forEach((m, i) => {
+        m.ix = i;
+        if (SD.wide) m.w = SD.wide.w[i];
+      });
     SD.numbers = {};
     AT().forEach((k) => {
       if (SPECS[k]?.kind === 'number') SD.numbers[k] = SD.attributes[k].map(Number);
@@ -1726,9 +1745,16 @@
         return SD;
       },
       peek: () => SD,
+      // what a protein's page reads of the sets: the whole selection if it is in, else the protein's own small file
+      // (null until it is in: ask again after the next render)
+      pdata: (pi) => (SD ? SD : protData(pi)),
+      // the questions, classes and attribute values without the marks: the whole selection if it is in, else the core
+      meta: () => SD || K.seld.core(),
+      // the values of an attribute (a mark holds their places): the whole selection's, else the core's or its own file's
+      vocab: (name) => (SD ? SD.attributes[name] : K.seld.vocab(name)),
+      setHas: (aid, s, p) => (SD ? !!setMembers[aid]?.[s]?.has(p) : K.seld.setsOf(p, aid).has(s)),
       prewarm,
       key: () => (SD ? stateKey() : null),
-      setHas: (aid, s, p) => !!setMembers[aid]?.[s]?.has(p),
       MIN: SEL_MIN,
       valueLabel,
       classLabel,

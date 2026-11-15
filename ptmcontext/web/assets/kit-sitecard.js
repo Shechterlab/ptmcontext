@@ -1094,7 +1094,7 @@
       ).forEach((v) => n.set(v, (n.get(v) || 0) + 1))
     );
     const linkOf = SPECS[CT.attribute]?.link
-      ? D.attribute_links?.[CT.attribute] || K.sel?.data()?.attribute_links?.[CT.attribute] || {}
+      ? D.attribute_links?.[CT.attribute] || K.sel?.meta()?.attribute_links?.[CT.attribute] || {}
       : {};
     return [...n.entries()]
       .sort((a, b) => b[1] - a[1])

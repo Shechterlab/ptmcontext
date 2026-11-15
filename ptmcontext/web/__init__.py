@@ -33,6 +33,7 @@ from ..site import card_questions, code_commit, load_site, manifest_of, presence
 from .cellpct import cell_percent, cell_proteome
 from .counts import counts_data
 from .glance import glance
+from . import seldata as SEL
 from . import structure as S3D
 from . import nucleic as NUC
 
@@ -43,6 +44,10 @@ FONTS = {
     'stylesheet': 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:wght@500;600;700'
     '&family=Inter:wght@400;500;600;700&display=swap',
 }
+# the same fonts as files of the kit (SIL Open Font License, assets/fonts/OFL.txt): the built folder uses them, the one-file
+# copy (which has no assets) the stylesheet above; a site that names its own stylesheet keeps it
+LOCAL_FONTS = 'assets/fonts/fonts.css'
+PRELOAD_FONT = 'assets/fonts/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2'  # Inter, latin
 # neutral greys for a site file that sets no colors of its own (website.band, accent, accent_dark): a site is meant to set them
 DEFAULT_BAND = ['#374151', '#111827']
 # The kit's modules, in the order the page loads them: THE ORDER MATTERS. A module reads what an earlier one put on K (kit-select.js
@@ -55,6 +60,7 @@ MODULES = (
     'kit-cols.js',
     'kit-late.js',
     'kit-stats.js',
+    'kit-seldata.js',
     'kit-select.js',
     'kit-rail.js',
     'kit-search.js',
@@ -101,6 +107,8 @@ MODULES = (
     'kit-figures.js',
     'kit.js',
 )
+# scripts a module starts in a worker: copied beside the others, never put in the page
+WORKERS = ('kit-seldata-worker.js',)
 DEFAULT_ACCENT, DEFAULT_ACCENT_DARK = '#4b5563', '#9ca3af'
 
 
@@ -145,6 +153,38 @@ def _control(a: dict) -> dict:
         }
         if a.get('control_of')
         else {}
+    )
+
+
+def lazy_site_data(site_dir: Path) -> None:
+    """Move the statistics table and the classes' labels (about half of an explorer's first page) out of its index.html
+    into data/statistics.tsv and data/labels.json, which kit.js reads, preloaded, before it draws. Done to the folders
+    that are published (`ptmc pages`); a folder from `ptmc web` has them inline, as the one-file copy does."""
+    page = site_dir / 'index.html'
+    text = page.read_text()
+    m = re.search(r'(<script id="site-data" type="application/json">)(.*?)(</script>)', text, re.S)
+    if not m:
+        return
+    data = json.loads(m.group(2).replace('<\\/', '</'))
+    if 'statistics_tsv' not in data:
+        return
+    (site_dir / 'data').mkdir(exist_ok=True)
+    (site_dir / 'data' / 'statistics.tsv').write_text(data.pop('statistics_tsv'))
+    labels = {a['id']: a.pop('labels') for a in data['analyses'] if a.get('labels')}
+    (site_dir / 'data' / 'labels.json').write_text(json.dumps(labels, separators=(',', ':')))
+    data['statistics_file'], data['labels_file'] = 'data/statistics.tsv', 'data/labels.json'
+    body = json.dumps(data, separators=(',', ':'), allow_nan=False).replace('</', '<\\/')
+    preload = (
+        '<link rel="preload" href="data/statistics.tsv" as="fetch" crossorigin>'
+        '<link rel="preload" href="data/labels.json" as="fetch" crossorigin>'
+    )
+    text = text[: m.start(2)] + body + text[m.end(2) :]
+    page.write_text(
+        text.replace(
+            '<link rel="stylesheet" href="assets/kit.css">',
+            preload + '<link rel="stylesheet" href="assets/kit.css">',
+            1,
+        )
     )
 
 
@@ -1675,10 +1715,8 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
 
         data['search'] = SR.data(site, run, sel, listing, fasta, out, log)
         (out / 'data').mkdir(parents=True, exist_ok=True)
-        (out / 'data' / 'selection.json').write_text(json.dumps(sel, separators=(',', ':')))
-        log(
-            f'  selection data: {len(sel["marks"]):,} marks, {(out / "data" / "selection.json").stat().st_size / 1e6:.1f} MB'
-        )
+        (out / 'data' / 'selection.json').unlink(missing_ok=True)  # the whole selection was one file once
+        SEL.write(sel, listing, out, log)
         # the pathway view's files (website.front.pathways), read one at a time when a reader opens a pathway
         if data.get('front'):
             from . import pathways as PW
@@ -1713,11 +1751,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     inline_proteins = json.dumps({f'{k:02d}': v for k, v in shards.items()}, separators=(',', ':')).replace(
         '</', '<\\/'
     )
-    inline_selection = (
-        (out / 'data' / 'selection.json').read_text().replace('</', '<\\/')
-        if (out / 'data' / 'selection.json').exists()
-        else ''
-    )
+    inline_selection = json.dumps(sel, separators=(',', ':')).replace('</', '<\\/') if listing else ''
     inline_partners = (
         (out / 'data' / 'partners.json').read_text().replace('</', '<\\/')
         if (out / 'data' / 'partners.json').exists()
@@ -1838,7 +1872,10 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             '{{BODYCLASS}}': ('' if (web.get('header') or {}).get('compact', True) else 'full-header'),
             '{{VERSION}}': version,
             '{{FONTS}}': (
-                f'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+                f'<link rel="preload" href="{PRELOAD_FONT}" as="font" type="font/woff2" crossorigin>'
+                f'<link rel="stylesheet" href="{LOCAL_FONTS}">'
+                if fonts.get('stylesheet') == FONTS['stylesheet'] and not inline
+                else f'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
                 f'<link rel="stylesheet" href="{html.escape(fonts["stylesheet"])}">'
             )
             if fonts.get('stylesheet')
@@ -1852,8 +1889,9 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             text = text.replace(key, value)
         return text
 
-    for name in ('kit.css', *MODULES):
+    for name in ('kit.css', *MODULES, *WORKERS):
         shutil.copyfile(_asset(f'assets/{name}'), out / 'assets' / name)
+    shutil.copytree(_asset('assets/fonts'), out / 'assets' / 'fonts', dirs_exist_ok=True)
     (out / 'assets' / 'logo.svg').write_text(icon)
     if logo:
         (out / 'assets' / 'lab.svg').write_text(logo)
@@ -2078,6 +2116,7 @@ def pages(
             shutil.rmtree(dest)
         # the one-file copy (<id>.html, up to 84 MB) is for offline use: it stays in the build folder, not in the published site
         shutil.copytree(src, dest, ignore=lambda d, names: [f'{site["id"]}.html'] if Path(d) == src else [])
+        lazy_site_data(dest)
         first_built = first_built or site['id']
         root_last = root_of(site)
         profile = site_profile(site)
@@ -2187,7 +2226,7 @@ def pages(
         cfg,
         kit_css=f'{first_built}/assets/kit.css' if first_built else None,
         lab_html=lab_html,
-        fonts_css=FONTS['stylesheet'],
+        fonts_css=f'{first_built}/{LOCAL_FONTS}' if first_built else FONTS['stylesheet'],
         built_with=built_with,
         logo=logo_href,
         search=bool(found),

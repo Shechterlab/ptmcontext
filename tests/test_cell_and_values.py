@@ -17,6 +17,7 @@ from ptmcontext import set_tests as T
 from ptmcontext import site as S
 from ptmcontext import web
 from ptmcontext.snapshot import md5_file
+from sel_parts import selection_of
 
 MARKS = Path(__file__).resolve().parents[1] / 'sites' / 'marks'
 
@@ -229,7 +230,7 @@ def test_maps_of_the_cell_and_numbers_reach_the_pages(tmp_path):
         data['tabs']['statistics']['label'] == 'All results'
         and data['overview']['sections'][0]['cards'][0]['drawing'] is True
     )
-    sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
+    sel = selection_of(index.parent)
     # the strata only for the maps of the cell; the numbers coded by protein index
     assert (
         'counts' in sel['protein_sets']['map_a']['covariate']

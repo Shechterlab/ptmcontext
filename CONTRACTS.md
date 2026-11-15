@@ -228,11 +228,21 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   it; it is colored and ranked only when at least `website.reading.min_maps` (default 2) of them differ the same way
   (q ≤ 0.05 and a fold of 1.1× or more, the test pointing the same way) and none the other way, gray otherwise.
 - `title, question, intro, note`: words.
-- `default_view`: `percent`, `difference` or `fold` (default `fold`), what the cell and nucleus maps color by when the page
-  opens. Every map has a switch, "Percent with sites | Difference from all mapped proteins | Fold vs other proteins".
-  Difference colors each part by its share's difference from the share among all the proteins the maps place, in points
-  ("+4 points", "−7 points" on the map; the percent on hover), on the fold's diverging ramp (red above, slate below, in
-  quarters of the largest difference, gray within half a point); the key states the centre. Percent is described next. Percent colors each part by the share of its proteins
+- `default_view`: `percent`, `average` or `fold` (default `fold`), what the cell and nucleus maps color by when the page
+  opens. Every map has a switch, "Percent with sites | Above or below the average | Fold vs other proteins". The average
+  view sets each part's share against the share among all the proteins the maps place (that map's, the median over the
+  maps that have the part). **Color is the effect size**, Cohen's h = 2 asin √p − 2 asin √p_all (steps at |h| 0.2, 0.5 and
+  0.8; red above, slate below), which does not grow with the part's size; the label reads "96% · h +1.1". **A fill is
+  evidence**: Benjamini–Hochberg q ≤ 0.05 across the parts shown; a part that is not significant is hatched. The test of a
+  map's compartment is the binomial z of its share, with the standard error widened by √φ where the map has 5 or more
+  compartments and φ > 1 (`dispersion`, default true, set false in the four sites: compartments are not expected to be alike, so the adjustment answers a different question; φ is the Pearson χ² of the Winsorised z, 10% per tail, of the
+  map's compartments, Spiegelhalter, Stat Med 2005;24:1185); with `dispersion: false`, Fisher's exact test of the part's
+  proteins against the other mapped proteins; with `abundance: true` (set in the four sites), the test within abundance deciles
+  (Mantel–Haenszel) for the maps that have it, Fisher's exact test for the others. A part takes the median p of its maps. Hover: percent, percentage-point
+  difference, h, odds ratio and its interval, z, φ, q and n. The cell page adds a funnel plot of one map (the share of
+  each compartment against its size, the overall share, 95% and 99.8% limits, widened by √φ when on) with its table. With
+  a selection, the selection's share in each part is set against its overall share the same way. The table has `h`,
+  `odds_ratio`, `or_ci_low`, `or_ci_high`, `z`, `phi`, `p` and `q_bh` (across the cells of that table). Percent colors each part by the share of its proteins
   that carry at least one mark, from the sequential ramp: the proteins are the reviewed proteins each map places in the part,
   and the median of the maps that have it is drawn (each map's value on hover). The legend's tick is the share among all the
   proteins the maps place. With a selection, the share of the part's proteins that are in it, the whole site's share on
@@ -669,7 +679,7 @@ Beside `statistics.tsv` and `run.json`, in `out/<site>/`:
 | `shown_proteins.tsv` | one per protein of `shown_marks.tsv` with no counted mark | `accession, gene, name, entry, length, sequence_md5` |
 
 `ptmc web` turns these into `data/p/NN.json` (64 shards of protein records: marks with their classes and attributes,
-units as `[kind, start, end, label, source index, class, ref]`) and `data/selection.json`: `analyses`, `classes` and
+units as `[kind, start, end, label, source index, class, ref]`) and the selection data (`data/sel/`): `analyses`, `classes` and
 `attributes` (the distinct values, which the rows code by index), `attribute_names` (their order), `attribute_links`,
 `marks` (`[protein index, position, [class codes per analysis], [attribute codes per attribute], window]`), `others`
 (per analysis, protein and class: the other candidate residues), `others_total` (per protein: candidates − marks),
@@ -690,7 +700,7 @@ its `marks`, the values in the order of `mark_attributes`), each protein of `sho
 (`marks: []`, `shown_only: true`), and the page data `shown_marks: {n, proteins: [[accession, gene, name, length,
 entry]], rows: [[accession, position, window, [attribute values]]], counted_like}` (`counted_like`: the counted marks
 that `website.shown_marks.counted.when` holds for) and `shown_view` (the site file's `website.shown_marks`). They are
-not in `data/selection.json`, `counts`, or any test; the map draws them as hatched ticks, the protein page and the
+not in the selection data, `counts`, or any test; the map draws them as hatched ticks, the protein page and the
 Sites page (behind a toggle, on by default) list them with the tag, and the note gives the numbers
 (`kit-shown.js`). A site without them gets none of these keys.
 
@@ -700,7 +710,7 @@ marks, marks with it alone (null for a category), link id]] (most marks first), 
 none, multi, two_or_more}` (`multi`: marks with two or more). A responses count: `{kind: 'responses', calls: {down, up}, first,
 group, tables, attributes, rows: [{id, name, note, short, group, kind, listed, filter, n, down, up, median, changes}]}`,
 where `filter` is the filter a row's click sets (`[t:<attribute>, <value>:<down>]`, or `[null, id]`: the count's own
-filter `c:<count id>`, whose values are row ids, keeping each row's down marks). `data/selection.json` then holds
+filter `c:<count id>`, whose values are row ids, keeping each row's down marks). the selection data then holds
 `count_questions: {<count id>: [per row: [[mark index, 1 if down + 2 if up, its change or null]]]}`, so a selection is counted
 again in the browser (`kit-counts.js`).
 
@@ -1136,7 +1146,7 @@ website:
 Data. `ptmc run` writes `overlap_members.json` (above) for the questions in `terms_from`; `ptmc web` turns it into `data/overlap/universe.json`
 (`{acc}`), `data/overlap/sets/<question>.json` (`{set: [index]}`) and `data/overlap/families.json` (`{readers: [{id, name, ids, note, m}],
 enzymes: [{id, name, role, m}]}`, `m` indices into the universe), each read when the page first needs it, and gives the page `D.overlap`. A site run
-before this key existed shows only the proteins with sites (no test). The page reads `selection.json` only through one accessor (`DATA.sd`).
+before this key existed shows only the proteins with sites (no test). The page reads the selection data only through one accessor (`DATA.sd`, over `K.seld`).
 
 A term source's members are read from the run's recorded inputs at `ptmc web` (it needs a run made with the inputs in the manifest), kept for the proteins of the reviewed proteome with `min_size` to `max_size` of them, and written to `data/overlap/sources/<id>/terms.json` (`{terms: [[id, name, proteins]]}`, read when the page opens, for the picker) and `<NN>.json` (`{term: [index]}`; a term's file is the sum of its id's character codes modulo `shards`, default 16; read when the term is chosen). The term is `x:<source>:<id>` in the address. The picker shows the term's id and size and finds it by either. An export that uses one of its terms carries the source's `cite` lines.
 
@@ -1167,7 +1177,7 @@ the front block's cards hold (their `facets` of kind `protein_sets`; a card's ot
 else opens it, and the selection bar's **Test this list** button links to it; both read the names with the search's own parser
 (`K.sel.parse`), so names matched by another name are listed ("Matched by another name: TLS -> FUS") and names not found are
 listed with any one-edit suggestion ("Not found"), never dropped silently. For each question its source's own background is
-used: `selection.json` `protein_sets[<id>]`, `in_background` (the marked proteins, or genes through `of`, that the source
+used: the selection data's `protein_sets[<id>]`, `in_background` (the marked proteins, or genes through `of`, that the source
 annotates), and each set's members within it. With n of the list in the background, N the background, M of it in the set
 and k of the list in the set: fold = (k/n)/(M/N), p = P(X >= k) for X hypergeometric(N, M, n) (one-sided; p = 1 at k = 0),
 q = Benjamini-Hochberg over every set of every question tested, small sets and k = 0 included. The function is
@@ -1242,11 +1252,34 @@ contract: a module that draws them keeps them, and a module that reads them read
 
 `K.tilekit` (`kit-tile.js`) is optional for the Overview tiles: without it a tile has no downloads and no ruler.
 
+## Selection data in parts
+
+`ptmc web` writes the selection data (what the browser filters and tests a selection with) as parts of `data/sel/`, so
+each view reads only what it shows; `data/selection.json` is no longer written. `kit-seldata.js` (`K.seld`) is the one
+reader; `ptmcontext/web/seldata.py` writes the parts and `seldata.read(folder)` puts them back together for tests and tools.
+
+| File | Holds | Read by |
+|---|---|---|
+| `core.json` | `analyses`, `classes`, `attributes` (values), `attribute_names`, `attribute_links`, every other small part, `protein_sets_meta` (the sets' names and sizes), and `parts` | the first search, filter or page that names a mark |
+| `m.NNN.json` | `{ix, rows}`: the marks of some proteins (`ix`: their positions in the whole list; rows as in the whole), about 600 KB each; proteins in the order the Sites page lists them (gene, else accession, lower case) and never split between files | the Sites page's first page (the files of its first proteins) and the whole |
+| `s.NNN.json` | for the proteins of `m.NNN.json`: `{protein index: {question: {n: names of the sets it is in, b: 1 if in the background, c: covariate value, sc: scores by set, a: best score, v: values}}}` | a protein page (the sets it is in) |
+| `x.<key>.json` | each other part larger than 32 KB (`others`, `by_test`, `protein_sets`, `wide`, `counted`, `count_questions`, ...) | the whole |
+
+`core.parts` names them: `n_marks`, `n_proteins`, `shard_of` (the file number of each protein, -1 for one without marks),
+`marks`, `sets`, `extra` (key -> file) and `attr_counts` (the marks per value of each attribute, over the whole list,
+for the Sites page's quick filters before the marks are in). The whole selection is the core without `parts` and
+`protein_sets_meta`, `marks` put back by `ix`, and each `extra` file under its key: what `K.sel.data()` returns, and what the
+one-file copy (`<id>.html`) holds inline. Reading goes: a protein page reads the core and its `s.NNN.json`
+(`K.sel.pdata(pi)`); the Sites page, with no selection and sorted by protein, reads the core and the first `m.NNN.json`
+files; anything that tests a selection, filters, sorts another way, downloads or cites reads everything
+(`K.seld.full()`), fetched and parsed by `kit-seldata-worker.js` and put together a file at a time. `K.sel.pdata`,
+`K.sel.meta` and `K.seld` are the accessor; no other module fetches these files. There is no site option for any of this.
+
 ## What the page reads at once and what it reads later
 
 `index.html` holds the data of the first screen (`site-data`). Two files are read only when something asks for them:
-`data/selection.json` (every mark with its classes and attributes) when a search, a filter, a selection in the address, the
-Filters tab or a page that tests a selection first needs it (`K.sel.data()`), and `data/site.json` for the values of the
+`data/sel/` (every mark with its classes and attributes, in parts: next section) when a search, a filter, a selection in the
+address, the Filters tab or a page that tests a selection first needs it (`K.sel.data()`), and `data/site.json` for the values of the
 protein attributes (`proteins.attributes`) that the Overview's starting points (`website.overview.starting_points`: what a
 list ranks by, filters on and shows) do not list. The page's data names them in `late: {file, protein_attributes: [name]}`;
 until the file is in, such an attribute reads as missing (`attribute_specs` and `protein_attributes.specs` stay inline,

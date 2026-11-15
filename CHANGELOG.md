@@ -4,6 +4,9 @@
 - The visible credit strip of an export no longer prints the commit, the FASTA MD5 or the page's address; they are in the SVG metadata, the PNG text chunks, the TSV `#` lines and the PDF's properties, which also carry the citation and the version.
 - "PDF of this page" and "Print this page" in one page menu on the protein pages, the Overview, the Method page and the website pages; a print stylesheet that hides the header, sidebar and buttons, keeps the figures whole and starts each section on a new page.
 - `website.network.controls` no longer has `preset`: the size is chosen in the Download menu.
+- Speed: the selection data is written in parts (`data/sel/`: a core, marks by protein in the Sites page's order, each protein's sets, and the parts only a test needs; CONTRACTS.md, "Selection data in parts"). A protein page reads only its own file; the Sites page with no selection reads its first page from the first files; everything else reads the whole in a worker, with a busy bar, a file at a time. The statistics are unchanged.
+- Speed: `ptmc pages` moves the statistics table and the classes' labels out of each index.html into `data/statistics.tsv` and `data/labels.json`, which the page preloads.
+- Speed: the fonts (Inter, IBM Plex Mono and Serif, SIL Open Font License) are files of the kit, not a request to Google Fonts; a site's own `website.fonts.stylesheet` still wins.
 - Network: a click on a protein pins it (its partners and their clusters stay lit, a panel holds its card: cluster, sites,
   partners in and out of the cluster, the term with k of n and q, the domain class), a second click opens its page,
   Shift-click pins up to five, Escape unpins. The downloads (SVG, PNG, PDF; slide or paper) make a figure of the pinned view,
@@ -92,7 +95,7 @@
   only the protein and its partners, or says why it is not there), and under the button a small drawing of the protein among
   its cluster. The button carries the selection and filters. Find genes takes a pasted list and counts and lists what it
   found. The section under the figure is called Method and is four sentences and the citations.
-- The cell and nucleus maps have a switch, "Percent with sites | Difference from all mapped proteins | Fold vs other proteins", on the Overview card, the
+- The cell and nucleus maps have a switch, "Percent with sites | Above or below the average | Fold vs other proteins", on the Overview card, the
   cell page and the enlarged map. Percent colors each compartment by the share of its proteins that carry at least one
   mark, labelled with the count ("Chromatin 97% · 412 proteins"), with the share among all proteins as a tick in the key.
   With several maps, the median is drawn and each map's value is on hover. With a selection, it shows the share of the
@@ -100,6 +103,11 @@
   Sites choose which opens first (`website.cell.default_view`). Where the mark is on 80% or more of the mapped proteins,
   the color range runs from the lowest compartment (rounded down to 5%) to 100%, and the key says it does not start at
   0 (`website.cell.range`: `data` or `full`). The key also gives the share among all reviewed proteins.
+  The average view colors each compartment by the effect size (Cohen's h) of its share against the share among all
+  mapped proteins and fills it only where q ≤ 0.05 across the compartments shown (hatched otherwise); the cell page adds
+  a funnel plot. The sites test each compartment within abundance deciles (`website.cell.abundance`), as the fold view does, with
+  Fisher's exact test where a map has none; `website.cell.dispersion` can widen the standard errors by the
+  overdispersion across a map's compartments (off in the sites; φ is on hover and the funnel plot draws both limits).
 - Where the fold has too few proteins to compare, the label says which side is short and how many proteins carry a
   mark ("too few without one to compare (97% carry one)").
 - Header: "All sites" sits on the switcher's row, so the lab block and links stay above the structure drawing. The sticky bar shows the short site name.

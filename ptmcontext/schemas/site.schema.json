@@ -5523,10 +5523,18 @@
             "default_view": {
               "enum": [
                 "percent",
-                "difference",
+                "average",
                 "fold"
               ],
-              "description": "what the cell and nucleus maps color by when the page opens: percent (the share of each compartment's proteins that carry at least one mark), difference (that share's difference from the share among all the proteins the maps place, in points, on a diverging ramp; both for a mark that covers most proteins, where the fold has little to compare against) or fold (the default: the fold against the other proteins). The switch on each map changes it for the visitor"
+              "description": "what the cell and nucleus maps color by when the page opens: percent (the share of each compartment's proteins that carry at least one mark), average (each compartment's share against the share among all the proteins the maps place, as Cohen's h on a diverging ramp, filled where q ≤ 0.05 across the compartments shown; percent and average suit a mark that covers most proteins, where the fold has little to compare against) or fold (the default: the fold against the other proteins). The switch on each map changes it for the visitor"
+            },
+            "dispersion": {
+              "type": "boolean",
+              "description": "the average view widens the standard error of a map's compartments by the square root of the overdispersion factor phi (the Pearson chi-squared of the Winsorised z of its compartments' shares, Spiegelhalter 2005), when the map has 5 or more compartments and phi is above 1; false tests each compartment by Fisher's exact test against the other mapped proteins (default true)"
+            },
+            "abundance": {
+              "type": "boolean",
+              "description": "the average view takes the test within abundance deciles (Mantel-Haenszel) for the maps tested so, and for a selection (default false)"
             },
             "range": {
               "enum": [

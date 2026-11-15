@@ -17,6 +17,7 @@ import yaml
 from ptmcontext import site as S
 from ptmcontext import web
 from test_protein_tables import _page_data, _toy
+from sel_parts import selection_of
 
 ASSETS = Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets'
 
@@ -101,7 +102,7 @@ def _node(index, body):
         data['protein_attributes']['values'].update(
             json.loads((index.parent / data['late']['file']).read_text())['protein_attributes']
         )
-    sel = json.loads((index.parent / 'data' / 'selection.json').read_text())
+    sel = selection_of(index.parent)
     files = [ASSETS / n for n in ('kit-columns.js', 'kit-sitecard.js', 'kit-tables.js', 'kit-sites.js')]
     script = f"""
 const fs = require('fs'), path = require('path'), WEB = {json.dumps(str(index.parent))};
@@ -119,7 +120,8 @@ const K = {{ D, W: D.words, A, S, esc, int: n => String(n), cap: t => String(t)[
   link: (v, a) => '#' + v + '/' + (a || ''), map: {{ attrColour: () => '#000' }}, preamble: () => '# head\\n', CIT: {{}}, download: () => {{}}, render: () => {{}}, go: () => {{}}, writeHash: () => {{}},
   expBar: (k, a) => `<span data-${{a}}></span>`, exportFigure: (kind, make, name, el, tsv) => {{ got = {{ name, tsv: tsv() }}; }}, proteinAttr: (acc, n) => D.protein_attributes.values[n][D.proteins.findIndex(p => p[0] === acc)],
   PADJ: 0.05, fxn: v => String(v), fq: v => String(v), pct: () => '', fx: v => String(v),
-  sel: {{ data: () => SD, active: () => false, compute: () => ({{ active: false }}), nMarks: () => SD.marks.length, valueLabel: (n, v) => (D.attribute_specs[n]?.values || {{}})[v] ?? v,
+  seld: {{ inline: true }},
+  sel: {{ data: () => SD, peek: () => SD, meta: () => SD, vocab: n => SD.attributes[n], active: () => false, compute: () => ({{ active: false }}), nMarks: () => SD.marks.length, valueLabel: (n, v) => (D.attribute_specs[n]?.values || {{}})[v] ?? v,
     classLabel: (a, c) => c, listHtml: (n, vs) => vs.join(', '), selectedCountByProtein: () => ({{}}), contrastGroups: () => null, MIN_SIDE: 10 }} }};
 window.PTMC_MODULES.forEach(f => f(K));
 const click = sel => K.clicks.find(([s]) => s === sel)[1];
