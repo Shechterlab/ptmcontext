@@ -26,12 +26,12 @@ def _build(tmp_path, sid, **website):
     return page, data
 
 
-def test_the_compact_header_is_on_unless_the_site_turns_it_off(tmp_path):
+def test_the_full_header_is_on_every_page_unless_the_site_asks_for_compact(tmp_path):
     page, data = _build(tmp_path, 'toyh')
-    assert '<body class="">' in page and data['header'] == {}
+    assert '<body class="full-header">' in page and data['header'] == {}
     assert re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', data['built'])  # the footer's "updated"
-    page, data = _build(tmp_path, 'toyi', header={'compact': False})
-    assert '<body class="full-header">' in page and data['header'] == {'compact': False}
+    page, data = _build(tmp_path, 'toyi', header={'compact': True})
+    assert '<body class="">' in page and data['header'] == {'compact': True}
 
 
 def test_fold_switches_are_in_the_schema_and_reach_the_page(tmp_path):

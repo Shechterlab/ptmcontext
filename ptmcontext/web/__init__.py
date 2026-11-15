@@ -642,7 +642,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         # the mark's short name in the map's "All modifications" block (the profile's, else its state codes)
         'profile_short': profile.data.get('short')
         or '/'.join(str(x.get('code')) for x in profile.data.get('states', []) if x.get('code')),
-        # the header (website.header.compact: false keeps the full band on every page) and when this build was made, for the footer
+        # the header (website.header.compact: true slims the band off the Overview) and when this build was made, for the footer
         'header': web.get('header') or {},
         'built': _now(),
         'overview': web.get('overview'),
@@ -1877,7 +1877,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             '{{LAB}}': lab,
             '{{LINKS}}': links,
             '{{CITE}}': cite_html,
-            '{{BODYCLASS}}': ('' if (web.get('header') or {}).get('compact', True) else 'full-header'),
+            '{{BODYCLASS}}': ('' if (web.get('header') or {}).get('compact', False) else 'full-header'),
             '{{VERSION}}': version,
             '{{FONTS}}': (
                 f'<link rel="preload" href="{PRELOAD_FONT}" as="font" type="font/woff2" crossorigin>'

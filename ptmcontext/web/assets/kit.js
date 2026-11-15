@@ -4851,7 +4851,7 @@
       S.view === 'overview'
         ? D.site.name
         : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`; // the page first: "FUS R216 · <site>"
-    document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg) && D.header?.compact !== false); // the header band in full on the Overview only (website.header.compact)
+    document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg) && D.header?.compact === true); // the full header band on every page unless website.header.compact: true
     document.body.classList.remove('bar-hidden');
     document.querySelector('.toolbar')?.removeAttribute('inert');
     K.barReset?.();
