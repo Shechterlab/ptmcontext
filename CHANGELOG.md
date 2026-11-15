@@ -1,4 +1,4 @@
-## 0.5.0 (unreleased)
+## 0.5.0 (2026-11-15)
 
 - Plain wording: Key findings read as sentences ("Methylarginines are more common in RGG (21× other arginines)"), tile answers read "More often in X (2.1×) and Y (1.8×)", "How to read", "What this explorer is" and "How this explorer is made" became Details, About and Software and build, and "read live" became "when the page opens". Help lists the site's terms and abundance deciles. Ids, keys and search syntax are unchanged.
 - Navigation: the same tabs on every explorer in one order (Overview, Proteins, Sites, Interactions, Compare sets, Network, Methods, Help); a tab whose data a site lacks is greyed out with its reason on hover (`website.tabs.<page>.empty`). Overlap is renamed Compare sets (`#overlap` stays, `#compare` is an alias). The All tests tab is gone: its table is the "Every test" section of Methods, which has five parts with addresses of their own (`#method/tests`, `/controls`, `/sources`, `/cite`, `/download`); `#statistics` redirects to `#method/every`. Badges and the tile popover link to `#method/controls`.
