@@ -534,11 +534,15 @@
       ...D.analyses.filter((a) => a.kind !== 'protein_sets').map((a) => a.id),
       ...Object.keys(A).filter((id) => id[0] === '@'),
     ];
-    const all = qs.flatMap((id) =>
-      (K.sel.contrast(id, 'fisher') || []).filter(
-        (r) => !r.descriptive && r.q != null && r.a + r.c >= 10 && !EXCL.test(r.label) && r.category !== ''
-      )
+    const raw = qs.flatMap((id) => K.sel.contrast(id, 'fisher') || []);
+    const all = raw.filter(
+      (r) => !r.descriptive && r.q != null && r.a + r.c >= 10 && !EXCL.test(r.label) && r.category !== ''
     );
+    // nothing tested: why (a selection of whole proteins, one made with the questions), not "0 of 0 features"
+    if (!all.length) {
+      const first = raw.find((r) => r.descriptive);
+      return first ? { G, tested: 0, why: K.whyShown(A[first.analysis] || {}, raw) } : null;
+    }
     const sig = all.filter((r) => r.q <= K.PADJ && (r.dir === 'more' || r.dir === 'less'));
     // how the marks were found (provenance attributes) after what they are, as the Overview's caveat
     const prov = (r) => !!A[r.analysis]?.provenance,
@@ -566,6 +570,14 @@
   function enrichedCard() {
     const F = features();
     if (!F) return '';
+    if (!F.tested)
+      return (
+        `<details class="pfold en-fold" id="sel-enriched"${EN.open ? ' open' : ''}><summary><span class="pfm" ` +
+        `aria-hidden="true"></span><h3>Enriched features</h3><span class="fsum">shown, not tested</span></summary>` +
+        `<div class="pfold-body"><p class="muted">${esc(F.why)}</p><p><a class="btn small" href="${esc(
+          K.link('overview', '', { vs: 'marks' })
+        )}">The shares, question by question ›</a></p></div></details>`
+      );
     const named = (r) => (r.label.length < 14 ? `${A[r.analysis]?.title || ''}: ${r.label}` : r.label);
     const top = F.up
       .filter((r) => !A[r.analysis]?.provenance && !r.circular)
@@ -633,7 +645,7 @@
   }
   function enrichedTsv() {
     const F = features();
-    if (!F) return '';
+    if (!F || !F.tested) return '';
     return (
       K.preamble(
         'enriched features of the selection',
@@ -691,7 +703,7 @@
   }
   function enrichedFigure() {
     const F = features(),
-      rows = [...F.up.slice(0, 8), ...F.dn.slice(0, 4)],
+      rows = F?.tested ? [...F.up.slice(0, 8), ...F.dn.slice(0, 4)] : [],
       Wd = 760,
       rh = 22,
       lab = 300,

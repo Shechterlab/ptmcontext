@@ -65,14 +65,17 @@
       .filter(Boolean)
       .join('. ');
   }
+  // a chip's words open the Filters, where the selection is made and changed; its × removes it
   const chip = (cat, val, tip, btn, cls = '') =>
-    `<span class="sel-chip${cls}" title="${esc(tip)}"><span class="sel-cat">${esc(cat)}</span>${
+    `<span class="sel-chip${cls}" title="${esc(tip)}"><button type="button" class="sel-chip-open" data-sel-filters ` +
+    `aria-label="${esc(cat)}${val ? ': ' + esc(val) : ''}. Open the filters"><span class="sel-cat">${esc(cat)}</span>${
       val ? ` · <span class="sel-val">${esc(val)}</span>` : ''
-    }${btn}</span>`;
+    }</button>${btn}</span>`;
   // the search's plain words: a gene list is "Genes", other words "Search"; the first three, the rest on hover
   function plainChip() {
     const c = compute(),
-      bad = new Set((c.unresolved || []).map((x) => x.toLowerCase())),
+      // a name the search could not place (a gene not in this dataset) is not part of the selection, so not counted
+      bad = new Set([...(c.unresolved || []), ...(c.q?.absent || [])].map((x) => String(x).toLowerCase())),
       words = plainOf(S.q)
         .split(/[\s,;]+/) // a list typed "TP53, MYC" has no commas of its own in the chip: they are the joiner
         .filter((t) => t && !bad.has(t.toLowerCase()));
@@ -213,6 +216,11 @@
     const { btn, pop } = menuEls();
     if (!btn) return;
     pop.hidden = !open;
+    // the Save field replaced the menu's items: they come back when it closes
+    if (!open && pop.dataset.items != null) {
+      pop.innerHTML = pop.dataset.items;
+      delete pop.dataset.items;
+    }
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     if (open && focus) pop.querySelector('[role="menuitem"]')?.focus();
     if (!open && focus) btn.focus();
@@ -222,7 +230,12 @@
     if (!btn || pop.hidden) return;
     if (e.target.closest('[data-sel-menu]')) return;
     // Copy link stays open so that its confirmation can be read; it closes with the text's reset
-    if (pop.contains(e.target) && e.target.closest('[data-sel-copy]')) return;
+    // (Save replaces the menu's items with its field, so its own button is no longer in the menu when this runs)
+    if (
+      (pop.contains(e.target) || !e.target.isConnected) &&
+      e.target.closest('[data-sel-copy], [data-sel-save], [data-sel-save-form]')
+    )
+      return;
     menuSet(false, false);
   });
   document.addEventListener('keydown', (e) => {
@@ -237,7 +250,7 @@
     } else if (open && e.key === 'Escape') {
       e.preventDefault();
       menuSet(false, true);
-    } else if (open && pop.contains(e.target)) {
+    } else if (open && pop.contains(e.target) && !e.target.closest('[data-sel-save-form]')) {
       const i = items.indexOf(document.activeElement);
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
         e.preventDefault();
@@ -304,8 +317,25 @@
       )
       .join('')}</div>`;
   }
+  // Save asks for a name in a field of its own, in the bar's menu (no browser prompt)
   function save() {
-    const name = prompt('A name for this selection', describe().slice(0, 80));
+    const { pop } = menuEls();
+    if (!pop) return;
+    pop.hidden = false;
+    menuEls().btn?.setAttribute('aria-expanded', 'true');
+    if (pop.dataset.items == null) pop.dataset.items = pop.innerHTML;
+    pop.innerHTML =
+      `<form class="sel-save-form" data-sel-save-form><label class="flabel" for="sel-save-name">A name for this ` +
+      `selection</label><input id="sel-save-name" type="text" maxlength="80" autocomplete="off" value="${esc(
+        describe().slice(0, 80)
+      )}"><span class="sel-save-btns"><button class="btn small accent" type="submit">Save</button>` +
+      `<button class="btn small" type="button" data-sel-save-cancel>Cancel</button></span></form>`;
+    const inp = pop.querySelector('input');
+    inp.focus();
+    inp.select();
+  }
+  function saveAs(name) {
+    name = String(name || '').trim();
     if (!name) return;
     const list = savedList().filter((x) => x.name !== name);
     list.unshift({
@@ -1024,9 +1054,12 @@
     [
       '[data-sel-clear-q]',
       () => {
+        const undo = K.undoable?.('Search removed.');
         S.q = (String(S.q).match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || []).filter(isTermTok).join(' ');
         K.writeHash(true);
         K.render();
+        K.commitQ?.();
+        undo?.();
       },
     ],
     [
@@ -1052,6 +1085,16 @@
     ],
     ['[data-sel-menu]', () => menuSet(menuEls().pop.hidden, false)],
     ['[data-sel-save]', () => save()],
+    ['[data-sel-save-cancel]', () => menuSet(false, true)],
+    [
+      '[data-sel-filters]',
+      (el) => {
+        R.opener = el;
+        R.tab = 'filters';
+        if (!pinned()) R.open = true;
+        rail();
+      },
+    ],
     [
       '[data-fgroup-clear]',
       (el, e) => {
@@ -1213,6 +1256,11 @@
       R.open = false;
       rail();
     }
+  });
+  document.addEventListener('submit', (e) => {
+    if (!e.target.closest?.('[data-sel-save-form]')) return;
+    e.preventDefault();
+    saveAs(e.target.querySelector('input')?.value);
   });
   ['pointerover', 'focusin'].forEach((ev0) =>
     document.addEventListener(

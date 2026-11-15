@@ -25,7 +25,10 @@
               configurable: true,
             });
           done = true;
-          K.render();
+          // the selection read these attributes as missing (a term on one of them matched nothing): it is resolved and
+          // computed again (K.sel.refresh: a new generation of its cache, then the page)
+          if (K.sel?.refresh) K.sel.refresh();
+          else K.render();
         },
         () => {
           done = true;

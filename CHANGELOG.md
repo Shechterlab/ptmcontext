@@ -22,7 +22,30 @@
 - Landing cards without the "Strongest result" block and the italic question line; `card: {result, question}` in the landing config brings them back (default false).
 - A small brand line (the landing config's `title`) above each explorer's name links to the landing page; the header's "All sites" link is gone, the sticky bar keeps it.
 - Protein page fixes. The Other PTMs card is read from the same marks and counts as the map's legend. A context mark with a score subset (phosphosites) draws every mark at first on every site, the score cut an option (`subset.default: subset` keeps the cut first); the legend counts what is drawn. A failed ortholog lookup says "Ortholog data could not be loaded" with a retry (the request used a type Ensembl does not accept, and an HTTP error no longer reads as "no ortholog"); AlphaFold DB's 404 is "no model". The tile captions are visible again (a hidden-label rule shared their class name). The protein's sets sit under an "Across all <marks>" heading, as dataset-wide results; the organelle IP and CD-CODE stress granule sets carry their source in the name. Network "Find genes" reads the main search's other names (TDP43) and keeps the genes in the address (`nf=`).
-
+- Selection retests say why a row is shown and not tested (made with the question, the selection's own classes, a
+  selection of whole proteins against the other marks, named proteins, too small, or a selection defined by the class a
+  question tests, such as a source filter whose every site carries the mark a same-lysine question asks about). A gene
+  list compared with the other marks draws its shares instead of an empty card; How does it differ and Enriched
+  features give that reason instead of "too few" or "0 of 0 features".
+- One measure per result: a question's page and its figure draw the fold, as the tile does, with the test's odds ratio
+  beneath each row; a protein's page quotes the main questions' fold (no control), and All tests names a control's rows
+  as a control. Effects are named by their test (a protein set's odds ratio within abundance deciles is no longer called
+  within-protein); the statistics and question downloads add a fold column and describe a, b, c and d for each kind of
+  row; an infinite odds ratio's log2 prints as a bound.
+- A tile with no row at 1.1x says how many rows are significant but under 1.1x in fold, and their hover says why. The cell
+  card names the parts its lists show as less often when no region differs.
+- Overlap: the term box is a keyboard combobox (ARIA 1.2); a set offered by two questions is listed once, and terms that
+  share a label show their source; a term made of sites (a selection, a gene list, a class of sites) is counted, not
+  tested.
+- Search and selection bar: Escape closes the suggestions and puts back the search as last committed, never clearing
+  it; the search's x, the chip's x and Clear all offer Undo. The chip leaves out names not in the dataset and opens the
+  Filters; Save takes its name in the menu, not a browser prompt. In Compare mode the cell card says it shows all sites.
+- A change of selection shows "Updating: testing N sites again" at once, and on the Overview the retests run one
+  question at a time, giving the browser back between them; How does it differ is compared only when opened, also in
+  slices. On the lysine site a source filter held the page for about 38 s; it now shows the note within 0.1 s and no
+  task runs longer than about 0.7 s.
+- A link whose search names a protein attribute read on demand is resolved again when that attribute arrives, instead
+  of showing an unmatched term until the next navigation.
 - Overlap page (`website.overlap`): two to four terms (protein sets, classes, reader families, enzymes, the selection, a gene list) as rows of regions (a membership matrix, a split size bar, the share with sites against all reviewed proteins with its 95% interval) and, for two or three terms, an area-proportional diagram, with proteins, proteins with sites, fold, a hypergeometric test against all reviewed proteins and Benjamini-Hochberg q for each region; also for sites, enzymes and readers. A "Compare with..." button on the rows of protein-set questions. Reader families (Tudor; chromodomain, PHD, MBT, PWWP; 14-3-3, SH2, BRCT; bromodomain, YEATS) are listed in the site files with their Pfam and InterPro ids.
 - Overlap terms from GO biological process (propagated annotations without computational-only evidence, 5 to 5,000 proteins), listed by name, GO id and size; one generic `term_sources` entry in the site file (data from PTM_Pipeline's staged GO tables; cite Gene Ontology Consortium 2023 and Ashburner et al. 2000).
 - `ptmc run` writes `overlap_members.json` (every protein of each set) for the questions an Overlap block names; the statistics are unchanged.

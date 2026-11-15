@@ -236,7 +236,7 @@ VS = r"""
   K.sel.data(); await K.sel.ready;
   Object.assign(S0, STATE);
   const fam = {};
-  for (const id of AIDS) fam[id] = (K.sel.contrast(id, METHOD) || []).map((r) => ({ category: r.category, p: r.p, q: r.q, descriptive: !!r.descriptive }));
+  for (const id of AIDS) fam[id] = (K.sel.contrast(id, METHOD) || []).map((r) => ({ category: r.category, p: r.p, q: r.q, descriptive: !!r.descriptive, why: r.why || null, definedBy: r.definedBy ?? null, a: r.a, b: r.b, c: r.c }));
   console.log(JSON.stringify({ fam, features: K.sel.residueFeatures(), mixed: K.sel.contrastGroups().mixed }));
 })();
 """
@@ -274,3 +274,49 @@ def test_a_selection_of_whole_proteins_is_not_tested_pooled_against_the_other_ma
     assert out['mixed'] == 0 and out['features'] == []
     rows = [r for a in ('reg', 'fams') for r in out['fam'][a]]
     assert rows and all(r['descriptive'] and r['p'] is None for r in rows)
+
+
+def test_a_gene_list_against_the_other_marks_yields_rows_on_the_residue_questions(tmp_path):
+    # a gene list is made with no question: every residue question is compared (its shares drawn), and the reason it is
+    # not tested is that it takes whole proteins, never that it was made with the question
+    root, index, stats = _built(tmp_path)
+    out = _vs(index, {'vs': 'marks', 'q': 'GP00 GP01 GP03 GP04 GP06'}, 'fisher', ['reg', 'fams'])
+    for aid in ('reg', 'fams'):
+        rows = out['fam'][aid]
+        assert rows, aid
+        assert all(r['why'] == 'between' for r in rows), rows
+        assert all(r['a'] + r['b'] > 0 and r['a'] + r['c'] > 0 for r in rows)
+
+
+DEFINED = r"""
+(async () => {
+  K.sel.data(); await K.sel.ready;
+  const SD = K.sel.peek(), ai = SD.analyses.indexOf('reg');
+  // the marks in the first class of 'reg', named one by one as sites: a selection that is that class, though made with
+  // no filter on the question
+  const ci = SD.classes.reg.findIndex((c, k) => SD.marks.filter((m) => m[2][ai].includes(k)).length >= 12);
+  const ms = SD.marks.filter((m) => m[2][ai].includes(ci));
+  S0.q = ms.map((m) => `${D.proteins[m[0]][1]} ${m[1]}`).join(' ');
+  const rows = K.sel.retest('reg', 'mantel_haenszel') || [];
+  console.log(JSON.stringify({ cls: SD.classes.reg[ci], n: K.sel.nMarks(), rows: rows.map((r) => ({ category: r.category, b: r.b, why: r.why || null, definedBy: r.definedBy ?? null, q: r.q })) }));
+})();
+"""
+
+
+def test_a_selection_defined_by_what_the_question_tests_is_not_tested(tmp_path):
+    # every selected mark is in one class of the question (here: sites named one by one, all inside a region): the test
+    # would be trivial (an odds ratio without bound), so the rows are shown with that reason, not tested
+    root, index, stats = _built(tmp_path)
+    head = (
+        f'const ASSETS = {json.dumps(str(ASSETS))}, BUILT = {json.dumps(str(index.parent / "assets"))}, '
+        f'INDEX = {json.dumps(str(index))}, SEL = {json.dumps(str(index.parent / "data" / "selection.json"))}, '
+        f'AIDS = [], FILTER = {{}};'
+    )
+    run = subprocess.run(
+        ['node', '-e', head + RUN.split('(async () => {')[0] + DEFINED], capture_output=True, text=True
+    )
+    assert run.returncode == 0, run.stderr[-1500:]
+    out = json.loads(run.stdout)
+    assert out['n'] >= 12 and out['rows'], out
+    assert all(r['why'] == 'defined' and r['q'] is None for r in out['rows']), out
+    assert {r['definedBy'] for r in out['rows']} == {out['cls']}
