@@ -271,3 +271,27 @@ def page(
 <p>{built_with}</p>
 <p>No cookies, no tracking: every test runs in your browser, and nothing you search or select leaves it.</p></footer>{f'<script>{SEARCH_JS}</script>' if search else ''}</body></html>
 """
+
+
+def logo_with_dots(svg: str, colours: list[str]) -> str:
+    """The landing page's mark with its `<g id="dots">` refilled: one dot per explorer card, each in that card's band
+    colour (landing.yml `logo_dots: cards`), centred across the lens; the template's own dots stay when no card has one."""
+    cs = [c for c in colours if _colour(c, None)][:5]
+    m = re.search(r'(<g id="dots"[^>]*>)(.*?)(</g>)', svg, flags=re.S)
+    if not cs or not m:
+        return svg
+    first = re.search(r'cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"', m.group(2))
+    cy, r = (float(first.group(2)), float(first.group(3))) if first else (29.0, 4.3)
+    xs = [float(x) for x in re.findall(r'cx="([\d.]+)"', m.group(2))] or [29.0]
+    mid, step = (min(xs) + max(xs)) / 2, 2.1 * r * (0.85 if len(cs) > 3 else 1)
+    dots = ''.join(
+        f'<circle cx="{mid + (i - (len(cs) - 1) / 2) * step:.1f}" cy="{cy:g}" r="{r * (0.85 if len(cs) > 3 else 1):.1f}" fill="{c}"/>'
+        for i, c in enumerate(cs)
+    )
+    return svg[: m.start()] + m.group(1) + dots + m.group(3) + svg[m.end() :]
+
+
+def card_colour(card: dict) -> str | None:
+    """A card's first band colour, read from its style variables (the same colour its band starts with)."""
+    m = re.search(r'--c1:(#[0-9a-fA-F]{3,8})', card.get('vars') or '')
+    return m.group(1) if m else None

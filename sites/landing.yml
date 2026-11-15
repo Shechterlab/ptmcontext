@@ -5,6 +5,7 @@ title: PTMContext
 lede: Analysis tools for protein post-translational modifications
 description: "PTMContext: analysis tools for protein post-translational modifications."
 logo: sites/art/ptmcontext_logo.svg
+logo_dots: cards           # the mark's dots: one per card, in its band colour
 switcher: {label: PTM}
 card: {result: false, question: false}    # the card's "Strongest result" block and italic question line (both default off)
 cta: "Explore {marks} →"

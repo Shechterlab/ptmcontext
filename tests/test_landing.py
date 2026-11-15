@@ -232,3 +232,15 @@ def test_the_compact_bar_options_reach_the_page_and_are_checked(tmp_path):
     a.write_text(yaml.safe_dump(spec, sort_keys=False, allow_unicode=True))
     with pytest.raises(Exception):
         S.load_site(a)
+
+
+def test_the_mark_takes_one_dot_per_card_in_its_band_colour():
+    from ptmcontext.web import landing as LP
+
+    cards = [{'vars': '--c1:#155e75;--c2:#0f3b47'}, {'vars': '--c1:#5b21b6;--c2:#3b0764'}, {'vars': ''}]
+    cols = [LP.card_colour(c) for c in cards]
+    assert cols == ['#155e75', '#5b21b6', None]
+    tpl = '<svg><circle r="20"/><g id="dots" stroke="#fff"><circle cx="19" cy="29" r="4.3" fill="#000"/><circle cx="39" cy="29" r="4.3" fill="#000"/></g></svg>'
+    svg = LP.logo_with_dots(tpl, cols)
+    assert svg.count('<circle') == 1 + 2 and '#155e75' in svg and '#5b21b6' in svg and '#000' not in svg
+    assert LP.logo_with_dots(tpl, [None]) == tpl  # no card colour: the template's own dots stay
