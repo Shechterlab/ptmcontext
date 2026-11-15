@@ -2389,7 +2389,7 @@
     const banner = small
       ? `<p class="note small-sel" role="status"><b>Showing the whole dataset.</b> Your ` +
         `selection is too small to test (it needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}), so each ` +
-        `tile shows all ${esc(W.marks)}.</p>`
+        `tile shows all ${esc(W.marks)}${D.cell && K.sel.proteinIds().size ? ', except the cell, which shows where your selection is found' : ''}.</p>`
       : '';
     if (S.arg && A[S.arg] && (A[S.arg].kind !== 'attribute' || vsOn())) return focus(S.arg);
     if (

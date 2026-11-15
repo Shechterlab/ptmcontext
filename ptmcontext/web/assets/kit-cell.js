@@ -895,6 +895,9 @@
     }
   };
   // the protein page card's choices: one map or all, and the whole dataset shaded with this protein's compartments outlined
+  // the proteins ONE stands for: the one of a protein page, or the few of a selection too small to test
+  const oneIds = () => ONE.ids || [ONE.i];
+  const geneOf = (i) => D.proteins[i][1] || D.proteins[i][0];
   const ONEUI = { map: 'all', ds: false };
   function oneParts() {
     const f = oneFound();
@@ -921,8 +924,12 @@
       const cols = ONEUI.map === 'all' ? L.cols : L.cols.filter((aid) => aid === ONEUI.map);
       L.groups.forEach(([, rows], gi) =>
         rows.forEach((row, ri) => {
-          const hit = cols.filter((aid) => row.map[aid] && K.sel.setHas(aid, row.map[aid], ONE.i)),
-            tested = cols.some((aid) => row.map[aid]);
+          const ids = oneIds(),
+            who = (aid) => ids.filter((i) => row.map[aid] && K.sel.setHas(aid, row.map[aid], i)),
+            hit = cols.filter((aid) => who(aid).length),
+            tested = cols.some((aid) => row.map[aid]),
+            found = [...new Set(hit.flatMap(who))],
+            many = ids.length > 1;
           // every compartment is named: found (colored, with the number of studies), not found (gray) or not tested (no map has it)
           if (row.part && !(P[row.part] && P[row.part].found))
             P[row.part] = {
@@ -931,9 +938,15 @@
               id: rowId(L, gi, ri),
               cells: hit.map((aid) => [aid, null]),
               found: hit.length > 0,
-              tone: hit.length ? 'u2' : tested ? 'ns' : 'na',
+              tone: hit.length ? (many && found.length / ids.length >= 0.5 ? 'u3' : 'u2') : tested ? 'ns' : 'na',
               value: hit.length ? 'Found here' : tested ? 'Not found here' : 'Not tested',
-              maps: hit.length ? hit.length + (hit.length === 1 ? ' study' : ' studies') : '',
+              // several proteins (a selection too small to test): the share of them a map places here, no statistics
+              maps: !hit.length
+                ? ''
+                : many
+                  ? `${found.length} of ${ids.length} proteins`
+                  : hit.length + (hit.length === 1 ? ' study' : ' studies'),
+              genes: many ? found.map(geneOf) : null,
             };
           (row.also || []).forEach((k) => {
             within[k] ||= row.part;
@@ -947,12 +960,15 @@
   function oneMaps(p) {
     const sd = K.sel.pdata(p.i);
     if (!sd) return null;
+    const ids = p.ids || [p.i];
     return MAPS.map((m) => {
       const aid = m.analysis,
         ps = sd.protein_sets?.[aid],
         d = DS(aid);
-      const sets = ps ? ps.sets.map((x) => x[0]).filter((s) => K.sel.setHas(aid, s, p.i)) : [];
-      const placed = !!ps && (sets.length > 0 || (ps.in_background || []).includes(p.i));
+      const sets = ps
+        ? [...new Set(ps.sets.map((x) => x[0]))].filter((s) => ids.some((i) => K.sel.setHas(aid, s, i)))
+        : [];
+      const placed = !!ps && (sets.length > 0 || ids.some((i) => (ps.in_background || []).includes(i)));
       return {
         aid,
         name: d.name,
@@ -993,7 +1009,7 @@
         make: () => withOne(p, () => DRAW[d.drawing](false)),
         tsv: oneTsv(p),
         zoom: d.drawing,
-        one: { i: p.i },
+        one: { i: p.i, ids: p.ids },
         note: () =>
           ONEUI.ds
             ? 'Shaded: the fold of the compartment across the dataset. Black outline: found here by at least one study.'
@@ -1048,10 +1064,14 @@
           `${p.gene || p.acc}: the ${d.drawing}, the parts ` + `colored by a map`
         )}"></div></figure>`
     ).join('');
+  const oneOfEl = (el) => ({
+    i: +el.dataset.i,
+    ids: el.dataset.ids ? el.dataset.ids.split(',').map(Number) : undefined,
+  });
   function fillOne() {
     document.querySelectorAll('[data-cell-one]:not([data-done])').forEach((el, k) => {
       el.dataset.done = '1';
-      drawInto(el, el.dataset.cellOne, { crop: true, labels: false, keep: k > 0, one: { i: +el.dataset.i } });
+      drawInto(el, el.dataset.cellOne, { crop: true, labels: false, keep: k > 0, one: oneOfEl(el) });
     });
   }
   K.cell = { maps: oneMaps, drawings: oneDrawings, name: (m) => DS(m).name, drawingsNarrow: oneNarrowHtml, fillOne };
@@ -1080,7 +1100,9 @@
               p.ds
                 ? `${esc(p.value)} across the dataset${p.mine ? '; found here' : ''}`
                 : p.found
-                  ? 'found here by ' + and(p.cells.map(([aid]) => esc(DS(aid).name)))
+                  ? (p.genes ? esc(and(p.genes.slice(0, 6))) + (p.genes.length > 6 ? ' and more' : '') + ': ' : '') +
+                    'found here by ' +
+                    and(p.cells.map(([aid]) => esc(DS(aid).name)))
                   : esc(p.value.toLowerCase())
             }`
           ) + ` data-cell-zpart="${esc(k)}"`
@@ -2679,7 +2701,7 @@
       FIGS[k].zoom
         ? `<button type="button" class="btn small cell-zoom-btn" ` +
           `data-cell-zoom="${esc(FIGS[k].zoom)}"${
-            FIGS[k].one ? ` data-i="${FIGS[k].one.i}"` : ''
+            FIGS[k].one ? ` data-i="${FIGS[k].one.i}"${FIGS[k].one.ids ? ` data-ids="${FIGS[k].one.ids}"` : ''}` : ''
           } title="Open the ${esc(FIGS[k].zoom)} large, to ` +
           `read its labels, zoom and move">Enlarge</button>`
         : ''
@@ -3003,6 +3025,29 @@
     const lo = Math.min(...ns),
       hi = Math.max(...ns);
     return lo === hi ? `median of ${lo} map${lo === 1 ? '' : 's'}` : `median of ${lo} to ${hi} maps`;
+  }
+  // a selection too small to test: where its own proteins are found, by the maps the tile uses (the protein page's card, for
+  // one protein or for several), with no statistics
+  function foundTile(card) {
+    const ids = [...K.sel.proteinIds()].sort((a, b) => a - b),
+      p = { i: ids[0], ids, gene: ids.length === 1 ? geneOf(ids[0]) : `these ${ids.length} proteins` };
+    const ms = oneMaps(p);
+    if (!ms) return '';
+    const nPl = ms.filter((m) => m.sets.length).length,
+      title =
+        ids.length === 1
+          ? `Where ${p.gene} is found (${nPl} of ${ms.length} maps)`
+          : `Where these ${ids.length} proteins are found`,
+      more = ids.length === 1 ? '' : ` (${nPl} of ${ms.length} maps place at least one)`;
+    const sets = [...new Set(ms.flatMap((m) => m.sets))];
+    return (
+      `<article class="tile wide cell-tile" id="tile-${esc(ID)}" data-tile="${esc(ID)}" tabindex="0"><header>` +
+      `<h3>${esc(title)}</h3>${K.detailsLink(ID)}</header>` +
+      `<p class="tans cell-ans">Found in${esc(more)}: ` +
+      `${sets.length ? esc(and(sets.slice(0, 8))) : 'no compartment of these maps'}.</p>` +
+      oneDrawings(p) +
+      `<p class="tkey">Only the selection is drawn; no statistics. Hover a compartment for the proteins and maps behind it.</p></article>`
+    );
   }
   function bigTile(card) {
     TIPS = [];
@@ -3398,7 +3443,7 @@
   }
   K.clicks.unshift([
     '[data-cell-zoom]',
-    (el) => zoomView(el.dataset.cellZoom, el.dataset.i != null ? { i: +el.dataset.i } : null),
+    (el) => zoomView(el.dataset.cellZoom, el.dataset.i != null ? oneOfEl(el) : null),
   ]);
   K.cell.zoom = zoomView;
   function drawBig() {
@@ -3422,6 +3467,8 @@
   K.clicks.push(['[data-cell-sel]', (el) => toggle(el.dataset.cellSel)]);
 
   function tile(card) {
+    if (DRAWINGS.length && K.selOn() && !K.vsOn() && K.sel.data() && !K.sel.testable() && K.sel.proteinIds().size)
+      return foundTile(card);
     if (card.drawing === true && DRAWINGS.length) return bigTile(card);
     TIPS = [];
     const scoped = scopedNow(),

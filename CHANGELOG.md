@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Overview: a selection too small to test draws where its own proteins are found in the cell and nucleus (the protein page's card, one protein or several, with no statistics), not the whole dataset's tested maps; the "Showing the whole dataset" line no longer counts the cell.
 - Protein page: opening a section, or jumping to it from the sidebar, sets the address to it (`#protein/FUS/structure`, `/conservation`, `/interactions`, ...); closing it takes the section off again, and loading such an address opens the page at that section. The older `p-` keys still work.
 - Figure panels: the site alignment and sequence logo draws with no search or filter set (it showed no marks). Conservation across species is on for the methyllysine, lysine and phosphosite sites too (`website.protein.conservation`).
 

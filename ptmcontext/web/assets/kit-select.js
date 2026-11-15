@@ -1733,6 +1733,7 @@
       parse,
       nMarks,
       nProteins,
+      proteinIds: () => (active() ? compute().proteins || new Set() : new Set()),
       protSelected,
       selectedPositions,
       selectedCountByProtein,

@@ -19,7 +19,7 @@ def test_every_compartment_is_named_on_the_protein_page():
         'not tested',
     ):
         assert word in js, word
-    assert "tone: hit.length ? 'u2' : tested ? 'ns' : 'na'" in js
+    assert "tested ? 'ns' : 'na'" in js and "'u2'" in js
 
 
 def test_the_line_under_the_maps_says_found_in_and_no_placed_wording_remains():
