@@ -6,6 +6,8 @@
 - Network cluster names: when no term holds for `min_coverage` of a cluster, the significant term of the smallest q names it, written with its share ("chromatin organization · 18%"); a cluster with no significant term keeps its three busiest proteins. New `network.thin_term` (`best` or `genes`).
 - Sticky bar: the toolbar is in full whenever the page is at its top, on every page, and a new page starts its scroll tracking afresh.
 - Network: the address uses readable names (`#network?clusters=12&colour=disorder`; `clusters`, `colour`, `score`, `top`, `sources`, `names`, `minsize`, `view`, `zoom`), earlier short names still open; Download has "Copy link".
+- Protein page: opening a section, or jumping to it from the sidebar, sets the address to it (`#protein/FUS/structure`, `/conservation`, `/interactions`, ...); closing it takes the section off again, and loading such an address opens the page at that section. The older `p-` keys still work.
+- Figure panels: the site alignment and sequence logo draws with no search or filter set (it showed no marks). Conservation across species is on for the methyllysine, lysine and phosphosite sites too (`website.protein.conservation`).
 
 ## 0.5.0 (2026-11-15)
 

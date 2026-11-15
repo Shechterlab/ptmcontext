@@ -1460,6 +1460,37 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: ctx, label: Context, menu: Disorder and domain context, analyses: [disorder, domain_context], hide: xs}
       - {id: struct, label: Structural context, analyses: [structure_context], hide: sm}
   protein:                 # the protein page
+    conservation:          # orthologs live from Ensembl Compara, and the selection's logo (CONTRACTS.md, Conservation across species)
+      reference: Human
+      ensembl: {rest: "https://rest.ensembl.org", xref: Ensembl, source: human}
+      species:             # every species a set below can name, with the label shown (all in Ensembl Compara's vertebrate set)
+        - {id: mus_musculus, label: Mouse}
+        - {id: rattus_norvegicus, label: Rat}
+        - {id: canis_lupus_familiaris, label: Dog}
+        - {id: bos_taurus, label: Cow}
+        - {id: macaca_mulatta, label: Macaque}
+        - {id: monodelphis_domestica, label: Opossum}
+        - {id: gallus_gallus, label: Chicken}
+        - {id: anolis_carolinensis, label: Lizard}
+        - {id: xenopus_tropicalis, label: Frog}
+        - {id: danio_rerio, label: Zebrafish}
+        - {id: callorhinchus_milii, label: Elephant shark}
+        - {id: ciona_intestinalis, label: Sea squirt}
+        - {id: drosophila_melanogaster, label: Fly}
+        - {id: caenorhabditis_elegans, label: Worm}
+        - {id: saccharomyces_cerevisiae, label: Yeast}
+      presets:             # the reader's choice, remembered in the browser; each set spans a range that still aligns well
+        - {id: mammals, label: Mammals, species: [mus_musculus, rattus_norvegicus, canis_lupus_familiaris, bos_taurus, macaca_mulatta, monodelphis_domestica],
+           note: "close relatives: almost every site aligns"}
+        - {id: vertebrates, label: Vertebrates, species: [mus_musculus, gallus_gallus, anolis_carolinensis, xenopus_tropicalis, danio_rerio, callorhinchus_milii],
+           note: "from mouse to the elephant shark"}
+        - {id: animals, label: Animals, species: [mus_musculus, gallus_gallus, xenopus_tropicalis, danio_rerio, ciona_intestinalis, drosophila_melanogaster, caenorhabditis_elegans],
+           note: "vertebrates, a sea squirt, the fly and the worm"}
+        - {id: to_yeast, label: To yeast, species: [mus_musculus, gallus_gallus, xenopus_tropicalis, danio_rerio, drosophila_melanogaster, caenorhabditis_elegans, saccharomyces_cerevisiae],
+           note: "the set used here: mouse to budding yeast; few proteins have a yeast relative"}
+      default: to_yeast
+      logo: true
+      logo_mode: freq      # the logo's first stack is residue frequency, as the explorer's; bits is a switch
     open_partners: true
     map:
       combined_marks: {default: folded}   # one "All modifications" block (a thin lane for each modification, the site's own first); the rows of the context marks fold behind it

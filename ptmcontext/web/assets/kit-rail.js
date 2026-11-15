@@ -1276,6 +1276,7 @@
           }
           for (let d = t; d; d = d.parentElement?.closest('details')) if (d.tagName === 'DETAILS') d.open = true;
           jumpId = el.dataset.jump;
+          if (S.view === 'protein') K.markSection?.(jumpId);
           // sections just drawn are still taking their size: go at once, and again when they have
           t.scrollIntoView({ behavior: drew ? 'instant' : K.smooth?.() || 'smooth', block: 'start' });
           if (drew)
