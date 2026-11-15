@@ -756,7 +756,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methylarginines (±10 residues)
     question: "Are modified lysines more often near a methylarginine than the other lysines of their protein?"
-    sub: "Modified lysines against the other lysines of the same proteins, by whether a methylarginine (the methylarginine explorer's release v1.4.3, by-similarity records left out) is within 10 residues on either side"
+    sub: "Modified lysines against the other lysines of the same proteins, by whether a methylarginine (methylarginine release v1.4.3, by-similarity records left out) is within 10 residues on either side"
     section: Other modifications
   - id: near_methyllysine
     family_label: All types
@@ -765,7 +765,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methyllysines (±10 residues)
     question: "Are modified lysines more often near a methyllysine than the other lysines of their protein?"
-    sub: "Modified lysines against the other lysines of the same proteins, by whether a methyllysine (UniProt, iPTMnet, CPLM 4.0 and Berryhill et al. 2023, release v1.5.0 of the methyllysine explorer; by-similarity records left out) is within 10 residues on either side, the lysine itself left out. A lysine that is itself methylated is asked about in the next section"
+    sub: "Modified lysines against the other lysines of the same proteins, by whether a methyllysine (UniProt, iPTMnet, CPLM 4.0 and Berryhill et al. 2023, methyllysine release v1.5.0; by-similarity records left out) is within 10 residues on either side, the lysine itself left out. A lysine that is itself methylated is asked about in the next section"
     section: Other modifications
   # The same lysine carrying two modifications: is a lysine with one modification more often also reported with another
   # than the other lysines of its protein? The comparison within each protein (Mantel-Haenszel over proteins) holds the
@@ -853,7 +853,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Acetylated and methylated lysines
     family_label: All lysines
     question: "Are acetylated lysines more often also reported methylated than the other lysines of their protein?"
-    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (the methyllysine explorer's release v1.5.0, by-similarity records left out). Acetylation and methylation compete for the same lysine, and both are best known on much-studied proteins such as histones, so the comparison is made within each protein"
+    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.0, by-similarity records left out). Acetylation and methylation compete for the same lysine, and both are best known on much-studied proteins such as histones, so the comparison is made within each protein"
     section: Same lysine, different modifications
   - id: same_ac_methyl_modified
     layer: near_marks
@@ -877,7 +877,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Ubiquitinated and methylated lysines
     family_label: All lysines
     question: "Are ubiquitinated lysines more often also reported methylated than the other lysines of their protein?"
-    sub: "Ubiquitinated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (the methyllysine explorer's release v1.5.0, by-similarity records left out). Most ubiquitination sites come from large mass-spectrometry studies of the proteome (CPLM 4.0), so the comparison is made within each protein"
+    sub: "Ubiquitinated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.0, by-similarity records left out). Most ubiquitination sites come from large mass-spectrometry studies of the proteome (CPLM 4.0), so the comparison is made within each protein"
     section: Same lysine, different modifications
   - id: same_ub_methyl_modified
     layer: near_marks
@@ -901,7 +901,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: SUMOylated and methylated lysines
     family_label: All lysines
     question: "Are SUMOylated lysines more often also reported methylated than the other lysines of their protein?"
-    sub: "SUMOylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (the methyllysine explorer's release v1.5.0, by-similarity records left out)"
+    sub: "SUMOylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.0, by-similarity records left out)"
     section: Same lysine, different modifications
   - id: same_su_methyl_modified
     layer: near_marks
@@ -960,7 +960,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Ubiquitinated and methylated lysines
     family_label: Ubiquitination from Akimov 2018
     question: "Are the ubiquitination sites of Akimov et al. 2018 more often also reported methylated than the other lysines of their protein?"
-    sub: "The lysines Akimov et al. 2018 reports ubiquitinated against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (the methyllysine explorer's release v1.5.0, by-similarity records left out)"
+    sub: "The lysines Akimov et al. 2018 reports ubiquitinated against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.0, by-similarity records left out)"
     section: Same lysine, different modifications
   - id: same_su_methyl_hendriks
     layer: near_marks
@@ -971,7 +971,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: SUMOylated and methylated lysines
     family_label: SUMOylation from Hendriks 2017
     question: "Are the SUMO-2 sites of Hendriks et al. 2017 more often also reported methylated than the other lysines of their protein?"
-    sub: "The lysines Hendriks et al. 2017 reports SUMOylated against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (the methyllysine explorer's release v1.5.0, by-similarity records left out)"
+    sub: "The lysines Hendriks et al. 2017 reports SUMOylated against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.0, by-similarity records left out)"
     section: Same lysine, different modifications
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)

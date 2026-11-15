@@ -2533,7 +2533,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - {id: animals, label: Animals, species: [mus_musculus, gallus_gallus, xenopus_tropicalis, danio_rerio, ciona_intestinalis, drosophila_melanogaster, caenorhabditis_elegans],
            note: "vertebrates, a sea squirt, the fly and the worm"}
         - {id: to_yeast, label: To yeast, species: [mus_musculus, gallus_gallus, xenopus_tropicalis, danio_rerio, drosophila_melanogaster, caenorhabditis_elegans, saccharomyces_cerevisiae],
-           note: "the explorer's set: mouse to budding yeast; few proteins have a yeast relative"}
+           note: "the set used here: mouse to budding yeast; few proteins have a yeast relative"}
       default: to_yeast
       similar: [K]         # lysine is a conservative change from arginine
       logo: true
