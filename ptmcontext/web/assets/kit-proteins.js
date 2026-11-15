@@ -1921,6 +1921,7 @@
     const sd = K.sel?.pdata(p.i);
     if (!sd) return `<p class="muted">Loading the sets…</p>`;
     let cov = null;
+    const none = [];
     const blocks = D.analyses
       .filter((a) => a.kind === 'protein_sets' && sd.protein_sets?.[a.id] && !K.inSetCards?.(a.id))
       .map((a) => {
@@ -1932,43 +1933,26 @@
           .map(([s]) => ({ s, r: setRow(a.id, s, 'enricher') }))
           .filter((x) => x.r)
           .sort((x, y) => RANK[x.r.dir] - RANK[y.r.dir] || x.r.q - y.r.q);
-        if (!mine.length)
-          return `<div class="kind"><h4>${esc(a.title)}</h4><p class="muted">In none of the sets tested.</p></div>`;
+        if (!mine.length) {
+          none.push(esc(a.title));
+          return '';
+        }
         const shown = PV.open['kinds:' + a.id] ? mine : mine.slice(0, 10);
         return (
-          `<div class="kind"><h4>${esc(a.title)} <span class="muted">${int(mine.length)} set${mine.length === 1 ? '' : 's'}</span></h4>` +
-          `<ul class="kind-list">` +
-          shown
-            .map(({ s, r }) => {
-              const hs = K.holdStatus(r),
-                nh = hs === 'lost' || hs === 'weaker';
-              return (
-                `<li><button ` +
-                `class="linkish" type="button" data-f="p:${esc(a.id)}" data-v="${esc(s)}" title="Select the ${esc(W.marks)} on proteins ` +
-                `in this set">${esc(r.label)}</button>${
-                  a.link && K.setIdLink ? ' ' + K.setIdLink(a.id, s) : ''
-                } <span class="val ${r.dir}">${esc(K.effText(r))}</span> <span ` +
-                `class="muted">q ${K.fq(r.q)}</span>${
-                  nh
-                    ? ` <span class="nh" title="${
-                        hs === 'lost'
-                          ? 'Lost within abundance deciles'
-                          : 'The same direction within abundance deciles, but not significant there'
-                      }"><span aria-hidden="true">${hs === 'lost' ? '○' : '◌'}</span><span class="vh">${
-                        hs === 'lost' ? 'lost within abundance deciles' : 'not significant within abundance deciles'
-                      }</span></span>`
-                    : ''
-                }</li>`
-              );
-            })
-            .join('') +
-          '</ul>' +
+          `<article class="tile kind"><header><h3>${esc(a.title)} <span class="muted">${int(mine.length)} set${
+            mine.length === 1 ? '' : 's'
+          }</span></h3></header>` +
+          K.rowsTile(
+            a,
+            shown.map((x) => x.r),
+            'in-set'
+          ) +
           (mine.length > 10
             ? `<button class="linkish" type="button" data-kinds-all="${esc(a.id)}">${
                 PV.open['kinds:' + a.id] ? 'Fewer' : `All ${int(mine.length)}`
               }</button>`
             : '') +
-          '</div>'
+          '</article>'
         );
       })
       .join('');
@@ -1979,18 +1963,16 @@
           (Object.values(D.inputs).find((x) => (x.roles || [x.role]).includes(cov.input)) || {}).version || cov.input
         )}; the decile ` + `the protein-set tests stratify by)</span></p>`
       : '';
-    const nhKey = /class="nh"/.test(blocks)
-      ? '<p class="muted small kind-key"><span class="nh">○</span> not significant ' +
-        'within abundance deciles · <span class="nh">◌</span> the same direction within ' +
-        'deciles, but not significant there</p>'
-      : '';
     // the sets' results are about every ${W.mark} in the set, not about this protein alone: their own heading says so
     const across =
       `<h3 class="kinds-head">Across all ${esc(W.marks)}</h3><p class="muted small kinds-note">Each set this protein is in, ` +
       `with the fold for all ${esc(W.marks)} in that set. The folds describe the whole set, not ${esc(
         p.gene || p.acc
       )}.</p>`;
-    return covLine + across + `<div class="kinds">${blocks}</div>` + nhKey;
+    const noneLine = none.length
+      ? `<p class="muted small kinds-none">In none of the sets tested for: ${none.join('; ')}.</p>`
+      : '';
+    return covLine + across + `<div class="kinds">${blocks}</div>` + noneLine;
   }
 
   // ---- domains and regions: every region the questions of this explorer read, as a table, with the marks inside each --------

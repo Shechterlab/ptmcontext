@@ -2801,6 +2801,15 @@ body.has-selection .tabs {
   color: var(--muted);
   font-weight: 500;
 }
+.kinds .tile.kind {
+  margin: 0;
+}
+.fr-row.in-set .fr-lab {
+  font-weight: 650;
+}
+.kinds-none {
+  margin: 0.6rem 0 0;
+}
 .kind-cov {
   margin: 0 0 0.6rem;
 }
@@ -9686,43 +9695,43 @@ details.pm-more .pm-list {
 .rows-menu .rm-foot {
   margin: 0.4rem 0 0;
 }
-/* the protein page's sites table, too: its cells wrap in the compact density */
-html[data-density] .stbl td {
+/* the protein page's sites table, too: its cells wrap in the comfortable density; compact rows are one line each */
+html[data-density='comfortable'] .stbl td {
   white-space: normal;
   vertical-align: top;
 }
-html[data-density] .stbl td.num,
-html[data-density] .stbl td.nw {
+html[data-density='comfortable'] .stbl td.num,
+html[data-density='comfortable'] .stbl td.nw {
   white-space: nowrap;
 }
-html[data-density] .stbl td.cw,
-html[data-density] .stbl td.cwin {
+html[data-density='comfortable'] .stbl td.cw,
+html[data-density='comfortable'] .stbl td.cwin {
   white-space: normal;
   max-width: none;
 }
-html[data-density] .stbl td.cwin > .mono {
+html[data-density='comfortable'] .stbl td.cwin > .mono {
   display: block;
   white-space: nowrap;
 }
-html[data-density] .stbl td.cwin > .tags {
+html[data-density='comfortable'] .stbl td.cwin > .tags {
   display: flex;
   flex-wrap: wrap;
   max-width: 18rem;
   margin: 0.15rem 0 0;
   overflow: visible;
 }
-html[data-density] .stbl td .tags,
-html[data-density] .stbl td .cv,
-html[data-density] .stbl .na-meta,
-html[data-density] .stbl .src-tags {
+html[data-density='comfortable'] .stbl td .tags,
+html[data-density='comfortable'] .stbl td .cv,
+html[data-density='comfortable'] .stbl .na-meta,
+html[data-density='comfortable'] .stbl .src-tags {
   flex-wrap: wrap;
   white-space: normal;
   margin-left: 0;
 }
-html[data-density] .stbl .sdot {
+html[data-density='comfortable'] .stbl .sdot {
   white-space: normal;
 }
-html[data-density] .stbl .src-tags a {
+html[data-density='comfortable'] .stbl .src-tags a {
   max-width: none;
   overflow: visible;
   text-overflow: clip;

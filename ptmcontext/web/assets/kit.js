@@ -1709,6 +1709,24 @@
       }</div></article>`
     );
   }
+  // the Overview tile's rows (K.tilekit, the same row model and axis) for a given list of one question's rows: a protein's
+  // own sets on the protein page; each row's class marks it as one the protein is in
+  function rowsTile(a, rows, cls = '') {
+    if (!K.tilekit || !rows.length) return '';
+    const ms = rows.map((r) => frModel(a, r)),
+      ax = K.tilekit.axisOf(K.tilekit.valsOf(ms));
+    return `<div class="trows fr-rows">${ms
+      .map((x, i) =>
+        K.tilekit.rowHtml(
+          x,
+          ax,
+          ` data-r="${reg(rows[i])}"${pickAttrs(rows[i]).replace(/ title="[^"]*"/, '')} aria-haspopup="dialog"`,
+          cls
+        )
+      )
+      .join('')}${K.tilekit.axisHtml(ax)}</div>`;
+  }
+  K.rowsTile = rowsTile;
   // an Overview card's beside: {analysis, label}, or a list of them: another question's result for the tile's first class
   // (not a 'Not ...' one), a line each (a control asked another way, or the same pair from one source), in the
   // statistic and method the tile shows, retested on a selection as every question is

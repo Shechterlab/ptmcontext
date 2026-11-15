@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Protein page: "Across all" in Protein classes and pathways draws each question as the Overview's forest-plot tile (the protein's own sets, highlighted, with fold, interval and the test within abundance deciles), and questions where the protein is in no set are one line; the sites table opens in compact rows (one line each), with the toggle offering the wrapped view.
 - Overview: a selection too small to test draws where its own proteins are found in the cell and nucleus (the protein page's card, one protein or several, with no statistics), not the whole dataset's tested maps; the "Showing the whole dataset" line no longer counts the cell.
 - Figure PDF and PNG: text is set in the site's own fonts (Inter, IBM Plex Mono for sequences), embedded, loaded only when a file is made; text that would run past the page edge is shrunk or moved in; Screen is listed before Paper, and file names no longer end in the print width.
 - The full header (title, search) shows at the top of every page, not only the Overview, so scrolling back up looks the same everywhere. `website.header.compact: true` restores the slim band off the Overview.
