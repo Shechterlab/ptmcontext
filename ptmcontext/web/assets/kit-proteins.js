@@ -1910,7 +1910,9 @@
                         hs === 'lost'
                           ? 'Lost within abundance deciles'
                           : 'The same direction within abundance deciles, but not significant there'
-                      }">${hs === 'lost' ? '○' : '◌'}</span>`
+                      }"><span aria-hidden="true">${hs === 'lost' ? '○' : '◌'}</span><span class="vh">${
+                        hs === 'lost' ? 'lost within abundance deciles' : 'not significant within abundance deciles'
+                      }</span></span>`
                     : ''
                 }</li>`
               );

@@ -16,6 +16,6 @@ groups:                    # a card goes in the group its site file names (websi
   - {id: other, title: Other organisms, compact: true}
 footer:
   links:
-    - {label: Cite ptmcontext, url: "https://github.com/Shechterlab/ptmcontext/blob/main/CITATION.cff"}
-    - {label: Code, url: "https://github.com/Shechterlab/ptmcontext"}
+    - {label: Cite, url: "https://github.com/Shechterlab/ptmcontext/blob/main/CITATION.cff"}
+    - {label: "Source code ↗", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Shechter Lab, url: "https://www.shechterlab.org/"}

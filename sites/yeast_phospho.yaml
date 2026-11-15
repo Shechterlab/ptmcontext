@@ -74,7 +74,7 @@ website:
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
   links:
     - {label: Method, url: "#method"}
-    - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
+    - {label: "Source code ↗", url: "https://github.com/Shechterlab/ptmcontext"}
   examples: [SEC16, SEC16 S73, "motif:S/T-P", "disorder:IDR", "idr_charge:Janus"]
   placeholders: {highlight: "SEC16, EDE1, STE2 S310", partners: "SEC13, SEC24", motif: "[ST]P, RRXS, SPXK", motif_either: "SP,TP"}
   front: {mode: classic}      # the front block (CONTRACTS.md); mode classic is the only layout
@@ -84,10 +84,9 @@ website:
     protein: SEC16
   overview:
     random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end (open: true opens it; enabled: false leaves it out)
-  tabs:                    # the top tabs' words (the addresses #idrs, #statistics and #method stay)
+  tabs:                    # the top tabs' words (the addresses #idrs and #method stay)
     idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of phosphorylated proteins, and the phosphosites in them."}
-    statistics: {label: All tests, hint: "Every test on the site, one row per class, with odds ratio, interval and q value."}
-    method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
+    method: {label: Methods, hint: "How each question was tested, every test, the controls, the sources and how to cite."}
   partners: {species: 4932}         # STRING files budding yeast under taxon 4932 (UniProt's proteome is strain S288c, 559292)
   sites: {columns: [structure_context]}
   search:

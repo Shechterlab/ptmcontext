@@ -238,7 +238,7 @@
     return (
       `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3><p class="sub">${esc(K.shortSub(a.sub))}. <a href="#method">` +
       `How it was tested</a> · <a href="${esc(
-        K.link('statistics', '', { a: a.id })
+        K.link('method', 'every', { a: a.id })
       )}">all tests</a></p></div>${expButtons('qoexp', a.id)}</div>` +
       `${drawn}<p class="note">${note}</p>` +
       `<div class="qv-links"><button class="linkish" type="button" data-qtree="${esc(a.id)}">${

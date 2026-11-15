@@ -140,7 +140,7 @@ def _toy(tmp_path):
                     }
                 ]
             },
-            'tabs': {'statistics': {'label': 'All results', 'hint': 'Every test.'}},
+            'tabs': {'method': {'label': 'All results', 'hint': 'Every test.'}},
             'legacy_links': {'old-cell': 'where'},
             'cell': {
                 'id': 'where',
@@ -227,7 +227,7 @@ def test_maps_of_the_cell_and_numbers_reach_the_pages(tmp_path):
     assert data['set_views'][0]['analysis'] == 'classes' and data['legacy_links']['old-cell'] == 'where'
     assert 'kit-cell.js' in page and 'kit-values.js' in page
     assert (
-        data['tabs']['statistics']['label'] == 'All results'
+        data['tabs']['method']['label'] == 'All results'
         and data['overview']['sections'][0]['cards'][0]['drawing'] is True
     )
     sel = selection_of(index.parent)

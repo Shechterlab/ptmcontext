@@ -24,6 +24,7 @@
   --muted: #5f6f78;
   --line: #e0e8eb;
   --line-strong: #c7d4d9;
+  --control-line: #6f8089; /* the border of a control: 3:1 against the page and the cards (WCAG 1.4.11) */
   --more: #b42318;
   --less: #334155;
   --same: #7b8791;
@@ -59,6 +60,7 @@
     --muted: #93a8b0;
     --line: #233841;
     --line-strong: #31505b;
+    --control-line: #6b8893;
     --more: #f87171;
     --less: #7e9bc4;
     --same: #7d8c97;
@@ -81,6 +83,7 @@
   --muted: #93a8b0;
   --line: #233841;
   --line-strong: #31505b;
+  --control-line: #6b8893;
   --more: #f87171;
   --less: #7e9bc4;
   --same: #7d8c97;
@@ -5264,13 +5267,23 @@ kbd {
 .keys-head h2 {
   font-size: 1.2rem;
 }
-.foot-help {
-  display: inline-flex;
-  gap: 0.4rem;
+.foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1.1rem;
   align-items: center;
 }
-.foot-help .linkish {
+.foot-links a,
+.foot-links .linkish {
   font-size: inherit;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+.foot-credit {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.78rem;
 }
 .empty-help {
   margin-top: 0.6rem;
@@ -8726,35 +8739,12 @@ a.pchip:hover {
   .dock-name img {
     border-radius: 6px;
   }
-  .dock-stats {
-    display: none;
-    gap: 1rem;
-    font-size: 0.8125rem;
-    white-space: nowrap;
-  }
-  .dock-stats a {
-    text-decoration: none;
-    opacity: 0.92;
-  }
-  .dock-stats a:hover {
-    text-decoration: underline;
-  }
   .dock-end {
     margin-left: auto;
     display: flex;
     align-items: center;
     gap: 1rem;
     min-width: 0;
-  }
-  .dock-cite {
-    font-size: 0.8125rem;
-    white-space: nowrap;
-  }
-  .dock-cite a {
-    text-decoration: underline;
-    display: inline-flex;
-    align-items: center;
-    min-height: 32px;
   }
   .dock .site-switch-btn {
     min-height: 32px;
@@ -8771,14 +8761,8 @@ a.pchip:hover {
     gap: 1rem;
   }
 }
-@media screen and (min-width: 1200px) and (min-height: 800px) {
-  .dock-stats {
-    display: inline-flex;
-  }
-}
 @media screen and (max-width: 639px) {
   .dock-name span,
-  .dock-cite,
   .dock .site-switch-btn b,
   .dock .sw-colon {
     display: none;
@@ -10296,10 +10280,75 @@ html[data-density] .sites-tbl .cv {
     flex: 1 1 0;
     min-width: 0;
     overflow: hidden;
-    /* a page that does not fit whole wraps out of sight, instead of being cut in half */
-    flex-wrap: wrap;
-    align-content: flex-start;
-    max-height: 2rem;
+    /* one line, never wrapping: the pages that do not fit go under "More" (kit.js, fitDock) */
+    flex-wrap: nowrap;
+  }
+  .dock-tabs .tab[hidden],
+  .dock-more[hidden] {
+    display: none;
+  }
+  .dock-more {
+    flex: none;
+    color: #fff;
+    font: inherit;
+    font-size: 0.8125rem;
+    padding: 0.3rem 0.55rem;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .dock-more:hover,
+  .dock-more[aria-expanded='true'] {
+    background: rgba(255, 255, 255, 0.18);
+  }
+  .dock-more:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 2px;
+  }
+  .dock-more-menu {
+    position: fixed;
+    z-index: 40;
+    min-width: 11rem;
+    display: grid;
+    padding: 0.35rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 0.6rem;
+    background: var(--surface);
+    box-shadow: var(--shadow-hover);
+  }
+  .dock-more-menu[hidden] {
+    display: none;
+  }
+  .dock .dock-more-menu a,
+  .dock .dock-more-menu .tab {
+    color: var(--ink);
+    padding: 0.5rem 0.7rem;
+    border-radius: 6px;
+    border: 0;
+    text-decoration: none;
+    font-size: 0.875rem;
+    display: flex;
+    justify-content: flex-start;
+  }
+  .dock .dock-more-menu .tab-ico {
+    display: none;
+  }
+  .dock .dock-more-menu .tab.off {
+    color: var(--muted);
+  }
+  .dock .dock-more-menu a:hover,
+  .dock .dock-more-menu a[aria-current='page'] {
+    background: var(--surface-2);
+  }
+  .dock .dock-more-menu :focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: -2px;
+  }
+  .dock.sw-short .site-switch-btn b,
+  .dock.sw-short .sw-colon {
+    display: none;
   }
   .dock-tabs .tab {
     color: #fff;
@@ -10412,12 +10461,6 @@ html[data-density] .sites-tbl .cv {
   }
 }
 
-/* the counts of the full bar make room for the compact bar's selection and pages */
-@media screen {
-  body.bar-hidden .dock-stats {
-    display: none;
-  }
-}
 @media screen and (max-width: 639px) {
   .dock-sel-w {
     display: none;
@@ -10425,9 +10468,6 @@ html[data-density] .sites-tbl .cv {
 }
 
 @media screen {
-  body.bar-hidden .dock-cite {
-    display: none;
-  }
   .dock-search input {
     width: 9rem;
   }
@@ -11301,4 +11341,202 @@ body.slim .brand-line {
 .ov-pick:focus-within .ov-res,
 .ov-res.open {
   display: block;
+}
+
+/* ---- Navigation round: greyed tabs, the Methods menu ---- */
+.tab.off {
+  color: var(--muted);
+  opacity: 0.6;
+  cursor: not-allowed;
+  font-weight: 500;
+}
+.tab.off:hover {
+  color: var(--muted);
+}
+.msub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0 0 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.msub a {
+  padding: 0.5rem 0.9rem 0.6rem;
+  border-bottom: 2.5px solid transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.msub a:hover,
+.msub a[aria-current='page'] {
+  color: var(--brand-ink);
+}
+.msub a[aria-current='page'] {
+  border-bottom-color: var(--accent);
+}
+
+/* ---- Key findings: the Overview's strip of the strongest results that hold their controls ---- */
+.keyfind {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem 0.85rem;
+  border: 1px solid var(--line-strong);
+  border-left: 4px solid var(--accent);
+  border-radius: 0.6rem;
+  background: var(--surface);
+}
+.keyfind h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.keyfind ol {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.keyfind li {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+.keyfind li a {
+  color: var(--ink);
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+.keyfind li a:hover {
+  text-decoration-color: var(--accent);
+}
+a.ctl-badge {
+  display: inline-block;
+  text-decoration: none;
+}
+.tile a.ctl-badge {
+  text-decoration: underline dotted;
+}
+.rp-ctl {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+}
+.tsw {
+  margin-left: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: help;
+}
+
+/* ---- Controls, chips and the drawer: borders at 3:1, chip counts at 4.5:1, a drawer that holds the page still, tap targets ---- */
+select,
+textarea,
+input:not([type='checkbox'], [type='radio'], [type='range'], [type='color']),
+.btn:not(.primary),
+.chip-btn,
+.fchip,
+.seg,
+.seg button,
+.try-chip,
+.theme-switch,
+.site-switch-btn,
+.ctl-badge {
+  border-color: var(--control-line);
+}
+.fchip:hover,
+.fchip[aria-pressed='true'] {
+  border-color: var(--accent);
+}
+.fchip[aria-pressed='true'] .muted {
+  opacity: 1;
+}
+.fchip.zero {
+  opacity: 1;
+  color: var(--muted);
+}
+.fchip.zero:hover {
+  opacity: 1;
+}
+html.rail-lock,
+html.rail-lock body {
+  overflow: hidden;
+}
+.rail {
+  overscroll-behavior: contain;
+}
+.rail-head [data-rail-close] {
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 1.25rem;
+}
+@media (pointer: coarse) {
+  .btn,
+  .chip-btn,
+  .fchip,
+  .try-chip,
+  .seg button,
+  .theme-switch button,
+  .site-switch-btn,
+  .search-clear,
+  .rail-btn,
+  .rail-fab,
+  .dock-ico,
+  .dock-sel,
+  .dock-more,
+  .foot-links a,
+  .foot-links .linkish,
+  .tdetails,
+  .tmore,
+  .msub a,
+  .rp-x,
+  .sp-close,
+  .tab,
+  .toc a,
+  .toc button,
+  .rail-head button,
+  summary,
+  select,
+  input[type='search'],
+  input[type='text'],
+  input[type='number'] {
+    min-height: 44px;
+  }
+  .btn,
+  .chip-btn,
+  .fchip,
+  .seg button,
+  .dock-ico,
+  .rail-btn,
+  .search-clear,
+  .rp-x,
+  .sp-close,
+  .theme-switch button {
+    min-width: 44px;
+  }
+  .tdetails,
+  .tmore,
+  .foot-links a,
+  .foot-links .linkish,
+  .msub a,
+  .fchip,
+  .btn,
+  .chip-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  input[type='checkbox'],
+  input[type='radio'] {
+    width: 24px;
+    height: 24px;
+  }
+  label:has(> input[type='checkbox']),
+  label:has(> input[type='radio']) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+  }
 }

@@ -594,7 +594,7 @@
     return (
       `<p><b>${esc(cap(C.calls?.title || 'Perturbations'))}</b> <span class="muted small">(every measurement ` +
       `at the site; a call is a peptide-level change)</span></p><div class="tbl-card"><table class="tbl compact">` +
-      `<thead><tr><th>Condition</th><th>Call</th><th class="num">Peptides (▼/▲)</th><th class="num">log2</th><th ` +
+      `<thead><tr><th>Condition</th><th>Call</th><th class="num">Peptides (down / up)</th><th class="num">log2</th><th ` +
       `class="num">q</th><th>Rule</th></tr></thead><tbody>` +
       rs
         .map(

@@ -1107,6 +1107,18 @@ integers; `tests/test_network.py` runs both). `site.network_problems` (`ptmc che
 `pairs` source, a repeated colour id and a tile in an Overview section that does not exist. The one-file copy has no
 network view.
 
+### Navigation (tabs, Methods, Key findings, group order)
+
+Every explorer shows the tabs Overview, Proteins, Sites, Interactions, Compare sets (`#overlap`; `#compare` is an alias), Network, Methods, Help, in this order, followed by none of the site's own except pages from `website.pages`, which sit before Methods. A tab whose page the site does not have is greyed out, not hidden; `website.tabs.<page>.empty` words the reason on hover (default: "No <page> data for this modification yet"). `website.tabs.<page>.label` and `.hint` rename a tab. `#statistics` redirects to `#method/every`.
+
+Methods has five parts, each an address: `#method/tests` (how the tests work, **Every test** with its filters and download, the questions, the parity check), `#method/controls`, `#method/sources`, `#method/cite` (also: what the explorer is, sharing a link and keys, accessibility, licenses and privacy), `#method/download`. An address that names a section (`#method/privacy`, `#method/q-<id>`) opens the part that holds it. `#method/every?a=<question>` filters the table to a question.
+
+`website.overview.key_findings` (default: on): `count` (3), `min_fold` (1.1), `pin` and `exclude` (a question id, `"id/class"` or `{analysis, category}`). The strip lists the results with the smallest q among those at or above `min_fold` that fail no control badge, at most one per section; `false` leaves it out; it is not shown with a selection.
+
+The Overview's sections follow one order: the names in `ptmcontext/config/overview_groups.json` (`shared`), or `website.overview.group_order`; a site's own sections follow, then the closing group (`last`). Sidebar entries are `#overview/<question id>` addresses and carry the tile's title.
+
+The footer is the same on every page: Cite, Download (when the site has downloads), Methods, Keyboard shortcuts, Source code (the kit's repository), Data DOI (`website.dataset.doi`, when present), Privacy, and the theme switch. The landing page has the same footer with the links of its config (`footer.links`), Privacy and the theme switch.
+
 ### The Overlap page
 
 `#overlap?t=<terms>` (kit-overlap.js; `website.overlap`, schema in site.schema.json) compares two to `max_terms` (at most 4) terms. The address keeps the

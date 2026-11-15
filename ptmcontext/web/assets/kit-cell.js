@@ -2184,7 +2184,7 @@
         (v == null
           ? ''
           : `<rect class="cb-bar ${dir}${r.sig ? '' : ' hollow'}" x="${Math.min(X(0), X(v))}" y="${y + 4}" width="${Math.max(1, Math.abs(X(v) - X(0)))}" height="${RH - 8}" rx="2"/>`) +
-        `<text class="cb-val ${dir}" x="${X(ext) + 6}" y="${y + 14}">${r.l2 == null ? '–' : K.fx(2 ** r.l2)}${r.mark ? ' ' + MARK[r.mark][0] : ''}</text></g>`;
+        `<text class="cb-val ${dir}" x="${X(ext) + 6}" y="${y + 14}"${r.mark ? ` aria-label="${esc((r.l2 == null ? '' : K.fx(2 ** r.l2) + ', ') + MARK[r.mark][1])}"` : ''}>${r.l2 == null ? '–' : K.fx(2 ** r.l2)}${r.mark ? ' ' + MARK[r.mark][0] : ''}</text></g>`;
     });
     return {
       g,

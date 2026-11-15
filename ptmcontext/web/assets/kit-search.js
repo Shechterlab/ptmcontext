@@ -262,8 +262,9 @@
   // a page by its tab's name, or by the word it had before: "Statistics" offers All tests, "IDRs" the Disordered regions
   const OLD = {
     statistics: ['Statistics', 'Results'],
+    overlap: ['Overlap', 'Compare sets'],
     idrs: ['IDRs', 'IDR'],
-    method: ['Method', 'Methods'],
+    method: ['Method', 'Methods', 'Documentation', 'All tests'],
     interactions: ['Interactions'],
   };
   function pageRows(phrase) {
@@ -272,13 +273,12 @@
     const pages = [
       ['overview', 'Overview'],
       ...K.tabs.map((f) => f()).filter(Boolean),
-      ['statistics', 'All tests'],
-      ['method', 'Methods and data'],
+      ['method', 'Methods'],
       ...(K.tabsEnd || []).map((f) => f()).filter(Boolean),
     ];
     const seen = new Set();
     return pages
-      .filter(([v]) => (['overview', 'statistics', 'method'].includes(v) || K.views[v]) && !seen.has(v) && seen.add(v))
+      .filter(([v]) => (['overview', 'method'].includes(v) || K.views[v]) && !seen.has(v) && seen.add(v))
       .map(([v, n]) => [v, K.tabName(v, n)])
       .filter(([v, name]) =>
         [name, v, ...(OLD[v] || [])].some(

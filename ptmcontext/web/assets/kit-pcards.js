@@ -654,7 +654,7 @@
                 const x = cell.get(`${pos}|${c.key}`);
                 return x
                   ? `<td title="${esc(x.tip)}"><span class="trend ` +
-                      `c-${esc(x.call)}"><b>${esc(mk(x.call))}</b></span></td>`
+                      `c-${esc(x.call)}"><b aria-hidden="true">${esc(mk(x.call))}</b><span class="vh">${esc(word(words, x.call))}</span></span></td>`
                   : '<td class="muted" title="Not quantified">&nbsp;</td>';
               })
               .join('')}</tr>`
@@ -676,9 +676,9 @@
     if (!rs.length) return { hide: true, html: '', sum: '' };
     const dir = (d) =>
       d === 'decreased'
-        ? '<b class="trend c-decreased">▼</b> fell'
+        ? '<b class="trend c-decreased" aria-hidden="true">▼</b><span class="vh">decreased:</span> fell'
         : d === 'increased'
-          ? '<b class="trend c-increased">▲</b> rose'
+          ? '<b class="trend c-increased" aria-hidden="true">▲</b><span class="vh">increased:</span> rose'
           : d === 'no_change'
             ? 'no change'
             : '—';

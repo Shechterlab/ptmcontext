@@ -269,7 +269,7 @@
             ? String(v)
             : String(+Number(v).toPrecision(3));
       case 'flag':
-        return v ? '✓' : '<span class="muted">–</span>';
+        return v ? '<span aria-hidden="true">✓</span><span class="vh">yes</span>' : '<span class="muted">–</span>';
       case 'accession':
         return accLink(v, labelOf ? labelOf(r) : '');
       case 'accessions':
@@ -760,9 +760,19 @@
         ? `<span class="ix-hold ${h || ''}" title="Within ` +
             `abundance deciles: OR ${fxn(s2.or ?? s2.eff)}${
               s2.lo != null ? ` [${fxn(s2.lo)}–${fxn(s2.hi)}]` : ''
-            }, q ${fq(s2.q)}">${
+            }, q ${fq(s2.q)}"><span aria-hidden="true">${
               h === 'holds' ? '✓' : h === 'weaker' ? '◌' : h === 'lost' ? '○' : dirOf(s2) === 'less' ? '▼' : '·'
-            } ${fxn(s2.or ?? s2.eff)}</span>`
+            }</span><span class="vh">${
+              h === 'holds'
+                ? 'holds within deciles'
+                : h === 'weaker'
+                  ? 'same direction within deciles, not significant'
+                  : h === 'lost'
+                    ? 'lost within deciles'
+                    : dirOf(s2) === 'less'
+                      ? 'fewer within deciles'
+                      : 'no reading within deciles'
+            }:</span> ${fxn(s2.or ?? s2.eff)}</span>`
         : '–';
     };
     return (

@@ -42,7 +42,7 @@ inputs:                # role the layers read: manifest input that fills it
   density_windows: density_windows_v1_4_3
   lower_confidence_sites: methylarginine_lower_confidence_sites_v1_4_3
   interpro_entries: interpro_all_entries
-  go_bp_annotations: go_bp_annotations         # the Overlap page's GO biological process terms
+  go_bp_annotations: go_bp_annotations         # the Compare sets page's GO biological process terms
   go_bp_terms: go_bp_terms
   # interactions and binding (scripts/37_export_interaction_data.py of the release): each role one kind of evidence
   uniprot_disorder: uniprot_disordered_regions
@@ -1441,9 +1441,9 @@ website:                  # the look and words of the website (ptmc web); layout
   art: sites/art/methylarginine-hero.svg
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
   links:
-    - {label: Documentation, url: "#method"}
+    - {label: Methods, url: "#method"}
     - {label: Download data, url: "#method/download"}
-    - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
+    - {label: "Source code ↗", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
   examples: [FUS, TAF15 EWSR1 FUS, "disease:als", FUS R216, "motif:RGG"]   # the first three are the chips under the search box
@@ -2004,14 +2004,13 @@ website:                  # the look and words of the website (ptmc web); layout
     panther: panther_class
     domain: domain_class
     bound: nucleic_acid_type
-  tabs:                    # the top tabs' words (the addresses #statistics and #method stay; #idrs opens its question)
+  tabs:                    # the top tabs' words (the addresses #method stay; #idrs opens its question)
     overview: {label: Overview, hint: "Click a class row to select its sites, or a tile's title to open the question."}
     proteins: {label: Proteins, hint: "One row per protein with methylarginines. Filter, sort and download."}
     sites: {label: Sites, hint: "One row per methylarginine, with its evidence. Filter, sort and download."}
     idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of methylated proteins, and the methylarginines in them.", as: section, question: idr_charge}   # not a tab: the page of the Charge of the IDR question (#idrs opens it)
     interactions: {label: Interactions, hint: "Methylarginines at contacts with RNA, DNA or other proteins."}
-    statistics: {label: All tests, hint: "Every test on the site, one row per class, with odds ratio, interval and q value."}
-    method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
+    method: {label: Methods, hint: "How each question was tested, every test, the controls, the sources and how to cite."}
     help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
   legacy_routes:           # the explorer's protein-page section keys (#ACC/p-dom) and the folds that hold them here
     p-dom: p-regions
@@ -2072,7 +2071,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}
       - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}
     tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites as one network of physical links and complexes, in clusters named by GO biological process."}
-  # The Overlap page: 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
+  # The Compare sets page (#overlap): 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, go_binding, binding_protein]
     max_terms: 4

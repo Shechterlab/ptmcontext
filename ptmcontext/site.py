@@ -807,7 +807,17 @@ def website_problems(site: dict) -> list[str]:
             if a not in sets
         ]
     page_ids = {pg['id'] for pg in web.get('pages') or []}
-    known_tabs = page_ids | {'overview', 'statistics', 'method', 'proteins', 'sites', 'idrs', 'help'}
+    known_tabs = page_ids | {
+        'overview',
+        'method',
+        'proteins',
+        'sites',
+        'idrs',
+        'interactions',
+        'overlap',
+        'network',
+        'help',
+    }
     out += [
         f'website.tabs: {k!r} is not a page of this site (it has {sorted(known_tabs)})'
         for k in (web.get('tabs') or {})
@@ -821,7 +831,18 @@ def website_problems(site: dict) -> list[str]:
                 out.append(f'website.tabs.{k}: question {t.get("question")!r} is not a question of this site')
     for key, to in (web.get('legacy_links') or {}).items():
         if to.startswith('#'):
-            if to[1:].split('/')[0] not in page_ids | {'overview', 'statistics', 'method', 'proteins', 'sites', 'idrs'}:
+            if to[1:].split('/')[0] not in page_ids | {
+                'overview',
+                'statistics',
+                'compare',
+                'overlap',
+                'network',
+                'interactions',
+                'method',
+                'proteins',
+                'sites',
+                'idrs',
+            }:
                 out.append(f'website.legacy_links: {key!r} opens {to!r}, which is not a page of this site')
         elif not to.startswith('?') and to not in questions:
             out.append(f'website.legacy_links: {key!r} opens {to!r}, which is not a question of this site')

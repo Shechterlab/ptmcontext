@@ -262,8 +262,9 @@ def test_a_failed_control_keeps_its_row_with_a_badge_in_the_kit():
     js = (ASSETS / 'kit.js').read_text()
     # by default lost and reversed count; the site file may add weaker or switch the badges off
     assert "OV.control_badges?.verdicts || ['lost', 'reversed']" in js and 'OV.control_badges === false' in js
-    # the badge sits after the tile row (not inside its button), opens the Controls table, and the row's name says it
-    assert 'class="ctl-fail"' in js and 'data-ctl-go=' in js and 'id="q-controls"' in js
+    # the badge sits after the tile row (not inside its button), links to Methods > Controls, and the row's name says it
+    assert 'class="ctl-fail"' in js and 'class="ctl-badge" href="${esc(link(\'method\', \'controls\'))}"' in js
+    assert 'id="q-controls"' in js
     assert 'fails control: ${f.label}' in js and 'badge: fails.map(failText)' in js
     assert '<span class="vh">, ${esc(x.badge)}</span>' in (ASSETS / 'kit-tile.js').read_text()
     css = (ASSETS / 'kit.css').read_text()
@@ -300,23 +301,23 @@ const { chromium } = require('playwright');
   await p.waitForSelector('.ctl-fail .ctl-badge', { timeout: 20000 });
   const tip = await p.getAttribute('.ctl-fail .ctl-badge', 'title');
   await p.click('.ctl-fail .ctl-badge');
-  await p.waitForFunction(() => document.activeElement && document.activeElement.id === 'q-controls', null, { timeout: 15000 });
-  const out = await p.evaluate(() => ({
-    hash: location.hash,
-    focused: document.activeElement.id,
-    top: Math.round(document.getElementById('q-controls').getBoundingClientRect().top),
-    h: innerHeight,
-    cells: [...document.querySelectorAll('#q-controls tbody td span[title]')].map((x) => [x.textContent, x.title]),
-  }));
+  await p.waitForSelector('#m-controls[open]', { timeout: 15000 });
+  const out = {};
+  out.hash = await p.evaluate(() => location.hash);
+  out.part = await p.evaluate(() => document.querySelector('.msub [aria-current]').textContent);
+  // the question's own page still holds its Controls table: each cell shows the fold, its test in the tooltip
+  await p.goto(process.argv[2] + '/index.html#overview/motif');
+  await p.waitForSelector('#q-controls tbody td span[title]', { timeout: 20000 });
+  out.cells = await p.evaluate(() => [...document.querySelectorAll('#q-controls tbody td span[title]')].map((x) => [x.textContent, x.title]));
   console.log(JSON.stringify({ ...out, tip, errs }));
   await b.close();
 })();
 """
 
 
-def test_a_badge_click_opens_the_question_at_its_controls_table(tmp_path):
-    """In a browser: a tile row whose result a control reverses has a badge; a click on it opens the question at its
-    Controls table (focused, in view) and selects nothing (the row's own click would filter its class)."""
+def test_a_badge_click_opens_methods_controls(tmp_path):
+    """In a browser: a tile row whose result a control reverses has a badge; a click on it opens Methods > Controls and
+    selects nothing (the row's own click would filter its class)."""
     import functools
     import http.server
     import subprocess
@@ -380,8 +381,10 @@ def test_a_badge_click_opens_the_question_at_its_controls_table(tmp_path):
     assert run.returncode == 0, run.stderr[-1500:]
     out = json.loads(run.stdout.strip().splitlines()[-1])
     assert out['errs'] == []
-    assert out['hash'] == '#overview/motif'  # the question, and no filter of the row (?f=...)
-    assert out['focused'] == 'q-controls' and 0 <= out['top'] < out['h']
+    assert (
+        out['hash'].startswith('#method/controls') and 'f=' not in out['hash']
+    )  # Methods > Controls, no filter of the row
+    assert out['part'] == 'Controls'
     assert out['tip'].startswith('This result reverses when only the RA sites are compared (')
     # each cell shows the fold, its test in the tooltip
     assert out['cells'] and all('× q ' in c[0] and c[1].startswith('OR ') and ', q ' in c[1] for c in out['cells'])

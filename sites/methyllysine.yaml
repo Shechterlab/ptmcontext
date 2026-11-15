@@ -37,7 +37,7 @@ inputs:                # role the layers read: manifest input that fills it
   depmap_genes: depmap_gene_effect
   string_partners: string_physical_v12_5         # the partner classes' test reads the STRING table whole (the page reads it by its manifest name)
   interpro_entries: interpro_all_entries         # the writers', erasers' and readers' protein sets, by InterPro entry
-  go_bp_annotations: go_bp_annotations         # the Overlap page's GO biological process terms
+  go_bp_annotations: go_bp_annotations         # the Compare sets page's GO biological process terms
   go_bp_terms: go_bp_terms
   # interactions (the methylarginine site's roles, less the RNA and DNA evidence and its release tables)
   uniprot_disorder: uniprot_disordered_regions
@@ -1025,9 +1025,9 @@ website:                  # the look and words of the website (ptmc web); layout
   art: sites/art/methyllysine-hero.svg
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
   links:
-    - {label: Documentation, url: "#method"}
+    - {label: Methods, url: "#method"}
     - {label: Download data, url: "#method/download"}
-    - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
+    - {label: "Source code ↗", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
   examples: [H3C1, TP53 DNMT1 EHMT2, "histone:histone", TAF10 K189, H3 K9]   # the first three are the chips under the search box
@@ -1362,13 +1362,12 @@ website:                  # the look and words of the website (ptmc web); layout
       marked: another methylated protein
       other: any other protein
       scores: [0.7, 0.9]
-  tabs:                    # the top tabs' words (the addresses #statistics and #method stay; #idrs opens its question)
+  tabs:                    # the top tabs' words (the addresses #method stay; #idrs opens its question)
     overview: {label: Overview, hint: "Click a class row to select its sites, or a tile's title to open the question."}
     proteins: {label: Proteins, hint: "One row per protein with methyllysines. Filter, sort and download."}
     sites: {label: Sites, hint: "One row per methyllysine, with its degrees and evidence. Filter, sort and download."}
     idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of methylated proteins, and the methyllysines in them.", as: section, question: idr_charge}
-    statistics: {label: All tests, hint: "Every test on the site, one row per class, with odds ratio, interval and q value."}
-    method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
+    method: {label: Methods, hint: "How each question was tested, every test, the controls, the sources and how to cite."}
     help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   network:                 # the Network view (kit-network.js): the proteins with sites as one network, clustered, each cluster named by its most enriched term
@@ -1411,7 +1410,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}
       - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}
     tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites as one network of physical links and complexes, in clusters named by GO biological process."}
-  # The Overlap page: 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
+  # The Compare sets page (#overlap): 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, histone, complex, condensate_proteome]
     max_terms: 4

@@ -30,8 +30,8 @@
         : '')
     );
   }
-  K.views.compare = { render: chooser, title: () => 'Compare two selections' };
-  K.sections.compare = () => [['view', 'Compare two selections', 1]];
+  K.views.comparesaved = { render: chooser, title: () => 'Compare two selections' };
+  K.sections.comparesaved = () => [['view', 'Compare two selections', 1]];
   // in the selection bar: the selection against the other marks, and the way to compare it with a saved one
   (K.selTools ||= []).push(
     () =>
@@ -47,7 +47,7 @@
   );
   K.clicks.push(
     ['[data-go-apart]', () => K.go('overview', { vs: 'marks' })],
-    ['[data-go-compare]', () => K.go('compare')],
+    ['[data-go-compare]', () => K.go('comparesaved')],
     [
       '[data-saved-cmp]',
       (el) => {

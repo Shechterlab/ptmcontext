@@ -16,7 +16,7 @@ inputs:                # role the layers read: manifest input that fills it
   disorder: mobidb_disorder
   domains: interpro_domains
   interpro_entries: interpro_all_entries         # the readers' families, by InterPro and Pfam entry
-  go_bp_annotations: go_bp_annotations         # the Overlap page's GO biological process terms
+  go_bp_annotations: go_bp_annotations         # the Compare sets page's GO biological process terms
   go_bp_terms: go_bp_terms
   reactome: reactome_protein_pathways
   reactome_names: reactome_pathways
@@ -1170,9 +1170,9 @@ website:                  # the look and words of the website (ptmc web); layout
   art: sites/art/lysine-hero.svg
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
   links:
-    - {label: Documentation, url: "#method"}
+    - {label: Methods, url: "#method"}
     - {label: Download data, url: "#method/download"}
-    - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
+    - {label: "Source code ↗", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Research, url: "https://www.shechterlab.org/research/"}
     - {label: Publications, url: "https://www.shechterlab.org/publications/"}
   examples: [H3C1, "TP53 MDM2 UBE2I", "histone:histone", TP53 K372, H3 K9]   # the first three are the chips under the search box
@@ -1232,7 +1232,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: near_methyllysine}
           - {analysis: near_phospho}
           - {analysis: near_phospho_high}
-      - name: Interactions
+      - name: Interactions and enzymes
         about: "Whether modified lysines are where a protein touches another or at an RNA or DNA interface, and the complexes their proteins are in."
         cards:
           - {analysis: pdb_interface, title: Interfaces in PDB structures}
@@ -1423,13 +1423,12 @@ website:                  # the look and words of the website (ptmc web); layout
       near: window           # window:KKXK anywhere within the span
       span: 15
     spacing: {label: "Another modified lysine within", within: [2, 3, 5, 10, 20]}
-  tabs:                    # the top tabs' words (the addresses #statistics and #method stay; #idrs opens its question)
+  tabs:                    # the top tabs' words (the addresses #method stay; #idrs opens its question)
     overview: {label: Overview, hint: "Click a class row to select its sites, or a tile's title to open the question."}
     proteins: {label: Proteins, hint: "One row per protein with modified lysines. Filter, sort and download."}
     sites: {label: Sites, hint: "One row per modified lysine, with its modifications and evidence. Filter, sort and download."}
     idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of proteins with modified lysines, and the modified lysines in them.", as: section, question: idr_charge}
-    statistics: {label: All tests, hint: "Every test on the site, one row per class, with odds ratio, interval and q value."}
-    method: {label: Methods & data, hint: "How each question was tested, the data behind it, and downloads."}
+    method: {label: Methods, hint: "How each question was tested, every test, the controls, the sources and how to cite."}
     help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   network:                 # the Network view (kit-network.js): the proteins with sites as one network, clustered, each cluster named by its most enriched term
@@ -1472,7 +1471,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}
       - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}
     tile: {section: "Interactions", title: Protein network, text: "The proteins with modified lysines with most sites as one network of physical links and complexes, in clusters named by GO biological process."}
-  # The Overlap page: 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
+  # The Compare sets page (#overlap): 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, histone, complex, condensate_proteome]
     max_terms: 4

@@ -36,7 +36,12 @@
           : r.q != null && r.q <= K.PADJ
             ? 'about the same (within 1.1×)'
             : 'no difference';
-  const arrow = (r) => (r.dir === 'more' ? '▲ ' : r.dir === 'less' ? '▼ ' : '');
+  const arrow = (r) =>
+    r.dir === 'more'
+      ? '<span aria-hidden="true">▲</span><span class="vh">more often </span> '
+      : r.dir === 'less'
+        ? '<span aria-hidden="true">▼</span><span class="vh">less often </span> '
+        : '';
   const unitOf = (f) => (f.numeric ? ` for each ${f.per === 1 ? '' : f.per + ' '}unit up` : '');
 
   // ---- the tile -----------------------------------------------------------------------------------------------------
