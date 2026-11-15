@@ -7423,10 +7423,10 @@ html[data-density='compact'] .tbl th {
   column-gap: 0.35em;
 }
 
-/* ---- The header: the full band on the Overview only; on every other page a compact band of 56 px (the site name, back to
+/* ---- The header: the full band on every page by default; with website.header.compact: true, a compact band of 56 px off the Overview (the site name, back to
    the Overview). Only the search, the selection line and the tabs stay in view (NN/g, Sticky headers). Nothing changes
    size while the page scrolls, so nothing shifts: on a phone the bar slides away on the way down and back on the way up
-   (a transform, which takes no room), and without motion it simply hides and shows. website.header.compact: false keeps
+   (a transform, which takes no room), and without motion it simply hides and shows. The default keeps
    the full band everywhere (body.full-header). */
 body.slim .hero {
   height: 56px;

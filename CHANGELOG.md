@@ -1,6 +1,8 @@
 ## Unreleased
 
 - Figure PDF and PNG: text is set in the site's own fonts (Inter, IBM Plex Mono for sequences), embedded, loaded only when a file is made; text that would run past the page edge is shrunk or moved in; Screen is listed before Paper, and file names no longer end in the print width.
+- The full header (title, search) shows at the top of every page, not only the Overview, so scrolling back up looks the same everywhere. `website.header.compact: true` restores the slim band off the Overview.
+
 - Overview: the glyph of the "Which factor matters most?" tile (the arrow and its hidden words) is drawn, not shown as markup.
 - Overview: tiles sit in a grid of columns of 320 px or more (three across on a desktop, one on a phone); count and cell tiles take two or all columns.
 - Compare sets: a press on a result no longer moves focus off the search box, so the option is chosen in every browser.
