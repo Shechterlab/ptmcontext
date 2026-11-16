@@ -713,7 +713,42 @@
     }
     const layout = (view, variant = 'desktop', minCluster = 5, maxShown = 8) =>
       finish(view, positions(view, variant, minCluster, maxShown), variant);
-    return { layout, positions, finish, shortName, wrap2, settings, radius, litBox };
+    // a segment pa-pb cut where it runs through a box [x0, y0, x1, y1] (each grown by pad): the pieces outside every box
+    const cutSegment = (pa, pb, boxes, pad = 0) => {
+      const dx = pb[0] - pa[0],
+        dy = pb[1] - pa[1],
+        cuts = [];
+      for (const b of boxes) {
+        let t0 = 0,
+          t1 = 1;
+        for (const [p, d, lo, hi] of [
+          [pa[0], dx, b[0] - pad, b[2] + pad],
+          [pa[1], dy, b[1] - pad, b[3] + pad],
+        ]) {
+          if (d === 0) {
+            if (p <= lo || p >= hi) t1 = -1;
+          } else {
+            const u = (lo - p) / d,
+              v = (hi - p) / d;
+            t0 = Math.max(t0, Math.min(u, v));
+            t1 = Math.min(t1, Math.max(u, v));
+          }
+        }
+        if (t1 > t0) cuts.push([t0, t1]);
+      }
+      cuts.sort((a, b) => a[0] - b[0]);
+      const out = [];
+      let at = 0;
+      for (const [t0, t1] of cuts) {
+        if (t0 > at) out.push([at, t0]);
+        at = Math.max(at, t1);
+      }
+      if (at < 1) out.push([at, 1]);
+      return out
+        .filter(([t0, t1]) => t1 > t0)
+        .map(([t0, t1]) => [pa[0] + dx * t0, pa[1] + dy * t0, pa[0] + dx * t1, pa[1] + dy * t1]);
+    };
+    return { layout, positions, finish, shortName, wrap2, settings, radius, litBox, cutSegment };
   }
   const NL = netLayoutFactory();
   const src = netLayoutFactory.toString();

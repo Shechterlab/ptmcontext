@@ -477,3 +477,28 @@ def test_the_frame_of_a_pinned_view_holds_every_lit_cluster_whole_with_its_margi
         assert inside(box[0], box[1], 24) and inside(box[2], box[3], 24)
     # and the window is no larger than it has to be: one of the margins touches the extreme
     assert B['w'] > 48 and B['h'] > 48
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
+def test_an_exported_link_is_cut_where_it_passes_under_a_name():
+    cases = {
+        'through': [[0, 0], [100, 0], [[40, -5, 60, 5]]],
+        'clear': [[0, 0], [100, 0], [[40, 10, 60, 20]]],
+        'two': [[0, 0], [100, 100], [[20, 15, 30, 35], [60, 55, 70, 75]]],
+        'vertical': [[50, 0], [50, 100], [[40, 40, 60, 60]]],
+    }
+    got = _node(
+        _harness(
+            'const o={};for(const [k,[a,b,bx]] of Object.entries(IN))o[k]=K.netlayout.cutSegment(a,b,bx,1);'
+            'console.log(JSON.stringify(o));'
+        ),
+        cases,
+    )
+    assert got['through'] == [[0, 0, 39, 0], [61, 0, 100, 0]]
+    assert got['clear'] == [[0, 0, 100, 0]]
+    assert len(got['two']) == 3
+    assert got['vertical'] == [[50, 0, 50, 39], [50, 61, 50, 100]]
+    for pieces, boxes in ((got['two'], cases['two'][2]),):
+        for x0, y0, x1, y1 in pieces:
+            for b in boxes:
+                assert not (b[0] < (x0 + x1) / 2 < b[2] and b[1] < (y0 + y1) / 2 < b[3])

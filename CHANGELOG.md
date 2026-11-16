@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Network exports: links no longer run under a gene name or a cluster name (they are cut where they pass under it), in SVG, PNG and PDF.
 - Where in the cell, for a small selection of proteins: each compartment says "Found here · k of n proteins" (also in the hover).
 - Header logos: the letters are drawn with a middle weight between the thin and the favicon letters.
 - The citation titles of the four sites say they are part of PTMcontext.

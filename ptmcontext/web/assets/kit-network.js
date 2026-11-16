@@ -473,17 +473,19 @@
   // ring round it; the same in the page, in an export and (with hover) when the pointer leaves
   let OVL = { x: '', top: '' };
   function pinOverlay(M, L, pinSet, ex, mini, ink, rs = 1) {
-    if (mini || !pinSet.size) return { x: '', top: '' };
+    if (mini || !pinSet.size) return { x: '', cuts: [], top: '' };
     const f1 = (v) => v.toFixed(1),
       k = L.k,
       x = [],
+      cuts = [],
       top = [];
     M.edges.forEach(([a, b, fl]) => {
       if (!(pinSet.has(a) || pinSet.has(b))) return;
       if (M.nodes[a].c === M.nodes[b].c) return;
-      x.push(
-        `<line x1="${f1(L.pos[a][0])}" y1="${f1(L.pos[a][1])}" x2="${f1(L.pos[b][0])}" y2="${f1(L.pos[b][1])}" stroke="${ink}" stroke-opacity="0.55" stroke-width="${k < 1 ? 0.7 : 1}"${dashOf(fl)}/>`
-      );
+      const w = k < 1 ? 0.7 : 1,
+        line = (xy) => `<line ${xy} stroke="${ink}" stroke-opacity="0.55" stroke-width="${w}"${dashOf(fl)}/>`;
+      x.push(line(`x1="${f1(L.pos[a][0])}" y1="${f1(L.pos[a][1])}" x2="${f1(L.pos[b][0])}" y2="${f1(L.pos[b][1])}"`));
+      cuts.push([L.pos[a], L.pos[b], w, line]);
     });
     pinSet.forEach((i) => {
       const rr = K.netlayout.radius(M.nodes[i].sz, k * rs);
@@ -491,7 +493,7 @@
         `<circle cx="${f1(L.pos[i][0])}" cy="${f1(L.pos[i][1])}" r="${f1(rr + pinGap(M.nodes[i]))}" fill="none" stroke="${ink}" stroke-width="1.5"/>`
       );
     });
-    return { x: x.join(''), top: top.join('') };
+    return { x: x.join(''), cuts, top: top.join('') };
   }
   // ---- why a link exists: its types, their scores and the complexes, for the tooltip -------------------------------------------
   // The whole-network file holds the channel scores and the complexes; the first hover on a link reads it (the tooltip then names them).
@@ -577,7 +579,8 @@
     // of a text apart from the text itself)
     // (the boxes are known once every name is placed, so the curves of an export are written after the names)
     const nameBoxes = [],
-      bundleSlots = [];
+      bundleSlots = [],
+      linkSlots = [];
     const bundleD = (pa, q, pb, w) => {
       const at = (t) => [
           (1 - t) ** 2 * pa[0] + 2 * (1 - t) * t * q[0] + t * t * pb[0],
@@ -653,16 +656,21 @@
         out.push(
           `<line class="nw-ieh" data-nwc="${ca}" ${xy} stroke="transparent" stroke-width="${phone ? 8 : 6}" pointer-events="stroke"><title>${esc(whyText(M, a, b, fl, sc))}</title></line>`
         );
-      out.push(
+      const line = (xy) =>
         `<line class="nw-ie" data-a="${a}" data-b="${b}" ${xy} stroke="${pt.stroke}" stroke-width="${pt.width}"${pt.dash} ` +
-          (ex ? `stroke-opacity="${pt.op}"` : `style="stroke-opacity:${pt.op}${o ? ';opacity:0.1' : ''}"`) +
-          (ex && o ? ' opacity="0.1"' : '') +
-          '/>'
-      );
+        (ex ? `stroke-opacity="${pt.op}"` : `style="stroke-opacity:${pt.op}${o ? ';opacity:0.1' : ''}"`) +
+        (ex && o ? ' opacity="0.1"' : '') +
+        '/>';
+      // in an export a link is cut where it passes under a name (see the bundles)
+      if (ex) linkSlots.push([out.push('') - 1, P[a], P[b], pt.width, line]);
+      else out.push(line(xy));
     });
     const ovl = pinOverlay(M, L, pinSet, ex, mini, ink, rs);
     if (!ex && !mini) OVL = ovl;
-    out.push(`</g><g class="nw-x">${ovl.x}</g><g class="nw-nodes">`);
+    // (in an export these links are cut under the names as well, once the names are placed)
+    out.push(`</g><g class="nw-x">${ex ? '' : ovl.x}`);
+    const pinSlot = out.length - 1;
+    out.push('</g><g class="nw-nodes">');
     P.forEach((p, i) => {
       if (!vis(M.nodes[i].c)) return;
       const nd = M.nodes[i],
@@ -808,6 +816,16 @@
     if (ex) {
       nameBoxes.push(...taken.filter((bx) => bx.every((v) => isFinite(v))));
       bundleSlots.forEach(([k, path]) => (out[k] = path()));
+      linkSlots.push(...ovl.cuts.map((c) => [-1, ...c]));
+      linkSlots.forEach(([k, pa, pb, w, line]) => {
+        const cutTo = (s) => (k >= 0 ? (out[k] = s) : (out[pinSlot] += s));
+        cutTo(
+          K.netlayout
+            .cutSegment(pa, pb, nameBoxes, w / 2 + 1.5)
+            .map(([x1, y1, x2, y2]) => line(`x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}"`))
+            .join('')
+        );
+      });
     }
     if (L.shelf && !crop)
       out.push(
