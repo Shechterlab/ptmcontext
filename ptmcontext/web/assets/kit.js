@@ -3462,6 +3462,7 @@
       ? `protein-set ` + `test of the ${x.sets} input`
       : `layer ${x.layer} (${x.origin})${x.with ? ', made with the parameters of its definition' : ''}`;
   };
+  const PAGE_LABEL = 'Page:';
   function creditLines() {
     const sn = D.run.snapshot || {};
     const lines = [];
@@ -3474,7 +3475,9 @@
       } · ptmcontext ${D.kit.version}${sn.release ? ' · ' + sn.release : ''}`
     );
     if (selOn() && K.sel.data()) lines.push(`Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks})`);
-    // the commit, the FASTA MD5 and the page's address are not in the strip: they are in the file's metadata (provenance())
+    // the commit and the FASTA MD5 are not in the strip: they are in the file's metadata (provenance()); the page's full
+    // address (view, filters, protein, section) is, so the figure can be traced back to it
+    if (typeof location !== 'undefined' && /^https?:/.test(location.href)) lines.push(`${PAGE_LABEL} ${location.href}`);
     lines.push(`Exported ${hdate(stamp())}${CIT.licence ? ' · license ' + hlicence(CIT.licence) : ''}`);
     return lines;
   }
@@ -4394,6 +4397,38 @@
     });
     return moved;
   }
+  // the credit's "Page:" line (its address may be wrapped over several texts) as boxes in PDF points, to be made clickable
+  function pageLinkBoxes(svgEl, pw) {
+    const href = typeof location !== 'undefined' ? location.href : '',
+      box = svgEl.getBoundingClientRect(),
+      k = box.width ? pw / box.width : 0,
+      out = [];
+    let at = -1;
+    svgEl.querySelectorAll('#credit text, text').forEach((t) => {
+      const s = (t.textContent || '').trim();
+      let piece = '';
+      if (s.startsWith(PAGE_LABEL)) {
+        piece = s.slice(PAGE_LABEL.length).trim();
+        at = 0;
+      } else if (at >= 0 && at < href.length && s && href.startsWith(s, at)) piece = s;
+      else {
+        if (at >= 0) at = -1;
+        return;
+      }
+      if (!piece || !href.startsWith(piece, at < 0 ? 0 : at)) return;
+      at += piece.length;
+      const r = t.getBoundingClientRect(),
+        w = piece === s ? r.width : r.width * (piece.length / s.length);
+      out.push({
+        x: (r.right - w - box.left) * k,
+        y: (r.top - box.top) * k,
+        w: w * k,
+        h: r.height * k,
+        url: href,
+      });
+    });
+    return out;
+  }
   // a vector PDF of the figure's SVG, its text in Inter (monospace in IBM Plex Mono, so residues still line up; weights as
   // regular or bold, the two cuts embedded); where the vector drawing fails, the figure as a 3x PNG on a page of its size
   async function pdfExport(f, name) {
@@ -4484,7 +4519,9 @@
         n.setAttribute('stroke', 'none');
         n.parentNode.insertBefore(halo, n);
       });
+      const links = pageLinkBoxes(svgEl, pw);
       await window.svg2pdf.svg2pdf(svgEl, pdf, { x: 0, y: 0, width: pw, height: ph });
+      links.forEach((l) => pdf.link(l.x, l.y, l.w, l.h, { url: l.url }));
     } catch (err) {
       const svg = await embedFonts(f.svg),
         img = new Image(),

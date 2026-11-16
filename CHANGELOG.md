@@ -3,6 +3,8 @@
 - Loading: a view that waits for data (selection data, tables, protein pages, network) shows a small spinner with a short text in the area being filled, only after 300 ms, as a live status (still, not turning, under reduced motion). The landing page does the same while its protein search index loads.
 - Where in the cell: the maps open on "Above or below the average" on all four sites (website.cell.default_view; without the key, average).
 - "Compare with…" buttons open the Compare sets page with the current set as set A (the selection bar, the highlighted list, saved selections, the row pop-ups and the question pages); where no comparison is possible the button is hidden.
+- Protein map: the charge track is drawn on a fixed -0.5 to +0.5 axis (95% of rolling means lie inside it), with a dot where a mean goes beyond, so its curve fills the track about as much as the hydropathy curve.
+- Exports (PDF, SVG, PNG) carry the full address of the page they came from, with its view, filters, protein and section, in the credit lines; in the PDF it is a clickable link. The printed page foot has the address with its hash too.
 - SVG exports: a protein-map row label that wraps onto two lines gets proper line spacing and its row more room; the regions figure's share and count labels no longer meet; the cell funnel's point names keep off the tick labels, and its gridlines are cut where a name stands.
 - CI: a newer push cancels the test run still going for an older commit on the same branch or pull request.
 
