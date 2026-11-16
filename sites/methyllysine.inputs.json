@@ -610,6 +610,51 @@
       "licence": "CC BY 4.0",
       "role": "input",
       "note": "The GO biological process terms with at least one reviewed human protein: name, depth, protein counts, parents. Staged by PTM_Pipeline scripts/63_stage_go_bp.py. Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556. Read for the Overlap page."
+    },
+    "methyllysine_site_interactions_v1_5_1": {
+      "file": "releases/v1.5.1/supporting/methyllysine_site_interactions_v1.5.1.tsv",
+      "md5": "3ed3ba155d3f814f698d935783515d7a",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/4897ea26936b26d2fcf0d7e5b0a314d0fa1ac8b3/releases/v1.5.1",
+      "version": "PTM_Pipeline release v1.5.1 (methyllysine supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
+      "role": "input",
+      "note": "Each methyllysine site's interaction evidence, one row per kind and partner (PDB interfaces with proteins, RNA, DNA and another copy of the protein; RNA and DNA crosslinks; RNA-bound peptides; UniProt DNA-binding regions): the site card's interaction evidence and the Interactions page. Sources: PDBe-KB interface residues (EMBL-EBI terms of use); PDB data through the RCSB ModelServer and Data API and SIFTS (CC0, EMBL-EBI terms); pepR-MS RNA crosslinks (Sha, Kuster & Trendel, bioRxiv 2025, CC BY-NC; with re-analyses of Kramer 2014, XRNAX 2019, RBS-ID 2020 and pRBS-ID 2021); CAPRI (Panhale 2019, CC BY 4.0); RBR-ID (Oksuz 2023, PRIDE, CC0); DNA crosslinks (Trendel 2025, CC BY-NC 4.0); UniProt DNA-binding regions (CC BY 4.0). RBDmap and pCLAP evidence, predicted complexes and IntAct records are not in this table."
+    },
+    "methyllysine_site_interaction_records_v1_5_1": {
+      "file": "releases/v1.5.1/supporting/methyllysine_site_interaction_records_v1.5.1.tsv",
+      "md5": "28719bdd11751c687744ae42e6449b97",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/4897ea26936b26d2fcf0d7e5b0a314d0fa1ac8b3/releases/v1.5.1",
+      "version": "PTM_Pipeline release v1.5.1 (methyllysine supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
+      "role": "input",
+      "note": "Every interaction record at a site with its source, method, paper and the state of the lysine in it (lysine, Kme1, Kme2, Kme3, Kac, another residue, not read): the site card's 'Who binds it, and how it was found' and the Interactions page. Sources as for the site interactions table: PDB data (CC0, EMBL-EBI terms), PDBe-KB, pepR-MS (CC BY-NC) and its re-analyses, CAPRI (CC BY 4.0), RBR-ID (CC0), Trendel 2025 DNA crosslinks (CC BY-NC 4.0), UniProt (CC BY 4.0). RBDmap and pCLAP evidence, predicted complexes and IntAct records are not in this table."
+    },
+    "methyllysine_nucleic_acid_contacts_v1_5_1": {
+      "file": "releases/v1.5.1/supporting/methyllysine_nucleic_acid_contacts_v1.5.1.tsv",
+      "md5": "d384f2fc1e43ff93b3a14d05b8c1fad1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/4897ea26936b26d2fcf0d7e5b0a314d0fa1ac8b3/releases/v1.5.1",
+      "version": "PTM_Pipeline release v1.5.1 (methyllysine supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
+      "role": "input",
+      "note": "The RNA and DNA chains within reach of each methyllysine in PDB structures, with the contacted nucleotides and the bound window: the site card's RNA and DNA contacts, the 3D viewer and the Interactions page. PDB data through the RCSB ModelServer and Data API and SIFTS (CC0, EMBL-EBI terms)."
+    },
+    "methyllysine_nucleic_acid_near_sites_v1_5_1": {
+      "file": "releases/v1.5.1/supporting/methyllysine_nucleic_acid_near_sites_v1.5.1.tsv",
+      "md5": "bcfbe0c5449e00b6a1c553ca4b908e9e",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/4897ea26936b26d2fcf0d7e5b0a314d0fa1ac8b3/releases/v1.5.1",
+      "version": "PTM_Pipeline release v1.5.1 (methyllysine supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
+      "role": "input",
+      "note": "RNA and DNA in contact with a residue next to a methyllysine in PDB structures: the site card's contacts through a neighboring residue. PDB data through the RCSB ModelServer and Data API and SIFTS (CC0, EMBL-EBI terms)."
+    },
+    "methyllysine_residue_evidence_v1_5_1": {
+      "file": "releases/v1.5.1/supporting/methyllysine_residue_evidence_v1.5.1.tsv",
+      "md5": "e434ac639ff7d6caea1ededb0aac9ae2",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/4897ea26936b26d2fcf0d7e5b0a314d0fa1ac8b3/releases/v1.5.1",
+      "version": "PTM_Pipeline release v1.5.1 (methyllysine supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
+      "role": "input",
+      "note": "Interaction evidence along each protein, one row per residue or stretch (PDB interfaces, RNA and DNA crosslinks, RNA-bound peptides and regions, UniProt DNA-binding regions): the site card's evidence within a few residues of a site and the 3D viewer's colorings. Sources as for the site interactions table: PDBe-KB, PDB data and SIFTS, pepR-MS and its re-analyses (CC BY-NC), CAPRI (CC BY 4.0), RBR-ID (CC0), Trendel 2025 (CC BY-NC 4.0), UniProt (CC BY 4.0). RBDmap and pCLAP evidence, predicted complexes and IntAct records are not in this table."
     }
   }
 }
