@@ -1368,6 +1368,7 @@ website:                  # the look and words of the website (ptmc web); layout
     overview: {label: Overview, hint: "Click a class row to select its sites, or a tile's title to open the question."}
     proteins: {label: Proteins, hint: "One row per protein with phosphosites. Filter, sort and download."}
     sites: {label: Sites, hint: "One row per phosphosite, with its residue and evidence. Filter, sort and download."}
+    interactions: {label: Interactions, hint: "Where phosphosites meet RNA, DNA and other proteins: crosslinks and RNA-bound peptides in cells, interfaces and bound RNA and DNA in PDB structures, and who binds each site."}
     idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of phosphorylated proteins, and the phosphosites in them.", as: section, question: idr_charge}
     method: {label: Methods, hint: "How each question was tested, every test, the controls, the sources and how to cite."}
     help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
@@ -1460,6 +1461,40 @@ website:                  # the look and words of the website (ptmc web); layout
       columns: {accession: protein_a, partner_accession: protein_b, partner: gene_b, score: combined_score}
       both_ways: {partner: gene_a}
       include: [{column: combined_score, at_least: 700}]
+    interactions:          # PTM_Pipeline release v1.5.1: each site's evidence (PDB interfaces, crosslinks, RNA-bound peptides, DNA-binding regions)
+      input: phospho_site_interactions_v1_5_1
+      format: site_evidence
+      columns: {site: site_id, kind: evidence_type, partner: partner_gene, partner_accession: partner_accession, ids: structures, score: score, detail: detail}
+      include: [{column: evidence_type, in: [pdb_protein, pdb_rna, pdb_dna, pdb_self, rna_crosslink, dna_crosslink, capri_xl_peptide, capri_adj_peptide, rbrid_residue, dna_binding_region]}]
+    contacts:
+      input: phospho_nucleic_acid_contacts_v1_5_1
+      format: bound_windows
+      columns: {site: site_id, window: window_marked, kind: nucleic_acid, type: nucleic_acid_type, name: molecule_name, entry: pdb_id,
+                distance: closest_distance_a, preparation: sample_preparation, chain: chain, nucleotides: contacted_nucleotides,
+                numbers: contacted_author_numbers, distances: contacted_distances_a}
+    contacts_near:
+      input: phospho_nucleic_acid_near_sites_v1_5_1
+      format: bound_windows
+      columns: {site: site_id, window: window_marked, kind: nucleic_acid, type: nucleic_acid_type, name: molecule_name, entry: pdb_id,
+                entries: n_entries, offset: residue_offset, preparation: sample_preparation}
+    residues:
+      input: phospho_residue_evidence_v1_5_1
+      format: residue_evidence
+      columns: {accession: uniprot_accession, start: start, end: end, kind: evidence_type, source: sources}
+      include: [{column: evidence_type, in: [rna_crosslink, dna_crosslink, capri_xl_peptide, capri_adj_peptide, rbrid_residue, rbrid_region, dna_binding_region]}]
+    chain_evidence:        # the 3D viewer's colorings along the chain: each run's kind with where it falls
+      input: phospho_residue_evidence_v1_5_1
+      format: residue_evidence
+      columns: {accession: uniprot_accession, start: start, end: end, kind: [evidence_type, localisation], source: sources}
+      include: [{column: evidence_type, in: [rna_crosslink, dna_crosslink, capri_xl_peptide, capri_adj_peptide, rbrid_residue, rbrid_region,
+                                             dna_binding_region, pdb_rna, pdb_dna, pdb_protein, pdb_self]}]
+    records:
+      input: phospho_site_interaction_records_v1_5_1
+      format: site_records
+      columns: {site: site_id, group: record_class, partner: partner_gene, partner_name: partner_name, partner_accession: partner_accession,
+                partner_kind: partner_kind, species: partner_species, source: source, id: source_id, method: method, context: context,
+                state: site_state, state_detail: state_detail, other_marks: other_marks, pubmed: pubmed, doi: doi, citation: citation,
+                title: paper_title}
   sites:                   # the Sites tab
     table:                 # the optional columns (the Columns menu): the same set on every site, where the data has it
       - {id: src, label: Reported by, attribute: sources, default: true, hide: sm}
@@ -1511,3 +1546,142 @@ website:                  # the look and words of the website (ptmc web); layout
         context: [mark, residue, detail, source, click]
       marks_view: {attribute: functional_score, at_least: 0.5, label: score ≥ 0.5}   # every site at first; a click on the row label keeps the sites Ochoa 2020 scores 0.5 or more
       hide_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row would repeat the phosphosites: one source for them
+    nucleic:               # the RNA and DNA interactions card (CONTRACTS.md, RNA and DNA interactions)
+      title: RNA and DNA interactions
+      kinds: {rna: RNA, dna: DNA}
+      near: {table: contacts_near, label: "in contact through a neighboring residue"}
+      crosslinks:          # single residues only: no peptide or fragment is listed
+        table: residues
+        span: 5
+        kinds: {rna_crosslink: rna, dna_crosslink: dna}
+    structure:             # the 3D viewer's evidence at the sites (CONTRACTS.md, Structure evidence), through the tables above
+      contacts:            # PDBe-KB interfaces at the sites, with the PDB entries that show each
+        table: interactions
+        include: [{column: kind, in: [pdb_rna, pdb_dna, pdb_protein, pdb_self]}]
+        kinds: {pdb_rna: rna, pdb_dna: dna, pdb_protein: protein, pdb_self: self}
+        label: PDBe-KB interfaces at the phosphosites
+        help: "PDB entries where the phosphosite is at an interface with RNA, DNA, another protein or another copy (PDBe-KB)"
+      bound:               # the RNA or DNA each site touches, entry by entry
+        table: contacts
+        label: RNA and DNA bound at the phosphosite
+        help: "Nucleotides within reach of the site’s side chain in each PDB entry analyzed"
+      residues:
+        table: chain_evidence
+        colourings:
+          - id: crosslinks
+            label: RNA/DNA crosslinks (cells)
+            none: No crosslink recorded
+            help: "Residues crosslinked to RNA or DNA in living cells, and the peptides and regions found bound"
+            classes:
+              - {id: both, label: Crosslinked to RNA and to DNA, colour: ev, all: [rna, dna]}
+              - {id: rna, label: RNA-crosslinked residue, colour: rna, where: [{column: kind, equals: "rna_crosslink; at_residue"}]}
+              - {id: dna, label: DNA-crosslinked residue, colour: dna, where: [{column: kind, equals: "dna_crosslink; at_residue"}]}
+              - {id: rna_bound, label: "RNA-bound peptide or region (CAPRI, RBR-ID)", colour: rna_pale,
+                 where: [{column: kind, in: ["capri_xl_peptide; in_peptide", "capri_adj_peptide; in_fragment", "rbrid_residue; in_region", "rbrid_region; in_region"]}]}
+              - {id: dna_bound, label: "DNA-bound peptide or region (crosslink, DNA-binding)", colour: dna_pale,
+                 where: [{column: kind, in: ["dna_crosslink; candidate_residue", "dna_crosslink; in_peptide", "dna_binding_region; in_region"]}]}
+          - id: interfaces
+            label: Interfaces in the PDB (PDBe-KB)
+            none: At no interface in the PDB
+            help: "Residues at an interface in a PDB entry (PDBe-KB) with RNA, DNA, another protein or another copy"
+            classes:
+              - {id: rna, label: RNA interface, colour: rna, where: [{column: kind, equals: "pdb_rna; at_residue"}]}
+              - {id: dna, label: DNA interface, colour: dna, where: [{column: kind, equals: "pdb_dna; at_residue"}]}
+              - {id: protein, label: Protein interface, colour: protein, where: [{column: kind, equals: "pdb_protein; at_residue"}]}
+              - {id: self, label: Interface with another copy of the protein, colour: self, where: [{column: kind, equals: "pdb_self; at_residue"}]}
+    card:                  # the site card: its blocks, each reading a table above (a block without its data is absent)
+      evidence:            # interaction evidence: PDB entries, bound RNA and DNA, crosslinks near the site
+        title: Interaction evidence
+        entries:                             # the site's entries in structures, by kind (a site_evidence table)
+          table: interactions
+          kinds: {pdb_rna: RNA, pdb_dna: DNA, pdb_protein: "", pdb_self: another copy}   # "": the partner's name
+          url: "https://www.rcsb.org/structure/{id}"
+        sequences:                           # bound_windows tables: the RNA and DNA in contact in structures
+          title: RNA and DNA contacts of {site}
+          tables: [contacts, contacts_near]
+          kinds: {rna: RNA, dna: DNA}
+          types: {rrna: rRNA, trna: tRNA, snrna: snRNA, mrna: mRNA, other_ncrna: Other ncRNA, viral_rna: Viral RNA, rna_oligo: RNA oligo, other_rna: Other RNA,
+                  nucleosomal_dna: Nucleosomal DNA, telomeric_dna: Telomeric DNA, other_dna: Other DNA}
+          designed: {preparation: Synthetically obtained, label: oligo}
+          ends: ["5′", "3′"]
+          max: 5
+        around:                              # a residue_evidence table: crosslinks and RNA-bound stretches at or near the site
+          table: residues
+          span: 3
+          labels: {rna_crosslink: UV-crosslinked to RNA in living cells, dna_crosslink: UV-crosslinked to DNA in living cells,
+                   capri_xl_peptide: inside CAPRI RNA-crosslinked peptide,
+                   capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RBR-ID+ peptide, rbrid_region: inside an RBR-ID region,
+                   dna_binding_region: inside a UniProt DNA-binding region}
+      records:             # a site_records table: who binds it, and how it was found
+        title: Who binds it, and how it was found
+        table: records
+        help:
+          binds_modified: "the residue is phosphorylated in the structure (SEP, TPO or PTR), as the entry models it"
+          binds_unmodified: structures that model an unmodified residue here (PDBe-KB interface)
+          binds_other_residue: "structures with another residue here: a mutated construct or a natural variant"
+          binds_state_not_read: PDBe-KB places an interface here, but the entry's sequence could not be matched to the site
+          nucleic_acid: contacts in structures, crosslinks and RNA-bound peptides in cells, UniProt DNA-binding regions
+          self: homo-oligomer contacts in structures
+        open: [binds_modified]
+        kinds: {self: another copy, rna: RNA, dna: DNA}
+        species: Homo sapiens                # partners of another species are named with theirs
+        urls: {PDB: "https://www.rcsb.org/structure/{id}"}
+        states: {serine: S (unmodified), threonine: T (unmodified), tyrosine: Y (unmodified), Sph: Sph (phosphoserine), Tph: Tph (phosphothreonine), Yph: Yph (phosphotyrosine), other_residue: variant, not_recorded: not recorded, not_read: not read}
+  pages:
+    - id: interactions
+      tab: Interactions
+      title: Where do phosphosites meet RNA, DNA and other proteins?
+      sub: "The evidence at each phosphosite: crosslinks and RNA-bound peptides in living cells, interfaces and bound RNA and DNA in solved structures, and the partners found at each site."
+      method: |
+        The tables of this page are the release's supporting tables, read through the site file's mapping; no test reads them. One row is one piece of evidence at one phosphosite: a PDBe-KB interface residue in a PDB entry (with a protein, RNA, DNA or another copy of the protein), a residue UV-crosslinked to RNA or DNA in living cells, a residue inside an RNA-bound peptide (CAPRI) or under an RBR-ID peptide, or a residue inside a UniProt DNA-binding region.
+
+        Bound RNA and DNA come from PDB structures: each chain of RNA or DNA within reach of the site’s side chain, with the bound sequence around the closest nucleotide. The records list who binds each site and how it was found, with the state of the residue in the structure or experiment (unmodified, phosphorylated, another residue, or not read).
+
+        RBDmap and pCLAP evidence, predicted complexes and IntAct records are not in these tables.
+      columns:             # how the page shows the tables' columns (a table's own: <table>.<column>)
+        interactions.kind: {label: Evidence, values: {rna_crosslink: RNA-crosslinked residue, capri_xl_peptide: CAPRI XL-peptide, capri_adj_peptide: CAPRI ADJ-peptide, rbrid_residue: RBR-ID+ residue, dna_crosslink: DNA crosslink, dna_binding_region: UniProt DNA-binding region, pdb_protein: PDB protein interface, pdb_rna: PDB RNA interface, pdb_dna: PDB DNA interface, pdb_self: PDB interface with another copy}}
+        interactions.ids: {label: Structures}
+        partner_accession: {label: Partner}
+        partner: {label: Partner gene}
+        records.group: {label: Record, values: {binds_modified: Binds it phosphorylated, binds_unmodified: Binds it unmodified, binds_other_residue: Binds a mutant or variant there, binds_state_not_read: Binds it (state not read), nucleic_acid: RNA or DNA, self: Another copy of the protein}}
+        records.source: {label: Evidence}
+        records.partner_kind: {label: Partner kind, values: {protein: Protein, rna: RNA, dna: DNA, self: Another copy}}
+        records.state: {label: The site in it, values: {serine: S (unmodified), threonine: T (unmodified), tyrosine: Y (unmodified), Sph: Sph (phosphoserine), Tph: Tph (phosphothreonine), Yph: Yph (phosphotyrosine), other_residue: Variant, not_recorded: Not recorded, not_read: Not read}}
+        state_detail: {label: The site in it}
+        context: {label: What it shows}
+        pubmed: {label: Paper}
+        window: {label: "Bound sequence ([contact])"}
+        contacts.type: {label: Type, values: {rrna: rRNA, trna: tRNA, snrna: snRNA, mrna: mRNA, other_ncrna: Other ncRNA, viral_rna: Viral RNA, rna_oligo: RNA oligo, other_rna: Other RNA, nucleosomal_dna: Nucleosomal DNA, telomeric_dna: Telomeric DNA, other_dna: Other DNA}}
+        contacts.name: {label: Molecule}
+        contacts.distance: {label: Closest (Å)}
+        contacts.entry: {label: PDB, type: pdb}
+      groups:
+        - name: RNA and DNA
+          sections:
+            - id: ixs-cells
+              title: Crosslinks and RNA-bound peptides in cells
+              question: Which phosphosites are crosslinked to RNA or DNA, lie inside an RNA-bound peptide, or lie in a DNA-binding region?
+              blocks:
+                - {kind: table, table: interactions, title: The crosslinks and RNA-bound peptides at each site, chips: kind, columns: [accession, kind, detail], limit: 25,
+                   where: [{column: kind, in: [rna_crosslink, dna_crosslink, capri_xl_peptide, capri_adj_peptide, rbrid_residue, dna_binding_region]}]}
+            - id: ix-na
+              title: Bound RNA and DNA
+              question: Which RNA and DNA do phosphosites contact in structures, and how close do they come?
+              blocks:
+                - {kind: table, table: contacts, title: RNA and DNA at phosphosites, sub: "Each PDB chain of RNA or DNA within reach of a site’s side chain, with the bound sequence around the closest nucleotide.", chips: type, columns: [accession, window, type, name, distance, entry], sort: distance, descending: false}
+        - name: Structures
+          sections:
+            - id: ixs-pdb
+              title: Interfaces in PDB structures
+              question: Which phosphosites are at protein, RNA or DNA interfaces in experimental structures?
+              blocks:
+                - {kind: table, table: interactions, title: The PDB interfaces at each site, chips: kind, columns: [accession, kind, partner_accession, ids, detail], limit: 25,
+                   where: [{column: kind, in: [pdb_protein, pdb_rna, pdb_dna, pdb_self]}], partner: partner_accession, label: partner}
+        - name: Partners
+          sections:
+            - id: ix-who
+              title: Who binds the phosphosite
+              question: Which partners bind these sites, in which state of the residue, and how was each found?
+              sub: phosphosites with a record
+              blocks:
+                - {kind: table, table: records, group_by: group, columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}
