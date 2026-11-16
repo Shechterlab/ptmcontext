@@ -301,7 +301,7 @@
   const pillOf = (m, k) => {
     const rc = K.map.readable(K.map.attrColour(k, attrVal(m, k)));
     const txt = String(K.sel?.valueLabel ? K.sel.valueLabel(k, attrVal(m, k)) : attrVal(m, k)),
-      // a trailing "(Rme1)" is dropped in compact rows (the dot and the short name stay; the pill keeps it all)
+      // a trailing bracketed note is dropped in compact rows (the dot and the short name stay; the pill keeps it all)
       cut = /^(.*?\S)\s+(\([^()]*\))$/.exec(txt);
     return (
       `<span class="state-pill" ` +
