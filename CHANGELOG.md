@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Logos: the header marks of the four sites and the landing page are drawn with finer lines, and the landing mark's dots are larger, staggered in two rows (one per card, up to six). The favicon keeps the bold drawing: new `website.favicon` (and `favicon` in the landing config) name it; without it the logo is used.
+
 - A test checks that every PTM_Pipeline file the Pages build reads is also checked out by each CI test job.
 
 - CI: the unit-test job checks out the STRING and Complex Portal tables the network needs; the Overview's "all tests" link goes straight to Methods → Every test instead of the retired #statistics address.

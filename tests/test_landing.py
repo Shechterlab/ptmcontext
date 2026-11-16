@@ -191,6 +191,13 @@ def test_the_logo_comes_from_the_site_file_to_the_header_the_favicon_and_the_car
     assert 'class="card-logo" src="toya/assets/logo.svg"' in land  # the live card's logo, from its site's build
     assert '<link rel="icon" href="logo.svg">' in land and 'class="site-mark" src="logo.svg"' in land
     assert (tmp_path / 'site' / 'logo.svg').read_text().count('654321') == 1
+    spec['website']['favicon'] = 'art/toya_favicon.svg'
+    (root / 'art' / 'toya_favicon.svg').write_text(svg.replace('123456', '0a0b0c'))
+    a.write_text(yaml.safe_dump(spec, sort_keys=False, allow_unicode=True))
+    web.build(a, log=lambda *_: None)  # a bolder favicon: the tab icon only, the header keeps the logo
+    page = (out / 'index.html').read_text()
+    assert '<link rel="icon" href="assets/favicon.svg">' in page and 'class="site-mark" src="assets/logo.svg"' in page
+    assert '0a0b0c' in (out / 'assets' / 'favicon.svg').read_text()
     import json
 
     assert json.loads((tmp_path / 'site' / 'sites.json').read_text())['switcher_label'] == 'Mod'  # the site file's word
@@ -244,3 +251,18 @@ def test_the_mark_takes_one_dot_per_card_in_its_band_colour():
     svg = LP.logo_with_dots(tpl, cols)
     assert svg.count('<circle') == 1 + 2 and '#155e75' in svg and '#5b21b6' in svg and '#000' not in svg
     assert LP.logo_with_dots(tpl, [None]) == tpl  # no card colour: the template's own dots stay
+
+
+def test_the_mark_dots_fit_the_lens_for_one_to_six_cards():
+    from ptmcontext.web import landing as LP
+
+    tpl = '<svg><g id="dots"><circle cx="1" cy="1" r="1" fill="#000"/></g></svg>'
+    sizes = []
+    for n in range(1, 7):
+        svg = LP.logo_with_dots(tpl, ['#155e75'] * n)
+        pts = [
+            (float(x), float(y), float(r)) for x, y, r in re.findall(r'cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"', svg)
+        ]
+        assert len(pts) == n and all(((x - 29) ** 2 + (y - 29) ** 2) ** 0.5 + r <= 17.05 for x, y, r in pts)
+        sizes.append(pts[0][2])
+    assert sizes[3] >= 5.9 and sizes == sorted(sizes, reverse=True)  # four dots, each larger than the old 4.3

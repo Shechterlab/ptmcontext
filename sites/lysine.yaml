@@ -1166,6 +1166,7 @@ website:                  # the look and words of the website (ptmc web); layout
   accent: "#4d7c0f"                 # the lime rule, active tab and links (5.0:1 on white)
   accent_dark: "#bef264"
   logo: sites/art/lysine_logo.svg
+  favicon: sites/art/lysine_favicon.svg
   switcher: {label: PTM}            # the site switcher reads "PTM: <site> ▾"
   art: sites/art/lysine-hero.svg
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}

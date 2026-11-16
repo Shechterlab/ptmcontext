@@ -234,6 +234,7 @@ def page(
     fonts_css: str,
     built_with: str,
     logo: str | None = None,
+    favicon: str | None = None,
     search: bool = False,
 ) -> str:
     title = html.escape(cfg.get('title') or 'ptmcontext')
@@ -269,7 +270,7 @@ def page(
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
 <meta name="description" content="{desc}">
-{f'<link rel="icon" href="{html.escape(logo)}">' if logo else ''}
+{f'<link rel="icon" href="{html.escape(favicon or logo)}">' if favicon or logo else ''}
 {'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' if fonts_css.startswith('http') else ''}
 <link rel="stylesheet" href="{html.escape(fonts_css)}">
 {f'<link rel="stylesheet" href="{html.escape(kit_css)}">' if kit_css else ''}
@@ -291,20 +292,38 @@ def page(
 """
 
 
+def _dot_layout(n: int, cx: float, cy: float, fit: float = 17.0) -> list[tuple[float, float, float]]:
+    """(x, y, r) of n dots packed inside a lens of radius `fit` about (cx, cy): one row for 1 or 2, else two staggered
+    rows (the top row the longer), each dot as large as the lens lets it be, with a small gap for the light ring."""
+    k = n if n <= 2 else -(-n // 2)
+    rows = [k] if n <= 2 else [k, n - k]
+    r = 9.0
+    while r > 2:
+        step = 2 * r + 1.6
+        dy = 0.866 * step if len(rows) == 2 else 0.0
+        shift = step / 6 if len(rows) == 2 and rows[0] == rows[1] else 0.0
+        pts = []
+        for ri, m in enumerate(rows):
+            y = cy + (ri - (len(rows) - 1) / 2) * dy
+            sx = shift * (1 if ri else -1)
+            pts += [(cx + sx + (i - (m - 1) / 2) * step, y, r) for i in range(m)]
+        if all(((x - cx) ** 2 + (y - cy) ** 2) ** 0.5 + r <= fit for x, y, _ in pts):
+            return pts
+        r -= 0.1
+    return pts
+
+
 def logo_with_dots(svg: str, colours: list[str]) -> str:
-    """The landing page's mark with its `<g id="dots">` refilled: one dot per explorer card, each in that card's band
-    colour (landing.yml `logo_dots: cards`), centred across the lens; the template's own dots stay when no card has one."""
-    cs = [c for c in colours if _colour(c, None)][:5]
+    """The landing page's mark with its `<g id="dots">` refilled: one dot per explorer card (up to six), each in that
+    card's band colour (landing.yml `logo_dots: cards`), staggered in two rows inside the lens; the template's own dots
+    stay when no card has one."""
+    cs = [c for c in colours if _colour(c, None)][:6]
     m = re.search(r'(<g id="dots"[^>]*>)(.*?)(</g>)', svg, flags=re.S)
     if not cs or not m:
         return svg
-    first = re.search(r'cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"', m.group(2))
-    cy, r = (float(first.group(2)), float(first.group(3))) if first else (29.0, 4.3)
-    xs = [float(x) for x in re.findall(r'cx="([\d.]+)"', m.group(2))] or [29.0]
-    mid, step = (min(xs) + max(xs)) / 2, 2.1 * r * (0.85 if len(cs) > 3 else 1)
     dots = ''.join(
-        f'<circle cx="{mid + (i - (len(cs) - 1) / 2) * step:.1f}" cy="{cy:g}" r="{r * (0.85 if len(cs) > 3 else 1):.1f}" fill="{c}"/>'
-        for i, c in enumerate(cs)
+        f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="{c}"/>'
+        for (x, y, r), c in zip(_dot_layout(len(cs), 29.0, 29.0), cs, strict=True)
     )
     return svg[: m.start()] + m.group(1) + dots + m.group(3) + svg[m.end() :]
 

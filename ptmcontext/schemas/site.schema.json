@@ -2017,6 +2017,10 @@
           "type": "string",
           "description": "the site's logo: an SVG file, relative to the repository (the header's mark, the favicon and the landing card's); default: a drawn mark in the band's colors"
         },
+        "favicon": {
+          "type": "string",
+          "description": "a bolder SVG of the mark for the tab icon, relative to the repository (default: the logo)"
+        },
         "icon": {
           "type": "string",
           "description": "the older name of logo"

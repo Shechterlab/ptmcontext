@@ -1554,6 +1554,8 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     # the site's logo (website.logo; website.icon is the older name): the header's mark, the favicon and the landing card's
     logo_file = web.get('logo') or web.get('icon')
     icon = (root / logo_file).read_text() if logo_file else default_icon(band[0], accent_dark)
+    # website.favicon: a bolder drawing of the mark for the tab icon (it must read at 16-32 px); default: the logo
+    favicon = (root / web['favicon']).read_text() if web.get('favicon') else icon
     art = (root / web['art']).read_text() if web.get('art') else default_art(profile, _mix(accent_dark, '#ffffff', 0.3))
     logo = (root / web['lab']['logo']).read_text() if web.get('lab', {}).get('logo') else ''
     from . import search as SE
@@ -1808,6 +1810,11 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         icon_href = (
             'data:image/svg+xml;base64,' + base64.b64encode(icon.encode()).decode() if inline else 'assets/logo.svg'
         )
+        favicon_href = (
+            'data:image/svg+xml;base64,' + base64.b64encode(favicon.encode()).decode()
+            if inline
+            else ('assets/favicon.svg' if favicon is not icon else 'assets/logo.svg')
+        )
         logo_href = (
             'data:image/svg+xml;base64,' + base64.b64encode(logo.encode()).decode() if inline else 'assets/lab.svg'
         )
@@ -1872,6 +1879,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             '{{NAME}}': html.escape(web['name']),
             '{{TAGLINE}}': html.escape(web.get('tagline', '')),
             '{{LOGO_HREF}}': icon_href,
+            '{{FAVICON_HREF}}': favicon_href,
             '{{THEME}}': theme,
             '{{ART}}': art,
             '{{LAB}}': lab,
@@ -1901,6 +1909,8 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         shutil.copyfile(_asset(f'assets/{name}'), out / 'assets' / name)
     shutil.copytree(_asset('assets/fonts'), out / 'assets' / 'fonts', dirs_exist_ok=True)
     (out / 'assets' / 'logo.svg').write_text(icon)
+    if favicon is not icon:
+        (out / 'assets' / 'favicon.svg').write_text(favicon)
     if logo:
         (out / 'assets' / 'lab.svg').write_text(logo)
     (out / 'glance.json').write_text(
@@ -2206,17 +2216,20 @@ def pages(
         json.dumps({'switcher_label': switcher_label, 'brand': cfg.get('title') or '', 'sites': registry}, indent=1)
     )
     # the landing page's own logo (landing.yml `logo`: an SVG file, relative to the working directory or the first site's repository)
-    logo_href = None
-    if cfg.get('logo'):
-        lf = next((f for f in (Path(cfg['logo']), root_last / cfg['logo']) if f.is_file()), None)
+    logo_href = favicon_href = None
+    for key, name in (('logo', 'logo.svg'), ('favicon', 'favicon.svg')):  # `favicon`: the bolder mark for the tab icon
+        lf = next((f for f in (Path(cfg[key]), root_last / cfg[key]) if f.is_file()), None) if cfg.get(key) else None
         if lf:
             svg = lf.read_text()
             if (
                 cfg.get('logo_dots') == 'cards'
             ):  # the mark's dots in the listed cards' band colours, in the landing order
                 svg = LP.logo_with_dots(svg, [LP.card_colour(c) for c in cards])
-            (out / 'logo.svg').write_text(svg)
-            logo_href = 'logo.svg'
+            (out / name).write_text(svg)
+            if key == 'logo':
+                logo_href = name
+            else:
+                favicon_href = name
     if found:  # read by the landing page's search box when it is first used (assets/land-search.js)
         rows = [[acc, *v] for acc, v in sorted(found.items())]
         (out / 'proteins.json').write_text(json.dumps({'sites': listed_ids, 'p': rows}, separators=(',', ':')))
@@ -2242,6 +2255,7 @@ def pages(
         fonts_css=f'{first_built}/{LOCAL_FONTS}' if first_built else FONTS['stylesheet'],
         built_with=built_with,
         logo=logo_href,
+        favicon=favicon_href,
         search=bool(found),
     )
     (out / 'index.html').write_text(text)
