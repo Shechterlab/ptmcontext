@@ -221,7 +221,7 @@
   // the classic page's own fold right after the protein map: the cell and its nucleus, drawn for this protein, the maps' table folded under them
   const CELLFOLD = !!PC.location?.maps;
   function cellBuild(p) {
-    if (!K.cell || !K.sel.pdata(p.i)) return { html: '<p class="muted small">Loading…</p>', wait: true };
+    if (!K.cell || !K.sel.pdata(p.i)) return { html: K.loading('Loading…'), wait: true };
     const ms = K.cell.maps(p),
       nar = matchMedia('(max-width: 700px)').matches,
       dr = ms ? (nar ? K.cell.drawingsNarrow(p) : K.cell.drawings(p)) : '';
@@ -791,7 +791,7 @@
       ctx = K.map?.ctxIds?.().length ? K.map.contextMarks(p.acc) : undefined;
     if (ctx === null) {
       setTimeout(paintAll, 300);
-      return { html: '<p class="muted small">Loading…</p>', wait: true };
+      return { html: K.loading('Loading…'), wait: true };
     }
     const kinds = ctx ? Object.fromEntries(ctx.map((c) => [c.id, c.label])) : cfg.kinds || {},
       rs = ctx ? ctx.flatMap((c) => c.pos.map((a) => ({ kind: c.id, start: a }))) : rows(tb, cfg.table);
@@ -1054,11 +1054,11 @@
       const kind = el.dataset.pc,
         tb = tables(p.acc);
       if (tb === undefined) {
-        el.innerHTML = '<p class="muted small">Loading…</p>';
+        el.innerHTML = K.loading('Loading…');
         return;
       }
       if (kind !== 'live' && !K.sel.pdata(p.i) && kind === 'location' && PC.location.maps) {
-        el.innerHTML = '<p class="muted small">Loading…</p>';
+        el.innerHTML = K.loading('Loading…');
         return;
       }
       const r = BUILD[kind](p, CUR.rec, tb, el);

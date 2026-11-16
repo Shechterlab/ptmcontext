@@ -32,7 +32,7 @@ def test_the_figure_panels_page_does_not_read_the_marks_before_they_are_loaded()
 const fs = require('fs');
 global.window = global; global.document = {{ addEventListener() {{}} }};
 let loaded = false, asked = 0;
-const K = {{ W: {{ marks: 'sites', mark: 'site' }}, esc: s => String(s), int: n => String(n), folds: {{}}, views: {{}},
+const K = {{ W: {{ marks: 'sites', mark: 'site' }}, esc: s => String(s), int: n => String(n), folds: {{}}, views: {{}}, loading: t => '<p>' + t + '</p>',
   logoPanel: () => {{ asked++; if (!loaded) throw new TypeError('marks not loaded'); return {{ n: 2, html: () => '' }}; }},
   sel: {{ data: () => (loaded ? {{}} : null), active: () => false }} }};
 eval(fs.readFileSync({json.dumps(str(ASSETS / 'kit-figures.js'))}, 'utf8'));

@@ -587,6 +587,11 @@
   };
   // smooth scrolling only for readers whose system does not ask for reduced motion
   K.smooth = () => (matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
+  // a view that waits for data: a small spinner with a short text in the area being filled. Hidden for the first 300 ms
+  // (CSS delay, so a quick load shows nothing), a live status for screen readers, still under reduced motion
+  K.loading = (text, cls) =>
+    `<p class="ld${cls ? ' ' + esc(cls) : ''}" role="status" aria-live="polite"><i class="ld-spin" aria-hidden="true"></i>` +
+    `<span>${esc(text || 'Loading…')}</span></p>`;
   Object.assign(K, {
     GLOSS,
     BTN,
@@ -1802,7 +1807,7 @@
     cat: r.category,
     f: A[r.analysis || a.id] ? fkeyOf(a) : '',
     noun: SETS(a.id) ? 'proteins' : W.marks,
-    ov: SETS(a.id) && K.overlapHas?.(a.id) ? `s:${a.id}:${r.category}` : '',
+    ov: SETS(a.id) && K.overlapHas?.(a.id, r.category) ? `s:${a.id}:${r.category}` : '',
   });
   const frModel = (a, r) => ({
     label: r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
@@ -2410,7 +2415,7 @@
   function overview() {
     REG = [];
     if (S.arg && A[S.arg]?.page) return focus(S.arg);
-    if (selOn() && !K.sel.data()) return lead() + '<p class="muted">Loading the selection…</p>';
+    if (selOn() && !K.sel.data()) return lead() + K.loading('Loading the selection…');
     // a selection too small to test: its proteins drawn and the counts that hold for any selection; one that can be
     // tested: what sets it apart, in brief (the modules' blocks: kit-selview.js)
     const selBlocks = (list) => (list || []).map((f) => f()).join('');
@@ -4556,7 +4561,7 @@
     return Object.entries(SP)
       .filter(([, s]) => s.kind === 'list' && s.link)
       .map(([name, s]) => {
-        if (!SD) return `<section id="m-sources"><h3>${esc(s.label)}</h3><p class="muted">Loading…</p></section>`;
+        if (!SD) return `<section id="m-sources"><h3>${esc(s.label)}</h3>${K.loading('Loading…')}</section>`;
         const ti = (SD.attribute_names || []).indexOf(name),
           vals = SD.attributes[name],
           n = vals.map(() => 0);

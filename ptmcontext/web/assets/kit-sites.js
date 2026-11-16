@@ -659,8 +659,7 @@
       k = Math.min(ord.length, k + 10);
     }
   }
-  const loadingView = () =>
-    `<div class="page-head"><h2>Sites</h2></div><p class="muted">Loading the ${esc(W.marks)}…</p>`;
+  const loadingView = () => `<div class="page-head"><h2>Sites</h2></div>${K.loading(`Loading the ${W.marks}…`)}`;
   function view() {
     if (T.key !== K.tables.selKey()) {
       T.key = K.tables.selKey();

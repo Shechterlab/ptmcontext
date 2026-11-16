@@ -161,7 +161,7 @@
     (whole ? `<p class="twhole"><span>Whole dataset</span> ${whole}</p>` : '') +
     `<div class="tact">${K.tilekit.dlMenu(card.title || C[id].title, ['pdf', 'svg', 'png', 'tsv'], 'cexp', id)}</div>` +
     '</article>';
-  const loading = () => `<p class="muted tnone">Counting your selection…</p>`;
+  const loading = () => K.loading('Counting your selection…');
   function valuesHead(id, v, shown, mine) {
     const c = C[id],
       nVals = mine ? v.distinct : c.values.length;
@@ -415,7 +415,7 @@
     );
   }
   function page(id, card) {
-    if (selOn() && !SD()) return head(id, card) + '<p class="muted">Loading the selection…</p>';
+    if (selOn() && !SD()) return head(id, card) + K.loading('Loading the selection…');
     return head(id, card) + (C[id].kind === 'values' ? valuesPage(id, card) : responsesPage(id, card));
   }
 

@@ -40,14 +40,22 @@
           `small" type="button" data-apart-here title="Selected ${esc(W.marks)} against the other ${esc(W.marks)}, question ` +
           `by question">How does it differ? ›</button>`
         : '') +
-      (K.sel.savedList().length
-        ? `<button class="btn small" type="button" data-go-compare title="Compare this ` +
-          `selection with a saved one">Compare</button>`
+      (K.sel.active() && K.views.overlap
+        ? `<button class="btn small" type="button" data-sel-sets title="Open Compare sets with this ` +
+          `selection as set A">Compare with…</button>`
         : '')
   );
   K.clicks.push(
     ['[data-go-apart]', () => K.go('overview', { vs: 'marks' })],
     ['[data-go-compare]', () => K.go('comparesaved')],
+    ['[data-sel-sets]', () => K.go('overlap', { ot: ['sel'], ou: 'proteins', or: '' })],
+    [
+      '[data-saved-sets]',
+      (el) => {
+        const x = K.sel.savedList()[+el.dataset.savedSets];
+        if (x) K.go('overlap', { ot: ['sel', `sv:${x.name}`], ou: 'proteins', or: '' });
+      },
+    ],
     [
       '[data-saved-cmp]',
       (el) => {

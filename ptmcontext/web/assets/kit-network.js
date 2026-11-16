@@ -1338,13 +1338,13 @@
     const head = `<div class="page-head results-head"><div><h2>${esc(TITLE)}</h2><p class="cx">${esc(leadOf())} <a href="${esc(location.hash)}" data-jump="nw-how">Method</a></p></div></div>`;
     let M = model();
     if (M.error) return `${head}<p class="muted">The network could not be read (${esc(M.error)}).</p>`;
-    if (M.wait) return `${head}<p class="muted" role="status">Loading the network…</p>`;
+    if (M.wait) return head + K.loading('Loading the network…');
     let fi = focusInfo(M);
     if (fi?.raised) {
       cache = { key: '', M: null };
       M = model();
       if (M.error) return `${head}<p class="muted">The network could not be read (${esc(M.error)}).</p>`;
-      if (M.wait) return `${head}<p class="muted" role="status">Loading the network…</p>`;
+      if (M.wait) return head + K.loading('Loading the network…');
       fi = focusInfo(M);
     }
     if (UI.pins.length && !M.full && !FILE.full) load('full'); // the cards' facts come from it

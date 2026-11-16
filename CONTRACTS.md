@@ -228,7 +228,7 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
   it; it is colored and ranked only when at least `website.reading.min_maps` (default 2) of them differ the same way
   (q ≤ 0.05 and a fold of 1.1× or more, the test pointing the same way) and none the other way, gray otherwise.
 - `title, question, intro, note`: words.
-- `default_view`: `percent`, `average` or `fold` (default `fold`), what the cell and nucleus maps color by when the page
+- `default_view`: `percent`, `average` or `fold` (default `average`), what the cell and nucleus maps color by when the page
   opens. Every map has a switch, "Percent with sites | Above or below the average | Fold vs other proteins". The average
   view sets each part's share against the share among all the proteins the maps place (that map's, the median over the
   maps that have the part). **Color is the effect size**, Cohen's h = 2 asin √p − 2 asin √p_all (steps at |h| 0.2, 0.5 and

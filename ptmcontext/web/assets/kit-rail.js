@@ -285,8 +285,8 @@
             `href="${esc(x.hash)}" data-saved-open="${i}" title="Open ${esc(x.name)}">${esc(x.name)}</a> <span ` +
             `class="muted">${int(x.n)}</span>` +
             (`${
-              K.views.compare
-                ? `<button type="button" class="linkish small" data-saved-cmp="${i}" title="Compare the ${esc(W.marks)} of the current ` +
+              K.views.overlap && K.sel.active()
+                ? `<button type="button" class="linkish small" data-saved-sets="${i}" title="Compare the ${esc(W.marks)} of the current ` +
                   `selection with those of ${esc(x.name)}">Compare with this</button>`
                 : ''
             }<button type="button" ` +
@@ -297,7 +297,7 @@
   }
   document.addEventListener('click', (e) => {
     document.querySelectorAll('.saved-dd[open]').forEach((d) => {
-      if (!d.contains(e.target) || e.target.closest('[data-saved-cmp]')) d.open = false;
+      if (!d.contains(e.target) || e.target.closest('[data-saved-sets]')) d.open = false;
     });
   });
   function savedHtml() {
@@ -308,9 +308,9 @@
         (x, i) =>
           `<div class="saved-row">` +
           `<a href="${esc(x.hash)}" data-saved-open="${i}">${esc(x.name)}</a> <span class="muted">${int(x.n)}</span>${
-            K.views.compare
+            K.views.overlap && K.sel.active()
               ? `<button type="button" ` +
-                `class="linkish small" data-saved-cmp="${i}" title="Compare ${esc(x.name)} with the current selection">` +
+                `class="linkish small" data-saved-sets="${i}" title="Compare ${esc(x.name)} with the current selection">` +
                 `Compare</button>`
               : ''
           }<button type="button" class="linkish small" data-saved-del="${i}" aria-label="Delete ${esc(x.name)}">×</button></div>`

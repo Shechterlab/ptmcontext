@@ -12,14 +12,26 @@
     pending = null;
   const esc = (s) =>
     String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  const load = () =>
-    (pending ||= fetch('proteins.json')
+  // the index still coming after 300 ms: a small spinner and short text in the status line (still under reduced motion)
+  let wait = 0;
+  const spin = () => {
+    wait = 0;
+    if (!idx && say) say.innerHTML = '<span class="ld-spin" aria-hidden="true"></span> Loading proteins…';
+  };
+  const load = () => {
+    if (!pending) wait = setTimeout(spin, 300);
+    return (pending ||= fetch('proteins.json')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('missing'))))
       .then((j) => (idx = j))
       .catch(() => {
         pending = null;
         return null;
+      })
+      .finally(() => {
+        clearTimeout(wait);
+        wait = 0;
       }));
+  };
   const find = (q) => {
     const t = q.trim().toUpperCase();
     if (!t || !idx) return [];
@@ -56,7 +68,7 @@
       return;
     }
     if (!idx) {
-      if (say) say.textContent = 'Searching…';
+      if (say && !say.querySelector('.ld-spin')) say.textContent = 'Searching…';
       return;
     }
     const rows = find(q);

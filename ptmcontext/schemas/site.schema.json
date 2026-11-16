@@ -5747,7 +5747,7 @@
                 "average",
                 "fold"
               ],
-              "description": "what the cell and nucleus maps color by when the page opens: percent (the share of each compartment's proteins that carry at least one mark), average (each compartment's share against the share among all the proteins the maps place, as Cohen's h on a diverging ramp, filled where q ≤ 0.05 across the compartments shown; percent and average suit a mark that covers most proteins, where the fold has little to compare against) or fold (the default: the fold against the other proteins). The switch on each map changes it for the visitor"
+              "description": "what the cell and nucleus maps color by when the page opens: percent (the share of each compartment's proteins that carry at least one mark), average (each compartment's share against the share among all the proteins the maps place, as Cohen's h on a diverging ramp, filled where q ≤ 0.05 across the compartments shown; percent and average suit a mark that covers most proteins, where the fold has little to compare against) or fold (the fold against the other proteins; without this key, average). The switch on each map changes it for the visitor"
             },
             "min_h": {
               "type": "number",

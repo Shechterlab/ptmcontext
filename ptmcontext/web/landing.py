@@ -50,6 +50,9 @@ CSS = """
 .land-search li { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; justify-content: space-between; padding: 0.45rem 0.7rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 .land-search .hit-sites { display: inline-flex; flex-wrap: wrap; gap: 0.2rem 0.7rem; }
 .land-search .muted { color: var(--muted); }
+.land-search .ld-spin { display: inline-block; vertical-align: -0.15em; width: 0.9rem; height: 0.9rem; margin-right: 0.3rem; border-radius: 50%; border: 2px solid var(--line-strong); border-top-color: var(--accent-l, currentColor); animation: land-spin 0.8s linear infinite; }
+@keyframes land-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .land-search .ld-spin { animation: none; border-top-color: var(--line-strong); background: radial-gradient(circle, currentColor 35%, transparent 40%); } }
 .land-intro { max-width: 46rem; padding-block: 1.5rem 0.25rem; display: grid; gap: 0.5rem; color: var(--ink-2); font-size: 1.02rem; line-height: 1.55; }
 .land-intro p { margin: 0; }
 .land-intro p:first-child { color: var(--ink); font-size: 1.15rem; }

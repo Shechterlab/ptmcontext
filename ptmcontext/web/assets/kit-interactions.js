@@ -1852,7 +1852,7 @@
   };
 
   // ---- a block, its exports, and a section ---------------------------------------------------------------------------
-  const loading = () => `<p class="muted">Loading…</p>`;
+  const loading = () => K.loading('Loading…');
   const FIG = { forest: 1, lines: 1, shares: 1, matrix: 1, bars: 1, histogram: 1, example: 1 };
   function blockHtml(pg, sec, b, bi) {
     if (!ready() && !['text', 'example'].includes(b.kind)) return loading();

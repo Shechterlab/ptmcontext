@@ -14,7 +14,7 @@
       `<div class="page-head results-head"><div><h2>Figure panels</h2><p class="cx">The figures of the ` +
       `current selection that no single page draws: ${int(lp ? lp.n : 0)} ${esc(W.marks)} with a sequence ` +
       `window. Every chart and table elsewhere has its own export buttons.</p></div></div>`;
-    if (!K.sel.data()) return `${head}<p class="muted">Loading the ${esc(W.marks)}…</p>`;
+    if (!K.sel.data()) return head + K.loading(`Loading the ${W.marks}…`);
     const note = K.sel.active()
       ? ''
       : `<div class="filter-note">No search or filter is set, so these figures use ` +

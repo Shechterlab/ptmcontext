@@ -813,14 +813,7 @@
       '[data-hl-compare]',
       () => {
         if (!K.sel.active() || !ordered().list.length) return;
-        const f = K.sel.encode(),
-          cmp = [S.q && 'q=' + encodeURIComponent(S.q), f && 'f=' + f].filter(Boolean).join('&');
-        takeSelection('Compared');
-        Object.assign(S, { view: 'overview', arg: '', vs: 'cmp', cmp });
-        reopen = Date.now() + 1500;
-        K.writeHash(true);
-        K.render();
-        scrollTo(0, 0);
+        K.go('overlap', { ot: ['g:' + S.hl, 'sel'], ou: 'proteins', or: '' });
       },
     ]
   );
@@ -830,12 +823,11 @@
     return (
       `<div class="hl-sets"><button type="button" class="btn small" data-hl-select${found ? '' : ' disabled'} ` +
       `title="Make the highlighted proteins the selection, replacing the current one (Back undoes it)">Select these</button>` +
-      `<button type="button" class="btn small" data-hl-compare${found && K.sel?.active() ? '' : ' disabled'} ` +
-      `title="${
-        K.sel?.active()
-          ? 'What sets the highlighted proteins apart from the current selection?'
-          : 'Make a selection first: the highlighted proteins are compared with it'
-      }">Compare with selection</button></div>` +
+      (found && K.sel?.active() && K.views?.overlap
+        ? `<button type="button" class="btn small" data-hl-compare ` +
+          `title="Open Compare sets with the highlighted proteins as set A and the current selection as set B">Compare with selection</button>`
+        : '') +
+      `</div>` +
       (found ? `<p class="small hl-note" role="status">${esc(msg || foundText('Found'))}</p>` : '')
     );
   };

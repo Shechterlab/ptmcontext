@@ -144,6 +144,7 @@ def _toy(tmp_path):
             'legacy_links': {'old-cell': 'where'},
             'cell': {
                 'id': 'where',
+                'default_view': 'fold',
                 'title': 'Where in the toy cell',
                 'maps': [
                     {'analysis': 'map_a', 'regions': 'regions_a', 'name': 'Map A'},

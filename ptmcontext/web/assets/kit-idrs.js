@@ -1370,8 +1370,8 @@
     load();
     const head = SECTION ? '' : `<div class="page-head"><h2>${esc(K.tabName('idrs', 'IDRs'))}</h2></div>`;
     if (VERR) return head + `<p class="empty">${esc(VERR)}</p>`;
-    if (!V) return head + `<p class="muted">Loading the IDRs…</p>`;
-    if (K.sel?.active() && !K.sel.data()) return head + `<p class="muted">Loading the selection…</p>`;
+    if (!V) return head + K.loading('Loading the IDRs…');
+    if (K.sel?.active() && !K.sel.data()) return head + K.loading('Loading the selection…');
     sel();
     const xs = scoped(),
       np = new Set(xs.map((x) => x.p)).size;

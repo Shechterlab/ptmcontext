@@ -828,7 +828,7 @@
         `class="btn small" data-site-close aria-label="Close">×</button></span></div>`) +
       varBlock +
       `<div class="sc-grid${ev ? '' : ' one'}">${ev}<section class="sc-site"><h4>Site</h4>${siteHtml}</section>${recs}${wr}</div>` +
-      (!ready && Object.keys(D.tables || {}).length ? '<p class="muted small">Loading tables…</p>' : '') +
+      (!ready && Object.keys(D.tables || {}).length ? K.loading('Loading tables…') : '') +
       '</section>'
     );
   }
@@ -1375,7 +1375,7 @@
             }</span></td></tr>` +
             (open
               ? `<tr class="ev-row" data-for="${m[0]}"><td colspan="${n}">${
-                  PV.tb ? K.card.evidenceRow(c) : '<p class="muted">Loading…</p>'
+                  PV.tb ? K.card.evidenceRow(c) : K.loading('Loading…')
                 }</td></tr>`
               : '')
           );
@@ -1482,7 +1482,7 @@
             : ''
       }</p>` +
       protHead(p);
-    if (!PV.rec) return head + `<p class="empty">${PV.err ? esc(PV.err) : 'Loading…'}</p>`;
+    if (!PV.rec) return head + (PV.err ? `<p class="empty">${esc(PV.err)}</p>` : K.loading('Loading the protein…'));
     const rec = PV.rec,
       sel = K.sel?.active() ? K.sel.selectedPositions(acc) : null;
     const isOpen = (id, open) => PV.open[id] ?? foldOpen(id, open);
@@ -1622,7 +1622,7 @@
         PV.site ? ` › ${esc(siteOf(p, PV.site))}` : ''
       }</p>` +
       protHead(p, true);
-    if (!PV.rec) return head + `<p class="empty">${PV.err ? esc(PV.err) : 'Loading…'}</p>`;
+    if (!PV.rec) return head + (PV.err ? `<p class="empty">${esc(PV.err)}</p>` : K.loading('Loading the protein…'));
     const rec = PV.rec;
     const fold = (id, title, sum, body, open) =>
       `<details class="pfold" id="${id}"${(PV.open[id] ?? open) ? ' open' : ''}><summary>` +
@@ -1922,7 +1922,7 @@
   const RANK = { more: 0, less: 1, same: 2, ns: 3 };
   function kindsHtml(p) {
     const sd = K.sel?.pdata(p.i);
-    if (!sd) return `<p class="muted">Loading the sets…</p>`;
+    if (!sd) return `${K.loading('Loading the sets…')}`;
     let cov = null;
     const none = [];
     const blocks = D.analyses

@@ -703,7 +703,7 @@
   }
   function proteinSetsHtml(c, p) {
     const sd = K.sel?.pdata(p.i);
-    if (!sd) return '<p class="muted">Loading the sets…</p>';
+    if (!sd) return K.loading('Loading the sets…');
     const gene = p.gene || p.acc;
     const blocks = c.analyses
       .filter((aid) => sd.protein_sets?.[aid])

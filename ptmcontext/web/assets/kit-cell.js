@@ -28,12 +28,12 @@
   const DRAWINGS = (C.drawings || []).filter((d) => PARTS[d.drawing]);
   // ---- the percent view: the share of a part's proteins that carry at least one mark, counted when the site was built
   // (D.cell_pct: for each map the proteins it places and, for each set a row names, its proteins and the marked ones). The
-  // site's default is website.cell.default_view; the switch on every map of the cell changes it for the page.
+  // site's default is website.cell.default_view (without it, the average view); the switch on every map of the cell changes it for the page.
   const PCTD = D.cell_pct || {};
   const HAS_PCT = MAPS.some((m) => PCTD[m.analysis]);
   // three views: percent (the share), diff (the share's difference from the share among all the proteins the maps place,
   // in points, on a diverging ramp) and fold; the first two draw from the counts
-  let VIEW = !HAS_PCT ? 'fold' : C.default_view === 'percent' ? 'percent' : C.default_view === 'average' ? 'z' : 'fold';
+  let VIEW = !HAS_PCT ? 'fold' : C.default_view === 'percent' ? 'percent' : C.default_view === 'fold' ? 'fold' : 'z';
   const pctOn = () => VIEW !== 'fold';
   const pv = () => (VIEW === 'z' ? 'z' : 'percent');
   const isPv = (p) => p.view === 'percent' || p.view === 'z';
@@ -3235,7 +3235,7 @@
     ZS.part = part;
     ZS.page = page;
     if (!mem) {
-      box.innerHTML = '<p class="muted">Loading the proteins…</p>';
+      box.innerHTML = K.loading('Loading the proteins…');
       Promise.resolve(K.sel.ready).then(() => {
         if (ZS && ZS.part === part && K.sel.peek()) zoomList(part, page);
       });
@@ -3811,7 +3811,7 @@
         : '') +
       '</div>' +
       (!mem
-        ? '<p class="muted">Loading the proteins…</p>'
+        ? K.loading('Loading the proteins…')
         : mem.length
           ? `<p class="cell-chips">${shown
               .map(
