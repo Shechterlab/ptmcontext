@@ -1,5 +1,7 @@
 ## Unreleased
 
+- CI: a newer push cancels the test run still going for an older commit on the same branch or pull request.
+
 - Network exports: links no longer run under a gene name or a cluster name (they are cut where they pass under it), in SVG, PNG and PDF.
 - Network export: gene names are given more room, so two names no longer overlap.
 - Where in the cell, for a small selection of proteins: each compartment says "Found here · k of n proteins" (also in the hover).

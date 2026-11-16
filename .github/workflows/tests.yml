@@ -1,5 +1,9 @@
 name: tests
 on: [push, pull_request]
+# a newer push to the same branch (or PR) cancels the run still going for an older one, so the queue does not build up
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   # The jobs run side by side: lint (seconds), the tests, and the link audit, one job per site, each building its site
   # (about 25 minutes, the lysine site about 45).
