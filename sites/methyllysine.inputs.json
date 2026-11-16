@@ -614,7 +614,7 @@
     "methyllysine_site_interactions_v1_5_1": {
       "file": "releases/v1.5.1/supporting/methyllysine_site_interactions_v1.5.1.tsv",
       "md5": "3ed3ba155d3f814f698d935783515d7a",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/4897ea26936b26d2fcf0d7e5b0a314d0fa1ac8b3/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b5e8566b484abd3bd8208ed71c95795a98d3d463/releases/v1.5.1",
       "version": "PTM_Pipeline release v1.5.1 (methyllysine supporting tables, 2026-11-16)",
       "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
       "role": "input",
@@ -623,7 +623,7 @@
     "methyllysine_site_interaction_records_v1_5_1": {
       "file": "releases/v1.5.1/supporting/methyllysine_site_interaction_records_v1.5.1.tsv",
       "md5": "28719bdd11751c687744ae42e6449b97",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/4897ea26936b26d2fcf0d7e5b0a314d0fa1ac8b3/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b5e8566b484abd3bd8208ed71c95795a98d3d463/releases/v1.5.1",
       "version": "PTM_Pipeline release v1.5.1 (methyllysine supporting tables, 2026-11-16)",
       "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
       "role": "input",
@@ -632,7 +632,7 @@
     "methyllysine_nucleic_acid_contacts_v1_5_1": {
       "file": "releases/v1.5.1/supporting/methyllysine_nucleic_acid_contacts_v1.5.1.tsv",
       "md5": "d384f2fc1e43ff93b3a14d05b8c1fad1",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/4897ea26936b26d2fcf0d7e5b0a314d0fa1ac8b3/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b5e8566b484abd3bd8208ed71c95795a98d3d463/releases/v1.5.1",
       "version": "PTM_Pipeline release v1.5.1 (methyllysine supporting tables, 2026-11-16)",
       "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
       "role": "input",
@@ -641,7 +641,7 @@
     "methyllysine_nucleic_acid_near_sites_v1_5_1": {
       "file": "releases/v1.5.1/supporting/methyllysine_nucleic_acid_near_sites_v1.5.1.tsv",
       "md5": "bcfbe0c5449e00b6a1c553ca4b908e9e",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/4897ea26936b26d2fcf0d7e5b0a314d0fa1ac8b3/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b5e8566b484abd3bd8208ed71c95795a98d3d463/releases/v1.5.1",
       "version": "PTM_Pipeline release v1.5.1 (methyllysine supporting tables, 2026-11-16)",
       "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
       "role": "input",
@@ -650,7 +650,7 @@
     "methyllysine_residue_evidence_v1_5_1": {
       "file": "releases/v1.5.1/supporting/methyllysine_residue_evidence_v1.5.1.tsv",
       "md5": "e434ac639ff7d6caea1ededb0aac9ae2",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/4897ea26936b26d2fcf0d7e5b0a314d0fa1ac8b3/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/b5e8566b484abd3bd8208ed71c95795a98d3d463/releases/v1.5.1",
       "version": "PTM_Pipeline release v1.5.1 (methyllysine supporting tables, 2026-11-16)",
       "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
       "role": "input",

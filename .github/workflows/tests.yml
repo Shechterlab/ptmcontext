@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: a338a7b604eb69d69667eeb2d4e011ca903f902e  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: b5e8566b484abd3bd8208ed71c95795a98d3d463  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference
@@ -186,7 +186,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: a338a7b604eb69d69667eeb2d4e011ca903f902e  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: b5e8566b484abd3bd8208ed71c95795a98d3d463  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference
@@ -353,7 +353,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: a338a7b604eb69d69667eeb2d4e011ca903f902e  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: b5e8566b484abd3bd8208ed71c95795a98d3d463  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference
