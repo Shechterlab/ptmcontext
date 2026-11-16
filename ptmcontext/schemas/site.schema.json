@@ -2682,6 +2682,8 @@
                   "label",
                   "clusters",
                   "colour",
+                  "size",
+                  "outline",
                   "find",
                   "score",
                   "minc",
@@ -2722,7 +2724,7 @@
                   "name",
                   "kind"
                 ],
-                "description": "a way to colour the proteins besides the cluster, from a column of the run's marks.tsv: `sequential` is the share of the protein's sites whose value is one of `values` (all sites with a value when none is listed); `categorical` is the value most of the protein's sites hold (the commonest `max_values`, the rest Other); `role` colours a protein by what it is to the site's mark, from the site's own enzyme and reader classes (writer, eraser, reader; none; several roles is a value of its own)",
+                "description": "a way to colour the proteins besides the cluster, from a column of the run's marks.tsv: `sequential` is the share of the protein's sites whose value is one of `values` (all sites with a value when none is listed); `categorical` is the value most of the protein's sites hold (the commonest `max_values`, the rest Other); `decile` is the protein's abundance decile (1 to 10) from the strata of the analysis `analysis`; `binding` is RNA, DNA, both or neither, from published protein sets (`rna`, `dna`)",
                 "properties": {
                   "id": {
                     "type": "string"
@@ -2735,34 +2737,30 @@
                     "enum": [
                       "sequential",
                       "categorical",
-                      "role"
+                      "decile",
+                      "binding"
                     ]
                   },
-                  "roles": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "description": "role: the roles shown, in order (default writer, eraser, reader), from the `role` of website.search.partners.classes"
+                  "analysis": {
+                    "type": "string",
+                    "description": "decile: an analysis of the site (a protein_sets one with `abundance`) whose strata give the deciles, so that the figure and the statistics place a protein in the same one"
                   },
+                  "rna": {"$ref": "#/$defs/network_sets"},
+                  "dna": {"$ref": "#/$defs/network_sets"},
                   "labels": {
                     "type": "object",
                     "additionalProperties": {
                       "type": "string"
                     },
-                    "description": "role: the name of each role in the key"
+                    "description": "binding: the name of `rna`, `dna` and `both` in the key (default RNA, DNA, RNA and DNA)"
                   },
                   "none": {
                     "type": "string",
-                    "description": "role: the key's name for a protein with no role (default No role)"
-                  },
-                  "several": {
-                    "type": "string",
-                    "description": "role: the name for a protein with more than one role (default More than one)"
+                    "description": "binding: the key's name for a protein in none of the sets (default Neither)"
                   },
                   "column": {
                     "type": "string",
-                    "description": "a column of marks.tsv (not for `role`)"
+                    "description": "a column of marks.tsv (for `sequential` and `categorical`)"
                   },
                   "values": {
                     "type": "array",
@@ -2780,6 +2778,62 @@
                     "minimum": 1,
                     "maximum": 8
                   }
+                }
+              }
+            },
+            "size": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "node size: `density` (sites per 100 of the protein's own candidate residues, the residues of the mark counted in its sequence) or `sites` (their number); the reader can choose either",
+              "properties": {
+                "default": {
+                  "enum": [
+                    "density",
+                    "sites"
+                  ],
+                  "description": "the size shown first (default density)"
+                }
+              }
+            },
+            "outline": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind"
+              ],
+              "description": "a ring on the nodes of proteins with an enzyme or reader role, one ring style per role, drawn with any colour (on by default): the roles come from the site's own classes (website.search.partners.classes, each with a `role`)",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "the name in the Outline menu and the key"
+                },
+                "kind": {
+                  "const": "role"
+                },
+                "roles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "the roles shown, in order (default writer, eraser, reader)"
+                },
+                "labels": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "the name of each role in the key"
+                },
+                "none": {
+                  "type": "string",
+                  "description": "the name for a protein with no role (default No role)"
+                },
+                "several": {
+                  "type": "string",
+                  "description": "the name for a protein with more than one role (default More than one)"
                 }
               }
             },
@@ -8906,6 +8960,26 @@
     }
   },
   "$defs": {
+    "network_sets": {
+      "type": "array",
+      "description": "protein sets of the site's analyses (a protein_sets analysis and one of its sets), the union of which is one side of the binding colour",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "analysis",
+          "set"
+        ],
+        "properties": {
+          "analysis": {
+            "type": "string"
+          },
+          "set": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "row_condition": {
       "description": "a condition on the rows of a marks table: a condition, or all_of, which holds for a row when every condition listed holds for it (exclude rows that are one thing in one column and another in a second), or any_of, which holds when one of them does",
       "oneOf": [

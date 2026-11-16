@@ -710,7 +710,8 @@ def test_every_site_has_the_four_link_types_configured_and_the_roles_where_it_ha
         assert [x for x in S.network_problems(site) if 'tile' not in x] == [], name
         classes = ((site['website'].get('search') or {}).get('partners') or {}).get('classes') or {}
         has_roles = any(isinstance(c, dict) and c.get('role') for c in classes.values())
-        assert any(c['kind'] == 'role' for c in net['color_by']) == has_roles, name
+        assert (net.get('outline', {}).get('kind') == 'role') == has_roles, name
+        assert all(c['kind'] != 'role' for c in net['color_by']), name
 
 
 def test_the_role_colouring_reads_the_site_classes_and_marks_none_and_several():
@@ -740,9 +741,88 @@ def test_the_role_colouring_reads_the_site_classes_and_marks_none_and_several():
     )
     assert only['cats'] == ['Writer'] and only['v'] == [0, 0, -1, -1, -1, -1] and only['none_label'] == 'Other'
     problems = S.network_problems(
-        {'inputs': {}, 'website': {'network': {'edges': [], 'color_by': [{'id': 'r', 'kind': 'role'}]}}}
+        {'inputs': {}, 'website': {'network': {'edges': [], 'outline': {'id': 'r', 'kind': 'role'}}}}
     )
     assert any('needs website.search.partners.classes' in x for x in problems)
+
+
+def test_density_is_sites_per_100_candidates_and_the_default_view_is_drawn_by_it(tmp_path):
+    assert NW.density(5, 50) == 10.0 and NW.density(3, 0) == 100.0 and NW.density(0, 0) == 0.0
+    assert NW.size_units('sites', 7, 70) == 7.0
+    assert NW.size_units('density', 5, 50) == round(NW.DENSITY_UNIT * 10, 3)
+    assert NW.size_units('density', 1, 1000) == NW.MIN_UNITS  # a node never vanishes
+    root, p, index = _built(tmp_path, _network())
+    view = json.loads((index.parent / 'data' / 'network.json').read_text())
+    full = json.loads((index.parent / 'data' / 'network_full.json').read_text())
+    assert len(view['cand']) == len(view['size']) == len(view['nodes']) and len(full['cand']) == len(full['acc'])
+    for s, c, z in zip(view['sites'], view['cand'], view['size']):
+        assert c >= s and z == NW.size_units('density', s, c)
+    # the layout was made on the size, not the number of sites: the proteins' radii follow it
+    assert view['layout']['desktop']
+    data = json.loads(
+        re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1)
+    )
+    assert data['network']['size'] == {'default': 'density', 'unit': NW.DENSITY_UNIT}
+    root2, p2, index2 = _built(tmp_path / 'sites', _network({'size': {'default': 'sites'}}))
+    v2 = json.loads((index2.parent / 'data' / 'network.json').read_text())
+    assert v2['size'] == [float(s) for s in v2['sites']]
+
+
+def test_the_abundance_decile_and_binding_colours_read_the_runs_protein_sets(tmp_path):
+    (tmp_path / 'protein_sets.json').write_text(
+        json.dumps(
+            {
+                'abund': {
+                    'covariate': {'strata': 10, 'proteins': {'A': [1.0, '1'], 'B': [99.0, '10'], 'C': [None, 'none']}}
+                },
+                'bind': {
+                    'sets': {
+                        'r1': {'M': 3, 'marked': ['A', 'B']},
+                        'r2': {'M': 1, 'marked': ['C']},
+                        'd1': {'M': 1, 'marked': ['B', 'D']},
+                    }
+                },
+            }
+        )
+    )
+    nodes = ['A', 'B', 'C', 'D', 'E']
+    dec = NW.decile_values(tmp_path, {'id': 'ab', 'name': 'Abundance', 'analysis': 'abund'}, nodes, lambda *_: None)
+    assert dec['kind'] == 'decile' and dec['n'] == 10 and dec['v'] == [1, 10, None, None, None]
+    spec = {
+        'id': 'bd',
+        'name': 'Binding',
+        'rna': [
+            {'analysis': 'bind', 'set': 'r1'},
+            {'analysis': 'bind', 'set': 'r2'},
+            {'analysis': 'bind', 'set': 'gone'},
+        ],
+        'dna': [{'analysis': 'bind', 'set': 'd1'}],
+    }
+    got = NW.binding_values(tmp_path, spec, nodes, lambda *_: None)
+    # A RNA, B both, C RNA, D DNA, E neither
+    assert got['kind'] == 'binding' and got['cats'] == ['RNA', 'DNA', 'RNA and DNA'] and got['v'] == [0, 2, 0, 1, -1]
+    assert got['none_label'] == 'Neither'
+    assert NW.decile_values(tmp_path, {'id': 'x', 'analysis': 'nope'}, nodes, lambda *_: None) is None
+    assert (
+        NW.binding_values(tmp_path, {'id': 'x', 'rna': [{'analysis': 'nope', 'set': 's'}]}, nodes, lambda *_: None)
+        is None
+    )
+    site = {
+        'inputs': {},
+        'analyses': [{'id': 'abund'}],
+        'website': {
+            'network': {
+                'edges': [],
+                'color_by': [
+                    {'id': 'a', 'kind': 'decile', 'analysis': 'abund'},
+                    {'id': 'b', 'kind': 'binding', 'rna': [{'analysis': 'zzz', 'set': 's'}]},
+                ],
+            }
+        },
+    }
+    assert [x for x in S.network_problems(site) if 'no analysis' in x] == [
+        "website.network color_by 'b': no analysis 'zzz'"
+    ]
 
 
 def test_node_area_follows_the_sites_up_to_the_cap_in_both_layouts():
@@ -762,6 +842,9 @@ def test_the_page_draws_link_types_a_key_with_switches_and_puts_the_key_in_the_e
         'exportLinkKey(keyItem)',  # the whole-network export
         'exportSizeKey(keyItem, FX,',
         'exportColourKey(keyItem, FX,',
+        'exportOutlineKey(keyItem, FX)',  # the enzyme-role ring is in the exports' keys
+        "p.set('size', UI.size)",  # the size choice is a readable address key, omitted at the default
+        "p.set('outline', 'none')",
         '<title>${esc(whyText(',  # the tooltip that says why a link exists
         "p.set('sources', UI.src.map((i) => SRC[i].id).join())",  # readable address, defaults omitted
     ):
