@@ -1856,14 +1856,24 @@
       Y = (v) => MT + ((yhi - v) / (yhi - ylo)) * (H - MT - MB),
       clampY = (v) => Math.min(yhi, Math.max(ylo, v));
     let g = '';
+    const tickBoxes = [], // the tick labels' boxes, which a point's name keeps clear of
+      gridLines = []; // the gridlines, drawn last with a gap where a name stands
     const step = [0.01, 0.02, 0.05, 0.1, 0.2].find((s) => (yhi - ylo) / s <= 8) || 0.2;
-    for (let v = Math.ceil(ylo / step - 1e-9) * step; v <= yhi + 1e-9; v += step)
-      g += `<line class="cb-grid" x1="${ML}" x2="${Wd - MR}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="cf-ax" x="${ML - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${pctText(+v.toFixed(4))}</text>`;
+    for (let v = Math.ceil(ylo / step - 1e-9) * step; v <= yhi + 1e-9; v += step) {
+      const tw = K.tw(pctText(+v.toFixed(4)), 11) * 1.18;
+      tickBoxes.push({ x: ML - 6 - tw, y: Y(v) - 9, w: tw, h: 13 });
+      gridLines.push([ML, Y(v), Wd - MR, Y(v)]);
+      g += `<text class="cf-ax" x="${ML - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${pctText(+v.toFixed(4))}</text>`;
+    }
     for (const base of [1, 2, 5])
       for (let e = 0; e <= 6; e++) {
         const n = base * 10 ** e;
-        if (n >= nmin && n <= nmax && (base === 1 || nmax / nmin < 40))
-          g += `<line class="cb-grid" x1="${X(n).toFixed(1)}" x2="${X(n).toFixed(1)}" y1="${MT}" y2="${H - MB}"/><text class="cf-ax" x="${X(n).toFixed(1)}" y="${H - MB + 15}" text-anchor="middle">${int(n)}</text>`;
+        if (n >= nmin && n <= nmax && (base === 1 || nmax / nmin < 40)) {
+          const tw = K.tw(int(n), 11) * 1.18;
+          tickBoxes.push({ x: X(n) - tw / 2, y: H - MB + 4, w: tw, h: 13 });
+          gridLines.push([X(n), MT, X(n), H - MB]);
+          g += `<text class="cf-ax" x="${X(n).toFixed(1)}" y="${H - MB + 15}" text-anchor="middle">${int(n)}</text>`;
+        }
       }
     const drawn = [
         [
@@ -1941,18 +1951,26 @@
             { x: q.x - w / 2, y: q.y - 20, a: 'middle' },
             { x: q.x - w / 2, y: q.y + 8, a: 'middle' },
           ];
-        for (const c of cand) {
+        // the first place that keeps off the curves and the tick labels; else off the curves alone. Each place is tried as
+        // it stands and then nudged up or down a little
+        const tries = cand.flatMap((c0) => [0, -7, 7, -14, 14].map((dy) => ({ ...c0, y: c0.y + dy })));
+        const fits = (c, clear) => {
           const box = { x: c.x, y: c.y, w, h: 13 };
-          if (
-            box.x < ML - 30 ||
-            box.x + w > Wd - MR + 4 ||
-            placed.some((o, i) => i >= pts.length && hit(box, o)) ||
-            crossed(box)
-          )
-            continue;
-          if (placed.slice(0, pts.length).some((o) => hit(box, o) && Math.hypot(o.x + 6 - q.x, o.y + 6 - q.y) > 1))
-            continue;
-          placed.push(box);
+          return (
+            box.x >= ML - 30 &&
+            box.x + w <= Wd - MR + 4 &&
+            box.y > MT - 8 &&
+            box.y + box.h < H - 2 &&
+            !placed.some((o, i) => i >= pts.length && hit(box, o)) &&
+            !crossed(box) &&
+            !placed.slice(0, pts.length).some((o) => hit(box, o) && Math.hypot(o.x + 6 - q.x, o.y + 6 - q.y) > 1) &&
+            (!clear || !tickBoxes.some((o) => hit(box, o)))
+          );
+        };
+        for (const clear of [1, 0]) {
+          const c = tries.find((t) => fits(t, clear));
+          if (!c) continue;
+          placed.push({ x: c.x, y: c.y, w, h: 13 });
           lab += `<text class="cf-t" x="${(c.a === 'start' ? c.x : c.a === 'end' ? c.x + w : c.x + w / 2).toFixed(1)}" y="${(c.y + 10).toFixed(1)}" text-anchor="${c.a}">${esc(q.r.name)}</text>`;
           break;
         }
@@ -1964,7 +1982,33 @@
         `<b>${esc(r.name)}</b>: ${esc(pctText(r.c.share))} of ${int(r.c.M)} proteins${scoped ? ' are in your selection' : ''}<br>${esc(ptsText(r.c.share - pa))} from ${esc(pctText(pa))}; <b>${esc(hText(r.s.h))}</b>, OR ${f2(r.s.or)} (${f2(r.s.lo)}–${f2(r.s.hi)}), ${esc(zText(r.s.z))}, q ${esc(fq(r.q))}`
       )}><circle class="cf-dot ${r.clear ? 'cg-c ' + tone : r.small ? 'cf-sm' : 'cf-ns'}" cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="5"/></g>`;
     });
-    g +=
+    // the gridlines, each cut where a point's name stands so that none runs through a name
+    const names = placed.slice(pts.length),
+      grid = gridLines
+        .flatMap(([x1, y1, x2, y2]) => {
+          const vert = x1 === x2,
+            [a0, a1] = vert ? [y1, y2] : [x1, x2],
+            cuts = names
+              .filter((b) => (vert ? x1 > b.x - 2 && x1 < b.x + b.w + 2 : y1 > b.y - 2 && y1 < b.y + b.h + 2))
+              .map((b) => (vert ? [b.y - 2, b.y + b.h + 2] : [b.x - 3, b.x + b.w + 3]))
+              .sort((p, q) => p[0] - q[0]),
+            segs = [];
+          let from = a0;
+          cuts.forEach(([c0, c1]) => {
+            if (c0 > from) segs.push([from, c0]);
+            from = Math.max(from, c1);
+          });
+          if (from < a1) segs.push([from, a1]);
+          return segs.map(([u, v]) => (vert ? [x1, u, x1, v] : [u, y1, v, y1]));
+        })
+        .map(
+          ([x1, y1, x2, y2]) =>
+            `<line class="cb-grid" x1="${x1.toFixed(1)}" x2="${x2.toFixed(1)}" y1="${y1.toFixed(1)}" y2="${y2.toFixed(1)}"/>`
+        )
+        .join('');
+    g =
+      grid +
+      g +
       dots +
       lab +
       `<text class="cf-ax" x="${(ML + (Wd - ML - MR) / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">proteins the map places in the compartment (log scale)</text>` +

@@ -1,5 +1,6 @@
 ## Unreleased
 
+- SVG exports: a protein-map row label that wraps onto two lines gets proper line spacing and its row more room; the regions figure's share and count labels no longer meet; the cell funnel's point names keep off the tick labels, and its gridlines are cut where a name stands.
 - CI: a newer push cancels the test run still going for an older commit on the same branch or pull request.
 
 - Network exports: links no longer run under a gene name or a cluster name (they are cut where they pass under it), in SVG, PNG and PDF.

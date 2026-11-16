@@ -1176,11 +1176,13 @@
           b = b0 && K.tw(b0, 10, 600) > ML - 6 ? cut(b0) : b0;
         if (a && b) {
           parts.push(
-            `<text x="2" y="${r1(yMid - 1)}" font-size="10" font-weight="600" fill="${P.muted}"${
+            `<text x="2" y="${r1(yMid - 3)}" font-size="10" font-weight="600" fill="${P.muted}"${
               ex ? '' : ` data-rowhelp="${esc(lab + ': ' + help)}"`
             }${sw}>${esc(a)}</text><text ` +
-              `x="2" y="${r1(yMid + 10)}" font-size="10" font-weight="600" fill="${P.muted}">${esc(b)}</text>`
+              `x="2" y="${r1(yMid + 9.5)}" font-size="10" font-weight="600" fill="${P.muted}">${esc(b)}</text>`
           );
+          // two lines need more than a row's own height: the next row starts lower, so its label does not meet this one's
+          if (!aside) c.y += 5;
           return;
         }
       }

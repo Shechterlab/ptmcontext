@@ -978,6 +978,10 @@
     const RH = 46,
       X = { lab: 20, bar: 262, barW: 80, cnt: 478, fa: 506, fb: 636, val: 740 },
       parts = [];
+    // the bars give way to the share and the count beside them: the widest share and the widest count keep a gap between them
+    const wShare = Math.max(...[...rows, all].map((r) => K.tw(pc(r.marks, r.cand), 11, 700))),
+      wCount = Math.max(...[...rows, all].map((r) => K.tw(`${int(r.marks)} of ${int(r.cand)}`, 11)));
+    X.barW = Math.max(24, Math.min(X.barW, X.cnt - wCount - 10 - wShare - 6 - X.bar));
     const vals = rows.flatMap((r) => {
       const t = TT[r.cls];
       return t ? [t.eff, t.lo, t.hi].filter((v) => v > 0) : [];
