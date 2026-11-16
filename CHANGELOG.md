@@ -1,5 +1,7 @@
 ## Unreleased
 
+- CI: the unit-test job checks out the STRING and Complex Portal tables the network needs; the Overview's "all tests" link goes straight to Methods → Every test instead of the retired #statistics address.
+
 - Protein page: "Across all" in Protein classes and pathways draws each question as the Overview's forest-plot tile (the protein's own sets, highlighted, with fold, interval and the test within abundance deciles), and questions where the protein is in no set are one line; the sites table opens in compact rows (one line each), with the toggle offering the wrapped view.
 - Network links show where they come from: STRING physical links (solid; split into an experiments and a curated-databases type, the second lighter, when the table has those score columns), Complex Portal complexes (thick, tinted) and an optional STRING functional layer (dashed, faint, off by default, left out when its table is missing). The key has a checkbox for each type and a sample line drawn as the links are; hovering a link names its sources, channel scores and complexes. The address lists the types by name (`sources=string_physical`), defaults omitted. YAML: `channels`, `name`, `style`, `default`, `optional` and `kind: functional` in `website.network.edges`.
 - Network: colour by enzyme role (`kind: role` in `color_by`): writer, eraser, reader, more than one, none, from the site's own `website.search.partners.classes`.

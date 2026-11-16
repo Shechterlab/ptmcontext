@@ -48,6 +48,8 @@ jobs:
             inputs/annotation/interpro_108.0_domain_intervals.tsv
             inputs/annotation/interpro_108.0_all_entry_intervals.tsv
             inputs/annotation/go_bp_human_2026-11-04.tsv
+            inputs/interactions/string_v12.5_human_physical_links_score400.tsv
+            inputs/interactions/complex_portal_human_complexes_2026-10-16.tsv
             inputs/annotation/go_bp_terms_2026-11-04.tsv
             inputs/layers/reactome_human_protein_pathways.tsv
             inputs/layers/reactome_human_pathways.tsv

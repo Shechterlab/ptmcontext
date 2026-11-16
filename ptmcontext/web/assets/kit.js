@@ -3041,7 +3041,7 @@
             }`
           : `${esc(K.shortSub(a.sub))}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}`
       }. <a href="#method">` +
-        `How it was tested</a> · <a href="#statistics?a=${encodeURIComponent(a.id)}">all tests</a></p>${
+        `How it was tested</a> · <a href="${esc(link('method', 'every', { a: a.id }))}">all tests</a></p>${
           own
             ? `<p class="sub ` +
               `own-note">${otherRows(a)}. The row marked <span class="sel-pill">Your selection</span> is the one you ` +
