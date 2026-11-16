@@ -1,0 +1,17 @@
+{
+  "description": "SHEPHARD's precomputed ECOD domains (DomainMapper on hmmscan hits against ECOD's HMMs) and the sequences they were computed on, per proteome folder of holehouse-lab/shephard-data, pinned to a commit: a moved file is a new staging. ptmc stage shephard <folder> reads this.",
+  "repository": "https://github.com/holehouse-lab/shephard-data",
+  "raw": "https://raw.githubusercontent.com/holehouse-lab/shephard-data",
+  "commit": "c5c956c0ff47da49ec024b0d99039c8d0d3dcbac",
+  "commit_date": "2024-05-07",
+  "proteomes": {
+    "human": {
+      "domains": "data/proteomes/human/shprd_domains_ecod_domainmapper.tsv",
+      "fasta": "data/proteomes/human/human_proteome_clean.fasta"
+    },
+    "s_cerevisiae": {
+      "domains": "data/proteomes/s_cerevisiae/shprd_domains_ecod_domainmapper_s_cerevisiae.tsv",
+      "fasta": "data/proteomes/s_cerevisiae/s_cerevisiae_clean.fasta"
+    }
+  }
+}

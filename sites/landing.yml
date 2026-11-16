@@ -1,0 +1,22 @@
+# The landing page of `ptmc pages` (read from beside the first site file, or --landing FILE): the page's own words and
+# the cards of sites not built yet. Each built site's card comes from its site file (website.name, band, accent, art,
+# landing.tagline / question / cta, stats) and its build (the numbers, the strongest result). CONTRACTS.md, "The landing page".
+title: PTMContext
+lede: Analysis tools for protein post-translational modifications
+description: "PTMContext: analysis tools for protein post-translational modifications."
+logo: sites/art/ptmcontext_logo.svg
+logo_dots: cards           # the mark's dots: one per card, in its band colour
+switcher: {label: PTM}
+card: {result: false, question: false}    # the card's "Strongest result" block and italic question line (both default off)
+cta: "Explore {marks} →"
+soon_label: Coming soon
+soon_cta: In preparation
+order: [methylarginine, methyllysine, lysine, phospho]
+groups:                    # a card goes in the group its site file names (website.landing.group), else the first
+  - {id: human, title: null}
+  - {id: other, title: Other organisms, compact: true}
+footer:
+  links:
+    - {label: Cite, url: "https://github.com/Shechterlab/ptmcontext/blob/main/CITATION.cff"}
+    - {label: "Source code ↗", url: "https://github.com/Shechterlab/ptmcontext"}
+    - {label: Shechter Lab, url: "https://www.shechterlab.org/"}

@@ -33,6 +33,16 @@
         "pattern": "^[ACDEFGHIKLMNPQRSTVWY]$"
       }
     },
+    "residue_names": {
+      "type": "object",
+      "description": "the singular name of each residue letter a family may be tested among (a family's among): its rows say which residues they are compared with, e.g. serines and threonines",
+      "propertyNames": {
+        "pattern": "^[ACDEFGHIKLMNPQRSTVWY]$"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
     "states": {
       "type": "array",
       "minItems": 1,
@@ -169,6 +179,46 @@
       ],
       "additionalProperties": {
         "type": "string"
+      }
+    },
+    "short": {
+      "type": "string",
+      "description": "a short name for the mark's lane in the protein map's 'All modifications' block (the Brno names are short); default: the state codes joined by '/'"
+    },
+    "uniprot_features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "the mark as UniProt names it in Modified residue features (the protein map draws these in their own row)"
+    },
+    "stickers": {
+      "description": "The residues that act as stickers for the mark's residue (aromatic Tyr, Phe and Trp pair with Arg by cation-pi): the default set of the sticker-context question and of the IDRs' aromatic patterning; a site file may name another",
+      "type": "object",
+      "required": [
+        "residues"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "residues": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]$"
+          }
+        },
+        "noun": {
+          "type": "string",
+          "description": "a singular noun for the set, in running text (aromatic residue)"
+        },
+        "nouns": {
+          "type": "string"
+        },
+        "heading": {
+          "type": "string",
+          "description": "the heading of the IDRs' patterning line (Aromatic patterning)"
+        }
       }
     }
   },

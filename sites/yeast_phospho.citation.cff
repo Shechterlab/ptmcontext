@@ -2,7 +2,7 @@
 cff-version: 1.2.0
 message: "Please cite the original data sources; this site is a test of the kit, not a publication."
 title: "Saccharomyces cerevisiae phosphosites from UniProt, against disorder and domains"
-version: "pilot-0.2.0"
+version: "pilot-0.3.0"
 date-released: "2026-11-01"
 license: "CC-BY-4.0"
 authors:
@@ -50,3 +50,21 @@ references:
     start: e1003926
     year: 2014
     doi: "10.1371/journal.pcbi.1003926"
+  - type: article
+    authors: [{family-names: Das, given-names: RK}, {family-names: Pappu, given-names: RV}]
+    title: "Conformations of intrinsically disordered proteins are influenced by linear sequence distributions of oppositely charged residues"
+    journal: "Proc Natl Acad Sci USA"
+    volume: 110
+    start: 13392
+    end: 13397
+    year: 2013
+    doi: "10.1073/pnas.1304749110"
+  - type: article
+    authors: [{family-names: Holehouse, given-names: AS}, {family-names: Das, given-names: RK}, {family-names: Ahad, given-names: JN}, {name: "et al."}]
+    title: "CIDER: Resources to analyze sequence-ensemble relationships of intrinsically disordered proteins"
+    journal: "Biophys J"
+    volume: 112
+    start: 16
+    end: 21
+    year: 2017
+    doi: "10.1016/j.bpj.2016.11.3200"

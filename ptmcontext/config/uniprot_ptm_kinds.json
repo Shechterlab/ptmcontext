@@ -1,0 +1,75 @@
+{
+  "description": "How the protein map files UniProt's modified-residue, cross-link, glycosylation and lipidation features into rows: the first rule whose type and description pattern (case-insensitive regular expression) match. A profile's uniprot_features (its own mark as UniProt names it) are drawn in their own row instead.",
+  "kinds": [
+    {
+      "kind": "SUMO",
+      "types": [
+        "Cross-link"
+      ],
+      "match": "sumo"
+    },
+    {
+      "kind": "Ubiquitin",
+      "types": [
+        "Cross-link"
+      ],
+      "match": "ubiquitin"
+    },
+    {
+      "kind": "Cross-link",
+      "types": [
+        "Cross-link"
+      ],
+      "match": ""
+    },
+    {
+      "kind": "Glycosylation",
+      "types": [
+        "Glycosylation"
+      ],
+      "match": ""
+    },
+    {
+      "kind": "Lipidation",
+      "types": [
+        "Lipidation"
+      ],
+      "match": ""
+    },
+    {
+      "kind": "Phospho",
+      "types": [
+        "Modified residue"
+      ],
+      "match": "phospho"
+    },
+    {
+      "kind": "N-terminal",
+      "types": [
+        "Modified residue"
+      ],
+      "match": "^N-(acetyl|formyl|myristoyl|palmitoyl)|^N,N"
+    },
+    {
+      "kind": "Lys acyl",
+      "types": [
+        "Modified residue"
+      ],
+      "match": "^N6-[a-z0-9-]*(acetyl|succinyl|crotonyl|malonyl|butyryl|lactoyl|glutaryl|propionyl|hydroxyisobutyryl|benzoyl)"
+    },
+    {
+      "kind": "Methyl",
+      "types": [
+        "Modified residue"
+      ],
+      "match": "methyl"
+    },
+    {
+      "kind": "Other PTM",
+      "types": [
+        "Modified residue"
+      ],
+      "match": ""
+    }
+  ]
+}

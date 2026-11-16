@@ -1,0 +1,120 @@
+# Regions of the cell: each compartment of three maps of the cell, by its name, into the nucleus, the cytoplasm
+# outside the membrane-bound organelles, or the organelles and membranes. The Methylarginine Site Explorer's grouping
+# (release v1.4.3: REGION_OF and NO_REGION of its scripts/cell_maps.py), written out as data. Read by the
+# cell_region_hpa, cell_region_hcm and cell_region_organelle_ip questions of sites/methylarginine.yaml (sets.families).
+# Contract: ptmcontext/schemas/set_families.schema.json.
+#
+# The nucleus is its interior (nucleoplasm, chromatin, nucleolus, nuclear bodies and speckles); the cytoplasm is the
+# cytosol, cytoskeleton, centrosome, RNA granules and translation; the nuclear envelope counts with the membranes (the
+# Human Cell Map places its proteins in one network with the ER). Each pattern is one compartment's whole name, as its
+# map writes it (case-sensitive): the maps share a few names (nucleolus, centrosome, Golgi apparatus), always in the
+# same region.
+schema_version: 1
+title: Regions of the cell (compartments of the Human Protein Atlas, the Human Cell Map and organelle IP, by name)
+source: "Methylarginine Site Explorer release v1.4.3 (PTM_Pipeline scripts/cell_maps.py, REGION_OF and NO_REGION), transcribed"
+case_sensitive: true
+overrides:                 # in no region: counted among the proteins a map places, never tested as a region
+  - {name: miscellaneous, family: null, note: "Human Cell Map: the NMF compartment of no one place"}
+  - {name: Primary cilium, family: null, note: "Human Protein Atlas: cilia, and the structures of sperm"}
+  - {name: Primary cilium tip, family: null}
+  - {name: Primary cilium transition zone, family: null}
+  - {name: Basal body, family: null}
+  - {name: Principal piece, family: null}
+  - {name: Mid piece, family: null}
+  - {name: End piece, family: null}
+  - {name: Flagellar centriole, family: null}
+  - {name: Acrosome, family: null}
+  - {name: Connecting piece, family: null}
+  - {name: Equatorial segment, family: null}
+  - {name: Calyx, family: null}
+  - {name: Perinuclear theca, family: null}
+  - {name: Annulus, family: null}
+lists:
+  - name: regions
+    families:
+      - family: Nucleus
+        match:
+          # Human Cell Map (NMF compartments)
+          - '^chromatin$'
+          - '^nucleoplasm$'
+          - '^nucleolus$'               # also organelle IP
+          - '^nuclear body$'
+          # organelle IP
+          - '^nucleus$'
+          # Human Protein Atlas
+          - '^Nucleoplasm$'
+          - '^Nucleoli$'
+          - '^Nucleoli fibrillar center$'
+          - '^Nucleoli rim$'
+          - '^Nuclear bodies$'
+          - '^Nuclear speckles$'
+          - '^Mitotic chromosome$'
+          - '^Kinetochore$'
+      - family: Cytoplasm
+        match:
+          # Human Cell Map
+          - '^cytoplasmic ribonucleoprotein granule$'
+          - '^actin cytoskeleton, cytosol$'
+          - '^microtubule cytoskeleton$'
+          - '^centrosome$'              # also organelle IP
+          # organelle IP
+          - '^cytosol$'
+          - '^translation$'
+          - '^stress_granule$'
+          - '^p-body$'
+          - '^actin_cytoskeleton$'
+          - '^proteasome$'
+          - '^14-3-3_scaffold$'
+          # Human Protein Atlas
+          - '^Cytosol$'
+          - '^Cytoplasmic bodies$'
+          - '^Aggresome$'
+          - '^Rods & Rings$'
+          - '^Actin filaments$'
+          - '^Microtubules$'
+          - '^Microtubule ends$'
+          - '^Intermediate filaments$'
+          - '^Centrosome$'
+          - '^Centriolar satellite$'
+          - '^Mitotic spindle$'
+          - '^Cytokinetic bridge$'
+          - '^Midbody$'
+          - '^Midbody ring$'
+      - family: Organelles and membranes
+        match:
+          # Human Cell Map
+          - '^nuclear outer membrane-ER membrane network$'
+          - '^ER membrane$'
+          - '^ER lumen$'
+          - '^Golgi apparatus$'         # also the Human Protein Atlas
+          - '^early endosome, recycling endosome$'
+          - '^endosome, lysosome$'
+          - '^mitochondrial matrix$'
+          - '^mitochondrial inner membrane, mitochondrial intermembrane space$'
+          - '^mitochondrial outer membrane, peroxisome$'
+          - '^plasma membrane$'
+          - '^cell junction$'
+          # organelle IP
+          - '^ER$'
+          - '^ERGIC$'
+          - '^Golgi$'
+          - '^trans-Golgi$'
+          - '^early_endosome$'
+          - '^recycling_endosome$'
+          - '^lysosome$'
+          - '^mitochondrion$'
+          - '^peroxisome$'
+          - '^plasma_membrane$'
+          # Human Protein Atlas
+          - '^Nuclear membrane$'
+          - '^Endoplasmic reticulum$'
+          - '^Vesicles$'
+          - '^Endosomes$'
+          - '^Lysosomes$'
+          - '^Mitochondria$'
+          - '^Peroxisomes$'
+          - '^Lipid droplets$'
+          - '^Plasma membrane$'
+          - '^Cell Junctions$'
+          - '^Focal adhesion sites$'
+          - '^Cleavage furrow$'

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ptmstats"
+version = "0.1.0"
+description = "Benjamini-Hochberg, Haldane-Anscombe odds ratio, Fisher, Cochran-Mantel-Haenszel and Mantel-Haenszel with its CI, hypergeometric enrichment: in Python and plain JavaScript"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+readme = "README.md"
+dependencies = ["numpy>=1.24", "scipy>=1.10", "statsmodels>=0.14"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[tool.setuptools]
+packages = ["ptmstats"]
+
+[tool.setuptools.package-data]
+ptmstats = ["ptmstats.js"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

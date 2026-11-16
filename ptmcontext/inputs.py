@@ -4,6 +4,7 @@ A file is used only if its bytes match the manifest, so it does not matter who s
 in. An entry marked role 'reference_output' is a published result read only to check parity, never as an input to a
 result of this repository.
 """
+
 from __future__ import annotations
 
 import json
@@ -21,10 +22,22 @@ def load(manifest: str | Path = MANIFEST) -> dict:
     return data['inputs']
 
 
-def resolve(root: str | Path, names: list[str] | None = None, manifest: str | Path = MANIFEST,
-            allow_untrusted: bool = False) -> dict[str, Path]:
+def checksum_only(entry: dict) -> bool:
+    """An input whose terms forbid redistribution: recorded here by its MD5 only, never copied into a repository, and
+    read from the root a build is given when it is there."""
+    return entry.get('redistribution') == 'checksum_only'
+
+
+def resolve(
+    root: str | Path,
+    names: list[str] | None = None,
+    manifest: str | Path = MANIFEST,
+    allow_untrusted: bool = False,
+    allow_absent: bool = False,
+) -> dict[str, Path]:
     """name -> path under root of each named input, after checking its MD5. Entries whose note starts with 'NOT
-    TRUSTED' are refused unless allow_untrusted."""
+    TRUSTED' are refused unless allow_untrusted. With allow_absent, a checksum_only input that is not under root is
+    left out of the answer (the caller says what it could not compute); any other missing input is an error."""
     entries = load(manifest)
     names = list(entries) if names is None else names
     out = {}
@@ -35,6 +48,8 @@ def resolve(root: str | Path, names: list[str] | None = None, manifest: str | Pa
         if e.get('note', '').startswith('NOT TRUSTED') and not allow_untrusted:
             raise PermissionError(f'input {name!r} is marked not trusted in the manifest: {e["note"]}')
         path = Path(root) / e['file']
+        if not path.exists() and allow_absent and checksum_only(e):
+            continue
         if not path.exists():
             raise FileNotFoundError(f'input {name!r}: {path} does not exist')
         md5 = md5_file(path)
@@ -49,16 +64,25 @@ def role_inputs(value) -> tuple[str, list[str]]:
     if isinstance(value, str):
         return 'one', [value]
     if isinstance(value, dict) and len(value) == 1:
-        (rule, names), = value.items()
+        ((rule, names),) = value.items()
         return rule, list(names)
     raise ValueError(f'a role is a manifest name, or {{first_of: [...]}} or {{all_of: [...]}}, not {value!r}')
 
 
 def site_input_names(site: dict) -> list[str]:
-    """Every manifest name a site reads: its snapshot, its marks, each role's inputs and its reference."""
-    names = [site['snapshot']['input'], site['marks']['input']]
+    """Every manifest name a site reads: its snapshot, its marks (and the tables added to them), each role's inputs,
+    its per-mark tables (for the website), its reference and the tables its website shows."""
+    names = [site['snapshot']['input'], site['marks']['input'], *[a['input'] for a in site['marks'].get('add', [])]]
+    if (site.get('proteins') or {}).get('input'):  # (context marks add attributes to a site without a protein table)
+        names.append(site['proteins']['input'])
     for value in site.get('inputs', {}).values():
         names += role_inputs(value)[1]
+    names += [t['input'] for t in (site['marks'].get('tables') or {}).values()]
     if site.get('reference', {}).get('statistics'):
         names.append(site['reference']['statistics'])
+    # the tables the protein pages show (website.tables): checked and recorded like every input, read by ptmc web
+    names += [t['input'] for t in ((site.get('website') or {}).get('tables') or {}).values()]
+    names += [x['input'] for x in (site.get('reference', {}).get('tables') or {}).values()]
+    if site.get('reference', {}).get('background'):
+        names.append(site['reference']['background']['input'])
     return list(dict.fromkeys(names))

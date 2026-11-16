@@ -1,0 +1,15 @@
+{
+  "description": "Accessions a region may carry (its ref), linked to the page of the database that defines them: the first pattern (a regular expression) that matches.",
+  "links": [
+    {
+      "pattern": "^IPR\\d{6}$",
+      "url": "https://www.ebi.ac.uk/interpro/entry/InterPro/{ref}/",
+      "name": "InterPro"
+    },
+    {
+      "pattern": "^PF\\d{5}$",
+      "url": "https://www.ebi.ac.uk/interpro/entry/pfam/{ref}/",
+      "name": "Pfam"
+    }
+  ]
+}

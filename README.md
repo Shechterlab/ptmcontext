@@ -1,51 +1,89 @@
-# ptmcontext (working name; `ptmcontext` proposed)
+# ptmcontext
 
-Where do modifications fall in proteins, tested fairly? One reference proteome, any mark (methylarginine,
-phosphosites, methyllysine ...), any regions (disorder, IDRs, domains, motifs, a lab's own), and two tests for every
-class: **pooled** (Fisher) and **within protein** (Mantel–Haenszel, each protein a stratum), written in the statistics
-table of the Methylarginine Site Explorer's releases.
+ptmcontext tests which human proteins carry a post-translational modification, and which regions, domains, motifs
+and neighboring modifications its sites are enriched in. Every test runs two ways: across all proteins (Fisher's
+exact test) and within each protein (Mantel–Haenszel, comparing each site with the other residues of its own
+protein). Python computes the statistics and builds the site. JavaScript displays them. The published sites are static files on GitHub Pages.
 
-A site is a YAML file. Changing the mark, the organism or the analyses is changing the file:
+## Sites
+
+Landing page: <https://shechterlab.github.io/ptmcontext/>
+
+| Site | Address |
+|---|---|
+| Human methylarginine sites | <https://shechterlab.github.io/ptmcontext/methylarginine/> |
+| Human methyllysine sites | <https://shechterlab.github.io/ptmcontext/methyllysine/> |
+| Human lysine modification sites (acetylation and other acylations, ubiquitination, SUMOylation) | <https://shechterlab.github.io/ptmcontext/lysine/> |
+| Human phosphosites | <https://shechterlab.github.io/ptmcontext/phospho/> |
+
+The methylarginine site rebuilds the statistics of release v1.4.3 of the
+[Methylarginine Site Explorer](https://github.com/Shechterlab/PTM_Pipeline) without running its code.
+`tests/test_parity_v1_4_3.py` checks that 4,549 of the release's 4,659 rows are reproduced exactly.
+The methyllysine, phosphosite and lysine modification sites have no earlier release, so all their statistics are new. Each site also shows the
+other modifications on each protein and tests whether its sites are within 10 residues of them. Each site's Methods page
+describes its inputs, tests and caveats.
+
+`sites/yeast_phospho.yaml` is the same code on another organism. It is not published.
+
+## Data
+
+Every input is in a manifest with its source, release and MD5. Staging is the only step that uses the network.
+The sites read releases of [PTM_Pipeline](https://github.com/Shechterlab/PTM_Pipeline) pinned by commit: v1.4.3 for
+methylarginine, and v1.5.0 for methyllysine, phosphorylation, acetylation and other acylations, ubiquitination and
+SUMOylation. The v1.5.0 tables come from UniProt, iPTMnet, CPLM 4.0, Berryhill et al. 2023, Ochoa et al. 2020, Hendriks et al. 2017 (SUMO-2) and Akimov et al. 2018 (ubiquitination). CPLM
+4.0 states no license. Its human lysine methylation, acetylation, other acylation, ubiquitination and SUMOylation sites
+are included and cited.
+
+## Build a site
+
+Each site is defined only by YAML files: a site file `sites/<site>.yaml`, a mark file `sites/marks/<mark>.yaml`, an inputs
+manifest `sites/<site>.inputs.json` and art in `sites/art/`. `ptmcontext/` contains no site-specific code;
+`tests/test_no_site_literals.py` enforces it. For the methyllysine site, with a checkout of PTM_Pipeline at the commit
+`.github/workflows/pages.yml` pins in `DATA`:
 
 ```bash
 pip install -e ".[test]"
+ptmc run sites/methyllysine.yaml --root DATA     # out/methyllysine/statistics.tsv and run.json
+ptmc web sites/methyllysine.yaml                 # out/methyllysine/web/
+```
+
+For a new organism, stage the inputs first, as for the yeast site:
+
+```bash
 ptmc stage uniprot UP000002311 --out DATA/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
 ptmc stage mobidb --out DATA/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
 ptmc stage shephard s_cerevisiae --out DATA/inputs --manifest sites/yeast_phospho.inputs.json --prefix yeast
-ptmc run sites/yeast_phospho.yaml --root DATA          # -> out/yeast_phospho/statistics.tsv and run.json
-ptmc web sites/yeast_phospho.yaml                      # -> out/yeast_phospho/web/: the site, in the Methylarginine Site Explorer's look
 ```
 
-## Status (pilot)
+## How the site is built
 
-- **Parity:** `sites/methylarginine.yaml` rebuilds 3,972 of the 4,659 rows (85%) of release v1.4.3's statistics table
-  byte for byte, from the release's inputs, without running any of its code (`tests/test_parity_v1_4_3.py`):
-  - the 82 residue-level rows (motif, disorder, domain context, domain class, structure context; pooled and within
-    protein);
-  - the 3,890 protein-set rows for PANTHER protein classes (grouped, top level, subclasses), Reactome top-level groups,
-    Reactome pathways and HPA locations (clusterProfiler's `enricher`, rewritten in Python, and its repeat within PaxDb
-    abundance deciles).
+```mermaid
+flowchart LR
+  Y["Site file<br/>sites/*.yaml"] --> R
+  I["Inputs<br/>(UniProt, MobiDB, PTM_Pipeline releases …)"] --> R
+  subgraph build["Build: Python, on a computer or in GitHub Actions"]
+    R["ptmc run<br/>the statistics<br/>(ptmstats, Python)"] --> O["out/&lt;site&gt;/<br/>statistics.tsv, run.json"]
+    O --> W["ptmc web<br/>assembles the site"]
+  end
+  W --> S["Static site<br/>index.html + assets/kit-*.js<br/>+ data/site.json, data/sel/"]
+  subgraph browser["In the browser: JavaScript"]
+    S --> V["Pages, charts, tables, exports<br/>(drawn from the data)"]
+    S --> T["Retests on a selection<br/>(ptmstats.js: Fisher, Mantel–Haenszel,<br/>hypergeometric, Benjamini–Hochberg)"]
+  end
+```
 
-  The rest (687 rows: condensates, functional classes, sequence proximity, crosslinks, interfaces, cell maps, eCLIP)
-  come next, one parity check at a time.
-- **A second organism by configuration:** yeast phosphosites staged from UniProt 2026_03, MobiDB and SHEPHARD in
-  about 50 s and run in 21 s. UniProt's domain features cover 1,937 of 6,067 yeast proteins; SHEPHARD's ECOD domains
-  fill 2,506 more, so 79% of the phosphosites (4,702 of 5,930) are on a protein with domain data, up from 47%.
-- **A website per site, from its file:** `ptmc web` gives the Methylarginine Site Explorer's look with the site's own
-  colours, pictures and words; every figure and table downloads as PDF, SVG, PNG and TSV carrying its description,
-  citation (from the site's `CITATION.cff`), versions and provenance. Each protein has a page: its map, its marks
-  against its own other residues, and live cards from UniProt (with a check that the sequence has not changed),
-  AlphaFold DB, PDBe and STRING (interaction partners, linked to their own pages when they are marked too).
-- **Not built yet:** isoform placement, measured backgrounds, the release writer, the remaining 687 rows. See
-  [docs/DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) for why this design, the alternatives, prior art and the order of work.
+The statistics are computed once, at build time. When a reader makes a selection, the browser reruns the tests with
+`packages/ptmstats/ptmstats/ptmstats.js`. `packages/ptmstats/tests/test_parity_js.py` checks that it agrees with the
+Python package, SciPy and statsmodels on random tables.
 
 ## Publishing
 
-`.github/workflows/pages.yml` builds every site from its sources on each merge to `main` and publishes them with a
-landing page on GitHub Pages (Settings → Pages → Source: GitHub Actions). By hand:
+`.github/workflows/pages.yml` builds every site on each push to `develop` or `main` and publishes them with a landing page on
+GitHub Pages (Settings → Pages → Source: GitHub Actions). The export audits (text overlap, legends) of each site run
+in `.github/workflows/tests.yml`. By hand:
 
 ```bash
-ptmc pages sites/methylarginine.yaml sites/yeast_phospho.yaml --out _site   # after ptmc run and ptmc web for each
+ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml sites/lysine.yaml --out _site   # after ptmc run and ptmc web for each
 ```
 
 ## Read next
@@ -53,11 +91,11 @@ ptmc pages sites/methylarginine.yaml sites/yeast_phospho.yaml --out _site   # af
 | | |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | the pieces and the rules they enforce |
-| [CONTRACTS.md](CONTRACTS.md) | the five file formats |
-| [ADDING_DATA.md](ADDING_DATA.md) | adding a source, a mark or a site: a step-by-step guide written for AI agents |
-| [AGENTS.md](AGENTS.md) | the rules for anyone, human or AI, changing this repository |
+| [CONTRACTS.md](CONTRACTS.md) | the file formats |
+| [ADDING_DATA.md](ADDING_DATA.md) | adding a source, a mark or a site |
+| [AGENTS.md](AGENTS.md) | the rules for anyone changing this repository |
 
-## Licence
+## License
 
-Code: MIT ([LICENSE](LICENSE)). Inputs keep their sources' terms, recorded in each manifest; this repository
+Code: MIT ([LICENSE](LICENSE)). Inputs keep their sources' terms, recorded in each manifest. This repository
 redistributes no input data.

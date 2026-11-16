@@ -10,16 +10,19 @@ Every new dataset is exactly one of these. If it is none of them, stop and ask.
 | It is | Example | It becomes |
 |---|---|---|
 | **sequences** | a new UniProt release, another organism | a snapshot: `ptmc stage uniprot <proteome>` |
-| **regions** | disorder, domains, flanks, charged segments, a lab's own regions | a **unit table** (`schemas/units.schema.json`) filling a **role** (`disorder`, `domains`, ...) |
+| **regions** | disorder, domains, flanks, charged segments, a lab's own regions | any table of intervals filling a **role**: a **unit table** (`schemas/units.schema.json`), or any layout its manifest entry maps with `columns`; a new kind of region is tested by the `regions` layer (no code) |
 | **marked residues** | a PTM site list, an MS experiment's sites | a **marks table** (accession, position, plus any columns) selected by a site file |
-| **a mark** | a modification not yet profiled | a **profile** (`ptmcontext/profiles/<mark>.yaml`) |
-| **a per-residue or per-protein annotation** | AlphaFold pLDDT, abundance, a score | a **layer** (code) or a unit table, if it is regions |
+| **a mark** | a modification not yet profiled | a **mark file** (`sites/marks/<mark>.yaml`) |
+| **a per-residue value** | AlphaFold pLDDT, conservation, a variant-effect score | a per-residue table read by a **column mapping**, tested by the `residue_values` layer (no code) |
+| **a per-protein annotation** | pathways, locations, classes, condensates, abundance | a (set, protein) table or class hierarchy for a **protein-set test** (no code); rows kept by other tables (`where`), old accessions through a history (`history`) |
+| **a per-gene annotation** | disease terms (DisGeNET), any sets keyed by another identifier | a (set, identifier) table, with the tables that map the site's proteins to that identifier, for a **protein-set test** (no code); families of its sets by name: a rules file in `sites/data/` |
+| **evidence to show on the protein pages** | interaction records at sites, bound RNA/DNA, source records, perturbation measurements | a table in one of the formats of CONTRACTS.md ("Tables the protein pages show"), named under `website.tables` with its columns mapped (no code); the site card and sites table show it as `website.protein.card` and `.table` say |
 | **a published result to match** | a release's statistics table | a `reference_output` entry: read only to check parity |
 
 ## 1. Check the terms before downloading
 
-- Find the licence on the source's own site. Record it word for word; if none is stated, write `none stated`.
-- Unpublished lab data (MicroDomains, dtIDR material, unpublished MS) never enter this repository. They go in a
+- Find the license on the source's own site. Record it word for word; if none is stated, write `none stated`.
+- Unpublished lab data and analyses (unpublished MS included) never enter this repository. They go in a
   private repository as a plugin (step 6). **If unsure whether something is published, stop and ask.**
 - A source that forbids redistribution is staged outside the repository and recorded with its MD5 only.
 
@@ -36,14 +39,14 @@ For a new source, add a function to `ptmcontext/stage.py` that downloads, writes
 format and calls `stage.record(...)`. Requirements:
 
 - the upstream URL, the source's release (from the response or the file, never from memory) or else the download
-  date, and the licence go into the manifest entry;
+  date, and the license go into the manifest entry;
 - retries with backoff, and batching where the service limits a request (MobiDB: 1,000 proteins);
 - coverage is reported (how many entries got data), and written into the entry's `note`.
 
 For a file you were given rather than downloaded:
 
 ```bash
-ptmc inputs record <name> <path under root> --root DATA --source "<where it came from>" --version "<release or date>" --licence "<licence>"
+ptmc inputs record <name> <path under root> --root DATA --source "<where it came from>" --version "<release or date>" --licence "<license>"
 ```
 
 A file with no traceable origin is recorded with a note that starts `NOT TRUSTED`: the build refuses it unless a run
@@ -60,7 +63,23 @@ says `--allow-untrusted`, and nothing computed from it is committed.
   versions are not placed by this package yet**: the site file's `residue_mismatch` decides whether such rows fail the
   run (`error`, the default) or are dropped and counted (`drop`). Never silently re-number.
 
-**Check:** `ptmc check sites/<site>.yaml` passes, and a unit table reads with `ptmcontext.units.read_units`.
+A table in its own layout needs no conversion: say in its manifest entry which columns hold what, and which rows to
+keep, and every build reads it the same way (`ptmc inputs record ... --columns '<json>'` writes it):
+
+```json
+"lab_condensates": {"file": "...", "md5": "...", "source": "...", "version": "...", "license": "...",
+  "columns": {"accession": "uniprot", "start": "from", "end": "to", "label": "name",
+              "include": [{"column": "evidence", "equals": "curated"}]},
+  "record": "https://example.org/protein/{acc}"}
+"scores": {"file": "...", "...": "...", "columns": {"accession": "entry", "position": "resnum", "value": "score"}}
+```
+
+`record` (optional) is the source's own page for a protein; the protein pages link it. A file that is not
+tab-separated says so (`"sep": ","`). A format read often may instead get a reader (`ptmcontext.units.register_reader`,
+in the package or a trusted plugin).
+
+**Check:** `ptmc check sites/<site>.yaml --root DATA` passes: it reads each mapped file's header and names any column
+the mapping gets wrong. A unit table (not a mapped file) also reads with `ptmcontext.units.read_units`.
 
 ## 4. Wire it into a site
 
@@ -73,9 +92,37 @@ inputs:
     first_of: [<curated>, <predicted>]    # each protein's units from the first that has any (or all_of: every input's)
 marks:
   input: <manifest name>
-  include: [{column: ..., in: [...]}]
+  include: [{column: ..., in: [...]}]   # rows kept; exclude drops rows (their residues count as other residues)
+  left_out: [{column: ..., contains: ...}]   # rows kept pending: counted on neither side
 analyses:
-  - {id: <analysis>, layer: <layer>}                     # a residue test
+  - {id: <analysis>, layer: <layer>}                     # a residue test, by a built-in or trusted plugin layer
+  - id: <analysis>                                       # a residue test of any table of regions: no code
+    layer: regions
+    with: {role: <role>, kind: <kind>, window: 20, noun: condensate-forming region}   # words, colors optional
+  - id: <analysis>                                       # a residue test of any per-residue value: no code
+    layer: residue_values
+    with: {role: <role>, bins: [50, 70, 90], classes: [very_low, low, confident, very_high], noun: pLDDT,
+           colors: {very_high: "#0053d6"}}
+  - id: <analysis>                                       # flags: is a residue listed in each of these tables? no code
+    layer: residue_lists
+    with: {flags: {<flag>: <role>, <flag>: <role>}, noun: changed residue, labels: {<flag>: ...}}
+    proteins: {input: <role>, column: <accession column>, label: " whose gene was screened"}   # count only these proteins
+    marks_alone: count                                   # and every mark of theirs, one with no other candidate too
+    order: [{categories: [<flag>, <flag>]}]              # the rows in this order
+```
+
+A list of residues (a change seen in tumors, a crosslinked residue) is any table with an accession and a position
+column, mapped in its manifest entry (`"columns": {"accession": ..., "position": ...}`); a residue is listed once
+however many rows name it.
+
+The class codes these make are what filters, `website.protein.facts` and `labels:` use: for `regions`, `in_<id>`,
+`<id>_boundary`, `outside_<id>` and `no_<id>` (the analysis id, or `with: code`); for `residue_values`, the classes
+given, lowest first, with a value equal to a threshold in the class above it (90 is `very_high` here), and `no_value`
+(or `with: missing`) where a residue has none. `ptmc check` names any `with:` key a layer does not know, any role it
+reads that `inputs:` does not fill, and any fact naming a class the question does not make. Two `regions` questions
+reading different roles may share a `kind`: each keeps its own row of the map.
+
+```yaml
   - id: <analysis>                                       # a protein-set test
     test: protein_sets
     sets: {input: <role>, set: <column>, protein: <column>, include: [...]}
@@ -94,9 +141,198 @@ analyses:
       unclassified: <set name>                           # the universe's proteins with no class, as a set
     universe: snapshot
     whole_universe: true
+  - id: <analysis>                                       # sets made by rules on a table's columns: no table of sets
+    test: protein_sets
+    sets:
+      input: <role>
+      protein: <column>
+      rules:                                             # each row in the first set whose conditions all hold
+        - {set: essential, when: [{column: <flag column>, equals: "True"}]}
+        - {set: most, when: [{ratio: [<column>, <column>], at_least: 0.5}]}   # a share; at_least and below on numbers
+        - {set: rest}                                    # no conditions: every row left
+    whole_universe: true
+    order: [{categories: [essential, most, rest]}]       # the rows in this order (default: by p)
+    labels: {most: "Most lines (≥ 50%)"}                 # names on the website; help: {set: definition}
+    values: {columns: [{name: <column>, background: true}, <column>]}   # numbers per protein for website.set_views
+  - id: <analysis>                                       # sets of another identifier (genes), gathered into families
+    test: protein_sets
+    identifiers:                                         # each protein's identifiers, through these tables in turn
+      noun: gene                                         # words for the website: "genes of marked proteins"
+      nouns: genes
+      map:
+        - {input: <role>, from: <accession column>, to: <column>, separator: ";", take: first}   # first of a list
+        - {input: <role>, from: <column>, to: <identifier column>}                                # every row's
+    sets:
+      input: <role>                                      # (set, identifier) pairs
+      set: <column>
+      protein: <identifier column>
+      families: {rules: sites/data/<site>_<vocabulary>.yaml, by: <name column>, lists: [<list>]}   # optional
+    universe: snapshot                                   # every protein's identifiers; the background: those in any set
+    abundance: {input: <role>, protein: <column>, value: <column>, combine: max}   # an identifier: its proteins' highest
 ```
 
+A (set, protein) table that needs other tables to say which of its rows count (the organism of a member, the kind of a
+set), whose members are named by older accessions, or whose rows the release lists in its own order:
+
+```yaml
+  - id: <analysis>                                       # CD-CODE condensates, as sites/methylarginine.yaml
+    test: protein_sets
+    sets:
+      input: <role>                                      # (set, protein) rows
+      set: <column>
+      protein: <column>
+      where:                                             # rows kept: the column's value is the key of a row that counts
+        - {column: <protein column>, input: <role>, key: <column>, include: [{column: species_name, equals: Homo sapiens}]}
+        - {column: <set column>, input: <role>, key: <column>, exclude: [{column: condensate_type, equals: synthetic}]}
+      history: {input: <role>, from: key, to: accession, include: [{column: kind, equals: secondary}]}   # old -> entry
+    names: {input: <role>, set: <column>, name: <column>}
+    universe: annotated                                  # the proteins in any kept set (or snapshot, whole_universe: true)
+    min_size: 5
+    order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]   # default: ascending p, then name
+    scores: {input: <role>, set: <column>, protein: <column>, value: <column>, label: <words>, levels: [2, 3, 4, 5], max: 5}
+    filter: {label: <words>, any: <words for "in any set">, sets: all}   # the Filters panel's control
+```
+
+A `where` condition on the protein column compares entries (an isoform counts as its entry); one table may fill several
+conditions. `history` keeps a member that is an entry of the snapshot, brings one the history maps to exactly one entry
+to it, and drops any other (sets of proteins only). `order` writes the rows in the order a release lists them; the fold
+enrichment is compared exactly, so equal fractions tie. `scores` (a value per membership, CD-CODE's confidence, say) and
+`filter` are for the website only: the control lists the tested sets (or every set holding a marked protein, `sets:
+all`), an option for marks on a protein in any set, and a threshold on the scores. A comma-separated table says so in
+its manifest entry: `"columns": {"sep": ","}`.
+
+Sets that form an ontology (each holding the members of the sets under it) name their parents, for the website's
+views; a set's own page is `link`; a question a release keeps in a supporting table, not its statistics table, is
+checked against that table in its own columns (CONTRACTS.md: Set hierarchy, Published set results):
+
+```yaml
+  - id: <analysis>
+    test: protein_sets
+    sets: {input: <role>, set: <column>, protein: <column>}
+    names: {input: <role>, set: <column>, name: <column>}
+    hierarchy: {input: <role>, set: <column>, parents: <column>, root: <root id>}   # website only
+    link: "https://example.org/term/{}"
+reference:
+  tables:
+    <analysis>: {input: <manifest name>, columns: {set: <col>, a: <col>, M: <col>, fold_enrichment: <col>, p: <col>, q: <col>}}
+website:
+  overview:
+    sections:
+      - name: <section>
+        cards:
+          - analysis: <families question>
+            views:                          # the first is the card's own question
+              - {label: <words>, analysis: <families question>, more: {analysis: <more families>, label: "Show {n} more"},
+                 members: {analysis: <one-by-one question>, of: [{analysis: <families question>, label: <words>}]}}
+              - {label: <words>, analysis: <ontology question>, ontology: {short: 50, compare: 4, tree: 100, glosses: {<id>: [<gloss>, <definition>]}}}
+  protein:
+    sets: [{title: <words>, analyses: [<ontology question>, <one-by-one question>, <families question>]}]
+```
+
+Which sets make a family is curated vocabulary: it goes in a site's own data file under `sites/data/`, never in code
+(`ptmcontext/schemas/set_families.schema.json`; `sites/data/methylarginine_disease_families.yaml` gathers DisGeNET's
+terms into the release's disease families; `sites/data/methylarginine_cell_regions.yaml` the compartments of three
+maps of the cell into its regions). Each family is a list of regular expressions matched against the set's
+name; exact-name `overrides` come first; families sit in ordered `lists`, a name taking the first family that matches,
+list by list, and each analysis tests the families of the lists it names. A set no rule places is in no family, but its
+identifiers still count as annotated (the background). `ptmc check` reads the rules file, the lists an analysis names
+and every column its tables must have; the run records the file's MD5. Record each mapping table in the manifest like
+any input: the identifiers are only as good as the map.
+
+A question of named patterns of the sequence around each residue (kinase motif classes, reader motifs) is a
+`motif_families` layer, no code: `layer: motif_families`, `with: {flank: 10, families: [{name, label, help, pattern: "R..[ST]",
+start: -3, marks: [{mark: <context id>, at: -3}]}]}` (CONTRACTS.md, Motif families). A column a later release of the marks
+table may add (a score) is read where it exists: give its attribute `optional: true` (and `bands: [..]` for a category
+from a number), and a context mark `columns.score` with a `subset` (CONTRACTS.md, Marks and Context marks). The members of
+a partner class may sit in a file under `sites/data/` (`genes_file`, with the query and date in its `#` lines).
+
+A question of several yes-or-no tests, each against the residues its evidence could reach (an RNA crosslink among
+the residues of the proteins with one, an interface among the residues a structure observed), needs no code either:
+
+```yaml
+  - id: <analysis>
+    counting: every_candidate              # or proteins_with_both (as the other residue tests)
+    tests:
+      - {category: <code>, inside: <role>, proteins_with: <role>, label: <words>}          # in a unit of the role
+      - {category: <code>, inside: <role>, within: 3, proteins_with: <role>}               # within 3 residues of one
+      - {category: <code>, inside: {role: <role>, where: [{column: class, at_most: 4}]}, covered_by: <measured role>}
+      - {category: <code>, inside: <role>, unless: {any: [{at: 1, in: G}]}}                # not where the motif rule holds
+    strata: [{stratum: all}, {stratum: ordered, outside_of: <disorder role>}]              # optional: every test again
+```
+
+A file whose terms forbid copying it is recorded with `"redistribution": "checksum_only"`: a build reads it from its
+root when it is there, and leaves out (and says so) the tests that need it otherwise. A role may name it first and a
+republishable source second (`first_of`), as the methylarginine site does for pCLAP's peptides.
+
+A page of its own (`website.pages`: the Interactions page of `sites/methylarginine.yaml`) lays out sections of blocks
+that read the statistics, the marks' attributes and the tables of `website.tables` (add `page_rows` for rows of no site
+or protein); CONTRACTS.md, "Website pages", lists the blocks. A block whose data a site lacks is left out.
+
+Columns of the marks table the website should keep (to color sites, filter them, and show where each comes from)
+go under `marks.attributes`; no test reads them:
+
+```yaml
+marks:
+  attributes:
+    state: {column: <column>, label: <name on the page>, kind: category, values: {<value>: <label>}, color: true, filter: true}
+    studies: {column: <column>, label: Studies, kind: list, separator: "; ", link: {column: <ids column>, url: "https://doi.org/{}"}, filter: true,
+              provenance: true}   # how a mark was found, not what it is: a caveat when marks are compared, and the
+                                  # within-study strata (website.compare.stratify names another)
+                                  # website.compare: {min_proteins: 10, min_marks: 30} is the smallest selection that is tested (these are the defaults);
+                                  # a smaller one gets counts and shares only, with no p, q or "enriched";
+                                  # website.reading: {min_maps: 2, min_group: 20, min_set: 30} is what is ranked and colored
+                                  # (the defaults): cell parts agreed by 2 maps of 20+ proteins a side, sets of 30+ proteins
+    changed: {column: <changes column>, present: true, label: Changed in tumors, kind: category,
+              values: {"yes": Changed, "no": Not changed}, filter: true}           # a yes/no filter over a column of changes
+    response: {column: <perturbations>, pair_with: <their calls>, label: Responses, kind: list, control: select,
+               filter: true}                                                       # each value "<perturbation>:<call>"
+```
+
+A question answered by counting rather than testing (how many marks each source reports; how many marks each experiment
+measured and changed) is a count question, `website.counts` (CONTRACTS.md, Per-mark tables and count questions). Its
+data are an attribute of the marks, or a table with several rows per mark, kept under `marks.tables` with the column that
+names each row's mark and the columns to keep; the site file maps the table's own columns (`where`, `call`, `change`),
+so a release's supporting table and a user's own table in the same shape give the same question:
+
+```yaml
+marks:
+  tables:
+    experiments: {input: <manifest name>, key: {marks: site_id, table: site_id}, columns: [treatment, call, log2_change]}
+website:
+  counts:
+    sources: {kind: values, attribute: studies, number: n_studies, title: Provenance, unit: [source, sources]}
+    responses:
+      kind: responses
+      title: Responses
+      calls: {down: decreased, up: increased}
+      rows:
+        - {name: Drug A, table: experiments, where: {treatment: A}, change: log2_change}
+        - {name: Knockout B, attribute: <a pair_with attribute>, value: ko_b}       # calls from '<value>:<call>' pairs
+  overview: {sections: [{name: Sources, cards: [sources, {analysis: responses, wide: true}]}]}
+```
+
+The website's Overview tiles, filter groups and header tiles are `website.overview`, `website.filters` and
+`website.stats`; the Sites tab's columns `website.sites.columns`; the protein page's fact tiles and extra links
+`website.protein.facts` and `website.protein.links: [{label, url: "...{acc}..."}]` (`sites/methylarginine.yaml` shows
+the others). Without them the kit lists
+every question and offers every filterable attribute. A new question appears on every page with no kit change: its
+tile, its filter, its rows in All tests and the downloads, its column if named, and, if its layer draws regions, a row
+of the protein map (`tests/test_new_sources.py` builds such a site from scratch).
+
+Evidence along the proteins that no question tests (crosslinks, interfaces, changes in tumors, dense windows) is a row
+of the protein map: `website.protein.map.rows`, each reading a role (or the marks table, `marks: true`) with a column
+mapping into the map-row format (CONTRACTS.md, Map rows), its classes with their words, marks and colors, and the
+papers of its sources in `website.protein.map.sources`. A residue list, a region list and a per-site count are the
+same format with different columns filled (`tests/test_map_rows.py` builds such a site from scratch). Rows the source
+may not republish are left out by the mapping's `include`/`exclude`: the website then never holds them.
+
 **Check:** `ptmc run sites/<site>.yaml --root DATA` runs, and `out/<site>/run.json` lists every input with its MD5.
+
+Maps of the cell need no code either: make each map a protein-set question (its sets the compartments; optionally a
+second one, its regions, by `sets.families`), then name them in `website.cell` with the rows of the grids and the part
+of the kit's drawings each colors (CONTRACTS.md lists the parts; a yeast vacuole may color `endolyso`, named
+"Vacuole"). A table of numbers per protein (a screen's scores) becomes classes by `sets.rules`, and `values` plus
+`website.set_views` draw its numbers beside them.
 
 ## 5. Prove it
 
@@ -110,7 +346,7 @@ analyses:
 
 ## 6. Code from another repository
 
-Layers written elsewhere (a private repository's flanks, a collaborator's score) come in as plugins: an installed
+Layers written elsewhere (a private repository's regions, a collaborator's score) come in as plugins: an installed
 package that offers a `ptmcontext.Layer` under the entry-point group `ptmcontext.layers`. A plugin loads only when
 the site names its package under `trusted_plugins`, and the run record keeps its version. Do not copy another
 repository's code into this one without the owner's review; do not run another repository's scripts from here.
@@ -127,5 +363,5 @@ repository's code into this one without the owner's review; do not run another r
 
 ## 8. Write down what you did
 
-In the pull request: what was added, its licence, its coverage, the checks run and their output, and anything that
+In the pull request: what was added, its license, its coverage, the checks run and their output, and anything that
 could not be verified. Never claim a check passed that was not run.

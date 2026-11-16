@@ -4,10 +4,10 @@ schema_version: 1
 id: yeast_phospho
 title: Saccharomyces cerevisiae phosphosites (UniProt)
 status: working
-mark: phospho
+mark: sites/marks/phospho.yaml
 manifest: sites/yeast_phospho.inputs.json      # written by ptmc stage
 
-snapshot: {input: uniprot_fasta, release: "UniProt 2026_03"}
+snapshot: {input: uniprot_fasta, release: "UniProt 2026_04"}
 inputs:
   disorder: mobidb_disorder                     # MobiDB consensus (prediction-disorder-th_50), as for human
   domains:                                      # each protein's domains from the first of these that has any:
@@ -29,21 +29,86 @@ analyses:
   - {id: disorder, layer: disorder}
   - {id: idr, layer: idr}
   - {id: domain_context, layer: domain_context}
-  - {id: domain_class, layer: domain_class}
+  - {id: domain_class, layer: domain_class, with: {classes: sites/data/domain_classes.json}}
   - {id: structure_context, layer: structure_context}
+  - {id: idr_charge, layer: idr_charge}
+  # Stickers and the factors together, as for human methylarginine (not in a release)
+  - {id: sticker_context_3, family: Next to aromatic residues, layer: neighbours, with: {window: 3, noun: aromatic residue}, new: true, section: Position in the protein,
+     title: "Next to aromatic residues (within 3)", question: "Are phosphosites more often next to aromatic residues than the other serines, threonines and tyrosines of their protein?"}
+  - {id: sticker_context_5, family: Next to aromatic residues, layer: neighbours, with: {window: 5, noun: aromatic residue}, new: true, section: Position in the protein,
+     title: "Next to aromatic residues (within 5)", question: "Are phosphosites more often next to aromatic residues than the other serines, threonines and tyrosines of their protein?"}
+  - {id: sticker_context_3_idr, family: Next to aromatic residues, layer: neighbours, with: {window: 3, noun: aromatic residue}, only_in: idr, new: true, section: Position in the protein,
+     title: "Next to aromatic residues, in IDRs (within 3)", question: "Inside disordered regions, are phosphosites more often next to aromatic residues than the other serines, threonines and tyrosines there?"}
+  - {id: sticker_context_5_idr, family: Next to aromatic residues, layer: neighbours, with: {window: 5, noun: aromatic residue}, only_in: idr, new: true, section: Position in the protein,
+     title: "Next to aromatic residues, in IDRs (within 5)", question: "Inside disordered regions, are phosphosites more often next to aromatic residues than the other serines, threonines and tyrosines there?"}
+  - id: which_factor
+    test: conditional_logit
+    new: true
+    title: Which factor matters most?
+    question: "Taking all factors together, which ones distinguish a phosphosite from the other serines, threonines and tyrosines of its protein?"
+    sub: "One model: each phosphosite against the other serines, threonines and tyrosines of its protein, all five factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
+    section: Position in the protein
+    covariates:
+      - {name: in_idr, label: In a disordered region, help: "Inside an IDR of 20 or more residues", layer: idr, is: [idr]}
+      - {name: aromatic_within_5, label: Aromatic residue within 5, help: "At least one Tyr, Phe or Trp within 5 residues on either side", layer: neighbours, with: {window: 5, noun: aromatic residue}, is: [one, two_plus]}
+      - {name: proline_directed, label: Followed by a proline, help: "Pro right after the site (S/T-P, proline-directed kinases)", layer: motif, flags: [proline_directed]}
+      - {name: net_charge, label: "Local net charge (per +1)", help: "Lys and Arg minus Asp and Glu within 7 residues on either side, the site itself left out; the odds ratio is for each extra +1", window_sum: {window: 7, weights: {K: 1, R: 1, D: -1, E: -1}}}
+      - {name: domain_distal, label: Far from any domain, help: "More than 20 residues from a domain, and not between two domains", layer: domain_context, is: [distal]}
 
 outputs: {folder: out/yeast_phospho}
 citation: sites/yeast_phospho.citation.cff
 
 website:
   name: Yeast Phosphosite Explorer
-  tagline: "Budding yeast phosphosites from UniProt, tested against disorder and domains. Built from public sources by one site file."
-  band: ["#334155", "#0f172a"]      # graphite: neutral beside the data colours; the orange rule ties it to its siblings
+  tagline: "Budding yeast phosphosites from UniProt."
+  landing:
+    tagline: "Budding yeast phosphosites from UniProt."
+    question: "Where are yeast phosphosites in their proteins, and which protein classes have them?"
+    label: Yeast phosphosites
+    group: other
+    unlisted: true          # not published: kept as an example of a second organism
+    in_switcher: false
+  band: ["#334155", "#0f172a"]      # graphite: neutral beside the data colors; the orange rule ties it to its siblings
   accent: "#c2410c"
   accent_dark: "#fb923c"
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
   links:
     - {label: Method, url: "#method"}
-    - {label: "Code & data", url: "https://github.com/Shechterlab/ptmcontext"}
-  examples: [S/T-P, IDR, linker, folded]
+    - {label: "Source code ↗", url: "https://github.com/Shechterlab/ptmcontext"}
+  examples: [SEC16, SEC16 S73, "motif:S/T-P", "disorder:IDR", "idr_charge:Janus"]
+  placeholders: {highlight: "SEC16, EDE1, STE2 S310", partners: "SEC13, SEC24", motif: "[ST]P, RRXS, SPXK", motif_either: "SP,TP"}
+  front: {mode: classic}      # the front block (CONTRACTS.md); mode classic is the only layout
+  start:                   # the Overview's first screen: one bar, three findings and one protein, drawn from the statistics
+    share: {analysis: disorder, classes: [disordered, disorder_boundary, ordered], labels: {disordered: in disordered regions (IDRs), disorder_boundary: next to an IDR, ordered: in ordered regions}}
+    findings: [{analysis: disorder, class: disordered}, {analysis: motif, class: proline_directed}, {analysis: structure_context, class: domain_folded}]
+    protein: SEC16
+  overview:
+    random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end (open: true opens it; enabled: false leaves it out)
+  tabs:                    # the top tabs' words (the addresses #idrs and #method stay)
+    idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of phosphorylated proteins, and the phosphosites in them."}
+    method: {label: Methods, hint: "How each question was tested, every test, the controls, the sources and how to cite."}
   partners: {species: 4932}         # STRING files budding yeast under taxon 4932 (UniProt's proteome is strain S288c, 559292)
+  sites: {columns: [structure_context]}
+  search:
+    patterns: {at: pattern, near: window, span: 15}   # the sequence windows the selection's logo is drawn from
+  protein:
+    facts: [{analysis: idr, classes: [idr]}]
+    conservation:          # orthologs from Ensembl Compara's fungal set (UniProt names the gene under EnsemblFungi)
+      reference: S. cerevisiae
+      ensembl: {rest: "https://rest.ensembl.org", xref: EnsemblFungi, source: saccharomyces_cerevisiae, compara: fungi}
+      species:             # every species a set below can name (all in the fungal Compara set)
+        - {id: candida_glabrata, label: C. glabrata}
+        - {id: candida_albicans, label: C. albicans}
+        - {id: candida_parapsilosis, label: C. parapsilosis}
+        - {id: yarrowia_lipolytica, label: Y. lipolytica}
+        - {id: schizosaccharomyces_pombe, label: S. pombe}
+        - {id: neurospora_crassa, label: N. crassa}
+        - {id: ustilago_maydis, label: U. maydis}
+        - {id: cryptococcus_neoformans, label: C. neoformans}
+      presets:             # the reader's choice, remembered in the browser
+        - {id: saccharomycetes, label: Saccharomycetes, species: [candida_glabrata, candida_albicans, candida_parapsilosis, yarrowia_lipolytica],
+           note: "budding-yeast relatives: almost every site aligns"}
+        - {id: fungi, label: Fungi, species: [candida_glabrata, candida_albicans, yarrowia_lipolytica, schizosaccharomyces_pombe, neurospora_crassa, ustilago_maydis, cryptococcus_neoformans],
+           note: "from budding yeasts to molds and basidiomycetes"}
+      default: fungi
+      logo: true
