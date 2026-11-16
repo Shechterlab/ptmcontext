@@ -1100,9 +1100,12 @@
               p.ds
                 ? `${esc(p.value)} across the dataset${p.mine ? '; found here' : ''}`
                 : p.found
-                  ? (p.genes ? esc(and(p.genes.slice(0, 6))) + (p.genes.length > 6 ? ' and more' : '') + ': ' : '') +
-                    'found here by ' +
-                    and(p.cells.map(([aid]) => esc(DS(aid).name)))
+                  ? (p.genes
+                      ? `found here \u00B7 ${esc(p.maps)}: ` +
+                        esc(and(p.genes.slice(0, 6))) +
+                        (p.genes.length > 6 ? ' and more' : '') +
+                        ', by '
+                      : 'found here by ') + and(p.cells.map(([aid]) => esc(DS(aid).name)))
                   : esc(p.value.toLowerCase())
             }`
           ) + ` data-cell-zpart="${esc(k)}"`
@@ -1170,7 +1173,8 @@
                 m = p.maps && !p.selected ? '\u00A0·\u00A0' + p.maps : '';
               const wt = isPv(p) ? 700 : 400;
               if (!v || K.tw(v + m, 13, wt) * 1.2 <= room) return [it, null];
-              const ls = K.wrap(v, room / 1.2, 13, wt);
+              // a selection's share ("3 of 4 proteins") stays in the wrapped value
+              const ls = K.wrap(p.genes ? v + ' · ' + p.maps : v, room / 1.2, 13, wt);
               return [it, ls.length > 3 ? [ls[0], ls[1], K.fit(ls.slice(2).join(' '), room, 13, wt, 1.2)] : ls];
             })
           ),

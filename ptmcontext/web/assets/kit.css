@@ -2422,6 +2422,31 @@ body.has-selection .tabs {
   background: var(--c);
   vertical-align: 0.15em;
 }
+.state-pill .sp-dot {
+  display: none;
+}
+/* compact rows: a small coloured dot and short text instead of the full pill */
+html[data-density='compact'] .stbl .state-pill {
+  background: none;
+  color: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+html[data-density='compact'] .stbl .state-pill .sp-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.3rem;
+  border-radius: 50%;
+  background: var(--c);
+  vertical-align: 0.02em;
+}
+html[data-density='compact'] .stbl .state-pill .sp-x {
+  display: none;
+}
 .stbl tr.faded td {
   opacity: 0.4;
 }

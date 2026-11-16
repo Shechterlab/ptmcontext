@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Where in the cell, for a small selection of proteins: each compartment says "Found here · k of n proteins" (also in the hover).
+- Header logos: the letters are drawn with a middle weight between the thin and the favicon letters.
+- The citation titles of the four sites say they are part of PTMcontext.
+- Protein page Sites table, compact rows: the methylation state shows as a small coloured dot with short text; the full pill stays in the comfortable view and the site card.
 - SVG exports: the two lines of a wrapped label no longer touch; the test line under a row of a forest tile no longer sits on the grid lines; the network's cluster names, protein names and links, the diagram of IDR states and the cell figure's value lines no longer overlap.
 - Logos: the header marks of the four sites and the landing page are drawn with finer lines, a thicker lens ring and a tapered, rounded handle, and the landing mark's dots are larger, staggered in two rows (one per card, up to six). The favicon keeps the bold drawing: new `website.favicon` (and `favicon` in the landing config) name it; without it the logo is used.
 - The brand is written PTMcontext (landing title, brand line, page description).

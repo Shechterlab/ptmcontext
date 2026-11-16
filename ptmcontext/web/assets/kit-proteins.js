@@ -300,11 +300,14 @@
     Object.keys(SPECS).filter((n) => !(SPECS[n].present && detailOf(n)) && (attrVal(m, n) !== '' || SPECS[n].colour));
   const pillOf = (m, k) => {
     const rc = K.map.readable(K.map.attrColour(k, attrVal(m, k)));
+    const txt = String(K.sel?.valueLabel ? K.sel.valueLabel(k, attrVal(m, k)) : attrVal(m, k)),
+      // a trailing "(Rme1)" is dropped in compact rows (the dot and the short name stay; the pill keeps it all)
+      cut = /^(.*?\S)\s+(\([^()]*\))$/.exec(txt);
     return (
       `<span class="state-pill" ` +
-      `style="--c:${rc.bg};--t:${rc.fg}" title="${esc(SPECS[k].label)}">${esc(
-        K.sel?.valueLabel ? K.sel.valueLabel(k, attrVal(m, k)) : attrVal(m, k)
-      )}</span>`
+      `style="--c:${rc.bg};--t:${rc.fg}" title="${esc(SPECS[k].label + ': ' + txt)}"><i class="sp-dot" aria-hidden="true"></i>${
+        cut ? `${esc(cut[1])}<span class="sp-x"> ${esc(cut[2])}</span>` : esc(txt)
+      }</span>`
     );
   };
   const statePill = (m) => {
