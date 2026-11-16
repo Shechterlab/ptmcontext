@@ -1865,14 +1865,56 @@
         if (n >= nmin && n <= nmax && (base === 1 || nmax / nmin < 40))
           g += `<line class="cb-grid" x1="${X(n).toFixed(1)}" x2="${X(n).toFixed(1)}" y1="${MT}" y2="${H - MB}"/><text class="cf-ax" x="${X(n).toFixed(1)}" y="${H - MB + 15}" text-anchor="middle">${int(n)}</text>`;
       }
-    const curve = (zz, sign, f = 1) => {
-      const pts = [];
-      for (let i = 0; i <= 80; i++) {
-        const n = Math.exp(Math.log(nmin) + (i / 80) * (Math.log(nmax) - Math.log(nmin)));
-        pts.push(`${X(n).toFixed(1)},${Y(clampY(pa + sign * zz * se(n, f))).toFixed(1)}`);
-      }
-      return pts.join(' ');
-    };
+    const drawn = [
+        [
+          [ML, Y(pa)],
+          [Wd - MR, Y(pa)],
+        ],
+      ], // the lines a point's name must stay clear of
+      curve = (zz, sign, f = 1) => {
+        const pts = [];
+        for (let i = 0; i <= 80; i++) {
+          const n = Math.exp(Math.log(nmin) + (i / 80) * (Math.log(nmax) - Math.log(nmin)));
+          pts.push([X(n), Y(clampY(pa + sign * zz * se(n, f)))]);
+        }
+        drawn.push(pts);
+        return pts.map((q) => `${q[0].toFixed(1)},${q[1].toFixed(1)}`).join(' ');
+      },
+      crossed = (b) =>
+        drawn.some((l) =>
+          l.some((q, i) => {
+            if (!i) return false;
+            const [x0, y0] = l[i - 1],
+              k = Math.max(1, Math.ceil(Math.hypot(q[0] - x0, q[1] - y0) / 2));
+            for (let j = 0; j <= k; j++) {
+              const x = x0 + ((q[0] - x0) * j) / k,
+                y = y0 + ((q[1] - y0) * j) / k;
+              if (x > b.x - 1 && x < b.x + b.w + 1 && y > b.y - 1 && y < b.y + b.h + 1) return true;
+            }
+            return false;
+          })
+        );
+    // the reference lines' labels at the right edge, spread to a line apart where their lines end close together
+    function refLabels() {
+      const at = (z, f) => Y(clampY(pa + z * se(nmax, f))) + 4,
+        L = [
+          [`overall ${pctText(pa)}`, Y(pa) + 4],
+          ['95% limit', at(1.96, 1)],
+          ['99.8% limit', at(3.09, 1)],
+          ...(wide > 1
+            ? [
+                ['95% × √φ', at(1.96, wide)],
+                ['99.8% × √φ', at(3.09, wide)],
+              ]
+            : []),
+        ].sort((p, q) => p[1] - q[1]),
+        gap = 15;
+      for (let i = 1; i < L.length; i++) L[i][1] = Math.max(L[i][1], L[i - 1][1] + gap);
+      const over = L[L.length - 1][1] - (H - 4);
+      if (over > 0) L.forEach((l) => (l[1] -= over));
+      for (let i = L.length - 2; i >= 0; i--) L[i][1] = Math.min(L[i][1], L[i + 1][1] - gap);
+      return L.map(([t, y]) => `<text class="cf-ax" x="${Wd - MR + 6}" y="${y.toFixed(1)}">${esc(t)}</text>`).join('');
+    }
     g +=
       `<polyline class="cf-l95" points="${curve(1.96, 1)}"/><polyline class="cf-l95" points="${curve(1.96, -1)}"/>` +
       `<polyline class="cf-l998" points="${curve(3.09, 1)}"/><polyline class="cf-l998" points="${curve(3.09, -1)}"/>` +
@@ -1881,13 +1923,7 @@
           `<polyline class="cf-w998" points="${curve(3.09, 1, wide)}"/><polyline class="cf-w998" points="${curve(3.09, -1, wide)}"/>`
         : '') +
       `<line class="cf-ref" x1="${ML}" x2="${Wd - MR}" y1="${Y(pa).toFixed(1)}" y2="${Y(pa).toFixed(1)}"/>` +
-      `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(pa) + 4).toFixed(1)}">overall ${esc(pctText(pa))}</text>` +
-      `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 1.96 * se(nmax))) + 4).toFixed(1)}">95% limit</text>` +
-      `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 3.09 * se(nmax))) + 4).toFixed(1)}">99.8% limit</text>` +
-      (wide > 1
-        ? `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 3.09 * se(nmax, wide))) + 4).toFixed(1)}">99.8% × √φ</text>` +
-          `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 1.96 * se(nmax, wide))) + 4).toFixed(1)}">95% × √φ</text>`
-        : '');
+      refLabels();
     // points, the most different first, each named where there is room
     const placed = [],
       hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h,
@@ -1907,7 +1943,12 @@
           ];
         for (const c of cand) {
           const box = { x: c.x, y: c.y, w, h: 13 };
-          if (box.x < ML - 30 || box.x + w > Wd - MR + 4 || placed.some((o, i) => i >= pts.length && hit(box, o)))
+          if (
+            box.x < ML - 30 ||
+            box.x + w > Wd - MR + 4 ||
+            placed.some((o, i) => i >= pts.length && hit(box, o)) ||
+            crossed(box)
+          )
             continue;
           if (placed.slice(0, pts.length).some((o) => hit(box, o) && Math.hypot(o.x + 6 - q.x, o.y + 6 - q.y) > 1))
             continue;
