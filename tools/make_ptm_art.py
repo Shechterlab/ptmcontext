@@ -278,26 +278,43 @@ LOGOS = {  # site -> (band colour, accent, glyph, title)
 }
 
 
-def logo(band: str, glass: str, inner: str, title: str) -> str:
+def logo(band: str, glass: str, inner: str, title: str, fine: bool = False) -> str:
+    """fine: the header's drawing (thin lines); else the bold favicon, which must read at 16 to 32 px."""
+    ring, edge = ('4.2', '1') if fine else ('6', '1.5')
+    if fine:  # a tapered, rounded handle
+        handle = '<path d="M44.9,42.1L59.1,54.9L54.9,59.1L42.1,44.9Z" fill="#f8fafc" stroke="#f8fafc" stroke-width="2" stroke-linejoin="round"/>'
+    else:
+        handle = '<path d="M44,44L57,57" stroke="#f8fafc" stroke-width="9" stroke-linecap="round"/>'
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="{title}">'
         f'<rect width="64" height="64" rx="14" fill="{band}"/>'
-        '<rect x=".75" y=".75" width="62.5" height="62.5" rx="13.5" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="1.5"/>'
+        f'<rect x=".75" y=".75" width="62.5" height="62.5" rx="13.5" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="{edge}"/>'
         f'<circle cx="29" cy="29" r="20" fill="{glass}"/>'
-        '<circle cx="29" cy="29" r="20" fill="none" stroke="#f8fafc" stroke-width="6"/>'
-        '<path d="M44,44L57,57" stroke="#f8fafc" stroke-width="9" stroke-linecap="round"/>'
+        f'<circle cx="29" cy="29" r="20" fill="none" stroke="#f8fafc" stroke-width="{ring}"/>'
+        f'{handle}'
         f'{inner}</svg>\n'
     )
 
 
 def write_logos():
-    for site, (band, accent, g, title) in LOGOS.items():
-        inner = f'<path transform="translate(29 29) scale(.8) translate(-29 -29)" d="{GLYPH[g]}" fill="none" stroke="#f8fafc" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'
-        (ART / f'{site}_logo.svg').write_text(logo(band, accent, inner, title))
-    dots = ''.join(
-        f'<circle cx="{x}" cy="29" r="4.3" fill="{c}"/>' for x, c in ((19, '#fb923c'), (29, '#fbbf24'), (39, '#22d3ee'))
-    )
-    (ART / 'ptmcontext_logo.svg').write_text(logo('#1e293b', '#334155', dots, 'Human protein modification sites'))
+    for fine, name in ((True, 'logo'), (False, 'favicon')):
+        for site, (band, accent, g, title) in LOGOS.items():
+            w = '2.6' if fine else '6'
+            inner = f'<path transform="translate(29 29) scale(.8) translate(-29 -29)" d="{GLYPH[g]}" fill="none" stroke="#f8fafc" stroke-width="{w}" stroke-linecap="round" stroke-linejoin="round"/>'
+            (ART / f'{site}_{name}.svg').write_text(logo(band, accent, inner, title, fine))
+        # the landing mark's dots (refilled from the cards by the build): staggered, as large as the lens allows
+        r, pts = (7.2, ((22.7, 24.5), (35.3, 24.5), (29, 35.4))) if fine else (6.6, ((23.2, 25), (34.8, 25), (29, 35)))
+        dots = (
+            '<g id="dots" stroke="#f8fafc" stroke-width="1.2">'
+            + ''.join(
+                f'<circle cx="{x}" cy="{y}" r="{r}" fill="{c}"/>'
+                for (x, y), c in zip(pts, ('#fb923c', '#fbbf24', '#22d3ee'))
+            )
+            + '</g>'
+        )
+        (ART / f'ptmcontext_{name}.svg').write_text(
+            logo('#1e293b', '#334155', dots, 'Human protein modification sites', fine)
+        )
 
 
 def main(argv):

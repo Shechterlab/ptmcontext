@@ -1893,7 +1893,7 @@
         : '') +
       `<div class="rp-acts">${d.f ? btn('sel', `Show these ${esc(d.noun)}`) : ''}${
         d.ov ? btn('ov', 'Compare sets with…') : ''
-      }${btn('open', 'Open question')}</div>`;
+      }${btn('open', 'Details')}</div>`;
     document.body.append(el);
     const r = row.getBoundingClientRect(),
       h = el.offsetHeight,

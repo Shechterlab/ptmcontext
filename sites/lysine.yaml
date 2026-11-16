@@ -454,7 +454,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: condensate_role
     test: protein_sets
     new: true
-    title: Roles in condensates
+    title: Driver or client in condensates
     question: "Are proteins with modified lysines more often drivers of condensates than clients or other members (CD-CODE)?"
     sub: "Proteins by their role in CD-CODE 2.3 condensates (human, not synthetic): driver, client, regulator, member or unknown, a protein in the role of every membership that lists it. Each role's proteins against the other proteins in these condensates (one-sided hypergeometric test). This export lists drivers, members and unknown roles only"
     section: Location, chromatin and condensates
@@ -1166,6 +1166,7 @@ website:                  # the look and words of the website (ptmc web); layout
   accent: "#4d7c0f"                 # the lime rule, active tab and links (5.0:1 on white)
   accent_dark: "#bef264"
   logo: sites/art/lysine_logo.svg
+  favicon: sites/art/lysine_favicon.svg
   switcher: {label: PTM}            # the site switcher reads "PTM: <site> ▾"
   art: sites/art/lysine-hero.svg
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
@@ -1211,7 +1212,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
-          - {analysis: condensate_role, title: Roles in condensates}
+          - {analysis: condensate_role, title: Driver or client in condensates}
       - name: Where in the protein
         about: "Where in the protein the modified lysines are: sequence motifs, folded or disordered parts, domains, the charge of disordered regions."
         cards:

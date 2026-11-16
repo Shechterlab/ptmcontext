@@ -1,12 +1,21 @@
 ## Unreleased
 
 - SVG exports: the two lines of a wrapped label no longer touch; the test line under a row of a forest tile no longer sits on the grid lines; the network's cluster names, protein names and links, the diagram of IDR states and the cell figure's value lines no longer overlap.
+- Logos: the header marks of the four sites and the landing page are drawn with finer lines, a thicker lens ring and a tapered, rounded handle, and the landing mark's dots are larger, staggered in two rows (one per card, up to six). The favicon keeps the bold drawing: new `website.favicon` (and `favicon` in the landing config) name it; without it the logo is used.
+- The brand is written PTMcontext (landing title, brand line, page description).
+
+- Logos: the header marks of the four sites and the landing page are drawn with finer lines, and the landing mark's dots are larger, staggered in two rows (one per card, up to six). The favicon keeps the bold drawing: new `website.favicon` (and `favicon` in the landing config) name it; without it the logo is used.
+
+- A test checks that every PTM_Pipeline file the Pages build reads is also checked out by each CI test job.
+
 - CI: the unit-test job checks out the STRING and Complex Portal tables the network needs; the Overview's "all tests" link goes straight to Methods → Every test instead of the retired #statistics address.
 
 - Protein page: "Across all" in Protein classes and pathways draws each question as the Overview's forest-plot tile (the protein's own sets, highlighted, with fold, interval and the test within abundance deciles), and questions where the protein is in no set are one line; the sites table opens in compact rows (one line each), with the toggle offering the wrapped view.
 - Network links show where they come from: STRING physical links (solid; split into an experiments and a curated-databases type, the second lighter, when the table has those score columns), Complex Portal complexes (thick, tinted) and an optional STRING functional layer (dashed, faint, off by default, left out when its table is missing). The key has a checkbox for each type and a sample line drawn as the links are; hovering a link names its sources, channel scores and complexes. The address lists the types by name (`sources=string_physical`), defaults omitted. YAML: `channels`, `name`, `style`, `default`, `optional` and `kind: functional` in `website.network.edges`.
 - Network: colour by enzyme role (`kind: role` in `color_by`): writer, eraser, reader, more than one, none, from the site's own `website.search.partners.classes`.
 - Network: the area of a node follows its number of sites (up to 41 sites, then capped), with a size key; the exported PDF, SVG and PNG carry the size, link-type and colour keys.
+- Plain names: the result pop-up's "Open question" button is now "Details" (same as the tile's link); the "Roles in condensates" tile is "Driver or client in condensates", so it no longer reads like the Biomolecular condensates tile.
+
 - Overview: a selection too small to test draws where its own proteins are found in the cell and nucleus (the protein page's card, one protein or several, with no statistics), not the whole dataset's tested maps; the "Showing the whole dataset" line no longer counts the cell.
 - Figure PDF and PNG: text is set in the site's own fonts (Inter, IBM Plex Mono for sequences), embedded, loaded only when a file is made; text that would run past the page edge is shrunk or moved in; Screen is listed before Paper, and file names no longer end in the print width.
 - The full header (title, search) shows at the top of every page, not only the Overview, so scrolling back up looks the same everywhere. `website.header.compact: true` restores the slim band off the Overview.

@@ -602,13 +602,13 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
     background: other human proteins in CD-CODE condensates (export of 2026-03-18)
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
-  # Roles in condensates: CD-CODE 2.3 gives each membership its roles (driver, client, regulator, member, or unknown; a
+  # Driver or client in condensates: CD-CODE 2.3 gives each membership its roles (driver, client, regulator, member, or unknown; a
   # membership may have several). A protein is in a role's set when it has that role in any human condensate; each set is
   # tested against the other proteins of the human condensates. Not in the release
   - id: condensate_role
     test: protein_sets
     new: true
-    title: Roles in condensates
+    title: Driver or client in condensates
     question: "Are methylated proteins more often drivers of condensates than clients or other members (CD-CODE)?"
     sub: "Proteins by their role in CD-CODE 2.3 condensates (human, not synthetic): driver, client, regulator, member or unknown, a protein in the role of every membership that lists it. Each role's proteins against the other proteins in these condensates (one-sided hypergeometric test). This export lists drivers, members and unknown roles only"
     section: Protein classes and pathways
@@ -1437,6 +1437,7 @@ website:                  # the look and words of the website (ptmc web); layout
   accent: "#c2410c"                 # the orange rule, active tab and links; shared by the lab's sites
   accent_dark: "#fb923c"
   logo: sites/art/methylarginine_logo.svg
+  favicon: sites/art/methylarginine_favicon.svg
   switcher: {label: PTM}            # the site switcher reads "PTM: <site> ▾"
   art: sites/art/methylarginine-hero.svg
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
@@ -1520,7 +1521,7 @@ website:                  # the look and words of the website (ptmc web); layout
       disease_term: "DisGeNET terms"
       condensate_proteome: "Condensates"
       condensate: "Condensates, among condensates"
-      condensate_role: "Roles in condensates"
+      condensate_role: "Driver or client in condensates"
       go_binding: "RNA/DNA binding (GO)"
       binding_protein: "RNA/DNA binding in cells"
       reactome_top_level: "Reactome, top level"
@@ -1632,7 +1633,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
-          - {analysis: condensate_role, title: Roles in condensates}
+          - {analysis: condensate_role, title: Driver or client in condensates}
       - name: Where in the protein
         about: "Where in the protein the methylated arginines are: motifs, folded or disordered parts, domains."
         cards:
