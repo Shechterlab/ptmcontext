@@ -312,7 +312,7 @@
       'Charge',
       'sequence',
       'Net charge along the chain: a 5-residue sliding mean on the EMBOSS charge scale ' +
-        '(K, R +1; H +0.5; D, E −1), positive up (blue), negative down (red)',
+        '(K, R +1; H +0.5; D, E −1), positive up (blue), negative down (red); the axis runs from −0.5 to +0.5, and a dot marks a mean beyond it',
     ],
     [
       'hydropathy',
@@ -2221,7 +2221,8 @@
         const h = 34,
           mid = c.y + h / 2,
           isC = id === 'charge',
-          scale = isC ? 1 : 3,
+          scale = isC ? 0.5 : 3, // the charge axis is ±0.5: 95% of rolling means of the site's proteins lie inside it
+          clipped = [],
           cu = isC ? P.chargeP : P.hydroP,
           cd = isC ? P.chargeN : P.hydroN;
         const sm = isC
@@ -2239,15 +2240,16 @@
         for (let i = za; i <= zb; i += step) {
           const c = Math.max(-scale, Math.min(scale, sm[i - 1])) / scale,
             xx = r1(X(i));
+          if (isC && Math.abs(sm[i - 1]) > scale) clipped.push([xx, mid - Math.sign(c) * (h / 2)]);
           up += ` L${xx},${r1(mid - (Math.max(0, c) * h) / 2)}`;
           dn += ` L${xx},${r1(mid - (Math.min(0, c) * h) / 2)}`;
         }
         up += ` L${r1(X(zb))},${mid} Z`;
         dn += ` L${r1(X(zb))},${mid} Z`;
         parts.push(
-          `<rect x="${X0}" y="${c.y}" width="${X1 - X0}" height="${h}" fill="none" stroke="${P.line}" stroke-width="0.4" data-track="${id}"/>` +
-            `<line x1="${X0}" x2="${X1}" y1="${mid}" y2="${mid}" stroke="${P.line}" stroke-width="0.6"/>` +
-            `<path d="${up}" fill="${cu}" opacity="0.75"/><path d="${dn}" fill="${cd}" opacity="0.75"/>`
+          `<line x1="${X0}" x2="${X1}" y1="${mid}" y2="${mid}" stroke="${P.line}" stroke-width="0.6"/>` +
+            `<path d="${up}" fill="${cu}" opacity="0.75"/><path d="${dn}" fill="${cd}" opacity="0.75"/>` +
+            clipped.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.2" fill="${P.muted}"/>`).join('')
         );
         parts.push(
           `<text x="${X1 + 2}" y="${c.y + 5}" font-size="8.5" fill="${P.muted}">+${scale}</text><text x="${X1 + 2}" y="${c.y + h}" font-size="8.5" ` +
