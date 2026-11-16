@@ -1,6 +1,7 @@
 /* The network view (website.network): one network of the site's proteins (the selection's, when there is one), grouped
    into clusters and each cluster named by its most enriched term.
-     nodes     proteins with sites; the area of a node follows the number of sites. By default the top N by site count;
+     nodes     proteins with sites; the area of a node follows the sites per 100 of the protein's own candidate residues (or their
+               number, the reader's choice). By default the top N by site count;
                isolated ones are dropped.
      edges     the sources the site file lists (a scored table such as STRING physical links, curated complexes), each with
                a switch. Links inside a cluster are drawn in its colour; links between two clusters are one bundle per
@@ -13,8 +14,9 @@
      layout    each cluster laid out on its own links, the clusters packed apart (kit-netlayout.js, the twin of
                web/netlayout.py: the default view is laid out when the site is built, any other in the browser, in a Web
                Worker when it is large). A phone gets its own, narrower layout with numbered badges and a list.
-     colour    by cluster (default) or by any "colour by" the site file lists (a share of the protein's sites, or the commonest
-               value among them); the cluster outlines and names stay.
+     colour    by cluster (default) or by any "colour by" the site file lists (a share of the protein's sites, the commonest
+               value among them, the abundance decile, RNA or DNA binding); the cluster outlines and names stay.
+     outline   a ring on the proteins with an enzyme or reader role, one style per role, with any colour (on by default).
    The default network is precomputed (data/network.json); a selection or another option makes it again in the browser from
    data/network_full.json, both read when the view is opened. Hover a protein or a cluster to light what it is joined to;
    a click opens the protein page. The table view (cluster, term, q, proteins) is the same network without the figure. SVG,
@@ -27,7 +29,9 @@
   if (!NC || !K.netcore || !K.netlayout) return;
   const OPT = NC.options,
     SRC = NC.sources,
-    CB = NC.color_by || [];
+    CB = NC.color_by || [],
+    OUT = NC.outline || null,
+    SZ = NC.size || { default: 'density', unit: 0.4 };
   const TITLE = NC.title || 'Network';
   const EG = String(D.site?.placeholders?.highlight || '').split(/[,\s]+/)[0];
   const NCOL = 8;
@@ -47,7 +51,16 @@
   };
   const seqStep = (v) => Math.max(0, Math.min(4, Math.floor(v * 5)));
   const seqHex = (v, mode) => RAMP[mode][seqStep(v)];
+  // the abundance deciles: ten steps between the ends of that ramp (the lightest step, low, to the darkest, high), so that a
+  // decile of the key and of the figure is the same colour in either mode
+  const decT = (d) => Math.max(0, Math.min(1, (d - 1) / 9));
+  const decVar = (d) => `color-mix(in srgb, var(--fig-seq-5) ${Math.round(decT(d) * 100)}%, var(--fig-seq-1))`;
+  const decHex = (d) => mixHex(RAMP.light[0], RAMP.light[4], decT(d));
   const catVar = (k) => `var(--nw-${k + 1})`;
+  // RNA, DNA and both take slots 1, 2 and 7 (blue, orange, violet): the three slots furthest apart for every vision (checked
+  // with the style guide's palette validator, both modes)
+  const BIND_SLOT = [0, 1, 6];
+  const slotOf = (kind, v) => (kind === 'binding' ? BIND_SLOT[v] : v);
   // ---- link types: one per source, drawn by the source's style (dashed or not, width, opacity, tint; the site file sets them) ----
   const ST = SRC.map((s) => ({ dash: false, width: 1, opacity: 1, tint: false, rank: 0, ...(s.style || {}) }));
   const OFF = SRC.map((s, i) => (s.off ? -1 : i)).filter((i) => i >= 0);
@@ -93,6 +106,8 @@
     colour: 'cluster',
     label: 0,
     clusters: OPT.clusters || null,
+    size: SZ.default === 'sites' ? 'sites' : 'density', // the node size: sites per 100 candidate residues, or the number of sites
+    outline: !!OUT, // the ring of the enzyme and reader roles
   };
   const KEY = 'ptmc-network:' + (D.site?.id || '');
   const UI = {
@@ -118,7 +133,11 @@
   };
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || '{}');
-    ['score', 'top', 'minc', 'src', 'colour', 'label', 'clusters'].forEach((k) => s[k] !== undefined && (UI[k] = s[k]));
+    ['score', 'top', 'minc', 'src', 'colour', 'label', 'clusters', 'size', 'outline'].forEach(
+      (k) => s[k] !== undefined && (UI[k] = s[k])
+    );
+    if (UI.size !== 'sites' && UI.size !== 'density') UI.size = DEF.size;
+    UI.outline = !!OUT && UI.outline !== false;
     UI.src = (Array.isArray(UI.src) ? UI.src : []).filter((i) => Number.isInteger(i) && i >= 0 && i < SRC.length);
     if (!UI.src.length) UI.src = DEF.src.slice();
     if (!OPT.steps.includes(UI.score)) UI.score = DEF.score;
@@ -140,6 +159,8 @@
           colour: UI.colour,
           label: UI.label,
           clusters: UI.clusters,
+          size: UI.size,
+          outline: UI.outline,
         })
       );
     } catch (e) {
@@ -153,6 +174,7 @@
     UI.colour === 'cluster' &&
     UI.label === DEF.label &&
     UI.clusters === DEF.clusters &&
+    UI.size === DEF.size &&
     !UI.nb &&
     !UI.nb &&
     UI.src.join() === DEF.src.join();
@@ -194,6 +216,12 @@
       });
     return null;
   };
+  // sites per 100 of the protein's own candidate residues; the units a node is drawn by (the layout's radius follows their
+  // square root, as it follows the sites): the number of sites, or the density times the site file's unit (netlayout twin:
+  // web/network.py size_units)
+  const density = (sites, cand) => (100 * sites) / Math.max(cand, sites, 1);
+  const sizeUnits = (sites, cand) =>
+    UI.size === 'sites' ? sites : Math.round(Math.max(0.9, SZ.unit * density(sites, cand)) * 1000) / 1000;
   // ---- the model: nodes with their cluster, edges, labels ---------------------------------------------------------------
   const maxShown = () => Math.max(OPT.max_shown || NCOL, UI.clusters || 0);
   const optNow = () => ({
@@ -216,6 +244,7 @@
       UI.clusters,
       UI.clusters ? UI.minc : 0,
       UI.colour === 'cluster' ? 0 : 1,
+      UI.size,
       UI.nb ? UI.pins.join() : '',
       sel ? K.sel.describe() : '',
     ]);
@@ -226,7 +255,18 @@
       if (!v) return { wait: 'network' };
       if (v.error) return { error: v.error };
       M = {
-        nodes: v.nodes.map((a, i) => ({ acc: a, gene: v.gene[i], sites: v.sites[i], c: v.comm[i], g: -1 })),
+        nodes: v.nodes.map((a, i) => ({
+          acc: a,
+          gene: v.gene[i],
+          sites: v.sites[i],
+          cand: v.cand?.[i] ?? 0,
+          sz: v.size ? v.size[i] : v.sites[i],
+          dec: v.dec ? v.dec[i] : null,
+          bd: v.bind ? v.bind[i] : null,
+          rl: v.role ? v.role[i] : -1,
+          c: v.comm[i],
+          g: -1,
+        })),
         edges: v.edges,
         labels: v.labels,
         layout: v.layout,
@@ -250,8 +290,21 @@
         [...pick].forEach((g) => K.netcore.partnersOf(f, g, UI.score, UI.src).forEach((x) => pick.add(x)));
       }
       const v = K.netcore.makeView(f, UI.nb || seeds ? { ...optNow(), top: 1e9 } : optNow(), pick, UI.src);
+      const dsp = (f.color || []).find((c) => c.kind === 'decile'),
+        bsp = (f.color || []).find((c) => c.kind === 'binding');
       M = {
-        nodes: v.nodes.map((g, i) => ({ acc: f.acc[g], gene: f.gene[g], sites: f.sites[g], c: v.comm[i], g })),
+        nodes: v.nodes.map((g, i) => ({
+          acc: f.acc[g],
+          gene: f.gene[g],
+          sites: f.sites[g],
+          cand: f.cand ? f.cand[g] : 0,
+          sz: sizeUnits(f.sites[g], f.cand ? f.cand[g] : 0),
+          dec: dsp ? dsp.v[g] : null,
+          bd: bsp ? bsp.v[g] : null,
+          rl: f.outline ? f.outline.v[g] : -1,
+          c: v.comm[i],
+          g,
+        })),
         edges: v.edges,
         labels: v.labels,
         full: f,
@@ -320,19 +373,41 @@
       return s < 0 ? other : ex ? CAT.light[s] : catVar(s);
     }
     const v = sp.v[nd.g];
+    if (sp.kind === 'decile') return v == null ? other : ex ? decHex(v) : decVar(v);
     if (sp.kind === 'sequential') {
       if (v == null) return other;
       if (ex) return seqHex(v, 'light');
       return `var(--fig-seq-${seqStep(v) + 1})`;
     }
-    return v < 0 || v >= NCOL ? other : ex ? CAT.light[v] : catVar(v);
+    return v < 0 || v >= NCOL ? other : ex ? CAT.light[slotOf(sp.kind, v)] : catVar(slotOf(sp.kind, v));
   }
   const clusterFill = (x, ex) =>
     x.slot < 0 ? (ex ? OTHER.light : 'var(--nw-other)') : ex ? CAT.light[x.slot] : catVar(x.slot);
+  // ---- the outline: a ring outside the node, one style per role (solid, dashed, dotted; a protein of several roles has two
+  // thin rings), in ink, so that it holds with any colour and without colour
+  const RING = [
+    { dash: '', w: 1.3 },
+    { dash: '3 2', w: 1.3 },
+    { dash: '0.1 2.6', w: 1.7, round: true },
+  ];
+  const ringStyle = (v, ink, w = 1) => {
+    const s = RING[Math.min(v, RING.length - 1)];
+    return ` fill="none" stroke="${ink}" stroke-width="${(s.w * w).toFixed(2)}"${s.dash ? ` stroke-dasharray="${s.dash}"` : ''}${s.round ? ' stroke-linecap="round"' : ''}`;
+  };
+  // how far outside a node the pin and hover rings lie: clear of its role ring
+  const pinGap = (nd) => (!UI.outline || !OUT || nd.rl == null || nd.rl < 0 ? 2.5 : nd.rl >= RING.length ? 7 : 5.3);
+  // v: the role's number in the outline's categories (-1: none); a value past the three styles is "more than one"
+  function roleRing(v, x, y, r, ink) {
+    if (!UI.outline || !OUT || v == null || v < 0) return '';
+    const c = `cx="${x.toFixed(1)}" cy="${y.toFixed(1)}"`;
+    return v >= RING.length
+      ? `<circle class="nw-ring" ${c} r="${(r + 2.2).toFixed(1)}"${ringStyle(0, ink, 0.7)}/><circle class="nw-ring" ${c} r="${(r + 4.4).toFixed(1)}"${ringStyle(0, ink, 0.7)}/>`
+      : `<circle class="nw-ring" ${c} r="${(r + 2.6).toFixed(1)}"${ringStyle(v, ink)}/>`;
+  }
   // ---- the layout of the model: precomputed for the default view, else made here (in a worker when large) ---------------
   const viewOf = (M) => ({
     gene: M.nodes.map((n) => n.gene),
-    sites: M.nodes.map((n) => n.sites),
+    sites: M.nodes.map((n) => n.sz),
     comm: M.nodes.map((n) => n.c),
     edges: M.edges,
     labels: M.labels,
@@ -411,9 +486,9 @@
       );
     });
     pinSet.forEach((i) => {
-      const rr = K.netlayout.radius(M.nodes[i].sites, k * rs);
+      const rr = K.netlayout.radius(M.nodes[i].sz, k * rs);
       top.push(
-        `<circle cx="${f1(L.pos[i][0])}" cy="${f1(L.pos[i][1])}" r="${f1(rr + 2.5)}" fill="none" stroke="${ink}" stroke-width="1.5"/>`
+        `<circle cx="${f1(L.pos[i][0])}" cy="${f1(L.pos[i][1])}" r="${f1(rr + pinGap(M.nodes[i]))}" fill="none" stroke="${ink}" stroke-width="1.5"/>`
       );
     });
     return { x: x.join(''), top: top.join('') };
@@ -479,7 +554,7 @@
       muted = ex ? EX.light.muted : 'var(--muted)',
       bg = ex ? '#ffffff' : 'var(--surface)',
       edgeX = ex ? EX.light.edge : 'var(--nw-edge-x)';
-    const r = (i) => K.netlayout.radius(M.nodes[i].sites, k * rs);
+    const r = (i) => K.netlayout.radius(M.nodes[i].sz, k * rs);
     const P = L.pos,
       f1 = (v) => v.toFixed(1);
     const out = [];
@@ -595,7 +670,9 @@
           found.has(i) || pinSet.has(i)
             ? ` stroke="${ink}" stroke-width="2.4"`
             : ` stroke="${bg}" stroke-width="${phone ? 1 : 1.4}"`,
-        dot = `<circle class="nw-dot" cx="${f1(p[0])}" cy="${f1(p[1])}" r="${r(i).toFixed(1)}" fill="${fillOf(M, CL, i, ex)}"${ring}/>`;
+        dot =
+          `<circle class="nw-dot" cx="${f1(p[0])}" cy="${f1(p[1])}" r="${r(i).toFixed(1)}" fill="${fillOf(M, CL, i, ex)}"${ring}/>` +
+          roleRing(nd.rl, p[0], p[1], r(i), ink);
       if (ex || mini) out.push(`<g${dim(i) ? ' opacity="0.18"' : ''}>${dot}</g>`);
       else
         out.push(
@@ -751,11 +828,17 @@
     return { svg: out.join(''), w: L.w, h: L.h };
   }
   // ---- the key and, on a phone, the list of clusters ------------------------------------------------------------------------
-  // the size key: circles of 1, 10 and 40 or more sites (area follows the sites; the largest is the cap), bottom-aligned
-  const KEY_SITES = [1, 10, 40],
-    SIZE_LABEL = '1 \u00b7 10 \u00b7 40+';
+  // the size key: circles of 1, 10 and 40 or more sites, or of 5, 25 and 100 sites per 100 candidate residues (area follows the
+  // number; the largest is the cap), bottom-aligned
+  const sizeKeyOf = () =>
+    UI.size === 'sites'
+      ? { units: [1, 10, 40], label: `${W.marks}: 1 \u00b7 10 \u00b7 40+` }
+      : {
+          units: [5, 25, 100].map((d) => SZ.unit * d),
+          label: `${W.marks} per 100 ${W.residues}: 5 \u00b7 25 \u00b7 100`,
+        };
   const sizeKey = (k) => {
-    const rs = KEY_SITES.map((s) => K.netlayout.radius(s, k)),
+    const rs = sizeKeyOf().units.map((s) => K.netlayout.radius(s, k)),
       h = 2 * rs[2] + 2;
     let x = 1;
     return `<svg width="${(rs.reduce((t, r) => t + 2 * r + 5, 0) - 4).toFixed(0)}" height="${h.toFixed(0)}" aria-hidden="true">${rs
@@ -784,16 +867,22 @@
       }
     ).join('')}</span>`;
   }
+  // the outline's key entries: [category number, name] (the roles, and "more than one" when a protein has several)
+  const ringCats = () => (OUT?.cats || []).map((c, v) => [v, c]);
   function keyHtml(M, CL, L, sum) {
     const sp = colourSpec(M),
       sw = (col) => `<i class="nw-sw" style="background:${col}"></i>`,
       phone = L && L.variant === 'phone';
     const bits = [
-      `<span class="nw-kg">${sizeKey(phone ? 0.6 : 1)}<span>${esc(W.marks)}: ${SIZE_LABEL}</span></span>`,
+      `<span class="nw-kg">${sizeKey(phone ? 0.6 : 1)}<span>${esc(sizeKeyOf().label)}</span></span>`,
       linkKeyHtml(),
       `<span class="nw-kg"><svg width="26" height="12" aria-hidden="true"><line x1="3" y1="6" x2="23" y2="6" stroke="var(--nw-edge-x)" stroke-opacity="0.35" stroke-width="6" stroke-linecap="round"/></svg><span>Links between clusters</span></span>`,
     ];
-    if (sp && sp.kind === 'sequential')
+    if (sp && sp.kind === 'decile')
+      bits.push(
+        `<span class="nw-kg"><span class="nw-sub">${esc(sp.name)}</span><span class="nw-sub">1 (lowest)</span><span class="nw-seq" aria-hidden="true">${Array.from({ length: sp.n || 10 }, (_, n) => `<i style="background:${decVar(n + 1)}"></i>`).join('')}</span><span class="nw-sub">${sp.n || 10} (highest)</span><span class="nw-kg">${sw('var(--nw-other)')}No value</span></span>`
+      );
+    else if (sp && sp.kind === 'sequential')
       bits.push(
         `<span class="nw-kg"><span class="nw-sub">${esc(sp.name)}</span><span class="nw-sub">0%</span><span class="nw-seq" aria-hidden="true">${[1, 2, 3, 4, 5].map((n) => `<i style="background:var(--fig-seq-${n})"></i>`).join('')}</span><span class="nw-sub">100%</span><span class="nw-kg">${sw('var(--nw-other)')}No value</span></span>`
       );
@@ -801,9 +890,18 @@
       const meta = NC.color_by.find((c) => c.id === sp.id) || sp,
         cats = meta.cats || sp.cats || [];
       bits.push(
-        `<span class="nw-kg"><span class="nw-sub">${esc(sp.name)}</span>${cats.map((c, n) => `<span class="nw-kg">${sw(c === 'Other' ? 'var(--nw-other)' : catVar(n))}${esc(c)}</span>`).join('')}<span class="nw-kg">${sw('var(--nw-other)')}${esc(meta.none_label || 'No value')}</span></span>`
+        `<span class="nw-kg"><span class="nw-sub">${esc(sp.name)}</span>${cats.map((c, n) => `<span class="nw-kg">${sw(c === 'Other' ? 'var(--nw-other)' : catVar(slotOf(sp.kind, n)))}${esc(c)}</span>`).join('')}<span class="nw-kg">${sw('var(--nw-other)')}${esc(meta.none_label || 'No value')}</span></span>`
       );
     }
+    if (UI.outline && OUT)
+      bits.push(
+        `<span class="nw-kg"><span class="nw-sub">Outline: ${esc(OUT.name)}</span>${ringCats()
+          .map(
+            ([v, c]) =>
+              `<span class="nw-kg"><svg width="22" height="18" aria-hidden="true"><circle cx="11" cy="9" r="3.4" fill="var(--nw-other)"/>${roleRing(v, 11, 9, 3.4, 'var(--ink)')}</svg>${esc(c)}</span>`
+          )
+          .join('')}</span>`
+      );
     return `<div class="nw-key" aria-label="Key"><span class="nw-sum" role="status">${sum}</span>${topSelect()}${bits.join('')}</div>`;
   }
   // a phone names the clusters in a list under the figure: badge, short name, proteins; a tap lights the cluster, a second zooms
@@ -861,7 +959,7 @@
       L = NC.labels[UI.label] || NC.labels[0] || {},
       lab = L.label || 'the annotation';
     const bits = [
-      `Nodes: the ${int(OPT.top)} proteins with the most ${W.marks} (or the selected proteins), sized by their number of ${W.marks}; proteins with no link among them are left out.`,
+      `Nodes: the ${int(OPT.top)} proteins with the most ${W.marks} (or the selected proteins), sized by ${UI.size === 'sites' ? `their number of ${W.marks}` : `their ${W.marks} per 100 ${W.residues} of the protein`}; proteins with no link among them are left out.`,
       p
         ? `Links: two proteins are joined when ${famOf(p)} scores them ${OPT.min_score / 1000} or more${g.length ? ` or ${g.map((x) => x.label).join(' and ')} puts them in one group (groups over ${int(g[0].max_size)} proteins are left out)` : ''}${fx.length ? `; ${fx.map((x) => x.label).join(' and ')} (dashed, faint) can be added from the key` : ''}.`
         : `Links: two proteins are joined when they share a group in ${sourceNames()}.`,
@@ -882,13 +980,14 @@
     );
   };
   // ---- the page -----------------------------------------------------------------------------------------------------------------
+  const cap1 = (s) => String(s).charAt(0).toUpperCase() + String(s).slice(1);
   const sel = (id, label, opts, val) =>
     `<label class="nw-f"><span>${esc(label)}</span><select data-nw="${id}">${opts
       .map(([v, t]) => `<option value="${esc(v)}"${String(v) === String(val) ? ' selected' : ''}>${esc(t)}</option>`)
       .join('')}</select></label>`;
   const claimOf = (n) => String(NC.claim || `The proteins with ${W.marks} form {n} clusters`).replace('{n}', n);
   // every control by id; the site file's `controls` lists the ones in the main row, the rest are under "More options"
-  const CONTROL_ORDER = ['clusters', 'colour', 'find', 'label', 'score', 'minc', 'sources', 'claim'];
+  const CONTROL_ORDER = ['clusters', 'colour', 'size', 'outline', 'find', 'label', 'score', 'minc', 'sources', 'claim'];
   const controls = (CL) => {
     const counts = [];
     for (let v = CR[0]; v <= CR[1]; v += Math.max(1, CR[2])) counts.push([v, v]);
@@ -904,6 +1003,28 @@
           : '',
       clusters: () => sel('clusters', 'Clusters', [['auto', 'Auto'], ...counts], UI.clusters || 'auto'),
       colour: () => sel('colour', 'Colour by', [['cluster', 'Cluster'], ...CB.map((c) => [c.id, c.name])], UI.colour),
+      size: () =>
+        sel(
+          'size',
+          'Node size',
+          [
+            ['density', `${cap1(W.marks)} per 100 ${W.residues}`],
+            ['sites', `Number of ${W.marks}`],
+          ],
+          UI.size
+        ),
+      outline: () =>
+        OUT
+          ? sel(
+              'outline',
+              'Outline',
+              [
+                ['role', OUT.name],
+                ['none', 'None'],
+              ],
+              UI.outline ? 'role' : 'none'
+            )
+          : '',
       score: () =>
         SRC.some((s) => s.kind === 'pairs')
           ? sel(
@@ -1043,6 +1164,7 @@
     f.color.forEach((sp) => {
       const v = sp.v[gi],
         meta = NC.color_by.find((x) => x.id === sp.id) || sp;
+      if (sp.kind === 'decile' || sp.kind === 'binding') return; // always on the card (cardLines)
       if (v == null || (sp.kind !== 'sequential' && v < 0)) return;
       out.push(
         `${meta.name}: ${sp.kind === 'sequential' ? Math.round(v * 100) + '%' : (meta.cats || sp.cats || [])[v] || ''}`
@@ -1063,6 +1185,17 @@
       m: nd.acc,
     });
     lines.push({ b: int(nd.sites), t: ` ${plural(nd.sites, W.mark, W.marks)}` });
+    if (nd.cand > 0)
+      lines.push({
+        b: density(nd.sites, nd.cand).toFixed(1),
+        t: ` ${W.marks} per 100 ${W.residues}`,
+        m: `${int(nd.sites)} of ${int(nd.cand)}`,
+      });
+    const dsp = CB.find((c) => c.kind === 'decile'),
+      bsp = CB.find((c) => c.kind === 'binding');
+    if (dsp) lines.push({ t: nd.dec == null ? `${dsp.name}: no value` : `${dsp.name}: ${nd.dec} of ${dsp.n || 10}` });
+    if (bsp) lines.push({ t: `${bsp.name}: ${(bsp.cats || [])[nd.bd] || bsp.none_label || 'none'}` });
+    if (OUT && nd.rl >= 0) lines.push({ t: `${OUT.name}: ${(OUT.cats || [])[nd.rl] || ''}` });
     lines.push({
       t: `${int(M.deg[i])} ${plural(M.deg[i], 'partner', 'partners')} (${int(inC)} in cluster, ${int(out)} outside)`,
     });
@@ -1296,7 +1429,7 @@
   // the key rows an export shares (whole network and pinned): the size circles, one row per link type in use (drawn as the links
   // are) and the colour-by values; keyItem(width, drawing, label) places a row. rk: the scale the nodes are drawn at.
   function exportSizeKey(keyItem, FX, rk) {
-    const rs = KEY_SITES.map((v) => K.netlayout.radius(v, rk));
+    const rs = sizeKeyOf().units.map((v) => K.netlayout.radius(v, rk));
     keyItem(
       rs.reduce((a, r) => a + 2 * r + 4, 0),
       rs
@@ -1305,7 +1438,7 @@
           return `<circle cx="${cx.toFixed(1)}" cy="${(rs[2] - r).toFixed(1)}" r="${r.toFixed(1)}" fill="none" stroke="${FX.muted}" stroke-width="0.75"/>`;
         })
         .join(''),
-      `${W.marks}: ${SIZE_LABEL} (area follows the number)`,
+      `${sizeKeyOf().label} (area follows the number)`,
       Math.max(0, rs[2] - 8)
     );
   }
@@ -1320,8 +1453,28 @@
       );
     });
   }
+  function exportOutlineKey(keyItem, FX) {
+    if (!UI.outline || !OUT) return;
+    keyItem(0, '', `Outline, ${OUT.name}:`);
+    ringCats().forEach(([v, c]) =>
+      keyItem(18, `<circle cx="9" cy="0" r="3.4" fill="${OTHER.light}"/>${roleRing(v, 9, 0, 3.4, FX.ink)}`, c)
+    );
+  }
   function exportColourKey(keyItem, FX, sp) {
     if (!sp) return;
+    if (sp.kind === 'decile') {
+      const n = sp.n || 10;
+      keyItem(
+        n * 11,
+        Array.from(
+          { length: n },
+          (_, k) => `<rect x="${k * 11}" y="-5" width="10" height="10" fill="${decHex(k + 1)}"/>`
+        ).join(''),
+        `${sp.name}: 1 (lowest) to ${n} (highest)`
+      );
+      keyItem(10, `<circle cx="5" cy="0" r="4.5" fill="${OTHER.light}"/>`, 'No value');
+      return;
+    }
     if (sp.kind === 'sequential') {
       keyItem(
         5 * 11,
@@ -1334,7 +1487,11 @@
     const meta = NC.color_by.find((c) => c.id === sp.id) || sp;
     keyItem(0, '', `${sp.name}:`);
     (meta.cats || sp.cats || []).forEach((c, k) =>
-      keyItem(10, `<circle cx="5" cy="0" r="4.5" fill="${c === 'Other' ? OTHER.light : CAT.light[k]}"/>`, c)
+      keyItem(
+        10,
+        `<circle cx="5" cy="0" r="4.5" fill="${c === 'Other' ? OTHER.light : CAT.light[slotOf(sp.kind, k)]}"/>`,
+        c
+      )
     );
     keyItem(10, `<circle cx="5" cy="0" r="4.5" fill="${OTHER.light}"/>`, meta.none_label || 'No value');
   }
@@ -1375,7 +1532,7 @@
     const top = K.sel?.active() ? 'The selected proteins' : `The ${int(UI.top)} proteins with the most ${W.marks}`,
       p = SRC.find((x) => x.kind === 'pairs'),
       g = SRC.filter((x, i) => x.kind !== 'pairs' && UI.src.includes(i)),
-      sub = `${top}, joined by ${p ? `${famOf(p)} (score ${UI.score / 1000} or more)` : sourceNames()}${g.length ? ` and ${g.map((x) => x.label).join(' and ')}` : ''}; the area of a node follows its number of ${W.marks}.`;
+      sub = `${top}, joined by ${p ? `${famOf(p)} (score ${UI.score / 1000} or more)` : sourceNames()}${g.length ? ` and ${g.map((x) => x.label).join(' and ')}` : ''}; the area of a node follows ${UI.size === 'sites' ? `its number of ${W.marks}` : `its ${W.marks} per 100 ${W.residues} of the protein`}.`;
     y += 4;
     wrapT(sub, Z.sub, 400).forEach((t) => {
       y += Z.sub * 1.3;
@@ -1415,6 +1572,7 @@
       'Links between clusters (width: how many)'
     );
     exportColourKey(keyItem, FX, sp);
+    exportOutlineKey(keyItem, FX);
     y += 10;
     const bodyY = y;
     parts.push(`<g transform="translate(${P},${bodyY}) scale(${s.toFixed(5)})">${fig.svg}</g>`);
@@ -1453,7 +1611,7 @@
       maxH = paper ? 520 : 580;
     const pos = K.netlayout.positions(view, 'desktop', UI.minc, maxShown());
     const comm = M.nodes.map((n) => n.c),
-      sites = M.nodes.map((n) => n.sites);
+      sites = M.nodes.map((n) => n.sz);
     const cropOf = (L, s) => {
       if (mode === 'view' && curL && L.pos[0] && curL.pos[0]) {
         // the window on screen, moved by what the new layout shifted (every protein by the same amount)
@@ -1507,8 +1665,8 @@
     const p = SRC.find((x) => x.kind === 'pairs'),
       g = SRC.filter((x, i) => x.kind !== 'pairs' && UI.src.includes(i)),
       sub = !pinIdx.length
-        ? `${K.sel?.active() ? 'The selected proteins' : `The ${int(UI.top)} proteins with the most ${W.marks}`}, joined by ${p ? `${famOf(p)} (score ${UI.score / 1000} or more)` : sourceNames()}${g.length ? ` and ${g.map((x) => x.label).join(' and ')}` : ''}, as shown on screen; the area of a node follows its number of ${W.marks}.`
-        : `The pinned ${plural(pinIdx.length, 'protein', 'proteins')}, the proteins joined to ${pinIdx.length === 1 ? 'it' : 'them'} by ${p ? `${famOf(p)} (score ${UI.score / 1000} or more)` : sourceNames()}${g.length ? ` or ${g.map((x) => x.label).join(' or ')}` : ''}, and the clusters they belong to; the area of a node follows its number of ${W.marks}.`;
+        ? `${K.sel?.active() ? 'The selected proteins' : `The ${int(UI.top)} proteins with the most ${W.marks}`}, joined by ${p ? `${famOf(p)} (score ${UI.score / 1000} or more)` : sourceNames()}${g.length ? ` and ${g.map((x) => x.label).join(' and ')}` : ''}, as shown on screen; the area of a node follows ${UI.size === 'sites' ? `its number of ${W.marks}` : `its ${W.marks} per 100 ${W.residues} of the protein`}.`
+        : `The pinned ${plural(pinIdx.length, 'protein', 'proteins')}, the proteins joined to ${pinIdx.length === 1 ? 'it' : 'them'} by ${p ? `${famOf(p)} (score ${UI.score / 1000} or more)` : sourceNames()}${g.length ? ` or ${g.map((x) => x.label).join(' or ')}` : ''}, and the clusters they belong to; the area of a node follows ${UI.size === 'sites' ? `its number of ${W.marks}` : `its ${W.marks} per 100 ${W.residues} of the protein`}.`;
     y += 4;
     wrapW(Wd - 2 * P, sub, Z.sub, 400).forEach((l) => {
       y += Z.sub * 1.3;
@@ -1553,6 +1711,7 @@
     exportSizeKey(keyItem, FX, Math.min(2, Math.max(1, 0.9 / s)) * s);
     exportLinkKey(keyItem);
     exportColourKey(keyItem, FX, colourSpec(M));
+    exportOutlineKey(keyItem, FX);
     y += 10;
     const bodyY = y,
       figX = P + (Fw - figW) / 2;
@@ -1627,7 +1786,7 @@
         l = K.netlayout.litBox(
           curL,
           M.nodes.map((n) => n.c),
-          M.nodes.map((n) => n.sites),
+          M.nodes.map((n) => n.sz),
           lit.nodes,
           lit.clusters,
           24
@@ -1664,6 +1823,10 @@
         nd.gene,
         nd.acc,
         nd.sites,
+        nd.cand > 0 ? density(nd.sites, nd.cand).toFixed(2) : '',
+        nd.dec == null ? '' : nd.dec,
+        nd.bd == null || nd.bd < 0 ? '' : (CB.find((c) => c.kind === 'binding')?.cats || [])[nd.bd],
+        OUT && nd.rl >= 0 ? (OUT.cats || [])[nd.rl] : '',
         M.deg[i],
         inC,
         M.deg[i] - inC,
@@ -1689,6 +1852,10 @@
         'gene',
         'accession',
         'sites',
+        'sites_per_100_candidates',
+        'abundance_decile',
+        'nucleic_acid_binding',
+        'enzyme_role',
         'partners_in_network',
         'partners_in_cluster',
         'partners_outside',
@@ -1770,11 +1937,11 @@
         )
         .join('');
     if (kind === 'n') {
-      const rr = K.netlayout.radius(M.nodes[id].sites, k),
+      const rr = K.netlayout.radius(M.nodes[id].sz, k),
         named = L.glabels.some((g) => g.i === id) || PIN.has(id);
       svg.querySelector('.nw-top').innerHTML =
         OVL.top +
-        `<circle cx="${f1(L.pos[id][0])}" cy="${f1(L.pos[id][1])}" r="${f1(rr + 2.5)}" fill="none" stroke="var(--ink)" stroke-width="1.5"/>` +
+        `<circle cx="${f1(L.pos[id][0])}" cy="${f1(L.pos[id][1])}" r="${f1(rr + pinGap(M.nodes[id]))}" fill="none" stroke="var(--ink)" stroke-width="1.5"/>` +
         (named
           ? ''
           : `<text x="${f1(L.pos[id][0])}" y="${f1(L.pos[id][1] - rr - 5)}" font-size="${L.gfs + 1}" font-weight="650" fill="var(--ink)" text-anchor="middle" paint-order="stroke" stroke="var(--surface)" stroke-width="3" stroke-linejoin="round">${esc(M.nodes[id].gene)}</text>`);
@@ -1867,7 +2034,11 @@
     const k = t.dataset?.nw;
     if (!k) return;
     if (k === 'colour') UI.colour = t.value;
-    else if (k === 'label') UI.label = +t.value;
+    else if (k === 'size') UI.size = t.value === 'sites' ? 'sites' : 'density';
+    else if (k === 'outline') {
+      UI.outline = t.value !== 'none';
+      return again();
+    } else if (k === 'label') UI.label = +t.value;
     else if (k === 'clusters') UI.clusters = t.value === 'auto' ? null : +t.value;
     else if (k === 'xf') {
       UI.xf = t.value;
@@ -1884,7 +2055,8 @@
     UI.hi = -1;
     UI.zc = -1;
     UI.fz = false;
-    if (UI.colour !== 'cluster' || UI.label !== DEF.label || UI.clusters !== DEF.clusters) load('full');
+    if (UI.colour !== 'cluster' || UI.label !== DEF.label || UI.clusters !== DEF.clusters || UI.size !== DEF.size)
+      load('full');
     again();
   });
   document.addEventListener('input', (e) => {
@@ -1968,7 +2140,7 @@
       b = K.netlayout.litBox(
         curL,
         M.nodes.map((n) => n.c),
-        M.nodes.map((n) => n.sites),
+        M.nodes.map((n) => n.sz),
         lit.nodes,
         lit.clusters,
         14
@@ -2114,7 +2286,7 @@
           .slice(0, 8);
       svg.querySelector('.nw-top').innerHTML = ids
         .map((i) => {
-          const rr = K.netlayout.radius(M.nodes[i].sites, curL.k);
+          const rr = K.netlayout.radius(M.nodes[i].sz, curL.k);
           return `<text class="nw-zl" x="${(curL.pos[i][0] + rr + 1).toFixed(1)}" y="${(curL.pos[i][1] + 2).toFixed(1)}" font-size="${(curL.gfs * 0.62).toFixed(1)}" font-weight="600" fill="var(--ink)" paint-order="stroke" stroke="var(--surface)" stroke-width="1.6" stroke-linejoin="round">${esc(M.nodes[i].gene)}</text>`;
         })
         .join('');
@@ -2137,7 +2309,7 @@
   // minsize= the smallest cluster, view=table, zoom= (and nf=, the genes to find, which the page keeps for the main
   // search). Only what differs from the site's defaults is written, and not while this page draws its own links.
   // The shorter names of earlier links (nk, nc, ns, nt, nx, nl, nm, nv, nz) are still read.
-  const PARAMS = ['clusters', 'colour', 'score', 'top', 'sources', 'names', 'minsize', 'view'];
+  const PARAMS = ['clusters', 'colour', 'size', 'outline', 'score', 'top', 'sources', 'names', 'minsize', 'view'];
   const accOk = (a) => /^[A-Z0-9][A-Z0-9-]{3,19}$/.test(a);
   const LEGACY = {
     nk: 'clusters',
@@ -2174,6 +2346,8 @@
           clusters:
             p.has('clusters') && +g('clusters') >= CR[0] && +g('clusters') <= CR[1] ? +g('clusters') : DEF.clusters,
           colour: p.has('colour') && CB.some((c) => c.id === g('colour')) ? g('colour') : 'cluster',
+          size: g('size') === 'sites' || g('size') === 'density' ? g('size') : DEF.size,
+          outline: !!OUT && g('outline') !== 'none',
           score: OPT.steps.includes(n('score', -1)) ? n('score', DEF.score) : DEF.score,
           top: n('top', DEF.top) >= 20 && n('top', DEF.top) <= 1000 ? n('top', DEF.top) : DEF.top,
           src: p.has('sources')
@@ -2197,7 +2371,13 @@
       if (Object.keys(next).some((k) => JSON.stringify(next[k]) !== JSON.stringify(UI[k]))) {
         Object.assign(UI, next);
         cache = { key: '', M: null };
-        if (UI.colour !== 'cluster' || UI.label !== DEF.label || UI.clusters !== DEF.clusters || UI.top !== DEF.top)
+        if (
+          UI.colour !== 'cluster' ||
+          UI.label !== DEF.label ||
+          UI.clusters !== DEF.clusters ||
+          UI.top !== DEF.top ||
+          UI.size !== DEF.size
+        )
           load('full');
       }
     }
@@ -2207,6 +2387,8 @@
     if (UI.pins.length) p.set('p', UI.pins.join());
     if (UI.clusters !== DEF.clusters && UI.clusters) p.set('clusters', UI.clusters);
     if (UI.colour !== 'cluster') p.set('colour', UI.colour);
+    if (UI.size !== DEF.size) p.set('size', UI.size);
+    if (OUT && !UI.outline) p.set('outline', 'none');
     if (UI.score !== DEF.score) p.set('score', UI.score);
     const top = UI.topWas ?? UI.top;
     if (top !== DEF.top) p.set('top', top);
@@ -2341,7 +2523,7 @@
       sl = K.netcore.previewSlice(view, i);
     const sub = {
       gene: sl.nodes.map((g) => j.gene[g]),
-      sites: sl.nodes.map((g) => j.sites[g]),
+      sites: sl.nodes.map((g) => (j.size || j.sites)[g]),
       comm: sl.nodes.map(() => 0),
       edges: sl.edges,
       labels: [j.labels[c]],
@@ -2363,7 +2545,15 @@
       term = j.labels[c].term,
       sn = K.netlayout.shortName(term);
     const MM = {
-        nodes: sl.nodes.map((g) => ({ acc: j.nodes[g], gene: j.gene[g], sites: j.sites[g], c: 0, g: -1 })),
+        nodes: sl.nodes.map((g) => ({
+          acc: j.nodes[g],
+          gene: j.gene[g],
+          sites: j.sites[g],
+          sz: (j.size || j.sites)[g],
+          rl: j.role ? j.role[g] : -1,
+          c: 0,
+          g: -1,
+        })),
         edges: sl.edges,
         labels: [j.labels[c]],
       },

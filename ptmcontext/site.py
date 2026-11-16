@@ -633,11 +633,17 @@ def network_problems(site: dict) -> list[str]:
     if len(ids) != len(set(ids)) or 'cluster' in ids:
         out.append('website.network: color_by ids must be distinct and not "cluster"')
     classes = ((((site.get('website') or {}).get('search') or {}).get('partners') or {}).get('classes')) or {}
+    if (cfg.get('outline') or {}).get('kind') == 'role' and not any(
+        isinstance(k, dict) and k.get('role') for k in classes.values()
+    ):
+        out.append('website.network outline: kind role needs website.search.partners.classes with roles')
+    done = {a.get('id') for a in site.get('analyses') or [] if isinstance(a, dict)}
     for c in cfg.get('color_by', []):
-        if c.get('kind') == 'role' and not any(isinstance(k, dict) and k.get('role') for k in classes.values()):
-            out.append(
-                f'website.network color_by {c.get("id")!r}: kind role needs website.search.partners.classes with roles'
-            )
+        refs = [c.get('analysis')] if c.get('kind') == 'decile' else []
+        refs += [r.get('analysis') for side in ('rna', 'dna') for r in c.get(side) or []]
+        for a in refs:
+            if a not in done:
+                out.append(f'website.network color_by {c.get("id")!r}: no analysis {a!r}')
     sec = (cfg.get('tile') or {}).get('section')
     names = {x.get('name') for x in ((site.get('website') or {}).get('overview') or {}).get('sections', [])}
     if sec and sec not in names:
