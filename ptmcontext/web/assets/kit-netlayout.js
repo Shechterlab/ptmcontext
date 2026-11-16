@@ -621,7 +621,7 @@
       const glabels = [];
       for (const i of want) {
         const t = gene[i],
-          w = textW(t, gfs) * 1.06,
+          w = textW(t, gfs) * 1.18,
           h = gfs * 1.3,
           cx = xy[i][0],
           cy = xy[i][1],

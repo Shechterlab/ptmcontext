@@ -587,7 +587,7 @@ def finish(view, pos, variant='desktop', fs=None, gfs=None):
     glabels = []
     for i in want:
         t = gene[i]
-        w, h = text_w(t, gfs) * 1.06, gfs * 1.3
+        w, h = text_w(t, gfs) * 1.18, gfs * 1.3
         cx, cy, rr = xy[i][0], xy[i][1], r[i] + 2.5
         cands = [
             (cx + rr, cy - h / 2, 'start'),
