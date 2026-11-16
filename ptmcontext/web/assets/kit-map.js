@@ -2245,7 +2245,8 @@
         up += ` L${r1(X(zb))},${mid} Z`;
         dn += ` L${r1(X(zb))},${mid} Z`;
         parts.push(
-          `<line x1="${X0}" x2="${X1}" y1="${mid}" y2="${mid}" stroke="${P.line}" stroke-width="0.6"/>` +
+          `<rect x="${X0}" y="${c.y}" width="${X1 - X0}" height="${h}" fill="none" stroke="${P.line}" stroke-width="0.4" data-track="${id}"/>` +
+            `<line x1="${X0}" x2="${X1}" y1="${mid}" y2="${mid}" stroke="${P.line}" stroke-width="0.6"/>` +
             `<path d="${up}" fill="${cu}" opacity="0.75"/><path d="${dn}" fill="${cd}" opacity="0.75"/>`
         );
         parts.push(

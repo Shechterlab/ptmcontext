@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Protein map: the charge and hydropathy tracks are drawn in an outlined box of the same height, so both plots are always the same height on screen and in exports.
+- Exports (PDF, SVG, PNG) carry the full address of the page they came from, with its view, filters, protein and section, in the credit lines; in the PDF it is a clickable link. The printed page foot has the address with its hash too.
 - SVG exports: a protein-map row label that wraps onto two lines gets proper line spacing and its row more room; the regions figure's share and count labels no longer meet; the cell funnel's point names keep off the tick labels, and its gridlines are cut where a name stands.
 - CI: a newer push cancels the test run still going for an older commit on the same branch or pull request.
 
