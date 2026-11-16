@@ -280,14 +280,18 @@ LOGOS = {  # site -> (band colour, accent, glyph, title)
 
 def logo(band: str, glass: str, inner: str, title: str, fine: bool = False) -> str:
     """fine: the header's drawing (thin lines); else the bold favicon, which must read at 16 to 32 px."""
-    ring, handle, edge = ('2.4', '3.4', '1') if fine else ('6', '9', '1.5')
+    ring, edge = ('4.2', '1') if fine else ('6', '1.5')
+    if fine:  # a tapered, rounded handle
+        handle = '<path d="M44.9,42.1L59.1,54.9L54.9,59.1L42.1,44.9Z" fill="#f8fafc" stroke="#f8fafc" stroke-width="2" stroke-linejoin="round"/>'
+    else:
+        handle = '<path d="M44,44L57,57" stroke="#f8fafc" stroke-width="9" stroke-linecap="round"/>'
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="{title}">'
         f'<rect width="64" height="64" rx="14" fill="{band}"/>'
         f'<rect x=".75" y=".75" width="62.5" height="62.5" rx="13.5" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="{edge}"/>'
         f'<circle cx="29" cy="29" r="20" fill="{glass}"/>'
         f'<circle cx="29" cy="29" r="20" fill="none" stroke="#f8fafc" stroke-width="{ring}"/>'
-        f'<path d="M44,44L57,57" stroke="#f8fafc" stroke-width="{handle}" stroke-linecap="round"/>'
+        f'{handle}'
         f'{inner}</svg>\n'
     )
 
