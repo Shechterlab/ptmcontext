@@ -516,7 +516,7 @@ def finish(view, pos, variant='desktop', fs=None, gfs=None):
             k_t = labels[c].get('k') if full else None
             cnt = f'{k_t} of {size[c]} proteins' if k_t is not None else f'{size[c]} proteins'
             w = max(max(text_w(s, fs, 600) for s in lines) + 14, text_w(cnt, fs - 1.5) + 14)
-            h = fs * 1.25 * len(lines) + (fs - 1.5) * 1.3
+            h = fs * 1.32 * len(lines) + (fs - 1.5) * 1.3
         else:  # a numbered badge: the list under the figure names the clusters
             lines, cnt = [str(ci + 1)], ''
             w = h = fs * 1.7
@@ -587,7 +587,7 @@ def finish(view, pos, variant='desktop', fs=None, gfs=None):
     glabels = []
     for i in want:
         t = gene[i]
-        w, h = text_w(t, gfs), gfs * 1.15
+        w, h = text_w(t, gfs) * 1.06, gfs * 1.3
         cx, cy, rr = xy[i][0], xy[i][1], r[i] + 2.5
         cands = [
             (cx + rr, cy - h / 2, 'start'),

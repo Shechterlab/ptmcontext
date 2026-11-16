@@ -498,17 +498,58 @@
       return !b || (b[0] >= crop.x && b[1] >= crop.y && b[2] <= crop.x + crop.w && b[3] <= crop.y + crop.h);
     };
     // bundles: one curve per pair of clusters with many links
+    // (in an export the curve is left out under a name, so that no line runs through a text, as a converter draws the halo
+    // of a text apart from the text itself)
+    // (the boxes are known once every name is placed, so the curves of an export are written after the names)
+    const nameBoxes = [],
+      bundleSlots = [];
+    const bundleD = (pa, q, pb, w) => {
+      const at = (t) => [
+          (1 - t) ** 2 * pa[0] + 2 * (1 - t) * t * q[0] + t * t * pb[0],
+          (1 - t) ** 2 * pa[1] + 2 * (1 - t) * t * q[1] + t * t * pb[1],
+        ],
+        pad = w / 2 + 3,
+        inside = (t) => {
+          const [x, y] = at(t);
+          return nameBoxes.some((bx) => x > bx[0] - pad && x < bx[2] + pad && y > bx[1] - pad && y < bx[3] + pad);
+        };
+      if (!nameBoxes.length) return `M${f1(pa[0])} ${f1(pa[1])}Q${f1(q[0])} ${f1(q[1])} ${f1(pb[0])} ${f1(pb[1])}`;
+      const N = 120,
+        runs = [];
+      let from = null;
+      for (let i = 0; i <= N; i++) {
+        const free = !inside(i / N);
+        if (free && from === null) from = i;
+        if ((!free || i === N) && from !== null) {
+          runs.push([from / N, (free ? i : i - 1) / N]);
+          from = null;
+        }
+      }
+      return runs
+        .filter(([t0, t1]) => t1 > t0)
+        .map(([t0, t1]) => {
+          // the piece of the curve between t0 and t1, again a quadratic
+          const a = at(t0),
+            e = at(t1),
+            dx = 2 * ((1 - t0) * (q[0] - pa[0]) + t0 * (pb[0] - q[0])),
+            dy = 2 * ((1 - t0) * (q[1] - pa[1]) + t0 * (pb[1] - q[1])),
+            k = (t1 - t0) / 2;
+          return `M${f1(a[0])} ${f1(a[1])}Q${f1(a[0] + dx * k)} ${f1(a[1] + dy * k)} ${f1(e[0])} ${f1(e[1])}`;
+        })
+        .join('');
+    };
     out.push('<g class="nw-bundles">');
     L.bundles.forEach((b) => {
       if (!vis(b.a) || !vis(b.b)) return;
       const [pa, q, pb] = b.p,
         w = Math.min(9, 1.2 + 0.95 * Math.sqrt(b.n)) * (phone ? 0.6 : 1);
-      out.push(
-        `<path class="nw-bd" data-ba="${b.a}" data-bb="${b.b}" d="M${f1(pa[0])} ${f1(pa[1])}Q${f1(q[0])} ${f1(q[1])} ${f1(pb[0])} ${f1(pb[1])}" fill="none" stroke="${edgeX}" ` +
-          `stroke-width="${w.toFixed(1)}" stroke-linecap="round" ` +
-          (ex ? `stroke-opacity="${EX.light.bundle}"` : 'style="stroke-opacity:var(--nw-bundle)"') +
-          `${lit ? ' opacity="0.15"' : ''}/>`
-      );
+      const path = () =>
+        `<path class="nw-bd" data-ba="${b.a}" data-bb="${b.b}" d="${bundleD(pa, q, pb, w)}" fill="none" stroke="${edgeX}" ` +
+        `stroke-width="${w.toFixed(1)}" stroke-linecap="round" ` +
+        (ex ? `stroke-opacity="${EX.light.bundle}"` : 'style="stroke-opacity:var(--nw-bundle)"') +
+        `${lit ? ' opacity="0.15"' : ''}/>`;
+      if (ex) bundleSlots.push([out.push('') - 1, path]);
+      else out.push(path());
     });
     out.push('</g><g class="nw-hulls">');
     // outlines: a flat wash in the cluster's colour, no stroke
@@ -597,8 +638,8 @@
             : '') +
           `<rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(x1 - x0)}" height="${f1(y1 - y0)}" fill="transparent"/>` +
           `<circle cx="${f1(x0 + 4)}" cy="${f1(y0 + fs * 0.62)}" r="4" fill="${clusterFill(x, ex)}"/>` +
-          l.lines.map((s, n) => text(x0 + 12, y0 + fs * (1 + 1.22 * n) - 2, fs, 650, ink, s)).join('') +
-          text(x0 + 12, y0 + fs * (1 + 1.22 * l.lines.length) + 0.5, fs - 1.5, 450, muted, l.count, '', 3) +
+          l.lines.map((s, n) => text(x0 + 12, y0 + fs * (1 + 1.32 * n) - 2, fs, 650, ink, s)).join('') +
+          text(x0 + 12, y0 + fs * (1 + 1.32 * l.lines.length) + 0.5, fs - 1.5, 450, muted, l.count, '', 3) +
           '</g>'
       );
     });
@@ -687,6 +728,10 @@
         const ax = ok[2] === 'end' ? ok[0] + w : ok[2] === 'start' ? ok[0] : ok[0] + w / 2;
         out.push(text(ax, ok[1] + h - gfs * 0.25, gfs, 650, ink, M.nodes[i].gene, `text-anchor="${ok[2]}"`, 3));
       });
+    if (ex) {
+      nameBoxes.push(...taken.filter((bx) => bx.every((v) => isFinite(v))));
+      bundleSlots.forEach(([k, path]) => (out[k] = path()));
+    }
     if (L.shelf && !crop)
       out.push(
         text(

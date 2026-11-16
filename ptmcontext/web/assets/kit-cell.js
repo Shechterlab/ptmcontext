@@ -1175,18 +1175,19 @@
             })
           ),
           wide = list.some((it) => vals.get(it)),
+          // the lines of a value run below its label: the last label stands that much higher
+          more = 14 * (Math.max(1, ...list.map((it) => vals.get(it)?.length || 1)) - 1),
           // labels of two-line values still fit between the top and the bottom of the drawing
           gap = wide
             ? Math.min(
-                (list.some((it) => lines.get(it).length > 1) ? 66 : 52) +
-                  14 * (Math.max(...list.map((it) => vals.get(it)?.length || 1)) - 1),
-                (H - 56) / Math.max(1, list.length - 1)
+                (list.some((it) => lines.get(it).length > 1) ? 66 : 52) + more,
+                (H - 56 - more) / Math.max(1, list.length - 1)
               )
             : list.some((it) => lines.get(it).length > 1)
               ? 66
               : 52,
           top = 30,
-          bot = H - 26,
+          bot = H - 26 - more,
           ys = list.map((it) => it.y);
         for (let i = 0; i < ys.length; i++) ys[i] = Math.max(ys[i], i ? ys[i - 1] + gap : top);
         for (let i = ys.length - 1; i >= 0; i--) ys[i] = Math.min(ys[i], i < ys.length - 1 ? ys[i + 1] - gap : bot);

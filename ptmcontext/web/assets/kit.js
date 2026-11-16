@@ -1346,6 +1346,19 @@
     const or = valOf(r) !== t.eff || r.adj ? `OR ${fxn(t.eff)}${ci} · ` : '';
     return `${r.adj ? 'within abundance deciles: ' : ''}${or}q ${fq(t.q)}`;
   };
+  // a vertical line of an export from y0 to y1 with the stretches under a text left out (gaps: [x0, x1, y0, y1] boxes), so
+  // no text is crossed by a line whatever draws its halo
+  const vLine = (x, y0, y1, gaps, attrs) => {
+    const cuts = gaps.filter((g) => x >= g[0] && x <= g[1] && g[3] > y0 && g[2] < y1).sort((a, b) => a[2] - b[2]);
+    let out = '',
+      from = y0;
+    for (const g of cuts) {
+      if (g[2] > from) out += `<line x1="${x}" x2="${x}" y1="${from}" y2="${g[2]}" ${attrs}/>`;
+      from = Math.max(from, g[3]);
+    }
+    if (from < y1) out += `<line x1="${x}" x2="${x}" y1="${from}" y2="${y1}" ${attrs}/>`;
+    return out;
+  };
   // the counts behind a row's fold, for its hover
   const countLine = (r) => {
     if (r.a == null || !(r.a + r.b > 0)) return '';
@@ -3860,7 +3873,8 @@
         selWords(rows);
     const parts = [],
       gp = [],
-      rp = [];
+      rp = [],
+      gaps = [];
     const T = (x, y, t, o = {}, to = parts) =>
       to.push(
         `<text x="${r1(x)}" y="${r1(y)}" font-size="${o.size || 11.5}"${
@@ -3913,7 +3927,7 @@
       // its name (two lines at most), then its meaning where there is room
       let name = wrap(r.label, LW, 11.5);
       if (name.length > 2) name = [name[0], fit(name.slice(1).join(' '), LW, 11.5)];
-      const h = Math.max(sharePair(r) && !r.vs ? 30 : 22, name.length * 14 + 8),
+      const h = Math.max(sharePair(r) && !r.vs ? 30 : 22, name.length * 15 + 8),
         yc = y + h / 2;
       name.forEach((t, k) => {
         const last = k === name.length - 1,
@@ -3922,7 +3936,7 @@
           last && shortHelp(r) && room > 30
             ? `<tspan fill="${PAL.muted}" font-size="10.5"> · ${esc(fit(r.help, room, 10.5))}</tspan>`
             : '';
-        T(P, yc + 4 - (name.length - 1) * 7 + k * 14, '', { raw: esc(t) + help }, rp);
+        T(P, yc + 4 - (name.length - 1) * 7.5 + k * 15, '', { raw: esc(t) + help }, rp);
       });
       T(C1, yc + 4, `${kfmt(r.a)} / ${kfmt(r.a + r.b)}`, { size: 10.5, anchor: 'end', fill: PAL.muted }, rp);
       T(C2, yc + 4, `${kfmt(r.c)} / ${kfmt(r.c + r.d)}`, { size: 10.5, anchor: 'end', fill: PAL.muted }, rp);
@@ -3966,8 +3980,10 @@
         { size: 11, anchor: 'end', weight: strong ? 'bold' : null, fill: strong ? PAL[r.dir] : PAL.muted },
         rp
       );
-      if (sharePair(r) && !r.vs)
+      if (sharePair(r) && !r.vs) {
         T(VX, yc + 11, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted, halo: true }, rp);
+        gaps.push([VX - tw(sharePair(r), 9.5) - 2, VX + 2, yc + 1, yc + 15]);
+      }
       if (d)
         T(
           DX,
@@ -3980,9 +3996,13 @@
     });
     M.axis.ticks.forEach((t) =>
       gp.push(
-        `<line x1="${r1(X0 + t.x * (X1 - X0))}" x2="${r1(X0 + t.x * (X1 - X0))}" y1="${top}" y2="${y + 2}" stroke="${
-          M.axis.log && t.lab === '1×' ? PAL.one : PAL.line
-        }" stroke-width="${M.axis.log && t.lab === '1×' ? 1.2 : 1}"/>`
+        vLine(
+          r1(X0 + t.x * (X1 - X0)),
+          top,
+          y + 2,
+          gaps,
+          `stroke="${M.axis.log && t.lab === '1×' ? PAL.one : PAL.line}" stroke-width="${M.axis.log && t.lab === '1×' ? 1.2 : 1}"`
+        )
       )
     );
     parts.push(...gp, ...rp);
@@ -4080,9 +4100,9 @@
     let y = 0;
     shown.forEach((r) => {
       const lab = wrap(r.label, LW, 11).slice(0, 2),
-        h = Math.max(!vs ? 32 : 22, lab.length * 13 + 8),
+        h = Math.max(!vs ? 32 : 22, lab.length * 15 + 8),
         yc = y + h / 2;
-      lab.forEach((t, k) => T(P, yc + 4 - (lab.length - 1) * 6.5 + k * 13, t));
+      lab.forEach((t, k) => T(P, yc + 4 - (lab.length - 1) * 7.5 + k * 15, t));
       if (r.absent) {
         T(VX, yc + 4, '–', { anchor: 'end', fill: PAL.muted });
         y += h;
@@ -4096,9 +4116,16 @@
               `<circle cx="${X(share1(r)).toFixed(1)}" cy="${yc}" r="4.6" fill="${col}" stroke="${PAL.bg}" stroke-width="1.5"/>`)
         );
       } else {
+        const gap = [[VX - tw(testLine(r), 9.5) - 2, VX + 2, yc + 1, yc + 15]];
         sc.grid.forEach((k) =>
           parts.push(
-            `<line x1="${X(2 ** k).toFixed(1)}" x2="${X(2 ** k).toFixed(1)}" y1="${y}" y2="${y + h}" stroke="${k === 0 ? PAL.ink : PAL.one}" stroke-width="1"${k === 0 ? '' : ' stroke-dasharray="2 3"'}/>`
+            vLine(
+              X(2 ** k).toFixed(1),
+              y,
+              y + h,
+              gap,
+              `stroke="${k === 0 ? PAL.ink : PAL.one}" stroke-width="1"${k === 0 ? '' : ' stroke-dasharray="2 3"'}`
+            )
           )
         );
         if (ciOf(r))

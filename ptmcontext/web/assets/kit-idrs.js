@@ -413,7 +413,8 @@
     const line = (a, b, o = '') =>
       `<line x1="${DX(a[0]).toFixed(1)}" y1="${DY(a[1]).toFixed(1)}" x2="${DX(b[0]).toFixed(1)}" y2="${DY(b[1]).toFixed(1)}" ${o}/>`;
     [0.25, 0.5, 0.75].forEach((v) => parts.push(line([-1, v], [1, v], `stroke="${P.line}" stroke-width="0.6"`)));
-    [-0.5, 0.5].forEach((v) => parts.push(line([v, 0], [v, 1], `stroke="${P.line}" stroke-width="0.6"`)));
+    // (from above the 'not possible' note, which they would cross)
+    [-0.5, 0.5].forEach((v) => parts.push(line([v, 0.1], [v, 1], `stroke="${P.line}" stroke-width="0.6"`)));
     parts.push(
       txt(P, DX(-0.97), DY(0.06), 'not possible: net charge above charged share', { size: 9.5, fill: P.muted }),
       txt(P, DX(0.97), DY(0.06), 'not possible: net charge above charged share', {

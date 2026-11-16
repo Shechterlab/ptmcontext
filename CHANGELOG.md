@@ -1,5 +1,6 @@
 ## Unreleased
 
+- SVG exports: the two lines of a wrapped label no longer touch; the test line under a row of a forest tile no longer sits on the grid lines; the network's cluster names, protein names and links, the diagram of IDR states and the cell figure's value lines no longer overlap.
 - CI: the unit-test job checks out the STRING and Complex Portal tables the network needs; the Overview's "all tests" link goes straight to Methods → Every test instead of the retired #statistics address.
 
 - Protein page: "Across all" in Protein classes and pathways draws each question as the Overview's forest-plot tile (the protein's own sets, highlighted, with fold, interval and the test within abundance deciles), and questions where the protein is in no set are one line; the sites table opens in compact rows (one line each), with the toggle offering the wrapped view.

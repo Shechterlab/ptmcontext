@@ -526,7 +526,7 @@
           lines = wrap2(term, 22);
           cnt = full && labels[c].k != null ? `${labels[c].k} of ${size[c]} proteins` : `${size[c]} proteins`;
           w = Math.max(Math.max(...lines.map((s) => textW(s, fs, 600))) + 14, textW(cnt, fs - 1.5) + 14);
-          h = fs * 1.25 * lines.length + (fs - 1.5) * 1.3;
+          h = fs * 1.32 * lines.length + (fs - 1.5) * 1.3;
         } else {
           lines = [String(ci + 1)];
           cnt = '';
@@ -621,8 +621,8 @@
       const glabels = [];
       for (const i of want) {
         const t = gene[i],
-          w = textW(t, gfs),
-          h = gfs * 1.15,
+          w = textW(t, gfs) * 1.06,
+          h = gfs * 1.3,
           cx = xy[i][0],
           cy = xy[i][1],
           rr = r[i] + 2.5,
