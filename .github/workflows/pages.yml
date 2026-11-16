@@ -41,6 +41,21 @@ jobs:
             releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv
             releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv
             releases/v1.5.0/human_sumoylation_sites_v1.5.0.tsv
+            releases/v1.5.1/supporting/methyllysine_site_interactions_v1.5.1.tsv
+            releases/v1.5.1/supporting/methyllysine_site_interaction_records_v1.5.1.tsv
+            releases/v1.5.1/supporting/methyllysine_nucleic_acid_contacts_v1.5.1.tsv
+            releases/v1.5.1/supporting/methyllysine_nucleic_acid_near_sites_v1.5.1.tsv
+            releases/v1.5.1/supporting/methyllysine_residue_evidence_v1.5.1.tsv
+            releases/v1.5.1/supporting/lysine_site_interactions_v1.5.1.tsv
+            releases/v1.5.1/supporting/lysine_site_interaction_records_v1.5.1.tsv
+            releases/v1.5.1/supporting/lysine_nucleic_acid_contacts_v1.5.1.tsv
+            releases/v1.5.1/supporting/lysine_nucleic_acid_near_sites_v1.5.1.tsv
+            releases/v1.5.1/supporting/lysine_residue_evidence_v1.5.1.tsv
+            releases/v1.5.1/supporting/phospho_site_interactions_v1.5.1.tsv
+            releases/v1.5.1/supporting/phospho_site_interaction_records_v1.5.1.tsv
+            releases/v1.5.1/supporting/phospho_nucleic_acid_contacts_v1.5.1.tsv
+            releases/v1.5.1/supporting/phospho_nucleic_acid_near_sites_v1.5.1.tsv
+            releases/v1.5.1/supporting/phospho_residue_evidence_v1.5.1.tsv
             inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv
             inputs/annotation/interpro_108.0_domain_intervals.tsv
             inputs/annotation/interpro_108.0_all_entry_intervals.tsv
