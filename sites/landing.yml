@@ -1,9 +1,9 @@
 # The landing page of `ptmc pages` (read from beside the first site file, or --landing FILE): the page's own words and
 # the cards of sites not built yet. Each built site's card comes from its site file (website.name, band, accent, art,
 # landing.tagline / question / cta, stats) and its build (the numbers, the strongest result). CONTRACTS.md, "The landing page".
-title: PTMContext
+title: PTMcontext
 lede: Analysis tools for protein post-translational modifications
-description: "PTMContext: analysis tools for protein post-translational modifications."
+description: "PTMcontext: analysis tools for protein post-translational modifications."
 logo: sites/art/ptmcontext_logo.svg
 favicon: sites/art/ptmcontext_favicon.svg   # the bolder mark for the tab icon
 logo_dots: cards           # the mark's dots: one per card, in its band colour
