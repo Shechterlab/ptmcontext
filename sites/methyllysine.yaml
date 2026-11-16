@@ -405,13 +405,13 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
     background: other human proteins in CD-CODE condensates (export of 2026-03-18)
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
-  # Roles in condensates: CD-CODE 2.3 gives each membership its roles (driver, client, regulator, member, or unknown; a
+  # Driver or client in condensates: CD-CODE 2.3 gives each membership its roles (driver, client, regulator, member, or unknown; a
   # membership may have several). A protein is in a role's set when it has that role in any human condensate; each set is
   # tested against the other proteins of the human condensates
   - id: condensate_role
     test: protein_sets
     new: true
-    title: Roles in condensates
+    title: Driver or client in condensates
     question: "Are methylated proteins more often drivers of condensates than clients or other members (CD-CODE)?"
     sub: "Proteins by their role in CD-CODE 2.3 condensates (human, not synthetic): driver, client, regulator, member or unknown, a protein in the role of every membership that lists it. Each role's proteins against the other proteins in these condensates (one-sided hypergeometric test). This export lists drivers, members and unknown roles only"
     section: Location, chromatin and condensates
@@ -1067,7 +1067,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
-          - {analysis: condensate_role, title: Roles in condensates}
+          - {analysis: condensate_role, title: Driver or client in condensates}
       - name: Where in the protein
         about: "Where in the protein the methylated lysines are: sequence motifs, folded or disordered parts, domains, the charge of disordered regions."
         cards:
