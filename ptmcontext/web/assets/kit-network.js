@@ -246,7 +246,8 @@
       UI.colour === 'cluster' ? 0 : 1,
       UI.size,
       UI.nb ? UI.pins.join() : '',
-      sel ? K.sel.describe() : '',
+      // what the selection holds now, not only its text: a filter's own file can arrive after the marks and change it
+      sel ? [K.sel.describe(), K.sel.key?.(), K.sel.nProteins()] : '',
     ]);
     if (cache.key === key && cache.M) return cache.M;
     let M;

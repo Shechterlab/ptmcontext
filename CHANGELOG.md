@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Network: a selection made of a filter or a word (for example ALS/FTD gene) is drawn from what it holds once its data has arrived, so an address with a colour or cluster setting no longer shows "nothing to draw".
 - Loading: a view that waits for data (selection data, tables, protein pages, network) shows a small spinner with a short text in the area being filled, only after 300 ms, as a live status (still, not turning, under reduced motion). The landing page does the same while its protein search index loads.
 - Share against size (funnel plot): point names are placed by one label placer (right, left, above, below, diagonals, then a leader line at growing distance) that keeps clear of other names, dots, tick labels, axis titles, reference labels, limit curves and the frame; a name that fits nowhere is left off, listed in the note, and stays in the table and the hover.
 - Where in the cell: the maps open on "Above or below the average" on all four sites (website.cell.default_view; without the key, average).

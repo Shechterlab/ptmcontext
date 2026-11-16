@@ -850,3 +850,46 @@ def test_the_page_draws_link_types_a_key_with_switches_and_puts_the_key_in_the_e
     ):
         assert needle in js, needle
     assert js.count('exportLinkKey(keyItem);') == 2  # the whole network and the pinned frame
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
+def test_the_network_follows_the_selection_when_a_filters_own_file_arrives_after_the_marks():
+    """The selection text is the same before and after a filter's file arrives, but what it holds is not: the network
+    must be drawn again, not kept as the empty drawing of the first moment."""
+    from test_netlayout import _harness, _node
+
+    full = _full()
+    file = {
+        'sources': full['sources'],
+        'acc': [n[0] for n in full['nodes']],
+        'gene': [n[1] for n in full['nodes']],
+        'sites': [n[2] for n in full['nodes']],
+        'edges': [x for e in full['edges'] for x in e],
+        'terms': full['terms'],
+        'ann': full['ann'],
+    }
+    prog = _harness(
+        """
+const el=()=>({addEventListener(){}});
+global.matchMedia=()=>({matches:false,addEventListener(){}});
+global.document=el();global.document.querySelectorAll=()=>[];
+global.localStorage={getItem(){return null},setItem(){}};
+global.location={hash:'#network'};
+global.fetch=()=>Promise.resolve({ok:true,json:()=>Promise.resolve(JSON.parse(JSON.stringify(IN.file)))});
+window.PTMC_MODULES.length=0;
+eval(fs.readFileSync(IN.net,'utf8'));
+let held=false;
+const K2={D:{site:{id:'x'},counts:{proteins:40},network:{options:{steps:[400,700],min_score:700,top:300,min_cluster:5,cluster_range:[4,16,1],max_shown:8},
+ sources:[{kind:'pairs',id:'p',label:'L'},{kind:'groups',id:'g',label:'G'}],labels:[{label:'GO'},{label:'R'}],color_by:[],files:{view:'v.json',full:'f.json'}}},
+ W:{marks:'sites',mark:'site',proteins:'proteins'},esc:(s)=>String(s),int:(n)=>String(n),S:{view:'network'},netcore:K.netcore,netlayout:K.netlayout,
+ views:{},tabs:[],clicks:[],tips:[],sections:{},methods:[],afterRender:[],paramsIn:[],paramsOut:[],
+ sel:{active:()=>true,data:()=>({}),describe:()=>'als',key:()=>String(held),nProteins:()=>(held?40:0),protSelected:()=>held},
+ render:()=>{},writeHash:()=>{},link:(v)=>'#'+v,loading:(t)=>t,fold:()=>'',tabName:(v,n)=>n,fq:String,fxn:String,expBar:()=>'',tt:()=>''};
+window.PTMC_MODULES.forEach(m=>m(K2));
+const nothing=()=>{try{return /nothing to draw/.test(String(K2.views.network.render()))}catch(e){return 'ERR '+e.message}};
+K2.views.network.render();
+setTimeout(()=>{const before=nothing();held=true;const after=nothing();console.log(JSON.stringify({before,after}))},50);
+"""
+    )
+    got = _node(prog, {'net': str(ASSETS / 'kit-network.js'), 'file': file})
+    assert got == {'before': True, 'after': False}, got
