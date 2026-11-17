@@ -48,3 +48,11 @@ console.log(JSON.stringify({{ before: before.includes('Loading'), asked, after: 
 
 def test_the_figure_panels_use_the_whole_dataset_when_nothing_is_selected():
     assert 'no selection: the whole dataset' in (ASSETS / 'kit-conserve.js').read_text()
+
+
+@node
+def test_the_content_audit_parses_and_is_not_a_ci_job():
+    script = ROOT / 'tools' / 'audit' / 'content.js'
+    assert subprocess.run(['node', '--check', str(script)], capture_output=True).returncode == 0
+    for wf in (ROOT / '.github' / 'workflows').glob('*.yml'):
+        assert 'audit/content.js' not in wf.read_text(), wf.name  # optional: run by hand

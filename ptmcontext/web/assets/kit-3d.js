@@ -1956,7 +1956,7 @@
     const rows =
       `<div class="s3d-row">${sel('style', 'Style', STYLES, V.style)}${sel(
         'color',
-        'Colour',
+        'Color',
         colourOptions(),
         colourKey()
       )}${sel('surface', 'Surface', SURFACES, V.surface)}${sel('light', 'Lighting', LIGHTS, V.light)}` +

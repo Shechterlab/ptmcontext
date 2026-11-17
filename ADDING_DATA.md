@@ -46,7 +46,7 @@ format and calls `stage.record(...)`. Requirements:
 For a file you were given rather than downloaded:
 
 ```bash
-ptmc inputs record <name> <path under root> --root DATA --source "<where it came from>" --version "<release or date>" --licence "<license>"
+ptmc inputs record <name> <path under root> --root DATA --source "<where it came from>" --version "<release or date>" --license "<license>"
 ```
 
 A file with no traceable origin is recorded with a note that starts `NOT TRUSTED`: the build refuses it unless a run
