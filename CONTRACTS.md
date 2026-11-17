@@ -85,6 +85,13 @@ Conventions:
   cell names at least N distinct groups, where an item in `not_counted` counts for nothing, an item in one of `groups`
   counts as that group, and any other item as its own (the studies behind a site, with one laboratory's studies counted
   once and databases not at all). An item in two groups, or in a group and `not_counted`, is an error.
+  `marks_where` alone may instead count units pooled over all of a mark's rows (a lysine's several states or types):
+  `{distinct_units_at_least: N, units: {columns: [pmids], separator: ";", direct: {column: sources, separator: "; ",
+  map: {dataset: unit}}, only_where: {column, equals}}}` holds for a mark whose rows together give at least N distinct
+  units. A unit is an item of a `columns` list (a PubMed ID), or the unit a `direct` item maps to (a dataset's own PubMed
+  ID, so a database citing that paper is not counted twice, or its name for a dataset with no PMID); `direct` items not in
+  `map` (databases) add nothing. A row failing `only_where` gives no units (so by-similarity or text-mined evidence
+  counts for nothing).
 - Controls (`controls: [{id, label, when?, note?, analyses: [question ids], marks_where?, marks_outside?,
   without_proteins?, only_in?}]`, each with at least one change): at load, each listed question gets a copy
   `<id>_<control id>` with the change (a `marks_where` joins the question's own: both must hold), `new: true`,

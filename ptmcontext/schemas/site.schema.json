@@ -8990,6 +8990,9 @@
           "$ref": "#/$defs/count_condition"
         },
         {
+          "$ref": "#/$defs/units_condition"
+        },
+        {
           "type": "object",
           "required": [
             "all_of"
@@ -9060,6 +9063,67 @@
             "type": "string"
           },
           "description": "items that count for nothing (databases and compilations)"
+        }
+      }
+    },
+    "units_condition": {
+      "type": "object",
+      "required": [
+        "distinct_units_at_least",
+        "units"
+      ],
+      "additionalProperties": false,
+      "description": "marks_where only: holds for a mark whose rows, pooled, give at least distinct_units_at_least distinct units (independent studies): the items of the list columns of units.columns (PubMed IDs), plus the unit each item of units.direct.column maps to; rows failing units.only_where give none",
+      "properties": {
+        "distinct_units_at_least": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "units": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "list columns whose items are units (PubMed IDs)"
+            },
+            "separator": {
+              "type": "string",
+              "description": "separator of those columns, default ';'"
+            },
+            "direct": {
+              "type": "object",
+              "required": [
+                "column",
+                "map"
+              ],
+              "additionalProperties": false,
+              "description": "a list column of sources: an item in map adds the unit it maps to (a dataset's own PubMed ID, so that a database citing the same paper is not counted twice, or its own name); any other item (a database) adds nothing",
+              "properties": {
+                "column": {
+                  "type": "string"
+                },
+                "separator": {
+                  "type": "string",
+                  "description": "default '; '"
+                },
+                "map": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "source item: its unit"
+                }
+              }
+            },
+            "only_where": {
+              "$ref": "#/$defs/condition",
+              "description": "a row that fails this condition (by-similarity, unspecified or text-mined evidence, say) gives no units"
+            }
+          }
         }
       }
     },

@@ -886,6 +886,26 @@ controls:
     analyses: [disorder, structure_context, domain_class, idr_charge]
     only_in:
       digest: {after: KR, not_before: P, min_length: 7, max_length: 35}
+  # High-confidence residues: reported by at least two independent studies. Only experimental records count (by-similarity,
+  # unspecified and text-mined records give nothing). A study is a PubMed ID in the record's pmids, or a direct dataset
+  # (Berryhill 2023, Ochoa 2020, Hendriks 2017 as its PubMed ID 28112733, Akimov 2018 as 29967540, so a database citing
+  # the same paper is not counted twice). UniProt, iPTMnet and CPLM count only through the papers they cite. Ochoa 2020 is
+  # one study, however many of its observations there are. A residue's studies are pooled over all its rows.
+  - id: hc
+    label: high-confidence sites
+    when: "only the serines, threonines and tyrosines at least two independent studies report are compared"
+    note: "Only the serines, threonines and tyrosines at least two independent studies report (each paper counted once, whether it comes from a database citing it or from the study's own data; Ochoa 2020 counted once; records by similarity, unspecified or text-mined count for nothing); the other sites are counted on neither side"
+    analyses: [disorder, idr_charge]
+    marks_where:
+      distinct_units_at_least: 2
+      units:
+        columns: [pmids]
+        separator: ";"
+        direct:
+          column: sources
+          map: {Berryhill 2023: Berryhill 2023, Ochoa 2020: Ochoa 2020, Hendriks 2017: "28112733", Akimov 2018: "29967540"}
+        only_where: {column: evidence_class, equals: experimental}
+    marks_outside: left_out
 
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
