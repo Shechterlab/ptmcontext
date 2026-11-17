@@ -1,5 +1,5 @@
 # Site: the human lysine modification sites (acetylation and the other lysine acylations, ubiquitination and SUMOylation),
-# from UniProt, iPTMnet, CPLM 4.0, Hendriks 2017 and Akimov 2018 (release v1.5.0 of PTM_Pipeline; CPLM states no license: its sites are included, cited).
+# from UniProt, iPTMnet, Hendriks 2017 and Akimov 2018 (release v1.5.0 of PTM_Pipeline).
 # The same code and the same generic inputs as the methyllysine site; its own marks, questions, focus, words and colors.
 # The four release tables are one set of marks, a row per lysine and type (marks.add with set: acyl_type); each type is a
 # filter, and the key questions run again on each type with at least 200 lysines (marks_subsets). There is no earlier
@@ -56,9 +56,9 @@ marks:
   # The release's four tables, one set of marks: a row per lysine and type, the type in acyl_type (acetyl, ubiquitin, sumo, or
   # the acyl type of the acylation table, acetyl rows of which come from the acetylation table). The main view counts the
   # lysines with an experimental record (UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment,
-  # a CPLM record labeled Exp. or Exp./Dat.) or an unspecified iPTMnet record. Behind the lower-confidence switch, as the
+  # a Hendriks 2017 or Akimov 2018 site) or an unspecified iPTMnet record. Behind the lower-confidence switch, as the
   # methyllysine site's: the rows UniProt reports only by similarity (ECO:0000250 and other records without an experimental
-  # code), and the rows only CPLM reports with the label Dat. (taken from another database; CPLM names no experiment).
+  # code).
   input: acetylation_sites_v1_5_0
   accession: canonical_UniProtAC
   position: position
@@ -68,13 +68,11 @@ marks:
     - {input: sumoylation_sites_v1_5_0, set: {acyl_type: sumo}}
   exclude:
     - {column: evidence_class, equals: by-similarity}     # in the main view their lysines count as other lysines
-    - all_of: [{column: sources, equals: CPLM}, {column: cplm_evidence, equals: Dat.}]    # CPLM's database-derived records alone
   parts:                # a lysine of one type, for the questions on a lysine that has another (near_marks, window 0)
     - {id: acetylation, where: {column: acyl_type, equals: acetyl}}
     - {id: ubiquitination, where: {column: acyl_type, equals: ubiquitin}}
     - {id: sumoylation, where: {column: acyl_type, equals: sumo}}
-    # the same, from one study alone: the SUMOylation sites of Hendriks 2017 and the ubiquitination sites of Akimov 2018 (with or
-    # without CPLM), for the pairs asked again without the sites only CPLM reports
+    # the same, from one study alone: the SUMOylation sites of Hendriks 2017 and the ubiquitination sites of Akimov 2018
     - {id: sumoylation_hendriks, where: {all_of: [{column: acyl_type, equals: sumo}, {column: sources, contains: Hendriks 2017}]}}
     - {id: ubiquitination_akimov, where: {all_of: [{column: acyl_type, equals: ubiquitin}, {column: sources, contains: Akimov 2018}]}}
     - {id: other_acylation, where: {column: acyl_type, in: [2-hydroxyisobutyryl, beta-hydroxybutyryl, crotonyl, glutaryl, succinyl, lactoyl, methacryl, isonicotinyl, benzoyl, butyryl, malonyl, propionyl, phosphoglyceryl, biotinyl, lipoyl]}}
@@ -137,7 +135,7 @@ marks:
       values: {experimental: Experimental, unspecified: Unspecified, by-similarity: By similarity}
       colour: true
       filter: true
-      help: "The best class of the records at the site. Experimental: UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, a CPLM record from an experimental paper, alone or with another database, a Hendriks 2017 SUMO-2 site or an Akimov 2018 ubiquitination site (both mass spectrometry). Unspecified: an iPTMnet record whose source has no evidence code, or a CPLM record taken from another database only. By similarity: UniProt's ECO:0000250 (lower-confidence variant)"
+      help: "The best class of the records at the site. Experimental: UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, a Hendriks 2017 SUMO-2 site or an Akimov 2018 ubiquitination site (both mass spectrometry). Unspecified: an iPTMnet record whose source has no evidence code. By similarity: UniProt's ECO:0000250 (lower-confidence variant)"
     sources:
       column: sources
       join_rows: true
@@ -148,20 +146,10 @@ marks:
       records:             # a database's own record of the protein
         UniProt: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"
         iPTMnet: "https://research.bioinformatics.udel.edu/iptmnet/entry/{acc}/"
-      values: {UniProt: UniProt, iPTMnet: iPTMnet, CPLM: CPLM 4.0, Hendriks 2017: "Hendriks et al. 2017", Akimov 2018: "Akimov et al. 2018"}
+      values: {UniProt: UniProt, iPTMnet: iPTMnet, Hendriks 2017: "Hendriks et al. 2017", Akimov 2018: "Akimov et al. 2018"}
       colour: true
       filter: true
-      help: "The databases and the two studies that report the lysine. Most sites of every large type are from CPLM 4.0, which states no license. Hendriks 2017: Hendriks et al., Nat Struct Mol Biol 24:325 (2017), doi:10.1038/nsmb.3366, SUMO-2 sites found by mass spectrometry in HeLa and U2OS cells (its Supplementary Table 1). Akimov 2018: Akimov et al., Nat Struct Mol Biol 25:631 (2018), doi:10.1038/s41594-018-0084-y, ubiquitination sites found by the UbiSite method in Hep2 and Jurkat cells (its Supplementary Table 1). Choose one of the two studies to see its SUMOylation or ubiquitination sites without CPLM; the data sources tile gives the counts"
-    cplm_evidence:
-      column: cplm_evidence
-      join_rows: true
-      provenance: true
-      label: CPLM evidence
-      kind: list
-      separator: "; "
-      values: {Exp.: "Experimental paper", Exp./Dat.: "Paper and another database", Dat.: "Another database only"}
-      filter: true
-      help: "CPLM 4.0's own evidence label for the lysine. Curated from an experimental paper; also reported by another database; or another database only (these sit behind the lower-confidence switch). Empty for a lysine CPLM does not report"
+      help: "The databases and the two studies that report the lysine. Hendriks 2017: Hendriks et al., Nat Struct Mol Biol 24:325 (2017), doi:10.1038/nsmb.3366, SUMO-2 sites found by mass spectrometry in HeLa and U2OS cells (its Supplementary Table 1). Akimov 2018: Akimov et al., Nat Struct Mol Biol 25:631 (2018), doi:10.1038/s41594-018-0084-y, ubiquitination sites found by the UbiSite method in Hep2 and Jurkat cells (its Supplementary Table 1). The data sources tile gives the counts"
     hendriks_cell_lines:
       column: hendriks_cell_lines
       join_rows: true
@@ -765,7 +753,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methyllysines (±10 residues)
     question: "Are modified lysines more often near a methyllysine than the other lysines of their protein?"
-    sub: "Modified lysines against the other lysines of the same proteins, by whether a methyllysine (UniProt, iPTMnet, CPLM 4.0 and Berryhill et al. 2023, methyllysine release v1.5.0; by-similarity records left out) is within 10 residues on either side, the lysine itself left out. A lysine that is itself methylated is asked about in the next section"
+    sub: "Modified lysines against the other lysines of the same proteins, by whether a methyllysine (UniProt, iPTMnet and Berryhill et al. 2023, methyllysine release v1.5.0; by-similarity records left out) is within 10 residues on either side, the lysine itself left out. A lysine that is itself methylated is asked about in the next section"
     section: Other modifications
   # The same lysine carrying two modifications: is a lysine with one modification more often also reported with another
   # than the other lysines of its protein? The comparison within each protein (Mantel-Haenszel over proteins) holds the
@@ -781,7 +769,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Acetylated and ubiquitinated lysines
     family_label: All lysines
     question: "Are acetylated lysines more often also reported ubiquitinated than the other lysines of their protein?"
-    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a ubiquitination site. Both modifications target lysine's amino group, so one lysine can have only one of them at a time; the question is whether, among the lysines of one protein, the acetylated ones have been reported ubiquitinated more or less often. Most ubiquitination sites come from CPLM 4.0 and Akimov et al. 2018; the second line under the tile counts the Akimov sites alone"
+    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a ubiquitination site. Both modifications target lysine's amino group, so one lysine can have only one of them at a time; the question is whether, among the lysines of one protein, the acetylated ones have been reported ubiquitinated more or less often. Most ubiquitination sites come from Akimov et al. 2018; the second line under the tile counts the Akimov sites alone"
     section: Same lysine, different modifications
   - id: same_ac_ub_modified
     layer: near_marks
@@ -805,7 +793,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Acetylated and SUMOylated lysines
     family_label: All lysines
     question: "Are acetylated lysines more often also reported SUMOylated than the other lysines of their protein?"
-    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a SUMOylation site. Most SUMOylation sites come from CPLM 4.0 and Hendriks et al. 2017; the second line under the tile counts the Hendriks sites alone"
+    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a SUMOylation site. Most SUMOylation sites come from Hendriks et al. 2017; the second line under the tile counts the Hendriks sites alone"
     section: Same lysine, different modifications
   - id: same_ac_su_modified
     layer: near_marks
@@ -829,7 +817,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Ubiquitinated and SUMOylated lysines
     family_label: All lysines
     question: "Are ubiquitinated lysines more often also reported SUMOylated than the other lysines of their protein?"
-    sub: "Ubiquitinated lysines against the other lysines of the same proteins, by whether the lysine itself is also a SUMOylation site. Ubiquitin and SUMO attach to the same amino group, and both lists are mostly from CPLM 4.0, which compiles them from large mass-spectrometry studies of the proteome; the second line under the tile counts only the sites of two such studies, Akimov et al. 2018 and Hendriks et al. 2017"
+    sub: "Ubiquitinated lysines against the other lysines of the same proteins, by whether the lysine itself is also a SUMOylation site. Ubiquitin and SUMO attach to the same amino group, and both lists are mostly from large mass-spectrometry studies of the proteome; the second line under the tile counts only the sites of two such studies, Akimov et al. 2018 and Hendriks et al. 2017"
     section: Same lysine, different modifications
   - id: same_ub_su_modified
     layer: near_marks
@@ -877,7 +865,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Ubiquitinated and methylated lysines
     family_label: All lysines
     question: "Are ubiquitinated lysines more often also reported methylated than the other lysines of their protein?"
-    sub: "Ubiquitinated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.0, by-similarity records left out). Most ubiquitination sites come from large mass-spectrometry studies of the proteome (CPLM 4.0), so the comparison is made within each protein"
+    sub: "Ubiquitinated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.0, by-similarity records left out). Most ubiquitination sites come from large mass-spectrometry studies of the proteome, so the comparison is made within each protein"
     section: Same lysine, different modifications
   - id: same_ub_methyl_modified
     layer: near_marks
@@ -917,7 +905,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sub: "The same question asked only among the lysines reported with some other modification (another type on this site, or methylation; not the two compared here), each protein analyzed separately. Mass spectrometry finds some lysines far more easily than others, which alone could make two modifications seem to share lysines; every lysine counted here was found modified at least once. The two compared modifications do not decide which lysines count: if they did, the lysines without the first would mostly be those with the second, and the comparison would lean toward fewer shared lysines"
     section: Same lysine, different modifications
   # The pairs again with the SUMOylation sites of Hendriks 2017 and the ubiquitination sites of Akimov 2018 alone (marks.parts):
-  # two proteome-wide mass-spectrometry studies, so a view of SUMO and ubiquitin without the sites only CPLM 4.0 reports
+  # two proteome-wide mass-spectrometry studies, so a view of SUMO and ubiquitin from those studies alone
   - id: same_ac_ub_akimov
     layer: near_marks
     with: {marks: ubiquitination_akimov, window: 0, noun: ubiquitination site of Akimov 2018, labels: {near: "Also reported ubiquitinated", none: "Not reported ubiquitinated"}}
@@ -927,7 +915,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Acetylated and ubiquitinated lysines
     family_label: Ubiquitination from Akimov 2018
     question: "Are acetylated lysines more often among the ubiquitination sites of Akimov et al. 2018 than the other lysines of their protein?"
-    sub: "Acetylated lysines against the other lysines of the same proteins, by whether Akimov et al. 2018 (UbiSite, Hep2 and Jurkat cells) reports the lysine ubiquitinated. The ubiquitination sites only CPLM 4.0 reports count as other lysines here"
+    sub: "Acetylated lysines against the other lysines of the same proteins, by whether Akimov et al. 2018 (UbiSite, Hep2 and Jurkat cells) reports the lysine ubiquitinated. The ubiquitination sites that Akimov et al. 2018 does not report count as other lysines here"
     section: Same lysine, different modifications
   - id: same_ac_su_hendriks
     layer: near_marks
@@ -938,7 +926,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Acetylated and SUMOylated lysines
     family_label: SUMOylation from Hendriks 2017
     question: "Are acetylated lysines more often among the SUMO-2 sites of Hendriks et al. 2017 than the other lysines of their protein?"
-    sub: "Acetylated lysines against the other lysines of the same proteins, by whether Hendriks et al. 2017 (SUMO-2, HeLa and U2OS cells) reports the lysine SUMOylated. The SUMOylation sites only CPLM 4.0 reports count as other lysines here"
+    sub: "Acetylated lysines against the other lysines of the same proteins, by whether Hendriks et al. 2017 (SUMO-2, HeLa and U2OS cells) reports the lysine SUMOylated. The SUMOylation sites that Hendriks et al. 2017 does not report count as other lysines here"
     section: Same lysine, different modifications
   - id: same_ub_su_studies
     layer: near_marks
@@ -949,7 +937,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Ubiquitinated and SUMOylated lysines
     family_label: Akimov 2018 and Hendriks 2017
     question: "Are the ubiquitination sites of Akimov et al. 2018 more often among the SUMO-2 sites of Hendriks et al. 2017 than the other lysines of their protein?"
-    sub: "The lysines Akimov et al. 2018 reports ubiquitinated against the other lysines of the same proteins, by whether Hendriks et al. 2017 reports the lysine SUMOylated: the two studies alone, no CPLM 4.0 site counted as modified"
+    sub: "The lysines Akimov et al. 2018 reports ubiquitinated against the other lysines of the same proteins, by whether Hendriks et al. 2017 reports the lysine SUMOylated: the two studies alone, no other site counted as modified"
     section: Same lysine, different modifications
   - id: same_ub_methyl_akimov
     layer: near_marks
@@ -1091,7 +1079,7 @@ controls:
   # High-confidence lysines: reported by at least two independent studies. Only experimental records count (by-similarity,
   # unspecified and text-mined records give nothing). A study is a PubMed ID in the record's pmids, or a direct dataset
   # (Berryhill 2023, Ochoa 2020, Hendriks 2017 as its PubMed ID 28112733, Akimov 2018 as 29967540, so a database citing
-  # the same paper is not counted twice). UniProt, iPTMnet and CPLM count only through the papers they cite. Ochoa 2020 is
+  # the same paper is not counted twice). UniProt and iPTMnet count only through the papers they cite. Ochoa 2020 is
   # one study, however many of its observations there are. A lysine's studies are pooled over all its rows.
   - id: hc
     label: high-confidence sites
@@ -1112,7 +1100,7 @@ controls:
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites
-    description: "Also counts the lysines UniProt reports only by similarity to another species (ECO:0000250 and other records without an experimental code) and the lysines only CPLM reports as taken from another database (CPLM’s own label), from the same tables"
+    description: "Also counts the lysines UniProt reports only by similarity to another species (ECO:0000250 and other records without an experimental code) from the same tables"
     marks_select: {exclude: []}
     attributes: {}
 
@@ -1145,13 +1133,12 @@ context_marks:
     colour: "#7c3aed"          # violet, the methyllysine site's color
     colour_dark: "#a78bfa"
     citation:
-      short: UniProt, iPTMnet, CPLM and Berryhill 2023
-      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license; Berryhill 2023 article CC BY 4.0"
+      short: UniProt, iPTMnet and Berryhill 2023
+      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
+      licence: "CC BY-NC-SA 4.0; Berryhill 2023 article CC BY 4.0"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       Berryhill 2023: {cite: "Berryhill et al., Sci Rep 13:377 (2023)", doi: 10.1038/s41598-022-27175-x}
   - id: phospho
     label: Phosphosite
@@ -1201,7 +1188,7 @@ website:                  # the look and words of the website (ptmc web); layout
   default_background: other reviewed human proteins   # examples inside the Highlight and partner boxes
   start:                   # the Overview's start panel for a first visit, and the Help page's starts (kit-help.js)
     protein: TP53
-    text: "Human lysine acetylation, other acylation, ubiquitination and SUMOylation sites from UniProt, iPTMnet, CPLM 4.0 and two proteome-wide studies (Hendriks et al. 2017 for SUMO, Akimov et al. 2018 for ubiquitin): their positions, proteins and partners. Each tile is one question, comparing the modified lysines with the other lysines of the same proteins, for all types together; each question's page links to the same question for each type with enough sites. Search a protein or a gene list to test your own selection."
+    text: "Human lysine acetylation, other acylation, ubiquitination and SUMOylation sites from UniProt, iPTMnet and two proteome-wide studies (Hendriks et al. 2017 for SUMO, Akimov et al. 2018 for ubiquitin): their positions, proteins and partners. Each tile is one question, comparing the modified lysines with the other lysines of the same proteins, for all types together; each question's page links to the same question for each type with enough sites. Search a protein or a gene list to test your own selection."
     examples:
       - {label: A histone, query: H3C1, help: "Histone H3's modified lysines (H3 K4, K9, K27 and K36 are K5, K10, K28 and K37 in UniProt's numbering)."}
       - {label: A list of genes, query: TP53 MDM2 UBE2I, help: "Every question is tested again on their modified lysines."}
@@ -1287,9 +1274,9 @@ website:                  # the look and words of the website (ptmc web); layout
                 ontology: {short: 50, compare: 4, tree: 100, id_label: DOID, noun: term, nouns: terms}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
       - name: Evidence and studies
-        about: "How well supported the modification sites are, and which databases they come from. Most sites are from CPLM 4.0; about half the ubiquitination sites are also from Akimov et al. 2018 and most SUMOylation sites from Hendriks et al. 2017. The data sources tile shows how many sites each reports."
+        about: "How well supported the modification sites are, and which databases they come from. Nearly all ubiquitination sites are from Akimov et al. 2018 and most SUMOylation sites from Hendriks et al. 2017. The data sources tile shows how many sites each reports."
         #  counted, not tested (website.counts)
-        cards: [provenance, evidence, cplm]
+        cards: [provenance, evidence]
       - name: More questions
         about: "Further pathways, cell maps, protein classes and complexes, one question each."
         cards: [panther_class, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, {analysis: hpa_location, title: Human Protein Atlas locations},
@@ -1383,18 +1370,7 @@ website:                  # the look and words of the website (ptmc web); layout
       noun: types
       top: 4
       note: "A lysine has a row for each modification a database reports, so it counts under each. Each type is also a filter (Modification). The key questions are run again for each type with at least 200 lysines: the types with fewer have counts and filters only."
-      method: "Each lysine lists the modifications its records give (the release tables' type: acyl_type for acetylation and the acylations, one table each for ubiquitination and SUMOylation). A type's count is the lysines with a record of it, by-similarity records and CPLM records taken from another database only left out."
-    cplm:
-      kind: values
-      attribute: cplm_evidence
-      title: CPLM evidence
-      question: "How well supported are the lysines CPLM 4.0 reports?"
-      sub: "Modified lysines reported by CPLM 4.0, by its own evidence label: experimental paper, or experimental paper and another database"
-      unit: [label, labels]
-      noun: CPLM labels
-      top: 3
-      note: "Nearly all ubiquitination, SUMOylation and acetylation sites, and most acylation sites, are from CPLM 4.0. Its records taken from another database (no experiment named) alone are in the lower-confidence variant (the switch at the top)."
-      method: "CPLM 4.0's own evidence label for the lysine (the release's cplm_evidence column), joined over the lysine's rows. Lysines CPLM does not report have none and are not counted here."
+      method: "Each lysine lists the modifications its records give (the release tables' type: acyl_type for acetylation and the acylations, one table each for ubiquitination and SUMOylation). A type's count is the lysines with a record of it, by-similarity records left out."
     evidence:
       kind: values
       attribute: evidence_class
@@ -1404,8 +1380,8 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [class, classes]
       noun: evidence classes
       top: 3
-      note: "The sites counted here have an experimental record, or an unspecified iPTMnet record. The sites UniProt reports only by similarity to another species, and those only CPLM reports as taken from another database (its records marked as taken from another database), are the lower-confidence variant (the switch at the top)."
-      method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, a CPLM record from an experimental paper (alone or with another database), or a Hendriks 2017 or Akimov 2018 site; unspecified is iPTMnet's copy of UniProt, which has no ECO code."
+      note: "The sites counted here have an experimental record, or an unspecified iPTMnet record. The sites UniProt reports only by similarity to another species, are the lower-confidence variant (the switch at the top)."
+      method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, or a Hendriks 2017 or Akimov 2018 site; unspecified is iPTMnet's copy of UniProt, which has no ECO code."
     provenance:
       kind: values
       attribute: sources
@@ -1415,10 +1391,10 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [study or database, studies and databases]
       noun: studies and databases
       top: 3
-      note: "iPTMnet contains a copy of UniProt, so both databases agreeing is not always two measurements. CPLM 4.0 compiles records from other databases too (its records marked as taken from another database), so a lysine that CPLM and another database both report may rest on one original record. CPLM 4.0 states no license; its sites are included and cited. In the main view of the pinned release, CPLM reports 216,708 of the 229,038 lysine-and-type records (95%), alone or with another source: acetylation 99.6%, crotonylation 100%, ubiquitination 98% and SUMOylation 81%. Two proteome-wide studies are sources of their own: Akimov et al. 2018 reports 62,871 ubiquitination sites (1,839 that no database reports) and Hendriks et al. 2017 39,858 SUMOylation sites (8,960 that no database reports). The other 1,531 come from UniProt or iPTMnet without CPLM, among them most glutaryl, lactyl, benzoyl, methacryl and isonicotinyl records."
+      note: "iPTMnet contains a copy of UniProt, so both databases agreeing is not always two measurements. In the main view of the pinned release, the 107,927 lysine-and-type records are mostly from two proteome-wide studies, which are sources of their own: Akimov et al. 2018 reports 62,871 ubiquitination sites (62,522 that no database reports) and Hendriks et al. 2017 39,858 SUMOylation sites (34,709 that no database reports). The other 5,198 records come from UniProt or iPTMnet, among them most glutaryl, lactyl, benzoyl, methacryl and isonicotinyl records."
       method: "Each lysine lists the databases and studies that report it (the release's sources column). A database or study's count is the lysines it reports."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
-    - {name: Studies and databases, attributes: [sources, cplm_evidence, evidence_class, hendriks_cell_lines, akimov_cell_lines, iptmnet_score, iptmnet_sources]}
+    - {name: Studies and databases, attributes: [sources, evidence_class, hendriks_cell_lines, akimov_cell_lines, iptmnet_score, iptmnet_sources]}
     - {name: Modification, attributes: [acyl_type]}
     - {name: Histone and protein class, analyses: [histone, panther_group, panther_class, reactome_top_level], proteins: [marks]}
     - {name: Same lysine, analyses: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl]}
@@ -1428,16 +1404,16 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: RNA and DNA, analyses: [pdb_interface_na]}
-  dataset: {label: PTM_Pipeline data release, version: v1.5.0, date: "2026-11-13", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5fadf74/releases/v1.5.0"}
-  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). CPLM 4.0 states no license: its sites (rows whose databases name CPLM) are included, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022), and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
+  dataset: {label: PTM_Pipeline data release, version: v1.5.0, date: "2026-11-13", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/d65489c/releases/v1.5.0"}
+  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). Akimov et al., Nat Struct Mol Biol 25:631 (2018) and Hendriks et al., Nat Struct Mol Biol 24:325 (2017) are articles that are not open access, and their supplementary tables have no license notice of their own: their sites are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
-    - {label: Acetylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5fadf74/releases/v1.5.0/human_acetylation_sites_v1.5.0.tsv", format: TSV, note: "every acetylation record: one row per lysine, with its evidence class, sources and CPLM evidence label (53,177 rows)"}
-    - {label: Other acylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5fadf74/releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv", format: TSV, note: "every lysine acylation record (acetyl and 15 other acyl types, in acyl_type): one row per lysine and type"}
-    - {label: Ubiquitination sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5fadf74/releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv", format: TSV, note: "every ubiquitination record, with its evidence class, sources, CPLM evidence label and the Akimov 2018 localization probability and cell lines (125,771 rows: 123,753 from CPLM 4.0, 62,871 from Akimov 2018)"}
-    - {label: SUMOylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5fadf74/releases/v1.5.0/human_sumoylation_sites_v1.5.0.tsv", format: TSV, note: "every SUMOylation record, with its evidence class, sources, CPLM evidence label and the Hendriks 2017 localization probability and cell lines (48,593 rows: 39,858 from Hendriks 2017, 39,493 from CPLM 4.0)"}
-    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5fadf74/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
-    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/5fadf74/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
-    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/5fadf74/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+    - {label: Acetylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c/releases/v1.5.0/human_acetylation_sites_v1.5.0.tsv", format: TSV, note: "every acetylation record: one row per lysine, with its evidence class, sources and iPTMnet fields (4,597 rows)"}
+    - {label: Other acylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c/releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv", format: TSV, note: "every lysine acylation record (acetyl and 12 other acyl types, in acyl_type): one row per lysine and type"}
+    - {label: Ubiquitination sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c/releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv", format: TSV, note: "every ubiquitination record, with its evidence class, sources and the Akimov 2018 localization probability and cell lines (63,480 rows, 62,871 from Akimov 2018)"}
+    - {label: SUMOylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c/releases/v1.5.0/human_sumoylation_sites_v1.5.0.tsv", format: TSV, note: "every SUMOylation record, with its evidence class, sources and the Hendriks 2017 localization probability and cell lines (40,249 rows, 39,858 from Hendriks 2017)"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/d65489c/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/d65489c/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
   search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
     shorthand: {H4: P62805, H3: P68431, "H3.1": P68431, "H3.3": P84243}   # names papers use for a protein (H4K20, H3 K9)
     patterns:                # the motif finder: a pattern of residues on the sites' sequence windows
@@ -1574,7 +1550,6 @@ website:                  # the look and words of the website (ptmc web); layout
     table:                 # the optional columns (the Columns menu): the same set on every site, where the data has it
       - {id: type, label: Modification, attribute: acyl_type, default: true, hide: xs}
       - {id: src, label: Reported by, attribute: sources, default: true, hide: sm}
-      - {id: cplm, label: CPLM evidence, attribute: cplm_evidence, hide: sm}
       - {id: ctx, label: Context, menu: Disorder and domain context, analyses: [disorder, domain_context], hide: xs}
       - {id: struct, label: Structural context, analyses: [structure_context], hide: sm}
   protein:                 # the protein page
@@ -1623,7 +1598,7 @@ website:                  # the look and words of the website (ptmc web); layout
       default_off: [ptm]                  # the gray live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
       hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
         site: [name, chips, nearby, click]
-        chips: [sources, cplm_evidence, {attribute: pmids, count: PMIDs}]
+        chips: [sources, {attribute: pmids, count: PMIDs}]
         context: [mark, residue, detail, source, click]
     numbering:             # positions typed in a search read as the protein's page numbers them
       - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"

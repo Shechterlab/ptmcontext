@@ -5,7 +5,7 @@ message: "Please cite the data sources: there is no paper for this site yet."
 title: "PTMcontext: human methyllysine sites (release v1.5.0 of PTM_Pipeline)"
 version: "0.5.0"
 date-released: "2026-11-15"
-url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5fadf74/releases/v1.5.0"
+url: "https://github.com/Shechterlab/PTM_Pipeline/tree/d65489c/releases/v1.5.0"
 license: "CC-BY-NC-SA-4.0"
 authors:
   - name: "Shechter Lab, Albert Einstein College of Medicine"
@@ -187,15 +187,6 @@ references:   # the data sources: cited with every export
     end: D550
     year: 2018
     doi: "10.1093/nar/gkx1104"
-  - type: article   # the methyllysine sites of CPLM 4.0 . CPLM states no license: its sites are included
-    authors: [{family-names: Zhang, given-names: W}, {family-names: Tan, given-names: X}, {family-names: Lin, given-names: S}, {name: "et al."}]
-    title: "CPLM 4.0: an updated database with rich annotations for protein lysine modifications"
-    journal: "Nucleic Acids Res"
-    volume: 50
-    start: D451
-    end: D459
-    year: 2022
-    doi: "10.1093/nar/gkab849"
   - type: article   # the SUMO-2 sites of Hendriks et al. 2017 (Supplementary Table 1): the article is not open access, the table carries no notice of its own; included, cited
     authors: [{family-names: Hendriks, given-names: IA}, {family-names: Lyon, given-names: D}, {family-names: Young, given-names: C}, {name: "et al."}]
     title: "Site-specific mapping of the human SUMO proteome reveals co-modification with phosphorylation"

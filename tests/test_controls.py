@@ -37,7 +37,7 @@ def test_distinct_units_pool_a_marks_rows_and_count_a_paper_once():
             'pos': [1, 1, 5, 7, 9, 9, 2, 3],
             'sources': [
                 'UniProt; Hendriks 2017',  # the same paper twice: one unit
-                'Ochoa 2020; CPLM',  # P1 pools its rows: 28112733 + Ochoa
+                'Ochoa 2020; iPTMnet',  # P1 pools its rows: 28112733 + Ochoa
                 'Ochoa 2020; UniProt',  # Ochoa alone: one unit
                 'UniProt; iPTMnet',  # databases add nothing
                 'UniProt',

@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: b5e8566b484abd3bd8208ed71c95795a98d3d463  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: d65489c1c719f4e6e7c3a87bf438f598227a3e38  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference

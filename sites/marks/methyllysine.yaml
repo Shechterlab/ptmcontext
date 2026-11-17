@@ -1,5 +1,5 @@
-# Mark profile: lysine methylation. The site table is release v1.5.0 of PTM_Pipeline (UniProt, iPTMnet, CPLM 4.0 and
-# Berryhill 2023); CPLM 4.0 states no license.
+# Mark profile: lysine methylation. The site table is release v1.5.0 of PTM_Pipeline (UniProt, iPTMnet and
+# Berryhill 2023).
 schema_version: 1
 id: methyllysine
 name: Methyllysine

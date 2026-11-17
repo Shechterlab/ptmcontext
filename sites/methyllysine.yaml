@@ -1,5 +1,5 @@
-# Site: the human methyllysine sites, from UniProt, iPTMnet, CPLM 4.0 and Berryhill et al. 2023 (release v1.5.0 of PTM_Pipeline; CPLM
-# states no license: its sites are included, cited). The same code and the same
+# Site: the human methyllysine sites, from UniProt, iPTMnet and Berryhill et al. 2023 (release v1.5.0 of PTM_Pipeline).
+# The same code and the same
 # generic inputs as the methylarginine site; its own marks, questions, focus, words and colors. There is no earlier
 # release to match, so every statistic is new (no reference). Contract: ptmcontext/schemas/site.schema.json.
 schema_version: 1
@@ -52,16 +52,14 @@ inputs:                # role the layers read: manifest input that fills it
 
 marks:
   # The release's own table: a row per lysine and methylation state. The main view counts the lysines with an
-  # experimental record (UniProt, iPTMnet, Berryhill 2023, or CPLM labeled Exp. or Exp./Dat.) or an unspecified iPTMnet record. Behind the
+  # experimental record (UniProt, iPTMnet or Berryhill 2023) or an unspecified iPTMnet record. Behind the
   # lower-confidence switch, as the methylarginine site's: the rows UniProt reports only by similarity (ECO:0000250 and
-  # other records without an experimental code), and the rows only CPLM reports with the label Dat. (taken from another
-  # database; CPLM names no experiment). A lysine with any other row still counts.
+  # other records without an experimental code). A lysine with any other row still counts.
   input: methyllysine_sites_v1_5_0
   accession: canonical_UniProtAC
   position: position
   exclude:
     - {column: evidence_class, equals: by-similarity}     # in the main view their lysines count as other lysines
-    - all_of: [{column: sources, equals: CPLM}, {column: cplm_evidence, equals: Dat.}]    # CPLM's database-derived records alone
   residue_mismatch: error
   attributes:          # what the website keeps for each site: to color, filter and explain it (no test reads these)
     state:
@@ -84,7 +82,7 @@ marks:
       values: {experimental: Experimental, unspecified: Unspecified, by-similarity: By similarity}
       colour: true
       filter: true
-      help: "The best class of the records at the site. Experimental: UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, a Berryhill 2023 site (mass spectrometry in HEK293T or U2OS cells), or a CPLM record from an experimental paper, alone or with another database. Unspecified: only iPTMnet's copy of UniProt, which has no ECO code, or only a CPLM record taken from another database By similarity: UniProt records without an experimental code, mainly ECO:0000250"
+      help: "The best class of the records at the site. Experimental: UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, a Berryhill 2023 site (mass spectrometry in HEK293T or U2OS cells). Unspecified: only iPTMnet's copy of UniProt, which has no ECO code. By similarity: UniProt records without an experimental code, mainly ECO:0000250"
     sources:
       column: sources
       join_rows: true
@@ -95,20 +93,10 @@ marks:
       records:             # a database's own record of the protein
         UniProt: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"
         iPTMnet: "https://research.bioinformatics.udel.edu/iptmnet/entry/{acc}/"
-      values: {UniProt: UniProt, iPTMnet: iPTMnet, CPLM: CPLM 4.0, Berryhill 2023: "Berryhill et al. 2023"}
+      values: {UniProt: UniProt, iPTMnet: iPTMnet, Berryhill 2023: "Berryhill et al. 2023"}
       colour: true
       filter: true
-      help: "The databases and the study that report the lysine. CPLM 4.0 states no license. Berryhill 2023: Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x, global lysine methylome profiling with characterized affinity reagents (its Supplementary Table 5)"
-    cplm_evidence:
-      column: cplm_evidence
-      join_rows: true
-      provenance: true
-      label: CPLM evidence
-      kind: list
-      separator: "; "
-      values: {Exp.: "Experimental paper", Exp./Dat.: "Paper and another database", Dat.: "Another database only"}
-      filter: true
-      help: "CPLM 4.0's own evidence label for the lysine. Curated from an experimental paper; also reported by another database; or another database only (these sit behind the lower-confidence switch)"
+      help: "The databases and the study that report the lysine. Berryhill 2023: Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x, global lysine methylome profiling with characterized affinity reagents (its Supplementary Table 5)"
     berryhill_cell_lines:
       column: berryhill_cell_lines
       join_rows: true
@@ -732,9 +720,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     question: "Are methyllysines more often near a methylarginine than the other lysines of their protein?"
     sub: "Methyllysines against the other lysines of the same proteins, by whether a methylarginine (methylarginine release v1.4.3, by-similarity records left out) is within 10 residues on either side"
     section: Other modifications
-    note: "The association comes from the database-curated sources: lysines that only CPLM reports are {or:near_methylarginine_cplm:near} near a methylarginine and those of UniProt or iPTMnet {or:near_methylarginine_uniprotipt:near}, while Berryhill et al.'s affinity-enriched sites are {or:near_methylarginine_berryhill:near} ({sig:near_methylarginine_berryhill:near}). That points to which proteins were studied, not to a link between the two marks. Select a source to see its lysines:"   # the numbers are the statistics' (the source subsets below)
+    note: "The association comes from the database-curated sources: lysines of UniProt or iPTMnet are {or:near_methylarginine_uniprotipt:near} near a methylarginine, while Berryhill et al.'s affinity-enriched sites are {or:near_methylarginine_berryhill:near} ({sig:near_methylarginine_berryhill:near}). That points to which proteins were studied, not to a link between the two marks. Select a source to see its lysines:"   # the numbers are the statistics' (the source subsets below)
     note_filters:
-      - {label: CPLM, query: "sources:CPLM"}
       - {label: UniProt, query: "sources:UniProt"}
       - {label: iPTMnet, query: "sources:iPTMnet"}
       - {label: Berryhill 2023, query: "sources:Berryhill"}
@@ -745,7 +732,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near acetylation sites (±10 residues)
     question: "Are methyllysines more often near an acetylation site than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether an acetylation site (CPLM 4.0, UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
     section: Other modifications
   - id: near_other_acylation
     family_label: All states
@@ -754,7 +741,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near other acylation sites (±10 residues)
     question: "Are methyllysines more often near another lysine acylation than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether a lysine acylation other than acetylation (CPLM 4.0, UniProt and iPTMnet, by-similarity records left out; 15 acyl types) is within 10 residues on either side. These modifications (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) is within 10 residues on either side. These modifications (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
     section: Other modifications
   # Both marks on one lysine: is a methyllysine more often also reported acetylated than the other lysines of its
   # protein? The comparison within each protein (Mantel-Haenszel over proteins) holds the protein fixed, so how much it
@@ -767,7 +754,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Methylated and acetylated lysines
     question: "Are methyllysines more often also reported acetylated than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether the lysine itself is also an acetylation site (CPLM 4.0, UniProt and iPTMnet, by-similarity records left out). Methylation and acetylation compete for the same lysine, and both are best known on much-studied proteins such as histones, so the comparison is made within each protein: it asks whether, among the lysines of one protein, the methylated ones are the acetylated ones more often than chance"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether the lysine itself is also an acetylation site (UniProt and iPTMnet, by-similarity records left out). Methylation and acetylation compete for the same lysine, and both are best known on much-studied proteins such as histones, so the comparison is made within each protein: it asks whether, among the lysines of one protein, the methylated ones are the acetylated ones more often than chance"
     section: Other modifications
   - id: near_ubiquitination
     family_label: All states
@@ -776,7 +763,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near ubiquitination sites (±10 residues)
     question: "Are methyllysines more often near a ubiquitination site than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether a ubiquitination site (CPLM 4.0, Akimov et al. 2018, UniProt and iPTMnet; by-similarity records left out) is within 10 residues on either side"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a ubiquitination site (Akimov et al. 2018, UniProt and iPTMnet; by-similarity records left out) is within 10 residues on either side"
     section: Other modifications
   - id: near_sumoylation
     family_label: All states
@@ -785,7 +772,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near SUMOylation sites (±10 residues)
     question: "Are methyllysines more often near a SUMOylation site than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether a SUMOylation site (CPLM 4.0, Hendriks et al. 2017, UniProt and iPTMnet; by-similarity records left out) is within 10 residues on either side"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a SUMOylation site (Hendriks et al. 2017, UniProt and iPTMnet; by-similarity records left out) is within 10 residues on either side"
     section: Other modifications
   - id: same_ubiquitination
     family_label: All states
@@ -794,7 +781,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Methylated and ubiquitinated lysines
     question: "Are methyllysines more often also reported ubiquitinated than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether the lysine itself is also a ubiquitination site (CPLM 4.0, Akimov et al. 2018, UniProt and iPTMnet; by-similarity records left out). Ubiquitination is reported on about two lysines in five of the proteins in this table, mostly by large mass-spectrometry studies of the proteome, so the comparison is made within each protein; methylation and ubiquitin compete for the same lysine"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether the lysine itself is also a ubiquitination site (Akimov et al. 2018, UniProt and iPTMnet; by-similarity records left out). Ubiquitination is reported on about two lysines in five of the proteins in this table, mostly by large mass-spectrometry studies of the proteome, so the comparison is made within each protein; methylation and ubiquitin compete for the same lysine"
     section: Other modifications
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
@@ -848,11 +835,6 @@ marks_subsets:           # the key questions again on the lysines of one methyla
     note: "Only the lysines with a trimethyl (Kme3) record are counted as methylated"
     analyses: [histone, panther_group, disorder, near_methylarginine, near_phospho, near_phospho_high, near_acetylation, near_other_acylation, same_acetylation, near_ubiquitination, near_sumoylation, same_ubiquitination]
   # the sources of the near-methylarginine note: the lysines each database reports (sources, a ';'-separated list)
-  - id: cplm
-    label: CPLM only
-    where: {column: sources, equals: CPLM}
-    note: "Only the lysines that CPLM alone reports are counted as methylated"
-    analyses: [near_methylarginine]
   - id: uniprotipt
     label: UniProt or iPTMnet
     where: {any_of: [{column: sources, contains: UniProt}, {column: sources, contains: iPTMnet}]}
@@ -886,7 +868,7 @@ controls:
   # High-confidence lysines: reported by at least two independent studies. Only experimental records count (by-similarity,
   # unspecified and text-mined records give nothing). A study is a PubMed ID in the record's pmids, or a direct dataset
   # (Berryhill 2023, Ochoa 2020, Hendriks 2017 as its PubMed ID 28112733, Akimov 2018 as 29967540, so a database citing
-  # the same paper is not counted twice). UniProt, iPTMnet and CPLM count only through the papers they cite. Ochoa 2020 is
+  # the same paper is not counted twice). UniProt and iPTMnet count only through the papers they cite. Ochoa 2020 is
   # one study, however many of its observations there are. A lysine's studies are pooled over all its rows.
   - id: hc
     label: high-confidence sites
@@ -907,7 +889,7 @@ controls:
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites
-    description: "Also counts the lysines UniProt reports only by similarity to another species (ECO:0000250 and other records without an experimental code) and the lysines only CPLM reports as taken from another database (CPLM’s own label), from the same table"
+    description: "Also counts the lysines UniProt reports only by similarity to another species (ECO:0000250 and other records without an experimental code) from the same table"
     marks_select: {exclude: []}
     attributes: {}
 
@@ -959,11 +941,10 @@ context_marks:
     colour: "#15803d"          # green: apart from the orange, violet, cyan and olive of the other marks (5.0:1 on white)
     colour_dark: "#4ade80"     # 9.3:1 on the dark surface
     citation:
-      short: CPLM, UniProt and iPTMnet
-      cite: "Lysine acetylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
+      short: UniProt and iPTMnet
+      cite: "Lysine acetylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0"
     sources:
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: other_acylation
@@ -973,16 +954,15 @@ context_marks:
     plural: Other acylation sites
     input: context_lysine_acylation_sites_v1_5_0
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: acyl_type, evidence: evidence_class, sources: sources}
-    exclude: [{column: acyl_type, in: [acetyl]}]   # acetylation is its own mark above; the rest, as one group, 15 acyl types
+    exclude: [{column: acyl_type, in: [acetyl]}]   # acetylation is its own mark above; the rest, as one group, 12 acyl types
     same_residue: true          # a methyllysine that also carries another acylation says so on its card
     colour: "#8a7a1c"          # olive: 4.3:1 on white
     colour_dark: "#ddd06a"     # 10.3:1 on the dark surface
     citation:
-      short: CPLM, UniProt and iPTMnet
-      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl, phosphoglyceryl, biotinyl, lipoyl) of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
+      short: UniProt and iPTMnet
+      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl) of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0"
     sources:
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: ubiquitination
@@ -997,11 +977,10 @@ context_marks:
     colour: "#be185d"          # rose: 6.0:1 on white
     colour_dark: "#f9a8d4"     # 9.0:1 on the dark surface
     citation:
-      short: CPLM, Akimov 2018, UniProt and iPTMnet
-      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); Akimov V et al., Nat Struct Mol Biol 25:631–640 (2018), doi:10.1038/s41594-018-0084-y; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license; Akimov 2018 included"
+      short: Akimov 2018, UniProt and iPTMnet
+      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Akimov V et al., Nat Struct Mol Biol 25:631–640 (2018), doi:10.1038/s41594-018-0084-y; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; Akimov 2018 included"
     sources:
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       Akimov 2018: {cite: "Akimov et al., Nat Struct Mol Biol 25:631 (2018)", doi: 10.1038/s41594-018-0084-y}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
@@ -1016,11 +995,10 @@ context_marks:
     colour: "#0369a1"          # blue: 5.9:1 on white
     colour_dark: "#7dd3fc"     # 9.8:1 on the dark surface
     citation:
-      short: CPLM, Hendriks 2017, UniProt and iPTMnet
-      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); Hendriks IA et al., Nat Struct Mol Biol 24:325–336 (2017), doi:10.1038/nsmb.3366; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license; Hendriks 2017 included"
+      short: Hendriks 2017, UniProt and iPTMnet
+      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Hendriks IA et al., Nat Struct Mol Biol 24:325–336 (2017), doi:10.1038/nsmb.3366; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; Hendriks 2017 included"
     sources:
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       Hendriks 2017: {cite: "Hendriks et al., Nat Struct Mol Biol 24:325 (2017)", doi: 10.1038/nsmb.3366}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
@@ -1056,7 +1034,7 @@ website:                  # the look and words of the website (ptmc web); layout
   default_background: other reviewed human proteins   # examples inside the Highlight and partner boxes
   start:                   # the Overview's start panel for a first visit, and the Help page's starts (kit-help.js)
     protein: H3C1
-    text: "Human lysine methylation sites from UniProt, iPTMnet, CPLM 4.0 and Berryhill et al. 2023: their positions, proteins and partners. Each tile is one question, comparing the methyllysines with the other lysines of the same proteins. Search a protein or a gene list to test your own selection."
+    text: "Human lysine methylation sites from UniProt, iPTMnet and Berryhill et al. 2023: their positions, proteins and partners. Each tile is one question, comparing the methyllysines with the other lysines of the same proteins. Search a protein or a gene list to test your own selection."
     examples:
       - {label: A histone, query: H3C1, help: "Histone H3's methyllysines (H3 K4, K9, K27 and K36 are K5, K10, K28 and K37 in UniProt's numbering)."}
       - {label: A list of genes, query: TP53 DNMT1 EHMT2, help: "Every question is tested again on their methyllysines."}
@@ -1275,8 +1253,8 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [class, classes]
       noun: evidence classes
       top: 3
-      note: "The sites counted here have an experimental record, or an unspecified iPTMnet record. The sites UniProt reports only by similarity to another species, and those only CPLM reports as taken from another database (its records marked as taken from another database), are the lower-confidence variant (the switch at the top)."
-      method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, a Berryhill 2023 site, or a CPLM record from an experimental paper, alone or with another database; unspecified is iPTMnet's copy of UniProt, which has no ECO code, or a CPLM record taken from another database only"
+      note: "The sites counted here have an experimental record, or an unspecified iPTMnet record. The sites UniProt reports only by similarity to another species, are the lower-confidence variant (the switch at the top)."
+      method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, a Berryhill 2023 site; unspecified is iPTMnet's copy of UniProt, which has no ECO code"
     provenance:
       kind: values
       attribute: sources
@@ -1286,7 +1264,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [study or database, studies and databases]
       noun: studies and databases
       top: 2
-      note: "iPTMnet contains a copy of UniProt: 217 methyllysine rows have unip as their only upstream database, so both databases agreeing is not always two measurements. CPLM 4.0 compiles records from other databases too (its records marked as taken from another database), so a lysine that CPLM and another database both report may rest on one original record. Berryhill 2023 is one study (Sci Rep 13:377), a mass-spectrometry experiment of its own in HEK293T and U2OS cells."
+      note: "iPTMnet contains a copy of UniProt: 217 methyllysine rows have unip as their only upstream database, so both databases agreeing is not always two measurements. Berryhill 2023 is one study (Sci Rep 13:377), a mass-spectrometry experiment of its own in HEK293T and U2OS cells."
       method: "Each methyllysine lists the databases and studies that report it (the release's sources column). A database or study's count is the methyllysines it reports."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex], keys: ["b:class", "b:gene", "b:score"]}
@@ -1298,13 +1276,13 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: RNA and DNA, analyses: [pdb_interface_na]}
     - {name: Studies and databases, attributes: [sources, berryhill_cell_lines, berryhill_enrichment, iptmnet_sources]}
-  dataset: {label: PTM_Pipeline data release, version: v1.5.0, date: "2026-11-13", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/5fadf74/releases/v1.5.0"}
-  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). CPLM 4.0 states no license: its sites (rows whose databases name CPLM) are included, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022), and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (the article is CC BY 4.0; its Supplementary Table 5 has no separate license notice and is included) is cited the same way. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
+  dataset: {label: PTM_Pipeline data release, version: v1.5.0, date: "2026-11-13", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/d65489c/releases/v1.5.0"}
+  download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (the article is CC BY 4.0; its Supplementary Table 5 has no separate license notice and is included) is cited, and the CC BY-NC-SA 4.0 gives no rights in it beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
-    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5fadf74/releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv", format: TSV, note: "every methyllysine record: one row per lysine and degree, with its evidence class, sources and CPLM evidence label (CPLM sites)"}
-    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/5fadf74/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
-    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/5fadf74/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
-    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/5fadf74/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c/releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv", format: TSV, note: "every methyllysine record: one row per lysine and degree, with its evidence class, sources and Berryhill 2023 fields (5,746 rows)"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/d65489c/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/d65489c/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
   search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
     shorthand: {H4: P62805, H3: P68431, "H3.1": P68431, "H3.3": P84243}   # names papers use for a protein (H4K20, H3 K9)
     patterns:                # the motif finder: a pattern of residues on the sites' sequence windows
@@ -1559,7 +1537,7 @@ website:                  # the look and words of the website (ptmc web); layout
       default_off: [ptm]                  # the gray live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
       hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
         site: [name, chips, nearby, click]
-        chips: [sources, cplm_evidence, {attribute: pmids, count: PMIDs}]
+        chips: [sources, {attribute: pmids, count: PMIDs}]
         context: [mark, residue, detail, source, click]
     numbering:             # positions typed in a search read as the protein's page numbers them
       - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"

@@ -1537,7 +1537,7 @@
                 },
                 "query": {
                   "type": "string",
-                  "description": "a search query the button puts in the search box (a filter such as sources:CPLM)"
+                  "description": "a search query the button puts in the search box (a filter such as sources:UniProt)"
                 }
               }
             },
