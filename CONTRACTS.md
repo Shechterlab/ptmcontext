@@ -752,6 +752,12 @@ shows). Every value is text unless said otherwise; empty means not known. Lists 
 | `protein_partners` (a table that lists each pair once says `both_ways: {partner: <column naming the row's first protein>}`: every row is also read the other way round) | `accession` | **`partner_accession`**, **`score`** (number), `partner`, `partner_marked` (true/false), `classes` (a list of codes) | the card's partners of some classes (`card.writer.partners`), and on a protein without marks the proteins with marks associated with it |
 | `protein_records` | `accession` | any columns: the site file names each (`columns:` maps the input's column to the name the card reads; `values:` keeps others under their own names); several rows a protein | the protein page's cards (below): locations, condensate memberships, dependency, experiments, clustering |
 
+`website.protein.card.records` (the card's "Who binds it" block over a `site_records` table) names the group headings in
+this order: the label of the `groups` attribute's value, else `labels: {code: label}` (optional, a map of a group's code to
+its heading), else the code with its underscores replaced by spaces. The summary line above the groups uses the same
+words, lower-cased. In `site_evidence`, a row's `kinds` entry of `""` names the row by its partner: `partner` (the
+gene), else `partner_accession`, else the kind's label.
+
 `ptmc web` keeps each protein's rows beside its page (`data/e/NN.json`, `e_shards` files of about 0.4 MB by the rule of `map_shards`), the rows that name a
 protein without marks as a partner (`site_records`, `protein_partners`) on that protein's light page (`data/u/NN.json`, `u_shards` files,
 with its name, length and sequence from the snapshot; `data/u/index.json` lists those proteins), and lookups in the
