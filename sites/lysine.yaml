@@ -56,7 +56,7 @@ marks:
   # The release's four tables, one set of marks: a row per lysine and type, the type in acyl_type (acetyl, ubiquitin, sumo, or
   # the acyl type of the acylation table, acetyl rows of which come from the acetylation table). The main view counts the
   # lysines with an experimental record (UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment,
-  # a CPLM record labelled Exp. or Exp./Dat.) or an unspecified iPTMnet record. Behind the lower-confidence switch, as the
+  # a CPLM record labeled Exp. or Exp./Dat.) or an unspecified iPTMnet record. Behind the lower-confidence switch, as the
   # methyllysine site's: the rows UniProt reports only by similarity (ECO:0000250 and other records without an experimental
   # code), and the rows only CPLM reports with the label Dat. (taken from another database; CPLM names no experiment).
   input: acetylation_sites_v1_5_0
@@ -1565,7 +1565,7 @@ website:                  # the look and words of the website (ptmc web); layout
           short: {acetyl: Kac, ubiquitin: Kub, sumo: SUMO, 2-hydroxyisobutyryl: Khib, beta-hydroxybutyryl: Kbhb, crotonyl: Kcr, glutaryl: Kglu,
                   succinyl: Ksucc, lactoyl: Kla, methacryl: Kmea, isonicotinyl: Kinic, benzoyl: Kbz, butyryl: Kbu, malonyl: Kmal,
                   propionyl: Kpr, phosphoglyceryl: Kpgly, biotinyl: Kbio, lipoyl: Klip}
-      default_off: [ptm]                  # the grey live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
+      default_off: [ptm]                  # the gray live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
       hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
         site: [name, chips, nearby, click]
         chips: [sources, cplm_evidence, {attribute: pmids, count: PMIDs}]

@@ -3,7 +3,7 @@
 ptmc run sites/methylarginine.yaml --root DIR   run a site: its analyses, its statistics table, its parity check
 ptmc check sites/phospho.yaml                   validate a site config (and the profile it names) without running
 ptmc inputs --root DIR                          check every file of the manifest under DIR against its MD5
-ptmc inputs record NAME FILE --root DIR --source URL --version V --licence L [--site S | --manifest M]
+ptmc inputs record NAME FILE --root DIR --source URL --version V --license L [--site S | --manifest M]
              [--columns '{"accession": ..., "start": ..., "end": ...}'] [--record URL]
                                               add (or update) a manifest entry, with the file's MD5
 ptmc stage uniprot UP000002311 --out DIR/inputs --manifest sites/yeast.inputs.json --prefix yeast
@@ -225,7 +225,7 @@ def main(argv=None) -> int:
     s.add_argument('--root', required=True)
     s.add_argument('--source', default='')
     s.add_argument('--version', default='')
-    s.add_argument('--licence', default='')
+    s.add_argument('--license', '--licence', dest='licence', default='')
     s.add_argument('--role', default='input', choices=['input', 'reference_output'])
     s.add_argument('--note', default='')
     s.add_argument('--manifest', default=None, help='the manifest to check or write (default: the package inputs.json)')
@@ -283,7 +283,7 @@ def main(argv=None) -> int:
 
     a = ap.parse_args(argv)
     if a.cmd == 'inputs' and a.action == 'record' and not (a.name and a.file and a.source and a.version and a.licence):
-        ap.error('ptmc inputs record NAME FILE needs --source, --version and --licence')
+        ap.error('ptmc inputs record NAME FILE needs --source, --version and --license')
     return a.fn(a)
 
 

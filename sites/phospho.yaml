@@ -1418,7 +1418,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: kinase, name: Main kinase motif class, kind: categorical, column: kinase_motifs}
       - {id: reader, name: Main reader-domain motif, kind: categorical, column: reader_motifs}
       - {id: abundance, name: PaxDb abundance decile, kind: decile, analysis: panther_group}   # the decile the statistics use as strata
-    outline: {id: enzyme_role, name: Enzyme role, kind: role, none: "No enzyme or reader role"}   # a ring on the writers, erasers and readers (website.search.partners classes), with any colour
+    outline: {id: enzyme_role, name: Enzyme role, kind: role, none: "No enzyme or reader role"}   # a ring on the writers, erasers and readers (website.search.partners classes), with any color
     tile: {section: "Interactions and enzymes", title: Protein network, text: "The phosphorylated proteins with most sites as one network of physical links and complexes, in clusters named by GO biological process."}
   # The Compare sets page (#overlap): 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
   overlap:
@@ -1504,7 +1504,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - residue
         - {id: kinase_motif, label: Kinase motif class, analysis: kinase_motifs,
            help: "Each site by the kinase motif class it fits (proline-directed, basophilic, acidophilic); a site in more than one takes the first listed, one in none is gray"}
-      default_off: [ptm]                  # the grey live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
+      default_off: [ptm]                  # the gray live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
       hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
         site: [name, chips, nearby, click]
         chips: [sources, {attribute: pmids, count: PMIDs}, functional_score]

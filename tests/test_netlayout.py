@@ -397,7 +397,7 @@ const K2={D:{site:{id:'x'},counts:{proteins:100},network:{options:{steps:[400,70
 window.PTMC_MODULES.forEach(m=>m(K2));
 const into=(q)=>{K2.paramsIn.forEach(f=>f(new URLSearchParams(q)));const o=new URLSearchParams();K2.paramsOut.forEach(f=>f(o));const none=new URLSearchParams();K2.nwWriting=false;K2.paramsOut.forEach(f=>f(none));K2.nwWriting=true;return none.toString()+'|'+o.toString();};
 K2.nwWriting=true;
-console.log(JSON.stringify([into('p=P35637,Q92804,BAD&clusters=8&colour=disordered&score=400&sources=1&view=table&top=500'),into('p=P35637&nz=2.5,0.4,0.6&nk=8'),typeof K2.netcore.exportFrame,typeof K2.network.exportFrame]));
+console.log(JSON.stringify([into('p=P35637,Q92804,BAD&clusters=8&colour=disordered&score=400&sources=1&view=table&top=500'),into('p=P35637&nz=2.5,0.4,0.6&nk=8'),into('clusters=8&color=disordered'),typeof K2.netcore.exportFrame,typeof K2.network.exportFrame]));
 """
     )
     got = _node(prog, {'net': str(ASSETS / 'kit-network.js')})
@@ -406,12 +406,15 @@ console.log(JSON.stringify([into('p=P35637,Q92804,BAD&clusters=8&colour=disorder
     )  # a link followed from the page does not carry the settings: only the page's own address does
     q = dict(x.split('=') for x in got[0][1:].split('&'))
     # every setting that differs from the defaults is written; a bad accession is dropped; the pins come out comma-separated
-    assert q['p'] == 'P35637%2CQ92804' and q['clusters'] == '8' and q['colour'] == 'disordered' and q['score'] == '400'
+    assert q['p'] == 'P35637%2CQ92804' and q['clusters'] == '8' and q['color'] == 'disordered' and q['score'] == '400'
     assert q['sources'] == 'g' and q['view'] == 'table' and q['top'] == '500'
     # an address with a pin and no settings leaves the settings as they were
     assert got[1].startswith('|p=P35637') and 'clusters=8' in got[1]
     assert 'zoom=2.5%2C0.4%2C0.6' in got[1]  # the zoom and its centre are in the address
-    assert got[2] == 'function' and got[3] == 'function'
+    # an old link with colour= still sets the colour, and every address is written with color=
+    assert q['color'] == 'disordered' and 'colour' not in q
+    assert 'color=disordered' in got[2].split('|')[1] and 'colour' not in got[2]
+    assert got[3] == 'function' and got[4] == 'function'
 
 
 @pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
