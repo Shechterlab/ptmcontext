@@ -52,7 +52,7 @@ inputs:                # role the layers read: manifest input that fills it
 
 marks:
   # The release's own table: a row per lysine and methylation state. The main view counts the lysines with an
-  # experimental record (UniProt, iPTMnet, Berryhill 2023, or CPLM labelled Exp. or Exp./Dat.) or an unspecified iPTMnet record. Behind the
+  # experimental record (UniProt, iPTMnet, Berryhill 2023, or CPLM labeled Exp. or Exp./Dat.) or an unspecified iPTMnet record. Behind the
   # lower-confidence switch, as the methylarginine site's: the rows UniProt reports only by similarity (ECO:0000250 and
   # other records without an experimental code), and the rows only CPLM reports with the label Dat. (taken from another
   # database; CPLM names no experiment). A lysine with any other row still counts.
@@ -1436,7 +1436,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}
       - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}
       - {id: abundance, name: PaxDb abundance decile, kind: decile, analysis: panther_group}   # the decile the statistics use as strata
-    outline: {id: enzyme_role, name: Enzyme role, kind: role, none: "No enzyme or reader role"}   # a ring on the writers, erasers and readers (website.search.partners classes), with any colour
+    outline: {id: enzyme_role, name: Enzyme role, kind: role, none: "No enzyme or reader role"}   # a ring on the writers, erasers and readers (website.search.partners classes), with any color
     tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites as one network of physical links and complexes, in clusters named by GO biological process."}
   # The Compare sets page (#overlap): 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
   overlap:
@@ -1521,7 +1521,7 @@ website:                  # the look and words of the website (ptmc web); layout
     open_partners: true
     map:
       combined_marks: {default: folded}   # one "All modifications" block (a thin lane for each modification, the site's own first); the rows of the context marks fold behind it
-      default_off: [ptm]                  # the grey live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
+      default_off: [ptm]                  # the gray live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
       hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
         site: [name, chips, nearby, click]
         chips: [sources, cplm_evidence, {attribute: pmids, count: PMIDs}]

@@ -7,7 +7,7 @@
                a switch. Links inside a cluster are drawn in its colour; links between two clusters are one bundle per
                pair of clusters (width: the number of links); the single links of a protein show when it is hovered.
      clusters  Louvain communities (kit-netcore.js), by default at the resolution of the site file, or the number the
-               reader asks for. A cluster smaller than the minimum goes on a shelf of small grey ones.
+               reader asks for. A cluster smaller than the minimum goes on a shelf of small gray ones.
      labels    the term of the smallest q in the cluster (ties to the deeper term), against the network's proteins; one
                source at a time (Name clusters by). Placed outside the cluster's outline, in a short form; the hover and the
                table have the whole name.
@@ -838,7 +838,7 @@
           muted,
           phone
             ? `Smaller clusters (${int(CL.protsOther)} proteins)`
-            : `Smaller clusters (${int(CL.nOther)}, ${int(CL.protsOther)} proteins, grey)`,
+            : `Smaller clusters (${int(CL.nOther)}, ${int(CL.protsOther)} proteins, gray)`,
           '',
           3
         )
@@ -982,7 +982,7 @@
       p
         ? `Links: two proteins are joined when ${famOf(p)} scores them ${OPT.min_score / 1000} or more${g.length ? ` or ${g.map((x) => x.label).join(' and ')} puts them in one group (groups over ${int(g[0].max_size)} proteins are left out)` : ''}${fx.length ? `; ${fx.map((x) => x.label).join(' and ')} (dashed, faint) can be added from the key` : ''}.`
         : `Links: two proteins are joined when they share a group in ${sourceNames()}.`,
-      `Clusters: Louvain communities (Blondel et al. 2008) of the links; the Clusters menu asks for a number, and communities under ${UI.minc} proteins are grey.`,
+      `Clusters: Louvain communities (Blondel et al. 2008) of the links; the Clusters menu asks for a number, and communities under ${UI.minc} proteins are gray.`,
       `Names: the ${lab} term with the smallest q (hypergeometric test against the network, Benjamini–Hochberg) among terms of ${OPT.min_term} proteins or more and at most ${Math.round(OPT.max_fraction * 100)}% of the network${L.min_depth ? `, at least ${L.min_depth} levels below the top` : ''}${L.max_size ? `, with at most ${int(L.max_size)} proteins in the whole proteome` : ''}${L.non_iea ? ', from curated annotations only' : ''}; a term names a cluster if it holds for ${Math.round(OPT.min_coverage * 100)}% of it or more; ${OPT.thin_term === 'genes' ? 'otherwise the cluster is named by its three busiest proteins' : 'otherwise the best significant term names it, written with its share of the cluster (for example "chromatin organization · 18%"), and a cluster with no significant term is named by its three busiest proteins'}; the figure shows a short form and the hover and table the full name.`,
     ];
     const cites = [
@@ -1021,7 +1021,7 @@
             )
           : '',
       clusters: () => sel('clusters', 'Clusters', [['auto', 'Auto'], ...counts], UI.clusters || 'auto'),
-      colour: () => sel('colour', 'Colour by', [['cluster', 'Cluster'], ...CB.map((c) => [c.id, c.name])], UI.colour),
+      colour: () => sel('colour', 'Color by', [['cluster', 'Cluster'], ...CB.map((c) => [c.id, c.name])], UI.colour),
       size: () =>
         sel(
           'size',
@@ -1324,7 +1324,7 @@
     const named = CL.nShown
       ? `${int(CL.nShown)} named ${plural(CL.nShown, 'cluster', 'clusters')}${UI.clusters && UI.clusters !== CL.nShown ? ` (${int(UI.clusters)} asked for; closest is ${int(CL.nShown)})` : ''}`
       : `no cluster of ${int(UI.minc)} or more proteins`;
-    return `${head} · ${int(M.edges.length)} ${plural(M.edges.length, 'link', 'links')} · ${named}${CL.nOther ? `, ${int(CL.nOther)} small (grey)` : ''}`;
+    return `${head} · ${int(M.edges.length)} ${plural(M.edges.length, 'link', 'links')} · ${named}${CL.nOther ? `, ${int(CL.nOther)} small (gray)` : ''}`;
   }
   function view() {
     K.noNw = true; // the links this page draws are not given the network's own address parameters
@@ -1598,7 +1598,7 @@
     y = bodyY + L.h * s + 12;
     // the caption: the method in a sentence, in the reader's words
     const lab = NC.labels[UI.label] || NC.labels[0] || {},
-      cap = `${sourceNames()}${p ? `; scores of ${UI.score / 1000} or more` : ''}. Clusters are Louvain communities${UI.clusters ? `, with the resolution chosen to give about ${UI.clusters}` : ''}; each is named by the ${lab.label || 'annotation'} term of smallest q (hypergeometric test, Benjamini–Hochberg q ≤ ${OPT.max_q}), shortened on the figure. ${CL.nOther ? `${int(CL.nOther)} smaller clusters (${int(CL.protsOther)} proteins) are grey at the bottom. ` : ''}${lab.cite ? lab.cite + '. ' : ''}`;
+      cap = `${sourceNames()}${p ? `; scores of ${UI.score / 1000} or more` : ''}. Clusters are Louvain communities${UI.clusters ? `, with the resolution chosen to give about ${UI.clusters}` : ''}; each is named by the ${lab.label || 'annotation'} term of smallest q (hypergeometric test, Benjamini–Hochberg q ≤ ${OPT.max_q}), shortened on the figure. ${CL.nOther ? `${int(CL.nOther)} smaller clusters (${int(CL.protsOther)} proteins) are gray at the bottom. ` : ''}${lab.cite ? lab.cite + '. ' : ''}`;
     wrapT(cap, Z.cap, 400)
       .slice(0, 5)
       .forEach((t) => {
@@ -1878,7 +1878,7 @@
         'partners_in_network',
         'partners_in_cluster',
         'partners_outside',
-        sp ? sp.name.replace(/\W+/g, '_') : 'colour',
+        sp ? sp.name.replace(/\W+/g, '_') : 'color',
       ].join('\t') +
       '\n' +
       rows.map((r) => r.join('\t')).join('\n') +
@@ -2324,15 +2324,16 @@
     requestAnimationFrame(tick);
   }
   // the address keeps every setting of the figure, so that a link reproduces it and is readable: p= the pinned proteins
-  // (comma-separated), clusters= their number, colour=, score=, top= the number of proteins, sources=, names= the name source,
+  // (comma-separated), clusters= their number, color=, score=, top= the number of proteins, sources=, names= the name source,
   // minsize= the smallest cluster, view=table, zoom= (and nf=, the genes to find, which the page keeps for the main
   // search). Only what differs from the site's defaults is written, and not while this page draws its own links.
-  // The shorter names of earlier links (nk, nc, ns, nt, nx, nl, nm, nv, nz) are still read.
-  const PARAMS = ['clusters', 'colour', 'size', 'outline', 'score', 'top', 'sources', 'names', 'minsize', 'view'];
+  // The shorter names of earlier links (nk, nc, ns, nt, nx, nl, nm, nv, nz) and the spelling colour= are still read.
+  const PARAMS = ['clusters', 'color', 'size', 'outline', 'score', 'top', 'sources', 'names', 'minsize', 'view'];
   const accOk = (a) => /^[A-Z0-9][A-Z0-9-]{3,19}$/.test(a);
   const LEGACY = {
     nk: 'clusters',
-    nc: 'colour',
+    nc: 'color',
+    colour: 'color',
     ns: 'score',
     nt: 'top',
     nx: 'sources',
@@ -2364,7 +2365,7 @@
         next = {
           clusters:
             p.has('clusters') && +g('clusters') >= CR[0] && +g('clusters') <= CR[1] ? +g('clusters') : DEF.clusters,
-          colour: p.has('colour') && CB.some((c) => c.id === g('colour')) ? g('colour') : 'cluster',
+          colour: p.has('color') && CB.some((c) => c.id === g('color')) ? g('color') : 'cluster',
           size: g('size') === 'sites' || g('size') === 'density' ? g('size') : DEF.size,
           outline: !!OUT && g('outline') !== 'none',
           score: OPT.steps.includes(n('score', -1)) ? n('score', DEF.score) : DEF.score,
@@ -2405,7 +2406,7 @@
     if (S.view !== 'network' || !K.nwWriting) return;
     if (UI.pins.length) p.set('p', UI.pins.join());
     if (UI.clusters !== DEF.clusters && UI.clusters) p.set('clusters', UI.clusters);
-    if (UI.colour !== 'cluster') p.set('colour', UI.colour);
+    if (UI.colour !== 'cluster') p.set('color', UI.colour);
     if (UI.size !== DEF.size) p.set('size', UI.size);
     if (OUT && !UI.outline) p.set('outline', 'none');
     if (UI.score !== DEF.score) p.set('score', UI.score);

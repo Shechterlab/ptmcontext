@@ -58,7 +58,7 @@ upstream ───────────► staged files ──► snapshot �
 (one file, for offline use; `ptmc pages` leaves it out of the published site). Layout and behavior are the kit's, in the Methylarginine Site Explorer's look: the header
 band with its accent rule, the search with example chips, tabs with counts, cards of dot rows, light and dark themes.
 A site's `website:` block sets its name, tagline, band colors and accent (`band`, `accent`, `accent_dark`: every site
-should set them; a site that sets none gets neutral greys, and exports, the band's link tints and the drawn protein follow
+should set them; a site that sets none gets neutral grays, and exports, the band's link tints and the drawn protein follow
 the accent), type, icon, header picture, lab, links,
 example searches, the tiles under the header (`stats`), what the Overview opens with (`overview`: sections of tiles,
 each a question with its most telling classes) and the groups of the Filters panel (`filters`); a site without a
