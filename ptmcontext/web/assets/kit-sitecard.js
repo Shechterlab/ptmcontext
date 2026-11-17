@@ -114,6 +114,8 @@
 
   // ---- interaction evidence ----------------------------------------------------------------------------------------
   const EV = C.evidence || {};
+  // a partner's name in an evidence row: its gene, else its accession (a protein with no gene), never the kind's code
+  const partnerName = (r) => r.partner || r.partner_accession || '';
   function evidenceParts(c) {
     const tg = EV.tags || {},
       vals = tg.attribute ? attrVals(c, tg.attribute) : [],
@@ -159,7 +161,7 @@
       if (seen.has(key)) continue;
       seen.add(key);
       const ps = partnersOf([v]),
-        names = [...new Set(ps.map((r) => r.partner).filter(Boolean))];
+        names = [...new Set(ps.map(partnerName).filter(Boolean))];
       const ids = [...new Set(ps.flatMap((r) => list(r.ids)))].map((x) => x.toUpperCase()); // a named kind also gives the entries that show it: "TNPO1 4FDD, 4FQ3 +4"
       const label =
         named.has(v) && names.length
@@ -180,14 +182,14 @@
     }
     if (predVals.length) {
       const ps = partnersOf(predVals),
-        names = [...new Set(ps.map((r) => r.partner).filter(Boolean))];
+        names = [...new Set(ps.map(partnerName).filter(Boolean))];
       const tip =
         predVals.map((v) => vLabel(tg.attribute, v)).join(', ') +
         (ps.length
           ? ': ' +
-            [...new Map(ps.map((r) => [r.partner, r])).values()]
+            [...new Map(ps.map((r) => [partnerName(r), r])).values()]
               .slice(0, 20)
-              .map((r) => `${r.partner}${r.score ? ' ' + Number(r.score).toFixed(2) : ''}`)
+              .map((r) => `${partnerName(r)}${r.score ? ' ' + Number(r.score).toFixed(2) : ''}`)
               .join(', ')
           : '');
       labs.push((tg.short || {})[predVals[0]] || 'pred.');
@@ -219,7 +221,7 @@
       groups = new Map();
     for (const r of at(c.tb, e.table, c.pos)) {
       if (!(r.kind in kinds)) continue;
-      const name = kinds[r.kind] || r.partner || r.kind,
+      const name = kinds[r.kind] || partnerName(r) || vLabel(EV.tags?.attribute, r.kind),
         key = r.kind + '|' + name;
       if (!groups.has(key)) groups.set(key, { name, tone: (EV.tags?.tone || {})[r.kind] || 'x', ids: [] });
       list(r.ids).forEach((id) => {
@@ -616,7 +618,11 @@
 
   // ---- who binds it, and how it was found (site_records) ------------------------------------------------------------
   const RC = C.records || {};
-  const grpLabel = (g) => (RC.groups && SPECS[RC.groups] ? vLabel(RC.groups, g) : g.replace(/_/g, ' '));
+  const grpLabel = (g) => {
+    const attr = RC.groups && SPECS[RC.groups] ? RC.groups : '';
+    if (attr && (SPECS[attr].values || {})[g] != null) return vLabel(attr, g); // the attribute's label wins
+    return (RC.labels || {})[g] || (attr ? vLabel(attr, g) : g.replace(/_/g, ' ')); // the site file's label, else the code
+  };
   const grpOrder = (g) => {
     const v = Object.keys(SPECS[RC.groups]?.values || {});
     const k = v.indexOf(g);

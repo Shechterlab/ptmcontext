@@ -1156,6 +1156,11 @@ def card_problems(site: dict) -> list[str]:
     if card.get('records'):
         table('card.records', card['records']['table'], 'site_records')
         attr('card.records', card['records'].get('groups'))
+        labels = card['records'].get('labels')
+        if labels is not None and not (
+            isinstance(labels, dict) and all(isinstance(k, str) and isinstance(v, str) for k, v in labels.items())
+        ):
+            out.append('website.protein.card.records.labels: a map of group code -> label (text)')
     if card.get('writer'):
         w = card['writer']
         for rule in (w.get('suggest') or {}).get('rules', []):

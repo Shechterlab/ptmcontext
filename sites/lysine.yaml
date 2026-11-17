@@ -1707,6 +1707,13 @@ website:                  # the look and words of the website (ptmc web); layout
           binds_state_not_read: PDBe-KB places an interface here, but the entry's sequence could not be matched to the site
           nucleic_acid: contacts in structures, crosslinks and RNA-bound peptides in cells, UniProt DNA-binding regions
           self: homo-oligomer contacts in structures
+        labels:              # the headings of the groups (a group the groups attribute does not label); the summary line reads them too
+          binds_modified: Binds it modified
+          binds_unmodified: Binds it unmodified
+          binds_other_residue: Binds a mutant or variant there
+          binds_state_not_read: "At an interface, residue not read"
+          nucleic_acid: RNA or DNA
+          self: Another copy of the protein
         open: [binds_modified]
         kinds: {self: another copy, rna: RNA, dna: DNA}
         species: Homo sapiens                # partners of another species are named with theirs
