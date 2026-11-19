@@ -2608,6 +2608,10 @@ website:                  # the look and words of the website (ptmc web); layout
         offset: -1
         label: histone numbering
         note: "Histone numbering, without the initiator methionine"
+      - removed_met: sites/data/uniprot_init_met_removed.tsv     # UniProt: initiator methionine, Removed
+        offset: -1
+        label: numbered without the initiator methionine
+        note: "Numbered without the initiator methionine, which UniProt records as removed"
     facts:                 # the headline cards under the map: each opens its section, with a hover
       - {count: marks, of: candidates, label: "{residues} methylated", kind: Sites, glyph: pins, opens: p-seq,
          tip: {values: [{attribute: arg_enrichment, label: "Arginine methylation enrichment: log2", format: l2}, {attribute: arg_enrichment_q, label: q, format: p}]}}

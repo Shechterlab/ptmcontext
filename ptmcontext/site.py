@@ -1207,6 +1207,11 @@ def card_problems(site: dict) -> list[str]:
                 re.compile(n.get(key, ''))
             except re.error as e:
                 out.append(f'website.protein.numbering[{k}].{key}: not a regular expression ({e})')
+        if n.get('removed_met') and not any(
+            (Path(n['removed_met']) if Path(n['removed_met']).is_absolute() else b / n['removed_met']).exists()
+            for b in (Path.cwd(), Path(__file__).resolve().parents[1])
+        ):
+            out.append(f'website.protein.numbering[{k}].removed_met: {n["removed_met"]} does not exist')
     return out
 
 

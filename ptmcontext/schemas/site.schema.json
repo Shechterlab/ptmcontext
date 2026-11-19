@@ -4130,7 +4130,7 @@
             },
             "numbering": {
               "type": "array",
-              "description": "proteins numbered as papers do, in labels and links: a protein whose gene (or, without a gene, name) matches is shown at UniProt position + offset (histones without the initiator methionine: offset -1)",
+              "description": "proteins numbered as papers do, in labels and links: a protein whose gene (or, without a gene, name) matches, or whose accession is in the removed_met table, is shown at UniProt position + offset (histones, and proteins whose initiator methionine UniProt records as removed: offset -1); the first rule that matches wins; downloads keep the UniProt position beside the shown site",
               "items": {
                 "type": "object",
                 "required": [
@@ -4145,6 +4145,10 @@
                   "names": {
                     "type": "string",
                     "description": "a regular expression on the protein's name (case-insensitive), for a protein without a gene"
+                  },
+                  "removed_met": {
+                    "type": "string",
+                    "description": "a tab-separated table (an accession column; # lines are comments) of the proteins this rule numbers, from UniProt's feature Initiator methionine, Removed"
                   },
                   "offset": {
                     "type": "integer"

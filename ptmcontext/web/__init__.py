@@ -36,6 +36,7 @@ from .glance import glance
 from . import seldata as SEL
 from . import structure as S3D
 from . import nucleic as NUC
+from . import numbering
 
 FONTS = {
     'heading': "'IBM Plex Serif', Georgia, 'Times New Roman', serif",
@@ -157,6 +158,13 @@ def _control(a: dict, run: dict | None = None) -> dict:
         **({'control_when': a['control_when']} if a.get('control_when') else {}),
         **({'control_too_few': int(n)} if few else {}),
     }
+
+
+def _protein_view(prot: dict | None) -> dict | None:
+    """The protein page's settings, with its numbering rules resolved for the page (numbering.rules_for_page)."""
+    if prot and prot.get('numbering'):
+        prot = {**prot, 'numbering': numbering.rules_for_page(prot['numbering'])}
+    return prot
 
 
 def lazy_site_data(site_dir: Path) -> None:
@@ -668,7 +676,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'sites_view': web.get('sites'),
         'proteins_view': web.get('proteins'),
         'selection_cards': web.get('selection_cards') or {},
-        'protein_view': web.get('protein'),
+        'protein_view': _protein_view(web.get('protein')),
         'compare': web.get('compare'),
         **({'reading': web['reading']} if web.get('reading') else {}),
         'legacy_links': web.get('legacy_links') or {},
