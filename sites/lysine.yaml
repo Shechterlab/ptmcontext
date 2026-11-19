@@ -72,10 +72,9 @@ marks:
     - {id: acetylation, where: {column: acyl_type, equals: acetyl}}
     - {id: ubiquitination, where: {column: acyl_type, equals: ubiquitin}}
     - {id: sumoylation, where: {column: acyl_type, equals: sumo}}
-    # the same, from one study alone: the SUMOylation sites of Hendriks 2017 and the ubiquitination sites of Akimov 2018
+    # the SUMOylation sites of Hendriks 2017, for the one question that compares the two proteome-wide studies
     - {id: sumoylation_hendriks, where: {all_of: [{column: acyl_type, equals: sumo}, {column: sources, contains: Hendriks 2017}]}}
-    - {id: ubiquitination_akimov, where: {all_of: [{column: acyl_type, equals: ubiquitin}, {column: sources, contains: Akimov 2018}]}}
-    - {id: other_acylation, where: {column: acyl_type, in: [2-hydroxyisobutyryl, beta-hydroxybutyryl, crotonyl, glutaryl, succinyl, lactoyl, methacryl, isonicotinyl, benzoyl, butyryl, malonyl, propionyl, phosphoglyceryl, biotinyl, lipoyl]}}
+    - {id: other_acylation, where: {column: acyl_type, in: [2-hydroxyisobutyryl, beta-hydroxybutyryl, crotonyl, glutaryl, succinyl, lactoyl, methacryl, isonicotinyl, benzoyl, butyryl, malonyl, propionyl]}}
   residue_mismatch: error
   attributes:          # what the website keeps for each site: to color, filter and explain it (no test reads these)
     acyl_type:
@@ -100,9 +99,6 @@ marks:
         butyryl: Butyrylation (Kbu)
         malonyl: Malonylation (Kmal)
         propionyl: Propionylation (Kpr)
-        phosphoglyceryl: Phosphoglycerylation (Kpgly)
-        biotinyl: Biotinylation (Kbio)
-        lipoyl: Lipoylation (Klip)
       colours:
         acetyl: "#15803d"
         ubiquitin: "#be185d"
@@ -119,9 +115,6 @@ marks:
         butyryl: "#57534e"
         malonyl: "#1e3a8a"
         propionyl: "#3f6212"
-        phosphoglyceryl: "#7f1d1d"
-        biotinyl: "#713f12"
-        lipoyl: "#365314"
       colour: true
       filter: true
       help: "The modifications reported on the lysine, one row each. Codes follow the usual form of the Brno histone nomenclature (ac, ub, su) with the lysine letter: Kac and Kub for acetylation and ubiquitination, SUMO for SUMOylation, and the common short names for the acylations (Khib, Kbhb, Kcr, Kglu, Ksucc, Kla, Kmea, Kinic, Kbz, Kbu, Kmal, Kpr, Kpgly, Kbio, Klip). SUMOylation is written SUMO so that it is not confused with Ksucc, succinylation"
@@ -769,7 +762,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Acetylated and ubiquitinated lysines
     family_label: All lysines
     question: "Are acetylated lysines more often also reported ubiquitinated than the other lysines of their protein?"
-    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a ubiquitination site. Both modifications target lysine's amino group, so one lysine can have only one of them at a time; the question is whether, among the lysines of one protein, the acetylated ones have been reported ubiquitinated more or less often. Most ubiquitination sites come from Akimov et al. 2018; the second line under the tile counts the Akimov sites alone"
+    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a ubiquitination site. Both modifications target lysine's amino group, so one lysine can have only one of them at a time; the question is whether, among the lysines of one protein, the acetylated ones have been reported ubiquitinated more or less often. Most ubiquitination sites come from Akimov et al. 2018"
     section: Same lysine, different modifications
   - id: same_ac_ub_modified
     layer: near_marks
@@ -793,7 +786,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Acetylated and SUMOylated lysines
     family_label: All lysines
     question: "Are acetylated lysines more often also reported SUMOylated than the other lysines of their protein?"
-    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a SUMOylation site. Most SUMOylation sites come from Hendriks et al. 2017; the second line under the tile counts the Hendriks sites alone"
+    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a SUMOylation site. Most SUMOylation sites come from Hendriks et al. 2017"
     section: Same lysine, different modifications
   - id: same_ac_su_modified
     layer: near_marks
@@ -904,30 +897,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     question: "Are SUMOylated lysines more often also reported methylated than the other lysines of their protein that have another modification?"
     sub: "The same question asked only among the lysines reported with some other modification (another type on this site, or methylation; not the two compared here), each protein analyzed separately. Mass spectrometry finds some lysines far more easily than others, which alone could make two modifications seem to share lysines; every lysine counted here was found modified at least once. The two compared modifications do not decide which lysines count: if they did, the lysines without the first would mostly be those with the second, and the comparison would lean toward fewer shared lysines"
     section: Same lysine, different modifications
-  # The pairs again with the SUMOylation sites of Hendriks 2017 and the ubiquitination sites of Akimov 2018 alone (marks.parts):
-  # two proteome-wide mass-spectrometry studies, so a view of SUMO and ubiquitin from those studies alone
-  - id: same_ac_ub_akimov
-    layer: near_marks
-    with: {marks: ubiquitination_akimov, window: 0, noun: ubiquitination site of Akimov 2018, labels: {near: "Also reported ubiquitinated", none: "Not reported ubiquitinated"}}
-    marks_where: {column: acyl_type, equals: acetyl}
-    new: true
-    title: "Acetylated and ubiquitinated lysines, ubiquitination from Akimov 2018"
-    family: Acetylated and ubiquitinated lysines
-    family_label: Ubiquitination from Akimov 2018
-    question: "Are acetylated lysines more often among the ubiquitination sites of Akimov et al. 2018 than the other lysines of their protein?"
-    sub: "Acetylated lysines against the other lysines of the same proteins, by whether Akimov et al. 2018 (UbiSite, Hep2 and Jurkat cells) reports the lysine ubiquitinated. The ubiquitination sites that Akimov et al. 2018 does not report count as other lysines here"
-    section: Same lysine, different modifications
-  - id: same_ac_su_hendriks
-    layer: near_marks
-    with: {marks: sumoylation_hendriks, window: 0, noun: SUMOylation site of Hendriks 2017, labels: {near: "Also reported SUMOylated", none: "Not reported SUMOylated"}}
-    marks_where: {column: acyl_type, equals: acetyl}
-    new: true
-    title: "Acetylated and SUMOylated lysines, SUMOylation from Hendriks 2017"
-    family: Acetylated and SUMOylated lysines
-    family_label: SUMOylation from Hendriks 2017
-    question: "Are acetylated lysines more often among the SUMO-2 sites of Hendriks et al. 2017 than the other lysines of their protein?"
-    sub: "Acetylated lysines against the other lysines of the same proteins, by whether Hendriks et al. 2017 (SUMO-2, HeLa and U2OS cells) reports the lysine SUMOylated. The SUMOylation sites that Hendriks et al. 2017 does not report count as other lysines here"
-    section: Same lysine, different modifications
+  # Ubiquitination and SUMOylation from the two proteome-wide mass-spectrometry studies alone (Akimov 2018, Hendriks 2017);
+  # the sites of each study are nearly all of their modification, so no further study-alone question is asked
   - id: same_ub_su_studies
     layer: near_marks
     with: {marks: sumoylation_hendriks, window: 0, noun: SUMOylation site of Hendriks 2017, labels: {near: "Also reported SUMOylated", none: "Not reported SUMOylated"}}
@@ -938,28 +909,6 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family_label: Akimov 2018 and Hendriks 2017
     question: "Are the ubiquitination sites of Akimov et al. 2018 more often among the SUMO-2 sites of Hendriks et al. 2017 than the other lysines of their protein?"
     sub: "The lysines Akimov et al. 2018 reports ubiquitinated against the other lysines of the same proteins, by whether Hendriks et al. 2017 reports the lysine SUMOylated: the two studies alone, no other site counted as modified"
-    section: Same lysine, different modifications
-  - id: same_ub_methyl_akimov
-    layer: near_marks
-    with: {marks: methyllysine, window: 0, noun: methyllysine, labels: {near: "Also reported methylated", none: "Not reported methylated"}}
-    marks_where: {all_of: [{column: acyl_type, equals: ubiquitin}, {column: sources, contains: Akimov 2018}]}
-    new: true
-    title: "Ubiquitinated and methylated lysines, ubiquitination from Akimov 2018"
-    family: Ubiquitinated and methylated lysines
-    family_label: Ubiquitination from Akimov 2018
-    question: "Are the ubiquitination sites of Akimov et al. 2018 more often also reported methylated than the other lysines of their protein?"
-    sub: "The lysines Akimov et al. 2018 reports ubiquitinated against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.1, by-similarity records left out)"
-    section: Same lysine, different modifications
-  - id: same_su_methyl_hendriks
-    layer: near_marks
-    with: {marks: methyllysine, window: 0, noun: methyllysine, labels: {near: "Also reported methylated", none: "Not reported methylated"}}
-    marks_where: {all_of: [{column: acyl_type, equals: sumo}, {column: sources, contains: Hendriks 2017}]}
-    new: true
-    title: "SUMOylated and methylated lysines, SUMOylation from Hendriks 2017"
-    family: SUMOylated and methylated lysines
-    family_label: SUMOylation from Hendriks 2017
-    question: "Are the SUMO-2 sites of Hendriks et al. 2017 more often also reported methylated than the other lysines of their protein?"
-    sub: "The lysines Hendriks et al. 2017 reports SUMOylated against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.1, by-similarity records left out)"
     section: Same lysine, different modifications
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
@@ -1037,7 +986,6 @@ marks_subsets:           # the key questions again on the lysines of one type (a
   - id: glu
     label: Kglu
     where: {column: acyl_type, equals: glutaryl}
-      per: acyl_type
     note: "Only the lysines with a glutarylation (Kglu) record are counted as modified"
     analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
   - id: la
@@ -1089,6 +1037,7 @@ controls:
     analyses: [motif, disorder, idr_charge]
     marks_where:
       distinct_units_at_least: 2
+      per: acyl_type
       units:
         columns: [pmids]
         separator: ";"
@@ -1595,7 +1544,7 @@ website:                  # the look and words of the website (ptmc web); layout
           attribute: acyl_type
           short: {acetyl: Kac, ubiquitin: Kub, sumo: SUMO, 2-hydroxyisobutyryl: Khib, beta-hydroxybutyryl: Kbhb, crotonyl: Kcr, glutaryl: Kglu,
                   succinyl: Ksucc, lactoyl: Kla, methacryl: Kmea, isonicotinyl: Kinic, benzoyl: Kbz, butyryl: Kbu, malonyl: Kmal,
-                  propionyl: Kpr, phosphoglyceryl: Kpgly, biotinyl: Kbio, lipoyl: Klip}
+                  propionyl: Kpr}
       default_off: [ptm]                  # the gray live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
       hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
         site: [name, chips, nearby, click]
