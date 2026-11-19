@@ -72,7 +72,8 @@ CSS = """
 .land-card { --c1: var(--band-1); --c2: var(--band-2); --ac: var(--accent-l); --acd: var(--accent-d); position: relative; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow); color: var(--ink); transition: transform 0.18s ease, box-shadow 0.18s ease; }
 .land-card.live:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
 .land-card.live:has(a:focus-visible) { outline: 3px solid var(--ac); outline-offset: 3px; }
-.land-card .band { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 0.35rem; min-height: 11rem; padding: 0.9rem 1.1rem 0.9rem; background: linear-gradient(160deg, var(--c1), var(--c2)); border-bottom: 4px solid var(--ac); color: #fff; }
+/* not positioned: the title link's ::after must reach the article, so the whole card (the call to action too) is one target */
+.land-card .band { display: flex; flex-direction: column; justify-content: flex-end; gap: 0.35rem; min-height: 11rem; padding: 0.9rem 1.1rem 0.9rem; background: linear-gradient(160deg, var(--c1), var(--c2)); border-bottom: 4px solid var(--ac); color: #fff; }
 .land-card .art { height: 6.8rem; color: rgba(255, 255, 255, 0.88); }
 .land-card .art svg { display: block; width: 100%; height: 100%; }
 .land-card h2 { margin: 0; display: flex; align-items: center; gap: 0.6rem; font-size: 1.3rem; line-height: 1.2; }

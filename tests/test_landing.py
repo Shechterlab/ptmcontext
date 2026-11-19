@@ -10,6 +10,7 @@ import yaml
 
 from ptmcontext import site as S
 from ptmcontext import web
+from ptmcontext.web import landing as LP
 
 from test_help import _toy
 
@@ -266,3 +267,11 @@ def test_the_mark_dots_fit_the_lens_for_one_to_six_cards():
         assert len(pts) == n and all(((x - 29) ** 2 + (y - 29) ** 2) ** 0.5 + r <= 17.05 for x, y, r in pts)
         sizes.append(pts[0][2])
     assert sizes[3] >= 5.9 and sizes == sorted(sizes, reverse=True)  # four dots, each larger than the old 4.3
+
+
+def test_the_whole_card_is_the_link_target():
+    """The title link's ::after covers the card only if nothing between it and the article is positioned: a positioned
+    band confined the target to the band, so the call to action and the body did nothing."""
+    css = LP.CSS
+    assert '.land-card .band { position: relative' not in css
+    assert ".land-card h2 a::after { content: ''; position: absolute; inset: 0;" in css

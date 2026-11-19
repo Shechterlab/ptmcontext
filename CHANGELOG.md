@@ -1,4 +1,5 @@
 ## Unreleased
+- Landing page: the whole card opens its explorer again, including the "Explore … →" button and the card body; a positioned color band had confined the card link to the band.
 
 - Interactions tab and protein pages, simpler: a table shows one line of counts per kind or group and keeps its rows behind "Show all rows" (ten at a time); a forest of more than ten tests shows eight and the rest behind "Show all tests"; the method sentence of a forest is behind "Method". The writer line of a site card lists eight partners and counts the rest.
 - Who binds the residue: the records are split under "binds it modified" (methylated, acetylated or phosphorylated, where the structure or record has the residue in that state) and "binds the residue, unmodified or in another state", on the Interactions tab and the site card of all four sites (`rollup` in `website.pages[].groups[].sections[].blocks[]` for a table with `group_by`, and in `website.protein.card.records`). The methylarginine tab now lists the unmodified binders too.
