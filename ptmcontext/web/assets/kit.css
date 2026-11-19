@@ -11683,3 +11683,35 @@ summary {
     align-items: center;
   }
 }
+
+/* ---- A phone: the header's top band is short on every page (the title and mark, the site switcher, the links), without the
+   introduction line, the figures and the credit; the figures are in the Overview and the credit in the footer. */
+@media (max-width: 700px) {
+  body:not(.slim) .hero .wrap {
+    padding-block: 0.75rem 0.85rem;
+    gap: 0.5rem;
+  }
+  body:not(.slim) .hero .lede,
+  body:not(.slim) .hero-stats,
+  body:not(.slim) .hero-art {
+    display: none;
+  }
+  body:not(.slim) .hero h1 {
+    font-size: 1.4rem;
+    line-height: 1.15;
+  }
+  body:not(.slim) .hero .site-mark {
+    width: 40px;
+    height: 40px;
+  }
+  body:not(.slim) .brand-side {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+  }
+  body:not(.slim) .brand-mark small {
+    display: none;
+  }
+}

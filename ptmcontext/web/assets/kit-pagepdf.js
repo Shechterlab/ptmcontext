@@ -30,10 +30,13 @@
       .replace(/≤/g, '<=')
       .replace(/[^\x20-\xff]/g, '');
   async function pagePdf(root, title, filename, btn) {
-    const label = btn ? btn.textContent : '';
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = 'Writing PDF…';
+    // the cue goes on the menu's toggle, which stays in view when the menu closes
+    const host = btn ? btn.closest('[data-xm]')?.querySelector('[data-xm-toggle]') || btn : null,
+      label = host ? host.textContent : '';
+    if (host) {
+      host.disabled = true;
+      host.setAttribute('aria-busy', 'true');
+      host.textContent = 'Preparing download…';
     }
     try {
       await Promise.all(LIBS.map(loadScript));
@@ -153,9 +156,10 @@
     } catch (e) {
       alert(`The PDF could not be written (${e.message}). Print can save one instead.`);
     } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = label;
+      if (host) {
+        host.disabled = false;
+        host.removeAttribute('aria-busy');
+        host.textContent = label;
       }
     }
   }

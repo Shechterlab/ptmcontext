@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Click audit and button fixes: `tools/audit/clicks.js` clicks every control of the landing page and of each site's routes (optional, not in CI). Slow downloads show "Preparing download…" on the visible Download button; the site switcher keeps the open tab when the other site has it; on a phone the header band is about 150 px; an Ensembl failure says "Ensembl is unavailable right now" with Try again.
+
 - Pin PTM_Pipeline v1.5.1 at its release commit 9a03d54 (tag v1.5.1; same tree as 7ae9a02, no md5 changes). Every site cites the release by its version DOI 10.5281/zenodo.24373077 (published 2026-11-19), with the concept DOI 10.5281/zenodo.22696798 for all versions; methyllysine, lysine and phospho now carry the data DOI. Human-facing source links name the tag.
 
 - Pin PTM_Pipeline 7ae9a02 (v1.5.1 with the corrected release README; no data file differs from 8b8e233).

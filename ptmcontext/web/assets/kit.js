@@ -4812,7 +4812,9 @@
       old = host ? host.textContent : '';
     if (host) {
       host.disabled = true;
-      host.textContent = '…';
+      host.setAttribute('aria-busy', 'true');
+      host.textContent = 'Preparing download…';
+      await new Promise((r) => setTimeout(r, 40)); // let the cue paint before a long synchronous build
     }
     try {
       if (kind === 'tsv') download(name + '.tsv', tsv(), 'text/tab-separated-values');
@@ -4828,6 +4830,7 @@
     } finally {
       if (host) {
         host.disabled = false;
+        host.removeAttribute('aria-busy');
         host.textContent = old;
       }
     }
