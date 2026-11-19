@@ -442,7 +442,7 @@
       )}</span> ${parts.join(' · ')}` +
       (pr.opens && document.getElementById(pr.opens)
         ? ` <button class="linkish" type="button" data-open-fold="${esc(pr.opens)}">${esc(
-            ctxWords(pr.opens_label || 'More', c)
+            ctxWords(pr.opens_label || K.ACT.showMore, c)
           )}</button>`
         : '') +
       '</p>'

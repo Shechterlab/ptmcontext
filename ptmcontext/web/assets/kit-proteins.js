@@ -33,7 +33,18 @@
       r.ok ? r.json() : Promise.reject(new Error('missing'))
     ));
   }
-  const loadProtein = (acc) => loadShard(shardOf(acc)).then((sh) => sh[acc] || Promise.reject(new Error('not found')));
+  // a region's name is shown in American spelling (the source's own stays in the data)
+  const loadProtein = (acc) =>
+    loadShard(shardOf(acc)).then((sh) => {
+      const rec = sh[acc] || Promise.reject(new Error('not found'));
+      if (rec.units && !rec.usDone) {
+        rec.usDone = true;
+        rec.units.forEach((u) => {
+          u[3] = K.us(u[3]);
+        });
+      }
+      return rec;
+    });
   K.loadProtein = loadProtein; // for other modules' drawings of a protein (kit-selview.js)
 
   // ---- website.protein.order / open: the folds in the site's order, and which of them start open --------------------------
@@ -780,7 +791,7 @@
       group('site', 'Site', siteRows, true) +
       group('questions', 'Questions', qrows.join(''), true) +
       group('records', 'UniProt and sources', uniRow + citeRow, true) +
-      group('more-questions', `More questions (${qmore.length})`, qmore.join(''), false) +
+      group('more-questions', `Other questions (${qmore.length})`, qmore.join(''), false) +
       group('attributes', `Other attributes (${rest.length})`, restRows, false);
     const ev = ready ? K.card.evidenceBlock(c) : '',
       recs = ready ? K.card.recordsBlock(c) : '',
@@ -2197,7 +2208,7 @@
         texts.length
           ? `<p class="fn-text${PV.fn ? ' open' : ''}">${texts.map(linkPm).join(' ')}</p><p class="src">` +
               `Function, from <a href="https://www.uniprot.org/uniprotkb/${esc(acc)}/entry#function">UniProt ${esc(acc)}</a> when the ` +
-              `page opens · <button type="button" class="linkish" data-fn-more>${PV.fn ? 'Less' : 'More'}</button></p>`
+              `page opens · <button type="button" class="linkish" data-fn-more>${PV.fn ? K.ACT.showLess : K.ACT.showMore}</button></p>`
           : '<p class="muted">UniProt gives no function text for this entry.</p>'
       );
       if (first) {
@@ -2613,7 +2624,7 @@
         PV.fn = !PV.fn;
         document.querySelector('.fn-text')?.classList.toggle('open', PV.fn);
         const b = document.querySelector('[data-fn-more]');
-        if (b) b.textContent = PV.fn ? 'Less' : 'More';
+        if (b) b.textContent = PV.fn ? K.ACT.showLess : K.ACT.showMore;
       },
     ],
     [
