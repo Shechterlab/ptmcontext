@@ -91,7 +91,9 @@ Conventions:
   units. A unit is an item of a `columns` list (a PubMed ID), or the unit a `direct` item maps to (a dataset's own PubMed
   ID, so a database citing that paper is not counted twice, or its name for a dataset with no PMID); `direct` items not in
   `map` (databases) add nothing. A row failing `only_where` gives no units (so by-similarity or text-mined evidence
-  counts for nothing).
+  counts for nothing). With `per: <column>` the units are pooled only among a mark's rows that share a value in that
+  column (the modification type), so each row answers for its own type: a lysine's acetylation, other acylation,
+  ubiquitination and SUMOylation records never add up to one another.
 - Controls (`controls: [{id, label, when?, note?, analyses: [question ids], marks_where?, marks_outside?,
   without_proteins?, only_in?}]`, each with at least one change): at load, each listed question gets a copy
   `<id>_<control id>` with the change (a `marks_where` joins the question's own: both must hold), `new: true`,

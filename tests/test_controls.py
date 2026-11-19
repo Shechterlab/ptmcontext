@@ -83,6 +83,25 @@ def test_distinct_units_pool_a_marks_rows_and_count_a_paper_once():
         S._holds(frame, cond)
 
 
+def test_distinct_units_are_pooled_per_type_when_per_is_given():
+    """One lysine with an acetyl record of paper A, a ubiquitin record of paper B and a second ubiquitin record of
+    paper C: pooled over all rows it has three units; per type, only the ubiquitin rows reach two."""
+    frame = pd.DataFrame(
+        {
+            'acc': ['P1', 'P1', 'P1', 'P2', 'P2'],
+            'pos': [1, 1, 1, 4, 4],
+            'type': ['acetyl', 'ubiquitin', 'ubiquitin', 'sumo', 'sumo'],
+            'pmids': ['1', '2', '3', '7', '7'],
+        }
+    )
+    cond = {'distinct_units_at_least': 2, 'units': {'columns': ['pmids']}}
+    key = frame['acc'] + ':' + frame['pos'].astype(str)
+    assert list(S._holds(frame, cond, key)) == [True, True, True, False, False]
+    assert list(S._holds(frame, {**cond, 'per': 'type'}, key)) == [False, True, True, False, False]
+    with pytest.raises(ValueError, match='per column'):
+        S._holds(frame, {**cond, 'per': 'nope'}, key)
+
+
 def test_digest_peptide_lengths_leave_the_residue_itself_uncut():
     # cuts after K3 (next R), not after R4 (next P), after K8 and R12; K15 is the last residue
     seq = 'MAKRPGGKAAARSTK'

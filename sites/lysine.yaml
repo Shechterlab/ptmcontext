@@ -1037,6 +1037,7 @@ marks_subsets:           # the key questions again on the lysines of one type (a
   - id: glu
     label: Kglu
     where: {column: acyl_type, equals: glutaryl}
+      per: acyl_type
     note: "Only the lysines with a glutarylation (Kglu) record are counted as modified"
     analyses: [histone, panther_group, reactome_top_level, hpa_location, cell_chromatin, disorder, idr_charge, structure_context, domain_class, near_methylarginine, near_methyllysine, near_phospho, near_phospho_high]
   - id: la
@@ -1080,11 +1081,11 @@ controls:
   # unspecified and text-mined records give nothing). A study is a PubMed ID in the record's pmids, or a direct dataset
   # (Berryhill 2023, Ochoa 2020, Hendriks 2017 as its PubMed ID 28112733, Akimov 2018 as 29967540, so a database citing
   # the same paper is not counted twice). UniProt and iPTMnet count only through the papers they cite. Ochoa 2020 is
-  # one study, however many of its observations there are. A lysine's studies are pooled over all its rows.
+  # one study, however many of its observations there are. Studies are pooled per modification (acyl_type: acetyl, each other acyl type, ubiquitin, sumo) over a lysine's rows: a lysine is high-confidence for a modification only if two studies report that modification, and studies of different modifications never add up.
   - id: hc
     label: high-confidence sites
-    when: "only the lysines at least two independent studies report are compared"
-    note: "Only the lysines at least two independent studies report (each paper counted once, whether it comes from a database citing it or from the study's own data; Ochoa 2020 counted once; records by similarity, unspecified or text-mined count for nothing); the other sites are counted on neither side"
+    when: "only the lysines at least two independent studies report with the same modification are compared"
+    note: "Only the lysines at least two independent studies report with the same modification: acetylation, each other acylation, ubiquitination and SUMOylation are counted separately, so a lysine acetylated in one study and ubiquitinated in another does not qualify (each paper counted once, whether it comes from a database citing it or from the study's own data; Ochoa 2020 counted once; records by similarity, unspecified or text-mined count for nothing); the other sites are counted on neither side"
     analyses: [motif, disorder, idr_charge]
     marks_where:
       distinct_units_at_least: 2

@@ -1440,8 +1440,14 @@ def _distinct_units_at_least(frame: pd.DataFrame, cond: dict, key: pd.Series) ->
     item of `units.direct.column` listed in `units.direct.map`, the unit it maps to (a dataset counts as one unit, or
     as the PubMed ID of its paper, so that a database citing that paper is not counted twice). Items of the direct
     column not in the map add nothing: databases count only through the papers they cite. A row that fails
-    `units.only_where` adds no units. Every row of a mark gets the mark's answer."""
+    `units.only_where` adds no units. Every row of a mark gets the mark's answer. With `per` (a column's name), units
+    are pooled only among rows with the same value in that column (the modification type): each row's answer is for
+    its own type, and a lysine's acetylation and ubiquitination records never add up."""
     u = cond['units']
+    if cond.get('per'):
+        if cond['per'] not in frame.columns:
+            raise ValueError(f'distinct_units_at_least: per column {cond["per"]!r} is not in the marks table')
+        key = key.astype(str) + '\x1f' + frame[cond['per']].astype(str)
     cols = u.get('columns') or []
     sep = u.get('separator', ';')
     d = u.get('direct') or {}

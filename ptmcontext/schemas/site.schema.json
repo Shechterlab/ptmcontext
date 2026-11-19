@@ -9079,6 +9079,10 @@
           "type": "integer",
           "minimum": 1
         },
+        "per": {
+          "type": "string",
+          "description": "a column of the marks table (the modification type): units are pooled only among rows with the same value in it, so a mark is high-confidence for its own type only"
+        },
         "units": {
           "type": "object",
           "additionalProperties": false,
