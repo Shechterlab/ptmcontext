@@ -1573,6 +1573,7 @@ website:                  # the look and words of the website (ptmc web); layout
       crosslink: ["capri_adj_peptide_among_measured", "rbrid_residue_among_measured", "pclap_lysc_region", "pclap_lysc_region_outside_rg", "pclap_peptide", "rbdmap_fragment", "rbdmap_fragment_outside_rg"]
     glossary:
       "IDR": "an intrinsically disordered region, a stretch with no fixed fold."
+      "PRMT": "a protein arginine methyltransferase, an enzyme that adds methyl groups to arginines."
       "CAPRI": "peptides crosslinked to RNA in living cells (UV crosslinking and mass spectrometry)."
       "RBR-ID": "residues whose peptides drop after UV crosslinking to RNA in cells, a sign of RNA contact."
       "pDockQ": "confidence of a predicted protein-protein interface (AlphaFold); 0.23 is likely, 0.5 confident."
@@ -1855,6 +1856,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
     - {name: Studies and databases, attributes: [studies, n_studies, localised_by]}
   dataset: {label: data release, version: v1.5.1, date: "2026-11-19", doi: "10.5281/zenodo.24373077", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1"}
+  methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.5.1/releases/v1.5.1/human_methylarginine_sites_v1.5.1.xlsx", format: Excel, note: "every site with its evidence, one row per site"}
@@ -2606,6 +2608,10 @@ website:                  # the look and words of the website (ptmc web); layout
         offset: -1
         label: histone numbering
         note: "Histone numbering, without the initiator methionine"
+      - removed_met: sites/data/uniprot_init_met_removed.tsv     # UniProt: initiator methionine, Removed
+        offset: -1
+        label: numbered without the initiator methionine
+        note: "Numbered without the initiator methionine, which UniProt records as removed"
     facts:                 # the headline cards under the map: each opens its section, with a hover
       - {count: marks, of: candidates, label: "{residues} methylated", kind: Sites, glyph: pins, opens: p-seq,
          tip: {values: [{attribute: arg_enrichment, label: "Arginine methylation enrichment: log2", format: l2}, {attribute: arg_enrichment_q, label: q, format: p}]}}
@@ -2717,6 +2723,9 @@ website:                  # the look and words of the website (ptmc web); layout
           self: homo-oligomer contacts in structures
           predicted: complex models (ProtVar, AlphaFold DB), not observations
         open: [writes, removes, binds_methylated, mutation_changes_binding, binds_region, other_reaction, not_a_protein]
+        rollup:              # the groups under two headings: the residue in the site's state, against in any other
+          - {label: Binds it methylated, groups: [binds_methylated]}
+          - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
         not_papers: [predicted]              # groups whose records are not counted among the papers
         kinds: {self: another copy, rna: RNA, dna: DNA, gene: Gene locus, small_molecule: Small molecule, peptide: Peptide or complex}
         species: Homo sapiens                # partners of another species are named with theirs
@@ -3273,11 +3282,11 @@ website:                  # the look and words of the website (ptmc web); layout
           sections:
             - id: ix-who
               title: Who acts on the methylarginine
-              question: Which partners methylate these sites, demethylate them, or bind them methylated, and in which experiments?
+              question: Which partners methylate these sites, demethylate them, bind them methylated, or bind the residue in another state, and in which experiments?
               sub: methylarginines with a record
               blocks:
-                - {kind: table, table: records, group_by: group, columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
-                   where: [{column: group, in: [writes, removes, binds_methylated, mutation_changes_binding]}]}
+                - {kind: table, table: records, group_by: group, rollup: [{label: Binds it methylated, values: [binds_methylated]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
+                   where: [{column: group, in: [writes, removes, binds_methylated, binds_unmodified, binds_other_residue, binds_state_not_read, mutation_changes_binding]}]}
             - id: ixs-partners
               title: Writers, readers and other partners
               question: Which PRMTs and reader-domain proteins bind the methylated proteins?

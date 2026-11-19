@@ -442,7 +442,7 @@
       )}</span> ${parts.join(' · ')}` +
       (pr.opens && document.getElementById(pr.opens)
         ? ` <button class="linkish" type="button" data-open-fold="${esc(pr.opens)}">${esc(
-            ctxWords(pr.opens_label || 'More', c)
+            ctxWords(pr.opens_label || K.ACT.showMore, c)
           )}</button>`
         : '') +
       '</p>'
@@ -689,6 +689,9 @@
     const k = v.indexOf(g);
     return k < 0 ? 999 : k;
   };
+  // card.records.rollup: [{label, groups: [codes]}] puts the groups of a heading under one line, as "binds it modified"
+  // against "binds the residue (unmodified or another state)"; a group no roll names stands alone
+  const rollOf = (g) => (RC.rollup || []).find((x) => (x.groups || []).includes(g));
   const paperKey = (r) => r.pubmed || r.doi || r.citation || '';
   const paperA = (r) => {
     const pml = K.papers.ids(r.pubmed);
@@ -816,14 +819,18 @@
       papers = new Set(),
       quiet = new Set(RC.not_papers || []);
     rs.forEach((r) => {
-      n.set(r.group, (n.get(r.group) || 0) + 1);
+      const roll = rollOf(r.group),
+        k = roll ? roll.label : r.group;
+      if (!n.has(k))
+        n.set(k, { label: roll ? roll.label : grpLabel(r.group), at: grpOrder(roll ? roll.groups[0] : r.group), k: 0 });
+      n.get(k).k++;
       if (!quiet.has(r.group) && paperKey(r)) papers.add(paperKey(r));
     });
     return (
       `${int(rs.length)} interaction record${rs.length === 1 ? '' : 's'} from ${int(papers.size)} paper${papers.size === 1 ? '' : 's'} and datasets: ` +
-      [...n.entries()]
-        .sort((a, b) => grpOrder(a[0]) - grpOrder(b[0]))
-        .map(([g, k]) => `${grpLabel(g).replace(/^[A-Z](?=[a-z])/, (ch) => ch.toLowerCase())} ${int(k)}`)
+      [...n.values()]
+        .sort((a, b) => a.at - b.at)
+        .map((x) => `${x.label.replace(/^[A-Z](?=[a-z])/, (ch) => ch.toLowerCase())} ${int(x.k)}`)
         .join(' · ')
     );
   }
@@ -836,6 +843,13 @@
         `class="linkish small" type="button" data-rec-tsv="${c.pos}">TSV</button></p>` +
         recordGroups(c, rs)
           .map(([g, m], _k, all) => {
+            const roll = rollOf(g),
+              first = roll && all.find(([x]) => roll.groups.includes(x))[0] === g,
+              rollRecs = roll
+                ? all
+                    .filter(([x]) => roll.groups.includes(x))
+                    .reduce((t, [, mm]) => t + [...mm.values()].reduce((u, x) => u + x.n, 0), 0)
+                : 0;
             const xs = [...m.values()],
               n = xs.reduce((t, x) => t + x.n, 0),
               who = new Set(xs.map((x) => x.partner || x.partner_name || x.partner_kind));
@@ -844,6 +858,9 @@
               `data-label="Method">${methodCell(x)}</td><td data-label="Site in it">${stateCell(x)}</td><td ` +
               `data-label="Paper">${papersCell(x)}</td></tr>`;
             return (
+              (first
+                ? `<h5 class="sp-roll">${esc(cap(roll.label))} <span class="muted small">${int(rollRecs)} record${rollRecs === 1 ? '' : 's'}</span></h5>`
+                : '') +
               `<details class="sp-group"${
                 (RC.open || []).includes(g) || all.length === 1 ? ' open' : ''
               }><summary><b>${esc(cap(grpLabel(g)))}</b> <span ` +
@@ -944,7 +961,15 @@
         ];
         if (names.length || w.none)
           lines.push(
-            dl(esc(w.label), names.length ? esc(names.join(', ')) : `<span class="muted">${esc(w.none)}</span>`)
+            dl(
+              esc(w.label),
+              names.length
+                ? esc(names.slice(0, 8).join(', ')) +
+                    (names.length > 8
+                      ? ` <span class="muted">+${names.length - 8} more, in the table below</span>`
+                      : '')
+                : `<span class="muted">${esc(w.none)}</span>`
+            )
           );
       }
     if (WR.suggest) {

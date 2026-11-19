@@ -1398,6 +1398,10 @@
             "type": "boolean",
             "description": "not in the site's reference: no parity check, and the website marks it new"
           },
+          "key_findings": {
+            "const": false,
+            "description": "false keeps every result of this question out of the Overview's Key findings (its tile still shows them); a motif family can say the same of itself"
+          },
           "with": {
             "type": "object",
             "description": "the parameters of a layer made from them (ptmc layers lists them): regions {role, kind, window, noun, nouns, labels, help, title, question, sub, section, track}; residue_values {role, bins, classes, missing, noun, labels, help, title, question, sub, section, track}; residue_lists {flags: {flag: role}, noun, labels, help, title, question, sub, section}; built-in layers: disorder {window}, idr {window, min_length}, domain {window}, domain_context {window}, structure_context {near, mid}, idr_charge {min_length} (each optional, the documented default 20, 20, 20, 20, 10 and 30, 20), domain_class {classes: the path of a file of domain classes, required}"
@@ -4126,7 +4130,7 @@
             },
             "numbering": {
               "type": "array",
-              "description": "proteins numbered as papers do, in labels and links: a protein whose gene (or, without a gene, name) matches is shown at UniProt position + offset (histones without the initiator methionine: offset -1)",
+              "description": "proteins numbered as papers do, in labels and links: a protein whose gene (or, without a gene, name) matches, or whose accession is in the removed_met table, is shown at UniProt position + offset (histones, and proteins whose initiator methionine UniProt records as removed: offset -1); the first rule that matches wins; downloads keep the UniProt position beside the shown site",
               "items": {
                 "type": "object",
                 "required": [
@@ -4141,6 +4145,10 @@
                   "names": {
                     "type": "string",
                     "description": "a regular expression on the protein's name (case-insensitive), for a protein without a gene"
+                  },
+                  "removed_met": {
+                    "type": "string",
+                    "description": "a tab-separated table (an accession column; # lines are comments) of the proteins this rule numbers, from UniProt's feature Initiator methionine, Removed"
                   },
                   "offset": {
                     "type": "integer"
@@ -5532,6 +5540,10 @@
         "download_terms": {
           "type": "string",
           "description": "the terms the downloads come under (licenses, attribution), shown above the list"
+        },
+        "methods_note": {
+          "type": "string",
+          "description": "one sentence for the Methods page's Data section (which releases of a source the sequences and the context marks use, and why)"
         },
         "counts": {
           "type": "object",
@@ -7994,6 +8006,29 @@
                                 },
                                 "group_by": {
                                   "type": "string"
+                                },
+                                "rollup": {
+                                  "type": "array",
+                                  "description": "table with group_by: headings that each hold several groups, as [{label, values: [group codes]}] (for example binds it modified, against binds the residue in any other state)",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "values": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "label",
+                                      "values"
+                                    ],
+                                    "additionalProperties": false
+                                  }
                                 },
                                 "chips": {
                                   "type": "string"

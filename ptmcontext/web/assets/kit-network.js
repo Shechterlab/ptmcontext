@@ -1081,7 +1081,7 @@
       (UI.mode === 'network'
         ? `<span class="nw-zb" role="group" aria-label="Zoom"><button type="button" class="btn small" data-nw-zoom="-1" aria-label="Zoom out" title="Zoom out (Ctrl or Cmd and the wheel; pinch on a touch screen; drag to move)">−</button><button type="button" class="btn small" data-nw-zoom="1" aria-label="Zoom in" title="Zoom in (Ctrl or Cmd and the wheel; pinch on a touch screen; drag to move)">+</button>` +
           `<button type="button" class="btn small" data-nw-fitpin title="Zoom to the pinned proteins and the clusters they touch">Fit pinned</button>` +
-          `<button type="button" class="btn small" data-nw-vreset title="Show the whole drawing">Reset</button></span>`
+          `<button type="button" class="btn small" data-nw-vreset title="Show the whole drawing">${K.ACT.resetView}</button></span>`
         : '') +
       `<label class="nw-inl nw-xf"><span>Export</span><select data-nw="xf" aria-label="What the download frames"><option value="fit"${UI.xf === 'fit' ? ' selected' : ''}>Fit pinned</option><option value="view"${UI.xf === 'view' ? ' selected' : ''}>What you see</option><option value="whole"${UI.xf === 'whole' ? ' selected' : ''}>Whole network</option></select></label>` +
       `${K.expBar(['svg', 'png', 'pdf', 'tsv'], 'nwexp', 'the network').replace(

@@ -40,7 +40,7 @@ enzymes:
 motifs:            # read in the 15-residue window centered on the lysine (window_flank 7); patterns of the sequence around it, not curated rules
   window_flank: 7
   families:
-    - {name: SUMO_consensus, label: "ψ-K-x-D/E", help: "A large hydrophobic residue (V, I or L) at −1 and Asp or Glu at +2: the SUMOylation consensus", all: [{at: -1, in: VIL}, {at: 2, in: DE}]}
+    - {name: SUMO_consensus, label: "ψ-K-x-D/E", key_findings: false, help: "A large hydrophobic residue (V, I or L) at −1 and Asp or Glu at +2: the SUMOylation consensus", all: [{at: -1, in: VIL}, {at: 2, in: DE}]}
     - {name: R_before, label: "Arg at −1", help: "Arg right before the lysine", all: [{at: -1, in: R}]}
     - {name: ST_after, label: "Ser or Thr at +1", help: "Ser or Thr right after the lysine", all: [{at: 1, in: ST}]}
     - {name: G_before, label: "Gly at −1", help: "Gly right before the lysine", all: [{at: -1, in: G}]}

@@ -3456,7 +3456,7 @@
       `<div class="cz-bar"><strong>${esc(title)}</strong>${one ? '' : viewSwitch()}<span class="cz-btns"><button type="button" ` +
       `class="btn small" data-cz="more" aria-label="Zoom in" title="Zoom in">+</button><button type="button" ` +
       `class="btn small" data-cz="less" aria-label="Zoom out" title="Zoom out">−</button><button type="button" ` +
-      `class="btn small" data-cz="reset" title="Back to the whole drawing">Reset</button><button type="button" ` +
+      `class="btn small" data-cz="reset" title="Back to the whole drawing">${K.ACT.resetView}</button><button type="button" ` +
       `class="btn small" data-cz="close" aria-label="Close" title="Close (Esc)">×</button></span></div>` +
       (`<div class="cz-body"><div class="cz-stage" tabindex="0" role="group" aria-label="${esc(title)}: scroll or ` +
         `pinch to zoom, drag to move; with the keyboard, plus and minus zoom, 0 resets and the arrow keys move">` +

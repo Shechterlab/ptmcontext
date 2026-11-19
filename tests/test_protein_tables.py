@@ -523,3 +523,21 @@ def test_the_record_groups_keep_the_attributes_labels_over_the_site_files():
     }
     rec = _card(both, specs, [], _REC_ROWS)['rec']
     assert '<b>Attribute word</b>' in rec and 'Site word' not in rec and '<b>Two</b>' in rec
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_record_groups_can_roll_up_under_two_headings_with_one_summary_phrase_each():
+    card = {
+        'evidence': _CARD_EV,
+        'records': {
+            **_CARD_REC,
+            'labels': {'binds_one': 'One', 'binds_two': 'Two'},
+            'rollup': [
+                {'label': 'Binds it modified', 'groups': ['binds_one']},
+                {'label': 'Binds the residue', 'groups': ['binds_two']},
+            ],
+        },
+    }
+    rec = _card(card, {}, [], _REC_ROWS)['rec']
+    assert '<h5 class="sp-roll">Binds it modified' in rec and '<h5 class="sp-roll">Binds the residue' in rec
+    assert 'binds it modified 2 · binds the residue 1' in rec  # the summary line reads the headings

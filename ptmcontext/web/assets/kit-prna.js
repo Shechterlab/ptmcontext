@@ -196,7 +196,7 @@
       (items.length > n
         ? `<li><button ` +
           `type="button" class="linkish" data-prna-more="${esc(key)}">${
-            open ? 'Show fewer' : `Show ${int(items.length - n)} more`
+            open ? K.ACT.showLess : `Show ${int(items.length - n)} more`
           }</button></li>`
         : '')
     );
@@ -287,7 +287,7 @@
         `${
           m.xl.length > 40
             ? ` <button type="button" class="linkish" data-prna-more="${k}x">${
-                UI.more[k + 'x'] ? 'Show fewer' : `Show ${int(m.xl.length - 40)} more`
+                UI.more[k + 'x'] ? K.ACT.showLess : `Show ${int(m.xl.length - 40)} more`
               }</button>`
             : ''
         }</p>`

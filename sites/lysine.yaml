@@ -1134,7 +1134,7 @@ citation: sites/lysine.citation.cff   # the citation, data sources, version and 
 
 website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
-  name: Lysine Modification Explorer
+  name: Lysine Modification Site Explorer
   tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from public databases and studies."
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
@@ -1379,6 +1379,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: RNA and DNA, analyses: [pdb_interface_na]}
   dataset: {label: PTM_Pipeline data release, version: v1.5.1, date: "2026-11-19", doi: "10.5281/zenodo.24373077", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1"}
+  methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). Akimov et al., Nat Struct Mol Biol 25:631 (2018) and Hendriks et al., Nat Struct Mol Biol 24:325 (2017) are articles that are not open access, and their supplementary tables have no license notice of their own: their sites are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
     - {label: Acetylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.5.1/releases/v1.5.1/human_acetylation_sites_v1.5.1.tsv", format: TSV, note: "every acetylation record: one row per lysine, with its evidence class, sources and iPTMnet fields (4,597 rows)"}
@@ -1593,12 +1594,16 @@ website:                  # the look and words of the website (ptmc web); layout
         site: [name, chips, nearby, click]
         chips: [sources, {attribute: pmids, count: PMIDs}]
         context: [mark, residue, detail, source, click]
-    numbering:             # positions typed in a search read as the protein's page numbers them
+    numbering:             # proteins numbered without the initiator methionine in every label, link and search (histones; proteins UniProt records it removed for)
       - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
         names: "^(putative |core )?histone (h1|h2a|h2b|h3|h4|macro-h2a)\\b|^testis-specific h1 histone|^histone h3-like centromeric"
         offset: -1
         label: histone numbering
         note: "Histone numbering, without the initiator methionine"
+      - removed_met: sites/data/uniprot_init_met_removed.tsv     # UniProt: initiator methionine, Removed
+        offset: -1
+        label: numbered without the initiator methionine
+        note: "Numbered without the initiator methionine, which UniProt records as removed"
     nucleic:               # the RNA and DNA interactions card (CONTRACTS.md, RNA and DNA interactions)
       title: RNA and DNA interactions
       kinds: {rna: RNA, dna: DNA}
@@ -1695,6 +1700,9 @@ website:                  # the look and words of the website (ptmc web); layout
           nucleic_acid: RNA or DNA
           self: Another copy of the protein
         open: [binds_modified]
+        rollup:              # the groups under two headings: the residue in the site's state, against in any other
+          - {label: Binds it modified, groups: [binds_modified]}
+          - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
         kinds: {self: another copy, rna: RNA, dna: DNA}
         species: Homo sapiens                # partners of another species are named with theirs
         urls: {PDB: "https://www.rcsb.org/structure/{id}"}
@@ -1756,4 +1764,4 @@ website:                  # the look and words of the website (ptmc web); layout
               question: Which partners bind these sites, in which state of the lysine, and how was each found?
               sub: modified lysines with a record
               blocks:
-                - {kind: table, table: records, group_by: group, columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}
+                - {kind: table, table: records, group_by: group, rollup: [{label: Binds it modified, values: [binds_modified]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}

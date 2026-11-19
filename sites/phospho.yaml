@@ -221,7 +221,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
            help: "Arg at -3 and Pro at +2, with any residue at -2: the relaxed form of mode 1"}
         - {name: ytt_mode2, label: "14-3-3 mode 2 (R-x-Y/F-x-pS-x-P)", pattern: "R.[FY].[ST].P", start: -4, among: ST,
            help: "Arg at -4, Tyr or Phe at -2 and Pro at +2: the second 14-3-3 binding mode (Yaffe et al. 1997)"}
-        - {name: polo_box, label: "Polo-box (S-pS/pT-P)", pattern: "S[ST]P", start: -1, among: ST,
+        - {name: polo_box, label: "Polo-box (S-pS/pT-P)", pattern: "S[ST]P", start: -1, among: ST, key_findings: false,
            help: "Ser at -1 and Pro at +1: the motif the polo-box domain of PLK1 binds (Elia et al. 2003)"}
         - name: phosphodegron_btrcp
           label: "beta-TrCP phosphodegron (D-pS-G-x-x-pS)"
@@ -1046,7 +1046,7 @@ citation: sites/phospho.citation.cff   # the citation, data sources, version and
 
 website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
-  name: Phosphosite Explorer
+  name: Phosphorylation Site Explorer
   tagline: "Human protein phosphorylation sites from public databases."
   # published at /ptmcontext/phospho/; listed on the landing page and in the sites' header menu
   landing:
@@ -1314,6 +1314,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
     - {name: Databases, attributes: [sources, iptmnet_sources]}
   dataset: {label: PTM_Pipeline data release, version: v1.5.1, date: "2026-11-19", doi: "10.5281/zenodo.24373077", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1"}
+  methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). The phosphosites and functional scores of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3 (rows whose databases name Ochoa 2020) come from an article that is not open access, and its supplementary table has no license: they are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.5.1/releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class, sources, Ochoa 2020 functional score and mass-spectrometry evidence (Ochoa 2020 rows included, not open access)"}
@@ -1620,6 +1621,16 @@ website:                  # the look and words of the website (ptmc web); layout
         context: [mark, residue, detail, source, click]
       marks_view: {attribute: functional_score, at_least: 0.5, label: score ≥ 0.5}   # every site at first; a click on the row label keeps the sites Ochoa 2020 scores 0.5 or more
       hide_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row would repeat the phosphosites: one source for them
+    numbering:             # proteins numbered without the initiator methionine in every label, link and search (histones; proteins UniProt records it removed for)
+      - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
+        names: "^(putative |core )?histone (h1|h2a|h2b|h3|h4|macro-h2a)\\b|^testis-specific h1 histone|^histone h3-like centromeric"
+        offset: -1
+        label: histone numbering
+        note: "Histone numbering, without the initiator methionine"
+      - removed_met: sites/data/uniprot_init_met_removed.tsv     # UniProt: initiator methionine, Removed
+        offset: -1
+        label: numbered without the initiator methionine
+        note: "Numbered without the initiator methionine, which UniProt records as removed"
     nucleic:               # the RNA and DNA interactions card (CONTRACTS.md, RNA and DNA interactions)
       title: RNA and DNA interactions
       kinds: {rna: RNA, dna: DNA}
@@ -1716,6 +1727,9 @@ website:                  # the look and words of the website (ptmc web); layout
           nucleic_acid: RNA or DNA
           self: Another copy of the protein
         open: [binds_modified]
+        rollup:              # the groups under two headings: the residue in the site's state, against in any other
+          - {label: Binds it phosphorylated, groups: [binds_modified]}
+          - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
         kinds: {self: another copy, rna: RNA, dna: DNA}
         species: Homo sapiens                # partners of another species are named with theirs
         urls: {PDB: "https://www.rcsb.org/structure/{id}"}
@@ -1777,4 +1791,4 @@ website:                  # the look and words of the website (ptmc web); layout
               question: Which partners bind these sites, in which state of the residue, and how was each found?
               sub: phosphosites with a record
               blocks:
-                - {kind: table, table: records, group_by: group, columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}
+                - {kind: table, table: records, group_by: group, rollup: [{label: Binds it phosphorylated, values: [binds_modified]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}

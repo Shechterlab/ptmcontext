@@ -52,9 +52,9 @@
   };
   const attrVal = (m, name) => K.cols.markAttr(m, name) ?? '';
   const letter = (rec, pos) => (rec.seq || '')[pos - 1] || '';
-  const siteName = (rec, pos) => letter(rec, pos) + pos;
+  const siteName = (rec, pos, acc) => letter(rec, pos) + (acc && K.prot?.shownPos ? K.prot.shownPos(acc, pos) : pos);
   const siteLink = (p, rec, pos) =>
-    `<a href="${esc(K.link('protein', `${p.acc}/${pos}`))}">${esc(siteName(rec, pos))}</a>`;
+    `<a href="${esc(K.link('protein', `${p.acc}/${pos}`))}">${esc(siteName(rec, pos, p.acc))}</a>`;
   const gene = (p) => p.gene || p.acc;
 
   // ---- live sources, asked by accession ------------------------------------------------------------------------------
@@ -860,7 +860,8 @@
     const clusters = list(r.clusters)
       .map((c) => c.split(',').map(Number))
       .filter((c) => c.length);
-    const range = `${letter(rec, +r.window_start)}${r.window_start}–${r.window_end}`;
+    const sh = (q) => (K.prot?.shownPos ? K.prot.shownPos(p.acc, +q) : +q);
+    const range = `${letter(rec, +r.window_start)}${sh(r.window_start)}–${sh(r.window_end)}`;
     const html =
       sub +
       '<dl class="pc-dl">' +
@@ -879,7 +880,7 @@
             clusters.length
               ? `<br><span ` +
                 `class="muted small">clusters ${clusters
-                  .map((c) => `${c[0]}–${c[c.length - 1]} (${c.length})`)
+                  .map((c) => `${sh(c[0])}–${sh(c[c.length - 1])} (${c.length})`)
                   .join(', ')}</span>`
               : ''
           }</dd>`
@@ -964,7 +965,7 @@
                           const m = marks.reduce((a, b) => (Math.abs(b - r.start) < Math.abs(a - r.start) ? b : a));
                           return (
                             `<span class="tag" ` +
-                            `title="${esc(r.source || '')}">${esc(siteName(rec, r.start))} · ${esc(siteName(rec, m))}</span>`
+                            `title="${esc(r.source || '')}">${esc(siteName(rec, r.start, p.acc))} · ${esc(siteName(rec, m, p.acc))}</span>`
                           );
                         })
                         .join(' ') +

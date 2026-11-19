@@ -107,8 +107,8 @@ Conventions:
   (the other side of 1×, at q ≤ 0.05, the fold and the test pointing the same way), lost (under 1.1× the same way, or the
   other side without q ≤ 0.05) or new (a reading only the control has). The table's key says the same. With a selection
   on, the table is still drawn and labeled as the whole dataset's. A class whose result fails a control keeps its place
-  on the Overview with a muted badge under its tile row, and one under its question's heading: "fails control:
-  <label>", a button that opens the question at its Controls table (focused, in view) and does nothing else (the click
+  on the Overview with a muted badge under its tile row, and one under its question's heading: "Doesn't hold
+  with <label> (n = <the control's marks>)" ("in", "inside" or "within" for a label that starts with one), a button that opens the question at its Controls table (focused, in view) and does nothing else (the click
   reaches neither the tile nor its row's filter). Its tooltip is one sentence, "This result disappears (or reverses)
   when <when> (fold → fold).", `when` defaulting to "the test is repeated with <label>"; the badge's words join the row's
   accessible name. `website.overview.control_badges: {verdicts: [lost, reversed, weaker]}` says which readings count
@@ -768,7 +768,7 @@ reader's choice in the browser. A count of at least `flag_ratio` (default 3) tim
 `website.protein.card.records` (the card's "Who binds it" block over a `site_records` table) names the group headings in
 this order: the label of the `groups` attribute's value, else `labels: {code: label}` (optional, a map of a group's code to
 its heading), else the code with its underscores replaced by spaces. The summary line above the groups uses the same
-words, lower-cased. In `site_evidence`, a row's `kinds` entry of `""` names the row by its partner: `partner` (the
+words, lower-cased. `rollup: [{label, groups: [codes]}]` (optional) puts the groups it names under one heading and one phrase of the summary (for example "binds it modified" against "binds the residue, unmodified or in another state"); a group no entry names stands alone. In `site_evidence`, a row's `kinds` entry of `""` names the row by its partner: `partner` (the
 gene), else `partner_accession`, else the kind's label.
 
 `ptmc web` keeps each protein's rows beside its page (`data/e/NN.json`, `e_shards` files of about 0.4 MB by the rule of `map_shards`), the rows that name a
@@ -779,8 +779,15 @@ written once (`_s`) and its places hold its index; positions, `start` and `end` 
 
 The site card and the sites table read the site file's `website.protein.card` and `website.protein.table` for their
 words: the codes' labels, the sentences, the marks of each call, which columns the Columns menu offers and which show
-first. `website.protein.numbering` numbers some proteins as papers do (a gene or name pattern and an offset: histones
-without their initiator methionine): their positions are shown and read in links with it.
+first. `website.protein.numbering` numbers some proteins as papers do: a list of rules, each an `offset` (-1: without the
+initiator methionine) and what it applies to, the first rule that matches winning. A rule names proteins by a gene or
+name pattern (`genes`, `names`: the histones) or by `removed_met`, a tab-separated table with an `accession` column (lines
+starting with `#` are comments) of the proteins whose UniProt entry records the initiator methionine as removed
+(feature INIT_MET, note "Removed"); the kit ships one for reviewed human entries, `sites/data/uniprot_init_met_removed.tsv`.
+Every view shows and reads a numbered protein's sites in it (the card, map, sequence, regions, Sites page, network, search
+and links); a table download keeps the UniProt `position` (or `start`, `end`) and adds the shown `site` (or `shown_range`),
+with a line in its header saying so. A link's letter and number is read as shown, unless only the UniProt reading names a
+site of that residue.
 
 ## Protein page cards
 
@@ -1068,7 +1075,7 @@ fields: one card per section in the order sections first appear.
 | `short` | question id to a short name (4 words or fewer) |
 | `row_labels` | question id to class or set code to a short row label (a code is unique only within its question) |
 | `summary_only` | question id to class codes left out of a card's summary rows, still on the question's page |
-| `glossary` | the site's own terms and their hover text (fold, odds ratio and q are the kit's) |
+| `glossary` | the site's own terms and their hover text (fold, odds ratio and q are the kit's; IDR, aa, PRMT, RGG, Janus, polyampholyte, FCR, NCPR and ChEP are the kit's too, listed on a site that uses them; a site entry of the same name replaces it) |
 | `examples` | the example chips: a search, or `{label, query}` (default: `website.examples`) |
 | `pathways[]` | the pathway view, below: `analyses` (protein-set questions whose sets are pathways), `hierarchy` (`input` role, `set`, `parents`, `name`, `separator`), `members` (`input` role, `set`, `protein`), `source` (`name`, `version`, `licence`, `url`, `link` with `{}` for a set's id) |
 
@@ -1144,11 +1151,17 @@ Every explorer shows the tabs Overview, Proteins, Sites, Interactions, Compare s
 
 Methods has five parts, each an address: `#method/tests` (how the tests work, **Every test** with its filters and download, the questions, the parity check), `#method/controls`, `#method/sources`, `#method/cite` (also: what the explorer is, sharing a link and keys, accessibility, licenses and privacy), `#method/download`. An address that names a section (`#method/privacy`, `#method/q-<id>`) opens the part that holds it. `#method/every?a=<question>` filters the table to a question.
 
-`website.overview.key_findings` (default: on): `count` (3), `min_fold` (1.1), `pin` and `exclude` (a question id, `"id/class"` or `{analysis, category}`). The strip lists the results with the smallest q among those at or above `min_fold` that fail no control badge, at most one per section; `false` leaves it out; it is not shown with a selection.
+`website.overview.key_findings` (default: on): `count` (3), `min_fold` (1.1), `pin` and `exclude` (a question id, `"id/class"` or `{analysis, category}`). The strip lists the results with the smallest q among those at or above `min_fold` that fail no control badge, at most one per section; `false` leaves it out; it is not shown with a selection. A question (`analyses[].key_findings: false`) or a motif family (`key_findings: false` in `with.families` or the mark profile's `motifs.families`) can keep itself out, for a result that follows from how the marks were defined (a motif drawn from the marks it is tested against); its tile still shows it.
+
+`website.methods_note` (a sentence): shown at the start of the Methods page's Data section, for which release of a source the sequences and the context marks use. The Download page adds, from the run, one sentence with the site's counted marks and the release table's rows when they differ.
 
 The Overview's sections follow one order: the names in `ptmcontext/config/overview_groups.json` (`shared`), or `website.overview.group_order`; a site's own sections follow, then the closing group (`last`). Sidebar entries are `#overview/<question id>` addresses and carry the tile's title.
 
 The footer is the same on every page: Cite, Download (when the site has downloads), Methods, Keyboard shortcuts, Source code (the kit's repository), Data DOI (`website.dataset.doi`, when present), Privacy, and the theme switch. The landing page has the same footer with the links of its config (`footer.links`), Privacy and the theme switch.
+
+### The search's term index
+
+`data/search/terms.json`, written by the web build when the site has protein-set questions or `website.overlap.term_sources`: `{sources: [{id, kind, title, group, key, shards?}], terms: [[source index, id, name, proteins, synonyms?]]}`. A `set` source is a protein-set question (filter `p:<question>`, the id is the set's key); a `term` source is an overlap term source (filter `g:<source>`, members read from `data/overlap/sources/`). `proteins` counts proteins with a mark; terms with none are left out. A name is empty when it equals the id. `group` is the heading from `website.overlap.groups`, else the question's title. No new site-file option.
 
 ### The Overlap page
 
@@ -1411,7 +1424,7 @@ Blocks (`kind`):
 
 | Kind | Reads | Draws |
 |---|---|---|
-| `forest` | `rows: [row refs]` (with `group` headings), `method` (default within each protein) | odds ratios with 95% CIs, counts, q; with a selection, its rows tested again in the browser beside the whole dataset's |
+| `forest` | `rows: [row refs]` (with `group` headings), `method` (default within each protein) | odds ratios with 95% CIs, counts, q (a list of more than ten rows shows the first eight and the rest behind "Show all tests"); with a selection, its rows tested again in the browser beside the whole dataset's |
 | `lines` | `analysis`, `series: [category]`, `x: {<stratum>: <number>}`, `x_label` | each series' odds ratio against x (a question's strata), with CI bands |
 | `sets` | `analysis` (a protein-set question) | each set: marked proteins in it against all, fold, q, and its reading within abundance deciles |
 | `shares` | `attribute` (a category attribute of the marks) | a stacked bar of its values among the (selected) marks |
@@ -1419,7 +1432,7 @@ Blocks (`kind`):
 | `matrix` | `attribute` (a list attribute: columns), `rows: [{filter, value, label, group}]` (a filter key as the Filters panel's: `a:<analysis>`, `t:<attribute>`) | odds ratio of each row feature among the marks with each column value against those without (pooled or within proteins), with n |
 | `checker` | `attributes: [names]`, `tables: [names]` | a search box: a mark's values and its rows in those tables |
 | `example` | `tracks: [kinds]`, `protein` (default accession or gene) | one protein's map with those tracks, chosen in a box |
-| `table` | `table`, `columns: [names]`, `group_by`, `chips` (a column whose values filter), `sort`, `limit`, `search` | the rows (a selection's own), sortable, with links |
+| `table` | `table`, `columns: [names]`, `group_by`, `rollup: [{label, values: [group codes]}]` (headings that each hold several groups), `chips` (a column whose values filter), `sort`, `limit` (kept for older site files: a table shows ten rows at a time), `search` | one line of counts by kind or group, then the rows behind "Show all rows" (a selection's own, ten at a time), sortable, with links |
 | `bars` | `table` (key protein), `label` (a column), `groups: {column, values: {code: title}}`, `top` | for each group value, the labels counted by distinct (selected) proteins |
 | `pairs` | `table` (key protein), `label`, `rows: {column, value}`, `cols: {column, value}` | a matrix: proteins that both a row label and a column label pair with |
 | `histogram` | `table` (key residue), `value` (a number column), `step`, `max` | the values of marks against the other residues, binned |
@@ -1441,7 +1454,7 @@ abundance deciles apply) unless `website.landing.findings` names one. A site who
 The page's own words are a landing config (`ptmc pages --landing FILE`, else `landing.yml` beside the first site file):
 `title` (also the small brand line, a link to this page, above each explorer's name in its header: written to `sites.json` as `brand`; the sticky bar keeps its "All sites" link), `description`, `lede`, `card: {result, question}` (the card's "Strongest result" block and italic question line; both default false), `logo` (an SVG file for the page's header and favicon, `favicon` a bolder one for the tab icon alone, with `logo_dots: cards`, the SVG's `<g id="dots">` is refilled with one dot per listed card in its band color, in the cards' order), `switcher: {label}` (the word of the sites' header and sticky-bar switcher, "PTM"; else a site file's `website.switcher.label`; written to `sites.json`), `intro` (paragraphs), `cta`, `order` (card ids), `groups` (`[{id, title, note, compact}]`:
 rows of cards, a card going in the group named by its site's `landing.group`, else the first; a `compact` row has smaller cards,
-e.g. other organisms), `footer: {links: [{label, url}], note}`,
+e.g. other organisms), `footer: {links: [{label, url}], note}`, `references` (lines under the intro: `{label, doi, all_versions?}` links doi.org, `{label, text, url?}` is text),
 and `soon`: cards without a link for sites not built yet (`id`, `name`, `tagline`, `question`, `band`, `accent`,
 `accent_dark`, `art`, `badge`, `cta`). Replace a `soon` entry by the site's file in the command when it is built.
 

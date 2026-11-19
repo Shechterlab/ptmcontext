@@ -18,7 +18,7 @@ the Methyllysine Site Explorer (`methyllysine-hero.svg`, `methyllysine-icon.svg`
 
 The phosphosite drawing (phosphoserine, phosphothreonine and phosphotyrosine: the side chains -CH2-O-PO3(2-), -CH(CH3)-O-PO3(2-)
 and -CH2-C6H4-O-PO3(2-), in the style of the methylarginine drawing, with the phosphate in cyan) and its icon are drawn for the
-Phosphosite Explorer (`phospho-hero.svg`, `phospho-icon.svg`).
+Phosphorylation Site Explorer (`phospho-hero.svg`, `phospho-icon.svg`).
 
 The lysine modification drawing (acetyllysine Kac, and the isopeptide bonds of ubiquitin, Kub, to Gly76 and of SUMO to its
 C-terminal Gly, drawn as -NH-CO-CH2-NH-Ub and -SUMO, the Gly and the bond in the site's light lime) and its logo (the lens with a

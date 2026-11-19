@@ -94,21 +94,24 @@
     return al ? { ps: al, via: true } : null;
   };
   const nameOf = (p) => (p.gene ? String(p.gene).split(/[\s;]+/)[0] : p.acc);
-  // numbering as papers do (website.protein.numbering: histones without the initiator methionine): a position typed
-  // in a search is read in it, as on the protein's page
+  // numbering as papers do (website.protein.numbering: histones, and proteins UniProt records without their initiator
+  // methionine): the one rule every view reads, K.numbering(protein) -> the rule (with its offset) or null. A position
+  // typed in a search is read in it, as on the protein's page
   const NUMR = (D.protein_view?.numbering || []).map((n) => ({
     ...n,
     g: n.genes ? new RegExp(n.genes) : null,
     nm: n.names ? new RegExp(n.names, 'i') : null,
+    a: n.accs ? new Set(n.accs) : null,
   }));
   const numOf = (p) => {
-    if (!NUMR.length) return null;
+    if (!NUMR.length || !p) return null;
     if (p._num === undefined) {
       const g = String(p.gene || '').split(/[\s;,]+/)[0];
-      p._num = NUMR.find((n) => (g ? n.g?.test(g) : n.nm?.test(p.name || ''))) || null;
+      p._num = NUMR.find((n) => n.a?.has(p.acc) || (g ? n.g?.test(g) : n.nm?.test(p.name || ''))) || null;
     }
     return p._num;
   };
+  K.numbering = numOf;
   const uniPos = (p, typed) => typed - (numOf(p)?.offset || 0);
   // symbols one edit away from a word (a letter added, dropped, changed, or two swapped), most marks first: "did you mean"
   function nearSymbols(word, max = 3) {

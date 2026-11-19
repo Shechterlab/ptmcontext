@@ -296,7 +296,7 @@
       .catch((e) => {
         st.phase = 'fail';
         st.err = fail(e);
-        st.who = st.ensg ? 'Ensembl Compara' : 'UniProt';
+        st.who = st.ensg ? 'Ensembl' : 'UniProt';
         paint(acc);
       });
   }
@@ -304,7 +304,7 @@
     if (!st || st.phase === 'idle' || st.phase === 'ens' || st.phase === 'ortho') return 'looking up the orthologs…';
     if (st.phase === 'no_gene') return `UniProt lists no ${esc(ENS.xref)} gene`;
     if (st.phase === 'none') return 'no ortholog in the species listed';
-    if (st.phase === 'fail') return 'ortholog data could not be loaded';
+    if (st.phase === 'fail') return `${st.who} is unavailable right now`;
     return st.ck.me == null ? `no ${esc(W.mark)} could be mapped` : esc(say(st.ck));
   };
 
@@ -349,7 +349,7 @@
     if (st.phase === 'fail')
       return (
         head +
-        (`<p class="note">Ortholog data could not be loaded (${esc(st.who)} ${esc(st.err)}). Nothing else on this ` +
+        (`<p class="note">${esc(st.who)} is unavailable right now (${esc(st.err)}). Nothing else on this ` +
           `page depends on it. <button class="linkish" type="button" data-cv-retry="${esc(acc)}">Try again</button>` +
           `</p>`)
       );

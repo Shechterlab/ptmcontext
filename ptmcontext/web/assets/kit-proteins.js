@@ -33,7 +33,18 @@
       r.ok ? r.json() : Promise.reject(new Error('missing'))
     ));
   }
-  const loadProtein = (acc) => loadShard(shardOf(acc)).then((sh) => sh[acc] || Promise.reject(new Error('not found')));
+  // a region's name is shown in American spelling (the source's own stays in the data)
+  const loadProtein = (acc) =>
+    loadShard(shardOf(acc)).then((sh) => {
+      const rec = sh[acc] || Promise.reject(new Error('not found'));
+      if (rec.units && !rec.usDone) {
+        rec.usDone = true;
+        rec.units.forEach((u) => {
+          u[3] = K.us(u[3]);
+        });
+      }
+      return rec;
+    });
   K.loadProtein = loadProtein; // for other modules' drawings of a protein (kit-selview.js)
 
   // ---- website.protein.order / open: the folds in the site's order, and which of them start open --------------------------
@@ -463,20 +474,14 @@
   };
   // ---- numbering: a protein the site file numbers as papers do (website.protein.numbering: histones without the
   // initiator methionine, say) shows position + offset everywhere, and a link's position is read the same way ----------
-  const NUM = (D.protein_view?.numbering || []).map((n) => ({
-    ...n,
-    g: n.genes ? new RegExp(n.genes) : null,
-    nm: n.names ? new RegExp(n.names, 'i') : null,
-  }));
-  const numOf = (p) => {
-    if (!p || !NUM.length) return null;
-    if (p._num === undefined) {
-      const g = String(p.gene || '').split(/[\s;,]+/)[0];
-      p._num = NUM.find((n) => (g ? n.g?.test(g) : n.nm?.test(p.name || ''))) || null;
-    }
-    return p._num;
-  };
+  const numOf = K.numbering; // one rule for every view (kit-select.js)
   const shownPos = (p, pos) => pos + (numOf(p)?.offset || 0);
+  // the line a download adds when the protein is numbered as papers do: the shown numbers beside UniProt's
+  const numNote = (p) =>
+    numOf(p)
+      ? ` ${numOf(p).note || 'Numbered as papers do'}: the site and shown_range columns use it, position, start and end are UniProt positions.`
+      : '';
+  const rangeOf = (p, a, b) => `${Math.max(1, shownPos(p, a))}–${Math.max(1, shownPos(p, b))}`;
   const uniPos = (p, n) => n - (numOf(p)?.offset || 0);
   const resAt = (p, pos) => (PV.acc === p?.acc && PV.rec?.seq?.[pos - 1]) || residueOf(p, pos);
   const siteOf = (p, pos) => `${resAt(p, pos) || ''}${shownPos(p, pos)}`;
@@ -485,6 +490,8 @@
     shownPos: (acc, pos) => shownPos(byAcc[acc] || (PV.acc === acc ? PV.lightP : null), pos),
     siteLabel: (acc, pos) => siteOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null) || { acc }, pos),
     numbering: (acc) => numOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
+    // a stretch as the page numbers it: its first residue is 1 even where the initiator methionine (0) is inside it
+    range: (acc, a, b) => rangeOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null), a, b),
     tables: (acc) => (PV.acc === acc ? PV.tb || null : null),
   };
 
@@ -780,7 +787,7 @@
       group('site', 'Site', siteRows, true) +
       group('questions', 'Questions', qrows.join(''), true) +
       group('records', 'UniProt and sources', uniRow + citeRow, true) +
-      group('more-questions', `More questions (${qmore.length})`, qmore.join(''), false) +
+      group('more-questions', `Other questions (${qmore.length})`, qmore.join(''), false) +
       group('attributes', `Other attributes (${rest.length})`, restRows, false);
     const ev = ready ? K.card.evidenceBlock(c) : '',
       recs = ready ? K.card.recordsBlock(c) : '',
@@ -987,10 +994,21 @@
     if (sectionKey(at)) return '/' + (SECTION_NAMES[SECTION[at.toLowerCase()]] || at.toLowerCase());
     if (/^p-[a-z0-9]+$/i.test(at)) return '/' + at.toLowerCase();
     if (/^\d+-\d+$/.test(at)) return '/' + at;
-    const s = /^[A-Za-z]?(\d+)$/.exec(at);
+    const s = /^([A-Za-z]?)(\d+)$/.exec(at);
     if (!s) return '';
     const p = byAcc[acc];
-    return '/' + (p ? uniPos(p, +s[1]) : +s[1]);
+    if (!p) return '/' + +s[2];
+    // read as the page numbers it, unless only the UniProt reading names a site of the letter's residue (a link made
+    // before this protein was renumbered keeps opening the site it named)
+    const u = uniPos(p, +s[2]);
+    if (
+      s[1] &&
+      numOf(p) &&
+      resAt(p, u).toUpperCase() !== s[1].toUpperCase() &&
+      resAt(p, +s[2]).toUpperCase() === s[1].toUpperCase()
+    )
+      return '/' + +s[2];
+    return '/' + u;
   };
   K.routes.protein = {
     path: (arg) => {
@@ -2007,7 +2025,7 @@
           const inside = rec.marks.filter((m) => m[0] >= s && m[0] <= e).map((m) => m[0]);
           const u = refUrl(ref);
           return (
-            `<tr><td>${esc(title(k))}</td><td class="num mono">${s}–${e}</td><td class="wrapok">${esc(lab || labs(k)[cls] || cls || '')}</td><td ` +
+            `<tr><td>${esc(title(k))}</td><td class="num mono">${rangeOf(p, s, e)}</td><td class="wrapok">${esc(lab || labs(k)[cls] || cls || '')}</td><td ` +
             `class="mono">${
               ref ? (u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(ref)}</a>` : esc(ref)) : ''
             }</td>` +
@@ -2033,8 +2051,11 @@
       rec = PV.rec,
       tracks = D.tracks || [];
     return (
-      K.preamble(`${p.gene || p.acc}: domains and regions`, `regions of ${p.acc} with the ${W.marks} inside them`) +
-      ['kind', 'start', 'end', 'label', 'class', 'ref', `${W.marks}_inside`, 'source'].join('\t') +
+      K.preamble(
+        `${p.gene || p.acc}: domains and regions`,
+        `regions of ${p.acc} with the ${W.marks} inside them` + numNote(p)
+      ) +
+      ['kind', 'start', 'end', 'shown_range', 'label', 'class', 'ref', `${W.marks}_inside`, 'source'].join('\t') +
       '\n' +
       rec.units
         .map(([k, s, e, lab, src, cls, ref]) =>
@@ -2042,6 +2063,7 @@
             (tracks.find((t) => t.kind === k) || {}).title || k,
             s,
             e,
+            rangeOf(p, s, e),
             lab || '',
             cls || '',
             ref || '',
@@ -2199,7 +2221,7 @@
         texts.length
           ? `<p class="fn-text${PV.fn ? ' open' : ''}">${texts.map(linkPm).join(' ')}</p><p class="src">` +
               `Function, from <a href="https://www.uniprot.org/uniprotkb/${esc(acc)}/entry#function">UniProt ${esc(acc)}</a> when the ` +
-              `page opens · <button type="button" class="linkish" data-fn-more>${PV.fn ? 'Less' : 'More'}</button></p>`
+              `page opens · <button type="button" class="linkish" data-fn-more>${PV.fn ? K.ACT.showLess : K.ACT.showMore}</button></p>`
           : '<p class="muted">UniProt gives no function text for this entry.</p>'
       );
       if (first) {
@@ -2365,7 +2387,8 @@
       K.preamble(
         `${W.marks} of ${p.gene || p.acc} (${p.acc})`,
         `each ${W.mark} of ${p.gene || p.acc} (${p.name}) with the ` +
-          `15 residues around it and its class in every question; the sequence is ${D.run.snapshot?.release} (MD5 ${rec.md5}).`
+          `15 residues around it and its class in every question; the sequence is ${D.run.snapshot?.release} (MD5 ${rec.md5}).` +
+          numNote(p)
       ) +
       ['site', 'position', 'window_15', ...COLS, ...AT, ...(rec.shown?.length ? ['counted'] : [])].join('\t') +
       '\n' +
@@ -2615,7 +2638,7 @@
         PV.fn = !PV.fn;
         document.querySelector('.fn-text')?.classList.toggle('open', PV.fn);
         const b = document.querySelector('[data-fn-more]');
-        if (b) b.textContent = PV.fn ? 'Less' : 'More';
+        if (b) b.textContent = PV.fn ? K.ACT.showLess : K.ACT.showMore;
       },
     ],
     [

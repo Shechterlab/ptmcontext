@@ -95,6 +95,8 @@
       : '';
   const pr = (x) => D.proteins[x.p];
   const gene = (x) => pr(x)[1] || pr(x)[0];
+  // an IDR's span as the protein page numbers it
+  const rg = (x) => (K.prot?.range ? K.prot.range(pr(x)[0], x.s, x.e) : `${x.s}–${x.e}`);
   const f2 = (v) => (v == null ? '–' : Number(v).toFixed(2));
   const s2 = (v) => {
     if (v == null) return '–';
@@ -240,11 +242,11 @@
     return (m && (m[4] || '')[7]) || (/([A-Z])\d+$/i.exec(t.label) || [])[1]?.toUpperCase() || '';
   };
   const hlName = (x) =>
-    `${gene(x)} ${x.s}–${x.e}${
+    `${gene(x)} ${rg(x)}${
       HLP?.prots.has(x.p) || !siteIn(x).length
         ? ''
         : ` (${siteIn(x)
-            .map((t) => resLetter(t) + t.pos)
+            .map((t) => resLetter(t) + (K.prot?.shownPos ? K.prot.shownPos(pr(x)[0], t.pos) : t.pos))
             .join(', ')})`
     }`;
   const outside = (x) => SC.on && !SC.prots.has(x.p); // highlighted, but not in the selection: drawn with its full values
@@ -266,7 +268,9 @@
     if (n) out.push(`${int(n)} outside your selection (dashed ring, all of their ${W.marks} counted)`);
     (HLS.sites || []).forEach((t) => {
       if (!(V.byP[t.p] || []).some((x) => t.pos >= x.s && t.pos <= x.e))
-        out.push(`${e(resLetter(t) + t.pos)} of ${e(K.D?.proteins?.[t.p]?.[1] || t.label)} is in no IDR`);
+        out.push(
+          `${e(resLetter(t) + (K.prot?.shownPos ? K.prot.shownPos(K.D.proteins[t.p][0], t.pos) : t.pos))} of ${e(K.D?.proteins?.[t.p]?.[1] || t.label)} is in no IDR`
+        );
     });
     return out.join(' · ');
   };
@@ -1084,7 +1088,7 @@
       items: () => V.idrs.filter((x) => x.fcr != null && x.ncpr != null && isHl(x)),
       row: (x) => [
         gene(x) + (outside(x) ? ' (outside your selection)' : ''),
-        `${x.s}–${x.e}`,
+        rg(x),
         `R${regionNo(x.cls)} ${DP[regionNo(x.cls)]?.[3] || clsLabel(x.cls)}`,
         f2(x.fcr),
         s2(x.ncpr),
@@ -1096,7 +1100,7 @@
       head: ['Gene', 'IDR', 'κ'],
       num: [0, 0, 1],
       items: () => V.idrs.filter((x) => (kappaFew() || x.cls === POLY3()) && x.kappa != null && isHl(x)),
-      row: (x) => [gene(x) + (outside(x) ? ' (outside your selection)' : ''), `${x.s}–${x.e}`, f2(x.kappa)],
+      row: (x) => [gene(x) + (outside(x) ? ' (outside your selection)' : ''), rg(x), f2(x.kappa)],
     },
   };
   const hlItems = (k) => {
@@ -1188,7 +1192,7 @@
       (x) => `<b>${esc(gene(x))}</b> <span class="muted mono">${esc(pr(x)[0])}</span>`,
       false,
     ],
-    ['span', 'Span', (x) => x.s, (x) => `<span class="mono">${x.s}–${x.e}</span>`, true],
+    ['span', 'Span', (x) => x.s, (x) => `<span class="mono">${rg(x)}</span>`, true],
     ['len', 'Length', (x) => x.len, (x) => int(x.len), true],
     ['fcr', 'FCR', (x) => x.fcr ?? -9, (x) => f2(x.fcr), true],
     ['ncpr', 'NCPR', (x) => x.ncpr ?? -9, (x) => s2(x.ncpr), true],
@@ -1276,7 +1280,7 @@
       shown
         .map(
           (x) =>
-            `<tr data-idr-go="${x.i}" tabindex="0" class="${marksOf(x) ? '' : 'idr-none'}" title="Open ${esc(gene(x))} at ${x.s}–${x.e}">${COLS.map(
+            `<tr data-idr-go="${x.i}" tabindex="0" class="${marksOf(x) ? '' : 'idr-none'}" title="Open ${esc(gene(x))} at ${rg(x)}">${COLS.map(
               (c) => `<td class="${c[4] ? 'num' : c[0] === 'region' ? 'idr-rcell' : ''}">${c[3](x)}</td>`
             ).join('')}</tr>`
         )
@@ -1349,7 +1353,7 @@
             ')'
           : '';
     return (
-      `<b>${esc(gene(x))}</b> <span class="muted mono">${esc(pr(x)[0])}</span> ${int(x.s)}–${int(x.e)} <span class="muted">(${int(x.len)} aa)</span>` +
+      `<b>${esc(gene(x))}</b> <span class="muted mono">${esc(pr(x)[0])}</span> ${rg(x)} <span class="muted">(${int(x.len)} aa)</span>` +
       `<br><i class="idr-sw" style="--c:${colour(x.cls)}"></i>R${regionNo(x.cls)} ${esc(clsLabel(x.cls))}` +
       `<br>FCR ${f2(x.fcr)} · NCPR ${s2(x.ncpr)} · f+ ${f2(x.fp)} · f− ${f2(x.fm)} · κ ${
         x.kappa == null ? 'none (no charged residue)' : f2(x.kappa)
