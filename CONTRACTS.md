@@ -1140,6 +1140,10 @@ The Overview's sections follow one order: the names in `ptmcontext/config/overvi
 
 The footer is the same on every page: Cite, Download (when the site has downloads), Methods, Keyboard shortcuts, Source code (the kit's repository), Data DOI (`website.dataset.doi`, when present), Privacy, and the theme switch. The landing page has the same footer with the links of its config (`footer.links`), Privacy and the theme switch.
 
+### The search's term index
+
+`data/search/terms.json`, written by the web build when the site has protein-set questions or `website.overlap.term_sources`: `{sources: [{id, kind, title, group, key, shards?}], terms: [[source index, id, name, proteins, synonyms?]]}`. A `set` source is a protein-set question (filter `p:<question>`, the id is the set's key); a `term` source is an overlap term source (filter `g:<source>`, members read from `data/overlap/sources/`). `proteins` counts proteins with a mark; terms with none are left out. A name is empty when it equals the id. `group` is the heading from `website.overlap.groups`, else the question's title. No new site-file option.
+
 ### The Overlap page
 
 `#overlap?t=<terms>` (kit-overlap.js; `website.overlap`, schema in site.schema.json) compares two to `max_terms` (at most 4) terms. The address keeps the

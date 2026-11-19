@@ -62,6 +62,7 @@ MODULES = (
     'kit-stats.js',
     'kit-seldata.js',
     'kit-select.js',
+    'kit-terms.js',
     'kit-rail.js',
     'kit-search.js',
     'kit-near.js',
@@ -1754,6 +1755,14 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             ov = OV.build(site, run, folder, listing, fasta, out, log)
             if ov:
                 data['overlap'] = ov
+        # the search box's term index (protein sets and ontology terms by name), read when the box is first used
+        from . import termindex as TI
+
+        ti = TI.build(data['analyses'], sel, listing, data.get('overlap'), out, log)
+        if ti:
+            data['term_index'] = ti
+        else:
+            (out / TI.FILE).unlink(missing_ok=True)
     # the site's pages (website.pages) and the whole tables they read, one file each, read when a page first needs one
     data['page_tables'], inline_page_tables = (
         page_tables(site, web.get('tables') or {}, run, listing, out, log) if listing else ({}, '')

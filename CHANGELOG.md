@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Search by name: protein sets and ontology terms (GO biological process, Reactome, PANTHER, condensates, cell compartments, Disease Ontology, DisGeNET terms and families) are found by name, synonym or ID (GO:0008380, DOID:332), listed by source with their number of proteins; choosing one adds a readable filter chip, kept in the link. The index (`data/search/terms.json`) is built with the site and read when the search box is first used. Yes/no attributes are offered by their label, not their key.
+
 - Pin PTM_Pipeline v1.5.1 at its release commit 9a03d54 (tag v1.5.1; same tree as 7ae9a02, no md5 changes). Every site cites the release by its version DOI 10.5281/zenodo.24373077 (published 2026-11-19), with the concept DOI 10.5281/zenodo.22696798 for all versions; methyllysine, lysine and phospho now carry the data DOI. Human-facing source links name the tag.
 
 - Pin PTM_Pipeline 7ae9a02 (v1.5.1 with the corrected release README; no data file differs from 8b8e233).

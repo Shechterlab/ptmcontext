@@ -670,8 +670,8 @@
     const site = (D.site.examples || []).find((e) => /\s[A-Z]?\d+$/.test(e)),
       term = (D.site.examples || []).find((e) => e.includes(':'));
     $('#q').placeholder = `Gene, accession, ${site ? `site (${site}), ` : ''}gene list${
-      term ? `, or a filter such ` + `as ${term}` : ''
-    }`;
+      D.term_index ? ', pathway, GO term or disease' : ''
+    }${term ? `, or a filter such ` + `as ${term}` : ''}`;
     const bar = K.sel?.bar();
     $('#scope').classList.toggle('selected', !!bar);
     $('#scope').setAttribute('aria-live', 'polite');

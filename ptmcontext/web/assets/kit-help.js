@@ -209,7 +209,11 @@
                   .join(', ')})`
               : ''
           }. Separate values with <span class="mono">|</span> to match any; several terms must all hold. Naming one ` +
-          `protein opens its page. The line under the box counts what matches. ${mlink('search', 'Methods › Sources')} lists every key.</p>`
+          `protein opens its page. The line under the box counts what matches. ${mlink('search', 'Methods › Sources')} lists every key.</p>` +
+          (D.term_index
+            ? `<p>A pathway, GO term, protein class, condensate or disease can be typed by name or ID. The matching terms ` +
+              `are listed by source with their number of ${esc(W.marked)} proteins, and choosing one filters to those proteins.</p>`
+            : '')
       ) +
       sec(
         'h-filters',
