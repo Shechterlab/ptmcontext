@@ -4156,7 +4156,7 @@
             },
             "card": {
               "type": "object",
-              "description": "the site card's blocks, read from the attributes and website.tables (evidence, states, changes, calls, records, writer, sources, inhibitors, cite); ptmc check names a table, attribute or column a block reads that does not exist",
+              "description": "the site card's blocks, read from the attributes and website.tables (evidence, states, changes, change_counts, calls, records, writer, sources, inhibitors, cite); ptmc check names a table, attribute or column a block reads that does not exist",
               "additionalProperties": {
                 "type": [
                   "object",
@@ -5211,7 +5211,7 @@
                   "required": [
                     "table"
                   ],
-                  "description": "Cancer cell lines and tumors: a protein_records table with lines (screened), dependent (lines depending), median, common_essential, histogram (counts, ;-separated) and lineages (name|lines|mean, ;-separated); the changes at the marks are the site card's (card.changes)",
+                  "description": "Cancer cell lines and tumors: a protein_records table with lines (screened), dependent (lines depending), median, common_essential, histogram (counts, ;-separated) and lineages (name|lines|mean, ;-separated); the changes at the marks are the site card's (card.changes, or card.change_counts)",
                   "properties": {
                     "title": {
                       "type": "string"
@@ -6025,6 +6025,7 @@
                   "site_evidence",
                   "bound_windows",
                   "residue_evidence",
+                  "residue_changes",
                   "site_records",
                   "site_measurements",
                   "source_records",

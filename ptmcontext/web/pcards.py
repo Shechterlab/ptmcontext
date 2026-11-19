@@ -88,6 +88,25 @@ def problems(site: dict) -> list[str]:
         need('clustering', 'table', cards['clustering'].get('table'), 'protein_records', ('spacing_median',))
     if 'other_ptms' in cards:
         need('other_ptms', 'table', cards['other_ptms'].get('table'), 'residue_evidence')
+    for k, x in enumerate((cfg.get('card') or {}).get('change_counts') or []):
+        w = f'website.protein.card.change_counts[{k}]'
+        if not x.get('tables'):
+            out.append(f'{w}: names no tables (residue_changes tables of website.tables)')
+        for name in x.get('tables') or []:
+            if name not in tables:
+                out.append(f'{w}.tables: no table {name!r} in website.tables')
+            elif tables[name].get('format') != 'residue_changes':
+                out.append(
+                    f'{w}.tables: {name!r} is a {tables[name].get("format")} table; read a residue_changes table'
+                )
+        bg = x.get('background')
+        if not bg:
+            out.append(f'{w}: names no background table (a protein_records table with residue, residues and the count)')
+        elif bg not in tables:
+            out.append(f'{w}.background: no table {bg!r} in website.tables')
+        else:
+            missing = [c for c in ('residue', 'residues', x.get('count')) if c not in _cols(tables[bg])]
+            out.extend(f'{w}.background: table {bg!r} has no column {c!r} (the card reads it)' for c in missing)
     if 'perturbations' in cards:
         calls = (cfg.get('card') or {}).get('calls') or {}
         if not (calls.get('tables') or calls.get('attributes')):

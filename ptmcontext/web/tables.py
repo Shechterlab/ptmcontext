@@ -88,6 +88,8 @@ FORMATS: dict[str, dict] = {
             'check',
         ],
     },
+    # one row per (site, new residue) with the number of input rows (tumor samples, cell lines) that carry it
+    'residue_changes': {'key': 'site', 'required': ['alt']},
     'protein_records': {'key': 'accession', 'free': True, 'open': True},
     'page_rows': {'key': 'none', 'free': True},  # rows of no site or protein (complexes, say): read by a page only
     'protein_partners': {
@@ -206,6 +208,15 @@ def read(spec: dict, path: Path):
         if spec['format'] == 'residue_evidence' and c in out.columns:
             out = out[out[c].str.fullmatch(r'\d+')]
             out[c] = out[c].astype(int)
+    if (
+        spec['format'] == 'residue_changes'
+    ):  # the input lists one change per sample or line: counted per site and residue
+        out = out[(out['position'].astype(str) != '') & (out['alt'] != '')]
+        out = out.groupby(['accession', 'position', 'alt'], sort=False).size().rename('n').reset_index()
+        out['position'] = out['position'].astype(int)
+        out = out.sort_values(['accession', 'position', 'n', 'alt'], ascending=[True, True, False, True])
+        out['position'] = out['position'].astype(str)
+        out['n'] = out['n'].astype(str)
     both = spec.get('both_ways')
     if both is not None and spec['format'] == 'protein_partners':  # a table that lists each pair once: both ways
         back = out.rename(columns={'accession': 'partner_accession', 'partner_accession': 'accession'})

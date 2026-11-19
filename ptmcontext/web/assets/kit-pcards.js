@@ -453,6 +453,135 @@
     s += `<text class="ht" x="${ml}" y="${H0 - 4}">${esc(h.axis || '')}</text>`;
     return `<svg class="pc-hist" viewBox="0 0 ${W0} ${H0}" role="img" aria-label="${esc(h.axis || 'histogram')}">${s}</svg>`;
   }
+  // ---- changes counted at each residue from per-change tables (card.change_counts): known sites only, or every candidate ----
+  // The reader's choice (known sites only at first) is kept in the browser; each count sits beside the protein's average
+  // per residue of the same kind, from the background table.
+  const CMODE_KEY = 'ptmc-change-mode';
+  let CMODE = 'known';
+  try {
+    CMODE = localStorage.getItem(CMODE_KEY) === 'all' ? 'all' : 'known';
+  } catch (e) {
+    /* storage may be blocked */
+  }
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest?.('[data-cc-mode]');
+    if (!b || b.getAttribute('aria-pressed') === 'true') return;
+    CMODE = b.dataset.ccMode === 'all' ? 'all' : 'known';
+    try {
+      localStorage.setItem(CMODE_KEY, CMODE);
+    } catch (e) {
+      /* storage may be blocked */
+    }
+    document.querySelectorAll('[data-pc="dependency"]').forEach((el) => delete el.dataset.pcOk);
+    paintAll();
+  });
+  let CFLAG = false; // show only the sites flagged at least flag_ratio times the protein's average
+  document.addEventListener('click', (ev) => {
+    if (!ev.target.closest?.('[data-cc-flag]')) return;
+    CFLAG = !CFLAG;
+    document.querySelectorAll('[data-pc="dependency"]').forEach((el) => delete el.dataset.pcOk);
+    paintAll();
+  });
+  function changeCountsSection(p, rec, tb) {
+    const cn = K.card.cc.entries,
+      CCK = K.card.cc,
+      resSet = new Set(D.residues || []),
+      seq = rec.seq || '',
+      known = new Set(rec.marks.map((m) => m[0]));
+    const order = (l) => (D.residues || []).indexOf(l);
+    const cands = [];
+    for (let i = 0; i < seq.length; i++) if (resSet.has(seq[i])) cands.push(i + 1);
+    const pool = CMODE === 'all' ? cands : [...known].filter((q) => seq[q - 1]).sort((a, b) => a - b);
+    const letters = [...new Set(pool.map((q) => seq[q - 1]))].sort((a, b) => order(a) - order(b));
+    const tot = (x, q) => CCK.total(CCK.at(tb, x, q));
+    const unitOf = (x) => x.unit || ['record', 'records'];
+    const lines = cn
+      .map((x) =>
+        letters
+          .map((l) => {
+            const qs = pool.filter((q) => seq[q - 1] === l),
+              n = qs.reduce((a, q) => a + tot(x, q), 0),
+              b = CCK.avg(tb, x, l),
+              nm = CCK.residueName(l);
+            const per = qs.length ? n / qs.length : null;
+            const known1 = CMODE === 'known',
+              one = known1 ? `known ${W.mark}` : `candidate ${nm}`,
+              many = known1 ? `known ${W.marks}` : `candidate ${CCK.residueNames(l)}`,
+              of = known1 && letters.length > 1 ? ` (${CCK.residueNames(l)})` : '';
+            return (
+              `<li><b>${esc(x.label)}</b>: ${int(n)} ${n === 1 ? 'change' : 'changes'} at its ` +
+              `${esc(plural(qs.length, one, many))}${esc(of)} · per ${known1 ? 'site' : esc(nm)}: ` +
+              `<b>${CCK.avgText(per)}</b> · protein average per ${esc(nm)}: <b>${CCK.avgText(b?.per)}</b></li>`
+            );
+          })
+          .join('')
+      )
+      .join('');
+    // one row per residue with a change, most changes first
+    const flagOf = (r, k) => CCK.flagged(tb, cn[k], seq[r.q - 1], CCK.total(r.cells[k]));
+    const all = pool
+      .map((q) => ({ q, cells: cn.map((x) => CCK.at(tb, x, q)) }))
+      .filter((r) => r.cells.some((v) => v.length));
+    const nFlag = all.filter((r) => cn.some((x, k) => flagOf(r, k))).length;
+    const per = CFLAG ? all.filter((r) => cn.some((x, k) => flagOf(r, k))) : all;
+    const sumOf = (r) => r.cells.reduce((a, v) => a + CCK.total(v), 0);
+    per.sort((a, b) => sumOf(b) - sumOf(a) || a.q - b.q);
+    const nSites = cn.map((x, k) => per.filter((r) => r.cells[k].length).length);
+    const what =
+      CMODE === 'known' ? plural(known.size, W.mark, W.marks) : `${plural(cands.length, 'candidate residue')}`;
+    const seg =
+      `<div class="seg" role="group" aria-label="Residues counted"><span class="seg-l">Count</span>` +
+      [
+        ['known', 'Known sites only'],
+        ['all', 'All candidate residues'],
+      ]
+        .map(([k, t]) => `<button type="button" data-cc-mode="${k}" aria-pressed="${CMODE === k}">${t}</button>`)
+        .join('') +
+      `</div> <span class="seg" role="group" aria-label="Flagged sites"><button type="button" class="cc-chip" data-cc-flag aria-pressed="${CFLAG}" title="Show only the sites with at ` +
+      `least ${cn.map((x) => x.flag_ratio || 3).join(' or ')} times the protein's average">Flagged only <span class="muted">${int(nFlag)}</span></button></span>`;
+    const cellOf = (r, k) => {
+      const v = r.cells[k];
+      return v.length
+        ? esc(v.map((a) => seq[r.q - 1] + r.q + a.alt + (a.n > 1 ? ' ×' + a.n : '')).join(', ')) +
+            (flagOf(r, k) ? ' ' + CCK.flagTag(cn[k]) : '')
+        : '<span class="muted">—</span>';
+    };
+    const html =
+      `<section class="pc-sec pc-cc"><h4>Changes at ${esc(CMODE === 'known' ? W.marks : W.residues)}</h4>${seg}` +
+      `<p class="small muted">${
+        CMODE === 'known'
+          ? `The protein's known ${esc(W.marks)} only.`
+          : `Every ${esc(W.residue)} of the protein, a known ${esc(W.mark)} or not.`
+      }</p>` +
+      `<ul class="small pc-cc-lines">${lines || ''}</ul>` +
+      `<p class="small">${cn
+        .map(
+          (x, k) =>
+            `${int(nSites[k])} of ${esc(what)} ${nSites[k] === 1 ? 'has' : 'have'} a change in at least one ` +
+            `${esc(unitOf(x)[0])} (${esc(x.label)})`
+        )
+        .join('; ')}.</p>` +
+      (per.length
+        ? `<div class="tbl-wrap"><table class="pc-tbl"><thead><tr><th>${CMODE === 'known' ? 'Site' : 'Residue'}</th>${cn
+            .map((x) => `<th>${esc(x.label)}</th>`)
+            .join('')}</tr></thead><tbody>` +
+          per
+            .slice(0, 12)
+            .map(
+              (r) =>
+                `<tr><td>${known.has(r.q) ? siteLink(p, rec, r.q) : esc(siteName(rec, r.q))}</td>${cn
+                  .map((x, k) => `<td>${cellOf(r, k)}</td>`)
+                  .join('')}</tr>`
+            )
+            .join('') +
+          `</tbody></table></div>` +
+          (per.length > 12
+            ? `<p class="muted small">${int(per.length - 12)} more ${CMODE === 'known' ? 'sites' : 'residues'} changed.</p>`
+            : '')
+        : '') +
+      `</section>`;
+    return { html, nSites, nKnown: cn.map((x) => rec.marks.filter((m) => tot(x, m[0])).length) };
+  }
   function dependencyBuild(p, rec, tb) {
     const cfg = PC.dependency,
       r = rows(tb, cfg.table)[0],
@@ -547,6 +676,7 @@
               : '')
           : '');
     }
+    const cnSec = K.card.cc?.entries.length ? changeCountsSection(p, rec, tb) : null;
     const html =
       `${
         cfg.url ? `<p class="actions">${ext(cfg.url.replace('{gene}', encodeURIComponent(g)), 'Source ↗')}</p>` : ''
@@ -555,6 +685,7 @@
       (ch.length
         ? `<section class="pc-sec"><h4>Changes at ${esc(W.residues)}</h4>${chg}${cfg.changes_note ? `` : ''}</section>`
         : '') +
+      (cnSec ? cnSec.html : '') +
       '</div>' +
       (cfg.note ? `` : '');
     const first = ch[0],
@@ -566,6 +697,9 @@
           : 'not screened',
         ch.length
           ? `${nSites[0] ? plural(nSites[0], 'site') : 'no site'} changed in ${(first.unit || ['', 'records'])[1]}`
+          : '',
+        cnSec
+          ? `${cnSec.nKnown[0] ? plural(cnSec.nKnown[0], 'site') : 'no site'} changed in ${(K.card.cc.entries[0].unit || ['', 'records'])[1]}`
           : '',
       ]
         .filter(Boolean)

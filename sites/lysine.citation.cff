@@ -196,6 +196,24 @@ references:   # the data sources: cited with every export
     start: 343
     year: 2021
     doi: "10.1186/s13059-021-02540-7"
+  - type: article
+    authors: [{family-names: Ellrott, given-names: K}, {family-names: Bailey, given-names: MH}, {family-names: Saksena, given-names: G}, {name: "et al."}]
+    title: "Scalable Open Science Approach for Mutation Calling of Tumor Exomes Using Multiple Genomic Pipelines"
+    journal: "Cell Syst"
+    volume: 6
+    start: 271
+    end: 281
+    year: 2018
+    doi: "10.1016/j.cels.2018.03.002"
+  - type: article
+    authors: [{family-names: Hoadley, given-names: KA}, {family-names: Yau, given-names: C}, {family-names: Hinoue, given-names: T}, {name: "et al."}]
+    title: "Cell-of-Origin Patterns Dominate the Molecular Classification of 10,000 Tumors from 33 Types of Cancer"
+    journal: "Cell"
+    volume: 173
+    start: 291
+    end: 304
+    year: 2018
+    doi: "10.1016/j.cell.2018.03.022"
   - type: article   # the methyllysine sites: iPTMnet 6.2 (CC BY-NC-SA 4.0); the UniProt article is above
     authors: [{family-names: Huang, given-names: H}, {family-names: Arighi, given-names: CN}, {family-names: Ross, given-names: KE}, {name: "et al."}]
     title: "iPTMnet: an integrated resource for protein post-translational modification network discovery"

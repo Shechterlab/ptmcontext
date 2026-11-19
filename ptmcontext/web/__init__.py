@@ -712,6 +712,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'words': {**profile.words, 'marked_long': profile.words.get('marked_long', profile.words['marked'])},
         'mark': profile.id,
         'residues': profile.residues,
+        **({'residue_names': profile.data['residue_names']} if profile.data.get('residue_names') else {}),
         'counts': {'marks': run['marks']['counted'], 'proteins': run['marks']['proteins']},
         'analyses': _with_families(analyses, site),
         'rows': rows,

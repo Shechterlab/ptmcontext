@@ -801,7 +801,9 @@
             : '<span class="muted">none reported at this residue</span>'
           : '<span class="muted">Loading from UniProt…</span>'
       ) +
-      ((CC.changes || []).length ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait) : '') +
+      ((CC.changes || []).length || (CC.change_counts || []).length
+        ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait)
+        : '') +
       '</dl></section>';
     return (
       `<section class="site-card" id="site-card"><div class="card-head"><div><p class="eyebrow">Selected ${esc(W.mark)}</p><h3>${esc(p.gene || p.acc)} ${esc(siteOf(p, m[0]))} ${statePill(m)}${

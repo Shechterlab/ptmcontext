@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Methyllysine, lysine and phospho sites show cancer changes at every candidate residue (TCGA MC3 tumors, DepMap 24Q4 cell lines; PTM_Pipeline v1.6.0 release folder, commit 34d974b, pending the merge of its PR): a "Changes in tumors and cell lines" question, the site card's count beside the protein's average per residue of that kind, and a Cancer cell lines and tumors card on the protein page with a switch between known sites only (the default) and all candidate residues. New table format `residue_changes` and card block `change_counts` (CONTRACTS.md). The workflows are pinned to 34d974b on this branch; methylarginine is unchanged.
+
 - Pin PTM_Pipeline v1.5.1 at its release commit 9a03d54 (tag v1.5.1; same tree as 7ae9a02, no md5 changes). Every site cites the release by its version DOI 10.5281/zenodo.24373077 (published 2026-11-19), with the concept DOI 10.5281/zenodo.22696798 for all versions; methyllysine, lysine and phospho now carry the data DOI. Human-facing source links name the tag.
 
 - Pin PTM_Pipeline 7ae9a02 (v1.5.1 with the corrected release README; no data file differs from 8b8e233).

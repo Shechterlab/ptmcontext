@@ -492,9 +492,70 @@
   }
   const renumber = (c, v) =>
     String(v).replace(/^([A-Za-z])(\d+)(?=[A-Za-z*])/, (m0, a, d) => (+d === c.pos ? a + c.shown(c.pos) : m0));
+  // ---- changes at residues counted from per-change tables (card.change_counts): a count at each residue, beside the
+  // protein's average per residue of the same kind (the background table). The tables list one change per tumor or line;
+  // the table format residue_changes (tables.py) counts them per site and new residue.
+  const CCN = (C.change_counts || []).filter((x) => (x.tables || []).some(has));
+  const CC_IDX = new WeakMap();
+  function changeIdx(tb, x) {
+    // position -> [{alt, n}], most first, over the entry's tables
+    let m = CC_IDX.get(tb);
+    if (!m) CC_IDX.set(tb, (m = {}));
+    return (m[x.id] ||= (() => {
+      const idx = new Map();
+      for (const t of x.tables || [])
+        for (const r of rows(tb, t)) {
+          if (!idx.has(r.position)) idx.set(r.position, []);
+          idx.get(r.position).push({ alt: r.alt, n: +r.n || 0 });
+        }
+      idx.forEach((v) => v.sort((a, b) => b.n - a.n || (a.alt < b.alt ? -1 : 1)));
+      return idx;
+    })());
+  }
+  const changesAt = (tb, x, pos) => changeIdx(tb, x).get(pos) || [];
+  const changeTotal = (v) => v.reduce((a, r) => a + r.n, 0);
+  // the protein's average per residue of one kind (letter): changes at its residues of that kind over how many it has
+  function changeAvg(tb, x, letter) {
+    const r = has(x.background) ? rows(tb, x.background).find((q) => q.residue === letter) : null;
+    const n = r ? +r.residues : 0;
+    return r && n ? { per: (+r[x.count] || 0) / n, residues: n, changes: +r[x.count] || 0 } : null;
+  }
+  // a count of at least flag_ratio (default 3) times the protein's average for that residue kind
+  const flagRatio = (x) => (+x.flag_ratio > 0 ? +x.flag_ratio : 3);
+  const flagged = (tb, x, letter, n) => {
+    const b = changeAvg(tb, x, letter);
+    return !!(b && b.per > 0 && n > 0 && n >= flagRatio(x) * b.per);
+  };
+  const flagTag = (x) =>
+    `<span class="tag cc-flag" title="At least ${flagRatio(x)} times the protein's average for this residue kind">≥${flagRatio(x)}× protein average</span>`;
+  const avgText = (v) =>
+    v == null ? '–' : v === 0 ? '0' : v < 0.1 ? v.toFixed(2) : v < 10 ? v.toFixed(1) : int(Math.round(v));
+  const residueName = (l) => D.residue_names?.[l] || ((D.residues || []).length === 1 ? W.residue : l);
+  const residueNames = (l) =>
+    D.residue_names?.[l] ? D.residue_names[l] + 's' : (D.residues || []).length === 1 ? W.residues : l + ' residues';
+  function changeCounts(c) {
+    const letter = (c.seq || '')[c.pos - 1] || '',
+      nm = residueName(letter);
+    return CCN.map((x) => {
+      const v = changesAt(c.tb, x, c.pos),
+        t = changeTotal(v),
+        unit = x.unit || ['', ''],
+        b = changeAvg(c.tb, x, letter);
+      const head = t
+        ? `${v
+            .map((r) => `<b>${esc(letter + c.shown(c.pos) + r.alt)}</b>${r.n > 1 ? ' ×' + int(r.n) : ''}`)
+            .join(', ')} <span class="muted">in ${int(t)} ${esc(t === 1 ? unit[0] : unit[1])} (${esc(x.label)})</span>`
+        : `<span class="muted">no change in ${esc(unit[1])} (${esc(x.label)})</span>`;
+      const flag = flagged(c.tb, x, letter, t) ? ' ' + flagTag(x) : '';
+      return (
+        `<div>${head}${flag}<br><span class="muted small">changes at this ${esc(nm)}: ${int(t)} · ` +
+        `protein average per ${esc(nm)}: ${avgText(b?.per)}</span></div>`
+      );
+    }).join('');
+  }
   function changes(c) {
     const cs = C.changes || [];
-    if (!cs.length) return '';
+    if (!cs.length) return changeCounts(c);
     const parts = cs
       .map((x) => {
         const vals = attrVals(c, x.attribute);
@@ -1390,6 +1451,17 @@
     around,
     states,
     changes,
+    cc: {
+      entries: CCN,
+      at: changesAt,
+      total: changeTotal,
+      avg: changeAvg,
+      avgText,
+      residueName,
+      residueNames,
+      flagged,
+      flagTag,
+    },
     calls,
     callsKey,
     evidenceBlock,

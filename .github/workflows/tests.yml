@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: 9a03d54c14ed63ece0c0c8d3eba03eec0d6840e9  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: 34d974b46488941dce37d6538dfdea5b999586e1  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference
@@ -91,6 +91,15 @@ jobs:
             inputs/layers/depmap_24q4_gene_effect_summary.tsv
             inputs/layers/depmap_24q4_arginine_changes.tsv
             inputs/layers/tcga_mc3_arginine_changes.tsv
+            releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz
             releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv
             releases/v1.5.1/statistics_v1.5.1.tsv
             releases/v1.5.1/human_methylarginine_proteins_v1.5.1.tsv
@@ -219,7 +228,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: 9a03d54c14ed63ece0c0c8d3eba03eec0d6840e9  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: 34d974b46488941dce37d6538dfdea5b999586e1  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference
@@ -270,6 +279,15 @@ jobs:
             inputs/layers/depmap_24q4_gene_effect_summary.tsv
             inputs/layers/depmap_24q4_arginine_changes.tsv
             inputs/layers/tcga_mc3_arginine_changes.tsv
+            releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz
             releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv
             releases/v1.5.1/statistics_v1.5.1.tsv
             releases/v1.5.1/human_methylarginine_proteins_v1.5.1.tsv
@@ -383,7 +401,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: 9a03d54c14ed63ece0c0c8d3eba03eec0d6840e9  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: 34d974b46488941dce37d6538dfdea5b999586e1  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference
@@ -434,6 +452,15 @@ jobs:
             inputs/layers/depmap_24q4_gene_effect_summary.tsv
             inputs/layers/depmap_24q4_arginine_changes.tsv
             inputs/layers/tcga_mc3_arginine_changes.tsv
+            releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz
             releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv
             releases/v1.5.1/statistics_v1.5.1.tsv
             releases/v1.5.1/human_methylarginine_proteins_v1.5.1.tsv
