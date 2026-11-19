@@ -22,7 +22,7 @@ def test_an_ortholog_request_that_fails_is_not_reported_as_no_ortholog():
     js = _src('kit-conserve.js')
     assert 'type=orthologues' in js  # the value Ensembl's homology endpoint accepts
     assert not re.search(r'400\|404', js)  # an HTTP error is never turned into an empty answer
-    assert 'Ortholog data could not be loaded' in js and 'data-cv-retry' in js
+    assert 'is unavailable right now' in js and 'data-cv-retry' in js
 
 
 def test_the_other_ptms_card_reads_the_maps_context_marks():
