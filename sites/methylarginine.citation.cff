@@ -23,14 +23,23 @@ preferred-citation:
   year: 2026
   doi: "10.1016/j.chembiol.2026.09.011"
 references:   # the data sources: cited with every export 
+  - type: dataset   # this release: the version DOI of PTM_Pipeline v1.5.1 (published 2026-11-19)
+    authors:
+      - {family-names: DeAngelo, given-names: JD}
+      - {family-names: Silverstein, given-names: AM}
+      - {family-names: Shechter, given-names: D}
+    title: "PTM_Pipeline data release v1.5.1"
+    publisher: Zenodo
+    year: 2026
+    doi: "10.5281/zenodo.24373077"
   - type: dataset
     authors:   # as the Zenodo record lists them
       - {family-names: DeAngelo, given-names: JD}
       - {family-names: Silverstein, given-names: AM}
       - {family-names: Shechter, given-names: D}
-    # the concept DOI, which names every version; its records on Zenodo (checked 1 Nov 2026) are v1.0.0
+    # all versions: the concept DOI, which names every version; its records on Zenodo include v1.0.0
     # (10.5281/zenodo.22696799) and v1.4.0, "Human methylarginine sites, v1.4.0 (PTM_Pipeline)" (10.5281/zenodo.23674710)
-    title: "Human methylarginine sites (PTM_Pipeline)"
+    title: "Human methylarginine sites (PTM_Pipeline), all versions"
     publisher: Zenodo
     year: 2026
     doi: "10.5281/zenodo.22696798"

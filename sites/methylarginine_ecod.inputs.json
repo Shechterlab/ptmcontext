@@ -22,8 +22,8 @@
     "methylarginine_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv",
       "md5": "50dd293d1a3dd94ce7a0fb3168eae3bd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1",
-      "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1",
+      "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-19)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "reference_output",
       "note": "The marks the parity test counts, until this repository builds the site union itself."

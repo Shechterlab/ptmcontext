@@ -32,6 +32,9 @@ The sites read releases of [PTM_Pipeline](https://github.com/Shechterlab/PTM_Pip
 site (the methylarginine data of v1.5.1 are byte for byte those of v1.4.3). The v1.5.1 context tables come from UniProt, iPTMnet, Berryhill et al. 2023, Ochoa et al. 2020, Hendriks et al. 2017 (SUMO-2) and Akimov et al. 2018
 (ubiquitination).
 
+To cite the data, use the archive of this release, v1.5.1 (doi:10.5281/zenodo.24373077, published 19 November 2026), and
+the archive of all versions (doi:10.5281/zenodo.22696798). Each site's Methods page (Cite) lists these with the studies and databases behind its sites.
+
 ## Build a site
 
 Each site is defined only by YAML files: a site file `sites/<site>.yaml`, a mark file `sites/marks/<mark>.yaml`, an inputs
