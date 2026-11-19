@@ -1,5 +1,5 @@
 # Site: the human lysine modification sites (acetylation and the other lysine acylations, ubiquitination and SUMOylation),
-# from UniProt, iPTMnet, Hendriks 2017 and Akimov 2018 (release v1.5.0 of PTM_Pipeline).
+# from UniProt, iPTMnet, Hendriks 2017 and Akimov 2018 (release v1.5.1 of PTM_Pipeline).
 # The same code and the same generic inputs as the methyllysine site; its own marks, questions, focus, words and colors.
 # The four release tables are one set of marks, a row per lysine and type (marks.add with set: acyl_type); each type is a
 # filter, and the key questions run again on each type with at least 200 lysines (marks_subsets). There is no earlier
@@ -59,13 +59,13 @@ marks:
   # a Hendriks 2017 or Akimov 2018 site) or an unspecified iPTMnet record. Behind the lower-confidence switch, as the
   # methyllysine site's: the rows UniProt reports only by similarity (ECO:0000250 and other records without an experimental
   # code).
-  input: acetylation_sites_v1_5_0
+  input: acetylation_sites_v1_5_1
   accession: canonical_UniProtAC
   position: position
   add:
-    - {input: lysine_acylation_sites_v1_5_0, exclude: [{column: acyl_type, equals: acetyl}]}
-    - {input: ubiquitination_sites_v1_5_0, set: {acyl_type: ubiquitin}}
-    - {input: sumoylation_sites_v1_5_0, set: {acyl_type: sumo}}
+    - {input: lysine_acylation_sites_v1_5_1, exclude: [{column: acyl_type, equals: acetyl}]}
+    - {input: ubiquitination_sites_v1_5_1, set: {acyl_type: ubiquitin}}
+    - {input: sumoylation_sites_v1_5_1, set: {acyl_type: sumo}}
   exclude:
     - {column: evidence_class, equals: by-similarity}     # in the main view their lysines count as other lysines
   parts:                # a lysine of one type, for the questions on a lysine that has another (near_marks, window 0)
@@ -744,7 +744,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methylarginines (±10 residues)
     question: "Are modified lysines more often near a methylarginine than the other lysines of their protein?"
-    sub: "Modified lysines against the other lysines of the same proteins, by whether a methylarginine (methylarginine release v1.4.3, by-similarity records left out) is within 10 residues on either side"
+    sub: "Modified lysines against the other lysines of the same proteins, by whether a methylarginine (methylarginine release v1.5.1, by-similarity records left out) is within 10 residues on either side"
     section: Other modifications
   - id: near_methyllysine
     family_label: All types
@@ -753,7 +753,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methyllysines (±10 residues)
     question: "Are modified lysines more often near a methyllysine than the other lysines of their protein?"
-    sub: "Modified lysines against the other lysines of the same proteins, by whether a methyllysine (UniProt, iPTMnet and Berryhill et al. 2023, methyllysine release v1.5.0; by-similarity records left out) is within 10 residues on either side, the lysine itself left out. A lysine that is itself methylated is asked about in the next section"
+    sub: "Modified lysines against the other lysines of the same proteins, by whether a methyllysine (UniProt, iPTMnet and Berryhill et al. 2023, methyllysine release v1.5.1; by-similarity records left out) is within 10 residues on either side, the lysine itself left out. A lysine that is itself methylated is asked about in the next section"
     section: Other modifications
   # The same lysine carrying two modifications: is a lysine with one modification more often also reported with another
   # than the other lysines of its protein? The comparison within each protein (Mantel-Haenszel over proteins) holds the
@@ -841,7 +841,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Acetylated and methylated lysines
     family_label: All lysines
     question: "Are acetylated lysines more often also reported methylated than the other lysines of their protein?"
-    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.0, by-similarity records left out). Acetylation and methylation compete for the same lysine, and both are best known on much-studied proteins such as histones, so the comparison is made within each protein"
+    sub: "Acetylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.1, by-similarity records left out). Acetylation and methylation compete for the same lysine, and both are best known on much-studied proteins such as histones, so the comparison is made within each protein"
     section: Same lysine, different modifications
   - id: same_ac_methyl_modified
     layer: near_marks
@@ -865,7 +865,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Ubiquitinated and methylated lysines
     family_label: All lysines
     question: "Are ubiquitinated lysines more often also reported methylated than the other lysines of their protein?"
-    sub: "Ubiquitinated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.0, by-similarity records left out). Most ubiquitination sites come from large mass-spectrometry studies of the proteome, so the comparison is made within each protein"
+    sub: "Ubiquitinated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.1, by-similarity records left out). Most ubiquitination sites come from large mass-spectrometry studies of the proteome, so the comparison is made within each protein"
     section: Same lysine, different modifications
   - id: same_ub_methyl_modified
     layer: near_marks
@@ -889,7 +889,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: SUMOylated and methylated lysines
     family_label: All lysines
     question: "Are SUMOylated lysines more often also reported methylated than the other lysines of their protein?"
-    sub: "SUMOylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.0, by-similarity records left out)"
+    sub: "SUMOylated lysines against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.1, by-similarity records left out)"
     section: Same lysine, different modifications
   - id: same_su_methyl_modified
     layer: near_marks
@@ -948,7 +948,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: Ubiquitinated and methylated lysines
     family_label: Ubiquitination from Akimov 2018
     question: "Are the ubiquitination sites of Akimov et al. 2018 more often also reported methylated than the other lysines of their protein?"
-    sub: "The lysines Akimov et al. 2018 reports ubiquitinated against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.0, by-similarity records left out)"
+    sub: "The lysines Akimov et al. 2018 reports ubiquitinated against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.1, by-similarity records left out)"
     section: Same lysine, different modifications
   - id: same_su_methyl_hendriks
     layer: near_marks
@@ -959,7 +959,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family: SUMOylated and methylated lysines
     family_label: SUMOylation from Hendriks 2017
     question: "Are the SUMO-2 sites of Hendriks et al. 2017 more often also reported methylated than the other lysines of their protein?"
-    sub: "The lysines Hendriks et al. 2017 reports SUMOylated against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.0, by-similarity records left out)"
+    sub: "The lysines Hendriks et al. 2017 reports SUMOylated against the other lysines of the same proteins, by whether the lysine itself is also a methyllysine (methyllysine release v1.5.1, by-similarity records left out)"
     section: Same lysine, different modifications
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
@@ -1105,36 +1105,36 @@ variants:                # the same questions on other marks; ptmc run --variant
     attributes: {}
 
 # Context marks: other modifications of the same proteins, shown beside the lysine modifications (CONTRACTS.md, Context marks):
-# methylarginine (the sites table of release v1.4.3, the methylarginine site's own marks), methyllysine and phosphorylation (the
-# sites tables of release v1.5.0). A map row, "Other modifications nearby" on the site card, a filter, table columns and downloads
+# methylarginine (the sites table of release v1.5.1, the methylarginine site's own marks), methyllysine and phosphorylation (the
+# sites tables of release v1.5.1). A map row, "Other modifications nearby" on the site card, a filter, table columns and downloads
 # follow from these entries; the near_marks questions test them. The tables are in sites/lysine.inputs.json. The site's own
 # types (acetylation, ubiquitination, SUMOylation) are parts of its marks (marks.parts), not context marks.
 context_marks:
   - id: methylarginine
     label: Methylarginine
     short: "Rme"   # the lane name in the map's "All modifications" block
-    input: context_methylarginine_sites_v1_4_3
+    input: context_methylarginine_sites_v1_5_1
     columns: {accession: uniprot_accession, position: position, residue: residue, state: methyl_state}
     replaces_ptm_kinds: [Methyl]   # the live UniProt "Other PTMs" row would repeat the methylarginines and methyllysines: one source for them
-    drop_evidence: []          # the v1.4.3 table has no evidence column: every row is kept
+    drop_evidence: []          # the v1.5.1 table has no evidence column: every row is kept
     colour: "#C2410C"          # the methylarginine site's orange accent
     colour_dark: "#FB923C"
     citation:
       short: Methylarginine Site Explorer
-      cite: "Methylarginine sites of the human reviewed proteome, release v1.4.3 of PTM_Pipeline: DeAngelo et al., Cell Chem Biol 33:1404-1421 (2026), doi:10.1016/j.chembiol.2026.09.011"
+      cite: "Methylarginine sites of the human reviewed proteome, release v1.5.1 of PTM_Pipeline: DeAngelo et al., Cell Chem Biol 33:1404-1421 (2026), doi:10.1016/j.chembiol.2026.09.011"
       doi: 10.1016/j.chembiol.2026.09.011
       licence: CC BY-NC-SA 4.0
   - id: methyllysine
     label: Methyllysine
     short: "Kme"
-    input: context_methyllysine_sites_v1_5_0
+    input: context_methyllysine_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
     same_residue: true          # a lysine that is also methylated says so on its card
     colour: "#7c3aed"          # violet, the methyllysine site's color
     colour_dark: "#a78bfa"
     citation:
       short: UniProt, iPTMnet and Berryhill 2023
-      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
+      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.1 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
       licence: "CC BY-NC-SA 4.0; Berryhill 2023 article CC BY 4.0"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
@@ -1143,7 +1143,7 @@ context_marks:
   - id: phospho
     label: Phosphosite
     short: "pS/pT/pY"
-    input: context_phosphorylation_sites_v1_5_0
+    input: context_phosphorylation_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources, score: functional_score}
     subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # every site is drawn at first; a click on the row label shows only the sites Ochoa 2020 scores 0.5 or more (about 10,900), and sites with no score (UniProt or iPTMnet only) are then hidden too
     replaces_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row leaves its Phospho kind out: one source for phosphosites
@@ -1151,7 +1151,7 @@ context_marks:
     colour_dark: "#1FA2C4"
     citation:
       short: UniProt, iPTMnet and Ochoa 2020
-      cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Ochoa et al., Nat Biotechnol 38:365-373 (2020), doi:10.1038/s41587-019-0344-3 (the article is not open access; its supplementary table is included)"
+      cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.1 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Ochoa et al., Nat Biotechnol 38:365-373 (2020), doi:10.1038/s41587-019-0344-3 (the article is not open access; its supplementary table is included)"
       licence: "CC BY-NC-SA 4.0; Ochoa 2020 included"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
@@ -1404,16 +1404,16 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: RNA and DNA, analyses: [pdb_interface_na]}
-  dataset: {label: PTM_Pipeline data release, version: v1.5.0, date: "2026-11-13", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/d65489c/releases/v1.5.0"}
+  dataset: {label: PTM_Pipeline data release, version: v1.5.1, date: "2026-11-17", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1"}
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). Akimov et al., Nat Struct Mol Biol 25:631 (2018) and Hendriks et al., Nat Struct Mol Biol 24:325 (2017) are articles that are not open access, and their supplementary tables have no license notice of their own: their sites are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
-    - {label: Acetylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c/releases/v1.5.0/human_acetylation_sites_v1.5.0.tsv", format: TSV, note: "every acetylation record: one row per lysine, with its evidence class, sources and iPTMnet fields (4,597 rows)"}
-    - {label: Other acylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c/releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv", format: TSV, note: "every lysine acylation record (acetyl and 12 other acyl types, in acyl_type): one row per lysine and type"}
-    - {label: Ubiquitination sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c/releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv", format: TSV, note: "every ubiquitination record, with its evidence class, sources and the Akimov 2018 localization probability and cell lines (63,480 rows, 62,871 from Akimov 2018)"}
-    - {label: SUMOylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c/releases/v1.5.0/human_sumoylation_sites_v1.5.0.tsv", format: TSV, note: "every SUMOylation record, with its evidence class, sources and the Hendriks 2017 localization probability and cell lines (40,249 rows, 39,858 from Hendriks 2017)"}
-    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
-    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/d65489c/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
-    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/d65489c/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+    - {label: Acetylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1/human_acetylation_sites_v1.5.1.tsv", format: TSV, note: "every acetylation record: one row per lysine, with its evidence class, sources and iPTMnet fields (4,597 rows)"}
+    - {label: Other acylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1/human_lysine_acylation_sites_v1.5.1.tsv", format: TSV, note: "every lysine acylation record (acetyl and 12 other acyl types, in acyl_type): one row per lysine and type"}
+    - {label: Ubiquitination sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1/human_ubiquitination_sites_v1.5.1.tsv", format: TSV, note: "every ubiquitination record, with its evidence class, sources and the Akimov 2018 localization probability and cell lines (63,480 rows, 62,871 from Akimov 2018)"}
+    - {label: SUMOylation sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1/human_sumoylation_sites_v1.5.1.tsv", format: TSV, note: "every SUMOylation record, with its evidence class, sources and the Hendriks 2017 localization probability and cell lines (40,249 rows, 39,858 from Hendriks 2017)"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
   search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
     shorthand: {H4: P62805, H3: P68431, "H3.1": P68431, "H3.3": P84243}   # names papers use for a protein (H4K20, H3 K9)
     patterns:                # the motif finder: a pattern of residues on the sites' sequence windows

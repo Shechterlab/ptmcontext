@@ -1,4 +1,4 @@
-# Site: the human phosphosites, from UniProt, iPTMnet and Ochoa et al. 2020 (release v1.5.0 of PTM_Pipeline). The same code and the same
+# Site: the human phosphosites, from UniProt, iPTMnet and Ochoa et al. 2020 (release v1.5.1 of PTM_Pipeline). The same code and the same
 # generic inputs as the methylarginine and methyllysine sites; its own marks, focus, words and colors. There is no earlier
 # release to match, so every statistic is new (no reference). Contract: ptmcontext/schemas/site.schema.json.
 # The marks table carries Ochoa et al. 2020's functional score (and its mass-spectrometry evidence) beside UniProt and iPTMnet:
@@ -54,7 +54,7 @@ marks:
   # The release's own table: a row per phosphorylated residue. The main view counts the residues with an experimental
   # record (UniProt, iPTMnet, or Ochoa 2020's mass spectrometry), a text-mined or an unspecified one; the residues UniProt reports only by similarity (ECO:0000250 and other records
   # without an experimental code) are the lower-confidence variant, as on the methylarginine and methyllysine sites.
-  input: phosphorylation_sites_v1_5_0
+  input: phosphorylation_sites_v1_5_1
   accession: canonical_UniProtAC
   position: position
   exclude:
@@ -244,7 +244,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methylarginines (±10 residues)
     question: "Are phosphosites more often near a methylarginine than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methylarginine (methylarginine release v1.4.3) is within 10 residues on either side. Both modifications are best studied on abundant, much-studied proteins, so the within-protein comparison is the fairer one"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methylarginine (methylarginine release v1.5.1) is within 10 residues on either side. Both modifications are best studied on abundant, much-studied proteins, so the within-protein comparison is the fairer one"
     section: Other modifications
   - id: near_methyllysine
     layer: near_marks
@@ -252,7 +252,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methyllysines (±10 residues)
     question: "Are phosphosites more often near a methyllysine than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methyllysine (methyllysine release v1.5.0, by-similarity records left out) is within 10 residues on either side"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a methyllysine (methyllysine release v1.5.1, by-similarity records left out) is within 10 residues on either side"
     section: Other modifications
   - id: near_acetylation
     layer: near_marks
@@ -297,13 +297,13 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       noun: shared arginine
       title: Shared arginine
       question: "Are phosphosites more often in a basophilic motif whose arginine is methylated than the other serines and threonines of their protein?"
-      sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins: the Ser or Thr has an Arg at -3 (R-x-x-S/T) or -2 (R-x-S/T) that is a methylarginine of release v1.4.3. Methylation of the Arg could change the kinase's access to the site"
+      sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins: the Ser or Thr has an Arg at -3 (R-x-x-S/T) or -2 (R-x-S/T) that is a methylarginine of release v1.5.1. Methylation of the Arg could change the kinase's access to the site"
       section: Other modifications
       families:
         - {name: methylated_R_m3, label: "R-x-x-S/T, the Arg methylated", pattern: "R..[ST]", start: -3, marks: [{mark: methylarginine, at: -3}],
-           help: "Arg at -3 of the Ser or Thr, and that Arg is a methylarginine of the methylarginine site (release v1.4.3)"}
+           help: "Arg at -3 of the Ser or Thr, and that Arg is a methylarginine of the methylarginine site (release v1.5.1)"}
         - {name: methylated_R_m2, label: "R-x-S/T, the Arg methylated", pattern: "R.[ST]", start: -2, marks: [{mark: methylarginine, at: -2}],
-           help: "Arg at -2 of the Ser or Thr, and that Arg is a methylarginine of the methylarginine site (release v1.4.3)"}
+           help: "Arg at -2 of the Ser or Thr, and that Arg is a methylarginine of the methylarginine site (release v1.5.1)"}
   # Interactions: each a question of yes-or-no tests, each against the serines, threonines and tyrosines its evidence could have reached: the
   # residues a structure observed or a model covers. Every candidate counts in the pooled test, and the within-protein
   # row reports those counts (counting: every_candidate).
@@ -915,34 +915,34 @@ variants:                # the same questions on other marks; ptmc run --variant
     attributes: {}
 
 # Context marks: other modifications of the same proteins, shown beside the phosphosites (CONTRACTS.md, Context marks):
-# methylarginine (the sites table of release v1.4.3, the methylarginine site's own marks) and methyllysine (the sites table
-# of release v1.5.0). A map row, "Other modifications nearby" on the site card, a filter, table columns and downloads follow from
+# methylarginine (the sites table of release v1.5.1, the methylarginine site's own marks) and methyllysine (the sites table
+# of release v1.5.1). A map row, "Other modifications nearby" on the site card, a filter, table columns and downloads follow from
 # these entries; the near_marks questions test them. Both tables are in sites/phospho.inputs.json.
 context_marks:
   - id: methylarginine
     label: Methylarginine
     short: "Rme"   # the lane name in the map's "All modifications" block
-    input: context_methylarginine_sites_v1_4_3
+    input: context_methylarginine_sites_v1_5_1
     columns: {accession: uniprot_accession, position: position, residue: residue, state: methyl_state}
     replaces_ptm_kinds: [Methyl]   # the live UniProt "Other PTMs" row would repeat the methylations: one source for them
-    drop_evidence: []          # the v1.4.3 table has no evidence column: every row is kept
+    drop_evidence: []          # the v1.5.1 table has no evidence column: every row is kept
     colour: "#C2410C"          # the methylarginine site's orange accent
     colour_dark: "#FB923C"
     citation:
       short: Methylarginine Site Explorer
-      cite: "Methylarginine sites of the human reviewed proteome, release v1.4.3 of PTM_Pipeline: DeAngelo et al., Cell Chem Biol 33:1404-1421 (2026), doi:10.1016/j.chembiol.2026.09.011"
+      cite: "Methylarginine sites of the human reviewed proteome, release v1.5.1 of PTM_Pipeline: DeAngelo et al., Cell Chem Biol 33:1404-1421 (2026), doi:10.1016/j.chembiol.2026.09.011"
       doi: 10.1016/j.chembiol.2026.09.011
       licence: CC BY-NC-SA 4.0
   - id: methyllysine
     label: Methyllysine
     short: "Kme"
-    input: context_methyllysine_sites_v1_5_0
+    input: context_methyllysine_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
     colour: "#7c3aed"          # violet, the methyllysine site's color
     colour_dark: "#a78bfa"
     citation:
       short: UniProt, iPTMnet and Berryhill 2023
-      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
+      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.1 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
       licence: "CC BY-NC-SA 4.0; Berryhill 2023 article CC BY 4.0"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
@@ -953,14 +953,14 @@ context_marks:
     short: "Kac"
     noun: acetylation site
     plural: Acetylation sites
-    input: context_acetylation_sites_v1_5_0
+    input: context_acetylation_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, evidence: evidence_class, sources: sources}
     replaces_ptm_kinds: [Lys acyl]   # the live UniProt "Other PTMs" row would repeat the lysine acylations: one source for them
     colour: "#15803d"          # green: apart from the orange, violet, cyan and olive of the other marks (5.0:1 on white)
     colour_dark: "#4ade80"     # 9.3:1 on the dark surface
     citation:
       short: UniProt and iPTMnet
-      cite: "Lysine acetylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      cite: "Lysine acetylation sites of the human reviewed proteome, release v1.5.1 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
       licence: "CC BY-NC-SA 4.0"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
@@ -970,14 +970,14 @@ context_marks:
     short: "Acyl"
     noun: non-acetyl acylation site
     plural: Other acylation sites
-    input: context_lysine_acylation_sites_v1_5_0
+    input: context_lysine_acylation_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: acyl_type, evidence: evidence_class, sources: sources}
     exclude: [{column: acyl_type, in: [acetyl]}]   # acetylation is its own mark above; the rest, as one group, 12 acyl types
     colour: "#8a7a1c"          # olive: 4.3:1 on white
     colour_dark: "#ddd06a"     # 10.3:1 on the dark surface
     citation:
       short: UniProt and iPTMnet
-      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl) of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl) of the human reviewed proteome, release v1.5.1 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
       licence: "CC BY-NC-SA 4.0"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
@@ -987,14 +987,14 @@ context_marks:
     short: "Kub"
     noun: ubiquitination site
     plural: Ubiquitination sites
-    input: context_ubiquitination_sites_v1_5_0
+    input: context_ubiquitination_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, evidence: evidence_class, sources: sources}
     replaces_ptm_kinds: [Ubiquitin]   # the live UniProt "Other PTMs" row would repeat the ubiquitination sites: one source for them
     colour: "#be185d"          # rose: 6.0:1 on white
     colour_dark: "#f9a8d4"     # 9.0:1 on the dark surface
     citation:
       short: Akimov 2018, UniProt and iPTMnet
-      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Akimov V et al., Nat Struct Mol Biol 25:631–640 (2018), doi:10.1038/s41594-018-0084-y; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.5.1 of PTM_Pipeline: Akimov V et al., Nat Struct Mol Biol 25:631–640 (2018), doi:10.1038/s41594-018-0084-y; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
       licence: "CC BY-NC-SA 4.0; Akimov 2018 included"
     sources:
       Akimov 2018: {cite: "Akimov et al., Nat Struct Mol Biol 25:631 (2018)", doi: 10.1038/s41594-018-0084-y}
@@ -1005,14 +1005,14 @@ context_marks:
     short: "SUMO"
     noun: SUMOylation site
     plural: SUMOylation sites
-    input: context_sumoylation_sites_v1_5_0
+    input: context_sumoylation_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, evidence: evidence_class, sources: sources}
     replaces_ptm_kinds: [SUMO]   # the live UniProt "Other PTMs" row would repeat the SUMOylation sites: one source for them
     colour: "#0369a1"          # blue: 5.9:1 on white
     colour_dark: "#7dd3fc"     # 9.8:1 on the dark surface
     citation:
       short: Hendriks 2017, UniProt and iPTMnet
-      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Hendriks IA et al., Nat Struct Mol Biol 24:325–336 (2017), doi:10.1038/nsmb.3366; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.5.1 of PTM_Pipeline: Hendriks IA et al., Nat Struct Mol Biol 24:325–336 (2017), doi:10.1038/nsmb.3366; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
       licence: "CC BY-NC-SA 4.0; Hendriks 2017 included"
     sources:
       Hendriks 2017: {cite: "Hendriks et al., Nat Struct Mol Biol 24:325 (2017)", doi: 10.1038/nsmb.3366}
@@ -1289,13 +1289,13 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency]}
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
     - {name: Databases, attributes: [sources, iptmnet_sources]}
-  dataset: {label: PTM_Pipeline data release, version: v1.5.0, date: "2026-11-13", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/d65489c1c719f4e6e7c3a87bf438f598227a3e38/releases/v1.5.0"}
+  dataset: {label: PTM_Pipeline data release, version: v1.5.1, date: "2026-11-17", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1"}
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). The phosphosites and functional scores of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3 (rows whose databases name Ochoa 2020) come from an article that is not open access, and its supplementary table has no license: they are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
-    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c1c719f4e6e7c3a87bf438f598227a3e38/releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class, sources, Ochoa 2020 functional score and mass-spectrometry evidence (Ochoa 2020 rows included, not open access)"}
-    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/d65489c1c719f4e6e7c3a87bf438f598227a3e38/releases/v1.5.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
-    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/d65489c1c719f4e6e7c3a87bf438f598227a3e38/releases/v1.5.0/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
-    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/d65489c1c719f4e6e7c3a87bf438f598227a3e38/releases/v1.5.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class, sources, Ochoa 2020 functional score and mass-spectrometry evidence (Ochoa 2020 rows included, not open access)"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1/README.md", format: Markdown, note: "how the release was made, its sources and what was dropped"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
   search:                  # the search's words beyond genes and the questions' keys (kit-select.js, kit-search.js, kit-near.js)
     patterns:                # the motif finder: a pattern of residues on the sites' sequence windows
       at: motif              # motif:SPXK covers the site

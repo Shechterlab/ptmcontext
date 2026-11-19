@@ -16,7 +16,7 @@ inputs:
     first_of: [interpro_domains, human_shephard_ecod_domains]
 
 marks:
-  input: methylarginine_sites_v1_4_3
+  input: methylarginine_sites_v1_5_1
   accession: uniprot_accession
   position: position
   left_out:                                       # held back: counted on neither side

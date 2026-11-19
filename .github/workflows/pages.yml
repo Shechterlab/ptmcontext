@@ -1,7 +1,7 @@
 # Build every site from its sources and publish them on GitHub Pages, with a landing page. Runs on each push to develop,
 # the working branch the site is served from, and to main (and by hand). Pages' source must be "GitHub Actions", and
 # the github-pages environment must allow develop among its deployment branches. The methylarginine site reads the release's public inputs as data, checked against inputs.json, and
-# must still equal release v1.4.3. The export audits (text overlap, legends) run in tests.yml, so a deploy does not wait for them.
+# must still equal release v1.5.1 (methylarginine data as in v1.4.3). The export audits (text overlap, legends) run in tests.yml, so a deploy does not wait for them.
 # The four sites are built in parallel jobs (one matrix entry each, the slowest about 45 minutes instead of the four in a row,
 # about two hours); a last job downloads their websites, assembles them with the landing page (ptmc pages) and uploads the Pages artifact.
 # (The yeast site is not published: sites/yeast_phospho.yaml stays as an example of a second organism.)
@@ -31,16 +31,16 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: d65489c1c719f4e6e7c3a87bf438f598227a3e38  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: 1419d3586fbbf7263d489afe0eac737e4628f64a  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference
-            releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv
-            releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv
-            releases/v1.5.0/human_acetylation_sites_v1.5.0.tsv
-            releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv
-            releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv
-            releases/v1.5.0/human_sumoylation_sites_v1.5.0.tsv
+            releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv
+            releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv
+            releases/v1.5.1/human_acetylation_sites_v1.5.1.tsv
+            releases/v1.5.1/human_lysine_acylation_sites_v1.5.1.tsv
+            releases/v1.5.1/human_ubiquitination_sites_v1.5.1.tsv
+            releases/v1.5.1/human_sumoylation_sites_v1.5.1.tsv
             releases/v1.5.1/supporting/methyllysine_site_interactions_v1.5.1.tsv
             releases/v1.5.1/supporting/methyllysine_site_interaction_records_v1.5.1.tsv
             releases/v1.5.1/supporting/methyllysine_nucleic_acid_contacts_v1.5.1.tsv
@@ -81,33 +81,33 @@ jobs:
             inputs/layers/depmap_24q4_gene_effect_summary.tsv
             inputs/layers/depmap_24q4_arginine_changes.tsv
             inputs/layers/tcga_mc3_arginine_changes.tsv
-            releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
-            releases/v1.4.3/statistics_v1.4.3.tsv
-            releases/v1.4.3/human_methylarginine_proteins_v1.4.3.tsv
-            releases/v1.4.3/supporting/nucleic_acid_contacts_v1.4.3.tsv
-            releases/v1.4.3/supporting/nucleic_acid_near_sites_v1.4.3.tsv
-            releases/v1.4.3/supporting/dna_motifs_v1.4.3.tsv
-            releases/v1.4.3/supporting/eclip_v1.4.3.tsv
-            releases/v1.4.3/supporting/nucleic_acid_regions_v1.4.3.tsv
-            releases/v1.4.3/supporting/rna_bind_n_seq_v1.4.3.tsv
-            releases/v1.4.3/supporting/protein_partners_v1.4.3.tsv
-            releases/v1.4.3/supporting/other_ptm_sites_v1.4.3.tsv
-            releases/v1.4.3/supporting/functional_experiments_v1.4.3.tsv
-            releases/v1.4.3/supporting/residue_evidence_v1.4.3.tsv
-            releases/v1.4.3/supporting/site_interaction_records_v1.4.3.tsv
-            releases/v1.4.3/supporting/site_interactions_v1.4.3.tsv
-            releases/v1.4.3/supporting/source_records_v1.4.3.tsv
-            releases/v1.4.3/studies_v1.4.3.tsv
-            releases/v1.4.3/supporting/carm1_ko_v1.4.3.tsv
-            releases/v1.4.3/supporting/maron2021_inhibitors_v1.4.3.tsv
-            releases/v1.4.3/supporting/writer_perturbations_v1.4.3.tsv
-            releases/v1.4.3/human_methylarginine_lower_confidence_sites_v1.4.3.tsv
-            releases/v1.4.3/statistics_with_lower_confidence_v1.4.3.tsv
-            releases/v1.4.3/supporting/density_windows_v1.4.3.tsv
-            releases/v1.4.3/supporting/disease_ontology_v1.4.3.tsv
-            releases/v1.4.3/supporting/disease_terms_tested_v1.4.3.tsv
-            releases/v1.4.3/analyses_with_lower_confidence/disease/disease_ontology.tsv
-            releases/v1.4.3/analyses_with_lower_confidence/disease/disease_terms.tsv
+            releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv
+            releases/v1.5.1/statistics_v1.5.1.tsv
+            releases/v1.5.1/human_methylarginine_proteins_v1.5.1.tsv
+            releases/v1.5.1/supporting/methylarginine_nucleic_acid_contacts_v1.5.1.tsv
+            releases/v1.5.1/supporting/methylarginine_nucleic_acid_near_sites_v1.5.1.tsv
+            releases/v1.5.1/supporting/dna_motifs_v1.5.1.tsv
+            releases/v1.5.1/supporting/eclip_v1.5.1.tsv
+            releases/v1.5.1/supporting/nucleic_acid_regions_v1.5.1.tsv
+            releases/v1.5.1/supporting/rna_bind_n_seq_v1.5.1.tsv
+            releases/v1.5.1/supporting/protein_partners_v1.5.1.tsv
+            releases/v1.5.1/supporting/other_ptm_sites_v1.5.1.tsv
+            releases/v1.5.1/supporting/functional_experiments_v1.5.1.tsv
+            releases/v1.5.1/supporting/methylarginine_residue_evidence_v1.5.1.tsv
+            releases/v1.5.1/supporting/methylarginine_site_interaction_records_v1.5.1.tsv
+            releases/v1.5.1/supporting/methylarginine_site_interactions_v1.5.1.tsv
+            releases/v1.5.1/supporting/source_records_v1.5.1.tsv
+            releases/v1.5.1/studies_v1.5.1.tsv
+            releases/v1.5.1/supporting/carm1_ko_v1.5.1.tsv
+            releases/v1.5.1/supporting/maron2021_inhibitors_v1.5.1.tsv
+            releases/v1.5.1/supporting/writer_perturbations_v1.5.1.tsv
+            releases/v1.5.1/human_methylarginine_lower_confidence_sites_v1.5.1.tsv
+            releases/v1.5.1/statistics_with_lower_confidence_v1.5.1.tsv
+            releases/v1.5.1/supporting/density_windows_v1.5.1.tsv
+            releases/v1.5.1/supporting/disease_ontology_v1.5.1.tsv
+            releases/v1.5.1/supporting/disease_terms_tested_v1.5.1.tsv
+            releases/v1.5.1/analyses_with_lower_confidence/disease/disease_ontology.tsv
+            releases/v1.5.1/analyses_with_lower_confidence/disease/disease_terms.tsv
             inputs/interactions/capri_panhale2019_adj_peptides.tsv
             inputs/interactions/capri_panhale2019_measured_peptides.tsv
             inputs/interactions/capri_panhale2019_xl_peptides.tsv
@@ -135,15 +135,11 @@ jobs:
             inputs/interactions/trendel2025_mcf7_dna_interactome.tsv
             inputs/interactions/uniprot_human_dna_binding_regions_2026-10-16.tsv
             inputs/interactions/uniprot_human_regions_2026-10-16.tsv
-            releases/v1.4.3/supporting/arginine_nucleic_acid_distances_v1.4.3.tsv
-            releases/v1.4.3/supporting/complexes_v1.4.3.tsv
-            releases/v1.4.3/supporting/dna_motifs_v1.4.3.tsv
-            releases/v1.4.3/supporting/eclip_v1.4.3.tsv
-            releases/v1.4.3/supporting/eclip_rna_compartments_v1.4.3.tsv
-            releases/v1.4.3/supporting/arginine_background_v1.4.3.tsv
-            releases/v1.4.3/supporting/htr_selex_v1.4.3.tsv
-            releases/v1.4.3/supporting/rna_bind_n_seq_v1.4.3.tsv
-            releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv
+            releases/v1.5.1/supporting/arginine_nucleic_acid_distances_v1.5.1.tsv
+            releases/v1.5.1/supporting/complexes_v1.5.1.tsv
+            releases/v1.5.1/supporting/eclip_rna_compartments_v1.5.1.tsv
+            releases/v1.5.1/supporting/arginine_background_v1.5.1.tsv
+            releases/v1.5.1/supporting/htr_selex_v1.5.1.tsv
             inputs/interactions/string_v12.5_human_physical_links_score400.tsv
             inputs/interactions/complex_portal_human_complexes_2026-10-16.tsv
           sparse-checkout-cone-mode: false
@@ -151,7 +147,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e packages/ptmstats -e .
-      # Methylarginine: the release's public inputs as data (v1.4.3). Methyllysine (unlisted on the landing page; in the sites'
+      # Methylarginine: the release's public inputs as data (v1.5.1). Methyllysine (unlisted on the landing page; in the sites'
       # header menu), phosphosites and lysine modifications (listed): release v1.5.0 of PTM_Pipeline, pinned above, with the
       # generic inputs the methylarginine site reads. Those three have no reference release: every statistic is new. The
       # lower-confidence variants of the phosphosite and lysine sites are not built here.
