@@ -1,5 +1,7 @@
 ## Unreleased
 
+- CI: the test jobs check out `releases/v1.5.1/release.json`, which the v1.5.1-matches-v1.4.3 test reads.
+
 - Every site reads PTM_Pipeline v1.5.1 (commit 8b8e233): methylarginine too, whose v1.5.1 data are byte for byte those of v1.4.3 (the six interaction tables under methylarginine_ names). Workflows and the inputs manifests are pinned to it; the parity test reads the v1.5.1 copies; a new test checks that those files equal the v1.4.3 ones.
 - Controls: a control on a part of the marks that counts fewer than `min_marks` marks (default 100; methyllysine has 83 high-confidence sites) shows no result, verdict or badge; its page and the Controls table say "Too few high-confidence sites to test (n = 83)."
 - Lysine site: the unused acyl types (phosphoglyceryl, biotinyl, lipoyl; no rows in the release) are removed, and the single-study Akimov and Hendriks questions (nearly identical to the all-lysines ones, as those studies are 99% of ubiquitination and SUMOylation sites) are dropped, leaving the one that compares the two studies.

@@ -42,6 +42,7 @@ jobs:
           path: reference
           sparse-checkout: |
             inputs/reference
+            releases/v1.5.1/release.json
             releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv
             releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv
             releases/v1.5.1/human_acetylation_sites_v1.5.1.tsv
@@ -222,6 +223,7 @@ jobs:
           path: reference
           sparse-checkout: |
             inputs/reference
+            releases/v1.5.1/release.json
             releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv
             releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv
             releases/v1.5.1/human_acetylation_sites_v1.5.1.tsv
@@ -385,6 +387,7 @@ jobs:
           path: reference
           sparse-checkout: |
             inputs/reference
+            releases/v1.5.1/release.json
             releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv
             releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv
             releases/v1.5.1/human_acetylation_sites_v1.5.1.tsv
