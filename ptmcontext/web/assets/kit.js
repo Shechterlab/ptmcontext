@@ -2399,7 +2399,10 @@
       const label = r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
         f = `${fxn(v)}×`,
         // "RGG" and "IDR" keep their capitals; "Nucleus" reads "nucleus" after "in"
-        low = (t) => (/^[A-Z][a-z]*(\s|$)/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t),
+        low = (t) =>
+          /^[A-Z][a-z]*(\s|$)/.test(t) && !/^[A-Z][a-z]{2}\s+(or|and)\s+[A-Z]/.test(t)
+            ? t.charAt(0).toLowerCase() + t.slice(1)
+            : t,
         where = /^(in|at|near|next to|within|inside|on)\s/i.test(label) ? low(label) : `in ${low(label)}`;
       return SETS(a.id)
         ? `Proteins in <b>${esc(label)}</b> are ${esc(W.marked)} ${f} as often as other proteins.`
@@ -2905,7 +2908,7 @@
     ];
     return (
       `<section id="m-privacy"><h3>Licenses and privacy</h3>` +
-      (`<p>Licenses: the code (ptmcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} license${
+      (`<p>Licenses: the code (PTMcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} license${
         D.kit.url ? ` (<a href="${esc(D.kit.url)}">source</a>)` : ''
       }. This site’s ` +
         `data and figures are under ${esc(hlicence(CIT.licence || 'their sources’ terms'))}, and each source ` +
@@ -3327,7 +3330,7 @@
       return (
         `<h4>${esc(cap(c.label))}</h4>${c.note ? `<p>${esc(c.note)}.</p>` : ''}` +
         (n
-          ? `<p>A ${esc(W.mark)} counts when at least ${int(n.distinct_at_least)} independent sources report it.` +
+          ? `<p>A ${esc(W.mark)} counts when at least ${int(n.distinct_at_least)} independent ${int(n.distinct_at_least) === 1 ? 'source reports' : 'sources report'} it.` +
             (groups.length
               ? ` Sources counted once together: ${groups
                   .map(([g, xs]) => `${esc(g)} (${xs.map(nm).join(', ')})`)
@@ -3464,6 +3467,8 @@
       ? `protein-set ` + `test of the ${x.sets} input`
       : `layer ${x.layer} (${x.origin})${x.with ? ', made with the parameters of its definition' : ''}`;
   };
+  // a label read inside a sentence: lower case, except one that names something ('PubMed IDs')
+  const lcLabel = (t) => (/[A-Z]/.test(String(t).slice(1)) ? t : String(t).toLowerCase());
   const PAGE_LABEL = 'Page:';
   function creditLines() {
     const sn = D.run.snapshot || {};
@@ -4615,7 +4620,7 @@
           .filter(([v]) => v)
           .sort((x, y) => y[1] - x[1]);
         return (
-          `<section id="m-sources"><h3>${esc(s.label)}</h3><p>${int(rows.length)} ${esc(s.label.toLowerCase())} report the ${esc(W.marks)}, with the ` +
+          `<section id="m-sources"><h3>${esc(s.label)}</h3><p>${int(rows.length)} ${esc(lcLabel(s.label))} report the ${esc(W.marks)}, with the ` +
           `number each reports. ${esc(s.help || '')} Cite those whose ${esc(W.marks)} you use.</p>` +
           (`<div class="tbl-card"><table class="tbl"><thead><tr><th>${esc(s.label)}</th><th class="num">${esc(cap(W.marks))}</th><th>` +
             `Reference</th></tr></thead><tbody>`) +
@@ -4656,9 +4661,7 @@
         ? `<p>${CIT.preferred ? 'and the' : 'Please cite the'} original data sources${
             Object.values(D.attribute_specs || {}).some((x) => x.kind === 'list' && x.link)
               ? ` and the ${esc(
-                  Object.values(D.attribute_specs)
-                    .find((x) => x.kind === 'list' && x.link)
-                    .label.toLowerCase()
+                  lcLabel(Object.values(D.attribute_specs).find((x) => x.kind === 'list' && x.link).label)
                 )} <a href="#method/sources">` + `under Sources</a> you use`
               : ''
           }:</p><ul>${CIT.references

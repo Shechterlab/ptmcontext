@@ -1,6 +1,6 @@
-# ptmcontext
+# PTMcontext
 
-ptmcontext tests which human proteins carry a post-translational modification, and which regions, domains, motifs
+PTMcontext tests which human proteins carry a post-translational modification, and which regions, domains, motifs
 and neighboring modifications its sites are enriched in. Every test runs two ways: across all proteins (Fisher's
 exact test) and within each protein (Mantel–Haenszel, comparing each site with the other residues of its own
 protein). Python computes the statistics and builds the site. JavaScript displays them. The published sites are static files on GitHub Pages.
