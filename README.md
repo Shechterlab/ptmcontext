@@ -92,6 +92,7 @@ ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml 
 | [ARCHITECTURE.md](ARCHITECTURE.md) | the pieces and the rules they enforce |
 | [CONTRACTS.md](CONTRACTS.md) | the file formats |
 | [ADDING_DATA.md](ADDING_DATA.md) | adding a source, a mark or a site |
+| [docs/DATA_STANDARD.md](docs/DATA_STANDARD.md) | the standard a new source must meet, and what a contributor sends |
 | [AGENTS.md](AGENTS.md) | the rules for anyone changing this repository |
 
 ## License
