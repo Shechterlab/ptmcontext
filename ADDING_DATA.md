@@ -3,6 +3,9 @@
 Follow these steps in order. Each ends with a check that must pass before the next. Stop and ask the owner where a
 step says so. Read [AGENTS.md](AGENTS.md) first; its rules override anything here.
 
+The criteria a source must meet (license, citation, organism, site-level evidence), the metadata to record and the
+versioning rule are in [docs/DATA_STANDARD.md](docs/DATA_STANDARD.md); this guide does not repeat them.
+
 ## 0. Decide what the data is
 
 Every new dataset is exactly one of these. If it is none of them, stop and ask.
@@ -21,6 +24,7 @@ Every new dataset is exactly one of these. If it is none of them, stop and ask.
 
 ## 1. Check the terms before downloading
 
+- Check the source against the gate in [docs/DATA_STANDARD.md](docs/DATA_STANDARD.md) (section 2).
 - Find the license on the source's own site. Record it word for word; if none is stated, write `none stated`.
 - Unpublished lab data and analyses (unpublished MS included) never enter this repository. They go in a
   private repository as a plugin (step 6). **If unsure whether something is published, stop and ask.**

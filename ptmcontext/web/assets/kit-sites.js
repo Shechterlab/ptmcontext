@@ -1073,7 +1073,7 @@
     [
       '[data-sites-3d]',
       (el) => {
-        const [acc, pos] = el.dataset.sites3d.split('/');
+        const [acc, pos] = el.dataset['sites-3d'].split('/');
         if (typeof K.show3d === 'function') K.show3d(acc, +pos);
       },
     ],

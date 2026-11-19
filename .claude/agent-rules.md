@@ -14,9 +14,9 @@ Read AGENTS.md first; its rules hold. Also:
 - **Data that stays out:** unpublished lab data (functional-class labels), the Barutcu nuclear-body calls (license
   pending), and pCLAP/RBDmap peptide sequences or extents. Never write "dtIDR", "domain-tethered" or "domain flanks".
   Don't call code from the other lab repositories.
-- **CPLM 4.0:** it states no license. On 2026-11-09 the owner decided to include its human lysine methylation sites
-  publicly, cited (Zhang et al., Nucleic Acids Res 50:D451, 2022), in PTM_Pipeline's releases and the sites that read
-  them, pending the authors' permission. Say so wherever CPLM data is described, and follow any terms the authors give.
+- **CPLM 4.0:** it states no license and compiles other databases. On 2026-11-17 the owner decided to exclude it from
+  all context marks (this replaces the 2026-11-09 decision to include it). Do not add CPLM data to any release, site or
+  table, and do not describe it as a source.
 - **Modular.** New data formats go in CONTRACTS.md and are mapped in the site file (the schema, plus
   `site.website_problems`). No site-specific literal goes in `ptmcontext/`. Add a toy-site test.
 - **Commit messages:** a subject line, a blank line, then an optional body. No trailers, no co-author lines, no session

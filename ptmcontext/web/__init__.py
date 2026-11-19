@@ -2245,7 +2245,7 @@ def pages(
         else ''
     )
     built_with = (
-        f'Updated {html.escape(human_date(_now()))}. Built with <a href="{html.escape(kit["url"])}">ptmcontext</a> '
+        f'Updated {html.escape(human_date(_now()))}. Built with <a href="{html.escape(kit["url"])}">PTMcontext</a> '
         f'{html.escape(kit["version"])}, {html.escape(_licence_words(kit.get("licence", "MIT")))} license. '
         "Each explorer's data are under the license its page states."
     )

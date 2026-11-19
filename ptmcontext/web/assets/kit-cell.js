@@ -54,7 +54,11 @@
     DISP = C.dispersion !== false,
     ABUND = !!C.abundance;
   const hOf = (p, q) => 2 * Math.asin(Math.sqrt(p)) - 2 * Math.asin(Math.sqrt(q));
-  const hText = (h) => (h == null ? '–' : 'h ' + (h > 0 ? '+' : h < 0 ? '−' : '') + Math.abs(h).toFixed(1));
+  const hText = (h) => {
+    if (h == null) return '–';
+    const r = Math.abs(h).toFixed(1); // round first: a value that rounds to 0.0 carries no sign
+    return 'h ' + (Number(r) === 0 ? '' : h > 0 ? '+' : '−') + r;
+  };
   const hStep = (h) => H_BANDS.filter((b) => Math.abs(h) >= b).length;
   const hBand = (h) =>
     ['negligible', 'small', 'medium', 'large'][hStep(h)] + (hStep(h) ? '' : ' (under ' + H_BANDS[0] + ')');
@@ -325,6 +329,7 @@
     '.pk-ref{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink)}',
     '.pk-tick{display:inline-block;width:2px;height:12px;background:var(--ink);margin-right:.3rem}',
     '@media (max-width:700px){.cell-view button{padding:.3rem .55rem}}',
+    '@media(max-width:700px){.cell-cell svg,.cell-svg.cell-cell,.cell-svg.cell-nucleus,.cell-svg.cell-bars,.cell-svg.cell-funnel{min-width:0}.tbl-wrap:has(>.cell-funnel-tbl){overflow-x:auto}}', // a phone: the drawings scale to the width and the funnel table scrolls inside its box, instead of widening the page
   ].join('');
 
   // ---- the site's rows of each map: the enricher row (counts, fold, q) and its repeat within the strata ----------------
