@@ -408,7 +408,7 @@ def near_marks(params: dict, aid: str) -> Layer:
     )
 
 
-MOTIF_FIELDS = {'name', 'label', 'help', 'pattern', 'start', 'patterns', 'marks', 'cite', 'among'}
+MOTIF_FIELDS = {'name', 'label', 'help', 'pattern', 'start', 'patterns', 'marks', 'cite', 'among', 'key_findings'}
 
 
 def _motif_family(f: dict, aid: str, flank: int) -> dict:

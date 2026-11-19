@@ -338,7 +338,7 @@ def test_a_failed_control_keeps_its_row_with_a_badge_in_the_kit():
     # the badge sits after the tile row (not inside its button), links to Methods > Controls, and the row's name says it
     assert 'class="ctl-fail"' in js and 'class="ctl-badge" href="${esc(link(\'method\', \'controls\'))}"' in js
     assert 'id="q-controls"' in js
-    assert 'fails control: ${f.label}' in js and 'badge: fails.map(failText)' in js
+    assert "Doesn't hold ${" in js and 'badge: fails.map(failText)' in js
     assert '<span class="vh">, ${esc(x.badge)}</span>' in (ASSETS / 'kit-tile.js').read_text()
     css = (ASSETS / 'kit.css').read_text()
     badge = css[css.index('.ctl-badge {') :]

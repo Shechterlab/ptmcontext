@@ -103,6 +103,7 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 | `kit-stats.js` | the tests in the browser; this is `ptmstats.js` of packages/ptmstats, copied under that name |
 | `kit-seldata.js`, `kit-seldata-worker.js` | the one reader of the selection data's parts (`data/sel/`): the core, a protein's sets, the marks of some proteins, and the whole, fetched and parsed in a worker (CONTRACTS.md, "Selection data in parts") |
 | `kit-select.js` | the selection model, `K.sel`: search, filters, selections and their tests; no page of its own, no document needed |
+| `kit-terms.js` | protein sets and ontology terms by name or ID for the search box: reads `data/search/terms.json` (written by `web/termindex.py`) on first use, ranks matches, and adds the `g:` filter for ontology-source terms |
 | `kit-rail.js` | the sidebar (Sections, Filters), the selection line and saved selections; a row that selects goes to the page top |
 | `kit-search.js` | the search box's suggestions and the line under it that says what it read |
 | `kit-near.js` | filters that read more than a mark's own classes: nearby marks, motif patterns, partners |

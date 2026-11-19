@@ -62,6 +62,7 @@ MODULES = (
     'kit-stats.js',
     'kit-seldata.js',
     'kit-select.js',
+    'kit-terms.js',
     'kit-rail.js',
     'kit-search.js',
     'kit-near.js',
@@ -267,6 +268,18 @@ def _labels(layer: dict | None, profile) -> tuple[dict, dict]:
     return dict(layer.get('labels') or {}), dict(layer.get('help') or {})
 
 
+def _key_findings_off(a: dict, layer: dict | None, profile) -> dict:
+    """Keep results out of the Overview's Key findings (their tiles still show them): `key_findings: false` on the
+    question, or on a motif family (a motif defined by the marks it is tested against)."""
+    if a.get('key_findings') is False:
+        return {'key_findings': False}
+    fams = a.get('with', {}).get('families') or []
+    if layer and layer.get('shape') == 'flags' and not layer.get('labels'):
+        fams = profile.motif_families
+    off = [f['name'] for f in fams if isinstance(f, dict) and f.get('key_findings') is False]
+    return {'key_findings_off': off} if off else {}
+
+
 def _layer_words(a: dict, run: dict) -> dict | None:
     """A residue analysis's layer as the website shows it: as its run recorded it (built in, made from with:, or a
     plugin), or, for a run written before runs recorded it, the built-in layer's own words."""
@@ -385,14 +398,14 @@ def _now() -> str:
 
 
 def human_date(iso: str) -> str:
-    """2026-11-01 -> 1 November 2026."""
+    """A date as readers see it: ISO, 2026-11-01 (a timestamp loses its time)."""
     import datetime as dt
 
     try:
         d = dt.date.fromisoformat(str(iso)[:10])
     except ValueError:
         return str(iso)
-    return f'{d.day} {d.strftime("%B")} {d.year}'
+    return d.isoformat()
 
 
 def site_data(site: dict, folder: Path, profile) -> dict:
@@ -545,6 +558,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                 'labels': labels,
                 'help': helps,
                 'new': bool(a.get('new')),
+                **_key_findings_off(a, layer, profile),
                 **({'only_in': True} if a.get('only_in') else {}),
                 **({'subset': True} if a.get('marks_where') else {}),
                 **_control(a, run),
@@ -666,6 +680,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'dataset': web.get('dataset'),
         'downloads': web.get('downloads') or [],
         'download_terms': web.get('download_terms', ''),
+        'methods_note': web.get('methods_note', ''),
         # the maps of the cell as one question (kit-cell.js) and the parts of the kit's drawings; protein-set questions
         # drawn with their proteins' numbers (kit-values.js)
         **(
@@ -1754,6 +1769,14 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             ov = OV.build(site, run, folder, listing, fasta, out, log)
             if ov:
                 data['overlap'] = ov
+        # the search box's term index (protein sets and ontology terms by name), read when the box is first used
+        from . import termindex as TI
+
+        ti = TI.build(data['analyses'], sel, listing, data.get('overlap'), out, log)
+        if ti:
+            data['term_index'] = ti
+        else:
+            (out / TI.FILE).unlink(missing_ok=True)
     # the site's pages (website.pages) and the whole tables they read, one file each, read when a page first needs one
     data['page_tables'], inline_page_tables = (
         page_tables(site, web.get('tables') or {}, run, listing, out, log) if listing else ({}, '')

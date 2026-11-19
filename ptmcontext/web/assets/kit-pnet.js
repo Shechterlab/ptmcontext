@@ -682,7 +682,7 @@
       (`<span class="pn-zoom" role="group" aria-label="Zoom the network"><button type="button" class="btn quiet ` +
         `small" data-pn-zoom="in" aria-label="Zoom in">+</button><button type="button" class="btn quiet small" ` +
         `data-pn-zoom="out" aria-label="Zoom out">−</button><button type="button" class="btn quiet small" ` +
-        `data-pn-zoom="fit" title="Show the whole network (double-click the background)">Reset zoom</button>` +
+        `data-pn-zoom="fit" title="Show the whole network (double-click the background)">${K.ACT.resetView}</button>` +
         `</span></div>`) +
       ``
     );

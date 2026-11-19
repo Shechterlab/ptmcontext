@@ -80,7 +80,7 @@ def test_web_build_from_a_synthetic_run(tmp_path):
     )
     index = web.build(REPO / 'sites' / 'yeast_phospho.yaml', out_root=tmp_path, log=lambda *_: None)
     page = index.read_text()
-    assert 'Yeast Phosphosite Explorer' in page and 'assets/kit.js' in page
+    assert 'Yeast Phosphorylation Site Explorer' in page and 'assets/kit.js' in page
     data = json.loads(re.search(r'<script id="site-data" type="application/json">(.*?)</script>', page, re.S).group(1))
     assert data['citation']['version'] == C.site_citation(site)['version']
     # the rows travel once, as the statistics table's text, which the page reads its rows from

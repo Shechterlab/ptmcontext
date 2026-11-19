@@ -162,6 +162,10 @@
               "help": {
                 "type": "string",
                 "description": "its definition, shown on hover"
+              },
+              "key_findings": {
+                "const": false,
+                "description": "false keeps the family out of the Overview's Key findings (a motif defined by the marks it is tested against); its tile still shows it"
               }
             }
           }

@@ -55,6 +55,8 @@ CSS = """
 @media (prefers-reduced-motion: reduce) { .land-search .ld-spin { animation: none; border-top-color: var(--line-strong); background: radial-gradient(circle, currentColor 35%, transparent 40%); } }
 .land-intro { max-width: 46rem; padding-block: 1.5rem 0.25rem; display: grid; gap: 0.5rem; color: var(--ink-2); font-size: 1.02rem; line-height: 1.55; }
 .land-intro p { margin: 0; }
+.land-refs { max-width: 46rem; list-style: none; margin: 0; padding: 0.5rem 0 0; display: flex; flex-wrap: wrap; gap: 0.2rem 1.4rem; font-size: 0.9rem; color: var(--ink-2); }
+.land-refs .muted { color: var(--muted); }
 .land-intro p:first-child { color: var(--ink); font-size: 1.15rem; }
 .sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(26rem, 100%), 1fr)); gap: 1.25rem; padding: 1rem 0 1.5rem; list-style: none; margin: 0; }
 .sites > li { display: flex; }
@@ -228,6 +230,26 @@ def ordered(cards: list[dict], cfg: dict) -> list[dict]:
     return sorted(cards, key=lambda c: rank.get(c['id'], len(rank)))
 
 
+def _ref(x: dict) -> str:
+    """One line of the landing page's references: a label, then a DOI (a link to doi.org, with `all_versions` as a second
+    DOI) or plain text (a link when it has a url)."""
+    label = html.escape(str(x.get('label', '')))
+    parts = []
+    if x.get('doi'):
+        d = html.escape(str(x['doi']))
+        parts.append(f'<a href="https://doi.org/{d}">doi:{d}</a>')
+    if x.get('all_versions'):
+        a = html.escape(str(x['all_versions']))
+        parts.append(f'all versions <a href="https://doi.org/{a}">doi:{a}</a>')
+    if x.get('text'):
+        t = html.escape(str(x['text']))
+        parts.append(f'<a href="{html.escape(str(x["url"]))}">{t}</a>' if x.get('url') else t)
+    if not parts:
+        return ''
+    body = ' · '.join(parts) if x.get('doi') and x.get('all_versions') else ', '.join(parts)
+    return f'<li><span class="muted">{label}:</span> {body}</li>'
+
+
 def page(
     cards: list[dict],
     cfg: dict,
@@ -249,6 +271,7 @@ def page(
         for x in (cfg.get('footer') or {}).get('links') or []
     )
     note = (cfg.get('footer') or {}).get('note')
+    refs = ''.join(_ref(x) for x in cfg.get('references') or [])
     groups = [g for g in cfg.get('groups') or [] if g.get('id')] or [{'id': None}]
     ids = {g['id'] for g in groups}
     sections = ''
@@ -284,6 +307,7 @@ def page(
 {f'<div class="lede"><p class="lede-what">{lede}</p></div>' if lede else ''}</div></header>
 <main class="wrap" id="sites">
 {f'<section class="land-intro" aria-label="About">{intro}</section>' if intro else ''}
+{f'<ul class="land-refs" aria-label="Paper and data">{refs}</ul>' if refs else ''}
 {SEARCH_HTML if search else ''}
 <h2 class="vh">The explorers</h2>
 {sections}</main>
