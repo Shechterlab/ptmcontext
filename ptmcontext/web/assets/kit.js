@@ -2537,6 +2537,10 @@
   // reading; 'weaker': the same direction by 1.1x or more, not at q <= 0.05; 'reversed': the other way at q <= 0.05;
   // 'lost': otherwise; 'new': a reading only the control has
   const controlsOf = (a) => D.analyses.filter((x) => A[x.id]?.control_of === a.id);
+  // a control on a part of the marks that counted too few of them (analyses[].control_too_few: how many) shows no result,
+  // no verdict and no badge; its page and the Controls table say so in one plain sentence
+  const tooFewText = (x) =>
+    `Too few ${x.control_label || 'sites'} to test (n = ${x.control_too_few.toLocaleString('en-US')}).`;
   const ctlMethod = (a) => (a.kind === 'protein_sets' ? 'enricher' : vsMethod(S.m));
   // a control is read on the measure its tiles show: the fold (valOf), with the test's odds ratio and q (the adjusted test
   // where there is one). Verdicts, as the Controls table's key says them:
@@ -2575,6 +2579,7 @@
       const main = new Map(rowsFor(a, m).map((r) => [r.category, r])),
         out = {};
       controlsOf(a).forEach((x) => {
+        if (A[x.id].control_too_few != null) return;
         const cr = new Map(rowsFor(A[x.id], m).map((r) => [r.category, r]));
         main.forEach((r, cat) => {
           const c = cr.get(cat),
@@ -2669,15 +2674,23 @@
   // the Controls table: each class's fold in the question and in each control, its test (odds ratio, interval, q) in the
   // cell's tooltip and accessible name. The controls describe the whole site: with a selection on they are shown so labelled
   function controlsBlock(a, m) {
-    const ctl = controlsOf(a);
-    if (!ctl.length) return '';
+    const all = controlsOf(a),
+      ctl = all.filter((x) => A[x.id].control_too_few == null),
+      few = all.filter((x) => A[x.id].control_too_few != null);
+    if (!all.length) return '';
+    const fewNotes = few.map((x) => `<p class="page-note note">${esc(tooFewText(A[x.id]))}</p>`).join('');
+    if (!ctl.length)
+      return `<section class="pcard controls" id="q-controls" tabindex="-1"><h3>Controls</h3>${fewNotes}</section>`;
     const main = rowsFor(a, m),
       of = (x) => new Map(rowsFor(A[x.id], m).map((r) => [r.category, r])),
       by = ctl.map(of);
     const cats = main.filter(
       (r) => r.dir === 'more' || r.dir === 'less' || by.some((b) => ctlTest(b.get(r.category) || {}).q <= PADJ)
     );
-    if (!cats.length) return '';
+    if (!cats.length)
+      return few.length
+        ? `<section class="pcard controls" id="q-controls" tabindex="-1"><h3>Controls</h3>${fewNotes}</section>`
+        : '';
     const cell = (r, v) => {
       if (!r) return v ? `– <b class="ctl-${v.replace(' ', '-')}">${esc(v)}</b>` : '–';
       const d = ctlDetail(r);
@@ -2712,7 +2725,7 @@
               .join('')}</tr>`
         )
         .join('') +
-      `</tbody></table></div></section>`
+      `</tbody></table></div>${fewNotes}</section>`
     );
   }
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
@@ -2795,15 +2808,17 @@
             .join('')}</p>`
         : '') +
       familyLine(a) +
-      `<section class="pcard">${
-        (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
-        (K.questionBody && K.questionBody(a, rows, card)) ??
-        cardBody(a, rows)
-      }${
-        selOn() && !vsOn() && !mod
-          ? `<p class="twhole">` + `<span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>`
-          : ''
-      }</section>` +
+      (a.control_too_few != null
+        ? `<section class="pcard"><p class="note too-few">${esc(tooFewText(a))}</p></section>`
+        : `<section class="pcard">${
+            (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
+            (K.questionBody && K.questionBody(a, rows, card)) ??
+            cardBody(a, rows)
+          }${
+            selOn() && !vsOn() && !mod
+              ? `<p class="twhole">` + `<span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>`
+              : ''
+          }</section>`) +
       (mod
         ? ''
         : controlsBlock(a, a.kind === 'protein_sets' ? 'enricher' : S.m === 'fisher' ? 'fisher' : 'mantel_haenszel'))

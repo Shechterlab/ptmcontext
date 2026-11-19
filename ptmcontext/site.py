@@ -103,6 +103,7 @@ def expand_subsets(site: dict) -> dict:
 
 
 CONTROL_KEYS = ('marks_where', 'marks_outside', 'without_proteins', 'only_in')
+CONTROL_MIN_MARKS = 100  # a control on a part of the marks (marks_where) with fewer marks shows no result
 
 
 def expand_controls(site: dict) -> dict:
@@ -164,6 +165,11 @@ def expand_controls(site: dict) -> dict:
                 control_of=aid,
                 control_label=ctl['label'],
                 **({'control_when': ctl['when']} if ctl.get('when') else {}),
+                **(
+                    {'control_min_marks': int(ctl.get('min_marks', CONTROL_MIN_MARKS))}
+                    if 'marks_where' in change
+                    else {}
+                ),
             )
             if title:
                 v['title'] = f'{title}, {ctl["label"]}'
@@ -1442,7 +1448,7 @@ def _distinct_units_at_least(frame: pd.DataFrame, cond: dict, key: pd.Series) ->
     column not in the map add nothing: databases count only through the papers they cite. A row that fails
     `units.only_where` adds no units. Every row of a mark gets the mark's answer. With `per` (a column's name), units
     are pooled only among rows with the same value in that column (the modification type): each row's answer is for
-    its own type, and a lysine's acetylation and ubiquitination records never add up."""
+    its own type, and records of different types never add up."""
     u = cond['units']
     if cond.get('per'):
         if cond['per'] not in frame.columns:

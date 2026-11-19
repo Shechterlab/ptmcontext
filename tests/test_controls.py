@@ -234,6 +234,7 @@ def test_the_browser_retests_a_flags_control_as_the_run(tmp_path):
             'id': 'x',
             'label': 'kind x',
             'analyses': ['motif'],
+            'min_marks': 1,
             'marks_where': {'column': 'kind', 'equals': 'x'},
             'marks_outside': 'left_out',
         }
@@ -421,6 +422,7 @@ def test_a_badge_click_opens_methods_controls(tmp_path):
             'label': 'RA sites only',
             'when': 'only the RA sites are compared',
             'analyses': ['motif'],
+            'min_marks': 1,
             'marks_where': {'column': 'kind', 'equals': 'a'},
             'marks_outside': 'left_out',
         }
@@ -460,3 +462,40 @@ def test_a_badge_click_opens_methods_controls(tmp_path):
     assert out['tip'].startswith('This result reverses when only the RA sites are compared (')
     # each cell shows the fold, its test in the tooltip
     assert out['cells'] and all('× q ' in c[0] and c[1].startswith('OR ') and ', q ' in c[1] for c in out['cells'])
+
+
+def test_a_control_with_too_few_marks_shows_no_result(tmp_path):
+    """A control on a part of the marks needs `min_marks` marks (default 100): below it the web data says how many it
+    counted (control_too_few), and the kit draws one plain sentence instead of a result, verdicts or badges."""
+    from ptmcontext import web
+
+    def control(**extra):
+        return {
+            'id': 'hc',
+            'label': 'high-confidence sites',
+            'analyses': ['confidence'],
+            'marks_where': {'column': 'studies', 'distinct_at_least': 2},
+            **extra,
+        }
+
+    root, path = _with_controls(tmp_path, [control()])
+    base = {a['id']: a for a in S.load_site(path)['analyses']}
+    assert base['confidence_hc']['control_min_marks'] == 100
+    assert 'control_min_marks' not in base['confidence']
+    root, path = _with_controls(tmp_path / 'b', [control(min_marks=2)])
+    assert {a['id']: a for a in S.load_site(path)['analyses']}['confidence_hc']['control_min_marks'] == 2
+    run = {'analyses': {'confidence_hc': {'marks_where': {'marks': 83}}}}
+    a = {
+        'id': 'confidence_hc',
+        'control_of': 'confidence',
+        'control_label': 'high-confidence sites',
+        'control_min_marks': 100,
+    }
+    assert web._control(a, run)['control_too_few'] == 83
+    assert 'control_too_few' not in web._control({**a, 'control_min_marks': 83}, run)  # enough: unchanged
+    assert 'control_too_few' not in web._control(a, {})  # no count: nothing hidden
+    assert web._control({'id': 'x'}, run) == {}
+    js = (ASSETS / 'kit.js').read_text()
+    assert 'Too few ${x.control_label' in js and 'A[x.id].control_too_few != null) return;' in js
+    schema = json.loads((S.Path(S.__file__).parent / 'schemas' / 'site.schema.json').read_text())
+    assert schema['properties']['controls']['items']['properties']['min_marks']['minimum'] == 1

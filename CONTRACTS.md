@@ -94,7 +94,7 @@ Conventions:
   counts for nothing). With `per: <column>` the units are pooled only among a mark's rows that share a value in that
   column (the modification type), so each row answers for its own type: a lysine's acetylation, other acylation,
   ubiquitination and SUMOylation records never add up to one another.
-- Controls (`controls: [{id, label, when?, note?, analyses: [question ids], marks_where?, marks_outside?,
+- Controls (`controls: [{id, label, when?, note?, min_marks?, analyses: [question ids], marks_where?, marks_outside?,
   without_proteins?, only_in?}]`, each with at least one change): at load, each listed question gets a copy
   `<id>_<control id>` with the change (a `marks_where` joins the question's own: both must hold), `new: true`,
   `control_of: <question>`, `control_label: <label>` and `control_when: <when>`, its title followed by `, <label>`,
@@ -114,7 +114,8 @@ Conventions:
   accessible name. `website.overview.control_badges: {verdicts: [lost, reversed, weaker]}` says which readings count
   (default lost and reversed); `false` shows no badge. No badge is shown for a selection. The Method page lists the
   controls, and for a `distinct_at_least` condition its groups and the items not counted. A control is not an Overview
-  tile. A model (`conditional_logit`) is not repeated; `only_in` is for a residue question of one layer without its own.
+  tile. A control with a `marks_where` needs `min_marks` marks (default 100): when its run counted fewer, its page and
+  the Controls table say "Too few <label> to test (n = 83)." and show no result, no verdict and no badge. A model (`conditional_logit`) is not repeated; `only_in` is for a residue question of one layer without its own.
 - Questions that are variants of one base (the same test at other window sizes, or inside IDRs) may share a
   `family:` (any text, the entry's name). The website's Sections sidebar then lists them as one entry with a caret
   that reveals the variants, each named by what differs: its title less the family's name (and any leading

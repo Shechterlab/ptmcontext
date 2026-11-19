@@ -142,18 +142,20 @@ def controls_data(site: dict) -> list[dict]:
     return out
 
 
-def _control(a: dict) -> dict:
+def _control(a: dict, run: dict | None = None) -> dict:
     """A control of another question (controls: in the site file): the question it controls and its short name, for
-    that question's page, which shows the control beside its result."""
-    return (
-        {
-            'control_of': a['control_of'],
-            'control_label': a.get('control_label', a['id']),
-            **({'control_when': a['control_when']} if a.get('control_when') else {}),
-        }
-        if a.get('control_of')
-        else {}
-    )
+    that question's page, which shows the control beside its result. A control on a part of the marks that counted
+    fewer than its minimum gets `control_too_few` (the marks it counted): the website shows no result for it."""
+    if not a.get('control_of'):
+        return {}
+    n = (((run or {}).get('analyses') or {}).get(a['id']) or {}).get('marks_where', {}).get('marks')
+    few = n is not None and a.get('control_min_marks') and n < a['control_min_marks']
+    return {
+        'control_of': a['control_of'],
+        'control_label': a.get('control_label', a['id']),
+        **({'control_when': a['control_when']} if a.get('control_when') else {}),
+        **({'control_too_few': int(n)} if few else {}),
+    }
 
 
 def lazy_site_data(site_dir: Path) -> None:
@@ -519,7 +521,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                     'help': dict(a.get('help') or {}),
                     'set_note': a.get('set_note', ''),
                     'new': bool(a.get('new')),
-                    **_control(a),
+                    **_control(a, run),
                     **_class_order(a, {}),
                 }
             )
@@ -545,7 +547,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
                 'new': bool(a.get('new')),
                 **({'only_in': True} if a.get('only_in') else {}),
                 **({'subset': True} if a.get('marks_where') else {}),
-                **_control(a),
+                **_control(a, run),
                 **(
                     {'note': note_text(a['note'], stats)} if a.get('note') else {}
                 ),  # a note under the question, with its one-click filters

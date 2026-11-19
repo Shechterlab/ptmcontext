@@ -170,6 +170,7 @@ def test_a_toy_site_in_a_browser(tmp_path):
             'label': 'RA sites only',
             'when': 'only the RA sites are compared',
             'analyses': ['motif'],
+            'min_marks': 1,
             'marks_where': {'column': 'kind', 'equals': 'a'},
             'marks_outside': 'left_out',
         }

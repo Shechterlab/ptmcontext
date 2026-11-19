@@ -1219,6 +1219,10 @@
             "type": "string",
             "description": "the control's when, for its badge. Written by controls"
           },
+          "control_min_marks": {
+            "type": "integer",
+            "description": "the fewest marks the control needs to show a result. Written by controls"
+          },
           "control_label": {
             "type": "string",
             "description": "the control's short name on its question's page. Written by controls"
@@ -8401,6 +8405,11 @@
               "left_out"
             ],
             "description": "with marks_where: the other marks are counted on neither side"
+          },
+          "min_marks": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "with marks_where: the fewest marks the control needs (default 100); with fewer, its page and the Controls table say \"Too few <label> to test (n = ...)\" and show no result, and no badge is drawn for it"
           },
           "without_proteins": {
             "$ref": "#/properties/analyses/items/properties/without_proteins"
