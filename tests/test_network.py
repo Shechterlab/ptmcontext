@@ -884,7 +884,7 @@ const K2={D:{site:{id:'x'},counts:{proteins:40},network:{options:{steps:[400,700
  W:{marks:'sites',mark:'site',proteins:'proteins'},esc:(s)=>String(s),int:(n)=>String(n),S:{view:'network'},netcore:K.netcore,netlayout:K.netlayout,
  views:{},tabs:[],clicks:[],tips:[],sections:{},methods:[],afterRender:[],paramsIn:[],paramsOut:[],
  sel:{active:()=>true,data:()=>({}),describe:()=>'als',key:()=>String(held),nProteins:()=>(held?40:0),protSelected:()=>held},
- render:()=>{},writeHash:()=>{},link:(v)=>'#'+v,loading:(t)=>t,fold:()=>'',tabName:(v,n)=>n,fq:String,fxn:String,expBar:()=>'',tt:()=>''};
+ render:()=>{},writeHash:()=>{},link:(v)=>'#'+v,loading:(t)=>t,fold:()=>'',tabName:(v,n)=>n,ACT:{resetView:'Reset view'},fq:String,fxn:String,expBar:()=>'',tt:()=>''};
 window.PTMC_MODULES.forEach(m=>m(K2));
 const nothing=()=>{try{return /nothing to draw/.test(String(K2.views.network.render()))}catch(e){return 'ERR '+e.message}};
 K2.views.network.render();

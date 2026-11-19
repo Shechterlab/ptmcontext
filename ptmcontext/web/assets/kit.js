@@ -37,6 +37,68 @@
       if (labels[a.id]) a.labels = labels[a.id];
     });
   }
+  // American spelling for the names a source writes in British English (a class, a disease, a domain), applied to what
+  // is displayed: the labels and texts below, and a protein's regions. Matching, links and downloads keep the source's
+  // own names; a code or column name (snake_case) is never a whole word here, so it is left alone.
+  const US_WORDS = {
+    defence: 'defense',
+    behaviour: 'behavior',
+    behavioural: 'behavioral',
+    tumour: 'tumor',
+    tumours: 'tumors',
+    signalling: 'signaling',
+    signalled: 'signaled',
+    modelled: 'modeled',
+    modelling: 'modeling',
+    labelled: 'labeled',
+    labelling: 'labeling',
+    haematological: 'hematological',
+    haematopoietic: 'hematopoietic',
+    haemoglobin: 'hemoglobin',
+    haemorrhage: 'hemorrhage',
+    anaemia: 'anemia',
+    leukaemia: 'leukemia',
+    ischaemia: 'ischemia',
+    oedema: 'edema',
+    oesophageal: 'esophageal',
+    oesophagus: 'esophagus',
+    paediatric: 'pediatric',
+    foetal: 'fetal',
+    centre: 'center',
+    colour: 'color',
+    sulphur: 'sulfur',
+    ageing: 'aging',
+    catalysed: 'catalyzed',
+    localised: 'localized',
+    localises: 'localizes',
+    localising: 'localizing',
+    stabilised: 'stabilized',
+    characterised: 'characterized',
+    recognised: 'recognized',
+    organised: 'organized',
+    summarised: 'summarized',
+  };
+  const US_RE = new RegExp(`\\b(?:${Object.keys(US_WORDS).join('|')}|\\w+isations?)\\b`, 'gi');
+  const us = (t) =>
+    typeof t !== 'string'
+      ? t
+      : t.replace(US_RE, (w) => {
+          const low = w.toLowerCase(),
+            to = US_WORDS[low] ?? low.replace(/isation/, 'ization');
+          return w === w.toUpperCase() && w.length > 1
+            ? to.toUpperCase()
+            : w[0] === w[0].toLowerCase()
+              ? to
+              : to[0].toUpperCase() + to.slice(1);
+        });
+  const usText = (o, keys) =>
+    keys.forEach((k) => {
+      const v = o[k];
+      if (typeof v === 'string') o[k] = us(v);
+      else if (v && typeof v === 'object') usText(v, Object.keys(v));
+    });
+  D.analyses.forEach((a) => usText(a, ['title', 'question', 'sub', 'describe', 'note', 'labels', 'help']));
+  if (D.front) usText(D.front, ['short', 'row_labels']);
   const W = D.words;
   const $ = (s) => document.querySelector(s);
   const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -58,23 +120,9 @@
   const fx = (v) => (v == null ? '–' : fxn(v) + '×');
   const pct = (k, n) => (n ? ((100 * k) / n).toFixed(1) + '%' : '–');
   const cap = (t) => String(t).charAt(0).toUpperCase() + String(t).slice(1);
-  const MONTHS = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
   const hdate = (iso) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
-    return m ? `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}` : String(iso || '');
+    return m ? `${m[1]}-${m[2]}-${m[3]}` : String(iso || '');
   };
   const htime = (iso) => {
     const m = /T(\d{2}):(\d{2})/.exec(String(iso || ''));
@@ -348,7 +396,18 @@
     how: false,
   };
   // modules (kit-*.js) register views, tabs, click handlers, tooltips and search hints here; the core starts them last
+  // one name for each action, wherever it is offered (labels only; each control keeps its behavior)
+  const ACT = {
+    details: 'Details', // opens a tile's question page
+    filters: 'Filters', // opens the filters
+    clearAll: 'Clear all',
+    resetView: 'Reset view', // back to the whole drawing
+    download: 'Download',
+    showMore: 'Show more', // expands a text or list in place
+    showLess: 'Show less',
+  };
   const K = (window.PTMC = {
+    ACT,
     D,
     W,
     A,
@@ -681,7 +740,7 @@
       fbtn = K.sel
         ? `<button type="button" class="btn small filter-btn${nf ? ' on' : ''}" data-rail-open="filters" ` +
           `title="Open the filters: narrow every page to the ${esc(W.marks)} that match"><span aria-hidden="true">` +
-          `⏚</span> Filter${nf ? ` <span class="badge">${nf}</span>` : ''}</button>`
+          `⏚</span> ${K.ACT.filters}${nf ? ` <span class="badge">${nf}</span>` : ''}</button>`
         : '';
     const hs = K.hl?.summary?.() || ''; // "Highlighted: FUS, TAF15 +1 ×", only while something is highlighted
     $('#scope').innerHTML =
@@ -1610,7 +1669,7 @@
   K.tileTitle = tileTitle;
   const detailsLink = (id) =>
     `<a class="tdetails" href="${esc(link('overview', id))}" title="Open the question: ` +
-    `every class, the tests and the downloads">details ›</a>`;
+    `every class, the tests and the downloads">${K.ACT.details} ›</a>`;
   K.detailsLink = detailsLink;
   function tile(card) {
     if (A[card.analysis].tile) return A[card.analysis].tile(card); // a question a module draws (kit-counts.js)
@@ -1900,7 +1959,7 @@
         : '') +
       `<div class="rp-acts">${d.f ? btn('sel', `Show these ${esc(d.noun)}`) : ''}${
         d.ov ? btn('ov', 'Compare sets with…') : ''
-      }${btn('open', 'Details')}</div>`;
+      }${btn('open', K.ACT.details)}</div>`;
     document.body.append(el);
     const r = row.getBoundingClientRect(),
       h = el.offsetHeight,
@@ -1999,7 +2058,7 @@
             `selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>`
           : ''
       }` +
-      `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">Details</button></p>`;
+      `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">${S.how ? 'Hide details' : 'Show details'}</button></p>`;
     const howP = S.how
       ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a ` +
         `log scale (the solid line is no difference). The number is the fold: for questions about where ${esc(W.marks)} ` +
@@ -2370,7 +2429,8 @@
           K.questions[a.id]?.tile ||
           a.control_of ||
           a.kind === 'attribute' ||
-          a.kind === 'module'
+          a.kind === 'module' ||
+          a.key_findings === false
         )
           return;
         (rowsOf(a, S.m) || []).forEach((r) => {
@@ -2378,6 +2438,7 @@
           const e = { a, r, q: r.adj ? r.adj.q : r.q, v: valOf(r), sec: x.name, card },
             at = named(KF?.pin, a.id, r.category);
           if (at >= 0) return pins.push({ ...e, at });
+          if (a.key_findings_off?.includes(r.category)) return;
           if (named(KF?.exclude, a.id, r.category) >= 0 || EXCL.test(r.label || '')) return;
           if (e.q == null || e.q > PADJ || e.v < minFold || controlFails(a, r.category).length) return;
           cands.push(e);
@@ -2404,8 +2465,18 @@
             ? t.charAt(0).toLowerCase() + t.slice(1)
             : t,
         where = /^(in|at|near|next to|within|inside|on)\s/i.test(label) ? low(label) : `in ${low(label)}`;
+      // a protein set reads as its plural noun: "P-body proteins", "Chromodomain proteins (reader)"
+      const noun = (t) => {
+        const [head, ...rest] = t.replace(/^(an?|the)\s+/i, '').split(/(?=\s\()/),
+          h = /\bproteins?$/i.test(head)
+            ? head.replace(/protein$/i, 'proteins')
+            : /\bproteome$/i.test(head)
+              ? head.replace(/proteome$/i, 'proteins')
+              : `${head} proteins`;
+        return cap(h) + rest.join('');
+      };
       return SETS(a.id)
-        ? `Proteins in <b>${esc(label)}</b> are ${esc(W.marked)} ${f} as often as other proteins.`
+        ? `<b>${esc(noun(label))}</b> are ${esc(W.marked)} ${f} as often as other proteins.`
         : `${esc(cap(W.marks))} are more common <b>${esc(where)}</b> (${f} other ${esc(W.residues)}).`;
     };
     return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Key findings</h3><ol>${pick
@@ -2612,7 +2683,16 @@
       or = r.method !== 'enricher' && t.eff != null ? `OR ${fxn(t.eff)}${ci}, ` : '';
     return `${or}q ${fq(t.q)}`;
   };
-  const failText = (f) => `fails control: ${f.label}`;
+  // "Doesn't hold with high-confidence sites (n = 83)", "Doesn't hold in detectable peptides": the control, and how many
+  // marks it counted
+  const failText = (f) => {
+    const n = D.run?.analyses?.[f.id]?.marks_where?.marks,
+      lab = String(f.label || f.id);
+    return (
+      `Doesn't hold ${/^(in|inside|with|within|among|at|near|without)\b/i.test(lab) ? '' : 'with '}${lab}` +
+      (n != null ? ` (n = ${int(n)})` : '')
+    );
+  };
   // one plain sentence: what happens to the result under the control, fold to fold; the numbers are in the Controls table
   const failTip = (f) =>
     `This result ${f.verdict === 'reversed' ? 'reverses' : 'disappears'} when ` +
@@ -2843,6 +2923,10 @@
           }${ds.date ? ` (${esc(hdate(ds.date))})` : ''}${
             ds.doi ? `, archived ` + `as <a href="https://doi.org/${esc(ds.doi)}">doi:${esc(ds.doi)}</a>` : ''
           }.</p>`
+        : '') +
+      (D.run?.marks?.rows > D.run?.marks?.counted
+        ? `<p>This explorer analyzes ${int(D.run.marks.counted)} ${esc(W.marks)}; the release table holds ` +
+          `${int(D.run.marks.rows)} rows. Sites known only by similarity, or not on the UniProt snapshot, are left out.</p>`
         : '') +
       (D.download_terms ? `<p>${esc(D.download_terms)}</p>` : '') +
       (`<div class="tbl-card"><table class="tbl"><thead><tr><th>File</th><th>Format</th><th>What it holds</th></tr>` +
@@ -3293,7 +3377,7 @@
       `</section>` +
       everyTest() +
       (`<span id="m-g2"></span><section id="m-data"><h3>Data</h3><p>Sequences: ${esc(sn.release)}, ${int(sn.entries)} entries ` +
-        `(FASTA MD5 <span class="mono">${esc(sn.fasta_md5)}</span>). `) +
+        `(FASTA MD5 <span class="mono">${esc(sn.fasta_md5)}</span>). ${D.methods_note ? esc(D.methods_note) + ' ' : ''}`) +
       (`${cap(W.marks)}: ${int(m.counted)} on ${int(m.proteins)} proteins, from ${int(m.selected)} records${
         dropped.length ? ' (' + dropped.join('; ') + ', left out)' : ''
       }. Each file ` +
@@ -4868,6 +4952,7 @@
     provenance,
     download,
     hdate,
+    us,
     htime,
     hlicence,
     shortCommit,
@@ -5562,7 +5647,7 @@
       `<span class="dock-x dock-search"><input id="dock-q" type="search" autocomplete="off" spellcheck="false" ` +
       `placeholder="Search" aria-label="Search proteins and sites, or filter"><button type="button" class="dock-ico" ` +
       `data-dock-search aria-label="Search" title="Search and pages">⌕</button></span>` +
-      `<button type="button" class="dock-x dock-sel" data-rail-open="filters" aria-label="Selection and filters"></button>` +
+      `<button type="button" class="dock-x dock-sel" data-rail-open="filters" aria-label="${K.ACT.filters}"></button>` +
       `</span></div>`;
     d.dataset.bar = (HDR.bar || BAR_ITEMS).join(' ');
   }

@@ -2556,7 +2556,7 @@
       (M.zoom
         ? `<span class="map-range small" id="map-range">residues ${int(M.zoom[0])}–${int(M.zoom[1])} of ${int(M.ctx?.p?.len || 0)}</span><button ` +
           `type="button" class="btn small" data-map-unzoom title="Show the whole protein again (double-click the ` +
-          `map, or press Esc)">Reset zoom</button>`
+          `map, or press Esc)">${K.ACT.resetView}</button>`
         : '') +
       '</div>'
     );

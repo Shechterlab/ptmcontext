@@ -1,6 +1,16 @@
 ## Unreleased
 
 - Search by name: protein sets and ontology terms (GO biological process, Reactome, PANTHER, condensates, cell compartments, Disease Ontology, DisGeNET terms and families) are found by name, synonym or ID (GO:0008380, DOID:332), listed by source with their number of proteins; choosing one adds a readable filter chip, kept in the link. The index (`data/search/terms.json`) is built with the site and read when the search box is first used. Yes/no attributes are offered by their label, not their key.
+- Wording and names (no statistics row changes; text in the statistics table is only displayed differently):
+  - Key findings leave out circular motifs: new `key_findings: false` on a question or on a motif family (lysine's SUMO consensus, phospho's polo-box); their tiles still show them. A protein-set finding reads "P-body proteins are methylated 2.7x as often as other proteins".
+  - The Download page says why the site analyzes fewer sites than the release table holds (both numbers); the Methods Data section says which UniProt releases the sequences and the context marks use (`website.methods_note`).
+  - Site names follow one pattern: Methylarginine, Methyllysine, Modified Lysine, Phosphorylation Site Explorer (was "Lysine Modification Explorer" and "Phosphosite Explorer").
+  - American spelling is shown for source names (defence, signalling, tumour, tetramerisation, ...); matching, links, downloads and the data keep the source's names.
+  - Dates are ISO (2026-11-19) wherever a reader sees one.
+  - The control badge reads "Doesn't hold with high-confidence sites (n = 83)" instead of "fails control: ...".
+  - One name per action from a shared list in the kit (`K.ACT`): Details, Filters, Reset view, Show more / Show less; "More questions" is "Other questions" and the selection's "More actions" is "Selection actions". No behavior changes.
+  - The landing page shows the paper DOI, the data DOI (and all versions) and the data release (`references` in landing.yml).
+  - The Help glossary has one shared list in the kit (IDR, aa, PRMT, RGG, Janus, polyampholyte, FCR, NCPR, ChEP), shown on each site that uses a term.
 
 - Pin PTM_Pipeline v1.5.1 at its release commit 9a03d54 (tag v1.5.1; same tree as 7ae9a02, no md5 changes). Every site cites the release by its version DOI 10.5281/zenodo.24373077 (published 2026-11-19), with the concept DOI 10.5281/zenodo.22696798 for all versions; methyllysine, lysine and phospho now carry the data DOI. Human-facing source links name the tag.
 

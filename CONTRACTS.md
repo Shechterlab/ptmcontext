@@ -107,8 +107,8 @@ Conventions:
   (the other side of 1×, at q ≤ 0.05, the fold and the test pointing the same way), lost (under 1.1× the same way, or the
   other side without q ≤ 0.05) or new (a reading only the control has). The table's key says the same. With a selection
   on, the table is still drawn and labeled as the whole dataset's. A class whose result fails a control keeps its place
-  on the Overview with a muted badge under its tile row, and one under its question's heading: "fails control:
-  <label>", a button that opens the question at its Controls table (focused, in view) and does nothing else (the click
+  on the Overview with a muted badge under its tile row, and one under its question's heading: "Doesn't hold
+  with <label> (n = <the control's marks>)" ("in", "inside" or "within" for a label that starts with one), a button that opens the question at its Controls table (focused, in view) and does nothing else (the click
   reaches neither the tile nor its row's filter). Its tooltip is one sentence, "This result disappears (or reverses)
   when <when> (fold → fold).", `when` defaulting to "the test is repeated with <label>"; the badge's words join the row's
   accessible name. `website.overview.control_badges: {verdicts: [lost, reversed, weaker]}` says which readings count
@@ -1058,7 +1058,7 @@ fields: one card per section in the order sections first appear.
 | `short` | question id to a short name (4 words or fewer) |
 | `row_labels` | question id to class or set code to a short row label (a code is unique only within its question) |
 | `summary_only` | question id to class codes left out of a card's summary rows, still on the question's page |
-| `glossary` | the site's own terms and their hover text (fold, odds ratio and q are the kit's) |
+| `glossary` | the site's own terms and their hover text (fold, odds ratio and q are the kit's; IDR, aa, PRMT, RGG, Janus, polyampholyte, FCR, NCPR and ChEP are the kit's too, listed on a site that uses them; a site entry of the same name replaces it) |
 | `examples` | the example chips: a search, or `{label, query}` (default: `website.examples`) |
 | `pathways[]` | the pathway view, below: `analyses` (protein-set questions whose sets are pathways), `hierarchy` (`input` role, `set`, `parents`, `name`, `separator`), `members` (`input` role, `set`, `protein`), `source` (`name`, `version`, `licence`, `url`, `link` with `{}` for a set's id) |
 
@@ -1134,7 +1134,9 @@ Every explorer shows the tabs Overview, Proteins, Sites, Interactions, Compare s
 
 Methods has five parts, each an address: `#method/tests` (how the tests work, **Every test** with its filters and download, the questions, the parity check), `#method/controls`, `#method/sources`, `#method/cite` (also: what the explorer is, sharing a link and keys, accessibility, licenses and privacy), `#method/download`. An address that names a section (`#method/privacy`, `#method/q-<id>`) opens the part that holds it. `#method/every?a=<question>` filters the table to a question.
 
-`website.overview.key_findings` (default: on): `count` (3), `min_fold` (1.1), `pin` and `exclude` (a question id, `"id/class"` or `{analysis, category}`). The strip lists the results with the smallest q among those at or above `min_fold` that fail no control badge, at most one per section; `false` leaves it out; it is not shown with a selection.
+`website.overview.key_findings` (default: on): `count` (3), `min_fold` (1.1), `pin` and `exclude` (a question id, `"id/class"` or `{analysis, category}`). The strip lists the results with the smallest q among those at or above `min_fold` that fail no control badge, at most one per section; `false` leaves it out; it is not shown with a selection. A question (`analyses[].key_findings: false`) or a motif family (`key_findings: false` in `with.families` or the mark profile's `motifs.families`) can keep itself out, for a result that follows from how the marks were defined (a motif drawn from the marks it is tested against); its tile still shows it.
+
+`website.methods_note` (a sentence): shown at the start of the Methods page's Data section, for which release of a source the sequences and the context marks use. The Download page adds, from the run, one sentence with the site's counted marks and the release table's rows when they differ.
 
 The Overview's sections follow one order: the names in `ptmcontext/config/overview_groups.json` (`shared`), or `website.overview.group_order`; a site's own sections follow, then the closing group (`last`). Sidebar entries are `#overview/<question id>` addresses and carry the tile's title.
 
@@ -1435,7 +1437,7 @@ abundance deciles apply) unless `website.landing.findings` names one. A site who
 The page's own words are a landing config (`ptmc pages --landing FILE`, else `landing.yml` beside the first site file):
 `title` (also the small brand line, a link to this page, above each explorer's name in its header: written to `sites.json` as `brand`; the sticky bar keeps its "All sites" link), `description`, `lede`, `card: {result, question}` (the card's "Strongest result" block and italic question line; both default false), `logo` (an SVG file for the page's header and favicon, `favicon` a bolder one for the tab icon alone, with `logo_dots: cards`, the SVG's `<g id="dots">` is refilled with one dot per listed card in its band color, in the cards' order), `switcher: {label}` (the word of the sites' header and sticky-bar switcher, "PTM"; else a site file's `website.switcher.label`; written to `sites.json`), `intro` (paragraphs), `cta`, `order` (card ids), `groups` (`[{id, title, note, compact}]`:
 rows of cards, a card going in the group named by its site's `landing.group`, else the first; a `compact` row has smaller cards,
-e.g. other organisms), `footer: {links: [{label, url}], note}`,
+e.g. other organisms), `footer: {links: [{label, url}], note}`, `references` (lines under the intro: `{label, doi, all_versions?}` links doi.org, `{label, text, url?}` is text),
 and `soon`: cards without a link for sites not built yet (`id`, `name`, `tagline`, `question`, `band`, `accent`,
 `accent_dark`, `art`, `badge`, `cta`). Replace a `soon` entry by the site's file in the command when it is built.
 
