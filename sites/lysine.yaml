@@ -1112,7 +1112,7 @@ citation: sites/lysine.citation.cff   # the citation, data sources, version and 
 
 website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
-  name: Modified Lysine Site Explorer
+  name: Lysine Modification Site Explorer
   tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from public databases and studies."
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with

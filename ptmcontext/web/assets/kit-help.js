@@ -195,12 +195,6 @@
   const SHARED_TERMS = [
     ['IDR', /\bIDRs?\b/, 'an intrinsically disordered region, a stretch of protein with no fixed fold.'],
     ['aa', /\baa\b/, 'amino acids (residues), as in "within 20 aa".'],
-    ['PRMT', /\bPRMTs?\b/, 'a protein arginine methyltransferase, an enzyme that adds methyl groups to arginines.'],
-    [
-      'RGG',
-      /\bRGG\b/,
-      'arginine-glycine(-glycine) repeats, the motifs PRMTs methylate most; often in disordered regions of RNA-binding proteins.',
-    ],
     [
       'Janus',
       /\bJanus\b/,

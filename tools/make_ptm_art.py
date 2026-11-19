@@ -274,7 +274,7 @@ LOGOS = {  # site -> (band colour, accent, glyph, title)
     'methylarginine': ('#155e75', '#c2410c', 'R', 'Methylarginine Site Explorer'),
     'methyllysine': ('#5b21b6', '#b45309', 'K', 'Methyllysine Site Explorer'),
     'phospho': ('#1e40af', '#0e7490', 'P', 'Phosphorylation Site Explorer'),
-    'lysine': ('#14532d', '#4d7c0f', 'K', 'Modified Lysine Site Explorer'),
+    'lysine': ('#14532d', '#4d7c0f', 'K', 'Lysine Modification Site Explorer'),
 }
 
 

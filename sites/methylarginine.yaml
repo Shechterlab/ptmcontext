@@ -1573,6 +1573,8 @@ website:                  # the look and words of the website (ptmc web); layout
       crosslink: ["capri_adj_peptide_among_measured", "rbrid_residue_among_measured", "pclap_lysc_region", "pclap_lysc_region_outside_rg", "pclap_peptide", "rbdmap_fragment", "rbdmap_fragment_outside_rg"]
     glossary:
       "IDR": "an intrinsically disordered region, a stretch with no fixed fold."
+      "PRMT": "a protein arginine methyltransferase, an enzyme that adds methyl groups to arginines."
+      "RGG": "arginine-glycine(-glycine) repeats, the motifs PRMTs methylate most; often in disordered regions of RNA-binding proteins."
       "CAPRI": "peptides crosslinked to RNA in living cells (UV crosslinking and mass spectrometry)."
       "RBR-ID": "residues whose peptides drop after UV crosslinking to RNA in cells, a sign of RNA contact."
       "pDockQ": "confidence of a predicted protein-protein interface (AlphaFold); 0.23 is likely, 0.5 confident."
