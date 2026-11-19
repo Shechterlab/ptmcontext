@@ -2468,7 +2468,11 @@
       // a protein set reads as its plural noun: "P-body proteins", "Chromodomain proteins (reader)"
       const noun = (t) => {
         const [head, ...rest] = t.replace(/^(an?|the)\s+/i, '').split(/(?=\s\()/),
-          h = /\bproteins?$/i.test(head) ? head.replace(/protein$/i, 'proteins') : `${head} proteins`;
+          h = /\bproteins?$/i.test(head)
+            ? head.replace(/protein$/i, 'proteins')
+            : /\bproteome$/i.test(head)
+              ? head.replace(/proteome$/i, 'proteins')
+              : `${head} proteins`;
         return cap(h) + rest.join('');
       };
       return SETS(a.id)
